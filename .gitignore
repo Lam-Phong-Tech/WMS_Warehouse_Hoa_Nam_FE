@@ -1,0 +1,50 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Env files (giữ lại .env.example để làm mẫu)
+.env
+.env.*
+!.env.example
+
+# Secrets / captured API responses (never commit tokens/credentials)
+login_resp*.txt
+*token*.txt
+*.jwt
+cookies.txt
+session.xml
+*.session
+*response*.json
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Local tooling artifacts / dumps (not part of source)
+.mcp.json
+.playwright-mcp/
+swagger-api.json
+swagger-live.html
+test-results.txt
+tsc-out.txt
+vietnam-addresses.json
+vietnam-addresses-formatted.txt
+test-manager-display.js
+package-lock.json

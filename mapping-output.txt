@@ -1,0 +1,401 @@
+[catalog] fetch runtime: login + GET https://astrodev.test8.io.vn/api/v1/permissions ...
+[catalog] runtime fetch thất bại (login 422) — fallback FE catalog + cache cũ (nếu có)
+
+=== docs\api-evidence\M1_API_MAPPING.md (87 endpoint rows) ===
+  ℹ [line 66] GET /org-units — operationId: org_unit_list · tags: 03. Organization / Company / Branch / Department
+  ℹ [line 67] POST /org-units — operationId: org_unit_create · tags: 03. Organization / Company / Branch / Department
+  ℹ [line 68] GET /org-units/{id} — operationId: org_unit_show · tags: 03. Organization / Company / Branch / Department
+  ℹ [line 69] PATCH /org-units/{id} — operationId: org_unit_update · tags: 03. Organization / Company / Branch / Department
+  ℹ [line 70] DELETE /org-units/{id}/soft-delete — operationId: org_unit_soft_delete · tags: 03. Organization / Company / Branch / Department
+  ℹ [line 71] PATCH /org-units/{id}/restore — operationId: org_unit_restore · tags: 03. Organization / Company / Branch / Department
+  ℹ [line 72] DELETE /org-units/{id}/force-delete — operationId: org_unit_force_delete · tags: 03. Organization / Company / Branch / Department
+  ℹ [line 73] GET /org-units/tree — operationId: org_unit_tree · tags: 03. Organization / Company / Branch / Department
+  ℹ [line 74] POST /org-units/generate-code — operationId: org_unit_generate_code · tags: 03. Organization / Company / Branch / Department
+  ℹ [line 75] POST /org-units/generate-tmp-code — operationId: org_unit_generate_tmp_code · tags: 03. Organization / Company / Branch / Department
+  ℹ [line 76] GET /org-units/check-tax-code/{taxCode} — operationId: org_unit_check_tax_code · tags: 16. API Tích Hợp
+  ℹ [line 77] GET /org-units/export-excel — operationId: org_unit_export_excel · tags: 03. Organization / Company / Branch / Department
+  ℹ [line 78] GET /org-units/export-pdf — operationId: org_unit_export_pdf · tags: 03. Organization / Company / Branch / Department
+  ℹ [line 79] GET /org-units/chart/export-pdf — operationId: org_unit_export_chart_pdf · tags: 03. Organization / Company / Branch / Department
+  ℹ [line 91] GET /departments — operationId: department_list · tags: 03. Organization / Company / Branch / Department
+  ℹ [line 92] POST /departments — operationId: department_create · tags: 03. Organization / Company / Branch / Department
+  ℹ [line 93] GET /departments/{id} — operationId: department_show · tags: 03. Organization / Company / Branch / Department
+  ℹ [line 94] PUT /departments/{id} — operationId: department_update_put · tags: 03. Organization / Company / Branch / Department
+  ℹ [line 95] DELETE /departments/{id}/soft-delete — operationId: department_soft_delete · tags: 03. Organization / Company / Branch / Department
+  ℹ [line 96] PATCH /departments/{id}/restore — operationId: department_restore · tags: 03. Organization / Company / Branch / Department
+  ℹ [line 97] DELETE /departments/{id}/force-delete — operationId: department_force_delete · tags: 03. Organization / Company / Branch / Department
+  ℹ [line 98] GET /departments/tree — operationId: department_tree · tags: 03. Organization / Company / Branch / Department
+  ℹ [line 99] POST /departments/generate-code — operationId: department_generate_code · tags: 03. Organization / Company / Branch / Department
+  ℹ [line 100] GET /departments/export-excel — operationId: department_export_excel · tags: 03. Organization / Company / Branch / Department
+  ℹ [line 101] GET /departments/export-pdf — operationId: department_export_pdf · tags: 03. Organization / Company / Branch / Department
+  ℹ [line 115] GET /positions — operationId: position_list · tags: 04. Employee / Staff
+  ℹ [line 116] GET /positions/{id} — operationId: position_show · tags: 04. Employee / Staff
+  ℹ [line 117] POST /positions — operationId: position_create · tags: 04. Employee / Staff
+  ℹ [line 118] PUT /positions/{id} — operationId: position_update · tags: 04. Employee / Staff
+  ℹ [line 119] DELETE /positions/{id}/soft-delete — operationId: position_soft_delete · tags: 04. Employee / Staff
+  ℹ [line 120] PATCH /positions/{id}/restore — operationId: position_restore · tags: 04. Employee / Staff
+  ℹ [line 121] DELETE /positions/{id}/force-delete — operationId: position_force_delete · tags: 04. Employee / Staff
+  ℹ [line 122] GET /positions/export-excel — operationId: position_export_excel · tags: 04. Employee / Staff
+  ℹ [line 123] GET /positions/export-pdf — operationId: position_export_pdf · tags: 04. Employee / Staff
+  ℹ [line 137] GET /employees — operationId: employee_list · tags: 04. Employee / Staff
+  ℹ [line 138] GET /employees — operationId: employee_list · tags: 04. Employee / Staff
+  ⚠ [line 138] GET /employees — trùng với dòng 137 trong cùng màn hình — kiểm tra có phải 2 UI Action khác nhau dùng chung endpoint không
+  ℹ [line 139] GET /employees/{id} — operationId: employee_show · tags: 04. Employee / Staff
+  ℹ [line 140] POST /employees — operationId: employee_create · tags: 04. Employee / Staff
+  ℹ [line 141] PUT /employees/{id} — operationId: employee_update_put · tags: 04. Employee / Staff
+  ℹ [line 142] PUT /employees/{id} — operationId: employee_update_put · tags: 04. Employee / Staff
+  ⚠ [line 142] PUT /employees/{id} — trùng với dòng 141 trong cùng màn hình — kiểm tra có phải 2 UI Action khác nhau dùng chung endpoint không
+  ℹ [line 143] DELETE /employees/{id}/soft-delete — operationId: employee_soft_delete · tags: 04. Employee / Staff
+  ℹ [line 144] PATCH /employees/{id}/restore — operationId: employee_restore · tags: 04. Employee / Staff
+  ℹ [line 145] POST /employees/{id}/account — operationId: employee_create_account · tags: 04. Employee / Staff
+  ℹ [line 146] POST /employees/import-excel — operationId: employee_import_excel · tags: 04. Employee / Staff
+  ℹ [line 147] GET /employees/import-template — operationId: employee_import_template · tags: 04. Employee / Staff
+  ℹ [line 148] GET /employee-status-histories — operationId: employee_status_history_list · tags: 04. Employee / Staff
+  ℹ [line 149] GET /employee-status-histories/{id} — operationId: employee_status_history_show · tags: 04. Employee / Staff
+  ℹ [line 150] GET /employees/export-excel — operationId: employee_export_excel · tags: 04. Employee / Staff
+  ℹ [line 151] GET /employees/export-pdf — operationId: employee_export_pdf · tags: 04. Employee / Staff
+  ℹ [line 165] GET /employee-assignments — operationId: employee_assignment_list · tags: 04. Employee / Staff
+  ℹ [line 166] GET /employee-assignments/{id} — operationId: employee_assignment_show · tags: 04. Employee / Staff
+  ℹ [line 167] POST /employee-assignments — operationId: employee_assignment_create · tags: 04. Employee / Staff
+  ℹ [line 168] PUT /employee-assignments/{id} — operationId: employee_assignment_update · tags: 04. Employee / Staff
+  ℹ [line 169] DELETE /employee-assignments/{id}/soft-delete — operationId: employee_assignment_soft_delete · tags: 04. Employee / Staff
+  ℹ [line 181] GET /employee-status-histories — operationId: employee_status_history_list · tags: 04. Employee / Staff
+  ℹ [line 182] GET /employee-status-histories/{id} — operationId: employee_status_history_show · tags: 04. Employee / Staff
+  ℹ [line 196] GET /roles — operationId: role_list · tags: 02. User & Role Permission
+  ℹ [line 197] GET /roles/{id} — operationId: role_show · tags: 02. User & Role Permission
+  ℹ [line 198] POST /roles — operationId: role_create · tags: 02. User & Role Permission
+  ℹ [line 199] PUT /roles/{id} — operationId: role_update · tags: 02. User & Role Permission
+  ℹ [line 200] DELETE /roles/{id}/soft-delete — operationId: role_soft_delete · tags: 02. User & Role Permission
+  ℹ [line 201] PATCH /roles/{id}/restore — operationId: role_restore · tags: 02. User & Role Permission
+  ℹ [line 202] DELETE /roles/{id}/force-delete — operationId: role_force_delete · tags: 02. User & Role Permission
+  ℹ [line 203] GET /permissions — operationId: permission_list · tags: 02. User & Role Permission
+  ℹ [line 204] POST /roles/{id}/permissions — operationId: role_assign_permissions · tags: 02. User & Role Permission
+  ℹ [line 205] GET /user-role-scopes — operationId: user_role_scope_list · tags: 02. User & Role Permission
+  ℹ [line 219] GET /user-role-scopes — operationId: user_role_scope_list · tags: 02. User & Role Permission
+  ℹ [line 220] PUT /users/{user_id}/role-scopes — operationId: user_role_scope_sync · tags: 02. User & Role Permission
+  ℹ [line 221] DELETE /user-role-scopes/{id} — operationId: user_role_scope_delete · tags: 02. User & Role Permission
+  ℹ [line 222] GET /user-data-scopes — operationId: user_data_scope_list · tags: 02. User & Role Permission
+  ℹ [line 223] POST /user-data-scopes — operationId: user_data_scope_create · tags: 02. User & Role Permission
+  ℹ [line 224] DELETE /user-data-scopes/{id} — operationId: user_data_scope_revoke · tags: 02. User & Role Permission
+  ℹ [line 246] GET /org-units — operationId: org_unit_list · tags: 03. Organization / Company / Branch / Department
+  ℹ [line 247] GET /org-units/tree — operationId: org_unit_tree · tags: 03. Organization / Company / Branch / Department
+  ℹ [line 248] GET /departments — operationId: department_list · tags: 03. Organization / Company / Branch / Department
+  ℹ [line 249] GET /employees — operationId: employee_list · tags: 04. Employee / Staff
+  ℹ [line 250] GET /org-units/chart/export-pdf — operationId: org_unit_export_chart_pdf · tags: 03. Organization / Company / Branch / Department
+  ℹ [line 262] GET /tasks — operationId: task_list · tags: 04. Employee / Staff
+  ℹ [line 263] GET /tasks/{id} — operationId: task_show · tags: 04. Employee / Staff
+  ℹ [line 264] POST /tasks — operationId: task_create · tags: 04. Employee / Staff
+  ℹ [line 265] PUT /tasks/{id} — operationId: task_update · tags: 04. Employee / Staff
+  ℹ [line 266] POST /tasks/{id}/start — operationId: task_start · tags: 04. Employee / Staff
+  ℹ [line 267] POST /tasks/{id}/submit — operationId: task_submit · tags: 04. Employee / Staff
+  ℹ [line 268] POST /tasks/{id}/approve — operationId: task_approve · tags: 04. Employee / Staff
+  ℹ [line 269] POST /tasks/{id}/reject — operationId: task_reject · tags: 04. Employee / Staff
+  ℹ [line 270] POST /tasks/{id}/cancel — operationId: task_cancel · tags: 04. Employee / Staff
+  ⚠ [line 271] GET /tasks/{id}/histories — không có trong swagger-api.json (snapshot), đã xác nhận qua OpenAPI live, xem KNOWN_LIVE_ONLY_ROUTES
+  ⚠ [line 95] Permission code "DEPT_DELETE" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 96] Permission code "DEPT_RESTORE" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 121] Permission code "POS_FORCE_DELETE" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 145] Permission code "DUPLICATE_USERNAME" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 200] Permission code "BE_SUPER_ADMIN_DELETE_GUARD_TICKET" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 268] Permission code "TASK_APPROVE" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 269] Permission code "TASK_APPROVE" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 271] Permission code "BE_TASK_STATUS_HISTORY_AND_APPROVE_PERMISSION_TICKET" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 288] Permission code "BE_TASK_STATUS_HISTORY_AND_APPROVE_PERMISSION_TICKET" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+
+=== docs\api-evidence\M2_DEPENDENCY_LIST.md (76 endpoint rows) ===
+  ℹ [line 75] GET /warehouses — operationId: warehouse_list · tags: 06. Warehouse
+  ℹ [line 76] POST /warehouses — operationId: warehouse_create · tags: 06. Warehouse
+  ℹ [line 77] GET /warehouses/{id} — operationId: warehouse_show · tags: 06. Warehouse
+  ℹ [line 78] PATCH /warehouses/{id} — operationId: warehouse_update · tags: 06. Warehouse
+  ℹ [line 79] DELETE /warehouses/{id}/soft-delete — operationId: warehouse_soft_delete · tags: 06. Warehouse
+  ℹ [line 80] PATCH /warehouses/{id}/restore — operationId: warehouse_restore · tags: 06. Warehouse
+  ℹ [line 81] DELETE /warehouses/{id}/force-delete — operationId: warehouse_force_delete · tags: 06. Warehouse
+  ℹ [line 82] GET /warehouses/tree — operationId: warehouse_tree · tags: 06. Warehouse
+  ℹ [line 83] GET /warehouses/trashed — operationId: warehouse_trashed · tags: 06. Warehouse
+  ℹ [line 84] PATCH /warehouses/{id}/enable — operationId: warehouse_enable · tags: 06. Warehouse
+  ℹ [line 85] PATCH /warehouses/{id}/disable — operationId: warehouse_disable · tags: 06. Warehouse
+  ℹ [line 86] GET /warehouses/lookups/org-units — operationId: warehouse_org_unit_lookups · tags: 06. Warehouse
+  ℹ [line 117] GET /inbound-documents — operationId: inbound_list · tags: 08. Stock In / Stock Out / Transfer
+  ℹ [line 118] POST /inbound-documents — operationId: inbound_create · tags: 08. Stock In / Stock Out / Transfer
+  ℹ [line 119] GET /inbound-documents/{id} — operationId: inbound_show · tags: 08. Stock In / Stock Out / Transfer
+  ℹ [line 120] PATCH /inbound-documents/{id} — operationId: inbound_update · tags: 08. Stock In / Stock Out / Transfer
+  ℹ [line 121] POST /inbound-documents/{id}/submit — operationId: inbound_submit · tags: 08. Stock In / Stock Out / Transfer
+  ℹ [line 122] POST /inbound-documents/{id}/approve — operationId: inbound_approve · tags: 08. Stock In / Stock Out / Transfer
+  ℹ [line 123] POST /inbound-documents/{id}/reject — operationId: inbound_reject · tags: 08. Stock In / Stock Out / Transfer
+  ℹ [line 124] POST /inbound-documents/{id}/cancel — operationId: inbound_cancel · tags: 08. Stock In / Stock Out / Transfer
+  ℹ [line 125] POST /inbound-documents/{id}/post-receipt — operationId: inbound_post_receipt · tags: 08. Stock In / Stock Out / Transfer
+  ℹ [line 143] GET /outbound-documents — operationId: outbound_list · tags: 08. Stock In / Stock Out / Transfer
+  ℹ [line 144] POST /outbound-documents — operationId: outbound_create · tags: 08. Stock In / Stock Out / Transfer
+  ℹ [line 145] GET /outbound-documents/{id} — operationId: outbound_show · tags: 08. Stock In / Stock Out / Transfer
+  ℹ [line 146] PATCH /outbound-documents/{id} — operationId: outbound_update · tags: 08. Stock In / Stock Out / Transfer
+  ℹ [line 147] POST /outbound-documents/{id}/submit — operationId: outbound_submit · tags: 08. Stock In / Stock Out / Transfer
+  ℹ [line 148] POST /outbound-documents/{id}/approve — operationId: outbound_approve · tags: 08. Stock In / Stock Out / Transfer
+  ℹ [line 149] POST /outbound-documents/{id}/reject — operationId: outbound_reject · tags: 08. Stock In / Stock Out / Transfer
+  ℹ [line 150] POST /outbound-documents/{id}/cancel — operationId: outbound_cancel · tags: 08. Stock In / Stock Out / Transfer
+  ℹ [line 151] POST /outbound-documents/{id}/post-issue — operationId: outbound_post_issue · tags: 08. Stock In / Stock Out / Transfer
+  ℹ [line 169] GET /transfer-orders — operationId: transfer_list · tags: 08. Stock In / Stock Out / Transfer
+  ℹ [line 170] POST /transfer-orders — operationId: transfer_create · tags: 08. Stock In / Stock Out / Transfer
+  ℹ [line 171] GET /transfer-orders/{id} — operationId: transfer_show · tags: 08. Stock In / Stock Out / Transfer
+  ℹ [line 172] PATCH /transfer-orders/{id} — operationId: transfer_update · tags: 08. Stock In / Stock Out / Transfer
+  ℹ [line 173] POST /transfer-orders/{id}/submit — operationId: transfer_submit · tags: 08. Stock In / Stock Out / Transfer
+  ℹ [line 174] POST /transfer-orders/{id}/approve — operationId: transfer_approve · tags: 08. Stock In / Stock Out / Transfer
+  ℹ [line 175] POST /transfer-orders/{id}/reject — operationId: transfer_reject · tags: 08. Stock In / Stock Out / Transfer
+  ℹ [line 176] POST /transfer-orders/{id}/cancel — operationId: transfer_cancel · tags: 08. Stock In / Stock Out / Transfer
+  ℹ [line 177] POST /transfer-orders/{id}/dispatch — operationId: transfer_dispatch · tags: 08. Stock In / Stock Out / Transfer
+  ℹ [line 178] POST /transfer-orders/{id}/receive — operationId: transfer_receive · tags: 08. Stock In / Stock Out / Transfer
+  ℹ [line 179] POST /transfer-orders/{id}/return — operationId: transfer_return · tags: 08. Stock In / Stock Out / Transfer
+  ℹ [line 180] POST /transfer-orders/{id}/confirm-return — operationId: transfer_confirm_return · tags: 08. Stock In / Stock Out / Transfer
+  ℹ [line 181] POST /transfer-orders/{id}/record-loss — operationId: transfer_record_loss · tags: 08. Stock In / Stock Out / Transfer
+  ℹ [line 199] GET /inventory/balances — operationId: inventory_list · tags: 07. Inventory / Stock
+  ℹ [line 205] GET /inventory-snapshots — operationId: inventory_snapshot_list · tags: 07. Inventory / Stock
+  ℹ [line 206] POST /inventory-snapshots/generate — operationId: inventory_snapshot_generate · tags: 07. Inventory / Stock
+  ℹ [line 207] GET /inventory-reservations — operationId: inventory_reservation_list · tags: 07. Inventory / Stock
+  ℹ [line 208] GET /inventory-reservations/{id} — operationId: inventory_reservation_show · tags: 07. Inventory / Stock
+  ℹ [line 226] GET /stock-movements — operationId: stock_movement_list · tags: 07. Inventory / Stock
+  ℹ [line 227] GET /stock-movements/{id} — operationId: stock_movement_show · tags: 07. Inventory / Stock
+  ℹ [line 228] GET /stock-movements/{id}/trace-source — operationId: stock_movement_trace_source · tags: 07. Inventory / Stock
+  ℹ [line 247] GET /safe-stock-alerts — operationId: safe_stock_alert_list · tags: 07. Inventory / Stock
+  ℹ [line 248] GET /safe-stock-alerts/history — operationId: safe_stock_alert_history · tags: 07. Inventory / Stock
+  ℹ [line 249] GET /safe-stock-configs — operationId: safe_stock_config_list · tags: 07. Inventory / Stock
+  ℹ [line 250] POST /safe-stock-configs — operationId: safe_stock_config_create · tags: 07. Inventory / Stock
+  ℹ [line 251] GET /safe-stock-configs/{id} — operationId: safe_stock_config_show · tags: 07. Inventory / Stock
+  ℹ [line 252] PUT /safe-stock-configs/{id} — operationId: safe_stock_config_update · tags: 07. Inventory / Stock
+  ℹ [line 253] DELETE /safe-stock-configs/{id} — operationId: safe_stock_config_delete · tags: 07. Inventory / Stock
+  ℹ [line 271] GET /stock-requests — operationId: stock_request_list · tags: 07. Inventory / Stock
+  ℹ [line 272] POST /stock-requests — operationId: stock_request_create · tags: 07. Inventory / Stock
+  ℹ [line 273] GET /stock-requests/{id} — operationId: stock_request_show · tags: 07. Inventory / Stock
+  ℹ [line 274] PUT /stock-requests/{id} — operationId: stock_request_update · tags: 07. Inventory / Stock
+  ℹ [line 275] DELETE /stock-requests/{id} — operationId: stock_request_delete · tags: 07. Inventory / Stock
+  ℹ [line 276] POST /stock-requests/{id}/submit — operationId: stock_request_submit · tags: 07. Inventory / Stock
+  ℹ [line 277] POST /stock-requests/{id}/approve — operationId: stock_request_approve · tags: 07. Inventory / Stock
+  ℹ [line 278] POST /stock-requests/{id}/reject — operationId: stock_request_reject · tags: 07. Inventory / Stock
+  ℹ [line 279] POST /stock-requests/{id}/convert — operationId: stock_request_convert · tags: 07. Inventory / Stock
+  ℹ [line 280] POST /stock-requests/{id}/confirm — operationId: stock_request_confirm · tags: 07. Inventory / Stock
+  ℹ [line 281] POST /stock-requests/{id}/cancel — operationId: stock_request_cancel · tags: 07. Inventory / Stock
+  ℹ [line 299] GET /in-transit-ledger — operationId: in_transit_ledger_list · tags: 07. Inventory / Stock
+  ℹ [line 313] GET /document-status-history — operationId: document_status_history_list · tags: 08. Stock In / Stock Out / Transfer
+  ℹ [line 314] GET /document-status-transitions — operationId: document_status_transition_list · tags: 08. Stock In / Stock Out / Transfer
+  ℹ [line 315] PATCH /document-status-transitions/{id}/toggle — operationId: document_status_transition_toggle · tags: 08. Stock In / Stock Out / Transfer
+  ℹ [line 333] GET /reports/inventory-xnt — operationId: warehouse_report_inventory_xnt · tags: 12. Dashboard / Report
+  ℹ [line 334] GET /reports/dashboard-quick — operationId: warehouse_report_dashboard_quick · tags: 12. Dashboard / Report
+  ℹ [line 335] GET /reports/inventory-xnt/export-excel — operationId: warehouse_report_export_excel · tags: 12. Dashboard / Report
+  ⚠ [line 75] Permission code "M2_WAREHOUSE_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 76] Permission code "M2_WAREHOUSE_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 77] Permission code "M2_WAREHOUSE_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 78] Permission code "M2_WAREHOUSE_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 79] Permission code "M2_WAREHOUSE_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 80] Permission code "M2_WAREHOUSE_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 81] Permission code "M2_WAREHOUSE_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 82] Permission code "M2_WAREHOUSE_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 83] Permission code "M2_WAREHOUSE_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 84] Permission code "M2_WAREHOUSE_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 85] Permission code "M2_WAREHOUSE_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 86] Permission code "M2_WAREHOUSE_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 117] Permission code "INBOUND_DOC_VIEW" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 117] Permission code "M2_WAREHOUSE_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 118] Permission code "INBOUND_DOC_CREATE" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 118] Permission code "M2_WAREHOUSE_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 119] Permission code "INBOUND_DOC_VIEW" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 119] Permission code "M2_WAREHOUSE_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 120] Permission code "INBOUND_DOC_EDIT" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 120] Permission code "M2_WAREHOUSE_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 121] Permission code "INBOUND_DOC_SUBMIT" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 121] Permission code "M2_WAREHOUSE_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 122] Permission code "INBOUND_DOC_APPROVE" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 122] Permission code "M2_WAREHOUSE_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 123] Permission code "INBOUND_DOC_APPROVE" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 123] Permission code "M2_WAREHOUSE_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 124] Permission code "INBOUND_DOC_CANCEL" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 124] Permission code "M2_WAREHOUSE_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 125] Permission code "INBOUND_DOC_POST" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 125] Permission code "M2_WAREHOUSE_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 143] Permission code "OUTBOUND_DOC_VIEW" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 143] Permission code "M2_WAREHOUSE_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 144] Permission code "OUTBOUND_DOC_CREATE" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 144] Permission code "M2_WAREHOUSE_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 145] Permission code "OUTBOUND_DOC_VIEW" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 145] Permission code "M2_WAREHOUSE_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 146] Permission code "OUTBOUND_DOC_EDIT" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 146] Permission code "M2_WAREHOUSE_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 147] Permission code "OUTBOUND_DOC_SUBMIT" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 147] Permission code "M2_WAREHOUSE_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 148] Permission code "OUTBOUND_DOC_APPROVE" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 148] Permission code "M2_WAREHOUSE_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 149] Permission code "OUTBOUND_DOC_APPROVE" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 149] Permission code "M2_WAREHOUSE_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 150] Permission code "OUTBOUND_DOC_CANCEL" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 150] Permission code "M2_WAREHOUSE_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 151] Permission code "OUTBOUND_DOC_POST" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 151] Permission code "M2_WAREHOUSE_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 169] Permission code "TRANSFER_ORDER_VIEW" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 169] Permission code "M2_WAREHOUSE_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 170] Permission code "TRANSFER_ORDER_CREATE" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 170] Permission code "M2_WAREHOUSE_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 171] Permission code "TRANSFER_ORDER_VIEW" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 171] Permission code "M2_WAREHOUSE_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 172] Permission code "TRANSFER_ORDER_EDIT" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 172] Permission code "M2_WAREHOUSE_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 173] Permission code "TRANSFER_ORDER_SUBMIT" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 173] Permission code "M2_WAREHOUSE_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 174] Permission code "TRANSFER_ORDER_APPROVE" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 174] Permission code "M2_WAREHOUSE_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 175] Permission code "TRANSFER_ORDER_APPROVE" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 175] Permission code "M2_WAREHOUSE_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 176] Permission code "TRANSFER_ORDER_CANCEL" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 176] Permission code "M2_WAREHOUSE_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 177] Permission code "TRANSFER_ORDER_DISPATCH" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 177] Permission code "M2_WAREHOUSE_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 178] Permission code "TRANSFER_ORDER_RECEIVE" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 178] Permission code "M2_WAREHOUSE_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 179] Permission code "TRANSFER_ORDER_RETURN" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 179] Permission code "M2_WAREHOUSE_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 180] Permission code "TRANSFER_ORDER_CONFIRM_RETURN" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 180] Permission code "M2_WAREHOUSE_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 181] Permission code "TRANSFER_ORDER_RECORD_LOSS" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 181] Permission code "M2_WAREHOUSE_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 199] Permission code "M2_WAREHOUSE_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 226] Permission code "M2_WAREHOUSE_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 227] Permission code "M2_WAREHOUSE_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 228] Permission code "M2_WAREHOUSE_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+
+=== docs\api-evidence\M3_DEPENDENCY_LIST.md (81 endpoint rows) ===
+  ℹ [line 82] GET /products — operationId: product_list · tags: 05. Product / SKU / Category
+  ℹ [line 83] POST /products — operationId: product_create · tags: 05. Product / SKU / Category
+  ℹ [line 84] GET /products/{id} — operationId: product_show · tags: 05. Product / SKU / Category
+  ℹ [line 85] PUT /products/{id} — operationId: product_update · tags: 05. Product / SKU / Category
+  ℹ [line 86] DELETE /products/{id} — operationId: product_delete · tags: 05. Product / SKU / Category
+  ℹ [line 87] PATCH /products/{id}/disable — operationId: product_disable · tags: 05. Product / SKU / Category
+  ℹ [line 88] PATCH /products/{id}/enable — operationId: product_enable · tags: 05. Product / SKU / Category
+  ℹ [line 89] PATCH /products/{id}/restore — operationId: product_restore · tags: 05. Product / SKU / Category
+  ℹ [line 90] POST /products/{id}/images — operationId: product_upload_images · tags: 05. Product / SKU / Category
+  ℹ [line 91] DELETE /products/{id}/images/{imageId} — operationId: product_delete_image · tags: 05. Product / SKU / Category
+  ℹ [line 92] PATCH /products/{id}/images/{imageId}/primary — operationId: product_set_primary_image · tags: 05. Product / SKU / Category
+  ℹ [line 98] GET /product-categories — operationId: product_category_list · tags: 05. Product / SKU / Category
+  ℹ [line 99] POST /product-categories — operationId: product_category_create · tags: 05. Product / SKU / Category
+  ℹ [line 100] GET /product-categories/{id} — operationId: product_category_show · tags: 05. Product / SKU / Category
+  ℹ [line 101] PUT /product-categories/{id} — operationId: product_category_update · tags: 05. Product / SKU / Category
+  ℹ [line 102] DELETE /product-categories/{id} — operationId: product_category_delete · tags: 05. Product / SKU / Category
+  ℹ [line 103] PATCH /product-categories/{id}/restore — operationId: product_category_restore · tags: 05. Product / SKU / Category
+  ℹ [line 104] GET /uoms — operationId: uom_list · tags: 05. Product / SKU / Category
+  ℹ [line 105] POST /uoms — operationId: uom_create · tags: 05. Product / SKU / Category
+  ℹ [line 106] GET /uoms/{id} — operationId: uom_show · tags: 05. Product / SKU / Category
+  ℹ [line 107] PUT /uoms/{id} — operationId: uom_update · tags: 05. Product / SKU / Category
+  ℹ [line 108] DELETE /uoms/{id} — operationId: uom_delete · tags: 05. Product / SKU / Category
+  ℹ [line 109] PATCH /uoms/{id}/restore — operationId: uom_restore · tags: 05. Product / SKU / Category
+  ℹ [line 131] GET /price-lists — operationId: price_list_list · tags: 11. Product / Pricing
+  ℹ [line 132] POST /price-lists — operationId: price_list_create · tags: 11. Product / Pricing
+  ℹ [line 133] GET /price-lists/{id} — operationId: price_list_detail · tags: 11. Product / Pricing
+  ℹ [line 134] PATCH /price-lists/{id} — operationId: price_list_update · tags: 11. Product / Pricing
+  ℹ [line 135] POST /price-lists/{id}/activate — operationId: price_list_activate · tags: 11. Product / Pricing
+  ℹ [line 136] POST /price-lists/{id}/deactivate — operationId: price_list_deactivate · tags: 11. Product / Pricing
+  ℹ [line 137] DELETE /price-lists/{id}/soft-delete — operationId: price_list_delete · tags: 11. Product / Pricing
+  ℹ [line 138] GET /price-lists/{priceListId}/items — operationId: price_list_items_list · tags: 11. Product / Pricing
+  ℹ [line 139] POST /price-lists/{priceListId}/items — operationId: price_list_items_create · tags: 11. Product / Pricing
+  ℹ [line 140] DELETE /price-lists/{priceListId}/items/{itemId} — operationId: price_list_items_delete · tags: 11. Product / Pricing
+  ℹ [line 146] PATCH /price-lists/{priceListId}/items/{itemId} — operationId: price_list_items_update · tags: 11. Product / Pricing
+  ℹ [line 147] PATCH /price-lists/{id}/restore — operationId: price_list_restore · tags: 11. Product / Pricing
+  ℹ [line 166] GET /customers — operationId: customer_list · tags: 09. Customer / Partner
+  ℹ [line 167] POST /customers — operationId: customer_create · tags: 09. Customer / Partner
+  ℹ [line 168] GET /customers/{id} — operationId: customer_show · tags: 09. Customer / Partner
+  ℹ [line 169] PUT /customers/{id} — operationId: customer_update · tags: 09. Customer / Partner
+  ℹ [line 170] DELETE /customers/{id} — operationId: customer_delete · tags: 09. Customer / Partner
+  ℹ [line 171] PATCH /customers/{id}/restore — operationId: customer_restore · tags: 09. Customer / Partner
+  ℹ [line 196] GET /sales-orders — operationId: sales_order_list · tags: 10. Sales Order
+  ℹ [line 197] POST /sales-orders — operationId: sales_order_create_draft · tags: 10. Sales Order
+  ℹ [line 198] GET /sales-orders/{id} — operationId: sales_order_detail · tags: 10. Sales Order
+  ℹ [line 199] PATCH /sales-orders/{id} — operationId: sales_order_update_draft · tags: 10. Sales Order
+  ℹ [line 200] POST /sales-orders/{id}/confirm — operationId: sales_order_confirm · tags: 10. Sales Order
+  ℹ [line 201] POST /sales-orders/{id}/approve — operationId: sales_order_approve_export · tags: 10. Sales Order
+  ℹ [line 202] POST /sales-orders/{id}/reject — operationId: sales_order_reject · tags: 10. Sales Order
+  ℹ [line 203] POST /sales-orders/{id}/cancel — operationId: sales_order_cancel · tags: 10. Sales Order
+  ℹ [line 204] POST /sales-orders/{id}/check-stock — operationId: sales_order_check_stock · tags: 10. Sales Order
+  ℹ [line 205] POST /sales-orders/{id}/retry-export — operationId: sales_order_retry_export · tags: 10. Sales Order
+  ℹ [line 227] GET /sales-channels — operationId: sales_channel_list · tags: 10. Sales Order
+  ℹ [line 228] POST /sales-channels — operationId: sales_channel_store · tags: 10. Sales Order
+  ℹ [line 229] GET /sales-channels/{id} — operationId: sales_channel_show · tags: 10. Sales Order
+  ℹ [line 230] PUT /sales-channels/{id} — operationId: sales_channel_update · tags: 10. Sales Order
+  ℹ [line 231] DELETE /sales-channels/{id} — operationId: sales_channel_destroy · tags: 10. Sales Order
+  ℹ [line 232] PATCH /sales-channels/{id}/restore — operationId: sales_channel_restore · tags: 10. Sales Order
+  ℹ [line 238] GET /stores — operationId: store_list · tags: 10. Sales Order
+  ℹ [line 239] POST /stores — operationId: store_create · tags: 10. Sales Order
+  ℹ [line 240] GET /stores/{id} — operationId: store_show · tags: 10. Sales Order
+  ℹ [line 241] PUT /stores/{id} — operationId: store_update · tags: 10. Sales Order
+  ℹ [line 242] DELETE /stores/{id} — operationId: store_delete · tags: 10. Sales Order
+  ℹ [line 243] PATCH /stores/{id}/restore — operationId: store_restore · tags: 10. Sales Order
+  ℹ [line 261] GET /customer-groups — operationId: customer_group_list · tags: 09. Customer / Partner
+  ℹ [line 262] POST /customer-groups — operationId: customer_group_store · tags: 09. Customer / Partner
+  ℹ [line 263] GET /customer-groups/{id} — operationId: customer_group_show · tags: 09. Customer / Partner
+  ℹ [line 264] PUT /customer-groups/{id} — operationId: customer_group_update · tags: 09. Customer / Partner
+  ℹ [line 265] DELETE /customer-groups/{id} — operationId: customer_group_destroy · tags: 09. Customer / Partner
+  ℹ [line 266] PATCH /customer-groups/{id}/restore — operationId: customer_group_restore · tags: 09. Customer / Partner
+  ℹ [line 284] GET /suppliers — operationId: supplier_list · tags: 09. Customer / Partner
+  ℹ [line 285] POST /suppliers — operationId: supplier_create · tags: 09. Customer / Partner
+  ℹ [line 286] GET /suppliers/{id} — operationId: supplier_show · tags: 09. Customer / Partner
+  ℹ [line 287] PUT /suppliers/{id} — operationId: supplier_update · tags: 09. Customer / Partner
+  ℹ [line 288] DELETE /suppliers/{id} — operationId: supplier_delete · tags: 09. Customer / Partner
+  ℹ [line 289] PATCH /suppliers/{id}/disable — operationId: supplier_disable · tags: 09. Customer / Partner
+  ℹ [line 290] PATCH /suppliers/{id}/enable — operationId: supplier_enable · tags: 09. Customer / Partner
+  ℹ [line 291] PATCH /suppliers/{id}/restore — operationId: supplier_restore · tags: 09. Customer / Partner
+  ℹ [line 319] POST /webhooks/m2/order-processing — operationId: m2_webhook_order_processing · tags: 10. Sales Order
+  ℹ [line 320] POST /webhooks/m2/order-completed — operationId: m2_webhook_order_completed · tags: 10. Sales Order
+  ℹ [line 321] POST /webhooks/m2/order-failed — operationId: m2_webhook_order_failed · tags: 10. Sales Order
+  ℹ [line 343] GET /reports/revenue — operationId: report_revenue · tags: 12. Dashboard / Report
+  ⚠ [line 82] Permission code "M3_BUSINESS_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 83] Permission code "M3_BUSINESS_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 84] Permission code "M3_BUSINESS_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 85] Permission code "M3_BUSINESS_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 86] Permission code "M3_BUSINESS_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 87] Permission code "M3_BUSINESS_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 88] Permission code "M3_BUSINESS_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 89] Permission code "PRODUCT_RESTORE" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 89] Permission code "M3_BUSINESS_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 90] Permission code "M3_BUSINESS_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 91] Permission code "M3_BUSINESS_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 92] Permission code "M3_BUSINESS_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 131] Permission code "M3_BUSINESS_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 132] Permission code "M3_BUSINESS_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 133] Permission code "M3_BUSINESS_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 134] Permission code "M3_BUSINESS_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 135] Permission code "M3_BUSINESS_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 136] Permission code "M3_BUSINESS_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 137] Permission code "M3_BUSINESS_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 138] Permission code "M3_BUSINESS_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 139] Permission code "M3_BUSINESS_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 140] Permission code "M3_BUSINESS_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 166] Permission code "M3_BUSINESS_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 167] Permission code "M3_BUSINESS_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 168] Permission code "M3_BUSINESS_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 169] Permission code "M3_BUSINESS_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 170] Permission code "M3_BUSINESS_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 171] Permission code "CUSTOMER_RESTORE" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 171] Permission code "M3_BUSINESS_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 196] Permission code "M3_BUSINESS_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 197] Permission code "M3_BUSINESS_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 198] Permission code "M3_BUSINESS_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 199] Permission code "M3_BUSINESS_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 200] Permission code "PENDING_APPROVAL" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 200] Permission code "M3_BUSINESS_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 201] Permission code "PENDING_APPROVAL" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 201] Permission code "M3_BUSINESS_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 202] Permission code "PENDING_APPROVAL" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 202] Permission code "SALES_ORDER_REJECT" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 202] Permission code "M3_BUSINESS_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 203] Permission code "M3_BUSINESS_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 204] Permission code "M3_BUSINESS_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 205] Permission code "FAILED_EXPORT" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 205] Permission code "M3_BUSINESS_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 227] Permission code "M3_BUSINESS_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 228] Permission code "M3_BUSINESS_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 229] Permission code "M3_BUSINESS_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 230] Permission code "M3_BUSINESS_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 231] Permission code "M3_BUSINESS_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 232] Permission code "SALES_CHANNEL_RESTORE" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 232] Permission code "M3_BUSINESS_SWAGGER_MAPPING" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+  ⚠ [line 321] Permission code "FAILED_EXPORT" chưa thấy trong catalog (runtime (GET /api/v1/permissions)) — kiểm tra UI đã wire RBAC guard chưa
+
+--- Tổng endpoint rows đếm tự động (M1+M2+M3): 244 ---
+--- Unique swagger routes: 272 ---
+
+--- Errors: 0 · Warnings (permission code chưa xác nhận RBAC + info): 142 ---
+--- Catalog source: runtime (GET /api/v1/permissions) (143 codes) ---
+
+✅ OK — method/path trong mapping docs khớp swagger-api.json, không có conflict. Xem warnings ở trên để rà soát permission code.

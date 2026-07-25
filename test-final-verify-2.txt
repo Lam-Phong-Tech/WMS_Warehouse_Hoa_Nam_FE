@@ -1,0 +1,16 @@
+
+[7m[1m[36m RUN [39m[22m[27m [36mv1.6.1[39m [90mc:/LAM_PHONG/ERP-Frontend[39m
+
+ [33m❯[39m src/modules/employees/components/EmployeeDetailDrawer.test.tsx [2m ([22m[2m0 test[22m[2m)[22m
+
+[31m⎯⎯⎯⎯⎯⎯[1m[7m Failed Suites 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/modules/employees/components/EmployeeDetailDrawer.test.tsx [2m[ src/modules/employees/components/EmployeeDetailDrawer.test.tsx ][22m
+[31m[1mError[22m: No test suite found in file C:/LAM_PHONG/ERP-Frontend/src/modules/employees/components/EmployeeDetailDrawer.test.tsx[39m
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [2mno tests[22m
+[2m   Start at [22m 10:14:12
+[2m   Duration [22m 3.18s[2m (transform 476ms, setup 517ms, collect 1.37s, tests 0ms, environment 817ms, prepare 189ms)[22m
+

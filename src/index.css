@@ -1,0 +1,165 @@
+:root {
+  font-family:
+    'Inter', system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* Toast (sonner): khi ẩn/kéo xuống thì trượt xuống dưới thay vì lên trên */
+.app-toaster
+  [data-sonner-toast][data-y-position='top'][data-removed='true'][data-swipe-out='false'] {
+  --y: translateY(100%) !important;
+}
+
+/* Thanh cuộn gọn gàng hơn */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.18);
+  border-radius: 8px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* Giao diện toast/action result thống nhất */
+.ant-message {
+  pointer-events: none;
+}
+.ant-message-notice {
+  pointer-events: auto;
+}
+.ant-message-notice .ant-message-notice-content {
+  border-radius: 12px;
+  padding: 14px 18px;
+  min-height: 56px;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+  font-size: 14px;
+}
+.ant-message-notice .ant-message-notice-content > .ant-message-notice-content {
+  padding: 0;
+}
+.ant-message-notice-icon {
+  font-size: 18px;
+  margin-right: 10px;
+}
+.ant-message-notice-content-success {
+  background: rgba(82, 196, 26, 0.08);
+  border: 1px solid #b7eb8f;
+  color: #389e0d;
+}
+.ant-message-notice-content-error {
+  background: rgba(255, 77, 79, 0.08);
+  border: 1px solid #ffa39e;
+  color: #cf1322;
+}
+.ant-message-notice-content-warning {
+  background: rgba(250, 173, 20, 0.08);
+  border: 1px solid #ffd591;
+  color: #d48806;
+}
+.ant-message-notice-content-info {
+  background: rgba(24, 144, 255, 0.08);
+  border: 1px solid #91d5ff;
+  color: #096dd9;
+}
+.ant-message-notice-content .ant-message-notice-content {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+/* Layout animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Responsive typography */
+@media (max-width: 576px) {
+  .ant-typography h1,
+  h1.ant-typography {
+    font-size: 24px !important;
+  }
+  .ant-typography h2,
+  h2.ant-typography {
+    font-size: 20px !important;
+  }
+  .ant-typography h3,
+  h3.ant-typography {
+    font-size: 18px !important;
+  }
+  .ant-typography h4,
+  h4.ant-typography {
+    font-size: 16px !important;
+  }
+}
+
+/* Smooth transitions cho Ant Design components */
+.ant-layout-sider {
+  transition: all 0.2s ease !important;
+}
+
+.ant-menu-inline-collapsed-tooltip {
+  z-index: 999;
+}
+
+/* Phân trang bảng: "Tổng ... bản ghi" ở góc trái, điều hướng trang ở góc phải */
+.ant-table-pagination.ant-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+.ant-table-pagination .ant-pagination-total-text {
+  margin-right: 0;
+  order: -1;
+}

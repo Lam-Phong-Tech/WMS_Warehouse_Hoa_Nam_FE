@@ -1,0 +1,132 @@
+#!/usr/bin/env sh
+# Secret scanning: chặn commit nếu phát hiện credential/API key/token hardcode thật.
+#
+# Lưu ý: husky gọi hook này bằng `sh -e "$0"` (xem .husky/_/h) — trên CI (ubuntu) `sh` là
+# dash, không phải bash. Toàn bộ script PHẢI là POSIX sh thuần: không dùng [[ ]], mảng,
+# `read -d ''`, ${var,,}, process substitution... Đã test cú pháp bằng `sh -n` + `dash -n`.
+#
+# `grep -q` trả về exit code 1 khi KHÔNG có dòng nào khớp (rất phổ biến, không phải lỗi) —
+# luôn đặt trong `if` (được set -e miễn trừ) thay vì gán trực tiếp ra biến để tránh script
+# chết giữa chừng.
+
+echo "🔍 Scanning for hardcoded credentials..."
+
+HAS_CREDENTIAL=false
+
+# Dùng `for FILE in $(...)` với IFS chỉ tách theo newline (không phải while-read-pipe) để:
+#   1) không tạo subshell (POSIX sh sẽ "nuốt" mất thay đổi biến HAS_CREDENTIAL sau vòng lặp
+#      nếu dùng `git diff ... | while read FILE; do ... done`)
+#   2) chịu được tên file có khoảng trắng (chỉ vỡ với tên file chứa newline — cực hiếm)
+OLD_IFS=$IFS
+IFS='
+'
+for FILE in $(git diff --cached --name-only --diff-filter=ACM); do
+IFS=$OLD_IFS
+
+  # Bỏ qua thư mục không chạy code / không thuộc source thật
+  case "$FILE" in
+    node_modules/*|.git/*) continue ;;
+  esac
+
+  # Bỏ qua chính file pre-commit để tránh false positive (chính các pattern mẫu bên dưới
+  # chứa chuỗi "admin@erb.vn", "Bearer", "password = " ... làm mồi test cho grep)
+  if [ "$FILE" = ".husky/pre-commit" ]; then
+    continue
+  fi
+
+  if [ ! -f "$FILE" ]; then
+    continue
+  fi
+
+  # Chỉ lấy các dòng được thêm (bắt đầu bằng +) trong staged diff của đúng file này.
+  # Lọc bỏ: env var reference, CSS selector, comment, import — không phải secret thật.
+  ADDED_LINES=$(git diff --cached -- "$FILE" | grep '^+' | grep -v '^+++' \
+    | grep -v 'process\.env' | grep -v 'import\.meta\.env' | grep -v '\$env:' \
+    | grep -v 'QA_ADMIN' | grep -v 'QA_NOEMPEDIT' \
+    | grep -v 'input\[type="password"\]' | grep -v 'name="password"' \
+    | grep -v '^+.*\/\/' | grep -v '^+.*\*' | grep -v '^+.*import') || true
+
+  # --- Nhóm A: pattern độ tin cậy cao — quét trên MỌI file kể cả docs/. ---
+  # docs/evidence hay dán nguyên request/response thật từ staging nên đây là nơi rủi ro
+  # cao nhất nếu chỉ loại trừ docs khỏi scan (đúng lỗ hổng review chỉ ra).
+
+  # A1: JWT thật (3 segment base64url, đủ dài từng segment)
+  if printf '%s\n' "$ADDED_LINES" | grep -q -E "eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}"; then
+    echo "❌ JWT TOKEN DETECTED in $FILE"
+    HAS_CREDENTIAL=true
+  fi
+
+  # A2: Token có prefix đặc trưng theo nhà cung cấp (GitHub / Slack / Google / Stripe / AWS)
+  if printf '%s\n' "$ADDED_LINES" | grep -q -E "(ghp_|gho_|ghu_|ghs_|ghr_|github_pat_)[A-Za-z0-9_]{20,}"; then
+    echo "❌ GITHUB TOKEN DETECTED in $FILE"
+    HAS_CREDENTIAL=true
+  fi
+  if printf '%s\n' "$ADDED_LINES" | grep -q -E "xox[baprs]-[A-Za-z0-9-]{10,}"; then
+    echo "❌ SLACK TOKEN DETECTED in $FILE"
+    HAS_CREDENTIAL=true
+  fi
+  if printf '%s\n' "$ADDED_LINES" | grep -q -E "AIza[0-9A-Za-z_-]{35}"; then
+    echo "❌ GOOGLE API KEY DETECTED in $FILE"
+    HAS_CREDENTIAL=true
+  fi
+  if printf '%s\n' "$ADDED_LINES" | grep -q -E "(sk|rk)_live_[0-9A-Za-z]{20,}"; then
+    echo "❌ STRIPE SECRET KEY DETECTED in $FILE"
+    HAS_CREDENTIAL=true
+  fi
+  if printf '%s\n' "$ADDED_LINES" | grep -q -E "\b(AKIA|ASIA)[0-9A-Z]{16}\b"; then
+    echo "❌ AWS ACCESS KEY ID DETECTED in $FILE"
+    HAS_CREDENTIAL=true
+  fi
+
+  # A3: Private key block (RSA / EC / OPENSSH / DSA / PGP)
+  if printf '%s\n' "$ADDED_LINES" | grep -q -E -- "-----BEGIN (RSA |EC |OPENSSH |DSA |ENCRYPTED |PGP )?PRIVATE KEY-----"; then
+    echo "❌ PRIVATE KEY BLOCK DETECTED in $FILE"
+    HAS_CREDENTIAL=true
+  fi
+
+  # A4: Header Authorization gắn thẳng Bearer token literal (không phải placeholder <...>)
+  if printf '%s\n' "$ADDED_LINES" | grep -q -E "[Aa]uthorization['\"]?[[:space:]]*[:=][[:space:]]*['\"]?Bearer[[:space:]]+[A-Za-z0-9_.-]{20,}"; then
+    echo "❌ HARDCODED BEARER TOKEN DETECTED in $FILE"
+    HAS_CREDENTIAL=true
+  fi
+
+  # A5: API key / secret / token generic gán trực tiếp bằng chuỗi literal đủ dài
+  if printf '%s\n' "$ADDED_LINES" | grep -q -E "(api[_-]?key|apikey|client[_-]?secret|secret[_-]?key|access[_-]?token|refresh[_-]?token|auth[_-]?token)['\"]?[[:space:]]*[:=][[:space:]]*['\"][A-Za-z0-9_/+=.-]{16,}['\"]"; then
+    echo "❌ HARDCODED API KEY/TOKEN DETECTED in $FILE"
+    HAS_CREDENTIAL=true
+  fi
+
+  # A6: Email staging thật — case đã leak thật trong lịch sử repo này, tuyệt đối không tái xuất
+  if printf '%s\n' "$ADDED_LINES" | grep -q -E "admin@erb\.vn"; then
+    echo "❌ STAGING EMAIL DETECTED in $FILE (admin@erb.vn)"
+    HAS_CREDENTIAL=true
+  fi
+
+  # --- Nhóm B: heuristic "password = ..." dễ false-positive với dữ liệu mẫu trong docs
+  # -> chỉ áp dụng cho file code, bỏ qua docs/.
+  case "$FILE" in
+    docs/*) : ;;
+    *)
+      if printf '%s\n' "$ADDED_LINES" | grep -q -E "password['\"]?[[:space:]]*[:=][[:space:]]*['\"][A-Za-z0-9!@#\$%^&*()_+={}\[\]|;:',.<>?/~\`-]{6,}['\"]"; then
+        echo "❌ CREDENTIAL DETECTED in $FILE (hardcoded password)"
+        HAS_CREDENTIAL=true
+      fi
+      ;;
+  esac
+
+IFS='
+'
+done
+IFS=$OLD_IFS
+
+if [ "$HAS_CREDENTIAL" = true ]; then
+  echo ""
+  echo "⛔ COMMIT REJECTED: Phát hiện credential/API key/token hardcode trong staged files."
+  echo "   Vui lòng xóa và thay bằng biến môi trường (env var) hoặc placeholder (vd: <QA_ADMIN_EMAIL>)."
+  echo "   Ví dụ sai: password = '12345678'"
+  echo "   Ví dụ đúng: password = process.env.QA_ADMIN_PASSWORD"
+  echo ""
+  exit 1
+fi
+
+echo "✅ No credentials detected. Proceeding with commit."
