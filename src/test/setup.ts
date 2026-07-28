@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { vi } from 'vitest';
+import '@testing-library/jest-dom/vitest';
 import React from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { configure } from '@testing-library/react';
@@ -25,11 +26,23 @@ const mockAuthState = {
   isSuperAdmin: false,
   isProfileLoaded: false,
 };
-const mockAuthStore = {
-  getState: () => mockAuthState,
-  setState: () => {},
-  persist: { rehydrate: () => {} },
-};
+const initialMockAuthState = { ...mockAuthState };
+const mockAuthStore = Object.assign(
+  <T,>(selector: (state: typeof mockAuthState) => T) =>
+    selector(mockAuthState),
+  {
+    getState: () => ({
+      ...mockAuthState,
+      logout: () => {
+        Object.assign(mockAuthState, initialMockAuthState);
+      },
+    }),
+    setState: (next: Partial<typeof mockAuthState>) => {
+      Object.assign(mockAuthState, next);
+    },
+    persist: { rehydrate: () => {} },
+  },
+);
 
 vi.mock('@/shared/store/auth.store', () => ({
   useAuthStore: mockAuthStore,

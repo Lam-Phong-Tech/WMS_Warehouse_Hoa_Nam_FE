@@ -1,4 +1,4 @@
-/* eslint-disable react-refresh/only-export-components -- file định nghĩa router, không phải module fast-refresh */
+/* eslint-disable react-refresh/only-export-components */
 import { lazy, Suspense, type ReactNode } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from '@/app/router/ProtectedRoute';
@@ -13,164 +13,80 @@ import { NoPermissionPage } from '@/modules/errors/pages/NoPermissionPage';
 
 // Import trực tiếp các trang ngoài modules (không lazy load)
 import { MainLayout } from '@/app/(admin)/layout';
-import { PartnerLayout } from '@/app/(partner)/layout';
 import { LoginPage } from '@/modules/auth/pages/LoginPage';
 import { ChangePasswordPage } from '@/modules/auth/pages/ChangePasswordPage';
-const OrgUnitsPage = lazy(() =>
-  import('@/modules/org-units/pages/OrgUnitsPage').then((m) => ({
-    default: m.OrgUnitsPage,
-  })),
-);
-const DepartmentsPage = lazy(() =>
-  import('@/modules/departments/pages/DepartmentsPage').then((m) => ({
-    default: m.DepartmentsPage,
-  })),
-);
-const EmployeesPage = lazy(() =>
-  import('@/modules/employees/pages/EmployeesPage').then((m) => ({
-    default: m.EmployeesPage,
-  })),
-);
-const RolesPage = lazy(() =>
-  import('@/modules/roles/pages/RolesPage').then((m) => ({
-    default: m.RolesPage,
-  })),
-);
-const PositionsPage = lazy(() =>
-  import('@/modules/positions/pages/PositionsPage').then((m) => ({
-    default: m.PositionsPage,
-  })),
-);
-const OrgChartPage = lazy(() =>
-  import('@/modules/org-charts/pages/OrgChartPage').then((m) => ({
-    default: m.OrgChartPage,
-  })),
-);
-const EmployeeStatusPage = lazy(() =>
-  import('@/modules/employee-status/pages/EmployeeStatusPage').then((m) => ({
-    default: m.EmployeeStatusPage,
-  })),
-);
-const EmployeeAssignmentsPage = lazy(() =>
-  import('@/modules/employee-assignments/pages/EmployeeAssignmentsPage').then(
-    (m) => ({
-      default: m.EmployeeAssignmentsPage,
-    }),
-  ),
-);
-const UserRoleScopesPage = lazy(() =>
-  import('@/modules/users/pages/UserRoleScopesPage').then((m) => ({
-    default: m.UserRoleScopesPage,
-  })),
-);
-const TasksPage = lazy(() =>
-  import('@/modules/tasks/pages/TasksPage').then((m) => ({
-    default: m.TasksPage,
-  })),
-);
+
+// Audit Logs
 const AuditLogsPage = lazy(() =>
   import('@/modules/audit-logs/pages/AuditLogsPage').then((m) => ({
     default: m.AuditLogsPage,
   })),
 );
-const ApiErrorDemoPage = lazy(() =>
-  import('@/modules/demo/pages/ApiErrorDemoPage').then((m) => ({
-    default: m.ApiErrorDemoPage,
-  })),
-);
-const PermissionDemoPage = lazy(() =>
-  import('@/modules/demo/pages/PermissionDemoPage').then((m) => ({
-    default: m.PermissionDemoPage,
-  })),
-);
-const SharedComponentsDemo = lazy(
-  () => import('@/modules/demo/pages/SharedComponentsDemo'),
-);
 
-// Module 2 - Warehouse
-const WarehousePage = lazy(() =>
-  import('@/modules/warehouse/pages/WarehousePage').then((m) => ({
-    default: m.WarehousePage,
+// WMS P0 - Modules
+const DashboardPage = lazy(() =>
+  import('@/modules/dashboard/pages/DashboardPage').then((m) => ({
+    default: m.default,
   })),
 );
-const WarehousesPage = lazy(() =>
-  import('@/modules/warehouses/pages/WarehousesPage').then((m) => ({
-    default: m.WarehousesPage,
+const MasterPage = lazy(() =>
+  import('@/modules/master/pages/MasterPage').then((m) => ({
+    default: m.default,
   })),
 );
-const StockReceiptsPage = lazy(() =>
-  import('@/modules/stock-receipts/pages/StockReceiptsPage').then((m) => ({
-    default: m.StockReceiptsPage,
+const PhysicalCodesPage = lazy(() =>
+  import('@/modules/physical-codes/pages/PhysicalCodesPage').then((m) => ({
+    default: m.default,
   })),
 );
-const StockIssuesPage = lazy(() =>
-  import('@/modules/stock-issues/pages/StockIssuesPage').then((m) => ({
-    default: m.StockIssuesPage,
+const InboundPage = lazy(() =>
+  import('@/modules/inbound/pages/InboundPage').then((m) => ({
+    default: m.default,
   })),
 );
-const StockTransfersPage = lazy(() =>
-  import('@/modules/stock-transfers/pages/StockTransfersPage').then((m) => ({
-    default: m.StockTransfersPage,
+const PutawayPage = lazy(() =>
+  import('@/modules/putaway/pages/PutawayPage').then((m) => ({
+    default: m.default,
   })),
 );
-const InventoryBalancePage = lazy(() =>
-  import('@/modules/inventory-balance/pages/InventoryBalancePage').then(
-    (m) => ({
-      default: m.InventoryBalancePage,
-    }),
-  ),
-);
-const StockMovementsPage = lazy(() =>
-  import('@/modules/stock-movements/pages/StockMovementsPage').then((m) => ({
-    default: m.StockMovementsPage,
+const OutboundPage = lazy(() =>
+  import('@/modules/outbound/pages/OutboundPage').then((m) => ({
+    default: m.default,
   })),
 );
-
-// Module 3 - Business
-const BusinessPage = lazy(() =>
-  import('@/modules/business/pages/BusinessPage').then((m) => ({
-    default: m.BusinessPage,
+const InventoryPage = lazy(() =>
+  import('@/modules/inventory/pages/InventoryPage').then((m) => ({
+    default: m.default,
   })),
 );
-const ProductsPage = lazy(() =>
-  import('@/modules/products/pages/ProductsPage').then((m) => ({
-    default: m.ProductsPage,
+const StocktakePage = lazy(() =>
+  import('@/modules/stocktake/pages/StocktakePage').then((m) => ({
+    default: m.default,
   })),
 );
-const PriceListsPage = lazy(() =>
-  import('@/modules/price-lists/pages/PriceListsPage').then((m) => ({
-    default: m.PriceListsPage,
+const WarrantyPage = lazy(() =>
+  import('@/modules/warranty/pages/WarrantyPage').then((m) => ({
+    default: m.default,
   })),
 );
-const CustomersPage = lazy(() =>
-  import('@/modules/customers/pages/CustomersPage').then((m) => ({
-    default: m.CustomersPage,
+const ReversalPage = lazy(() =>
+  import('@/modules/reversal/pages/ReversalPage').then((m) => ({
+    default: m.default,
   })),
 );
-const SalesOrdersPage = lazy(() =>
-  import('@/modules/sales-orders/pages/SalesOrdersPage').then((m) => ({
-    default: m.SalesOrdersPage,
-  })),
-);
-const SalesChannelsPage = lazy(() =>
-  import('@/modules/sales-channels/pages/SalesChannelsPage').then((m) => ({
-    default: m.SalesChannelsPage,
+const ReportsPage = lazy(() =>
+  import('@/modules/reports/pages/ReportsPage').then((m) => ({
+    default: m.default,
   })),
 );
 
-// Tài khoản (truy cập từ UserMenu, không có mục sidebar riêng)
+// Tài khoản
 const ProfilePage = lazy(() =>
   import('@/modules/auth/pages/ProfilePage').then((m) => ({
     default: m.ProfilePage,
   })),
 );
 
-/**
- * Bọc page với AdaptiveDelayedRender để dữ liệu React Query có thời gian
- * load trước khi render content, tránh flash loading state.
- * Delay tự động điều chỉnh theo network condition.
- * Chỉ dùng cho các trang trong modules (đã lazy load).
- */
 function withPageTransition(node: ReactNode) {
   return (
     <AdaptiveDelayedRender minDelay={100} maxDelay={800}>
@@ -179,14 +95,11 @@ function withPageTransition(node: ReactNode) {
   );
 }
 
-/**
- * Bọc page không cần delay (cho các trang ngoài modules)
- */
 function withoutDelay(node: ReactNode) {
   return node;
 }
 
-// Bọc route theo quyền (lấy từ ROUTE_PERMISSIONS): thiếu quyền → 403.
+// Bọc route theo quyền
 function routeEl(path: string, node: ReactNode) {
   return (
     <RequirePermission permission={ROUTE_PERMISSIONS[path]}>
@@ -211,131 +124,62 @@ export const router = createBrowserRouter([
         path: ROUTES.HOME,
         element: withoutDelay(<MainLayout />),
         children: [
-          { index: true, element: <Navigate to={ROUTES.ORG_UNITS} replace /> },
-          {
-            path: ROUTES.ORG_UNITS,
-            element: routeEl(ROUTES.ORG_UNITS, <OrgUnitsPage />),
-          },
-          {
-            path: ROUTES.DEPARTMENTS,
-            element: routeEl(ROUTES.DEPARTMENTS, <DepartmentsPage />),
-          },
-          {
-            path: ROUTES.EMPLOYEES,
-            element: routeEl(ROUTES.EMPLOYEES, <EmployeesPage />),
-          },
-          {
-            path: ROUTES.POSITIONS,
-            element: routeEl(ROUTES.POSITIONS, <PositionsPage />),
-          },
-          { path: ROUTES.ROLES, element: routeEl(ROUTES.ROLES, <RolesPage />) },
-          {
-            path: ROUTES.ORG_CHART,
-            element: routeEl(ROUTES.ORG_CHART, <OrgChartPage />),
-          },
-          {
-            path: ROUTES.EMPLOYEE_STATUS,
-            element: routeEl(ROUTES.EMPLOYEE_STATUS, <EmployeeStatusPage />),
-          },
-          {
-            path: ROUTES.EMPLOYEE_ASSIGNMENTS,
-            element: routeEl(
-              ROUTES.EMPLOYEE_ASSIGNMENTS,
-              <EmployeeAssignmentsPage />,
-            ),
-          },
-          {
-            path: ROUTES.USER_ROLE_SCOPES,
-            element: routeEl(ROUTES.USER_ROLE_SCOPES, <UserRoleScopesPage />),
-          },
-          { path: ROUTES.TASKS, element: routeEl(ROUTES.TASKS, <TasksPage />) },
+          { index: true, element: <Navigate to={ROUTES.DASHBOARD} replace /> },
           {
             path: ROUTES.AUDIT_LOGS,
             element: routeEl(ROUTES.AUDIT_LOGS, <AuditLogsPage />),
           },
+          // WMS P0
           {
-            path: '/demo/api-errors',
-            element: routeEl('/demo/api-errors', <ApiErrorDemoPage />),
+            path: ROUTES.DASHBOARD,
+            element: routeEl(ROUTES.DASHBOARD, <DashboardPage />),
           },
           {
-            path: ROUTES.PERMISSION_DEMO,
-            element: routeEl(ROUTES.PERMISSION_DEMO, <PermissionDemoPage />),
+            path: ROUTES.MASTER,
+            element: routeEl(ROUTES.MASTER, <MasterPage />),
           },
           {
-            path: ROUTES.SHARED_COMPONENTS_DEMO,
-            element: routeEl(
-              ROUTES.SHARED_COMPONENTS_DEMO,
-              <SharedComponentsDemo />,
-            ),
-          },
-          // Module 2 - Warehouse
-          {
-            path: ROUTES.WAREHOUSE,
-            element: routeEl(ROUTES.WAREHOUSE, <WarehousePage />),
+            path: ROUTES.PHYSICAL_CODES,
+            element: routeEl(ROUTES.PHYSICAL_CODES, <PhysicalCodesPage />),
           },
           {
-            path: ROUTES.WAREHOUSES,
-            element: routeEl(ROUTES.WAREHOUSES, <WarehousesPage />),
+            path: ROUTES.INBOUND,
+            element: routeEl(ROUTES.INBOUND, <InboundPage />),
           },
           {
-            path: ROUTES.STOCK_RECEIPTS,
-            element: routeEl(ROUTES.STOCK_RECEIPTS, <StockReceiptsPage />),
+            path: ROUTES.PUTAWAY,
+            element: routeEl(ROUTES.PUTAWAY, <PutawayPage />),
           },
           {
-            path: ROUTES.STOCK_ISSUES,
-            element: routeEl(ROUTES.STOCK_ISSUES, <StockIssuesPage />),
+            path: ROUTES.OUTBOUND,
+            element: routeEl(ROUTES.OUTBOUND, <OutboundPage />),
           },
           {
-            path: ROUTES.STOCK_TRANSFERS,
-            element: routeEl(ROUTES.STOCK_TRANSFERS, <StockTransfersPage />),
+            path: ROUTES.INVENTORY,
+            element: routeEl(ROUTES.INVENTORY, <InventoryPage />),
           },
           {
-            path: ROUTES.INVENTORY_BALANCE,
-            element: routeEl(
-              ROUTES.INVENTORY_BALANCE,
-              <InventoryBalancePage />,
-            ),
+            path: ROUTES.STOCKTAKE,
+            element: routeEl(ROUTES.STOCKTAKE, <StocktakePage />),
           },
           {
-            path: ROUTES.STOCK_MOVEMENTS,
-            element: routeEl(ROUTES.STOCK_MOVEMENTS, <StockMovementsPage />),
-          },
-          // Module 3 - Business
-          {
-            path: ROUTES.BUSINESS,
-            element: routeEl(ROUTES.BUSINESS, <BusinessPage />),
+            path: ROUTES.WARRANTY,
+            element: routeEl(ROUTES.WARRANTY, <WarrantyPage />),
           },
           {
-            path: ROUTES.PRODUCTS,
-            element: routeEl(ROUTES.PRODUCTS, <ProductsPage />),
+            path: ROUTES.REVERSAL,
+            element: routeEl(ROUTES.REVERSAL, <ReversalPage />),
           },
           {
-            path: ROUTES.PRICE_LISTS,
-            element: routeEl(ROUTES.PRICE_LISTS, <PriceListsPage />),
+            path: ROUTES.REPORTS,
+            element: routeEl(ROUTES.REPORTS, <ReportsPage />),
           },
-          {
-            path: ROUTES.CUSTOMERS,
-            element: routeEl(ROUTES.CUSTOMERS, <CustomersPage />),
-          },
-          {
-            path: ROUTES.SALES_ORDERS,
-            element: routeEl(ROUTES.SALES_ORDERS, <SalesOrdersPage />),
-          },
-          {
-            path: ROUTES.SALES_CHANNELS,
-            element: routeEl(ROUTES.SALES_CHANNELS, <SalesChannelsPage />),
-          },
-          // Tài khoản — không cần permission riêng, ai đăng nhập cũng vào được.
+          // Profile
           {
             path: ROUTES.PROFILE,
             element: routeEl(ROUTES.PROFILE, <ProfilePage />),
           },
         ],
-      },
-      {
-        path: '/partner',
-        element: withoutDelay(<PartnerLayout />),
-        children: [{ index: true, element: <div>Partner Portal Home</div> }],
       },
     ],
   },

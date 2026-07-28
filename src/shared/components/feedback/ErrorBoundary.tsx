@@ -21,7 +21,10 @@ export class ErrorBoundary extends Component<
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error('ErrorBoundary bắt được lỗi:', error, info);
+    // Log lỗi để debug — trong production nên gửi tới monitoring service
+    if (import.meta.env.DEV) {
+      console.error('[ErrorBoundary]', error, info);
+    }
   }
 
   private handleReload = () => {

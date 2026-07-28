@@ -1,7 +1,0 @@
-
-> erp-frontend@0.0.0 build
-> tsc -b && vite build
-
-src/test/setup.ts(846,72): error TS2345: Argument of type 'string' is not assignable to parameter of type 'never'.
-src/test/setup.ts(874,74): error TS2345: Argument of type 'string' is not assignable to parameter of type 'never'.
-src/test/setup.ts(878,73): error TS2345: Argument of type 'string' is not assignable to parameter of type 'never'.

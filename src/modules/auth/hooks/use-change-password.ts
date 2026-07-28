@@ -19,7 +19,7 @@ export function useChangePassword() {
       authService.changePassword(data),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
-      navigate(ROUTES.ORG_UNITS, { replace: true });
+      navigate(ROUTES.DASHBOARD, { replace: true });
     },
   });
 }

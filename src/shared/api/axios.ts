@@ -22,7 +22,7 @@ declare module 'axios' {
 }
 
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL: import.meta.env.VITE_API_BASE_URL,
   timeout: 10000,
   // Bắt buộc để trình duyệt gửi/nhận cookie HttpOnly `refresh_token` (BE set
   // ở path /auth, domain .test8.io.vn) khi FE ở subdomain khác cùng site —

@@ -101,10 +101,12 @@ export function AuditLogsTable({
     },
     {
       title: 'Người thực hiện',
-      dataIndex: ['user', 'email'],
+      dataIndex: 'user',
       key: 'user_email',
       width: 200,
-      render: (email: string) => <Text copyable>{email}</Text>,
+      render: (user: AuditLog['user']) => (
+        <Text copyable>{user?.email || 'N/A'}</Text>
+      ),
     },
     {
       title: 'IP Address',
@@ -160,7 +162,7 @@ export function AuditLogsTable({
         onChange={(_pagination, _filters, sorter) => {
           if (!onSortChange) return;
           const s = Array.isArray(sorter) ? sorter[0] : sorter;
-          const field = s?.order ? (s.columnKey as string) : undefined;
+          const field = s?.order ? (s.field as string) : undefined;
           const order =
             s?.order === 'ascend'
               ? 'asc'

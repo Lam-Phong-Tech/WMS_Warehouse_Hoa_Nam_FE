@@ -1,6 +1,6 @@
 // Chụp screenshot THẬT cho module Employee Assignment & Status Lifecycle —
 // tài khoản Super Admin, dữ liệu thật trên astrodev.test8.io.vn (qua BE thật,
-// FE chạy local tại localhost:5173 trỏ VITE_API_URL=astrodev.test8.io.vn).
+// FE chạy local tại localhost:5173 trỏ VITE_API_BASE_URL=astrodev.test8.io.vn).
 //
 // Bổ sung evidence còn thiếu theo review P1 [M1][FE] Employee Assignment &
 // Status Lifecycle: assignment list, create modal, current assignment alert,

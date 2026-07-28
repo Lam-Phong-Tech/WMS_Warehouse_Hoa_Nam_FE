@@ -8,7 +8,6 @@ import {
   MENU,
   toMenuItems,
 } from '@/app/layouts/menu';
-import { useHasPermission } from '@/shared/components/permission';
 import { layoutStyles } from '@/app/layouts/layout.styles';
 
 interface Props {
@@ -21,7 +20,8 @@ interface Props {
 export function SideNav({ collapsed = false, onNavigate }: Props) {
   const location = useLocation();
   const navigate = useNavigate();
-  const can = useHasPermission();
+  // Standalone mode: hiển thị tất cả menu items không lọc quyền
+  const can = () => true;
 
   // Controlled openKeys thay vì defaultOpenKeys (P2): defaultOpenKeys chỉ áp
   // dụng lần render đầu — điều hướng bằng code (breadcrumb, link ngoài menu)

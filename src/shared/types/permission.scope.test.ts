@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import type { PermissionAction } from './permission';
 import {
   meetsMinScope,
   getScopeRequirement,
@@ -39,9 +40,9 @@ describe('permission.scope', () => {
     });
 
     it('should return none for unknown module or action', () => {
-      expect(getScopeRequirement('unknown', 'create' as any)).toBe('none');
-      expect(getScopeRequirement('org_units', 'unknown' as any)).toBe('none');
-      expect(getScopeRequirement('org_units' as any)).toBe('none');
+      expect(getScopeRequirement('unknown', 'create' as unknown as PermissionAction)).toBe('none');
+      expect(getScopeRequirement('org_units', 'unknown' as unknown as PermissionAction)).toBe('none');
+      expect(getScopeRequirement('org_units' as unknown as string, undefined)).toBe('none');
     });
   });
 

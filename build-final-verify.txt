@@ -1,5 +1,0 @@
-
-> erp-frontend@0.0.0 build
-> tsc -b && vite build
-
-vite.config.ts(4,1): error TS6133: 'path' is declared but its value is never read.

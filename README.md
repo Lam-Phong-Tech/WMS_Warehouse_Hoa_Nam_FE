@@ -47,7 +47,7 @@ yarn dev
 Mặc định `.env.example` đang trỏ tới backend test:
 
 ```env
-VITE_API_URL="https://astrodev.test8.io.vn/api/v1"
+VITE_API_BASE_URL="https://astrodev.test8.io.vn/api/v1"
 ```
 
 ---
@@ -145,7 +145,7 @@ import {
 
 `axios` cấu hình tại [src/shared/api/axios.ts](src/shared/api/axios.ts):
 
-- `baseURL` = `VITE_API_URL`.
+- `baseURL` = `VITE_API_BASE_URL`.
 - **Request interceptor**: tự gắn `Authorization: Bearer <token>`.
 - **Response interceptor**: gặp `401` → logout + xoá cookie + chuyển `/login`.
 

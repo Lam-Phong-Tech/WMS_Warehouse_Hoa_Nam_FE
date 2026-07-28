@@ -9,15 +9,14 @@
 
 // Danh sách các routes cần preload (theo thứ tự ưu tiên)
 const CRITICAL_ROUTES = [
-  () => import('@/modules/org-units/pages/OrgUnitsPage'),
-  () => import('@/modules/employees/pages/EmployeesPage'),
-  () => import('@/modules/departments/pages/DepartmentsPage'),
+  // Organization routes removed
 ] as const;
 
 const SECONDARY_ROUTES = [
-  () => import('@/modules/roles/pages/RolesPage'),
-  () => import('@/modules/positions/pages/PositionsPage'),
-  () => import('@/modules/tasks/pages/TasksPage'),
+  // Temporarily disabled - modules being migrated
+  // () => import('@/modules/roles/pages/RolesPage'),
+  // () => import('@/modules/positions/pages/PositionsPage'),
+  // () => import('@/modules/tasks/pages/TasksPage'),
 ] as const;
 
 type PreloadStatus = 'idle' | 'loading' | 'ready';
@@ -141,7 +140,9 @@ class PreloadManager {
         state.status = 'ready';
       })
       .catch((error) => {
-        console.warn(`Failed to preload route: ${routeName}`, error);
+        if (import.meta.env.DEV) {
+          console.warn(`[Preload] Failed to preload route: ${routeName}`, error);
+        }
         state.status = 'idle';
         state.promise = null;
       });
@@ -163,20 +164,7 @@ class PreloadManager {
     routePath: string,
   ): (() => Promise<unknown>) | null {
     const routeMap: Record<string, () => Promise<unknown>> = {
-      '/org-units': () => import('@/modules/org-units/pages/OrgUnitsPage'),
-      '/departments': () =>
-        import('@/modules/departments/pages/DepartmentsPage'),
-      '/employees': () => import('@/modules/employees/pages/EmployeesPage'),
-      '/roles': () => import('@/modules/roles/pages/RolesPage'),
-      '/positions': () => import('@/modules/positions/pages/PositionsPage'),
-      '/org-chart': () => import('@/modules/org-charts/pages/OrgChartPage'),
-      '/employee-status': () =>
-        import('@/modules/employee-status/pages/EmployeeStatusPage'),
-      '/employee-assignments': () =>
-        import('@/modules/employee-assignments/pages/EmployeeAssignmentsPage'),
-      '/user-role-scopes': () =>
-        import('@/modules/users/pages/UserRoleScopesPage'),
-      '/tasks': () => import('@/modules/tasks/pages/TasksPage'),
+      // Organization routes removed
     };
 
     return routeMap[routePath] || null;

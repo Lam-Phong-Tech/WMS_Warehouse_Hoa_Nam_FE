@@ -42,4 +42,26 @@ export const API_ENDPOINTS = {
   // Webhook M2→M3: yêu cầu header X-Webhook-Secret riêng (không dùng Bearer token).
   // Dùng để demo 403 vì contract trả 403 FORBIDDEN ổn định, không phụ thuộc quyền user.
   WEBHOOKS_M2_ORDER_PROCESSING: '/webhooks/m2/order-processing',
+  // WMS Modules
+  DASHBOARD: '/dashboard',
+  DASHBOARD_KPI: '/dashboard/kpi',
+  DASHBOARD_RECENT_DOCUMENTS: '/dashboard/recent-documents',
+  DASHBOARD_RECONCILE_HEALTH: '/dashboard/reconcile-health',
+  DASHBOARD_ALERTS: '/dashboard/alerts',
+  // Receiving/Inbound
+  INBOUND_DOCUMENTS: '/inbound/documents',
+  INBOUND_DOCUMENT: '/inbound/documents/:id',
+  INBOUND_LINES: '/inbound/documents/:id/lines',
+  // Shipping/Outbound
+  OUTBOUND_DOCUMENTS: '/outbound/documents',
+  OUTBOUND_DOCUMENT: '/outbound/documents/:id',
+  OUTBOUND_LINES: '/outbound/documents/:id/lines',
+  // Putaway
+  PUTAWAY_TASKS: '/putaway/tasks',
+  PUTAWAY_HISTORY: '/putaway/history',
+  // Reports
+  REPORTS: '/reports',
+  REPORTS_XNT: '/reports/xnt',
+  // Audit Logs
+  AUDIT_LOGS: '/audit-logs',
 };

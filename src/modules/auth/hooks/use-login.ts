@@ -39,11 +39,13 @@ export function useLogin() {
         } catch (error) {
           // Log error nhưng không chặn login flow
           // User có thể retry thủ công qua ContextSwitcher
-          console.error('Failed to auto-switch context after login:', error);
+          if (import.meta.env.DEV) {
+            console.error('[Auth] Failed to auto-switch context after login:', error);
+          }
         }
       }
 
-      navigate(ROUTES.ORG_UNITS, { replace: true });
+      navigate(ROUTES.DASHBOARD, { replace: true });
     },
   });
 }
