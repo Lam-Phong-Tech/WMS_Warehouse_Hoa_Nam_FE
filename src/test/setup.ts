@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { vi } from 'vitest';
-import '@testing-library/jest-dom/vitest';
-import React from 'react';
-import { createRoot, type Root } from 'react-dom/client';
-import { configure } from '@testing-library/react';
-import dayjs from 'dayjs';
-import customParseFormat from 'dayjs/plugin/customParseFormat';
-import { cleanupCreatedQueryClients } from '@/test/test-utils';
+import { vi } from "vitest";
+import "@testing-library/jest-dom/vitest";
+import React from "react";
+import { createRoot, type Root } from "react-dom/client";
+import { configure } from "@testing-library/react";
+import dayjs from "dayjs";
+import customParseFormat from "dayjs/plugin/customParseFormat";
+import { cleanupCreatedQueryClients } from "@/test/test-utils";
 
 // Mock auth store để tránh persist middleware gây lỗi trong test
 const mockAuthState = {
@@ -28,8 +28,7 @@ const mockAuthState = {
 };
 const initialMockAuthState = { ...mockAuthState };
 const mockAuthStore = Object.assign(
-  <T,>(selector: (state: typeof mockAuthState) => T) =>
-    selector(mockAuthState),
+  <T>(selector: (state: typeof mockAuthState) => T) => selector(mockAuthState),
   {
     getState: () => ({
       ...mockAuthState,
@@ -44,12 +43,12 @@ const mockAuthStore = Object.assign(
   },
 );
 
-vi.mock('@/shared/store/auth.store', () => ({
+vi.mock("@/shared/store/auth.store", () => ({
   useAuthStore: mockAuthStore,
 }));
 
 // vitest 4.x + vite 8: mock http để tránh axios instance truy cập config ở thời điểm module load
-vi.mock('@/shared/api/http', () => {
+vi.mock("@/shared/api/http", () => {
   const createMockHttp = () => {
     const mock = function () {};
     mock.get = vi.fn();
@@ -66,7 +65,7 @@ vi.mock('@/shared/api/http', () => {
 });
 
 // Mock axios để tránh lỗi 'Cannot read properties of undefined (reading 'config')'
-vi.mock('axios', () => {
+vi.mock("axios", () => {
   const createMockInstance = () => ({
     get: vi.fn(),
     post: vi.fn(),
@@ -93,7 +92,7 @@ vi.mock('axios', () => {
 });
 
 // Mock @/shared/api/axios để tránh lỗi module load
-vi.mock('@/shared/api/axios', () => {
+vi.mock("@/shared/api/axios", () => {
   const createMockInstance = () => ({
     get: vi.fn(),
     post: vi.fn(),
@@ -127,7 +126,7 @@ function showImperativeModal(options: {
   onOk?: () => unknown;
   onCancel?: () => unknown;
 }) {
-  const container = document.createElement('div');
+  const container = document.createElement("div");
   document.body.appendChild(container);
   const root = createRoot(container);
   const entry = { root, container };
@@ -139,7 +138,7 @@ function showImperativeModal(options: {
   };
   const handleOk = () => {
     const result = options.onOk?.();
-    if (result && typeof (result as Promise<unknown>).then === 'function')
+    if (result && typeof (result as Promise<unknown>).then === "function")
       (result as Promise<unknown>).then(close).catch(() => {});
     else close();
   };
@@ -149,38 +148,38 @@ function showImperativeModal(options: {
   };
   root.render(
     React.createElement(
-      'div',
-      { className: 'ant-modal ant-modal-confirm', role: 'dialog' },
+      "div",
+      { className: "ant-modal ant-modal-confirm", role: "dialog" },
       options.title
         ? React.createElement(
-            'div',
-            { className: 'ant-modal-confirm-title' },
+            "div",
+            { className: "ant-modal-confirm-title" },
             options.title,
           )
         : null,
       options.content
         ? React.createElement(
-            'div',
-            { className: 'ant-modal-confirm-content' },
+            "div",
+            { className: "ant-modal-confirm-content" },
             options.content,
           )
         : null,
       React.createElement(
-        'div',
-        { className: 'ant-modal-confirm-btns' },
+        "div",
+        { className: "ant-modal-confirm-btns" },
         React.createElement(
-          'button',
-          { className: 'ant-btn', type: 'button', onClick: handleCancel },
-          options.cancelText ?? 'Hủy',
+          "button",
+          { className: "ant-btn", type: "button", onClick: handleCancel },
+          options.cancelText ?? "Hủy",
         ),
         React.createElement(
-          'button',
+          "button",
           {
-            className: 'ant-btn ant-btn-primary',
-            type: 'button',
+            className: "ant-btn ant-btn-primary",
+            type: "button",
             onClick: handleOk,
           },
-          options.okText ?? 'OK',
+          options.okText ?? "OK",
         ),
       ),
     ),
@@ -188,7 +187,7 @@ function showImperativeModal(options: {
   return { destroy: close, update: () => {} };
 }
 
-vi.mock('antd', () => {
+vi.mock("antd", () => {
   const createElementWithTag = (tag: string) => (props: any) => {
     const { children, ...rest } = props ?? {};
     const elementProps = { ...rest } as Record<string, unknown>;
@@ -213,10 +212,10 @@ vi.mock('antd', () => {
   const createButton = (props: any) => {
     const { children, type, ...rest } = props ?? {};
     return React.createElement(
-      'button',
+      "button",
       {
         ...rest,
-        type: type === 'submit' ? 'submit' : 'button',
+        type: type === "submit" ? "submit" : "button",
       },
       children ?? null,
     );
@@ -225,24 +224,24 @@ vi.mock('antd', () => {
   const createCheckbox = (props: any) => {
     const { children, checked, disabled, onChange, ...rest } = props ?? {};
     return React.createElement(
-      'label',
+      "label",
       null,
-      React.createElement('input', {
+      React.createElement("input", {
         ...rest,
-        type: 'checkbox',
+        type: "checkbox",
         checked: Boolean(checked),
         disabled: Boolean(disabled),
         onChange,
       }),
-      children ? React.createElement('span', null, children) : null,
+      children ? React.createElement("span", null, children) : null,
     );
   };
 
   const createInput = (props: any) => {
     const { value, defaultValue, ...rest } = props ?? {};
-    return React.createElement('input', {
+    return React.createElement("input", {
       ...rest,
-      value: value ?? defaultValue ?? '',
+      value: value ?? defaultValue ?? "",
     });
   };
 
@@ -257,14 +256,14 @@ vi.mock('antd', () => {
       ...rest
     } = props ?? {};
     const normalizedOptions = Array.isArray(options) ? options : [];
-    const selectedValue = value ?? defaultValue ?? '';
+    const selectedValue = value ?? defaultValue ?? "";
     const handleChange = (event: any) => {
       const nextValue = event?.target?.value ?? selectedValue;
       onChange?.(nextValue);
       onSelect?.(nextValue);
     };
     return React.createElement(
-      'select',
+      "select",
       {
         ...rest,
         value: selectedValue,
@@ -272,10 +271,10 @@ vi.mock('antd', () => {
         onClick: handleChange,
       },
       normalizedOptions.map((option: any) => {
-        const optionValue = option?.value ?? '';
+        const optionValue = option?.value ?? "";
         const optionLabel = option?.label ?? optionValue;
         return React.createElement(
-          'option',
+          "option",
           { key: optionValue, value: optionValue },
           optionLabel,
         );
@@ -287,8 +286,8 @@ vi.mock('antd', () => {
   const createOption = (props: any) => {
     const { children, value, ...rest } = props ?? {};
     return React.createElement(
-      'option',
-      { ...rest, value: value ?? '' },
+      "option",
+      { ...rest, value: value ?? "" },
       children ?? null,
     );
   };
@@ -306,42 +305,42 @@ vi.mock('antd', () => {
   const createStatistic = (props: any) => {
     const { value, prefix, suffix, title, precision } = props ?? {};
     let formatted: React.ReactNode = value;
-    if (typeof value === 'number') {
+    if (typeof value === "number") {
       const fixed =
         precision != null ? value.toFixed(precision) : String(value);
-      const [intPart, decPart] = fixed.split('.');
-      const intWithGroup = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+      const [intPart, decPart] = fixed.split(".");
+      const intWithGroup = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
       formatted = decPart != null ? `${intWithGroup},${decPart}` : intWithGroup;
     }
     return React.createElement(
-      'div',
-      { className: 'ant-statistic', 'data-testid': 'ant-statistic' },
+      "div",
+      { className: "ant-statistic", "data-testid": "ant-statistic" },
       title != null
         ? React.createElement(
-            'div',
-            { className: 'ant-statistic-title' },
+            "div",
+            { className: "ant-statistic-title" },
             title,
           )
         : null,
       React.createElement(
-        'div',
-        { className: 'ant-statistic-content' },
+        "div",
+        { className: "ant-statistic-content" },
         prefix != null
           ? React.createElement(
-              'span',
-              { className: 'ant-statistic-content-prefix' },
+              "span",
+              { className: "ant-statistic-content-prefix" },
               prefix,
             )
           : null,
         React.createElement(
-          'span',
-          { className: 'ant-statistic-content-value' },
+          "span",
+          { className: "ant-statistic-content-value" },
           formatted,
         ),
         suffix != null
           ? React.createElement(
-              'span',
-              { className: 'ant-statistic-content-suffix' },
+              "span",
+              { className: "ant-statistic-content-suffix" },
               suffix,
             )
           : null,
@@ -354,27 +353,27 @@ vi.mock('antd', () => {
     const { label, children, help, validateStatus, message, name, ...rest } =
       props ?? {};
     return React.createElement(
-      'div',
+      "div",
       {
-        className: `ant-form-item${validateStatus ? ` ant-form-item-has-${validateStatus}` : ''}`,
-        'data-name': name,
+        className: `ant-form-item${validateStatus ? ` ant-form-item-has-${validateStatus}` : ""}`,
+        "data-name": name,
       },
       label != null
         ? React.createElement(
-            'label',
-            { className: 'ant-form-item-label', htmlFor: rest.htmlFor },
+            "label",
+            { className: "ant-form-item-label", htmlFor: rest.htmlFor },
             label,
           )
         : null,
       React.createElement(
-        'div',
-        { className: 'ant-form-item-control' },
+        "div",
+        { className: "ant-form-item-control" },
         children ?? null,
       ),
       (message ?? help) != null
         ? React.createElement(
-            'div',
-            { className: 'ant-form-item-explain', role: 'alert' },
+            "div",
+            { className: "ant-form-item-explain", role: "alert" },
             message ?? help,
           )
         : null,
@@ -386,12 +385,12 @@ vi.mock('antd', () => {
     const { value, placeholder, format, onChange, ...rest } = props ?? {};
     const ph =
       placeholder ??
-      (typeof format === 'string' ? format.toLowerCase() : 'dd/mm/yyyy');
-    return React.createElement('input', {
+      (typeof format === "string" ? format.toLowerCase() : "dd/mm/yyyy");
+    return React.createElement("input", {
       ...rest,
-      type: 'text',
+      type: "text",
       placeholder: ph,
-      value: value ?? '',
+      value: value ?? "",
       onChange: (e: any) => onChange?.(e?.target?.value, e),
     });
   };
@@ -428,30 +427,30 @@ vi.mock('antd', () => {
         setOpen((prev) => !prev);
       };
       return React.createElement(
-        'div',
+        "div",
         null,
         React.createElement(
-          'button',
+          "button",
           {
-            type: 'button',
+            type: "button",
             onClick: handleClick,
-            title: 'Thao tác',
-            'data-placement': placement,
-            'data-testid': 'action-dropdown-trigger',
+            title: "Thao tác",
+            "data-placement": placement,
+            "data-testid": "action-dropdown-trigger",
           },
-          open ? '▾' : '⋯',
+          open ? "▾" : "⋯",
         ),
         open && menu?.items
           ? React.createElement(
-              'div',
-              { role: 'menu' },
+              "div",
+              { role: "menu" },
               menu.items.map((item: any, index: number) =>
                 React.createElement(
-                  'button',
+                  "button",
                   {
                     key: item.key ?? index,
-                    type: 'button',
-                    role: 'menuitem',
+                    type: "button",
+                    role: "menuitem",
                     onClick: item.onClick,
                     title: item.label,
                   },
@@ -462,11 +461,11 @@ vi.mock('antd', () => {
           : null,
       );
     },
-    Space: renderWithChildren('div'),
+    Space: renderWithChildren("div"),
     Typography: Object.assign(stub, {
-      Text: renderWithChildren('span'),
-      Title: renderWithChildren('h1'),
-      Paragraph: renderWithChildren('p'),
+      Text: renderWithChildren("span"),
+      Title: renderWithChildren("h1"),
+      Paragraph: renderWithChildren("p"),
     }),
     Tooltip: ({ children }: any) =>
       React.createElement(React.Fragment, null, children ?? null),
@@ -475,8 +474,8 @@ vi.mock('antd', () => {
         const rows = Array.isArray(dataSource) ? dataSource : [];
         const getValue = (record: any, dataIndex?: string) => {
           if (!dataIndex) return undefined;
-          if (typeof dataIndex === 'string') {
-            const parts = dataIndex.split('.');
+          if (typeof dataIndex === "string") {
+            const parts = dataIndex.split(".");
             let current: any = record;
             for (const part of parts) {
               if (current == null) return undefined;
@@ -486,34 +485,34 @@ vi.mock('antd', () => {
           }
           return undefined;
         };
-        const emptyText = locale?.emptyText ?? 'Không có dữ liệu';
+        const emptyText = locale?.emptyText ?? "Không có dữ liệu";
         return React.createElement(
-          'div',
-          { role: 'table', ...rest },
+          "div",
+          { role: "table", ...rest },
           rows.length === 0
             ? React.createElement(
-                'div',
-                { role: 'empty' },
-                typeof emptyText === 'string'
+                "div",
+                { role: "empty" },
+                typeof emptyText === "string"
                   ? emptyText
                   : React.createElement(React.Fragment, null, emptyText),
               )
             : rows.map((record: any, rowIndex: number) => {
                 const rowKey = record?.id ?? rowIndex;
                 return React.createElement(
-                  'div',
-                  { key: rowKey, role: 'row' },
+                  "div",
+                  { key: rowKey, role: "row" },
                   rowSelection
-                    ? React.createElement('div', { key: 'selection' }, '✓')
+                    ? React.createElement("div", { key: "selection" }, "✓")
                     : null,
                   (columns ?? []).map((column: any, columnIndex: number) => {
                     const value = getValue(record, column?.dataIndex);
                     const content =
-                      typeof column?.render === 'function'
+                      typeof column?.render === "function"
                         ? column.render(value, record, rowIndex)
                         : value;
                     return React.createElement(
-                      'div',
+                      "div",
                       { key: column?.key ?? column?.dataIndex ?? columnIndex },
                       content ?? null,
                     );
@@ -532,24 +531,24 @@ vi.mock('antd', () => {
       ({ open, title, children, footer }: any) => {
         if (!open) return null;
         return React.createElement(
-          'div',
-          { className: 'ant-modal', role: 'dialog' },
+          "div",
+          { className: "ant-modal", role: "dialog" },
           title
             ? React.createElement(
-                'div',
-                { className: 'ant-modal-title' },
+                "div",
+                { className: "ant-modal-title" },
                 title,
               )
             : null,
           React.createElement(
-            'div',
-            { className: 'ant-modal-body' },
+            "div",
+            { className: "ant-modal-body" },
             children ?? null,
           ),
           footer !== null
             ? React.createElement(
-                'div',
-                { className: 'ant-modal-footer' },
+                "div",
+                { className: "ant-modal-footer" },
                 footer ?? null,
               )
             : null,
@@ -573,7 +572,7 @@ vi.mock('antd', () => {
     }),
     Input: Object.assign(createInput, {
       Password: createInput,
-      TextArea: createElementWithTag('textarea'),
+      TextArea: createElementWithTag("textarea"),
       Search: createInput,
       Group: stub,
     }),
@@ -585,40 +584,40 @@ vi.mock('antd', () => {
     Spin: stub,
     Tag: ({ children, color, ...rest }: any) =>
       React.createElement(
-        'span',
-        { className: `ant-tag${color ? ` ant-tag-${color}` : ''}`, ...rest },
+        "span",
+        { className: `ant-tag${color ? ` ant-tag-${color}` : ""}`, ...rest },
         children ?? null,
       ),
     Badge: stub,
     Empty: Object.assign(
       ({ description, children }: any) =>
         React.createElement(
-          'div',
+          "div",
           null,
-          description ? React.createElement('div', null, description) : null,
+          description ? React.createElement("div", null, description) : null,
           children ?? null,
         ),
       {
-        PRESENTED_IMAGE_SIMPLE: 'simple',
-        PRESENTED_IMAGE_DEFAULT: 'default',
+        PRESENTED_IMAGE_SIMPLE: "simple",
+        PRESENTED_IMAGE_DEFAULT: "default",
       },
     ),
     Alert: ({ message, description, children }: any) =>
       React.createElement(
-        'div',
+        "div",
         null,
-        message ? React.createElement('div', null, message) : null,
-        description ? React.createElement('div', null, description) : null,
+        message ? React.createElement("div", null, message) : null,
+        description ? React.createElement("div", null, description) : null,
         children ?? null,
       ),
     Skeleton: ({ children }: any) =>
-      React.createElement('div', null, children ?? 'Loading...'),
+      React.createElement("div", null, children ?? "Loading..."),
     Card: Object.assign(
       ({ title, children, ...rest }: any) =>
         React.createElement(
-          'div',
+          "div",
           rest,
-          title ? React.createElement('div', null, title) : null,
+          title ? React.createElement("div", null, title) : null,
           children ?? null,
         ),
       { Grid: stub, Meta: stub },
@@ -631,9 +630,9 @@ vi.mock('antd', () => {
     List: Object.assign(stub, { Item: Object.assign(stub, { Meta: stub }) }),
     Checkbox: Object.assign(createCheckbox, { Group: stub }),
     Radio: Object.assign(stub, { Group: stub, Button: stub }),
-    Switch: createElementWithTag('input'),
+    Switch: createElementWithTag("input"),
     Slider: stub,
-    Upload: Object.assign(stub, { Dragger: stub, LIST_IGNORE: 'LIST_IGNORE' }),
+    Upload: Object.assign(stub, { Dragger: stub, LIST_IGNORE: "LIST_IGNORE" }),
     Rate: stub,
     Progress: stub,
     Timeline: stub,
@@ -645,16 +644,16 @@ vi.mock('antd', () => {
     Watermark: stub,
     Segmented: ({ options, value, onChange }: any) =>
       React.createElement(
-        'div',
+        "div",
         null,
         (options ?? []).map((option: any) =>
           React.createElement(
-            'button',
+            "button",
             {
               key: option.value,
-              type: 'button',
+              type: "button",
               onClick: () => onChange?.(option.value),
-              'data-active': value === option.value,
+              "data-active": value === option.value,
             },
             option.label ?? option.value,
           ),
@@ -678,27 +677,27 @@ vi.mock('antd', () => {
           const key =
             node?.key ??
             node?.id ??
-            `${depth}-${node?.title ?? node?.name ?? 'node'}`;
+            `${depth}-${node?.title ?? node?.name ?? "node"}`;
           const label =
-            node?.title ?? node?.label ?? node?.name ?? node?.key ?? 'node';
+            node?.title ?? node?.label ?? node?.name ?? node?.key ?? "node";
           const isSelected = Array.isArray(selectedKeys)
             ? selectedKeys.includes(key)
             : false;
           return React.createElement(
-            'div',
+            "div",
             { key, style: { marginLeft: depth * 12 } },
             React.createElement(
-              'button',
+              "button",
               {
-                type: 'button',
+                type: "button",
                 onClick: () => onSelect?.([key], node),
-                'data-selected': isSelected ? 'true' : 'false',
+                "data-selected": isSelected ? "true" : "false",
               },
               label,
             ),
             Array.isArray(node?.children) && node.children.length > 0
               ? React.createElement(
-                  'div',
+                  "div",
                   null,
                   node.children.map((child: any) =>
                     renderNode(child, depth + 1),
@@ -708,8 +707,8 @@ vi.mock('antd', () => {
           );
         };
         return React.createElement(
-          'div',
-          { className: 'ant-tree', role: 'tree', ...rest },
+          "div",
+          { className: "ant-tree", role: "tree", ...rest },
           children ?? null,
           nodes.map((node: any) => renderNode(node)),
         );
@@ -726,7 +725,7 @@ vi.mock('antd', () => {
       open,
       title,
       children,
-      placement = 'right',
+      placement = "right",
       size,
       afterOpenChange,
       destroyOnClose,
@@ -738,31 +737,31 @@ vi.mock('antd', () => {
       }, [open, afterOpenChange]);
 
       if (!open && destroyOnClose) return null;
-      const width = typeof size === 'number' ? `${size}px` : (size ?? '520px');
+      const width = typeof size === "number" ? `${size}px` : (size ?? "520px");
       const drawerStyle =
-        placement === 'left' || placement === 'right'
-          ? { width, maxWidth: '100%' }
-          : { width: '100%' };
+        placement === "left" || placement === "right"
+          ? { width, maxWidth: "100%" }
+          : { width: "100%" };
       return React.createElement(
-        'div',
-        { className: 'ant-drawer', style: drawerStyle },
+        "div",
+        { className: "ant-drawer", style: drawerStyle },
         React.createElement(
-          'div',
-          { className: 'ant-drawer-title' },
+          "div",
+          { className: "ant-drawer-title" },
           title ?? null,
         ),
         extra
-          ? React.createElement('div', { className: 'ant-drawer-extra' }, extra)
+          ? React.createElement("div", { className: "ant-drawer-extra" }, extra)
           : null,
         React.createElement(
-          'div',
-          { className: 'ant-drawer-body' },
+          "div",
+          { className: "ant-drawer-body" },
           children ?? null,
         ),
         footer
           ? React.createElement(
-              'div',
-              { className: 'ant-drawer-footer' },
+              "div",
+              { className: "ant-drawer-footer" },
               footer,
             )
           : null,
@@ -771,8 +770,8 @@ vi.mock('antd', () => {
     Pagination: stub,
     Popconfirm: stub,
     Statistic: createStatistic,
-    config: { getPrefixCls: () => 'ant', prefixCls: 'ant' },
-    version: '5.x',
+    config: { getPrefixCls: () => "ant", prefixCls: "ant" },
+    version: "5.x",
     App: Object.assign(stub, {
       useApp: () => ({
         message: {},
@@ -802,7 +801,7 @@ vi.mock('antd', () => {
   };
 });
 
-vi.mock('rc-util', () => {
+vi.mock("rc-util", () => {
   const stub = () => null;
   return {
     default: stub,
@@ -813,7 +812,7 @@ vi.mock('rc-util', () => {
     canUseDom: () => false,
     dom: { canUseDom: () => false },
     KeyCode: { ENTER: 13, TAB: 9 },
-    getContainer: (c: any) => (typeof c === 'function' ? c() : c),
+    getContainer: (c: any) => (typeof c === "function" ? c() : c),
     isBrowser: () => false,
     isCSSSupport: () => false,
     supportRef: () => false,
@@ -833,7 +832,7 @@ vi.mock('rc-util', () => {
   };
 });
 
-vi.mock('sonner', () => ({
+vi.mock("sonner", () => ({
   Toaster: () => null,
   toast: {
     success: () => {},
@@ -846,16 +845,16 @@ vi.mock('sonner', () => ({
   },
 }));
 
-vi.mock('@ant-design/icons', () => {
+vi.mock("@ant-design/icons", () => {
   const stub = () => null;
   const icons: Record<string, any> = {};
-  'AimOutlined ApartmentOutlined AppstoreOutlined ArrowRightOutlined AuditOutlined BankOutlined BarChartOutlined BellOutlined CarOutlined CheckCircleOutlined CheckOutlined CloseCircleOutlined CloseOutlined ClusterOutlined CopyOutlined DeleteOutlined DownOutlined DownloadOutlined EditOutlined EnvironmentOutlined ExclamationCircleFilled ExpandAltOutlined ExportOutlined EyeOutlined FileExcelOutlined FilePdfOutlined FileSearchOutlined FileTextOutlined FundOutlined HomeOutlined IdcardOutlined ImportOutlined InboxOutlined KeyOutlined LockOutlined LogoutOutlined MailOutlined MenuFoldOutlined MenuUnfoldOutlined NodeIndexOutlined PlayCircleOutlined PlusOutlined ProfileOutlined ReloadOutlined RollbackOutlined SafetyCertificateOutlined SaveOutlined SearchOutlined SendOutlined SettingOutlined ShopOutlined ShoppingCartOutlined ShrinkOutlined SolutionOutlined StockOutlined StopOutlined SwapOutlined SyncOutlined TeamOutlined UndoOutlined UnorderedListOutlined UploadOutlined UserAddOutlined UserOutlined UserSwitchOutlined ZoomInOutlined ZoomOutOutlined'
-    .split(' ')
+  "AimOutlined ApartmentOutlined AppstoreOutlined ArrowRightOutlined AuditOutlined BankOutlined BarChartOutlined BarcodeOutlined BellOutlined CarOutlined CheckCircleOutlined CheckOutlined CloseCircleOutlined CloseOutlined ClusterOutlined CopyOutlined DeleteOutlined DownOutlined DownloadOutlined EditOutlined EnvironmentOutlined ExclamationCircleFilled ExpandAltOutlined ExperimentOutlined ExportOutlined EyeOutlined FileExcelOutlined FilePdfOutlined FileSearchOutlined FileTextOutlined FundOutlined HomeOutlined IdcardOutlined ImportOutlined InboxOutlined KeyOutlined LockOutlined LogoutOutlined MailOutlined MenuFoldOutlined MenuUnfoldOutlined NodeIndexOutlined PlayCircleOutlined PlusOutlined ProfileOutlined ReloadOutlined RollbackOutlined SafetyCertificateOutlined SaveOutlined SearchOutlined SendOutlined SettingOutlined ShopOutlined ShoppingCartOutlined ShrinkOutlined SolutionOutlined StockOutlined StopOutlined SwapOutlined SyncOutlined TeamOutlined UndoOutlined UnorderedListOutlined UploadOutlined UserAddOutlined UserOutlined UserSwitchOutlined ZoomInOutlined ZoomOutOutlined"
+    .split(" ")
     .forEach((n) => (icons[n] = stub));
   return { default: stub, ...icons };
 });
 
-vi.mock('@/modules/auth/utils/permission', () => ({
+vi.mock("@/modules/auth/utils/permission", () => ({
   usePermissionState: () => {
     const authState = mockAuthStore.getState();
     return {
@@ -863,7 +862,7 @@ vi.mock('@/modules/auth/utils/permission', () => ({
       permissionCodes: authState.permissionCodes,
       currentScopeType:
         (authState.currentContext?.scope_type as string | undefined) ??
-        'he_thong',
+        "he_thong",
       currentOrgUnitId: authState.currentContext?.org_unit_id ?? null,
       currentDepartmentId: authState.currentContext?.department_id ?? null,
     };
@@ -878,36 +877,36 @@ vi.mock('@/modules/auth/utils/permission', () => ({
   useCan: () => true,
 }));
 
-vi.mock('@/app/router/access', () => ({
+vi.mock("@/app/router/access", () => ({
   ROUTE_PERMISSIONS: {
-    '/org-units': 'ORG_VIEW',
-    '/departments': 'DEPT_VIEW',
-    '/employees': 'EMP_VIEW',
-    '/positions': 'POS_VIEW',
-    '/roles': 'ROLE_VIEW',
-    '/org-chart': 'ORG_VIEW',
-    '/employee-status': 'EMP_VIEW',
-    '/employee-assignments': 'EMP_ASSIGNMENT_VIEW',
-    '/user-role-scopes': ['ROLE_ASSIGN', 'SCOPE_CONFIG'],
-    '/tasks': 'TASK_VIEW',
-    '/warehouse': 'WAREHOUSE_VIEW',
-    '/warehouses': 'WAREHOUSE_VIEW',
-    '/stock-receipts': 'STOCK_RECEIPT_VIEW',
-    '/stock-issues': 'STOCK_ISSUE_VIEW',
-    '/stock-transfers': 'STOCK_TRANSFER_VIEW',
-    '/inventory-balance': 'INVENTORY_VIEW',
-    '/stock-movements': 'STOCK_MOVEMENT_VIEW',
-    '/business': 'BUSINESS_VIEW',
-    '/products': 'PRODUCT_VIEW',
-    '/price-lists': 'PRICE_LIST_VIEW',
-    '/customers': 'CUSTOMER_VIEW',
-    '/sales-orders': 'SALES_ORDER_VIEW',
-    '/sales-channels': 'SALES_CHANNEL_VIEW',
-    '/audit-logs': 'AUDIT_LOG_VIEW',
+    "/org-units": "ORG_VIEW",
+    "/departments": "DEPT_VIEW",
+    "/employees": "EMP_VIEW",
+    "/positions": "POS_VIEW",
+    "/roles": "ROLE_VIEW",
+    "/org-chart": "ORG_VIEW",
+    "/employee-status": "EMP_VIEW",
+    "/employee-assignments": "EMP_ASSIGNMENT_VIEW",
+    "/user-role-scopes": ["ROLE_ASSIGN", "SCOPE_CONFIG"],
+    "/tasks": "TASK_VIEW",
+    "/warehouse": "WAREHOUSE_VIEW",
+    "/warehouses": "WAREHOUSE_VIEW",
+    "/stock-receipts": "STOCK_RECEIPT_VIEW",
+    "/stock-issues": "STOCK_ISSUE_VIEW",
+    "/stock-transfers": "STOCK_TRANSFER_VIEW",
+    "/inventory-balance": "INVENTORY_VIEW",
+    "/stock-movements": "STOCK_MOVEMENT_VIEW",
+    "/business": "BUSINESS_VIEW",
+    "/products": "PRODUCT_VIEW",
+    "/price-lists": "PRICE_LIST_VIEW",
+    "/customers": "CUSTOMER_VIEW",
+    "/sales-orders": "SALES_ORDER_VIEW",
+    "/sales-channels": "SALES_CHANNEL_VIEW",
+    "/audit-logs": "AUDIT_LOG_VIEW",
   },
 }));
 
-vi.mock('@/shared/hooks/usePermission', () => {
+vi.mock("@/shared/hooks/usePermission", () => {
   const resolveCan = (context: {
     module?: string;
     action?: string;
@@ -924,7 +923,7 @@ vi.mock('@/shared/hooks/usePermission', () => {
       context.permissionCode ??
       (context.action && context.module
         ? `${context.action.toUpperCase()}_${context.module.toUpperCase()}`
-        : (context.module ?? '').toUpperCase());
+        : (context.module ?? "").toUpperCase());
     const hasCodePermission = isSuperAdmin || permissionCodes.includes(code);
     // Simple scope check - just check if super admin
     const scopePassed = isSuperAdmin || !!currentContext?.scope_type;
@@ -935,16 +934,16 @@ vi.mock('@/shared/hooks/usePermission', () => {
       module?: string;
       action?: string;
       permissionCode?: string;
-      mode?: 'hide' | 'disable';
+      mode?: "hide" | "disable";
     }) => {
       const can = resolveCan(context);
-      const mode = context.mode ?? 'hide';
+      const mode = context.mode ?? "hide";
       return {
         can,
         mode,
-        isHidden: mode === 'hide' && !can,
-        isDisabled: mode === 'disable' && !can,
-        permissionCode: context.permissionCode ?? '',
+        isHidden: mode === "hide" && !can,
+        isDisabled: mode === "disable" && !can,
+        permissionCode: context.permissionCode ?? "",
       };
     },
     useCanAll: (codes: string[]) => {
@@ -958,8 +957,8 @@ vi.mock('@/shared/hooks/usePermission', () => {
   };
 });
 
-if (typeof window !== 'undefined') {
-  Object.defineProperty(window, 'matchMedia', {
+if (typeof window !== "undefined") {
+  Object.defineProperty(window, "matchMedia", {
     writable: true,
     value: (query: string) => ({
       matches: false,
@@ -973,7 +972,7 @@ if (typeof window !== 'undefined') {
     }),
   });
   try {
-    Object.defineProperty(window, 'location', {
+    Object.defineProperty(window, "location", {
       writable: true,
       configurable: true,
       value: {
@@ -989,7 +988,7 @@ if (typeof window !== 'undefined') {
   }
 }
 
-if (typeof globalThis.ResizeObserver === 'undefined') {
+if (typeof globalThis.ResizeObserver === "undefined") {
   globalThis.ResizeObserver = class ResizeObserver {
     observe() {}
     unobserve() {}
