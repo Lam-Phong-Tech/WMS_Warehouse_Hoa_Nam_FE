@@ -100,3 +100,45 @@ can render backend validation without client-side guessing.
   invalid, success, and error.
 - Pages must not mutate inventory locally. Only backend post/apply/reverse APIs
   can change stock.
+
+## HN-FE-001 Reusable FE Foundation
+
+Traceability:
+
+- Parent Task: WWHN-38
+- Parent Temp Key: HN-FE-001
+- Epic Temp Key: HN-EPIC-02
+- Role: FE1
+- Assignee Placeholder: HN-FE-01
+- Dependencies: HN-UX-001, HN-FND-001
+- Output: Reusable FE Nen tang
+
+Reusable foundation delivered in this repository:
+
+- `src/app/providers/AppProviders.tsx`: single application provider root for
+  TanStack Query, Ant Design theme/locale, Ant Design app context, toast, and
+  ErrorBoundary.
+- `src/app/router`: protected route, route-level RBAC, lazy page loading, and
+  no-permission routing.
+- `src/app/layouts`: responsive admin shell with sidebar, drawer navigation,
+  header, breadcrumb, footer, and profile bootstrap handling.
+- `src/shared/store/auth.store.ts`: session state, memory-only access token,
+  persisted non-sensitive hints, context, permission codes, and logout cleanup.
+- `src/shared/api`: approved API envelope unwrap, pagination meta handling,
+  refresh-token interceptor, RBAC/API error classification, and field error
+  extraction.
+- `src/shared/components`: shared layout, form, table, feedback, permission,
+  navigation, card, and page-level UI states exported through a stable barrel.
+
+Contract boundaries:
+
+- RBAC in FE is for UI/UX only; backend remains the authority for permission and
+  data scope.
+- Business validation and inventory mutation rules are not inferred in FE.
+  Forms may improve UX with local validation, but API errors and field errors
+  must be displayed from the backend contract.
+- Any endpoint, payload, enum, or error-code mismatch must be recorded as a
+  blocker with owner/ETA instead of being silently patched in the UI.
+
+Verification evidence is recorded in
+`docs/evidence/HN-FE-001-REUSABLE-FE-FOUNDATION.md`.

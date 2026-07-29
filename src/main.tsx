@@ -1,7 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
-import { QueryProvider } from "./app/providers/query-provider";
+import { AppProviders } from "./app/providers/AppProviders";
 import { bootstrapAuth } from "./app/bootstrap-auth";
 import "./index.css";
 
@@ -14,8 +14,8 @@ void bootstrapAuth();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <QueryProvider>
+    <AppProviders>
       <App />
-    </QueryProvider>
+    </AppProviders>
   </StrictMode>,
 );

@@ -11,33 +11,37 @@ import { cleanupCreatedQueryClients } from "@/test/test-utils";
 // Mock auth store để tránh persist middleware gây lỗi trong test
 
 // vitest 4.x + vite 8: mock http để tránh axios instance truy cập config ở thời điểm module load
-vi.mock("@/shared/api/http", () => {
-  const createMockHttp = () => {
-    const mock = function () {};
-    mock.get = vi.fn();
-    mock.getPage = vi.fn();
-    mock.post = vi.fn();
-    mock.put = vi.fn();
-    mock.patch = vi.fn();
-    mock.delete = vi.fn();
-    mock.downloadBlob = vi.fn();
-    return mock;
-  };
-  const http = createMockHttp();
-  return { http, default: http };
-});
-
 // Mock axios để tránh lỗi 'Cannot read properties of undefined (reading 'config')'
 vi.mock("axios", () => {
+  const createInterceptor = () => {
+    const interceptor = {
+      handlers: [] as Array<{
+        fulfilled?: (value: unknown) => unknown;
+        rejected?: (error: unknown) => unknown;
+      }>,
+      use: vi.fn((fulfilled, rejected) => {
+        interceptor.handlers.push({ fulfilled, rejected });
+        return interceptor.handlers.length - 1;
+      }),
+      eject: vi.fn((id: number) => {
+        interceptor.handlers[id] = {};
+      }),
+      clear: vi.fn(() => {
+        interceptor.handlers.length = 0;
+      }),
+    };
+    return interceptor;
+  };
   const createMockInstance = () => ({
     get: vi.fn(),
     post: vi.fn(),
     put: vi.fn(),
     patch: vi.fn(),
     delete: vi.fn(),
+    request: vi.fn(),
     interceptors: {
-      request: { use: vi.fn(), eject: vi.fn(), clear: vi.fn() },
-      response: { use: vi.fn(), eject: vi.fn(), clear: vi.fn() },
+      request: createInterceptor(),
+      response: createInterceptor(),
     },
     defaults: { headers: { common: {} } },
   });
@@ -52,24 +56,6 @@ vi.mock("axios", () => {
     create: vi.fn(() => createMockInstance()),
     isAxiosError: vi.fn(() => false),
   };
-});
-
-// Mock @/shared/api/axios để tránh lỗi module load
-vi.mock("@/shared/api/axios", () => {
-  const createMockInstance = () => ({
-    get: vi.fn(),
-    post: vi.fn(),
-    put: vi.fn(),
-    patch: vi.fn(),
-    delete: vi.fn(),
-    interceptors: {
-      request: { use: vi.fn(), eject: vi.fn(), clear: vi.fn() },
-      response: { use: vi.fn(), eject: vi.fn(), clear: vi.fn() },
-    },
-    defaults: { headers: { common: {} } },
-  });
-  const api = createMockInstance();
-  return { api, default: api };
 });
 
 dayjs.extend(customParseFormat);
@@ -173,12 +159,12 @@ vi.mock("antd", () => {
   };
 
   const createButton = (props: any) => {
-    const { children, type, ...rest } = props ?? {};
+    const { children, type, htmlType, ...rest } = props ?? {};
     return React.createElement(
       "button",
       {
         ...rest,
-        type: type === "submit" ? "submit" : "button",
+        type: htmlType === "submit" || type === "submit" ? "submit" : "button",
       },
       children ?? null,
     );
@@ -360,6 +346,14 @@ vi.mock("antd", () => {
 
   const stub = (props: any) => (props?.children ? props.children : null);
   const voidStub = () => null;
+  const createForm = (props: any) => {
+    const { children, onSubmit, onSubmitCapture, ...rest } = props ?? {};
+    return React.createElement(
+      "form",
+      { ...rest, onSubmit, onSubmitCapture },
+      children ?? null,
+    );
+  };
   const renderMenuItems = (
     items: any[] = [],
     onClick?: (info: any) => void,
@@ -388,7 +382,7 @@ vi.mock("antd", () => {
     );
   return {
     default: voidStub,
-    ConfigProvider: Object.assign(voidStub, {
+    ConfigProvider: Object.assign(stub, {
       config: {},
       theme: { config: {} },
     }),
@@ -409,7 +403,7 @@ vi.mock("antd", () => {
     Menu: ({ items, onClick }: any) => renderMenuItems(items, onClick),
     Breadcrumb: stub,
     Avatar: stub,
-    Dropdown: ({ menu, disabled, placement }: any) => {
+    Dropdown: ({ menu, disabled, placement, children }: any) => {
       const [open, setOpen] = React.useState(false);
       const handleClick = () => {
         if (disabled) return;
@@ -427,7 +421,7 @@ vi.mock("antd", () => {
             "data-placement": placement,
             "data-testid": "action-dropdown-trigger",
           },
-          open ? "▾" : "⋯",
+          children ?? (open ? "▾" : "⋯"),
         ),
         open && menu?.items
           ? React.createElement(
@@ -552,7 +546,7 @@ vi.mock("antd", () => {
         destroyAll: () => {},
       },
     ),
-    Form: Object.assign(stub, {
+    Form: Object.assign(createForm, {
       Item: createFormItem,
       List: stub,
       Provider: stub,

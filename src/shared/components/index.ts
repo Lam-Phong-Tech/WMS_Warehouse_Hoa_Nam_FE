@@ -102,6 +102,11 @@ export {
 export { NoPermissionState } from "./feedback/NoPermissionState";
 export type { NoPermissionStateProps } from "./feedback/NoPermissionState";
 
+// ui-states/ - page-level loading, empty, error, and placeholders
+export { PageSkeleton } from "./ui-states/PageSkeleton";
+export { PlaceholderPage } from "./ui-states/PlaceholderPage";
+export { ErrorState, type ErrorStateProps } from "./ui-states/ErrorState";
+
 // permission/ — kiểm soát quyền truy cập
 export { PermissionGuard } from "./permission/PermissionGuard";
 export type { PermissionGuardProps } from "./permission/PermissionGuard";
