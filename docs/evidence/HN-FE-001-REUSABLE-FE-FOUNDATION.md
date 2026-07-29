@@ -6,11 +6,15 @@
 | --- | --- |
 | Parent Task | WWHN-38 - [FE] Khung ung dung, dang nhap, dieu huong va trang thai UI dung chung |
 | Parent Temp Key | HN-FE-001 |
+| Contract Item | PL01-02 |
 | Epic Temp Key | HN-EPIC-02 |
+| BA Pin | HN-PIN-02 |
 | Role | FE1 |
 | Assignee Placeholder | HN-FE-01 |
 | Dependencies | HN-UX-001; HN-FND-001 |
-| Output | Reusable FE Nen tang |
+| Sources | 08_DATA_API_UI_TECHNICAL_HANDOFF; HoaNam_Handoff_v3_9 |
+| Stock Effect | None |
+| Output | Next.js shell equivalent on approved React/Vite baseline; reusable component library; component catalog; DEV evidence |
 
 ## Scope Verified
 
@@ -26,6 +30,14 @@
 - Shared components are exported through `src/shared/components/index.ts`,
   including layout, forms, data display, feedback, permission controls,
   navigation, cards, and page-level UI states.
+- Component catalog is available at `/component-catalog` for authenticated
+  BA/QA users and demonstrates shared table, form, modal, status, scan, toast,
+  loading, empty, error, no-permission, disabled, and confirm states.
+- Contract mismatch disposition: task wording says "Next.js shell", but
+  `docs/WMS_Hoa_Nam_Techstack_Architecture_Dev_Guide.md` explicitly approves
+  React + Vite + TypeScript for Web Admin and says Next.js should not be chosen
+  without a real SEO/public-catalog need. Implementation therefore preserves
+  the approved React/Vite baseline instead of changing framework.
 
 ## Acceptance Criteria Mapping
 
@@ -33,6 +45,7 @@
 | --- | --- |
 | Reusable FE Nen tang reviewed/verified | `AppProviders`, router/layout/session store, API wrapper, shared component barrel |
 | Loading/empty/error/success/disabled/confirm states | `Loading`, `PageSkeleton`, `EmptyState`, `ErrorState`, `ApiErrorAlert`, `ConfirmButton`, `ConfirmDialog`, `ActionButton` |
+| Shared table/form/modal/status/scan/toast documented | `src/modules/component-catalog/ComponentCatalogPage.tsx`, `src/shared/components/README.md`, `docs/WMS_FRONTEND_STANDARDIZATION.md` |
 | RBAC/API error display | `RequirePermission`, `PermissionGuard`, `NoPermissionState`, `ApiErrorAlert`, `api-error.ts`, `axios.ts` |
 | No hard-coded business rules outside contract | FE keeps RBAC as UX aid only; API/business validation remains backend-owned |
 | Lint/build/test suitable for handoff | Run results should be appended below when executed in the branch |
@@ -41,6 +54,10 @@
 ## Blockers / Disposition
 
 - No FE1 P0/P1 blocker identified in the reusable foundation scope.
+- PL01-02 wording mentions Next.js, while architecture baseline mandates
+  React/Vite for Web Admin. Disposition: preserve baseline, implement shell and
+  route guards in existing React/Vite app, and document this mismatch here for
+  BA/Tech Lead review.
 - Endpoint/payload/business-rule gaps outside the current approved contract must
   be raised to BE/BA with owner and ETA before UI behavior is changed.
 

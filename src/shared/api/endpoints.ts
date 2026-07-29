@@ -62,6 +62,12 @@ export const API_ENDPOINTS = {
   // Reports
   REPORTS: "/reports",
   REPORTS_XNT: "/reports/xnt",
+  // Master Data / SKU / Item / Code
+  SKUS: "/skus",
+  SKU: "/skus/:id",
+  SKU_IMPORT_EXCEL: "/skus/import-excel",
+  ITEMS: "/items",
+  PHYSICAL_CODES: "/physical-codes",
   // Audit Logs
   AUDIT_LOGS: "/audit-logs",
 };

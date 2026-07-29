@@ -79,6 +79,11 @@ const ReportsPage = lazy(() =>
     default: m.default,
   })),
 );
+const ComponentCatalogPage = lazy(() =>
+  import("@/modules/component-catalog/ComponentCatalogPage").then((m) => ({
+    default: m.default,
+  })),
+);
 
 // Tài khoản
 const ProfilePage = lazy(() =>
@@ -174,6 +179,13 @@ export const router = createBrowserRouter([
             path: ROUTES.REPORTS,
             element: routeEl(ROUTES.REPORTS, <ReportsPage />),
           },
+          {
+            path: ROUTES.COMPONENT_CATALOG,
+            element: routeEl(
+              ROUTES.COMPONENT_CATALOG,
+              <ComponentCatalogPage />,
+            ),
+          },
           // Profile
           {
             path: ROUTES.PROFILE,
@@ -184,8 +196,13 @@ export const router = createBrowserRouter([
     ],
   },
   {
-    path: ROUTES.NO_PERMISSION,
-    element: withoutDelay(<NoPermissionPage />),
+    element: <ProtectedRoute />,
+    children: [
+      {
+        path: ROUTES.NO_PERMISSION,
+        element: withoutDelay(<NoPermissionPage />),
+      },
+    ],
   },
   {
     path: "*",

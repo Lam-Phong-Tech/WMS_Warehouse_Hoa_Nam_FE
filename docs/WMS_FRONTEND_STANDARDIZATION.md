@@ -122,6 +122,10 @@ Reusable foundation delivered in this repository:
   no-permission routing.
 - `src/app/layouts`: responsive admin shell with sidebar, drawer navigation,
   header, breadcrumb, footer, and profile bootstrap handling.
+- `src/modules/component-catalog/ComponentCatalogPage.tsx`: authenticated demo
+  route at `/component-catalog` for BA/QA review of shared table, form, modal,
+  status, scan, toast, loading, empty, error, no-permission, disabled, and
+  confirm states.
 - `src/shared/store/auth.store.ts`: session state, memory-only access token,
   persisted non-sensitive hints, context, permission codes, and logout cleanup.
 - `src/shared/api`: approved API envelope unwrap, pagination meta handling,

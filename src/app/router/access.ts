@@ -22,6 +22,7 @@ export const ROUTE_PERMISSIONS: Record<string, string | string[] | undefined> =
     [ROUTES.WARRANTY]: ["warranty.manage"],
     [ROUTES.REVERSE]: ["inventory.reversal.post"],
     [ROUTES.REPORTS]: ["report.view"],
+    [ROUTES.COMPONENT_CATALOG]: undefined,
 
     // Shared/system.
     [ROUTES.PROFILE]: undefined,

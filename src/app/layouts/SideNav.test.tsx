@@ -63,7 +63,9 @@ describe("SideNav RBAC filtering", () => {
     expect(screen.getByText("Nhập kho")).toBeInTheDocument();
     expect(screen.queryByText("Bảo hành")).not.toBeInTheDocument();
     expect(screen.queryByText("Báo cáo")).not.toBeInTheDocument();
-    expect(screen.queryByText("Hệ thống")).not.toBeInTheDocument();
+    expect(screen.getByText("Hệ thống")).toBeInTheDocument();
+    expect(screen.getByText("Component catalog")).toBeInTheDocument();
+    expect(screen.queryByText("Nhật ký kiểm tra")).not.toBeInTheDocument();
   });
 
   it("lets Super Admin see all WMS/System menu items even with no permission codes", () => {

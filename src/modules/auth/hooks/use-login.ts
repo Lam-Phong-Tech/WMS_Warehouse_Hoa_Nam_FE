@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { authService } from "@/modules/auth/services/auth.service";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { useSwitchContext } from "./use-switch-context";
@@ -9,8 +9,17 @@ import type {
   SwitchContextRequest,
 } from "@/modules/auth/types/auth.types";
 
+interface LoginLocationState {
+  from?: {
+    pathname?: string;
+    search?: string;
+    hash?: string;
+  };
+}
+
 export function useLogin() {
   const navigate = useNavigate();
+  const location = useLocation();
   const setAuth = useAuthStore((s) => s.setAuth);
   const switchContext = useSwitchContext();
 
@@ -48,7 +57,12 @@ export function useLogin() {
         }
       }
 
-      navigate(ROUTES.DASHBOARD, { replace: true });
+      const from = (location.state as LoginLocationState | null)?.from;
+      const nextPath = from?.pathname
+        ? `${from.pathname}${from.search ?? ""}${from.hash ?? ""}`
+        : ROUTES.DASHBOARD;
+
+      navigate(nextPath, { replace: true });
     },
   });
 }

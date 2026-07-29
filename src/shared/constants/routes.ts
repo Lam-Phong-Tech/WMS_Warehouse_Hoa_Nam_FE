@@ -15,6 +15,7 @@ export const ROUTES = {
   WARRANTY: "/warranty",
   REVERSE: "/reverse",
   REPORTS: "/reports",
+  COMPONENT_CATALOG: "/component-catalog",
   // Organization & Employee Management
   ORG_UNITS: "/org-units",
   EMPLOYEE_ASSIGNMENTS: "/employee-assignments",
