@@ -1,5 +1,5 @@
-import type { CSSProperties, ReactNode } from 'react';
-import { Space } from 'antd';
+import type { CSSProperties, ReactNode } from "react";
+import { Space } from "antd";
 
 export interface FilterBarProps {
   /** Ô lọc (trái): SearchInput, Select, DatePicker... */
@@ -32,11 +32,11 @@ export function FilterBar({
       role="search"
       className={className}
       style={{
-        display: 'flex',
-        flexWrap: 'wrap',
+        display: "flex",
+        flexWrap: "wrap",
         gap: 12,
-        justifyContent: 'space-between',
-        alignItems: 'center',
+        justifyContent: "space-between",
+        alignItems: "center",
         marginBottom: 16,
         ...style,
       }}

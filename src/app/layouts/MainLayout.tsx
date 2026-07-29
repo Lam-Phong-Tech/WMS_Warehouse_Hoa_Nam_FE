@@ -1,17 +1,17 @@
-import { useState, useEffect } from 'react';
-import { Outlet } from 'react-router-dom';
-import { Drawer, Grid, Layout, theme } from 'antd';
-import { useAuthStore } from '@/shared/store/auth.store';
-import { useMe } from '@/modules/auth/hooks/use-me';
-import { SideNav } from '@/app/layouts/SideNav';
-import { AppHeader } from '@/app/layouts/AppHeader';
-import { AppBreadcrumb } from '@/app/layouts/AppBreadcrumb';
-import { AppFooter } from '@/app/layouts/AppFooter';
-import { Loading } from '@/shared/components';
-import { preloadManager } from '@/shared/utils/preload-manager';
-import { layoutStyles } from '@/app/layouts/layout.styles';
+import { useState, useEffect } from "react";
+import { Outlet } from "react-router-dom";
+import { Drawer, Grid, Layout, theme } from "antd";
+import { useAuthStore } from "@/shared/store/auth.store";
+import { useMe } from "@/modules/auth/hooks/use-me";
+import { SideNav } from "@/app/layouts/SideNav";
+import { AppHeader } from "@/app/layouts/AppHeader";
+import { AppBreadcrumb } from "@/app/layouts/AppBreadcrumb";
+import { AppFooter } from "@/app/layouts/AppFooter";
+import { AppShell, Loading } from "@/shared/components";
+import { preloadManager } from "@/shared/utils/preload-manager";
+import { layoutStyles } from "@/app/layouts/layout.styles";
 
-const { Sider, Content } = Layout;
+const { Sider } = Layout;
 const SIDER_WIDTH = 280;
 const SIDER_COLLAPSED_WIDTH = 80;
 
@@ -54,9 +54,9 @@ export function MainLayout() {
     return <Loading />;
   }
 
-  return (
-    <Layout style={layoutStyles.mainLayoutRoot}>
-      {!isMobile && (
+  const sider = (
+    <>
+      {!isMobile ? (
         <Sider
           collapsible
           collapsed={collapsed}
@@ -66,12 +66,12 @@ export function MainLayout() {
           collapsedWidth={SIDER_COLLAPSED_WIDTH}
           style={{
             ...layoutStyles.siderFixed,
-            transition: 'width 0.2s ease',
+            transition: "width 0.2s ease",
           }}
         >
           <SideNav collapsed={collapsed} />
         </Sider>
-      )}
+      ) : null}
 
       <Drawer
         placement="left"
@@ -81,7 +81,7 @@ export function MainLayout() {
         size={SIDER_WIDTH}
         autoFocus
         aria-label="Menu điều hướng"
-        {...{ role: 'navigation' }}
+        {...{ role: "navigation" }}
         styles={{
           body: layoutStyles.drawerBody,
           mask: layoutStyles.siderDrawerMask,
@@ -89,37 +89,37 @@ export function MainLayout() {
       >
         <SideNav onNavigate={() => setDrawerOpen(false)} />
       </Drawer>
+    </>
+  );
 
-      <Layout
-        style={
-          !isMobile
-            ? layoutStyles.siderOffset(
-                collapsed ? SIDER_COLLAPSED_WIDTH : SIDER_WIDTH,
-              )
-            : undefined
-        }
-      >
+  return (
+    <AppShell
+      sider={sider}
+      header={
         <AppHeader
           isMobile={isMobile}
           collapsed={collapsed}
           onToggle={toggleSidebar}
         />
-
-        <Content style={layoutStyles.contentMargin(isMobile)}>
-          <AppBreadcrumb />
-
-          <div
-            style={{
-              ...layoutStyles.contentBody(colorBgContainer, borderRadiusLG),
-              animation: 'fadeIn 0.3s ease',
-            }}
-          >
-            <Outlet />
-          </div>
-        </Content>
-
-        <AppFooter />
-      </Layout>
-    </Layout>
+      }
+      breadcrumb={<AppBreadcrumb />}
+      footer={<AppFooter />}
+      responsivePadding={false}
+      rootStyle={layoutStyles.mainLayoutRoot}
+      mainStyle={
+        !isMobile
+          ? layoutStyles.siderOffset(
+              collapsed ? SIDER_COLLAPSED_WIDTH : SIDER_WIDTH,
+            )
+          : undefined
+      }
+      contentStyle={layoutStyles.contentMargin(isMobile)}
+      bodyStyle={{
+        ...layoutStyles.contentBody(colorBgContainer, borderRadiusLG),
+        animation: "fadeIn 0.3s ease",
+      }}
+    >
+      <Outlet />
+    </AppShell>
   );
 }

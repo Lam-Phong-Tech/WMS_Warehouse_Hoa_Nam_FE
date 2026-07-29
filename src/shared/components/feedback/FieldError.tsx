@@ -1,4 +1,4 @@
-import type { CommonProps } from '../cards/types';
+import type { CommonProps } from "../cards/types";
 
 export interface FieldErrorProps extends CommonProps {
   /** Thông điệp lỗi của field; falsy → không render. */
@@ -12,7 +12,7 @@ export function FieldError({ message, className }: FieldErrorProps) {
     <div
       role="alert"
       className={className}
-      style={{ color: '#ff4d4f', fontSize: 12, marginTop: 4 }}
+      style={{ color: "#ff4d4f", fontSize: 12, marginTop: 4 }}
     >
       {message}
     </div>

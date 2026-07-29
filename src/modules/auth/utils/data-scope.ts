@@ -1,5 +1,5 @@
-import { useAuthStore } from '@/shared/store/auth.store';
-import type { AuthContext } from '@/modules/auth/types/auth.types';
+import { useAuthStore } from "@/shared/store/auth.store";
+import type { AuthContext } from "@/modules/auth/types/auth.types";
 
 /**
  * Phạm vi dữ liệu hiện tại (suy từ bối cảnh đang chọn ở ContextSwitcher).
@@ -36,7 +36,7 @@ export function useDataScope(): DataScope | null {
  * KHÔNG cần dùng hàm này.
  */
 export function scopeToParams(scope: DataScope | null): Record<string, number> {
-  if (!scope || scope.scopeType === 'he_thong') return {};
+  if (!scope || scope.scopeType === "he_thong") return {};
   const params: Record<string, number> = {};
   if (scope.orgUnitId != null) params.org_unit_id = scope.orgUnitId;
   if (scope.departmentId != null) params.department_id = scope.departmentId;

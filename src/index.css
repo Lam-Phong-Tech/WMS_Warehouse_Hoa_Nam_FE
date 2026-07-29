@@ -1,6 +1,6 @@
 :root {
   font-family:
-    'Inter', system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    "Inter", system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -25,7 +25,7 @@ body,
 
 /* Toast (sonner): khi ẩn/kéo xuống thì trượt xuống dưới thay vì lên trên */
 .app-toaster
-  [data-sonner-toast][data-y-position='top'][data-removed='true'][data-swipe-out='false'] {
+  [data-sonner-toast][data-y-position="top"][data-removed="true"][data-swipe-out="false"] {
   --y: translateY(100%) !important;
 }
 

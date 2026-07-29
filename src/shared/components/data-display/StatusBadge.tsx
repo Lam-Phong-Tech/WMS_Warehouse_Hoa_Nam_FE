@@ -1,4 +1,4 @@
-import { Tag } from 'antd';
+import { Tag } from "antd";
 
 export interface StatusBadgeProps {
   /** Trạng thái hoạt động (true) hay ngừng (false). */
@@ -13,8 +13,8 @@ export interface StatusBadgeProps {
  */
 export function StatusBadge({
   active,
-  activeLabel = 'Hoạt động',
-  inactiveLabel = 'Ngừng',
+  activeLabel = "Hoạt động",
+  inactiveLabel = "Ngừng",
 }: StatusBadgeProps) {
   return active ? (
     <Tag color="green">{activeLabel}</Tag>

@@ -1,8 +1,8 @@
-import { Breadcrumb } from 'antd';
-import { Link, useLocation } from 'react-router-dom';
-import { HomeOutlined } from '@ant-design/icons';
-import { getBreadcrumb } from '@/app/layouts/menu';
-import { layoutStyles } from '@/app/layouts/layout.styles';
+import { Breadcrumb } from "antd";
+import { Link, useLocation } from "react-router-dom";
+import { HomeOutlined } from "@ant-design/icons";
+import { getBreadcrumb } from "@/app/layouts/menu";
+import { layoutStyles } from "@/app/layouts/layout.styles";
 
 /** Breadcrumb tự sinh theo route hiện tại (dựa trên cấu hình MENU). */
 export function AppBreadcrumb() {

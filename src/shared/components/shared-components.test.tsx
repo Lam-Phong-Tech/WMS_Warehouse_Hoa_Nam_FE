@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import {
   PageHeader,
+  AppShell,
   EmptyState,
   ScanInput,
   StatusBadge,
@@ -25,6 +26,28 @@ describe("PageHeader", () => {
     expect(
       screen.getByRole("button", { name: /thêm mới/i }),
     ).toBeInTheDocument();
+  });
+});
+
+describe("AppShell", () => {
+  it("renders reusable frame slots and body wrapper", () => {
+    render(
+      <AppShell
+        sider={<nav>Menu</nav>}
+        header={<header>Header</header>}
+        breadcrumb={<div>Breadcrumb</div>}
+        footer={<footer>Footer</footer>}
+        bodyStyle={{ minHeight: 120 }}
+      >
+        <main>Page body</main>
+      </AppShell>,
+    );
+
+    expect(screen.getByText("Menu")).toBeInTheDocument();
+    expect(screen.getByText("Header")).toBeInTheDocument();
+    expect(screen.getByText("Breadcrumb")).toBeInTheDocument();
+    expect(screen.getByText("Page body")).toBeInTheDocument();
+    expect(screen.getByText("Footer")).toBeInTheDocument();
   });
 });
 

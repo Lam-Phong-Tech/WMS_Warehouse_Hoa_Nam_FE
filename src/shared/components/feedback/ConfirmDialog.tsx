@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react';
-import { Modal } from 'antd';
+import type { ReactNode } from "react";
+import { Modal } from "antd";
 
 export interface ConfirmDialogOptions {
   title: ReactNode;
@@ -21,8 +21,8 @@ export interface ConfirmDialogOptions {
 export function confirmDialog({
   title,
   content,
-  okText = 'Đồng ý',
-  cancelText = 'Huỷ',
+  okText = "Đồng ý",
+  cancelText = "Huỷ",
   danger = false,
   onOk,
   onCancel,

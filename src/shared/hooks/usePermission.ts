@@ -1,14 +1,14 @@
-import { useMemo } from 'react';
+import { useMemo } from "react";
 import {
   type PermissionMode,
   type PermissionContext,
   getPermissionCode,
-} from '@/shared/types/permission';
+} from "@/shared/types/permission";
 import {
   usePermissionState,
   hasPermission,
-} from '@/modules/auth/utils/permission';
-import { hasScopeForAction } from '@/shared/types/permission.scope';
+} from "@/modules/auth/utils/permission";
+import { hasScopeForAction } from "@/shared/types/permission.scope";
 
 /**
  * @internal Không import file này trực tiếp trong code ứng dụng — dùng
@@ -55,7 +55,7 @@ export function usePermission(context: PermissionContext): {
   /** Permission code đang check */
   permissionCode: string;
 } {
-  const { module, action, permissionCode: customCode, mode = 'hide' } = context;
+  const { module, action, permissionCode: customCode, mode = "hide" } = context;
 
   // Resolve permission code (hàm thuần, không phải hook)
   const resolvedCode = useMemo(() => {
@@ -64,7 +64,7 @@ export function usePermission(context: PermissionContext): {
       return getPermissionCode(action, module);
     }
     // Fallback: dùng chính module name (không nên xảy ra)
-    return (module ?? '').toUpperCase();
+    return (module ?? "").toUpperCase();
   }, [module, action, customCode]);
 
   // Đọc state quyền TẬP TRUNG (gọi hook đúng 1 lần, không điều kiện)
@@ -80,7 +80,7 @@ export function usePermission(context: PermissionContext): {
   // User thường bị enforce scope theo MODULE_SCOPE_REQUIREMENTS.
   const scopePassed = hasScopeForAction(
     state.currentScopeType,
-    module ?? '',
+    module ?? "",
     action,
     state.isSuperAdmin,
   );
@@ -91,8 +91,8 @@ export function usePermission(context: PermissionContext): {
   return {
     can,
     mode,
-    isHidden: mode === 'hide' && !can,
-    isDisabled: mode === 'disable' && !can,
+    isHidden: mode === "hide" && !can,
+    isDisabled: mode === "disable" && !can,
     permissionCode: resolvedCode,
   };
 }

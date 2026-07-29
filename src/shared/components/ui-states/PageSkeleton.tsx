@@ -1,4 +1,4 @@
-import { Skeleton } from 'antd';
+import { Skeleton } from "antd";
 
 /**
  * Skeleton nhẹ cho Suspense fallback khi lazy-load page chunk.

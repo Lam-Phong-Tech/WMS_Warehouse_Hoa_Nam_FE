@@ -1,10 +1,10 @@
-import type { ReactNode } from 'react';
-import React from 'react';
-import { usePermission } from '@/shared/hooks/usePermission';
+import type { ReactNode } from "react";
+import React from "react";
+import { usePermission } from "@/shared/hooks/usePermission";
 import type {
   PermissionMode,
   PermissionAction,
-} from '@/shared/types/permission';
+} from "@/shared/types/permission";
 
 export interface PermissionGuardProps {
   children: ReactNode;
@@ -74,10 +74,10 @@ export function PermissionGuard({
   module,
   action,
   permissionCode,
-  mode = 'hide',
+  mode = "hide",
   fallback = null,
   className,
-  disabledTooltip = 'Bạn không có quyền thực hiện thao tác này',
+  disabledTooltip = "Bạn không có quyền thực hiện thao tác này",
 }: PermissionGuardProps) {
   const { isHidden, isDisabled } = usePermission({
     module,
@@ -87,16 +87,16 @@ export function PermissionGuard({
   });
 
   // Hide mode: không render gì cả
-  if (mode === 'hide' && isHidden) {
+  if (mode === "hide" && isHidden) {
     return <>{fallback}</>;
   }
 
   // Disable mode: wrap children và disable nếu cần
-  if (mode === 'disable' && isDisabled) {
+  if (mode === "disable" && isDisabled) {
     return (
       <span
         className={className}
-        style={{ opacity: 0.5, cursor: 'not-allowed' }}
+        style={{ opacity: 0.5, cursor: "not-allowed" }}
         title={disabledTooltip}
       >
         {cloneAndDisable(children)}
@@ -116,7 +116,7 @@ function cloneAndDisable(children: ReactNode): ReactNode {
     if (!React.isValidElement(child)) return child;
 
     // Nếu là button hoặc element có thể disable
-    if (child.type === 'button' || child.type === 'input') {
+    if (child.type === "button" || child.type === "input") {
       return React.cloneElement(
         child as React.ReactElement<{ disabled?: boolean }>,
         {
@@ -129,7 +129,7 @@ function cloneAndDisable(children: ReactNode): ReactNode {
 
     // Nếu là Ant Design Button
     const typeStr = String(child.type);
-    if (typeStr.includes('Button') || typeStr.includes('button')) {
+    if (typeStr.includes("Button") || typeStr.includes("button")) {
       return React.cloneElement(
         child as React.ReactElement<{ disabled?: boolean }>,
         {
@@ -142,8 +142,8 @@ function cloneAndDisable(children: ReactNode): ReactNode {
     // Recursively process children
     if (
       child.props &&
-      typeof child.props === 'object' &&
-      'children' in child.props
+      typeof child.props === "object" &&
+      "children" in child.props
     ) {
       return React.cloneElement(
         child as React.ReactElement<{ children?: ReactNode }>,

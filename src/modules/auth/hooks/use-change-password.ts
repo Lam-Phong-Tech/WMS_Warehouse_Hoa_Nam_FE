@@ -1,8 +1,8 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
-import { authService } from '@/modules/auth/services/auth.service';
-import { ROUTES } from '@/shared/constants/routes';
-import type { ChangePasswordRequest } from '@/modules/auth/types/auth.types';
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
+import { authService } from "@/modules/auth/services/auth.service";
+import { ROUTES } from "@/shared/constants/routes";
+import type { ChangePasswordRequest } from "@/modules/auth/types/auth.types";
 
 /**
  * POST /auth/change-password — bắt buộc dùng khi password_change_required=true
@@ -18,7 +18,7 @@ export function useChangePassword() {
     mutationFn: (data: ChangePasswordRequest) =>
       authService.changePassword(data),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
+      await queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
       navigate(ROUTES.DASHBOARD, { replace: true });
     },
   });

@@ -1,5 +1,5 @@
-import { redirect } from 'react-router-dom';
-import { useAuthStore } from '@/shared/store/auth.store';
+import { redirect } from "react-router-dom";
+import { useAuthStore } from "@/shared/store/auth.store";
 
 /**
  * Skeleton Middleware
@@ -16,7 +16,7 @@ export function requireAuthMiddleware() {
   const token = useAuthStore.getState().token;
   if (!token) {
     // Nếu chưa đăng nhập, redirect về trang login
-    return redirect('/login');
+    return redirect("/login");
   }
   return null;
 }
@@ -26,7 +26,7 @@ export function requireRoleMiddleware(roleName: string) {
   const hasRole = isSuperAdmin || currentContext?.role_name === roleName;
   if (!hasRole) {
     // Nếu không có quyền truy cập, redirect về 403 hoặc trang chủ
-    return redirect('/403');
+    return redirect("/403");
   }
   return null;
 }

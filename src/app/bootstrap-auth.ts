@@ -1,5 +1,5 @@
-import { authService } from '@/modules/auth/services/auth.service';
-import { useAuthStore } from '@/shared/store/auth.store';
+import { authService } from "@/modules/auth/services/auth.service";
+import { useAuthStore } from "@/shared/store/auth.store";
 
 /**
  * Rehydrate persisted, non-sensitive session hints, then try to restore the

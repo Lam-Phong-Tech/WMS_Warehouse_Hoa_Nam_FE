@@ -1,7 +1,7 @@
-import type { ReactNode } from 'react';
-import type { Control, FieldValues, Path } from 'react-hook-form';
-import { Input } from 'antd';
-import { FormField } from '@/shared/components/forms/FormField';
+import type { ReactNode } from "react";
+import type { Control, FieldValues, Path } from "react-hook-form";
+import { Input } from "antd";
+import { FormField } from "@/shared/components/forms/FormField";
 
 const { TextArea } = Input;
 

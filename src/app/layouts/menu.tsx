@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ReactNode } from "react";
 import {
   ProfileOutlined,
   SettingOutlined,
@@ -14,10 +14,11 @@ import {
   ExperimentOutlined,
   ToolOutlined,
   SwapOutlined,
-} from '@ant-design/icons';
-import type { MenuProps } from 'antd';
-import { ROUTES } from '@/shared/constants/routes';
-import { ROUTE_PERMISSIONS } from '@/app/router/access';
+  UserOutlined,
+} from "@ant-design/icons";
+import type { MenuProps } from "antd";
+import { ROUTES } from "@/shared/constants/routes";
+import { ROUTE_PERMISSIONS } from "@/app/router/access";
 
 export interface AppMenuItem {
   key: string;
@@ -30,88 +31,101 @@ export interface AppMenuItem {
 // Nguồn duy nhất cho cả sidebar và breadcrumb.
 export const MENU: AppMenuItem[] = [
   {
-    key: 'wms',
-    label: 'Quản lý kho · WMS',
+    key: "wms",
+    label: "Quản lý kho · WMS",
     icon: <ShopOutlined />,
     children: [
       {
         key: ROUTES.DASHBOARD,
-        label: 'Tổng quan',
+        label: "Tổng quan",
         icon: <BarChartOutlined />,
         permission: ROUTE_PERMISSIONS[ROUTES.DASHBOARD],
       },
       {
-        key: ROUTES.MASTER,
-        label: 'Danh mục & SKU',
+        key: ROUTES.MASTER_DATA,
+        label: "Danh mục & SKU",
         icon: <ProfileOutlined />,
-        permission: ROUTE_PERMISSIONS[ROUTES.MASTER],
+        permission: ROUTE_PERMISSIONS[ROUTES.MASTER_DATA],
       },
       {
-        key: ROUTES.PHYSICAL_CODES,
-        label: 'Mã vật lý',
+        key: ROUTES.SCAN,
+        label: "Mã vật lý",
         icon: <BarcodeOutlined />,
-        permission: ROUTE_PERMISSIONS[ROUTES.PHYSICAL_CODES],
+        permission: ROUTE_PERMISSIONS[ROUTES.SCAN],
       },
       {
         key: ROUTES.INBOUND,
-        label: 'Nhập kho',
+        label: "Nhập kho",
         icon: <InboxOutlined />,
         permission: ROUTE_PERMISSIONS[ROUTES.INBOUND],
       },
       {
         key: ROUTES.PUTAWAY,
-        label: 'Cất hàng',
+        label: "Cất hàng",
         icon: <SwapOutlined />,
         permission: ROUTE_PERMISSIONS[ROUTES.PUTAWAY],
       },
       {
         key: ROUTES.OUTBOUND,
-        label: 'Xuất kho',
+        label: "Xuất kho",
         icon: <StockOutlined />,
         permission: ROUTE_PERMISSIONS[ROUTES.OUTBOUND],
       },
       {
         key: ROUTES.INVENTORY,
-        label: 'Tồn & truy vết',
+        label: "Tồn & truy vết",
         icon: <FundOutlined />,
         permission: ROUTE_PERMISSIONS[ROUTES.INVENTORY],
       },
       {
         key: ROUTES.STOCKTAKE,
-        label: 'Kiểm kê',
+        label: "Kiểm kê",
         icon: <ExperimentOutlined />,
         permission: ROUTE_PERMISSIONS[ROUTES.STOCKTAKE],
       },
       {
         key: ROUTES.WARRANTY,
-        label: 'Bảo hành',
+        label: "Bảo hành",
         icon: <ToolOutlined />,
         permission: ROUTE_PERMISSIONS[ROUTES.WARRANTY],
       },
       {
-        key: ROUTES.REVERSAL,
-        label: 'Đảo ngược',
+        key: ROUTES.REVERSE,
+        label: "Đảo ngược",
         icon: <RollbackOutlined />,
-        permission: ROUTE_PERMISSIONS[ROUTES.REVERSAL],
+        permission: ROUTE_PERMISSIONS[ROUTES.REVERSE],
       },
       {
         key: ROUTES.REPORTS,
-        label: 'Báo cáo',
+        label: "Báo cáo",
         icon: <FileTextOutlined />,
         permission: ROUTE_PERMISSIONS[ROUTES.REPORTS],
       },
     ],
   },
   {
-    key: 'system',
-    label: 'Hệ thống',
+    key: "system",
+    label: "Hệ thống",
     icon: <SettingOutlined />,
     children: [
       {
         key: ROUTES.AUDIT_LOGS,
-        label: 'Nhật ký kiểm tra',
+        label: "Nhật ký kiểm tra",
         icon: <AuditOutlined />,
         permission: ROUTE_PERMISSIONS[ROUTES.AUDIT_LOGS],
+      },
+    ],
+  },
+  {
+    key: "account",
+    label: "Tài khoản",
+    icon: <UserOutlined />,
+    children: [
+      {
+        key: ROUTES.PROFILE,
+        label: "Hồ sơ cá nhân",
+        icon: <UserOutlined />,
+        permission: ROUTE_PERMISSIONS[ROUTES.PROFILE],
       },
     ],
   },
@@ -140,7 +154,7 @@ export function filterMenu(
 }
 
 /** Chuyển cấu hình sang dạng items của antd Menu. */
-export function toMenuItems(items: AppMenuItem[]): MenuProps['items'] {
+export function toMenuItems(items: AppMenuItem[]): MenuProps["items"] {
   return items.map((it) => ({
     key: it.key,
     icon: it.icon,
@@ -155,40 +169,40 @@ export interface Crumb {
 }
 
 function splitKey(key: string): { path: string; query: string } {
-  const idx = key.indexOf('?');
+  const idx = key.indexOf("?");
   return idx === -1
-    ? { path: key, query: '' }
+    ? { path: key, query: "" }
     : { path: key.slice(0, idx), query: key.slice(idx) };
 }
 
 function matchesPath(
   key: string,
   pathname: string,
-  search: string = '',
+  search: string = "",
 ): boolean {
   const { path, query } = splitKey(key);
   const pathMatches =
-    path === pathname || (path !== '/' && pathname.startsWith(`${path}/`));
+    path === pathname || (path !== "/" && pathname.startsWith(`${path}/`));
   if (!pathMatches) return false;
-  return query === '' || query === search;
+  return query === "" || query === search;
 }
 
 function findMatchingItem(
   items: AppMenuItem[],
   pathname: string,
-  search: string = '',
+  search: string = "",
 ): AppMenuItem | undefined {
   const specific = items.find(
-    (c) => splitKey(c.key).query !== '' && matchesPath(c.key, pathname, search),
+    (c) => splitKey(c.key).query !== "" && matchesPath(c.key, pathname, search),
   );
   if (specific) return specific;
   return items.find(
-    (c) => splitKey(c.key).query === '' && matchesPath(c.key, pathname, search),
+    (c) => splitKey(c.key).query === "" && matchesPath(c.key, pathname, search),
   );
 }
 
 /** Tìm "vết" breadcrumb cho path hiện tại dựa trên cấu hình menu. */
-export function getBreadcrumb(pathname: string, search: string = ''): Crumb[] {
+export function getBreadcrumb(pathname: string, search: string = ""): Crumb[] {
   for (const top of MENU) {
     if (matchesPath(top.key, pathname, search))
       return [{ label: top.label, path: top.key }];
@@ -201,14 +215,14 @@ export function getBreadcrumb(pathname: string, search: string = ''): Crumb[] {
 }
 
 /** Các submenu cần mở sẵn theo path hiện tại. */
-export function getOpenKeys(pathname: string, search: string = ''): string[] {
+export function getOpenKeys(pathname: string, search: string = ""): string[] {
   return MENU.filter((top) =>
     top.children?.some((c) => matchesPath(c.key, pathname, search)),
   ).map((top) => top.key);
 }
 
 /** Tìm key menu cha để highlight đúng selectedKeys cho sub-route. */
-export function getSelectedKey(pathname: string, search: string = ''): string {
+export function getSelectedKey(pathname: string, search: string = ""): string {
   for (const top of MENU) {
     if (top.key === pathname) return top.key;
     const child = findMatchingItem(top.children ?? [], pathname, search);

@@ -1,16 +1,16 @@
-import axios from 'axios';
-import type { AxiosError, InternalAxiosRequestConfig } from 'axios';
-import { useAuthStore } from '@/shared/store/auth.store';
-import { memoryStorage } from '@/shared/lib/memory-storage';
-import { ROUTES } from '@/shared/constants/routes';
+import axios from "axios";
+import type { AxiosError, InternalAxiosRequestConfig } from "axios";
+import { useAuthStore } from "@/shared/store/auth.store";
+import { memoryStorage } from "@/shared/lib/memory-storage";
+import { ROUTES } from "@/shared/constants/routes";
 import {
   getErrorCode,
   type ApiErrorResponse,
-} from '@/shared/types/api-response';
-import { API_ENDPOINTS } from '@/shared/api/endpoints';
+} from "@/shared/types/api-response";
+import { API_ENDPOINTS } from "@/shared/api/endpoints";
 
 // Extend AxiosError type to include custom flags
-declare module 'axios' {
+declare module "axios" {
   interface AxiosError {
     _isNoPermission?: boolean;
     _isValidationError?: boolean;
@@ -81,23 +81,23 @@ api.interceptors.request.use((config) => {
   // BE enforce header này (trả 400 IDEMPOTENCY_KEY_REQUIRED nếu thiếu).
   // Mỗi lần người dùng bấm nút thật sự (không phải retry mạng) phải sinh key MỚI
   // để không bị trả lại response cũ từ cache 24h.
-  const url = config.url || '';
+  const url = config.url || "";
   const idempotencyMatch = url.match(
     /^\/employees\/(\d+)\/(account|account\/reissue-temporary-credential)$/,
   );
   if (idempotencyMatch) {
     const employeeId = idempotencyMatch[1];
     const isReissue =
-      idempotencyMatch[2] === 'account/reissue-temporary-credential';
+      idempotencyMatch[2] === "account/reissue-temporary-credential";
     const timestamp = Date.now();
 
     if (isReissue) {
       // Reissue: BE dùng account_id, nhưng FE không có sẵn ở đây nên dùng
       // employee_id + timestamp. Đủ unique cho mỗi lần bấm nút thật.
-      config.headers['Idempotency-Key'] = `reissue:${employeeId}:${timestamp}`;
+      config.headers["Idempotency-Key"] = `reissue:${employeeId}:${timestamp}`;
     } else {
       // Tạo mới: theo gợi ý BA doc §11
-      config.headers['Idempotency-Key'] =
+      config.headers["Idempotency-Key"] =
         `employee:${employeeId}:initial-account:v1`;
     }
   }
@@ -145,7 +145,7 @@ api.interceptors.response.use(
       // Đọc cả error_code root-level lẫn error.code nested (BE publish song song
       // 2 contract lỗi tuỳ module — xem api-response.ts).
       if (
-        getErrorCode(data) === 'PASSWORD_CHANGE_REQUIRED' &&
+        getErrorCode(data) === "PASSWORD_CHANGE_REQUIRED" &&
         window.location.pathname !== ROUTES.CHANGE_PASSWORD
       ) {
         window.location.assign(ROUTES.CHANGE_PASSWORD);

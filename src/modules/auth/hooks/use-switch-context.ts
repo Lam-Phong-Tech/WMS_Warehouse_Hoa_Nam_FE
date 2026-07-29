@@ -1,8 +1,8 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { QueryKey } from '@tanstack/react-query';
-import { authService } from '@/modules/auth/services/auth.service';
-import { useAuthStore } from '@/shared/store/auth.store';
-import type { SwitchContextRequest } from '@/modules/auth/types/auth.types';
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import type { QueryKey } from "@tanstack/react-query";
+import { authService } from "@/modules/auth/services/auth.service";
+import { useAuthStore } from "@/shared/store/auth.store";
+import type { SwitchContextRequest } from "@/modules/auth/types/auth.types";
 
 /**
  * Query key gốc (queryKey[0]) của các domain ĐÃ XÁC NHẬN không lọc theo
@@ -19,13 +19,13 @@ import type { SwitchContextRequest } from '@/modules/auth/types/auth.types';
  *   AUDIT_VIEW tại thời điểm gọi API, nội dung không lọc theo org_unit/
  *   department/warehouse của context đang chọn.
  */
-const CONTEXT_INDEPENDENT_QUERY_ROOTS: readonly string[] = ['audit-logs'];
+const CONTEXT_INDEPENDENT_QUERY_ROOTS: readonly string[] = ["audit-logs"];
 
 /** Tách riêng khỏi hook để unit test được mà không cần mock QueryClient. */
 export function isContextScopedQuery(queryKey: QueryKey): boolean {
   const root = queryKey[0];
   return !(
-    typeof root === 'string' && CONTEXT_INDEPENDENT_QUERY_ROOTS.includes(root)
+    typeof root === "string" && CONTEXT_INDEPENDENT_QUERY_ROOTS.includes(root)
   );
 }
 

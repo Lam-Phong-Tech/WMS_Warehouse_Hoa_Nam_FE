@@ -1,7 +1,7 @@
-import { LockOutlined } from '@ant-design/icons';
-import { Button, Result, Space, Typography } from 'antd';
-import { useNavigate } from 'react-router-dom';
-import { ROUTES } from '@/shared/constants/routes';
+import { LockOutlined } from "@ant-design/icons";
+import { Button, Result, Space, Typography } from "antd";
+import { useNavigate } from "react-router-dom";
+import { ROUTES } from "@/shared/constants/routes";
 
 const { Paragraph } = Typography;
 
@@ -32,9 +32,9 @@ export interface NoPermissionStateProps {
 }
 
 export function NoPermissionState({
-  title = 'Bạn không có quyền truy cập',
-  description = 'Bạn không có quyền thực hiện thao tác này. Liên hệ quản trị viên để được cấp quyền.',
-  actionText = 'Quay lại',
+  title = "Bạn không có quyền truy cập",
+  description = "Bạn không có quyền thực hiện thao tác này. Liên hệ quản trị viên để được cấp quyền.",
+  actionText = "Quay lại",
   onAction,
   showHomeButton = true,
   compact = false,
@@ -56,17 +56,17 @@ export function NoPermissionState({
   return (
     <div
       style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: compact ? undefined : '400px',
-        padding: compact ? '24px 0' : 24,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        minHeight: compact ? undefined : "400px",
+        padding: compact ? "24px 0" : 24,
       }}
     >
       <Result
         icon={
           <LockOutlined
-            style={{ color: '#faad14', fontSize: compact ? 40 : 64 }}
+            style={{ color: "#faad14", fontSize: compact ? 40 : 64 }}
           />
         }
         title={

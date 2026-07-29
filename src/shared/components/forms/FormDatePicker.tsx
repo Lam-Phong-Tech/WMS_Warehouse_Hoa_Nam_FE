@@ -1,10 +1,10 @@
-import type { Control, FieldValues, Path } from 'react-hook-form';
-import { DatePicker } from 'antd';
-import { FormField } from '@/shared/components/forms/FormField';
-import type { FormFieldProps } from '@/shared/components/forms/FormField';
+import type { Control, FieldValues, Path } from "react-hook-form";
+import { DatePicker } from "antd";
+import { FormField } from "@/shared/components/forms/FormField";
+import type { FormFieldProps } from "@/shared/components/forms/FormField";
 
 export interface FormDatePickerProps<T extends FieldValues> extends Partial<
-  Pick<FormFieldProps<T>, 'label' | 'help' | 'tooltip' | 'required'>
+  Pick<FormFieldProps<T>, "label" | "help" | "tooltip" | "required">
 > {
   control: Control<T>;
   name: Path<T>;
@@ -12,7 +12,7 @@ export interface FormDatePickerProps<T extends FieldValues> extends Partial<
   format?: string;
   showTime?: boolean;
   disabled?: boolean;
-  size?: 'small' | 'middle' | 'large';
+  size?: "small" | "middle" | "large";
 }
 
 /**
@@ -24,10 +24,10 @@ export function FormDatePicker<T extends FieldValues>({
   name,
   label,
   placeholder,
-  format = 'DD/MM/YYYY',
+  format = "DD/MM/YYYY",
   showTime = false,
   disabled = false,
-  size = 'large',
+  size = "large",
   help,
   tooltip,
   required,
@@ -49,7 +49,7 @@ export function FormDatePicker<T extends FieldValues>({
           showTime={showTime}
           disabled={disabled}
           size={size}
-          style={{ width: '100%' }}
+          style={{ width: "100%" }}
           autoComplete="off"
         />
       )}

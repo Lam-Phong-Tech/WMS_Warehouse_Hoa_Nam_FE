@@ -9,43 +9,6 @@ import customParseFormat from "dayjs/plugin/customParseFormat";
 import { cleanupCreatedQueryClients } from "@/test/test-utils";
 
 // Mock auth store để tránh persist middleware gây lỗi trong test
-const mockAuthState = {
-  token: null,
-  user: null,
-  contexts: [] as any[],
-  currentContext: null as {
-    scope_type?: string;
-    org_unit_id?: number | null;
-    department_id?: number | null;
-    permission_codes?: string[];
-  } | null,
-  isAuthenticated: false,
-  isBootstrapped: true,
-  profile: null,
-  permissionCodes: [] as string[],
-  isSuperAdmin: false,
-  isProfileLoaded: false,
-};
-const initialMockAuthState = { ...mockAuthState };
-const mockAuthStore = Object.assign(
-  <T>(selector: (state: typeof mockAuthState) => T) => selector(mockAuthState),
-  {
-    getState: () => ({
-      ...mockAuthState,
-      logout: () => {
-        Object.assign(mockAuthState, initialMockAuthState);
-      },
-    }),
-    setState: (next: Partial<typeof mockAuthState>) => {
-      Object.assign(mockAuthState, next);
-    },
-    persist: { rehydrate: () => {} },
-  },
-);
-
-vi.mock("@/shared/store/auth.store", () => ({
-  useAuthStore: mockAuthStore,
-}));
 
 // vitest 4.x + vite 8: mock http để tránh axios instance truy cập config ở thời điểm module load
 vi.mock("@/shared/api/http", () => {
@@ -397,6 +360,32 @@ vi.mock("antd", () => {
 
   const stub = (props: any) => (props?.children ? props.children : null);
   const voidStub = () => null;
+  const renderMenuItems = (
+    items: any[] = [],
+    onClick?: (info: any) => void,
+  ): React.ReactElement =>
+    React.createElement(
+      "ul",
+      { role: "menu" },
+      items.map((item: any) =>
+        React.createElement(
+          "li",
+          { key: item.key, role: "none" },
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              role: "menuitem",
+              onClick: () => onClick?.({ key: item.key }),
+            },
+            item.label,
+          ),
+          item.children?.length
+            ? renderMenuItems(item.children, onClick)
+            : null,
+        ),
+      ),
+    );
   return {
     default: voidStub,
     ConfigProvider: Object.assign(voidStub, {
@@ -417,7 +406,7 @@ vi.mock("antd", () => {
       darkAlgorithm: {},
       config: {},
     },
-    Menu: stub,
+    Menu: ({ items, onClick }: any) => renderMenuItems(items, onClick),
     Breadcrumb: stub,
     Avatar: stub,
     Dropdown: ({ menu, disabled, placement }: any) => {
@@ -848,37 +837,54 @@ vi.mock("sonner", () => ({
 vi.mock("@ant-design/icons", () => {
   const stub = () => null;
   const icons: Record<string, any> = {};
-  "AimOutlined ApartmentOutlined AppstoreOutlined ArrowRightOutlined AuditOutlined BankOutlined BarChartOutlined BarcodeOutlined BellOutlined CarOutlined CheckCircleOutlined CheckOutlined CloseCircleOutlined CloseOutlined ClusterOutlined CopyOutlined DeleteOutlined DownOutlined DownloadOutlined EditOutlined EnvironmentOutlined ExclamationCircleFilled ExpandAltOutlined ExperimentOutlined ExportOutlined EyeOutlined FileExcelOutlined FilePdfOutlined FileSearchOutlined FileTextOutlined FundOutlined HomeOutlined IdcardOutlined ImportOutlined InboxOutlined KeyOutlined LockOutlined LogoutOutlined MailOutlined MenuFoldOutlined MenuUnfoldOutlined NodeIndexOutlined PlayCircleOutlined PlusOutlined ProfileOutlined ReloadOutlined RollbackOutlined SafetyCertificateOutlined SaveOutlined SearchOutlined SendOutlined SettingOutlined ShopOutlined ShoppingCartOutlined ShrinkOutlined SolutionOutlined StockOutlined StopOutlined SwapOutlined SyncOutlined TeamOutlined UndoOutlined UnorderedListOutlined UploadOutlined UserAddOutlined UserOutlined UserSwitchOutlined ZoomInOutlined ZoomOutOutlined"
+  "AimOutlined ApartmentOutlined AppstoreOutlined ArrowRightOutlined AuditOutlined BankOutlined BarChartOutlined BarcodeOutlined BellOutlined CarOutlined CheckCircleOutlined CheckOutlined CloseCircleOutlined CloseOutlined ClusterOutlined CopyOutlined DeleteOutlined DownOutlined DownloadOutlined EditOutlined EnvironmentOutlined ExclamationCircleFilled ExpandAltOutlined ExperimentOutlined ExportOutlined EyeOutlined FileExcelOutlined FilePdfOutlined FileSearchOutlined FileTextOutlined FundOutlined HomeOutlined IdcardOutlined ImportOutlined InboxOutlined KeyOutlined LockOutlined LogoutOutlined MailOutlined MenuFoldOutlined MenuUnfoldOutlined NodeIndexOutlined PlayCircleOutlined PlusOutlined ProfileOutlined ReloadOutlined RollbackOutlined SafetyCertificateOutlined SaveOutlined SearchOutlined SendOutlined SettingOutlined ShopOutlined ShoppingCartOutlined ShrinkOutlined SolutionOutlined StockOutlined StopOutlined SwapOutlined SyncOutlined TeamOutlined ToolOutlined UndoOutlined UnorderedListOutlined UploadOutlined UserAddOutlined UserOutlined UserSwitchOutlined ZoomInOutlined ZoomOutOutlined"
     .split(" ")
     .forEach((n) => (icons[n] = stub));
   return { default: stub, ...icons };
 });
 
-vi.mock("@/modules/auth/utils/permission", () => ({
-  usePermissionState: () => {
-    const authState = mockAuthStore.getState();
-    return {
-      isSuperAdmin: authState.isSuperAdmin,
-      permissionCodes: authState.permissionCodes,
-      currentScopeType:
-        (authState.currentContext?.scope_type as string | undefined) ??
-        "he_thong",
-      currentOrgUnitId: authState.currentContext?.org_unit_id ?? null,
-      currentDepartmentId: authState.currentContext?.department_id ?? null,
-    };
-  },
-  hasPermission: (
-    code: string,
-    state?: { permissionCodes?: string[]; isSuperAdmin?: boolean },
-  ) => {
-    const permissionCodes = state?.permissionCodes ?? [];
-    return Boolean(state?.isSuperAdmin || permissionCodes.includes(code));
-  },
-  useCan: () => true,
-}));
+vi.mock("@/modules/auth/utils/permission", async () => {
+  const { useAuthStore } = await vi.importActual<
+    typeof import("@/shared/store/auth.store")
+  >("@/shared/store/auth.store");
+
+  return {
+    usePermissionState: () => {
+      const authState = useAuthStore.getState();
+      return {
+        isSuperAdmin: authState.isSuperAdmin,
+        permissionCodes: authState.permissionCodes,
+        currentScopeType:
+          (authState.currentContext?.scope_type as string | undefined) ??
+          "he_thong",
+        currentOrgUnitId: authState.currentContext?.org_unit_id ?? null,
+        currentDepartmentId: authState.currentContext?.department_id ?? null,
+      };
+    },
+    hasPermission: (
+      code: string,
+      state?: { permissionCodes?: string[]; isSuperAdmin?: boolean },
+    ) => {
+      const permissionCodes = state?.permissionCodes ?? [];
+      return Boolean(state?.isSuperAdmin || permissionCodes.includes(code));
+    },
+    useCan: () => true,
+  };
+});
 
 vi.mock("@/app/router/access", () => ({
   ROUTE_PERMISSIONS: {
+    "/dashboard": undefined,
+    "/master-data": ["sku.manage", "master.manage"],
+    "/scan": ["inventory.trace", "scan.classify"],
+    "/inbound": ["inbound.create", "inbound.post"],
+    "/putaway": ["putaway.manage"],
+    "/outbound": ["outbound.create", "outbound.post"],
+    "/inventory": ["inventory.view"],
+    "/stocktake": ["stocktake.count"],
+    "/warranty": ["warranty.manage"],
+    "/reverse": ["inventory.reversal.post"],
+    "/reports": ["report.view"],
     "/org-units": "ORG_VIEW",
     "/departments": "DEPT_VIEW",
     "/employees": "EMP_VIEW",
@@ -906,27 +912,114 @@ vi.mock("@/app/router/access", () => ({
   },
 }));
 
-vi.mock("@/shared/hooks/usePermission", () => {
+vi.mock("@/shared/hooks/usePermission", async () => {
+  const { useAuthStore } = await vi.importActual<
+    typeof import("@/shared/store/auth.store")
+  >("@/shared/store/auth.store");
+
+  const permissionRules: Record<string, Record<string, string>> = {
+    org_units: {
+      create: "ORG_CREATE",
+      edit: "ORG_EDIT",
+      delete: "ORG_INACTIVE",
+      approve: "ORG_EDIT",
+      export: "ORG_EXPORT",
+    },
+    departments: {
+      create: "DEPT_CREATE",
+      edit: "DEPT_EDIT",
+      delete: "DEPT_INACTIVE",
+      approve: "DEPT_EDIT",
+      export: "DEPT_EXPORT",
+    },
+    employees: {
+      create: "EMP_CREATE",
+      edit: "EMP_EDIT",
+      delete: "EMP_INACTIVE",
+      approve: "EMP_EDIT",
+      export: "EMP_EXPORT",
+    },
+    audit_logs: {
+      view: "AUDIT_VIEW",
+      export: "AUDIT_EXPORT",
+    },
+  };
+
+  const scopeRank: Record<string, number> = {
+    he_thong: 4,
+    co_so: 3,
+    phong_ban: 2,
+    kho: 1,
+  };
+
+  const scopeRequirements: Record<string, Record<string, string>> = {
+    org_units: {
+      create: "co_so",
+      edit: "co_so",
+      delete: "co_so",
+      approve: "co_so",
+      export: "co_so",
+    },
+    departments: {
+      create: "co_so",
+      edit: "phong_ban",
+      delete: "co_so",
+      approve: "phong_ban",
+      export: "phong_ban",
+    },
+    audit_logs: {
+      view: "he_thong",
+      export: "he_thong",
+    },
+  };
+
+  const getPermissionCode = (context: {
+    module?: string;
+    action?: string;
+    permissionCode?: string;
+  }) => {
+    if (context.permissionCode) return context.permissionCode;
+    if (context.module && context.action) {
+      return (
+        permissionRules[context.module]?.[context.action] ??
+        `${context.module.toUpperCase().replace(/[^A-Z0-9]/g, "_")}_${context.action.toUpperCase()}`
+      );
+    }
+    return (context.module ?? "").toUpperCase();
+  };
+
+  const passesScope = (
+    currentScopeType: string | undefined,
+    context: { module?: string; action?: string },
+    isSuperAdmin: boolean,
+  ) => {
+    if (isSuperAdmin) return true;
+    const required =
+      context.module && context.action
+        ? scopeRequirements[context.module]?.[context.action]
+        : undefined;
+    if (!required || required === "none") return true;
+    return (scopeRank[currentScopeType ?? ""] ?? 0) >= scopeRank[required];
+  };
+
   const resolveCan = (context: {
     module?: string;
     action?: string;
     permissionCode?: string;
   }) => {
-    const state = mockAuthStore.getState() as {
+    const state = useAuthStore.getState() as {
       isSuperAdmin: boolean;
       permissionCodes: string[];
       currentContext: { scope_type?: string } | null;
     };
     const { isSuperAdmin, permissionCodes, currentContext } = state;
-    // Simple permission check without importing types
-    const code =
-      context.permissionCode ??
-      (context.action && context.module
-        ? `${context.action.toUpperCase()}_${context.module.toUpperCase()}`
-        : (context.module ?? "").toUpperCase());
+    const code = getPermissionCode(context);
     const hasCodePermission = isSuperAdmin || permissionCodes.includes(code);
-    // Simple scope check - just check if super admin
-    const scopePassed = isSuperAdmin || !!currentContext?.scope_type;
+    const scopePassed = passesScope(
+      currentContext?.scope_type ?? "he_thong",
+      context,
+      isSuperAdmin,
+    );
     return hasCodePermission && scopePassed;
   };
   return {
@@ -947,11 +1040,11 @@ vi.mock("@/shared/hooks/usePermission", () => {
       };
     },
     useCanAll: (codes: string[]) => {
-      const { isSuperAdmin, permissionCodes } = mockAuthStore.getState();
+      const { isSuperAdmin, permissionCodes } = useAuthStore.getState();
       return codes.every((c) => isSuperAdmin || permissionCodes.includes(c));
     },
     useCanAny: (codes: string[]) => {
-      const { isSuperAdmin, permissionCodes } = mockAuthStore.getState();
+      const { isSuperAdmin, permissionCodes } = useAuthStore.getState();
       return codes.some((c) => isSuperAdmin || permissionCodes.includes(c));
     },
   };

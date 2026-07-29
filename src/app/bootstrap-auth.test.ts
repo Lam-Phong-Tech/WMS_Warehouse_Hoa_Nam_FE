@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 /**
  * Test riêng cho bootstrapAuth() (tách từ main.tsx) — đảm bảo khi refresh
@@ -14,7 +14,7 @@ const { rehydrateMock, setTokenMock, setStateMock } = vi.hoisted(() => ({
   setStateMock: vi.fn(),
 }));
 
-vi.mock('@/shared/store/auth.store', () => ({
+vi.mock("@/shared/store/auth.store", () => ({
   useAuthStore: {
     persist: { rehydrate: rehydrateMock },
     getState: () => ({ setToken: setTokenMock }),
@@ -26,13 +26,13 @@ const { refreshMock } = vi.hoisted(() => ({
   refreshMock: vi.fn(),
 }));
 
-vi.mock('@/modules/auth/services/auth.service', () => ({
+vi.mock("@/modules/auth/services/auth.service", () => ({
   authService: { refresh: refreshMock },
 }));
 
-import { bootstrapAuth } from '@/app/bootstrap-auth';
+import { bootstrapAuth } from "@/app/bootstrap-auth";
 
-describe('bootstrapAuth', () => {
+describe("bootstrapAuth", () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let consoleErrorSpy: any;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -43,8 +43,8 @@ describe('bootstrapAuth', () => {
     setTokenMock.mockReset();
     setStateMock.mockReset();
     refreshMock.mockReset();
-    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -52,10 +52,10 @@ describe('bootstrapAuth', () => {
     consoleWarnSpy.mockRestore();
   });
 
-  it('refresh fail (chưa login) → không setToken, không log noise, vẫn set isBootstrapped: true', async () => {
+  it("refresh fail (chưa login) → không setToken, không log noise, vẫn set isBootstrapped: true", async () => {
     refreshMock.mockRejectedValue({
       isAxiosError: true,
-      response: { status: 401, data: { message: 'Unauthenticated' } },
+      response: { status: 401, data: { message: "Unauthenticated" } },
     });
 
     await bootstrapAuth();
@@ -66,8 +66,8 @@ describe('bootstrapAuth', () => {
     expect(setStateMock).toHaveBeenCalledWith({ isBootstrapped: true });
   });
 
-  it('refresh lỗi mạng (không phải 401) → vẫn im lặng, vẫn set isBootstrapped: true', async () => {
-    refreshMock.mockRejectedValue(new Error('Network Error'));
+  it("refresh lỗi mạng (không phải 401) → vẫn im lặng, vẫn set isBootstrapped: true", async () => {
+    refreshMock.mockRejectedValue(new Error("Network Error"));
 
     await bootstrapAuth();
 
@@ -77,27 +77,27 @@ describe('bootstrapAuth', () => {
     expect(setStateMock).toHaveBeenCalledWith({ isBootstrapped: true });
   });
 
-  it('refresh thành công → setToken với access_token mới, vẫn set isBootstrapped: true', async () => {
-    refreshMock.mockResolvedValue({ access_token: 'new-token' });
+  it("refresh thành công → setToken với access_token mới, vẫn set isBootstrapped: true", async () => {
+    refreshMock.mockResolvedValue({ access_token: "new-token" });
 
     await bootstrapAuth();
 
-    expect(setTokenMock).toHaveBeenCalledWith('new-token');
+    expect(setTokenMock).toHaveBeenCalledWith("new-token");
     expect(setStateMock).toHaveBeenCalledWith({ isBootstrapped: true });
   });
 
-  it('rehydrate xong trước rồi mới gọi refresh (đảm bảo thứ tự)', async () => {
+  it("rehydrate xong trước rồi mới gọi refresh (đảm bảo thứ tự)", async () => {
     const callOrder: string[] = [];
     rehydrateMock.mockImplementation(() => {
-      callOrder.push('rehydrate');
+      callOrder.push("rehydrate");
     });
     refreshMock.mockImplementation(async () => {
-      callOrder.push('refresh');
-      return { access_token: 'tok' };
+      callOrder.push("refresh");
+      return { access_token: "tok" };
     });
 
     await bootstrapAuth();
 
-    expect(callOrder).toEqual(['rehydrate', 'refresh']);
+    expect(callOrder).toEqual(["rehydrate", "refresh"]);
   });
 });

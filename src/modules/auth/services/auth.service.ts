@@ -1,5 +1,5 @@
-import { http } from '@/shared/api/http';
-import { API_ENDPOINTS } from '@/shared/api/endpoints';
+import { http } from "@/shared/api/http";
+import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import type {
   ChangePasswordRequest,
   LoginRequest,
@@ -7,8 +7,8 @@ import type {
   RefreshResponse,
   SwitchContextRequest,
   SwitchContextResponse,
-} from '@/modules/auth/types/auth.types';
-import type { MeResponse } from '@/modules/auth/types/me.types';
+} from "@/modules/auth/types/auth.types";
+import type { MeResponse } from "@/modules/auth/types/me.types";
 
 export const authService = {
   login(data: LoginRequest) {
@@ -42,5 +42,5 @@ export const authService = {
 };
 
 // Cửa công khai của module auth (gộp từ index.ts).
-export { useLogin } from '@/modules/auth/hooks/use-login';
-export { useLogout } from '@/modules/auth/hooks/use-logout';
+export { useLogin } from "@/modules/auth/hooks/use-login";
+export { useLogout } from "@/modules/auth/hooks/use-logout";

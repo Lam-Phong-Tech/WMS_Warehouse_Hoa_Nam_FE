@@ -15,5 +15,5 @@ export interface XntReportRow {
   reversalNet: number;
   closing: number;
   partialRemaining: number;
-  reconcile: 'PASS' | 'WARN' | 'FAIL';
+  reconcile: "PASS" | "WARN" | "FAIL";
 }

@@ -1,30 +1,29 @@
-import { ROUTES } from '@/shared/constants/routes';
+import { ROUTES } from "@/shared/constants/routes";
 
 /**
- * Nguồn DUY NHẤT khai báo quyền tối thiểu để vào mỗi route.
- * Dùng cho cả route guard (RequirePermission) lẫn lọc menu (SideNav),
- * tránh khai báo mã quyền rải rác hai nơi.
+ * Single source of route-level permissions for both RequirePermission and menu
+ * filtering. Route permissions are only UX gates; backend still owns RBAC and
+ * data-scope enforcement.
  *
- * `undefined` = ai đăng nhập cũng vào được.
- * Mảng string[] = OR — chỉ cần 1 trong các quyền là vào được route.
+ * `undefined` means every authenticated user can enter the route.
+ * `string[]` means OR: the user needs at least one listed permission.
  */
-export const ROUTE_PERMISSIONS: Record<string, string | string[] | undefined> = {
-  // WMS P0 - Quản lý kho
-  // Permission mapping theo Wireframe P0 tab 12A (Screen map & stock effect)
-  // Chi tiết action-level permission xem bảng 12D
-  
-  [ROUTES.DASHBOARD]: undefined, // Dashboard tổng quan - ai cũng xem được
-  [ROUTES.MASTER]: ['sku.manage', 'master.manage'],      // Danh mục & SKU
-  [ROUTES.PHYSICAL_CODES]: ['inventory.trace', 'scan.classify'], // Mã vật lý
-  [ROUTES.INBOUND]: ['inbound.create', 'inbound.post'],          // Nhập kho
-  [ROUTES.PUTAWAY]: ['putaway.manage'],                          // Putaway
-  [ROUTES.OUTBOUND]: ['outbound.create', 'outbound.post'],       // Xuất kho
-  [ROUTES.INVENTORY]: ['inventory.view'],                        // Tồn & truy vết
-  [ROUTES.STOCKTAKE]: ['stocktake.count'],                       // Kiểm kê
-  [ROUTES.WARRANTY]: ['warranty.manage'],                        // Bảo hành
-  [ROUTES.REVERSAL]: ['inventory.reversal.post'],                // Reversal
-  [ROUTES.REPORTS]: ['report.view'],                             // Báo cáo
+export const ROUTE_PERMISSIONS: Record<string, string | string[] | undefined> =
+  {
+    // WMS P0 bounded contexts from the technical architecture guide.
+    [ROUTES.DASHBOARD]: undefined,
+    [ROUTES.MASTER_DATA]: ["sku.manage", "master.manage"],
+    [ROUTES.SCAN]: ["inventory.trace", "scan.classify"],
+    [ROUTES.INBOUND]: ["inbound.create", "inbound.post"],
+    [ROUTES.PUTAWAY]: ["putaway.manage"],
+    [ROUTES.OUTBOUND]: ["outbound.create", "outbound.post"],
+    [ROUTES.INVENTORY]: ["inventory.view"],
+    [ROUTES.STOCKTAKE]: ["stocktake.count"],
+    [ROUTES.WARRANTY]: ["warranty.manage"],
+    [ROUTES.REVERSE]: ["inventory.reversal.post"],
+    [ROUTES.REPORTS]: ["report.view"],
 
-  // Shared
-  [ROUTES.AUDIT_LOGS]: 'AUDIT_LOG_VIEW',
-};
+    // Shared/system.
+    [ROUTES.PROFILE]: undefined,
+    [ROUTES.AUDIT_LOGS]: "AUDIT_LOG_VIEW",
+  };

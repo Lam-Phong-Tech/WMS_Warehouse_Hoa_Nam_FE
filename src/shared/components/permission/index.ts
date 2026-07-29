@@ -9,10 +9,10 @@
  * Route-level guard (RequirePermission/ProtectedRoute) và data-scope theo
  * context (useDataScope) nằm ở entry point riêng: `@/lib/permissions`.
  */
-export { PermissionGuard } from './PermissionGuard';
-export { ActionButton } from './ActionButton';
-export type { PermissionGuardProps } from './PermissionGuard';
-export type { ActionButtonProps } from './ActionButton';
+export { PermissionGuard } from "./PermissionGuard";
+export { ActionButton } from "./ActionButton";
+export type { PermissionGuardProps } from "./PermissionGuard";
+export type { ActionButtonProps } from "./ActionButton";
 
 // Re-export row-level scope helpers
 export {
@@ -24,9 +24,9 @@ export {
   isRecordInScopeById,
   type RowScopeContext,
   type RowScopeTarget,
-} from '@/shared/types/permission.scope';
-export { Can } from '@/modules/auth/components/Can';
-export type { CanProps } from '@/modules/auth/components/Can';
+} from "@/shared/types/permission.scope";
+export { Can } from "@/modules/auth/components/Can";
+export type { CanProps } from "@/modules/auth/components/Can";
 
 // Re-export permission utilities for convenience
 export {
@@ -34,11 +34,11 @@ export {
   hasPermission,
   useCan,
   useHasPermission,
-} from '@/modules/auth/utils/permission';
+} from "@/modules/auth/utils/permission";
 
 // Re-export usePermission hook (module+action scope-aware check) + tiện ích
 export {
   usePermission,
   useCanAny,
   useCanAll,
-} from '@/shared/hooks/usePermission';
+} from "@/shared/hooks/usePermission";

@@ -1,6 +1,6 @@
-import React from 'react';
+import React from "react";
 
-export type Size = 'small' | 'middle' | 'large';
+export type Size = "small" | "middle" | "large";
 
 // Common props convention for shared components
 export interface CommonProps {

@@ -1,4 +1,4 @@
-import type { User } from '@/shared/types/user';
+import type { User } from "@/shared/types/user";
 
 // Mô hình dữ liệu (interface) của module auth.
 

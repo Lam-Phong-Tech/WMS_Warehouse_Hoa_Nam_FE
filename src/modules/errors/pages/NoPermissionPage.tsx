@@ -1,7 +1,7 @@
-import { Descriptions, Tag } from 'antd';
-import { useNavigate } from 'react-router-dom';
-import { NoPermissionState } from '@/shared/components/feedback/NoPermissionState';
-import { useAuthStore } from '@/shared/store/auth.store';
+import { Descriptions, Tag } from "antd";
+import { useNavigate } from "react-router-dom";
+import { NoPermissionState } from "@/shared/components/feedback/NoPermissionState";
+import { useAuthStore } from "@/shared/store/auth.store";
 
 /**
  * Trang 403 - Không có quyền truy cập.
@@ -15,15 +15,15 @@ export function NoPermissionPage() {
   return (
     <div
       style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
         padding: 24,
-        background: '#f5f5f5',
+        background: "#f5f5f5",
       }}
     >
-      <div style={{ maxWidth: 600, width: '100%' }}>
+      <div style={{ maxWidth: 600, width: "100%" }}>
         <NoPermissionState
           title="Không có quyền truy cập"
           description={
@@ -31,7 +31,7 @@ export function NoPermissionPage() {
               Bạn không có quyền truy cập trang này. Vui lòng liên hệ quản trị
               viên để được cấp quyền phù hợp.
               {user && (
-                <div style={{ marginTop: 12, textAlign: 'left' }}>
+                <div style={{ marginTop: 12, textAlign: "left" }}>
                   <Descriptions size="small" column={1}>
                     <Descriptions.Item label="Tài khoản">
                       {user.name || user.email}

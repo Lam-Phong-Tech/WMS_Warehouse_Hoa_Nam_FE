@@ -1,11 +1,11 @@
-import { useMemo } from 'react';
-import { Table } from 'antd';
-import type { TablePaginationConfig, TableProps } from 'antd';
-import { DESIGN_TOKENS } from '@/app/theme';
-import { EmptyState } from './EmptyState';
-import { TopPagination, type TopPaginationProps } from './TopPagination';
-import { PageSizeSelector } from './PageSizeSelector';
-import { useSortTooltipColumns } from './useSortTooltipColumns';
+import { useMemo } from "react";
+import { Table } from "antd";
+import type { TablePaginationConfig, TableProps } from "antd";
+import { DESIGN_TOKENS } from "@/app/theme";
+import { EmptyState } from "./EmptyState";
+import { TopPagination, type TopPaginationProps } from "./TopPagination";
+import { PageSizeSelector } from "./PageSizeSelector";
+import { useSortTooltipColumns } from "./useSortTooltipColumns";
 
 /** Cấu hình server-side pagination tiện ích — truyền thay vì dùng `pagination` thủ công. */
 export interface ServerPagination {
@@ -30,7 +30,7 @@ export interface DataTableProps<T extends object> extends TableProps<T> {
    * Khi bật, cột checkbox sẽ được thêm vào đầu bảng (trước STT nếu có).
    */
   rowSelection?: {
-    type?: 'checkbox' | 'radio';
+    type?: "checkbox" | "radio";
     selectedRowKeys?: React.Key[];
     onChange?: (selectedRowKeys: React.Key[], selectedRows: T[]) => void;
     getCheckboxProps?: (record: T) => { disabled?: boolean; name?: string };
@@ -48,7 +48,7 @@ export interface DataTableProps<T extends object> extends TableProps<T> {
    * Vị trí hiển thị top pagination: 'top' (mặc định, phía trên bảng) hoặc
    * 'bottom' (phía dưới bảng).
    */
-  topPaginationPlacement?: 'top' | 'bottom';
+  topPaginationPlacement?: "top" | "bottom";
 }
 
 /**
@@ -64,11 +64,11 @@ export function DataTable<T extends object>({
   rowSelection,
   showTopPagination = false,
   topPaginationConfig,
-  topPaginationPlacement = 'top',
+  topPaginationPlacement = "top",
   ...props
 }: DataTableProps<T>) {
   const {
-    rowKey = 'id',
+    rowKey = "id",
     pagination,
     scroll,
     locale,
@@ -107,7 +107,7 @@ export function DataTable<T extends object>({
   const { columns: sortTooltipColumns, onSorterChange } =
     useSortTooltipColumns(columns);
 
-  const handleChange: NonNullable<TableProps<T>['onChange']> = (
+  const handleChange: NonNullable<TableProps<T>["onChange"]> = (
     paginationInfo,
     filters,
     sorter,
@@ -131,13 +131,13 @@ export function DataTable<T extends object>({
     const firstColumnFixed = sortTooltipColumns[0]?.fixed;
 
     const sttColumn = {
-      title: 'STT',
-      key: 'stt_index',
+      title: "STT",
+      key: "stt_index",
       width: 60,
-      align: 'center' as const,
+      align: "center" as const,
       fixed:
-        firstColumnFixed === 'left' || firstColumnFixed === true
-          ? ('left' as const)
+        firstColumnFixed === "left" || firstColumnFixed === true
+          ? ("left" as const)
           : undefined,
       render: (_value: unknown, _record: unknown, index: number) => {
         let page = 1;
@@ -148,7 +148,7 @@ export function DataTable<T extends object>({
           pageSize = serverPagination.pageSize || 10;
         } else if (
           resolvedPagination &&
-          typeof resolvedPagination === 'object'
+          typeof resolvedPagination === "object"
         ) {
           page = resolvedPagination.current || 1;
           pageSize = resolvedPagination.pageSize || 10;
@@ -163,14 +163,14 @@ export function DataTable<T extends object>({
 
   const tableRowSelection = rowSelection
     ? {
-        type: rowSelection.type || 'checkbox',
+        type: rowSelection.type || "checkbox",
         selectedRowKeys: rowSelection.selectedRowKeys || [],
         onChange: rowSelection.onChange,
         getCheckboxProps: rowSelection.getCheckboxProps,
       }
     : undefined;
 
-  const isBottomPlacement = topPaginationPlacement === 'bottom';
+  const isBottomPlacement = topPaginationPlacement === "bottom";
 
   const topPaginationElement = showTopPagination && topPaginationConfig && (
     <TopPagination
@@ -205,7 +205,7 @@ export function DataTable<T extends object>({
       <Table<T>
         rowKey={rowKey}
         size={size ?? DESIGN_TOKENS.table.size}
-        scroll={scroll ?? { x: 'max-content' }}
+        scroll={scroll ?? { x: "max-content" }}
         locale={{ emptyText: <EmptyState />, ...locale }}
         pagination={resolvedPagination}
         onChange={handleChange}
@@ -213,7 +213,7 @@ export function DataTable<T extends object>({
         rowSelection={tableRowSelection}
         {...rest}
       />
-      {topPaginationPlacement === 'bottom' && topPaginationElement}
+      {topPaginationPlacement === "bottom" && topPaginationElement}
     </>
   );
 }

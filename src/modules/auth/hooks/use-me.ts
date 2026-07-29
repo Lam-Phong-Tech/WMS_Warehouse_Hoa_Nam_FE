@@ -1,7 +1,7 @@
-import { useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { authService } from '@/modules/auth/services/auth.service';
-import { useAuthStore } from '@/shared/store/auth.store';
+import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { authService } from "@/modules/auth/services/auth.service";
+import { useAuthStore } from "@/shared/store/auth.store";
 
 /**
  * Lấy hồ sơ + phân quyền của tài khoản hiện tại (GET /auth/me) và
@@ -16,7 +16,7 @@ export function useMe() {
   const setProfile = useAuthStore((s) => s.setProfile);
 
   const query = useQuery({
-    queryKey: ['auth', 'me'],
+    queryKey: ["auth", "me"],
     queryFn: () => authService.me(),
     enabled: !!token,
     staleTime: 5 * 60 * 1000,

@@ -1,8 +1,8 @@
-import type { ReactNode } from 'react';
-import type { ButtonProps } from 'antd';
-import { Form, Typography } from 'antd';
-import { CARD_SHADOW, NEUTRAL_COLORS, RADIUS } from '@/shared/design-tokens';
-import { FormActions } from './FormActions';
+import type { ReactNode } from "react";
+import type { ButtonProps } from "antd";
+import { Form, Typography } from "antd";
+import { CARD_SHADOW, NEUTRAL_COLORS, RADIUS } from "@/shared/design-tokens";
+import { FormActions } from "./FormActions";
 
 export interface FormPageProps {
   /** Tiêu đề trang (§3 Typography: "Tiêu đề trang" 23px/700). */

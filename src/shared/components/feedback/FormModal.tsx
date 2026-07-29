@@ -1,6 +1,6 @@
-import type { ReactNode } from 'react';
-import type { ButtonProps } from 'antd';
-import { Button, Form, Modal } from 'antd';
+import type { ReactNode } from "react";
+import type { ButtonProps } from "antd";
+import { Button, Form, Modal } from "antd";
 
 export interface FormModalProps {
   open: boolean;
@@ -48,8 +48,8 @@ export function FormModal({
   onCancel,
   onDismiss,
   loading,
-  okText = 'Lưu',
-  cancelText = 'Huỷ',
+  okText = "Lưu",
+  cancelText = "Huỷ",
   width,
   afterClose,
   children,

@@ -1,4 +1,4 @@
-import { Select } from 'antd';
+import { Select } from "antd";
 
 export interface PageSizeSelectorProps {
   /** Trang hiện tại (bắt đầu từ 1) */

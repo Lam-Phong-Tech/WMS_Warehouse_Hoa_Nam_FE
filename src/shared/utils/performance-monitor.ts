@@ -16,7 +16,7 @@ interface PerformanceMetric {
   metadata?: Record<string, unknown>;
 }
 
-type MetricType = 'chunk_load' | 'api_call' | 'page_render' | 'navigation';
+type MetricType = "chunk_load" | "api_call" | "page_render" | "navigation";
 
 class PerformanceMonitor {
   private metrics: Map<string, PerformanceMetric> = new Map();
@@ -26,7 +26,7 @@ class PerformanceMonitor {
     // Chỉ enable trong development hoặc khi có flag
     this.enabled =
       import.meta.env.DEV ||
-      import.meta.env.VITE_ENABLE_PERF_MONITOR === 'true';
+      import.meta.env.VITE_ENABLE_PERF_MONITOR === "true";
   }
 
   /**
@@ -89,15 +89,15 @@ class PerformanceMonitor {
     if (!duration) return;
 
     // Color coding based on performance
-    let color = '#52c41a'; // Green - good
+    let color = "#52c41a"; // Green - good
     if (duration > 1000)
-      color = '#ff4d4f'; // Red - bad
-    else if (duration > 500) color = '#faad14'; // Yellow - warning
+      color = "#ff4d4f"; // Red - bad
+    else if (duration > 500) color = "#faad14"; // Yellow - warning
 
     console.log(
       `%c[Performance] ${type}: ${name} %c${duration.toFixed(2)}ms`,
       `color: ${color}; font-weight: bold;`,
-      'color: #666;',
+      "color: #666;",
       metadata || {},
     );
   }
@@ -156,7 +156,7 @@ class PerformanceMonitor {
   trackNavigation(from: string, to: string): void {
     if (!this.enabled) return;
 
-    this.startMeasure(`navigation: ${from} → ${to}`, 'navigation', {
+    this.startMeasure(`navigation: ${from} → ${to}`, "navigation", {
       from,
       to,
     });
@@ -177,7 +177,7 @@ class PerformanceMonitor {
       return () => {};
     }
 
-    this.startMeasure(`chunk: ${chunkName}`, 'chunk_load', { chunkName });
+    this.startMeasure(`chunk: ${chunkName}`, "chunk_load", { chunkName });
 
     return () => {
       this.endMeasure(`chunk: ${chunkName}`);
@@ -192,7 +192,7 @@ class PerformanceMonitor {
       return () => {};
     }
 
-    this.startMeasure(`api: ${method} ${endpoint}`, 'api_call', {
+    this.startMeasure(`api: ${method} ${endpoint}`, "api_call", {
       endpoint,
       method,
     });

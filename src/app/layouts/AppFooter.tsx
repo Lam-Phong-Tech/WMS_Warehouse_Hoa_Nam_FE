@@ -1,5 +1,5 @@
-import { Layout, Typography } from 'antd';
-import { layoutStyles } from '@/app/layouts/layout.styles';
+import { Layout, Typography } from "antd";
+import { layoutStyles } from "@/app/layouts/layout.styles";
 
 const { Footer } = Layout;
 

@@ -1,8 +1,8 @@
-import type { ReactElement, ReactNode } from 'react';
-import { render } from '@testing-library/react';
-import { Toaster } from 'sonner';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { MemoryRouter } from 'react-router-dom';
+import type { ReactElement, ReactNode } from "react";
+import { render } from "@testing-library/react";
+import { Toaster } from "sonner";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MemoryRouter } from "react-router-dom";
 
 // Theo dõi mọi QueryClient tạo ra bởi renderWithProviders để dọn sau mỗi
 // test — mặc định react-query giữ cache mỗi Query qua 1 setTimeout `gcTime`

@@ -1,14 +1,14 @@
-import type { ReactNode } from 'react';
-import { useMemo } from 'react';
+import type { ReactNode } from "react";
+import { useMemo } from "react";
 import {
   usePermissionState,
   hasPermission,
-} from '@/modules/auth/utils/permission';
+} from "@/modules/auth/utils/permission";
 import {
   type PermissionAction,
   getPermissionCode,
-} from '@/shared/types/permission';
-import { hasScopeForAction } from '@/shared/types/permission.scope';
+} from "@/shared/types/permission";
+import { hasScopeForAction } from "@/shared/types/permission.scope";
 
 export interface CanProps {
   /** Mã quyền cần có để hiển thị children (cách cũ). */

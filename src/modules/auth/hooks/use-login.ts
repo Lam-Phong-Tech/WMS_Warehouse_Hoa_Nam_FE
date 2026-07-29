@@ -1,13 +1,13 @@
-import { useMutation } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
-import { authService } from '@/modules/auth/services/auth.service';
-import { useAuthStore } from '@/shared/store/auth.store';
-import { useSwitchContext } from './use-switch-context';
-import { ROUTES } from '@/shared/constants/routes';
+import { useMutation } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
+import { authService } from "@/modules/auth/services/auth.service";
+import { useAuthStore } from "@/shared/store/auth.store";
+import { useSwitchContext } from "./use-switch-context";
+import { ROUTES } from "@/shared/constants/routes";
 import type {
   LoginRequest,
   SwitchContextRequest,
-} from '@/modules/auth/types/auth.types';
+} from "@/modules/auth/types/auth.types";
 
 export function useLogin() {
   const navigate = useNavigate();
@@ -40,7 +40,10 @@ export function useLogin() {
           // Log error nhưng không chặn login flow
           // User có thể retry thủ công qua ContextSwitcher
           if (import.meta.env.DEV) {
-            console.error('[Auth] Failed to auto-switch context after login:', error);
+            console.error(
+              "[Auth] Failed to auto-switch context after login:",
+              error,
+            );
           }
         }
       }

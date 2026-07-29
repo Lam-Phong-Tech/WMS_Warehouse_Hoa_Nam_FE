@@ -4,15 +4,15 @@
  */
 
 export type AuditAction =
-  | 'CREATE'
-  | 'UPDATE'
-  | 'DELETE'
-  | 'REVOKE_ROLE_SCOPE'
-  | 'SYNC_ROLE_SCOPES'
-  | 'SUBMIT'
-  | 'CANCEL'
-  | 'ARCHIVE'
-  | 'RESTORE';
+  | "CREATE"
+  | "UPDATE"
+  | "DELETE"
+  | "REVOKE_ROLE_SCOPE"
+  | "SYNC_ROLE_SCOPES"
+  | "SUBMIT"
+  | "CANCEL"
+  | "ARCHIVE"
+  | "RESTORE";
 
 export interface AuditUser {
   id: number;
@@ -62,7 +62,7 @@ export interface AuditLogFilters {
   q?: string;
   /** Trường sắp xếp phía backend (chỉ cột trực tiếp trên audit_logs, vd created_at). */
   sort_by?: string;
-  sort_order?: 'asc' | 'desc';
+  sort_order?: "asc" | "desc";
 }
 
 export interface AuditLogDetail extends AuditLog {

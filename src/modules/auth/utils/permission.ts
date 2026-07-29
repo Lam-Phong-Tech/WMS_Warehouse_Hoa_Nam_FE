@@ -1,5 +1,5 @@
-import { useAuthStore } from '@/shared/store/auth.store';
-import type { ScopeType } from '@/shared/types/permission.scope';
+import { useAuthStore } from "@/shared/store/auth.store";
+import type { ScopeType } from "@/shared/types/permission.scope";
 
 /**
  * @internal Không import file này trực tiếp trong code ứng dụng — dùng

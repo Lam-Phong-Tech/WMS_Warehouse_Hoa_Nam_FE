@@ -1,88 +1,88 @@
 /* eslint-disable react-refresh/only-export-components */
-import { lazy, Suspense, type ReactNode } from 'react';
-import { createBrowserRouter, Navigate } from 'react-router-dom';
-import { ProtectedRoute } from '@/app/router/ProtectedRoute';
-import { RequirePermission } from '@/app/router/RequirePermission';
-import { ROUTE_PERMISSIONS } from '@/app/router/access';
-import { PageSkeleton } from '@/shared/components/ui-states/PageSkeleton';
-import { AdaptiveDelayedRender } from '@/shared/components/feedback/AdaptiveDelayedRender';
-import { ROUTES } from '@/shared/constants/routes';
+import { lazy, Suspense, type ReactNode } from "react";
+import { createBrowserRouter, Navigate } from "react-router-dom";
+import { ProtectedRoute } from "@/app/router/ProtectedRoute";
+import { RequirePermission } from "@/app/router/RequirePermission";
+import { ROUTE_PERMISSIONS } from "@/app/router/access";
+import { PageSkeleton } from "@/shared/components/ui-states/PageSkeleton";
+import { AdaptiveDelayedRender } from "@/shared/components/feedback/AdaptiveDelayedRender";
+import { ROUTES } from "@/shared/constants/routes";
 
 // No Permission page
-import { NoPermissionPage } from '@/modules/errors/pages/NoPermissionPage';
+import { NoPermissionPage } from "@/modules/errors/pages/NoPermissionPage";
 
 // Import trực tiếp các trang ngoài modules (không lazy load)
-import { MainLayout } from '@/app/(admin)/layout';
-import { LoginPage } from '@/modules/auth/pages/LoginPage';
-import { ChangePasswordPage } from '@/modules/auth/pages/ChangePasswordPage';
+import { MainLayout } from "@/app/layouts/MainLayout";
+import { LoginPage } from "@/modules/auth/pages/LoginPage";
+import { ChangePasswordPage } from "@/modules/auth/pages/ChangePasswordPage";
 
 // Audit Logs
 const AuditLogsPage = lazy(() =>
-  import('@/modules/audit-logs/pages/AuditLogsPage').then((m) => ({
+  import("@/modules/audit-logs/pages/AuditLogsPage").then((m) => ({
     default: m.AuditLogsPage,
   })),
 );
 
 // WMS P0 - Modules
 const DashboardPage = lazy(() =>
-  import('@/modules/dashboard/pages/DashboardPage').then((m) => ({
+  import("@/modules/dashboard/pages/DashboardPage").then((m) => ({
     default: m.default,
   })),
 );
 const MasterPage = lazy(() =>
-  import('@/modules/master/pages/MasterPage').then((m) => ({
+  import("@/modules/master-data/pages/MasterPage").then((m) => ({
     default: m.default,
   })),
 );
 const PhysicalCodesPage = lazy(() =>
-  import('@/modules/physical-codes/pages/PhysicalCodesPage').then((m) => ({
+  import("@/modules/scan/pages/PhysicalCodesPage").then((m) => ({
     default: m.default,
   })),
 );
 const InboundPage = lazy(() =>
-  import('@/modules/inbound/pages/InboundPage').then((m) => ({
+  import("@/modules/inbound/pages/InboundPage").then((m) => ({
     default: m.default,
   })),
 );
 const PutawayPage = lazy(() =>
-  import('@/modules/putaway/pages/PutawayPage').then((m) => ({
+  import("@/modules/putaway/pages/PutawayPage").then((m) => ({
     default: m.default,
   })),
 );
 const OutboundPage = lazy(() =>
-  import('@/modules/outbound/pages/OutboundPage').then((m) => ({
+  import("@/modules/outbound/pages/OutboundPage").then((m) => ({
     default: m.default,
   })),
 );
 const InventoryPage = lazy(() =>
-  import('@/modules/inventory/pages/InventoryPage').then((m) => ({
+  import("@/modules/inventory/pages/InventoryPage").then((m) => ({
     default: m.default,
   })),
 );
 const StocktakePage = lazy(() =>
-  import('@/modules/stocktake/pages/StocktakePage').then((m) => ({
+  import("@/modules/stocktake/pages/StocktakePage").then((m) => ({
     default: m.default,
   })),
 );
 const WarrantyPage = lazy(() =>
-  import('@/modules/warranty/pages/WarrantyPage').then((m) => ({
+  import("@/modules/warranty/pages/WarrantyPage").then((m) => ({
     default: m.default,
   })),
 );
 const ReversalPage = lazy(() =>
-  import('@/modules/reversal/pages/ReversalPage').then((m) => ({
+  import("@/modules/reverse/pages/ReversalPage").then((m) => ({
     default: m.default,
   })),
 );
 const ReportsPage = lazy(() =>
-  import('@/modules/reports/pages/ReportsPage').then((m) => ({
+  import("@/modules/reports/pages/ReportsPage").then((m) => ({
     default: m.default,
   })),
 );
 
 // Tài khoản
 const ProfilePage = lazy(() =>
-  import('@/modules/auth/pages/ProfilePage').then((m) => ({
+  import("@/modules/auth/pages/ProfilePage").then((m) => ({
     default: m.ProfilePage,
   })),
 );
@@ -135,12 +135,12 @@ export const router = createBrowserRouter([
             element: routeEl(ROUTES.DASHBOARD, <DashboardPage />),
           },
           {
-            path: ROUTES.MASTER,
-            element: routeEl(ROUTES.MASTER, <MasterPage />),
+            path: ROUTES.MASTER_DATA,
+            element: routeEl(ROUTES.MASTER_DATA, <MasterPage />),
           },
           {
-            path: ROUTES.PHYSICAL_CODES,
-            element: routeEl(ROUTES.PHYSICAL_CODES, <PhysicalCodesPage />),
+            path: ROUTES.SCAN,
+            element: routeEl(ROUTES.SCAN, <PhysicalCodesPage />),
           },
           {
             path: ROUTES.INBOUND,
@@ -167,8 +167,8 @@ export const router = createBrowserRouter([
             element: routeEl(ROUTES.WARRANTY, <WarrantyPage />),
           },
           {
-            path: ROUTES.REVERSAL,
-            element: routeEl(ROUTES.REVERSAL, <ReversalPage />),
+            path: ROUTES.REVERSE,
+            element: routeEl(ROUTES.REVERSE, <ReversalPage />),
           },
           {
             path: ROUTES.REPORTS,
@@ -188,7 +188,7 @@ export const router = createBrowserRouter([
     element: withoutDelay(<NoPermissionPage />),
   },
   {
-    path: '*',
+    path: "*",
     element: <Navigate to={ROUTES.HOME} replace />,
   },
 ]);

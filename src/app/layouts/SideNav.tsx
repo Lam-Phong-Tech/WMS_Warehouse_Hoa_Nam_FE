@@ -1,14 +1,15 @@
-import { useState } from 'react';
-import { Menu } from 'antd';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useState } from "react";
+import { Menu } from "antd";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   filterMenu,
   getOpenKeys,
   getSelectedKey,
   MENU,
   toMenuItems,
-} from '@/app/layouts/menu';
-import { layoutStyles } from '@/app/layouts/layout.styles';
+} from "@/app/layouts/menu";
+import { layoutStyles } from "@/app/layouts/layout.styles";
+import { useAuthStore } from "@/shared/store/auth.store";
 
 interface Props {
   /** Đang thu gọn (ẩn chữ thương hiệu) — chỉ áp dụng cho Sider desktop. */
@@ -21,7 +22,9 @@ export function SideNav({ collapsed = false, onNavigate }: Props) {
   const location = useLocation();
   const navigate = useNavigate();
   // Standalone mode: hiển thị tất cả menu items không lọc quyền
-  const can = () => true;
+  const permissionCodes = useAuthStore((state) => state.permissionCodes);
+  const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
+  const can = (code: string) => isSuperAdmin || permissionCodes.includes(code);
 
   // Controlled openKeys thay vì defaultOpenKeys (P2): defaultOpenKeys chỉ áp
   // dụng lần render đầu — điều hướng bằng code (breadcrumb, link ngoài menu)
@@ -68,7 +71,7 @@ export function SideNav({ collapsed = false, onNavigate }: Props) {
           onNavigate?.();
         }}
         style={{
-          borderInlineEnd: 'none',
+          borderInlineEnd: "none",
           paddingBottom: 24,
         }}
       />

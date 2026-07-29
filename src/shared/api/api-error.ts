@@ -4,7 +4,7 @@
  */
 interface ApiErrorResponse {
   success?: false;
-  status?: 'error';
+  status?: "error";
   message: string;
   error_code?: string;
   errors?: Record<string, string[] | string>;
@@ -33,7 +33,7 @@ function formatFieldErrors(
       ([field, message]) =>
         `${field}: ${Array.isArray(message) ? message[0] : String(message)}`,
     )
-    .join('; ');
+    .join("; ");
 }
 
 /** Lỗi validation theo field — đọc `errors` (flat) trước, fallback `error.details` (nested). */
@@ -56,8 +56,8 @@ export class ApiEnvelopeError extends Error {
   readonly data: ApiErrorResponse;
 
   constructor(data: ApiErrorResponse) {
-    super(data.message ?? 'Yêu cầu không thành công');
-    this.name = 'ApiEnvelopeError';
+    super(data.message ?? "Yêu cầu không thành công");
+    this.name = "ApiEnvelopeError";
     this.data = data;
   }
 }
@@ -67,9 +67,9 @@ export class ApiEnvelopeError extends Error {
  */
 function isAxiosError(error: unknown): boolean {
   return (
-    typeof error === 'object' &&
+    typeof error === "object" &&
     error !== null &&
-    'isAxiosError' in error &&
+    "isAxiosError" in error &&
     (error as Record<string, unknown>).isAxiosError === true
   );
 }
@@ -127,7 +127,7 @@ export function createMockAxiosError(
 ): MockAxiosError {
   const {
     status = 400,
-    statusText = 'Bad Request',
+    statusText = "Bad Request",
     data = {},
     code,
     headers = {},
@@ -147,7 +147,7 @@ export function createMockAxiosError(
     },
     code,
     message: (data.message as string) || statusText,
-    name: 'AxiosError',
+    name: "AxiosError",
   };
 
   if (_isNoPermission) error._isNoPermission = true;
@@ -217,7 +217,7 @@ export function getMutationErrorMessage(error: unknown): string {
     const data = response?.data as ApiErrorResponse | undefined;
     return (
       data?.message ??
-      'Bạn không có quyền thực hiện thao tác này. Liên hệ quản trị viên để được cấp quyền.'
+      "Bạn không có quyền thực hiện thao tác này. Liên hệ quản trị viên để được cấp quyền."
     );
   }
   return getApiErrorMessage(error);
@@ -230,7 +230,7 @@ export function getMutationErrorMessage(error: unknown): string {
  */
 export const getNoPermissionMessage = getMutationErrorMessage;
 
-const DEFAULT_MESSAGE = 'Lỗi hệ thống';
+const DEFAULT_MESSAGE = "Lỗi hệ thống";
 
 /**
  * Trích thông điệp lỗi thân thiện từ bất kỳ lỗi nào (axios / Error / unknown).
@@ -254,24 +254,24 @@ export function getApiErrorMessage(
 
   if (
     error &&
-    typeof error === 'object' &&
-    'message' in error &&
-    typeof (error as { message?: unknown }).message === 'string' &&
+    typeof error === "object" &&
+    "message" in error &&
+    typeof (error as { message?: unknown }).message === "string" &&
     (error as { message?: string }).message
   ) {
     const msg = (error as { message: string }).message;
-    if (msg !== 'Bad Request' && msg !== 'Internal Server Error') {
+    if (msg !== "Bad Request" && msg !== "Internal Server Error") {
       return msg;
     }
   }
 
   if (isAxiosError(error)) {
     const axiosErr = error as Record<string, unknown>;
-    if (axiosErr.code === 'ECONNABORTED') {
-      return 'Yêu cầu quá thời gian, vui lòng thử lại.';
+    if (axiosErr.code === "ECONNABORTED") {
+      return "Yêu cầu quá thời gian, vui lòng thử lại.";
     }
-    if (axiosErr.code === 'ERR_NETWORK') {
-      return 'Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.';
+    if (axiosErr.code === "ERR_NETWORK") {
+      return "Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.";
     }
 
     const response = axiosErr.response as Record<string, unknown> | undefined;
@@ -299,18 +299,18 @@ function snakeToCamel(str: string): string {
  * Các field mapping đặc biệt cho M1 P0 modules.
  */
 const FIELD_MAP: Record<string, string> = {
-  org_unit_id: 'orgUnitId',
-  tax_code: 'taxCode',
-  manager_id: 'managerId',
-  parent_id: 'parentId',
-  effective_date: 'effectiveDate',
-  employee_status: 'employeeStatus',
-  account_status: 'accountStatus',
-  hire_date: 'hireDate',
-  personal_tax_code: 'personalTaxCode',
-  full_name: 'fullName',
-  unit_type: 'unitType',
-  permission_ids: 'permissionIds',
+  org_unit_id: "orgUnitId",
+  tax_code: "taxCode",
+  manager_id: "managerId",
+  parent_id: "parentId",
+  effective_date: "effectiveDate",
+  employee_status: "employeeStatus",
+  account_status: "accountStatus",
+  hire_date: "hireDate",
+  personal_tax_code: "personalTaxCode",
+  full_name: "fullName",
+  unit_type: "unitType",
+  permission_ids: "permissionIds",
 };
 
 /**

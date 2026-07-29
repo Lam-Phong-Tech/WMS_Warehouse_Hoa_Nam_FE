@@ -1,6 +1,6 @@
-import type { ReactNode } from 'react';
-import { Card, Statistic } from 'antd';
-import type { CommonProps } from './types';
+import type { ReactNode } from "react";
+import { Card, Statistic } from "antd";
+import type { CommonProps } from "./types";
 
 export interface StatCardProps extends CommonProps {
   title: ReactNode;
@@ -24,17 +24,17 @@ export function StatCard({
   className,
 }: StatCardProps) {
   return (
-    <Card variant="borderless" style={{ height: '100%' }} className={className}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+    <Card variant="borderless" style={{ height: "100%" }} className={className}>
+      <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
         <div
           style={{
             width: 48,
             height: 48,
             borderRadius: 12,
             flexShrink: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
             fontSize: 22,
             color,
             background: `${color}1a`,
@@ -47,7 +47,7 @@ export function StatCard({
           value={value}
           prefix={prefix}
           formatter={(val) =>
-            typeof val === 'number' ? val.toLocaleString('vi-VN') : val
+            typeof val === "number" ? val.toLocaleString("vi-VN") : val
           }
         />
       </div>

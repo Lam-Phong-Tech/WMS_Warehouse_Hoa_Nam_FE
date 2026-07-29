@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react';
-import { NavLink } from 'react-router-dom';
+import type { ReactNode } from "react";
+import { NavLink } from "react-router-dom";
 
 export interface MenuItemProps {
   to: string;
@@ -20,10 +20,10 @@ export function MenuItem({ to, icon, end, children }: MenuItemProps) {
       to={to}
       end={end}
       style={({ isActive }) => ({
-        display: 'flex',
-        alignItems: 'center',
+        display: "flex",
+        alignItems: "center",
         gap: 8,
-        padding: '8px 12px',
+        padding: "8px 12px",
         borderRadius: 8,
         fontWeight: isActive ? 600 : 400,
       })}

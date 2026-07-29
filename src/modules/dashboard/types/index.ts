@@ -13,7 +13,7 @@ export interface DashboardKPI {
 export interface RecentDocument {
   id: string;
   code: string;
-  type: 'INBOUND' | 'OUTBOUND' | 'STOCKTAKE';
+  type: "INBOUND" | "OUTBOUND" | "STOCKTAKE";
   partner: string;
   progress: number;
   posted: number;
@@ -24,13 +24,13 @@ export interface RecentDocument {
 }
 
 export interface ReconcileHealth {
-  ledgerBalance: 'PASS' | 'WARN' | 'FAIL';
+  ledgerBalance: "PASS" | "WARN" | "FAIL";
   ledgerSkuCount: number;
-  subledger: 'PASS' | 'WARN' | 'FAIL';
+  subledger: "PASS" | "WARN" | "FAIL";
   subledgerMessage: string;
 }
 
 export interface AlertItem {
   message: string;
-  severity: 'warning' | 'danger' | 'info';
+  severity: "warning" | "danger" | "info";
 }

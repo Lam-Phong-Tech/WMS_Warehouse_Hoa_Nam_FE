@@ -1,19 +1,19 @@
-import { Dropdown, Space, Tag, Typography } from 'antd';
-import type { MenuProps } from 'antd';
+import { Dropdown, Space, Tag, Typography } from "antd";
+import type { MenuProps } from "antd";
 import {
   ApartmentOutlined,
   CheckOutlined,
   DownOutlined,
-} from '@ant-design/icons';
-import { toast } from 'sonner';
-import { useAuthStore } from '@/shared/store/auth.store';
-import { useSwitchContext } from '@/modules/auth/hooks/use-switch-context';
+} from "@ant-design/icons";
+import { toast } from "sonner";
+import { useAuthStore } from "@/shared/store/auth.store";
+import { useSwitchContext } from "@/modules/auth/hooks/use-switch-context";
 import {
   getContextKey,
   getScopeName,
   getScopeTypeLabel,
-} from '@/modules/auth/utils/context';
-import { layoutStyles } from '@/app/layouts/layout.styles';
+} from "@/modules/auth/utils/context";
+import { layoutStyles } from "@/app/layouts/layout.styles";
 
 /**
  * Bộ chuyển bối cảnh làm việc (vai trò + phạm vi) — gọi thật
@@ -44,7 +44,7 @@ export function ContextSwitcher() {
   }
 
   const currentKey = getContextKey(current);
-  const items: MenuProps['items'] = contexts.map((ctx) => {
+  const items: MenuProps["items"] = contexts.map((ctx) => {
     const key = getContextKey(ctx);
     return {
       key,
@@ -79,7 +79,7 @@ export function ContextSwitcher() {
           {
             onError: () => {
               toast.error(
-                'Không thể chuyển bối cảnh hoạt động, vui lòng thử lại.',
+                "Không thể chuyển bối cảnh hoạt động, vui lòng thử lại.",
               );
             },
           },
@@ -91,7 +91,7 @@ export function ContextSwitcher() {
   return (
     <Dropdown
       menu={{ items, selectedKeys: [currentKey] }}
-      trigger={['click']}
+      trigger={["click"]}
       disabled={switchContext.isPending}
     >
       <Space style={layoutStyles.contextSwitcherTrigger} size={6}>

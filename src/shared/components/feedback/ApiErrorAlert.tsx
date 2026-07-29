@@ -1,7 +1,7 @@
-import type { CSSProperties } from 'react';
-import { Alert, Button } from 'antd';
-import { isNoPermissionError, normalizeError } from '@/shared/api/api-error';
-import { NoPermissionState } from './NoPermissionState';
+import type { CSSProperties } from "react";
+import { Alert, Button } from "antd";
+import { isNoPermissionError, normalizeError } from "@/shared/api/api-error";
+import { NoPermissionState } from "./NoPermissionState";
 
 export interface ApiErrorAlertProps {
   /** Lỗi bất kỳ (axios / Error / unknown). Falsy → không render gì. */
@@ -23,7 +23,7 @@ export interface ApiErrorAlertProps {
  */
 export function ApiErrorAlert({
   error,
-  title = 'Đã xảy ra lỗi',
+  title = "Đã xảy ra lỗi",
   onRetry,
   style,
 }: ApiErrorAlertProps) {
@@ -36,7 +36,7 @@ export function ApiErrorAlert({
           compact
           showHomeButton={false}
           title="Không có quyền truy cập"
-          actionText={onRetry ? 'Thử lại' : 'Quay lại'}
+          actionText={onRetry ? "Thử lại" : "Quay lại"}
           onAction={onRetry}
         />
       </div>
@@ -58,7 +58,7 @@ export function ApiErrorAlert({
         <>
           <div>{message}</div>
           {fieldMessages.length > 0 && (
-            <ul style={{ margin: '4px 0 0', paddingLeft: 18 }}>
+            <ul style={{ margin: "4px 0 0", paddingLeft: 18 }}>
               {fieldMessages.map((m, i) => (
                 <li key={i}>{m}</li>
               ))}

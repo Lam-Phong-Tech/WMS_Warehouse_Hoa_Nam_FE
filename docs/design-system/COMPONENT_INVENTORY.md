@@ -6,7 +6,7 @@ Evidence scope: shared app shell, RBAC, shared states, form/table/scan/status/au
 
 | Component | Purpose | Path | API/props | Supported states | Accessibility | Responsive behavior | Reuse target | Test/evidence |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `MainLayout` | Authenticated app shell | `src/app/(admin)/layout.tsx` | route outlet | loading through route suspense | landmarks via Ant Layout | sidebar collapses/drawer handled by layout styles | all authenticated pages | `src/app/layouts/SideNav.test.tsx` |
+| `MainLayout` | Authenticated app shell | `src/app/layouts/MainLayout.tsx` | route outlet | loading through route suspense | landmarks via Ant Layout | sidebar collapses/drawer handled by layout styles | all authenticated pages | `src/app/layouts/SideNav.test.tsx` |
 | `SideNav` | RBAC filtered navigation | `src/app/layouts/SideNav.tsx`, `src/app/layouts/menu.tsx` | menu config and permission state | expanded, collapsed, filtered | keyboard behavior inherited from Ant Menu | desktop sidebar, mobile drawer pattern | all modules | `src/app/layouts/SideNav.test.tsx` |
 | `RequirePermission` | Route guard | `src/app/router/RequirePermission.tsx` | `permission?: string | string[]` | loading profile, allowed, blocked | redirects to 403 guidance page | stable on refresh/direct URL | protected routes | `src/app/router/RequirePermission.test.tsx` |
 | `PermissionGuard` | Conditional content/action wrapper | `src/shared/components/permission/PermissionGuard.tsx` | module/action/permissionCode, fallback | hidden, fallback, allowed | avoids unreachable controls | inline, table action, toolbar action | all action areas | `src/shared/components/permission/**` tests |

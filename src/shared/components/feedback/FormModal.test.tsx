@@ -1,9 +1,9 @@
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
-import { FormModal } from './FormModal';
+import { describe, it, expect, vi } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { FormModal } from "./FormModal";
 
-describe('FormModal', () => {
-  it('width truyền vào modal đúng giá trị', () => {
+describe("FormModal", () => {
+  it("width truyền vào modal đúng giá trị", () => {
     render(
       <FormModal
         open
@@ -17,11 +17,11 @@ describe('FormModal', () => {
     );
     // AntD Modal trong jsdom có thể không set width vào style attribute
     // — chỉ verify modal được render với prop width (component đã nhận prop)
-    const wrap = document.querySelector('.ant-modal') as HTMLElement;
+    const wrap = document.querySelector(".ant-modal") as HTMLElement;
     expect(wrap).toBeInTheDocument();
   });
 
-  it('gọi afterClose sau khi modal đóng hẳn, không gọi khi vẫn đang mở', async () => {
+  it("gọi afterClose sau khi modal đóng hẳn, không gọi khi vẫn đang mở", async () => {
     const afterClose = vi.fn();
     const { rerender } = render(
       <FormModal
@@ -53,7 +53,7 @@ describe('FormModal', () => {
     expect(afterClose).not.toHaveBeenCalled();
   });
 
-  it('loading=true khoá nút OK và hiện trạng thái loading (confirmLoading)', () => {
+  it("loading=true khoá nút OK và hiện trạng thái loading (confirmLoading)", () => {
     render(
       <FormModal
         open
@@ -65,12 +65,12 @@ describe('FormModal', () => {
         <div>content</div>
       </FormModal>,
     );
-    const okButton = screen.getByRole('button', { name: 'Lưu' });
+    const okButton = screen.getByRole("button", { name: "Lưu" });
     // AntD Button có thể set loading qua prop, không phải class trong jsdom
     expect(okButton).toBeInTheDocument();
   });
 
-  it('bấm nút Lưu gọi onOk, bấm Huỷ gọi onCancel', () => {
+  it("bấm nút Lưu gọi onOk, bấm Huỷ gọi onCancel", () => {
     const onOk = vi.fn();
     const onCancel = vi.fn();
     render(
@@ -78,13 +78,13 @@ describe('FormModal', () => {
         <div>content</div>
       </FormModal>,
     );
-    fireEvent.click(screen.getByRole('button', { name: 'Lưu' }));
+    fireEvent.click(screen.getByRole("button", { name: "Lưu" }));
     expect(onOk).toHaveBeenCalledTimes(1);
-    fireEvent.click(screen.getByRole('button', { name: 'Huỷ' }));
+    fireEvent.click(screen.getByRole("button", { name: "Huỷ" }));
     expect(onCancel).toHaveBeenCalledTimes(1);
   });
 
-  it('okButtonProps.disabled khoá được nút Lưu (dùng ở OrgUnitFormModal khi chưa có mã)', () => {
+  it("okButtonProps.disabled khoá được nút Lưu (dùng ở OrgUnitFormModal khi chưa có mã)", () => {
     render(
       <FormModal
         open
@@ -96,10 +96,10 @@ describe('FormModal', () => {
         <div>content</div>
       </FormModal>,
     );
-    expect(screen.getByRole('button', { name: 'Lưu' })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Lưu" })).toBeDisabled();
   });
 
-  it('không render khi open=false', () => {
+  it("không render khi open=false", () => {
     render(
       <FormModal
         open={false}
@@ -110,6 +110,6 @@ describe('FormModal', () => {
         <div>only-visible-content</div>
       </FormModal>,
     );
-    expect(screen.queryByText('only-visible-content')).not.toBeInTheDocument();
+    expect(screen.queryByText("only-visible-content")).not.toBeInTheDocument();
   });
 });

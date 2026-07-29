@@ -1,8 +1,8 @@
-import { Navigate, Outlet, useLocation } from 'react-router-dom';
-import { useMe } from '@/modules/auth/hooks/use-me';
-import { Loading } from '@/shared/components/feedback/Loading';
-import { ROUTES } from '@/shared/constants/routes';
-import { useAuthStore } from '@/shared/store/auth.store';
+import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { useMe } from "@/modules/auth/hooks/use-me";
+import { Loading } from "@/shared/components/feedback/Loading";
+import { ROUTES } from "@/shared/constants/routes";
+import { useAuthStore } from "@/shared/store/auth.store";
 
 /**
  * Auth route guard:

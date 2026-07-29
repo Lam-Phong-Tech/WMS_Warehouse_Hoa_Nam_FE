@@ -12,11 +12,11 @@
  *
  * Phân quyền (permission/role/scope) tách riêng ở `@/lib/permissions`.
  */
-export { useAuthStore } from '@/shared/store/auth.store';
-export { ProtectedRoute } from '@/app/router/ProtectedRoute';
-export { useMe } from '@/modules/auth/hooks/use-me';
-export { useLogin } from '@/modules/auth/hooks/use-login';
-export { useLogout } from '@/modules/auth/hooks/use-logout';
+export { useAuthStore } from "@/shared/store/auth.store";
+export { ProtectedRoute } from "@/app/router/ProtectedRoute";
+export { useMe } from "@/modules/auth/hooks/use-me";
+export { useLogin } from "@/modules/auth/hooks/use-login";
+export { useLogout } from "@/modules/auth/hooks/use-logout";
 
 /**
  * ═══════════════════════════════════════════════════════

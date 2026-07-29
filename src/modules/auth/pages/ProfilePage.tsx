@@ -1,8 +1,8 @@
-import { Avatar, Card, Descriptions, Tag } from 'antd';
-import { UserOutlined } from '@ant-design/icons';
-import { PageHeader } from '@/shared/components';
-import { BRAND } from '@/app/theme';
-import { useAuthStore } from '@/shared/store/auth.store';
+import { Avatar, Card, Descriptions, Tag } from "antd";
+import { UserOutlined } from "@ant-design/icons";
+import { PageHeader } from "@/shared/components";
+import { BRAND } from "@/app/theme";
+import { useAuthStore } from "@/shared/store/auth.store";
 
 /**
  * Hồ sơ tài khoản hiện tại — chỉ đọc, dữ liệu lấy từ GET /auth/me (đã nạp
@@ -16,7 +16,7 @@ export function ProfilePage() {
   const currentContext = useAuthStore((s) => s.currentContext);
 
   const displayName =
-    profile?.name ?? user?.name ?? user?.code ?? user?.email ?? 'Người dùng';
+    profile?.name ?? user?.name ?? user?.code ?? user?.email ?? "Người dùng";
   const email = profile?.email ?? user?.email;
 
   return (
@@ -26,8 +26,8 @@ export function ProfilePage() {
       <Card>
         <div
           style={{
-            display: 'flex',
-            alignItems: 'center',
+            display: "flex",
+            alignItems: "center",
             gap: 16,
             marginBottom: 24,
           }}
@@ -39,34 +39,34 @@ export function ProfilePage() {
           />
           <div>
             <div style={{ fontSize: 18, fontWeight: 600 }}>{displayName}</div>
-            {email && <div style={{ color: 'rgba(0,0,0,0.45)' }}>{email}</div>}
+            {email && <div style={{ color: "rgba(0,0,0,0.45)" }}>{email}</div>}
           </div>
         </div>
 
         <Descriptions column={1} bordered size="middle">
           <Descriptions.Item label="Mã nhân viên">
-            {profile?.code ?? user?.code ?? '—'}
+            {profile?.code ?? user?.code ?? "—"}
           </Descriptions.Item>
           <Descriptions.Item label="Số điện thoại">
-            {profile?.phone ?? '—'}
+            {profile?.phone ?? "—"}
           </Descriptions.Item>
           <Descriptions.Item label="Chức vụ">
-            {profile?.position?.name ?? '—'}
+            {profile?.position?.name ?? "—"}
           </Descriptions.Item>
           <Descriptions.Item label="Phòng ban">
-            {profile?.department?.name ?? '—'}
+            {profile?.department?.name ?? "—"}
           </Descriptions.Item>
           <Descriptions.Item label="Chi nhánh">
-            {profile?.branch?.name ?? '—'}
+            {profile?.branch?.name ?? "—"}
           </Descriptions.Item>
           <Descriptions.Item label="Công ty">
-            {profile?.company?.name ?? '—'}
+            {profile?.company?.name ?? "—"}
           </Descriptions.Item>
           <Descriptions.Item label="Vai trò">
             {isSuperAdmin ? (
               <Tag color="gold">Super Admin</Tag>
             ) : (
-              (profile?.role?.name ?? currentContext?.role_name ?? '—')
+              (profile?.role?.name ?? currentContext?.role_name ?? "—")
             )}
           </Descriptions.Item>
         </Descriptions>

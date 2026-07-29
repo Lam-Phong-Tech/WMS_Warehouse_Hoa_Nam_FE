@@ -6,7 +6,13 @@ export interface InboundDocument {
   expected: number;
   posted: number;
   remaining: number;
-  status: 'DRAFT' | 'SCANNING' | 'PARTIALLY_POSTED' | 'POSTED' | 'CLOSED' | 'CANCELLED';
+  status:
+    | "DRAFT"
+    | "SCANNING"
+    | "PARTIALLY_POSTED"
+    | "POSTED"
+    | "CLOSED"
+    | "CANCELLED";
   createdBy: string;
   version: number;
   sourceReference?: string;
@@ -22,7 +28,7 @@ export interface InboundLine {
   scanned: number;
   posted: number;
   remaining: number;
-  validation: 'VALID' | 'INVALID' | 'UNKNOWN';
+  validation: "VALID" | "INVALID" | "UNKNOWN";
   selected: boolean;
 }
 

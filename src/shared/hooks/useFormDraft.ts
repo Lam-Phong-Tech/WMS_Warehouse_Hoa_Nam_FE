@@ -1,9 +1,9 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef } from "react";
 
 /**
  * Key constants to scope form draft storage in localStorage.
  */
-const DRAFT_PREFIX = 'erp_form_draft';
+const DRAFT_PREFIX = "erp_form_draft";
 
 /**
  * Validate that stored JSON still looks like a valid non-null object
@@ -13,7 +13,7 @@ function isValidDraft(raw: string | null): unknown | null {
   if (!raw) return null;
   try {
     const parsed = JSON.parse(raw);
-    if (typeof parsed === 'object' && parsed !== null) return parsed;
+    if (typeof parsed === "object" && parsed !== null) return parsed;
     return null;
   } catch {
     return null;

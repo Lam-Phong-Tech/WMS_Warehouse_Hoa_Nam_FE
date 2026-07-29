@@ -1,13 +1,13 @@
-import { Button, type ButtonProps } from 'antd';
+import { Button, type ButtonProps } from "antd";
 import {
   usePermissionState,
   hasPermission,
-} from '@/modules/auth/utils/permission';
+} from "@/modules/auth/utils/permission";
 import {
   getPermissionCode,
   type PermissionAction,
-} from '@/shared/types/permission';
-import { hasScopeForAction } from '@/shared/types/permission.scope';
+} from "@/shared/types/permission";
+import { hasScopeForAction } from "@/shared/types/permission.scope";
 
 export interface ActionButtonProps extends ButtonProps {
   /** Module name */
@@ -17,7 +17,7 @@ export interface ActionButtonProps extends ButtonProps {
   /** Permission code cụ thể (ưu tiên) */
   permissionCode?: string;
   /** Mode: 'hide' | 'disable' */
-  mode?: 'hide' | 'disable';
+  mode?: "hide" | "disable";
   /** Tooltip khi bị disable */
   disabledTooltip?: string;
   /** Icon component */
@@ -61,7 +61,7 @@ export function ActionButton({
   action,
   permissionCode,
   mode,
-  disabledTooltip = 'Bạn không có quyền thực hiện thao tác này',
+  disabledTooltip = "Bạn không có quyền thực hiện thao tác này",
   icon,
   children,
   ...buttonProps
@@ -76,13 +76,13 @@ export function ActionButton({
     state.isSuperAdmin,
   );
   const can = hasCodePermission && scopePassed;
-  const effectiveMode = mode ?? (hasCodePermission ? 'disable' : 'hide');
+  const effectiveMode = mode ?? (hasCodePermission ? "disable" : "hide");
 
-  if (effectiveMode === 'hide' && !can) {
+  if (effectiveMode === "hide" && !can) {
     return null;
   }
 
-  const isButtonDisabled = effectiveMode === 'disable' && !can;
+  const isButtonDisabled = effectiveMode === "disable" && !can;
 
   return (
     <Button

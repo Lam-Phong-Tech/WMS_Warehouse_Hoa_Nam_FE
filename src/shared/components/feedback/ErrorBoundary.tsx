@@ -1,5 +1,5 @@
-import { Component, type ErrorInfo, type ReactNode } from 'react';
-import { Button, Result } from 'antd';
+import { Component, type ErrorInfo, type ReactNode } from "react";
+import { Button, Result } from "antd";
 
 export interface ErrorBoundaryProps {
   children: ReactNode;
@@ -23,7 +23,7 @@ export class ErrorBoundary extends Component<
   componentDidCatch(error: Error, info: ErrorInfo) {
     // Log lỗi để debug — trong production nên gửi tới monitoring service
     if (import.meta.env.DEV) {
-      console.error('[ErrorBoundary]', error, info);
+      console.error("[ErrorBoundary]", error, info);
     }
   }
 

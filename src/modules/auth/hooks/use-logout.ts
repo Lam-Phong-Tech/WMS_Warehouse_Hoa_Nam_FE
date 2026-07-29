@@ -1,8 +1,8 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
-import { authService } from '@/modules/auth/services/auth.service';
-import { useAuthStore } from '@/shared/store/auth.store';
-import { ROUTES } from '@/shared/constants/routes';
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
+import { authService } from "@/modules/auth/services/auth.service";
+import { useAuthStore } from "@/shared/store/auth.store";
+import { ROUTES } from "@/shared/constants/routes";
 
 export const useLogout = () => {
   const queryClient = useQueryClient();

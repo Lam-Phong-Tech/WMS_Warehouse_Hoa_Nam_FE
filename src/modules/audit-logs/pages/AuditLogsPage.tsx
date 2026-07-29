@@ -1,22 +1,22 @@
-import { useState } from 'react';
-import { Card } from 'antd';
+import { useState } from "react";
+import { Card } from "antd";
 import {
   PageHeader,
   ApiErrorAlert,
   EmptyState,
   LoadingState,
-} from '@/shared/components';
-import { AuditLogsTable } from '@/modules/audit-logs/components/AuditLogsTable';
-import { AuditLogDetailDrawer } from '@/modules/audit-logs/components/AuditLogDetailDrawer';
-import { useAuditLogs } from '@/modules/audit-logs/hooks/use-audit-logs';
-import type { AuditLog } from '@/modules/audit-logs/types/audit-logs.types';
+} from "@/shared/components";
+import { AuditLogsTable } from "@/modules/audit-logs/components/AuditLogsTable";
+import { AuditLogDetailDrawer } from "@/modules/audit-logs/components/AuditLogDetailDrawer";
+import { useAuditLogs } from "@/modules/audit-logs/hooks/use-audit-logs";
+import type { AuditLog } from "@/modules/audit-logs/types/audit-logs.types";
 
 export function AuditLogsPage() {
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(15);
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
   const [sortBy, setSortBy] = useState<string>();
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>();
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">();
 
   const { data, isLoading, isError, error, refetch } = useAuditLogs({
     page,

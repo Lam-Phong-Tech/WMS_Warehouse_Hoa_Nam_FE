@@ -1,16 +1,16 @@
-import { Dropdown, Button } from 'antd';
-import type { MenuProps } from 'antd';
-import { EditOutlined } from '@ant-design/icons';
-import type { ReactNode } from 'react';
+import { Dropdown, Button } from "antd";
+import type { MenuProps } from "antd";
+import { EditOutlined } from "@ant-design/icons";
+import type { ReactNode } from "react";
 import {
   usePermissionState,
   hasPermission,
-} from '@/modules/auth/utils/permission';
+} from "@/modules/auth/utils/permission";
 import {
   getPermissionCode,
   type PermissionAction,
-} from '@/shared/types/permission';
-import { hasScopeForAction } from '@/shared/types/permission.scope';
+} from "@/shared/types/permission";
+import { hasScopeForAction } from "@/shared/types/permission.scope";
 
 export interface ActionItem {
   key: string;
@@ -55,7 +55,7 @@ export interface ActionDropdownProps {
  */
 export function ActionDropdown({
   items,
-  tooltip = 'Thao tác',
+  tooltip = "Thao tác",
   icon = <EditOutlined />,
   disabled = false,
 }: ActionDropdownProps) {
@@ -85,7 +85,7 @@ export function ActionDropdown({
     return true;
   });
 
-  const menuItems: MenuProps['items'] = visibleItems.map((item) => ({
+  const menuItems: MenuProps["items"] = visibleItems.map((item) => ({
     key: item.key,
     icon: item.icon,
     label: item.label,
@@ -100,7 +100,7 @@ export function ActionDropdown({
   return (
     <Dropdown
       menu={{ items: menuItems }}
-      trigger={['click']}
+      trigger={["click"]}
       placement="bottomRight"
       disabled={disabled}
     >

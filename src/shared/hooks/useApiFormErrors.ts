@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
-import type { FieldValues, Path, UseFormSetError } from 'react-hook-form';
-import { extractFieldErrors } from '@/shared/api/api-error';
+import { useEffect } from "react";
+import type { FieldValues, Path, UseFormSetError } from "react-hook-form";
+import { extractFieldErrors } from "@/shared/api/api-error";
 
 /**
  * Ghi 1 map lỗi field (`{ camelField: message }`, đã map snake_case → camelCase
@@ -27,7 +27,7 @@ function applyFieldErrorsToForm<T extends FieldValues>(
     if (!msg) continue;
     let field = fieldMap?.[beField] ?? beField;
     if (normalizeField) field = normalizeField(field);
-    setError(field as Path<T>, { type: 'server', message: msg });
+    setError(field as Path<T>, { type: "server", message: msg });
   }
 }
 

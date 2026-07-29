@@ -1,10 +1,10 @@
-import type { ButtonProps } from 'antd';
-import { Button } from 'antd';
+import type { ButtonProps } from "antd";
+import { Button } from "antd";
 import {
   ACCENT_COLORS,
   FONT_FAMILY,
   NEUTRAL_COLORS,
-} from '@/shared/design-tokens';
+} from "@/shared/design-tokens";
 
 export interface FormActionsProps {
   onOk: () => void;
@@ -20,7 +20,7 @@ export interface FormActionsProps {
 
 const cancelStyle = {
   height: 38,
-  padding: '0 18px',
+  padding: "0 18px",
   border: `1.5px solid ${NEUTRAL_COLORS.ink}`,
   borderRadius: 3,
   background: NEUTRAL_COLORS.paper,
@@ -31,7 +31,7 @@ const cancelStyle = {
 
 const okStyle = {
   height: 38,
-  padding: '0 22px',
+  padding: "0 22px",
   background: ACCENT_COLORS.accent,
   fontSize: 15,
   fontWeight: 700,
@@ -46,8 +46,8 @@ export function FormActions({
   onOk,
   onCancel,
   loading = false,
-  okText = 'Lưu',
-  cancelText = 'Hủy',
+  okText = "Lưu",
+  cancelText = "Hủy",
   showOk = true,
   showCancel = true,
   okButtonProps,
@@ -55,7 +55,7 @@ export function FormActions({
 }: FormActionsProps) {
   if (!showOk && !showCancel) return null;
   return (
-    <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+    <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
       {showCancel && (
         <Button onClick={onCancel} style={cancelStyle} {...cancelButtonProps}>
           {cancelText}
@@ -66,7 +66,7 @@ export function FormActions({
           type="primary"
           onClick={onOk}
           loading={loading}
-          className={loading ? 'ant-btn-loading' : undefined}
+          className={loading ? "ant-btn-loading" : undefined}
           style={okStyle}
           {...okButtonProps}
         >

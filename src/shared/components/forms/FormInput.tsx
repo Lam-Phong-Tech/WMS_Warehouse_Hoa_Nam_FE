@@ -1,12 +1,12 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import type {
   Control,
   ControllerRenderProps,
   FieldValues,
   Path,
-} from 'react-hook-form';
-import { Input } from 'antd';
-import { FormField } from '@/shared/components/forms/FormField';
+} from "react-hook-form";
+import { Input } from "antd";
+import { FormField } from "@/shared/components/forms/FormField";
 
 export interface FormInputProps<T extends FieldValues> {
   control: Control<T>;
@@ -20,7 +20,7 @@ export interface FormInputProps<T extends FieldValues> {
   disabled?: boolean;
   allowClear?: boolean;
   required?: boolean;
-  size?: 'small' | 'middle' | 'large';
+  size?: "small" | "middle" | "large";
   /** Chỉ cho phép nhập số (không cho phép chữ cái và ký tự đặc biệt). */
   numericOnly?: boolean;
   /** Chỉ cho phép nhập chữ cái và khoảng trắng (không cho phép số và ký tự đặc biệt). */
@@ -40,10 +40,10 @@ function sanitize(
 ): string | null {
   let cleaned = value;
   if (numericOnly) {
-    cleaned = value.replace(/[^0-9]/g, '');
+    cleaned = value.replace(/[^0-9]/g, "");
   } else if (alphabeticOnly) {
     // \p{L} khớp mọi ký tự chữ cái Unicode (bao gồm tất cả dấu tiếng Việt)
-    cleaned = value.replace(/[^\p{L}\s]/gu, '');
+    cleaned = value.replace(/[^\p{L}\s]/gu, "");
   }
   return cleaned !== value ? cleaned : null;
 }
@@ -61,7 +61,7 @@ interface InnerProps {
   autoFocus: boolean;
   disabled: boolean;
   allowClear: boolean;
-  size: 'small' | 'middle' | 'large';
+  size: "small" | "middle" | "large";
   maxLength?: number;
   numericOnly: boolean;
   alphabeticOnly: boolean;
@@ -83,7 +83,7 @@ function FormInputInner({
   // Local state đóng vai trò buffer — Input đọc value từ đây thay vì
   // trực tiếp từ field.value. Nhờ vậy, react-hook-form re-render (do
   // validation onChange) không thể ghi đè value đang compose dở.
-  const [localValue, setLocalValue] = useState<string>(field.value ?? '');
+  const [localValue, setLocalValue] = useState<string>(field.value ?? "");
   const composingRef = useRef(false);
   const justSanitizedRef = useRef(false);
 
@@ -93,7 +93,7 @@ function FormInputInner({
   const prevFieldValue = useRef(field.value);
   useEffect(() => {
     if (field.value !== prevFieldValue.current && !composingRef.current) {
-      setLocalValue(field.value ?? '');
+      setLocalValue(field.value ?? "");
     }
     prevFieldValue.current = field.value;
   }, [field.value]);
@@ -191,7 +191,7 @@ export function FormInput<T extends FieldValues>({
   disabled = false,
   allowClear = false,
   required = false,
-  size = 'large',
+  size = "large",
   numericOnly = false,
   alphabeticOnly = false,
   maxLength,

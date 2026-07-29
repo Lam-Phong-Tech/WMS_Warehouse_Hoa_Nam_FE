@@ -1,9 +1,9 @@
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { FormDrawer } from './FormDrawer';
+import { describe, it, expect, vi } from "vitest";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { FormDrawer } from "./FormDrawer";
 
-describe('FormDrawer', () => {
-  it('width truyền vào FormDrawer được chuyển thành prop `size` cho antd Drawer (antd v6 bỏ `width` cho placement ngang)', () => {
+describe("FormDrawer", () => {
+  it("width truyền vào FormDrawer được chuyển thành prop `size` cho antd Drawer (antd v6 bỏ `width` cho placement ngang)", () => {
     render(
       <FormDrawer
         open
@@ -15,9 +15,9 @@ describe('FormDrawer', () => {
         <div>content</div>
       </FormDrawer>,
     );
-    const panel = document.querySelector('.ant-drawer') as HTMLElement;
+    const panel = document.querySelector(".ant-drawer") as HTMLElement;
     expect(panel).toBeTruthy();
-    expect(panel.style.width).toBe('720px');
+    expect(panel.style.width).toBe("720px");
   });
 
   it('placement="left" vẫn áp dụng width lên chiều ngang, không bị bỏ qua', () => {
@@ -33,11 +33,11 @@ describe('FormDrawer', () => {
         <div>content</div>
       </FormDrawer>,
     );
-    const panel = document.querySelector('.ant-drawer') as HTMLElement;
-    expect(panel.style.width).toBe('480px');
+    const panel = document.querySelector(".ant-drawer") as HTMLElement;
+    expect(panel.style.width).toBe("480px");
   });
 
-  it('gọi afterClose sau khi drawer đóng hẳn, không gọi khi vẫn đang mở', async () => {
+  it("gọi afterClose sau khi drawer đóng hẳn, không gọi khi vẫn đang mở", async () => {
     const afterClose = vi.fn();
     const { rerender } = render(
       <FormDrawer
@@ -80,10 +80,10 @@ describe('FormDrawer', () => {
       </FormDrawer>,
     );
     expect(
-      screen.queryByRole('button', { name: 'Lưu' }),
+      screen.queryByRole("button", { name: "Lưu" }),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('button', { name: 'Hủy' }),
+      screen.queryByRole("button", { name: "Hủy" }),
     ).not.toBeInTheDocument();
   });
 
@@ -93,18 +93,18 @@ describe('FormDrawer', () => {
         <div>content</div>
       </FormDrawer>,
     );
-    expect(screen.getByText('Thêm mới')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Lưu' })).toBeInTheDocument();
+    expect(screen.getByText("Thêm mới")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Lưu" })).toBeInTheDocument();
 
     rerender(
       <FormDrawer open onOk={vi.fn()} onCancel={vi.fn()} mode="edit">
         <div>content</div>
       </FormDrawer>,
     );
-    expect(screen.getByText('Chỉnh sửa')).toBeInTheDocument();
+    expect(screen.getByText("Chỉnh sửa")).toBeInTheDocument();
   });
 
-  it('loading=true khoá nút Lưu và hiện trạng thái loading', () => {
+  it("loading=true khoá nút Lưu và hiện trạng thái loading", () => {
     render(
       <FormDrawer
         open
@@ -116,11 +116,11 @@ describe('FormDrawer', () => {
         <div>content</div>
       </FormDrawer>,
     );
-    const okButton = screen.getByRole('button', { name: 'Lưu' });
-    expect(okButton).toHaveClass('ant-btn-loading');
+    const okButton = screen.getByRole("button", { name: "Lưu" });
+    expect(okButton).toHaveClass("ant-btn-loading");
   });
 
-  it('bấm nút Lưu gọi onOk, bấm Hủy gọi onCancel', () => {
+  it("bấm nút Lưu gọi onOk, bấm Hủy gọi onCancel", () => {
     const onOk = vi.fn();
     const onCancel = vi.fn();
     render(
@@ -128,13 +128,13 @@ describe('FormDrawer', () => {
         <div>content</div>
       </FormDrawer>,
     );
-    fireEvent.click(screen.getByRole('button', { name: 'Lưu' }));
+    fireEvent.click(screen.getByRole("button", { name: "Lưu" }));
     expect(onOk).toHaveBeenCalledTimes(1);
-    fireEvent.click(screen.getByRole('button', { name: 'Hủy' }));
+    fireEvent.click(screen.getByRole("button", { name: "Hủy" }));
     expect(onCancel).toHaveBeenCalledTimes(1);
   });
 
-  it('title dạng function nhận đúng mode hiện tại', () => {
+  it("title dạng function nhận đúng mode hiện tại", () => {
     render(
       <FormDrawer
         open
@@ -146,6 +146,6 @@ describe('FormDrawer', () => {
         <div>content</div>
       </FormDrawer>,
     );
-    expect(screen.getByText('Tiêu đề: edit')).toBeInTheDocument();
+    expect(screen.getByText("Tiêu đề: edit")).toBeInTheDocument();
   });
 });

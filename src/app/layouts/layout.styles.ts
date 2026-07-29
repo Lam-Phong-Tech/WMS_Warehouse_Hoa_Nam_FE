@@ -1,5 +1,5 @@
-import type { CSSProperties } from 'react';
-import { BRAND } from '@/app/theme';
+import type { CSSProperties } from "react";
+import { BRAND } from "@/app/theme";
 
 /**
  * Style dùng chung cho các component layout (Sider/Header/Footer/Breadcrumb).
@@ -13,25 +13,25 @@ import { BRAND } from '@/app/theme';
 export const layoutStyles = {
   sideNavBrand: {
     height: 64,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 10,
-    color: '#fff',
+    color: "#fff",
     fontWeight: 700,
     fontSize: 18,
     letterSpacing: 0.5,
-    userSelect: 'none',
+    userSelect: "none",
   } satisfies CSSProperties,
 
   sideNavBrandIcon: {
     width: 32,
     height: 32,
     borderRadius: 8,
-    background: 'rgba(255,255,255,0.15)',
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
+    background: "rgba(255,255,255,0.15)",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
     flexShrink: 0,
   } satisfies CSSProperties,
 
@@ -39,30 +39,30 @@ export const layoutStyles = {
     fontSize: 16,
     width: 40,
     height: 40,
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
     borderRadius: 8,
   } satisfies CSSProperties,
 
   breadcrumb: {
     marginBottom: 16,
-    padding: '0 2px',
+    padding: "0 2px",
   } satisfies CSSProperties,
 
   footer: {
-    textAlign: 'center',
-    padding: '16px 24px',
+    textAlign: "center",
+    padding: "16px 24px",
   } satisfies CSSProperties,
 
   userMenuClickable: {
-    cursor: 'pointer',
-    display: 'inline-flex',
-    alignItems: 'center',
+    cursor: "pointer",
+    display: "inline-flex",
+    alignItems: "center",
     gap: 8,
-    padding: '4px 8px',
+    padding: "4px 8px",
     borderRadius: 8,
-    transition: 'background 0.2s ease',
+    transition: "background 0.2s ease",
   } satisfies CSSProperties,
 
   userMenuProfile: {
@@ -78,7 +78,7 @@ export const layoutStyles = {
   } satisfies CSSProperties,
 
   mainLayoutRoot: {
-    minHeight: '100vh',
+    minHeight: "100vh",
   } satisfies CSSProperties,
 
   /**
@@ -88,21 +88,21 @@ export const layoutStyles = {
    * không đẩy Header/Footer.
    */
   siderFixed: {
-    overflow: 'auto',
-    height: '100vh',
-    position: 'fixed',
+    overflow: "auto",
+    height: "100vh",
+    position: "fixed",
     insetInlineStart: 0,
     top: 0,
     bottom: 0,
     zIndex: 100,
-    scrollbarWidth: 'thin',
-    scrollbarColor: 'rgba(255,255,255,0.12) transparent',
+    scrollbarWidth: "thin",
+    scrollbarColor: "rgba(255,255,255,0.12) transparent",
   } satisfies CSSProperties,
 
   /** Bù khoảng trống bên trái = độ rộng Sider (đã fixed, không còn chiếm chỗ trong luồng). */
   siderOffset: (width: number): CSSProperties => ({
     marginInlineStart: width,
-    transition: 'margin-inline-start 0.2s ease',
+    transition: "margin-inline-start 0.2s ease",
   }),
 
   contentMargin: (isMobile: boolean): CSSProperties => ({
@@ -113,11 +113,11 @@ export const layoutStyles = {
     colorBgContainer: string,
     borderRadiusLG: number,
   ): CSSProperties => ({
-    padding: 'clamp(16px, 2vw, 24px)',
-    minHeight: 'calc(100vh - 64px - 70px - 80px)',
+    padding: "clamp(16px, 2vw, 24px)",
+    minHeight: "calc(100vh - 64px - 70px - 80px)",
     background: colorBgContainer,
     borderRadius: borderRadiusLG,
-    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
+    boxShadow: "0 1px 3px rgba(0, 0, 0, 0.04)",
   }),
 
   drawerBody: {
@@ -138,7 +138,7 @@ export const layoutStyles = {
   } satisfies CSSProperties,
 
   contextSwitcherItemIconPlaceholder: {
-    display: 'inline-block',
+    display: "inline-block",
     width: 14,
   } satisfies CSSProperties,
 
@@ -155,23 +155,23 @@ export const layoutStyles = {
   } satisfies CSSProperties,
 
   contextSwitcherTrigger: {
-    cursor: 'pointer',
+    cursor: "pointer",
   } satisfies CSSProperties,
 
   contextSwitcherCaret: {
     fontSize: 10,
-    color: '#999',
+    color: "#999",
   } satisfies CSSProperties,
 
   // Animation & responsive helpers
   headerContainer: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '0 clamp(12px, 2vw, 24px)',
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: "0 clamp(12px, 2vw, 24px)",
     height: 64,
-    transition: 'box-shadow 0.3s ease',
-    position: 'sticky',
+    transition: "box-shadow 0.3s ease",
+    position: "sticky",
     top: 0,
     zIndex: 99,
     backdropFilter: BRAND.headerBlur,
@@ -179,7 +179,7 @@ export const layoutStyles = {
   } satisfies CSSProperties,
 
   siderDrawerMask: {
-    background: 'rgba(0, 0, 0, 0.45)',
-    backdropFilter: 'blur(4px)',
+    background: "rgba(0, 0, 0, 0.45)",
+    backdropFilter: "blur(4px)",
   } satisfies CSSProperties,
 };

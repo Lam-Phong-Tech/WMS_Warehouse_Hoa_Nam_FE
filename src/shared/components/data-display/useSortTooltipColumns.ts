@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react';
-import type { SorterResult } from 'antd/es/table/interface';
-import type { TableColumnsType } from 'antd';
+import { useMemo, useState } from "react";
+import type { SorterResult } from "antd/es/table/interface";
+import type { TableColumnsType } from "antd";
 
-type SortState = { key?: React.Key; order?: 'ascend' | 'descend' };
+type SortState = { key?: React.Key; order?: "ascend" | "descend" };
 
 /**
  * Cột chữ (mã, tên, email...) sort theo alphabet → tooltip nói "A → Z"/"Z → A".
@@ -10,7 +10,7 @@ type SortState = { key?: React.Key; order?: 'ascend' | 'descend' };
  * → tooltip nói "tăng dần"/"giảm dần" (không có ý nghĩa gì khi nói "A → Z" cho
  * một ngày tháng hay một con số). Mặc định 'text' vì đa số cột là chữ.
  */
-export type SortWordingType = 'text' | 'value';
+export type SortWordingType = "text" | "value";
 
 /**
  * Cho phép khai báo `sortType` trên column definition của antd Table.
@@ -53,21 +53,21 @@ export function useSortTooltipColumns<T>(
   const columnsWithTooltip = useMemo(() => {
     if (!columns) return columns;
     return (columns as ColumnWithSortType<T>).map((col) => {
-      if (!('sorter' in col) || !col.sorter || typeof col.title !== 'string') {
+      if (!("sorter" in col) || !col.sorter || typeof col.title !== "string") {
         return col;
       }
       const label = col.title;
-      const key = col.key ?? ('dataIndex' in col ? col.dataIndex : undefined);
+      const key = col.key ?? ("dataIndex" in col ? col.dataIndex : undefined);
       const isActive = sortState.key === key;
       const [asc, desc] =
-        col.sortType === 'value'
-          ? ['tăng dần', 'giảm dần']
-          : ['A → Z', 'Z → A'];
+        col.sortType === "value"
+          ? ["tăng dần", "giảm dần"]
+          : ["A → Z", "Z → A"];
 
       const text =
-        isActive && sortState.order === 'ascend'
+        isActive && sortState.order === "ascend"
           ? `Nhấp để sắp xếp theo ${label} ${desc}`
-          : isActive && sortState.order === 'descend'
+          : isActive && sortState.order === "descend"
             ? `Nhấp để bỏ sắp xếp ${label}`
             : `Nhấp để sắp xếp theo ${label} ${asc}`;
 
