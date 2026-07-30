@@ -89,6 +89,22 @@ endpoint constants. The preferred WMS envelope is:
 Business errors should preserve `error_code` and field-level `errors` so forms
 can render backend validation without client-side guessing.
 
+## Build, Env, And Health
+
+Runtime configuration is centralized in `src/shared/config/env.ts`.
+
+| Concern | Standard |
+| --- | --- |
+| Environment name | `VITE_APP_ENV` is restricted to `local`, `dev`, `uat`, `prod`, or `test`. |
+| API base URL | `VITE_API_BASE_URL` must be an absolute `http/https` URL and is consumed through `runtimeConfig`, not directly inside modules. |
+| Backend health | `apiHealthUrl` is composed from `VITE_API_BASE_URL` and `VITE_API_HEALTH_PATH`; FE does not invent backend health semantics. |
+| API timeout | `VITE_API_TIMEOUT_MS` controls the shared axios timeout. |
+| Storage URL | `VITE_STORAGE_URL` is optional; relative storage paths fall back to the API base URL when unset. |
+| Frontend health | `public/health.json` is copied to `dist/health.json`; `npm run health:check` verifies deployable FE artifacts after build. |
+
+CI must run install, format check, lint, unit tests, build, frontend health
+artifact check, and API mapping check before a branch is considered deployable.
+
 ## Frontend Rules
 
 - Route guards and hidden UI are UX aids only; backend must enforce RBAC and

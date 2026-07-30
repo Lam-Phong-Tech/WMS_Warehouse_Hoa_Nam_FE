@@ -36,5 +36,8 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Check frontend health artifact
+        run: npm run health:check
+
       - name: Check API mapping
         run: npm run check:api-mapping

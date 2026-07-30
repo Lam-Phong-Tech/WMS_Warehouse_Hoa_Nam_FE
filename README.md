@@ -48,7 +48,22 @@ Mặc định `.env.example` đang trỏ tới backend test:
 
 ```env
 VITE_API_BASE_URL="https://astrodev.test8.io.vn/api/v1"
+VITE_API_HEALTH_PATH="/health"
 ```
+
+### Build/env/health baseline
+
+| Env var | Purpose |
+| --- | --- |
+| `VITE_APP_ENV` | Runtime target: `local`, `dev`, `uat`, `prod`, or `test`. |
+| `VITE_API_BASE_URL` | Approved API base URL with `http/https`; consumed through shared runtime config. |
+| `VITE_API_HEALTH_PATH` | Backend health path joined with `VITE_API_BASE_URL`. |
+| `VITE_API_TIMEOUT_MS` | Shared axios timeout in milliseconds. |
+| `VITE_STORAGE_URL` | Optional public storage base URL; falls back to `VITE_API_BASE_URL` when empty. |
+
+Frontend build exposes a static health artifact at `/health.json`. After
+`yarn build`, run `yarn health:check` to verify `dist/index.html` and
+`dist/health.json` before deployment.
 
 ---
 

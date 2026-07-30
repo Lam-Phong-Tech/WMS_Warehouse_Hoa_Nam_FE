@@ -12,6 +12,7 @@
     "test:watch": "vitest",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\"",
+    "health:check": "node scripts/check-frontend-health.mjs",
     "check:api-mapping": "node scripts/check-api-mapping.mjs",
     "prepare": "husky",
     "postinstall": "patch-package"

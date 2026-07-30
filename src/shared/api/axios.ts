@@ -8,6 +8,7 @@ import {
   type ApiErrorResponse,
 } from "@/shared/types/api-response";
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
+import { runtimeConfig } from "@/shared/config/env";
 
 // Extend AxiosError type to include custom flags
 declare module "axios" {
@@ -22,8 +23,8 @@ declare module "axios" {
 }
 
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
-  timeout: 10000,
+  baseURL: runtimeConfig.apiBaseUrl,
+  timeout: runtimeConfig.apiTimeoutMs,
   // Bắt buộc để trình duyệt gửi/nhận cookie HttpOnly `refresh_token` (BE set
   // ở path /auth, domain .test8.io.vn) khi FE ở subdomain khác cùng site —
   // xem docs/tickets/BE_REFRESH_ENDPOINT_TICKET.md.
