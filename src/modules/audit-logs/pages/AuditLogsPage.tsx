@@ -1,83 +1,42 @@
-import { useState } from "react";
-import { Card } from "antd";
-import {
-  PageHeader,
-  ApiErrorAlert,
-  EmptyState,
-  LoadingState,
-} from "@/shared/components";
-import { AuditLogsTable } from "@/modules/audit-logs/components/AuditLogsTable";
-import { AuditLogDetailDrawer } from "@/modules/audit-logs/components/AuditLogDetailDrawer";
-import { useAuditLogs } from "@/modules/audit-logs/hooks/use-audit-logs";
-import type { AuditLog } from "@/modules/audit-logs/types/audit-logs.types";
+import { Card, Typography } from "antd";
+import { FileTextOutlined } from "@ant-design/icons";
 
+const { Title, Paragraph } = Typography;
+
+/**
+ * AuditLogsPage - Module skeleton
+ * Thay thế bằng page thực tế khi triển khai nghiệp vụ
+ */
 export function AuditLogsPage() {
-  const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(15);
-  const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
-  const [sortBy, setSortBy] = useState<string>();
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">();
-
-  const { data, isLoading, isError, error, refetch } = useAuditLogs({
-    page,
-    limit: perPage,
-    sort_by: sortBy,
-    sort_order: sortOrder,
-  });
-
-  const auditLogs = data?.data ?? [];
-  const total = data?.meta?.total ?? 0;
-
   return (
-    <div>
-      <PageHeader
-        title="Nhật ký kiểm tra"
-        subtitle="Lịch sử thay đổi hệ thống - đối chiếu khi xảy ra mất mát hoặc thất thoát dữ liệu."
-      />
-
-      {isError && (
-        <ApiErrorAlert
-          error={error}
-          title="Không tải được audit logs"
-          onRetry={refetch}
-          style={{ marginBottom: 16 }}
-        />
-      )}
-
-      <Card variant="borderless">
-        {isLoading && auditLogs.length === 0 ? (
-          <LoadingState tip="Đang tải audit logs..." minHeight={320} />
-        ) : !isLoading && auditLogs.length === 0 ? (
-          <EmptyState
-            title="Chưa có audit log"
-            description="Hệ thống chưa có bản ghi nào."
-          />
-        ) : (
-          <AuditLogsTable
-            data={auditLogs}
-            loading={isLoading}
-            page={page}
-            perPage={perPage}
-            total={total}
-            onPaginationChange={(p, ps) => {
-              setPage(p);
-              setPerPage(ps);
-            }}
-            onSortChange={(field, order) => {
-              setSortBy(field);
-              setSortOrder(order);
-              setPage(1);
-            }}
-            onView={(log) => setSelectedLog(log)}
-          />
-        )}
+    <div style={{ padding: 24 }}>
+      <Card style={{ maxWidth: 800, margin: "0 auto" }}>
+        <div style={{ textAlign: "center", marginBottom: 24 }}>
+          <FileTextOutlined style={{ fontSize: 48, color: "#356fa3" }} />
+        </div>
+        <Title level={2} style={{ textAlign: "center", marginBottom: 8 }}>
+          Audit Logs
+        </Title>
+        <Paragraph style={{ textAlign: "center", color: "#7a766c", marginBottom: 24 }}>
+          Module quản lý nhật ký hoạt động của hệ thống
+        </Paragraph>
+        <div
+          style={{
+            marginTop: 24,
+            padding: 16,
+            background: "#fff4cf",
+            border: "1px dashed #c9a227",
+            borderRadius: 4,
+            textAlign: "center",
+          }}
+        >
+          <Typography.Text type="secondary">
+            Module skeleton · Sẵn sàng để triển khai nghiệp vụ
+          </Typography.Text>
+        </div>
       </Card>
-
-      <AuditLogDetailDrawer
-        open={selectedLog !== null}
-        auditLog={selectedLog}
-        onClose={() => setSelectedLog(null)}
-      />
     </div>
   );
 }
+
+export default AuditLogsPage;

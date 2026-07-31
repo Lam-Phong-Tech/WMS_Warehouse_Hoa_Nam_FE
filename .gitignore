@@ -48,3 +48,12 @@ vietnam-addresses.json
 vietnam-addresses-formatted.txt
 test-manager-display.js
 package-lock.json
+
+# Project-specific non-skeleton artifacts
+BA_HOA_NAM/
+scripts/
+e2e/
+debug.log
+.agent-cache/
+.claude/
+.codex/
