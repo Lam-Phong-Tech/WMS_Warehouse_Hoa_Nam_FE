@@ -90,7 +90,9 @@ export const API_ENDPOINTS = {
   SAFE_STOCK_ALERTS: "/safe-stock-alerts",
   SAFE_STOCK_CONFIGS: "/safe-stock-configs",
   SAFE_STOCK_CONFIG: "/safe-stock-configs/:id",
-  // Product / SKU / Category
+  // Product / SKU / Category — CANONICAL CONTRACT (confirmed from OpenAPI 3.0.0, 220 routes)
+  // NOTE: Legacy paths /skus, /items, /physical-codes, /skus/import-excel are NOT in current BE contract.
+  // FE MUST use canonical paths below. If BE later adds /skus/import-excel, update this constant only.
   PRODUCTS: "/products",
   PRODUCT: "/products/:id",
   PRODUCT_ENABLE: "/products/:id/enable",
@@ -99,7 +101,7 @@ export const API_ENDPOINTS = {
   PRODUCT_CATEGORY: "/product-categories/:id",
   UOMS: "/uoms",
   SUPPLIERS: "/suppliers",
-  // Legacy WMS master endpoints kept for item/code tabs.
+  // Legacy endpoints kept ONLY for reference; do NOT use in production code until BE confirms.
   SKUS: "/skus",
   SKU: "/skus/:id",
   SKU_IMPORT_EXCEL: "/skus/import-excel",

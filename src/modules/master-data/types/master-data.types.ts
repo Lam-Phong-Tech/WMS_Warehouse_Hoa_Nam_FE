@@ -1,15 +1,21 @@
-export type MasterStatus = "ACTIVE" | "INACTIVE" | "DRAFT" | string;
+// ===== Canonical contract aligned with OpenAPI 3.0.0 (220 routes) =====
+// Backend does NOT expose /skus, /items, /physical-codes, /skus/import-excel.
+// Use /products, /product-categories, /uoms, /suppliers as source of truth.
 
-export type SkuType = "PRODUCT" | "COMPONENT" | string;
+export type ProductStatus = "active" | "inactive" | "discontinued" | string;
 
-export interface SkuRecord {
+export interface ProductRecord {
   id: number | string;
-  code: string;
+  product_code: string;
+  barcode?: string | null;
   name: string;
-  unit: string;
-  sku_type: SkuType;
-  is_serial_tracked: boolean;
-  status: MasterStatus;
+  description?: string | null;
+  supplier_id?: number | string | null;
+  category_id?: number | string | null;
+  uom_id?: number | string | null;
+  list_price_net?: number | null;
+  vat_rate?: 0 | 5 | 8 | 10 | number | null;
+  status: ProductStatus;
   created_at?: string | null;
   updated_at?: string | null;
 }
@@ -34,7 +40,7 @@ export interface ItemRecord {
   sku_name?: string | null;
   serial_no?: string | null;
   lot_no?: string | null;
-  status: MasterStatus;
+  status: ProductStatus;
   warehouse_name?: string | null;
   updated_at?: string | null;
 }
@@ -46,19 +52,23 @@ export interface PhysicalCodeRecord {
   carrier?: string | null;
   sku_code?: string | null;
   item_code?: string | null;
-  status: MasterStatus;
+  status: ProductStatus;
   duplicate_flag?: boolean;
   last_scanned_at?: string | null;
   updated_at?: string | null;
 }
 
-export interface SkuPayload {
+export interface ProductPayload {
+  supplier_id?: number | null;
+  category_id?: number | null;
+  uom_id?: number | null;
+  product_code: string;
+  barcode?: string | null;
   name: string;
-  code: string;
-  unit: string;
-  sku_type: SkuType;
-  is_serial_tracked: boolean;
-  status?: MasterStatus;
+  description?: string | null;
+  list_price_net?: number | null;
+  vat_rate?: 0 | 5 | 8 | 10 | number | null;
+  status?: ProductStatus;
 }
 
 export interface ProductCategoryPayload {

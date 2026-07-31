@@ -2,24 +2,24 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type {
   MasterListParams,
   ProductCategoryPayload,
-  SkuPayload,
+  ProductPayload,
 } from "@/modules/master-data/types/master-data.types";
 import {
   createProductCategory,
-  createSku,
+  createProduct,
   getProductCategories,
   getItems,
   getPhysicalCodes,
   getSuppliers,
-  getSkus,
+  getProducts,
   getUoms,
   importSkus,
-  updateSkuStatus,
+  updateProductStatus,
 } from "@/modules/master-data/services/master-data.service";
 
 export const masterDataKeys = {
   all: ["master-data"] as const,
-  skus: (params: MasterListParams) =>
+  products: (params: MasterListParams) =>
     [...masterDataKeys.all, "products", params] as const,
   categories: (params: MasterListParams) =>
     [...masterDataKeys.all, "product-categories", params] as const,
@@ -31,8 +31,8 @@ export const masterDataKeys = {
 
 export function useSkus(params: MasterListParams) {
   return useQuery({
-    queryKey: masterDataKeys.skus(params),
-    queryFn: () => getSkus(params),
+    queryKey: masterDataKeys.products(params),
+    queryFn: () => getProducts(params),
   });
 }
 
@@ -77,7 +77,7 @@ export function useSuppliers(enabled = true) {
 export function useCreateSku() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (payload: SkuPayload) => createSku(payload),
+    mutationFn: (payload: ProductPayload) => createProduct(payload),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: masterDataKeys.all }),
   });
@@ -100,8 +100,8 @@ export function useUpdateSkuStatus() {
       status,
     }: {
       id: number | string;
-      status: "ACTIVE" | "INACTIVE";
-    }) => updateSkuStatus(id, status),
+      status: "active" | "inactive" | "discontinued";
+    }) => updateProductStatus(id, status),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: masterDataKeys.all }),
   });

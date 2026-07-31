@@ -54,6 +54,8 @@ import {
   useProductCategories,
   useSkus,
   useUpdateSkuStatus,
+  useSuppliers,
+  useUoms,
 } from "@/modules/master-data/hooks/use-master-data";
 import type {
   ImportResult,
@@ -64,13 +66,14 @@ import type {
   PhysicalCodeRecord,
   ProductCategoryPayload,
   ProductCategoryRecord,
-  SkuPayload,
-  SkuRecord,
+  ProductPayload,
+  ProductRecord,
 } from "@/modules/master-data/types/master-data.types";
 
-const STATUS_OPTIONS = [
-  { label: "Hoạt động", value: "ACTIVE" },
-  { label: "Ngưng hoạt động", value: "INACTIVE" },
+const PRODUCT_STATUS_OPTIONS = [
+  { label: "Hoạt động", value: "active" },
+  { label: "Ngưng hoạt động", value: "inactive" },
+  { label: "Ngừng kinh doanh", value: "discontinued" },
 ];
 
 const CATEGORY_STATUS_OPTIONS = [
@@ -90,7 +93,7 @@ const PAGE_SIZE_OPTIONS = [15, 20, 50, 100];
 type MasterEntityKey = "categories" | "skus" | "items" | "codes";
 type MasterRecord =
   | ProductCategoryRecord
-  | SkuRecord
+  | ProductRecord
   | ItemRecord
   | PhysicalCodeRecord;
 
@@ -154,8 +157,8 @@ function buildParams(table: UseTablePatternReturn): MasterListParams {
   } as MasterListParams;
 }
 
-function productSku(record: SkuRecord) {
-  return record.code ?? "-";
+function productSku(record: ProductRecord) {
+  return record.product_code ?? "-";
 }
 
 function errorAlert(error: unknown) {
@@ -408,7 +411,7 @@ export default function MasterPage() {
     fields: DetailField<MasterRecord>[];
     title: string;
   }>();
-  const [form] = Form.useForm<SkuPayload>();
+  const [form] = Form.useForm<ProductPayload>();
   const [categoryForm] = Form.useForm<ProductCategoryPayload>();
   const hasPermission = useHasPermission();
   const canManageMasterData =
@@ -420,7 +423,7 @@ export default function MasterPage() {
   const codeTable = useTablePattern({ initialPageSize: 15 });
 
   const shouldLoadCategories = activeTab === "categories" || isCategoryModalOpen;
-  const categories = useProductCategories(buildParams(categoryTable), shouldLoadCategories);
+  const categoriesQuery = useProductCategories(buildParams(categoryTable), shouldLoadCategories);
   const skus = useSkus(buildParams(skuTable));
   const items = useItems(buildParams(itemTable));
   const codes = usePhysicalCodes(buildParams(codeTable));
@@ -441,12 +444,12 @@ export default function MasterPage() {
       if (fieldErrors) {
         form.setFields(
           Object.entries(fieldErrors).map(([name, errors]) => ({
-            name: [name as keyof SkuPayload],
+            name: [name as keyof ProductPayload],
             errors: [errors],
           })),
         );
       }
-      message.error(getApiErrorMessage(error, "Không thể tạo SKU"));
+      message.error(getApiErrorMessage(error, "Không thể tạo sản phẩm"));
     }
   };
 
@@ -490,12 +493,19 @@ export default function MasterPage() {
     },
   };
 
-  const skuColumns: ColumnsType<SkuRecord> = useMemo(
+  const skuColumns: ColumnsType<ProductRecord> = useMemo(
     () => [
       {
-        title: "Code",
-        dataIndex: "code",
-        key: "code",
+        title: "Mã SP",
+        dataIndex: "product_code",
+        key: "product_code",
+        sorter: true,
+        render: mono,
+      },
+      {
+        title: "Barcode",
+        dataIndex: "barcode",
+        key: "barcode",
         sorter: true,
         render: mono,
       },
@@ -506,21 +516,28 @@ export default function MasterPage() {
         sorter: true,
         render: (value: string) => <strong>{value}</strong>,
       },
-      { title: "ĐVT", dataIndex: "unit" },
+      { title: "NCC", dataIndex: "supplier_id", render: mono },
+      { title: "Danh mục", dataIndex: "category_id", render: mono },
+      { title: "ĐVT", dataIndex: "uom_id", render: mono },
       {
-        title: "Loại SKU",
-        dataIndex: "sku_type",
-        render: (value: string) => <Tag color={value === "PRODUCT" ? "blue" : "purple"}>{value}</Tag>,
+        title: "Giá niêm yết",
+        dataIndex: "list_price_net",
+        align: "right",
+        render: (value?: number) =>
+          value !== undefined && value !== null
+            ? value.toLocaleString("vi-VN")
+            : "-",
       },
       {
-        title: "Serial",
-        dataIndex: "is_serial_tracked",
-        render: (value?: boolean) => boolTag(value, "Theo dõi", "Không"),
+        title: "VAT",
+        dataIndex: "vat_rate",
+        align: "right",
+        render: (value?: number) => (value !== undefined && value !== null ? `${value}%` : "-"),
       },
       {
         title: "Trạng thái",
         dataIndex: "status",
-        filters: STATUS_OPTIONS.map((item) => ({
+        filters: PRODUCT_STATUS_OPTIONS.map((item) => ({
           text: item.label,
           value: item.value,
         })),
@@ -530,41 +547,37 @@ export default function MasterPage() {
         title: "Hành động",
         key: "action",
         width: 96,
-        render: (_, record) => (
-          <Tooltip
-            title={record.status === "ACTIVE" ? "Ngừng hoạt động" : "Kích hoạt"}
-          >
-          <ConfirmButton
-            type="text"
-            size="small"
-            danger={record.status === "ACTIVE"}
-            icon={
-              record.status === "ACTIVE" ? (
-                <StopOutlined />
-              ) : (
-                <ReloadOutlined />
-              )
-            }
-            title={
-              record.status === "ACTIVE" ? "Ngừng hoạt động SKU?" : "Kích hoạt SKU?"
-            }
-            description="Thao tác gửi trạng thái mới lên API theo contract đã duyệt."
-            okText="Xác nhận"
-            loading={updateStatusMutation.isPending}
-            disabled={!canManageMasterData}
-            onConfirm={() =>
-              updateStatusMutation.mutate({
-                id: record.id,
-                status: record.status === "ACTIVE" ? "INACTIVE" : "ACTIVE",
-              })
-            }
-          >
-            <span className="sr-only">
-              {record.status === "ACTIVE" ? "Ngưng hoạt động" : "Kích hoạt"}
-            </span>
-          </ConfirmButton>
-          </Tooltip>
-        ),
+        render: (_, record) => {
+          const isActive = String(record.status).toLowerCase() === "active";
+          const nextStatus = isActive ? "inactive" : "active";
+          return (
+            <Tooltip title={isActive ? "Ngừng hoạt động" : "Kích hoạt"}>
+              <ConfirmButton
+                type="text"
+                size="small"
+                danger={isActive}
+                icon={
+                  isActive ? <StopOutlined /> : <ReloadOutlined />
+                }
+                title={isActive ? "Ngừng hoạt động sản phẩm?" : "Kích hoạt sản phẩm?"}
+                description="Thao tác gửi trạng thái mới lên API theo contract đã duyệt."
+                okText="Xác nhận"
+                loading={updateStatusMutation.isPending}
+                disabled={!canManageMasterData}
+                onConfirm={() =>
+                  updateStatusMutation.mutate({
+                    id: record.id,
+                    status: nextStatus,
+                  })
+                }
+              >
+                <span className="sr-only">
+                  {isActive ? "Ngưng hoạt động" : "Kích hoạt"}
+                </span>
+              </ConfirmButton>
+            </Tooltip>
+          );
+        },
       },
     ],
     [canManageMasterData, updateStatusMutation],
@@ -615,7 +628,7 @@ export default function MasterPage() {
       permissionNote: "Product Category | backend RBAC",
       searchPlaceholder: "Mã hoặc tên danh mục...",
       columns: categoryColumns as ColumnsType<MasterRecord>,
-      query: categories,
+      query: categoriesQuery,
       table: categoryTable,
       filters: [
         { key: "status", placeholder: "Trạng thái", options: CATEGORY_STATUS_OPTIONS },
@@ -656,21 +669,49 @@ export default function MasterPage() {
       query: skus,
       table: skuTable,
       filters: [
-        { key: "status", placeholder: "Trạng thái", options: STATUS_OPTIONS },
+        {
+          key: "status",
+          placeholder: "Trạng thái",
+          options: PRODUCT_STATUS_OPTIONS,
+        },
       ],
       detailFields: [
-        { label: "ID", render: (record) => mono((record as SkuRecord).id) },
-        { label: "Code", render: (record) => mono(productSku(record as SkuRecord)) },
-        { label: "Tên", render: (record) => (record as SkuRecord).name },
-        { label: "ĐVT", render: (record) => (record as SkuRecord).unit },
-        { label: "Loại SKU", render: (record) => (record as SkuRecord).sku_type },
+        { label: "ID", render: (record) => mono((record as ProductRecord).id) },
         {
-          label: "Theo dõi serial",
-          render: (record) => boolTag((record as SkuRecord).is_serial_tracked),
+          label: "Mã SP",
+          render: (record) => mono(productSku(record as ProductRecord)),
+        },
+        { label: "Barcode", render: (record) => mono((record as ProductRecord).barcode) },
+        { label: "Tên", render: (record) => (record as ProductRecord).name },
+        {
+          label: "Mô tả",
+          render: (record) => (record as ProductRecord).description || "-",
+        },
+        { label: "NCC", render: (record) => mono((record as ProductRecord).supplier_id) },
+        { label: "Danh mục", render: (record) => mono((record as ProductRecord).category_id) },
+        { label: "ĐVT", render: (record) => mono((record as ProductRecord).uom_id) },
+        {
+          label: "Giá niêm yết",
+          render: (record) =>
+            (record as ProductRecord).list_price_net?.toLocaleString("vi-VN") || "-",
+        },
+        {
+          label: "VAT",
+          render: (record) =>
+            (record as ProductRecord).vat_rate !== undefined &&
+            (record as ProductRecord).vat_rate !== null
+              ? `${(record as ProductRecord).vat_rate}%`
+              : "-",
         },
         { label: "Trạng thái", render: (record) => statusTag(record.status) },
-        { label: "Tạo lúc", render: (record) => (record as SkuRecord).created_at || "-" },
-        { label: "Cập nhật", render: (record) => record.updated_at || "-" },
+        {
+          label: "Tạo lúc",
+          render: (record) => (record as ProductRecord).created_at || "-",
+        },
+        {
+          label: "Cập nhật",
+          render: (record) => (record as ProductRecord).updated_at || "-",
+        },
       ],
       scrollX: 920,
       emptyText: "Chưa có SKU",
@@ -693,7 +734,7 @@ export default function MasterPage() {
       columns: itemColumns as ColumnsType<MasterRecord>,
       query: items,
       table: itemTable,
-      filters: [{ key: "status", placeholder: "Trạng thái", options: STATUS_OPTIONS }],
+      filters: [{ key: "status", placeholder: "Trạng thái", options: PRODUCT_STATUS_OPTIONS }],
       detailFields: [
         { label: "Mã item", render: (record) => mono((record as ItemRecord).item_code) },
         { label: "SKU", render: (record) => mono((record as ItemRecord).sku_code) },
@@ -718,7 +759,7 @@ export default function MasterPage() {
       table: codeTable,
       filters: [
         { key: "code_type", placeholder: "Loại mã", options: CODE_TYPES },
-        { key: "status", placeholder: "Trạng thái", options: STATUS_OPTIONS },
+        { key: "status", placeholder: "Trạng thái", options: PRODUCT_STATUS_OPTIONS },
         {
           key: "duplicate_flag",
           placeholder: "Trùng lặp",
@@ -753,8 +794,23 @@ export default function MasterPage() {
   ];
 
   const activeConfig = configs.find((item) => item.key === activeTab) ?? configs[0];
+  const suppliersQuery = useSuppliers(true);
+  const uomsQuery = useUoms(true);
+
   const categoryOptions =
-    categories.data?.data.map((item) => ({
+    categoriesQuery.data?.data.map((item) => ({
+      label: [item.code, item.name].filter(Boolean).join(" - "),
+      value: Number(item.id),
+    })) ?? [];
+
+  const supplierOptions =
+    suppliersQuery.data?.map((item) => ({
+      label: [item.code, item.name].filter(Boolean).join(" - "),
+      value: Number(item.id),
+    })) ?? [];
+
+  const uomOptions =
+    uomsQuery.data?.map((item) => ({
       label: [item.code, item.name].filter(Boolean).join(" - "),
       value: Number(item.id),
     })) ?? [];
@@ -851,54 +907,104 @@ export default function MasterPage() {
           form={form}
           layout="vertical"
           initialValues={{
-            status: "ACTIVE",
-            sku_type: "PRODUCT",
-            is_serial_tracked: true,
+            status: "active",
+            vat_rate: 8,
           }}
         >
           <Row gutter={16}>
             <Col xs={24} md={12}>
-              <Form.Item label="Code" name="code" rules={[{ required: true }]}>
+              <Form.Item
+                label="Mã SP"
+                name="product_code"
+                rules={[{ required: true, message: "Vui lòng nhập mã sản phẩm" }]}
+              >
                 <Input placeholder="VD: HN-PV-INV-001" />
               </Form.Item>
             </Col>
             <Col xs={24} md={12}>
-              <Form.Item label="Tên" name="name" rules={[{ required: true }]}>
-                <Input placeholder="VD: Bo inverter Hoa Nam PV 220V 3kW" />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={12}>
-              <Form.Item label="Đơn vị tính" name="unit" rules={[{ required: true }]}>
-                <Input placeholder="VD: cái" />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={12}>
-              <Form.Item label="Loại SKU" name="sku_type" rules={[{ required: true }]}>
-                <Select
-                  options={[
-                    { label: "PRODUCT", value: "PRODUCT" },
-                    { label: "COMPONENT", value: "COMPONENT" },
-                  ]}
-                />
+              <Form.Item label="Barcode" name="barcode">
+                <Input placeholder="Để trống để hệ thống tự sinh" />
               </Form.Item>
             </Col>
             <Col xs={24} md={12}>
               <Form.Item
-                label="Quản lý serial"
-                name="is_serial_tracked"
-                rules={[{ required: true }]}
+                label="Tên sản phẩm"
+                name="name"
+                rules={[{ required: true, message: "Vui lòng nhập tên sản phẩm" }]}
               >
+                <Input placeholder="VD: Bo inverter Hoa Nam PV 220V 3kW" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={12}>
+              <Form.Item label="Mô tả" name="description">
+                <Input.TextArea rows={2} />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={8}>
+              <Form.Item label="Nhà cung cấp" name="supplier_id">
                 <Select
+                  allowClear
+                  showSearch
+                  optionFilterProp="label"
+                  loading={suppliersQuery.isLoading}
+                  options={supplierOptions}
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={8}>
+              <Form.Item label="Danh mục" name="category_id">
+                <Select
+                  allowClear
+                  showSearch
+                  optionFilterProp="label"
+                  loading={categoriesQuery.isLoading}
+                  options={categoryOptions}
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={8}>
+              <Form.Item label="Đơn vị tính" name="uom_id">
+                <Select
+                  allowClear
+                  showSearch
+                  optionFilterProp="label"
+                  loading={uomsQuery.isLoading}
+                  options={uomOptions}
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={8}>
+              <Form.Item
+                label="Giá niêm yết (chưa VAT)"
+                name="list_price_net"
+              >
+              {/* @ts-ignore InputNumber parser return type is too strict for our use case */}
+              <InputNumber
+                min={0}
+                precision={0}
+                className="full-width"
+                formatter={(value) => `${value ?? 0}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+                // @ts-ignore parser return type is too strict
+                parser={(value) => Number((value ?? "").replace(/,/g, ""))}
+              />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={8}>
+              <Form.Item label="Thuế VAT (%)" name="vat_rate">
+                <Select
+                  allowClear
                   options={[
-                    { label: "Có", value: true },
-                    { label: "Không", value: false },
+                    { label: "0%", value: 0 },
+                    { label: "5%", value: 5 },
+                    { label: "8%", value: 8 },
+                    { label: "10%", value: 10 },
                   ]}
                 />
               </Form.Item>
             </Col>
-            <Col xs={24} md={12}>
+            <Col xs={24} md={8}>
               <Form.Item label="Trạng thái" name="status" rules={[{ required: true }]}>
-                <Select options={STATUS_OPTIONS} />
+                <Select options={PRODUCT_STATUS_OPTIONS} />
               </Form.Item>
             </Col>
           </Row>
@@ -936,7 +1042,7 @@ export default function MasterPage() {
                   allowClear
                   showSearch
                   optionFilterProp="label"
-                  loading={categories.isLoading}
+                  loading={categoriesQuery.isLoading}
                   options={categoryOptions}
                 />
               </Form.Item>

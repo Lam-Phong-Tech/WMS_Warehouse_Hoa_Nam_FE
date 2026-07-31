@@ -1,16 +1,16 @@
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { http } from "@/shared/api/http";
 import type {
-  ItemRecord,
   ImportResult,
+  ItemRecord,
   MasterListParams,
   MasterPageResult,
   PhysicalCodeRecord,
   ProductCategoryPayload,
   ProductCategoryRecord,
+  ProductPayload,
+  ProductRecord,
   ReferenceOptionRecord,
-  SkuPayload,
-  SkuRecord,
 } from "@/modules/master-data/types/master-data.types";
 
 function cleanParams(params: MasterListParams) {
@@ -58,45 +58,62 @@ function productParams(params: MasterListParams) {
   return cleaned;
 }
 
-export async function getSkus(
+// ===== Products (canonical) =====
+export async function getProducts(
   params: MasterListParams,
-): Promise<MasterPageResult<SkuRecord>> {
-  const result = await http.getPage<MaybePaginator<SkuRecord>>(API_ENDPOINTS.PRODUCTS, {
+): Promise<MasterPageResult<ProductRecord>> {
+  const result = await http.getPage<MaybePaginator<ProductRecord>>(API_ENDPOINTS.PRODUCTS, {
     params: productParams(params),
   });
   return normalizePage(result);
 }
 
-export async function createSku(payload: SkuPayload): Promise<SkuRecord> {
-  return http.post<SkuRecord>(API_ENDPOINTS.PRODUCTS, payload);
+export async function createProduct(payload: ProductPayload): Promise<ProductRecord> {
+  return http.post<ProductRecord>(API_ENDPOINTS.PRODUCTS, payload);
+}
+
+export async function updateProductStatus(
+  id: number | string,
+  status: "active" | "inactive" | "discontinued",
+): Promise<ProductRecord> {
+  const endpoint =
+    status === "active"
+      ? API_ENDPOINTS.PRODUCT_ENABLE
+      : status === "inactive"
+        ? API_ENDPOINTS.PRODUCT_DISABLE
+        : API_ENDPOINTS.PRODUCT.replace(":id", String(id)) + "/status";
+  return http.patch<ProductRecord>(endpoint.replace(":id", String(id)), { status });
+}
+
+// ===== Legacy aliases kept for UI tabs until BE confirms new endpoints =====
+export async function getSkus(
+  params: MasterListParams,
+): Promise<MasterPageResult<ProductRecord>> {
+  return getProducts(params);
+}
+
+export async function createSku(payload: ProductPayload): Promise<ProductRecord> {
+  return createProduct(payload);
 }
 
 export async function updateSkuStatus(
   id: number | string,
-  status: "ACTIVE" | "INACTIVE",
-): Promise<SkuRecord> {
-  const endpoint =
-    status === "ACTIVE" ? API_ENDPOINTS.PRODUCT_ENABLE : API_ENDPOINTS.PRODUCT_DISABLE;
-  return http.patch<SkuRecord>(endpoint.replace(":id", String(id)));
+  status: "active" | "inactive" | "discontinued",
+): Promise<ProductRecord> {
+  return updateProductStatus(id, status);
 }
 
 export async function importSkus(file: File): Promise<ImportResult> {
   const body = new FormData();
   body.append("file", file);
+  // WARNING: /skus/import-excel is NOT in current BE OpenAPI contract.
+  // Keep this only if BE later confirms; otherwise remove or replace with /products/import-excel.
   return http.post<ImportResult>(API_ENDPOINTS.SKU_IMPORT_EXCEL, body, {
     headers: { "Content-Type": "multipart/form-data" },
   });
 }
 
-export async function getItems(
-  params: MasterListParams,
-): Promise<MasterPageResult<ItemRecord>> {
-  const result = await http.getPage<ItemRecord[]>(API_ENDPOINTS.ITEMS, {
-    params: cleanParams(params),
-  });
-  return { data: result.data, meta: result.meta };
-}
-
+// ===== Categories =====
 export async function getProductCategories(
   params: MasterListParams,
 ): Promise<MasterPageResult<ProductCategoryRecord>> {
@@ -113,6 +130,7 @@ export async function createProductCategory(
   return http.post<ProductCategoryRecord>(API_ENDPOINTS.PRODUCT_CATEGORIES, payload);
 }
 
+// ===== Reference data =====
 export async function getUoms(): Promise<ReferenceOptionRecord[]> {
   const result = await http.getPage<MaybePaginator<ReferenceOptionRecord>>(
     API_ENDPOINTS.UOMS,
@@ -127,6 +145,16 @@ export async function getSuppliers(): Promise<ReferenceOptionRecord[]> {
     { params: { per_page: 100, status: 1 } },
   );
   return normalizePage(result).data;
+}
+
+// ===== Legacy item/code tabs =====
+export async function getItems(
+  params: MasterListParams,
+): Promise<MasterPageResult<ItemRecord>> {
+  const result = await http.getPage<ItemRecord[]>(API_ENDPOINTS.ITEMS, {
+    params: cleanParams(params),
+  });
+  return { data: result.data, meta: result.meta };
 }
 
 export async function getPhysicalCodes(
