@@ -9,7 +9,7 @@ export function AppFooter() {
   return (
     <Footer style={layoutStyles.footer}>
       <Typography.Text type="secondary">
-        ERP System ©{year} — Phát triển bởi Lam Phong Tech
+        Hoa Nam ©{year} — Phát triển bởi Lam Phong Tech
       </Typography.Text>
     </Footer>
   );

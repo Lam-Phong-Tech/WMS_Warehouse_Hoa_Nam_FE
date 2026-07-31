@@ -4,17 +4,26 @@ export type SkuType = "PRODUCT" | "COMPONENT" | string;
 
 export interface SkuRecord {
   id: number | string;
-  sku_code: string;
-  sku_name: string;
+  code: string;
+  name: string;
+  unit: string;
   sku_type: SkuType;
-  brand?: string | null;
-  category?: string | null;
-  model?: string | null;
-  unit?: string | null;
-  serial_tracking?: boolean;
-  default_container_type?: string | null;
-  warranty_enabled?: boolean;
+  is_serial_tracked: boolean;
   status: MasterStatus;
+  created_at?: string | null;
+  updated_at?: string | null;
+}
+
+export interface ProductCategoryRecord {
+  id: number | string;
+  parent_id?: number | string | null;
+  code: string;
+  name: string;
+  depth?: number | null;
+  sort_order?: number | null;
+  status: 0 | 1 | number;
+  children?: ProductCategoryRecord[];
+  created_at?: string | null;
   updated_at?: string | null;
 }
 
@@ -44,17 +53,27 @@ export interface PhysicalCodeRecord {
 }
 
 export interface SkuPayload {
-  sku_type: string;
-  sku_code: string;
-  sku_name: string;
-  brand?: string;
-  category?: string;
-  model?: string;
+  name: string;
+  code: string;
   unit: string;
-  serial_tracking: boolean;
-  default_container_type: string;
-  warranty_enabled: boolean;
-  status: MasterStatus;
+  sku_type: SkuType;
+  is_serial_tracked: boolean;
+  status?: MasterStatus;
+}
+
+export interface ProductCategoryPayload {
+  code: string;
+  name: string;
+  parent_id?: number | null;
+  sort_order?: number;
+  status?: 0 | 1;
+}
+
+export interface ReferenceOptionRecord {
+  id: number | string;
+  code?: string | null;
+  name: string;
+  status?: number | string | null;
 }
 
 export interface MasterListParams {
@@ -65,8 +84,12 @@ export interface MasterListParams {
   sort_direction?: "asc" | "desc";
   sku_type?: string;
   category?: string;
+  category_id?: number | string;
+  parent_id?: number | string;
+  supplier_id?: number | string;
+  tree?: 0 | 1;
   serial_tracking?: boolean;
-  status?: string;
+  status?: string | number;
   code_type?: string;
   duplicate_flag?: boolean;
   warehouse_id?: number | string;

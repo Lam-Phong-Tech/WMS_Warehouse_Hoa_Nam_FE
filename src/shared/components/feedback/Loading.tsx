@@ -16,7 +16,7 @@ export function Loading() {
       }}
     >
       <Spin size="large" />
-      <div style={{ marginTop: 10, color: "#555" }}>Loading...</div>
+      <div style={{ marginTop: 10, color: "#555" }}>Đang tải...</div>
     </div>
   );
 }

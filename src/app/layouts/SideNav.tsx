@@ -56,7 +56,7 @@ export function SideNav({ collapsed = false, onNavigate }: Props) {
     <>
       <div style={layoutStyles.sideNavBrand}>
         <span style={layoutStyles.sideNavBrandIcon}>E</span>
-        {!collapsed && <span>ERP System</span>}
+        {!collapsed && <span>Hoa Nam</span>}
       </div>
 
       <Menu

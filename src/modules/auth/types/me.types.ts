@@ -39,10 +39,20 @@ export interface MeContext extends AuthContext {
 }
 
 export interface MeResponse {
-  id: number;
+  id: number | string;
+  user_id?: string;
+  username?: string;
   name: string;
+  display_name?: string;
   email: string;
   code: string;
+  status?: string;
+  roles?: Array<{
+    role_id: string;
+    role_code: string;
+    role_name: string;
+  }>;
+  permissions?: string[];
   phone?: string | null;
   company: MeOrgRef | null;
   branch: MeOrgRef | null;

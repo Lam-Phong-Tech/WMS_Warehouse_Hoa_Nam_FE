@@ -7,6 +7,7 @@ export interface RuntimeConfig {
   readonly apiBaseUrl: string;
   readonly apiHealthPath: string;
   readonly apiTimeoutMs: number;
+  readonly apiWithCredentials: boolean;
   readonly storageUrl?: string;
   readonly enableAnalytics: boolean;
   readonly enableDebug: boolean;
@@ -86,6 +87,7 @@ export const runtimeConfig: RuntimeConfig = {
     readEnv("VITE_API_TIMEOUT_MS"),
     DEFAULT_API_TIMEOUT_MS,
   ),
+  apiWithCredentials: boolEnv(readEnv("VITE_API_WITH_CREDENTIALS")),
   storageUrl: optionalUrl(readEnv("VITE_STORAGE_URL"), "VITE_STORAGE_URL"),
   enableAnalytics: boolEnv(readEnv("VITE_ENABLE_ANALYTICS")),
   enableDebug: boolEnv(readEnv("VITE_ENABLE_DEBUG")),

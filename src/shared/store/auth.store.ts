@@ -60,6 +60,7 @@ interface AuthState {
 
   setAuth: (data: {
     token: string;
+    refreshToken?: string;
     user: User;
     contexts?: AuthContext[];
   }) => void;
@@ -86,11 +87,14 @@ export const useAuthStore = create<AuthState>()(
       isSuperAdmin: false,
       isProfileLoaded: false,
 
-      setAuth: ({ token, user, contexts = [] }) => {
+      setAuth: ({ token, refreshToken, user, contexts = [] }) => {
         // Đồng bộ token vào memoryStorage để axios.ts đọc — token KHÔNG nằm
         // trong `partialize` bên dưới nên không persist vào cookie; memory-only
         // thật sự (xem docs/TOKEN_STORAGE_HARDENING.md).
         memoryStorage.setItem(token);
+        if (refreshToken) {
+          memoryStorage.setRefreshToken(refreshToken);
+        }
         set({
           token,
           user,

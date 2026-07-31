@@ -1,20 +1,23 @@
 import { useEffect, useState } from "react";
 import {
+  Button,
+  Card,
+  Form,
+  Input,
+  Modal,
+  Select,
+  Space,
   Table,
   Tag,
-  Button,
-  Space,
-  Input,
-  Select,
-  Card,
-  Modal,
-  Form,
+  Tooltip,
   Typography,
 } from "antd";
 import {
+  CheckCircleOutlined,
+  ExportOutlined,
+  EyeOutlined,
   PlusOutlined,
   SearchOutlined,
-  ExportOutlined,
 } from "@ant-design/icons";
 import type { InboundDocument, InboundLine } from "../types";
 import {
@@ -34,36 +37,40 @@ const statusColorMap: Record<string, string> = {
 export default function ReceivingPage() {
   const [docs, setDocs] = useState<InboundDocument[]>([]);
   const [lines, setLines] = useState<InboundLine[]>([]);
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState<string>();
+  const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState<InboundDocument | null>(null);
 
   useEffect(() => {
-    fetchInboundDocuments().then(setDocs);
-  }, []);
+    setLoading(true);
+    fetchInboundDocuments({ search, status, per_page: 20 })
+      .then(setDocs)
+      .finally(() => setLoading(false));
+  }, [search, status]);
 
   const columns = [
     { title: "Mã phiếu", dataIndex: "code", key: "code" },
     { title: "Nguồn hàng", dataIndex: "source", key: "source" },
     { title: "Ngày", dataIndex: "date", key: "date" },
     {
-      title: "Expected",
+      title: "Dự kiến",
       dataIndex: "expected",
       key: "expected",
       align: "right" as const,
     },
     {
-      title: "Posted",
+      title: "Đã ghi nhận",
       dataIndex: "posted",
       key: "posted",
       align: "right" as const,
     },
     {
-      title: "Remaining",
+      title: "Còn lại",
       key: "remaining",
       align: "right" as const,
-      render: (_: unknown, r: InboundDocument) => (
-        <strong>{r.remaining}</strong>
-      ),
+      render: (_: unknown, r: InboundDocument) => <strong>{r.remaining}</strong>,
     },
     {
       title: "Trạng thái",
@@ -73,39 +80,46 @@ export default function ReceivingPage() {
     },
     { title: "Người tạo", dataIndex: "createdBy", key: "createdBy" },
     {
-      title: "Action",
+      title: "Hành động",
       key: "action",
       render: (_: unknown, r: InboundDocument) => (
-        <a
-          onClick={() => {
-            setSelectedDoc(r);
-            fetchInboundLines(r.id).then(setLines);
-            setModalOpen(true);
-          }}
-        >
-          Mở · Post tiếp
-        </a>
+        <Space>
+          <Tooltip title="Mở">
+            <Button
+              type="text"
+              icon={<EyeOutlined />}
+              onClick={() => {
+                setSelectedDoc(r);
+                fetchInboundLines(r.id).then(setLines);
+                setModalOpen(true);
+              }}
+            />
+          </Tooltip>
+          <Tooltip title="Ghi nhận tiếp">
+            <Button type="text" icon={<CheckCircleOutlined />} />
+          </Tooltip>
+        </Space>
       ),
     },
   ];
 
   const lineColumns = [
     { title: "SKU", dataIndex: "sku", key: "sku" },
-    { title: "Đối tượng scan", dataIndex: "scanTarget", key: "scanTarget" },
+    { title: "Đối tượng quét", dataIndex: "scanTarget", key: "scanTarget" },
     {
-      title: "Expected",
+      title: "Dự kiến",
       dataIndex: "expected",
       key: "expected",
       align: "right" as const,
     },
     {
-      title: "Scanned",
+      title: "Đã quét",
       dataIndex: "scanned",
       key: "scanned",
       align: "right" as const,
     },
     {
-      title: "Đã post",
+      title: "Đã ghi nhận",
       dataIndex: "posted",
       key: "posted",
       align: "right" as const,
@@ -118,15 +132,11 @@ export default function ReceivingPage() {
       render: (v: number) => <strong>{v}</strong>,
     },
     {
-      title: "Validation",
+      title: "Kiểm tra",
       dataIndex: "validation",
       key: "validation",
       render: (v: string) => (
-        <Tag
-          color={
-            v === "VALID" ? "success" : v === "UNKNOWN" ? "error" : "warning"
-          }
-        >
+        <Tag color={v === "VALID" ? "success" : v === "UNKNOWN" ? "error" : "warning"}>
           {v}
         </Tag>
       ),
@@ -143,17 +153,28 @@ export default function ReceivingPage() {
               prefix={<SearchOutlined />}
               placeholder="Mã phiếu/nguồn/SKU..."
               style={{ width: 250 }}
+              allowClear
+              onPressEnter={(event) => setSearch(event.currentTarget.value)}
+              onChange={(event) => {
+                if (!event.target.value) setSearch("");
+              }}
             />
             <Select
-              defaultValue=""
+              value={status}
               style={{ width: 150 }}
+              allowClear
+              placeholder="Trạng thái"
+              onChange={setStatus}
               options={[
-                { value: "", label: "Trạng thái" },
-                { value: "POSTED", label: "POSTED" },
-                { value: "PARTIALLY_POSTED", label: "PARTIALLY_POSTED" },
+                { value: "draft", label: "Nháp" },
+                { value: "pending", label: "Chờ xử lý" },
+                { value: "approved", label: "Đã duyệt" },
+                { value: "received", label: "Đã nhận" },
+                { value: "cancelled", label: "Đã hủy" },
+                { value: "rejected", label: "Từ chối" },
               ]}
             />
-            <Button icon={<ExportOutlined />}>Export</Button>
+            <Button icon={<ExportOutlined />}>Xuất file</Button>
             <Button type="primary" icon={<PlusOutlined />}>
               Tạo phiếu nhập
             </Button>
@@ -164,6 +185,7 @@ export default function ReceivingPage() {
           dataSource={docs}
           columns={columns}
           rowKey="id"
+          loading={loading}
           pagination={false}
           size="small"
         />
@@ -179,10 +201,10 @@ export default function ReceivingPage() {
             Quay lại
           </Button>,
           <Button key="post" type="primary">
-            Post Receipt subset
+            Ghi nhận một phần phiếu nhập
           </Button>,
           <Button key="close" type="default" danger>
-            Close remainder
+            Đóng phần còn lại
           </Button>,
         ]}
       >
@@ -196,11 +218,9 @@ export default function ReceivingPage() {
                 <strong>{selectedDoc.date}</strong>
               </Form.Item>
               <Form.Item label="Trạng thái">
-                <Tag color={statusColorMap[selectedDoc.status]}>
-                  {selectedDoc.status}
-                </Tag>
+                <Tag color={statusColorMap[selectedDoc.status]}>{selectedDoc.status}</Tag>
               </Form.Item>
-              <Form.Item label="Version">
+              <Form.Item label="Phiên bản">
                 <Typography.Text code>v{selectedDoc.version}</Typography.Text>
               </Form.Item>
             </Form>

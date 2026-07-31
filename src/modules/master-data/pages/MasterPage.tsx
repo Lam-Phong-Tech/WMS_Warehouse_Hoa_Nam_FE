@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   Alert,
   Button,
@@ -8,6 +8,7 @@ import {
   Drawer,
   Form,
   Input,
+  InputNumber,
   Modal,
   Row,
   Select,
@@ -16,6 +17,7 @@ import {
   Table,
   Tabs,
   Tag,
+  Tooltip,
   Upload,
   message,
   type TablePaginationConfig,
@@ -45,9 +47,11 @@ import {
 } from "@/shared/hooks/useTablePattern";
 import {
   useCreateSku,
+  useCreateProductCategory,
   useImportSkus,
   useItems,
   usePhysicalCodes,
+  useProductCategories,
   useSkus,
   useUpdateSkuStatus,
 } from "@/modules/master-data/hooks/use-master-data";
@@ -58,19 +62,20 @@ import type {
   MasterListParams,
   MasterPageResult,
   PhysicalCodeRecord,
+  ProductCategoryPayload,
+  ProductCategoryRecord,
   SkuPayload,
   SkuRecord,
 } from "@/modules/master-data/types/master-data.types";
 
-const SKU_TYPES = [
-  { label: "PRODUCT", value: "PRODUCT" },
-  { label: "COMPONENT", value: "COMPONENT" },
+const STATUS_OPTIONS = [
+  { label: "Hoạt động", value: "ACTIVE" },
+  { label: "Ngưng hoạt động", value: "INACTIVE" },
 ];
 
-const STATUS_OPTIONS = [
-  { label: "ACTIVE", value: "ACTIVE" },
-  { label: "INACTIVE", value: "INACTIVE" },
-  { label: "DRAFT", value: "DRAFT" },
+const CATEGORY_STATUS_OPTIONS = [
+  { label: "Hoạt động", value: 1 },
+  { label: "Ngưng hoạt động", value: 0 },
 ];
 
 const CODE_TYPES = [
@@ -80,19 +85,19 @@ const CODE_TYPES = [
   { label: "TRAY", value: "TRAY" },
 ];
 
-const CONTAINER_TYPES = [
-  { label: "CARTON", value: "CARTON" },
-  { label: "BOX", value: "BOX" },
-  { label: "TRAY", value: "TRAY" },
-];
+const PAGE_SIZE_OPTIONS = [15, 20, 50, 100];
 
-type MasterEntityKey = "skus" | "items" | "codes";
-type MasterRecord = SkuRecord | ItemRecord | PhysicalCodeRecord;
+type MasterEntityKey = "categories" | "skus" | "items" | "codes";
+type MasterRecord =
+  | ProductCategoryRecord
+  | SkuRecord
+  | ItemRecord
+  | PhysicalCodeRecord;
 
 interface FilterConfig {
   key: string;
   placeholder: string;
-  options: { label: string; value: string | boolean }[];
+  options: { label: string; value: string | number | boolean }[];
 }
 
 interface DetailField<T extends MasterRecord> {
@@ -116,19 +121,20 @@ interface MasterEntityConfig<T extends MasterRecord> {
   toolbarExtra?: ReactNode;
 }
 
-function statusTag(status: string) {
+function statusTag(status: string | number) {
+  const normalized = String(status).toLowerCase();
   const color =
-    status === "ACTIVE"
+    normalized === "active" || status === "1"
       ? "success"
-      : status === "INACTIVE"
+      : normalized === "inactive" || status === "0"
         ? "default"
-        : status === "DRAFT"
+        : normalized === "draft"
           ? "processing"
           : "warning";
-  return <Tag color={color}>{status}</Tag>;
+  return <Tag color={color}>{String(status)}</Tag>;
 }
 
-function boolTag(value?: boolean, yes = "YES", no = "NO") {
+function boolTag(value?: boolean, yes = "Có", no = "Không") {
   return <Tag color={value ? "success" : "default"}>{value ? yes : no}</Tag>;
 }
 
@@ -148,6 +154,10 @@ function buildParams(table: UseTablePatternReturn): MasterListParams {
   } as MasterListParams;
 }
 
+function productSku(record: SkuRecord) {
+  return record.code ?? "-";
+}
+
 function errorAlert(error: unknown) {
   const normalized = normalizeError(error);
   const requestId = getErrorRequestId(error);
@@ -158,13 +168,13 @@ function errorAlert(error: unknown) {
       className="master-data-state-alert"
       message={
         normalized.status === 403
-          ? "Khong co quyen truy cap du lieu"
+          ? "Không có quyền truy cập dữ liệu"
           : getApiErrorMessage(error)
       }
       description={[
         normalized.status ? `HTTP ${normalized.status}` : undefined,
-        normalized.code ? `Error code: ${normalized.code}` : undefined,
-        requestId ? `Request ID: ${requestId}` : undefined,
+        normalized.code ? `Mã lỗi: ${normalized.code}` : undefined,
+        requestId ? `Mã yêu cầu: ${requestId}` : undefined,
       ]
         .filter(Boolean)
         .join(" | ")}
@@ -199,32 +209,14 @@ function normalizeImportRows(result?: ImportResult): ImportRowError[] {
 
 function downloadSkuTemplate() {
   const header = [
-    "sku_type",
-    "sku_code",
-    "sku_name",
-    "brand",
-    "category",
-    "model",
+    "code",
+    "name",
     "unit",
-    "serial_tracking",
-    "default_container_type",
-    "warranty_enabled",
+    "sku_type",
+    "is_serial_tracked",
     "status",
   ];
-  const sample = [
-    "PRODUCT",
-    "SKU-SAMPLE-001",
-    "Sample SKU",
-    "Hoa Nam",
-    "TOOLS",
-    "MODEL-A",
-    "PCS",
-    "true",
-    "CARTON",
-    "false",
-    "ACTIVE",
-  ];
-  const csv = `${header.join(",")}\n${sample.join(",")}\n`;
+  const csv = `${header.join(",")}\n`;
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -246,37 +238,37 @@ function ImportResultModal({
   const rowErrors = normalizeImportRows(result);
   return (
     <Modal
-      title="Ket qua import SKU"
+      title="Kết quả import SKU"
       open={open}
       onCancel={onClose}
       onOk={onClose}
       width={920}
-      okText="Dong"
+      okText="Đóng"
     >
       <Alert
         showIcon
         type={rowErrors.length > 0 ? "warning" : "success"}
-        message={result?.message ?? "Backend da tra ket qua xu ly import."}
-        description="UI chi hien thi ket qua theo contract. Rule ghi partial hay rollback toan bo do backend HN-MC-001 quyet dinh."
+        message={result?.message ?? "Backend đã trả kết quả xử lý import."}
+        description="UI chỉ hiển thị kết quả theo contract. Rule ghi partial hay rollback toàn bộ do backend HN-MC-001 quyết định."
       />
       <Row gutter={[12, 12]} className="import-summary">
         <Col xs={12} md={4}>
-          <Statistic title="Total" value={result?.total_rows ?? 0} />
+          <Statistic title="Tổng" value={result?.total_rows ?? 0} />
         </Col>
         <Col xs={12} md={4}>
-          <Statistic title="Valid" value={result?.valid_rows ?? 0} />
+          <Statistic title="Hợp lệ" value={result?.valid_rows ?? 0} />
         </Col>
         <Col xs={12} md={4}>
-          <Statistic title="Errors" value={result?.error_rows ?? rowErrors.length} />
+          <Statistic title="Lỗi" value={result?.error_rows ?? rowErrors.length} />
         </Col>
         <Col xs={12} md={4}>
-          <Statistic title="Inserted" value={result?.inserted_rows ?? 0} />
+          <Statistic title="Đã thêm" value={result?.inserted_rows ?? 0} />
         </Col>
         <Col xs={12} md={4}>
-          <Statistic title="Updated" value={result?.updated_rows ?? 0} />
+          <Statistic title="Đã cập nhật" value={result?.updated_rows ?? 0} />
         </Col>
         <Col xs={12} md={4}>
-          <Statistic title="Partial" value={result?.partial_write ? "YES" : "NO"} />
+          <Statistic title="Ghi một phần" value={result?.partial_write ? "Có" : "Không"} />
         </Col>
       </Row>
       <Table
@@ -284,13 +276,13 @@ function ImportResultModal({
         rowKey={(row, index) => `${row.row}-${row.field ?? "row"}-${index}`}
         dataSource={rowErrors}
         pagination={{ pageSize: 8 }}
-        locale={{ emptyText: "Khong co row-level error" }}
+        locale={{ emptyText: "Không có lỗi theo dòng" }}
         columns={[
-          { title: "Row", dataIndex: "row", width: 80 },
-          { title: "Field", dataIndex: "field", width: 160, render: mono },
-          { title: "Code", dataIndex: "code", width: 160, render: mono },
-          { title: "Value", dataIndex: "value", width: 180, render: mono },
-          { title: "Message", dataIndex: "message" },
+          { title: "Dòng", dataIndex: "row", width: 80 },
+          { title: "Trường", dataIndex: "field", width: 160, render: mono },
+          { title: "Mã lỗi", dataIndex: "code", width: 160, render: mono },
+          { title: "Giá trị", dataIndex: "value", width: 180, render: mono },
+          { title: "Thông báo", dataIndex: "message" },
         ]}
       />
     </Modal>
@@ -305,6 +297,16 @@ function MasterEntityPanel<T extends MasterRecord>({
   onViewDetail: (record: T, config: MasterEntityConfig<T>) => void;
 }) {
   const data = config.query.data?.data as T[] | undefined;
+  const pageSize = PAGE_SIZE_OPTIONS.includes(config.table.pageSize)
+    ? config.table.pageSize
+    : PAGE_SIZE_OPTIONS[0];
+
+  useEffect(() => {
+    if (!PAGE_SIZE_OPTIONS.includes(config.table.pageSize)) {
+      config.table.setPageSize(PAGE_SIZE_OPTIONS[0]);
+    }
+  }, [config.table]);
+
   return (
     <Card className="master-data-panel">
       <div className="master-data-contract-strip">
@@ -334,7 +336,7 @@ function MasterEntityPanel<T extends MasterRecord>({
         ))}
         <Col xs={12} md={4}>
           <Button onClick={config.table.resetFilters} className="full-width">
-            Xoa loc
+            Xóa lọc
           </Button>
         </Col>
         <Col xs={24} md={4} className="panel-extra-actions">
@@ -342,12 +344,26 @@ function MasterEntityPanel<T extends MasterRecord>({
         </Col>
       </Row>
       {config.query.isError ? errorAlert(config.query.error) : null}
+      <div className="table-page-size">
+        <Select
+          size="small"
+          value={pageSize}
+          style={{ width: 110 }}
+          showSearch={false}
+          labelRender={({ value }) => `${value} / trang`}
+          options={PAGE_SIZE_OPTIONS.map((size) => ({
+            value: size,
+            label: `${size} / trang`,
+          }))}
+          onChange={(pageSize) => config.table.setPageSize(pageSize)}
+        />
+      </div>
       <Table<T>
         rowKey="id"
         columns={[
           ...config.columns,
           {
-            title: "Detail",
+            title: "Chi tiết",
             key: "detail",
             width: 96,
             fixed: "right",
@@ -358,7 +374,7 @@ function MasterEntityPanel<T extends MasterRecord>({
                 icon={<EyeOutlined />}
                 onClick={() => onViewDetail(record, config)}
               >
-                View
+                Xem
               </Button>
             ),
           },
@@ -368,13 +384,13 @@ function MasterEntityPanel<T extends MasterRecord>({
         onChange={tableChange(config.table) as TableProps<T>["onChange"]}
         pagination={{
           current: config.table.page,
-          pageSize: config.table.pageSize,
+          pageSize,
           total: config.query.data?.meta.total ?? 0,
-          showSizeChanger: true,
-          showTotal: (total) => `Tong ${total} ban ghi`,
+          showSizeChanger: false,
+          showTotal: (total) => `Tổng ${total} bản ghi`,
         }}
         locale={{
-          emptyText: config.query.isError ? "Khong tai duoc du lieu" : config.emptyText,
+          emptyText: config.query.isError ? "Không tải được dữ liệu" : config.emptyText,
         }}
         scroll={{ x: config.scrollX }}
       />
@@ -385,6 +401,7 @@ function MasterEntityPanel<T extends MasterRecord>({
 export default function MasterPage() {
   const [activeTab, setActiveTab] = useState<MasterEntityKey>("skus");
   const [isSkuModalOpen, setIsSkuModalOpen] = useState(false);
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [importResult, setImportResult] = useState<ImportResult | undefined>();
   const [detailState, setDetailState] = useState<{
     record: MasterRecord;
@@ -392,18 +409,23 @@ export default function MasterPage() {
     title: string;
   }>();
   const [form] = Form.useForm<SkuPayload>();
+  const [categoryForm] = Form.useForm<ProductCategoryPayload>();
   const hasPermission = useHasPermission();
   const canManageMasterData =
     hasPermission("sku.manage") || hasPermission("master.manage");
 
-  const skuTable = useTablePattern({ initialPageSize: 10 });
-  const itemTable = useTablePattern({ initialPageSize: 10 });
-  const codeTable = useTablePattern({ initialPageSize: 10 });
+  const categoryTable = useTablePattern({ initialPageSize: 15 });
+  const skuTable = useTablePattern({ initialPageSize: 15 });
+  const itemTable = useTablePattern({ initialPageSize: 15 });
+  const codeTable = useTablePattern({ initialPageSize: 15 });
 
+  const shouldLoadCategories = activeTab === "categories" || isCategoryModalOpen;
+  const categories = useProductCategories(buildParams(categoryTable), shouldLoadCategories);
   const skus = useSkus(buildParams(skuTable));
   const items = useItems(buildParams(itemTable));
   const codes = usePhysicalCodes(buildParams(codeTable));
   const createSkuMutation = useCreateSku();
+  const createCategoryMutation = useCreateProductCategory();
   const updateStatusMutation = useUpdateSkuStatus();
   const importMutation = useImportSkus();
 
@@ -411,7 +433,7 @@ export default function MasterPage() {
     const values = await form.validateFields();
     try {
       await createSkuMutation.mutateAsync(values);
-      message.success("Da tao SKU");
+      message.success("Đã tạo sản phẩm/SKU");
       setIsSkuModalOpen(false);
       form.resetFields();
     } catch (error) {
@@ -424,7 +446,28 @@ export default function MasterPage() {
           })),
         );
       }
-      message.error(getApiErrorMessage(error, "Khong the tao SKU"));
+      message.error(getApiErrorMessage(error, "Không thể tạo SKU"));
+    }
+  };
+
+  const handleCategorySave = async () => {
+    const values = await categoryForm.validateFields();
+    try {
+      await createCategoryMutation.mutateAsync(values);
+      message.success("Đã tạo danh mục sản phẩm");
+      setIsCategoryModalOpen(false);
+      categoryForm.resetFields();
+    } catch (error) {
+      const fieldErrors = extractFieldErrorsRaw(error);
+      if (fieldErrors) {
+        categoryForm.setFields(
+          Object.entries(fieldErrors).map(([name, errors]) => ({
+            name: [name as keyof ProductCategoryPayload],
+            errors: [errors],
+          })),
+        );
+      }
+      message.error(getApiErrorMessage(error, "Không thể tạo danh mục"));
     }
   };
 
@@ -436,11 +479,11 @@ export default function MasterPage() {
       try {
         const result = await importMutation.mutateAsync(file);
         setImportResult(result);
-        message.success("Da nhan ket qua import SKU");
+        message.success("Đã nhận kết quả import SKU");
       } catch (error) {
         Modal.error({
-          title: "Import khong thanh cong",
-          content: getApiErrorMessage(error, "Khong the import file"),
+          title: "Import không thành công",
+          content: getApiErrorMessage(error, "Không thể import file"),
         });
       }
       return Upload.LIST_IGNORE;
@@ -450,62 +493,63 @@ export default function MasterPage() {
   const skuColumns: ColumnsType<SkuRecord> = useMemo(
     () => [
       {
-        title: "SKU code",
-        dataIndex: "sku_code",
+        title: "Code",
+        dataIndex: "code",
+        key: "code",
         sorter: true,
         render: mono,
       },
       {
-        title: "Ten SKU",
-        dataIndex: "sku_name",
+        title: "Tên",
+        dataIndex: "name",
+        key: "name",
         sorter: true,
         render: (value: string) => <strong>{value}</strong>,
       },
+      { title: "ĐVT", dataIndex: "unit" },
       {
-        title: "Loai",
+        title: "Loại SKU",
         dataIndex: "sku_type",
-        render: (value: string) => (
-          <Tag color={value === "PRODUCT" ? "blue" : "green"}>{value}</Tag>
-        ),
-      },
-      {
-        title: "Brand/Model",
-        render: (_, record) =>
-          [record.brand, record.model].filter(Boolean).join(" / ") || "-",
+        render: (value: string) => <Tag color={value === "PRODUCT" ? "blue" : "purple"}>{value}</Tag>,
       },
       {
         title: "Serial",
-        dataIndex: "serial_tracking",
-        render: (value?: boolean) => boolTag(value, "Serial", "Quantity"),
+        dataIndex: "is_serial_tracked",
+        render: (value?: boolean) => boolTag(value, "Theo dõi", "Không"),
       },
-      { title: "DVT", dataIndex: "unit" },
-      { title: "Container", dataIndex: "default_container_type" },
       {
-        title: "Trang thai",
+        title: "Trạng thái",
         dataIndex: "status",
         filters: STATUS_OPTIONS.map((item) => ({
           text: item.label,
           value: item.value,
         })),
-        render: statusTag,
+        render: (value: string) => statusTag(value),
       },
       {
-        title: "Action",
+        title: "Hành động",
         key: "action",
-        width: 132,
+        width: 96,
         render: (_, record) => (
+          <Tooltip
+            title={record.status === "ACTIVE" ? "Ngừng hoạt động" : "Kích hoạt"}
+          >
           <ConfirmButton
-            type="link"
+            type="text"
             size="small"
             danger={record.status === "ACTIVE"}
-            icon={<StopOutlined />}
-            title={
-              record.status === "ACTIVE"
-                ? "Ngung hoat dong SKU?"
-                : "Kich hoat SKU?"
+            icon={
+              record.status === "ACTIVE" ? (
+                <StopOutlined />
+              ) : (
+                <ReloadOutlined />
+              )
             }
-            description="Thao tac gui trang thai moi len API theo contract da duyet."
-            okText="Xac nhan"
+            title={
+              record.status === "ACTIVE" ? "Ngừng hoạt động SKU?" : "Kích hoạt SKU?"
+            }
+            description="Thao tác gửi trạng thái mới lên API theo contract đã duyệt."
+            okText="Xác nhận"
             loading={updateStatusMutation.isPending}
             disabled={!canManageMasterData}
             onConfirm={() =>
@@ -515,8 +559,11 @@ export default function MasterPage() {
               })
             }
           >
-            {record.status === "ACTIVE" ? "Disable" : "Enable"}
+            <span className="sr-only">
+              {record.status === "ACTIVE" ? "Ngưng hoạt động" : "Kích hoạt"}
+            </span>
           </ConfirmButton>
+          </Tooltip>
         ),
       },
     ],
@@ -524,79 +571,116 @@ export default function MasterPage() {
   );
 
   const itemColumns: ColumnsType<ItemRecord> = [
-    { title: "Item code", dataIndex: "item_code", render: mono },
+    { title: "Mã item", dataIndex: "item_code", render: mono },
     { title: "SKU", dataIndex: "sku_code", render: mono },
-    { title: "Ten SKU", dataIndex: "sku_name" },
+    { title: "Tên SKU", dataIndex: "sku_name" },
     { title: "Serial", dataIndex: "serial_no", render: mono },
     { title: "Lot", dataIndex: "lot_no", render: mono },
     { title: "Kho", dataIndex: "warehouse_name", render: (value) => value || "-" },
-    { title: "Trang thai", dataIndex: "status", render: statusTag },
+    { title: "Trạng thái", dataIndex: "status", render: statusTag },
   ];
 
   const codeColumns: ColumnsType<PhysicalCodeRecord> = [
-    { title: "Physical code", dataIndex: "code_value", render: mono },
-    { title: "Code type", dataIndex: "code_type", render: (value) => <Tag>{value}</Tag> },
-    { title: "Carrier", dataIndex: "carrier", render: (value) => value || "-" },
+    { title: "Mã vật lý", dataIndex: "code_value", render: mono },
+    { title: "Loại mã", dataIndex: "code_type", render: (value) => <Tag>{value}</Tag> },
+    { title: "Vật mang", dataIndex: "carrier", render: (value) => value || "-" },
     { title: "SKU", dataIndex: "sku_code", render: mono },
     { title: "Item", dataIndex: "item_code", render: mono },
     {
-      title: "Duplicate",
+      title: "Trùng lặp",
       dataIndex: "duplicate_flag",
       render: (value?: boolean) => boolTag(value),
     },
-    { title: "Trang thai", dataIndex: "status", render: statusTag },
+    { title: "Trạng thái", dataIndex: "status", render: statusTag },
+  ];
+
+  const categoryColumns: ColumnsType<ProductCategoryRecord> = [
+    { title: "Mã danh mục", dataIndex: "code", render: mono },
+    { title: "Tên danh mục", dataIndex: "name", render: (value) => <strong>{value}</strong> },
+    { title: "Danh mục cha", dataIndex: "parent_id", render: mono },
+    { title: "Cấp", dataIndex: "depth", width: 96 },
+    { title: "Thứ tự", dataIndex: "sort_order", width: 96 },
+    {
+      title: "Trạng thái",
+      dataIndex: "status",
+      render: (value: number) => statusTag(String(value)),
+    },
   ];
 
   const configs: MasterEntityConfig<MasterRecord>[] = [
     {
+      key: "categories",
+      label: "Danh mục sản phẩm",
+      endpoint: "GET/POST /product-categories",
+      permissionNote: "Product Category | backend RBAC",
+      searchPlaceholder: "Mã hoặc tên danh mục...",
+      columns: categoryColumns as ColumnsType<MasterRecord>,
+      query: categories,
+      table: categoryTable,
+      filters: [
+        { key: "status", placeholder: "Trạng thái", options: CATEGORY_STATUS_OPTIONS },
+      ],
+      detailFields: [
+        { label: "Mã danh mục", render: (record) => mono((record as ProductCategoryRecord).code) },
+        { label: "Tên danh mục", render: (record) => (record as ProductCategoryRecord).name },
+        { label: "Danh mục cha", render: (record) => mono((record as ProductCategoryRecord).parent_id) },
+        { label: "Cấp", render: (record) => (record as ProductCategoryRecord).depth ?? "-" },
+        { label: "Thứ tự", render: (record) => (record as ProductCategoryRecord).sort_order ?? "-" },
+        {
+          label: "Trạng thái",
+          render: (record) => statusTag(String((record as ProductCategoryRecord).status)),
+        },
+        { label: "Cập nhật", render: (record) => record.updated_at || "-" },
+      ],
+      scrollX: 820,
+      emptyText: "Chưa có danh mục sản phẩm",
+      toolbarExtra: (
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          disabled={!canManageMasterData}
+          onClick={() => setIsCategoryModalOpen(true)}
+          className="full-width"
+        >
+          Tạo danh mục
+        </Button>
+      ),
+    },
+    {
       key: "skus",
-      label: "SKU / Product master",
-      endpoint: "GET/POST /skus",
-      permissionNote: "sku.manage | master.manage",
-      searchPlaceholder: "Ten, SKU, brand, model...",
+      label: "Sản phẩm / SKU",
+      endpoint: "",
+      permissionNote: "",
+      searchPlaceholder: "Tên hoặc code SKU...",
       columns: skuColumns as ColumnsType<MasterRecord>,
       query: skus,
       table: skuTable,
       filters: [
-        { key: "sku_type", placeholder: "Loai SKU", options: SKU_TYPES },
-        {
-          key: "serial_tracking",
-          placeholder: "Serial",
-          options: [
-            { label: "Serial", value: true },
-            { label: "Quantity", value: false },
-          ],
-        },
-        { key: "status", placeholder: "Trang thai", options: STATUS_OPTIONS },
+        { key: "status", placeholder: "Trạng thái", options: STATUS_OPTIONS },
       ],
       detailFields: [
-        { label: "SKU code", render: (record) => mono((record as SkuRecord).sku_code) },
-        { label: "Ten SKU", render: (record) => (record as SkuRecord).sku_name },
-        { label: "Loai", render: (record) => (record as SkuRecord).sku_type },
-        { label: "Brand", render: (record) => (record as SkuRecord).brand || "-" },
-        { label: "Category", render: (record) => (record as SkuRecord).category || "-" },
-        { label: "Model", render: (record) => (record as SkuRecord).model || "-" },
-        { label: "DVT", render: (record) => (record as SkuRecord).unit || "-" },
+        { label: "ID", render: (record) => mono((record as SkuRecord).id) },
+        { label: "Code", render: (record) => mono(productSku(record as SkuRecord)) },
+        { label: "Tên", render: (record) => (record as SkuRecord).name },
+        { label: "ĐVT", render: (record) => (record as SkuRecord).unit },
+        { label: "Loại SKU", render: (record) => (record as SkuRecord).sku_type },
         {
-          label: "Serial tracking",
-          render: (record) => boolTag((record as SkuRecord).serial_tracking),
+          label: "Theo dõi serial",
+          render: (record) => boolTag((record as SkuRecord).is_serial_tracked),
         },
-        {
-          label: "Warranty",
-          render: (record) => boolTag((record as SkuRecord).warranty_enabled),
-        },
-        { label: "Status", render: (record) => statusTag(record.status) },
-        { label: "Updated", render: (record) => record.updated_at || "-" },
+        { label: "Trạng thái", render: (record) => statusTag(record.status) },
+        { label: "Tạo lúc", render: (record) => (record as SkuRecord).created_at || "-" },
+        { label: "Cập nhật", render: (record) => record.updated_at || "-" },
       ],
-      scrollX: 1180,
-      emptyText: "Chua co SKU",
+      scrollX: 920,
+      emptyText: "Chưa có SKU",
       toolbarExtra: (
         <Button
           icon={<ReloadOutlined />}
           onClick={() => void skus.refetch()}
           className="full-width"
         >
-          Refresh
+          Làm mới
         </Button>
       ),
     },
@@ -605,27 +689,27 @@ export default function MasterPage() {
       label: "Item",
       endpoint: "GET /items",
       permissionNote: "route RBAC + backend data scope",
-      searchPlaceholder: "Item code, SKU, serial...",
+      searchPlaceholder: "Mã item, SKU, serial...",
       columns: itemColumns as ColumnsType<MasterRecord>,
       query: items,
       table: itemTable,
-      filters: [{ key: "status", placeholder: "Trang thai", options: STATUS_OPTIONS }],
+      filters: [{ key: "status", placeholder: "Trạng thái", options: STATUS_OPTIONS }],
       detailFields: [
-        { label: "Item code", render: (record) => mono((record as ItemRecord).item_code) },
+        { label: "Mã item", render: (record) => mono((record as ItemRecord).item_code) },
         { label: "SKU", render: (record) => mono((record as ItemRecord).sku_code) },
-        { label: "Ten SKU", render: (record) => (record as ItemRecord).sku_name || "-" },
+        { label: "Tên SKU", render: (record) => (record as ItemRecord).sku_name || "-" },
         { label: "Serial", render: (record) => mono((record as ItemRecord).serial_no) },
         { label: "Lot", render: (record) => mono((record as ItemRecord).lot_no) },
         { label: "Kho", render: (record) => (record as ItemRecord).warehouse_name || "-" },
-        { label: "Status", render: (record) => statusTag(record.status) },
-        { label: "Updated", render: (record) => record.updated_at || "-" },
+        { label: "Trạng thái", render: (record) => statusTag(record.status) },
+        { label: "Cập nhật", render: (record) => record.updated_at || "-" },
       ],
       scrollX: 980,
-      emptyText: "Chua co item",
+      emptyText: "Chưa có item",
     },
     {
       key: "codes",
-      label: "Physical code",
+      label: "Mã vật lý",
       endpoint: "GET /physical-codes",
       permissionNote: "duplicate/unknown do backend classify",
       searchPlaceholder: "QR/Barcode/RFID-ready code...",
@@ -633,86 +717,82 @@ export default function MasterPage() {
       query: codes,
       table: codeTable,
       filters: [
-        { key: "code_type", placeholder: "Code type", options: CODE_TYPES },
-        { key: "status", placeholder: "Trang thai", options: STATUS_OPTIONS },
+        { key: "code_type", placeholder: "Loại mã", options: CODE_TYPES },
+        { key: "status", placeholder: "Trạng thái", options: STATUS_OPTIONS },
         {
           key: "duplicate_flag",
-          placeholder: "Duplicate",
+          placeholder: "Trùng lặp",
           options: [
-            { label: "YES", value: true },
-            { label: "NO", value: false },
+            { label: "Có", value: true },
+            { label: "Không", value: false },
           ],
         },
       ],
       detailFields: [
         {
-          label: "Physical code",
+          label: "Mã vật lý",
           render: (record) => mono((record as PhysicalCodeRecord).code_value),
         },
-        { label: "Code type", render: (record) => (record as PhysicalCodeRecord).code_type },
-        { label: "Carrier", render: (record) => (record as PhysicalCodeRecord).carrier || "-" },
+        { label: "Loại mã", render: (record) => (record as PhysicalCodeRecord).code_type },
+        { label: "Vật mang", render: (record) => (record as PhysicalCodeRecord).carrier || "-" },
         { label: "SKU", render: (record) => mono((record as PhysicalCodeRecord).sku_code) },
         { label: "Item", render: (record) => mono((record as PhysicalCodeRecord).item_code) },
         {
-          label: "Duplicate",
+          label: "Trùng lặp",
           render: (record) => boolTag((record as PhysicalCodeRecord).duplicate_flag),
         },
-        { label: "Status", render: (record) => statusTag(record.status) },
+        { label: "Trạng thái", render: (record) => statusTag(record.status) },
         {
-          label: "Last scanned",
+          label: "Quét lần cuối",
           render: (record) => (record as PhysicalCodeRecord).last_scanned_at || "-",
         },
       ],
       scrollX: 1040,
-      emptyText: "Chua co physical code",
+      emptyText: "Chưa có physical code",
     },
   ];
 
   const activeConfig = configs.find((item) => item.key === activeTab) ?? configs[0];
+  const categoryOptions =
+    categories.data?.data.map((item) => ({
+      label: [item.code, item.name].filter(Boolean).join(" - "),
+      value: Number(item.id),
+    })) ?? [];
 
   return (
     <div className="master-data-page">
       <div className="page-heading">
         <div>
-          <h1>Master/SKU FE</h1>
-          <p>PL01-04 | HN-EPIC-04 | HN-PIN-04 | HN-FE-01</p>
+          <h1>Danh mục /SKU</h1>
+          
         </div>
         <Space wrap>
           <Button icon={<DownloadOutlined />} onClick={downloadSkuTemplate}>
-            Template CSV
+            Tải mẫu CSV
           </Button>
           <Upload {...uploadProps}>
             <Button
               icon={<ImportOutlined />}
               loading={importMutation.isPending}
               disabled={!canManageMasterData}
-              title={
-                canManageMasterData
-                  ? undefined
-                  : "Ban khong co quyen import du lieu Master/SKU"
-              }
+              title={canManageMasterData ? undefined : "Bạn không có quyền import"}
             >
-              Import Excel
+              Import SKU cũ
             </Button>
           </Upload>
           <Button
             type="primary"
             icon={<PlusOutlined />}
             disabled={!canManageMasterData}
-            title={canManageMasterData ? undefined : "Ban khong co quyen tao SKU"}
+            title={canManageMasterData ? undefined : "Bạn không có quyền tạo sản phẩm"}
             onClick={() => setIsSkuModalOpen(true)}
           >
-            Tao SKU
+            Tạo sản phẩm
           </Button>
         </Space>
       </div>
 
-      <Alert
-        showIcon
-        type="info"
-        className="trace-alert"
-        message="FE dung component cau hinh lai cho SKU/item/code; backend van la authority cho permission, validation, data scope va import transaction rule."
-      />
+     
 
       <Tabs
         activeKey={activeTab}
@@ -736,7 +816,7 @@ export default function MasterPage() {
       />
 
       <Drawer
-        title={`${detailState?.title ?? activeConfig.label} detail`}
+        title={`Chi tiết ${detailState?.title ?? activeConfig.label}`}
         open={Boolean(detailState)}
         onClose={() => setDetailState(undefined)}
         width={520}
@@ -759,10 +839,10 @@ export default function MasterPage() {
       />
 
       <Modal
-        title="Tao SKU moi"
+        title="Tạo sản phẩm/SKU mới"
         open={isSkuModalOpen}
         onOk={() => void handleSkuSave()}
-        okText="Luu"
+        okText="Lưu"
         confirmLoading={createSkuMutation.isPending}
         onCancel={() => setIsSkuModalOpen(false)}
         width={760}
@@ -772,78 +852,103 @@ export default function MasterPage() {
           layout="vertical"
           initialValues={{
             status: "ACTIVE",
-            warranty_enabled: false,
-            serial_tracking: true,
+            sku_type: "PRODUCT",
+            is_serial_tracked: true,
           }}
         >
           <Row gutter={16}>
             <Col xs={24} md={12}>
-              <Form.Item label="Loai SKU" name="sku_type" rules={[{ required: true }]}>
-                <Select options={SKU_TYPES} />
+              <Form.Item label="Code" name="code" rules={[{ required: true }]}>
+                <Input placeholder="VD: HN-PV-INV-001" />
               </Form.Item>
             </Col>
             <Col xs={24} md={12}>
-              <Form.Item label="SKU code" name="sku_code" rules={[{ required: true }]}>
-                <Input placeholder="Theo API field specification" />
+              <Form.Item label="Tên" name="name" rules={[{ required: true }]}>
+                <Input placeholder="VD: Bo inverter Hoa Nam PV 220V 3kW" />
               </Form.Item>
             </Col>
-            <Col xs={24}>
-              <Form.Item label="Ten SKU" name="sku_name" rules={[{ required: true }]}>
-                <Input />
+            <Col xs={24} md={12}>
+              <Form.Item label="Đơn vị tính" name="unit" rules={[{ required: true }]}>
+                <Input placeholder="VD: cái" />
               </Form.Item>
             </Col>
-            <Col xs={24} md={8}>
-              <Form.Item label="Brand" name="brand">
-                <Input />
+            <Col xs={24} md={12}>
+              <Form.Item label="Loại SKU" name="sku_type" rules={[{ required: true }]}>
+                <Select
+                  options={[
+                    { label: "PRODUCT", value: "PRODUCT" },
+                    { label: "COMPONENT", value: "COMPONENT" },
+                  ]}
+                />
               </Form.Item>
             </Col>
-            <Col xs={24} md={8}>
-              <Form.Item label="Category" name="category">
-                <Input />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={8}>
-              <Form.Item label="Model" name="model">
-                <Input />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={8}>
-              <Form.Item label="Don vi tinh" name="unit" rules={[{ required: true }]}>
-                <Input />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={8}>
+            <Col xs={24} md={12}>
               <Form.Item
-                label="Container mac dinh"
-                name="default_container_type"
+                label="Quản lý serial"
+                name="is_serial_tracked"
                 rules={[{ required: true }]}
               >
-                <Select options={CONTAINER_TYPES} />
+                <Select
+                  options={[
+                    { label: "Có", value: true },
+                    { label: "Không", value: false },
+                  ]}
+                />
               </Form.Item>
             </Col>
-            <Col xs={24} md={8}>
-              <Form.Item label="Trang thai" name="status" rules={[{ required: true }]}>
+            <Col xs={24} md={12}>
+              <Form.Item label="Trạng thái" name="status" rules={[{ required: true }]}>
                 <Select options={STATUS_OPTIONS} />
               </Form.Item>
             </Col>
+          </Row>
+        </Form>
+      </Modal>
+
+      <Modal
+        title="Tạo danh mục sản phẩm"
+        open={isCategoryModalOpen}
+        onOk={() => void handleCategorySave()}
+        okText="Lưu"
+        confirmLoading={createCategoryMutation.isPending}
+        onCancel={() => setIsCategoryModalOpen(false)}
+        width={640}
+      >
+        <Form
+          form={categoryForm}
+          layout="vertical"
+          initialValues={{ status: 1, sort_order: 0 }}
+        >
+          <Row gutter={16}>
             <Col xs={24} md={12}>
-              <Form.Item label="Theo doi serial" name="serial_tracking">
-                <Select
-                  options={[
-                    { label: "Serial", value: true },
-                    { label: "Quantity", value: false },
-                  ]}
-                />
+              <Form.Item label="Mã danh mục" name="code" rules={[{ required: true }]}>
+                <Input placeholder="VD: DM001" />
               </Form.Item>
             </Col>
             <Col xs={24} md={12}>
-              <Form.Item label="Bao hanh ap dung" name="warranty_enabled">
+              <Form.Item label="Tên danh mục" name="name" rules={[{ required: true }]}>
+                <Input />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={12}>
+              <Form.Item label="Danh mục cha" name="parent_id">
                 <Select
-                  options={[
-                    { label: "YES", value: true },
-                    { label: "NO", value: false },
-                  ]}
+                  allowClear
+                  showSearch
+                  optionFilterProp="label"
+                  loading={categories.isLoading}
+                  options={categoryOptions}
                 />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={6}>
+              <Form.Item label="Thứ tự" name="sort_order">
+                <InputNumber min={0} precision={0} className="full-width" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={6}>
+              <Form.Item label="Trạng thái" name="status">
+                <Select options={CATEGORY_STATUS_OPTIONS} />
               </Form.Item>
             </Col>
           </Row>

@@ -8,7 +8,7 @@ describe("LoginPage", () => {
   it("hiển thị form đăng nhập", () => {
     renderWithProviders(<LoginPage />);
     expect(
-      screen.getByRole("heading", { name: /erp system/i }),
+      screen.getByRole("heading", { name: /hoa nam/i }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /đăng nhập/i }),
@@ -32,7 +32,7 @@ describe("LoginPage", () => {
     renderWithProviders(<LoginPage />);
 
     await user.type(
-      screen.getByPlaceholderText(/you@example/i),
+      screen.getByPlaceholderText(/gmail\.com/i),
       "not-an-email",
     );
     await user.click(screen.getByRole("button", { name: /đăng nhập/i }));

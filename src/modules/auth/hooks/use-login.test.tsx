@@ -16,7 +16,7 @@ vi.mock("@/modules/auth/services/auth.service", () => ({
   },
 }));
 
-const TEST_LOGIN_EMAIL = "operator@hoanam.test";
+const TEST_LOGIN_EMAIL = "operator@gmail.com";
 const TEST_LOGIN_PASSWORD = "<TEST_LOGIN_PASSWORD>";
 
 function LoginHarness() {
@@ -25,7 +25,10 @@ function LoginHarness() {
     <button
       type="button"
       onClick={() =>
-        login.mutate({ email: TEST_LOGIN_EMAIL, password: TEST_LOGIN_PASSWORD })
+        login.mutate({
+          email: TEST_LOGIN_EMAIL,
+          password: TEST_LOGIN_PASSWORD,
+        })
       }
     >
       Login
@@ -70,11 +73,13 @@ describe("useLogin", () => {
   it("khôi phục URL protected route sau khi đăng nhập thành công", async () => {
     vi.mocked(authService.login).mockResolvedValue({
       access_token: "access-token",
+      refresh_token: "refresh-token",
       token_type: "Bearer",
       expires_in: 3600,
       available_contexts: [],
       user: {
         id: 1,
+        username: TEST_LOGIN_EMAIL,
         name: "Quang Nguyen",
         email: TEST_LOGIN_EMAIL,
         code: "HN-FE-01",

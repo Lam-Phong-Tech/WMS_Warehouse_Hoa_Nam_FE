@@ -155,13 +155,19 @@ body,
 /* Phân trang bảng: "Tổng ... bản ghi" ở góc trái, điều hướng trang ở góc phải */
 .ant-table-pagination.ant-pagination {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   width: 100%;
 }
 .ant-table-pagination .ant-pagination-total-text {
-  margin-right: 0;
+  margin-right: auto;
   order: -1;
+}
+
+.table-page-size {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 12px;
 }
 
 .master-data-page {

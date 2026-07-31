@@ -1,4 +1,4 @@
-# HN-INT-001 - FE Sign-off
+# HN-INT-001 - Conditional FE Sign-off
 
 ## Traceability
 
@@ -11,17 +11,24 @@
 | Role | FE1 |
 | Assignee Placeholder | HN-FE-01 |
 | Owner FE | Quang Nguyen Thanh |
-| Output | FE sign-off |
+| Output | Conditional FE sign-off |
 | Review date | 2026-07-29 |
 | Baseline source | `docs/WMS_Hoa_Nam_Techstack_Architecture_Dev_Guide.md`; `docs/WMS_FRONTEND_STANDARDIZATION.md`; `docs/api-evidence/*.md`; current FE implementation |
+| Sign-off status | Conditional only - not final WMS production integration sign-off |
+| Final sign-off dependency | BE1 must publish the corrected/locked endpoint, payload, error, permission, idempotency, and sample-data contract; FE1 must re-check every module and update Pass/Fail evidence afterward. |
 
 ## Review Objective
 
 FE1 reviewed endpoint mapping, request/response payload handling, error display,
 UI states, RBAC gates, and contract traceability for the current React/Vite/TypeScript
-Web Admin baseline. This sign-off does not approve backend business rules that
-are missing from HN-INT-001-ST01, and it does not silently change any endpoint,
-payload, enum, or API error contract.
+Web Admin baseline. This document is a **Conditional FE Sign-off** only. It does
+not approve final WMS production integration, does not approve backend business
+rules that are missing from HN-INT-001-ST01, and does not silently change any
+endpoint, payload, enum, permission, workflow, or API error contract.
+
+After BE1 publishes the corrected locked contract, FE1 must re-run the contract
+review and update this artifact with explicit Pass/Fail for each module across
+endpoint, payload, error, permission, idempotency, and evidence status.
 
 ## Baseline Rules Applied
 
@@ -44,6 +51,17 @@ payload, enum, or API error contract.
 | RBAC | UX guard verified; catalog confirmation required | `src/app/router/access.ts`, `RequirePermission`, menu filtering, and permission tests cover FE gates; backend/runtime permission catalog for WMS-specific codes is still required. |
 | Contract mismatch handling | Verified as process | Mismatches are documented below with owners/ETA; no unilateral API contract change was made by FE1. |
 
+## Conditional Follow-up Required After BE1 Contract Lock
+
+| Required FE1 update | Expected evidence before final sign-off |
+| --- | --- |
+| Reconcile every endpoint against BE locked contract | Pass/Fail per module and canonical path recorded for Scan, Inbound, Outbound, Dashboard/Reports, Inventory, Stocktake, Warranty, Reverse, and any remaining workflow actions. |
+| Reconcile request/response payloads | Field names, enum values, validation rules, idempotency keys, pagination/filter contracts, and sample payloads verified against BE source of truth. |
+| Reconcile error handling | Backend `error_code`, field `errors`, permission errors, duplicate/unknown/invalid scan errors, insufficient-stock errors, and workflow conflict/lock errors rendered by FE without local business-rule inference. |
+| Reconcile permissions | `ROUTE_PERMISSIONS` updated to match backend permission catalog or BE/BA-approved mapping; unresolved permissions remain blocked with owner/ETA. |
+| Replace mock evidence | Mock-only screens must not be used as production integration evidence. Final evidence must reference real service/query wiring, API responses, and screenshots/logs from wired flows. |
+| Refresh blockers | FE-SO-001 to FE-SO-005 must be updated with status, owner, ETA, and disposition; any blocker not closed remains open and prevents final sign-off. |
+
 ## Endpoint, Payload, and Error Mapping
 
 | Module / UI surface | Current FE mapping | Baseline / expected contract | Payload / error handling reviewed | FE result |
@@ -51,17 +69,17 @@ payload, enum, or API error contract.
 | Auth/session | `/auth/login`, `/auth/logout`, `/auth/me`, `/auth/refresh`, `/auth/switch-context`, `/auth/change-password` | Existing foundation contract | Login/change-password hooks use shared API; axios interceptor handles 401 refresh and 403 classification; password-change 403 remains distinct from no-permission. | Pass in current FE scope. |
 | App shell / 403 UX | Route guard and menu RBAC only | FE UX guard; BE remains authority | Direct route block redirects to no-permission state and carries required permission list. | Pass with BE authority caveat. |
 | API envelope | All services should use `http` wrapper | Success envelope `{ success, message, data, meta }`; error envelope `{ success:false, message, error_code, errors }` | `ApiEnvelopeError`, `getApiErrorMessage`, `extractFieldErrors`, `extractFieldErrorsRaw`, `normalizeError`, request-id extraction. | Pass. |
-| Dashboard | `GET /dashboard/kpi`, `/dashboard/recent-documents`, `/dashboard/reconcile-health`, `/dashboard/alerts` | Technical guide lists report/dashboard style APIs; prior evidence mentions `/reports/dashboard-quick` as possible approved route | No mutation payload. Query error/empty rendering should be explicit when canonical endpoint is confirmed. | P1 mismatch pending BE1/BA disposition. |
+| Dashboard | `GET /dashboard/kpi`, `/dashboard/recent-documents`, `/dashboard/reconcile-health`, `/dashboard/alerts` | Technical guide lists report/dashboard style APIs; prior evidence mentions `/reports/dashboard-quick` as possible approved route | No mutation payload. Query error/empty rendering should be explicit when canonical endpoint is confirmed. | Conditional Fail for final integration; canonical path pending BE1/BA disposition. |
 | Master Data - SKU | `GET/POST /skus`, `PATCH /skus/:id`, `POST /skus/import-excel` | Guide suggests `/skus`; final OpenAPI/Jira field spec still required | `SkuPayload` sends contract-named fields; create/status/import show mutation errors and status confirmation. Import result displays backend result without deciding rollback/partial-write rule. | Conditional pass; P1 dependency remains for official fields/enums/import response. |
 | Master Data - Item | `GET /items` | Guide suggests `/items`; dependency evidence not sufficient for final field list | List only; no local business rule inference found. | Conditional; BE1/BA must confirm fields/filter/pagination. |
-| Physical Codes / Scan | `GET /physical-codes`; active scan page has mock classify results | Guide expects `POST /scan-batches/classify` with duplicate/unknown/source states | Shared parser can display error_code/field errors; scan state machine not integrated to approved endpoint yet. | P0 blocker for production-integrated scan. |
-| Inbound | Service uses `/inbound/documents`, `/inbound/documents/:id`, `/lines`; active `InboundPage` uses mock data | Guide expects `/inbound-documents`, `/scan`, `/post-receipt`; Post Receipt requires idempotency, backend transaction, no FE inventory mutation | No approved post-receipt payload/error/idempotency contract in current FE evidence. | P0 blocker; do not mark integrated Done. |
-| Outbound | Service uses `/outbound/documents`, `/outbound/documents/:id/lines`; active `OutboundPage` uses mock data | Guide expects `/outbound-documents`, `/scan`, `/post-issue`; backend prevents negative stock | FE must display backend insufficient-stock error, not compute final stock locally. Contract not present. | P0 blocker; do not mark integrated Done. |
+| Physical Codes / Scan | `GET /physical-codes`; active scan page has mock classify results | Guide expects `POST /scan-batches/classify` with duplicate/unknown/source states | Shared parser can display error_code/field errors; scan state machine not integrated to approved endpoint yet. | Conditional Fail for final integration; canonical Scan path/payload/error contract pending. |
+| Inbound | Service uses `/inbound/documents`, `/inbound/documents/:id`, `/lines`; active `InboundPage` uses mock data | Guide expects `/inbound-documents`, `/scan`, `/post-receipt`; Post Receipt requires idempotency, backend transaction, no FE inventory mutation | No approved post-receipt payload/error/idempotency contract in current FE evidence. | Conditional Fail for final integration; canonical Inbound workflow pending. |
+| Outbound | Service uses `/outbound/documents`, `/outbound/documents/:id/lines`; active `OutboundPage` uses mock data | Guide expects `/outbound-documents`, `/scan`, `/post-issue`; backend prevents negative stock | FE must display backend insufficient-stock error, not compute final stock locally. Contract not present. | Conditional Fail for final integration; canonical Outbound workflow pending. |
 | Inventory | Active page uses mock balances/movements; no concrete service bound | Guide expects balances and movement audit; reports must reconcile movement | No approved filters/status/pagination/movement error contract. | P1 blocker. |
 | Stocktake | Active page uses mock sessions/count lines | Guide expects session snapshot, count, variance, apply adjustment | Apply Adjustment requires backend idempotency and error codes; not approved. | P1 blocker. |
 | Warranty | Active page uses mock data | Guide expects `POST /warranty-cases`, `PATCH /status`, TEMP_ONLY support | TEMP_ONLY rules, defect/status enum, and validation errors not confirmed. | P1 blocker. |
 | Reverse | Active page uses mock data | Guide expects backend reverse transaction/audit with reference | No endpoint/payload/idempotency/error code confirmed. | P1 blocker. |
-| Reports | Service uses `/reports` and `/reports/xnt` | Guide expects `/reports/xnt`; prior evidence mentions `/reports/inventory-xnt` and export endpoint alternatives | Export behavior and error payload for queued export not confirmed. | P1 mismatch pending BE1/BA. |
+| Reports | Service uses `/reports` and `/reports/xnt` | Guide expects `/reports/xnt`; prior evidence mentions `/reports/inventory-xnt` and export endpoint alternatives | Export behavior and error payload for queued export not confirmed. | Conditional Fail for final integration; canonical Reports path/export behavior pending BE1/BA. |
 | Audit logs | `GET /audit-logs` through `http.getPage` | Existing endpoint evidence | Unit tests verify pagination params and no stray query string. | Pass. |
 
 ## UI State and RBAC Evidence
@@ -94,22 +112,27 @@ payload, enum, or API error contract.
 | Reports | `report.view` | Needs backend permission catalog confirmation. |
 | Audit logs | `AUDIT_LOG_VIEW` | Existing catalog evidence; no FE blocker. |
 
+`ROUTE_PERMISSIONS` is conditionally accepted only as FE UX guard evidence. Final
+sign-off requires either direct alignment to the backend permission catalog or an
+explicit BE/BA-approved mapping table. Until then, WMS-specific route permissions
+remain open and must not be treated as production RBAC evidence.
+
 ## Blockers, Owners, and Disposition
 
 | ID | Severity | Blocker | Owner | ETA / disposition |
 | --- | --- | --- | --- | --- |
-| FE-SO-001 | P0 | HN-INT-001-ST01 does not provide approved scan classify endpoint/payload/error-code sample for production integration. | BE1 + BA/BAS | Provide `POST /scan-batches/classify` or approved equivalent, request/response samples, duplicate/unknown/invalid error codes before FE integration Done. |
-| FE-SO-002 | P0 | Inbound/outbound active pages use mock data and endpoint naming is not confirmed against approved contract. | BE1 + BA/BAS; FE1 after sign-off | Confirm canonical paths, workflow actions, idempotency key location/header/body, validation and RBAC before FE wiring. |
-| FE-SO-003 | P1 | Dashboard/report endpoint variants are not reconciled across FE constants, guide, and prior evidence. | BE1 + BA/BAS | Confirm dashboard quick vs split endpoints and report XNT/export route names before FE final sign-off. |
-| FE-SO-004 | P1 | WMS permission codes in FE route guards are not confirmed against runtime `/permissions` or OpenAPI/Jira catalog. | BE2/RBAC owner | Provide permission catalog and scope rules; FE1 updates `ROUTE_PERMISSIONS` and evidence. |
-| FE-SO-005 | P1 | Inventory movement, stocktake apply-adjustment, warranty TEMP_ONLY/status, and reverse contracts are absent from current FE evidence. | BE1/BE2 + BA/BAS | Provide endpoint, payload, enum, validation, error code, sample data, and permission contract. |
+| FE-SO-001 | P0 | HN-INT-001-ST01 does not provide approved scan classify endpoint/payload/error-code sample for production integration. | BE1 + BA/BAS | Open. Provide `POST /scan-batches/classify` or approved equivalent, request/response samples, duplicate/unknown/invalid error codes before FE integration Done. FE1 updates Pass/Fail after BE contract lock. |
+| FE-SO-002 | P0 | Inbound/outbound active pages use mock data and endpoint naming is not confirmed against approved contract. | BE1 + BA/BAS; FE1 after sign-off | Open. Confirm canonical paths, workflow actions, idempotency key location/header/body, validation and RBAC before FE wiring. FE1 replaces mock evidence with API-wired evidence after BE contract lock. |
+| FE-SO-003 | P1 | Dashboard/report endpoint variants are not reconciled across FE constants, guide, and prior evidence. | BE1 + BA/BAS | Open. Confirm dashboard quick vs split endpoints and report XNT/export route names before FE final sign-off. FE1 records canonical Dashboard/Reports paths and Pass/Fail afterward. |
+| FE-SO-004 | P1 | WMS permission codes in FE route guards are not confirmed against runtime `/permissions` or OpenAPI/Jira catalog. | BE2/RBAC owner + BA/BAS | Open. Provide permission catalog and scope rules or BE/BA-approved mapping; FE1 updates `ROUTE_PERMISSIONS` and evidence. |
+| FE-SO-005 | P1 | Inventory movement, stocktake apply-adjustment, warranty TEMP_ONLY/status, reverse contracts, and any missing workflow contracts are absent from current FE evidence. | BE1/BE2 + BA/BAS | Open. Provide endpoint, payload, enum, validation, error code, sample data, and permission contract. FE1 updates module Pass/Fail and disposition after BE handoff. |
 | FE-SO-006 | P2 | Module-level responsive screenshots and API error screenshots are incomplete for mock-only pages. | FE1 + QA after contract delivery | Capture after real API wiring; current foundation evidence is acceptable only for shared UI. |
 
 ## Acceptance Criteria Mapping
 
 | Acceptance Criteria | FE sign-off result |
 | --- | --- |
-| Output "FE sign-off" reviewed/verified and attached to HN-INT-001; no FE1 blocker remains | This file is the FE sign-off artifact. FE-owned foundation items are verified; contract dependencies above remain with owners/disposition. |
+| Output "FE sign-off" reviewed/verified and attached to HN-INT-001; no FE1 blocker remains | This file is the conditional FE sign-off artifact. FE-owned foundation items are verified; contract dependencies above remain open with owners/disposition and prevent final WMS integration sign-off. |
 | UI follows business rules, field specification, responsive, and state handling | Shared UI baseline passes. Production module sign-off is conditional on receiving approved field specs and replacing mock pages with real API/query states. |
 | Permission/RBAC and API error display correctly; no hard-code contrary to contract | API/RBAC foundation passes. Mock WMS data is explicitly marked non-production evidence and must not be treated as integrated contract fulfillment. |
 | Integrated approved endpoint/payload; lint/build/test pass | Approved auth/audit/foundation paths pass. WMS workflow endpoint/payload integration is blocked until HN-INT-001-ST01 provides final contracts. |
@@ -145,8 +168,11 @@ npm.cmd run check:api-mapping -- --no-live
 FE1 can sign off the shared FE foundation for error parsing, RBAC UX gates,
 state components, and current approved auth/audit-style integrations.
 
-FE1 cannot honestly sign off production integration for scan, inbound, outbound,
+FE1 cannot sign off final production integration for scan, inbound, outbound,
 inventory movement, stocktake apply adjustment, warranty, reverse, dashboard, or
 reports until HN-INT-001-ST01 supplies the approved endpoint/payload/validation/
-error-code/permission/sample-data contracts listed above. These are recorded as
-contract blockers with owners, so they are not hidden FE blockers.
+error-code/permission/sample-data contracts listed above. Mock-only screens are
+not production integration evidence. After BE1 contract lock, FE1 must reconcile
+the canonical paths and payload/error/permission contracts, update module-level
+Pass/Fail, and close or carry FE-SO-001 to FE-SO-005 with owner, ETA, and
+disposition.

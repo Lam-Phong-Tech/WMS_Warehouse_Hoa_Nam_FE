@@ -26,12 +26,12 @@ function normalizeScanCode(value: string) {
  */
 export function ScanInput({
   value,
-  placeholder = "Scan/nhap ma...",
+  placeholder = "Scan/nhập mã...",
   disabled = false,
   autoFocus = true,
   size = "large",
   recentCodes = [],
-  duplicateMessage = "Ma nay vua duoc scan",
+  duplicateMessage = "Mã này vừa được scan",
   error,
   onChange,
   onScan,
@@ -62,7 +62,7 @@ export function ScanInput({
   const submit = (rawValue: string) => {
     const code = normalizeScanCode(rawValue);
     if (!code) {
-      setLocalError("Vui long scan hoac nhap ma");
+      setLocalError("Vui lòng scan hoặc nhập mã");
       inputRef.current?.focus();
       return;
     }

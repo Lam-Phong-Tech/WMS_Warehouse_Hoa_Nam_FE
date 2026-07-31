@@ -10,9 +10,9 @@ const locale = {
   ...viVN,
   Table: {
     ...viVN.Table,
-    triggerAsc: "Nhap de sap xep A-Z",
-    triggerDesc: "Nhap de sap xep Z-A",
-    cancelSort: "Nhap de bo sap xep",
+    triggerAsc: "Nhấp để sắp xếp A-Z",
+    triggerDesc: "Nhấp để sắp xếp Z-A",
+    cancelSort: "Nhấp để bỏ sắp xếp",
   },
 };
 

@@ -1,21 +1,24 @@
 import { useEffect, useState } from "react";
 import {
+  Alert,
+  Button,
+  Card,
+  Form,
+  Input,
+  Modal,
+  Select,
+  Space,
   Table,
   Tag,
-  Button,
-  Space,
-  Input,
-  Select,
-  Card,
-  Modal,
-  Form,
+  Tooltip,
   Typography,
-  Alert,
 } from "antd";
 import {
+  CheckCircleOutlined,
+  ExportOutlined,
+  EyeOutlined,
   PlusOutlined,
   SearchOutlined,
-  ExportOutlined,
 } from "@ant-design/icons";
 import type { OutboundDocument, OutboundLine } from "../types";
 import {
@@ -35,36 +38,40 @@ const statusColorMap: Record<string, string> = {
 export default function ShippingPage() {
   const [docs, setDocs] = useState<OutboundDocument[]>([]);
   const [lines, setLines] = useState<OutboundLine[]>([]);
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState<string>();
+  const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState<OutboundDocument | null>(null);
 
   useEffect(() => {
-    fetchOutboundDocuments().then(setDocs);
-  }, []);
+    setLoading(true);
+    fetchOutboundDocuments({ search, status, per_page: 20 })
+      .then(setDocs)
+      .finally(() => setLoading(false));
+  }, [search, status]);
 
   const columns = [
     { title: "Mã phiếu", dataIndex: "code", key: "code" },
     { title: "Nơi nhận", dataIndex: "receiverName", key: "receiverName" },
     { title: "Ngày", dataIndex: "date", key: "date" },
     {
-      title: "Planned",
+      title: "Dự kiến",
       dataIndex: "planned",
       key: "planned",
       align: "right" as const,
     },
     {
-      title: "Issued",
+      title: "Đã xuất",
       dataIndex: "issued",
       key: "issued",
       align: "right" as const,
     },
     {
-      title: "Remaining",
+      title: "Còn lại",
       key: "remaining",
       align: "right" as const,
-      render: (_: unknown, r: OutboundDocument) => (
-        <strong>{r.remaining}</strong>
-      ),
+      render: (_: unknown, r: OutboundDocument) => <strong>{r.remaining}</strong>,
     },
     {
       title: "Trạng thái",
@@ -74,57 +81,62 @@ export default function ShippingPage() {
     },
     { title: "Người tạo", dataIndex: "createdBy", key: "createdBy" },
     {
-      title: "Action",
+      title: "Hành động",
       key: "action",
       render: (_: unknown, r: OutboundDocument) => (
-        <a
-          onClick={() => {
-            setSelectedDoc(r);
-            fetchOutboundLines(r.id).then(setLines);
-            setModalOpen(true);
-          }}
-        >
-          Mở · Post tiếp
-        </a>
+        <Space>
+          <Tooltip title="Mở">
+            <Button
+              type="text"
+              icon={<EyeOutlined />}
+              onClick={() => {
+                setSelectedDoc(r);
+                fetchOutboundLines(r.id).then(setLines);
+                setModalOpen(true);
+              }}
+            />
+          </Tooltip>
+          <Tooltip title="Ghi nhận tiếp">
+            <Button type="text" icon={<CheckCircleOutlined />} />
+          </Tooltip>
+        </Space>
       ),
     },
   ];
 
   const lineColumns = [
     { title: "SKU", dataIndex: "sku", key: "sku" },
-    { title: "Scan source", dataIndex: "scanSource", key: "scanSource" },
+    { title: "Nguồn quét", dataIndex: "scanSource", key: "scanSource" },
     {
-      title: "Available",
+      title: "Khả dụng",
       dataIndex: "available",
       key: "available",
       align: "right" as const,
     },
     {
-      title: "Planned",
+      title: "Dự kiến",
       dataIndex: "planned",
       key: "planned",
       align: "right" as const,
     },
     {
-      title: "Đã issue",
+      title: "Đã xuất",
       dataIndex: "issued",
       key: "issued",
       align: "right" as const,
     },
     {
-      title: "Subset mới",
+      title: "Phần mới",
       dataIndex: "subsetNew",
       key: "subsetNew",
       align: "right" as const,
       render: (v: number) => <strong>{v}</strong>,
     },
     {
-      title: "Validation",
+      title: "Kiểm tra",
       dataIndex: "validation",
       key: "validation",
-      render: (v: string) => (
-        <Tag color={v === "VALID" ? "success" : "error"}>{v}</Tag>
-      ),
+      render: (v: string) => <Tag color={v === "VALID" ? "success" : "error"}>{v}</Tag>,
     },
   ];
 
@@ -138,17 +150,28 @@ export default function ShippingPage() {
               prefix={<SearchOutlined />}
               placeholder="Mã phiếu/đại lý/SKU..."
               style={{ width: 250 }}
+              allowClear
+              onPressEnter={(event) => setSearch(event.currentTarget.value)}
+              onChange={(event) => {
+                if (!event.target.value) setSearch("");
+              }}
             />
             <Select
-              defaultValue=""
+              value={status}
               style={{ width: 150 }}
+              allowClear
+              placeholder="Trạng thái"
+              onChange={setStatus}
               options={[
-                { value: "", label: "Trạng thái" },
-                { value: "POSTED", label: "POSTED" },
-                { value: "PARTIALLY_POSTED", label: "PARTIALLY_POSTED" },
+                { value: "draft", label: "Nháp" },
+                { value: "pending", label: "Chờ xử lý" },
+                { value: "approved", label: "Đã duyệt" },
+                { value: "issued", label: "Đã xuất" },
+                { value: "cancelled", label: "Đã hủy" },
+                { value: "rejected", label: "Từ chối" },
               ]}
             />
-            <Button icon={<ExportOutlined />}>Export</Button>
+            <Button icon={<ExportOutlined />}>Xuất file</Button>
             <Button type="primary" icon={<PlusOutlined />}>
               Tạo phiếu xuất
             </Button>
@@ -159,6 +182,7 @@ export default function ShippingPage() {
           dataSource={docs}
           columns={columns}
           rowKey="id"
+          loading={loading}
           pagination={false}
           size="small"
         />
@@ -174,10 +198,10 @@ export default function ShippingPage() {
             Quay lại
           </Button>,
           <Button key="post" type="primary">
-            Post Issue subset
+            Ghi nhận một phần phiếu xuất
           </Button>,
           <Button key="close" type="default" danger>
-            Close remainder
+            Đóng phần còn lại
           </Button>,
         ]}
       >
@@ -191,16 +215,14 @@ export default function ShippingPage() {
                 <strong>{selectedDoc.date}</strong>
               </Form.Item>
               <Form.Item label="Trạng thái">
-                <Tag color={statusColorMap[selectedDoc.status]}>
-                  {selectedDoc.status}
-                </Tag>
+                <Tag color={statusColorMap[selectedDoc.status]}>{selectedDoc.status}</Tag>
               </Form.Item>
-              <Form.Item label="Version">
+              <Form.Item label="Phiên bản">
                 <Typography.Text code>v{selectedDoc.version}</Typography.Text>
               </Form.Item>
             </Form>
             <Alert
-              message="Sau Post chỉ giảm tồn kho tổng. Không sinh Balance/Movement tăng cho đại lý."
+              message="Sau khi ghi nhận chỉ giảm tồn kho tổng. Không sinh số dư/dịch chuyển tăng cho đại lý."
               type="warning"
               showIcon
               style={{ marginBottom: 12 }}

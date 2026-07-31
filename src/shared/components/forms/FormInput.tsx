@@ -14,6 +14,7 @@ export interface FormInputProps<T extends FieldValues> {
   label?: ReactNode;
   placeholder?: string;
   prefix?: ReactNode;
+  type?: React.HTMLInputTypeAttribute;
   /** Hiển thị dạng ô mật khẩu (Input.Password). */
   password?: boolean;
   autoFocus?: boolean;
@@ -58,6 +59,7 @@ interface InnerProps {
   InputComp: typeof Input | typeof Input.Password;
   placeholder?: string;
   prefix?: ReactNode;
+  type?: React.HTMLInputTypeAttribute;
   autoFocus: boolean;
   disabled: boolean;
   allowClear: boolean;
@@ -72,6 +74,7 @@ function FormInputInner({
   InputComp,
   placeholder,
   prefix,
+  type,
   autoFocus,
   disabled,
   allowClear,
@@ -108,6 +111,7 @@ function FormInputInner({
       /* eslint-enable react-hooks/refs */
       placeholder={placeholder}
       prefix={prefix}
+      type={type}
       autoFocus={autoFocus}
       disabled={disabled}
       allowClear={allowClear}
@@ -186,6 +190,7 @@ export function FormInput<T extends FieldValues>({
   label,
   placeholder,
   prefix,
+  type = "text",
   password = false,
   autoFocus = false,
   disabled = false,
@@ -206,6 +211,7 @@ export function FormInput<T extends FieldValues>({
           InputComp={InputComp}
           placeholder={placeholder}
           prefix={prefix}
+          type={password ? undefined : type}
           autoFocus={autoFocus}
           disabled={disabled}
           allowClear={allowClear}

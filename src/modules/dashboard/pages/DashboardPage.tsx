@@ -10,10 +10,12 @@ import {
   Alert,
   Button,
   Space,
+  Tooltip,
 } from "antd";
 import {
   ArrowUpOutlined,
   ArrowDownOutlined,
+  EyeOutlined,
   WarningOutlined,
   PlusOutlined,
 } from "@ant-design/icons";
@@ -86,7 +88,15 @@ export default function DashboardPage() {
     },
     { title: "Người cập nhật", dataIndex: "updatedBy", key: "updatedBy" },
     { title: "Cập nhật", dataIndex: "updatedAt", key: "updatedAt" },
-    { title: "Action", key: "action", render: () => <a>Mở</a> },
+    {
+      title: "Hành động",
+      key: "action",
+      render: () => (
+        <Tooltip title="M?">
+          <Button type="text" icon={<EyeOutlined />} />
+        </Tooltip>
+      ),
+    },
   ];
 
   return (
@@ -163,7 +173,7 @@ export default function DashboardPage() {
               <Button type="primary" icon={<PlusOutlined />}>
                 Tạo phiếu xuất
               </Button>
-              <Button icon={<WarningOutlined />}>Demo máy quét</Button>
+              <Button icon={<WarningOutlined />}>Máy quét</Button>
               <Button>+ Tạo phiên kiểm kê</Button>
             </Space>
           </Card>

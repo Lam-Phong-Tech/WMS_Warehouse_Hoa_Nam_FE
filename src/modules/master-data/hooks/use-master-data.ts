@@ -1,13 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type {
   MasterListParams,
+  ProductCategoryPayload,
   SkuPayload,
 } from "@/modules/master-data/types/master-data.types";
 import {
+  createProductCategory,
   createSku,
+  getProductCategories,
   getItems,
   getPhysicalCodes,
+  getSuppliers,
   getSkus,
+  getUoms,
   importSkus,
   updateSkuStatus,
 } from "@/modules/master-data/services/master-data.service";
@@ -15,7 +20,9 @@ import {
 export const masterDataKeys = {
   all: ["master-data"] as const,
   skus: (params: MasterListParams) =>
-    [...masterDataKeys.all, "skus", params] as const,
+    [...masterDataKeys.all, "products", params] as const,
+  categories: (params: MasterListParams) =>
+    [...masterDataKeys.all, "product-categories", params] as const,
   items: (params: MasterListParams) =>
     [...masterDataKeys.all, "items", params] as const,
   codes: (params: MasterListParams) =>
@@ -43,10 +50,43 @@ export function usePhysicalCodes(params: MasterListParams) {
   });
 }
 
+export function useProductCategories(params: MasterListParams, enabled = true) {
+  return useQuery({
+    queryKey: masterDataKeys.categories(params),
+    queryFn: () => getProductCategories(params),
+    enabled,
+  });
+}
+
+export function useUoms(enabled = true) {
+  return useQuery({
+    queryKey: [...masterDataKeys.all, "uoms"],
+    queryFn: getUoms,
+    enabled,
+  });
+}
+
+export function useSuppliers(enabled = true) {
+  return useQuery({
+    queryKey: [...masterDataKeys.all, "suppliers"],
+    queryFn: getSuppliers,
+    enabled,
+  });
+}
+
 export function useCreateSku() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: SkuPayload) => createSku(payload),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: masterDataKeys.all }),
+  });
+}
+
+export function useCreateProductCategory() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: ProductCategoryPayload) => createProductCategory(payload),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: masterDataKeys.all }),
   });

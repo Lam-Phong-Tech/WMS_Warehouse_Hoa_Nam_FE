@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 /**
  * Test riêng cho response interceptor trong axios.ts (401/403/422/409),
@@ -25,7 +25,12 @@ vi.mock("@/shared/store/auth.store", () => ({
 }));
 
 const { memoryStorageMock } = vi.hoisted(() => ({
-  memoryStorageMock: { getToken: vi.fn(() => null), setItem: vi.fn() },
+  memoryStorageMock: {
+    getToken: vi.fn(() => null),
+    getRefreshToken: vi.fn<() => string | null>(() => null),
+    setItem: vi.fn(),
+    setRefreshToken: vi.fn(),
+  },
 }));
 
 vi.mock("@/shared/lib/memory-storage", () => ({
@@ -70,6 +75,10 @@ describe("axios response interceptor", () => {
       configurable: true,
       value: { ...originalLocation, pathname: "/employees", assign: vi.fn() },
     });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it("401: logout, clear storage, redirect về /login", async () => {
@@ -201,7 +210,12 @@ describe("axios response interceptor: 401 refresh flow", () => {
     });
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it("refresh thành công → retry request gốc với Authorization header mới", async () => {
+    memoryStorageMock.getRefreshToken.mockReturnValue("refresh-token");
     const postSpy = vi.spyOn(api, "post").mockResolvedValue({
       data: {
         success: true,
@@ -221,7 +235,9 @@ describe("axios response interceptor: 401 refresh flow", () => {
 
     const result = await rejected(error);
 
-    expect(postSpy).toHaveBeenCalledWith(API_ENDPOINTS.REFRESH);
+    expect(postSpy).toHaveBeenCalledWith(API_ENDPOINTS.REFRESH, {
+      refresh_token: "refresh-token",
+    });
     expect(memoryStorageMock.setItem).toHaveBeenCalledWith("new-token");
     expect(setStateMock).toHaveBeenCalledWith({
       token: "new-token",
@@ -257,6 +273,7 @@ describe("axios response interceptor: 401 refresh flow", () => {
   });
 
   it("hai 401 đồng thời → chỉ gọi /auth/refresh một lần (gom qua refreshPromise)", async () => {
+    memoryStorageMock.getRefreshToken.mockReturnValue("refresh-token");
     let resolvePost: (v: unknown) => void;
     const postSpy = vi.spyOn(api, "post").mockReturnValue(
       new Promise((resolve) => {

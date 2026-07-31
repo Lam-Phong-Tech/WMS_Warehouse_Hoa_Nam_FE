@@ -24,17 +24,11 @@ interface CatalogRow {
   status: "DRAFT" | "SCANNING" | "POSTED" | "ERROR";
 }
 
-const sampleRows: CatalogRow[] = [
-  { id: "1", code: "IN-260729-001", owner: "Inbound", status: "DRAFT" },
-  { id: "2", code: "SCAN-260729-008", owner: "Scan", status: "SCANNING" },
-  { id: "3", code: "OUT-260729-004", owner: "Outbound", status: "POSTED" },
-];
-
 const columns: ColumnsType<CatalogRow> = [
-  { title: "Ma chung tu", dataIndex: "code", key: "code" },
+  { title: "Mã chứng từ", dataIndex: "code", key: "code" },
   { title: "Module", dataIndex: "owner", key: "owner", responsive: ["sm"] },
   {
-    title: "Trang thai",
+    title: "Trạng thái",
     dataIndex: "status",
     key: "status",
     render: (status: CatalogRow["status"]) => (
@@ -67,17 +61,17 @@ export default function ComponentCatalogPage() {
     <Space direction="vertical" size={20} style={{ width: "100%" }}>
       <PageHeader
         title="Component catalog"
-        subtitle="Demo route noi bo cho BA/QA kiem tra UI states dung chung theo HN-FE-001."
+        subtitle="Route nội bộ cho BA/QA kiểm tra UI states dùng chung theo HN-FE-001."
         extra={
           <Space wrap>
-            <Button onClick={() => toast.success("Toast success da san sang")}>
+            <Button onClick={() => toast.success("Toast success đã sẵn sàng")}>
               Toast success
             </Button>
             <Button danger onClick={() => toast.error("Toast error theo API")}>
               Toast error
             </Button>
             <Button type="primary" onClick={() => setModalOpen(true)}>
-              Mo modal
+              Mở modal
             </Button>
           </Space>
         }
@@ -88,12 +82,12 @@ export default function ComponentCatalogPage() {
           <Card title="Table + status + pagination" style={cardStyle}>
             <DataTable<CatalogRow>
               columns={columns}
-              dataSource={sampleRows}
+              dataSource={[]}
               serverPagination={{
-                total: 24,
+                total: 0,
                 current: 1,
                 pageSize: 10,
-                onChange: () => toast.info("Pagination callback da duoc goi"),
+                onChange: () => toast.info("Pagination callback đã được gọi"),
               }}
             />
           </Card>
@@ -103,10 +97,10 @@ export default function ComponentCatalogPage() {
             <Space direction="vertical" size={12} style={{ width: "100%" }}>
               <ScanInput
                 recentCodes={recentCodes}
-                duplicateMessage="Ma vua scan bi trung trong batch hien tai"
+                duplicateMessage="Mã vừa scan bị trùng trong batch hiện tại"
                 onScan={(code) => {
                   setRecentCodes((codes) => [code, ...codes].slice(0, 5));
-                  toast.success(`Da nhan scan ${code}`);
+                  toast.success(`Đã nhận scan ${code}`);
                 }}
               />
               <Typography.Text type="secondary">
@@ -125,12 +119,12 @@ export default function ComponentCatalogPage() {
       <Row gutter={[16, 16]}>
         <Col xs={24} md={12} xl={6}>
           <Card title="Loading" style={cardStyle}>
-            <LoadingState tip="Dang tai danh sach..." />
+            <LoadingState tip="Đang tải danh sách..." />
           </Card>
         </Col>
         <Col xs={24} md={12} xl={6}>
           <Card title="Empty" style={cardStyle}>
-            <EmptyState description="Khong co ban ghi phu hop bo loc." />
+            <EmptyState description="Không có bản ghi phù hợp bộ lọc." />
           </Card>
         </Col>
         <Col xs={24} md={12} xl={6}>
@@ -156,8 +150,8 @@ export default function ComponentCatalogPage() {
                     message: "Validation failed",
                     error_code: "WMS_VALIDATION_ERROR",
                     errors: {
-                      sku_id: ["SKU bat buoc"],
-                      warehouse_id: ["Kho khong nam trong data scope"],
+                      sku_id: ["SKU bắt buộc"],
+                      warehouse_id: ["Kho không nằm trong data scope"],
                     },
                   },
                 },
@@ -171,9 +165,9 @@ export default function ComponentCatalogPage() {
             <Space wrap>
               <ConfirmButton
                 danger
-                title="Xac nhan thao tac"
-                description="Demo confirm cho action co rui ro."
-                onConfirm={() => toast.success("Da xac nhan thao tac")}
+                title="Xác nhận thao tác"
+                description="Confirm cho action có rủi ro."
+                onConfirm={() => toast.success("Đã xác nhận thao tác")}
               >
                 Confirm action
               </ConfirmButton>
@@ -189,19 +183,19 @@ export default function ComponentCatalogPage() {
 
       <FormModal
         open={modalOpen}
-        title="Demo form modal"
+        title="Form modal"
         onOk={() => {
-          toast.success("Submit callback da chay");
+          toast.success("Submit callback đã chạy");
           setModalOpen(false);
         }}
         onCancel={() => setModalOpen(false)}
         width={560}
       >
-        <Form.Item label="Ma chung tu" required>
+        <Form.Item label="Mã chứng từ" required>
           <Input placeholder="IN-260729-001" />
         </Form.Item>
-        <Form.Item label="Ghi chu">
-          <Input.TextArea rows={3} placeholder="Thong tin bo sung" />
+        <Form.Item label="Ghi chú">
+          <Input.TextArea rows={3} placeholder="Thông tin bổ sung" />
         </Form.Item>
       </FormModal>
     </Space>

@@ -1,11 +1,34 @@
-import { http } from "@/shared/api/http";
-import type { PutawayTask, PutawayHistory } from "../types";
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
+import { http } from "@/shared/api/http";
 
-export async function fetchPutawayTasks(): Promise<PutawayTask[]> {
-  return http.get<PutawayTask[]>(API_ENDPOINTS.PUTAWAY_TASKS);
+type RawRecord = Record<string, unknown>;
+
+function rowsOf<T>(value: T[] | { data?: T[] }): T[] {
+  return Array.isArray(value) ? value : Array.isArray(value.data) ? value.data : [];
 }
 
-export async function fetchPutawayHistory(): Promise<PutawayHistory[]> {
-  return http.get<PutawayHistory[]>(API_ENDPOINTS.PUTAWAY_HISTORY);
+function clean(params: Record<string, unknown>) {
+  return Object.fromEntries(
+    Object.entries(params).filter(([, value]) => value !== "" && value !== undefined),
+  );
+}
+
+export async function fetchPutawayTasks(
+  params: Record<string, unknown> = {},
+): Promise<RawRecord[]> {
+  const result = await http.getPage<RawRecord[] | { data?: RawRecord[] }>(
+    API_ENDPOINTS.PUTAWAY_TASKS,
+    { params: clean(params) },
+  );
+  return rowsOf(result.data as RawRecord[] | { data?: RawRecord[] });
+}
+
+export async function fetchPutawayHistory(
+  params: Record<string, unknown> = {},
+): Promise<RawRecord[]> {
+  const result = await http.getPage<RawRecord[] | { data?: RawRecord[] }>(
+    API_ENDPOINTS.PUTAWAY_HISTORY,
+    { params: clean(params) },
+  );
+  return rowsOf(result.data as RawRecord[] | { data?: RawRecord[] });
 }

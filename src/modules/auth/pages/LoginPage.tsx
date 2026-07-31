@@ -100,7 +100,7 @@ export function LoginPage() {
             E
           </div>
           <Typography.Title level={3} style={{ margin: 0 }}>
-            ERP System
+            Hoa Nam
           </Typography.Title>
           <Typography.Text type="secondary">
             Đăng nhập để tiếp tục
@@ -116,13 +116,19 @@ export function LoginPage() {
           />
         )}
 
-        <Form layout="vertical" onSubmitCapture={onSubmit} requiredMark={false}>
+        <Form
+          layout="vertical"
+          onSubmitCapture={onSubmit}
+          requiredMark={false}
+          noValidate
+        >
           <FormInput
             control={control}
             name="email"
-            label="Email"
-            placeholder="you@example.com"
+            label="Gmail"
+            placeholder="Vui lòng nhập gmail của bạn"
             prefix={<MailOutlined style={{ color: "#bbb" }} />}
+            type="email"
             autoFocus
             disabled={isSubmitting}
           />

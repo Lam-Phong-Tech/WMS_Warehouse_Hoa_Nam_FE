@@ -4,7 +4,7 @@ import { Layout, theme } from "antd";
 const { Header, Content, Footer } = Layout;
 
 /**
- * Khung partner: Layout khung dành cho Cổng đối tác.
+ * Khung đối tác: layout dành cho Cổng đối tác.
  */
 export function PartnerLayout() {
   const {
@@ -21,7 +21,7 @@ export function PartnerLayout() {
           alignItems: "center",
         }}
       >
-        <h1 style={{ margin: 0, fontSize: 18 }}>Partner Portal</h1>
+        <h1 style={{ margin: 0, fontSize: 18 }}>Cổng đối tác</h1>
       </Header>
 
       <Content style={{ margin: 24 }}>
@@ -38,7 +38,7 @@ export function PartnerLayout() {
       </Content>
 
       <Footer style={{ textAlign: "center" }}>
-        ERP System ©{new Date().getFullYear()} Partner Portal
+        Hệ thống ERP ©{new Date().getFullYear()} Cổng đối tác
       </Footer>
     </Layout>
   );

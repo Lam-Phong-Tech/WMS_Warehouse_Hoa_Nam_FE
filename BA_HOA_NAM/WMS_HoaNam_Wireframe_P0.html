@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="vi">
 <head>
 <meta charset="utf-8" />
@@ -143,59 +143,65 @@ table{border-collapse:collapse;width:100%;table-layout:fixed}th{background:var(-
     <div class="screen-grid">
       <div class="col">
         <div class="frame-wrap">
-          <div class="frame-label">2A · Danh sách SKU & Product Master <span class="tag">P0</span> <span class="code">SCR-MST-01 · F-WM-2.1..2.6</span></div>
+          <div class="frame-label">2A · Danh sách/SKU Master <span class="tag">P0</span> <span class="code">SCR-MST-01 · F-WM-2.1..2.6</span></div>
           <div class="frame xwide">
-            <div class="api-strip"><span class="label-mini">API</span><span class="chip api">/product-masters</span><span class="chip api">/skus</span><span class="label-mini">Permission</span><span class="chip rule">sku.manage · master.manage</span><span class="chip rule">code/mode immutable after stock</span></div>
-            <div class="toolbar"><div class="search">⌕ Tên, SKU, model...</div><div class="filter">Loại SKU ▾</div><div class="filter">Category ▾</div><div class="filter">Serial mode ▾</div><div class="filter">Trạng thái ▾</div><div class="spacer"></div><div class="btn ghost">Import Excel</div><div class="btn primary">＋ Tạo SKU</div></div>
-            <table><thead><tr><th>SKU code</th><th>Tên SKU</th><th>Loại</th><th>Brand/Model</th><th>Serial</th><th>ĐVT</th><th>Default container</th><th>Trạng thái</th><th>Action</th></tr></thead>
+            <div class="api-strip"><span class="label-mini">API</span><span class="chip api">GET /skus</span><span class="chip api">GET /inventory/summary</span><span class="chip api">PATCH /skus/{id}</span><span class="label-mini">Rule</span><span class="chip rule">SKU là loại hàng</span><span class="chip rule">Không dùng carton/box/tray làm SKU</span><span class="chip rule">Khóa sku_code/serial mode sau movement</span></div>
+            <div class="toolbar"><div class="search">⌕ SKU, tên, alias, model...</div><div class="filter">PRODUCT/COMPONENT ▾</div><div class="filter">Category ▾</div><div class="filter">Serial mode ▾</div><div class="filter">Publish ▾</div><div class="filter">Data quality ▾</div><div class="spacer"></div><div class="btn ghost">Import alias</div><div class="btn ghost">Export</div><div class="btn primary">＋ Tạo SKU</div></div>
+            <div class="section" style="padding-bottom:6px"><div class="grid5"><div class="kpi"><div class="k">Tổng SKU active</div><div class="v">428</div><div class="d">312 product · 116 component</div></div><div class="kpi"><div class="k">Đã publish App PV</div><div class="v">186</div><div class="d">Chỉ hiện tổng available</div></div><div class="kpi"><div class="k">Có serial</div><div class="v">337</div><div class="d">ITEM bắt buộc mã vật lý</div></div><div class="kpi"><div class="k">Quantity-only</div><div class="v">91</div><div class="d">Quản lý theo box/qty</div></div><div class="kpi"><div class="k">Cần rà soát</div><div class="v warn-text">12</div><div class="d">Alias/trường bắt buộc thiếu</div></div></div></div>
+            <table><thead><tr><th style="width:19%">SKU code</th><th style="width:18%">Tên & phân loại</th><th>Thuộc tính định danh</th><th>Quản lý tồn</th><th class="num">Available</th><th>Publish</th><th>Data quality</th><th>Action</th></tr></thead>
             <tbody>
-              <tr><td class="mono">DCH-DRILL-DJZ10A-220V-V1</td><td><strong>Máy khoan Dongcheng DJZ10A 220V</strong></td><td>PRODUCT</td><td>DCH · DJZ10A</td><td><span class="pill accentpill">Có serial</span></td><td>cái</td><td>CARTON</td><td><span class="pill success">ACTIVE</span></td><td class="actions">Chi tiết · Sửa</td></tr>
-              <tr><td class="mono">DCH-GRINDER-DSM02-850W-V1</td><td><strong>Máy mài góc DSM02 850W</strong></td><td>PRODUCT</td><td>DCH · DSM02</td><td><span class="pill accentpill">Có serial</span></td><td>cái</td><td>CARTON</td><td><span class="pill success">ACTIVE</span></td><td class="actions">Chi tiết · Sửa</td></tr>
-              <tr><td class="mono">LK-DCH-OC-VIT-M2-V1</td><td><strong>Ốc vít M2 Dongcheng</strong></td><td>COMPONENT</td><td>DCH · M2</td><td><span class="pill neutral">Quantity</span></td><td>cái</td><td>BOX/TRAY</td><td><span class="pill success">ACTIVE</span></td><td class="actions">Chi tiết · Sửa</td></tr>
+              <tr><td><strong class="mono">DCH-DRILL-DJZ10A-220V-V1</strong><div class="hint">Alias: MAYKHOAN-01</div></td><td><strong>Máy khoan Dongcheng DJZ10A 220V</strong><div class="hint">PRODUCT · DRILL</div></td><td>DCH · DJZ10A · 220V · V1<div class="hint">Unit: cái · Warranty: Có</div></td><td><span class="pill accentpill">Serial tracked</span><div class="hint">ITEM + CARTON · không tính carton là tồn</div></td><td class="num"><strong>58</strong><div class="hint">NORMAL</div></td><td><span class="pill success">PUBLISHED</span><div class="hint">Sync 24/07 08:42</div></td><td><span class="pill success">PASS</span><div class="hint">Ledger = Balance = Item</div></td><td class="actions">Chi tiết · Sửa</td></tr>
+              <tr><td><strong class="mono">DCH-GRINDER-DSM02-850W-V1</strong><div class="hint">Alias: DSM02-850</div></td><td><strong>Máy mài góc DSM02 850W</strong><div class="hint">PRODUCT · GRINDER</div></td><td>DCH · DSM02 · 850W · V1<div class="hint">Unit: cái · Warranty: Có</div></td><td><span class="pill accentpill">Serial tracked</span><div class="hint">ITEM + CARTON</div></td><td class="num"><strong>31</strong><div class="hint">NORMAL</div></td><td><span class="pill neutral">DRAFT</span><div class="hint">Thiếu ảnh/spec PV</div></td><td><span class="pill warnpill">WARN</span><div class="hint">Thiếu industry tag</div></td><td class="actions">Hoàn thiện · Sửa</td></tr>
+              <tr><td><strong class="mono">LK-DCH-OC-VIT-M2-V1</strong><div class="hint">Alias: OC-M2</div></td><td><strong>Ốc vít M2 Dongcheng</strong><div class="hint">COMPONENT · PART</div></td><td>DCH · M2 · version V1<div class="hint">Unit: cái · Warranty: Không</div></td><td><span class="pill neutral">Quantity-only</span><div class="hint">BOX một SKU · TRAY vị trí gợi ý</div></td><td class="num"><strong>1,250</strong><div class="hint">Box qty</div></td><td><span class="pill neutral">NOT PV</span><div class="hint">Không publish linh kiện nhỏ</div></td><td><span class="pill success">PASS</span><div class="hint">Balance = Box subledger</div></td><td class="actions">Chi tiết · Sửa</td></tr>
+              <tr><td><strong class="mono">LK-DCH-PIN-20V-V1</strong><div class="hint">Alias: PIN20V-DCH</div></td><td><strong>Pin Dongcheng 20V</strong><div class="hint">COMPONENT · BATTERY</div></td><td>DCH · PIN20V · V1<div class="hint">Unit: cái · Warranty: Có</div></td><td><span class="pill accentpill">Serial tracked</span><div class="hint">ITEM hoặc BOX serial</div></td><td class="num"><strong>84</strong><div class="hint">NORMAL</div></td><td><span class="pill success">PUBLISHED</span><div class="hint">Hiện còn hàng</div></td><td><span class="pill dangerpill">BLOCK</span><div class="hint">Alias trùng source Excel</div></td><td class="actions">Sửa lỗi</td></tr>
             </tbody></table>
+            <div class="note tight"><b>Không tách tab dư:</b> cùng một màn hiển thị danh sách, trạng thái publish, alias migration, available tổng và cảnh báo chất lượng. Chi tiết serial/item/container mở bằng action Trace ở module Mã vật lý/Tồn kho, không nhồi vào SKU.</div>
           </div>
         </div>
 
         <div class="frame-wrap">
-          <div class="frame-label">2B · Quản lý đại lý/cửa hàng con <span class="tag">P0</span> <span class="code">SCR-AGY-01 · F-WM-1.3</span></div>
+          <div class="frame-label">2B · Chi tiết nhanh SKU đang chọn <span class="tag">P0</span></div>
           <div class="frame xwide">
-            <div class="api-strip"><span class="chip api">/agencies</span><span class="chip rule">Agency ≠ Warehouse</span><span class="chip rule">Không có field tồn/balance</span></div>
-            <div class="toolbar"><div class="search">⌕ Mã/tên đại lý...</div><div class="filter">Khu vực ▾</div><div class="filter">Trạng thái ▾</div><div class="spacer"></div><div class="btn primary">＋ Thêm đại lý</div></div>
-            <table><thead><tr><th>Mã</th><th>Tên đại lý/cửa hàng</th><th>Người liên hệ</th><th>Điện thoại</th><th>Địa chỉ nhận hàng</th><th>Trạng thái</th><th>Action</th></tr></thead><tbody>
-              <tr><td class="mono">AG-HN-001</td><td><strong>Đại lý Hà Đông</strong></td><td>Nguyễn Văn A</td><td>09******22</td><td>Hà Đông, Hà Nội</td><td><span class="pill success">ACTIVE</span></td><td class="actions">Sửa · Ngừng</td></tr>
-              <tr><td class="mono">AG-HN-002</td><td><strong>Cửa hàng Đông Anh</strong></td><td>Trần Văn B</td><td>09******11</td><td>Đông Anh, Hà Nội</td><td><span class="pill success">ACTIVE</span></td><td class="actions">Sửa · Ngừng</td></tr>
-            </tbody></table>
+            <div class="toolbar"><div><strong>DCH-DRILL-DJZ10A-220V-V1</strong> · Máy khoan Dongcheng DJZ10A 220V</div><div class="spacer"></div><div class="btn ghost">Mở tồn kho</div><div class="btn ghost">Mở mã vật lý</div><div class="btn primary">Sửa hồ sơ</div></div>
+            <div class="section"><div class="grid4"><div class="item"><b>Định danh chuẩn</b><div>Brand: Dongcheng</div><div>Category: DRILL</div><div>Model: DJZ10A</div><div>Power: 220V</div></div><div class="item"><b>Quy tắc tồn</b><div>Serial tracked: Có</div><div>Container rule: CARTON chứa ITEM</div><div>Stock bucket: warehouse + sku + status</div></div><div class="item"><b>PV/App xem sản phẩm</b><div>Published: Có</div><div>available_qty: 58</div><div>Không lộ serial/carton/movement</div></div><div class="item"><b>Ràng buộc sửa</b><div>sku_code: locked</div><div>serial mode: locked</div><div>name/spec/profile: editable theo quyền</div></div></div></div>
+            <div class="section" style="padding-top:0"><div class="grid3"><div class="item"><b>Alias mã cũ</b><div class="mono">EXCEL-OLD · MAYKHOAN-01</div><div class="mono">SALE-LIST · DJZ10A-220</div><div class="hint">Alias unique theo source, không dùng làm khóa tồn.</div></div><div class="item"><b>Profile publish</b><div>Ảnh: 4 · Spec: đủ · Industry: Xây dựng, cơ khí</div><div>Tags: khoan bê tông, 220V, Dongcheng</div><div class="hint">Chỉ SKU ACTIVE mới được publish.</div></div><div class="item"><b>Validation gần nhất</b><div><span class="pill success">Ledger = Balance</span> · 24/07 08:42</div><div><span class="pill success">Item count khớp</span> · 58 item IN_STOCK</div><div><span class="pill neutral">Carton chỉ trace</span> · không cộng tồn riêng</div></div></div></div>
           </div>
         </div>
       </div>
 
       <div class="col">
         <div class="frame-wrap">
-          <div class="frame-label">2C · Form SKU <span class="tag">P0</span> <span class="code">field-level spec</span></div>
+          <div class="frame-label">2C · Tạo/Sửa SKU <span class="tag">P0</span> <span class="code">field-level spec</span></div>
           <div class="frame formframe">
-            <div class="form"><h2>Tạo SKU mới</h2>
+            <div class="form"><h2>Hồ sơ SKU</h2>
               <div class="section-title">Thông tin định danh</div>
               <div class="row"><div class="field"><div class="label">Loại SKU *</div><div class="segmented"><div class="segment active">◉ PRODUCT</div><div class="segment">○ COMPONENT</div></div></div></div>
-              <div class="row"><div class="field"><div class="label">SKU code *</div><div class="input">DCH-DRILL-DJZ10A-220V-V1</div><div class="hint">Khóa sửa sau khi đã có stock/movement.</div></div></div>
+              <div class="row"><div class="field"><div class="label">SKU code *</div><div class="input mono">DCH-DRILL-DJZ10A-220V-V1</div><div class="hint">Không chứa lô nhập, item serial, tình trạng, kênh bán hoặc container.</div></div></div>
               <div class="row"><div class="field"><div class="label">Tên SKU *</div><div class="input">Máy khoan Dongcheng DJZ10A 220V</div></div></div>
-              <div class="row"><div class="field"><div class="label">Brand *</div><div class="input">Dongcheng ▾</div></div><div class="field"><div class="label">Category *</div><div class="input">Máy khoan ▾</div></div></div>
-              <div class="row"><div class="field"><div class="label">Model *</div><div class="input">DJZ10A</div></div><div class="field"><div class="label">Điện áp/Công suất</div><div class="input">220V</div></div></div>
+              <div class="row"><div class="field"><div class="label">Brand *</div><div class="input">Dongcheng ▾</div></div><div class="field"><div class="label">Category *</div><div class="input">DRILL ▾</div></div></div>
+              <div class="row"><div class="field"><div class="label">Model *</div><div class="input">DJZ10A</div></div><div class="field"><div class="label">Điện áp/Công suất/Version</div><div class="input">220V · V1</div></div></div>
               <div class="section-title">Quản lý tồn</div>
-              <div class="row"><div class="field"><div class="label">Theo dõi serial *</div><div class="segmented"><div class="segment active">◉ Có</div><div class="segment">○ Không</div></div></div><div class="field"><div class="label">Container mặc định *</div><div class="input">CARTON ▾</div></div></div>
+              <div class="row"><div class="field"><div class="label">Theo dõi serial *</div><div class="segmented"><div class="segment active">◉ Có</div><div class="segment">○ Không</div></div><div class="hint">Nếu đã phát sinh movement thì chỉ xem.</div></div><div class="field"><div class="label">Container rule *</div><div class="input">CARTON chứa ITEM ▾</div><div class="hint">Container chỉ trace/mapping, không phải SKU.</div></div></div>
               <div class="row"><div class="field"><div class="label">Đơn vị tính *</div><div class="input">cái ▾</div></div><div class="field"><div class="label">Bảo hành áp dụng</div><div class="input">Có ▾</div></div></div>
+              <div class="section-title">Migration & Publish</div>
+              <div class="row"><div class="field"><div class="label">Alias/mã cũ</div><div class="input textarea">EXCEL-OLD:MAYKHOAN-01; SALE-LIST:DJZ10A-220</div><div class="hint">Validate unique theo source, không dùng alias làm khóa tồn.</div></div></div>
+              <div class="row"><div class="field"><div class="label">Publish App PV</div><div class="segmented"><div class="segment active">◉ Published</div><div class="segment">○ Draft</div><div class="segment">○ Unpublish</div></div></div></div>
+              <div class="row"><div class="field"><div class="label">Tags/ngành nghề</div><div class="input textarea">Xây dựng; Cơ khí; Khoan bê tông; 220V</div></div></div>
+              <div class="banner warn">Nếu SKU đã có stock/movement, hệ thống khóa sửa sku_code, sku_type và serial mode; chỉ cho cập nhật tên, profile, alias hợp lệ, publish và thông số không ảnh hưởng tồn.</div>
               <div class="form-actions"><div class="btn">Hủy</div><div class="btn primary">Lưu SKU</div></div>
             </div>
           </div>
         </div>
 
         <div class="frame-wrap">
-          <div class="frame-label">2D · Danh mục bệnh/lỗi <span class="tag">P0</span> <span class="code">SCR-DEF-01 · F-WM-1.4</span></div>
-          <div class="frame formframe"><div class="toolbar"><div class="search">⌕ Mã/tên bệnh...</div><div class="spacer"></div><div class="btn primary">＋ Thêm bệnh/lỗi</div></div><table><thead><tr><th>Mã</th><th>Tên bệnh/lỗi</th><th>Trạng thái</th><th>Action</th></tr></thead><tbody><tr><td class="mono">DEF-MOTOR-01</td><td>Không chạy động cơ</td><td><span class="pill success">ACTIVE</span></td><td class="actions">Sửa</td></tr><tr><td class="mono">DEF-BAT-02</td><td>Pin không nhận sạc</td><td><span class="pill success">ACTIVE</span></td><td class="actions">Sửa</td></tr></tbody></table><div class="note tight"><b>Rule:</b> Bệnh/lỗi INACTIVE không được chọn cho case bảo hành mới nhưng lịch sử cũ vẫn giữ.</div></div>
+          <div class="frame-label">2D · Master phụ trong cùng màn <span class="tag">P0</span></div>
+          <div class="frame formframe">
+            <div class="section"><div class="grid2"><div class="item"><b>Đại lý/cửa hàng nhận hàng</b><div class="hint">Agency không phải warehouse, không có tồn riêng trong MVP.</div><div class="mono">AG-HN-001 · Đại lý Hà Đông · ACTIVE</div><div class="mono">AG-HN-002 · Cửa hàng Đông Anh · ACTIVE</div><div class="zone-actions" style="margin-top:8px"><div class="btn ghost">Quản lý đại lý</div></div></div><div class="item"><b>Danh mục bệnh/lỗi</b><div class="hint">Dùng cho bảo hành; inactive không chọn mới nhưng giữ lịch sử.</div><div class="mono">DEF-MOTOR-01 · Không chạy động cơ</div><div class="mono">DEF-BAT-02 · Pin không nhận sạc</div><div class="zone-actions" style="margin-top:8px"><div class="btn ghost">Quản lý bệnh/lỗi</div></div></div></div></div>
+          </div>
         </div>
       </div>
     </div>
   </section>
-
   <!-- 3 PHYSICAL -->
   <section class="screen" id="physical">
     <div class="screen-grid">

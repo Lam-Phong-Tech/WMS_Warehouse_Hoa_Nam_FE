@@ -1,93 +1,57 @@
-import { useState } from "react";
-import { Table, Button, Space, Tag, Input, Select, Tabs } from "antd";
-import { SearchOutlined } from "@ant-design/icons";
-
-const mockInventory = [
-  {
-    id: 1,
-    sku: "DCH-DRILL-DJZ10A-220V-V1",
-    name: "Máy khoan DJZ10A",
-    type: "PRODUCT",
-    available: 58,
-    serialQty: 58,
-    boxQty: 0,
-    location: "Carton/khu lưu tự do",
-    reconcile: "PASS",
-    updatedAt: "10:32",
-  },
-  {
-    id: 2,
-    sku: "LK-DCH-OC-VIT-M2-V1",
-    name: "Ốc vít M2",
-    type: "COMPONENT",
-    available: 450,
-    serialQty: 0,
-    boxQty: 450,
-    location: "BOX-LK-0042 · chưa Putaway",
-    reconcile: "WARNING",
-    updatedAt: "10:18",
-  },
-  {
-    id: 3,
-    sku: "LK-DCH-PIN-20V-V1",
-    name: "Pin 20V",
-    type: "COMPONENT",
-    available: 80,
-    serialQty: 80,
-    boxQty: 0,
-    location: "TRAY-T-03",
-    reconcile: "PASS",
-    updatedAt: "09:55",
-  },
-];
-
-const mockMovements = [
-  {
-    id: 1,
-    movementId: "MOV-000812",
-    time: "24/07/2026 08:42",
-    type: "RECEIPT_POSTED",
-    sku: "DCH-DRILL-DJZ10A...",
-    qty: 20,
-    source: "PN-20260724-001",
-    actor: "NV kho",
-    chain: "Original",
-  },
-  {
-    id: 2,
-    movementId: "MOV-000826",
-    time: "24/07/2026 09:48",
-    type: "ISSUE_POSTED",
-    sku: "DCH-GRINDER-DSM02...",
-    qty: -5,
-    source: "PX-20260724-004",
-    actor: "NV kho",
-    chain: "Original",
-  },
-  {
-    id: 3,
-    movementId: "MOV-000829",
-    time: "24/07/2026 10:05",
-    type: "ADJUST_IN",
-    sku: "LK-DCH-SAC-20V...",
-    qty: 2,
-    source: "STK-20260724-01",
-    actor: "QL kho",
-    chain: "Adjustment",
-  },
-];
+import { useEffect, useState } from "react";
+import { Button, Input, Select, Space, Table, Tabs, Tag, Tooltip } from "antd";
+import {
+  EyeOutlined,
+  HistoryOutlined,
+  RollbackOutlined,
+  SearchOutlined,
+} from "@ant-design/icons";
+import {
+  fetchInventoryBalances,
+  fetchStockMovements,
+  type InventoryBalanceRow,
+  type StockMovementRow,
+} from "../services/inventoryService";
 
 export default function InventoryPage() {
   const [activeTab, setActiveTab] = useState("stock");
+  const [balances, setBalances] = useState<InventoryBalanceRow[]>([]);
+  const [movements, setMovements] = useState<StockMovementRow[]>([]);
+  const [stockSearch, setStockSearch] = useState("");
+  const [stockStatus, setStockStatus] = useState<string>();
+  const [movementSearch, setMovementSearch] = useState("");
+  const [movementType, setMovementType] = useState<string>();
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (activeTab !== "stock") return;
+    setLoading(true);
+    fetchInventoryBalances({ search: stockSearch, status: stockStatus, limit: 20 })
+      .then(setBalances)
+      .catch(() => setBalances([]))
+      .finally(() => setLoading(false));
+  }, [activeTab, stockSearch, stockStatus]);
+
+  useEffect(() => {
+    if (activeTab !== "movement") return;
+    setLoading(true);
+    fetchStockMovements({
+      search: movementSearch,
+      keyword: movementSearch,
+      movement_type: movementType,
+      per_page: 20,
+    })
+      .then(setMovements)
+      .catch(() => setMovements([]))
+      .finally(() => setLoading(false));
+  }, [activeTab, movementSearch, movementType]);
 
   const columns = [
     {
       title: "SKU",
       dataIndex: "sku",
       key: "sku",
-      render: (v: string) => (
-        <span style={{ fontFamily: "monospace" }}>{v}</span>
-      ),
+      render: (v: string) => <span style={{ fontFamily: "monospace" }}>{v}</span>,
     },
     {
       title: "Tên hàng",
@@ -99,63 +63,57 @@ export default function InventoryPage() {
       title: "Loại",
       dataIndex: "type",
       key: "type",
-      render: (v: string) => (
-        <Tag color={v === "PRODUCT" ? "blue" : "green"}>{v}</Tag>
-      ),
+      render: (v: string) => <Tag color={v === "PRODUCT" ? "blue" : "green"}>{v}</Tag>,
     },
     {
-      title: "Available",
+      title: "Khả dụng",
       dataIndex: "available",
       key: "available",
       render: (v: number) => (
-        <span
-          style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}
-        >
+        <span style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
           <strong>{v}</strong>
         </span>
       ),
     },
     {
-      title: "Serial qty",
+      title: "SL serial",
       dataIndex: "serialQty",
       key: "serialQty",
       render: (v: number) => (
-        <span
-          style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}
-        >
+        <span style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
           {v}
         </span>
       ),
     },
     {
-      title: "Box qty",
+      title: "SL box",
       dataIndex: "boxQty",
       key: "boxQty",
       render: (v: number) => (
-        <span
-          style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}
-        >
+        <span style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
           {v}
         </span>
       ),
     },
-    { title: "Location hint", dataIndex: "location", key: "location" },
+    { title: "Vị trí gợi ý", dataIndex: "location", key: "location" },
     {
       title: "Đối soát",
       dataIndex: "reconcile",
       key: "reconcile",
-      render: (v: string) => (
-        <Tag color={v === "PASS" ? "success" : "warning"}>{v}</Tag>
-      ),
+      render: (v: string) => <Tag color={v === "PASS" ? "success" : "warning"}>{v}</Tag>,
     },
     { title: "Cập nhật", dataIndex: "updatedAt", key: "updatedAt" },
     {
-      title: "Action",
+      title: "Hành động",
       key: "action",
       render: () => (
         <Space>
-          <a>Chi tiết</a>
-          <a>Trace</a>
+          <Tooltip title="Chi tiết">
+            <Button type="text" icon={<EyeOutlined />} />
+          </Tooltip>
+          <Tooltip title="Truy vết">
+            <Button type="text" icon={<HistoryOutlined />} />
+          </Tooltip>
         </Space>
       ),
     },
@@ -163,18 +121,16 @@ export default function InventoryPage() {
 
   const movementColumns = [
     {
-      title: "Movement ID",
+      title: "Mã dịch chuyển",
       dataIndex: "movementId",
       key: "movementId",
-      render: (v: string) => (
-        <span style={{ fontFamily: "monospace" }}>{v}</span>
-      ),
+      render: (v: string) => <span style={{ fontFamily: "monospace" }}>{v}</span>,
     },
-    { title: "Thời gian post", dataIndex: "time", key: "time" },
+    { title: "Thời gian ghi nhận", dataIndex: "time", key: "time" },
     { title: "Loại", dataIndex: "type", key: "type" },
     { title: "SKU", dataIndex: "sku", key: "sku" },
     {
-      title: "Qty delta",
+      title: "SL thay đổi",
       dataIndex: "qty",
       key: "qty",
       render: (v: number) => (
@@ -190,22 +146,24 @@ export default function InventoryPage() {
       ),
     },
     {
-      title: "Source",
+      title: "Nguồn",
       dataIndex: "source",
       key: "source",
-      render: (v: string) => (
-        <span style={{ fontFamily: "monospace" }}>{v}</span>
-      ),
+      render: (v: string) => <span style={{ fontFamily: "monospace" }}>{v}</span>,
     },
-    { title: "Actor", dataIndex: "actor", key: "actor" },
-    { title: "Chain", dataIndex: "chain", key: "chain" },
+    { title: "Người thao tác", dataIndex: "actor", key: "actor" },
+    { title: "Chuỗi liên kết", dataIndex: "chain", key: "chain" },
     {
-      title: "Action",
+      title: "Hành động",
       key: "action",
       render: () => (
         <Space>
-          <a>Chi tiết</a>
-          <a>Reverse</a>
+          <Tooltip title="Chi tiết">
+            <Button type="text" icon={<EyeOutlined />} />
+          </Tooltip>
+          <Tooltip title="Hoàn đảo">
+            <Button type="text" icon={<RollbackOutlined />} />
+          </Tooltip>
         </Space>
       ),
     },
@@ -233,6 +191,8 @@ export default function InventoryPage() {
                     <Input.Search
                       placeholder="SKU/tên hàng..."
                       style={{ width: 285 }}
+                      allowClear
+                      onSearch={setStockSearch}
                     />
                     <Select
                       placeholder="Loại hàng"
@@ -240,24 +200,31 @@ export default function InventoryPage() {
                       allowClear
                     />
                     <Select
-                      placeholder="Stock status"
+                      placeholder="Trạng thái tồn"
                       style={{ width: 125 }}
                       allowClear
+                      value={stockStatus}
+                      onChange={setStockStatus}
+                      options={[
+                        { value: "active", label: "Hoạt động" },
+                        { value: "inactive", label: "Ngưng hoạt động" },
+                      ]}
                     />
                     <Select
-                      placeholder="Reconcile"
+                      placeholder="Đối soát"
                       style={{ width: 125 }}
                       allowClear
                     />
                   </Space>
                   <Space>
-                    <Button icon={<SearchOutlined />}>Export</Button>
+                    <Button icon={<SearchOutlined />}>Xuất file</Button>
                   </Space>
                 </div>
                 <Table
-                  dataSource={mockInventory}
+                  dataSource={balances}
                   columns={columns}
                   rowKey="id"
+                  loading={loading}
                   pagination={{ pageSize: 10 }}
                 />
                 <div
@@ -271,7 +238,7 @@ export default function InventoryPage() {
                     color: "#314e68",
                   }}
                 >
-                  <b>Location hint/tray</b> chỉ giúp tìm hàng, không tham gia
+                  <b>Vị trí gợi ý/khay</b> chỉ giúp tìm hàng, không tham gia
                   công thức tồn và không tạo bucket tồn riêng.
                 </div>
               </div>
@@ -279,7 +246,7 @@ export default function InventoryPage() {
           },
           {
             key: "movement",
-            label: "Lịch sử Movement",
+            label: "Lịch sử dịch chuyển",
             children: (
               <div>
                 <div
@@ -291,13 +258,25 @@ export default function InventoryPage() {
                 >
                   <Space>
                     <Input.Search
-                      placeholder="Movement/document..."
+                      placeholder="Dịch chuyển/chứng từ..."
                       style={{ width: 285 }}
+                      allowClear
+                      onSearch={setMovementSearch}
                     />
                     <Select
-                      placeholder="Loại movement"
-                      style={{ width: 125 }}
+                      placeholder="Loại dịch chuyển"
+                      style={{ width: 150 }}
                       allowClear
+                      value={movementType}
+                      onChange={setMovementType}
+                      options={[
+                        { value: "RECEIPT_IN", label: "Nhập kho" },
+                        { value: "ISSUE_OUT", label: "Xuất kho" },
+                        { value: "TRANSFER_OUT", label: "Chuyển đi" },
+                        { value: "TRANSFER_IN", label: "Chuyển đến" },
+                        { value: "TRANSFER_RETURN", label: "Trả lại" },
+                        { value: "TRANSFER_LOSS", label: "Mất mát" },
+                      ]}
                     />
                     <Select
                       placeholder="Khoảng ngày"
@@ -305,12 +284,13 @@ export default function InventoryPage() {
                       allowClear
                     />
                   </Space>
-                  <Button>Xem correction chain</Button>
+                  <Button>Xem chuỗi điều chỉnh</Button>
                 </div>
                 <Table
-                  dataSource={mockMovements}
+                  dataSource={movements}
                   columns={movementColumns}
                   rowKey="id"
+                  loading={loading}
                   pagination={{ pageSize: 10 }}
                 />
               </div>

@@ -28,6 +28,7 @@ export function useLogin() {
     onSuccess: async (data) => {
       setAuth({
         token: data.access_token,
+        refreshToken: data.refresh_token,
         user: data.user,
         contexts: data.available_contexts,
       });

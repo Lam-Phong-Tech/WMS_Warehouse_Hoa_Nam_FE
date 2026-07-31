@@ -1,165 +1,45 @@
-import { useState } from "react";
-import { Table, Button, Space, Tag, Input, Select, Tabs } from "antd";
+import { useEffect, useState } from "react";
+import { Button, Input, Space, Table, Tabs, Tag } from "antd";
 import { RollbackOutlined } from "@ant-design/icons";
+import { fetchReversalDocuments } from "@/modules/reverse/services/reversalService";
 
-const mockReversals = [
-  {
-    id: 1,
-    code: "REV-20260724-001",
-    originalDoc: "PN-20260724-001",
-    type: "INBOUND",
-    reason: "Nhầm NCC",
-    status: "REVIEWING",
-    createdBy: "NV kho",
-    updatedAt: "10:32",
-  },
-  {
-    id: 2,
-    code: "REV-20260723-014",
-    originalDoc: "PX-20260723-018",
-    type: "OUTBOUND",
-    reason: "Hủy đơn giao",
-    status: "APPLIED",
-    createdBy: "QL kho",
-    updatedAt: "11:20",
-  },
-];
+type Row = Record<string, unknown>;
 
-const mockReversalLines = [
-  {
-    id: 1,
-    sku: "DCH-DRILL-DJZ10A...",
-    qty: 20,
-    direction: "IN",
-    originalMovement: "MOV-000812",
-    newMovement: "MOV-000835",
-    status: "PENDING",
-  },
-  {
-    id: 2,
-    sku: "LK-DCH-OC-VIT-M2...",
-    qty: 5,
-    direction: "OUT",
-    originalMovement: "MOV-000826",
-    newMovement: "MOV-000836",
-    status: "PENDING",
-  },
-];
+function text(value: unknown, fallback = ""): string {
+  return value === undefined || value === null ? fallback : String(value);
+}
+
+function rowsOf(value: unknown): Row[] {
+  if (Array.isArray(value)) return value as Row[];
+  if (
+    typeof value === "object" &&
+    value !== null &&
+    Array.isArray((value as { data?: unknown }).data)
+  ) {
+    return (value as { data: Row[] }).data;
+  }
+  return [];
+}
 
 export default function ReversalPage() {
   const [activeTab, setActiveTab] = useState("list");
+  const [documents, setDocuments] = useState<Row[]>([]);
+  const [lines, setLines] = useState<Row[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const statusColorMap: Record<string, string> = {
-    REVIEWING: "purple",
-    APPLIED: "success",
-    REJECTED: "error",
-  };
-
-  const columns = [
-    {
-      title: "Mã reversal",
-      dataIndex: "code",
-      key: "code",
-      render: (v: string) => (
-        <span style={{ fontFamily: "monospace" }}>{v}</span>
-      ),
-    },
-    {
-      title: "Chứng từ gốc",
-      dataIndex: "originalDoc",
-      key: "originalDoc",
-      render: (v: string) => (
-        <span style={{ fontFamily: "monospace" }}>{v}</span>
-      ),
-    },
-    {
-      title: "Loại",
-      dataIndex: "type",
-      key: "type",
-      render: (v: string) => (
-        <Tag color={v === "INBOUND" ? "blue" : "orange"}>{v}</Tag>
-      ),
-    },
-    { title: "Lý do", dataIndex: "reason", key: "reason" },
-    {
-      title: "Trạng thái",
-      dataIndex: "status",
-      key: "status",
-      render: (v: string) => (
-        <Tag color={statusColorMap[v] || "default"}>{v}</Tag>
-      ),
-    },
-    { title: "Người tạo", dataIndex: "createdBy", key: "createdBy" },
-    { title: "Cập nhật", dataIndex: "updatedAt", key: "updatedAt" },
-    {
-      title: "Action",
-      key: "action",
-      render: () => (
-        <Space>
-          <a>Mở</a>
-          <a>Review</a>
-        </Space>
-      ),
-    },
-  ];
-
-  const lineColumns = [
-    { title: "SKU", dataIndex: "sku", key: "sku" },
-    {
-      title: "Qty",
-      dataIndex: "qty",
-      key: "qty",
-      render: (v: number) => (
-        <span
-          style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}
-        >
-          {v}
-        </span>
-      ),
-    },
-    {
-      title: "Direction",
-      dataIndex: "direction",
-      key: "direction",
-      render: (v: string) => (
-        <Tag color={v === "IN" ? "blue" : "orange"}>{v}</Tag>
-      ),
-    },
-    {
-      title: "Movement gốc",
-      dataIndex: "originalMovement",
-      key: "originalMovement",
-      render: (v: string) => (
-        <span style={{ fontFamily: "monospace" }}>{v}</span>
-      ),
-    },
-    {
-      title: "Movement mới",
-      dataIndex: "newMovement",
-      key: "newMovement",
-      render: (v: string) => (
-        <span style={{ fontFamily: "monospace" }}>{v}</span>
-      ),
-    },
-    {
-      title: "Line status",
-      dataIndex: "status",
-      key: "status",
-      render: (v: string) => (
-        <Tag
-          color={
-            v === "PENDING"
-              ? "default"
-              : v === "APPLIED"
-                ? "success"
-                : "warning"
-          }
-        >
-          {v}
-        </Tag>
-      ),
-    },
-  ];
+  useEffect(() => {
+    setLoading(true);
+    fetchReversalDocuments({ per_page: 20 })
+      .then((rows) => {
+        setDocuments(rows);
+        setLines(rows.flatMap((row) => rowsOf(row.lines)));
+      })
+      .catch(() => {
+        setDocuments([]);
+        setLines([]);
+      })
+      .finally(() => setLoading(false));
+  }, []);
 
   return (
     <div style={{ padding: 24 }}>
@@ -169,89 +49,55 @@ export default function ReversalPage() {
         items={[
           {
             key: "list",
-            label: "Danh sách Reversal",
+            label: "Danh sách hoàn đảo",
             children: (
-              <div>
-                <div
-                  style={{
-                    marginBottom: 16,
-                    display: "flex",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <Space>
-                    <Input.Search
-                      placeholder="Mã reversal/chứng từ gốc..."
-                      style={{ width: 285 }}
-                    />
-                    <Select
-                      placeholder="Loại"
-                      style={{ width: 125 }}
-                      allowClear
-                    />
-                    <Select
-                      placeholder="Trạng thái"
-                      style={{ width: 125 }}
-                      allowClear
-                    />
-                  </Space>
+              <>
+                <Space style={{ marginBottom: 16 }}>
+                  <Input.Search placeholder="Mã hoàn đảo/chứng từ gốc..." style={{ width: 285 }} />
                   <Button type="primary" icon={<RollbackOutlined />}>
-                    ＋ Tạo Reversal
+                    Tạo hoàn đảo
                   </Button>
-                </div>
+                </Space>
                 <Table
-                  dataSource={mockReversals}
-                  columns={columns}
-                  rowKey="id"
+                  dataSource={documents}
+                  rowKey={(row) => text(row.id)}
+                  loading={loading}
                   pagination={{ pageSize: 10 }}
+                  columns={[
+                    { title: "Mã hoàn đảo", dataIndex: "code", key: "code" },
+                    { title: "Chứng từ gốc", dataIndex: "source_document_code", key: "source_document_code" },
+                    { title: "Loại", dataIndex: "source_type", key: "source_type" },
+                    { title: "Lý do", dataIndex: "reason", key: "reason" },
+                    {
+                      title: "Trạng thái",
+                      dataIndex: "status",
+                      key: "status",
+                      render: (value: string) => <Tag>{value}</Tag>,
+                    },
+                    { title: "Cập nhật", dataIndex: "updated_at", key: "updated_at" },
+                  ]}
                 />
-              </div>
+              </>
             ),
           },
           {
-            key: "workspace",
-            label: "Workspace Reversal",
+            key: "lines",
+            label: "Dòng hoàn đảo",
             children: (
-              <div>
-                <div
-                  style={{
-                    marginBottom: 16,
-                    display: "flex",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <Space>
-                    <Input.Search
-                      placeholder="⌁ Scan/nhập mã..."
-                      style={{ width: 285 }}
-                    />
-                    <Button type="primary" icon={<RollbackOutlined />}>
-                      Demo máy quét
-                    </Button>
-                  </Space>
-                  <Button>Apply Reversal</Button>
-                </div>
-                <Table
-                  dataSource={mockReversalLines}
-                  columns={lineColumns}
-                  rowKey="id"
-                  pagination={false}
-                  size="small"
-                />
-                <div
-                  style={{
-                    marginTop: 12,
-                    background: "#fff4cf",
-                    border: "1px dashed #c9a227",
-                    borderRadius: 4,
-                    padding: 10,
-                  }}
-                >
-                  <strong>Lưu ý:</strong> Reversal không được apply nếu đã có
-                  movement/issue/warranty/reversal mới sau chứng từ gốc. Kiểm
-                  tra version và chain trước khi apply.
-                </div>
-              </div>
+              <Table
+                dataSource={lines}
+                rowKey={(row) => text(row.id)}
+                loading={loading}
+                pagination={{ pageSize: 10 }}
+                columns={[
+                  { title: "SKU", dataIndex: "sku_code", key: "sku_code" },
+                  { title: "Số lượng", dataIndex: "quantity", key: "quantity" },
+                  { title: "Hướng", dataIndex: "direction", key: "direction" },
+                  { title: "Dịch chuyển gốc", dataIndex: "source_movement_id", key: "source_movement_id" },
+                  { title: "Dịch chuyển mới", dataIndex: "new_movement_id", key: "new_movement_id" },
+                  { title: "Trạng thái", dataIndex: "status", key: "status" },
+                ]}
+              />
             ),
           },
         ]}

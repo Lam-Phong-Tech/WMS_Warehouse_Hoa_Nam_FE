@@ -28,7 +28,7 @@ export const api = axios.create({
   // Bắt buộc để trình duyệt gửi/nhận cookie HttpOnly `refresh_token` (BE set
   // ở path /auth, domain .test8.io.vn) khi FE ở subdomain khác cùng site —
   // xem docs/tickets/BE_REFRESH_ENDPOINT_TICKET.md.
-  withCredentials: true,
+  withCredentials: runtimeConfig.apiWithCredentials,
 });
 
 /**
@@ -38,10 +38,22 @@ export const api = axios.create({
  * chính request refresh khi nó 401).
  */
 function callRefresh() {
+  const refreshToken = memoryStorage.getRefreshToken();
+  if (!refreshToken && !runtimeConfig.apiWithCredentials) {
+    return Promise.reject(new Error("No refresh token available"));
+  }
   return api.post<{
     success: boolean;
-    data: { access_token: string; token_type: string; expires_in: number };
-  }>(API_ENDPOINTS.REFRESH);
+    data: {
+      access_token: string;
+      refresh_token?: string;
+      token_type: string;
+      expires_in: number;
+    };
+  }>(
+    API_ENDPOINTS.REFRESH,
+    refreshToken ? { refresh_token: refreshToken } : undefined,
+  );
 }
 
 let refreshPromise: Promise<string> | null = null;
@@ -52,7 +64,11 @@ function refreshAccessToken(): Promise<string> {
     refreshPromise = callRefresh()
       .then((res) => {
         const token = res.data.data.access_token;
+        const refreshToken = res.data.data.refresh_token;
         memoryStorage.setItem(token);
+        if (refreshToken) {
+          memoryStorage.setRefreshToken(refreshToken);
+        }
         useAuthStore.setState({ token, isAuthenticated: true });
         return token;
       })
