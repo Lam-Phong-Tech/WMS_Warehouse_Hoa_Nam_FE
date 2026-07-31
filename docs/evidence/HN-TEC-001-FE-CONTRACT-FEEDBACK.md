@@ -1,142 +1,142 @@
-# HN-TEC-001 - FE Contract Feedback
+# HN-TEC-001 - Phản hồi Hợp đồng FE
 
-## Traceability
+## Truy xuất nguồn gốc
 
-| Field | Value |
+| Trường | Giá trị |
 | --- | --- |
-| Parent Task | WWHN-31 - [TECH] Kien truc, ERD, Tu dien du lieu va OpenAPI v1 |
-| Parent Temp Key | HN-TEC-001 |
-| Epic Temp Key | HN-EPIC-03 |
-| Dependency | HN-TEC-001-ST01 |
-| Role | FE1 |
-| Assignee Placeholder | HN-FE-01 |
-| Owner FE | Quang Nguyen Thanh |
-| Output | FE contract feedback |
-| Review date | 2026-07-29 |
-| Baseline source | `docs/WMS_Hoa_Nam_Techstack_Architecture_Dev_Guide.md`; `swagger-api.json`; `docs/WMS_FRONTEND_STANDARDIZATION.md`; current FE implementation |
+| Nhiệm vụ Cha | WWHN-31 - [TECH] Kiến trúc, ERD, Từ điển dữ liệu và OpenAPI v1 |
+| Khóa tạm Cha | HN-TEC-001 |
+| Khóa tạm Epic | HN-EPIC-03 |
+| Phụ thuộc | HN-TEC-001-ST01 |
+| Vai trò | FE1 |
+| Người được gán | HN-FE-01 |
+| Chủ sở hữu FE | Quang Nguyen Thanh |
+| Đầu ra | Phản hồi hợp đồng FE |
+| Ngày đánh giá | 2026-07-29 |
+| Nguồn cơ sở | `docs/WMS_Hoa_Nam_Techstack_Architecture_Dev_Guide.md`; `swagger-api.json`; `docs/WMS_FRONTEND_STANDARDIZATION.md`; triển khai FE hiện tại |
 
-## Review Scope
+## Phạm vi Đánh giá
 
-FE1 reviewed the contract/UI surface against the technical baseline:
+FE1 đã đánh giá bề mặt hợp đồng/UI dựa trên đường cơ sở kỹ thuật:
 
-- React/Vite/TypeScript Web Admin must consume approved API contracts through the shared API layer.
-- UI must cover loading, empty, error, success, disabled, confirm, and permission denied states where applicable.
-- Route/action RBAC in FE is only a UX gate; backend remains the authority for permission and data scope.
-- FE must not hard-code production data or infer inventory/business rules outside the contract.
-- Contract mismatch must be raised with owner/ETA instead of silently changing the UI or API path.
+- Web Admin React/Vite/TypeScript phải tiêu thụ các hợp đồng API đã được phê duyệt thông qua lớp API dùng chung.
+- UI phải bao gồm các trạng thái loading, empty, error, success, disabled, confirm và permission denied khi thích hợp.
+- RBAC route/action trong FE chỉ là cổng UX; backend vẫn là cơ quan có thẩm quyền về quyền và phạm vi dữ liệu.
+- FE không được hard-code dữ liệu sản xuất hoặc suy luận quy tắc tồn kho/nghiệp vụ ngoài hợp đồng.
+- Không khớp hợp đồng phải được báo lên với chủ sở hữu/ETA thay vì thay đổi UI hoặc đường dẫn API một cách im lặng.
 
-## Executive Status
+## Trạng thái Điều hành
 
-| Area | FE status | Disposition |
+| Khu vực | Trạng thái FE | Xử lý |
 | --- | --- | --- |
-| Shared API envelope/error handling | Verified | `src/shared/api/http.ts`, `src/shared/api/axios.ts`, and `ApiEnvelopeError` preserve `message`, `error_code`, field `errors`, pagination `meta`, 403 classification, and request context. |
-| Route-level RBAC | Verified with caveat | `src/app/router/access.ts` maps WMS routes to permission codes as UX guard only. Backend permission catalog for WMS codes still needs BE confirmation. |
-| Master Data UI/API | Partially integrated | SKU/item/physical-code list and SKU create/status/import use shared services. Needs OpenAPI confirmation because `swagger-api.json` snapshot does not expose `/skus`, `/items`, `/physical-codes`. |
-| Dashboard UI/API | Contract mismatch | FE calls `/dashboard/kpi`, `/dashboard/recent-documents`, `/dashboard/reconcile-health`, `/dashboard/alerts`; OpenAPI snapshot exposes `/reports/dashboard-quick`. Needs BE/BA disposition. |
-| Inbound/Outbound UI/API | Contract mismatch and mock UI | FE constants/services use `/inbound/documents` and `/outbound/documents`, while OpenAPI exposes `/inbound-documents` and `/outbound-documents` plus workflow actions. Current route pages use mock data. |
-| Inventory/Stocktake/Warranty/Reverse/Scan/Reports/Putaway | Not production-integrated | Several pages are visual/mock surfaces. They should stay blocked from Done as "integrated UI" until approved endpoint, payload, validation, RBAC, and sample data are delivered. |
+| Xử lý envelope/lỗi API dùng chung | Đã xác minh | `src/shared/api/http.ts`, `src/shared/api/axios.ts` và `ApiEnvelopeError` giữ nguyên `message`, `error_code`, field `errors`, pagination `meta`, phân loại 403 và ngữ cảnh yêu cầu. |
+| RBAC cấp route | Đã xác minh với lưu ý | `src/app/router/access.ts` ánh xạ các route WMS đến mã quyền chỉ như cổng UX. Danh mục quyền backend cho mã WMS vẫn cần xác nhận BE. |
+| UI/API Dữ liệu Danh mục | Tích hợp một phần | Danh sách SKU/item/physical-code và tạo/cập nhật trạng thái/import SKU sử dụng dịch vụ dùng chung. Cần xác nhận OpenAPI vì ảnh chụp `swagger-api.json` không hiển thị `/skus`, `/items`, `/physical-codes`. |
+| UI/API Dashboard | Không khớp hợp đồng | FE gọi `/dashboard/kpi`, `/dashboard/recent-documents`, `/dashboard/reconcile-health`, `/dashboard/alerts`; ảnh chụp OpenAPI hiển thị `/reports/dashboard-quick`. Cần xử lý BE/BA. |
+| UI/API Inbound/Outbound | Không khớp hợp đồng và UI mock | Hằng số/dịch vụ FE sử dụng `/inbound/documents` và `/outbound/documents`, trong khi OpenAPI hiển thị `/inbound-documents` và `/outbound-documents` cộng với các hành động workflow. Các trang route hiện tại sử dụng dữ liệu mock. |
+| Inventory/Stocktake/Warranty/Reverse/Scan/Reports/Putaway | Chưa tích hợp sản xuất | Một số trang là bề mặt visual/mock. Chúng nên bị chặn khỏi "Đã hoàn thành" như "UI đã tích hợp" cho đến khi endpoint, payload, xác thực, RBAC và dữ liệu mẫu đã được phê duyệt được bàn giao. |
 
-## Contract Mapping Review
+## Đánh giá Ánh xạ Hợp đồng
 
-| UI/module | Current FE evidence | OpenAPI / baseline expectation | Status | Required disposition |
+| UI/module | Bằng chứng FE hiện tại | Kỳ vọng OpenAPI / đường cơ sở | Trạng thái | Xử lý yêu cầu |
 | --- | --- | --- | --- | --- |
-| App shell, protected route, 403 UX | `src/app/router/index.tsx`; `src/app/router/access.ts`; `NoPermissionPage` | FE route guard allowed as UX aid; BE enforces RBAC/data scope | OK | No blocker for FE foundation. |
-| API envelope and field errors | `src/shared/api/http.ts`; `src/shared/api/api-error.ts`; `src/shared/types/api-response.ts` | Standard success/error envelope with `success`, `message`, `data`, `meta`, `error_code`, `errors` | OK | Keep all services on `http`; do not bypass axios wrapper. |
-| Dashboard | `src/modules/dashboard/services/dashboardService.ts`; endpoints in `src/shared/api/endpoints.ts` | OpenAPI snapshot has `GET /reports/dashboard-quick`, not FE's four `/dashboard/*` endpoints | P1 mismatch | BE1/BA confirm whether Dashboard contract is split endpoints or quick report endpoint. ETA: before FE integration Done. |
-| Master Data - SKU | `getSkus`, `createSku`, `updateSkuStatus`, `importSkus` in `master-data.service.ts` | Guide suggests `GET/POST /skus`; OpenAPI snapshot does not include `/skus` | P1 dependency | BE1 to provide approved OpenAPI route/payload/status enum/import response. FE should not rename fields until confirmed. |
-| Master Data - Item | `getItems` calls `/items` | Guide suggests `/items`; OpenAPI snapshot only shows price-list item routes, not master item list | P1 dependency | BE1/BA confirm Item endpoint and fields. |
-| Master Data - Physical Code | `getPhysicalCodes` calls `/physical-codes` | Guide suggests `/physical-codes`; OpenAPI snapshot does not expose it | P1 dependency | BE1 confirm code list/classify endpoint, duplicate/unknown fields, and permission code. |
-| Scan classify | `PhysicalCodesPage.tsx` uses `mockPhysicalCodes` and `mockScanResults` | Guide expects `POST /scan-batches/classify` and states waiting/scanned/duplicate/unknown/invalid/success/error | P0 blocker for integrated scan | BE1 provide endpoint/payload/error codes. FE1 wire real state machine after contract sign-off. |
-| Inbound list/detail/lines | FE service exists under `src/modules/receiving`, but active route `src/modules/inbound/pages/InboundPage.tsx` uses `mockInboundDocs/mockInboundLines`; endpoints are `/inbound/documents` | OpenAPI exposes `/inbound-documents`, `/{id}`, submit/approve/post-receipt/reject/cancel | P0 blocker for integrated inbound | BE1/BA decide path naming and workflow payloads; FE1 must replace mock page with service/query only after approval. |
-| Inbound post receipt | No FE mutation wired in active page | Baseline requires idempotent post receipt, transaction, no local stock mutation | P0 dependency | BE1 provide `idempotency_key` contract and error codes; FE1 show confirm/loading/success/error only, no inventory calculation in FE. |
-| Outbound list/detail/lines | FE service exists under `src/modules/shipping`, but active route `src/modules/outbound/pages/OutboundPage.tsx` uses `mockOutboundDocs/mockOutboundLines`; endpoints are `/outbound/documents` | OpenAPI exposes `/outbound-documents`, `/{id}`, submit/approve/post-issue/reject/cancel | P0 blocker for integrated outbound | BE1/BA decide path naming and workflow payloads; FE1 wire real API after sign-off. |
-| Outbound post issue | No FE mutation wired in active page | Baseline requires backend lock/recheck to prevent negative stock | P0 dependency | FE must display backend `WMS_INSUFFICIENT_STOCK` or equivalent; must not calculate final inventory locally. |
-| Putaway | Service calls `/putaway/tasks`, `/putaway/history`; active page uses mock data | Guide architecture mentions putaway only indirectly; OpenAPI snapshot has no putaway routes | P2/open scope | BA/BE confirm whether putaway is in WWHN-31 scope. Keep as demo until contract exists. |
-| Inventory balance/movement | `InventoryPage.tsx` uses `mockInventory/mockMovements`; no service bound | OpenAPI exposes `/inventory/balances`; guide also expects inventory movements | P1 blocker | BE1 confirm movement endpoint, filters, pagination, reconcile status fields. |
-| Stocktake | `StocktakePage.tsx` uses `mockStocktakeSessions/mockCountLines` | Guide expects sessions/count/apply-adjustment, snapshot + variance | P1 blocker | BE1/BA provide endpoint, status enum, variance payload, apply-adjustment idempotency/error codes. |
-| Warranty | `WarrantyPage.tsx` uses mock data | Guide expects `POST /warranty-cases`, `PATCH /status`, TEMP_ONLY support | P1 blocker | BE1/BA provide status enum, defect codes, TEMP_ONLY field rules, permission. |
-| Reverse | `ReversalPage.tsx` uses mock data | Guide says reverse changes inventory through backend transaction/audit | P1 blocker | BE1 provide reverse endpoint, reference document rules, idempotency, error codes. |
-| Reports | Service calls `/reports` and `/reports/xnt`; active page uses mock reports | OpenAPI exposes `/reports/inventory-xnt`, `/reports/inventory-xnt/export-excel`, `/reports/revenue` | P1 mismatch | BE1/BA align report hub vs inventory-xnt paths and export behavior. |
-| Audit logs | `audit-logs.service.ts` uses `http.getPage('/audit-logs')` | OpenAPI exposes `/audit-logs` | OK | Keep pagination meta behavior; already covered by unit test. |
+| App shell, route được bảo vệ, UX 403 | `src/app/router/index.tsx`; `src/app/router/access.ts`; `NoPermissionPage` | Bảo vệ route FE được phép như hỗ trợ UX; BE thực thi RBAC/phạm vi dữ liệu | OK | Không có blocker cho nền tảng FE. |
+| Envelope API và lỗi trường | `src/shared/api/http.ts`; `src/shared/api/api-error.ts`; `src/shared/types/api-response.ts` | Envelope thành công/lỗi chuẩn với `success`, `message`, `data`, `meta`, `error_code`, `errors` | OK | Giữ tất cả dịch vụ trên `http`; không bỏ qua wrapper axios. |
+| Dashboard | `src/modules/dashboard/services/dashboardService.ts`; endpoint trong `src/shared/api/endpoints.ts` | Ảnh chụp OpenAPI có `GET /reports/dashboard-quick`, không phải bốn endpoint `/dashboard/*` của FE | P1 không khớp | BE1/BA xác nhận liệu hợp đồng Dashboard là endpoint riêng lẻ hay endpoint báo cáo nhanh. ETA: trước khi FE tích hợp xong. |
+| Dữ liệu Danh mục - SKU | `getSkus`, `createSku`, `updateSkuStatus`, `importSkus` trong `master-data.service.ts` | Hướng dẫn gợi ý `GET/POST /skus`; ảnh chụp OpenAPI không bao gồm `/skus` | P1 phụ thuộc | BE1 cung cấp OpenAPI route/payload/status enum/import response đã được phê duyệt. FE không nên đổi tên trường cho đến khi được xác nhận. |
+| Dữ liệu Danh mục - Item | `getItems` gọi `/items` | Hướng dẫn gợi ý `/items`; ảnh chụp OpenAPI chỉ hiển thị route item price-list, không phải danh sách item master | P1 phụ thuộc | BE1/BA xác nhận endpoint Item và trường. |
+| Dữ liệu Danh mục - Physical Code | `getPhysicalCodes` gọi `/physical-codes` | Hướng dẫn gợi ý `/physical-codes`; ảnh chụp OpenAPI không hiển thị nó | P1 phụ thuộc | BE1 xác nhận endpoint danh sách/phân loại code, trường trùng lặp/không xác định và mã quyền. |
+| Phân loại Scan | `PhysicalCodesPage.tsx` sử dụng `mockPhysicalCodes` và `mockScanResults` | Hướng dẫn mong đợi `POST /scan-batches/classify` và các trạng thái waiting/scanned/duplicate/unknown/invalid/success/error | P0 blocker cho scan tích hợp | BE1 cung cấp endpoint/payload/mã lỗi. FE1 kết nối state machine thực tế sau khi ký hợp đồng. |
+| Danh sách/chi tiết/dòng Inbound | Dịch vụ FE tồn tại dưới `src/modules/receiving`, nhưng route hoạt động `src/modules/inbound/pages/InboundPage.tsx` sử dụng `mockInboundDocs/mockInboundLines`; endpoint là `/inbound/documents` | OpenAPI hiển thị `/inbound-documents`, `/{id}`, submit/approve/post-receipt/reject/cancel | P0 blocker cho inbound tích hợp | BE1/BA quyết định đặt tên đường dẫn và payload workflow; FE1 phải thay thế trang mock bằng service/query chỉ sau khi được phê duyệt. |
+| Post receipt Inbound | Không có mutation FE nào được kết nối trong trang hoạt động | Đường cơ sở yêu cầu post receipt không đổi, transaction, không mutation tồn cục bộ | P0 phụ thuộc | BE1 cung cấp hợp đồng `idempotency_key` và mã lỗi; FE1 chỉ hiển thị confirm/loading/success/error, không tính toán tồn kho trong FE. |
+| Danh sách/chi tiết/dòng Outbound | Dịch vụ FE tồn tại dưới `src/modules/shipping`, nhưng route hoạt động `src/modules/outbound/pages/OutboundPage.tsx` sử dụng `mockOutboundDocs/mockOutboundLines`; endpoint là `/outbound/documents` | OpenAPI hiển thị `/outbound-documents`, `/{id}`, submit/approve/post-issue/reject/cancel | P0 blocker cho outbound tích hợp | BE1/BA quyết định đặt tên đường dẫn và payload workflow; FE1 kết nối API thực tế sau khi ký hợp đồng. |
+| Post issue Outbound | Không có mutation FE nào được kết nối trong trang hoạt động | Đường cơ sở yêu cầu lock/kiểm tra lại backend để ngăn tồn kho âm | P0 phụ thuộc | FE phải hiển thị `WMS_INSUFFICIENT_STOCK` của backend hoặc tương đương; không được tính toán tồn kho cuối cùng cục bộ. |
+| Putaway | Dịch vụ gọi `/putaway/tasks`, `/putaway/history`; trang hoạt động sử dụng dữ liệu mock | Kiến trúc hướng dẫn đề cập putaway chỉ gián tiếp; ảnh chụp OpenAPI không có route putaway | P2/phạm vi mở | BA/BE xác nhận liệu putaway có trong phạm vi WWHN-31 hay không. Giữ làm demo cho đến khi có hợp đồng. |
+| Số dư/biến động tồn kho | `InventoryPage.tsx` sử dụng `mockInventory/mockMovements`; không có service nào được ràng buộc | OpenAPI hiển thị `/inventory/balances`; hướng dẫn cũng mong đợi biến động tồn kho | P1 blocker | BE1 xác nhận endpoint biến động, bộ lọc, phân trang, trường trạng thái đối soát. |
+| Stocktake | `StocktakePage.tsx` sử dụng `mockStocktakeSessions/mockCountLines` | Hướng dẫn mong đợi sessions/count/apply-adjustment, snapshot + variance | P1 blocker | BE1/BA cung cấp endpoint, enum trạng thái, payload variance, mã lỗi/không đổi apply-adjustment. |
+| Warranty | `WarrantyPage.tsx` sử dụng dữ liệu mock | Hướng dẫn mong đợi `POST /warranty-cases`, `PATCH /status`, hỗ trợ TEMP_ONLY | P1 blocker | BE1/BA cung cấp enum trạng thái, mã lỗi, quy tắc trường TEMP_ONLY, quyền. |
+| Reverse | `ReversalPage.tsx` sử dụng dữ liệu mock | Hướng dẫn nói reverse thay đổi tồn kho thông qua transaction/audit backend | P1 blocker | BE1 cung cấp endpoint reverse, quy tắc tài liệu tham chiếu, không đổi, mã lỗi. |
+| Reports | Dịch vụ gọi `/reports` và `/reports/xnt`; trang hoạt động sử dụng báo cáo mock | OpenAPI hiển thị `/reports/inventory-xnt`, `/reports/inventory-xnt/export-excel`, `/reports/revenue` | P1 không khớp | BE1/BA căn chỉnh report hub so với đường dẫn inventory-xnt và hành vi export. |
+| Audit logs | `audit-logs.service.ts` sử dụng `http.getPage('/audit-logs')` | OpenAPI hiển thị `/audit-logs` | OK | Giữ nguyên hành vi pagination meta; đã được bao phủ bởi kiểm thử đơn vị. |
 
-## UI State Review
+## Đánh giá Trạng thái UI
 
-| State requirement | Current evidence | FE conclusion |
+| Yêu cầu trạng thái | Bằng chứng hiện tại | Kết luận FE |
 | --- | --- | --- |
-| Loading | Route lazy fallback uses `PageSkeleton`; Master Data table uses query loading; shared `Loading`/`PageSkeleton` exists | Foundation OK; mock pages need query loading when real API is wired. |
-| Empty | Shared `EmptyState`; Ant Design `Table` empty defaults; component catalog demonstrates empty state | OK at component level; module-specific empty copy should be added during API integration. |
-| Error | Shared `ErrorState`, `ApiErrorAlert`, `ErrorBoundary`, API error parser | OK at foundation; Dashboard currently lacks explicit query error rendering and should add it with real contract. |
-| Success | Toast/App provider and mutation success invalidation exist in Master Data | OK where mutations exist; workflow actions need success messages after endpoint approval. |
-| Disabled | Shared `ActionButton` supports hide/disable by permission/scope; Master Data action buttons disable while pending/loading | OK pattern; mock pages must not expose enabled destructive workflow actions before contract. |
-| Confirm | Shared `ConfirmButton`/`ConfirmDialog`; Master Data status change uses confirm | OK for current mutation; post/apply/reverse actions must use confirm after contract approval. |
-| Permission denied | `RequirePermission`, menu filtering, `NoPermissionPage`, `NoPermissionState`, axios 403 classification | OK as FE UX; backend remains authority. |
-| Scan states | `PhysicalCodesPage` visually shows duplicate/unknown/invalid/success-like states through mocks | Not Done for integration; must bind to `POST /scan-batches/classify` or approved equivalent. |
+| Loading | Fallback route lười sử dụng `PageSkeleton`; bảng Dữ liệu Danh mục sử dụng query loading; `Loading`/`PageSkeleton` dùng chung tồn tại | Nền tảng OK; trang mock cần query loading khi API thực được kết nối. |
+| Empty | `EmptyState` dùng chung; mặc định trống `Table` Ant Design; danh mục component trình diễn trạng thái trống | OK ở cấp component; nội dung empty cụ thể module nên được thêm trong quá trình tích hợp API. |
+| Error | `ErrorState`, `ApiErrorAlert`, `ErrorBoundary`, trình phân tích lỗi API dùng chung | OK ở nền tảng; Dashboard hiện thiếu hiển thị lỗi query rõ ràng và nên thêm nó với hợp đồng thực tế. |
+| Success | Toast/App provider và mutation success invalidation tồn tại trong Dữ liệu Danh mục | OK khi mutation tồn tại; hành động workflow cần thông báo thành công sau khi endpoint được phê duyệt. |
+| Disabled | `ActionButton` dùng chung hỗ trợ ẩn/vô hiệu theo quyền/phạm vi; nút hành động Dữ liệu Danh mục bị vô hiệu khi đang chờ/loading | OK mẫu; trang mock không được hiển thị hành động workflow hủy đã được kích hoạt trước hợp đồng. |
+| Confirm | `ConfirmButton`/`ConfirmDialog` dùng chung; thay đổi trạng thái Dữ liệu Danh mục sử dụng confirm | OK cho mutation hiện tại; hành động post/apply/reverse phải sử dụng confirm sau khi hợp đồng được phê duyệt. |
+| Từ chối quyền | `RequirePermission`, lọc menu, `NoPermissionPage`, `NoPermissionState`, phân loại 403 axios | OK như UX FE; backend vẫn là cơ quan có thẩm quyền. |
+| Trạng thái Scan | `PhysicalCodesPage` hiển thị trực quan các trạng thái giống duplicate/unknown/invalid/success thông qua mocks | Chưa xong cho tích hợp; phải ràng buộc với `POST /scan-batches/classify` hoặc tương đương đã được phê duyệt. |
 
-## RBAC Review
+## Đánh giá RBAC
 
-Current FE route permissions:
+Quyền route FE hiện tại:
 
-| Route | FE permission gate | Status |
+| Route | Cổng quyền FE | Trạng thái |
 | --- | --- | --- |
-| Dashboard | Authenticated user | Needs BA/BE confirmation if dashboard has role restrictions. |
-| Master Data | `sku.manage` OR `master.manage` | Needs BE permission catalog confirmation. |
-| Scan | `inventory.trace` OR `scan.classify` | Needs BE permission catalog confirmation. |
-| Inbound | `inbound.create` OR `inbound.post` | Needs BE permission catalog confirmation. |
-| Putaway | `putaway.manage` | Needs BE permission catalog confirmation or scope removal. |
-| Outbound | `outbound.create` OR `outbound.post` | Needs BE permission catalog confirmation. |
-| Inventory | `inventory.view` | Needs BE permission catalog confirmation. |
-| Stocktake | `stocktake.count` | Needs BE permission catalog confirmation. |
-| Warranty | `warranty.manage` | Needs BE permission catalog confirmation. |
-| Reverse | `inventory.reversal.post` | Needs BE permission catalog confirmation. |
-| Reports | `report.view` | Needs BE permission catalog confirmation. |
-| Audit logs | `AUDIT_LOG_VIEW` | Existing catalog evidence from prior task; OK. |
+| Dashboard | Người dùng đã xác thực | Cần xác nhận BA/BE nếu dashboard có hạn chế vai trò. |
+| Dữ liệu Danh mục | `sku.manage` OR `master.manage` | Cần xác nhận danh mục quyền BE. |
+| Scan | `inventory.trace` OR `scan.classify` | Cần xác nhận danh mục quyền BE. |
+| Inbound | `inbound.create` OR `inbound.post` | Cần xác nhận danh mục quyền BE. |
+| Putaway | `putaway.manage` | Cần xác nhận danh mục quyền BE hoặc loại bỏ phạm vi. |
+| Outbound | `outbound.create` OR `outbound.post` | Cần xác nhận danh mục quyền BE. |
+| Inventory | `inventory.view` | Cần xác nhận danh mục quyền BE. |
+| Stocktake | `stocktake.count` | Cần xác nhận danh mục quyền BE. |
+| Warranty | `warranty.manage` | Cần xác nhận danh mục quyền BE. |
+| Reverse | `inventory.reversal.post` | Cần xác nhận danh mục quyền BE. |
+| Reports | `report.view` | Cần xác nhận danh mục quyền BE. |
+| Audit logs | `AUDIT_LOG_VIEW` | Bằng chứng danh mục hiện có từ nhiệm vụ trước; OK. |
 
-Disposition: FE route guards are acceptable for UX, but WMS permission codes above cannot be considered contract-verified until BE returns them from `/permissions` or includes them in OpenAPI/Jira field specification.
+Xử lý: Bảo vệ route FE có thể chấp nhận cho UX, nhưng các mã quyền WMS trên không thể được coi là đã xác minh hợp đồng cho đến khi BE trả về chúng từ `/permissions` hoặc bao gồm chúng trong đặc tả trường OpenAPI/Jira.
 
-## Blockers and Owners
+## Blockers và Chủ sở hữu
 
-| ID | Severity | Blocker | Owner | ETA / Disposition |
+| ID | Mức độ | Blocker | Chủ sở hữu | ETA / Xử lý |
 | --- | --- | --- | --- | --- |
-| FE-CF-001 | P0 | Active inbound/outbound/scan workflow pages use mock data and are not wired to approved workflow endpoints/payloads. | BE1 + BA/BAS for contract; FE1 after sign-off | Before marking WWHN-31 FE integration Done. |
-| FE-CF-002 | P1 | Endpoint path mismatch: FE constants use `/inbound/documents`, `/outbound/documents`, `/reports/xnt`, `/dashboard/*`; OpenAPI snapshot uses `/inbound-documents`, `/outbound-documents`, `/reports/inventory-xnt`, `/reports/dashboard-quick`. | BE1 + BA/BAS | Confirm canonical OpenAPI v1 paths; FE1 will update constants/services only after disposition. |
-| FE-CF-003 | P1 | WMS permission codes in route guards are not confirmed against runtime permission catalog in current evidence. | BE2/RBAC owner | Provide catalog or Jira field spec; FE1 updates mapping/evidence. |
-| FE-CF-004 | P1 | Inventory movement, stocktake apply adjustment, warranty, reverse, and report export contracts are missing or not represented in current FE services. | BE1/BE2 + BA/BAS | Provide endpoint, payload, validation, error code, sample data. |
-| FE-CF-005 | P2 | Dashboard query error/empty states should be rendered explicitly once final contract is chosen. | FE1 | Same PR as dashboard contract integration. |
+| FE-CF-001 | P0 | Các trang workflow inbound/outbound/scan hoạt động sử dụng dữ liệu mock và không được kết nối với endpoint/payload workflow đã được phê duyệt. | BE1 + BA/BAS cho hợp đồng; FE1 sau khi ký duyệt | Trước khi đánh dấu tích hợp FE WWHN-31 Đã hoàn thành. |
+| FE-CF-002 | P1 | Không khớp đường dẫn endpoint: hằng số FE sử dụng `/inbound/documents`, `/outbound/documents`, `/reports/xnt`, `/dashboard/*`; ảnh chụp OpenAPI sử dụng `/inbound-documents`, `/outbound-documents`, `/reports/inventory-xnt`, `/reports/dashboard-quick`. | BE1 + BA/BAS | Xác nhận đường dẫn OpenAPI v1 chuẩn; FE1 sẽ cập nhật hằng số/dịch vụ chỉ sau khi xử lý. |
+| FE-CF-003 | P1 | Mã quyền WMS trong bảo vệ route không được xác nhận dựa trên danh mục quyền runtime trong bằng chứng hiện tại. | BE2/RBAC owner | Cung cấp danh mục hoặc đặc tả trường Jira; FE1 cập nhật ánh xạ/bằng chứng. |
+| FE-CF-004 | P1 | Hợp đồng biến động tồn kho, apply adjustment stocktake, warranty, reverse và export báo cáo bị thiếu hoặc không được đại diện trong dịch vụ FE hiện tại. | BE1/BE2 + BA/BAS | Cung cấp endpoint, payload, xác thực, mã lỗi, dữ liệu mẫu. |
+| FE-CF-005 | P2 | Trạng thái lỗi/trống query Dashboard nên được hiển thị rõ ràng khi hợp đồng cuối cùng được chọn. | FE1 | Cùng PR với tích hợp hợp đồng dashboard. |
 
-## Acceptance Criteria Mapping
+## Ánh xạ Tiêu chí Chấp nhận
 
-| Acceptance Criteria | Review result |
+| Tiêu chí Chấp nhận | Kết quả đánh giá |
 | --- | --- |
-| Output "FE contract feedback" reviewed/verified and attached to HN-TEC-001 | This file is the FE contract feedback artifact for HN-TEC-001. |
-| UI follows business rules, field specification, responsive, and handles states | Shared foundation supports required states; current integrated Master Data partially complies; mock WMS pages remain blocked until contracts are approved. |
-| Permission/RBAC and API error displayed correctly | Foundation verified; WMS route permission codes need BE catalog confirmation. |
-| No hard-coded data/rules contrary to contract | Hard-coded mock data exists in active WMS pages; classified as blocker and must not be treated as production integration. |
-| Integrated approved endpoint/payload; lint/build/test pass | Endpoint integration is partial; mismatches listed above. Lint/build/test passed for current branch. |
-| BA/QA has evidence; no P0/P1 blocker without disposition | All identified P0/P1 blockers have owner and disposition above. |
+| Đầu ra "Phản hồi hợp đồng FE" đã được đánh giá/xác minh và đính kèm vào HN-TEC-001 | File này là artifact phản hồi hợp đồng FE cho HN-TEC-001. |
+| UI tuân theo quy tắc nghiệp vụ, đặc tả trường, responsive và xử lý trạng thái | Nền tảng dùng chung hỗ trợ các trạng thái yêu cầu; Dữ liệu Danh mục tích hợp hiện tại tuân thủ một phần; các trang WMS mock vẫn bị chặn cho đến khi hợp đồng được phê duyệt. |
+| Hiển thị quyền/RBAC và lỗi API chính xác | Nền tảng đã xác minh; mã quyền route WMS cần xác nhận danh mục BE. |
+| Không có dữ liệu/quy tắc hard-code trái ngược hợp đồng | Dữ liệu mock hard-code tồn tại trong các trang WMS hoạt động; được phân loại là blocker và không được coi là tích hợp sản xuất. |
+| Tích hợp endpoint/payload đã được phê duyệt; lint/build/test đạt | Tích hợp endpoint là một phần; các không khớp được liệt kê ở trên. Lint/build/test đã qua cho nhánh hiện tại. |
+| BA/QA có bằng chứng; không có blocker P0/P1 nào không có xử lý | Tất cả các blocker P0/P1 đã xác định có chủ sở hữu và xử lý ở trên. |
 
-## FE Decision Log
+## Nhật ký Quyết định FE
 
-- FE1 did not change API paths to match `swagger-api.json` in this review because the task explicitly forbids unilateral API contract changes.
-- FE1 did not remove mock pages because they may serve as visual/UX evidence, but they are marked as not production-integrated.
-- FE1 treats React/Vite/TypeScript as the approved baseline per the technical guide; no Next.js migration is required for this task.
-- FE1 will only wire post/apply/reverse mutations after BE provides idempotency, validation, error-code, and permission contracts.
+- FE1 đã không thay đổi đường dẫn API để khớp với `swagger-api.json` trong đánh giá này vì nhiệm vụ rõ ràng cấm thay đổi hợp đồng API đơn phương.
+- FE1 đã không xóa các trang mock vì chúng có thể phục vụ như bằng chứng visual/UX, nhưng chúng được đánh dấu là chưa tích hợp sản xuất.
+- FE1 coi React/Vite/TypeScript là đường cơ sở đã được phê duyệt theo hướng dẫn kỹ thuật; không cần di chuyển Next.js cho nhiệm vụ này.
+- FE1 sẽ chỉ kết nối mutation post/apply/reverse sau khi BE cung cấp hợp đồng không đổi, xác thực, mã lỗi và quyền.
 
-## Verification Log
+## Nhật ký Xác minh
 
-Executed on 2026-07-29 in `C:\ERP_HOA_NAM\Hoa_Nam_Tools`:
+Đã thực thi vào ngày 2026-07-29 trong `C:\ERP_HOA_NAM\Hoa_Nam_Tools`:
 
 ```text
 npm.cmd run lint
-Result: PASS
+Kết quả: ĐẠT
 
 npm.cmd run build
-Result: PASS - tsc -b and vite build completed
+Kết quả: ĐẠT - tsc -b và vite build đã hoàn thành
 
 npm.cmd run test
-Result: PASS - 32 test files, 276 tests
+Kết quả: ĐẠT - 32 file kiểm thử, 276 bài kiểm tra
 
 npm.cmd run check:api-mapping -- --no-live
-Result: PASS with warning - mapping docs currently expose 0 endpoint rows while `swagger-api.json` has 288 unique routes; endpoint-level mapping evidence is incomplete and must be completed before closing contract traceability.
+Kết quả: ĐẠT với cảnh báo - tài liệu ánh xạ hiện hiển thị 0 hàng endpoint trong khi `swagger-api.json` có 288 route duy nhất; bằng chứng ánh xạ cấp endpoint không đầy đủ và phải được hoàn thành trước khi đóng truy xuất hợp đồng.
 ```
 
-Because this task is primarily a contract review artifact and current blockers are contract-level, passing lint/build/test alone does not close FE-CF-001 through FE-CF-004.
+Vì nhiệm vụ này chủ yếu là artifact đánh giá hợp đồng và các blocker hiện tại ở cấp hợp đồng, việc vượt qua lint/build/test một mình không đóng FE-CF-001 đến FE-CF-004.

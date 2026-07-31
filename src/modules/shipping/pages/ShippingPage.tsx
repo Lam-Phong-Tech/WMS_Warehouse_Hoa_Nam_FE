@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState } from "react";
 import {
   Alert,
@@ -44,11 +45,20 @@ export default function ShippingPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState<OutboundDocument | null>(null);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
+    let cancelled = false;
     setLoading(true);
     fetchOutboundDocuments({ search, status, per_page: 20 })
-      .then(setDocs)
-      .finally(() => setLoading(false));
+      .then((data) => {
+        if (!cancelled) setDocs(data);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [search, status]);
 
   const columns = [

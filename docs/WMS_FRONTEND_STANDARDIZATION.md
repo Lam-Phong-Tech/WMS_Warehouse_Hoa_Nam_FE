@@ -1,19 +1,19 @@
-# WMS Frontend Standardization
+# Chuẩn hóa Frontend WMS
 
-This document records how the current frontend repo is aligned with
+Tài liệu này ghi lại cách repo frontend hiện tại được căn chỉnh với
 `docs/WMS_Hoa_Nam_Techstack_Architecture_Dev_Guide.md`.
 
-## Scope
+## Phạm vi
 
-This repository is the React/Vite/TypeScript Web Admin frontend. Backend
-requirements in the guide such as Laravel modules, PostgreSQL transactions,
-Valkey locks, inventory movement, idempotency, Postman/Newman, and Docker
-Compose are treated here as API/runtime contracts owned by the backend or
-platform repositories.
+Repository này là frontend Web Admin React/Vite/TypeScript. Các yêu cầu backend
+trong hướng dẫn như module Laravel, transaction PostgreSQL, lock Valkey,
+biến động tồn kho, idempotency, Postman/Newman và Docker
+Compose được coi là hợp đồng API/runtime thuộc sở hữu của backend hoặc
+repository nền tảng.
 
 ## Stack
 
-| Guide standard | Repo standard |
+| Tiêu chuẩn hướng dẫn | Tiêu chuẩn repo |
 | --- | --- |
 | React + Vite + TypeScript | `react`, `vite`, `typescript` |
 | Ant Design | `antd`, `@ant-design/icons` |
@@ -23,7 +23,7 @@ platform repositories.
 | React Router | `react-router-dom` |
 | Vitest / Playwright | `vitest`, `@playwright/test` |
 
-## Source Layout
+## Bố cục Nguồn
 
 ```text
 src/
@@ -51,12 +51,12 @@ src/
 └── assets/
 ```
 
-The app does not use Next.js route groups. Shared layouts live under
-`src/app/layouts`, and route composition lives in `src/app/router`.
+Ứng dụng không sử dụng nhóm route Next.js. Các layout dùng chung nằm dưới
+`src/app/layouts`, và thành phần route nằm trong `src/app/router`.
 
-## Bounded Context Mapping
+## Ánh xạ Ngữ cảnh Giới hạn
 
-| Guide bounded context | Frontend module/path |
+| Ngữ cảnh giới hạn hướng dẫn | Module/đường dẫn frontend |
 | --- | --- |
 | MasterData | `src/modules/master-data` |
 | Scan | `src/modules/scan` |
@@ -69,10 +69,10 @@ The app does not use Next.js route groups. Shared layouts live under
 | Report | `src/modules/reports` |
 | Shared | `src/shared` |
 
-## API Contract
+## Hợp đồng API
 
-Frontend services must call APIs through `src/shared/api/http.ts` and shared
-endpoint constants. The preferred WMS envelope is:
+Các dịch vụ frontend phải gọi API thông qua `src/shared/api/http.ts` và các
+hằng số endpoint dùng chung. Envelope WMS được ưu tiên là:
 
 ```json
 {
@@ -86,79 +86,79 @@ endpoint constants. The preferred WMS envelope is:
 }
 ```
 
-Business errors should preserve `error_code` and field-level `errors` so forms
-can render backend validation without client-side guessing.
+Lỗi nghiệp vụ nên giữ nguyên `error_code` và `errors` cấp trường để form
+có thể hiển thị xác thực backend mà không cần suy luận phía client.
 
-## Build, Env, And Health
+## Build, Env và Health
 
-Runtime configuration is centralized in `src/shared/config/env.ts`.
+Cấu hình runtime được tập trung trong `src/shared/config/env.ts`.
 
-| Concern | Standard |
+| Vấn đề | Tiêu chuẩn |
 | --- | --- |
-| Environment name | `VITE_APP_ENV` is restricted to `local`, `dev`, `uat`, `prod`, or `test`. |
-| API base URL | `VITE_API_BASE_URL` must be an absolute `http/https` URL and is consumed through `runtimeConfig`, not directly inside modules. |
-| Backend health | `apiHealthUrl` is composed from `VITE_API_BASE_URL` and `VITE_API_HEALTH_PATH`; FE does not invent backend health semantics. |
-| API timeout | `VITE_API_TIMEOUT_MS` controls the shared axios timeout. |
-| Storage URL | `VITE_STORAGE_URL` is optional; relative storage paths fall back to the API base URL when unset. |
-| Frontend health | `public/health.json` is copied to `dist/health.json`; `npm run health:check` verifies deployable FE artifacts after build. |
+| Tên môi trường | `VITE_APP_ENV` được giới hạn ở `local`, `dev`, `uat`, `prod` hoặc `test`. |
+| URL cơ sở API | `VITE_API_BASE_URL` phải là URL `http/https` tuyệt đối và được tiêu thụ thông qua `runtimeConfig`, không trực tiếp trong module. |
+| Health backend | `apiHealthUrl` được tạo từ `VITE_API_BASE_URL` và `VITE_API_HEALTH_PATH`; FE không tự phát minh ngữ nghĩa health backend. |
+| API timeout | `VITE_API_TIMEOUT_MS` điều khiển timeout axios dùng chung. |
+| Storage URL | `VITE_STORAGE_URL` là tùy chọn; đường dẫn storage tương đối dự phòng về URL cơ sở API khi không được đặt. |
+| Frontend health | `public/health.json` được sao chép vào `dist/health.json`; `npm run health:check` xác minh artifact FE có thể triển khai sau khi build. |
 
-CI must run install, format check, lint, unit tests, build, frontend health
-artifact check, and API mapping check before a branch is considered deployable.
+CI phải chạy install, format check, lint, unit tests, build, frontend health
+artifact check và API mapping check trước khi một nhánh được coi là có thể triển khai.
 
-## Frontend Rules
+## Quy tắc Frontend
 
-- Route guards and hidden UI are UX aids only; backend must enforce RBAC and
-  data scope.
-- Module pages use `shared/components` for loading, empty, error, table, form,
-  permission, and scan states.
-- Tables with large datasets must request pagination/filter/sort from backend.
-- Scan screens must model clear states: waiting, scanned, duplicate, unknown,
-  invalid, success, and error.
-- Pages must not mutate inventory locally. Only backend post/apply/reverse APIs
-  can change stock.
+- Bảo vệ route và UI ẩn chỉ là hỗ trợ UX; backend phải thực thi RBAC và
+  phạm vi dữ liệu.
+- Các trang module sử dụng `shared/components` cho trạng thái loading, empty, error, table, form,
+  quyền và scan.
+- Bảng với tập dữ liệu lớn phải yêu cầu phân trang/lọc/sắp xếp từ backend.
+- Màn hình scan phải mô hình hóa các trạng thái rõ ràng: waiting, scanned, duplicate, unknown,
+  invalid, success và error.
+- Trang không được tự biến đổi tồn kho cục bộ. Chỉ API post/apply/reverse backend
+  mới có thể thay đổi tồn kho.
 
-## HN-FE-001 Reusable FE Foundation
+## HN-FE-001 Nền tảng FE Tái sử dụng
 
-Traceability:
+Truy xuất nguồn gốc:
 
-- Parent Task: WWHN-38
-- Parent Temp Key: HN-FE-001
-- Epic Temp Key: HN-EPIC-02
-- Role: FE1
-- Assignee Placeholder: HN-FE-01
-- Dependencies: HN-UX-001, HN-FND-001
-- Output: Reusable FE Nen tang
+- Nhiệm vụ Cha: WWHN-38
+- Khóa tạm Cha: HN-FE-001
+- Khóa tạm Epic: HN-EPIC-02
+- Vai trò: FE1
+- Người được gán: HN-FE-01
+- Phụ thuộc: HN-UX-001, HN-FND-001
+- Đầu ra: Nền tảng FE tái sử dụng
 
-Reusable foundation delivered in this repository:
+Nền tảng tái sử dụng đã được bàn giao trong repository này:
 
-- `src/app/providers/AppProviders.tsx`: single application provider root for
-  TanStack Query, Ant Design theme/locale, Ant Design app context, toast, and
+- `src/app/providers/AppProviders.tsx`: gốc provider ứng dụng duy nhất cho
+  TanStack Query, Ant Design theme/locale, ngữ cảnh ứng dụng Ant Design, toast và
   ErrorBoundary.
-- `src/app/router`: protected route, route-level RBAC, lazy page loading, and
-  no-permission routing.
-- `src/app/layouts`: responsive admin shell with sidebar, drawer navigation,
-  header, breadcrumb, footer, and profile bootstrap handling.
-- `src/modules/component-catalog/ComponentCatalogPage.tsx`: authenticated demo
-  route at `/component-catalog` for BA/QA review of shared table, form, modal,
-  status, scan, toast, loading, empty, error, no-permission, disabled, and
-  confirm states.
-- `src/shared/store/auth.store.ts`: session state, memory-only access token,
-  persisted non-sensitive hints, context, permission codes, and logout cleanup.
-- `src/shared/api`: approved API envelope unwrap, pagination meta handling,
-  refresh-token interceptor, RBAC/API error classification, and field error
-  extraction.
-- `src/shared/components`: shared layout, form, table, feedback, permission,
-  navigation, card, and page-level UI states exported through a stable barrel.
+- `src/app/router`: route được bảo vệ, RBAC cấp route, tải trang lười và
+  định tuyến không có quyền.
+- `src/app/layouts`: shell admin responsive với sidebar, drawer navigation,
+  header, breadcrumb, footer và xử lý bootstrap profile.
+- `src/modules/component-catalog/ComponentCatalogPage.tsx`: route demo đã xác thực
+  tại `/component-catalog` cho BA/QA xem xét bảng dùng chung, form, modal,
+  trạng thái, scan, toast, loading, empty, error, no-permission, disabled và
+  confirm.
+- `src/shared/store/auth.store.ts`: trạng thái phiên, token truy cập chỉ trong bộ nhớ,
+  gợi ý phiên không nhạy cảm đã được persist, ngữ cảnh, mã quyền và dọn dẹp logout.
+- `src/shared/api`: mở envelope API đã được phê duyệt, xử lý pagination meta,
+  interceptor refresh-token, phân loại lỗi RBAC/API và trích xuất
+  lỗi trường.
+- `src/shared/components`: layout dùng chung, form, table, feedback, quyền,
+  điều hướng, thẻ và trạng thái UI cấp trang được xuất qua barrel ổn định.
 
-Contract boundaries:
+Ranh giới hợp đồng:
 
-- RBAC in FE is for UI/UX only; backend remains the authority for permission and
-  data scope.
-- Business validation and inventory mutation rules are not inferred in FE.
-  Forms may improve UX with local validation, but API errors and field errors
-  must be displayed from the backend contract.
-- Any endpoint, payload, enum, or error-code mismatch must be recorded as a
-  blocker with owner/ETA instead of being silently patched in the UI.
+- RBAC trong FE chỉ dành cho UI/UX; backend vẫn là cơ quan có thẩm quyền về quyền và
+  phạm vi dữ liệu.
+- Xác thực nghiệp vụ và quy tắc biến đổi tồn kho không được suy luận trong FE.
+  Form có thể cải thiện UX với xác thực cục bộ, nhưng lỗi API và lỗi trường
+  phải được hiển thị từ hợp đồng backend.
+- Bất kỳ endpoint, payload, enum hoặc mã lỗi không khớp nào phải được ghi lại như
+  blocker với chủ sở hữu/ETA thay vì được vá im lặng trong UI.
 
-Verification evidence is recorded in
+Bằng chứng xác minh được ghi lại trong
 `docs/evidence/HN-FE-001-REUSABLE-FE-FOUNDATION.md`.

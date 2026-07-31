@@ -39,7 +39,7 @@ function normalizePage<T>(
     return { data: result.data, meta: result.meta };
   }
   const rows = Array.isArray(result.data.data) ? result.data.data : [];
-  const { data: _rows, ...paginatorMeta } = result.data;
+  const { ...paginatorMeta } = result.data as Record<string, unknown>;
   return {
     data: rows,
     meta: { ...paginatorMeta, ...result.meta },

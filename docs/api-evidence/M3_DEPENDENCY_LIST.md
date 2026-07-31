@@ -1,7 +1,7 @@
-# M3 Dependency List
+# Danh sách Phụ thuộc M3
 
-Status: no endpoint dependency introduced by WWHN-29
+Trạng thái: không có phụ thuộc endpoint nào được giới thiệu bởi WWHN-29
 
-| Screen | UI action | Method | Path | Permission | Status |
+| Màn hình | Hành động UI | Phương thức | Đường dẫn | Quyền | Trạng thái |
 | --- | --- | --- | --- | --- | --- |
-| M3 modules | Future module wiring | N/A | N/A | module-owned | Out of scope for WWHN-29 |
+| Các module M3 | Kết nối module trong tương lai | N/A | N/A | thuộc module | Ngoài phạm vi WWHN-29 |

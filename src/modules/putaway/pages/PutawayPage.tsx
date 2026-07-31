@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState } from "react";
 import { Button, Input, Space, Table, Tabs, Tag } from "antd";
 import { SwapOutlined } from "@ant-design/icons";
@@ -18,13 +19,36 @@ export default function PutawayPage() {
   const [history, setHistory] = useState<Row[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
+    let cancelled = false;
     setLoading(true);
     const loader = activeTab === "list" ? fetchPutawayTasks : fetchPutawayHistory;
     loader()
-      .then(activeTab === "list" ? setTasks : setHistory)
-      .catch(() => (activeTab === "list" ? setTasks([]) : setHistory([])))
-      .finally(() => setLoading(false));
+      .then((data) => {
+        if (!cancelled) {
+          if (activeTab === "list") {
+            setTasks(data);
+          } else {
+            setHistory(data);
+          }
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          if (activeTab === "list") {
+            setTasks([]);
+          } else {
+            setHistory([]);
+          }
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [activeTab]);
 
   return (

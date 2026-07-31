@@ -1,9 +1,11 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState } from "react";
 import { Button, DatePicker, Input, Select, Space, Table, Tabs, Tag } from "antd";
 import dayjs from "dayjs";
 import type { Dayjs } from "dayjs";
 import { fetchWarrantyCases } from "@/modules/warranty/services/warrantyService";
-import { fetchReports, fetchXntReport } from "../services/reportsService";
+import type { WarrantyCase } from "@/modules/warranty/types";
+import { fetchReportsHub, fetchXntReport, downloadXntReportExcel } from "../services/reportsService";
 import type { ReportItem, XntReportRow } from "../types";
 
 type WarrantyReportRow = {
@@ -16,17 +18,13 @@ type WarrantyReportRow = {
   tempOnly: number;
 };
 
-function text(value: unknown, fallback = ""): string {
-  return value === undefined || value === null ? fallback : String(value);
-}
-
-function warrantyRow(row: Record<string, unknown>): WarrantyReportRow {
-  const status = text(row.status);
+function warrantyRow(row: WarrantyCase): WarrantyReportRow {
+  const status = row.status;
   const returned = ["RETURNED", "RETURNED_TO_CUSTOMER", "CLOSED"].includes(status);
   return {
-    id: text(row.id),
-    model: text(row.model ?? row.sku_code ?? row.product_code, "-"),
-    defect: text(row.defect_name ?? row.defect_code ?? row.defect, "-"),
+    id: row.id,
+    model: row.sku,
+    defect: row.defect_code,
     total: 1,
     processing: status && !returned ? 1 : 0,
     returned: returned ? 1 : 0,
@@ -46,31 +44,76 @@ export default function ReportsPage() {
   const [scope, setScope] = useState<"warehouse" | "system">("system");
   const [loading, setLoading] = useState(false);
 
+  // Fetch reports hub list from backend (replaces old mock data)
   useEffect(() => {
-    fetchReports().then(setReports).catch(() => setReports([]));
+    fetchReportsHub().then(setReports).catch(() => setReports([]));
   }, []);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     if (activeTab !== "xnt") return;
+    let cancelled = false;
     setLoading(true);
     fetchXntReport({
       from: period[0].format("YYYY-MM-DD"),
       to: period[1].format("YYYY-MM-DD"),
       scope,
     })
-      .then(setXntRows)
-      .catch(() => setXntRows([]))
-      .finally(() => setLoading(false));
+      .then((data) => {
+        if (!cancelled) setXntRows(data);
+      })
+      .catch(() => {
+        if (!cancelled) setXntRows([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [activeTab, period, scope]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     if (activeTab !== "warranty") return;
+    let cancelled = false;
     setLoading(true);
     fetchWarrantyCases()
-      .then((rows) => setWarrantyRows(rows.map(warrantyRow)))
-      .catch(() => setWarrantyRows([]))
-      .finally(() => setLoading(false));
+      .then((rows) => {
+        if (!cancelled) setWarrantyRows(rows.map(warrantyRow));
+      })
+      .catch(() => {
+        if (!cancelled) setWarrantyRows([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [activeTab]);
+
+  /** Handle XNT Excel export download */
+  const handleExportXnt = async () => {
+    setLoading(true);
+    try {
+      const blob = await downloadXntReportExcel({
+        from: period[0].format("YYYY-MM-DD"),
+        to: period[1].format("YYYY-MM-DD"),
+        scope,
+      });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `xnt-report-${period[0].format("YYYYMMDD")}-${period[1].format("YYYYMMDD")}.xlsx`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      // Error handled by shared API error bridge
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div style={{ padding: 24 }}>
@@ -123,7 +166,9 @@ export default function ReportsPage() {
                       { value: "warehouse", label: "Kho" },
                     ]}
                   />
-                  <Button type="primary">Xuất XLSX</Button>
+                  <Button type="primary" onClick={handleExportXnt} loading={loading}>
+                    Xuất XLSX
+                  </Button>
                 </Space>
                 <Table
                   dataSource={xntRows}

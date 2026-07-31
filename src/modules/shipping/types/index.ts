@@ -39,3 +39,24 @@ export interface PostIssueRequest {
   idempotencyKey: string;
   ifMatch: number;
 }
+
+/** Outbound business error codes from backend */
+export type OutboundErrorCode =
+  | "WMS_OUTBOUND_DOCUMENT_NOT_FOUND"
+  | "WMS_OUTBOUND_ALREADY_POSTED"
+  | "WMS_OUTBOUND_INVALID_STATUS_TRANSITION"
+  | "WMS_OUTBOUND_INSUFFICIENT_STOCK"
+  | "WMS_OUTBOUND_LINE_SKU_MISMATCH"
+  | "WMS_OUTBOUND_EXCEEDS_PLANNED"
+  | "WMS_OUTBOUND_NEGATIVE_STOCK"
+  | "WMS_OUTBOUND_IDEMPOTENCY_REPLAY"
+  | "WMS_OUTBOUND_VERSION_CONFLICT";
+
+/** Outbound scan response item */
+export interface OutboundScanResult {
+  code_value: string;
+  status: "VALID" | "DUPLICATE" | "UNKNOWN" | "INVALID";
+  sku?: string;
+  line_id?: string;
+  message?: string;
+}

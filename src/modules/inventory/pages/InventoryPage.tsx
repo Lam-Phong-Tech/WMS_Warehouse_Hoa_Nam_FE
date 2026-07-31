@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState } from "react";
 import { Button, Input, Select, Space, Table, Tabs, Tag, Tooltip } from "antd";
 import {
@@ -23,17 +24,29 @@ export default function InventoryPage() {
   const [movementType, setMovementType] = useState<string>();
   const [loading, setLoading] = useState(false);
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (activeTab !== "stock") return;
+    let cancelled = false;
     setLoading(true);
     fetchInventoryBalances({ search: stockSearch, status: stockStatus, limit: 20 })
-      .then(setBalances)
-      .catch(() => setBalances([]))
-      .finally(() => setLoading(false));
+      .then((data) => {
+        if (!cancelled) setBalances(data);
+      })
+      .catch(() => {
+        if (!cancelled) setBalances([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [activeTab, stockSearch, stockStatus]);
 
   useEffect(() => {
     if (activeTab !== "movement") return;
+    let cancelled = false;
     setLoading(true);
     fetchStockMovements({
       search: movementSearch,
@@ -41,10 +54,20 @@ export default function InventoryPage() {
       movement_type: movementType,
       per_page: 20,
     })
-      .then(setMovements)
-      .catch(() => setMovements([]))
-      .finally(() => setLoading(false));
+      .then((data) => {
+        if (!cancelled) setMovements(data);
+      })
+      .catch(() => {
+        if (!cancelled) setMovements([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [activeTab, movementSearch, movementType]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const columns = [
     {

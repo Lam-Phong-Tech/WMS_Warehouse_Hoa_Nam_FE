@@ -43,12 +43,13 @@ export const API_ENDPOINTS = {
   // Dùng để demo 403 vì contract trả 403 FORBIDDEN ổn định, không phụ thuộc quyền user.
   WEBHOOKS_M2_ORDER_PROCESSING: "/webhooks/m2/order-processing",
   // WMS Modules
+  // Dashboard: quick KPI endpoint
   DASHBOARD: "/reports/dashboard-quick",
   DASHBOARD_KPI: "/reports/dashboard-quick",
   DASHBOARD_RECENT_DOCUMENTS: "/document-status-history",
   DASHBOARD_RECONCILE_HEALTH: "/inventory-snapshots",
   DASHBOARD_ALERTS: "/safe-stock-alerts",
-  // Receiving/Inbound
+  // Receiving/Inbound - canonical paths per architecture guide
   INBOUND_DOCUMENTS: "/inbound-documents",
   INBOUND_DOCUMENT: "/inbound-documents/:id",
   INBOUND_LINES: "/inbound-documents/:id",
@@ -60,7 +61,7 @@ export const API_ENDPOINTS = {
   INBOUND_SCAN: "/inbound-documents/:id/scan",
   INBOUND_CLOSE_REMAINDER: "/inbound-documents/:id/close-remainder",
   INBOUND_REVERSE: "/inbound-documents/:id/reverse",
-  // Shipping/Outbound
+  // Shipping/Outbound - canonical paths per architecture guide
   OUTBOUND_DOCUMENTS: "/outbound-documents",
   OUTBOUND_DOCUMENT: "/outbound-documents/:id",
   OUTBOUND_LINES: "/outbound-documents/:id",
@@ -75,10 +76,13 @@ export const API_ENDPOINTS = {
   // Putaway
   PUTAWAY_TASKS: "/putaway/tasks",
   PUTAWAY_HISTORY: "/putaway/history",
-  // Reports
-  REPORTS: "/reports/dashboard-quick",
+  // Reports hub - canonical paths per architecture guide
+  // DASHBOARD uses /reports/dashboard-quick for KPI; REPORTS hub is separate
+  REPORTS_HUB: "/reports/hub",
   REPORTS_XNT: "/reports/inventory-xnt",
   REPORTS_XNT_EXPORT_EXCEL: "/reports/inventory-xnt/export-excel",
+  REPORTS_WARRANTY_DEFECTS: "/reports/warranty-defects",
+  // Inventory
   INVENTORY_BALANCES: "/inventory/balances",
   STOCK_MOVEMENTS: "/stock-movements",
   STOCK_MOVEMENT: "/stock-movements/:id",
@@ -101,14 +105,25 @@ export const API_ENDPOINTS = {
   SKU_IMPORT_EXCEL: "/skus/import-excel",
   ITEMS: "/items",
   PHYSICAL_CODES: "/physical-codes",
+  // Scan - canonical classify endpoint per architecture guide
   SCAN_BATCHES: "/scan/batches",
+  SCAN_BATCHES_CLASSIFY: "/scan-batches/classify",
   SCAN_EVENTS: "/scan/events",
   DOCUMENT_STATUS_HISTORY: "/document-status-history",
   INVENTORY_SNAPSHOTS: "/inventory-snapshots",
+  // Stocktake
   STOCKTAKE_SESSIONS: "/stocktake/sessions",
+  STOCKTAKE_COUNT: "/stocktake/sessions/:sessionId/count",
+  STOCKTAKE_APPLY_ADJUSTMENT: "/stocktake/sessions/:sessionId/apply-adjustment",
+  // Reverse
   REVERSAL_DOCUMENTS: "/reversal-documents",
+  REVERSAL_DOCUMENT: "/reversal-documents/:id",
+  REVERSAL_CREATE: "/reversal-documents",
+  // Warranty
   WARRANTY_CASES: "/warranty/cases",
+  WARRANTY_CASE: "/warranty/cases/:id",
   WARRANTY_CASE_EVENTS: "/warranty/cases/:caseId/events",
+  WARRANTY_UPDATE_STATUS: "/warranty/cases/:id/status",
   // Audit Logs
   AUDIT_LOGS: "/audit-logs",
 };

@@ -1,43 +1,43 @@
-# HN-FND-001 - FE Auth Session 403 Evidence
+# HN-FND-001 - Bằng chứng FE Auth Session 403
 
-## Traceability
+## Truy xuất nguồn gốc
 
-| Field | Value |
+| Trường | Giá trị |
 | --- | --- |
-| Parent Task | WWHN-35 - [FOUNDATION] Xac thuc, RBAC, audit va cau truc loi chuan |
-| Parent Temp Key | HN-FND-001 |
-| Epic Temp Key | HN-EPIC-03 |
-| Dependency | HN-FND-001-ST01 |
-| Role | FE1 |
-| Assignee Placeholder | HN-FE-01 |
-| Output | Tich hop xac thuc FE |
+| Nhiệm vụ Cha | WWHN-35 - [FOUNDATION] Xác thực, RBAC, audit và cấu trúc lỗi chuẩn |
+| Khóa tạm Cha | HN-FND-001 |
+| Khóa tạm Epic | HN-EPIC-03 |
+| Phụ thuộc | HN-FND-001-ST01 |
+| Vai trò | FE1 |
+| Người được gán | HN-FE-01 |
+| Đầu ra | Tích hợp xác thực FE |
 
-## Scope Verified
+## Phạm vi Đã xác minh
 
-- Login uses approved `POST /auth/login` contract through `authService.login`.
-- Access token remains memory-only; persisted auth state stores only non-sensitive session hints.
-- Session bootstrap rehydrates persisted hints, then restores access through `POST /auth/refresh` with HttpOnly refresh cookie.
-- Protected routes wait for bootstrap and `GET /auth/me` profile/permission load before rendering protected UI.
-- Anonymous users are redirected to `/login` with the attempted URL preserved in router state.
-- Successful login restores the attempted protected URL, including query string and hash, instead of always forcing `/dashboard`.
-- Route-level RBAC uses `RequirePermission`; missing permissions redirect to `/errors/403`.
-- `/errors/403` is protected by session guard, so anonymous users do not see a permission page before authentication.
-- API 403 responses are marked by the axios interceptor and rendered consistently by `ApiErrorAlert` / `NoPermissionState`.
-- `PASSWORD_CHANGE_REQUIRED` remains a special 403 flow and redirects to `/change-password` without clearing the session.
+- Đăng nhập sử dụng hợp đồng `POST /auth/login` đã được phê duyệt thông qua `authService.login`.
+- Access token chỉ lưu trong bộ nhớ; trạng thái auth đã persist chỉ lưu các gợi ý session không nhạy cảm.
+- Session bootstrap hydrate các gợi ý đã persist, sau đó khôi phục access thông qua `POST /auth/refresh` với HttpOnly refresh cookie.
+- Protected routes đợi bootstrap và tải profile/permission `GET /auth/me` trước khi render protected UI.
+- Anonymous users được chuyển hướng đến `/login` với attempted URL được giữ trong router state.
+- Successful login khôi phục attempted protected URL, bao gồm query string và hash, thay vì luôn force `/dashboard`.
+- Route-level RBAC sử dụng `RequirePermission`; missing permissions chuyển hướng đến `/errors/403`.
+- `/errors/403` được bảo vệ bởi session guard, nên anonymous users không thấy permission page trước khi authentication.
+- API 403 responses được đánh dấu bởi axios interceptor và render nhất quán bởi `ApiErrorAlert` / `NoPermissionState`.
+- `PASSWORD_CHANGE_REQUIRED` vẫn là special 403 flow và redirects đến `/change-password` mà không clear session.
 
-## Acceptance Criteria Mapping
+## Ánh xạ Tiêu chí Chấp nhận
 
-| Acceptance Criteria | Evidence |
+| Tiêu chí Chấp nhận | Bằng chứng |
 | --- | --- |
-| Output "Tich hop xac thuc FE" reviewed/verified | `auth.store.ts`, `bootstrap-auth.ts`, `axios.ts`, `ProtectedRoute.tsx`, `RequirePermission.tsx`, `use-login.ts` |
-| Loading/error/disabled states | `ProtectedRoute` loading gates; `LoginPage` submitting overlay and disabled fields; `ApiErrorAlert` for API error states |
-| Permission/RBAC and API error display | Route guard redirects to `/errors/403`; API 403 renders `NoPermissionState`; password-change 403 keeps dedicated redirect |
-| No hard-coded business rules outside contract | FE only mirrors route/action permission hints; backend remains source of truth for auth/RBAC/data scope |
-| Endpoint/payload aligned with contract | `auth.service.ts` uses `/auth/login`, `/auth/logout`, `/auth/me`, `/auth/refresh`, `/auth/switch-context`, `/auth/change-password` via shared endpoint constants |
-| Lint/build/test pass | Verification log below |
-| BA/QA evidence available | This file documents traceability, scope, disposition, and verification commands |
+| Output "Tích hợp xác thực FE" reviewed/verified | `auth.store.ts`, `bootstrap-auth.ts`, `axios.ts`, `ProtectedRoute.tsx`, `RequirePermission.tsx`, `use-login.ts` |
+| Loading/error/disabled states | `ProtectedRoute` loading gates; `LoginPage` submitting overlay và disabled fields; `ApiErrorAlert` cho API error states |
+| Permission/RBAC và API error display | Route guard redirects đến `/errors/403`; API 403 renders `NoPermissionState`; password-change 403 giữ dedicated redirect |
+| No hard-coded business rules outside contract | FE chỉ mirrors route/action permission hints; backend vẫn là source of truth cho auth/RBAC/data scope |
+| Endpoint/payload aligned with contract | `auth.service.ts` sử dụng `/auth/login`, `/auth/logout`, `/auth/me`, `/auth/refresh`, `/auth/switch-context`, `/auth/change-password` qua shared endpoint constants |
+| Lint/build/test pass | Verification log bên dưới |
+| BA/QA evidence available | File này documents traceability, scope, disposition, và verification commands |
 
-## Changed Files
+## Files Đã thay đổi
 
 - `src/modules/auth/hooks/use-login.ts`
 - `src/app/router/index.tsx`

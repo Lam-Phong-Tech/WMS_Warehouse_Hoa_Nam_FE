@@ -1,54 +1,128 @@
-import { useEffect, useState } from "react";
-import { Button, Input, Space, Table, Tabs, Tag } from "antd";
+/* eslint-disable react-hooks/set-state-in-effect */
+import { useEffect, useState, useCallback } from "react";
+import { Alert, Button, Input, Space, Table, Tabs, Tag, Typography } from "antd";
 import { BarcodeOutlined } from "@ant-design/icons";
+import type { ScanCodeState, ScanClassifyItem } from "../types";
 import {
-  createScanBatch,
+  classifyScanCodes,
   fetchScanBatches,
   fetchScanEvents,
-} from "@/modules/inventory/services/inventoryService";
-import { getPhysicalCodes } from "@/modules/master-data/services/master-data.service";
+  fetchPhysicalCodes,
+} from "../services/scanService";
+import type { ScanBatch, ScanEvent, PhysicalCode } from "../types";
 
-type Row = Record<string, unknown>;
+/** Map scan code state to Tag color */
+const stateColorMap: Record<ScanCodeState, string> = {
+  waiting: "default",
+  scanned: "processing",
+  duplicate: "warning",
+  unknown: "geekblue",
+  invalid: "error",
+  success: "success",
+  error: "error",
+};
 
-function text(value: unknown, fallback = ""): string {
-  return value === undefined || value === null ? fallback : String(value);
-}
+/** Map classify status to Tag color */
+const classifyColorMap: Record<string, string> = {
+  VALID: "success",
+  DUPLICATE: "warning",
+  UNKNOWN: "geekblue",
+  INVALID: "error",
+};
 
 export default function PhysicalCodesPage() {
   const [activeTab, setActiveTab] = useState("list");
-  const [codes, setCodes] = useState<Row[]>([]);
-  const [batches, setBatches] = useState<Row[]>([]);
-  const [events, setEvents] = useState<Row[]>([]);
+  const [codes, setCodes] = useState<PhysicalCode[]>([]);
+  const [batches, setBatches] = useState<ScanBatch[]>([]);
+  const [events, setEvents] = useState<ScanEvent[]>([]);
   const [scanValue, setScanValue] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Classify-specific state
+  const [classifyResult, setClassifyResult] = useState<ScanClassifyItem[] | null>(null);
+  const [classifyState, setClassifyState] = useState<ScanCodeState>("waiting");
+  const [classifyMessage, setClassifyMessage] = useState("");
+
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
+    let cancelled = false;
     setLoading(true);
     if (activeTab === "list") {
-      getPhysicalCodes({ page: 1, per_page: 20 })
-        .then((result) => setCodes(result.data as unknown as Row[]))
-        .catch(() => setCodes([]))
-        .finally(() => setLoading(false));
+      fetchPhysicalCodes({ page: 1, per_page: 20 })
+        .then((data) => {
+          if (!cancelled) setCodes(data);
+        })
+        .catch(() => {
+          if (!cancelled) setCodes([]);
+        })
+        .finally(() => {
+          if (!cancelled) setLoading(false);
+        });
       return;
     }
-    Promise.all([fetchScanBatches({ per_page: 20 }), fetchScanEvents({ per_page: 20 })])
+    Promise.all([
+      fetchScanBatches({ per_page: 20 }),
+      fetchScanEvents({ per_page: 20 }),
+    ])
       .then(([batchRows, eventRows]) => {
-        setBatches(batchRows);
-        setEvents(eventRows);
+        if (!cancelled) {
+          setBatches(batchRows);
+          setEvents(eventRows);
+        }
       })
       .catch(() => {
-        setBatches([]);
-        setEvents([]);
+        if (!cancelled) {
+          setBatches([]);
+          setEvents([]);
+        }
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [activeTab]);
 
-  async function submitScan() {
+  /** Submit scan code via POST /scan-batches/classify */
+  const submitScan = useCallback(async () => {
     const code = scanValue.trim();
     if (!code) return;
+
     setLoading(true);
+    setClassifyState("scanned");
+    setClassifyResult(null);
+    setClassifyMessage("");
+
     try {
-      await createScanBatch({ source_type: "lookup", codes: [code] });
+      const response = await classifyScanCodes({
+        codes: [code],
+        scan_source: "manual",
+      });
+
+      setClassifyResult(response.items);
+
+      // Determine overall state from classify results
+      const allValid = response.items.every((item) => item.status === "VALID");
+      const hasDuplicate = response.items.some((item) => item.status === "DUPLICATE");
+      const hasUnknown = response.items.some((item) => item.status === "UNKNOWN");
+      const hasInvalid = response.items.some((item) => item.status === "INVALID");
+
+      if (allValid) {
+        setClassifyState("success");
+        setClassifyMessage(`Mã ${code} hợp lệ.`);
+      } else if (hasDuplicate) {
+        setClassifyState("duplicate");
+        setClassifyMessage(`Mã ${code} đã được quét trước đó.`);
+      } else if (hasUnknown) {
+        setClassifyState("unknown");
+        setClassifyMessage(`Mã ${code} không được nhận diện trong hệ thống.`);
+      } else if (hasInvalid) {
+        setClassifyState("invalid");
+        setClassifyMessage(`Mã ${code} không hợp lệ.`);
+      }
+
+      // Refresh batches and events after successful classify
       const [batchRows, eventRows] = await Promise.all([
         fetchScanBatches({ per_page: 20 }),
         fetchScanEvents({ per_page: 20 }),
@@ -56,16 +130,26 @@ export default function PhysicalCodesPage() {
       setBatches(batchRows);
       setEvents(eventRows);
       setScanValue("");
+    } catch (error: unknown) {
+      setClassifyState("error");
+      setClassifyMessage(
+        error instanceof Error ? error.message : "Lỗi khi phân loại mã. Vui lòng thử lại.",
+      );
     } finally {
       setLoading(false);
     }
-  }
+  }, [scanValue]);
 
   return (
     <div style={{ padding: 24 }}>
       <Tabs
         activeKey={activeTab}
-        onChange={setActiveTab}
+        onChange={(key) => {
+          setActiveTab(key);
+          setClassifyResult(null);
+          setClassifyState("waiting");
+          setClassifyMessage("");
+        }}
         items={[
           {
             key: "list",
@@ -80,7 +164,7 @@ export default function PhysicalCodesPage() {
                 </Space>
                 <Table
                   dataSource={codes}
-                  rowKey={(row) => text(row.id ?? row.code_value)}
+                  rowKey="id"
                   loading={loading}
                   pagination={{ pageSize: 10 }}
                   columns={[
@@ -102,8 +186,8 @@ export default function PhysicalCodesPage() {
             ),
           },
           {
-            key: "scan",
-            label: "Lô quét / sự kiện",
+            key: "classify",
+            label: "Phân loại mã quét",
             children: (
               <>
                 <Space style={{ marginBottom: 16 }}>
@@ -113,34 +197,142 @@ export default function PhysicalCodesPage() {
                     onChange={(event) => setScanValue(event.target.value)}
                     onSearch={submitScan}
                     style={{ width: 360 }}
+                    enterButton="Phân loại"
                   />
-                  <Button type="primary" onClick={submitScan} loading={loading}>
+                  <Button
+                    type="primary"
+                    onClick={submitScan}
+                    loading={loading && classifyState === "scanned"}
+                    icon={<BarcodeOutlined />}
+                  >
                     Gửi quét
                   </Button>
                 </Space>
+
+                {/* Classify result display */}
+                {classifyState !== "waiting" && classifyState !== "scanned" && (
+                  <Alert
+                    type={
+                      classifyState === "success"
+                        ? "success"
+                        : classifyState === "duplicate"
+                          ? "warning"
+                          : classifyState === "unknown"
+                            ? "info"
+                            : "error"
+                    }
+                    message={
+                      <Space>
+                        <Typography.Text strong>Kết quả:</Typography.Text>
+                        <Tag color={stateColorMap[classifyState]}>
+                          {classifyState.toUpperCase()}
+                        </Tag>
+                        <Typography.Text>{classifyMessage}</Typography.Text>
+                      </Space>
+                    }
+                    showIcon
+                    style={{ marginBottom: 16 }}
+                  />
+                )}
+
+                {loading && classifyState === "scanned" && (
+                  <Alert
+                    type="info"
+                    message="Đang phân loại mã..."
+                    showIcon
+                    style={{ marginBottom: 16 }}
+                  />
+                )}
+
+                {/* Classify detail table */}
+                {classifyResult && classifyResult.length > 0 && (
+                  <Table
+                    dataSource={classifyResult}
+                    rowKey="code_value"
+                    pagination={false}
+                    size="small"
+                    style={{ marginBottom: 16 }}
+                    columns={[
+                      { title: "Mã", dataIndex: "code_value", key: "code_value" },
+                      { title: "Loại mã", dataIndex: "code_type", key: "code_type" },
+                      {
+                        title: "Kết quả",
+                        dataIndex: "status",
+                        key: "status",
+                        render: (value: string) => (
+                          <Tag color={classifyColorMap[value]}>{value}</Tag>
+                        ),
+                      },
+                      { title: "SKU", dataIndex: "sku_code", key: "sku_code" },
+                      { title: "Ghi chú", dataIndex: "message", key: "message" },
+                    ]}
+                  />
+                )}
+              </>
+            ),
+          },
+          {
+            key: "history",
+            label: "Lô quét / sự kiện",
+            children: (
+              <>
                 <Table
                   dataSource={batches}
-                  rowKey={(row) => text(row.id)}
+                  rowKey="id"
                   loading={loading}
                   pagination={{ pageSize: 5 }}
+                  style={{ marginBottom: 16 }}
                   columns={[
-                    { title: "Lô", dataIndex: "id", key: "id" },
+                    { title: "Lô", dataIndex: "batch_no", key: "batch_no" },
                     { title: "Nguồn", dataIndex: "source_type", key: "source_type" },
-                    { title: "Trạng thái", dataIndex: "status", key: "status" },
+                    {
+                      title: "Trạng thái",
+                      dataIndex: "status",
+                      key: "status",
+                      render: (value: string) => <Tag>{value}</Tag>,
+                    },
+                    { title: "Mã hợp lệ", dataIndex: "valid_count", key: "valid_count" },
+                    {
+                      title: "Trùng",
+                      dataIndex: "duplicate_count",
+                      key: "duplicate_count",
+                      render: (v: number) =>
+                        v > 0 ? <Tag color="warning">{v}</Tag> : v,
+                    },
+                    {
+                      title: "Không rõ",
+                      dataIndex: "unknown_count",
+                      key: "unknown_count",
+                      render: (v: number) =>
+                        v > 0 ? <Tag color="geekblue">{v}</Tag> : v,
+                    },
+                    {
+                      title: "Lỗi",
+                      dataIndex: "invalid_count",
+                      key: "invalid_count",
+                      render: (v: number) =>
+                        v > 0 ? <Tag color="error">{v}</Tag> : v,
+                    },
                     { title: "Tạo lúc", dataIndex: "created_at", key: "created_at" },
                   ]}
                 />
                 <Table
-                  style={{ marginTop: 16 }}
                   dataSource={events}
-                  rowKey={(row) => text(row.id)}
+                  rowKey="id"
                   loading={loading}
                   pagination={{ pageSize: 5 }}
                   columns={[
                     { title: "Mã", dataIndex: "code_value", key: "code_value" },
                     { title: "Loại", dataIndex: "code_type", key: "code_type" },
-                    { title: "Kết quả", dataIndex: "status", key: "status" },
-                    { title: "Tạo lúc", dataIndex: "created_at", key: "created_at" },
+                    {
+                      title: "Kết quả",
+                      dataIndex: "status",
+                      key: "status",
+                      render: (value: string) => (
+                        <Tag color={classifyColorMap[value]}>{value}</Tag>
+                      ),
+                    },
+                    { title: "Tạo lúc", dataIndex: "scanned_at", key: "scanned_at" },
                   ]}
                 />
               </>

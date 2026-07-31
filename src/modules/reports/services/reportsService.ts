@@ -11,27 +11,6 @@ export type XntReportParams = {
   scope?: "warehouse" | "system";
 };
 
-const reportHub: ReportItem[] = [
-  {
-    id: "inventory",
-    code: "RPT-INV-01",
-    title: "Tồn hiện tại",
-    description: "Nguồn API: /inventory/balances.",
-  },
-  {
-    id: "xnt",
-    code: "RPT-XNT-01",
-    title: "Xuất nhập tồn",
-    description: "Nguồn API: /reports/inventory-xnt.",
-  },
-  {
-    id: "movement",
-    code: "RPT-MOV-01",
-    title: "Movement History",
-    description: "Nguồn API: /stock-movements.",
-  },
-];
-
 function rowsOf<T>(value: T[] | { data?: T[]; rows?: T[]; items?: T[] }): T[] {
   if (Array.isArray(value)) return value;
   if (Array.isArray(value.data)) return value.data;
@@ -65,10 +44,28 @@ function normalizeXnt(row: RawRecord): XntReportRow {
   };
 }
 
-export async function fetchReports(): Promise<ReportItem[]> {
-  return reportHub;
+/**
+ * GET /reports/hub
+ * Fetch reports hub list from backend.
+ * This replaces the old hardcoded mock data.
+ */
+export async function fetchReportsHub(): Promise<ReportItem[]> {
+  const result = await http.get<RawRecord[] | { data?: RawRecord[] }>(
+    API_ENDPOINTS.REPORTS_HUB,
+  );
+  const rows = rowsOf(result);
+  return rows.map((row) => ({
+    id: text(row.id ?? row.code),
+    code: text(row.code),
+    title: text(row.title ?? row.name),
+    description: text(row.description),
+  }));
 }
 
+/**
+ * GET /reports/inventory-xnt
+ * Fetch XNT (Xuất-Nhập-Tồn) report data.
+ */
 export async function fetchXntReport(
   params: XntReportParams,
 ): Promise<XntReportRow[]> {
@@ -79,21 +76,25 @@ export async function fetchXntReport(
   return rowsOf(result).map(normalizeXnt);
 }
 
+/**
+ * GET /reports/inventory-xnt/export-excel
+ * Download XNT report as Excel file (blob).
+ */
 export async function downloadXntReportExcel(
   params: XntReportParams,
 ): Promise<Blob> {
   return http.downloadBlob(API_ENDPOINTS.REPORTS_XNT_EXPORT_EXCEL, { params });
 }
 
-export async function fetchDashboardQuick(): Promise<RawRecord> {
-  return http.get<RawRecord>(API_ENDPOINTS.REPORTS);
-}
-
-export async function fetchDocumentStatusHistory(
+/**
+ * GET /reports/warranty-defects
+ * Fetch warranty defects report.
+ */
+export async function fetchWarrantyDefectsReport(
   params: Record<string, unknown> = {},
 ): Promise<RawRecord[]> {
   const result = await http.getPage<RawRecord[] | { data?: RawRecord[] }>(
-    API_ENDPOINTS.DOCUMENT_STATUS_HISTORY,
+    API_ENDPOINTS.REPORTS_WARRANTY_DEFECTS,
     { params },
   );
   return rowsOf(result.data as RawRecord[] | { data?: RawRecord[] });

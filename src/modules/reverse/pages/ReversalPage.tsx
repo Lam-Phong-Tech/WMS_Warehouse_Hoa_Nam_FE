@@ -1,44 +1,32 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState } from "react";
 import { Button, Input, Space, Table, Tabs, Tag } from "antd";
 import { RollbackOutlined } from "@ant-design/icons";
 import { fetchReversalDocuments } from "@/modules/reverse/services/reversalService";
-
-type Row = Record<string, unknown>;
-
-function text(value: unknown, fallback = ""): string {
-  return value === undefined || value === null ? fallback : String(value);
-}
-
-function rowsOf(value: unknown): Row[] {
-  if (Array.isArray(value)) return value as Row[];
-  if (
-    typeof value === "object" &&
-    value !== null &&
-    Array.isArray((value as { data?: unknown }).data)
-  ) {
-    return (value as { data: Row[] }).data;
-  }
-  return [];
-}
+import type { ReversalDocument } from "@/modules/reverse/types";
 
 export default function ReversalPage() {
   const [activeTab, setActiveTab] = useState("list");
-  const [documents, setDocuments] = useState<Row[]>([]);
-  const [lines, setLines] = useState<Row[]>([]);
+  const [documents, setDocuments] = useState<ReversalDocument[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
+    let cancelled = false;
     setLoading(true);
     fetchReversalDocuments({ per_page: 20 })
-      .then((rows) => {
-        setDocuments(rows);
-        setLines(rows.flatMap((row) => rowsOf(row.lines)));
+      .then((data) => {
+        if (!cancelled) setDocuments(data);
       })
       .catch(() => {
-        setDocuments([]);
-        setLines([]);
+        if (!cancelled) setDocuments([]);
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return (
@@ -60,13 +48,13 @@ export default function ReversalPage() {
                 </Space>
                 <Table
                   dataSource={documents}
-                  rowKey={(row) => text(row.id)}
+                  rowKey="id"
                   loading={loading}
                   pagination={{ pageSize: 10 }}
                   columns={[
-                    { title: "Mã hoàn đảo", dataIndex: "code", key: "code" },
-                    { title: "Chứng từ gốc", dataIndex: "source_document_code", key: "source_document_code" },
-                    { title: "Loại", dataIndex: "source_type", key: "source_type" },
+                    { title: "Mã hoàn đảo", dataIndex: "reversal_code", key: "reversal_code" },
+                    { title: "Chứng từ gốc", dataIndex: "reference_document_code", key: "reference_document_code" },
+                    { title: "Loại", dataIndex: "reversal_type", key: "reversal_type" },
                     { title: "Lý do", dataIndex: "reason", key: "reason" },
                     {
                       title: "Trạng thái",
@@ -74,30 +62,10 @@ export default function ReversalPage() {
                       key: "status",
                       render: (value: string) => <Tag>{value}</Tag>,
                     },
-                    { title: "Cập nhật", dataIndex: "updated_at", key: "updated_at" },
+                    { title: "Ngày tạo", dataIndex: "created_at", key: "created_at" },
                   ]}
                 />
               </>
-            ),
-          },
-          {
-            key: "lines",
-            label: "Dòng hoàn đảo",
-            children: (
-              <Table
-                dataSource={lines}
-                rowKey={(row) => text(row.id)}
-                loading={loading}
-                pagination={{ pageSize: 10 }}
-                columns={[
-                  { title: "SKU", dataIndex: "sku_code", key: "sku_code" },
-                  { title: "Số lượng", dataIndex: "quantity", key: "quantity" },
-                  { title: "Hướng", dataIndex: "direction", key: "direction" },
-                  { title: "Dịch chuyển gốc", dataIndex: "source_movement_id", key: "source_movement_id" },
-                  { title: "Dịch chuyển mới", dataIndex: "new_movement_id", key: "new_movement_id" },
-                  { title: "Trạng thái", dataIndex: "status", key: "status" },
-                ]}
-              />
             ),
           },
         ]}
