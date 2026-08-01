@@ -44,6 +44,22 @@ function getRejectedHandler() {
   return handler.rejected;
 }
 
+function getRequestFulfilledHandler() {
+  const handlers = (
+    api.interceptors.request as unknown as {
+      handlers: Array<{
+        fulfilled: (config: {
+          url?: string;
+          headers: Record<string, string>;
+        }) => { url?: string; headers: Record<string, string> };
+      }>;
+    }
+  ).handlers;
+  const handler = handlers.find((h) => h?.fulfilled);
+  if (!handler) throw new Error("Khong tim thay request interceptor");
+  return handler.fulfilled;
+}
+
 function makeError(status: number, data: unknown = {}, config?: Record<string, unknown>) {
   return {
     isAxiosError: true,
@@ -168,6 +184,25 @@ describe("QA1.1: 401 Unauthenticated — Token Expired / Missing", () => {
     expect(postSpy).not.toHaveBeenCalled();
 
     postSpy.mockRestore();
+  });
+});
+
+describe("QA1.7b: API Deny Runtime Evidence Shape", () => {
+  it("API 403 deny is handled independently from FE menu/action hiding", async () => {
+    const rejected = getRejectedHandler();
+    const error = makeError(403, {
+      success: false,
+      error_code: "FORBIDDEN",
+      message: "Backend authorization denied",
+      meta: {
+        request_id: "qa1-api-deny",
+        env: process.env.VITE_APP_ENV ?? "test",
+        build_sha: process.env.VITE_GIT_SHA ?? "local",
+      },
+    });
+
+    await expect(rejected(error)).rejects.toBe(error);
+    expect(error._isNoPermission).toBe(true);
   });
 });
 
@@ -454,6 +489,18 @@ describe("QA1.6: Audit Trail Integration", () => {
     useAuthStore.setState({ token });
     // Verify: memoryStorage.getToken() được gọi khi request interceptor runs
     // (implementation detail of axios interceptor)
+  });
+});
+
+describe("QA1.6b: Audit Trail Request Authorization", () => {
+  it("Audit logs request interceptor attaches Bearer token", async () => {
+    const { memoryStorage } = await import("@/shared/lib/memory-storage");
+    vi.spyOn(memoryStorage, "getToken").mockReturnValue(MOCK_TOKEN);
+
+    const fulfilled = getRequestFulfilledHandler();
+    const config = fulfilled({ url: "/audit-logs", headers: {} });
+
+    expect(config.headers.Authorization).toBe(`Bearer ${MOCK_TOKEN}`);
   });
 });
 

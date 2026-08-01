@@ -585,12 +585,13 @@ vi.mock("antd", () => {
         PRESENTED_IMAGE_DEFAULT: "default",
       },
     ),
-    Alert: ({ message, description, children }: any) =>
+    Alert: ({ message, description, action, children }: any) =>
       React.createElement(
         "div",
         null,
         message ? React.createElement("div", null, message) : null,
         description ? React.createElement("div", null, description) : null,
+        action ?? null,
         children ?? null,
       ),
     Skeleton: ({ children }: any) =>

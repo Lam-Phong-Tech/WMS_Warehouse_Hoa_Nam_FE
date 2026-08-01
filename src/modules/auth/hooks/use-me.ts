@@ -4,12 +4,8 @@ import { authService } from "@/modules/auth/services/auth.service";
 import { useAuthStore } from "@/shared/store/auth.store";
 
 /**
- * Lấy hồ sơ + phân quyền của tài khoản hiện tại (GET /auth/me) và
- * đồng bộ vào store. Tự chạy khi có token (sau login & sau F5).
- *
- * Xử lý lỗi: nếu API /auth/me lỗi (mạng/401/500...), không giữ nguyên
- * loading vô hạn → sau 10 giây vẫn set isProfileLoaded = true để
- * người dùng thấy được menu (dù quyền rỗng), thay vì "trắng màn hình".
+ * Fetch the current profile, permissions, and active data scope from GET
+ * /auth/me. Protected UI must stay fail-closed until this succeeds.
  */
 export function useMe() {
   const token = useAuthStore((s) => s.token);
@@ -29,20 +25,6 @@ export function useMe() {
       setProfile(query.data);
     }
   }, [query.data, setProfile]);
-
-  // Fallback: nếu query lỗi (mạng/401/500...), sau 10s vẫn cho vào app
-  // với quyền rỗng để tránh "trắng menu" vô hạn.
-  useEffect(() => {
-    if (query.isError && token) {
-      const timer = setTimeout(() => {
-        const store = useAuthStore.getState();
-        if (!store.isProfileLoaded) {
-          useAuthStore.setState({ isProfileLoaded: true });
-        }
-      }, 10000);
-      return () => clearTimeout(timer);
-    }
-  }, [query.isError, token]);
 
   return query;
 }

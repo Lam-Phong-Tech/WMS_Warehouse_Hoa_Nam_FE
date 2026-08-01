@@ -105,3 +105,41 @@ Lưu ý xác minh đã biết: Vite báo warning non-blocking rằng `__dirname`
 - Không còn P0/P1 blocker thuộc sở hữu FE1 cho WWHN-165.
 - BE vẫn sở hữu token validity, refresh cookie issuance/rotation, API-level RBAC/data-scope enforcement, audit logging, và structured error payload consistency.
 - BA/QA có thể verify theo các scenario liệt kê trong P0/P1 disposition và command log bên trên.
+
+## P1 closure pass - 2026-08-01
+
+| Field | Evidence |
+| --- | --- |
+| Branch | `m1` |
+| Commit SHA at verification time | `e94a825fe18522bc9ea902a8a1d3d17cd516dd9f` |
+| PR link | Not available in local workspace at verification time; CI workflow is present and will run on pull request/push. |
+| Runtime env contract | `VITE_APP_ENV=local/dev/uat/prod/test`; `.env.example` points API base to `https://astrodev.test8.io.vn/api/v1` and documents `VITE_API_WITH_CREDENTIALS`. |
+| Build ID/artifacts | Local Vite build completed; main assets include `dist/assets/index-DZNPL0Ip.js`, `dist/assets/ApiErrorAlert-DayvmKNw.js`, `dist/assets/AuditLogsPage-C2LibHTt.js`. |
+| CI definition | `.github/workflows/ci.yml`: `npm ci`, `format:check`, `lint`, `test`, `build`, `health:check`, `check:api-mapping`. |
+
+### Fixes added in this pass
+
+- `useMe()` no longer sets `isProfileLoaded=true` after `/auth/me` failure. Protected UI now stays fail-closed until profile, permission, and active data-scope are loaded successfully.
+- `ProtectedRoute` renders an API error with retry when `/auth/me` fails before profile load; Outlet/shell is not rendered in that state.
+- QA1 tests now assert request-interceptor evidence for audit-log Authorization headers and API 403 handling with env/SHA-shaped metadata.
+- Test harness now renders Ant Design `Alert.action`, so retry buttons are covered instead of hidden by mocks.
+
+### Verification log for this pass
+
+```text
+npm.cmd test -- --run src/app/router/ProtectedRoute.test.tsx src/test/auth-security-rbac-audit.test.ts
+Result: PASS - 2 test files, 25 tests
+
+npm.cmd test -- --run src/modules/auth/hooks/use-login.test.tsx src/app/router/ProtectedRoute.test.tsx src/app/router/RequirePermission.test.tsx src/shared/api/axios.test.ts src/shared/api/axios.refresh.integration.test.ts src/app/bootstrap-auth.test.ts src/test/auth-security-rbac-audit.test.ts
+Result: PASS - 7 test files, 62 tests
+
+npm.cmd run lint
+Result: PASS
+
+npm.cmd run build
+Result: PASS - tsc -b and vite build completed; 3370 modules transformed
+```
+
+### QA1 / BE runtime evidence still required
+
+FE tests prove the client fails closed and handles 401/403/audit request headers correctly. The claim "backend authorization denies independently from FE hiding" must still be evidenced by QA1/BE against the target env with real role tokens: direct API call to a forbidden endpoint returns `403`, out-of-scope data returns `403`, audit event is written/read with `AUDIT_LOG_VIEW`, and the evidence records env, commit SHA/build ID, request id, token role/scope, and command log.
