@@ -101,14 +101,33 @@ Traceability theo artifact:
 | --- | --- |
 | Runtime | Node.js 18+ |
 | Package manager | npm hoặc yarn; repo hiện có cả `package-lock.json` và `yarn.lock`, nhưng scripts trong tài liệu evidence dùng `npm.cmd` trên Windows. |
-| Framework | React 19 + TypeScript + Vite SPA |
-| UI library | Ant Design, `@ant-design/icons`, `sonner` toast |
-| Server state | TanStack Query |
-| Client state | Zustand cho auth/session |
-| Form/validation | React Hook Form + Zod |
-| Routing | React Router |
-| Unit test | Vitest + Testing Library |
-| E2E/evidence | Playwright và các script capture trong `scripts/` |
+| Framework | React `19.2.6` + TypeScript `~6.0.2` + Vite `8.x` SPA theo `package.json`. |
+| UI library | Ant Design `6.4.5`, `@ant-design/icons` `6.2.5`, `sonner` toast. |
+| Server state | TanStack Query `5.101.0`. |
+| Client state | Zustand `5.0.14` cho auth/session. |
+| Form/validation | React Hook Form `7.80.0` + Zod `4.4.3`. |
+| Routing | React Router DOM `7.18.0`. |
+| Unit test | Vitest `4.1.10` + Testing Library. |
+| E2E/evidence | Playwright `1.61.1`, e2e specs trong `e2e/` và các script capture trong `scripts/`. |
+
+### 6.1.1 Đối chiếu nguồn sự thật build/runtime
+
+Khi có khác biệt giữa tài liệu mô tả và repo, thứ tự ưu tiên để build/review là:
+
+| Nhóm | Source truth | Ghi chú kiểm soát |
+| --- | --- | --- |
+| Version package/toolchain | `package.json`, `package-lock.json`, `yarn.lock` | `package.json` đang là nguồn chính để xác định React/AntD/Router/Vite thực tế. |
+| Script có thể chạy | `package.json` | README chỉ là hướng dẫn nhanh; nếu README nhắc script chưa tồn tại thì không coi là build gate hợp lệ. |
+| Env template | `.env.example`, `src/shared/config/env.ts` | `.env` local không dùng làm nguồn handover vì có thể chứa cấu hình máy cá nhân. |
+| Build artifact | `dist/index.html`, `dist/assets/*`, `dist/health.json` | Được sinh lại bằng `npm.cmd run build`; không sửa tay trong `dist/`. |
+| API endpoint FE | `src/shared/api/endpoints.ts`, service từng module | Đối chiếu với `swagger-api.json` và docs `docs/api-evidence/*`; endpoint legacy chỉ dùng khi có ghi chú rõ. |
+| RBAC route/action | `src/app/router/access.ts`, `src/shared/components/permission`, `src/lib/permissions` | FE chỉ gate UX; backend/RBAC catalog vẫn là authority cuối. |
+
+Điểm lệch đã xác nhận khi rà soát:
+
+- README ghi Ant Design 5.x và React Router v6, nhưng `package.json` thực tế là Ant Design 6.4.5 và React Router DOM 7.18.0.
+- README nhắc `test:e2e` và `test:coverage`, nhưng `package.json` chưa khai báo hai script này.
+- `npm.cmd` được dùng cho verification trên Windows để khớp môi trường bàn giao hiện tại; `yarn` vẫn có lockfile nhưng không phải command evidence chính trong lần xác minh này.
 
 ### 6.2 Environment
 
@@ -290,7 +309,7 @@ Các mã quyền WMS như `scan.classify`, `inventory.trace`, `inbound.post`,
 | Output “Frontend handover” được rà soát/xác minh, gắn evidence vào HN-HO-001 và không còn blocker thuộc vai trò FE1. | File này là artifact Frontend handover cho WWHN-311; có trace WWHN-83/HN-HO-001/HN-EPIC-10/HN-HO-001-ST01 và danh sách evidence/check commands. | Đạt trong phạm vi tài liệu; việc gắn vào HN-HO-001/Jira cần thao tác quy trình sau. |
 | UI đáp ứng quy tắc nghiệp vụ, field specification và responsive; xử lý loading, empty, error, success, disabled và confirm khi phù hợp. | Đã mô tả component taxonomy, component catalog evidence, table/form/feedback patterns và module coverage. | Conditional pass; nghiệp vụ/field spec final phụ thuộc BA/BE lock. |
 | Permission/RBAC và API error hiển thị đúng; không hard-code dữ liệu hoặc quy tắc trái contract. | Đã nêu rõ RBAC là UX gate, API error parser, không tự suy diễn permission/contract, các blocker external còn mở. | Conditional pass; permission catalog backend cần confirm. |
-| Tích hợp đúng endpoint/payload đã duyệt; lint, build và test phù hợp phải pass. | Đã liệt kê commands chuẩn và gate cần chạy. Tài liệu liên quan ghi nhận lint/build/test pass trước đó; WWHN-311 cần chạy lại trên build/version bàn giao nếu formal sign-off. | Pending verification mới nhất nếu cần bằng chứng runtime ngay tại thời điểm đóng Jira. |
+| Tích hợp đúng endpoint/payload đã duyệt; lint, build và test phù hợp phải pass. | Đã chạy lại `lint`, `test`, `build`, `health:check`, `check:api-mapping` tại workspace `C:\HoaNamFE\Hoa_Nam_Tools` ngày 2026-08-01. Kết quả pass; warning còn lại đã có disposition ở mục 14-15. | Đạt cho FE verification hiện tại; final production sign-off vẫn phụ thuộc BA/BE/RBAC/QA. |
 | BA/QA có evidence để kiểm tra; không còn P0/P1 blocker chưa có disposition. | Có checklist BA/QA, component catalog surface, module coverage và blocker/disposition. | Đạt về documentation; P0/P1 external vẫn có owner/disposition, không bị che khuất. |
 
 ## 10. Output đầu ra
@@ -313,7 +332,7 @@ Nội dung output bao gồm:
 
 | DoD từ Jira | Cách xác minh | Trạng thái |
 | --- | --- | --- |
-| Code, review, lint/build/test, evidence UI và traceability hoàn tất. | Chạy `npm.cmd run lint`, `npm.cmd run build`, `npm.cmd run test`, `npm.cmd run health:check`, `npm.cmd run check:api-mapping`; chụp UI evidence theo checklist. | Tài liệu trace hoàn tất; verification runtime cần chạy lại khi đóng task chính thức. |
+| Code, review, lint/build/test, evidence UI và traceability hoàn tất. | Đã chạy `npm.cmd run lint`, `npm.cmd run build`, `npm.cmd run test`, `npm.cmd run health:check`, `npm.cmd run check:api-mapping`; chụp UI evidence khi có thay đổi UI cụ thể theo checklist. | Đạt cho scope tài liệu/build verification hiện tại; UI evidence runtime chi tiết vẫn chạy theo module khi QA yêu cầu. |
 | Contract mismatch đã được xử lý hoặc có disposition; tài liệu component/build được cập nhật khi cần. | Các mismatch endpoint/payload/RBAC được nêu là conditional/external blocker với owner BA/BE/RBAC/QA. | Đạt về disposition. |
 | BA/QA có thể kiểm tra theo Acceptance Criteria; không còn blocker chưa có owner và ETA. | Checklist BA/QA và blocker table bên dưới. | Đạt trong phạm vi FE documentation. |
 
@@ -356,25 +375,31 @@ Ngoài scope:
 | WWHN-311-B01 | P1 | Permission catalog WMS cần BE2/RBAC hoặc BA/BE mapping duyệt để final RBAC evidence. | BE2/RBAC owner + BA/BAS | FE giữ UX gate hiện tại, không tự thêm/sửa permission heuristic. |
 | WWHN-311-B02 | P1 | Một số endpoint/payload workflow nhạy cảm như scan classify, post receipt, post issue, stocktake apply adjustment, warranty status, reverse cần contract final và sample/error code. | BE1 + BA/BAS | FE ghi conditional readiness; chỉ final khi contract được khóa và QA xác minh. |
 | WWHN-311-B03 | P1 | QA evidence cần build/version/env cụ thể, chưa thể thay thế bằng tài liệu. | QA + FE1 hỗ trợ | Dùng checklist ở mục 13; FE cung cấp commands và component catalog surface. |
-| WWHN-311-B04 | P2 | README nhắc `test:e2e`/`test:coverage` nhưng `package.json` hiện chưa khai báo scripts này. | FE1/Tech Lead | Cần thêm scripts hoặc cập nhật README trong task riêng nếu CI/CD yêu cầu command thống nhất. |
-| WWHN-311-B05 | P2 | Một số file docs cũ có dấu hiệu encoding lỗi tiếng Việt khi đọc bằng shell. | FE1/Tech Lead | Không ảnh hưởng source code; nên chuẩn hóa UTF-8 trong đợt docs cleanup để BA/QA đọc thuận hơn. |
+| WWHN-311-B04 | P2 | README nhắc `test:e2e`/`test:coverage` nhưng `package.json` hiện chưa khai báo scripts này; README cũng đang ghi AntD 5.x/React Router v6 trong khi package thực tế là AntD 6/React Router 7. | FE1/Tech Lead | Cần thêm scripts hoặc cập nhật README trong task riêng nếu CI/CD yêu cầu command thống nhất; trong WWHN-311, source truth dùng `package.json`. |
+| WWHN-311-B05 | P2 | Vitest/Vite cảnh báo `__dirname` trong `vitest.config.ts`/`vite.config.ts` không tương thích với `configLoader: native` mặc định tương lai. | FE1/Tech Lead | Không làm fail lint/test/build hiện tại; nên đổi sang `import.meta.dirname` trong task hardening trước khi nâng major Vite/config loader. |
+| WWHN-311-B06 | P2 | `check:api-mapping` pass method/path nhưng mapping docs mới cover 45 endpoint rows trên 288 unique swagger routes và permission catalog runtime bị skip do thiếu `VITE_TEST_EMAIL`/`VITE_TEST_PASSWORD`. | FE1 + BE/RBAC owner | Không phải conflict endpoint; cần RBAC runtime account và mở rộng mapping nếu scope handover yêu cầu phủ toàn swagger. |
 
-## 15. Nhật ký xác minh đề xuất cho lần đóng Jira
+## 15. Nhật ký xác minh WWHN-311
 
-Chạy lại tại workspace `C:\HoaNamFE\Hoa_Nam_Tools` trước khi chuyển WWHN-311 sang
-Done hoặc Ready for Review:
+Đã chạy tại workspace `C:\HoaNamFE\Hoa_Nam_Tools` ngày 2026-08-01, môi trường Windows/PowerShell:
 
-```text
-npm.cmd run lint
-npm.cmd run build
-npm.cmd run test
-npm.cmd run health:check
-npm.cmd run check:api-mapping
-```
+| Command | Kết quả | Ghi chú handover |
+| --- | --- | --- |
+| `npm.cmd run lint` | Pass | ESLint chạy trên `src/`, không có error. |
+| `npm.cmd run test` | Pass | Vitest: 35 test files, 298 tests passed. Có warning Vite native config loader về `__dirname`, xem WWHN-311-B05. |
+| `npm.cmd run build` | Pass | `tsc -b && vite build` pass; sinh `dist/index.html` và chunks trong `dist/assets/`. Có cùng warning `__dirname` ở `vite.config.ts`. |
+| `npm.cmd run health:check` | Pass | Script xác nhận frontend build exposes `/health.json` và `index.html`. |
+| `npm.cmd run check:api-mapping` | Pass có warning | Không có conflict method/path với `swagger-api.json`; warning: permission runtime fetch bị skip do thiếu credential env và mapping docs cover 45/288 swagger routes. |
 
 Nếu có thay đổi UI hoặc cần evidence trực quan, chạy thêm Playwright/screenshot theo
 scope module bị ảnh hưởng và lưu evidence kèm Jira/source. Kết quả phải ghi rõ ngày
 giờ, branch/commit hoặc build version, environment, command và pass/fail.
+
+Điều kiện khuyến nghị trước khi chuyển Jira sang Done/Ready for Review:
+
+- Nếu không có thay đổi code/UI sau nhật ký trên, có thể dùng kết quả này làm FE build verification cho WWHN-311.
+- Nếu có commit mới, đổi dependency, đổi env, đổi endpoint hoặc đổi RBAC sau 2026-08-01, phải chạy lại toàn bộ 5 command trên.
+- Nếu QA cần evidence trực quan, mở component catalog và module bị ảnh hưởng để chụp loading, empty, error, success, disabled, confirm, responsive và permission denied.
 
 ## 16. Kết luận bàn giao FE1
 

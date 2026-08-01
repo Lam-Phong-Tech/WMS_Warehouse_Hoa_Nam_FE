@@ -3,7 +3,9 @@ import type {
   CloseRemainderRequest,
   InboundDocument,
   InboundLine,
+  InboundScanResult,
   PostReceiptRequest,
+  ReceiptEvidence,
 } from "../types";
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 
@@ -20,7 +22,11 @@ type ListParams = {
 type RawRecord = Record<string, unknown>;
 
 function rowsOf<T>(value: T[] | { data?: T[] }): T[] {
-  return Array.isArray(value) ? value : Array.isArray(value.data) ? value.data : [];
+  return Array.isArray(value)
+    ? value
+    : Array.isArray(value.data)
+      ? value.data
+      : [];
 }
 
 function num(value: unknown): number {
@@ -52,7 +58,10 @@ function normalizeDocument(row: RawRecord): InboundDocument {
     posted,
     remaining: num(row.remaining_qty ?? row.qty_remaining ?? expected - posted),
     status: mapInboundStatus(row.status),
-    createdBy: text(row.created_by_name ?? row.created_by ?? row.creator_name, "-"),
+    createdBy: text(
+      row.created_by_name ?? row.created_by ?? row.creator_name,
+      "-",
+    ),
     version: num(row.version ?? row.lock_version ?? 1),
     sourceReference: text(row.source_reference ?? row.note),
   };
@@ -73,6 +82,52 @@ function normalizeLine(row: RawRecord, documentId: string): InboundLine {
     remaining: num(row.remaining_qty ?? expected - posted),
     validation: "VALID",
     selected: false,
+  };
+}
+
+function normalizeScanResult(row: RawRecord): InboundScanResult {
+  const rawStatus = text(row.status ?? row.result).toUpperCase();
+  const status: InboundScanResult["status"] =
+    rawStatus === "DUPLICATE" ||
+    rawStatus === "UNKNOWN" ||
+    rawStatus === "INVALID"
+      ? rawStatus
+      : "VALID";
+  return {
+    code_value: text(row.code_value ?? row.code ?? row.value),
+    status,
+    sku: text(row.sku ?? row.sku_code, undefined),
+    line_id: text(row.line_id ?? row.lineId, undefined),
+    message: text(row.message, undefined),
+  };
+}
+
+export function normalizeReceiptEvidence(row: RawRecord): ReceiptEvidence {
+  const evidence = (row.evidence ??
+    row.receipt ??
+    row.data ??
+    row) as RawRecord;
+  return {
+    receiptId: text(
+      evidence.receipt_id ?? evidence.receiptId ?? evidence.receipt_no,
+      undefined,
+    ),
+    movementRef: text(
+      evidence.movement_ref ??
+        evidence.movementRef ??
+        evidence.stock_movement_id ??
+        evidence.movement_id,
+      undefined,
+    ),
+    requestId: text(
+      evidence.request_id ?? evidence.requestId ?? row.request_id,
+      undefined,
+    ),
+    traceSource: text(
+      evidence.trace_source ?? evidence.traceSource ?? evidence.trace,
+      undefined,
+    ),
+    replayed: Boolean(evidence.replayed ?? evidence.idempotency_replay),
   };
 }
 
@@ -107,17 +162,18 @@ export async function fetchInboundLines(
   const detail = await http.get<RawRecord>(
     `${API_ENDPOINTS.INBOUND_LINES.replace(":id", documentId)}`,
   );
-  return rowsOf((detail.lines ?? detail.items ?? []) as RawRecord[]).map((line) =>
-    normalizeLine(line, documentId),
+  return rowsOf((detail.lines ?? detail.items ?? []) as RawRecord[]).map(
+    (line) => normalizeLine(line, documentId),
   );
 }
 
 export async function fetchInboundDocument(
   id: string,
 ): Promise<InboundDocument> {
-  return http.get<InboundDocument>(
+  const detail = await http.get<RawRecord>(
     endpoint(API_ENDPOINTS.INBOUND_DOCUMENT, id),
   );
+  return normalizeDocument(detail);
 }
 
 export async function createInboundDocument<TPayload extends RawRecord>(
@@ -130,44 +186,67 @@ export async function updateInboundDocument<TPayload extends RawRecord>(
   id: string,
   payload: TPayload,
 ): Promise<InboundDocument> {
-  return http.patch<InboundDocument>(endpoint(API_ENDPOINTS.INBOUND_DOCUMENT, id), payload);
+  return http.patch<InboundDocument>(
+    endpoint(API_ENDPOINTS.INBOUND_DOCUMENT, id),
+    payload,
+  );
 }
 
-export async function submitInboundDocument(id: string): Promise<InboundDocument> {
+export async function submitInboundDocument(
+  id: string,
+): Promise<InboundDocument> {
   return http.post<InboundDocument>(endpoint(API_ENDPOINTS.INBOUND_SUBMIT, id));
 }
 
-export async function approveInboundDocument(id: string): Promise<InboundDocument> {
-  return http.post<InboundDocument>(endpoint(API_ENDPOINTS.INBOUND_APPROVE, id));
+export async function approveInboundDocument(
+  id: string,
+): Promise<InboundDocument> {
+  return http.post<InboundDocument>(
+    endpoint(API_ENDPOINTS.INBOUND_APPROVE, id),
+  );
 }
 
 export async function rejectInboundDocument(
   id: string,
   reason: string,
 ): Promise<InboundDocument> {
-  return http.post<InboundDocument>(endpoint(API_ENDPOINTS.INBOUND_REJECT, id), {
-    reason,
-  });
+  return http.post<InboundDocument>(
+    endpoint(API_ENDPOINTS.INBOUND_REJECT, id),
+    {
+      reason,
+    },
+  );
 }
 
 export async function cancelInboundDocument(
   id: string,
   reason: string,
 ): Promise<InboundDocument> {
-  return http.post<InboundDocument>(endpoint(API_ENDPOINTS.INBOUND_CANCEL, id), {
-    reason,
-  });
+  return http.post<InboundDocument>(
+    endpoint(API_ENDPOINTS.INBOUND_CANCEL, id),
+    {
+      reason,
+    },
+  );
 }
 
 export async function scanInboundDocument(
   id: string,
   codes: string[],
   extra?: RawRecord,
-): Promise<RawRecord> {
-  return http.post<RawRecord>(endpoint(API_ENDPOINTS.INBOUND_SCAN, id), {
-    ...extra,
-    codes,
-  });
+): Promise<InboundScanResult[]> {
+  const result = await http.post<RawRecord>(
+    endpoint(API_ENDPOINTS.INBOUND_SCAN, id),
+    {
+      ...extra,
+      codes,
+    },
+  );
+  return rowsOf(
+    (result.results ?? result.items ?? result.scans ?? result.data ?? []) as
+      | RawRecord[]
+      | { data?: RawRecord[] },
+  ).map(normalizeScanResult);
 }
 
 export async function postInboundReceipt(

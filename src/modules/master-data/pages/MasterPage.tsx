@@ -111,6 +111,7 @@ interface MasterEntityConfig<T extends MasterRecord> {
   searchPlaceholder: string;
   endpoint: string;
   permissionNote: string;
+  blockerNote?: string;
   columns: ColumnsType<T>;
   query: UseQueryResult<MasterPageResult<T>, Error>;
   table: UseTablePatternReturn;
@@ -344,6 +345,15 @@ function MasterEntityPanel<T extends MasterRecord>({
         </Col>
       </Row>
       {config.query.isError ? errorAlert(config.query.error) : null}
+      {config.blockerNote ? (
+        <Alert
+          showIcon
+          type="warning"
+          className="master-data-state-alert"
+          message="Chưa có contract API chính thức"
+          description={config.blockerNote}
+        />
+      ) : null}
       <div className="table-page-size">
         <Select
           size="small"
@@ -419,7 +429,8 @@ export default function MasterPage() {
   const itemTable = useTablePattern({ initialPageSize: 15 });
   const codeTable = useTablePattern({ initialPageSize: 15 });
 
-  const shouldLoadCategories = activeTab === "categories" || isCategoryModalOpen;
+  const shouldLoadCategories =
+    activeTab === "categories" || isCategoryModalOpen || isSkuModalOpen;
   const categoriesQuery = useProductCategories(buildParams(categoryTable), shouldLoadCategories);
   const skus = useSkus(buildParams(skuTable));
   const items = useItems(buildParams(itemTable));
@@ -707,6 +718,8 @@ export default function MasterPage() {
       label: "Item",
       endpoint: "OUT OF SCOPE: /items not in OpenAPI",
       permissionNote: "read-only until BE contract",
+      blockerNote:
+        "OpenAPI 3.0.0 hiện chưa publish /items. FE giữ pattern UI để BA/QA soát layout nhưng không gọi request ngoài contract; cần BE/BA chốt endpoint, payload, phân quyền và field spec trước khi bật runtime.",
       searchPlaceholder: "Mã item, SKU, serial...",
       columns: itemColumns as ColumnsType<MasterRecord>,
       query: items,
@@ -730,6 +743,8 @@ export default function MasterPage() {
       label: "Mã vật lý",
       endpoint: "OUT OF SCOPE: /physical-codes not in OpenAPI",
       permissionNote: "read-only until BE contract",
+      blockerNote:
+        "OpenAPI 3.0.0 hiện chưa publish /physical-codes. FE không tự suy diễn luồng QR/barcode/RFID trong Master Data; cần BE/BA baseline endpoint, filter, duplicate rule và detail schema trước khi gỡ khóa.",
       searchPlaceholder: "QR/Barcode/RFID-ready code...",
       columns: codeColumns as ColumnsType<MasterRecord>,
       query: codes,

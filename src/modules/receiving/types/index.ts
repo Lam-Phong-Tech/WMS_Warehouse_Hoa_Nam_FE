@@ -32,6 +32,14 @@ export interface InboundLine {
   selected: boolean;
 }
 
+export interface ReceiptEvidence {
+  receiptId?: string;
+  movementRef?: string;
+  requestId?: string;
+  traceSource?: string;
+  replayed?: boolean;
+}
+
 export interface PostReceiptRequest {
   documentId: string;
   lines: { lineId: string; quantity: number }[];

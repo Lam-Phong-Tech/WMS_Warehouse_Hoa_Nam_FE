@@ -197,7 +197,7 @@ export function DataTable<T extends object>({
     );
 
   return (
-    <>
+    <div className="hn-data-table">
       {isBottomPlacement && pageSizeSelectorElement && (
         <div style={{ marginBottom: 12 }}>{pageSizeSelectorElement}</div>
       )}
@@ -214,6 +214,6 @@ export function DataTable<T extends object>({
         {...rest}
       />
       {topPaginationPlacement === "bottom" && topPaginationElement}
-    </>
+    </div>
   );
 }

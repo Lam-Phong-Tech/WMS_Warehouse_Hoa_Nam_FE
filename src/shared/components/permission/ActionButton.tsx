@@ -1,4 +1,4 @@
-import { Button, type ButtonProps } from "antd";
+import { Button, Tooltip, type ButtonProps } from "antd";
 import {
   usePermissionState,
   hasPermission,
@@ -64,6 +64,8 @@ export function ActionButton({
   disabledTooltip = "Bạn không có quyền thực hiện thao tác này",
   icon,
   children,
+  disabled,
+  title,
   ...buttonProps
 }: ActionButtonProps) {
   const state = usePermissionState();
@@ -84,14 +86,20 @@ export function ActionButton({
 
   const isButtonDisabled = effectiveMode === "disable" && !can;
 
-  return (
+  const button = (
     <Button
       {...buttonProps}
-      disabled={isButtonDisabled}
-      title={isButtonDisabled ? disabledTooltip : undefined}
+      disabled={Boolean(disabled) || isButtonDisabled}
+      title={isButtonDisabled ? disabledTooltip : title}
       icon={icon}
     >
       {children}
     </Button>
+  );
+
+  return isButtonDisabled ? (
+    <Tooltip title={disabledTooltip}>{button}</Tooltip>
+  ) : (
+    button
   );
 }

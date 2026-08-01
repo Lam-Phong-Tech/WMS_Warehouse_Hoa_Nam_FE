@@ -251,3 +251,52 @@ thuộc dependency/contract/evidence cần BA/BE/QA phối hợp trước final 
 Khuyến nghị trạng thái: giữ `WWHN-148` ở **In Progress/Ready for BA-BE-QA evidence attachment** cho đến khi `HN-UX-002-ST01`
 và contract/evidence runtime được gắn đủ. Sau khi BA/BE/QA attach evidence mục 12 và API mapping chạy pass,
 FE1 có thể cập nhật artifact này thành final pass.
+
+## 16. Cap nhat ra soat sau FE1 - API evidence bo sung ngay 2026-08-01 ICT
+
+Sau khi ra soat lai task `WWHN-148`, FE1 da bo sung bo evidence mapping API de phan kiem chung khong con dung o nhan dinh be mat.
+
+| Artifact bo sung | Noi dung | Ket qua |
+| --- | --- | --- |
+| `docs/api-evidence/M1_API_MAPPING.md` | Mapping man hinh/action FE voi endpoint contract-ready cho Dashboard, Inventory, Master Data/Product, Inbound, Outbound, Reports. | 38 endpoint rows duoc script doc va doi chieu voi `swagger-api.json`. |
+| `docs/api-evidence/M2_DEPENDENCY_LIST.md` | Mapping phu tro cho safe stock, audit logs va danh sach dependency/mismatch cho scan, putaway, safe stock config. | 3 endpoint rows contract-ready pass; cac endpoint chua co trong swagger duoc ghi ro owner/disposition. |
+| `docs/api-evidence/M3_DEPENDENCY_LIST.md` | Mapping late-core/high-risk cho stock movement, reports va dependency cua stocktake, warranty, reversal. | 4 endpoint rows contract-ready pass; cac workflow rui ro duoc giu conditional, khong tu sign-off thay BE/BA. |
+
+### 16.1 Ket qua chay lai API mapping
+
+Command da chay:
+
+```bash
+npm.cmd run check:api-mapping -- --no-live
+```
+
+| Hang muc | Ket qua cap nhat |
+| --- | --- |
+| Hard error method/path | **0 errors** |
+| Endpoint rows script doc duoc | **45 rows** (`M1=38`, `M2=3`, `M3=4`) |
+| Doi chieu swagger local | **Pass** cho toan bo rows contract-ready; script in duoc `operationId` va Swagger tag tuong ung. |
+| Runtime permission catalog | **Warning co chu dich** vi chay `--no-live` va `.env` khong co `VITE_TEST_EMAIL`/`VITE_TEST_PASSWORD`; script fallback sang FE catalog. |
+| Coverage warning | **Warning co chu dich** vi mapping evidence chi cover scope WWHN-148/core WMS, khong cover toan bo 288 unique swagger routes. |
+
+Disposition cap nhat cho blocker `WWHN-148-B04`: **da xu ly phan thieu file evidence**. Khong con fail cung do thieu `docs/api-evidence/M1_API_MAPPING.md`. Trang thai moi la **Pass voi warnings can review**, trong do warnings thuoc pham vi runtime credential/catalog va coverage ngoai scope WWHN-148.
+
+### 16.2 Phan loai contract-ready va conditional sau ra soat sau
+
+| Nhom | Contract-ready trong swagger local | Conditional / can BE-BA khoa |
+| --- | --- | --- |
+| Dashboard | `/reports/dashboard-quick`, `/document-status-history`, `/inventory-snapshots`, `/safe-stock-alerts` | Dashboard hub/sample payload cuoi van can BE/QA evidence runtime. |
+| Master Data/Product | `/products`, `/products/{id}`, `/products/{id}/enable`, `/products/{id}/disable`, `/products/{id}/status`, `/product-categories`, `/uoms`, `/suppliers` | Legacy `/skus`, `/items`, `/physical-codes`, SKU import khong duoc coi la production-ready. |
+| Inbound | List/create/detail/update/submit/approve/post-receipt/reject/cancel co trong swagger. | Scan, close remainder, reverse chua co trong swagger local; can BE sample/error/idempotency. |
+| Outbound | List/create/detail/update/submit/approve/post-issue/reject/cancel co trong swagger. | Scan, close remainder, reverse chua co trong swagger local; can BE sample insufficient-stock/409/422. |
+| Inventory/Trace | Balances, stock movements, movement detail, trace source co trong swagger. | Safe stock config chua co trong swagger local. |
+| Reports | Inventory XNT va export Excel co trong swagger. | Reports hub va warranty defects chua co trong swagger local. |
+| Audit logs | `/audit-logs` co trong swagger va co targeted service test. | Can screenshot/evidence neu dung trong UAT package. |
+| Scan/Putaway/Stocktake/Warranty/Reversal | Chua du contract-ready trong swagger local theo evidence moi. | Giu conditional; da ghi owner/disposition trong `M2_DEPENDENCY_LIST.md` va `M3_DEPENDENCY_LIST.md`. |
+
+### 16.3 Ket luan cap nhat cho WWHN-148
+
+`WWHN-148` hien co the ban giao o muc **FE readiness/reuse review sau co evidence file**, khong con thieu artifact API mapping. Tuy nhien FE1 van khong duoc nang toan bo luong core thanh final production pass cho den khi:
+
+- BE/BA khoa cac endpoint conditional da liet ke trong `docs/api-evidence/M2_DEPENDENCY_LIST.md` va `docs/api-evidence/M3_DEPENDENCY_LIST.md`.
+- QA/FE capture runtime evidence cho viewport, role, 403, 409, 422, confirm va success mutation.
+- Runtime permission catalog duoc kiem chung bang account test that thay vi fallback FE catalog.

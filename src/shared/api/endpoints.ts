@@ -115,12 +115,15 @@ export const API_ENDPOINTS = {
   INVENTORY_SNAPSHOTS: "/inventory-snapshots",
   // Stocktake
   STOCKTAKE_SESSIONS: "/stocktake/sessions",
+  STOCKTAKE_SESSION: "/stocktake/sessions/:sessionId",
+  STOCKTAKE_CREATE_SESSION: "/stocktake/sessions",
   STOCKTAKE_COUNT: "/stocktake/sessions/:sessionId/count",
   STOCKTAKE_APPLY_ADJUSTMENT: "/stocktake/sessions/:sessionId/apply-adjustment",
   // Reverse
   REVERSAL_DOCUMENTS: "/reversal-documents",
   REVERSAL_DOCUMENT: "/reversal-documents/:id",
   REVERSAL_CREATE: "/reversal-documents",
+  REVERSAL_MOVEMENT_LOOKUP: "/stock-movements/reversible",
   // Warranty
   WARRANTY_CASES: "/warranty/cases",
   WARRANTY_CASE: "/warranty/cases/:id",

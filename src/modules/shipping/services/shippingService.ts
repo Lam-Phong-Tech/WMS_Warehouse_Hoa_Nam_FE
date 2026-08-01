@@ -1,5 +1,11 @@
 import { http } from "@/shared/api/http";
-import type { OutboundDocument, OutboundLine, PostIssueRequest } from "../types";
+import type {
+  CloseRemainderRequest,
+  OutboundDocument,
+  OutboundLine,
+  OutboundScanResult,
+  PostIssueRequest,
+} from "../types";
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 
 type ListParams = {
@@ -13,7 +19,11 @@ type ListParams = {
 type RawRecord = Record<string, unknown>;
 
 function rowsOf<T>(value: T[] | { data?: T[] }): T[] {
-  return Array.isArray(value) ? value : Array.isArray(value.data) ? value.data : [];
+  return Array.isArray(value)
+    ? value
+    : Array.isArray(value.data)
+      ? value.data
+      : [];
 }
 
 function num(value: unknown): number {
@@ -39,7 +49,10 @@ function normalizeDocument(row: RawRecord): OutboundDocument {
   return {
     id: text(row.id),
     code: text(row.doc_no ?? row.code ?? row.document_no),
-    receiverType: text(row.receiver_type ?? row.customer_type, "OTHER") === "AGENCY" ? "AGENCY" : "OTHER",
+    receiverType:
+      text(row.receiver_type ?? row.customer_type, "OTHER") === "AGENCY"
+        ? "AGENCY"
+        : "OTHER",
     receiverId: text(row.receiver_id ?? row.customer_id),
     receiverName: text(row.receiver_name ?? row.customer_name ?? row.note, "-"),
     date: text(row.doc_date ?? row.date ?? row.created_at),
@@ -47,7 +60,10 @@ function normalizeDocument(row: RawRecord): OutboundDocument {
     issued,
     remaining: num(row.remaining_qty ?? row.qty_remaining ?? planned - issued),
     status: mapOutboundStatus(row.status),
-    createdBy: text(row.created_by_name ?? row.created_by ?? row.creator_name, "-"),
+    createdBy: text(
+      row.created_by_name ?? row.created_by ?? row.creator_name,
+      "-",
+    ),
     version: num(row.version ?? row.lock_version ?? 1),
   };
 }
@@ -66,6 +82,7 @@ function normalizeLine(row: RawRecord, documentId: string): OutboundLine {
     issued,
     subsetNew: num(row.subset_new ?? planned - issued),
     validation: "VALID",
+    validationMessage: undefined,
     selected: false,
   };
 }
@@ -86,10 +103,9 @@ function idempotencyConfig(key?: string, ifMatch?: number) {
 export async function fetchOutboundDocuments(
   params: ListParams = {},
 ): Promise<OutboundDocument[]> {
-  const result = await http.getPage<OutboundDocument[] | { data?: RawRecord[] }>(
-    API_ENDPOINTS.OUTBOUND_DOCUMENTS,
-    { params },
-  );
+  const result = await http.getPage<
+    OutboundDocument[] | { data?: RawRecord[] }
+  >(API_ENDPOINTS.OUTBOUND_DOCUMENTS, { params });
   return rowsOf(result.data as RawRecord[] | { data?: RawRecord[] }).map(
     normalizeDocument,
   );
@@ -101,21 +117,28 @@ export async function fetchOutboundLines(
   const detail = await http.get<RawRecord>(
     endpoint(API_ENDPOINTS.OUTBOUND_LINES, documentId),
   );
-  return rowsOf((detail.lines ?? detail.items ?? []) as RawRecord[]).map((line) =>
-    normalizeLine(line, documentId),
+  return rowsOf((detail.lines ?? detail.items ?? []) as RawRecord[]).map(
+    (line) => normalizeLine(line, documentId),
   );
 }
 
 export async function fetchOutboundDocument(
   id: string,
 ): Promise<OutboundDocument> {
-  return http.get<OutboundDocument>(endpoint(API_ENDPOINTS.OUTBOUND_DOCUMENT, id));
+  const detail = await http.get<RawRecord>(
+    endpoint(API_ENDPOINTS.OUTBOUND_DOCUMENT, id),
+  );
+  return normalizeDocument(detail);
 }
 
 export async function createOutboundDocument<TPayload extends RawRecord>(
   payload: TPayload,
 ): Promise<OutboundDocument> {
-  return http.post<OutboundDocument>(API_ENDPOINTS.OUTBOUND_DOCUMENTS, payload);
+  const result = await http.post<RawRecord>(
+    API_ENDPOINTS.OUTBOUND_DOCUMENTS,
+    payload,
+  );
+  return normalizeDocument(result);
 }
 
 export async function updateOutboundDocument<TPayload extends RawRecord>(
@@ -128,41 +151,61 @@ export async function updateOutboundDocument<TPayload extends RawRecord>(
   );
 }
 
-export async function submitOutboundDocument(id: string): Promise<OutboundDocument> {
-  return http.post<OutboundDocument>(endpoint(API_ENDPOINTS.OUTBOUND_SUBMIT, id));
+export async function submitOutboundDocument(
+  id: string,
+): Promise<OutboundDocument> {
+  return http.post<OutboundDocument>(
+    endpoint(API_ENDPOINTS.OUTBOUND_SUBMIT, id),
+  );
 }
 
-export async function approveOutboundDocument(id: string): Promise<OutboundDocument> {
-  return http.post<OutboundDocument>(endpoint(API_ENDPOINTS.OUTBOUND_APPROVE, id));
+export async function approveOutboundDocument(
+  id: string,
+): Promise<OutboundDocument> {
+  return http.post<OutboundDocument>(
+    endpoint(API_ENDPOINTS.OUTBOUND_APPROVE, id),
+  );
 }
 
 export async function rejectOutboundDocument(
   id: string,
   reason: string,
 ): Promise<OutboundDocument> {
-  return http.post<OutboundDocument>(endpoint(API_ENDPOINTS.OUTBOUND_REJECT, id), {
-    reason,
-  });
+  return http.post<OutboundDocument>(
+    endpoint(API_ENDPOINTS.OUTBOUND_REJECT, id),
+    {
+      reason,
+    },
+  );
 }
 
 export async function cancelOutboundDocument(
   id: string,
   reason: string,
 ): Promise<OutboundDocument> {
-  return http.post<OutboundDocument>(endpoint(API_ENDPOINTS.OUTBOUND_CANCEL, id), {
-    reason,
-  });
+  return http.post<OutboundDocument>(
+    endpoint(API_ENDPOINTS.OUTBOUND_CANCEL, id),
+    {
+      reason,
+    },
+  );
 }
 
 export async function scanOutboundDocument(
   id: string,
   codes: string[],
   extra?: RawRecord,
-): Promise<RawRecord> {
-  return http.post<RawRecord>(endpoint(API_ENDPOINTS.OUTBOUND_SCAN, id), {
+): Promise<OutboundScanResult[]> {
+  const result = await http.post<
+    | OutboundScanResult[]
+    | { data?: OutboundScanResult[]; results?: OutboundScanResult[] }
+  >(endpoint(API_ENDPOINTS.OUTBOUND_SCAN, id), {
     ...extra,
     codes,
   });
+  if (Array.isArray(result)) return result;
+  if (Array.isArray(result.results)) return result.results;
+  return Array.isArray(result.data) ? result.data : [];
 }
 
 export async function postOutboundIssue(
@@ -176,13 +219,14 @@ export async function postOutboundIssue(
 }
 
 export async function closeOutboundRemainder(
-  documentId: string,
-  reason: string,
+  request: CloseRemainderRequest,
 ): Promise<OutboundDocument> {
-  return http.post<OutboundDocument>(
-    endpoint(API_ENDPOINTS.OUTBOUND_CLOSE_REMAINDER, documentId),
-    { reason },
+  const result = await http.post<RawRecord>(
+    endpoint(API_ENDPOINTS.OUTBOUND_CLOSE_REMAINDER, request.documentId),
+    { reason: request.reason },
+    idempotencyConfig(request.idempotencyKey, request.ifMatch),
   );
+  return normalizeDocument(result);
 }
 
 export async function reverseOutboundDocument(

@@ -10,7 +10,11 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { getApiErrorMessage, createMockAxiosError } from "./api-error";
+import {
+  getApiErrorMessage,
+  createMockAxiosError,
+  isNoPermissionError,
+} from "./api-error";
 
 describe("api-error", () => {
   it("should extract BE message", () => {
@@ -58,5 +62,23 @@ describe("api-error", () => {
       data: {},
     });
     expect(getApiErrorMessage(error)).toBe("Lỗi hệ thống");
+  });
+  it("should treat plain HTTP 403 as no-permission even without interceptor flag", () => {
+    const error = createMockAxiosError({
+      status: 403,
+      data: { message: "Forbidden" },
+    });
+    expect(isNoPermissionError(error)).toBe(true);
+  });
+
+  it("should not treat PASSWORD_CHANGE_REQUIRED 403 as generic no-permission", () => {
+    const error = createMockAxiosError({
+      status: 403,
+      data: {
+        message: "Password change required",
+        error_code: "PASSWORD_CHANGE_REQUIRED",
+      },
+    });
+    expect(isNoPermissionError(error)).toBe(false);
   });
 });

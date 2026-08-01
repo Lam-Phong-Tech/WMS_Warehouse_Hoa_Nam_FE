@@ -93,7 +93,7 @@ export function FormDrawer({
   loading = false,
   okText = "Lưu",
   cancelText = "Hủy",
-  width = 520,
+  width = "min(520px, calc(100vw - 32px))",
   placement = "right",
   showCancel = true,
   showOk = true,
@@ -141,17 +141,19 @@ export function FormDrawer({
       footer={
         footer ??
         (showActions ? (
-          <FormActions
-            onOk={onOk}
-            onCancel={onCancel}
-            loading={loading}
-            okText={okText}
-            cancelText={cancelText}
-            showOk={showOk}
-            showCancel={showCancel}
-            okButtonProps={okButtonProps}
-            cancelButtonProps={cancelButtonProps}
-          />
+          <div className="hn-drawer-footer-actions">
+            <FormActions
+              onOk={onOk}
+              onCancel={onCancel}
+              loading={loading}
+              okText={okText}
+              cancelText={cancelText}
+              showOk={showOk}
+              showCancel={showCancel}
+              okButtonProps={okButtonProps}
+              cancelButtonProps={cancelButtonProps}
+            />
+          </div>
         ) : null)
       }
     >

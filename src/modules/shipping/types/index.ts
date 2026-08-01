@@ -30,12 +30,20 @@ export interface OutboundLine {
   issued: number;
   subsetNew: number;
   validation: "VALID" | "INVALID" | "UNKNOWN";
+  validationMessage?: string;
   selected: boolean;
 }
 
 export interface PostIssueRequest {
   documentId: string;
   lines: { lineId: string; quantity: number }[];
+  idempotencyKey: string;
+  ifMatch: number;
+}
+
+export interface CloseRemainderRequest {
+  documentId: string;
+  reason: string;
   idempotencyKey: string;
   ifMatch: number;
 }

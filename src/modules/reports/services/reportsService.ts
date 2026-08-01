@@ -9,6 +9,9 @@ export type XntReportParams = {
   to: string;
   warehouse_id?: number;
   scope?: "warehouse" | "system";
+  sku?: string;
+  category?: string;
+  movement_type?: string;
 };
 
 function rowsOf<T>(value: T[] | { data?: T[]; rows?: T[]; items?: T[] }): T[] {
@@ -32,6 +35,8 @@ function normalizeXnt(row: RawRecord): XntReportRow {
   const issue = num(row.issue ?? row.issue_qty ?? row.out_qty);
   return {
     sku: text(row.sku ?? row.sku_code ?? row.product_sku ?? row.product_code),
+    category: text(row.category ?? row.category_name ?? row.product_category),
+    movementType: text(row.movement_type ?? row.movementType),
     opening: num(row.opening ?? row.opening_qty),
     receipt,
     issue,
@@ -40,7 +45,10 @@ function normalizeXnt(row: RawRecord): XntReportRow {
     reversalNet: num(row.reversal_net ?? row.reversalNet),
     closing: num(row.closing ?? row.closing_qty),
     partialRemaining: num(row.partial_remaining ?? row.remaining_qty),
-    reconcile: text(row.reconcile ?? row.reconciliation_status, "PASS") as XntReportRow["reconcile"],
+    reconcile: text(
+      row.reconcile ?? row.reconciliation_status,
+      "PASS",
+    ) as XntReportRow["reconcile"],
   };
 }
 
@@ -59,6 +67,13 @@ export async function fetchReportsHub(): Promise<ReportItem[]> {
     code: text(row.code),
     title: text(row.title ?? row.name),
     description: text(row.description),
+    status: text(row.status ?? row.availability, ""),
+    available:
+      typeof row.available === "boolean"
+        ? row.available
+        : row.enabled === undefined
+          ? undefined
+          : Boolean(row.enabled),
   }));
 }
 
@@ -69,10 +84,10 @@ export async function fetchReportsHub(): Promise<ReportItem[]> {
 export async function fetchXntReport(
   params: XntReportParams,
 ): Promise<XntReportRow[]> {
-  const result = await http.get<RawRecord[] | { data?: RawRecord[]; rows?: RawRecord[]; items?: RawRecord[] }>(
-    API_ENDPOINTS.REPORTS_XNT,
-    { params },
-  );
+  const result = await http.get<
+    | RawRecord[]
+    | { data?: RawRecord[]; rows?: RawRecord[]; items?: RawRecord[] }
+  >(API_ENDPOINTS.REPORTS_XNT, { params });
   return rowsOf(result).map(normalizeXnt);
 }
 

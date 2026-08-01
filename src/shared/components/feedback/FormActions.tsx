@@ -55,7 +55,10 @@ export function FormActions({
 }: FormActionsProps) {
   if (!showOk && !showCancel) return null;
   return (
-    <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+    <div
+      className="hn-form-actions"
+      style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}
+    >
       {showCancel && (
         <Button onClick={onCancel} style={cancelStyle} {...cancelButtonProps}>
           {cancelText}

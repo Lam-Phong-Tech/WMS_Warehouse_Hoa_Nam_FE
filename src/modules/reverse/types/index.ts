@@ -54,6 +54,44 @@ export interface ReversalLine {
   error_message?: string;
 }
 
+export interface ReversibleMovementLine {
+  id: string;
+  sku: string;
+  sku_name: string;
+  original_qty: number;
+  reversed_qty: number;
+  reversible_qty: number;
+  remaining_qty: number;
+  uom?: string;
+  dependency_guard?: string;
+  can_reverse: boolean;
+}
+
+export interface ReversibleMovement {
+  id: string;
+  movement_code: string;
+  movement_type: string;
+  source_document_type: string;
+  source_document_id: string;
+  source_document_code: string;
+  warehouse_id: number;
+  warehouse_name: string;
+  posted_at: string;
+  posted_by?: string;
+  version?: string;
+  dependency_guard?: string;
+  can_reverse: boolean;
+  lines: ReversibleMovementLine[];
+}
+
+export interface ReversalLookupParams {
+  search?: string;
+  warehouse_id?: number;
+  movement_type?: string;
+  reversible_only?: boolean;
+  per_page?: number;
+}
+
 /** Request to create a reversal */
 export interface CreateReversalRequest {
   reversal_type: ReversalType;
@@ -66,6 +104,7 @@ export interface CreateReversalRequest {
     reason?: string;
   }>;
   idempotency_key: string;
+  reference_version?: string;
 }
 
 /** Reversal response */

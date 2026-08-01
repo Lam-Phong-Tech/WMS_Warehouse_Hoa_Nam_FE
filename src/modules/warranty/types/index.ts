@@ -6,16 +6,20 @@
 
 /** Warranty case status */
 export type WarrantyCaseStatus =
+  | "RECEIVED"
+  | "CHECKING"
+  | "COMPLETED"
+  | "RETURNED"
   | "OPEN"
   | "PROCESSING"
   | "WAITING_PARTS"
   | "REPAIRING"
-  | "TEMP_ONLY"
   | "READY"
-  | "RETURNED"
   | "RETURNED_TO_CUSTOMER"
   | "CLOSED"
   | "CANCELLED";
+
+export type WarrantyIdentificationType = "IDENTIFIED" | "TEMP_ONLY";
 
 /** Warranty case priority */
 export type WarrantyPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
@@ -26,18 +30,28 @@ export interface WarrantyCase {
   case_code: string;
   sku: string;
   sku_name: string;
+  item_code?: string;
+  physical_code?: string;
+  temporary_item_code?: string;
+  identification_type: WarrantyIdentificationType;
   serial_number?: string;
   customer_name: string;
   customer_phone?: string;
+  masked_customer_name?: string;
+  masked_customer_phone?: string;
   agency_name?: string;
   defect: string;
   defect_code: string;
   status: WarrantyCaseStatus;
   priority: WarrantyPriority;
-  temp_only_reason?: string;
+  missing_code_reason?: string;
+  manual_product_description?: string;
+  item_status?: string;
+  warehouse_name?: string;
   received_at: string;
   expected_return_at?: string;
   returned_at?: string;
+  case_age_days?: number;
   created_at: string;
   created_by: string;
   notes?: string;
@@ -67,13 +81,18 @@ export type WarrantyEventType =
 
 /** Request to create a warranty case */
 export interface CreateWarrantyCaseRequest {
-  sku: string;
-  serial_number?: string;
+  identification_type: WarrantyIdentificationType;
+  item_code?: string;
+  sku?: string;
   customer_name: string;
-  customer_phone?: string;
+  customer_phone: string;
   agency_name?: string;
   defect_code: string;
   defect_description: string;
+  missing_code_reason?: string;
+  manual_product_description?: string;
+  consent_contact?: boolean;
+  consent_photo?: boolean;
   notes?: string;
   priority?: WarrantyPriority;
 }

@@ -188,6 +188,10 @@ export const MODULE_SCOPE_REQUIREMENTS: Record<string, ModuleScopeConfig> = {
     approve: "he_thong",
     export: "he_thong",
   },
+  reports: {
+    view: "none",
+    export: "none",
+  },
 };
 
 /**

@@ -38,6 +38,7 @@ session.xml
 *.sw?
 
 # Local tooling artifacts / dumps (not part of source)
+coverage/
 .mcp.json
 .playwright-mcp/
 swagger-api.json

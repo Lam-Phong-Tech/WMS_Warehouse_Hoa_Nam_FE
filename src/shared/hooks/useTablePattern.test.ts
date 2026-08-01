@@ -705,7 +705,14 @@ describe("useTablePattern", () => {
         await vi.advanceTimersByTimeAsync(100);
       });
 
-      expect(onFetch).toHaveBeenCalledTimes(4);
+      expect(onFetch).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          search: "test",
+          filters: { status: "active" },
+          page: 1,
+          pageSize: 10,
+        }),
+      );
       expect(result.current.getApiParams().search).toBe("test");
 
       vi.useRealTimers();

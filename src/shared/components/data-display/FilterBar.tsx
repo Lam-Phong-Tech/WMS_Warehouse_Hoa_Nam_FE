@@ -27,25 +27,22 @@ export function FilterBar({
   className,
   style,
 }: FilterBarProps) {
+  const rootClassName = ["hn-filter-bar", className].filter(Boolean).join(" ");
+
   return (
     <div
       role="search"
-      className={className}
+      className={rootClassName}
       style={{
-        display: "flex",
-        flexWrap: "wrap",
-        gap: 12,
-        justifyContent: "space-between",
-        alignItems: "center",
         marginBottom: 16,
         ...style,
       }}
     >
-      <Space wrap size={8}>
+      <Space className="hn-filter-bar__controls" wrap size={8}>
         {children}
       </Space>
       {actions && (
-        <Space wrap size={8}>
+        <Space className="hn-filter-bar__actions" wrap size={8}>
           {actions}
         </Space>
       )}

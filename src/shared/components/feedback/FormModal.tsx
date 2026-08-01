@@ -61,11 +61,17 @@ export function FormModal({
       title={title}
       onCancel={onDismiss ?? onCancel}
       confirmLoading={loading}
-      width={width}
+      width={width ?? 640}
       afterClose={afterClose}
       destroyOnHidden
+      centered
+      maskClosable={!loading}
+      keyboard={!loading}
+      styles={{
+        body: { maxHeight: "min(68vh, 640px)", overflowY: "auto" },
+      }}
       footer={
-        <>
+        <div className="hn-modal-footer-actions">
           <Button onClick={onCancel}>{cancelText}</Button>
           <Button
             type="primary"
@@ -75,7 +81,7 @@ export function FormModal({
           >
             {okText}
           </Button>
-        </>
+        </div>
       }
     >
       <Form layout="vertical">{children}</Form>

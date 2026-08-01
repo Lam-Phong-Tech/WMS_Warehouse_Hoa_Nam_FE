@@ -173,6 +173,10 @@ export const PERMISSION_RULES: Record<
     approve: "AUDIT_EXPORT",
     export: "AUDIT_EXPORT",
   },
+  reports: {
+    view: "REPORT_VIEW",
+    export: "REPORT_EXPORT",
+  },
 };
 
 /**

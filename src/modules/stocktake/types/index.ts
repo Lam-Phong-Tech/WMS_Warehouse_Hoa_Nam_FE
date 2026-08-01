@@ -8,7 +8,9 @@ export type StocktakeSessionStatus =
   | "DRAFT"
   | "IN_PROGRESS"
   | "COUNTING"
+  | "REVIEWING"
   | "COMPLETED"
+  | "APPLIED"
   | "ADJUSTED"
   | "CANCELLED";
 
@@ -22,12 +24,31 @@ export interface StocktakeSession {
   total_sku: number;
   counted_sku: number;
   variance_sku: number;
+  shortage_sku?: number;
+  surplus_sku?: number;
+  movement_warning_count?: number;
+  scope_type?: "FULL_WAREHOUSE" | "SKU" | "SKU_GROUP" | "LOCATION" | string;
+  scope_label?: string;
+  owner_name?: string;
+  version?: string;
+  etag?: string;
   snapshot_at: string;
   completed_at?: string;
   adjusted_at?: string;
   created_at: string;
   created_by: string;
   notes?: string;
+}
+
+export interface CreateStocktakeSessionRequest {
+  name: string;
+  warehouse_id: number;
+  scope_type: "FULL_WAREHOUSE" | "SKU" | "SKU_GROUP" | "LOCATION";
+  sku_codes?: string[];
+  group_code?: string;
+  location_code?: string;
+  notes?: string;
+  idempotency_key?: string;
 }
 
 /** Stocktake snapshot - frozen balance at session start */
@@ -48,6 +69,9 @@ export interface StocktakeCount {
   sku: string;
   sku_name: string;
   expected_qty: number;
+  snapshot_qty?: number;
+  net_movement_after_snapshot?: number;
+  expected_at_count?: number;
   actual_qty: number;
   variance: number;
   status: "PENDING" | "COUNTED" | "RE_COUNT" | "VERIFIED";
@@ -61,6 +85,11 @@ export interface StocktakeVariance {
   sku: string;
   sku_name: string;
   expected_qty: number;
+  snapshot_qty?: number;
+  net_movement_after_snapshot?: number;
+  expected_at_count?: number;
+  movement_warning_count?: number;
+  cutoff_at?: string;
   actual_qty: number;
   variance: number;
   variance_type: "SURPLUS" | "SHORTAGE" | "MATCH";
@@ -76,6 +105,7 @@ export interface ApplyAdjustmentRequest {
     reason?: string;
   }>;
   idempotency_key?: string;
+  version?: string;
 }
 
 /** Apply adjustment response */

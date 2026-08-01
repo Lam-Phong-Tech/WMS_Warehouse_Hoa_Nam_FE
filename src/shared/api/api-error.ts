@@ -177,10 +177,32 @@ export interface NormalizedError {
  * Được đánh dấu bởi interceptor trong axios.ts.
  */
 export function isNoPermissionError(error: unknown): boolean {
-  return (
-    isAxiosError(error) &&
-    (error as Record<string, unknown>)._isNoPermission === true
-  );
+  if (isAxiosError(error)) {
+    const err = error as Record<string, unknown>;
+    const response = err.response as Record<string, unknown> | undefined;
+    const data = response?.data as ApiErrorResponse | undefined;
+    const status = Number(response?.status);
+    const code = getErrorCode(data);
+
+    return (
+      err._isNoPermission === true ||
+      (status === 403 && code !== "PASSWORD_CHANGE_REQUIRED")
+    );
+  }
+
+  if (error instanceof ApiEnvelopeError) {
+    const code = getErrorCode(error.data);
+    return (
+      error.data.status === "error" &&
+      code !== "PASSWORD_CHANGE_REQUIRED" &&
+      (code === "FORBIDDEN" ||
+        code === "PERMISSION_DENIED" ||
+        code === "NO_PERMISSION" ||
+        code === "ACCESS_DENIED")
+    );
+  }
+
+  return false;
 }
 
 /**

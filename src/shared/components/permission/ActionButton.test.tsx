@@ -94,4 +94,14 @@ describe("ActionButton", () => {
     const button = screen.getByText("Thêm mới").closest("button");
     expect(button).not.toBeDisabled();
   });
+  it("keeps caller disabled state even when permission passes", () => {
+    useAuthStore.setState({ permissionCodes: ["REPORT_EXPORT"] });
+    render(
+      <ActionButton module="reports" action="export" mode="disable" disabled>
+        Export
+      </ActionButton>,
+    );
+    const button = screen.getByText("Export").closest("button");
+    expect(button).toBeDisabled();
+  });
 });

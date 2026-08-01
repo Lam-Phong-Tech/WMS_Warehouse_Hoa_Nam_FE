@@ -5,19 +5,25 @@ import type {
   StocktakeSnapshot,
   StocktakeCount,
   StocktakeVariance,
+  CreateStocktakeSessionRequest,
   ApplyAdjustmentRequest,
   ApplyAdjustmentResponse,
 } from "../types";
 
 type RawRecord = Record<string, unknown>;
 
-function rowsOf<T>(value: T[] | { data?: T[] }): T[] {
-  return Array.isArray(value) ? value : Array.isArray(value.data) ? value.data : [];
+function rowsOf<T>(value: T[] | { data?: T[]; rows?: T[] }): T[] {
+  if (Array.isArray(value)) return value;
+  if (Array.isArray(value.data)) return value.data;
+  if (Array.isArray(value.rows)) return value.rows;
+  return [];
 }
 
 function clean(params: Record<string, unknown>) {
   return Object.fromEntries(
-    Object.entries(params).filter(([, value]) => value !== "" && value !== undefined),
+    Object.entries(params).filter(
+      ([, value]) => value !== "" && value !== undefined,
+    ),
   );
 }
 
@@ -39,6 +45,17 @@ function normalizeSession(row: RawRecord): StocktakeSession {
     total_sku: num(row.total_sku ?? row.total_items ?? 0),
     counted_sku: num(row.counted_sku ?? row.counted_items ?? 0),
     variance_sku: num(row.variance_sku ?? row.variance_count ?? 0),
+    shortage_sku: num(row.shortage_sku ?? row.shortage_count ?? 0),
+    surplus_sku: num(row.surplus_sku ?? row.surplus_count ?? 0),
+    movement_warning_count: num(
+      row.movement_warning_count ?? row.movement_warnings ?? 0,
+    ),
+    scope_type: text(row.scope_type ?? row.scope),
+    scope_label: text(row.scope_label ?? row.scope_name) || undefined,
+    owner_name:
+      text(row.owner_name ?? row.owner ?? row.created_by_name) || undefined,
+    version: text(row.version) || undefined,
+    etag: text(row.etag ?? row._etag) || undefined,
     snapshot_at: text(row.snapshot_at ?? row.created_at),
     completed_at: text(row.completed_at) || undefined,
     adjusted_at: text(row.adjusted_at) || undefined,
@@ -61,7 +78,24 @@ function normalizeSnapshot(row: RawRecord): StocktakeSnapshot {
 }
 
 function normalizeCount(row: RawRecord): StocktakeCount {
-  const expected = num(row.expected_qty ?? row.qty_expected);
+  const snapshotQty = num(
+    row.snapshot_qty ??
+      row.qty_snapshot ??
+      row.expected_qty ??
+      row.qty_expected,
+  );
+  const netMovement = num(
+    row.net_movement_after_snapshot ??
+      row.net_movement_after_snapshot_to_count_cutoff ??
+      row.net_movement ??
+      0,
+  );
+  const expected = num(
+    row.expected_at_count ??
+      row.expected_qty ??
+      row.qty_expected ??
+      snapshotQty + netMovement,
+  );
   const actual = num(row.actual_qty ?? row.qty_actual ?? row.counted_qty);
   return {
     id: text(row.id),
@@ -69,6 +103,9 @@ function normalizeCount(row: RawRecord): StocktakeCount {
     sku: text(row.sku ?? row.sku_code ?? row.product_sku),
     sku_name: text(row.sku_name ?? row.product_name, "-"),
     expected_qty: expected,
+    snapshot_qty: snapshotQty,
+    net_movement_after_snapshot: netMovement,
+    expected_at_count: expected,
     actual_qty: actual,
     variance: num(row.variance ?? actual - expected),
     status: (text(row.status) as StocktakeCount["status"]) || "PENDING",
@@ -79,18 +116,71 @@ function normalizeCount(row: RawRecord): StocktakeCount {
 }
 
 function normalizeVariance(row: RawRecord): StocktakeVariance {
-  const expected = num(row.expected_qty ?? row.qty_expected);
+  const snapshotQty = num(
+    row.snapshot_qty ??
+      row.qty_snapshot ??
+      row.expected_qty ??
+      row.qty_expected,
+  );
+  const netMovement = num(
+    row.net_movement_after_snapshot ??
+      row.net_movement_after_snapshot_to_count_cutoff ??
+      row.net_movement ??
+      0,
+  );
+  const expected = num(
+    row.expected_at_count ??
+      row.expected_qty ??
+      row.qty_expected ??
+      snapshotQty + netMovement,
+  );
   const actual = num(row.actual_qty ?? row.qty_actual);
   const variance = num(row.variance ?? actual - expected);
   return {
     sku: text(row.sku ?? row.sku_code ?? row.product_sku),
     sku_name: text(row.sku_name ?? row.product_name, "-"),
     expected_qty: expected,
+    snapshot_qty: snapshotQty,
+    net_movement_after_snapshot: netMovement,
+    expected_at_count: expected,
+    movement_warning_count: num(
+      row.movement_warning_count ?? row.movement_warnings ?? 0,
+    ),
+    cutoff_at: text(row.cutoff_at ?? row.count_cutoff_at) || undefined,
     actual_qty: actual,
     variance,
-    variance_type: variance > 0 ? "SURPLUS" : variance < 0 ? "SHORTAGE" : "MATCH",
-    reconcile_status: (text(row.reconcile_status ?? row.status, "PENDING") as StocktakeVariance["reconcile_status"]),
+    variance_type:
+      variance > 0 ? "SURPLUS" : variance < 0 ? "SHORTAGE" : "MATCH",
+    reconcile_status: text(
+      row.reconcile_status ?? row.status,
+      "PENDING",
+    ) as StocktakeVariance["reconcile_status"],
   };
+}
+
+export async function createStocktakeSession(
+  request: CreateStocktakeSessionRequest,
+): Promise<StocktakeSession> {
+  const result = await http.post<RawRecord>(
+    API_ENDPOINTS.STOCKTAKE_CREATE_SESSION,
+    {
+      name: request.name,
+      warehouse_id: request.warehouse_id,
+      scope_type: request.scope_type,
+      sku_codes: request.sku_codes,
+      group_code: request.group_code,
+      location_code: request.location_code,
+      notes: request.notes,
+    },
+    {
+      headers: {
+        ...(request.idempotency_key
+          ? { "Idempotency-Key": request.idempotency_key }
+          : {}),
+      },
+    },
+  );
+  return normalizeSession(result);
 }
 
 /**
@@ -104,7 +194,9 @@ export async function fetchStocktakeSessions(
     API_ENDPOINTS.STOCKTAKE_SESSIONS,
     { params: clean(params) },
   );
-  return rowsOf(result.data as RawRecord[] | { data?: RawRecord[] }).map(normalizeSession);
+  return rowsOf(result.data as RawRecord[] | { data?: RawRecord[] }).map(
+    normalizeSession,
+  );
 }
 
 /**
@@ -118,7 +210,9 @@ export async function fetchInventorySnapshots(
     API_ENDPOINTS.INVENTORY_SNAPSHOTS,
     { params: clean(params) },
   );
-  return rowsOf(result.data as RawRecord[] | { data?: RawRecord[] }).map(normalizeSnapshot);
+  return rowsOf(result.data as RawRecord[] | { data?: RawRecord[] }).map(
+    normalizeSnapshot,
+  );
 }
 
 /**
@@ -144,11 +238,17 @@ export async function applyStocktakeAdjustment(
   request: ApplyAdjustmentRequest,
 ): Promise<ApplyAdjustmentResponse> {
   return http.post<ApplyAdjustmentResponse>(
-    API_ENDPOINTS.STOCKTAKE_APPLY_ADJUSTMENT.replace(":sessionId", request.session_id),
+    API_ENDPOINTS.STOCKTAKE_APPLY_ADJUSTMENT.replace(
+      ":sessionId",
+      request.session_id,
+    ),
     { lines: request.lines },
     {
       headers: {
-        ...(request.idempotency_key ? { "Idempotency-Key": request.idempotency_key } : {}),
+        ...(request.idempotency_key
+          ? { "Idempotency-Key": request.idempotency_key }
+          : {}),
+        ...(request.version ? { "If-Match": request.version } : {}),
       },
     },
   );
@@ -166,7 +266,9 @@ export async function fetchStocktakeCounts(
     API_ENDPOINTS.STOCKTAKE_COUNT.replace(":sessionId", sessionId),
     { params: clean(params) },
   );
-  return rowsOf(result.data as RawRecord[] | { data?: RawRecord[] }).map(normalizeCount);
+  return rowsOf(result.data as RawRecord[] | { data?: RawRecord[] }).map(
+    normalizeCount,
+  );
 }
 
 /**
@@ -177,9 +279,10 @@ export async function fetchStocktakeVariances(
   sessionId: string,
   params: Record<string, unknown> = {},
 ): Promise<StocktakeVariance[]> {
-  const result = await http.get<RawRecord[] | { data?: RawRecord[]; rows?: RawRecord[] }>(
-    `${API_ENDPOINTS.STOCKTAKE_SESSIONS}/${sessionId}/variance`,
-    { params: clean(params) },
-  );
+  const result = await http.get<
+    RawRecord[] | { data?: RawRecord[]; rows?: RawRecord[] }
+  >(`${API_ENDPOINTS.STOCKTAKE_SESSIONS}/${sessionId}/variance`, {
+    params: clean(params),
+  });
   return rowsOf(result).map(normalizeVariance);
 }

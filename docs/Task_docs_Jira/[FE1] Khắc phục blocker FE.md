@@ -201,3 +201,48 @@ disposition owner/ETA, Acceptance Criteria mapping, DoD mapping và verification
 Trạng thái hiện tại: **FE technical gate pass, ready for BA/QA verification with concrete WWHN-70
 evidence**. Không còn gate lint/test/build/health thuộc FE đang chặn. Các phần chưa thể chốt hoàn
 toàn nằm ở danh sách lỗi cụ thể, dữ liệu regression, contract hoặc environment từ WWHN-70/HN-QA-005-ST01.
+## 15. Implementation update 2026-08-01 ICT
+
+FE1 đã xử lý sâu nhóm blocker UI state/API error/responsive theo phạm vi WWHN-268 trên các surface regression chính:
+
+- Stocktake: `src/modules/stocktake/pages/StocktakePage.tsx`
+- Reversal: `src/modules/reverse/pages/ReversalPage.tsx`
+- Warranty: `src/modules/warranty/pages/WarrantyPage.tsx`
+- PV/Physical Codes/Scan: `src/modules/scan/pages/PhysicalCodesPage.tsx`
+- Reports: `src/modules/reports/pages/ReportsPage.tsx`
+- Inventory: `src/modules/inventory/pages/InventoryPage.tsx`
+- Shared FE state helper: `src/shared/components/feedback/BusinessState.tsx`
+
+Thay đổi chính:
+
+- Không còn nuốt lỗi API bằng bảng rỗng ở các màn nghiệp vụ chính; lỗi fetch/list/history/export được giữ trong state riêng và hiển thị bằng shared `ApiErrorAlert`.
+- 403 tiếp tục đi qua shared `NoPermissionState` thông qua `ApiErrorAlert`, không hard-code permission/rule ở page.
+- Empty state của bảng phân biệt được "không có dữ liệu" và "dữ liệu chưa tải do lỗi API".
+- Có retry action cho các lỗi list/history/export quan trọng để QA/BA có evidence rõ khi reproduce.
+- Các bảng nghiệp vụ nhiều cột được bổ sung horizontal scroll `x: "max-content"`; toolbar chính dùng `ResponsiveToolbar` có wrap để giảm rủi ro vỡ layout trên tablet/mobile.
+- PV/Scan list fetch được sửa cleanup để tránh setState sau unmount/tab change khi request chậm.
+- Reports export XNT không còn fail âm thầm; lỗi download được hiển thị và có retry.
+
+Verification log sau implementation:
+
+```text
+npm.cmd run lint
+Result: PASS - exit code 0
+
+npm.cmd run test -- --run
+Result: PASS - 35 test files, 297 tests
+Note: Vitest/Vite warning non-blocking về __dirname trong vitest.config.ts với configLoader native tương lai.
+
+npm.cmd run build
+Result: PASS - tsc -b và vite build hoàn tất; 3369 modules transformed.
+Note: Vite warning non-blocking về __dirname trong vite.config.ts với configLoader native tương lai.
+
+npm.cmd run health:check
+Result: PASS - Frontend build exposes /health.json and index.html.
+```
+
+Disposition sau implementation:
+
+- WWHN-268-FE-01: Fixed/pass gate.
+- WWHN-268-FE-02: Fixed phần nền UI state/API error/responsive cho các module FE1 được nêu trong task; còn cần QA gắn scenario cụ thể từ WWHN-70/HN-QA-005-ST01 nếu phát sinh lỗi nghiệp vụ mới.
+- WWHN-268-BE-01, WWHN-268-QA-01, WWHN-268-DEVOPS-01: không thay đổi contract/env/data; vẫn là dependency nếu QA cung cấp mismatch hoặc evidence ngoài phạm vi FE.
