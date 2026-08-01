@@ -12,7 +12,6 @@ import type {
 import type { MeResponse } from "@/modules/auth/types/me.types";
 import type { User } from "@/shared/types/user";
 import { memoryStorage } from "@/shared/lib/memory-storage";
-import { runtimeConfig } from "@/shared/config/env";
 
 type BackendUser = Partial<User> & {
   user_id?: string;
@@ -126,9 +125,6 @@ export const authService = {
    */
   async refresh() {
     const refreshToken = memoryStorage.getRefreshToken();
-    if (!refreshToken && !runtimeConfig.apiWithCredentials) {
-      return undefined;
-    }
     const response = await http.post<RefreshResponse>(
       API_ENDPOINTS.REFRESH,
       refreshToken ? { refresh_token: refreshToken } : undefined,

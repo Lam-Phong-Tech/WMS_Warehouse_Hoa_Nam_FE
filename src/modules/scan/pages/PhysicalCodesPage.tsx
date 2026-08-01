@@ -42,8 +42,6 @@ export default function PhysicalCodesPage() {
   const [classifyResult, setClassifyResult] = useState<ScanClassifyItem[] | null>(null);
   const [classifyState, setClassifyState] = useState<ScanCodeState>("waiting");
   const [classifyMessage, setClassifyMessage] = useState("");
-
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     let cancelled = false;
     setLoading(true);

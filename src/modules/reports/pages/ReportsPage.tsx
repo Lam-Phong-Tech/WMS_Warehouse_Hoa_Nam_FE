@@ -48,8 +48,6 @@ export default function ReportsPage() {
   useEffect(() => {
     fetchReportsHub().then(setReports).catch(() => setReports([]));
   }, []);
-
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     if (activeTab !== "xnt") return;
     let cancelled = false;
@@ -72,8 +70,6 @@ export default function ReportsPage() {
       cancelled = true;
     };
   }, [activeTab, period, scope]);
-
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     if (activeTab !== "warranty") return;
     let cancelled = false;

@@ -9,8 +9,6 @@ export default function ReversalPage() {
   const [activeTab, setActiveTab] = useState("list");
   const [documents, setDocuments] = useState<ReversalDocument[]>([]);
   const [loading, setLoading] = useState(false);
-
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     let cancelled = false;
     setLoading(true);

@@ -24,7 +24,6 @@ export default function InventoryPage() {
   const [movementType, setMovementType] = useState<string>();
   const [loading, setLoading] = useState(false);
 
-  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (activeTab !== "stock") return;
     let cancelled = false;
@@ -67,8 +66,6 @@ export default function InventoryPage() {
       cancelled = true;
     };
   }, [activeTab, movementSearch, movementType]);
-  /* eslint-enable react-hooks/set-state-in-effect */
-
   const columns = [
     {
       title: "SKU",

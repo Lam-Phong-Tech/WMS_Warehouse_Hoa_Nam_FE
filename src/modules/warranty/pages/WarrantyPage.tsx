@@ -14,8 +14,6 @@ export default function WarrantyPage() {
   const [events, setEvents] = useState<WarrantyEvent[]>([]);
   const [selectedCaseId, setSelectedCaseId] = useState<string>();
   const [loading, setLoading] = useState(false);
-
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
@@ -36,8 +34,6 @@ export default function WarrantyPage() {
       cancelled = true;
     };
   }, []);
-
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     if (activeTab !== "history" || !selectedCaseId) return;
     let cancelled = false;

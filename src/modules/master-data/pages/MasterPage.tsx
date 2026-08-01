@@ -978,13 +978,12 @@ export default function MasterPage() {
                 label="Giá niêm yết (chưa VAT)"
                 name="list_price_net"
               >
-              {/* @ts-ignore InputNumber parser return type is too strict for our use case */}
               <InputNumber
                 min={0}
                 precision={0}
                 className="full-width"
                 formatter={(value) => `${value ?? 0}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
-                // @ts-ignore parser return type is too strict
+                // @ts-expect-error parser return type is too strict
                 parser={(value) => Number((value ?? "").replace(/,/g, ""))}
               />
               </Form.Item>

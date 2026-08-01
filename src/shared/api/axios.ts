@@ -39,9 +39,6 @@ export const api = axios.create({
  */
 function callRefresh() {
   const refreshToken = memoryStorage.getRefreshToken();
-  if (!refreshToken && !runtimeConfig.apiWithCredentials) {
-    return Promise.reject(new Error("No refresh token available"));
-  }
   return api.post<{
     success: boolean;
     data: {

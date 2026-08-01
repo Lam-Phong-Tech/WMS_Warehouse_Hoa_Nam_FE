@@ -18,8 +18,6 @@ export default function PutawayPage() {
   const [tasks, setTasks] = useState<Row[]>([]);
   const [history, setHistory] = useState<Row[]>([]);
   const [loading, setLoading] = useState(false);
-
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     let cancelled = false;
     setLoading(true);

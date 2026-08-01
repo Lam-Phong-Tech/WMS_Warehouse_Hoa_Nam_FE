@@ -13,8 +13,6 @@ export default function StocktakePage() {
   const [sessions, setSessions] = useState<StocktakeSession[]>([]);
   const [snapshots, setSnapshots] = useState<StocktakeSnapshot[]>([]);
   const [loading, setLoading] = useState(false);
-
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
