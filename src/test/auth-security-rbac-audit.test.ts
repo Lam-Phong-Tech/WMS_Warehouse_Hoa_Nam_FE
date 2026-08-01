@@ -395,11 +395,11 @@ describe("QA1.4: RBAC — Route Permission Matrix", () => {
     // Bài test: Menu items phải được filter đúng theo quyền của user.
     const { MENU, filterMenu } = await import("@/app/layouts/menu");
 
-    // User không có quyền gì
+    // User không có quyền gì vẫn thấy các route authenticated public.
     const can = () => false;
     const filtered = filterMenu(MENU, can);
     const allLeafItems = filtered.flatMap((g: { children?: Array<unknown> }) => g.children ?? []);
-    expect(allLeafItems.length).toBe(0); // Không thấy menu nào
+    expect(allLeafItems.length).toBe(3);
   });
 });
 

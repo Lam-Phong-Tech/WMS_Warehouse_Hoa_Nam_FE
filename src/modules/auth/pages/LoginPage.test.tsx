@@ -32,7 +32,7 @@ describe("LoginPage", () => {
     renderWithProviders(<LoginPage />);
 
     await user.type(
-      screen.getByPlaceholderText(/gmail\.com/i),
+      screen.getByPlaceholderText(/gmail của bạn/i),
       "not-an-email",
     );
     await user.click(screen.getByRole("button", { name: /đăng nhập/i }));

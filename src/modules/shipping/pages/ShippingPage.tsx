@@ -42,14 +42,28 @@ export default function ShippingPage() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<string>();
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [lineLoading, setLineLoading] = useState(false);
+  const [lineErrorMessage, setLineErrorMessage] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState<OutboundDocument | null>(null);
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
+    setErrorMessage("");
     fetchOutboundDocuments({ search, status, per_page: 20 })
       .then((data) => {
         if (!cancelled) setDocs(data);
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) {
+          setDocs([]);
+          setErrorMessage(
+            error instanceof Error
+              ? error.message
+              : "Khong tai duoc danh sach phieu xuat.",
+          );
+        }
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -99,13 +113,25 @@ export default function ShippingPage() {
               icon={<EyeOutlined />}
               onClick={() => {
                 setSelectedDoc(r);
-                fetchOutboundLines(r.id).then(setLines);
+                setLines([]);
+                setLineErrorMessage("");
+                setLineLoading(true);
+                fetchOutboundLines(r.id)
+                  .then(setLines)
+                  .catch((error: unknown) => {
+                    setLineErrorMessage(
+                      error instanceof Error
+                        ? error.message
+                        : "Khong tai duoc dong phieu xuat.",
+                    );
+                  })
+                  .finally(() => setLineLoading(false));
                 setModalOpen(true);
               }}
             />
           </Tooltip>
           <Tooltip title="Ghi nhận tiếp">
-            <Button type="text" icon={<CheckCircleOutlined />} />
+            <Button type="text" icon={<CheckCircleOutlined />} disabled />
           </Tooltip>
         </Space>
       ),
@@ -186,6 +212,14 @@ export default function ShippingPage() {
           </Space>
         }
       >
+        {errorMessage && (
+          <Alert
+            type="error"
+            message={errorMessage}
+            showIcon
+            style={{ marginBottom: 16 }}
+          />
+        )}
         <Table
           dataSource={docs}
           columns={columns}
@@ -215,6 +249,14 @@ export default function ShippingPage() {
       >
         {selectedDoc && (
           <>
+            {lineErrorMessage && (
+              <Alert
+                type="error"
+                message={lineErrorMessage}
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
+            )}
             <Form layout="inline" style={{ marginBottom: 16 }}>
               <Form.Item label="Nơi nhận">
                 <strong>{selectedDoc.receiverName}</strong>
@@ -239,6 +281,7 @@ export default function ShippingPage() {
               dataSource={lines}
               columns={lineColumns}
               rowKey="id"
+              loading={lineLoading}
               pagination={false}
               size="small"
             />

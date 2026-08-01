@@ -1,6 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState } from "react";
 import {
+  Alert,
   Button,
   Card,
   Form,
@@ -41,14 +42,28 @@ export default function ReceivingPage() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<string>();
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [lineLoading, setLineLoading] = useState(false);
+  const [lineErrorMessage, setLineErrorMessage] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState<InboundDocument | null>(null);
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
+    setErrorMessage("");
     fetchInboundDocuments({ search, status, per_page: 20 })
       .then((data) => {
         if (!cancelled) setDocs(data);
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) {
+          setDocs([]);
+          setErrorMessage(
+            error instanceof Error
+              ? error.message
+              : "Khong tai duoc danh sach phieu nhap.",
+          );
+        }
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -98,13 +113,25 @@ export default function ReceivingPage() {
               icon={<EyeOutlined />}
               onClick={() => {
                 setSelectedDoc(r);
-                fetchInboundLines(r.id).then(setLines);
+                setLines([]);
+                setLineErrorMessage("");
+                setLineLoading(true);
+                fetchInboundLines(r.id)
+                  .then(setLines)
+                  .catch((error: unknown) => {
+                    setLineErrorMessage(
+                      error instanceof Error
+                        ? error.message
+                        : "Khong tai duoc dong phieu nhap.",
+                    );
+                  })
+                  .finally(() => setLineLoading(false));
                 setModalOpen(true);
               }}
             />
           </Tooltip>
           <Tooltip title="Ghi nhận tiếp">
-            <Button type="text" icon={<CheckCircleOutlined />} />
+            <Button type="text" icon={<CheckCircleOutlined />} disabled />
           </Tooltip>
         </Space>
       ),
@@ -189,6 +216,14 @@ export default function ReceivingPage() {
           </Space>
         }
       >
+        {errorMessage && (
+          <Alert
+            type="error"
+            message={errorMessage}
+            showIcon
+            style={{ marginBottom: 16 }}
+          />
+        )}
         <Table
           dataSource={docs}
           columns={columns}
@@ -218,6 +253,14 @@ export default function ReceivingPage() {
       >
         {selectedDoc && (
           <>
+            {lineErrorMessage && (
+              <Alert
+                type="error"
+                message={lineErrorMessage}
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
+            )}
             <Form layout="inline" style={{ marginBottom: 16 }}>
               <Form.Item label="Nguồn hàng">
                 <strong>{selectedDoc.source}</strong>
@@ -236,6 +279,7 @@ export default function ReceivingPage() {
               dataSource={lines}
               columns={lineColumns}
               rowKey="id"
+              loading={lineLoading}
               pagination={false}
               size="small"
             />
