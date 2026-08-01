@@ -299,4 +299,65 @@ Ket luan cap nhat: tai lieu nay **tiep tuc la Conditional FE Sign-off**, khong p
 - Bo sung P0/P1 closure matrix, cap nhat disposition cho FE-SO-001 den FE-SO-005.
 - Lam ro ranh gioi **FE implementation readiness** vs **production integration final sign-off**.
 
+## Bo sung guard sau review P0/P1 - 2026-08-01 23:10 ICT
+
+Phan nay la cap nhat bat buoc de tranh viec doc nham cac dong "Pass" phia tren thanh **Final FE sign-off**. Tu thoi diem cap nhat nay, tat ca dong Pass lien quan Scan, Post Receipt, Post Issue, Apply Adjustment, Dashboard/Reports va RBAC chi co nghia la **FE code readiness / regression guard pass**. Chung khong duoc dung de dong gate san xuat neu chua co artifact BE/BA/QA tuong ung.
+
+### Ket luan gate hien tai
+
+| Gate | Trang thai dung | Dieu kien duoc dong |
+| --- | --- | --- |
+| `WWHN-180 -> WWHN-181` P0 contract dependency | **Open external blocker** | BE1+BA phai publish mot contract duy nhat cho Scan, Post Receipt, Post Issue, Apply Adjustment: endpoint canonical, method, payload request/response, error code, permission, idempotency/If-Match, sample thanh cong va sample loi. |
+| Final FE sign-off | **Blocked** | Chi duoc doi sang Final khi WWHN-180 het `Impediment`, WWHN-182 co QA evidence tren build/version cu the, va WWHN-183 co G1 minutes voi Go/Conditional Go/No-Go. |
+| `ROUTE_PERMISSIONS` | **Conditional FE UX gate** | BE/RBAC owner hoac BA phai duyet permission catalog/mapping. FE khong tu them `stocktake.adjust`, `warranty.temp_only`, scan context permission neu chua co approval. |
+| Dashboard/Reports | **Conditional endpoint mapping** | BE/BA phai xac nhan `/reports/dashboard-quick`, `/reports/inventory-xnt`, `/reports/inventory-xnt/export-excel`, va disposition cua `/reports/hub` bang OpenAPI/Swagger/Jira approved. |
+| QA2 `WWHN-182` | **Open external blocker** | QA2 chay happy, negative, RBAC, idempotency, retry/duplicate submit, network error tren commit/build id cu the va attach evidence. |
+| BA `WWHN-183` | **Open external blocker** | BA ghi G1 minutes: Go/Conditional Go/No-Go, closure tung FE-SO-001...005, owner va ETA cho blocker con mo. |
+
+### Regression guard FE vua them
+
+FE1 da them unit test `src/test/wms-contract-signoff-guards.test.ts` de khoa cac diem co nguy co bi sua nham:
+
+| Guard | Noi dung kiem tra |
+| --- | --- |
+| Scan endpoint | `classifyScanCodes()` goi `POST /scan-batches/classify` theo constant hien tai va khong tu doi sang disputed path `/api/v1/scan/classify` khi chua co contract approved. |
+| Post Receipt | `postInboundReceipt()` goi `/inbound-documents/:id/post-receipt`, payload `lines`, header `Idempotency-Key`, va `If-Match`. |
+| Post Issue | `postOutboundIssue()` goi `/outbound-documents/:id/post-issue`, payload `lines`, header `Idempotency-Key`, va `If-Match`. |
+| Apply Adjustment | `applyStocktakeAdjustment()` goi `/stocktake/sessions/:sessionId/apply-adjustment`, payload `lines`, header `Idempotency-Key`, va `If-Match`. |
+| Route permissions | Giu mapping FE UX gate tap trung trong `ROUTE_PERMISSIONS` cho Scan/Inbound/Outbound/Stocktake/Warranty/Reports de khong bi drift am tham truoc khi BE/BA duyet catalog. |
+| Dashboard/Reports | Exercise cac endpoint FE dang dung: `/reports/hub`, `/reports/inventory-xnt`, `/reports/inventory-xnt/export-excel`; ghi ro day la current FE constants, khong thay the confirmation OpenAPI/Swagger. |
+
+### Dieu kien dong FE-SO-001...005 sau cap nhat nay
+
+| Blocker | Trang thai FE | Dieu kien dong that |
+| --- | --- | --- |
+| FE-SO-001 | FE ready, guard co test | BE1+BA chot Scan endpoint/schema/error/permission/sample. Neu canonical path khac `/scan-batches/classify`, FE cap nhat constant/service/test trong cung mot thay doi co trace. |
+| FE-SO-002 | FE ready, guard co test | BE1+BA chot Post Receipt/Post Issue payload, idempotency, error code, permission; QA2 chung minh retry/double-click/idempotency replay khong tao giao dich lap. |
+| FE-SO-003 | Partial FE ready | BE1+BA xac nhan Dashboard/Reports endpoint canonical, dac biet disposition cua `/reports/hub`; QA2 capture response/error states. |
+| FE-SO-004 | Open | BE/RBAC owner hoac BA duyet permission catalog/mapping; FE cap nhat `ROUTE_PERMISSIONS` va test neu mapping thay doi. |
+| FE-SO-005 | FE ready, guard co test cho Apply Adjustment | BE1+BA chot Apply Adjustment, Warranty TEMP_ONLY/status, Reverse contract, error/sample/permission; QA2 chay negative + RBAC + retry. |
+
+### Verification moi nhat
+
+Da chay tai `C:\HoaNamFE\Hoa_Nam_Tools`:
+
+```text
+npx vitest run src/test/wms-contract-signoff-guards.test.ts
+Ket qua: PASS - 1 file, 5 tests
+
+npm run lint
+Ket qua: PASS
+
+npm run test
+Ket qua: PASS - 37 files, 309 tests
+
+npm run build
+Ket qua: PASS - tsc -b va Vite production build thanh cong
+
+npm run check:api-mapping -- --no-live
+Ket qua: PASS voi 0 errors. Canh bao con mo: runtime permission catalog bi skip do thieu credential, va mapping docs moi cover 45 endpoint rows trong khi swagger snapshot co 288 unique routes.
+```
+
+Can chay lai mapping check voi runtime permission credential hoac artifact BE/BA approved sau khi BE publish contract locked, vi endpoint canonical va permission catalog cho cac gate tren van la dieu kien ngoai FE.
+
 
