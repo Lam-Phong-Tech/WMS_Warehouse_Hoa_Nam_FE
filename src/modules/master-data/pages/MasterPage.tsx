@@ -18,10 +18,8 @@ import {
   Tabs,
   Tag,
   Tooltip,
-  Upload,
   message,
   type TablePaginationConfig,
-  type UploadProps,
 } from "antd";
 import {
   DownloadOutlined,
@@ -48,7 +46,6 @@ import {
 import {
   useCreateSku,
   useCreateProductCategory,
-  useImportSkus,
   useItems,
   usePhysicalCodes,
   useProductCategories,
@@ -430,7 +427,6 @@ export default function MasterPage() {
   const createSkuMutation = useCreateSku();
   const createCategoryMutation = useCreateProductCategory();
   const updateStatusMutation = useUpdateSkuStatus();
-  const importMutation = useImportSkus();
 
   const handleSkuSave = async () => {
     const values = await form.validateFields();
@@ -472,25 +468,6 @@ export default function MasterPage() {
       }
       message.error(getApiErrorMessage(error, "Không thể tạo danh mục"));
     }
-  };
-
-  const uploadProps: UploadProps = {
-    accept: ".xlsx,.xls,.csv",
-    maxCount: 1,
-    showUploadList: false,
-    beforeUpload: async (file) => {
-      try {
-        const result = await importMutation.mutateAsync(file);
-        setImportResult(result);
-        message.success("Đã nhận kết quả import SKU");
-      } catch (error) {
-        Modal.error({
-          title: "Import không thành công",
-          content: getApiErrorMessage(error, "Không thể import file"),
-        });
-      }
-      return Upload.LIST_IGNORE;
-    },
   };
 
   const skuColumns: ColumnsType<ProductRecord> = useMemo(
@@ -662,8 +639,8 @@ export default function MasterPage() {
     {
       key: "skus",
       label: "Sản phẩm / SKU",
-      endpoint: "",
-      permissionNote: "",
+      endpoint: "GET/POST/PATCH /products",
+      permissionNote: "sku.manage | master.manage",
       searchPlaceholder: "Tên hoặc code SKU...",
       columns: skuColumns as ColumnsType<MasterRecord>,
       query: skus,
@@ -728,8 +705,8 @@ export default function MasterPage() {
     {
       key: "items",
       label: "Item",
-      endpoint: "GET /items",
-      permissionNote: "route RBAC + backend data scope",
+      endpoint: "OUT OF SCOPE: /items not in OpenAPI",
+      permissionNote: "read-only until BE contract",
       searchPlaceholder: "Mã item, SKU, serial...",
       columns: itemColumns as ColumnsType<MasterRecord>,
       query: items,
@@ -746,13 +723,13 @@ export default function MasterPage() {
         { label: "Cập nhật", render: (record) => record.updated_at || "-" },
       ],
       scrollX: 980,
-      emptyText: "Chưa có item",
+      emptyText: "Item chờ BE publish OpenAPI, FE không gọi /items",
     },
     {
       key: "codes",
       label: "Mã vật lý",
-      endpoint: "GET /physical-codes",
-      permissionNote: "duplicate/unknown do backend classify",
+      endpoint: "OUT OF SCOPE: /physical-codes not in OpenAPI",
+      permissionNote: "read-only until BE contract",
       searchPlaceholder: "QR/Barcode/RFID-ready code...",
       columns: codeColumns as ColumnsType<MasterRecord>,
       query: codes,
@@ -789,7 +766,7 @@ export default function MasterPage() {
         },
       ],
       scrollX: 1040,
-      emptyText: "Chưa có physical code",
+      emptyText: "Physical code chờ BE publish OpenAPI, FE không gọi /physical-codes",
     },
   ];
 
@@ -826,16 +803,11 @@ export default function MasterPage() {
           <Button icon={<DownloadOutlined />} onClick={downloadSkuTemplate}>
             Tải mẫu CSV
           </Button>
-          <Upload {...uploadProps}>
-            <Button
-              icon={<ImportOutlined />}
-              loading={importMutation.isPending}
-              disabled={!canManageMasterData}
-              title={canManageMasterData ? undefined : "Bạn không có quyền import"}
-            >
+          <Tooltip title="Chưa bật: /skus/import-excel không có trong OpenAPI 3.0.0. Chỉ dùng sau khi BE publish endpoint import chính thức.">
+            <Button icon={<ImportOutlined />} disabled>
               Import SKU cũ
             </Button>
-          </Upload>
+          </Tooltip>
           <Button
             type="primary"
             icon={<PlusOutlined />}
@@ -963,7 +935,11 @@ export default function MasterPage() {
               </Form.Item>
             </Col>
             <Col xs={24} md={8}>
-              <Form.Item label="Đơn vị tính" name="uom_id">
+              <Form.Item
+                label="Đơn vị tính"
+                name="uom_id"
+                rules={[{ required: true, message: "Vui lòng chọn đơn vị tính" }]}
+              >
                 <Select
                   allowClear
                   showSearch
@@ -977,6 +953,7 @@ export default function MasterPage() {
               <Form.Item
                 label="Giá niêm yết (chưa VAT)"
                 name="list_price_net"
+                rules={[{ required: true, message: "Vui lòng nhập giá niêm yết" }]}
               >
               <InputNumber
                 min={0}
@@ -989,7 +966,11 @@ export default function MasterPage() {
               </Form.Item>
             </Col>
             <Col xs={24} md={8}>
-              <Form.Item label="Thuế VAT (%)" name="vat_rate">
+              <Form.Item
+                label="Thuế VAT (%)"
+                name="vat_rate"
+                rules={[{ required: true, message: "Vui lòng chọn thuế VAT" }]}
+              >
                 <Select
                   allowClear
                   options={[

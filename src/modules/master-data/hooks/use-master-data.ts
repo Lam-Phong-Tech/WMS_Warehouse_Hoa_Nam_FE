@@ -36,17 +36,19 @@ export function useSkus(params: MasterListParams) {
   });
 }
 
-export function useItems(params: MasterListParams) {
+export function useItems(params: MasterListParams, enabled = false) {
   return useQuery({
     queryKey: masterDataKeys.items(params),
     queryFn: () => getItems(params),
+    enabled,
   });
 }
 
-export function usePhysicalCodes(params: MasterListParams) {
+export function usePhysicalCodes(params: MasterListParams, enabled = false) {
   return useQuery({
     queryKey: masterDataKeys.codes(params),
     queryFn: () => getPhysicalCodes(params),
+    enabled,
   });
 }
 

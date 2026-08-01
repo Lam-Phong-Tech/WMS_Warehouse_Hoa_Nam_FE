@@ -104,13 +104,10 @@ export async function updateSkuStatus(
 }
 
 export async function importSkus(file: File): Promise<ImportResult> {
-  const body = new FormData();
-  body.append("file", file);
-  // WARNING: /skus/import-excel is NOT in current BE OpenAPI contract.
-  // Keep this only if BE later confirms; otherwise remove or replace with /products/import-excel.
-  return http.post<ImportResult>(API_ENDPOINTS.SKU_IMPORT_EXCEL, body, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
+  void file;
+  throw new Error(
+    "Import SKU is disabled because /skus/import-excel is not in OpenAPI 3.0.0.",
+  );
 }
 
 // ===== Categories =====
@@ -151,18 +148,15 @@ export async function getSuppliers(): Promise<ReferenceOptionRecord[]> {
 export async function getItems(
   params: MasterListParams,
 ): Promise<MasterPageResult<ItemRecord>> {
-  const result = await http.getPage<ItemRecord[]>(API_ENDPOINTS.ITEMS, {
-    params: cleanParams(params),
-  });
-  return { data: result.data, meta: result.meta };
+  void params;
+  throw new Error("Item list is disabled because /items is not in OpenAPI 3.0.0.");
 }
 
 export async function getPhysicalCodes(
   params: MasterListParams,
 ): Promise<MasterPageResult<PhysicalCodeRecord>> {
-  const result = await http.getPage<PhysicalCodeRecord[]>(
-    API_ENDPOINTS.PHYSICAL_CODES,
-    { params: cleanParams(params) },
+  void params;
+  throw new Error(
+    "Physical code list is disabled because /physical-codes is not in OpenAPI 3.0.0.",
   );
-  return { data: result.data, meta: result.meta };
 }
