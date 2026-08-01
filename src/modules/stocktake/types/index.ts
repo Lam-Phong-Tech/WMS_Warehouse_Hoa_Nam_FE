@@ -104,8 +104,8 @@ export interface ApplyAdjustmentRequest {
     actual_qty: number;
     reason?: string;
   }>;
-  idempotency_key?: string;
-  version?: string;
+  idempotency_key: string;
+  version: string;
 }
 
 /** Apply adjustment response */
@@ -127,4 +127,6 @@ export type StocktakeErrorCode =
   | "WMS_STOCKTAKE_ALREADY_ADJUSTED"
   | "WMS_STOCKTAKE_SKU_NOT_FOUND"
   | "WMS_STOCKTAKE_VARIANCE_EXCEEDS_THRESHOLD"
-  | "WMS_INVENTORY_INSUFFICIENT";
+  | "WMS_INVENTORY_INSUFFICIENT"
+  | "WMS_STOCKTAKE_VERSION_CONFLICT"
+  | "WMS_STOCKTAKE_IDEMPOTENCY_REPLAY";

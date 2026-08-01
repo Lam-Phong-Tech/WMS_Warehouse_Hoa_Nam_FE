@@ -20,13 +20,24 @@ export interface ScanClassifyRequest {
   scan_source?: "manual" | "barcode" | "rfid" | "lookup";
 }
 
+export type ScanClassifyStatus = "VALID" | "DUPLICATE" | "UNKNOWN" | "INVALID";
+
+export const SCAN_ERROR_CODES = [
+  "WMS_SCAN_DUPLICATE",
+  "WMS_SCAN_UNKNOWN",
+  "WMS_SCAN_INVALID",
+  "WMS_SCAN_BATCH_NOT_FOUND",
+  "WMS_SCAN_WAREHOUSE_MISMATCH",
+] as const;
+
 /** Individual code classify result */
 export interface ScanClassifyItem {
   code_value: string;
   code_type: string;
-  status: "VALID" | "DUPLICATE" | "UNKNOWN" | "INVALID";
+  status: ScanClassifyStatus;
   scan_source: string;
   sku_code?: string;
+  error_code?: ScanErrorCode;
   message?: string;
 }
 
@@ -37,12 +48,7 @@ export interface ScanClassifyResponse {
 }
 
 /** Scan error codes from backend */
-export type ScanErrorCode =
-  | "WMS_SCAN_DUPLICATE"
-  | "WMS_SCAN_UNKNOWN"
-  | "WMS_SCAN_INVALID"
-  | "WMS_SCAN_BATCH_NOT_FOUND"
-  | "WMS_SCAN_WAREHOUSE_MISMATCH";
+export type ScanErrorCode = (typeof SCAN_ERROR_CODES)[number];
 
 /** Scan batch record */
 export interface ScanBatch {

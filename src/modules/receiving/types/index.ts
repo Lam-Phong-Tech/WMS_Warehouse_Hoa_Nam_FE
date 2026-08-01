@@ -33,9 +33,9 @@ export interface InboundLine {
 }
 
 export interface ReceiptEvidence {
-  receiptId?: string;
-  movementRef?: string;
-  requestId?: string;
+  receiptId: string;
+  movementRef: string;
+  requestId: string;
   traceSource?: string;
   replayed?: boolean;
 }

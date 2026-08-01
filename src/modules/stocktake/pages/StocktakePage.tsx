@@ -309,7 +309,7 @@ export default function StocktakePage() {
             session_id: selectedSession.id,
             lines: approvedLines,
             idempotency_key: idempotencyKey("stocktake-apply"),
-            version: selectedSession.version ?? selectedSession.etag,
+            version: selectedSession.version ?? selectedSession.etag ?? "",
           });
           setApplyResult(result);
           message.success("Backend đã xử lý apply adjustment");

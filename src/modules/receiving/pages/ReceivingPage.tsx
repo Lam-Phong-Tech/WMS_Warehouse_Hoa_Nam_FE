@@ -37,7 +37,6 @@ import {
   fetchInboundDocument,
   fetchInboundDocuments,
   fetchInboundLines,
-  normalizeReceiptEvidence,
   postInboundReceipt,
   scanInboundDocument,
 } from "../services/receivingService";
@@ -245,7 +244,7 @@ export default function ReceivingPage() {
             idempotencyKey,
             ifMatch: selectedDoc.version,
           });
-          setReceiptEvidence(normalizeReceiptEvidence(result));
+          setReceiptEvidence(result);
           postIntentKeyRef.current = undefined;
           message.success("Da ghi nhan nhap kho.");
           await refreshSelectedDetail();

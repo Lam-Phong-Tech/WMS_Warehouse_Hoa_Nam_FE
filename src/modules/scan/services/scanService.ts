@@ -1,5 +1,11 @@
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { http } from "@/shared/api/http";
+import {
+  WmsContractError,
+  requireArray,
+  requireNonEmptyString,
+  requirePositiveNumber,
+} from "@/shared/api/wms-contract";
 import type {
   ScanClassifyRequest,
   ScanClassifyResponse,
@@ -11,7 +17,11 @@ import type {
 type RawRecord = Record<string, unknown>;
 
 function rowsOf<T>(value: T[] | { data?: T[] }): T[] {
-  return Array.isArray(value) ? value : Array.isArray(value.data) ? value.data : [];
+  return Array.isArray(value)
+    ? value
+    : Array.isArray(value.data)
+      ? value.data
+      : [];
 }
 
 function text(value: unknown, fallback = ""): string {
@@ -20,6 +30,33 @@ function text(value: unknown, fallback = ""): string {
 
 function num(value: unknown): number {
   return Number(value ?? 0);
+}
+
+function normalizeClassifyRequest(
+  request: ScanClassifyRequest,
+): ScanClassifyRequest {
+  const codes = requireArray(request.codes, "codes").map((code, index) =>
+    requireNonEmptyString(code, `codes.${index}`),
+  );
+  const duplicated = codes.find((code, index) => codes.indexOf(code) !== index);
+  if (duplicated) {
+    throw new WmsContractError(
+      "WMS_SCAN_DUPLICATE",
+      `Duplicate code in request payload: ${duplicated}`,
+    );
+  }
+  return {
+    codes,
+    ...(request.warehouse_id === undefined
+      ? {}
+      : {
+          warehouse_id: requirePositiveNumber(
+            request.warehouse_id,
+            "warehouse_id",
+          ),
+        }),
+    ...(request.scan_source ? { scan_source: request.scan_source } : {}),
+  };
 }
 
 function normalizeBatch(row: RawRecord): ScanBatch {
@@ -77,11 +114,10 @@ function normalizePhysicalCode(row: RawRecord): PhysicalCode {
 export async function classifyScanCodes(
   request: ScanClassifyRequest,
 ): Promise<ScanClassifyResponse> {
-  return http.post<ScanClassifyResponse>(API_ENDPOINTS.SCAN_BATCHES_CLASSIFY, {
-    codes: request.codes,
-    ...(request.warehouse_id ? { warehouse_id: request.warehouse_id } : {}),
-    ...(request.scan_source ? { scan_source: request.scan_source } : {}),
-  });
+  return http.post<ScanClassifyResponse>(
+    API_ENDPOINTS.SCAN_BATCHES_CLASSIFY,
+    normalizeClassifyRequest(request),
+  );
 }
 
 /**
@@ -95,7 +131,9 @@ export async function fetchScanBatches(
     API_ENDPOINTS.SCAN_BATCHES,
     { params },
   );
-  return rowsOf(result.data as RawRecord[] | { data?: RawRecord[] }).map(normalizeBatch);
+  return rowsOf(result.data as RawRecord[] | { data?: RawRecord[] }).map(
+    normalizeBatch,
+  );
 }
 
 /**
@@ -109,7 +147,9 @@ export async function fetchScanEvents(
     API_ENDPOINTS.SCAN_EVENTS,
     { params },
   );
-  return rowsOf(result.data as RawRecord[] | { data?: RawRecord[] }).map(normalizeEvent);
+  return rowsOf(result.data as RawRecord[] | { data?: RawRecord[] }).map(
+    normalizeEvent,
+  );
 }
 
 /**
@@ -123,5 +163,7 @@ export async function fetchPhysicalCodes(
     API_ENDPOINTS.PHYSICAL_CODES,
     { params },
   );
-  return rowsOf(result.data as RawRecord[] | { data?: RawRecord[] }).map(normalizePhysicalCode);
+  return rowsOf(result.data as RawRecord[] | { data?: RawRecord[] }).map(
+    normalizePhysicalCode,
+  );
 }

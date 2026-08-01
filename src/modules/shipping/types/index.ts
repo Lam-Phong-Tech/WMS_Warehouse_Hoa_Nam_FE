@@ -41,6 +41,14 @@ export interface PostIssueRequest {
   ifMatch: number;
 }
 
+export interface IssueEvidence {
+  issueId: string;
+  movementRef: string;
+  requestId: string;
+  traceSource?: string;
+  replayed?: boolean;
+}
+
 export interface CloseRemainderRequest {
   documentId: string;
   reason: string;

@@ -1,4 +1,11 @@
 import { http } from "@/shared/api/http";
+import {
+  requireArray,
+  requireIdempotencyHeaders,
+  requireNonEmptyString,
+  requirePositiveNumber,
+  WmsContractError,
+} from "@/shared/api/wms-contract";
 import type {
   CloseRemainderRequest,
   InboundDocument,
@@ -107,22 +114,31 @@ export function normalizeReceiptEvidence(row: RawRecord): ReceiptEvidence {
     row.receipt ??
     row.data ??
     row) as RawRecord;
+  const receiptId = text(
+    evidence.receipt_id ?? evidence.receiptId ?? evidence.receipt_no,
+    undefined,
+  );
+  const movementRef = text(
+    evidence.movement_ref ??
+      evidence.movementRef ??
+      evidence.stock_movement_id ??
+      evidence.movement_id,
+    undefined,
+  );
+  const requestId = text(
+    evidence.request_id ?? evidence.requestId ?? row.request_id,
+    undefined,
+  );
+  if (!receiptId || !movementRef || !requestId) {
+    throw new WmsContractError(
+      "WMS_FE_MISSING_RECEIPT_EVIDENCE",
+      "Post receipt response must include receiptId, movementRef, and requestId",
+    );
+  }
   return {
-    receiptId: text(
-      evidence.receipt_id ?? evidence.receiptId ?? evidence.receipt_no,
-      undefined,
-    ),
-    movementRef: text(
-      evidence.movement_ref ??
-        evidence.movementRef ??
-        evidence.stock_movement_id ??
-        evidence.movement_id,
-      undefined,
-    ),
-    requestId: text(
-      evidence.request_id ?? evidence.requestId ?? row.request_id,
-      undefined,
-    ),
+    receiptId,
+    movementRef,
+    requestId,
     traceSource: text(
       evidence.trace_source ?? evidence.traceSource ?? evidence.trace,
       undefined,
@@ -141,6 +157,20 @@ function idempotencyConfig(key?: string, ifMatch?: number) {
       ...(key ? { "Idempotency-Key": key } : {}),
       ...(ifMatch !== undefined ? { "If-Match": String(ifMatch) } : {}),
     },
+  };
+}
+
+function normalizePostReceiptRequest(request: PostReceiptRequest) {
+  return {
+    documentId: requireNonEmptyString(request.documentId, "documentId"),
+    lines: requireArray(request.lines, "lines").map((line, index) => ({
+      lineId: requireNonEmptyString(line.lineId, `lines.${index}.lineId`),
+      quantity: requirePositiveNumber(line.quantity, `lines.${index}.quantity`),
+    })),
+    headers: requireIdempotencyHeaders({
+      idempotencyKey: request.idempotencyKey,
+      ifMatch: request.ifMatch,
+    }),
   };
 }
 
@@ -251,12 +281,14 @@ export async function scanInboundDocument(
 
 export async function postInboundReceipt(
   request: PostReceiptRequest,
-): Promise<RawRecord> {
-  return http.post<RawRecord>(
-    endpoint(API_ENDPOINTS.INBOUND_POST_RECEIPT, request.documentId),
-    { lines: request.lines },
-    idempotencyConfig(request.idempotencyKey, request.ifMatch),
+): Promise<ReceiptEvidence> {
+  const normalized = normalizePostReceiptRequest(request);
+  const result = await http.post<RawRecord>(
+    endpoint(API_ENDPOINTS.INBOUND_POST_RECEIPT, normalized.documentId),
+    { lines: normalized.lines },
+    { headers: normalized.headers },
   );
+  return normalizeReceiptEvidence(result);
 }
 
 export async function closeInboundRemainder(

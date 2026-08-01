@@ -28,10 +28,10 @@ describe("WMS route access contract", () => {
       [ROUTES.PUTAWAY]: ["putaway.manage"],
       [ROUTES.OUTBOUND]: ["outbound.create", "outbound.post"],
       [ROUTES.INVENTORY]: ["inventory.view"],
-      [ROUTES.STOCKTAKE]: ["stocktake.count"],
+      [ROUTES.STOCKTAKE]: ["stocktake.count", "stocktake.adjust"],
       [ROUTES.WARRANTY]: ["warranty.manage"],
       [ROUTES.REVERSE]: ["inventory.reversal.post"],
-      [ROUTES.REPORTS]: ["report.view"],
+      [ROUTES.REPORTS]: ["report.view", "report.export"],
       [ROUTES.AUDIT_LOGS]: "AUDIT_LOG_VIEW",
       [ROUTES.PROFILE]: undefined,
     });

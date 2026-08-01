@@ -1,5 +1,11 @@
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { http } from "@/shared/api/http";
+import {
+  requireArray,
+  requireIdempotencyHeaders,
+  requireNonEmptyString,
+  requireNonNegativeNumber,
+} from "@/shared/api/wms-contract";
 import type {
   StocktakeSession,
   StocktakeSnapshot,
@@ -237,19 +243,23 @@ export async function submitStocktakeCount(
 export async function applyStocktakeAdjustment(
   request: ApplyAdjustmentRequest,
 ): Promise<ApplyAdjustmentResponse> {
-  return http.post<ApplyAdjustmentResponse>(
-    API_ENDPOINTS.STOCKTAKE_APPLY_ADJUSTMENT.replace(
-      ":sessionId",
-      request.session_id,
+  const sessionId = requireNonEmptyString(request.session_id, "session_id");
+  const lines = requireArray(request.lines, "lines").map((line, index) => ({
+    sku: requireNonEmptyString(line.sku, `lines.${index}.sku`),
+    actual_qty: requireNonNegativeNumber(
+      line.actual_qty,
+      `lines.${index}.actual_qty`,
     ),
-    { lines: request.lines },
+    ...(line.reason ? { reason: line.reason } : {}),
+  }));
+  return http.post<ApplyAdjustmentResponse>(
+    API_ENDPOINTS.STOCKTAKE_APPLY_ADJUSTMENT.replace(":sessionId", sessionId),
+    { lines },
     {
-      headers: {
-        ...(request.idempotency_key
-          ? { "Idempotency-Key": request.idempotency_key }
-          : {}),
-        ...(request.version ? { "If-Match": request.version } : {}),
-      },
+      headers: requireIdempotencyHeaders({
+        idempotencyKey: request.idempotency_key,
+        ifMatch: request.version,
+      }),
     },
   );
 }

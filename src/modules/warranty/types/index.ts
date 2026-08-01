@@ -101,7 +101,7 @@ export interface CreateWarrantyCaseRequest {
 export interface UpdateWarrantyStatusRequest {
   status: WarrantyCaseStatus;
   reason?: string;
-  idempotency_key?: string;
+  idempotency_key: string;
 }
 
 /** Warranty defect type */
@@ -118,4 +118,5 @@ export type WarrantyErrorCode =
   | "WMS_WARRANTY_INVALID_STATUS_TRANSITION"
   | "WMS_WARRANTY_SKU_NOT_FOUND"
   | "WMS_WARRANTY_DUPLICATE_SERIAL"
-  | "WMS_WARRANTY_TEMP_ONLY_REQUIRED";
+  | "WMS_WARRANTY_TEMP_ONLY_REQUIRED"
+  | "WMS_WARRANTY_IDEMPOTENCY_REPLAY";

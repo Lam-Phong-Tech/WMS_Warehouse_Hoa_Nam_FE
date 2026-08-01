@@ -1,5 +1,10 @@
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { http } from "@/shared/api/http";
+import {
+  requireArray,
+  requireNonEmptyString,
+  requirePositiveNumber,
+} from "@/shared/api/wms-contract";
 import type {
   ReversalDocument,
   ReversalLine,
@@ -187,18 +192,36 @@ export async function fetchReversibleMovements(
 export async function createReversalDocument(
   request: CreateReversalRequest,
 ): Promise<CreateReversalResponse> {
+  const lines = requireArray(request.lines, "lines").map((line, index) => ({
+    sku: requireNonEmptyString(line.sku, `lines.${index}.sku`),
+    reversal_qty: requirePositiveNumber(
+      line.reversal_qty,
+      `lines.${index}.reversal_qty`,
+    ),
+    ...(line.reason ? { reason: line.reason } : {}),
+  }));
   return http.post<CreateReversalResponse>(
     API_ENDPOINTS.REVERSAL_CREATE,
     {
       reversal_type: request.reversal_type,
-      reference_document_id: request.reference_document_id,
-      reference_document_type: request.reference_document_type,
-      reason: request.reason,
-      lines: request.lines,
+      reference_document_id: requireNonEmptyString(
+        request.reference_document_id,
+        "reference_document_id",
+      ),
+      reference_document_type: requireNonEmptyString(
+        request.reference_document_type,
+        "reference_document_type",
+      ),
+      reason: requireNonEmptyString(request.reason, "reason"),
+      lines,
     },
     {
       headers: {
-        "Idempotency-Key": request.idempotency_key,
+        "Idempotency-Key": requireNonEmptyString(
+          request.idempotency_key,
+          "idempotency_key",
+          "WMS_FE_IDEMPOTENCY_KEY_REQUIRED",
+        ),
         ...(request.reference_version
           ? { "If-Match": request.reference_version }
           : {}),

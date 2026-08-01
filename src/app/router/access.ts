@@ -1,4 +1,5 @@
 import { ROUTES } from "@/shared/constants/routes";
+import { WMS_PERMISSION_CATALOG as P } from "@/shared/constants/wms-permissions";
 
 /**
  * Single source of route-level permissions for both RequirePermission and menu
@@ -12,19 +13,19 @@ export const ROUTE_PERMISSIONS: Record<string, string | string[] | undefined> =
   {
     // WMS P0 bounded contexts from the technical architecture guide.
     [ROUTES.DASHBOARD]: undefined,
-    [ROUTES.MASTER_DATA]: ["sku.manage", "master.manage"],
-    [ROUTES.SCAN]: ["inventory.trace", "scan.classify"],
-    [ROUTES.INBOUND]: ["inbound.create", "inbound.post"],
-    [ROUTES.PUTAWAY]: ["putaway.manage"],
-    [ROUTES.OUTBOUND]: ["outbound.create", "outbound.post"],
-    [ROUTES.INVENTORY]: ["inventory.view"],
-    [ROUTES.STOCKTAKE]: ["stocktake.count"],
-    [ROUTES.WARRANTY]: ["warranty.manage"],
-    [ROUTES.REVERSE]: ["inventory.reversal.post"],
-    [ROUTES.REPORTS]: ["report.view"],
+    [ROUTES.MASTER_DATA]: [P.SKU_MANAGE, P.MASTER_MANAGE],
+    [ROUTES.SCAN]: [P.INVENTORY_TRACE, P.SCAN_CLASSIFY],
+    [ROUTES.INBOUND]: [P.INBOUND_CREATE, P.INBOUND_POST],
+    [ROUTES.PUTAWAY]: [P.PUTAWAY_MANAGE],
+    [ROUTES.OUTBOUND]: [P.OUTBOUND_CREATE, P.OUTBOUND_POST],
+    [ROUTES.INVENTORY]: [P.INVENTORY_VIEW],
+    [ROUTES.STOCKTAKE]: [P.STOCKTAKE_COUNT, P.STOCKTAKE_ADJUST],
+    [ROUTES.WARRANTY]: [P.WARRANTY_MANAGE],
+    [ROUTES.REVERSE]: [P.REVERSAL_POST],
+    [ROUTES.REPORTS]: [P.REPORT_VIEW, P.REPORT_EXPORT],
     [ROUTES.COMPONENT_CATALOG]: undefined,
 
     // Shared/system.
     [ROUTES.PROFILE]: undefined,
-    [ROUTES.AUDIT_LOGS]: "AUDIT_LOG_VIEW",
+    [ROUTES.AUDIT_LOGS]: P.AUDIT_LOG_VIEW,
   };

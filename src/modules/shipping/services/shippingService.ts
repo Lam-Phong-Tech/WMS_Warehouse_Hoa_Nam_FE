@@ -1,9 +1,17 @@
 import { http } from "@/shared/api/http";
+import {
+  requireArray,
+  requireIdempotencyHeaders,
+  requireNonEmptyString,
+  requirePositiveNumber,
+  WmsContractError,
+} from "@/shared/api/wms-contract";
 import type {
   CloseRemainderRequest,
   OutboundDocument,
   OutboundLine,
   OutboundScanResult,
+  IssueEvidence,
   PostIssueRequest,
 } from "../types";
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
@@ -97,6 +105,55 @@ function idempotencyConfig(key?: string, ifMatch?: number) {
       ...(key ? { "Idempotency-Key": key } : {}),
       ...(ifMatch !== undefined ? { "If-Match": String(ifMatch) } : {}),
     },
+  };
+}
+
+function normalizeIssueEvidence(row: RawRecord): IssueEvidence {
+  const evidence = (row.evidence ?? row.issue ?? row.data ?? row) as RawRecord;
+  const issueId = text(
+    evidence.issue_id ?? evidence.issueId ?? evidence.issue_no,
+    undefined,
+  );
+  const movementRef = text(
+    evidence.movement_ref ??
+      evidence.movementRef ??
+      evidence.stock_movement_id ??
+      evidence.movement_id,
+    undefined,
+  );
+  const requestId = text(
+    evidence.request_id ?? evidence.requestId ?? row.request_id,
+    undefined,
+  );
+  if (!issueId || !movementRef || !requestId) {
+    throw new WmsContractError(
+      "WMS_FE_MISSING_ISSUE_EVIDENCE",
+      "Post issue response must include issueId, movementRef, and requestId",
+    );
+  }
+  return {
+    issueId,
+    movementRef,
+    requestId,
+    traceSource: text(
+      evidence.trace_source ?? evidence.traceSource ?? evidence.trace,
+      undefined,
+    ),
+    replayed: Boolean(evidence.replayed ?? evidence.idempotency_replay),
+  };
+}
+
+function normalizePostIssueRequest(request: PostIssueRequest) {
+  return {
+    documentId: requireNonEmptyString(request.documentId, "documentId"),
+    lines: requireArray(request.lines, "lines").map((line, index) => ({
+      lineId: requireNonEmptyString(line.lineId, `lines.${index}.lineId`),
+      quantity: requirePositiveNumber(line.quantity, `lines.${index}.quantity`),
+    })),
+    headers: requireIdempotencyHeaders({
+      idempotencyKey: request.idempotencyKey,
+      ifMatch: request.ifMatch,
+    }),
   };
 }
 
@@ -210,12 +267,14 @@ export async function scanOutboundDocument(
 
 export async function postOutboundIssue(
   request: PostIssueRequest,
-): Promise<RawRecord> {
-  return http.post<RawRecord>(
-    endpoint(API_ENDPOINTS.OUTBOUND_POST_ISSUE, request.documentId),
-    { lines: request.lines },
-    idempotencyConfig(request.idempotencyKey, request.ifMatch),
+): Promise<IssueEvidence> {
+  const normalized = normalizePostIssueRequest(request);
+  const result = await http.post<RawRecord>(
+    endpoint(API_ENDPOINTS.OUTBOUND_POST_ISSUE, normalized.documentId),
+    { lines: normalized.lines },
+    { headers: normalized.headers },
   );
+  return normalizeIssueEvidence(result);
 }
 
 export async function closeOutboundRemainder(

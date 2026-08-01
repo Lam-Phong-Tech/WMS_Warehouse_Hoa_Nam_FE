@@ -1,5 +1,6 @@
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { http } from "@/shared/api/http";
+import { requireNonEmptyString } from "@/shared/api/wms-contract";
 import type {
   WarrantyCase,
   WarrantyEvent,
@@ -135,6 +136,16 @@ export async function fetchWarrantyCaseEvents(
 export async function createWarrantyCase(
   payload: CreateWarrantyCaseRequest,
 ): Promise<WarrantyCase> {
+  if (payload.identification_type === "IDENTIFIED") {
+    requireNonEmptyString(payload.item_code, "item_code");
+  } else {
+    requireNonEmptyString(payload.sku, "sku");
+    requireNonEmptyString(payload.missing_code_reason, "missing_code_reason");
+    requireNonEmptyString(
+      payload.manual_product_description,
+      "manual_product_description",
+    );
+  }
   const result = await http.post<RawRecord>(
     API_ENDPOINTS.WARRANTY_CASES,
     payload,
@@ -151,14 +162,17 @@ export async function updateWarrantyCaseStatus(
   caseId: string | number,
   request: UpdateWarrantyStatusRequest,
 ): Promise<WarrantyCase> {
+  const normalizedCaseId = requireNonEmptyString(String(caseId), "caseId");
   const result = await http.patch<RawRecord>(
-    API_ENDPOINTS.WARRANTY_UPDATE_STATUS.replace(":id", String(caseId)),
+    API_ENDPOINTS.WARRANTY_UPDATE_STATUS.replace(":id", normalizedCaseId),
     { status: request.status, reason: request.reason },
     {
       headers: {
-        ...(request.idempotency_key
-          ? { "Idempotency-Key": request.idempotency_key }
-          : {}),
+        "Idempotency-Key": requireNonEmptyString(
+          request.idempotency_key,
+          "idempotency_key",
+          "WMS_FE_IDEMPOTENCY_KEY_REQUIRED",
+        ),
       },
     },
   );

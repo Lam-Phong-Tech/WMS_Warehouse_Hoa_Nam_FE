@@ -1,9 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.unmock("@/app/router/access");
+
 import { ROUTES } from "@/shared/constants/routes";
 import { ROUTE_PERMISSIONS } from "@/app/router/access";
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
+import { WMS_PERMISSION_CATALOG as P } from "@/shared/constants/wms-permissions";
 import { http } from "@/shared/api/http";
 import { classifyScanCodes } from "@/modules/scan/services/scanService";
+import { WmsContractError } from "@/shared/api/wms-contract";
 import { postInboundReceipt } from "@/modules/receiving/services/receivingService";
 import { postOutboundIssue } from "@/modules/shipping/services/shippingService";
 import { applyStocktakeAdjustment } from "@/modules/stocktake/services/stocktakeService";
@@ -66,8 +71,32 @@ describe("WMS conditional sign-off contract guards", () => {
     );
   });
 
+  it("blocks invalid scan classify payloads before network calls", async () => {
+    await expect(
+      classifyScanCodes({ codes: ["QR-001", " QR-001 "] }),
+    ).rejects.toMatchObject({
+      code: "WMS_SCAN_DUPLICATE",
+    });
+    await expect(
+      classifyScanCodes({ codes: ["QR-002"], warehouse_id: 0 }),
+    ).rejects.toBeInstanceOf(WmsContractError);
+
+    expect(http.post).not.toHaveBeenCalled();
+  });
+
   it("requires idempotency and optimistic lock evidence on receipt, issue, and apply-adjustment service calls", async () => {
-    vi.mocked(http.post).mockResolvedValue({});
+    vi.mocked(http.post)
+      .mockResolvedValueOnce({
+        receipt_id: "REC-1",
+        movement_ref: "MOV-IN-1",
+        request_id: "REQ-IN-1",
+      })
+      .mockResolvedValueOnce({
+        issue_id: "ISS-1",
+        movement_ref: "MOV-OUT-1",
+        request_id: "REQ-OUT-1",
+      })
+      .mockResolvedValueOnce({});
 
     await postInboundReceipt({
       documentId: "IN-1",
@@ -123,22 +152,67 @@ describe("WMS conditional sign-off contract guards", () => {
     );
   });
 
+  it("rejects receipt/issue/stocktake mutation payloads missing idempotency or evidence", async () => {
+    await expect(
+      postInboundReceipt({
+        documentId: "IN-1",
+        lines: [{ lineId: "L1", quantity: 2 }],
+        idempotencyKey: "",
+        ifMatch: 7,
+      }),
+    ).rejects.toMatchObject({ code: "WMS_FE_IDEMPOTENCY_KEY_REQUIRED" });
+
+    await expect(
+      postOutboundIssue({
+        documentId: "OUT-1",
+        lines: [{ lineId: "L1", quantity: 0 }],
+        idempotencyKey: "idem",
+        ifMatch: 7,
+      }),
+    ).rejects.toMatchObject({ code: "WMS_FE_INVALID_PAYLOAD" });
+
+    await expect(
+      applyStocktakeAdjustment({
+        session_id: "ST-1",
+        lines: [{ sku: "SKU-001", actual_qty: 1 }],
+        idempotency_key: "idem",
+        version: "",
+      }),
+    ).rejects.toMatchObject({ code: "WMS_FE_IF_MATCH_REQUIRED" });
+
+    vi.mocked(http.post).mockResolvedValueOnce({ receipt_id: "REC-1" });
+    await expect(
+      postInboundReceipt({
+        documentId: "IN-1",
+        lines: [{ lineId: "L1", quantity: 1 }],
+        idempotencyKey: "idem",
+        ifMatch: 1,
+      }),
+    ).rejects.toMatchObject({ code: "WMS_FE_MISSING_RECEIPT_EVIDENCE" });
+  });
+
   it("keeps WMS ROUTE_PERMISSIONS explicit until BE/BA approves the backend permission catalog", () => {
     expect(ROUTE_PERMISSIONS[ROUTES.SCAN]).toEqual([
-      "inventory.trace",
-      "scan.classify",
+      P.INVENTORY_TRACE,
+      P.SCAN_CLASSIFY,
     ]);
     expect(ROUTE_PERMISSIONS[ROUTES.INBOUND]).toEqual([
-      "inbound.create",
-      "inbound.post",
+      P.INBOUND_CREATE,
+      P.INBOUND_POST,
     ]);
     expect(ROUTE_PERMISSIONS[ROUTES.OUTBOUND]).toEqual([
-      "outbound.create",
-      "outbound.post",
+      P.OUTBOUND_CREATE,
+      P.OUTBOUND_POST,
     ]);
-    expect(ROUTE_PERMISSIONS[ROUTES.STOCKTAKE]).toEqual(["stocktake.count"]);
-    expect(ROUTE_PERMISSIONS[ROUTES.WARRANTY]).toEqual(["warranty.manage"]);
-    expect(ROUTE_PERMISSIONS[ROUTES.REPORTS]).toEqual(["report.view"]);
+    expect(ROUTE_PERMISSIONS[ROUTES.STOCKTAKE]).toEqual([
+      P.STOCKTAKE_COUNT,
+      P.STOCKTAKE_ADJUST,
+    ]);
+    expect(ROUTE_PERMISSIONS[ROUTES.WARRANTY]).toEqual([P.WARRANTY_MANAGE]);
+    expect(ROUTE_PERMISSIONS[ROUTES.REPORTS]).toEqual([
+      P.REPORT_VIEW,
+      P.REPORT_EXPORT,
+    ]);
   });
 
   it("documents Dashboard/Reports as conditional by exercising only the current FE constants", async () => {
