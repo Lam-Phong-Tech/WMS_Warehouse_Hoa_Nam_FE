@@ -1,9 +1,11 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { isAxiosError } from "axios";
 import { useMe } from "@/modules/auth/hooks/use-me";
 import { Loading } from "@/shared/components/feedback/Loading";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { ROUTES } from "@/shared/constants/routes";
 import { useAuthStore } from "@/shared/store/auth.store";
+import { getErrorCode, type ApiErrorResponse } from "@/shared/types/api-response";
 
 /**
  * Auth route guard:
@@ -26,6 +28,14 @@ export function ProtectedRoute() {
   }
 
   if (!isProfileLoaded && meQuery.isError) {
+    if (
+      isAxiosError<ApiErrorResponse>(meQuery.error) &&
+      meQuery.error.response?.status === 403 &&
+      getErrorCode(meQuery.error.response.data) === "PASSWORD_CHANGE_REQUIRED"
+    ) {
+      return <Navigate to={ROUTES.CHANGE_PASSWORD} replace />;
+    }
+
     return (
       <div style={{ margin: "48px auto", maxWidth: 720, padding: 24 }}>
         <ApiErrorAlert
