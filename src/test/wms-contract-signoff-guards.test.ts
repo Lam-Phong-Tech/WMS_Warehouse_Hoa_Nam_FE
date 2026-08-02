@@ -12,6 +12,13 @@ import {
   fetchPhysicalCodes,
 } from "@/modules/scan/services/scanService";
 import { WmsContractError } from "@/shared/api/wms-contract";
+import {
+  WMS_FINAL_SIGNOFF,
+  WMS_OPENAPI_LOCAL_SNAPSHOT,
+  WMS_P0_P1_CONTRACT_GATES,
+  assertFinalSignoffAllowed,
+  getOpenContractGateIds,
+} from "@/shared/api/wms-contract-signoff";
 import { postInboundReceipt } from "@/modules/receiving/services/receivingService";
 import { postOutboundIssue } from "@/modules/shipping/services/shippingService";
 import { applyStocktakeAdjustment } from "@/modules/stocktake/services/stocktakeService";
@@ -47,6 +54,55 @@ describe("WMS conditional sign-off contract guards", () => {
     expect(API_ENDPOINTS.STOCKTAKE_APPLY_ADJUSTMENT).toBe(
       "/stocktake/sessions/:sessionId/apply-adjustment",
     );
+    expect(WMS_FINAL_SIGNOFF.finalAllowed).toBe(false);
+    expect(WMS_FINAL_SIGNOFF.status).toBe("conditional_pass_not_final");
+    expect(WMS_FINAL_SIGNOFF.blockers).toEqual(
+      expect.arrayContaining([
+        "WWHN-31 official OpenAPI/schema version/hash/changelog",
+        "WWHN-180 Scan/Post Receipt/Post Issue/Apply Adjustment contract pass",
+        "WWHN-152 QA1 constraints/error/testability evidence",
+        "WWHN-182 QA2 happy/negative/RBAC/idempotency/retry evidence",
+        "WWHN-183 BA G1 Go/No-Go minutes",
+      ]),
+    );
+    expect(assertFinalSignoffAllowed).toThrow(/final sign-off is blocked/);
+  });
+
+  it("records local OpenAPI snapshot metadata without treating it as official BE sign-off", () => {
+    expect(WMS_OPENAPI_LOCAL_SNAPSHOT).toMatchObject({
+      source: "swagger-api.json",
+      openapi: "3.0.0",
+      infoVersion: "1.0.0",
+      sha256:
+        "5AF4D40AD5614ABC49CF7BDEF0849D6C1B073F77A9A6307AA07CA7464F83D4EF",
+    });
+    expect(WMS_OPENAPI_LOCAL_SNAPSHOT.disposition).toContain(
+      "not a final WWHN-31/WWHN-150/WWHN-151 contract artifact",
+    );
+  });
+
+  it("keeps every reviewed P0/P1 item represented as a contract gate", () => {
+    expect(WMS_P0_P1_CONTRACT_GATES.map((gate) => gate.id)).toEqual([
+      "WWHN-31",
+      "FE-FINAL-SIGNOFF",
+      "WWHN-150-WWHN-151",
+      "ROUTE_PERMISSIONS",
+      "STOCK_CHANGING_CRITICAL_FLOWS",
+      "BE-CONFIRMATION-EVIDENCE",
+      "QA-BA-GATES",
+    ]);
+    expect(getOpenContractGateIds()).toEqual([
+      "WWHN-31",
+      "FE-FINAL-SIGNOFF",
+      "WWHN-150-WWHN-151",
+      "BE-CONFIRMATION-EVIDENCE",
+      "QA-BA-GATES",
+    ]);
+    expect(
+      WMS_P0_P1_CONTRACT_GATES.filter(
+        (gate) => gate.status === "fe_guarded",
+      ).map((gate) => gate.id),
+    ).toEqual(["ROUTE_PERMISSIONS", "STOCK_CHANGING_CRITICAL_FLOWS"]);
   });
 
   it("classifies scans through the current conditional endpoint without inventing the disputed /api/v1/scan/classify path", async () => {

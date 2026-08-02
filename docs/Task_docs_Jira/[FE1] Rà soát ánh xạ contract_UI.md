@@ -219,3 +219,111 @@ Nguồn Jira đã kiểm tra:
 - Không còn P0/P1 thuộc phạm vi FE mà bị bỏ trống disposition.
 - FE đã loại bỏ hành vi nguy hiểm nhất: gọi legacy physical-code endpoint chưa duyệt, tự mở mutation stock-affecting khi thiếu idempotency/evidence, hoặc coi route permission FE là RBAC source of truth.
 - Các mục còn lại là **external sign-off dependency**, không phải code-only fix: OpenAPI/schema/version/hash, permission catalog runtime, sample response/error code, QA2 test pass, BA Go/No-Go.
+
+## Phu luc xu ly review moi nhat - 2026-08-02 14:07
+
+Nguon Jira da kiem tra:
+
+- Jira task: WWHN-153 - `[FE1] Ra soat anh xa contract/UI`
+- Review moi nhat: `2026-08-02T14:07:27.581+0700`
+- Danh gia moi nhat: **Chua dat yeu cau - 72/100 (72%)**
+- Comment FE code baseline: `2026-08-02T14:32:47.889+0700`, branch review `m1`
+- Yeu cau trong luot nay: xu ly ky P0/P1, cap nhat artifact cuc bo, khong comment truc tiep tren Jira.
+
+### Tom tat ket luan dieu hanh
+
+FE1 khong the tu dong P0 contract/gate cua WWHN-31/WWHN-180/WWHN-150/WWHN-151/QA/BA vi cac muc nay can BE/BA/QA xac nhan doc lap. Trong pham vi FE, code duoc giu o trang thai **conditional pass, not final sign-off**:
+
+- Khong tu suy dien mutation lam thay doi ton kho tren client.
+- Khong coi `ROUTE_PERMISSIONS` la backend RBAC source of truth.
+- Khong goi legacy physical-code endpoint khi endpoint chua co trong OpenAPI snapshot.
+- Critical mutation co guard `Idempotency-Key` va `If-Match` truoc khi goi network.
+- Endpoint FE dang dung cho inbound/outbound/reports duoc can theo OpenAPI snapshot hien co.
+
+### Doi chieu P0/P1 theo review 2026-08-02 14:07
+
+| ID | Muc | Noi dung review | Ket qua xu ly FE1 / disposition |
+| --- | --- | --- | --- |
+| WWHN-153-P0-20260802-1407-01 | P0 | Contract nguon WWHN-31 chua hoan tat; can OpenAPI/schema chinh thuc co version/hash/changelog va QA1 review constraints/error/testability. | **External blocker, FE khong final.** FE chi ghi nhan `swagger-api.json` hien co lam snapshot cuc bo, khong thay cho artifact version/hash/changelog chinh thuc. Dieu kien dong: BE1/BE2 phat hanh OpenAPI/schema co version/hash/changelog, QA1 pass/fail constraints/error/testability. |
+| WWHN-153-P0-20260802-1407-02 | P0 | Final FE sign-off chua hop le; chi duoc final sau khi WWHN-31/WWHN-180 contract pass va co BA/QA confirmation doc lap. | **Da sua disposition tai artifact:** tai lieu nay la FE contract feedback/conditional disposition, khong phai final sign-off. FE khong tu dong trang thai Done khi chua co gate doc lap. |
+| WWHN-153-P1-20260802-1407-01 | P1 | WWHN-150/WWHN-151 chua dong; can hoan tat Architecture/OpenAPI core va Schema/API modules, attach evidence versioned. | **External blocker co owner ro.** FE khong comment Jira va khong thay WWHN-150/WWHN-151. Dieu kien dong: BE1/BE2 attach evidence versioned cho Architecture/OpenAPI core va Schema/API modules; FE se re-run mapping sau khi artifact moi co version/hash. |
+| WWHN-153-P1-20260802-1407-02 | P1 | `ROUTE_PERMISSIONS` van la UX gate; can dong bo backend permission catalog hoac mapping BE/BA duyet bang evidence versioned. | **FE da giu dung ranh gioi:** `src/app/router/access.ts` dung `WMS_PERMISSION_CATALOG` va comment ro route permission chi la UX gate. `src/test/wms-contract-signoff-guards.test.ts` bao ve mapping hien tai de tranh sua am tham. Dieu kien dong: BE/RBAC cung cap `/permissions` runtime catalog hoac artifact versioned, BA duyet mapping. |
+| WWHN-153-P1-20260802-1407-03 | P1 | Stock-changing/API critical flow chua du sign-off cho Scan/Post Receipt/Post Issue/Apply Adjustment. | **FE da xu ly phan co the code:** `postInboundReceipt`, `postOutboundIssue`, `applyStocktakeAdjustment` yeu cau `Idempotency-Key` va `If-Match`; payload rong/sai bi reject truoc network; response post receipt/post issue phai co movement/request evidence. `fetchPhysicalCodes()` bi chan bang `WMS_FE_CONTRACT_NOT_APPROVED` vi physical-code endpoint chua co trong OpenAPI snapshot. Dieu kien dong: BE/BA/QA cung cap endpoint, payload, error code, permission, sample response chinh thuc cho tung critical flow. |
+| WWHN-153-P1-20260802-1407-04 | P1 | BE confirmation con yeu; comment "toi la BE..." khong thay OpenAPI/Postman/version/hash/reviewer doc lap. | **Da ghi nhan khong dung lam final evidence.** Comment BE ngay `2026-08-01T18:43:55.935+0700` chi la tin hieu phoi hop, khong phai contract source. Dieu kien dong: OpenAPI/Postman/schema co version/hash/reviewer doc lap. |
+| WWHN-153-P1-20260802-1407-05 | P1 | QA1/QA2/BA gate chua chay; WWHN-152, WWHN-182, WWHN-183 phai co pass/fail evidence. | **External blocker.** FE da co guard test cuc bo de QA doi chieu, nhung khong tu pass thay QA/BA. Dieu kien dong: QA1/QA2/BA cung cap pass/fail evidence hoac gate minutes Go/No-Go. |
+
+### Kiem chung OpenAPI snapshot cuc bo
+
+Kiem tra `swagger-api.json` trong workspace ngay 2026-08-02:
+
+| Nhom endpoint | Ket qua snapshot | Disposition FE |
+| --- | --- | --- |
+| Inbound | Co `/inbound-documents`, `/{id}`, `/submit`, `/approve`, `/post-receipt`, `/reject`, `/cancel` | FE constants/services da can theo canonical path nay. |
+| Outbound | Co `/outbound-documents`, `/{id}`, `/submit`, `/approve`, `/post-issue`, `/reject`, `/cancel` | FE constants/services da can theo canonical path nay. |
+| Reports/Dashboard | Co `/reports/inventory-xnt`, `/reports/dashboard-quick`, `/reports/inventory-xnt/export-excel` | FE reports constants da dung canonical path. Dashboard quick KPI dang dung `/reports/dashboard-quick`; cac endpoint bo tro dashboard khac van conditional theo snapshot. |
+| RBAC | Co `/permissions` va `/users/{id}/effective-permissions` | FE co the doi chieu runtime catalog khi BE/RBAC cung cap dataset/version; hien chua tu dong final mapping. |
+| Inventory | Co `/inventory/balances`, `/stock-movements`, `/stock-movements/{id}`, `/stock-movements/{id}/trace-source` | FE service dung endpoint that cho list/trace, nhung mutation ton kho van phu thuoc contract. |
+| Scan classify | Khong thay path `/scan-batches/classify` trong pattern kiem tra snapshot cuc bo | FE chi giu service conditional theo architecture/Jira review va khong final contract. |
+| Stocktake/Warranty/Reversal | Khong thay path stocktake/warranty/reversal tu pattern kiem tra snapshot cuc bo | FE giu conditional, khong dung cac service nay lam final production evidence khi chua co OpenAPI official. |
+
+### Bang chung code va test cap nhat
+
+| Bang chung | Ket qua |
+| --- | --- |
+| `src/shared/api/endpoints.ts` | Inbound/outbound/reports canonical constants da khop snapshot hien co; legacy SKU/items/physical-code duoc danh dau khong dung production khi chua co BE sign-off. |
+| `src/modules/scan/services/scanService.ts` | `fetchPhysicalCodes()` throw `WMS_FE_CONTRACT_NOT_APPROVED` truoc network, tranh dung legacy `/physical-codes` lam evidence gia. |
+| `src/modules/receiving/services/receivingService.ts` | `postInboundReceipt()` validate document/lines/idempotency/If-Match va bat buoc response co `receiptId`, `movementRef`, `requestId`. |
+| `src/modules/shipping/services/shippingService.ts` | `postOutboundIssue()` validate document/lines/idempotency/If-Match va bat buoc response co `issueId`, `movementRef`, `requestId`. |
+| `src/modules/stocktake/services/stocktakeService.ts` | `applyStocktakeAdjustment()` validate session/lines/idempotency/If-Match truoc network. |
+| `src/app/router/access.ts` | Route permissions giu explicit va duoc ghi ro la UX gate, backend van la enforcement source. |
+| `src/test/wms-contract-signoff-guards.test.ts` | Regression test bao ve endpoint canonical, physical-code blocked, scan payload, idempotency/If-Match, receipt/issue evidence, route permission mapping, reports constants. |
+
+### Kiem tra lai trong luot nay
+
+Thuc hien tai `C:\LAM_PHONG_TECH\HoaNam_FE\Hoa_Nam_Tools` ngay 2026-08-02:
+
+```text
+npm.cmd run test -- src/test/wms-contract-signoff-guards.test.ts --run
+Ket qua: PASS - 1 test file, 8 tests
+Duration: 62.64s
+```
+
+### Trang thai ban giao P0/P1 sau review 14:07
+
+- **P0:** Khong co P0 nao FE co the code-fix de final. Ca hai P0 deu la external contract/sign-off gate; FE da xu ly bang cach khong final, khong mo unsafe mutation, va ghi ro dieu kien dong.
+- **P1 FE-owned:** Endpoint canonical, permission UX gate boundary, unsafe physical-code legacy call, idempotency/If-Match guard, receipt/issue evidence guard da co disposition va test.
+- **P1 external:** WWHN-150/WWHN-151, BE version/hash/changelog, BE/RBAC permission catalog, BE/BA sample response/error code/permission, QA1/QA2/BA gate van can owner ben ngoai. FE khong comment Jira va khong tu dong thay owner khac.
+
+## Phu luc xu ly P0/P1 bo sung - 2026-08-02 16:45
+
+Yeu cau xu ly: tiep tuc giai quyet cac dau viec P0/P1 vao code va cap nhat artifact cuc bo, khong comment truc tiep tren Jira.
+
+### Dieu chinh code trong luot nay
+
+| Hang muc | Ket qua code |
+| --- | --- |
+| P0 - Contract nguon WWHN-31 chua hoan tat | Them `src/shared/api/wms-contract-signoff.ts` de ghi ro local OpenAPI snapshot chi la snapshot FE, khong thay official BE artifact. Snapshot hien tai: `swagger-api.json`, OpenAPI `3.0.0`, info version `1.0.0`, SHA256 `5AF4D40AD5614ABC49CF7BDEF0849D6C1B073F77A9A6307AA07CA7464F83D4EF`. Dieu kien dong van la BE1/BE2 publish OpenAPI/schema co version/hash/changelog va QA1 review constraints/error/testability. |
+| P0 - Final FE sign-off chua hop le | Them `WMS_FINAL_SIGNOFF.finalAllowed = false` va `status = conditional_pass_not_final`; `assertFinalSignoffAllowed()` luon throw voi danh sach blocker WWHN-31/WWHN-180/WWHN-150/WWHN-151/WWHN-152/WWHN-182/WWHN-183. Code nay ngan viec bien artifact FE thanh final sign-off khi chua co BA/QA confirmation doc lap. |
+| P1 - WWHN-150/WWHN-151 chua dong | Dua vao `WMS_P0_P1_CONTRACT_GATES` voi status `external_blocker`, owner `BE1 + BE2`, required fix la attach Architecture/OpenAPI core va Schema/API modules evidence versioned. FE khong tu dong dong thay BE. |
+| P1 - ROUTE_PERMISSIONS van la UX gate | Dua vao contract gates voi status `fe_guarded`; mapping van tap trung trong `src/app/router/access.ts` va regression test tiep tuc bao ve ranh gioi "FE route permission chi la UX gate, backend/RBAC moi la enforcement source". |
+| P1 - Critical stock-changing/API flow chua du sign-off | Dua vao contract gates voi status `fe_guarded`; regression test bao ve Scan/Post Receipt/Post Issue/Apply Adjustment: endpoint canonical, validate payload, `Idempotency-Key`, `If-Match`, receipt/issue movement/request evidence, va block legacy physical-code endpoint. |
+| P1 - BE confirmation con yeu | Dua vao contract gates voi status `external_blocker`; comment BE khong duoc coi la final evidence neu khong co OpenAPI/Postman/schema version/hash va reviewer doc lap. |
+| P1 - QA1/QA2/BA gate chua chay | Dua vao contract gates voi status `external_blocker`; code khong tu pass thay QA/BA, chi cung cap local guard de QA doi chieu. |
+
+### Bang chung regression test
+
+Thuc hien tai `C:\LAM_PHONG_TECH\HoaNam_FE\Hoa_Nam_Tools` ngay 2026-08-02:
+
+```text
+npm.cmd run test -- src/test/wms-contract-signoff-guards.test.ts --run
+Ket qua: PASS - 1 test file, 10 tests
+Duration: 2.03s
+```
+
+### Trang thai sau luot bo sung
+
+- P0 khong duoc chuyen thanh final pass trong code; FE chi giu `conditional_pass_not_final`.
+- Tat ca muc P0/P1 review moi nhat da co gate tuong ung trong code, co owner, required fix va status `external_blocker` hoac `fe_guarded`.
+- Phan FE co the lam da duoc guard bang test: endpoint canonical, unsafe legacy endpoint block, idempotency/optimistic lock, route permission boundary, va final sign-off blocker.
+- Phan con lai van la external sign-off dependency: official OpenAPI/schema version/hash/changelog, WWHN-150/WWHN-151 evidence, backend permission catalog/mapping BE-BA duyet, sample response/error code/permission, QA1/QA2 pass-fail evidence, BA G1 minutes.
+- Khong co comment nao duoc thuc hien truc tiep tren Jira trong luot nay.
