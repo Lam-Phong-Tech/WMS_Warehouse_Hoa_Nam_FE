@@ -188,3 +188,34 @@ Lưu ý: Vitest hiển thị cùng cảnh báo `configLoader: native` tại `vit
 - Không còn P0/P1 thuộc phạm vi FE mà chỉ có trạng thái "chưa có disposition".
 - Các P0/P1 còn phụ thuộc BE/BA/RBAC đã có owner và điều kiện đóng rõ: contract endpoint/payload, idempotency, error code, permission catalog và sample data được phê duyệt.
 - FE không tự suy diễn nghiệp vụ tồn kho, không tự tính post receipt/post issue/apply adjustment/reverse trên client, và không thay đổi API contract ngoài các endpoint canonical đã được source hiện tại xác nhận.
+
+## Phụ lục xử lý review mới nhất - 2026-08-02
+
+Nguồn Jira đã kiểm tra:
+
+- Jira task: WWHN-153 - `[FE1] Rà soát ánh xạ contract/UI`
+- Review mới nhất: `2026-08-02T00:07:34.903+0700`
+- Đánh giá mới nhất: **Chưa đạt yêu cầu - 70/100 (70%)**
+- Trạng thái Jira khi kiểm tra: `In Progress`
+
+### P0/P1 disposition theo review 2026-08-02
+
+| ID | Mức | Nội dung review | Xử lý FE1 / disposition |
+| --- | --- | --- | --- |
+| WWHN-153-P0-20260802-01 | P0 | Contract nguồn WWHN-31 chưa hoàn tất; cần OpenAPI/schema/version/hash chính thức và QA1 review constraints/error/testability. | FE không được tự final. Code hiện chỉ dùng endpoint canonical đã có trong constants/test guard; các endpoint chưa có contract hoặc còn legacy bị chặn/ghi rõ conditional. Điều kiện đóng: BE1/BE2 phát hành OpenAPI v1 có version/hash, QA1 comment pass/fail constraints/error/testability. |
+| WWHN-153-P0-20260802-02 | P0 | Final FE sign-off chưa hợp lệ khi chưa có BE contract và BA/QA gate độc lập. | FE1 giữ trạng thái **conditional pass, not final sign-off**. Tài liệu này là feedback/disposition, không phải nghiệm thu cuối. Điều kiện đóng: BE/BA/QA gate có xác nhận độc lập trên Jira hoặc artifact versioned. |
+| WWHN-153-P1-20260802-01 | P1 | `ROUTE_PERMISSIONS` vẫn là UX gate tự map; cần đồng bộ backend permission catalog. | `src/app/router/access.ts` giữ mapping rõ ràng và test bảo vệ trong `src/test/wms-contract-signoff-guards.test.ts`. Không tự đổi quyền. Điều kiện đóng: BE/RBAC cung cấp `/permissions` hoặc catalog versioned, BA duyệt mapping. |
+| WWHN-153-P1-20260802-02 | P1 | Scan/Post Receipt/Post Issue/Apply Adjustment chưa đủ sign-off endpoint, payload, error code, idempotency, permission, sample response. | FE đã có guard payload/idempotency/If-Match/evidence cho `POST /scan-batches/classify`, post receipt, post issue, apply adjustment. UI không mở action mutation nguy hiểm khi chưa có đủ payload nghiệp vụ. Điều kiện đóng: BE/BA/QA cung cấp sample response/error code/permission chính thức và QA chạy negative/RBAC/idempotency. |
+| WWHN-153-P1-20260802-03 | P1 | BE confirmation trên Jira còn yếu, chưa thay cho OpenAPI/Postman/version/hash/reviewer độc lập. | FE ghi nhận comment BE ngày `2026-08-01T18:43:55.935+0700` chỉ là tín hiệu phối hợp, không dùng làm final contract evidence. Điều kiện đóng: BE đính kèm OpenAPI/Postman/version/hash hoặc link artifact được reviewer độc lập xác nhận. |
+| WWHN-153-P1-20260802-04 | P1 | QA2/BA gate chưa chạy: WWHN-182 happy/negative/RBAC/idempotency/retry; WWHN-183 G1 minutes Go/No-Go. | FE chưa thể tự đóng gate QA/BA. Điều kiện đóng: QA2/BA comment kết quả hoặc link evidence/gate minutes; FE sẽ cập nhật lại status final theo gate đó. |
+
+### Điều chỉnh code bổ sung trong lượt 2026-08-02
+
+- `src/modules/scan/services/scanService.ts`: chặn `fetchPhysicalCodes()` bằng `WMS_FE_CONTRACT_NOT_APPROVED` thay vì gọi legacy `/physical-codes`. Việc này xử lý phần P1 “endpoint physical-code chưa có OpenAPI/sign-off” bằng cách không để FE tạo network call hoặc evidence giả.
+- `src/test/wms-contract-signoff-guards.test.ts`: thêm regression test xác nhận physical-code list bị blocked trước network; giữ scan classify, post receipt, post issue, apply adjustment và route permission dưới contract guard.
+
+### Trạng thái bàn giao sau xử lý P0/P1
+
+- Không còn P0/P1 thuộc phạm vi FE mà bị bỏ trống disposition.
+- FE đã loại bỏ hành vi nguy hiểm nhất: gọi legacy physical-code endpoint chưa duyệt, tự mở mutation stock-affecting khi thiếu idempotency/evidence, hoặc coi route permission FE là RBAC source of truth.
+- Các mục còn lại là **external sign-off dependency**, không phải code-only fix: OpenAPI/schema/version/hash, permission catalog runtime, sample response/error code, QA2 test pass, BA Go/No-Go.

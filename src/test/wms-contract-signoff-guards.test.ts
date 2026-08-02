@@ -7,7 +7,10 @@ import { ROUTE_PERMISSIONS } from "@/app/router/access";
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { WMS_PERMISSION_CATALOG as P } from "@/shared/constants/wms-permissions";
 import { http } from "@/shared/api/http";
-import { classifyScanCodes } from "@/modules/scan/services/scanService";
+import {
+  classifyScanCodes,
+  fetchPhysicalCodes,
+} from "@/modules/scan/services/scanService";
 import { WmsContractError } from "@/shared/api/wms-contract";
 import { postInboundReceipt } from "@/modules/receiving/services/receivingService";
 import { postOutboundIssue } from "@/modules/shipping/services/shippingService";
@@ -81,6 +84,15 @@ describe("WMS conditional sign-off contract guards", () => {
       classifyScanCodes({ codes: ["QR-002"], warehouse_id: 0 }),
     ).rejects.toBeInstanceOf(WmsContractError);
 
+    expect(http.post).not.toHaveBeenCalled();
+  });
+
+  it("keeps physical-code list blocked until BE/BA approves the endpoint contract", async () => {
+    await expect(fetchPhysicalCodes({ page: 1 })).rejects.toMatchObject({
+      code: "WMS_FE_CONTRACT_NOT_APPROVED",
+    });
+
+    expect(http.get).not.toHaveBeenCalled();
     expect(http.post).not.toHaveBeenCalled();
   });
 

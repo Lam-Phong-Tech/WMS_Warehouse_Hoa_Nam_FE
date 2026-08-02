@@ -90,22 +90,6 @@ function normalizeEvent(row: RawRecord): ScanEvent {
   };
 }
 
-function normalizePhysicalCode(row: RawRecord): PhysicalCode {
-  return {
-    id: text(row.id),
-    code_value: text(row.code_value ?? row.code),
-    code_type: text(row.code_type),
-    carrier_type: text(row.carrier_type),
-    target_type: text(row.target_type),
-    sku_code: text(row.sku_code) || undefined,
-    container_code: text(row.container_code) || undefined,
-    status: text(row.status),
-    location_hint: text(row.location_hint) || undefined,
-    created_at: text(row.created_at),
-    updated_at: text(row.updated_at),
-  };
-}
-
 /**
  * POST /scan-batches/classify
  * Classify scanned codes: returns VALID, DUPLICATE, UNKNOWN, or INVALID status.
@@ -153,17 +137,16 @@ export async function fetchScanEvents(
 }
 
 /**
- * GET /physical-codes
- * Fetch physical codes with pagination.
+ * Physical-code list endpoint is not part of the current approved OpenAPI
+ * snapshot. Keep the UI in an explicit blocked state instead of calling the
+ * legacy `/physical-codes` route and turning mock/legacy data into evidence.
  */
 export async function fetchPhysicalCodes(
   params: Record<string, unknown> = {},
 ): Promise<PhysicalCode[]> {
-  const result = await http.getPage<RawRecord[] | { data?: RawRecord[] }>(
-    API_ENDPOINTS.PHYSICAL_CODES,
-    { params },
-  );
-  return rowsOf(result.data as RawRecord[] | { data?: RawRecord[] }).map(
-    normalizePhysicalCode,
+  void params;
+  throw new WmsContractError(
+    "WMS_FE_CONTRACT_NOT_APPROVED",
+    "Physical code list endpoint is not approved in OpenAPI v1. FE must wait for BE/BA route, payload, status enum, error code, sample response, and permission sign-off.",
   );
 }
