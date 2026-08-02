@@ -143,3 +143,7 @@ Result: PASS - tsc -b and vite build completed; 3370 modules transformed
 ### QA1 / BE runtime evidence still required
 
 FE tests prove the client fails closed and handles 401/403/audit request headers correctly. The claim "backend authorization denies independently from FE hiding" must still be evidenced by QA1/BE against the target env with real role tokens: direct API call to a forbidden endpoint returns `403`, out-of-scope data returns `403`, audit event is written/read with `AUDIT_LOG_VIEW`, and the evidence records env, commit SHA/build ID, request id, token role/scope, and command log.
+
+## Backend RBAC Independent Evidence Gate
+
+FE guard is UX only. BE/RBAC owner and BE2 must provide the permission catalog source of truth, including route/action/API permission mapping and data-scope rules. QA evidence for sign-off must include at least one direct API call that bypasses the FE UI and receives HTTP `403` from backend authorization with request id, account role/scope, endpoint, expected deny reason, and build/env metadata.

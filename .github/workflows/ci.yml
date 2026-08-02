@@ -33,6 +33,12 @@ jobs:
       - name: Test
         run: npm run test
 
+      - name: Verify env and smoke contract
+        run: npm run env:verify
+
+      - name: Verify UAT P0/P1 readiness contract
+        run: npm run uat:p0p1:verify
+
       - name: Build
         run: npm run build
 

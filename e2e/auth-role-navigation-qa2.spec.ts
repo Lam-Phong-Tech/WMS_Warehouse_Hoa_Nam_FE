@@ -124,16 +124,6 @@ async function setupMockApi(page: Page, options: MockAuthOptions = {}) {
 
     // Auth/me
     if (url.includes('/auth/me')) {
-      if (!meSuccess) {
-        return route.fulfill({
-          status: 401,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            success: false,
-            message: 'Unauthenticated',
-          }),
-        });
-      }
       if (passwordChangeRequired) {
         return route.fulfill({
           status: 403,
@@ -141,7 +131,17 @@ async function setupMockApi(page: Page, options: MockAuthOptions = {}) {
           body: JSON.stringify({
             success: false,
             error_code: 'PASSWORD_CHANGE_REQUIRED',
-            message: 'Bạn cần đổi mật khẩu trước khi tiếp tục',
+            message: 'Ban can doi mat khau truoc khi tiep tuc',
+          }),
+        });
+      }
+      if (!meSuccess) {
+        return route.fulfill({
+          status: 401,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            success: false,
+            message: 'Unauthenticated',
           }),
         });
       }
@@ -429,7 +429,7 @@ test.describe('QA2.4: /errors/403 Page', () => {
     expect(page.url()).toContain('/errors/403');
   });
 
-  test.skip('PASSWORD_CHANGE_REQUIRED → redirect to /change-password, not /errors/403', async ({ page }) => {
+  test('PASSWORD_CHANGE_REQUIRED redirects to /change-password, not /errors/403', async ({ page }) => {
     // Bài test: BE trả 403 PASSWORD_CHANGE_REQUIRED → FE redirect
     // đến /change-password, không phải /errors/403.
     // P0: Nếu redirect sai, user sẽ thấy "Bạn không có quyền" thay vì
@@ -441,15 +441,18 @@ test.describe('QA2.4: /errors/403 Page', () => {
       passwordChangeRequired: true,
     });
 
-    // Navigate đến protected route với refresh session hợp lệ.
-    // Bootstrap sẽ gọi /auth/refresh OK, sau đó /auth/me trả 403 PASSWORD_CHANGE_REQUIRED.
-    await page.goto(`${BASE_URL}/dashboard`).catch((error) => {
-      if (!String(error).includes("ERR_ABORTED")) throw error;
-    });
+    // Login first; after auth state is set, ProtectedRoute calls /auth/me and
+    // must route the special 403 to change-password instead of generic 403.
+    await page.goto(`${BASE_URL}/login`);
     await page.waitForLoadState('networkidle');
-
-    // Verify: redirect đến /change-password
-    expect(page.url()).toContain('/change-password');
+    const emailInput = page.locator('input[type="email"], input[name="email"], input[placeholder*="email" i]');
+    if (await emailInput.isVisible()) {
+      await emailInput.fill(process.env.QA_ADMIN_EMAIL ?? 'qa.admin@gmail.com');
+      await page.locator('input[type="password"]').fill(process.env.QA_ADMIN_PASSWORD ?? 'Password123!');
+      await page.locator('button[type="submit"]').click();
+    }
+    await expect(page).toHaveURL(/\/change-password/, { timeout: 15000 });
+    expect(page.url()).not.toContain('/errors/403');
   });
 });
 
