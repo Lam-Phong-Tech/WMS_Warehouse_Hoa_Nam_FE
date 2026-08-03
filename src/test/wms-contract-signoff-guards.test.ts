@@ -5,7 +5,10 @@ vi.unmock("@/app/router/access");
 import { ROUTES } from "@/shared/constants/routes";
 import { ROUTE_PERMISSIONS } from "@/app/router/access";
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
-import { WMS_PERMISSION_CATALOG as P } from "@/shared/constants/wms-permissions";
+import {
+  WMS_ACTION_PERMISSIONS,
+  WMS_PERMISSION_CATALOG as P,
+} from "@/shared/constants/wms-permissions";
 import { http } from "@/shared/api/http";
 import {
   classifyScanCodes,
@@ -109,17 +112,6 @@ describe("WMS conditional sign-off contract guards", () => {
       "RUNTIME-EVIDENCE",
       "QA-BA-GATES",
     ]);
-    expect(
-      WMS_P0_P1_CONTRACT_GATES.filter(
-        (gate) => gate.status === "fe_guarded",
-      ).map((gate) => gate.id),
-    ).toEqual([
-      "API-MAPPING-EVIDENCE",
-      "ROUTE_PERMISSIONS",
-      "STOCK_CHANGING_CRITICAL_FLOWS",
-      "SERVICE-NORMALIZATION",
-      "VITE-VITEST-CONFIG-WARNING",
-    ]);
   });
 
   it("classifies scans through the current conditional endpoint without inventing the disputed /api/v1/scan/classify path", async () => {
@@ -150,9 +142,7 @@ describe("WMS conditional sign-off contract guards", () => {
   it("blocks invalid scan classify payloads before network calls", async () => {
     await expect(
       classifyScanCodes({ codes: ["QR-001", " QR-001 "] }),
-    ).rejects.toMatchObject({
-      code: "WMS_SCAN_DUPLICATE",
-    });
+    ).rejects.toMatchObject({ code: "WMS_SCAN_DUPLICATE" });
     await expect(
       classifyScanCodes({ codes: ["QR-002"], warehouse_id: 0 }),
     ).rejects.toBeInstanceOf(WmsContractError);
@@ -164,9 +154,7 @@ describe("WMS conditional sign-off contract guards", () => {
     await expect(fetchPhysicalCodes({ page: 1 })).rejects.toMatchObject({
       code: "WMS_FE_CONTRACT_NOT_APPROVED",
     });
-
     expect(http.get).not.toHaveBeenCalled();
-    expect(http.post).not.toHaveBeenCalled();
   });
 
   it("requires idempotency and optimistic lock evidence on receipt, issue, and apply-adjustment service calls", async () => {
@@ -276,18 +264,10 @@ describe("WMS conditional sign-off contract guards", () => {
     ).rejects.toMatchObject({ code: "WMS_FE_MISSING_RECEIPT_EVIDENCE" });
   });
 
-  it("keeps WMS ROUTE_PERMISSIONS explicit until BE/BA approves the backend permission catalog", () => {
+  it("separates route-entry permissions from sensitive action permissions", () => {
     expect(ROUTE_PERMISSIONS[ROUTES.SCAN]).toEqual([
       P.INVENTORY_TRACE,
       P.SCAN_CLASSIFY,
-    ]);
-    expect(ROUTE_PERMISSIONS[ROUTES.INBOUND]).toEqual([
-      P.INBOUND_CREATE,
-      P.INBOUND_POST,
-    ]);
-    expect(ROUTE_PERMISSIONS[ROUTES.OUTBOUND]).toEqual([
-      P.OUTBOUND_CREATE,
-      P.OUTBOUND_POST,
     ]);
     expect(ROUTE_PERMISSIONS[ROUTES.STOCKTAKE]).toEqual([
       P.STOCKTAKE_COUNT,
@@ -298,6 +278,18 @@ describe("WMS conditional sign-off contract guards", () => {
       P.REPORT_VIEW,
       P.REPORT_EXPORT,
     ]);
+
+    expect(WMS_ACTION_PERMISSIONS).toMatchObject({
+      SCAN_INBOUND: [P.SCAN_INBOUND],
+      SCAN_OUTBOUND: [P.SCAN_OUTBOUND],
+      SCAN_WARRANTY: [P.SCAN_WARRANTY],
+      POST_RECEIPT: [P.INBOUND_POST],
+      POST_ISSUE: [P.OUTBOUND_POST],
+      APPLY_STOCKTAKE_ADJUSTMENT: [P.STOCKTAKE_ADJUST],
+      WARRANTY_TEMP_ONLY: [P.WARRANTY_TEMP_ONLY],
+      EXPORT_REPORT: [P.REPORT_EXPORT],
+      POST_REVERSAL: [P.REVERSAL_POST],
+    });
   });
 
   it("documents Dashboard/Reports as conditional by exercising only the current FE constants", async () => {

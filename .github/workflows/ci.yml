@@ -19,10 +19,16 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        shell: bash
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci --no-audit --no-fund
+          else
+            echo "::warning::package-lock.json is missing; using npm install. Add and review a lockfile to restore deterministic installs."
+            npm install --no-audit --no-fund --package-lock=false
+          fi
 
       - name: Check formatting
         run: npm run format:check
