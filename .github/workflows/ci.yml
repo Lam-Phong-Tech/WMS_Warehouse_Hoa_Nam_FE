@@ -39,6 +39,9 @@ jobs:
       - name: Verify UAT P0/P1 readiness contract
         run: npm run uat:p0p1:verify
 
+      - name: Verify Master/SKU closure contract
+        run: npm run master-sku:verify
+
       - name: Build
         run: npm run build
 
