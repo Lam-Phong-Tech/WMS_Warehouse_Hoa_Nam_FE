@@ -24,6 +24,8 @@ export const WMS_FINAL_SIGNOFF = {
   status: "conditional_pass_not_final",
   finalAllowed: false,
   blockers: [
+    "WWHN-146 HN-UX-002 field/state matrix BAS approval",
+    "WWHN-147 HN-UX-002 rule/label/validation BA approval",
     "WWHN-31 official OpenAPI/schema version/hash/changelog",
     "WWHN-180 Scan/Post Receipt/Post Issue/Apply Adjustment contract pass",
     "WWHN-150 Architecture/OpenAPI core evidence",
@@ -35,6 +37,30 @@ export const WMS_FINAL_SIGNOFF = {
 } as const;
 
 export const WMS_P0_P1_CONTRACT_GATES: readonly ContractGate[] = [
+  {
+    id: "HN-UX-002-WWHN-146-WWHN-147",
+    level: "P1",
+    status: "external_blocker",
+    owner: "BAS + BA",
+    requiredFix:
+      "Complete and approve the HN-UX-002 field/state matrix in WWHN-146 plus rule, label, and validation baseline in WWHN-147.",
+  },
+  {
+    id: "QA2-TESTABILITY-REVIEW",
+    level: "P1",
+    status: "external_blocker",
+    owner: "QA2",
+    requiredFix:
+      "Review UI state, responsive behavior, RBAC, API errors, and testability; add explicit pass/fail evidence on the target build.",
+  },
+  {
+    id: "API-MAPPING-EVIDENCE",
+    level: "P1",
+    status: "fe_guarded",
+    owner: "FE1 + BE/BA",
+    requiredFix:
+      "Keep docs/api-evidence/M1_API_MAPPING.md present and make npm run check:api-mapping pass; BE/BA must approve any contract/script exception.",
+  },
   {
     id: "WWHN-31",
     level: "P0",
@@ -81,7 +107,15 @@ export const WMS_P0_P1_CONTRACT_GATES: readonly ContractGate[] = [
     status: "external_blocker",
     owner: "BE1/BE2",
     requiredFix:
-      "Replace informal BE comments with OpenAPI/Postman/schema version/hash and independent reviewer evidence.",
+      "Confirm endpoints, payloads, error codes, permission catalog, and sample 403/409/422/idempotency responses with OpenAPI/Postman/schema version/hash and independent reviewer evidence.",
+  },
+  {
+    id: "RUNTIME-EVIDENCE",
+    level: "P1",
+    status: "external_blocker",
+    owner: "FE1 + QA",
+    requiredFix:
+      "Attach screenshot or video evidence for desktop, tablet, mobile, role scenarios, and API error states on a named build/env.",
   },
   {
     id: "QA-BA-GATES",
@@ -90,6 +124,22 @@ export const WMS_P0_P1_CONTRACT_GATES: readonly ContractGate[] = [
     owner: "QA1 + QA2 + BA",
     requiredFix:
       "WWHN-152 QA1, WWHN-182 QA2, and WWHN-183 BA G1 minutes must include pass/fail evidence.",
+  },
+  {
+    id: "SERVICE-NORMALIZATION",
+    level: "P1",
+    status: "fe_guarded",
+    owner: "FE1 + BE",
+    requiredFix:
+      "After BE locks contracts, reduce multi-field fallback normalization and update official TypeScript types/schema.",
+  },
+  {
+    id: "VITE-VITEST-CONFIG-WARNING",
+    level: "P1",
+    status: "fe_guarded",
+    owner: "FE1 + Tech Lead",
+    requiredFix:
+      "Track the non-blocking Vite/Vitest config-loader warning as a separate technical task if the toolchain upgrade requires it.",
   },
 ] as const;
 

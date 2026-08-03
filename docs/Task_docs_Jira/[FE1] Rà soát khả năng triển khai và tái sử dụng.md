@@ -220,7 +220,7 @@ Thời điểm chạy: 2026-08-01 ICT, workspace `C:\HoaNamFE\Hoa_Nam_Tools`.
 
 | ID | Loại | Mô tả | Owner | ETA / điều kiện đóng | Severity |
 | --- | --- | --- | --- | --- | --- |
-| WWHN-148-B01 | Dependency | `HN-UX-002-ST01` cần cung cấp/chốt đầy đủ field specification, UI state, AC và open point đã xử lý từ task cha. | BA/BAS | Attach/chốt baseline vào `HN-UX-002`; FE cập nhật mapping nếu có thay đổi. | P1 |
+| WWHN-148-B01 | Dependency | `HN-UX-002-ST01` chưa được chốt thực tế. BAS đã hoàn tất field/state matrix tại `WWHN-146`; BA đã hoàn tất rule/label/validation tại `WWHN-147`; cần BAS + BA chốt baseline thực tế cuối cùng trước final sign-off. | BAS + BA | Chốt/attach baseline thực tế vào `HN-UX-002-ST01`/`HN-UX-002`; FE cập nhật mapping nếu field/state/rule/label/validation thay đổi sau chốt. | P1 |
 | WWHN-148-B02 | API contract | Final endpoint/payload/error code/permission/sample data cho các luồng core chưa thể xác nhận 100% chỉ từ FE repo. | BE1/BE2 | Cung cấp contract locked; FE chạy lại API mapping và targeted module review. | P1 |
 | WWHN-148-B03 | RBAC | Permission catalog runtime cần sign-off để xác nhận `ROUTE_PERMISSIONS` và action permissions không lệch BE. | BE2/RBAC owner + BA | Cung cấp catalog/bảng mapping; QA chạy role scenarios. | P1 |
 | WWHN-148-B04 | Evidence file | `npm.cmd run check:api-mapping -- --no-live` fail vì thiếu `docs/api-evidence/M1_API_MAPPING.md`. | FE1 + BE1/BA nếu file là artifact contract | Tạo/cung cấp file evidence đúng format hoặc cập nhật script theo approval để graceful fallback. | P1 cho sign-off mapping |

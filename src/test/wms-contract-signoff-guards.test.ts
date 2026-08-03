@@ -58,6 +58,8 @@ describe("WMS conditional sign-off contract guards", () => {
     expect(WMS_FINAL_SIGNOFF.status).toBe("conditional_pass_not_final");
     expect(WMS_FINAL_SIGNOFF.blockers).toEqual(
       expect.arrayContaining([
+        "WWHN-146 HN-UX-002 field/state matrix BAS approval",
+        "WWHN-147 HN-UX-002 rule/label/validation BA approval",
         "WWHN-31 official OpenAPI/schema version/hash/changelog",
         "WWHN-180 Scan/Post Receipt/Post Issue/Apply Adjustment contract pass",
         "WWHN-152 QA1 constraints/error/testability evidence",
@@ -83,26 +85,41 @@ describe("WMS conditional sign-off contract guards", () => {
 
   it("keeps every reviewed P0/P1 item represented as a contract gate", () => {
     expect(WMS_P0_P1_CONTRACT_GATES.map((gate) => gate.id)).toEqual([
+      "HN-UX-002-WWHN-146-WWHN-147",
+      "QA2-TESTABILITY-REVIEW",
+      "API-MAPPING-EVIDENCE",
       "WWHN-31",
       "FE-FINAL-SIGNOFF",
       "WWHN-150-WWHN-151",
       "ROUTE_PERMISSIONS",
       "STOCK_CHANGING_CRITICAL_FLOWS",
       "BE-CONFIRMATION-EVIDENCE",
+      "RUNTIME-EVIDENCE",
       "QA-BA-GATES",
+      "SERVICE-NORMALIZATION",
+      "VITE-VITEST-CONFIG-WARNING",
     ]);
     expect(getOpenContractGateIds()).toEqual([
+      "HN-UX-002-WWHN-146-WWHN-147",
+      "QA2-TESTABILITY-REVIEW",
       "WWHN-31",
       "FE-FINAL-SIGNOFF",
       "WWHN-150-WWHN-151",
       "BE-CONFIRMATION-EVIDENCE",
+      "RUNTIME-EVIDENCE",
       "QA-BA-GATES",
     ]);
     expect(
       WMS_P0_P1_CONTRACT_GATES.filter(
         (gate) => gate.status === "fe_guarded",
       ).map((gate) => gate.id),
-    ).toEqual(["ROUTE_PERMISSIONS", "STOCK_CHANGING_CRITICAL_FLOWS"]);
+    ).toEqual([
+      "API-MAPPING-EVIDENCE",
+      "ROUTE_PERMISSIONS",
+      "STOCK_CHANGING_CRITICAL_FLOWS",
+      "SERVICE-NORMALIZATION",
+      "VITE-VITEST-CONFIG-WARNING",
+    ]);
   });
 
   it("classifies scans through the current conditional endpoint without inventing the disputed /api/v1/scan/classify path", async () => {
