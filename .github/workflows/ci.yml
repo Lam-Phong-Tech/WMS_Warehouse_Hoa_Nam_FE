@@ -67,6 +67,18 @@ jobs:
       - name: Verify Master/SKU closure contract
         run: npm run master-sku:verify
 
+      - name: Verify WMS P0/P1/P2 contract sign-off guards
+        run: npm run wms-contract:verify
+
+      - name: Upload WMS contract evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: wms-contract-evidence-${{ github.sha }}
+          path: docs/evidence/wms-contract-signoff/ci-contract-evidence.json
+          if-no-files-found: warn
+          retention-days: 30
+
       - name: Build
         run: npm run build
 
