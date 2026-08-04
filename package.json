@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && node scripts/write-build-manifest.mjs",
     "typecheck": "tsc -b --pretty false",
     "lint": "eslint --config eslint.config.js --no-error-on-unmatched-pattern src/",
     "preview": "vite preview",
@@ -19,6 +19,8 @@
     "format:check": "node scripts/verify-format-baseline.mjs",
     "env:verify": "node scripts/verify-env-health-contract.mjs",
     "uat:p0p1:verify": "node scripts/verify-uat-p0-p1-readiness.mjs",
+    "wwhn-156:verify": "node scripts/verify-wwhn-156-closure.mjs",
+    "smoke:wwhn-156": "node scripts/run-wwhn-156-smoke.mjs",
     "master-sku:verify": "node scripts/verify-master-sku-closure.mjs",
     "wms-contract:verify": "node scripts/verify-wms-contract-signoff.mjs",
     "wwhn-148:verify": "node scripts/verify-wwhn-148-closure.mjs",

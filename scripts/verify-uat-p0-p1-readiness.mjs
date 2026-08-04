@@ -3,80 +3,16 @@ import { existsSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 
 const root = process.cwd();
-
 const requiredFiles = [
   "docs/Task_docs_Jira/Khắc phục lỗi UI_responsive_RBAC.md",
-  "docs/Task_docs_Jira/[FE1] Chuẩn hóa Xây dựng_env_health.md",
+  "docs/Task_docs_Jira/WWHN-156.md",
   "docs/Task_docs_Jira/HN-FND-001-FE-AUTH-SESSION-403.md",
+  "docs/evidence/wwhn-156/WWHN-156_CLOSURE_REGISTER.json",
   "e2e/auth-role-navigation-qa2.spec.ts",
+  "e2e/wms-runtime-evidence.spec.ts",
   "scripts/capture-permission-403-evidence.mjs",
   "scripts/capture-role-scopes-screenshots.mjs",
-];
-
-const readinessChecks = [
-  {
-    id: "WWHN-78/HN-UAT-003 defect traceability",
-    file: "docs/Task_docs_Jira/Khắc phục lỗi UI_responsive_RBAC.md",
-    patterns: [
-      /WWHN-78/i,
-      /HN-UAT-003/i,
-      /module/i,
-      /route/i,
-      /role|account/i,
-      /viewport/i,
-      /Before evidence|before-after|before\/after/i,
-      /severity|P0|P1/i,
-    ],
-  },
-  {
-    id: "Code/build artifact proof",
-    file: "docs/Task_docs_Jira/[FE1] Chuẩn hóa Xây dựng_env_health.md",
-    patterns: [
-      /Code da cap nhat|Code đã cập nhật/i,
-      /scripts\/verify-env-health-contract\.mjs/i,
-      /scripts\/verify-uat-p0-p1-readiness\.mjs/i,
-      /package\.json/i,
-      /\.github\/workflows\/ci\.yml/i,
-      /npm\.cmd run build|npm run build/i,
-      /SHA|commit|build ID|CI/i,
-    ],
-  },
-  {
-    id: "After evidence and UI states",
-    file: "docs/Task_docs_Jira/Khắc phục lỗi UI_responsive_RBAC.md",
-    patterns: [
-      /desktop/i,
-      /tablet/i,
-      /mobile/i,
-      /loading/i,
-      /empty/i,
-      /error/i,
-      /success/i,
-      /disabled/i,
-      /confirm/i,
-      /screenshot|video/i,
-    ],
-  },
-  {
-    id: "QA2 WWHN-293 retest disposition",
-    file: "docs/Task_docs_Jira/[FE1] Chuẩn hóa Xây dựng_env_health.md",
-    patterns: [/WWHN-293/i, /QA2/i, /retest/i, /pass\/fail/i, /browser/i, /role/i],
-  },
-  {
-    id: "Parent WWHN-78 blocker disposition",
-    file: "docs/Task_docs_Jira/[FE1] Chuẩn hóa Xây dựng_env_health.md",
-    patterns: [/WWHN-78/i, /Blocked|Pending/i, /disposition/i, /Lead/i, /QA2/i],
-  },
-  {
-    id: "BA DEC-UAT baseline traceability",
-    file: "docs/Task_docs_Jira/[FE1] Chuẩn hóa Xây dựng_env_health.md",
-    patterns: [/DEC-UAT/i, /WWHN-20/i, /WWHN-28/i, /WWHN-140/i, /WWHN-141/i, /WWHN-142/i, /approval|baseline|source register/i],
-  },
-  {
-    id: "Independent RBAC/backend authorization evidence",
-    file: "docs/Task_docs_Jira/HN-FND-001-FE-AUTH-SESSION-403.md",
-    patterns: [/backend authorization/i, /403/i, /permission catalog/i, /BE\/RBAC|BE2|RBAC owner/i, /independent|direct API/i],
-  },
+  "scripts/run-wwhn-156-smoke.mjs",
 ];
 
 function fail(message) {
@@ -93,31 +29,130 @@ function readRequired(path) {
   return readFileSync(fullPath, "utf8");
 }
 
-for (const file of requiredFiles) {
-  readRequired(file);
-}
-
-for (const check of readinessChecks) {
-  const content = readRequired(check.file);
-  const missing = check.patterns.filter((pattern) => !pattern.test(content));
+function requirePatterns(content, patterns, label, file) {
+  const missing = patterns.filter((pattern) => !pattern.test(content));
   if (missing.length > 0) {
     fail(
-      `${check.id} is incomplete in ${relative(root, join(root, check.file))}: missing ${missing
+      `${label} is incomplete in ${relative(root, join(root, file))}: missing ${missing
         .map((pattern) => pattern.toString())
         .join(", ")}`,
     );
   }
 }
 
+for (const file of requiredFiles) readRequired(file);
+
+const uatDocPath = "docs/Task_docs_Jira/Khắc phục lỗi UI_responsive_RBAC.md";
+const uatDoc = readRequired(uatDocPath);
+requirePatterns(
+  uatDoc,
+  [
+    /WWHN-78/iu,
+    /HN-UAT-003/iu,
+    /module/iu,
+    /route/iu,
+    /role|account/iu,
+    /viewport/iu,
+    /Before evidence|before-after|before\/after/iu,
+    /severity|P0|P1/iu,
+    /desktop/iu,
+    /tablet/iu,
+    /mobile/iu,
+    /loading/iu,
+    /empty/iu,
+    /error/iu,
+    /success/iu,
+    /disabled/iu,
+    /confirm/iu,
+    /screenshot|video/iu,
+  ],
+  "WWHN-78 defect and after-evidence traceability",
+  uatDocPath,
+);
+
+const taskDocPath = "docs/Task_docs_Jira/WWHN-156.md";
+const taskDoc = readRequired(taskDocPath);
+requirePatterns(
+  taskDoc,
+  [
+    /WWHN-157/iu,
+    /WWHN-32/iu,
+    /WWHN-78/iu,
+    /WWHN-292/iu,
+    /WWHN-293/iu,
+    /WWHN-20/iu,
+    /WWHN-28/iu,
+    /WWHN-140/iu,
+    /WWHN-141/iu,
+    /WWHN-142/iu,
+    /direct API 403/iu,
+    /data-scope deny/iu,
+    /source SHA/iu,
+    /execution.*SHA/iu,
+    /artifact/iu,
+    /pass\/fail/iu,
+  ],
+  "WWHN-156 P1 closure and handoff matrix",
+  taskDocPath,
+);
+if (/blob:/iu.test(taskDoc)) fail(`${taskDocPath} contains non-traceable blob evidence.`);
+
+const registerPath = "docs/evidence/wwhn-156/WWHN-156_CLOSURE_REGISTER.json";
+let register = {};
+try {
+  register = JSON.parse(readRequired(registerPath));
+} catch (error) {
+  fail(`${registerPath} is invalid JSON: ${error.message}`);
+}
+const expectedBlockedOwners = new Set([
+  "WWHN156-P1-01",
+  "WWHN156-P1-02",
+  "WWHN156-P1-03",
+  "WWHN156-P1-04",
+  "WWHN156-P1-05",
+]);
+const reviewItems = Array.isArray(register.reviewItems) ? register.reviewItems : [];
+for (const item of reviewItems) {
+  if (expectedBlockedOwners.has(item.id) && item.closureState !== "BLOCKED_EXTERNAL") {
+    fail(`${item.id} must remain BLOCKED_EXTERNAL until its independent owner attaches evidence.`);
+  }
+}
+if (reviewItems.filter((item) => expectedBlockedOwners.has(item.id)).length !== expectedBlockedOwners.size) {
+  fail("Closure register is missing one or more independent P1 gates.");
+}
+
 const qa2Spec = readRequired("e2e/auth-role-navigation-qa2.spec.ts");
-if (/test\.skip\([^)]*PASSWORD_CHANGE_REQUIRED/i.test(qa2Spec)) {
-  fail("QA2 PASSWORD_CHANGE_REQUIRED retest must not be skipped.");
+const runtimeSpec = readRequired("e2e/wms-runtime-evidence.spec.ts");
+if (/test\.skip/iu.test(qa2Spec) || /test\.skip/iu.test(runtimeSpec)) {
+  fail("Targeted QA2/runtime evidence tests must not be skipped.");
 }
+requirePatterns(
+  runtimeSpec,
+  [
+    /desktop-1440x900/iu,
+    /tablet-1024x768/iu,
+    /mobile-390x844/iu,
+    /limited role.*403/iu,
+    /login API error/iu,
+    /422/iu,
+    /component-catalog/iu,
+    /screenshot/iu,
+    /video/iu,
+    /trace/iu,
+  ],
+  "controlled responsive/RBAC/API-error evidence suite",
+  "e2e/wms-runtime-evidence.spec.ts",
+);
 
-if (process.exitCode) {
-  process.exit(process.exitCode);
-}
+const rbacDoc = readRequired("docs/Task_docs_Jira/HN-FND-001-FE-AUTH-SESSION-403.md");
+requirePatterns(
+  rbacDoc,
+  [/backend authorization/iu, /403/iu, /permission catalog/iu, /BE\/RBAC|BE2|RBAC owner/iu, /independent|direct API/iu],
+  "independent backend RBAC boundary",
+  "docs/Task_docs_Jira/HN-FND-001-FE-AUTH-SESSION-403.md",
+);
 
+if (process.exitCode) process.exit(process.exitCode);
 console.log(
-  "[uat-p0-p1] P0/P1 readiness checks cover UAT defect traceability, code proof, after evidence, QA2 retest, parent disposition, BA baseline, and RBAC backend evidence.",
+  "[uat-p0-p1] PASS: real defect traceability, controlled after-evidence generation and fail-closed external P1 ownership are enforced.",
 );

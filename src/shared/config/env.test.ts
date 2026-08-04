@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { apiHealthUrl, runtimeConfig } from "@/shared/config/env";
+import {
+  apiHealthUrl,
+  resolveApiUrl,
+  runtimeConfig,
+} from "@/shared/config/env";
 
 describe("runtimeConfig", () => {
   it("normalizes required deploy-time config", () => {
@@ -11,7 +15,16 @@ describe("runtimeConfig", () => {
 
   it("builds the approved backend health URL", () => {
     expect(apiHealthUrl).toBe(
-      `${runtimeConfig.apiBaseUrl}${runtimeConfig.apiHealthPath}`,
+      resolveApiUrl(runtimeConfig.apiBaseUrl, runtimeConfig.apiHealthPath),
+    );
+  });
+
+  it("resolves the versioned health contract without a double slash", () => {
+    expect(resolveApiUrl("https://example.test/api/v1", "/health")).toBe(
+      "https://example.test/api/v1/health",
+    );
+    expect(resolveApiUrl("https://example.test/api/v1/", "health/")).toBe(
+      "https://example.test/api/v1/health",
     );
   });
 });

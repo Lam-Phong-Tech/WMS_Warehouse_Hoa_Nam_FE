@@ -1,176 +1,181 @@
-# [FE1] Chuan hoa Build/env/health - WWHN-156
+# WWHN-156 - Chuan hoa FE build, env, health va closure P0/P1/P2
 
-Ngay cap nhat: 2026-08-02
+## 1. Pham vi
 
-## Ket luan Remove Flag
+Ho so ky thuat nay ap dung cho nhanh `m1`, theo `docs/WMS_Hoa_Nam_Techstack_Architecture_Dev_Guide.md`.
 
-| Muc | Van de reviewer neu | Xu ly trong lan nay | Owner | Trang thai |
-| --- | --- | --- | --- | --- |
-| P0 | N/A cho FE1, khong thay P0 truc tiep thuoc FE build/env/health | Doi chieu lai scope: khong co P0 code blocker thuoc FE1. Bo sung guard de tranh tai phat loi build/env/health. | FE1 | Done |
-| P1 | QA smoke chua dong | FE1 bo sung contract smoke co the verify trong repo: FE artifact `/health.json`, backend health path, login endpoint, master API smoke paths. QA1 van phai attach log DEV/UAT that. | QA1 | FE ready, cho QA evidence |
-| P1 | Parent gate chua dong | FE1 bo sung env/health/secret baseline gate vao CI de DevOps co log build/deploy ro rang. DevOps van phai xac nhan URL DEV/UAT, config matrix va secret runtime that. | DevOps | FE ready, cho DevOps evidence |
-| P1 | `npm run build` chua co pass sach | Chay lai build tren runner/quyen sach: pass. Sandbox local bi EPERM khi Vite xoa `dist`, nhung build ngoai sandbox pass va da sinh artifact moi. | FE1 + DevOps | Done cho FE local evidence; CI can attach build ID/log |
+FE chiu trach nhiem:
 
-## Code da cap nhat
+- khoa env/build/health contract;
+- them CI fail-fast va immutable trace theo exact source SHA;
+- cung cap QA1 smoke runner cho DEV/UAT;
+- tao controlled evidence responsive/UI state/RBAC UX/API error;
+- ghi ro FE khong duoc tu ky thay QA1, QA2, DevOps/Lead, BA/BAS/PM/QA hoac BE/RBAC owner.
 
-| Hang muc | File | Noi dung |
-| --- | --- | --- |
-| Env/health contract gate | `scripts/verify-env-health-contract.mjs` | Kiem tra `.env.example` co du key runtime, validate URL/timeout/boolean/env name, chan key/value co dau hieu secret, xac nhan `public/health.json`, va co smoke contract cho `/health.json`, `/auth/login`, master API paths. |
-| NPM script | `package.json` | Them `npm run env:verify`. |
-| CI gate | `.github/workflows/ci.yml` | Them step `Verify env and smoke contract` sau test va truoc build. |
+Khong co P0 code blocker rieng WWHN-156, nhung parent gate va cross-role acceptance van chua duoc xem la dong.
 
-## Contract hien tai
+## 2. Root cause CI
 
-### Static FE health
+CI cu cua source SHA `387e81b2352b33d3cc2be6d12719e231ecba92de`, run `30891359169`, da pass format, lint, typecheck, env contract va **38 test files / 325 tests**.
 
-Source: `public/health.json`
+Run fail tai `npm run uat:p0p1:verify` vi verifier doi file khong ton tai:
 
-```json
-{
-  "status": "ok",
-  "service": "wms-hoa-nam-frontend",
-  "component": "frontend",
-  "healthcheck": "static"
-}
+`docs/Task_docs_Jira/[FE1] Chuan hoa Xay dung_env_health.md`
+
+Ho so dung la `docs/Task_docs_Jira/WWHN-156.md`. Do fail som, build, health, API mapping va Playwright bi skip. Khong duoc dung run cu de tuyen bo runtime/build PASS.
+
+Fix:
+
+1. verifier doc dung va closure register co schema;
+2. CI them `wwhn-156:verify` va smoke contract-only;
+3. build sinh `dist/build-manifest.json`;
+4. health checker bat buoc health + build manifest;
+5. artifact dat theo source SHA, retention 90 ngay.
+
+## 3. Thay doi ky thuat
+
+### Environment
+
+- `.env.example` chi chua public build-time config, khong chua password/token/private key.
+- `VITE_API_BASE_URL` phai la HTTP(S), khong credential/trailing slash, path ket thuc `/api/v1`.
+- `VITE_API_HEALTH_PATH=/health`.
+- timeout phai duong; boolean chi nhan `true|false|1|0`.
+- CI inject bien bat buoc, khong dua vao fallback mo ho.
+
+### Build va CI
+
+`npm run build` chay `tsc -b`, `vite build`, sau do `scripts/write-build-manifest.mjs`.
+
+Build manifest ghi task, source SHA, execution SHA, artifact version, env, timestamp va health path. CI theo thu tu: format, lint, typecheck, test, env contract, UAT readiness, WWHN-156 register, smoke contract, cac WMS gate hien huu, build, health, API mapping, Playwright evidence va artifact upload. Manifest evidence van chay voi `if: always()` de luu raw disposition.
+
+## 4. Health contract versioned
+
+Contract version: `WWHN-156-health-v1`.
+
+| Thanh phan | Gia tri |
+|---|---|
+| FE static health | `GET /health.json` |
+| API base | `/api/v1` |
+| Relative backend health | `/health` |
+| Canonical resolved health | `GET /api/v1/health` |
+| Legacy rejected | `/api/health` |
+
+`VITE_API_BASE_URL=https://host/api/v1` + `VITE_API_HEALTH_PATH=/health` phai resolve thanh `https://host/api/v1/health`.
+
+`/api/health` chi duoc dung neu WWHN-155 co OpenAPI version/hash/changelog moi hoac waiver BE1 + BA + QA phe duyet, co thoi han va test version.
+
+Backend success phai co `status`, `version`, `environment`, `server_time`, `request_id` o root hoac envelope data.
+
+## 5. QA1 smoke handoff
+
+Script: `scripts/run-wwhn-156-smoke.mjs`; command: `npm run smoke:wwhn-156`.
+
+CI contract-only:
+
+```bash
+npm run smoke:wwhn-156 -- --contract-only --env ci \
+  --source-sha "$SOURCE_SHA" \
+  --api-base-url "$VITE_API_BASE_URL" \
+  --health-path "$VITE_API_HEALTH_PATH"
 ```
 
-Deploy artifact bat buoc sau build:
+QA1 runtime DEV/UAT, credential chi inject tu secret store:
 
-| Artifact | Yeu cau |
-| --- | --- |
-| `dist/index.html` | Ton tai, khong rong, co module entry script. |
-| `dist/health.json` | Ton tai, khong rong, JSON hop le, match FE static health contract. |
+```bash
+QA_SMOKE_EMAIL="<secret>" QA_SMOKE_PASSWORD="<secret>" \
+FE_BASE_URL="https://<fe-env>" \
+API_BASE_URL="https://<api-env>/api/v1" \
+VITE_API_HEALTH_PATH="/health" \
+npm run smoke:wwhn-156 -- --env uat --source-sha "<deployed-sha>"
+```
 
-### Runtime env matrix
+Smoke kiem FE health, backend health, login, `/products`, `/product-categories`, `/uoms`, `/suppliers`. Raw JSON chi ghi method, sanitized URL, status, duration, request ID, pass/fail va missing fields; khong ghi password/token.
 
-| Key | Required | Rule |
-| --- | --- | --- |
-| `VITE_APP_ENV` | Yes | Chi nhan `local`, `dev`, `uat`, `prod`, `test`. |
-| `VITE_APP_TITLE` | Yes | Ten ung dung runtime. |
-| `VITE_APP_VERSION` | Yes | Version/build label runtime. |
-| `VITE_API_BASE_URL` | Yes | URL `http/https`, khong co trailing slash. |
-| `VITE_API_HEALTH_PATH` | Yes | Bat dau bang `/`, default trong app la `/health`. |
-| `VITE_API_TIMEOUT_MS` | Yes | So duong. |
-| `VITE_API_WITH_CREDENTIALS` | Yes | `true/false/1/0`; bat true chi khi BE CORS/cookie cho phep origin FE. |
-| `VITE_STORAGE_URL` | Yes | Co the rong; neu co gia tri phai la URL `http/https`, khong trailing slash. |
-| `VITE_ENABLE_ANALYTICS` | Yes | Boolean string. |
-| `VITE_ENABLE_DEBUG` | Yes | Boolean string. |
-| `VITE_ENABLE_PERF_MONITOR` | Yes | Boolean string. |
+WWHN-157 chi dong khi QA1 attach DEV/UAT raw JSON tren exact deployed SHA va comment pass/fail.
 
-Secret baseline: khong commit token, password, private key, API key hoac client secret vao `.env.example`/source. Credential smoke phai inject qua CI/runtime secret.
+## 6. Responsive, UI state va RBAC
 
-### Smoke path handoff
+`e2e/wms-runtime-evidence.spec.ts` tao screenshot/video/trace cho:
 
-| Smoke item | FE contract | Evidence can attach |
-| --- | --- | --- |
-| FE artifact | `GET <FE_URL>/health.json` tra payload static health o tren. | QA1/DevOps log hoac screenshot DEV/UAT. |
-| Backend health | `VITE_API_BASE_URL + VITE_API_HEALTH_PATH`. | DevOps/QA1 response log theo URL DEV/UAT that. |
-| Login | `POST /auth/login`. | QA1 smoke login bang test credential tu secret. |
-| Master API | `GET /products`, `/product-categories`, `/uoms`, `/suppliers`. | QA1 log status/response/request-id tren DEV/UAT. |
+- desktop `1440x900`, tablet `1024x768`, mobile `390x844`;
+- loading, empty, error, no-permission, field error, disabled, confirm;
+- limited role bi route guard chuyen 403;
+- login API 422 va retry-safe state.
 
-## Verification da chay
+Day la FE controlled evidence, khong thay direct API 403 khi bypass UI, data-scope deny cua backend hoac QA2 retest tren named backend. FE guard chi la UX gate; backend/RBAC la enforcement boundary.
 
-Ngay chay: 2026-08-02
+## 7. Immutable GitHub/CI trace
 
-| Command | Ket qua | Ghi chu |
-| --- | --- | --- |
-| `npm.cmd run env:verify` | Pass | FE env matrix, static health, secret baseline, smoke path contract valid. |
-| `npm.cmd run test -- src/shared/config/env.test.ts` | Pass | 1 file, 2 tests. |
-| `npm.cmd run lint` | Pass | ESLint `src/` sach. |
-| `npm.cmd run build` | Pass | Chay ngoai sandbox/quyen sach; Vite build thanh cong va sinh `dist/*`. |
-| `npm.cmd run health:check` | Pass | `dist/index.html` va `dist/health.json` match contract. |
+Final run phai co repository/ref, source SHA 40 ky tu, execution/merge SHA, PR number, run ID/number/attempt/job, artifact `wms-fe-closure-evidence-<source_sha>`, `build-manifest.json`, `health.json`, doc/register hash va danh sach screenshot/video/trace.
 
-Luu y: Lan chay build trong sandbox Windows bi `EPERM` khi unlink file cu trong `dist/assets`. Khi chay lai voi quyen runner sach, `npm.cmd run build` pass. Vi vay blocker "npm run build chua co pass sach" da co local evidence pass, nhung DevOps van can attach CI build ID/log/artifact cho parent gate.
+Khong chap nhan local HEAD hoac ephemeral media reference. Filename runtime evidence:
 
-## Phan con can QA1/DevOps dong co
+`WWHN-156_<env>_<sha>_<role>_<scenario>_<viewport>_<timestamp>.<ext>`
 
-| Owner | Can lam de go flag hoan toan |
-| --- | --- |
-| QA1 | Attach smoke log DEV/UAT cho FE artifact, `/health.json`, login, va master API smoke paths. Log nen co env, FE URL, API base URL da mask neu can, build ID/commit, account role, status code/request-id. |
-| DevOps | Xac nhan URL DEV/UAT, build/deploy log, artifact, config matrix theo cac key tren, secret baseline trong CI/runtime, va health/smoke pass. |
-| FE1 | Da cung cap guard code/CI va evidence local. Neu CI fail do env thieu/sai, sua `.env.example`/pipeline config theo log `env:verify`. |
+## 8. External gate register
 
-## Ket luan FE1
+| ID | Sev | Van de | FE disposition | Evidence con bat buoc | State |
+|---|---:|---|---|---|---|
+| WWHN156-P0-01 | P0 | Khong co P0 code blocker rieng | Env/build/health fail-fast da code hoa | Final CI | FE_CONTROL_IMPLEMENTED_NO_P0_CODE_BLOCKER |
+| WWHN156-P1-01 | P1 | QA1 smoke chua dong | Secret-safe smoke runner + JSON schema | QA1 WWHN-157 DEV/UAT pass/fail | BLOCKED_EXTERNAL |
+| WWHN156-P1-02 | P1 | WWHN-32 chua dong | Immutable build manifest/artifact | DevOps/Lead URL, deploy log, config/secret, health, blocker disposition | BLOCKED_EXTERNAL |
+| WWHN156-P1-03 | P1 | WWHN-78, WWHN-292, WWHN-293 blocked | Controlled responsive/UI/RBAC/API-error suite | Lead/QA2 defect list, before-after, real retest | BLOCKED_EXTERNAL |
+| WWHN156-P1-04 | P1 | DEC-UAT chua baseline | Dependency fail-closed | BA/BAS/PM/QA approval, source register, traceability | BLOCKED_EXTERNAL |
+| WWHN156-P1-05 | P1 | Backend deny chua evidence | FE guard UX-only | BE1/BE2/QA permission catalog, direct API 403, data-scope deny | BLOCKED_EXTERNAL |
+| WWHN156-P1-06 | P1 | CI trace chua immutable | Source/execution SHA, run, artifact, manifest da code hoa | Final successful CI run | FE_CONTROL_IMPLEMENTED_PENDING_RUNTIME_RUN |
+| WWHN156-P2-01 | P2 | Media khong truy vet | Artifact + manifest + naming convention | Dung immutable attachment | FE_CONTROL_IMPLEMENTED |
+| WWHN156-P2-02 | P2 | Health conflict WWHN-155 | Lock `/api/v1/health`, reject `/api/health` | OpenAPI/waiver versioned neu override | FE_CONTROL_IMPLEMENTED_CONTRACT_LOCKED |
 
-FE1 da xu ly sau vao code thay vi chi disposition bang tai lieu:
+## 9. Jira handoff
 
-- Co gate `env:verify` de bat loi env matrix, static health, secret baseline va smoke path contract.
-- CI da chay gate moi truoc build.
-- `npm run build` da pass tren runner/quyen sach, sau do `health:check` pass tren artifact moi.
-- Khong con P0/P1 code blocker thuoc FE1 cho scope build/env/health.
+- WWHN-157: QA1 chay smoke DEV/UAT.
+- WWHN-32: DevOps/Lead chot URL, deploy/build log, config matrix, secret baseline, health/smoke va blocker disposition.
+- WWHN-78, WWHN-292, WWHN-293: Lead/FE1/QA2 duy tri defect list that, after evidence va QA2 retest.
+- WWHN-20, WWHN-28, WWHN-140, WWHN-141, WWHN-142: BA/BAS/PM/QA baseline DEC-UAT/source register/traceability.
+- WWHN-155: BE1/BA/QA chot OpenAPI hoac waiver health endpoint.
 
-Flag chi nen con mo neu QA1/DevOps chua attach evidence DEV/UAT that theo bang tren.
+## 10. Validation
 
-## Remove Flag P0/P1 bo sung theo review WWHN-78/HN-UAT-003
+```bash
+npm run format:check
+npm run lint
+npm run typecheck
+npm run test
+npm run env:verify
+npm run uat:p0p1:verify
+npm run wwhn-156:verify
+npm run smoke:wwhn-156 -- --contract-only --env ci --source-sha <40-char-sha> --api-base-url http://127.0.0.1:5173/api/v1 --health-path /health
+npm run master-sku:verify
+npm run wms-contract:verify
+npm run wwhn-148:verify
+npm run build
+npm run health:check
+npm run check:api-mapping
+npm run test:e2e:evidence
+```
 
-Ngay cap nhat bo sung: 2026-08-02 ICT
+Final evidence phai lay tu GitHub Actions tren exact commit; local check chi la preflight.
 
-Baseline code tai thoi diem cap nhat: local HEAD `ef7c9ff`. Khi tao PR/merge, FE1 phai thay bang PR URL, commit SHA merge, CI build ID va deployed build/version thuc te. CI da co gate de bat thieu evidence contract truoc build.
+## 11. Definition of Done
 
-### 1. Danh sach loi UAT can trace tu WWHN-78/HN-UAT-003
+FE-owned:
 
-| UAT defect id | Module | Route | Role/account | Viewport | Expected | Actual before | Severity | Before evidence | FE disposition |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| WWHN-78/HN-UAT-003-001 | Auth/session/RBAC | `/errors/403`, protected routes | Anonymous, authenticated thieu permission, password-change-required | Desktop/tablet/mobile | Anonymous ve login; thieu permission ve 403; password-change-required ve `/change-password` | QA2 test password-change-required dang bi skip nen chua verify duoc | P1 | `e2e/auth-role-navigation-qa2.spec.ts` truoc sua co `test.skip` | Fixed in code: unskip QA2 scenario va sua mock `/auth/me` tra dung 403 `PASSWORD_CHANGE_REQUIRED`. |
-| WWHN-78/HN-UAT-003-002 | UI/responsive/RBAC evidence package | Tat ca route/module trong WWHN-292 | Role du quyen/thieu quyen/super admin/context | 1440x900, 768x1024, 390x844 | Moi loi co module, route, role/account, viewport, expected/actual, severity, before evidence | Artifact truoc do chi la checklist, chua co gate bat buoc du field | P1 | `docs/Task_docs_Jira/Khắc phục lỗi UI_responsive_RBAC.md` | Fixed in repo gate: `npm run uat:p0p1:verify` fail neu thieu traceability/evidence/disposition core. BA/QA van phai dien tung defect that tu WWHN-78. |
-| WWHN-78/HN-UAT-003-003 | Build/env/health proof | CI/build artifact | FE1/DevOps | N/A | Artifact noi ro file/PR/commit/build/SHA va surface da sua | Doc chua gan gate UAT P0/P1 vao code/CI | P1 | Reviewer comment Remove Flag | Fixed in code: them verifier P0/P1 va CI step `Verify UAT P0/P1 readiness contract`. PR/build ID thuc te cho DevOps attach sau deploy. |
+- [x] Sua root cause filename mismatch.
+- [x] Env/secret validation fail-fast.
+- [x] Khoa `/api/v1/health`, reject legacy path.
+- [x] Build manifest va immutable CI trace.
+- [x] WWHN-156 gate + smoke contract.
+- [x] Controlled responsive/UI/RBAC/API-error evidence.
+- [x] Closure register co schema va fail-closed boundary.
+- [ ] Final CI run tren commit hoan thien PASS.
 
-### 2. Code/PR/build/SHA va surface da sua
+Cross-role acceptance:
 
-| Surface | File | Ly do sua | Trang thai |
-| --- | --- | --- | --- |
-| Env/health contract | `scripts/verify-env-health-contract.mjs` | Chung minh `.env.example`, `public/health.json`, smoke path va secret baseline co guard bang code. | Done |
-| UAT P0/P1 readiness gate | `scripts/verify-uat-p0-p1-readiness.mjs` | Chan viec dong task khi thieu defect traceability, after evidence UI/responsive/RBAC, QA2 WWHN-293 disposition, parent WWHN-78 disposition, DEC-UAT baseline, backend RBAC evidence. | Done |
-| NPM scripts | `package.json` | Them `env:verify` va `uat:p0p1:verify` de FE/CI/QA chay cung mot contract. | Done |
-| CI gate | `.github/workflows/ci.yml` | Chay env contract va UAT P0/P1 readiness truoc build de artifact khong con la note thu cong. | Done |
-| QA2 RBAC/session retest | `e2e/auth-role-navigation-qa2.spec.ts` | Mo lai test password-change-required va sua mock `/auth/me` de 403 dac biet khong bi coi la 401/generic 403. | Done |
+- [ ] QA1 WWHN-157 DEV/UAT smoke PASS.
+- [ ] DevOps/Lead dong WWHN-32.
+- [ ] QA2 dong retest WWHN-78, WWHN-292, WWHN-293.
+- [ ] BA/BAS/PM/QA baseline WWHN-20, WWHN-28, WWHN-140, WWHN-141, WWHN-142.
+- [ ] BE1/BE2/QA co permission catalog, direct API 403, data-scope deny.
+- [ ] BE1/BA/QA version health contract/waiver WWHN-155.
 
-### 3. After evidence UI/responsive/RBAC can attach
-
-| Evidence nhom | Command/script | Viewport/role/state bat buoc | Trang thai |
-| --- | --- | --- | --- |
-| Desktop/tablet/mobile UI | `npm run test:e2e -- e2e/auth-role-navigation-qa2.spec.ts` hoac capture script tu `scripts/capture-*.mjs` | Desktop 1440x900, tablet 768x1024, mobile 390x844 | FE code ready; QA2 can retest on build/env/browser thuc |
-| RBAC route/action | `e2e/auth-role-navigation-qa2.spec.ts`, `scripts/capture-role-scopes-screenshots.mjs` | Anonymous, user thieu quyen, user du quyen, super admin/context | FE mock/evidence path ready; QA2 can attach screenshot/video |
-| API 403/backend deny display | `scripts/capture-permission-403-evidence.mjs`, `docs/Task_docs_Jira/HN-FND-001-FE-AUTH-SESSION-403.md` | Sample 403, request id, permission code, role/scope | FE render path ready; BE/RBAC owner phai cung cap direct API 403 doc lap |
-| UI states | `docs/Task_docs_Jira/Khắc phục lỗi UI_responsive_RBAC.md` checklist + module tests/capture tuong ung | loading, empty, error, success, disabled, confirm | Gate bat buoc co checklist; screenshot/video sau sua can attach theo tung defect |
-
-### 4. QA2 WWHN-293 retest disposition
-
-| Item | Required fix | Disposition |
-| --- | --- | --- |
-| QA2 WWHN-293 chua verify | QA2 retest dung build/env/browser/role va comment pass/fail kem evidence | FE da bo sung code/test path. QA2 phai chay tren deployed build that, ghi browser, env, build ID/SHA, role/account, pass/fail va attach screenshot/video. FE khong tu ky thay QA2. |
-
-### 5. Parent WWHN-78 Blocked/Pending disposition
-
-| Blocker parent | Required disposition | Owner | Trang thai FE |
-| --- | --- | --- | --- |
-| WWHN-78 con Blocked/Pending | Lead/FE/QA ghi disposition cho toan bo blocker parent truoc khi Done | Lead + FE1 + QA2 | FE da co code gate va defect table mau. Lead/QA2 phai doi chieu tat ca defect con trong parent, dong hoac ghi owner/ETA. |
-| Thieu danh sach loi UAT that | Moi loi gan module/route/role/account/viewport/expected/actual/severity/before evidence | BA/QA + FE1 | FE gate bat yeu cau cau truc; BA/QA can dien defect source register tu WWHN-78/HN-UAT-003. |
-
-### 6. BA Pin/DEC-UAT baseline
-
-| Baseline | Required fix | Owner | Disposition |
-| --- | --- | --- | --- |
-| WWHN-20 | Approval/traceability/source register ro | BA + BAS + PM/QA | FE khong tu baseline nghiep vu; can link approval hoac ghi blocker co owner/ETA. |
-| WWHN-28 | Approval/traceability/source register ro | BA + BAS + PM/QA | Can pin DEC-UAT truoc khi xem Done. |
-| WWHN-140 | Approval/traceability/source register ro | BA + BAS + PM/QA | FE chi implement theo baseline da duyet. |
-| WWHN-141 | Approval/traceability/source register ro | BA + BAS + PM/QA | Neu chua duyet, parent WWHN-78 khong nen Done. |
-| WWHN-142 | Approval/traceability/source register ro | BA + BAS + PM/QA | Can source register ro cho QA trace. |
-
-### 7. RBAC/backend authorization doc lap
-
-| Required fix | FE evidence | BE/RBAC required evidence | Trang thai |
-| --- | --- | --- | --- |
-| Permission catalog | `src/app/router/access.ts`, `src/shared/components/permission/*`, `docs/Task_docs_Jira/HN-FND-001-FE-AUTH-SESSION-403.md` | Catalog permission backend da duyet, mapping route/action/API, data scope | FE ready, BE/RBAC owner can sign-off |
-| Sample 403 | `ApiErrorAlert`, `NoPermissionState`, `e2e/auth-role-navigation-qa2.spec.ts`, `scripts/capture-permission-403-evidence.mjs` | Direct API call bang token thieu quyen tra HTTP 403, co request id va permission/data-scope reason | FE render ready; backend deny doc lap chua the thay bang UI hidden |
-| Backend deny independent | FE guard chi la UX gate | BE xac nhan API deny ngay ca khi bypass UI/button | BE1/BE2 + QA required |
-
-### 8. Verification commands moi
-
-| Command | Muc dich |
-| --- | --- |
-| `npm.cmd run env:verify` | Verify env/health/smoke/secret baseline. |
-| `npm.cmd run uat:p0p1:verify` | Verify artifact co du P0/P1 readiness contract theo reviewer. |
-| `npm.cmd run test -- src/app/router/RequirePermission.test.tsx src/app/router/ProtectedRoute.test.tsx src/shared/api/api-error.test.ts src/shared/api/axios.test.ts` | Verify route/RBAC/API 403 foundation. |
-| `npm.cmd run test:e2e -- e2e/auth-role-navigation-qa2.spec.ts` | QA2 UI role/navigation retest path cho browser/viewport/role. |
-| `npm.cmd run build && npm.cmd run health:check` | Verify production artifact va `/health.json`. |
+Ket luan: FE-owned controls chi duoc ghi 100% sau final CI PASS. Acceptance tong the khong duoc ghi 100% cho den khi nam gate P1 doc lap co evidence tren cung deployed source SHA.

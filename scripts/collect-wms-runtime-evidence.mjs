@@ -34,6 +34,10 @@ function listFiles(path) {
   return files;
 }
 
+function relativeFiles(paths) {
+  return paths.map((path) => relative(root, path).replaceAll("\\", "/"));
+}
+
 const outcomes = {
   format: process.env.FORMAT_OUTCOME ?? "not_run",
   lint: process.env.LINT_OUTCOME ?? "not_run",
@@ -41,6 +45,8 @@ const outcomes = {
   unitTests: process.env.UNIT_TEST_OUTCOME ?? "not_run",
   envContract: process.env.ENV_CONTRACT_OUTCOME ?? "not_run",
   uatContract: process.env.UAT_CONTRACT_OUTCOME ?? "not_run",
+  wwhn156Closure: process.env.WWHN_156_OUTCOME ?? "not_run",
+  smokeContract: process.env.SMOKE_CONTRACT_OUTCOME ?? "not_run",
   masterSku: process.env.MASTER_SKU_OUTCOME ?? "not_run",
   wmsContract: process.env.WMS_CONTRACT_OUTCOME ?? "not_run",
   wwhn148Closure: process.env.WWHN_148_OUTCOME ?? "not_run",
@@ -50,29 +56,40 @@ const outcomes = {
   runtimeEvidence: process.env.RUNTIME_EVIDENCE_OUTCOME ?? "not_run",
 };
 
+const sourceSha =
+  process.env.WMS_SOURCE_SHA ?? process.env.SOURCE_SHA ?? process.env.GITHUB_SHA ?? null;
+const executionSha =
+  process.env.WMS_EXECUTION_SHA ??
+  process.env.EXECUTION_SHA ??
+  process.env.GITHUB_SHA ??
+  sourceSha;
+const artifactName = `wms-fe-closure-evidence-${sourceSha ?? "unknown"}`;
 const testFiles = listFiles(join(root, "test-results"));
-const screenshots = testFiles
-  .filter((path) => extname(path).toLowerCase() === ".png")
-  .map((path) => relative(root, path).replaceAll("\\", "/"));
-const videos = testFiles
-  .filter((path) => [".webm", ".mp4"].includes(extname(path).toLowerCase()))
-  .map((path) => relative(root, path).replaceAll("\\", "/"));
-const traces = testFiles
-  .filter((path) => extname(path).toLowerCase() === ".zip")
-  .map((path) => relative(root, path).replaceAll("\\", "/"));
+const screenshots = relativeFiles(
+  testFiles.filter((path) => extname(path).toLowerCase() === ".png"),
+);
+const videos = relativeFiles(
+  testFiles.filter((path) => [".webm", ".mp4"].includes(extname(path).toLowerCase())),
+);
+const traces = relativeFiles(
+  testFiles.filter((path) => extname(path).toLowerCase() === ".zip"),
+);
 
 const manifest = {
-  schemaVersion: "1.1.0",
-  tasks: ["WWHN-148", "WWHN-153"],
+  schemaVersion: "2.0.0",
+  tasks: ["WWHN-148", "WWHN-153", "WWHN-156"],
   generatedAt: new Date().toISOString(),
   repository:
     process.env.GITHUB_REPOSITORY ??
     "Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_FE",
   branchOrRef: process.env.GITHUB_REF ?? null,
-  sourceSha: process.env.WMS_SOURCE_SHA ?? process.env.GITHUB_SHA ?? null,
-  executionSha: process.env.WMS_EXECUTION_SHA ?? process.env.GITHUB_SHA ?? null,
+  sourceSha,
+  executionSha,
   pullRequestNumber:
-    process.env.GITHUB_REF_NAME?.match(/^\d+\/merge$/u)?.[0] ?? null,
+    process.env.GITHUB_EVENT_NAME === "pull_request"
+      ? process.env.GITHUB_REF?.match(/^refs\/pull\/(\d+)\/merge$/u)?.[1] ?? null
+      : null,
+  artifactName,
   run: {
     id: process.env.GITHUB_RUN_ID ?? null,
     number: process.env.GITHUB_RUN_NUMBER ?? null,
@@ -86,40 +103,41 @@ const manifest = {
     node: process.version,
     appEnv: process.env.VITE_APP_ENV ?? "ci",
     apiBaseUrl: process.env.VITE_API_BASE_URL ?? null,
+    healthPath: process.env.VITE_API_HEALTH_PATH ?? null,
   },
   outcomes,
   artifacts: {
-    health: {
+    frontendHealth: {
       path: "dist/health.json",
       sha256: sha256(join(root, "dist/health.json")),
+    },
+    buildManifest: {
+      path: "dist/build-manifest.json",
+      sha256: sha256(join(root, "dist/build-manifest.json")),
+    },
+    wwhn156ClosureRegister: {
+      path: "docs/evidence/wwhn-156/WWHN-156_CLOSURE_REGISTER.json",
+      sha256: sha256(
+        join(root, "docs/evidence/wwhn-156/WWHN-156_CLOSURE_REGISTER.json"),
+      ),
+    },
+    wwhn156TaskDocument: {
+      path: "docs/Task_docs_Jira/WWHN-156.md",
+      sha256: sha256(join(root, "docs/Task_docs_Jira/WWHN-156.md")),
     },
     contractEvidence: {
       path: "docs/evidence/wms-contract-signoff/generated/contract-evidence.json",
       sha256: sha256(join(outputDir, "contract-evidence.json")),
     },
-    wwhn148Document: {
-      path: "docs/Task_docs_Jira/WWHN-148.md",
-      sha256: sha256(join(root, "docs/Task_docs_Jira/WWHN-148.md")),
-    },
-    m1ApiMapping: {
-      path: "docs/api-evidence/M1_API_MAPPING.md",
-      sha256: sha256(join(root, "docs/api-evidence/M1_API_MAPPING.md")),
-    },
-    normalizationRegister: {
-      path: "docs/api-evidence/WWHN-148_NORMALIZATION_REGISTER.json",
-      sha256: sha256(
-        join(root, "docs/api-evidence/WWHN-148_NORMALIZATION_REGISTER.json"),
-      ),
-    },
     screenshots,
     videos,
     traces,
   },
-  independentGateBoundary: {
-    feAutomation:
-      "This manifest proves FE build, mapping, controlled UI-state, responsive, RBAC and API-error evidence from the exact source SHA.",
-    notSubstituted:
-      "It does not replace WWHN-146 BAS approval, WWHN-147 BA approval, WWHN-149 QA2 named-backend execution, or BE1/BE2 versioned contract evidence.",
+  evidenceBoundary: {
+    feOwned:
+      "Exact FE source/build, controlled responsive/UI-state/RBAC/API-error evidence and immutable CI artifact trace.",
+    independent:
+      "QA1 DEV/UAT smoke, DevOps deployment, BA baseline, BE direct API deny and QA2 retest remain independent evidence and are never self-signed by FE.",
   },
 };
 
@@ -129,15 +147,14 @@ writeFileSync(
   `${JSON.stringify(manifest, null, 2)}\n`,
 );
 
-const markdown = `# WWHN-148 / WWHN-153 CI Evidence Manifest
+const markdown = `# WWHN-148 / WWHN-153 / WWHN-156 CI Evidence Manifest
 
-- Source SHA: \`${manifest.sourceSha ?? "n/a"}\`
-- Execution/merge SHA: \`${manifest.executionSha ?? "n/a"}\`
+- Artifact: \`${artifactName}\`
+- Source SHA: \`${sourceSha ?? "n/a"}\`
+- Execution/merge SHA: \`${executionSha ?? "n/a"}\`
 - Run: \`${manifest.run.id ?? "n/a"}\` / number \`${manifest.run.number ?? "n/a"}\`
 - Runner: \`${manifest.environment.runnerOs}/${manifest.environment.runnerArch}\`, Node \`${manifest.environment.node}\`
-- Screenshots: ${screenshots.length}
-- Videos: ${videos.length}
-- Traces: ${traces.length}
+- Screenshots: ${screenshots.length}; videos: ${videos.length}; traces: ${traces.length}
 
 ## Gate outcomes
 
@@ -147,10 +164,10 @@ ${Object.entries(outcomes)
 
 ## Boundary
 
-This evidence is generated from the exact FE source/build. It does not self-sign BAS, BA, BE, QA1 or QA2 approvals.
+This artifact proves FE-owned controls from the exact SHA. It does not replace independent QA1, QA2, DevOps, BA, BAS or BE evidence.
 `;
 writeFileSync(join(outputDir, "runtime-manifest.md"), markdown);
 
 console.log(
-  `[wms-evidence] Manifest written with ${screenshots.length} screenshot(s), ${videos.length} video(s), and ${traces.length} trace(s).`,
+  `[wms-evidence] ${artifactName}: ${screenshots.length} screenshot(s), ${videos.length} video(s), ${traces.length} trace(s).`,
 );
