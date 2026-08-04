@@ -1,27 +1,45 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { isAxiosError } from "axios";
+import { bootstrapAuth } from "@/app/bootstrap-auth";
 import { useMe } from "@/modules/auth/hooks/use-me";
 import { Loading } from "@/shared/components/feedback/Loading";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { ROUTES } from "@/shared/constants/routes";
 import { useAuthStore } from "@/shared/store/auth.store";
-import { getErrorCode, type ApiErrorResponse } from "@/shared/types/api-response";
+import {
+  getErrorCode,
+  type ApiErrorResponse,
+} from "@/shared/types/api-response";
 
 /**
- * Auth route guard:
- * 1. Wait for cookie/store bootstrap before trusting auth state.
- * 2. Redirect anonymous users to login and preserve the attempted URL.
- * 3. Fetch /auth/me for permissions/profile before rendering protected routes.
+ * Auth route guard fail-closed:
+ * - chờ bootstrap;
+ * - không biến lỗi hạ tầng refresh thành anonymous redirect;
+ * - chờ /auth/me xác nhận permission/data-scope của đúng JWT hiện tại.
  */
 export function ProtectedRoute() {
   const location = useLocation();
   const isBootstrapped = useAuthStore((s) => s.isBootstrapped);
+  const bootstrapError = useAuthStore((s) => s.bootstrapError);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const isProfileLoaded = useAuthStore((s) => s.isProfileLoaded);
-
   const meQuery = useMe();
 
   if (!isBootstrapped) return <Loading />;
+
+  if (bootstrapError) {
+    return (
+      <div style={{ margin: "48px auto", maxWidth: 720, padding: 24 }}>
+        <ApiErrorAlert
+          error={bootstrapError}
+          title="Không thể khôi phục phiên làm việc"
+          onRetry={() => {
+            void bootstrapAuth();
+          }}
+        />
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return <Navigate to={ROUTES.LOGIN} replace state={{ from: location }} />;
@@ -40,7 +58,7 @@ export function ProtectedRoute() {
       <div style={{ margin: "48px auto", maxWidth: 720, padding: 24 }}>
         <ApiErrorAlert
           error={meQuery.error}
-          title="Khong the tai ho so va phan quyen"
+          title="Không thể tải hồ sơ và phân quyền"
           onRetry={() => {
             void meQuery.refetch();
           }}
@@ -50,6 +68,5 @@ export function ProtectedRoute() {
   }
 
   if (!isProfileLoaded) return <Loading />;
-
   return <Outlet />;
 }

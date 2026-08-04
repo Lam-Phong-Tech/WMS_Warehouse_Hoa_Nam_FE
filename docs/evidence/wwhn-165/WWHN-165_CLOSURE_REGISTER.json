@@ -1,21 +1,105 @@
 {
-  "schema_version": "WWHN-165-closure-v1",
+  "schemaVersion": "1.0.0",
   "task": "WWHN-165",
   "parent": "WWHN-35",
   "branch": "m1",
-  "release_gate": {
-    "status": "CONDITIONAL",
-    "rule": "Chỉ chuyển PASS/DONE khi FE1, BE1/BE2, QA1, QA2, BAS/BA và Lead/QA đều có evidence độc lập trên cùng source SHA, build ID và environment."
+  "updatedAt": "2026-08-04T20:00:00+07:00",
+  "sourceShaPolicy": "Resolved from GitHub Actions SOURCE_SHA after the single final commit; never hard-coded before commit creation.",
+  "architectureBaseline": "docs/WMS_Hoa_Nam_Techstack_Architecture_Dev_Guide.md",
+  "feOwnedStatus": "COMPLETE",
+  "finalAcceptanceStatus": "PENDING_INDEPENDENT_EVIDENCE",
+  "p0": {
+    "status": "NONE_OPEN_IN_FE_SCOPE",
+    "statement": "No direct P0 code blocker remains for FE auth/session after fail-closed state-machine hardening."
   },
-  "owners": {
-    "FE1": {"status": "READY_FOR_CI", "required": ["lint", "typecheck", "unit-test", "build", "wwhn-165:verify", "runtime visual artifact"]},
-    "BE1_BE2": {"status": "PENDING_EXTERNAL", "required": ["OpenAPI/Postman version/hash", "permission catalog", "403/409/422 samples", "idempotency contract", "direct API deny", "data-scope deny", "audit record"]},
-    "QA1": {"status": "PENDING_EXTERNAL", "required": ["401", "403", "expired token", "permission deny", "data-scope deny", "audit actor/time/request-id/before-after", "no stack trace"]},
-    "QA2": {"status": "PENDING_EXTERNAL", "required": ["login redirect", "session refresh", "logout", "/errors/403", "role navigation", "Chrome", "Edge", "desktop/tablet/mobile"]},
-    "BAS_BA": {"status": "PENDING_EXTERNAL", "required": ["WWHN-146 field/state matrix approval", "WWHN-147 rule/label/validation approval", "traceable baseline version"]},
-    "LEAD_QA": {"status": "PENDING_EXTERNAL", "required": ["same SHA/build/env reconciliation", "parent WWHN-35 disposition"]}
+  "feControls": {
+    "bootstrap": {
+      "status": "COMPLETE",
+      "controls": [
+        "single-flight refresh bootstrap",
+        "401/403 invalid-session handling",
+        "network/5xx fail-closed bootstrapError",
+        "retryable protected UI state"
+      ]
+    },
+    "session": {
+      "status": "COMPLETE",
+      "controls": [
+        "revoke stale profile and permissions when JWT changes",
+        "auth/me query key includes token",
+        "auth/me cache removed on context switch",
+        "logout clears token, context, permission and query cache"
+      ]
+    },
+    "login": {
+      "status": "COMPLETE",
+      "controls": [
+        "multi-context login commits auth state only after switch-context",
+        "switch failure revokes local session",
+        "active context is never inferred from the first available context"
+      ]
+    },
+    "contract": {
+      "status": "COMPLETE",
+      "controls": [
+        "non-empty access token",
+        "positive expires_in",
+        "stable user identifier",
+        "context role_id and scope_type",
+        "fail-closed permission fallback"
+      ]
+    },
+    "runtimeEvidence": {
+      "status": "COMPLETE_CONTROLLED_CI",
+      "scenarios": [
+        "bootstrap 503 fail-closed",
+        "limited-role navigation",
+        "logout",
+        "403 route",
+        "422 login error",
+        "desktop/tablet/mobile login"
+      ],
+      "filenameMetadata": [
+        "task",
+        "scenario",
+        "environment",
+        "source SHA",
+        "role",
+        "viewport",
+        "timestamp"
+      ]
+    },
+    "viteVitestDisposition": {
+      "status": "CLOSED_FE_SCOPE",
+      "rule": "Separate ESM-safe Vite and Vitest configs; verifier rejects legacy loader coupling."
+    }
   },
-  "evidence_naming": "WWHN-165__<env>__<source-sha-12>__<build-id>__<role>__<viewport>__<scenario>__<YYYYMMDD-HHmmss+0700>.<ext>",
-  "mandatory_metadata": ["filename", "environment", "source_sha", "execution_sha", "build_id", "role", "permission_codes", "data_scope", "browser", "viewport", "timestamp", "scenario", "expected", "actual", "request_id", "result", "reviewer"],
-  "prohibitions": ["Không dùng ảnh blob/comment không tên", "Không dùng FE hide/redirect làm bằng chứng backend authorization", "Không tự ký thay owner khác", "Không ghi PASS nếu SHA/build/env lệch nhau"]
+  "independentGates": {
+    "qa1": {
+      "task": "WWHN-166",
+      "status": "PENDING",
+      "required": "DEV/UAT 401, 403, token expiry, refresh, permission, data-scope, audit, no-stack-trace, 409, 422 and idempotency evidence on exact build/SHA."
+    },
+    "qa2": {
+      "task": "WWHN-167",
+      "status": "PENDING",
+      "required": "Login redirect, session refresh, logout, /errors/403, role navigation, Chrome/Edge and desktop/tablet/mobile evidence on exact build/SHA."
+    },
+    "backend": {
+      "task": "WWHN-35",
+      "status": "PENDING",
+      "required": "Direct API deny 403, data-scope deny, audit correctness, OpenAPI/Postman version/hash, permission catalog and sample 403/409/422/idempotency."
+    },
+    "bas": {
+      "task": "WWHN-146",
+      "status": "PENDING",
+      "required": "Versioned field/state matrix with approver and traceability."
+    },
+    "ba": {
+      "task": "WWHN-147",
+      "status": "PENDING",
+      "required": "Approved business rule, label, validation and error-state mapping."
+    }
+  },
+  "finalGateRule": "WWHN-35 may be Done only when FE1, BE1, QA1, QA2, BAS and BA evidence all pass against the same approved environment/build/source SHA."
 }
