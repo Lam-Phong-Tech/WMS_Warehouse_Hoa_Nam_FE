@@ -33,7 +33,7 @@ const CTX_B: AuthContext = {
   warehouse_name: "Kho Tổng",
 };
 
-describe("useAuthStore", () => {
+describe("useAuthStore WWHN-165", () => {
   beforeEach(() => {
     useAuthStore.getState().logout();
     queryClient.clear();
@@ -46,34 +46,41 @@ describe("useAuthStore", () => {
     expect(state.isAuthenticated).toBe(false);
   });
 
-  it("setAuth lưu token + user và bật isAuthenticated", () => {
-    useAuthStore.getState().setAuth({ token: "abc", user: mockUser });
-    const state = useAuthStore.getState();
-    expect(state.token).toBe("abc");
-    expect(state.user).toEqual(mockUser);
-    expect(state.isAuthenticated).toBe(true);
-  });
-
-  it("setAuth chọn currentContext mặc định là context đầu tiên trong available_contexts", () => {
+  it("setAuth không suy diễn context/quyền trước GET /auth/me", () => {
     useAuthStore
       .getState()
       .setAuth({ token: "abc", user: mockUser, contexts: [CTX_A, CTX_B] });
     const state = useAuthStore.getState();
+    expect(state.isAuthenticated).toBe(true);
     expect(state.contexts).toEqual([CTX_A, CTX_B]);
-    expect(state.currentContext).toEqual(CTX_A);
+    expect(state.currentContext).toBeNull();
+    expect(state.permissionCodes).toEqual([]);
+    expect(state.isProfileLoaded).toBe(false);
   });
 
-  it("setToken cập nhật token (dùng sau POST /auth/switch-context)", () => {
+  it("setToken thu hồi profile/quyền cũ ngay khi JWT đổi", () => {
     useAuthStore.getState().setAuth({ token: "abc", user: mockUser });
+    useAuthStore.setState({
+      currentContext: CTX_A,
+      permissionCodes: ["inventory.view"],
+      isProfileLoaded: true,
+      isSuperAdmin: true,
+    });
+
     useAuthStore.getState().setToken("new-jwt");
-    expect(useAuthStore.getState().token).toBe("new-jwt");
+    const state = useAuthStore.getState();
+    expect(state.token).toBe("new-jwt");
+    expect(state.currentContext).toBeNull();
+    expect(state.permissionCodes).toEqual([]);
+    expect(state.isProfileLoaded).toBe(false);
+    expect(state.isSuperAdmin).toBe(false);
   });
 
-  it("setProfile nạp permissionCodes/currentContext/isSuperAdmin từ active_context của GET /auth/me", () => {
+  it("setProfile nạp quyền đúng active_context", () => {
     useAuthStore.getState().setProfile({
       id: 1,
       name: "Test",
-      email: "t@erb.vn",
+      email: "t@erp.vn",
       code: "T1",
       company: null,
       branch: null,
@@ -94,7 +101,7 @@ describe("useAuthStore", () => {
     expect(state.isProfileLoaded).toBe(true);
   });
 
-  it("setProfile: active_context null + available_contexts rỗng → isSuperAdmin true", () => {
+  it("is_super_admin runtime được ưu tiên hơn heuristic", () => {
     useAuthStore.getState().setProfile({
       id: 1,
       name: "Super Admin",
@@ -105,25 +112,14 @@ describe("useAuthStore", () => {
       department: null,
       position: null,
       role: { id: 1, name: "Super Admin", permissions: [] },
-      active_context: null,
-      available_contexts: [],
+      active_context: { ...CTX_A, permission_codes: [] },
+      available_contexts: [{ ...CTX_A, permission_codes: [] }],
+      is_super_admin: true,
     });
-
-    const state = useAuthStore.getState();
-    expect(state.isSuperAdmin).toBe(true);
-    expect(state.permissionCodes).toEqual([]);
-    expect(state.currentContext).toBeNull();
+    expect(useAuthStore.getState().isSuperAdmin).toBe(true);
   });
 
-  it("logout xoá sạch phiên đăng nhập", () => {
-    useAuthStore.getState().setAuth({ token: "abc", user: mockUser });
-    useAuthStore.getState().logout();
-    const state = useAuthStore.getState();
-    expect(state.token).toBeNull();
-    expect(state.isAuthenticated).toBe(false);
-  });
-
-  it("logout xoá sạch permission/context và clear React Query cache (P1.3)", () => {
+  it("logout xoá phiên, scope, quyền và cache", () => {
     useAuthStore
       .getState()
       .setAuth({ token: "abc", user: mockUser, contexts: [CTX_A] });
@@ -131,12 +127,13 @@ describe("useAuthStore", () => {
       permissionCodes: ["EMP_VIEW"],
       isProfileLoaded: true,
     });
-    queryClient.setQueryData(["auth", "me"], { fake: "data" });
+    queryClient.setQueryData(["auth", "me", "abc"], { fake: "data" });
     const clearSpy = vi.spyOn(queryClient, "clear");
 
     useAuthStore.getState().logout();
 
     const state = useAuthStore.getState();
+    expect(state.token).toBeNull();
     expect(state.currentContext).toBeNull();
     expect(state.permissionCodes).toEqual([]);
     expect(state.isProfileLoaded).toBe(false);
