@@ -1,7 +1,9 @@
+import { API_ENDPOINTS } from "@/shared/api/endpoints";
+import { assertWmsActionPermission } from "@/shared/api/wms-action-permission";
 import { http } from "@/shared/api/http";
 import { WmsContractError } from "@/shared/api/wms-contract";
+import { WMS_ACTION_PERMISSIONS } from "@/shared/constants/wms-permissions";
 import type { ReportItem, XntReportRow } from "../types";
-import { API_ENDPOINTS } from "@/shared/api/endpoints";
 
 type RawRecord = Record<string, unknown>;
 
@@ -60,10 +62,6 @@ function unapprovedReportContract(name: string, path: string): never {
   );
 }
 
-/**
- * `/reports/hub` remains a documented proposal, not a canonical endpoint.
- * This function intentionally fails before any HTTP request.
- */
 export async function fetchReportsHub(): Promise<ReportItem[]> {
   return unapprovedReportContract(
     "Reports hub",
@@ -84,13 +82,13 @@ export async function fetchXntReport(
 export async function downloadXntReportExcel(
   params: XntReportParams,
 ): Promise<Blob> {
+  assertWmsActionPermission(
+    WMS_ACTION_PERMISSIONS.EXPORT_REPORT,
+    "export XNT report",
+  );
   return http.downloadBlob(API_ENDPOINTS.REPORTS_XNT_EXPORT_EXCEL, { params });
 }
 
-/**
- * `/reports/warranty-defects` is blocked until BE/BA publish a canonical
- * OpenAPI/Jira disposition. UI receives an explicit contract error.
- */
 export async function fetchWarrantyDefectsReport(
   params: Record<string, unknown> = {},
 ): Promise<RawRecord[]> {

@@ -1,11 +1,15 @@
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
+import { assertWmsActionPermission } from "@/shared/api/wms-action-permission";
 import { http } from "@/shared/api/http";
 import {
   requireArray,
   requireIdempotencyHeaders,
   requireNonEmptyString,
   requireNonNegativeNumber,
+  requireUniqueStrings,
+  WmsContractError,
 } from "@/shared/api/wms-contract";
+import { WMS_ACTION_PERMISSIONS } from "@/shared/constants/wms-permissions";
 import type {
   StocktakeSession,
   StocktakeSnapshot,
@@ -164,6 +168,68 @@ function normalizeVariance(row: RawRecord): StocktakeVariance {
   };
 }
 
+function normalizeAdjustmentResponse(
+  value: unknown,
+  expectedSessionId: string,
+): ApplyAdjustmentResponse {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new WmsContractError(
+      "WMS_FE_INVALID_ADJUSTMENT_RESPONSE",
+      "Apply adjustment response must be an object",
+    );
+  }
+  const row = (value as RawRecord).data ?? value;
+  if (!row || typeof row !== "object" || Array.isArray(row)) {
+    throw new WmsContractError(
+      "WMS_FE_INVALID_ADJUSTMENT_RESPONSE",
+      "Apply adjustment response data must be an object",
+    );
+  }
+  const evidence = row as RawRecord;
+  const sessionId = requireNonEmptyString(
+    evidence.session_id ?? evidence.sessionId,
+    "session_id",
+    "WMS_FE_INVALID_ADJUSTMENT_RESPONSE",
+  );
+  if (sessionId !== expectedSessionId) {
+    throw new WmsContractError(
+      "WMS_FE_INVALID_ADJUSTMENT_RESPONSE",
+      `Adjustment response session ${sessionId} does not match ${expectedSessionId}`,
+    );
+  }
+  const status = text(evidence.status).toUpperCase();
+  if (status !== "ADJUSTED" && status !== "PARTIALLY_ADJUSTED") {
+    throw new WmsContractError(
+      "WMS_FE_INVALID_ADJUSTMENT_RESPONSE",
+      `Unsupported successful adjustment status: ${status || "empty"}`,
+    );
+  }
+  const movementRef = requireNonEmptyString(
+    evidence.movement_ref ??
+      evidence.movementRef ??
+      evidence.stock_movement_id,
+    "movement_ref",
+    "WMS_FE_MISSING_ADJUSTMENT_EVIDENCE",
+  );
+  const requestId = requireNonEmptyString(
+    evidence.request_id ?? evidence.requestId,
+    "request_id",
+    "WMS_FE_MISSING_ADJUSTMENT_EVIDENCE",
+  );
+  return {
+    session_id: sessionId,
+    adjusted_lines: num(evidence.adjusted_lines ?? evidence.adjustedLines),
+    total_variance: num(evidence.total_variance ?? evidence.totalVariance),
+    status,
+    movement_ref: movementRef,
+    request_id: requestId,
+    replayed: Boolean(evidence.replayed ?? evidence.idempotency_replay),
+    errors: Array.isArray(evidence.errors)
+      ? (evidence.errors as ApplyAdjustmentResponse["errors"])
+      : undefined,
+  };
+}
+
 export async function createStocktakeSession(
   request: CreateStocktakeSessionRequest,
 ): Promise<StocktakeSession> {
@@ -189,10 +255,6 @@ export async function createStocktakeSession(
   return normalizeSession(result);
 }
 
-/**
- * GET /stocktake/sessions
- * Fetch stocktake sessions with optional filters.
- */
 export async function fetchStocktakeSessions(
   params: Record<string, unknown> = {},
 ): Promise<StocktakeSession[]> {
@@ -205,10 +267,6 @@ export async function fetchStocktakeSessions(
   );
 }
 
-/**
- * GET /inventory-snapshots
- * Fetch stocktake snapshots.
- */
 export async function fetchInventorySnapshots(
   params: Record<string, unknown> = {},
 ): Promise<StocktakeSnapshot[]> {
@@ -221,10 +279,6 @@ export async function fetchInventorySnapshots(
   );
 }
 
-/**
- * POST /stocktake/sessions/:sessionId/count
- * Submit a stocktake count for a specific SKU.
- */
 export async function submitStocktakeCount(
   sessionId: string,
   payload: { sku: string; actual_qty: number; notes?: string },
@@ -235,16 +289,21 @@ export async function submitStocktakeCount(
   );
 }
 
-/**
- * POST /stocktake/sessions/:sessionId/apply-adjustment
- * Apply stocktake adjustment to update inventory balances.
- * Requires idempotency key to prevent double application.
- */
 export async function applyStocktakeAdjustment(
   request: ApplyAdjustmentRequest,
 ): Promise<ApplyAdjustmentResponse> {
+  assertWmsActionPermission(
+    WMS_ACTION_PERMISSIONS.APPLY_STOCKTAKE_ADJUSTMENT,
+    "apply stocktake adjustment",
+  );
   const sessionId = requireNonEmptyString(request.session_id, "session_id");
-  const lines = requireArray(request.lines, "lines").map((line, index) => ({
+  const rawLines = requireArray(request.lines, "lines");
+  requireUniqueStrings(
+    rawLines.map((line) => line.sku),
+    "lines.sku",
+    "WMS_FE_DUPLICATE_SKU",
+  );
+  const lines = rawLines.map((line, index) => ({
     sku: requireNonEmptyString(line.sku, `lines.${index}.sku`),
     actual_qty: requireNonNegativeNumber(
       line.actual_qty,
@@ -252,8 +311,11 @@ export async function applyStocktakeAdjustment(
     ),
     ...(line.reason ? { reason: line.reason } : {}),
   }));
-  return http.post<ApplyAdjustmentResponse>(
-    API_ENDPOINTS.STOCKTAKE_APPLY_ADJUSTMENT.replace(":sessionId", sessionId),
+  const result = await http.post<unknown>(
+    API_ENDPOINTS.STOCKTAKE_APPLY_ADJUSTMENT.replace(
+      ":sessionId",
+      sessionId,
+    ),
     { lines },
     {
       headers: requireIdempotencyHeaders({
@@ -262,12 +324,9 @@ export async function applyStocktakeAdjustment(
       }),
     },
   );
+  return normalizeAdjustmentResponse(result, sessionId);
 }
 
-/**
- * GET /stocktake/sessions/:sessionId/count
- * Fetch stocktake count lines for a session.
- */
 export async function fetchStocktakeCounts(
   sessionId: string,
   params: Record<string, unknown> = {},
@@ -281,10 +340,6 @@ export async function fetchStocktakeCounts(
   );
 }
 
-/**
- * GET /stocktake/sessions/:sessionId/variance
- * Fetch stocktake variances for a session.
- */
 export async function fetchStocktakeVariances(
   sessionId: string,
   params: Record<string, unknown> = {},

@@ -1,11 +1,15 @@
+import { API_ENDPOINTS } from "@/shared/api/endpoints";
+import { assertWmsActionPermission } from "@/shared/api/wms-action-permission";
 import { http } from "@/shared/api/http";
 import {
   requireArray,
   requireIdempotencyHeaders,
   requireNonEmptyString,
   requirePositiveNumber,
+  requireUniqueStrings,
   WmsContractError,
 } from "@/shared/api/wms-contract";
+import { WMS_ACTION_PERMISSIONS } from "@/shared/constants/wms-permissions";
 import type {
   CloseRemainderRequest,
   OutboundDocument,
@@ -14,7 +18,6 @@ import type {
   IssueEvidence,
   PostIssueRequest,
 } from "../types";
-import { API_ENDPOINTS } from "@/shared/api/endpoints";
 
 type ListParams = {
   page?: number;
@@ -144,9 +147,15 @@ function normalizeIssueEvidence(row: RawRecord): IssueEvidence {
 }
 
 function normalizePostIssueRequest(request: PostIssueRequest) {
+  const lines = requireArray(request.lines, "lines");
+  requireUniqueStrings(
+    lines.map((line) => line.lineId),
+    "lines.lineId",
+    "WMS_FE_DUPLICATE_LINE",
+  );
   return {
     documentId: requireNonEmptyString(request.documentId, "documentId"),
-    lines: requireArray(request.lines, "lines").map((line, index) => ({
+    lines: lines.map((line, index) => ({
       lineId: requireNonEmptyString(line.lineId, `lines.${index}.lineId`),
       quantity: requirePositiveNumber(line.quantity, `lines.${index}.quantity`),
     })),
@@ -230,9 +239,7 @@ export async function rejectOutboundDocument(
 ): Promise<OutboundDocument> {
   return http.post<OutboundDocument>(
     endpoint(API_ENDPOINTS.OUTBOUND_REJECT, id),
-    {
-      reason,
-    },
+    { reason },
   );
 }
 
@@ -242,9 +249,7 @@ export async function cancelOutboundDocument(
 ): Promise<OutboundDocument> {
   return http.post<OutboundDocument>(
     endpoint(API_ENDPOINTS.OUTBOUND_CANCEL, id),
-    {
-      reason,
-    },
+    { reason },
   );
 }
 
@@ -256,10 +261,7 @@ export async function scanOutboundDocument(
   const result = await http.post<
     | OutboundScanResult[]
     | { data?: OutboundScanResult[]; results?: OutboundScanResult[] }
-  >(endpoint(API_ENDPOINTS.OUTBOUND_SCAN, id), {
-    ...extra,
-    codes,
-  });
+  >(endpoint(API_ENDPOINTS.OUTBOUND_SCAN, id), { ...extra, codes });
   if (Array.isArray(result)) return result;
   if (Array.isArray(result.results)) return result.results;
   return Array.isArray(result.data) ? result.data : [];
@@ -268,6 +270,10 @@ export async function scanOutboundDocument(
 export async function postOutboundIssue(
   request: PostIssueRequest,
 ): Promise<IssueEvidence> {
+  assertWmsActionPermission(
+    WMS_ACTION_PERMISSIONS.POST_ISSUE,
+    "post outbound issue",
+  );
   const normalized = normalizePostIssueRequest(request);
   const result = await http.post<RawRecord>(
     endpoint(API_ENDPOINTS.OUTBOUND_POST_ISSUE, normalized.documentId),

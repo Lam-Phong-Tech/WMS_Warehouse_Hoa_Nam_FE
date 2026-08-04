@@ -23,11 +23,6 @@ export const WMS_PERMISSION_CATALOG = {
   AUDIT_LOG_VIEW: "AUDIT_LOG_VIEW",
 } as const;
 
-/**
- * Alias chỉ dùng để tương thích contract cũ đã xuất hiện trong FE.
- * Mọi phép kiểm tra đều chuẩn hóa về code canonical phía trên; không alias
- * quyền rộng như `stocktake.manage` sang quyền điều chỉnh tồn kho.
- */
 export const WMS_PERMISSION_ALIASES: Readonly<Record<string, string>> = {
   SCAN_CLASSIFY: WMS_PERMISSION_CATALOG.SCAN_CLASSIFY,
   SCAN_INBOUND: WMS_PERMISSION_CATALOG.SCAN_INBOUND,
@@ -39,8 +34,20 @@ export const WMS_PERMISSION_ALIASES: Readonly<Record<string, string>> = {
   WARRANTY_TEMP_ONLY: WMS_PERMISSION_CATALOG.WARRANTY_TEMP_ONLY,
 } as const;
 
+export const WMS_CANONICAL_PERMISSION_CODES = Object.freeze(
+  Object.values(WMS_PERMISSION_CATALOG),
+);
+
+const WMS_CANONICAL_PERMISSION_SET = new Set<string>(
+  WMS_CANONICAL_PERMISSION_CODES,
+);
+
 export function canonicalizeWmsPermission(code: string): string {
   return WMS_PERMISSION_ALIASES[code] ?? code;
+}
+
+export function isCanonicalWmsPermission(code: string): boolean {
+  return WMS_CANONICAL_PERMISSION_SET.has(canonicalizeWmsPermission(code));
 }
 
 export function hasAnyWmsPermission(
@@ -58,13 +65,19 @@ export function hasAnyWmsPermission(
 }
 
 /**
- * Permission groups for action-level guards. These groups are intentionally
- * separate from route access: entering a page must not implicitly authorize a
- * stock-changing, export, TEMP_ONLY, or context-specific scan action.
- *
- * Backend remains the RBAC authority. BE/BA must approve these codes against
- * the runtime permission catalog before production final sign-off.
+ * Remove only explicitly rejected broad fallbacks from OR permission groups.
+ * `stocktake.manage` may grant page/session administration, but it must never
+ * authorize the stock-changing `stocktake.adjust` action.
  */
+export function resolveWmsPermissionAlternatives(
+  codes: readonly string[],
+): string[] {
+  const canonical = codes.map(canonicalizeWmsPermission);
+  return canonical.includes(WMS_PERMISSION_CATALOG.STOCKTAKE_ADJUST)
+    ? canonical.filter((code) => code !== "stocktake.manage")
+    : canonical;
+}
+
 export const WMS_ACTION_PERMISSIONS = {
   SCAN_CLASSIFY_GENERIC: [
     WMS_PERMISSION_CATALOG.INVENTORY_TRACE,

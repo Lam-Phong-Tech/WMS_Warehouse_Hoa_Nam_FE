@@ -1,14 +1,8 @@
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
+import { assertWmsActionPermission } from "@/shared/api/wms-action-permission";
 import { http } from "@/shared/api/http";
-import {
-  WmsContractError,
-  requireNonEmptyString,
-} from "@/shared/api/wms-contract";
-import {
-  WMS_ACTION_PERMISSIONS,
-  hasAnyWmsPermission,
-} from "@/shared/constants/wms-permissions";
-import { useAuthStore } from "@/shared/store/auth.store";
+import { requireNonEmptyString } from "@/shared/api/wms-contract";
+import { WMS_ACTION_PERMISSIONS } from "@/shared/constants/wms-permissions";
 import type {
   WarrantyCase,
   WarrantyEvent,
@@ -104,22 +98,6 @@ function normalizeWarrantyEvent(row: RawRecord): WarrantyEvent {
   };
 }
 
-function assertTempOnlyPermission(): void {
-  const state = useAuthStore.getState();
-  if (
-    !hasAnyWmsPermission(
-      state.permissionCodes,
-      WMS_ACTION_PERMISSIONS.WARRANTY_TEMP_ONLY,
-      state.isSuperAdmin,
-    )
-  ) {
-    throw new WmsContractError(
-      "WMS_FE_PERMISSION_REQUIRED",
-      "warranty.temp_only is required to create a TEMP_ONLY warranty case",
-    );
-  }
-}
-
 export async function fetchWarrantyCases(
   params: Record<string, unknown> = {},
 ): Promise<WarrantyCase[]> {
@@ -151,7 +129,10 @@ export async function createWarrantyCase(
   if (payload.identification_type === "IDENTIFIED") {
     requireNonEmptyString(payload.item_code, "item_code");
   } else {
-    assertTempOnlyPermission();
+    assertWmsActionPermission(
+      WMS_ACTION_PERMISSIONS.WARRANTY_TEMP_ONLY,
+      "create TEMP_ONLY warranty case",
+    );
     requireNonEmptyString(payload.missing_code_reason, "missing_code_reason");
     requireNonEmptyString(
       payload.manual_product_description,

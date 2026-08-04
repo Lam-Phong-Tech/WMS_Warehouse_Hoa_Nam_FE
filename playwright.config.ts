@@ -7,8 +7,9 @@ export default defineConfig({
   expect: { timeout: 10_000 },
   fullyParallel: false,
   reporter: [["list"], ["html", { open: "never" }]],
+  outputDir: "test-results",
   use: {
-    baseURL: process.env.E2E_BASE_URL ?? "http://localhost:5173",
+    baseURL: process.env.E2E_BASE_URL ?? "http://127.0.0.1:5173",
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
     video: "retain-on-failure",
@@ -16,8 +17,8 @@ export default defineConfig({
   webServer: process.env.E2E_BASE_URL
     ? undefined
     : {
-        command: "npm.cmd run dev -- --host 127.0.0.1",
-        url: "http://localhost:5173",
+        command: "npm run dev -- --host 127.0.0.1",
+        url: "http://127.0.0.1:5173",
         reuseExistingServer: true,
         timeout: 120_000,
       },

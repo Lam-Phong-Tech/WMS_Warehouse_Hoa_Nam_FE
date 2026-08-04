@@ -1,11 +1,14 @@
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
+import { assertWmsActionPermission } from "@/shared/api/wms-action-permission";
 import { http } from "@/shared/api/http";
 import {
   WmsContractError,
   requireArray,
   requireNonEmptyString,
   requirePositiveNumber,
+  requireUniqueStrings,
 } from "@/shared/api/wms-contract";
+import { WMS_ACTION_PERMISSIONS } from "@/shared/constants/wms-permissions";
 import type {
   ScanClassifyRequest,
   ScanClassifyResponse,
@@ -44,16 +47,12 @@ function num(value: unknown): number {
 function normalizeClassifyRequest(
   request: ScanClassifyRequest,
 ): ScanClassifyRequest {
-  const codes = requireArray(request.codes, "codes").map((code, index) =>
-    requireNonEmptyString(code, `codes.${index}`),
+  const rawCodes = requireArray(request.codes, "codes");
+  const codes = requireUniqueStrings(
+    rawCodes,
+    "codes",
+    "WMS_SCAN_DUPLICATE",
   );
-  const duplicated = codes.find((code, index) => codes.indexOf(code) !== index);
-  if (duplicated) {
-    throw new WmsContractError(
-      "WMS_SCAN_DUPLICATE",
-      `Duplicate code in request payload: ${duplicated}`,
-    );
-  }
   return {
     codes,
     ...(request.warehouse_id === undefined
@@ -96,7 +95,7 @@ function normalizeClassifyItem(
 
 function normalizeClassifyResponse(
   value: unknown,
-  requestedCodeCount: number,
+  requestedCodes: readonly string[],
 ): ScanClassifyResponse {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new WmsContractError(
@@ -115,10 +114,28 @@ function normalizeClassifyResponse(
     "WMS_FE_INVALID_SCAN_RESPONSE",
   ).map(normalizeClassifyItem);
 
-  if (items.length !== requestedCodeCount) {
+  if (items.length !== requestedCodes.length) {
     throw new WmsContractError(
       "WMS_FE_INVALID_SCAN_RESPONSE",
-      `Scan classify response returned ${items.length} items for ${requestedCodeCount} requested codes`,
+      `Scan classify response returned ${items.length} items for ${requestedCodes.length} requested codes`,
+    );
+  }
+
+  const responseCodes = items.map((item) => item.code_value);
+  if (new Set(responseCodes).size !== responseCodes.length) {
+    throw new WmsContractError(
+      "WMS_FE_INVALID_SCAN_RESPONSE",
+      "Scan classify response contains duplicate code_value entries",
+    );
+  }
+  const requestedSet = new Set(requestedCodes);
+  const missingOrUnexpected = responseCodes.filter(
+    (code) => !requestedSet.has(code),
+  );
+  if (missingOrUnexpected.length > 0) {
+    throw new WmsContractError(
+      "WMS_FE_INVALID_SCAN_RESPONSE",
+      `Scan classify response contains unexpected code(s): ${missingOrUnexpected.join(", ")}`,
     );
   }
 
@@ -128,6 +145,7 @@ function normalizeClassifyResponse(
       "batch_id",
       "WMS_FE_INVALID_SCAN_RESPONSE",
     ),
+    request_id: text(row.request_id ?? row.requestId) || undefined,
     items,
   };
 }
@@ -163,20 +181,20 @@ function normalizeEvent(row: RawRecord): ScanEvent {
   };
 }
 
-/**
- * POST /api/v1/scan/classify at runtime.
- * `VITE_API_BASE_URL` already contains /api/v1, so the endpoint constant is
- * deliberately `/scan/classify` rather than repeating the API prefix.
- */
+/** POST /api/v1/scan/classify at runtime. */
 export async function classifyScanCodes(
   request: ScanClassifyRequest,
 ): Promise<ScanClassifyResponse> {
+  assertWmsActionPermission(
+    WMS_ACTION_PERMISSIONS.SCAN_CLASSIFY_GENERIC,
+    "scan classify",
+  );
   const normalized = normalizeClassifyRequest(request);
   const result = await http.post<unknown>(
     API_ENDPOINTS.SCAN_BATCHES_CLASSIFY,
     normalized,
   );
-  return normalizeClassifyResponse(result, normalized.codes.length);
+  return normalizeClassifyResponse(result, normalized.codes);
 }
 
 export async function fetchScanBatches(
@@ -203,10 +221,6 @@ export async function fetchScanEvents(
   );
 }
 
-/**
- * Physical-code list is not in the approved contract supplied to FE.
- * Fail closed instead of converting a legacy route or mock into evidence.
- */
 export async function fetchPhysicalCodes(
   params: Record<string, unknown> = {},
 ): Promise<PhysicalCode[]> {

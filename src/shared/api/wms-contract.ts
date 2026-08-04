@@ -52,16 +52,42 @@ export function requireArray<T>(
   return value;
 }
 
+export function requireUniqueStrings(
+  values: readonly string[],
+  field: string,
+  code = "WMS_FE_DUPLICATE_VALUE",
+): string[] {
+  const normalized = values.map((value, index) =>
+    requireNonEmptyString(value, `${field}.${index}`),
+  );
+  const seen = new Set<string>();
+  for (const value of normalized) {
+    if (seen.has(value)) {
+      throw new WmsContractError(code, `${field} contains duplicate value: ${value}`);
+    }
+    seen.add(value);
+  }
+  return normalized;
+}
+
 export function requireIdempotencyHeaders(input: {
   idempotencyKey?: string;
   ifMatch?: string | number;
 }) {
+  const idempotencyKey = requireNonEmptyString(
+    input.idempotencyKey,
+    "idempotencyKey",
+    "WMS_FE_IDEMPOTENCY_KEY_REQUIRED",
+  );
+  if (idempotencyKey.length < 8 || idempotencyKey.length > 128) {
+    throw new WmsContractError(
+      "WMS_FE_INVALID_IDEMPOTENCY_KEY",
+      "idempotencyKey must contain 8 to 128 characters",
+    );
+  }
+
   return {
-    "Idempotency-Key": requireNonEmptyString(
-      input.idempotencyKey,
-      "idempotencyKey",
-      "WMS_FE_IDEMPOTENCY_KEY_REQUIRED",
-    ),
+    "Idempotency-Key": idempotencyKey,
     "If-Match": requireNonEmptyString(
       input.ifMatch === undefined ? undefined : String(input.ifMatch),
       "ifMatch",

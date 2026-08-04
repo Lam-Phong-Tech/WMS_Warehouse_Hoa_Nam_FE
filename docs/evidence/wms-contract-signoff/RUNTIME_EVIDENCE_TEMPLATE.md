@@ -1,39 +1,41 @@
-# WWHN-181 Runtime Evidence Template
+# WWHN-153 Runtime Evidence Template
 
-This template must be completed by QA2 on the exact commit, build, environment,
-browser, role, and permission fixture. FE automation can prepare the checks but
-must not fabricate independent runtime evidence.
+Mẫu này được QA2/DevOps hoàn tất trên **đúng source SHA, execution/build SHA, CI run, môi trường, browser/device, role và permission fixture**. FE automation chỉ chuẩn bị manifest và controlled evidence; không được tự nhận sign-off thay QA/BE/BA.
 
-## Run identity
+## 1. Run identity
 
 | Field | Required value |
 | --- | --- |
-| Commit SHA | Exact tested SHA |
-| CI run/build ID | Link or ID |
-| Environment/API base URL | Named DEV/UAT environment |
-| Browser/device/viewport | Version and viewport |
-| Actor/role/permission codes | Exact fixture |
-| Test time | ISO-8601 with timezone |
+| Repository/branch | `Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_FE` / `m1` |
+| Source SHA | SHA chính xác của đầu nhánh `m1` được test |
+| Execution/merge SHA | SHA workflow checkout thực tế |
+| PR/CI run/build ID | Link hoặc ID |
+| Environment/API base URL | DEV/UAT đã định danh; không ghi token/secret |
+| Browser/device/viewport | Version + viewport |
+| Actor/role/permission codes | Fixture chính xác |
+| Test time | ISO-8601 có timezone |
+| Official OpenAPI version/SHA256 | Giá trị phát hành từ WWHN-31 |
 
-## Required captures
+## 2. Required captures
 
 | Evidence ID | Scenario | Expected evidence |
 | --- | --- | --- |
-| RT-01 | Scan success | Network request to `/api/v1/scan/classify`, payload, 2xx response, success UI |
-| RT-02 | Scan validation/error | 422/409/5xx or controlled negative response, error code, request ID, retry behavior |
-| RT-03 | RBAC | Direct API request by an unauthorized actor returns 403; UI guard alone is insufficient |
-| RT-04 | Stocktake adjust | `stocktake.adjust`, confirmation, `Idempotency-Key`, `If-Match`, replay/conflict behavior |
-| RT-05 | Warranty TEMP_ONLY | Missing `warranty.temp_only` blocks before request; permitted actor reaches API |
-| RT-06 | Reports | XNT/export canonical routes work; hub/warranty-defects make no request while blocked |
-| RT-07 | Responsive/accessibility | 1920, 1366, 1024, 768 and mobile viewport; keyboard focus and readable error states |
-| RT-08 | UI states | loading, empty, error, success, disabled, confirm, retry |
+| RT-01 | Scan success | Request `/api/v1/scan/classify`, payload, 2xx response, `batch_id`, đủ từng `code_value`, success UI |
+| RT-02 | Scan negative | 403/409/422/5xx, error code, request ID, UI retry-safe; không đổi state như thành công |
+| RT-03 | RBAC runtime | `/permissions` catalog + direct API request của actor không quyền trả 403; UI guard không thay backend |
+| RT-04 | Post Receipt | `inbound.post`, `Idempotency-Key`, `If-Match`, `receipt_id`, `movement_ref`, `request_id`, replay/conflict |
+| RT-05 | Post Issue | `outbound.post`, `Idempotency-Key`, `If-Match`, `issue_id`, `movement_ref`, `request_id`, insufficient stock/conflict |
+| RT-06 | Apply Adjustment | Chỉ `stocktake.adjust`; response có `session_id`, `movement_ref`, `request_id`; stale/replay/duplicate SKU negative |
+| RT-07 | Report export | Thiếu `report.export` bị chặn trước request; actor hợp lệ tải đúng filter |
+| RT-08 | Warranty TEMP_ONLY | Thiếu `warranty.temp_only` bị chặn trước request; actor hợp lệ đến API |
+| RT-09 | Responsive/accessibility | 1440, 1024, 390; keyboard focus, không overflow, error state đọc được |
+| RT-10 | Build trace | PR, source SHA, execution SHA, run/build ID, environment, lint/typecheck/test/build logs, manifest SHA256 |
 
-Attach screenshots/video and sanitized network HAR or equivalent. Do not commit
-PII, tokens, cookies, passwords, or production identifiers.
+Đính kèm screenshot/video và sanitized HAR hoặc network export. Không commit PII, token, cookie, mật khẩu hoặc định danh production.
 
-## Independent boundary
+## 3. Independent boundary
 
-Không tự nhận QA2 sign-off.  
-Không tự nhận BE authorization sign-off.  
-BA must record Go, Conditional Go, or No-Go in WWHN-183 after reviewing the
-evidence above.
+- Không tự nhận QA1/QA2 sign-off.
+- Không tự nhận BE authorization/OpenAPI sign-off.
+- BA chỉ ghi `Go`, `Conditional Go` hoặc `No-Go` tại WWHN-183 sau khi kiểm bằng chứng.
+- FE final sign-off vẫn fail-closed khi WWHN-31/WWHN-180/WWHN-182/WWHN-183 chưa đạt.

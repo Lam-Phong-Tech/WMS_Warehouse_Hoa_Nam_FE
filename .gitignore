@@ -39,6 +39,9 @@ session.xml
 
 # Local tooling artifacts / dumps (not part of source)
 coverage/
+test-results/
+playwright-report/
+docs/evidence/wms-contract-signoff/generated/
 .mcp.json
 .playwright-mcp/
 swagger-api.json

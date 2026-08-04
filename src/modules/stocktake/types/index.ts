@@ -1,8 +1,3 @@
-/**
- * Stocktake module types for WMS Hoa Nam.
- * Based on architecture guide: stocktake session, snapshot, count, variance, apply adjustment.
- */
-
 /** Stocktake session status */
 export type StocktakeSessionStatus =
   | "DRAFT"
@@ -14,7 +9,6 @@ export type StocktakeSessionStatus =
   | "ADJUSTED"
   | "CANCELLED";
 
-/** Stocktake session */
 export interface StocktakeSession {
   id: string;
   code: string;
@@ -51,7 +45,6 @@ export interface CreateStocktakeSessionRequest {
   idempotency_key?: string;
 }
 
-/** Stocktake snapshot - frozen balance at session start */
 export interface StocktakeSnapshot {
   id: string;
   session_id: string;
@@ -62,7 +55,6 @@ export interface StocktakeSnapshot {
   location_hint?: string;
 }
 
-/** Stocktake count line */
 export interface StocktakeCount {
   id: string;
   session_id: string;
@@ -80,7 +72,6 @@ export interface StocktakeCount {
   notes?: string;
 }
 
-/** Stocktake variance after reconciliation */
 export interface StocktakeVariance {
   sku: string;
   sku_name: string;
@@ -96,7 +87,6 @@ export interface StocktakeVariance {
   reconcile_status: "PENDING" | "APPROVED" | "REJECTED";
 }
 
-/** Request to apply stocktake adjustment */
 export interface ApplyAdjustmentRequest {
   session_id: string;
   lines: Array<{
@@ -108,12 +98,14 @@ export interface ApplyAdjustmentRequest {
   version: string;
 }
 
-/** Apply adjustment response */
 export interface ApplyAdjustmentResponse {
   session_id: string;
   adjusted_lines: number;
   total_variance: number;
   status: "ADJUSTED" | "PARTIALLY_ADJUSTED" | "FAILED";
+  movement_ref: string;
+  request_id: string;
+  replayed?: boolean;
   errors?: Array<{
     sku: string;
     error_code: string;
@@ -121,7 +113,6 @@ export interface ApplyAdjustmentResponse {
   }>;
 }
 
-/** Stocktake error codes */
 export type StocktakeErrorCode =
   | "WMS_STOCKTAKE_SESSION_LOCKED"
   | "WMS_STOCKTAKE_ALREADY_ADJUSTED"

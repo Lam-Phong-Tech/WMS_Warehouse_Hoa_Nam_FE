@@ -1,11 +1,15 @@
+import { API_ENDPOINTS } from "@/shared/api/endpoints";
+import { assertWmsActionPermission } from "@/shared/api/wms-action-permission";
 import { http } from "@/shared/api/http";
 import {
   requireArray,
   requireIdempotencyHeaders,
   requireNonEmptyString,
   requirePositiveNumber,
+  requireUniqueStrings,
   WmsContractError,
 } from "@/shared/api/wms-contract";
+import { WMS_ACTION_PERMISSIONS } from "@/shared/constants/wms-permissions";
 import type {
   CloseRemainderRequest,
   InboundDocument,
@@ -14,7 +18,6 @@ import type {
   PostReceiptRequest,
   ReceiptEvidence,
 } from "../types";
-import { API_ENDPOINTS } from "@/shared/api/endpoints";
 
 type ListParams = {
   page?: number;
@@ -110,10 +113,7 @@ function normalizeScanResult(row: RawRecord): InboundScanResult {
 }
 
 export function normalizeReceiptEvidence(row: RawRecord): ReceiptEvidence {
-  const evidence = (row.evidence ??
-    row.receipt ??
-    row.data ??
-    row) as RawRecord;
+  const evidence = (row.evidence ?? row.receipt ?? row.data ?? row) as RawRecord;
   const receiptId = text(
     evidence.receipt_id ?? evidence.receiptId ?? evidence.receipt_no,
     undefined,
@@ -161,9 +161,15 @@ function idempotencyConfig(key?: string, ifMatch?: number) {
 }
 
 function normalizePostReceiptRequest(request: PostReceiptRequest) {
+  const lines = requireArray(request.lines, "lines");
+  requireUniqueStrings(
+    lines.map((line) => line.lineId),
+    "lines.lineId",
+    "WMS_FE_DUPLICATE_LINE",
+  );
   return {
     documentId: requireNonEmptyString(request.documentId, "documentId"),
-    lines: requireArray(request.lines, "lines").map((line, index) => ({
+    lines: lines.map((line, index) => ({
       lineId: requireNonEmptyString(line.lineId, `lines.${index}.lineId`),
       quantity: requirePositiveNumber(line.quantity, `lines.${index}.quantity`),
     })),
@@ -190,7 +196,7 @@ export async function fetchInboundLines(
   documentId: string,
 ): Promise<InboundLine[]> {
   const detail = await http.get<RawRecord>(
-    `${API_ENDPOINTS.INBOUND_LINES.replace(":id", documentId)}`,
+    API_ENDPOINTS.INBOUND_LINES.replace(":id", documentId),
   );
   return rowsOf((detail.lines ?? detail.items ?? []) as RawRecord[]).map(
     (line) => normalizeLine(line, documentId),
@@ -242,9 +248,7 @@ export async function rejectInboundDocument(
 ): Promise<InboundDocument> {
   return http.post<InboundDocument>(
     endpoint(API_ENDPOINTS.INBOUND_REJECT, id),
-    {
-      reason,
-    },
+    { reason },
   );
 }
 
@@ -254,9 +258,7 @@ export async function cancelInboundDocument(
 ): Promise<InboundDocument> {
   return http.post<InboundDocument>(
     endpoint(API_ENDPOINTS.INBOUND_CANCEL, id),
-    {
-      reason,
-    },
+    { reason },
   );
 }
 
@@ -267,10 +269,7 @@ export async function scanInboundDocument(
 ): Promise<InboundScanResult[]> {
   const result = await http.post<RawRecord>(
     endpoint(API_ENDPOINTS.INBOUND_SCAN, id),
-    {
-      ...extra,
-      codes,
-    },
+    { ...extra, codes },
   );
   return rowsOf(
     (result.results ?? result.items ?? result.scans ?? result.data ?? []) as
@@ -282,6 +281,10 @@ export async function scanInboundDocument(
 export async function postInboundReceipt(
   request: PostReceiptRequest,
 ): Promise<ReceiptEvidence> {
+  assertWmsActionPermission(
+    WMS_ACTION_PERMISSIONS.POST_RECEIPT,
+    "post inbound receipt",
+  );
   const normalized = normalizePostReceiptRequest(request);
   const result = await http.post<RawRecord>(
     endpoint(API_ENDPOINTS.INBOUND_POST_RECEIPT, normalized.documentId),

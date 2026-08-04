@@ -1,7 +1,8 @@
 /**
  * Scan module types for WMS Hoa Nam.
  * Canonical runtime classify route: POST /api/v1/scan/classify.
- * FE endpoint constants stay relative because API base URL already includes /api/v1.
+ * FE endpoint constants stay relative because API base URL already includes
+ * /api/v1.
  */
 
 export type ScanCodeState =
@@ -45,6 +46,7 @@ export interface ScanClassifyItem {
 
 export interface ScanClassifyResponse {
   batch_id: string;
+  request_id?: string;
   items: ScanClassifyItem[];
 }
 
@@ -56,7 +58,12 @@ export interface ScanBatch {
   source_type: string;
   source_id?: string;
   warehouse_id?: number;
-  status: "OPEN" | "CLASSIFIED" | "PARTIALLY_POSTED" | "CLOSED" | "CANCELLED";
+  status:
+    | "OPEN"
+    | "CLASSIFIED"
+    | "PARTIALLY_POSTED"
+    | "CLOSED"
+    | "CANCELLED";
   total_codes: number;
   valid_count: number;
   duplicate_count: number;

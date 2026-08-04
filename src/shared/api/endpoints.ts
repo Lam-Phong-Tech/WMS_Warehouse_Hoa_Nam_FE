@@ -102,8 +102,7 @@ export const API_ENDPOINTS = {
   STOCKTAKE_SESSION: "/stocktake/sessions/:sessionId",
   STOCKTAKE_CREATE_SESSION: "/stocktake/sessions",
   STOCKTAKE_COUNT: "/stocktake/sessions/:sessionId/count",
-  STOCKTAKE_APPLY_ADJUSTMENT:
-    "/stocktake/sessions/:sessionId/apply-adjustment",
+  STOCKTAKE_APPLY_ADJUSTMENT: "/stocktake/sessions/:sessionId/apply-adjustment",
   REVERSAL_DOCUMENTS: "/reversal-documents",
   REVERSAL_DOCUMENT: "/reversal-documents/:id",
   REVERSAL_CREATE: "/reversal-documents",
