@@ -147,9 +147,18 @@ test("limited role navigation is filtered by permission code", async ({
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/profile");
 
-  await expect(page.getByText("Tồn & truy vết", { exact: true })).toBeVisible();
+  const wmsGroup = page.getByText("Quản lý kho · WMS", { exact: true });
+  await expect(wmsGroup).toBeVisible();
+  await wmsGroup.click();
+
+  const inventoryRoute = page.getByText("Tồn & truy vết", { exact: true });
+  await expect(inventoryRoute).toBeVisible();
   await expect(page.getByText("Danh mục & SKU", { exact: true })).toHaveCount(0);
   await expect(page.getByText("Nhật ký kiểm tra", { exact: true })).toHaveCount(0);
+
+  await inventoryRoute.click();
+  await expect(page).toHaveURL(/\/inventory$/);
+  await expect(page).not.toHaveURL(/\/errors\/403$/);
 
   await page.screenshot({
     path: testInfo.outputPath(

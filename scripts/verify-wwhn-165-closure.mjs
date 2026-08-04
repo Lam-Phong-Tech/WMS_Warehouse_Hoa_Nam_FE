@@ -64,7 +64,7 @@ requirePatterns(
     /Direct API missing permission/,
     /Audit/,
     /no stack trace/i,
-    /same build\/SHA/i,
+    /same build\/SHA|cùng build\/SHA/i,
   ],
 );
 
