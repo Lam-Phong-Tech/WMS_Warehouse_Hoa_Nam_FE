@@ -205,9 +205,7 @@ function normalizeAdjustmentResponse(
     );
   }
   const movementRef = requireNonEmptyString(
-    evidence.movement_ref ??
-      evidence.movementRef ??
-      evidence.stock_movement_id,
+    evidence.movement_ref ?? evidence.movementRef ?? evidence.stock_movement_id,
     "movement_ref",
     "WMS_FE_MISSING_ADJUSTMENT_EVIDENCE",
   );
@@ -312,10 +310,7 @@ export async function applyStocktakeAdjustment(
     ...(line.reason ? { reason: line.reason } : {}),
   }));
   const result = await http.post<unknown>(
-    API_ENDPOINTS.STOCKTAKE_APPLY_ADJUSTMENT.replace(
-      ":sessionId",
-      sessionId,
-    ),
+    API_ENDPOINTS.STOCKTAKE_APPLY_ADJUSTMENT.replace(":sessionId", sessionId),
     { lines },
     {
       headers: requireIdempotencyHeaders({

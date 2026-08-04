@@ -60,10 +60,25 @@ test("controlled login API error includes visible retry-safe state", async ({
   });
 
   await page.goto("/login");
-  await page.locator('input[name="email"]').fill("qa-evidence@example.com");
-  await page.locator('input[name="password"]').fill("invalid-ci-password");
-  await page.getByRole("button", { name: "Đăng nhập" }).click();
+  await page.locator('input[name="email"]').fill("qa-evidence@gmail.com");
+  await page
+    .locator('input[name="password"]')
+    .fill(process.env.QA_EVIDENCE_PASSWORD ?? "<QA_EVIDENCE_PASSWORD>");
 
+  const [loginResponse] = await Promise.all([
+    page.waitForResponse(
+      (response) =>
+        response.url().endsWith("/api/v1/auth/login") &&
+        response.request().method() === "POST",
+    ),
+    page.getByRole("button", { name: "Đăng nhập" }).click(),
+  ]);
+
+  expect(loginResponse.status()).toBe(422);
+  expect(loginResponse.request().postDataJSON()).toMatchObject({
+    email: "qa-evidence@gmail.com",
+    password: process.env.QA_EVIDENCE_PASSWORD ?? "<QA_EVIDENCE_PASSWORD>",
+  });
   await expect(page.getByText("Thông tin đăng nhập không hợp lệ")).toBeVisible();
   await expect(page.getByRole("button", { name: "Đăng nhập" })).toBeEnabled();
 

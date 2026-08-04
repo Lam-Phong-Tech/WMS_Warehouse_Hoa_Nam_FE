@@ -63,10 +63,7 @@ function unapprovedReportContract(name: string, path: string): never {
 }
 
 export async function fetchReportsHub(): Promise<ReportItem[]> {
-  return unapprovedReportContract(
-    "Reports hub",
-    API_ENDPOINTS.REPORTS_HUB,
-  );
+  return unapprovedReportContract("Reports hub", API_ENDPOINTS.REPORTS_HUB);
 }
 
 export async function fetchXntReport(

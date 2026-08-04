@@ -113,7 +113,10 @@ function normalizeScanResult(row: RawRecord): InboundScanResult {
 }
 
 export function normalizeReceiptEvidence(row: RawRecord): ReceiptEvidence {
-  const evidence = (row.evidence ?? row.receipt ?? row.data ?? row) as RawRecord;
+  const evidence = (row.evidence ??
+    row.receipt ??
+    row.data ??
+    row) as RawRecord;
   const receiptId = text(
     evidence.receipt_id ?? evidence.receiptId ?? evidence.receipt_no,
     undefined,

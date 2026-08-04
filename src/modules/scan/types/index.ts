@@ -20,11 +20,7 @@ export interface ScanClassifyRequest {
   scan_source?: "manual" | "barcode" | "rfid" | "lookup";
 }
 
-export type ScanClassifyStatus =
-  | "VALID"
-  | "DUPLICATE"
-  | "UNKNOWN"
-  | "INVALID";
+export type ScanClassifyStatus = "VALID" | "DUPLICATE" | "UNKNOWN" | "INVALID";
 
 export const SCAN_ERROR_CODES = [
   "WMS_SCAN_DUPLICATE",
@@ -58,12 +54,7 @@ export interface ScanBatch {
   source_type: string;
   source_id?: string;
   warehouse_id?: number;
-  status:
-    | "OPEN"
-    | "CLASSIFIED"
-    | "PARTIALLY_POSTED"
-    | "CLOSED"
-    | "CANCELLED";
+  status: "OPEN" | "CLASSIFIED" | "PARTIALLY_POSTED" | "CLOSED" | "CANCELLED";
   total_codes: number;
   valid_count: number;
   duplicate_count: number;

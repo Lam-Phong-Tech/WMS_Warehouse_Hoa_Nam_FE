@@ -32,9 +32,7 @@ import {
 } from "@/shared/constants/wms-permissions";
 import { ROUTES } from "@/shared/constants/routes";
 import { WmsContractError } from "@/shared/api/wms-contract";
-import {
-  reconcileRuntimePermissionCatalog,
-} from "@/shared/api/wms-permission-catalog";
+import { reconcileRuntimePermissionCatalog } from "@/shared/api/wms-permission-catalog";
 import {
   WMS_CONTRACT_BASELINE,
   WMS_EXTERNAL_GATE_LIST,
@@ -160,9 +158,9 @@ describe("WWHN-153 contract and FE sign-off guards", () => {
   });
 
   it("blocks sensitive service calls without action permission", async () => {
-    await expect(classifyScanCodes({ codes: ["QR-001"] })).rejects.toMatchObject(
-      { code: "WMS_FE_PERMISSION_REQUIRED" },
-    );
+    await expect(
+      classifyScanCodes({ codes: ["QR-001"] }),
+    ).rejects.toMatchObject({ code: "WMS_FE_PERMISSION_REQUIRED" });
     await expect(
       postInboundReceipt({
         documentId: "IN-1",
@@ -396,10 +394,7 @@ describe("WWHN-153 contract and FE sign-off guards", () => {
       hasAnyWmsPermission(["stocktake.manage"], ["stocktake.adjust"]),
     ).toBe(false);
     expect(
-      resolveWmsPermissionAlternatives([
-        "stocktake.apply",
-        "stocktake.manage",
-      ]),
+      resolveWmsPermissionAlternatives(["stocktake.apply", "stocktake.manage"]),
     ).toEqual(["stocktake.adjust"]);
     expect(
       resolveWmsPermissionAlternatives(["report.view", "legacy.report"]),
@@ -411,9 +406,7 @@ describe("WWHN-153 contract and FE sign-off guards", () => {
       P.INVENTORY_TRACE,
       P.SCAN_CLASSIFY,
     ]);
-    expect(ROUTE_PERMISSIONS[ROUTES.STOCKTAKE]).toEqual([
-      P.STOCKTAKE_COUNT,
-    ]);
+    expect(ROUTE_PERMISSIONS[ROUTES.STOCKTAKE]).toEqual([P.STOCKTAKE_COUNT]);
     expect(ROUTE_PERMISSIONS[ROUTES.REPORTS]).toEqual([P.REPORT_VIEW]);
     expect(ROUTE_PERMISSIONS[ROUTES.WARRANTY]).toEqual([P.WARRANTY_MANAGE]);
 

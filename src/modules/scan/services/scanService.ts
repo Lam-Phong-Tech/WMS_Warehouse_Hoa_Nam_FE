@@ -48,11 +48,7 @@ function normalizeClassifyRequest(
   request: ScanClassifyRequest,
 ): ScanClassifyRequest {
   const rawCodes = requireArray(request.codes, "codes");
-  const codes = requireUniqueStrings(
-    rawCodes,
-    "codes",
-    "WMS_SCAN_DUPLICATE",
-  );
+  const codes = requireUniqueStrings(rawCodes, "codes", "WMS_SCAN_DUPLICATE");
   return {
     codes,
     ...(request.warehouse_id === undefined

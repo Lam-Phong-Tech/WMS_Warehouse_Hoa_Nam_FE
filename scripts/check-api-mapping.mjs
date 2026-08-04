@@ -22,11 +22,15 @@ const failures = [];
 const warnings = [];
 
 function normalizePath(path) {
-  return path
-    .replace(/^\/api\/v1(?=\/)/, "")
-    .replace(/:[A-Za-z_][A-Za-z0-9_]*/g, "{param}")
-    .replace(/\{[^}]+\}/g, "{param}")
-    .replace(/\/+$/, "") || "/";
+  if (typeof path !== "string" || path.trim() === "") return null;
+  return (
+    path
+      .trim()
+      .replace(/^\/api\/v1(?=\/)/, "")
+      .replace(/:[A-Za-z_][A-Za-z0-9_]*/g, "{param}")
+      .replace(/\{[^}]+\}/g, "{param}")
+      .replace(/\/+$/, "") || "/"
+  );
 }
 
 function extractRows(markdown) {
@@ -58,7 +62,8 @@ function loadEndpointPaths() {
   const paths = new Set();
   for (const match of source.matchAll(/:\s*"([^"]+)"/g)) {
     const value = match[1];
-    if (value.startsWith("/")) paths.add(normalizePath(value));
+    const normalized = normalizePath(value);
+    if (normalized) paths.add(normalized);
   }
   return paths;
 }
@@ -68,9 +73,11 @@ function loadSwaggerRoutes() {
   const swagger = JSON.parse(readFileSync(swaggerPath, "utf8"));
   const routes = new Set();
   for (const [path, operations] of Object.entries(swagger.paths ?? {})) {
+    const normalized = normalizePath(path);
+    if (!normalized) continue;
     for (const method of Object.keys(operations)) {
       if (methods.has(method.toUpperCase())) {
-        routes.add(`${method.toUpperCase()} ${normalizePath(path)}`);
+        routes.add(`${method.toUpperCase()} ${normalized}`);
       }
     }
   }
@@ -115,6 +122,10 @@ for (const file of mappingFiles) {
 
   for (const row of rows) {
     const normalized = normalizePath(row.path);
+    if (!normalized) {
+      failures.push(`${rel}:${row.line} invalid endpoint path: ${row.path}`);
+      continue;
+    }
     if (swaggerRoutes) {
       const key = `${row.method} ${normalized}`;
       if (!swaggerRoutes.has(key)) {
@@ -129,16 +140,31 @@ for (const file of mappingFiles) {
 }
 
 for (const flow of baseline.criticalFlows ?? []) {
-  const normalized = normalizePath(flow.endpointPath);
-  if (!endpointPaths.has(normalized)) {
+  const rawPath = flow.relativePath ?? flow.endpointPath ?? flow.runtimePath;
+  const normalized = normalizePath(rawPath);
+  if (!normalized) {
     failures.push(
-      `Baseline ${flow.id} path ${flow.endpointPath} not represented by endpoints.ts`,
+      `Baseline ${flow.id ?? "UNKNOWN_FLOW"} is missing relativePath/endpointPath/runtimePath`,
+    );
+  } else if (!endpointPaths.has(normalized)) {
+    failures.push(
+      `Baseline ${flow.id} path ${rawPath} not represented by endpoints.ts`,
     );
   }
-  if (!permissionSource.includes(`"${flow.permission}"`)) {
-    failures.push(
-      `Baseline ${flow.id} permission ${flow.permission} missing from catalog`,
-    );
+
+  const flowPermissions = [
+    ...(Array.isArray(flow.permissionsAny) ? flow.permissionsAny : []),
+    ...(typeof flow.permission === "string" ? [flow.permission] : []),
+  ];
+  if (flowPermissions.length === 0) {
+    failures.push(`Baseline ${flow.id} has no permission or permissionsAny`);
+  }
+  for (const permission of flowPermissions) {
+    if (!permissionSource.includes(`"${permission}"`)) {
+      failures.push(
+        `Baseline ${flow.id} permission ${permission} missing from catalog`,
+      );
+    }
   }
 }
 for (const code of [

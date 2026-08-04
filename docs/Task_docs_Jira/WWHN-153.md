@@ -120,9 +120,55 @@ Final sign-off chỉ được mở khi đồng thời có:
 
 Không có mục nào ở trên được FE tự đánh dấu pass bằng comment hoặc local snapshot.
 
-## 9. Kết luận bàn giao
+## 9. Kết quả kiểm chứng thực tế
+
+### Full pipeline đã pass
+
+Lần xác minh đầy đủ trước khi hợp nhất lịch sử thành một commit:
+
+| Trường | Giá trị |
+| --- | --- |
+| GitHub Actions run | `#79` — run ID `30881393261` |
+| Source SHA được kiểm | `3fad133f9553c403310ffcb5591572492780ef9b` |
+| Execution/merge SHA | `fa74dc6b0f923987dabc55a406ad15b7dd9ab076` |
+| Runner | `Linux/X64` |
+| Node | `v22.23.1` |
+| App environment | `test` |
+| API base URL | `http://127.0.0.1:5173/api/v1` |
+| Artifact ID | `8881474730` |
+| Artifact digest | `sha256:47244b33b2aaca8ea78419e4850266f00d0445350def895f78f29eb0bb6c3ed6` |
+| Kết quả | **Success — tất cả gate pass** |
+
+Kết quả chi tiết:
+
+- Format read-only: pass; không phát sinh drift mới, 10 file debt lịch sử giữ nguyên blob đã khóa.
+- ESLint và TypeScript: pass.
+- Unit/integration: `37/37` test files, `320/320` tests pass.
+- Env, UAT P0/P1, Master/SKU, WMS contract: pass.
+- Production build, health artifact, API mapping: pass; `16` dòng mapping được kiểm.
+- Playwright: `4/4` pass.
+  - Desktop `1440×900`: không horizontal overflow.
+  - Tablet `1024×768`: không horizontal overflow.
+  - Mobile `390×844`: không horizontal overflow.
+  - Controlled login error: request thực sự gửi `POST /api/v1/auth/login`, payload fixture hợp lệ, response `422`, thông báo lỗi hiển thị và nút đăng nhập được enable lại.
+- Artifact cuối của run #79 chứa `8` screenshot, `4` video, `4` trace, Playwright report, health artifact và manifest JSON/Markdown.
+
+### Lỗi được gate phát hiện và cách đóng
+
+| Run | Lỗi phát hiện | Nguyên nhân gốc | Fix cuối |
+| --- | --- | --- | --- |
+| `#67` | Format gate fail | 8 file remediation mới chưa qua Prettier | Áp dụng đúng patch cho 8 file; không thêm ignore và không mở rộng debt baseline |
+| `#73` | API mapping crash | Script giả định `endpointPath`, trong khi baseline dùng `relativePath`; chưa hỗ trợ `permissionsAny` | Hỗ trợ `relativePath/endpointPath/runtimePath`, `permission/permissionsAny`, guard path rỗng |
+| `#75` | 4 E2E fail, ảnh trắng | CI truyền `VITE_APP_ENV=ci`, ngoài enum runtime | Chuẩn hóa build–E2E–manifest về environment hợp lệ `test` |
+| `#77` | 3 responsive pass, case 422 fail | Fixture `@example.com` bị Gmail validation chặn trước HTTP | Dùng fixture `@gmail.com`; assert request POST, request payload, HTTP 422, error UI và retry state |
+| `#79` | Không còn lỗi | Full regression sau toàn bộ fix | **Tất cả gate success** |
+
+> Sau khi tài liệu này được cập nhật, lịch sử remediation được hợp nhất thành một commit tiếng Việt trên `m1`. SHA cuối và run cuối sau hợp nhất được ghi tự động trong `runtime-manifest.json`; manifest là nguồn bằng chứng chính xác, tránh hard-code SHA tự tham chiếu trong tài liệu nguồn.
+
+## 10. Kết luận bàn giao
 
 - **FE-owned remediation:** hoàn tất, có automated guards và trace cho toàn bộ 9 mục review.
 - **Code safety:** fail-closed tại permission, payload, optimistic lock, idempotency và success evidence.
 - **Evidence quality:** source SHA/merge SHA/build/env/log/screenshot/video được tự động hóa và đóng gói theo commit.
+- **Regression:** full CI và 4/4 browser evidence đã pass trước khi squash; commit hợp nhất phải chạy lại cùng pipeline.
 - **Final acceptance toàn dự án:** còn phụ thuộc artifact chính thức và sign-off độc lập; không tuyên bố sai là đã hoàn tất thay các owner đó.

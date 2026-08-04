@@ -63,7 +63,10 @@ export function requireUniqueStrings(
   const seen = new Set<string>();
   for (const value of normalized) {
     if (seen.has(value)) {
-      throw new WmsContractError(code, `${field} contains duplicate value: ${value}`);
+      throw new WmsContractError(
+        code,
+        `${field} contains duplicate value: ${value}`,
+      );
     }
     seen.add(value);
   }

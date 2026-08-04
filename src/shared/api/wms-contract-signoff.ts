@@ -193,8 +193,6 @@ export const WMS_FINAL_SIGNOFF = {
 
 export function assertFinalSignoffAllowed(): void {
   if (!WMS_FINAL_SIGNOFF.finalAllowed) {
-    throw new Error(
-      `FE-FINAL-SIGNOFF blocked: ${WMS_FINAL_SIGNOFF.reason}`,
-    );
+    throw new Error(`FE-FINAL-SIGNOFF blocked: ${WMS_FINAL_SIGNOFF.reason}`);
   }
 }
