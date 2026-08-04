@@ -1,4 +1,5 @@
 import { http } from "@/shared/api/http";
+import { WmsContractError } from "@/shared/api/wms-contract";
 import type { ReportItem, XntReportRow } from "../types";
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 
@@ -52,35 +53,24 @@ function normalizeXnt(row: RawRecord): XntReportRow {
   };
 }
 
-/**
- * GET /reports/hub
- * Fetch reports hub list from backend.
- * This replaces the old hardcoded mock data.
- */
-export async function fetchReportsHub(): Promise<ReportItem[]> {
-  const result = await http.get<RawRecord[] | { data?: RawRecord[] }>(
-    API_ENDPOINTS.REPORTS_HUB,
+function unapprovedReportContract(name: string, path: string): never {
+  throw new WmsContractError(
+    "WMS_FE_CONTRACT_NOT_APPROVED",
+    `${name} is blocked because ${path} has no BE/BA canonical contract disposition. Use only after endpoint, payload, error, permission, and sample response are signed off.`,
   );
-  const rows = rowsOf(result);
-  return rows.map((row) => ({
-    id: text(row.id ?? row.code),
-    code: text(row.code),
-    title: text(row.title ?? row.name),
-    description: text(row.description),
-    status: text(row.status ?? row.availability, ""),
-    available:
-      typeof row.available === "boolean"
-        ? row.available
-        : row.enabled === undefined
-          ? undefined
-          : Boolean(row.enabled),
-  }));
 }
 
 /**
- * GET /reports/inventory-xnt
- * Fetch XNT (Xuất-Nhập-Tồn) report data.
+ * `/reports/hub` remains a documented proposal, not a canonical endpoint.
+ * This function intentionally fails before any HTTP request.
  */
+export async function fetchReportsHub(): Promise<ReportItem[]> {
+  return unapprovedReportContract(
+    "Reports hub",
+    API_ENDPOINTS.REPORTS_HUB,
+  );
+}
+
 export async function fetchXntReport(
   params: XntReportParams,
 ): Promise<XntReportRow[]> {
@@ -91,10 +81,6 @@ export async function fetchXntReport(
   return rowsOf(result).map(normalizeXnt);
 }
 
-/**
- * GET /reports/inventory-xnt/export-excel
- * Download XNT report as Excel file (blob).
- */
 export async function downloadXntReportExcel(
   params: XntReportParams,
 ): Promise<Blob> {
@@ -102,15 +88,15 @@ export async function downloadXntReportExcel(
 }
 
 /**
- * GET /reports/warranty-defects
- * Fetch warranty defects report.
+ * `/reports/warranty-defects` is blocked until BE/BA publish a canonical
+ * OpenAPI/Jira disposition. UI receives an explicit contract error.
  */
 export async function fetchWarrantyDefectsReport(
   params: Record<string, unknown> = {},
 ): Promise<RawRecord[]> {
-  const result = await http.getPage<RawRecord[] | { data?: RawRecord[] }>(
+  void params;
+  return unapprovedReportContract(
+    "Warranty defects report",
     API_ENDPOINTS.REPORTS_WARRANTY_DEFECTS,
-    { params },
   );
-  return rowsOf(result.data as RawRecord[] | { data?: RawRecord[] });
 }

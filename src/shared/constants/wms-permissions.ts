@@ -24,6 +24,40 @@ export const WMS_PERMISSION_CATALOG = {
 } as const;
 
 /**
+ * Alias chỉ dùng để tương thích contract cũ đã xuất hiện trong FE.
+ * Mọi phép kiểm tra đều chuẩn hóa về code canonical phía trên; không alias
+ * quyền rộng như `stocktake.manage` sang quyền điều chỉnh tồn kho.
+ */
+export const WMS_PERMISSION_ALIASES: Readonly<Record<string, string>> = {
+  SCAN_CLASSIFY: WMS_PERMISSION_CATALOG.SCAN_CLASSIFY,
+  SCAN_INBOUND: WMS_PERMISSION_CATALOG.SCAN_INBOUND,
+  SCAN_OUTBOUND: WMS_PERMISSION_CATALOG.SCAN_OUTBOUND,
+  SCAN_WARRANTY: WMS_PERMISSION_CATALOG.SCAN_WARRANTY,
+  "stocktake.apply": WMS_PERMISSION_CATALOG.STOCKTAKE_ADJUST,
+  REPORT_EXPORT: WMS_PERMISSION_CATALOG.REPORT_EXPORT,
+  WARRANTY_MANAGE: WMS_PERMISSION_CATALOG.WARRANTY_MANAGE,
+  WARRANTY_TEMP_ONLY: WMS_PERMISSION_CATALOG.WARRANTY_TEMP_ONLY,
+} as const;
+
+export function canonicalizeWmsPermission(code: string): string {
+  return WMS_PERMISSION_ALIASES[code] ?? code;
+}
+
+export function hasAnyWmsPermission(
+  grantedCodes: readonly string[],
+  requiredCodes: readonly string[],
+  isSuperAdmin = false,
+): boolean {
+  if (isSuperAdmin) return true;
+  const canonicalGranted = new Set(
+    grantedCodes.map((code) => canonicalizeWmsPermission(code)),
+  );
+  return requiredCodes.some((code) =>
+    canonicalGranted.has(canonicalizeWmsPermission(code)),
+  );
+}
+
+/**
  * Permission groups for action-level guards. These groups are intentionally
  * separate from route access: entering a page must not implicitly authorize a
  * stock-changing, export, TEMP_ONLY, or context-specific scan action.

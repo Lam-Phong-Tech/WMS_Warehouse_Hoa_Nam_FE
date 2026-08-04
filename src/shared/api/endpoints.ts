@@ -10,8 +10,6 @@ export const API_ENDPOINTS = {
   EMPLOYEE_STATUS_HISTORIES: "/employee-status-histories",
   EMPLOYEES_ASSIGNABLE: "/employees/assignable-employees",
   POSITIONS: "/positions",
-  // P0.4: base path xác nhận từ API doc thật (astrodev.test8.io.vn/api/documentation)
-  // là "org_units" (underscore), không phải "org-units" (hyphen).
   ORG_UNITS: "/org_units",
   ORG_UNITS_GENERATE_TMP: "/org_units/generate-tmp-code",
   ORG_UNITS_GENERATE_CODE: "/org_units/generate-code",
@@ -20,7 +18,6 @@ export const API_ENDPOINTS = {
   DEPARTMENTS: "/departments",
   ROLES: "/roles",
   PERMISSIONS: "/permissions",
-  // Export endpoints
   ORG_UNITS_EXPORT: "/org_units/export-excel",
   ORG_UNITS_EXPORT_PDF: "/org_units/export-pdf",
   ORG_UNITS_CHART_EXPORT_PDF: "/org_units/chart/export-pdf",
@@ -34,22 +31,16 @@ export const API_ENDPOINTS = {
   POSITIONS_EXPORT_PDF: "/positions/export-pdf",
   POSITIONS_TRASHED: "/positions/trashed",
   EMPLOYEES_TRASHED: "/employees/trashed",
-  // User role scopes
   USER_ROLE_SCOPES: "/user-role-scopes",
   USER_DATA_SCOPES: "/user-data-scopes",
   TASKS: "/tasks",
   WAREHOUSES: "/warehouses",
-  // Webhook M2→M3: yêu cầu header X-Webhook-Secret riêng (không dùng Bearer token).
-  // Dùng để demo 403 vì contract trả 403 FORBIDDEN ổn định, không phụ thuộc quyền user.
   WEBHOOKS_M2_ORDER_PROCESSING: "/webhooks/m2/order-processing",
-  // WMS Modules
-  // Dashboard: quick KPI endpoint
   DASHBOARD: "/reports/dashboard-quick",
   DASHBOARD_KPI: "/reports/dashboard-quick",
   DASHBOARD_RECENT_DOCUMENTS: "/document-status-history",
   DASHBOARD_RECONCILE_HEALTH: "/inventory-snapshots",
   DASHBOARD_ALERTS: "/safe-stock-alerts",
-  // Receiving/Inbound - canonical paths per architecture guide
   INBOUND_DOCUMENTS: "/inbound-documents",
   INBOUND_DOCUMENT: "/inbound-documents/:id",
   INBOUND_LINES: "/inbound-documents/:id",
@@ -61,7 +52,6 @@ export const API_ENDPOINTS = {
   INBOUND_SCAN: "/inbound-documents/:id/scan",
   INBOUND_CLOSE_REMAINDER: "/inbound-documents/:id/close-remainder",
   INBOUND_REVERSE: "/inbound-documents/:id/reverse",
-  // Shipping/Outbound - canonical paths per architecture guide
   OUTBOUND_DOCUMENTS: "/outbound-documents",
   OUTBOUND_DOCUMENT: "/outbound-documents/:id",
   OUTBOUND_LINES: "/outbound-documents/:id",
@@ -73,16 +63,12 @@ export const API_ENDPOINTS = {
   OUTBOUND_SCAN: "/outbound-documents/:id/scan",
   OUTBOUND_CLOSE_REMAINDER: "/outbound-documents/:id/close-remainder",
   OUTBOUND_REVERSE: "/outbound-documents/:id/reverse",
-  // Putaway
   PUTAWAY_TASKS: "/putaway/tasks",
   PUTAWAY_HISTORY: "/putaway/history",
-  // Reports hub - canonical paths per architecture guide
-  // DASHBOARD uses /reports/dashboard-quick for KPI; REPORTS hub is separate
   REPORTS_HUB: "/reports/hub",
   REPORTS_XNT: "/reports/inventory-xnt",
   REPORTS_XNT_EXPORT_EXCEL: "/reports/inventory-xnt/export-excel",
   REPORTS_WARRANTY_DEFECTS: "/reports/warranty-defects",
-  // Inventory
   INVENTORY_BALANCES: "/inventory/balances",
   STOCK_MOVEMENTS: "/stock-movements",
   STOCK_MOVEMENT: "/stock-movements/:id",
@@ -90,9 +76,6 @@ export const API_ENDPOINTS = {
   SAFE_STOCK_ALERTS: "/safe-stock-alerts",
   SAFE_STOCK_CONFIGS: "/safe-stock-configs",
   SAFE_STOCK_CONFIG: "/safe-stock-configs/:id",
-  // Product / SKU / Category — CANONICAL CONTRACT (confirmed from OpenAPI 3.0.0, 220 routes)
-  // NOTE: Legacy paths /skus, /items, /physical-codes, /skus/import-excel are NOT in current BE contract.
-  // FE MUST use canonical paths below. If BE later adds /skus/import-excel, update this constant only.
   PRODUCTS: "/products",
   PRODUCT: "/products/:id",
   PRODUCT_ENABLE: "/products/:id/enable",
@@ -101,34 +84,33 @@ export const API_ENDPOINTS = {
   PRODUCT_CATEGORY: "/product-categories/:id",
   UOMS: "/uoms",
   SUPPLIERS: "/suppliers",
-  // Legacy endpoints kept ONLY for reference; do NOT use in production code until BE confirms.
   SKUS: "/skus",
   SKU: "/skus/:id",
   SKU_IMPORT_EXCEL: "/skus/import-excel",
   ITEMS: "/items",
   PHYSICAL_CODES: "/physical-codes",
-  // Scan - canonical classify endpoint per architecture guide
   SCAN_BATCHES: "/scan/batches",
-  SCAN_BATCHES_CLASSIFY: "/scan-batches/classify",
+  /**
+   * Axios base URL already ends with /api/v1. Therefore this relative path
+   * resolves to the canonical runtime URL POST /api/v1/scan/classify.
+   */
+  SCAN_BATCHES_CLASSIFY: "/scan/classify",
   SCAN_EVENTS: "/scan/events",
   DOCUMENT_STATUS_HISTORY: "/document-status-history",
   INVENTORY_SNAPSHOTS: "/inventory-snapshots",
-  // Stocktake
   STOCKTAKE_SESSIONS: "/stocktake/sessions",
   STOCKTAKE_SESSION: "/stocktake/sessions/:sessionId",
   STOCKTAKE_CREATE_SESSION: "/stocktake/sessions",
   STOCKTAKE_COUNT: "/stocktake/sessions/:sessionId/count",
-  STOCKTAKE_APPLY_ADJUSTMENT: "/stocktake/sessions/:sessionId/apply-adjustment",
-  // Reverse
+  STOCKTAKE_APPLY_ADJUSTMENT:
+    "/stocktake/sessions/:sessionId/apply-adjustment",
   REVERSAL_DOCUMENTS: "/reversal-documents",
   REVERSAL_DOCUMENT: "/reversal-documents/:id",
   REVERSAL_CREATE: "/reversal-documents",
   REVERSAL_MOVEMENT_LOOKUP: "/stock-movements/reversible",
-  // Warranty
   WARRANTY_CASES: "/warranty/cases",
   WARRANTY_CASE: "/warranty/cases/:id",
   WARRANTY_CASE_EVENTS: "/warranty/cases/:caseId/events",
   WARRANTY_UPDATE_STATUS: "/warranty/cases/:id/status",
-  // Audit Logs
   AUDIT_LOGS: "/audit-logs",
 };

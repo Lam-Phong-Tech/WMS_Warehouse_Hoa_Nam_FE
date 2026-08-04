@@ -1,84 +1,68 @@
 # M1 API Mapping Evidence
 
-Updated: 2026-08-01 ICT  
-Scope: FE readiness mapping for core WMS screens used by `WWHN-148`.
+Updated: 2026-08-04 ICT  
+Scope: WWHN-181 / HN-INT-001 FE implementation mapping.
 
-This file is intentionally contract-facing: endpoint rows below must exist in
-`swagger-api.json` and be consumed through src/shared/api/endpoints.ts plus the
-module service layer. FE route/action permissions remain UX gates; BE remains
-the authority for RBAC and data scope.
+## Authority boundary
 
-## Dashboard And Inventory
+This document is FE evidence, not an independent BE contract approval. Endpoint
+constants are relative to `VITE_API_BASE_URL`. Because the approved environment
+shape ends with `/api/v1`, `SCAN_BATCHES_CLASSIFY = "/scan/classify"` resolves
+to the canonical runtime URL `POST /api/v1/scan/classify`. Adding `/api/v1`
+inside the constant would incorrectly produce `/api/v1/api/v1/scan/classify`.
 
-| Screen | FE service/source | UI action | Method | Path | Contract disposition |
-| --- | --- | --- | --- | --- | --- |
-| Dashboard | src/modules/dashboard/services/dashboardService.ts | Load KPI cards | GET | `/reports/dashboard-quick` | Present in local Swagger snapshot. |
-| Dashboard | src/modules/dashboard/services/dashboardService.ts | Load recent document status | GET | `/document-status-history` | Present in local Swagger snapshot. |
-| Dashboard | src/modules/dashboard/services/dashboardService.ts | Load reconcile health | GET | `/inventory-snapshots` | Present in local Swagger snapshot. |
-| Dashboard | src/modules/dashboard/services/dashboardService.ts | Load safe stock alerts | GET | `/safe-stock-alerts` | Present in local Swagger snapshot. |
-| Inventory | src/modules/inventory/services/inventoryService.ts | Load inventory balances | GET | `/inventory/balances` | Present in local Swagger snapshot. |
-| Inventory | src/modules/inventory/services/inventoryService.ts | Load stock movements | GET | `/stock-movements` | Present in local Swagger snapshot. |
-| Inventory | src/modules/inventory/services/inventoryService.ts | Open stock movement detail | GET | `/stock-movements/{id}` | Present in local Swagger snapshot. |
-| Inventory | src/modules/inventory/services/inventoryService.ts | Trace movement source | GET | `/stock-movements/{id}/trace-source` | Present in local Swagger snapshot. |
+Final sign-off remains blocked until WWHN-180, WWHN-182, and WWHN-183 have
+independent evidence.
 
-## Master Data SKU/Product
+## Canonical critical mappings
 
-| Screen | FE service/source | UI action | Method | Path | Contract disposition |
-| --- | --- | --- | --- | --- | --- |
-| Master Data | src/modules/master-data/services/master-data.service.ts | List products/SKU baseline | GET | `/products` | Canonical replacement for legacy `/skus`. |
-| Master Data | src/modules/master-data/services/master-data.service.ts | Create product | POST | `/products` | Present in local Swagger snapshot. |
-| Master Data | src/modules/master-data/services/master-data.service.ts | Update product | PUT | `/products/{id}` | FE currently uses status/enable/disable paths for status actions. |
-| Master Data | src/modules/master-data/services/master-data.service.ts | Disable product | PATCH | `/products/{id}/disable` | Present in local Swagger snapshot. |
-| Master Data | src/modules/master-data/services/master-data.service.ts | Enable product | PATCH | `/products/{id}/enable` | Present in local Swagger snapshot. |
-| Master Data | src/modules/master-data/services/master-data.service.ts | Update product status fallback | PATCH | `/products/{id}/status` | Present in local Swagger snapshot. |
-| Master Data | src/modules/master-data/services/master-data.service.ts | List product categories | GET | `/product-categories` | Present in local Swagger snapshot. |
-| Master Data | src/modules/master-data/services/master-data.service.ts | Create product category | POST | `/product-categories` | Present in local Swagger snapshot. |
-| Master Data | src/modules/master-data/services/master-data.service.ts | List UOMs | GET | `/uoms` | Present in local Swagger snapshot. |
-| Master Data | src/modules/master-data/services/master-data.service.ts | List suppliers | GET | `/suppliers` | Present in local Swagger snapshot. |
+| Flow | FE service | Method | Endpoint constant path | Effective runtime path | Permission | Disposition |
+| --- | --- | --- | --- | --- | --- | --- |
+| Scan classify | `scanService.ts` | POST | `/scan/classify` | `/api/v1/scan/classify` | `scan.classify` | Implemented; BE1 + BA sign-off pending. |
+| Post receipt | `receivingService.ts` | POST | `/inbound-documents/{id}/post-receipt` | `/api/v1/inbound-documents/{id}/post-receipt` | `inbound.post` | Implemented with `Idempotency-Key` and `If-Match`; BE sign-off pending. |
+| Post issue | `shippingService.ts` | POST | `/outbound-documents/{id}/post-issue` | `/api/v1/outbound-documents/{id}/post-issue` | `outbound.post` | Implemented with `Idempotency-Key` and `If-Match`; BE sign-off pending. |
+| Apply adjustment | `stocktakeService.ts` | POST | `/stocktake/sessions/{sessionId}/apply-adjustment` | `/api/v1/stocktake/sessions/{sessionId}/apply-adjustment` | `stocktake.adjust` | Action-level permission; route entry does not grant this action. |
 
-## Inbound Receiving
+## Dashboard and reports disposition
 
-| Screen | FE service/source | UI action | Method | Path | Contract disposition |
-| --- | --- | --- | --- | --- | --- |
-| Receiving | src/modules/receiving/services/receivingService.ts | List inbound documents | GET | `/inbound-documents` | Present in local Swagger snapshot. |
-| Receiving | src/modules/receiving/services/receivingService.ts | Create inbound document | POST | `/inbound-documents` | Present in local Swagger snapshot. |
-| Receiving | src/modules/receiving/services/receivingService.ts | Open inbound detail | GET | `/inbound-documents/{id}` | Present in local Swagger snapshot. |
-| Receiving | src/modules/receiving/services/receivingService.ts | Update inbound document | PATCH | `/inbound-documents/{id}` | Present in local Swagger snapshot. |
-| Receiving | src/modules/receiving/services/receivingService.ts | Submit inbound document | POST | `/inbound-documents/{id}/submit` | Present in local Swagger snapshot. |
-| Receiving | src/modules/receiving/services/receivingService.ts | Approve inbound document | POST | `/inbound-documents/{id}/approve` | Present in local Swagger snapshot. |
-| Receiving | src/modules/receiving/services/receivingService.ts | Post receipt | POST | `/inbound-documents/{id}/post-receipt` | Present in local Swagger snapshot; risky mutation must keep confirm/idempotency evidence. |
-| Receiving | src/modules/receiving/services/receivingService.ts | Reject inbound document | POST | `/inbound-documents/{id}/reject` | Present in local Swagger snapshot. |
-| Receiving | src/modules/receiving/services/receivingService.ts | Cancel inbound document | POST | `/inbound-documents/{id}/cancel` | Present in local Swagger snapshot. |
+| Screen/action | Method | Path | FE runtime behavior | Canonical disposition |
+| --- | --- | --- | --- | --- |
+| Dashboard quick KPI | GET | `/reports/dashboard-quick` | Active | Implemented mapping; independent BE approval pending. |
+| Inventory XNT | GET | `/reports/inventory-xnt` | Active | Implemented mapping; independent BE approval pending. |
+| Export XNT | GET | `/reports/inventory-xnt/export-excel` | Active and action-gated by `report.export` | Implemented mapping; independent BE approval pending. |
+| Reports hub | GET | `/reports/hub` | Fail-closed before network | Blocked until BE1/BE2 + BA publish canonical OpenAPI/Jira disposition. |
+| Warranty defects report | GET | `/reports/warranty-defects` | Fail-closed before network | Blocked until BE1/BE2 + BA publish canonical OpenAPI/Jira disposition. |
 
-## Outbound Shipping
+## RBAC mapping
 
-| Screen | FE service/source | UI action | Method | Path | Contract disposition |
-| --- | --- | --- | --- | --- | --- |
-| Shipping | src/modules/shipping/services/shippingService.ts | List outbound documents | GET | `/outbound-documents` | Present in local Swagger snapshot. |
-| Shipping | src/modules/shipping/services/shippingService.ts | Create outbound document | POST | `/outbound-documents` | Present in local Swagger snapshot. |
-| Shipping | src/modules/shipping/services/shippingService.ts | Open outbound detail | GET | `/outbound-documents/{id}` | Present in local Swagger snapshot. |
-| Shipping | src/modules/shipping/services/shippingService.ts | Update outbound document | PATCH | `/outbound-documents/{id}` | Present in local Swagger snapshot. |
-| Shipping | src/modules/shipping/services/shippingService.ts | Submit outbound document | POST | `/outbound-documents/{id}/submit` | Present in local Swagger snapshot. |
-| Shipping | src/modules/shipping/services/shippingService.ts | Approve outbound document | POST | `/outbound-documents/{id}/approve` | Present in local Swagger snapshot. |
-| Shipping | src/modules/shipping/services/shippingService.ts | Post issue | POST | `/outbound-documents/{id}/post-issue` | Present in local Swagger snapshot; risky mutation must keep confirm/idempotency evidence. |
-| Shipping | src/modules/shipping/services/shippingService.ts | Reject outbound document | POST | `/outbound-documents/{id}/reject` | Present in local Swagger snapshot. |
-| Shipping | src/modules/shipping/services/shippingService.ts | Cancel outbound document | POST | `/outbound-documents/{id}/cancel` | Present in local Swagger snapshot. |
+Route permission is only a page-entry UX gate. Backend authorization remains
+the authority for HTTP 403 and data scope.
 
-## Reports
+| Area | Route-entry permission | Sensitive action permission |
+| --- | --- | --- |
+| Scan | `inventory.trace` OR `scan.classify` | `scan.inbound`, `scan.outbound`, or `scan.warranty` according to context |
+| Stocktake | `stocktake.count` | `stocktake.adjust` for apply adjustment |
+| Warranty | `warranty.manage` | `warranty.temp_only` for TEMP_ONLY creation |
+| Reports | `report.view` | `report.export` for export |
 
-| Screen | FE service/source | UI action | Method | Path | Contract disposition |
-| --- | --- | --- | --- | --- | --- |
-| Reports | src/modules/reports/services/reportsService.ts | Load inventory XNT report | GET | `/reports/inventory-xnt` | Present in local Swagger snapshot. |
-| Reports | src/modules/reports/services/reportsService.ts | Export inventory XNT Excel | GET | `/reports/inventory-xnt/export-excel` | Present in local Swagger snapshot. |
+Legacy FE names are normalized only through an explicit alias list. No broad
+permission such as `stocktake.manage` is silently promoted to
+`stocktake.adjust`.
 
-## Known Mismatch / Conditional Contract Items
+## Evidence commands
 
-| Area | FE source | Endpoint constant or behavior | Disposition |
-| --- | --- | --- | --- |
-| Inbound scan | `receivingService.ts` | inbound scan endpoint uses `/inbound-documents/:id/scan` | Not present in local Swagger snapshot; BE sample needed before production sign-off. |
-| Inbound close remainder | `receivingService.ts` | inbound close remainder endpoint uses `/inbound-documents/:id/close-remainder` | Not present in local Swagger snapshot; keep as conditional. |
-| Inbound reverse | `receivingService.ts` | inbound reverse endpoint uses `/inbound-documents/:id/reverse` | Not present in local Swagger snapshot; keep as conditional. |
-| Outbound scan | `shippingService.ts` | outbound scan endpoint uses `/outbound-documents/:id/scan` | Not present in local Swagger snapshot; BE sample needed. |
-| Outbound close remainder | `shippingService.ts` | outbound close remainder endpoint uses `/outbound-documents/:id/close-remainder` | Not present in local Swagger snapshot; keep as conditional. |
-| Outbound reverse | `shippingService.ts` | outbound reverse endpoint uses `/outbound-documents/:id/reverse` | Not present in local Swagger snapshot; keep as conditional. |
-| Legacy SKU/import | endpoint constants | Legacy sku/import constants retained for reference only | Do not use for production until BE adds/locks these paths. |
+```bash
+npm run format:check
+npm run lint
+npm run test
+npm run env:verify
+npm run master-sku:verify
+npm run wms-contract:verify
+npm run build
+npm run health:check
+npm run check:api-mapping
+```
+
+CI writes machine-readable evidence to
+`docs/evidence/wms-contract-signoff/ci-contract-evidence.json` and uploads it
+as `wms-contract-evidence-${GITHUB_SHA}`.

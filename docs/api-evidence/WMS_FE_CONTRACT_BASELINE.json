@@ -1,0 +1,139 @@
+{
+  "schemaVersion": "1.0.0",
+  "updatedAt": "2026-08-04",
+  "task": "WWHN-181",
+  "parent": "WWHN-40",
+  "dependency": "HN-INT-001-ST01",
+  "authorityBoundary": "FE implementation mapping only; final contract requires independent BE1+BA, QA2, and BA G1 evidence.",
+  "apiBasePath": "/api/v1",
+  "criticalFlows": [
+    {
+      "id": "SCAN_CLASSIFY",
+      "method": "POST",
+      "endpointConstant": "SCAN_BATCHES_CLASSIFY",
+      "endpointPath": "/scan/classify",
+      "runtimePath": "/api/v1/scan/classify",
+      "permission": "scan.classify",
+      "status": "implemented_pending_be_signoff"
+    },
+    {
+      "id": "POST_RECEIPT",
+      "method": "POST",
+      "endpointConstant": "INBOUND_POST_RECEIPT",
+      "endpointPath": "/inbound-documents/:id/post-receipt",
+      "runtimePath": "/api/v1/inbound-documents/{id}/post-receipt",
+      "permission": "inbound.post",
+      "status": "implemented_pending_be_signoff"
+    },
+    {
+      "id": "POST_ISSUE",
+      "method": "POST",
+      "endpointConstant": "OUTBOUND_POST_ISSUE",
+      "endpointPath": "/outbound-documents/:id/post-issue",
+      "runtimePath": "/api/v1/outbound-documents/{id}/post-issue",
+      "permission": "outbound.post",
+      "status": "implemented_pending_be_signoff"
+    },
+    {
+      "id": "APPLY_ADJUSTMENT",
+      "method": "POST",
+      "endpointConstant": "STOCKTAKE_APPLY_ADJUSTMENT",
+      "endpointPath": "/stocktake/sessions/:sessionId/apply-adjustment",
+      "runtimePath": "/api/v1/stocktake/sessions/{sessionId}/apply-adjustment",
+      "permission": "stocktake.adjust",
+      "status": "implemented_pending_be_signoff"
+    }
+  ],
+  "reportEndpoints": [
+    {
+      "id": "DASHBOARD_QUICK",
+      "method": "GET",
+      "endpointPath": "/reports/dashboard-quick",
+      "status": "implemented_pending_be_signoff"
+    },
+    {
+      "id": "INVENTORY_XNT",
+      "method": "GET",
+      "endpointPath": "/reports/inventory-xnt",
+      "status": "implemented_pending_be_signoff"
+    },
+    {
+      "id": "INVENTORY_XNT_EXPORT",
+      "method": "GET",
+      "endpointPath": "/reports/inventory-xnt/export-excel",
+      "status": "implemented_pending_be_signoff"
+    },
+    {
+      "id": "REPORTS_HUB",
+      "method": "GET",
+      "endpointPath": "/reports/hub",
+      "status": "blocked_pending_canonical_contract"
+    },
+    {
+      "id": "WARRANTY_DEFECTS",
+      "method": "GET",
+      "endpointPath": "/reports/warranty-defects",
+      "status": "blocked_pending_canonical_contract"
+    }
+  ],
+  "permissions": {
+    "routeEntry": {
+      "stocktake": [
+        "stocktake.count"
+      ],
+      "warranty": [
+        "warranty.manage"
+      ],
+      "reports": [
+        "report.view"
+      ],
+      "scan": [
+        "inventory.trace",
+        "scan.classify"
+      ]
+    },
+    "actions": {
+      "stocktakeAdjustment": [
+        "stocktake.adjust"
+      ],
+      "warrantyTempOnly": [
+        "warranty.temp_only"
+      ],
+      "reportExport": [
+        "report.export"
+      ],
+      "scanInbound": [
+        "scan.inbound"
+      ],
+      "scanOutbound": [
+        "scan.outbound"
+      ],
+      "scanWarranty": [
+        "scan.warranty"
+      ]
+    },
+    "aliases": {
+      "stocktake.apply": "stocktake.adjust",
+      "REPORT_EXPORT": "report.export",
+      "WARRANTY_MANAGE": "warranty.manage",
+      "WARRANTY_TEMP_ONLY": "warranty.temp_only"
+    }
+  },
+  "externalGates": [
+    {
+      "id": "WWHN-180",
+      "owner": "BE1 + BA",
+      "status": "pending_independent_signoff"
+    },
+    {
+      "id": "WWHN-182",
+      "owner": "QA2",
+      "status": "pending_execution"
+    },
+    {
+      "id": "WWHN-183",
+      "owner": "BA",
+      "status": "pending_g1_decision"
+    }
+  ]
+}

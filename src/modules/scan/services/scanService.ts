@@ -9,12 +9,21 @@ import {
 import type {
   ScanClassifyRequest,
   ScanClassifyResponse,
+  ScanClassifyItem,
+  ScanClassifyStatus,
   ScanBatch,
   ScanEvent,
   PhysicalCode,
 } from "../types";
 
 type RawRecord = Record<string, unknown>;
+
+const CLASSIFY_STATUSES = new Set<ScanClassifyStatus>([
+  "VALID",
+  "DUPLICATE",
+  "UNKNOWN",
+  "INVALID",
+]);
 
 function rowsOf<T>(value: T[] | { data?: T[] }): T[] {
   return Array.isArray(value)
@@ -59,6 +68,70 @@ function normalizeClassifyRequest(
   };
 }
 
+function normalizeClassifyItem(
+  row: RawRecord,
+  index: number,
+): ScanClassifyItem {
+  const status = text(row.status).toUpperCase() as ScanClassifyStatus;
+  if (!CLASSIFY_STATUSES.has(status)) {
+    throw new WmsContractError(
+      "WMS_FE_INVALID_SCAN_RESPONSE",
+      `items.${index}.status is not a supported scan status`,
+    );
+  }
+  return {
+    code_value: requireNonEmptyString(
+      row.code_value ?? row.code,
+      `items.${index}.code_value`,
+      "WMS_FE_INVALID_SCAN_RESPONSE",
+    ),
+    code_type: text(row.code_type, "UNKNOWN"),
+    status,
+    scan_source: text(row.scan_source, "unknown"),
+    sku_code: text(row.sku_code ?? row.sku) || undefined,
+    error_code: text(row.error_code) as ScanClassifyItem["error_code"],
+    message: text(row.message) || undefined,
+  };
+}
+
+function normalizeClassifyResponse(
+  value: unknown,
+  requestedCodeCount: number,
+): ScanClassifyResponse {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new WmsContractError(
+      "WMS_FE_INVALID_SCAN_RESPONSE",
+      "Scan classify response must be an object",
+    );
+  }
+  const row = value as RawRecord;
+  const items = requireArray(
+    rowsOf(
+      (row.items ?? row.results ?? row.data ?? []) as
+        | RawRecord[]
+        | { data?: RawRecord[] },
+    ),
+    "items",
+    "WMS_FE_INVALID_SCAN_RESPONSE",
+  ).map(normalizeClassifyItem);
+
+  if (items.length !== requestedCodeCount) {
+    throw new WmsContractError(
+      "WMS_FE_INVALID_SCAN_RESPONSE",
+      `Scan classify response returned ${items.length} items for ${requestedCodeCount} requested codes`,
+    );
+  }
+
+  return {
+    batch_id: requireNonEmptyString(
+      row.batch_id ?? row.batchId,
+      "batch_id",
+      "WMS_FE_INVALID_SCAN_RESPONSE",
+    ),
+    items,
+  };
+}
+
 function normalizeBatch(row: RawRecord): ScanBatch {
   return {
     id: text(row.id),
@@ -91,23 +164,21 @@ function normalizeEvent(row: RawRecord): ScanEvent {
 }
 
 /**
- * POST /scan-batches/classify
- * Classify scanned codes: returns VALID, DUPLICATE, UNKNOWN, or INVALID status.
- * This is the canonical scan endpoint per architecture guide.
+ * POST /api/v1/scan/classify at runtime.
+ * `VITE_API_BASE_URL` already contains /api/v1, so the endpoint constant is
+ * deliberately `/scan/classify` rather than repeating the API prefix.
  */
 export async function classifyScanCodes(
   request: ScanClassifyRequest,
 ): Promise<ScanClassifyResponse> {
-  return http.post<ScanClassifyResponse>(
+  const normalized = normalizeClassifyRequest(request);
+  const result = await http.post<unknown>(
     API_ENDPOINTS.SCAN_BATCHES_CLASSIFY,
-    normalizeClassifyRequest(request),
+    normalized,
   );
+  return normalizeClassifyResponse(result, normalized.codes.length);
 }
 
-/**
- * GET /scan/batches
- * Fetch scan batches with optional filters.
- */
 export async function fetchScanBatches(
   params: Record<string, unknown> = {},
 ): Promise<ScanBatch[]> {
@@ -120,10 +191,6 @@ export async function fetchScanBatches(
   );
 }
 
-/**
- * GET /scan/events
- * Fetch scan events with optional filters.
- */
 export async function fetchScanEvents(
   params: Record<string, unknown> = {},
 ): Promise<ScanEvent[]> {
@@ -137,9 +204,8 @@ export async function fetchScanEvents(
 }
 
 /**
- * Physical-code list endpoint is not part of the current approved OpenAPI
- * snapshot. Keep the UI in an explicit blocked state instead of calling the
- * legacy `/physical-codes` route and turning mock/legacy data into evidence.
+ * Physical-code list is not in the approved contract supplied to FE.
+ * Fail closed instead of converting a legacy route or mock into evidence.
  */
 export async function fetchPhysicalCodes(
   params: Record<string, unknown> = {},
@@ -147,6 +213,6 @@ export async function fetchPhysicalCodes(
   void params;
   throw new WmsContractError(
     "WMS_FE_CONTRACT_NOT_APPROVED",
-    "Physical code list endpoint is not approved in OpenAPI v1. FE must wait for BE/BA route, payload, status enum, error code, sample response, and permission sign-off.",
+    "Physical code list endpoint is not approved. FE requires BE/BA route, payload, status enum, error code, sample response, and permission sign-off.",
   );
 }

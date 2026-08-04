@@ -1,6 +1,14 @@
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { http } from "@/shared/api/http";
-import { requireNonEmptyString } from "@/shared/api/wms-contract";
+import {
+  WmsContractError,
+  requireNonEmptyString,
+} from "@/shared/api/wms-contract";
+import {
+  WMS_ACTION_PERMISSIONS,
+  hasAnyWmsPermission,
+} from "@/shared/constants/wms-permissions";
+import { useAuthStore } from "@/shared/store/auth.store";
 import type {
   WarrantyCase,
   WarrantyEvent,
@@ -96,10 +104,22 @@ function normalizeWarrantyEvent(row: RawRecord): WarrantyEvent {
   };
 }
 
-/**
- * GET /warranty/cases
- * Fetch warranty cases with optional filters.
- */
+function assertTempOnlyPermission(): void {
+  const state = useAuthStore.getState();
+  if (
+    !hasAnyWmsPermission(
+      state.permissionCodes,
+      WMS_ACTION_PERMISSIONS.WARRANTY_TEMP_ONLY,
+      state.isSuperAdmin,
+    )
+  ) {
+    throw new WmsContractError(
+      "WMS_FE_PERMISSION_REQUIRED",
+      "warranty.temp_only is required to create a TEMP_ONLY warranty case",
+    );
+  }
+}
+
 export async function fetchWarrantyCases(
   params: Record<string, unknown> = {},
 ): Promise<WarrantyCase[]> {
@@ -112,10 +132,6 @@ export async function fetchWarrantyCases(
   );
 }
 
-/**
- * GET /warranty/cases/:caseId/events
- * Fetch warranty case events.
- */
 export async function fetchWarrantyCaseEvents(
   caseId: string | number,
   params: Record<string, unknown> = {},
@@ -129,17 +145,13 @@ export async function fetchWarrantyCaseEvents(
   );
 }
 
-/**
- * POST /warranty/cases
- * Create a new warranty case.
- */
 export async function createWarrantyCase(
   payload: CreateWarrantyCaseRequest,
 ): Promise<WarrantyCase> {
   if (payload.identification_type === "IDENTIFIED") {
     requireNonEmptyString(payload.item_code, "item_code");
   } else {
-    requireNonEmptyString(payload.sku, "sku");
+    assertTempOnlyPermission();
     requireNonEmptyString(payload.missing_code_reason, "missing_code_reason");
     requireNonEmptyString(
       payload.manual_product_description,
@@ -153,11 +165,6 @@ export async function createWarrantyCase(
   return normalizeWarrantyCase(result);
 }
 
-/**
- * PATCH /warranty/cases/:id/status
- * Update warranty case status.
- * Supports idempotency key to prevent duplicate status transitions.
- */
 export async function updateWarrantyCaseStatus(
   caseId: string | number,
   request: UpdateWarrantyStatusRequest,
@@ -179,10 +186,6 @@ export async function updateWarrantyCaseStatus(
   return normalizeWarrantyCase(result);
 }
 
-/**
- * GET /warranty/cases/:id
- * Fetch a single warranty case by ID.
- */
 export async function fetchWarrantyCase(
   caseId: string | number,
 ): Promise<WarrantyCase> {

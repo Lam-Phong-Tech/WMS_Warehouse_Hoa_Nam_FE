@@ -1,139 +1,166 @@
-# HN-INT-001 — FE Sign-off Control Record
+# WWHN-181 — FE1 Xác minh ánh xạ / payload / lỗi
 
-## 1. Kết luận hiện tại
-
-**Trạng thái: CONDITIONAL PASS — CHƯA ĐƯỢC PHÉP FINAL SIGN-OFF.**
-
-FE đã hoàn thành các guard và remediation nằm trong phạm vi repository. Tuy nhiên, không thể tuyên bố 100% hoặc Final FE Sign-off khi các điều kiện độc lập sau chưa có bằng chứng hợp lệ:
-
-1. `WWHN-180` phải hết Impediment và BE1 + BA khóa contract chính thức.
-2. `WWHN-182` phải có QA2 execution evidence trên commit/build/env cụ thể.
-3. `WWHN-183` phải có G1 minutes và quyết định `Go / Conditional Go / No-Go`.
-4. Permission catalog phải được BE/RBAC + BA duyệt và đối chiếu với runtime `/permissions`.
-5. P2 responsive/API-error evidence phải được chụp trên build thực.
-
-Không mục nào bên dưới được ghi là “Pass production” nếu chỉ có code FE hoặc unit test.
-
-## 2. Baseline và thay đổi mới nhất
+## 1. Trạng thái kiểm soát
 
 | Trường | Giá trị |
 | --- | --- |
+| Task | WWHN-181 |
+| Parent | WWHN-40 — HN-INT-001 |
+| Dependency | HN-INT-001-ST01 |
+| Branch bắt buộc | `m1` |
+| Kết quả FE implementation | **Đã hoàn tất code guard, regression test, CI verifier và evidence template** |
+| Final FE sign-off | **CONDITIONAL PASS — NOT FINAL** |
+| Lý do chưa final | WWHN-180, WWHN-182 và WWHN-183 là bằng chứng độc lập của BE1/BA, QA2 và BA G1; FE1 không được tự ký thay. |
+| Final gate | `FE-FINAL-SIGNOFF` fail-closed |
+| Contract evidence token | `BE-CONFIRMATION-EVIDENCE` |
+| Cross-role gate token | `QA-BA-GATES` |
+| Runtime evidence token | `RUNTIME-EVIDENCE` |
+
+Tài liệu này xác nhận phạm vi FE đã được xử lý sâu tới code/service/test/CI.
+Nó không biến các task bên ngoài thành Done và không ghi một final sign-off giả.
+
+## 2. Closure matrix P0 / P1 / P2
+
+| ID | Sev | Required fix | Xử lý trong FE | Evidence | Trạng thái |
+| --- | --- | --- | --- | --- | --- |
+| FE1-P0-01 | P0 | Chỉ final sau BE contract, QA2 và BA G1 | Tách `WMS_FE_IMPLEMENTATION_READINESS` khỏi `WMS_FINAL_SIGNOFF`; `finalAllowed=false`; test bắt buộc final gate phải throw. | `src/shared/api/wms-contract-signoff.ts`; `src/test/wms-contract-signoff-guards.test.ts` | **FE closed; final external gate pending** |
+| FE1-P0-02 | P0 | Khóa endpoint/payload/error/permission/idempotency/sample | Tạo baseline machine-readable; khóa 4 critical flows; validate Scan payload/response; receipt/issue/adjustment bắt buộc `Idempotency-Key` + `If-Match`; endpoint chưa duyệt fail-closed. | `docs/api-evidence/WMS_FE_CONTRACT_BASELINE.json`; service tests; CI artifact | **FE contract guard closed; WWHN-180 pending independent sign-off** |
+| FE1-P1-01 | P1 | Canonical Scan path | Constant đổi thành `/scan/classify`; base URL đã có `/api/v1`, nên effective runtime URL là `POST /api/v1/scan/classify`; test cấm lặp prefix. | `endpoints.ts`; `scanService.ts`; regression test | **Closed** |
+| FE1-P1-02 | P1 | Runtime permission mapping | Route chỉ là entry gate; action riêng cho `stocktake.adjust`, `warranty.temp_only`, `report.export`, `scan.inbound/outbound/warranty`; alias cũ chuẩn hóa có whitelist, không nâng quyền rộng. TEMP_ONLY bị chặn trước network khi thiếu quyền. | `wms-permissions.ts`; `permission.ts`; `access.ts`; `warrantyService.ts` | **Closed phía FE; Backend authorization evidence pending** |
+| FE1-P1-03 | P1 | Dashboard/Reports canonical disposition | Dashboard quick, XNT và XNT export được ghi mapping; `/reports/hub` và `/reports/warranty-defects` bị fail-closed trước network tới khi BE/BA chốt. | `reportsService.ts`; `M1_API_MAPPING.md`; baseline JSON | **Closed bằng disposition rõ ràng** |
+| FE1-P1-04 | P1 | QA2 chạy trên commit/build/env cụ thể | Cung cấp checklist happy/negative/RBAC/idempotency/retry/responsive và mẫu runtime evidence. | `RUNTIME_EVIDENCE_TEMPLATE.md`; CI artifact | **Prepared; WWHN-182 pending QA2 execution** |
+| FE1-P1-05 | P1 | BA G1 decision | Final gate yêu cầu BA ghi Go / Conditional Go / No-Go và disposition các điểm FE-SO. | Tài liệu này; `WMS_EXTERNAL_GATES` | **Prepared; WWHN-183 pending BA decision** |
+| FE1-P2-01 | P2 | Runtime screenshot/video/API error thật | Chuẩn hóa run identity, viewport, role fixture, request/response/request ID, HAR sanitized và UI-state checklist. Không commit PII/token. | `RUNTIME_EVIDENCE_TEMPLATE.md` | **Prepared; evidence thật phải do QA2 chạy** |
+
+## 3. Canonical API mapping
+
+`VITE_API_BASE_URL` có suffix `/api/v1`. Endpoint constant phải là relative path.
+
+| Flow | Method | FE constant path | Effective runtime URL | Permission | Payload / header guard |
+| --- | --- | --- | --- | --- | --- |
+| Scan classify | POST | `/scan/classify` | `/api/v1/scan/classify` | `scan.classify` | `codes` không rỗng, không duplicate, warehouse dương; response bắt buộc `batch_id`, số item khớp request và status hợp lệ |
+| Post receipt | POST | `/inbound-documents/:id/post-receipt` | `/api/v1/inbound-documents/{id}/post-receipt` | `inbound.post` | line hợp lệ; `Idempotency-Key`; `If-Match`; receipt/movement/request evidence |
+| Post issue | POST | `/outbound-documents/:id/post-issue` | `/api/v1/outbound-documents/{id}/post-issue` | `outbound.post` | line hợp lệ; `Idempotency-Key`; `If-Match`; issue/movement/request evidence |
+| Apply adjustment | POST | `/stocktake/sessions/:sessionId/apply-adjustment` | `/api/v1/stocktake/sessions/{sessionId}/apply-adjustment` | `stocktake.adjust` | line hợp lệ; `Idempotency-Key`; `If-Match` |
+
+Không đưa `/api/v1` vào `API_ENDPOINTS.SCAN_BATCHES_CLASSIFY`, vì Axios sẽ tạo
+sai URL `/api/v1/api/v1/scan/classify`.
+
+## 4. Permission / RBAC runtime mapping
+
+### 4.1 Route-entry
+
+| Route | Permission |
+| --- | --- |
+| Scan | `inventory.trace` OR `scan.classify` |
+| Stocktake | `stocktake.count` |
+| Warranty | `warranty.manage` |
+| Reports | `report.view` |
+
+### 4.2 Sensitive action
+
+| Action | Canonical permission |
+| --- | --- |
+| Scan trong nhập kho | `scan.inbound` |
+| Scan trong xuất kho | `scan.outbound` |
+| Scan trong bảo hành | `scan.warranty` |
+| Apply stocktake adjustment | `stocktake.adjust` |
+| Tạo warranty TEMP_ONLY | `warranty.temp_only` |
+| Export report | `report.export` |
+| Post receipt / issue | `inbound.post` / `outbound.post` |
+
+Frontend guard chỉ là UX/defense-in-depth. **Backend authorization** vẫn là
+nguồn quyết định cho HTTP 403 và data scope. Alias chỉ áp dụng cho các tên cũ
+đã liệt kê, ví dụ `stocktake.apply → stocktake.adjust`; không tự coi
+`stocktake.manage` là `stocktake.adjust`.
+
+## 5. Dashboard / Reports disposition
+
+| Endpoint | Disposition |
+| --- | --- |
+| `/reports/dashboard-quick` | Active FE mapping, WWHN-180 vẫn phải xác nhận contract chính thức. |
+| `/reports/inventory-xnt` | Active FE mapping. |
+| `/reports/inventory-xnt/export-excel` | Active, action-gated bằng `report.export`. |
+| `/reports/hub` | Blocked; service ném `WMS_FE_CONTRACT_NOT_APPROVED` trước network. |
+| `/reports/warranty-defects` | Blocked; service ném `WMS_FE_CONTRACT_NOT_APPROVED` trước network. |
+
+Không còn tình trạng UI âm thầm gọi một proposal endpoint rồi dùng lỗi runtime
+làm bằng chứng contract.
+
+## 6. UI states và runtime evidence
+
+QA2 phải kiểm tra đầy đủ các trạng thái: **loading, empty, error, success,
+disabled, confirm, retry**, responsive và accessibility.
+
+Bằng chứng tối thiểu:
+
+1. Scan success và negative response trên `/api/v1/scan/classify`.
+2. 403 trực tiếp từ API với actor thiếu quyền; ảnh UI disabled không đủ.
+3. 422 field validation, 409 conflict/idempotency replay, 412 stale `If-Match`,
+   428 missing precondition, 5xx và retry.
+4. `warranty.temp_only` thiếu quyền phải không có network request.
+5. Report hub và warranty-defects bị block phải không có network request.
+6. Screenshot/video ở 1920, 1366, 1024, 768 và mobile viewport.
+7. Commit SHA, CI run/build ID, environment, browser, role, permission fixture,
+   request ID và sanitized HAR.
+
+**Không tự nhận QA2 sign-off.**  
+**Không tự nhận BE authorization sign-off.**
+
+## 7. Automated regression / CI gates
+
+Các lệnh bắt buộc:
+
+```bash
+npm run format:check
+npm run lint
+npm run test
+npm run env:verify
+npm run uat:p0p1:verify
+npm run master-sku:verify
+npm run wms-contract:verify
+npm run build
+npm run health:check
+npm run check:api-mapping
+```
+
+`wms-contract:verify` tạo
+`docs/evidence/wms-contract-signoff/ci-contract-evidence.json` và CI upload
+artifact `wms-contract-evidence-${GITHUB_SHA}`.
+
+Verifier không còn phụ thuộc vào một `swagger-api.json` không tồn tại trong
+branch. Khi official OpenAPI chưa có, `check:api-mapping` chạy ở chế độ
+FE constant/baseline validation và phát warning rõ ràng; không được mô tả chế độ
+này là BE OpenAPI sign-off.
+
+## 8. PR/CI trace
+
+| Field | Value |
+| --- | --- |
 | Repository | `Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_FE` |
 | Branch | `m1` |
-| Ngày cập nhật | `2026-08-03` |
-| Permission catalog commit | `a052d042416d0403cd657110ebbdac617ed69cd5` |
-| Regression test commit | `6e627964e348b7605092f6fc4b3acfe84bbb49d9` |
-| CI remediation commit | `7b2a967301c4bad16e20cca0affd9bc420188da7` |
-| Sign-off authority | FE1 xác nhận FE code readiness; BA/QA/BE quyết định gate tích hợp |
+| Commit | Commit duy nhất chứa code và tài liệu closure này |
+| Previous observed CI | Head cũ `bcc2574...`: format/lint/test pass; 37 test files, 317 tests; pipeline dừng tại master-SKU verifier do regex JSX không xử lý icon `>` |
+| CI reliability fix | Verifier mới kiểm tra JSX đa dòng bằng semantic pattern; evidence token được kiểm tra theo ngữ nghĩa Việt/Anh |
+| New CI run | Điền từ workflow chạy trên commit closure |
+| Artifact | `wms-contract-evidence-${GITHUB_SHA}` |
 
-## 3. P0/P1/P2 closure matrix
+## 9. External gate handoff
 
-| Mức | Vấn đề | Remediation trong FE | Trạng thái thật | Điều kiện đóng |
-| --- | --- | --- | --- | --- |
-| P0 | BE contract chưa khóa | FE giữ endpoint tập trung, validation, idempotency và `If-Match` guards cho Scan, Post Receipt, Post Issue, Apply Adjustment. Không tự đổi disputed Scan path. | **FE guarded / External blocker open** | BE1 + BA publish một contract duy nhất gồm method, path, request, response, errors, permission, idempotency, sample success/error. |
-| P0 | Final FE sign-off chưa hợp lệ | `WMS_FINAL_SIGNOFF.finalAllowed=false`; unit test khóa điều kiện không được ký final. | **Closed trong code wording / Gate vẫn blocked** | `WWHN-180` pass, `WWHN-182` pass, `WWHN-183` có decision. |
-| P1 | Scan path conflict | FE hiện dùng `POST /scan-batches/classify`; test bảo đảm không tự chuyển sang `/api/v1/scan/classify` khi chưa có approved contract. | **Conditional** | BE1 + BA chọn một canonical path; FE cập nhật constant/service/test trong cùng commit nếu contract khác. |
-| P1 | `ROUTE_PERMISSIONS` conditional | Bổ sung central catalog và action groups cho `stocktake.adjust`, `warranty.temp_only`, `report.export`, scan inbound/outbound/warranty context. Route-entry và action permission được tách riêng. | **FE guarded / Approval open** | BE/RBAC + BA duyệt code, scope rule và runtime mapping; action guards phải được wiring ở UI tương ứng nếu chưa có. |
-| P1 | Dashboard/Reports chưa canonical đủ | FE constants hiện có `/reports/dashboard-quick`, `/reports/inventory-xnt`, `/reports/inventory-xnt/export-excel`, `/reports/hub`; unit test khóa mapping hiện tại. | **Conditional** | BE1/BE2 + BA xác nhận OpenAPI/Jira disposition của từng endpoint, đặc biệt `/reports/hub`. |
-| P1 | QA2 chưa chạy | CI và test guards cung cấp input cho QA; không giả mạo QA evidence. | **Open external blocker** | QA2 chạy happy, negative, RBAC, 401/403/409/422, idempotency replay, retry/network failure trên commit/build/env cụ thể. |
-| P1 | BA gate chưa có | FE-SO closure conditions được chuẩn hóa trong tài liệu này. | **Open external blocker** | BA ghi G1 minutes, decision và closure từng `FE-SO-001...006`. |
-| P2 | UI evidence chưa đủ | Foundation responsive/error-state có trong code; chưa được coi là runtime evidence. | **Open external blocker** | FE1 + QA2 attach screenshot/video desktop/tablet/mobile, role/env/build, và lỗi API thật. |
+| Gate | Owner | Bằng chứng bắt buộc | Current disposition |
+| --- | --- | --- | --- |
+| WWHN-180 / `BE-CONFIRMATION-EVIDENCE` | BE1 + BA | endpoint, method, payload, response, error code, permission, idempotency, sample và canonical OpenAPI/Jira decision | Pending independent sign-off |
+| WWHN-182 / `QA-BA-GATES` | QA2 | runtime happy/negative/RBAC/idempotency/retry/responsive trên exact SHA/build/env | Pending execution |
+| WWHN-183 / `QA-BA-GATES` | BA | G1 minutes: Go / Conditional Go / No-Go; closure FE-SO-001…006 | Pending BA decision |
+| `RUNTIME-EVIDENCE` | QA2 + FE1 support | screenshots/video/network evidence theo template | Pending runtime run |
 
-## 4. Contract guard hiện có
+## 10. Kết luận
 
-### 4.1 Endpoint và mutation safety
+Phạm vi FE1 có thể tự chịu trách nhiệm đã được xử lý đầy đủ ở mức code,
+payload/response validation, permission mapping, fail-closed contract,
+regression test, CI verifier, API mapping và evidence template.
 
-`src/test/wms-contract-signoff-guards.test.ts` kiểm tra:
-
-- Scan classify dùng endpoint hiện tại `/scan-batches/classify`.
-- Không tự chuyển sang disputed path `/api/v1/scan/classify`.
-- Scan payload duplicate hoặc invalid bị chặn trước network call.
-- Physical-code endpoint chưa approved bị fail-closed.
-- Post Receipt gửi `Idempotency-Key` và `If-Match`.
-- Post Issue gửi `Idempotency-Key` và `If-Match`.
-- Apply Adjustment gửi `Idempotency-Key` và `If-Match`.
-- Mutation thiếu idempotency/version hoặc response evidence bị reject.
-- Dashboard/XNT/export chỉ dùng constants hiện tại và vẫn mang trạng thái conditional.
-
-### 4.2 Permission catalog và action mapping
-
-`src/shared/constants/wms-permissions.ts` hiện định nghĩa:
-
-- Route/basic permissions: `inventory.trace`, `scan.classify`, `inbound.post`, `outbound.post`, `stocktake.count`, `stocktake.adjust`, `warranty.manage`, `report.view`, `report.export`, `inventory.reversal.post`.
-- Context permissions: `scan.inbound`, `scan.outbound`, `scan.warranty`.
-- Sensitive action permission: `warranty.temp_only`.
-- `WMS_ACTION_PERMISSIONS` tách action-level authorization khỏi route-entry authorization.
-
-**Caveat:** đây là FE mapping proposal/guard. Backend vẫn là authority. Mapping chỉ được coi là production-approved sau khi BE/RBAC + BA xác nhận runtime catalog và scope semantics.
-
-## 5. CI quality gate
-
-Workflow `.github/workflows/ci.yml` chạy:
-
-1. install dependencies;
-2. `format:check`;
-3. `lint`;
-4. `test`;
-5. `env:verify`;
-6. `uat:p0p1:verify`;
-7. `master-sku:verify`;
-8. `build`;
-9. `health:check`;
-10. `check:api-mapping`.
-
-Run của commit `6e627964...` fail tại `npm ci` vì repository không có `package-lock.json`; các quality gates sau đó chưa chạy. Commit `7b2a9673...` đã sửa workflow:
-
-- Có lockfile: dùng `npm ci`.
-- Chưa có lockfile: dùng `npm install --package-lock=false` và phát warning rõ ràng.
-
-Đây là remediation để CI tiếp tục chạy, nhưng không thay thế yêu cầu tạo/review `package-lock.json` để có deterministic install. CI chỉ được ghi Pass sau khi workflow của HEAD hoàn tất thành công.
-
-## 6. FE-SO closure register
-
-| ID | Trạng thái FE | Blocker còn lại |
-| --- | --- | --- |
-| FE-SO-001 Scan | FE guard có test | Canonical endpoint/schema/error/permission/sample chưa BE+BA approved. |
-| FE-SO-002 Receipt/Issue | FE guard có idempotency + optimistic-lock test | Contract lỗi/RBAC và QA replay evidence chưa có. |
-| FE-SO-003 Dashboard/Reports | FE mapping có regression test | `/reports/hub` và toàn bộ report contract chưa BE+BA xác nhận. |
-| FE-SO-004 RBAC | FE catalog/action groups đã bổ sung | Runtime permission catalog, scope và approval chưa có. |
-| FE-SO-005 Stocktake/Warranty/Reverse | FE service/types/guards có sẵn | Apply Adjustment, TEMP_ONLY, reverse errors/sample/permission chưa được khóa. |
-| FE-SO-006 UI evidence | Chưa đóng | Cần screenshot/video responsive và API errors thật theo role/env/build. |
-
-## 7. QA2 execution checklist bắt buộc
-
-QA2 phải ghi commit SHA, workflow/build ID, environment, account/role và evidence link cho từng nhóm:
-
-| Nhóm | Cases tối thiểu |
-| --- | --- |
-| Happy | Scan success; Post Receipt; Post Issue; Apply Adjustment; dashboard/XNT/export. |
-| Negative | invalid/duplicate scan; validation 422; stock conflict 409; network failure; malformed response. |
-| RBAC | allowed role; denied 403; hidden/disabled action; direct API denial. |
-| Idempotency | double-click; replay cùng key; retry sau timeout; key mới tạo transaction mới. |
-| Auth | 401 refresh success; refresh failure/logout; 403 không bị hiểu nhầm thành 401. |
-| Responsive | desktop, tablet, mobile cho các flow P0/P1. |
-
-Không chấp nhận screenshot không có build/env/role hoặc dùng mock response làm production evidence.
-
-## 8. BA G1 minutes template
-
-BA phải ghi rõ:
-
-- Decision: `Go`, `Conditional Go`, hoặc `No-Go`.
-- Baseline commit/build/env.
-- Trạng thái `WWHN-180`, `WWHN-182`, `WWHN-183`.
-- Closure từng `FE-SO-001...006`.
-- Owner và deadline cho blocker còn mở.
-- Risk acceptance, rollback condition và người có thẩm quyền chấp nhận.
-
-## 9. Final sign-off rule
-
-Chỉ được đổi tài liệu này sang **FINAL PASS** khi đồng thời:
-
-- BE1 + BA khóa contract và xóa conflict Scan path.
-- Permission catalog/runtime mapping được duyệt.
-- CI của đúng HEAD pass toàn bộ quality gates.
-- QA2 attach đủ evidence và kết luận Pass.
-- BA phát hành G1 minutes với decision hợp lệ.
-- P2 responsive/API-error evidence có đủ build/env/role.
-
-Trước thời điểm đó, kết luận hợp lệ duy nhất là **Conditional Pass — Final blocked**.
+Task **không được chuyển thành Final FE sign-off** trước khi WWHN-180,
+WWHN-182 và WWHN-183 có bằng chứng độc lập. Sau khi ba gate đó pass, BA có thể
+đổi disposition từ `CONDITIONAL PASS — NOT FINAL` sang final mà không cần FE
+tự sửa lại contract logic đã khóa trong commit này.

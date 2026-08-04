@@ -16,7 +16,7 @@ describe("WMS route access contract", () => {
     }
   });
 
-  it("documents the PL01-02 WMS route RBAC matrix", async () => {
+  it("keeps route entry separate from sensitive action permissions", async () => {
     const { ROUTE_PERMISSIONS } = await import("@/app/router/access");
     const { ROUTES } = await import("@/shared/constants/routes");
 
@@ -28,12 +28,17 @@ describe("WMS route access contract", () => {
       [ROUTES.PUTAWAY]: ["putaway.manage"],
       [ROUTES.OUTBOUND]: ["outbound.create", "outbound.post"],
       [ROUTES.INVENTORY]: ["inventory.view"],
-      [ROUTES.STOCKTAKE]: ["stocktake.count", "stocktake.adjust"],
+      [ROUTES.STOCKTAKE]: ["stocktake.count"],
       [ROUTES.WARRANTY]: ["warranty.manage"],
       [ROUTES.REVERSE]: ["inventory.reversal.post"],
-      [ROUTES.REPORTS]: ["report.view", "report.export"],
+      [ROUTES.REPORTS]: ["report.view"],
       [ROUTES.AUDIT_LOGS]: "AUDIT_LOG_VIEW",
       [ROUTES.PROFILE]: undefined,
     });
+
+    expect(ROUTE_PERMISSIONS[ROUTES.STOCKTAKE]).not.toContain(
+      "stocktake.adjust",
+    );
+    expect(ROUTE_PERMISSIONS[ROUTES.REPORTS]).not.toContain("report.export");
   });
 });

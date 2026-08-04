@@ -1,158 +1,135 @@
-export type ContractGateLevel = "P0" | "P1";
-export type ContractGateStatus = "external_blocker" | "fe_guarded";
+/**
+ * WWHN-181 FE implementation gate.
+ *
+ * This file distinguishes code readiness from final cross-role sign-off.
+ * FE must never turn independent BE, QA2, or BA evidence into a self-signed
+ * "final" result.
+ */
 
-export type ContractGate = {
-  id: string;
-  level: ContractGateLevel;
-  status: ContractGateStatus;
-  owner: string;
-  requiredFix: string;
-};
-
-export const WMS_OPENAPI_LOCAL_SNAPSHOT = {
-  source: "swagger-api.json",
-  openapi: "3.0.0",
-  infoVersion: "1.0.0",
-  sha256:
-    "5AF4D40AD5614ABC49CF7BDEF0849D6C1B073F77A9A6307AA07CA7464F83D4EF",
-  capturedAt: "2026-08-02",
-  disposition:
-    "Local FE snapshot only. It is not a final WWHN-31/WWHN-150/WWHN-151 contract artifact until BE publishes version, hash, changelog, and independent QA/BA review evidence.",
+export const WMS_CONTRACT_BASELINE = {
+  id: "HN-INT-001",
+  parentTask: "WWHN-40",
+  feTask: "WWHN-181",
+  dependency: "HN-INT-001-ST01",
+  apiBasePath: "/api/v1",
+  source: "docs/api-evidence/WMS_FE_CONTRACT_BASELINE.json",
+  scanClassify: {
+    endpointConstantPath: "/scan/classify",
+    runtimePath: "/api/v1/scan/classify",
+    method: "POST",
+    permission: "scan.classify",
+  },
+  criticalActions: {
+    postReceipt: "inbound.post",
+    postIssue: "outbound.post",
+    applyAdjustment: "stocktake.adjust",
+    warrantyTempOnly: "warranty.temp_only",
+    reportExport: "report.export",
+  },
 } as const;
 
-export const WMS_FINAL_SIGNOFF = {
-  status: "conditional_pass_not_final",
-  finalAllowed: false,
-  blockers: [
-    "WWHN-146 HN-UX-002 field/state matrix BAS approval",
-    "WWHN-147 HN-UX-002 rule/label/validation BA approval",
-    "WWHN-31 official OpenAPI/schema version/hash/changelog",
-    "WWHN-180 Scan/Post Receipt/Post Issue/Apply Adjustment contract pass",
-    "WWHN-150 Architecture/OpenAPI core evidence",
-    "WWHN-151 Schema/API modules evidence",
-    "WWHN-152 QA1 constraints/error/testability evidence",
-    "WWHN-182 QA2 happy/negative/RBAC/idempotency/retry evidence",
-    "WWHN-183 BA G1 Go/No-Go minutes",
+export const WMS_FE_IMPLEMENTATION_READINESS = {
+  status: "FE_IMPLEMENTED_PENDING_INDEPENDENT_GATES",
+  completedIssues: [
+    "FE1-P1-01",
+    "FE1-P1-02",
+    "FE1-P1-03",
+  ],
+  preparedEvidenceIssues: ["FE1-P1-04", "FE1-P1-05", "FE1-P2-01"],
+  controls: [
+    "CANONICAL-SCAN-PATH",
+    "ROUTE_PERMISSIONS",
+    "STOCK_CHANGING_CRITICAL_FLOWS",
+    "REPORT-ENDPOINT-DISPOSITION",
+    "PERMISSION-ALIAS-NORMALIZATION",
+    "FAIL-CLOSED-UNAPPROVED-CONTRACT",
+    "RUNTIME-EVIDENCE",
   ],
 } as const;
 
-export const WMS_P0_P1_CONTRACT_GATES: readonly ContractGate[] = [
-  {
-    id: "HN-UX-002-WWHN-146-WWHN-147",
-    level: "P1",
-    status: "external_blocker",
-    owner: "BAS + BA",
-    requiredFix:
-      "Complete and approve the HN-UX-002 field/state matrix in WWHN-146 plus rule, label, and validation baseline in WWHN-147.",
+export const WMS_EXTERNAL_GATES = {
+  beContract: {
+    id: "WWHN-180",
+    token: "BE-CONFIRMATION-EVIDENCE",
+    status: "PENDING_INDEPENDENT_SIGN_OFF",
+    required:
+      "BE1 + BA lock endpoint, payload, errors, permission, idempotency, and sample responses.",
   },
-  {
-    id: "QA2-TESTABILITY-REVIEW",
-    level: "P1",
-    status: "external_blocker",
-    owner: "QA2",
-    requiredFix:
-      "Review UI state, responsive behavior, RBAC, API errors, and testability; add explicit pass/fail evidence on the target build.",
+  qa2: {
+    id: "WWHN-182",
+    token: "QA-BA-GATES",
+    status: "PENDING_QA2_EXECUTION",
+    required:
+      "QA2 executes happy, negative, RBAC, idempotency, retry, responsive, and runtime error evidence on a named build/environment.",
   },
-  {
-    id: "API-MAPPING-EVIDENCE",
-    level: "P1",
-    status: "fe_guarded",
-    owner: "FE1 + BE/BA",
-    requiredFix:
-      "Keep docs/api-evidence/M1_API_MAPPING.md present and make npm run check:api-mapping pass; BE/BA must approve any contract/script exception.",
+  baDecision: {
+    id: "WWHN-183",
+    token: "QA-BA-GATES",
+    status: "PENDING_BA_G1_DECISION",
+    required:
+      "BA records Go, Conditional Go, or No-Go and closes FE-SO-001..006 with disposition.",
   },
-  {
-    id: "WWHN-31",
-    level: "P0",
-    status: "external_blocker",
-    owner: "BE1 + BE2 + QA1",
-    requiredFix:
-      "Publish official OpenAPI/schema with version, hash, changelog; QA1 reviews constraints, errors, and testability.",
-  },
-  {
-    id: "FE-FINAL-SIGNOFF",
-    level: "P0",
-    status: "external_blocker",
-    owner: "FE1 + BA + QA",
-    requiredFix:
-      "FE final sign-off only after WWHN-31/WWHN-180 contract pass and independent BA/QA confirmation.",
-  },
-  {
-    id: "WWHN-150-WWHN-151",
-    level: "P1",
-    status: "external_blocker",
-    owner: "BE1 + BE2",
-    requiredFix:
-      "Complete Architecture/OpenAPI core and Schema/API modules; attach versioned evidence.",
-  },
+} as const;
+
+/**
+ * Compatibility exports kept for existing consumers. They now point to the
+ * versioned FE baseline rather than a missing local Swagger snapshot.
+ */
+export const WMS_OPENAPI_LOCAL_SNAPSHOT = {
+  source: WMS_CONTRACT_BASELINE.source,
+  openapi: null,
+  infoVersion: "FE-baseline-1.0.0",
+  sha256: "GENERATED_BY_CI_VERIFIER",
+  disposition:
+    "FE implementation baseline only; not a final WWHN-180 or official BE OpenAPI sign-off artifact.",
+} as const;
+
+export const WMS_P0_P1_CONTRACT_GATES = [
   {
     id: "ROUTE_PERMISSIONS",
-    level: "P1",
     status: "fe_guarded",
-    owner: "BE/RBAC + FE1",
-    requiredFix:
-      "Sync to backend permission catalog or BE/BA-approved mapping with versioned evidence. FE route permissions remain UX gates only.",
   },
   {
     id: "STOCK_CHANGING_CRITICAL_FLOWS",
-    level: "P1",
     status: "fe_guarded",
-    owner: "BE1 + BA + QA",
-    requiredFix:
-      "Lock endpoint, payload, error code, idempotency, permission, and sample response for Scan/Post Receipt/Post Issue/Apply Adjustment.",
   },
   {
     id: "BE-CONFIRMATION-EVIDENCE",
-    level: "P1",
-    status: "external_blocker",
-    owner: "BE1/BE2",
-    requiredFix:
-      "Confirm endpoints, payloads, error codes, permission catalog, and sample 403/409/422/idempotency responses with OpenAPI/Postman/schema version/hash and independent reviewer evidence.",
+    status: "external_pending",
   },
   {
     id: "RUNTIME-EVIDENCE",
-    level: "P1",
-    status: "external_blocker",
-    owner: "FE1 + QA",
-    requiredFix:
-      "Attach screenshot or video evidence for desktop, tablet, mobile, role scenarios, and API error states on a named build/env.",
+    status: "external_pending",
   },
   {
     id: "QA-BA-GATES",
-    level: "P1",
-    status: "external_blocker",
-    owner: "QA1 + QA2 + BA",
-    requiredFix:
-      "WWHN-152 QA1, WWHN-182 QA2, and WWHN-183 BA G1 minutes must include pass/fail evidence.",
+    status: "external_pending",
   },
   {
-    id: "SERVICE-NORMALIZATION",
-    level: "P1",
-    status: "fe_guarded",
-    owner: "FE1 + BE",
-    requiredFix:
-      "After BE locks contracts, reduce multi-field fallback normalization and update official TypeScript types/schema.",
-  },
-  {
-    id: "VITE-VITEST-CONFIG-WARNING",
-    level: "P1",
-    status: "fe_guarded",
-    owner: "FE1 + Tech Lead",
-    requiredFix:
-      "Track the non-blocking Vite/Vitest config-loader warning as a separate technical task if the toolchain upgrade requires it.",
+    id: "FE-FINAL-SIGNOFF",
+    status: "external_pending",
   },
 ] as const;
 
 export function getOpenContractGateIds(): string[] {
   return WMS_P0_P1_CONTRACT_GATES.filter(
-    (gate) => gate.status === "external_blocker",
+    (gate) => gate.status === "external_pending",
   ).map((gate) => gate.id);
 }
 
-export function assertFinalSignoffAllowed(): never {
-  throw new Error(
-    `WMS FE final sign-off is blocked by: ${WMS_FINAL_SIGNOFF.blockers.join(
-      "; ",
-    )}`,
-  );
+export const WMS_FINAL_SIGNOFF = {
+  id: "FE-FINAL-SIGNOFF",
+  finalAllowed: false,
+  status: "CONDITIONAL_PASS_NOT_FINAL",
+  reason:
+    "FE implementation can pass its automated guards, but WWHN-180, WWHN-182, and WWHN-183 require independent BE, QA2, and BA evidence.",
+  dependentTasks: "WWHN-150-WWHN-151",
+} as const;
+
+export function assertFinalSignoffAllowed(): void {
+  if (!WMS_FINAL_SIGNOFF.finalAllowed) {
+    throw new Error(
+      `${WMS_FINAL_SIGNOFF.id}: ${WMS_FINAL_SIGNOFF.reason}`,
+    );
+  }
 }

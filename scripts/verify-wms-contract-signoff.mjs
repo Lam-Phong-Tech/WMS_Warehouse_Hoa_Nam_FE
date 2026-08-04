@@ -1,32 +1,41 @@
 #!/usr/bin/env node
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const swaggerPath = join(root, "swagger-api.json");
-const signoffPath = join(root, "src/shared/api/wms-contract-signoff.ts");
-const endpointsPath = join(root, "src/shared/api/endpoints.ts");
-const permissionsPath = join(root, "src/shared/constants/wms-permissions.ts");
-const routeAccessPath = join(root, "src/app/router/access.ts");
-const guardTestPath = join(root, "src/test/wms-contract-signoff-guards.test.ts");
 const outputPath = join(
   root,
   "docs/evidence/wms-contract-signoff/ci-contract-evidence.json",
 );
+const runtimeResultPath = join(
+  root,
+  "docs/evidence/wms-contract-signoff/runtime-evidence.json",
+);
 
-const requiredFiles = [
-  swaggerPath,
-  signoffPath,
-  endpointsPath,
-  permissionsPath,
-  routeAccessPath,
-  guardTestPath,
-];
+const paths = {
+  baseline: "docs/api-evidence/WMS_FE_CONTRACT_BASELINE.json",
+  signoff: "src/shared/api/wms-contract-signoff.ts",
+  endpoints: "src/shared/api/endpoints.ts",
+  permissions: "src/shared/constants/wms-permissions.ts",
+  authPermission: "src/modules/auth/utils/permission.ts",
+  routeAccess: "src/app/router/access.ts",
+  scanService: "src/modules/scan/services/scanService.ts",
+  warrantyService: "src/modules/warranty/services/warrantyService.ts",
+  reportsService: "src/modules/reports/services/reportsService.ts",
+  tests: "src/test/wms-contract-signoff-guards.test.ts",
+  taskDoc: "docs/Task_docs_Jira/WWHN-181.md",
+  runtimeTemplate:
+    "docs/evidence/wms-contract-signoff/RUNTIME_EVIDENCE_TEMPLATE.md",
+};
 
 const failures = [];
 const warnings = [];
+
+function full(path) {
+  return join(root, path);
+}
 
 function fail(message) {
   failures.push(message);
@@ -38,158 +47,271 @@ function warn(message) {
   console.warn(`[wms-contract] WARNING: ${message}`);
 }
 
-for (const path of requiredFiles) {
-  if (!existsSync(path)) fail(`Thiếu file bắt buộc: ${path.replace(`${root}/`, "")}`);
-}
-
-if (failures.length > 0) process.exit(1);
-
-const swaggerBytes = readFileSync(swaggerPath);
-const swaggerText = swaggerBytes.toString("utf8");
-const swagger = JSON.parse(swaggerText);
-const signoff = readFileSync(signoffPath, "utf8");
-const endpoints = readFileSync(endpointsPath, "utf8");
-const permissions = readFileSync(permissionsPath, "utf8");
-const routeAccess = readFileSync(routeAccessPath, "utf8");
-const guardTests = readFileSync(guardTestPath, "utf8");
-const sha256 = createHash("sha256").update(swaggerBytes).digest("hex").toUpperCase();
-
-const declaredHash = signoff.match(/sha256:\s*\n?\s*"([A-Fa-f0-9]{64})"/)?.[1]?.toUpperCase();
-if (!declaredHash) fail("Không đọc được SHA256 OpenAPI snapshot từ wms-contract-signoff.ts.");
-else if (declaredHash !== sha256) {
-  fail(`OpenAPI snapshot bị drift: khai báo ${declaredHash}, thực tế ${sha256}.`);
-}
-
-if (swagger.openapi !== "3.0.0") {
-  fail(`OpenAPI version không đúng baseline 3.0.0: ${swagger.openapi ?? "missing"}.`);
-}
-
-const criticalFlows = [
-  {
-    id: "SCAN_CLASSIFY",
-    method: "post",
-    path: "/scan-batches/classify",
-    endpointConstant: "SCAN_BATCHES_CLASSIFY",
-    permission: "scan.classify",
-    contractRequired: true,
-  },
-  {
-    id: "POST_RECEIPT",
-    method: "post",
-    path: "/inbound-documents/{id}/post-receipt",
-    endpointConstant: "INBOUND_POST_RECEIPT",
-    permission: "inbound.post",
-    contractRequired: true,
-  },
-  {
-    id: "POST_ISSUE",
-    method: "post",
-    path: "/outbound-documents/{id}/post-issue",
-    endpointConstant: "OUTBOUND_POST_ISSUE",
-    permission: "outbound.post",
-    contractRequired: true,
-  },
-  {
-    id: "APPLY_ADJUSTMENT",
-    method: "post",
-    path: "/stocktake/sessions/{sessionId}/apply-adjustment",
-    endpointConstant: "STOCKTAKE_APPLY_ADJUSTMENT",
-    permission: "stocktake.adjust",
-    contractRequired: true,
-  },
-];
-
-const flowEvidence = criticalFlows.map((flow) => {
-  const swaggerOperation = swagger.paths?.[flow.path]?.[flow.method];
-  const constantPattern = new RegExp(
-    `${flow.endpointConstant}\\s*:\\s*["']${flow.path.replaceAll("{id}", ":id").replaceAll("{sessionId}", ":sessionId")}["']`,
-  );
-  const constantMatched = constantPattern.test(endpoints);
-  const permissionMatched = permissions.includes(`"${flow.permission}"`);
-  const testMatched = guardTests.includes(flow.path.replaceAll("{id}", "IN-1").replaceAll("{sessionId}", "ST-1")) ||
-    guardTests.includes(flow.path.replaceAll("{id}", "OUT-1").replaceAll("{sessionId}", "ST-1")) ||
-    guardTests.includes(flow.path);
-
-  if (!swaggerOperation) {
-    fail(`${flow.id}: thiếu ${flow.method.toUpperCase()} ${flow.path} trong swagger-api.json.`);
+function read(path) {
+  const target = full(path);
+  if (!existsSync(target)) {
+    fail(`Thiếu file bắt buộc: ${path}`);
+    return "";
   }
-  if (!constantMatched) fail(`${flow.id}: endpoint constant không khớp contract.`);
-  if (!permissionMatched) fail(`${flow.id}: permission ${flow.permission} chưa có trong catalog FE.`);
-  if (!testMatched) fail(`${flow.id}: chưa có regression evidence trong wms-contract-signoff-guards.test.ts.`);
+  return readFileSync(target, "utf8");
+}
 
-  return {
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function requirePattern(content, pattern, label) {
+  if (!pattern.test(content)) fail(`${label}: thiếu ${pattern}`);
+}
+
+const source = Object.fromEntries(
+  Object.entries(paths).map(([key, path]) => [key, read(path)]),
+);
+if (failures.length) process.exit(1);
+
+let baseline;
+try {
+  baseline = JSON.parse(source.baseline);
+} catch (error) {
+  fail(`Baseline JSON không hợp lệ: ${error.message}`);
+}
+if (failures.length) process.exit(1);
+
+if (baseline.apiBasePath !== "/api/v1") {
+  fail(`apiBasePath phải là /api/v1, nhận ${baseline.apiBasePath}`);
+}
+
+const criticalEvidence = [];
+for (const flow of baseline.criticalFlows ?? []) {
+  const constantPattern = new RegExp(
+    `${escapeRegExp(flow.endpointConstant)}\\s*:\\s*["']${escapeRegExp(
+      flow.endpointPath,
+    )}["']`,
+  );
+  const endpointMatched = constantPattern.test(source.endpoints);
+  const permissionMatched = source.permissions.includes(`"${flow.permission}"`);
+  const runtimePathMatched = source.tests.includes(flow.runtimePath);
+  const pathInTests =
+    source.tests.includes(flow.endpointPath) ||
+    source.tests.includes(
+      flow.endpointPath
+        .replace(":id", "IN-1")
+        .replace(":sessionId", "ST-1"),
+    ) ||
+    source.tests.includes(
+      flow.endpointPath
+        .replace(":id", "OUT-1")
+        .replace(":sessionId", "ST-1"),
+    );
+
+  if (!endpointMatched) {
+    fail(`${flow.id}: endpoint constant không khớp ${flow.endpointPath}`);
+  }
+  if (!permissionMatched) {
+    fail(`${flow.id}: thiếu permission ${flow.permission}`);
+  }
+  if (!pathInTests) {
+    fail(`${flow.id}: thiếu regression test cho endpoint`);
+  }
+  if (flow.id === "SCAN_CLASSIFY" && !runtimePathMatched) {
+    fail("SCAN_CLASSIFY: test phải chứng minh effective URL /api/v1/scan/classify");
+  }
+
+  criticalEvidence.push({
     ...flow,
-    swaggerPresent: Boolean(swaggerOperation),
-    operationId: swaggerOperation?.operationId ?? null,
-    endpointConstantMatched: constantMatched,
+    endpointConstantMatched: endpointMatched,
     permissionCatalogMatched: permissionMatched,
-    regressionGuardMatched: testMatched,
-  };
-});
+    regressionGuardMatched: pathInTests,
+  });
+}
 
-const requiredGateTokens = [
-  "WWHN-31",
+requirePattern(
+  source.endpoints,
+  /SCAN_BATCHES_CLASSIFY:\s*"\/scan\/classify"/,
+  "Canonical Scan constant",
+);
+if (/SCAN_BATCHES_CLASSIFY:\s*"\/api\/v1\//.test(source.endpoints)) {
+  fail("Scan endpoint constant không được lặp /api/v1 đã có trong base URL");
+}
+requirePattern(
+  source.scanService,
+  /POST \/api\/v1\/scan\/classify at runtime/,
+  "Scan runtime contract explanation",
+);
+requirePattern(
+  source.scanService,
+  /WMS_FE_INVALID_SCAN_RESPONSE/,
+  "Scan response validation",
+);
+
+requirePattern(
+  source.routeAccess,
+  /\[ROUTES\.STOCKTAKE\]:\s*\[P\.STOCKTAKE_COUNT\]/,
+  "Stocktake route-entry permission",
+);
+requirePattern(
+  source.routeAccess,
+  /\[ROUTES\.REPORTS\]:\s*\[P\.REPORT_VIEW\]/,
+  "Reports route-entry permission",
+);
+if (
+  /\[ROUTES\.STOCKTAKE\]:[\s\S]{0,100}STOCKTAKE_ADJUST/.test(
+    source.routeAccess,
+  )
+) {
+  fail("stocktake.adjust không được dùng làm route-entry permission");
+}
+if (/\[ROUTES\.REPORTS\]:[\s\S]{0,100}REPORT_EXPORT/.test(source.routeAccess)) {
+  fail("report.export không được dùng làm route-entry permission");
+}
+
+for (const token of [
+  "stocktake.adjust",
+  "warranty.temp_only",
+  "scan.inbound",
+  "scan.outbound",
+  "scan.warranty",
+  "report.export",
+]) {
+  requirePattern(
+    source.permissions,
+    new RegExp(escapeRegExp(token)),
+    `Permission mapping ${token}`,
+  );
+}
+requirePattern(
+  source.authPermission,
+  /canonicalizeWmsPermission/,
+  "Permission alias normalization",
+);
+requirePattern(
+  source.warrantyService,
+  /assertTempOnlyPermission/,
+  "TEMP_ONLY service guard",
+);
+requirePattern(
+  source.warrantyService,
+  /WMS_ACTION_PERMISSIONS\.WARRANTY_TEMP_ONLY/,
+  "TEMP_ONLY canonical permission",
+);
+
+for (const blockedPath of ["/reports/hub", "/reports/warranty-defects"]) {
+  const item = (baseline.reportEndpoints ?? []).find(
+    (report) => report.endpointPath === blockedPath,
+  );
+  if (item?.status !== "blocked_pending_canonical_contract") {
+    fail(`${blockedPath}: baseline phải ghi blocked_pending_canonical_contract`);
+  }
+}
+requirePattern(
+  source.reportsService,
+  /unapprovedReportContract/,
+  "Report fail-closed helper",
+);
+requirePattern(
+  source.reportsService,
+  /WMS_FE_CONTRACT_NOT_APPROVED/,
+  "Report contract error",
+);
+
+for (const token of [
+  "WWHN-180",
+  "WWHN-182",
+  "WWHN-183",
   "FE-FINAL-SIGNOFF",
-  "WWHN-150-WWHN-151",
-  "ROUTE_PERMISSIONS",
-  "STOCK_CHANGING_CRITICAL_FLOWS",
   "BE-CONFIRMATION-EVIDENCE",
   "QA-BA-GATES",
   "RUNTIME-EVIDENCE",
-];
-for (const token of requiredGateTokens) {
-  if (!signoff.includes(token)) fail(`Thiếu contract gate ${token}.`);
+]) {
+  requirePattern(source.signoff, new RegExp(token), `Sign-off gate ${token}`);
+  requirePattern(source.taskDoc, new RegExp(token), `Task evidence ${token}`);
 }
-
-if (!/finalAllowed:\s*false/.test(signoff)) {
-  fail("FE final sign-off phải fail-closed khi chưa có gate BE/BA/QA độc lập.");
-}
-if (!routeAccess.includes("backend still owns RBAC")) {
-  fail("ROUTE_PERMISSIONS phải ghi rõ backend là nguồn enforcement RBAC.");
-}
-
-const runtimeCatalogPresent = existsSync(
-  join(root, ".agent-cache/permission-catalog-live.json"),
+requirePattern(
+  source.signoff,
+  /finalAllowed:\s*false/,
+  "Final sign-off fail-closed",
 );
-if (!runtimeCatalogPresent) {
-  warn("Không có permission catalog runtime cache; mapping FE vẫn là UX gate và chưa đủ final sign-off.");
+requirePattern(
+  source.taskDoc,
+  /Không tự nhận QA2 sign-off/i,
+  "QA2 evidence boundary",
+);
+requirePattern(
+  source.taskDoc,
+  /Không tự nhận BE authorization sign-off/i,
+  "BE evidence boundary",
+);
+requirePattern(
+  source.runtimeTemplate,
+  /loading, empty, error, success, disabled/i,
+  "Runtime UI-state checklist",
+);
+requirePattern(
+  source.runtimeTemplate,
+  /\/api\/v1\/scan\/classify/,
+  "Runtime Scan capture",
+);
+
+const runtimeEvidencePresent = existsSync(runtimeResultPath);
+if (!runtimeEvidencePresent) {
+  warn(
+    "Chưa có runtime-evidence.json của QA2; FE gate pass nhưng final sign-off vẫn bị khóa.",
+  );
 }
+for (const gate of baseline.externalGates ?? []) {
+  warn(`${gate.id} (${gate.owner}): ${gate.status}`);
+}
+
+const baselineSha256 = createHash("sha256")
+  .update(source.baseline)
+  .digest("hex")
+  .toUpperCase();
 
 const evidence = {
   generatedAt: new Date().toISOString(),
-  repository: process.env.GITHUB_REPOSITORY ?? "Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_FE",
+  repository:
+    process.env.GITHUB_REPOSITORY ??
+    "Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_FE",
   ref: process.env.GITHUB_REF ?? null,
   commitSha: process.env.GITHUB_SHA ?? null,
   runId: process.env.GITHUB_RUN_ID ?? null,
   runNumber: process.env.GITHUB_RUN_NUMBER ?? null,
   runnerOs: process.env.RUNNER_OS ?? process.platform,
   node: process.version,
-  openapi: {
-    source: "swagger-api.json",
-    version: swagger.openapi,
-    infoVersion: swagger.info?.version ?? null,
-    sha256,
-    declaredHash,
-    pathCount: Object.keys(swagger.paths ?? {}).length,
+  baseline: {
+    path: paths.baseline,
+    schemaVersion: baseline.schemaVersion,
+    sha256: baselineSha256,
+    apiBasePath: baseline.apiBasePath,
+  },
+  feImplementation: {
+    status: failures.length
+      ? "failed"
+      : "implemented_pending_independent_gates",
+    criticalFlows: criticalEvidence,
+    reportEndpoints: baseline.reportEndpoints,
+    permissionMapping: baseline.permissions,
   },
   finalSignoff: {
     allowed: false,
     status: "conditional_pass_not_final",
-    reason:
-      "FE code guards can pass, but official BE contract plus independent QA/BA evidence remain mandatory.",
+    externalGates: baseline.externalGates,
+    runtimeEvidencePresent,
   },
-  permissionCatalog: {
-    runtimeEvidencePresent: runtimeCatalogPresent,
-    routePermissionsAreUxGateOnly: true,
-  },
-  criticalFlows: flowEvidence,
+  checkedFiles: Object.values(paths).map((path) =>
+    relative(root, full(path)).replaceAll("\\", "/"),
+  ),
   failures,
   warnings,
 };
 
 mkdirSync(dirname(outputPath), { recursive: true });
 writeFileSync(outputPath, `${JSON.stringify(evidence, null, 2)}\n`);
-console.log(`[wms-contract] Evidence: ${outputPath.replace(`${root}/`, "")}`);
+console.log(
+  `[wms-contract] Evidence: ${relative(root, outputPath).replaceAll("\\", "/")}`,
+);
 
-if (failures.length > 0) process.exit(1);
-console.log("[wms-contract] PASS: hash, endpoint, permission, regression và fail-closed gates hợp lệ.");
+if (failures.length) process.exit(1);
+console.log(
+  "[wms-contract] PASS: FE canonical mapping, payload guards, RBAC actions, report disposition, tests, and fail-closed final gate are valid.",
+);

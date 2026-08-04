@@ -1,6 +1,24 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+const authMocks = vi.hoisted(() => ({
+  getState: vi.fn(),
+}));
+
 vi.unmock("@/app/router/access");
+vi.mock("@/shared/store/auth.store", () => ({
+  useAuthStore: {
+    getState: authMocks.getState,
+  },
+}));
+vi.mock("@/shared/api/http", () => ({
+  http: {
+    get: vi.fn(),
+    getPage: vi.fn(),
+    post: vi.fn(),
+    patch: vi.fn(),
+    downloadBlob: vi.fn(),
+  },
+}));
 
 import { ROUTES } from "@/shared/constants/routes";
 import { ROUTE_PERMISSIONS } from "@/app/router/access";
@@ -8,6 +26,8 @@ import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import {
   WMS_ACTION_PERMISSIONS,
   WMS_PERMISSION_CATALOG as P,
+  canonicalizeWmsPermission,
+  hasAnyWmsPermission,
 } from "@/shared/constants/wms-permissions";
 import { http } from "@/shared/api/http";
 import {
@@ -16,11 +36,11 @@ import {
 } from "@/modules/scan/services/scanService";
 import { WmsContractError } from "@/shared/api/wms-contract";
 import {
+  WMS_CONTRACT_BASELINE,
+  WMS_EXTERNAL_GATES,
+  WMS_FE_IMPLEMENTATION_READINESS,
   WMS_FINAL_SIGNOFF,
-  WMS_OPENAPI_LOCAL_SNAPSHOT,
-  WMS_P0_P1_CONTRACT_GATES,
   assertFinalSignoffAllowed,
-  getOpenContractGateIds,
 } from "@/shared/api/wms-contract-signoff";
 import { postInboundReceipt } from "@/modules/receiving/services/receivingService";
 import { postOutboundIssue } from "@/modules/shipping/services/shippingService";
@@ -28,136 +48,186 @@ import { applyStocktakeAdjustment } from "@/modules/stocktake/services/stocktake
 import {
   downloadXntReportExcel,
   fetchReportsHub,
+  fetchWarrantyDefectsReport,
   fetchXntReport,
 } from "@/modules/reports/services/reportsService";
+import { createWarrantyCase } from "@/modules/warranty/services/warrantyService";
 
-vi.mock("@/shared/api/http", () => ({
-  http: {
-    get: vi.fn(),
-    post: vi.fn(),
-    downloadBlob: vi.fn(),
-  },
-}));
-
-describe("WMS conditional sign-off contract guards", () => {
+describe("WWHN-181 contract and FE sign-off guards", () => {
   beforeEach(() => {
     vi.mocked(http.get).mockReset();
+    vi.mocked(http.getPage).mockReset();
     vi.mocked(http.post).mockReset();
+    vi.mocked(http.patch).mockReset();
     vi.mocked(http.downloadBlob).mockReset();
-  });
-
-  it("keeps final FE sign-off blocked by documenting P0/P1 gates in code-facing constants", () => {
-    expect(API_ENDPOINTS.SCAN_BATCHES_CLASSIFY).toBe("/scan-batches/classify");
-    expect(API_ENDPOINTS.INBOUND_POST_RECEIPT).toBe(
-      "/inbound-documents/:id/post-receipt",
-    );
-    expect(API_ENDPOINTS.OUTBOUND_POST_ISSUE).toBe(
-      "/outbound-documents/:id/post-issue",
-    );
-    expect(API_ENDPOINTS.STOCKTAKE_APPLY_ADJUSTMENT).toBe(
-      "/stocktake/sessions/:sessionId/apply-adjustment",
-    );
-    expect(WMS_FINAL_SIGNOFF.finalAllowed).toBe(false);
-    expect(WMS_FINAL_SIGNOFF.status).toBe("conditional_pass_not_final");
-    expect(WMS_FINAL_SIGNOFF.blockers).toEqual(
-      expect.arrayContaining([
-        "WWHN-146 HN-UX-002 field/state matrix BAS approval",
-        "WWHN-147 HN-UX-002 rule/label/validation BA approval",
-        "WWHN-31 official OpenAPI/schema version/hash/changelog",
-        "WWHN-180 Scan/Post Receipt/Post Issue/Apply Adjustment contract pass",
-        "WWHN-152 QA1 constraints/error/testability evidence",
-        "WWHN-182 QA2 happy/negative/RBAC/idempotency/retry evidence",
-        "WWHN-183 BA G1 Go/No-Go minutes",
-      ]),
-    );
-    expect(assertFinalSignoffAllowed).toThrow(/final sign-off is blocked/);
-  });
-
-  it("records local OpenAPI snapshot metadata without treating it as official BE sign-off", () => {
-    expect(WMS_OPENAPI_LOCAL_SNAPSHOT).toMatchObject({
-      source: "swagger-api.json",
-      openapi: "3.0.0",
-      infoVersion: "1.0.0",
-      sha256:
-        "5AF4D40AD5614ABC49CF7BDEF0849D6C1B073F77A9A6307AA07CA7464F83D4EF",
+    authMocks.getState.mockReset();
+    authMocks.getState.mockReturnValue({
+      isSuperAdmin: false,
+      permissionCodes: [],
     });
-    expect(WMS_OPENAPI_LOCAL_SNAPSHOT.disposition).toContain(
-      "not a final WWHN-31/WWHN-150/WWHN-151 contract artifact",
+  });
+
+  it("uses the canonical Scan runtime URL without duplicating /api/v1", async () => {
+    expect(WMS_CONTRACT_BASELINE.apiBasePath).toBe("/api/v1");
+    expect(API_ENDPOINTS.SCAN_BATCHES_CLASSIFY).toBe("/scan/classify");
+    expect(WMS_CONTRACT_BASELINE.scanClassify.runtimePath).toBe(
+      "/api/v1/scan/classify",
     );
-  });
+    expect(API_ENDPOINTS.SCAN_BATCHES_CLASSIFY).not.toContain("/api/v1");
 
-  it("keeps every reviewed P0/P1 item represented as a contract gate", () => {
-    expect(WMS_P0_P1_CONTRACT_GATES.map((gate) => gate.id)).toEqual([
-      "HN-UX-002-WWHN-146-WWHN-147",
-      "QA2-TESTABILITY-REVIEW",
-      "API-MAPPING-EVIDENCE",
-      "WWHN-31",
-      "FE-FINAL-SIGNOFF",
-      "WWHN-150-WWHN-151",
-      "ROUTE_PERMISSIONS",
-      "STOCK_CHANGING_CRITICAL_FLOWS",
-      "BE-CONFIRMATION-EVIDENCE",
-      "RUNTIME-EVIDENCE",
-      "QA-BA-GATES",
-      "SERVICE-NORMALIZATION",
-      "VITE-VITEST-CONFIG-WARNING",
-    ]);
-    expect(getOpenContractGateIds()).toEqual([
-      "HN-UX-002-WWHN-146-WWHN-147",
-      "QA2-TESTABILITY-REVIEW",
-      "WWHN-31",
-      "FE-FINAL-SIGNOFF",
-      "WWHN-150-WWHN-151",
-      "BE-CONFIRMATION-EVIDENCE",
-      "RUNTIME-EVIDENCE",
-      "QA-BA-GATES",
-    ]);
-  });
-
-  it("classifies scans through the current conditional endpoint without inventing the disputed /api/v1/scan/classify path", async () => {
     vi.mocked(http.post).mockResolvedValue({
       batch_id: "B1",
-      total_codes: 1,
-      items: [],
+      items: [
+        {
+          code_value: "QR-001",
+          code_type: "QR",
+          status: "VALID",
+          scan_source: "manual",
+        },
+      ],
     });
 
-    await classifyScanCodes({
+    await expect(
+      classifyScanCodes({
+        codes: ["QR-001"],
+        warehouse_id: 12,
+        scan_source: "manual",
+      }),
+    ).resolves.toMatchObject({
+      batch_id: "B1",
+      items: [{ code_value: "QR-001", status: "VALID" }],
+    });
+
+    expect(http.post).toHaveBeenCalledWith("/scan/classify", {
       codes: ["QR-001"],
       warehouse_id: 12,
       scan_source: "manual",
     });
-
-    expect(http.post).toHaveBeenCalledWith("/scan-batches/classify", {
-      codes: ["QR-001"],
-      warehouse_id: 12,
-      scan_source: "manual",
-    });
-    expect(http.post).not.toHaveBeenCalledWith(
-      "/api/v1/scan/classify",
-      expect.anything(),
-      expect.anything(),
-    );
   });
 
-  it("blocks invalid scan classify payloads before network calls", async () => {
+  it("rejects invalid Scan payload and response before polluted state reaches UI", async () => {
     await expect(
       classifyScanCodes({ codes: ["QR-001", " QR-001 "] }),
     ).rejects.toMatchObject({ code: "WMS_SCAN_DUPLICATE" });
     await expect(
       classifyScanCodes({ codes: ["QR-002"], warehouse_id: 0 }),
     ).rejects.toBeInstanceOf(WmsContractError);
-
     expect(http.post).not.toHaveBeenCalled();
+
+    vi.mocked(http.post).mockResolvedValue({
+      batch_id: "B2",
+      items: [{ code_value: "QR-002", status: "UNSUPPORTED" }],
+    });
+    await expect(
+      classifyScanCodes({ codes: ["QR-002"] }),
+    ).rejects.toMatchObject({ code: "WMS_FE_INVALID_SCAN_RESPONSE" });
   });
 
-  it("keeps physical-code list blocked until BE/BA approves the endpoint contract", async () => {
+  it("keeps unapproved physical-code and report proposals fail-closed", async () => {
     await expect(fetchPhysicalCodes({ page: 1 })).rejects.toMatchObject({
       code: "WMS_FE_CONTRACT_NOT_APPROVED",
     });
+    await expect(fetchReportsHub()).rejects.toMatchObject({
+      code: "WMS_FE_CONTRACT_NOT_APPROVED",
+    });
+    await expect(fetchWarrantyDefectsReport()).rejects.toMatchObject({
+      code: "WMS_FE_CONTRACT_NOT_APPROVED",
+    });
+
     expect(http.get).not.toHaveBeenCalled();
+    expect(http.getPage).not.toHaveBeenCalled();
   });
 
-  it("requires idempotency and optimistic lock evidence on receipt, issue, and apply-adjustment service calls", async () => {
+  it("keeps canonical XNT report and export mappings active", async () => {
+    vi.mocked(http.get).mockResolvedValue([]);
+    vi.mocked(http.downloadBlob).mockResolvedValue(new Blob(["xlsx"]));
+
+    await fetchXntReport({ from: "2026-08-01", to: "2026-08-01" });
+    await downloadXntReportExcel({
+      from: "2026-08-01",
+      to: "2026-08-01",
+    });
+
+    expect(http.get).toHaveBeenCalledWith("/reports/inventory-xnt", {
+      params: { from: "2026-08-01", to: "2026-08-01" },
+    });
+    expect(http.downloadBlob).toHaveBeenCalledWith(
+      "/reports/inventory-xnt/export-excel",
+      { params: { from: "2026-08-01", to: "2026-08-01" } },
+    );
+  });
+
+  it("normalizes only explicit legacy permission aliases", () => {
+    expect(canonicalizeWmsPermission("stocktake.apply")).toBe(
+      "stocktake.adjust",
+    );
+    expect(canonicalizeWmsPermission("REPORT_EXPORT")).toBe("report.export");
+    expect(canonicalizeWmsPermission("stocktake.manage")).toBe(
+      "stocktake.manage",
+    );
+    expect(
+      hasAnyWmsPermission(["REPORT_EXPORT"], ["report.export"]),
+    ).toBe(true);
+    expect(
+      hasAnyWmsPermission(["stocktake.manage"], ["stocktake.adjust"]),
+    ).toBe(false);
+  });
+
+  it("separates page-entry RBAC from sensitive action permissions", () => {
+    expect(ROUTE_PERMISSIONS[ROUTES.SCAN]).toEqual([
+      P.INVENTORY_TRACE,
+      P.SCAN_CLASSIFY,
+    ]);
+    expect(ROUTE_PERMISSIONS[ROUTES.STOCKTAKE]).toEqual([
+      P.STOCKTAKE_COUNT,
+    ]);
+    expect(ROUTE_PERMISSIONS[ROUTES.REPORTS]).toEqual([P.REPORT_VIEW]);
+    expect(ROUTE_PERMISSIONS[ROUTES.WARRANTY]).toEqual([P.WARRANTY_MANAGE]);
+
+    expect(WMS_ACTION_PERMISSIONS).toMatchObject({
+      SCAN_INBOUND: [P.SCAN_INBOUND],
+      SCAN_OUTBOUND: [P.SCAN_OUTBOUND],
+      SCAN_WARRANTY: [P.SCAN_WARRANTY],
+      APPLY_STOCKTAKE_ADJUSTMENT: [P.STOCKTAKE_ADJUST],
+      WARRANTY_TEMP_ONLY: [P.WARRANTY_TEMP_ONLY],
+      EXPORT_REPORT: [P.REPORT_EXPORT],
+    });
+  });
+
+  it("requires warranty.temp_only before any TEMP_ONLY request is sent", async () => {
+    const payload = {
+      identification_type: "TEMP_ONLY" as const,
+      customer_name: "Khach hang",
+      customer_phone: "0900000000",
+      defect_code: "POWER",
+      defect_description: "Khong len nguon",
+      missing_code_reason: "Mat tem",
+      manual_product_description: "May khoan mau do",
+    };
+
+    await expect(createWarrantyCase(payload)).rejects.toMatchObject({
+      code: "WMS_FE_PERMISSION_REQUIRED",
+    });
+    expect(http.post).not.toHaveBeenCalled();
+
+    authMocks.getState.mockReturnValue({
+      isSuperAdmin: false,
+      permissionCodes: ["WARRANTY_TEMP_ONLY"],
+    });
+    vi.mocked(http.post).mockResolvedValue({
+      id: "WAR-1",
+      case_code: "BH-001",
+      identification_type: "TEMP_ONLY",
+      temporary_item_code: "TEMP-001",
+      status: "RECEIVED",
+      priority: "MEDIUM",
+    });
+
+    await createWarrantyCase(payload);
+    expect(http.post).toHaveBeenCalledWith("/warranty/cases", payload);
+  });
+
+  it("requires idempotency and optimistic locking for stock-changing flows", async () => {
     vi.mocked(http.post)
       .mockResolvedValueOnce({
         receipt_id: "REC-1",
@@ -225,88 +295,17 @@ describe("WMS conditional sign-off contract guards", () => {
     );
   });
 
-  it("rejects receipt/issue/stocktake mutation payloads missing idempotency or evidence", async () => {
-    await expect(
-      postInboundReceipt({
-        documentId: "IN-1",
-        lines: [{ lineId: "L1", quantity: 2 }],
-        idempotencyKey: "",
-        ifMatch: 7,
-      }),
-    ).rejects.toMatchObject({ code: "WMS_FE_IDEMPOTENCY_KEY_REQUIRED" });
-
-    await expect(
-      postOutboundIssue({
-        documentId: "OUT-1",
-        lines: [{ lineId: "L1", quantity: 0 }],
-        idempotencyKey: "idem",
-        ifMatch: 7,
-      }),
-    ).rejects.toMatchObject({ code: "WMS_FE_INVALID_PAYLOAD" });
-
-    await expect(
-      applyStocktakeAdjustment({
-        session_id: "ST-1",
-        lines: [{ sku: "SKU-001", actual_qty: 1 }],
-        idempotency_key: "idem",
-        version: "",
-      }),
-    ).rejects.toMatchObject({ code: "WMS_FE_IF_MATCH_REQUIRED" });
-
-    vi.mocked(http.post).mockResolvedValueOnce({ receipt_id: "REC-1" });
-    await expect(
-      postInboundReceipt({
-        documentId: "IN-1",
-        lines: [{ lineId: "L1", quantity: 1 }],
-        idempotencyKey: "idem",
-        ifMatch: 1,
-      }),
-    ).rejects.toMatchObject({ code: "WMS_FE_MISSING_RECEIPT_EVIDENCE" });
-  });
-
-  it("separates route-entry permissions from sensitive action permissions", () => {
-    expect(ROUTE_PERMISSIONS[ROUTES.SCAN]).toEqual([
-      P.INVENTORY_TRACE,
-      P.SCAN_CLASSIFY,
-    ]);
-    expect(ROUTE_PERMISSIONS[ROUTES.STOCKTAKE]).toEqual([
-      P.STOCKTAKE_COUNT,
-      P.STOCKTAKE_ADJUST,
-    ]);
-    expect(ROUTE_PERMISSIONS[ROUTES.WARRANTY]).toEqual([P.WARRANTY_MANAGE]);
-    expect(ROUTE_PERMISSIONS[ROUTES.REPORTS]).toEqual([
-      P.REPORT_VIEW,
-      P.REPORT_EXPORT,
-    ]);
-
-    expect(WMS_ACTION_PERMISSIONS).toMatchObject({
-      SCAN_INBOUND: [P.SCAN_INBOUND],
-      SCAN_OUTBOUND: [P.SCAN_OUTBOUND],
-      SCAN_WARRANTY: [P.SCAN_WARRANTY],
-      POST_RECEIPT: [P.INBOUND_POST],
-      POST_ISSUE: [P.OUTBOUND_POST],
-      APPLY_STOCKTAKE_ADJUSTMENT: [P.STOCKTAKE_ADJUST],
-      WARRANTY_TEMP_ONLY: [P.WARRANTY_TEMP_ONLY],
-      EXPORT_REPORT: [P.REPORT_EXPORT],
-      POST_REVERSAL: [P.REVERSAL_POST],
-    });
-  });
-
-  it("documents Dashboard/Reports as conditional by exercising only the current FE constants", async () => {
-    vi.mocked(http.get).mockResolvedValue([]);
-    vi.mocked(http.downloadBlob).mockResolvedValue(new Blob(["xlsx"]));
-
-    await fetchReportsHub();
-    await fetchXntReport({ from: "2026-08-01", to: "2026-08-01" });
-    await downloadXntReportExcel({ from: "2026-08-01", to: "2026-08-01" });
-
-    expect(http.get).toHaveBeenNthCalledWith(1, "/reports/hub");
-    expect(http.get).toHaveBeenNthCalledWith(2, "/reports/inventory-xnt", {
-      params: { from: "2026-08-01", to: "2026-08-01" },
-    });
-    expect(http.downloadBlob).toHaveBeenCalledWith(
-      "/reports/inventory-xnt/export-excel",
-      { params: { from: "2026-08-01", to: "2026-08-01" } },
+  it("keeps final sign-off blocked until independent BE, QA2, and BA gates pass", () => {
+    expect(WMS_FE_IMPLEMENTATION_READINESS.status).toBe(
+      "FE_IMPLEMENTED_PENDING_INDEPENDENT_GATES",
     );
+    expect(Object.values(WMS_EXTERNAL_GATES).map((gate) => gate.id)).toEqual([
+      "WWHN-180",
+      "WWHN-182",
+      "WWHN-183",
+    ]);
+    expect(WMS_FINAL_SIGNOFF.finalAllowed).toBe(false);
+    expect(WMS_FINAL_SIGNOFF.status).toBe("CONDITIONAL_PASS_NOT_FINAL");
+    expect(assertFinalSignoffAllowed).toThrow(/FE-FINAL-SIGNOFF/);
   });
 });

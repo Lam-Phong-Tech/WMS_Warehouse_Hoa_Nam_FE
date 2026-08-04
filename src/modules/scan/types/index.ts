@@ -1,9 +1,9 @@
 /**
  * Scan module types for WMS Hoa Nam.
- * Based on architecture guide: POST /scan-batches/classify
+ * Canonical runtime classify route: POST /api/v1/scan/classify.
+ * FE endpoint constants stay relative because API base URL already includes /api/v1.
  */
 
-/** Scan code state machine: waiting → scanned → duplicate/unknown/invalid → success/error */
 export type ScanCodeState =
   | "waiting"
   | "scanned"
@@ -13,14 +13,17 @@ export type ScanCodeState =
   | "success"
   | "error";
 
-/** Classify request payload */
 export interface ScanClassifyRequest {
   codes: string[];
   warehouse_id?: number;
   scan_source?: "manual" | "barcode" | "rfid" | "lookup";
 }
 
-export type ScanClassifyStatus = "VALID" | "DUPLICATE" | "UNKNOWN" | "INVALID";
+export type ScanClassifyStatus =
+  | "VALID"
+  | "DUPLICATE"
+  | "UNKNOWN"
+  | "INVALID";
 
 export const SCAN_ERROR_CODES = [
   "WMS_SCAN_DUPLICATE",
@@ -30,7 +33,6 @@ export const SCAN_ERROR_CODES = [
   "WMS_SCAN_WAREHOUSE_MISMATCH",
 ] as const;
 
-/** Individual code classify result */
 export interface ScanClassifyItem {
   code_value: string;
   code_type: string;
@@ -41,16 +43,13 @@ export interface ScanClassifyItem {
   message?: string;
 }
 
-/** Classify response from backend */
 export interface ScanClassifyResponse {
   batch_id: string;
   items: ScanClassifyItem[];
 }
 
-/** Scan error codes from backend */
 export type ScanErrorCode = (typeof SCAN_ERROR_CODES)[number];
 
-/** Scan batch record */
 export interface ScanBatch {
   id: string;
   batch_no: string;
@@ -67,7 +66,6 @@ export interface ScanBatch {
   created_by: string;
 }
 
-/** Scan event record */
 export interface ScanEvent {
   id: string;
   batch_id: string;
@@ -79,7 +77,6 @@ export interface ScanEvent {
   scanned_by: string;
 }
 
-/** Physical code record */
 export interface PhysicalCode {
   id: string;
   code_value: string;
