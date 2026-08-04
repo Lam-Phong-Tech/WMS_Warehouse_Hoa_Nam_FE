@@ -77,6 +77,10 @@ jobs:
         id: wwhn_156
         run: npm run wwhn-156:verify
 
+      - name: Verify WWHN-165 auth/session/RBAC closure controls
+        id: wwhn_165
+        run: npm run wwhn-165:verify
+
       - name: Validate QA1 smoke contract without runtime secrets
         id: smoke_contract
         run: >-
@@ -135,6 +139,7 @@ jobs:
           ENV_CONTRACT_OUTCOME: ${{ steps.env_contract.outcome }}
           UAT_CONTRACT_OUTCOME: ${{ steps.uat_contract.outcome }}
           WWHN_156_OUTCOME: ${{ steps.wwhn_156.outcome }}
+          WWHN_165_OUTCOME: ${{ steps.wwhn_165.outcome }}
           SMOKE_CONTRACT_OUTCOME: ${{ steps.smoke_contract.outcome }}
           MASTER_SKU_OUTCOME: ${{ steps.master_sku.outcome }}
           WMS_CONTRACT_OUTCOME: ${{ steps.wms_contract.outcome }}
@@ -154,6 +159,7 @@ jobs:
             docs/evidence/wms-contract-signoff/generated
             docs/evidence/wwhn-156/WWHN-156_CLOSURE_REGISTER.json
             docs/evidence/wwhn-156/generated
+            docs/evidence/wwhn-165
             test-results
             playwright-report
             dist/health.json
