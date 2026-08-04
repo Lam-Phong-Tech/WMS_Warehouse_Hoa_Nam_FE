@@ -52,7 +52,14 @@ function extractRows(markdown) {
     if (!method || !pathCell) continue;
     const path = pathCell.match(/`(\/[^`]+)`/)?.[1];
     if (!path) continue;
-    rows.push({ line: index + 1, method, path });
+    const disposition = cells.at(-1) ?? "";
+    rows.push({
+      line: index + 1,
+      method,
+      path,
+      disposition,
+      failClosed: /fail-closed|blocked until|pending contract/i.test(disposition),
+    });
   }
   return rows;
 }
@@ -113,10 +120,12 @@ if (!swaggerRoutes) {
 }
 
 let totalRows = 0;
+let failClosedRows = 0;
 for (const file of mappingFiles) {
   const rel = relative(root, file).replaceAll("\\", "/");
   const rows = extractRows(readFileSync(file, "utf8"));
   totalRows += rows.length;
+  failClosedRows += rows.filter((row) => row.failClosed).length;
   const isM1 = rel.endsWith("M1_API_MAPPING.md");
   console.log(`[api-mapping] ${rel}: ${rows.length} endpoint rows`);
 
@@ -126,10 +135,17 @@ for (const file of mappingFiles) {
       failures.push(`${rel}:${row.line} invalid endpoint path: ${row.path}`);
       continue;
     }
+
     if (swaggerRoutes) {
       const key = `${row.method} ${normalized}`;
       if (!swaggerRoutes.has(key)) {
-        failures.push(`${rel}:${row.line} ${key} not found in swagger-api.json`);
+        if (row.failClosed) {
+          warnings.push(
+            `${rel}:${row.line} ${key} is intentionally fail-closed pending canonical contract.`,
+          );
+        } else {
+          failures.push(`${rel}:${row.line} ${key} not found in swagger-api.json`);
+        }
       }
     } else if (isM1 && !endpointPaths.has(normalized)) {
       failures.push(
@@ -167,6 +183,7 @@ for (const flow of baseline.criticalFlows ?? []) {
     }
   }
 }
+
 for (const code of [
   "stocktake.adjust",
   "warranty.temp_only",
@@ -186,5 +203,5 @@ if (failures.length) {
   process.exit(1);
 }
 console.log(
-  `[api-mapping] PASS: ${totalRows} documented rows checked; M1 canonical paths and permissions match FE constants/baseline.`,
+  `[api-mapping] PASS: ${totalRows} documented rows checked (${failClosedRows} explicitly fail-closed); canonical paths and permissions match FE constants/baseline.`,
 );

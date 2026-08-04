@@ -1,19 +1,16 @@
-/// <reference types="vitest/config" />
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import react from "@vitejs/plugin-react";
+import { defineConfig } from "vite";
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
-  plugins: [
-    react(),
-  ],
+  plugins: [react()],
 
   resolve: {
     alias: {
-      '@': path.resolve(rootDir, './src'),
+      "@": path.resolve(rootDir, "./src"),
     },
   },
 
@@ -23,14 +20,14 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id: string) {
-          if (!id.includes('node_modules')) return;
+          if (!id.includes("node_modules")) return;
 
           if (
             /[\\/]node_modules[\\/](react|react-dom|react-router-dom)[\\/]/.test(
               id,
             )
           ) {
-            return 'vendor-react';
+            return "vendor-react";
           }
 
           if (
@@ -38,7 +35,7 @@ export default defineConfig({
               id,
             )
           ) {
-            return 'vendor-data';
+            return "vendor-data";
           }
 
           if (
@@ -46,30 +43,30 @@ export default defineConfig({
               id,
             )
           ) {
-            return 'vendor-form';
+            return "vendor-form";
           }
 
           if (/[\\/]node_modules[\\/](antd|@ant-design)[\\/]/.test(id)) {
-            return 'vendor-antd';
+            return "vendor-antd";
           }
 
           if (/[\\/]node_modules[\\/].*rc-/.test(id)) {
-            return 'vendor-rc';
+            return "vendor-rc";
           }
 
           if (/[\\/]node_modules[\\/]@emotion[\\/]/.test(id)) {
-            return 'vendor-emotion';
+            return "vendor-emotion";
           }
 
           if (/[\\/]node_modules[\\/]dayjs[\\/]/.test(id)) {
-            return 'vendor-dayjs';
+            return "vendor-dayjs";
           }
 
           if (/[\\/]node_modules[\\/](lodash|uuid)[\\/]/.test(id)) {
-            return 'vendor-utils';
+            return "vendor-utils";
           }
 
-          return 'vendor';
+          return "vendor";
         },
       },
     },

@@ -74,6 +74,10 @@ jobs:
           WMS_EXECUTION_SHA: ${{ env.EXECUTION_SHA }}
         run: npm run wms-contract:verify
 
+      - name: Verify WWHN-148 FE closure
+        id: wwhn_148
+        run: npm run wwhn-148:verify
+
       - name: Build production bundle
         id: build
         run: npm run build
@@ -108,6 +112,7 @@ jobs:
           UAT_CONTRACT_OUTCOME: ${{ steps.uat_contract.outcome }}
           MASTER_SKU_OUTCOME: ${{ steps.master_sku.outcome }}
           WMS_CONTRACT_OUTCOME: ${{ steps.wms_contract.outcome }}
+          WWHN_148_OUTCOME: ${{ steps.wwhn_148.outcome }}
           BUILD_OUTCOME: ${{ steps.build.outcome }}
           HEALTH_OUTCOME: ${{ steps.health.outcome }}
           API_MAPPING_OUTCOME: ${{ steps.api_mapping.outcome }}

@@ -1,0 +1,106 @@
+{
+  "schemaVersion": "1.0.0",
+  "task": "WWHN-148",
+  "updatedAt": "2026-08-04T14:00:00+07:00",
+  "policy": {
+    "criticalMutationResponses": "Canonical snake_case fields from WMS_FE_CONTRACT_BASELINE.json are preferred. Only the explicit aliases listed per flow may remain temporarily until BE locks the contract; undocumented aliases must fail closed.",
+    "readModels": "Observed response aliases may remain temporarily only while the BE contract is not locked. They must not expand without a reviewed registry update.",
+    "removalGate": "After BE1/BE2 publish versioned OpenAPI/schema plus sample payloads and BA/BAS close WWHN-146/WWHN-147, replace registered read aliases with generated/official types and remove obsolete fallbacks.",
+    "authority": "src/shared/api/http.ts owns envelope unwrapping; module services must not duplicate envelope aliases for critical mutation success evidence."
+  },
+  "criticalFlows": [
+    {
+      "id": "POST_RECEIPT",
+      "service": "src/modules/receiving/services/receivingService.ts",
+      "requiredCanonicalFields": [
+        "receipt_id",
+        "movement_ref",
+        "request_id"
+      ],
+      "legacySuccessAliasesAllowed": true,
+      "explicitTemporaryAliases": [
+        "evidence",
+        "receipt",
+        "data",
+        "receiptId",
+        "receipt_no",
+        "movementRef",
+        "stock_movement_id",
+        "movement_id",
+        "requestId",
+        "traceSource",
+        "trace",
+        "idempotency_replay"
+      ]
+    },
+    {
+      "id": "POST_ISSUE",
+      "service": "src/modules/shipping/services/shippingService.ts",
+      "requiredCanonicalFields": [
+        "issue_id",
+        "movement_ref",
+        "request_id"
+      ],
+      "legacySuccessAliasesAllowed": true,
+      "explicitTemporaryAliases": [
+        "issue",
+        "data",
+        "issueId",
+        "issue_no",
+        "movementRef",
+        "stock_movement_id",
+        "movement_id",
+        "requestId",
+        "traceSource",
+        "trace",
+        "idempotency_replay"
+      ]
+    },
+    {
+      "id": "APPLY_ADJUSTMENT",
+      "service": "src/modules/stocktake/services/stocktakeService.ts",
+      "requiredCanonicalFields": [
+        "session_id",
+        "status",
+        "movement_ref",
+        "request_id"
+      ],
+      "legacySuccessAliasesAllowed": true,
+      "explicitTemporaryAliases": [
+        "data",
+        "sessionId",
+        "movementRef",
+        "stock_movement_id",
+        "requestId",
+        "adjustedLines",
+        "totalVariance",
+        "idempotency_replay"
+      ]
+    }
+  ],
+  "temporaryReadNormalization": [
+    {
+      "service": "src/modules/receiving/services/receivingService.ts",
+      "scope": "inbound document/list/line read model",
+      "owner": "FE1 + BE1",
+      "status": "FROZEN_PENDING_BE_LOCK"
+    },
+    {
+      "service": "src/modules/shipping/services/shippingService.ts",
+      "scope": "outbound document/list/line read model",
+      "owner": "FE1 + BE1",
+      "status": "FROZEN_PENDING_BE_LOCK"
+    },
+    {
+      "service": "src/modules/stocktake/services/stocktakeService.ts",
+      "scope": "stocktake session/snapshot/count/variance read model",
+      "owner": "FE1 + BE1",
+      "status": "FROZEN_PENDING_BE_LOCK"
+    }
+  ],
+  "externalDependencies": [
+    "WWHN-146 BAS field/state matrix",
+    "WWHN-147 BA rule/label/validation approval",
+    "BE1/BE2 versioned OpenAPI/schema, permission catalog and 403/409/422/idempotency samples"
+  ]
+}
