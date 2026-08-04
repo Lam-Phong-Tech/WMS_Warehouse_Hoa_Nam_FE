@@ -21,6 +21,7 @@
     "uat:p0p1:verify": "node scripts/verify-uat-p0-p1-readiness.mjs",
     "master-sku:verify": "node scripts/verify-master-sku-closure.mjs",
     "wms-contract:verify": "node scripts/verify-wms-contract-signoff.mjs",
+    "wwhn-148:verify": "node scripts/verify-wwhn-148-closure.mjs",
     "wms-evidence:collect": "node scripts/collect-wms-runtime-evidence.mjs",
     "health:check": "node scripts/check-frontend-health.mjs",
     "check:api-mapping": "node scripts/check-api-mapping.mjs",

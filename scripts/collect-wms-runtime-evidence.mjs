@@ -43,6 +43,7 @@ const outcomes = {
   uatContract: process.env.UAT_CONTRACT_OUTCOME ?? "not_run",
   masterSku: process.env.MASTER_SKU_OUTCOME ?? "not_run",
   wmsContract: process.env.WMS_CONTRACT_OUTCOME ?? "not_run",
+  wwhn148Closure: process.env.WWHN_148_OUTCOME ?? "not_run",
   build: process.env.BUILD_OUTCOME ?? "not_run",
   health: process.env.HEALTH_OUTCOME ?? "not_run",
   apiMapping: process.env.API_MAPPING_OUTCOME ?? "not_run",
@@ -61,7 +62,8 @@ const traces = testFiles
   .map((path) => relative(root, path).replaceAll("\\", "/"));
 
 const manifest = {
-  schemaVersion: "1.0.0",
+  schemaVersion: "1.1.0",
+  tasks: ["WWHN-148", "WWHN-153"],
   generatedAt: new Date().toISOString(),
   repository:
     process.env.GITHUB_REPOSITORY ??
@@ -69,7 +71,8 @@ const manifest = {
   branchOrRef: process.env.GITHUB_REF ?? null,
   sourceSha: process.env.WMS_SOURCE_SHA ?? process.env.GITHUB_SHA ?? null,
   executionSha: process.env.WMS_EXECUTION_SHA ?? process.env.GITHUB_SHA ?? null,
-  pullRequestNumber: process.env.GITHUB_REF_NAME?.match(/^\d+\/merge$/u)?.[0] ?? null,
+  pullRequestNumber:
+    process.env.GITHUB_REF_NAME?.match(/^\d+\/merge$/u)?.[0] ?? null,
   run: {
     id: process.env.GITHUB_RUN_ID ?? null,
     number: process.env.GITHUB_RUN_NUMBER ?? null,
@@ -92,8 +95,20 @@ const manifest = {
     },
     contractEvidence: {
       path: "docs/evidence/wms-contract-signoff/generated/contract-evidence.json",
+      sha256: sha256(join(outputDir, "contract-evidence.json")),
+    },
+    wwhn148Document: {
+      path: "docs/Task_docs_Jira/WWHN-148.md",
+      sha256: sha256(join(root, "docs/Task_docs_Jira/WWHN-148.md")),
+    },
+    m1ApiMapping: {
+      path: "docs/api-evidence/M1_API_MAPPING.md",
+      sha256: sha256(join(root, "docs/api-evidence/M1_API_MAPPING.md")),
+    },
+    normalizationRegister: {
+      path: "docs/api-evidence/WWHN-148_NORMALIZATION_REGISTER.json",
       sha256: sha256(
-        join(outputDir, "contract-evidence.json"),
+        join(root, "docs/api-evidence/WWHN-148_NORMALIZATION_REGISTER.json"),
       ),
     },
     screenshots,
@@ -102,9 +117,9 @@ const manifest = {
   },
   independentGateBoundary: {
     feAutomation:
-      "This manifest proves FE build and controlled browser evidence only.",
+      "This manifest proves FE build, mapping, controlled UI-state, responsive, RBAC and API-error evidence from the exact source SHA.",
     notSubstituted:
-      "It does not replace official WWHN-31 OpenAPI/schema, QA1/QA2 execution against named BE environment, or BA G1 minutes.",
+      "It does not replace WWHN-146 BAS approval, WWHN-147 BA approval, WWHN-149 QA2 named-backend execution, or BE1/BE2 versioned contract evidence.",
   },
 };
 
@@ -114,7 +129,7 @@ writeFileSync(
   `${JSON.stringify(manifest, null, 2)}\n`,
 );
 
-const markdown = `# WWHN-153 CI Evidence Manifest
+const markdown = `# WWHN-148 / WWHN-153 CI Evidence Manifest
 
 - Source SHA: \`${manifest.sourceSha ?? "n/a"}\`
 - Execution/merge SHA: \`${manifest.executionSha ?? "n/a"}\`
@@ -132,7 +147,7 @@ ${Object.entries(outcomes)
 
 ## Boundary
 
-This evidence is generated from the exact FE source/build. It does not self-sign BE, QA1, QA2, or BA approvals.
+This evidence is generated from the exact FE source/build. It does not self-sign BAS, BA, BE, QA1 or QA2 approvals.
 `;
 writeFileSync(join(outputDir, "runtime-manifest.md"), markdown);
 
