@@ -56,7 +56,9 @@ function renderHarness(children: ReactNode) {
         initialEntries={[
           {
             pathname: ROUTES.LOGIN,
-            state: { from: { pathname: ROUTES.INBOUND, search: "?status=DRAFT" } },
+            state: {
+              from: { pathname: ROUTES.INBOUND, search: "?status=DRAFT" },
+            },
           },
         ]}
       >

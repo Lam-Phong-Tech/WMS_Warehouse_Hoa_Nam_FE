@@ -1,12 +1,17 @@
-import { isAxiosError } from "axios";
 import { authService } from "@/modules/auth/services/auth.service";
 import { useAuthStore } from "@/shared/store/auth.store";
 
 let activeBootstrap: Promise<void> | null = null;
 
+function responseStatus(error: unknown): number | undefined {
+  if (typeof error !== "object" || error === null) return undefined;
+  const response = (error as { response?: { status?: number } }).response;
+  return response?.status;
+}
+
 function isInvalidSession(error: unknown): boolean {
-  if (!isAxiosError(error)) return false;
-  return error.response?.status === 401 || error.response?.status === 403;
+  const status = responseStatus(error);
+  return status === 401 || status === 403;
 }
 
 async function runBootstrap(): Promise<void> {

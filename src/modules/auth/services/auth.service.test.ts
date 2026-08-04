@@ -57,7 +57,9 @@ describe("authService contract WWHN-165", () => {
       expires_in: 0,
     });
 
-    await expect(authService.refresh()).rejects.toBeInstanceOf(AuthContractError);
+    await expect(authService.refresh()).rejects.toBeInstanceOf(
+      AuthContractError,
+    );
   });
 
   it("/auth/me chuẩn hóa context nhưng không tự cấp permission", async () => {

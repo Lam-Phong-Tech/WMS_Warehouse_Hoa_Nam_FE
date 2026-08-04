@@ -9,10 +9,7 @@ import type {
   SwitchContextRequest,
   SwitchContextResponse,
 } from "@/modules/auth/types/auth.types";
-import type {
-  MeContext,
-  MeResponse,
-} from "@/modules/auth/types/me.types";
+import type { MeContext, MeResponse } from "@/modules/auth/types/me.types";
 import type { User } from "@/shared/types/user";
 import { memoryStorage } from "@/shared/lib/memory-storage";
 
@@ -106,11 +103,13 @@ function normalizeContext(
   };
 
   if (!includePermissions) return normalized;
+  const permissionCodes: unknown = (value as Partial<MeContext>)
+    .permission_codes;
   return {
     ...normalized,
-    permission_codes: Array.isArray(value.permission_codes)
-      ? value.permission_codes.filter(
-          (code): code is string =>
+    permission_codes: Array.isArray(permissionCodes)
+      ? permissionCodes.filter(
+          (code: unknown): code is string =>
             typeof code === "string" && code.trim() !== "",
         )
       : [],
@@ -129,9 +128,7 @@ function normalizeLoginContexts(
   );
 }
 
-function normalizeMeContexts(
-  contexts: MeContext[] | undefined,
-): MeContext[] {
+function normalizeMeContexts(contexts: MeContext[] | undefined): MeContext[] {
   if (contexts === undefined) return [];
   if (!Array.isArray(contexts)) {
     throw new AuthContractError("available_contexts", "expected an array");
@@ -160,7 +157,8 @@ function normalizeMeResponse(data: BackendMeResponse): MeResponse {
     ? (normalizeContext(data.active_context, 0, true) as MeContext)
     : null;
   const isSuperAdmin =
-    data.is_super_admin ?? roles.some((role) => role.role_code === "SUPER_ADMIN");
+    data.is_super_admin ??
+    roles.some((role) => role.role_code === "SUPER_ADMIN");
 
   return {
     ...data,
@@ -189,9 +187,9 @@ function normalizeMeResponse(data: BackendMeResponse): MeResponse {
   };
 }
 
-function normalizeTokenResponse<T extends RefreshResponse | SwitchContextResponse>(
-  data: T,
-): T {
+function normalizeTokenResponse<
+  T extends RefreshResponse | SwitchContextResponse,
+>(data: T): T {
   return {
     ...data,
     access_token: requireNonEmptyString(data.access_token, "access_token"),

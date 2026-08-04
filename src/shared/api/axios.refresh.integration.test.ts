@@ -6,15 +6,15 @@ vi.unmock("@/shared/api/axios");
 import MockAdapter from "axios-mock-adapter";
 
 /**
- * Test "thật" cho refresh flow — khác với axios.test.ts (mock trực tiếp
- * `api.post`/`api.request`), test này dùng axios-mock-adapter để mock ở tầng
- * adapter: request đi qua TOÀN BỘ chain thật (request interceptor gắn
- * Authorization header, response interceptor bắt 401, gọi refresh, retry) —
- * chỉ tầng network (XHR/HTTP) là giả lập, giống hành vi thật khi access token
- * hết hạn + refresh cookie hợp lệ.
+ * Integration test cho refresh flow ở tầng axios adapter: request đi qua toàn
+ * bộ interceptor chain; chỉ network transport được giả lập.
  */
 
-const { setStateMock } = vi.hoisted(() => ({ setStateMock: vi.fn() }));
+const { setTokenMock, logoutMock, clearStorageMock } = vi.hoisted(() => ({
+  setTokenMock: vi.fn(),
+  logoutMock: vi.fn(),
+  clearStorageMock: vi.fn(),
+}));
 
 vi.mock("@/shared/store/auth.store", async () => {
   const actual = await vi.importActual<
@@ -24,9 +24,8 @@ vi.mock("@/shared/store/auth.store", async () => {
     ...actual,
     useAuthStore: {
       ...actual.useAuthStore,
-      getState: () => ({ logout: vi.fn() }),
-      persist: { clearStorage: vi.fn() },
-      setState: setStateMock,
+      getState: () => ({ logout: logoutMock, setToken: setTokenMock }),
+      persist: { clearStorage: clearStorageMock },
     },
   };
 });
@@ -44,7 +43,9 @@ describe("axios refresh interceptor — integration (mock ở tầng HTTP adapte
 
   beforeEach(() => {
     mock = new MockAdapter(api);
-    setStateMock.mockReset();
+    setTokenMock.mockReset();
+    logoutMock.mockReset();
+    clearStorageMock.mockReset();
     memoryStorage.clear();
     Object.defineProperty(window, "location", {
       configurable: true,
@@ -56,14 +57,12 @@ describe("axios refresh interceptor — integration (mock ở tầng HTTP adapte
     mock.restore();
   });
 
-  it("access token hết hạn (401) + refresh cookie hợp lệ → tự refresh rồi retry request gốc thành công", async () => {
+  it("access token hết hạn (401) + refresh hợp lệ → tự refresh, thu hồi state cũ và retry thành công", async () => {
     memoryStorage.setItem(EXPIRED_ACCESS_TOKEN_PLACEHOLDER);
 
     let employeesCallCount = 0;
     mock.onGet("/employees").reply((config) => {
       employeesCallCount += 1;
-      // Lần đầu: token cũ (hết hạn) → BE trả 401.
-      // Lần retry sau refresh: header phải mang token mới.
       if (
         config.headers?.Authorization ===
         `Bearer ${FRESH_ACCESS_TOKEN_PLACEHOLDER}`
@@ -91,13 +90,10 @@ describe("axios refresh interceptor — integration (mock ở tầng HTTP adapte
     expect(res.status).toBe(200);
     expect(res.data.data).toEqual([{ id: 1, name: "Nguyen Van A" }]);
     expect(memoryStorage.getToken()).toBe(FRESH_ACCESS_TOKEN_PLACEHOLDER);
-    expect(setStateMock).toHaveBeenCalledWith({
-      token: FRESH_ACCESS_TOKEN_PLACEHOLDER,
-      isAuthenticated: true,
-    });
+    expect(setTokenMock).toHaveBeenCalledWith(FRESH_ACCESS_TOKEN_PLACEHOLDER);
   });
 
-  it("access token hết hạn (401) + refresh cookie CŨNG hết hạn/invalid (refresh trả 401) → logout, redirect /login, không retry", async () => {
+  it("access token hết hạn + refresh cũng 401 → logout, redirect login, không retry", async () => {
     memoryStorage.setItem(EXPIRED_ACCESS_TOKEN_PLACEHOLDER);
 
     mock.onGet("/employees").reply(401, {
@@ -113,11 +109,13 @@ describe("axios refresh interceptor — integration (mock ở tầng HTTP adapte
       response: { status: 401 },
     });
 
+    expect(logoutMock).toHaveBeenCalledTimes(1);
+    expect(clearStorageMock).toHaveBeenCalledTimes(1);
     expect(window.location.assign).toHaveBeenCalledWith("/login");
-    expect(memoryStorage.getToken()).toBe(EXPIRED_ACCESS_TOKEN_PLACEHOLDER); // không bị ghi đè bởi token mới
+    expect(memoryStorage.getToken()).toBe(EXPIRED_ACCESS_TOKEN_PLACEHOLDER);
   });
 
-  it("nhiều request 401 đồng thời cùng lúc access token hết hạn → chỉ gọi /auth/refresh một lần, cả hai đều retry thành công", async () => {
+  it("nhiều request 401 đồng thời → một refresh, cả hai retry thành công", async () => {
     memoryStorage.setItem(EXPIRED_ACCESS_TOKEN_PLACEHOLDER);
 
     let refreshCallCount = 0;
@@ -160,5 +158,7 @@ describe("axios refresh interceptor — integration (mock ở tầng HTTP adapte
     expect(res1.status).toBe(200);
     expect(res2.status).toBe(200);
     expect(refreshCallCount).toBe(1);
+    expect(setTokenMock).toHaveBeenCalledTimes(1);
+    expect(setTokenMock).toHaveBeenCalledWith(FRESH_ACCESS_TOKEN_PLACEHOLDER);
   });
 });

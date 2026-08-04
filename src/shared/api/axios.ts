@@ -57,7 +57,9 @@ function refreshAccessToken(): Promise<string> {
       .then((res) => {
         const token = res.data?.data?.access_token;
         if (typeof token !== "string" || token.trim() === "") {
-          throw new Error("AUTH_REFRESH_CONTRACT_INVALID: missing access_token");
+          throw new Error(
+            "AUTH_REFRESH_CONTRACT_INVALID: missing access_token",
+          );
         }
         const refreshToken = res.data.data.refresh_token;
         memoryStorage.setItem(token);

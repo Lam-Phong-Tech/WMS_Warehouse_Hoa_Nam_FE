@@ -6,7 +6,10 @@ import { Loading } from "@/shared/components/feedback/Loading";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { ROUTES } from "@/shared/constants/routes";
 import { useAuthStore } from "@/shared/store/auth.store";
-import { getErrorCode, type ApiErrorResponse } from "@/shared/types/api-response";
+import {
+  getErrorCode,
+  type ApiErrorResponse,
+} from "@/shared/types/api-response";
 
 /**
  * Auth route guard fail-closed:

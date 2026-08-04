@@ -51,23 +51,7 @@ jobs:
 
       - name: Check formatting without mutating source
         id: format
-        continue-on-error: true
         run: npm run format:check
-
-      - name: Emit exact Prettier diagnostic for WWHN-165 files
-        run: |
-          npx prettier --write \
-            src/modules/auth/hooks/use-login.test.tsx \
-            src/modules/auth/services/auth.service.test.ts \
-            src/shared/api/axios.ts
-          for file in \
-            src/modules/auth/hooks/use-login.test.tsx \
-            src/modules/auth/services/auth.service.test.ts \
-            src/shared/api/axios.ts; do
-            echo "===== BEGIN_PRETTIER_FILE:${file} ====="
-            cat "${file}"
-            echo "===== END_PRETTIER_FILE:${file} ====="
-          done
 
       - name: Lint
         id: lint
