@@ -1,19 +1,19 @@
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
-import { FormPage } from './FormPage';
+import { describe, it, expect, vi } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { FormPage } from "./FormPage";
 
-describe('FormPage', () => {
-  it('render title đúng', () => {
+describe("FormPage", () => {
+  it("render title đúng", () => {
     render(
       <FormPage title="Thêm nhân viên" onOk={vi.fn()} onCancel={vi.fn()}>
         <div>form content</div>
       </FormPage>,
     );
-    expect(screen.getByText('Thêm nhân viên')).toBeInTheDocument();
-    expect(screen.getByText('form content')).toBeInTheDocument();
+    expect(screen.getByText("Thêm nhân viên")).toBeInTheDocument();
+    expect(screen.getByText("form content")).toBeInTheDocument();
   });
 
-  it('gọi onOk và onCancel khi bấm nút', () => {
+  it("gọi onOk và onCancel khi bấm nút", () => {
     const onOk = vi.fn();
     const onCancel = vi.fn();
     render(
@@ -22,35 +22,35 @@ describe('FormPage', () => {
       </FormPage>,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Lưu' }));
+    fireEvent.click(screen.getByRole("button", { name: "Lưu" }));
     expect(onOk).toHaveBeenCalledTimes(1);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Hủy' }));
+    fireEvent.click(screen.getByRole("button", { name: "Hủy" }));
     expect(onCancel).toHaveBeenCalledTimes(1);
   });
 
-  it('loading=true hiển thị trạng thái loading trên nút Lưu', () => {
+  it("loading=true hiển thị trạng thái loading trên nút Lưu", () => {
     render(
       <FormPage title="Test" onOk={vi.fn()} onCancel={vi.fn()} loading>
         <div>content</div>
       </FormPage>,
     );
-    const okButton = screen.getByRole('button', { name: 'Lưu' });
-    expect(okButton).toHaveClass('ant-btn-loading');
+    const okButton = screen.getByRole("button", { name: "Lưu" });
+    expect(okButton).toHaveClass("ant-btn-loading");
   });
 
-  it('showOk=false ẩn nút Lưu', () => {
+  it("showOk=false ẩn nút Lưu", () => {
     render(
       <FormPage title="Test" onOk={vi.fn()} onCancel={vi.fn()} showOk={false}>
         <div>content</div>
       </FormPage>,
     );
     expect(
-      screen.queryByRole('button', { name: 'Lưu' }),
+      screen.queryByRole("button", { name: "Lưu" }),
     ).not.toBeInTheDocument();
   });
 
-  it('showCancel=false ẩn nút Hủy', () => {
+  it("showCancel=false ẩn nút Hủy", () => {
     render(
       <FormPage
         title="Test"
@@ -62,11 +62,11 @@ describe('FormPage', () => {
       </FormPage>,
     );
     expect(
-      screen.queryByRole('button', { name: 'Hủy' }),
+      screen.queryByRole("button", { name: "Hủy" }),
     ).not.toBeInTheDocument();
   });
 
-  it('hiển thị extra content dưới title', () => {
+  it("hiển thị extra content dưới title", () => {
     render(
       <FormPage
         title="Test"
@@ -77,10 +77,10 @@ describe('FormPage', () => {
         <div>content</div>
       </FormPage>,
     );
-    expect(screen.getByText('Breadcrumb')).toBeInTheDocument();
+    expect(screen.getByText("Breadcrumb")).toBeInTheDocument();
   });
 
-  it('custom okText/cancelText hiển thị đúng', () => {
+  it("custom okText/cancelText hiển thị đúng", () => {
     render(
       <FormPage
         title="Test"
@@ -92,11 +92,11 @@ describe('FormPage', () => {
         <div>content</div>
       </FormPage>,
     );
-    expect(screen.getByRole('button', { name: 'Lưu lại' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Đóng' })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Lưu lại" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Đóng" })).toBeInTheDocument();
   });
 
-  it('okButtonProps.disabled khoá nút Lưu', () => {
+  it("okButtonProps.disabled khoá nút Lưu", () => {
     render(
       <FormPage
         title="Test"
@@ -107,6 +107,6 @@ describe('FormPage', () => {
         <div>content</div>
       </FormPage>,
     );
-    expect(screen.getByRole('button', { name: 'Lưu' })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Lưu" })).toBeDisabled();
   });
 });

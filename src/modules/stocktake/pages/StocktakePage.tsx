@@ -1,44 +1,334 @@
-import { useState } from 'react';
-import { Table, Button, Space, Tag, Input, Select, Tabs, Progress } from 'antd';
-import { ExperimentOutlined } from '@ant-design/icons';
+/* eslint-disable react-hooks/set-state-in-effect */
+import { useEffect, useMemo, useState } from "react";
+import {
+  Alert,
+  Button,
+  Card,
+  Col,
+  Descriptions,
+  Form,
+  Input,
+  InputNumber,
+  Modal,
+  Progress,
+  Row,
+  Select,
+  Space,
+  Statistic,
+  Table,
+  Tabs,
+  Tag,
+  Typography,
+  message,
+} from "antd";
+import {
+  CheckCircleOutlined,
+  ExperimentOutlined,
+  ReloadOutlined,
+  SaveOutlined,
+  WarningOutlined,
+} from "@ant-design/icons";
+import {
+  InlineApiError,
+  ResponsiveToolbar,
+  tableEmptyText,
+} from "@/shared/components/feedback/BusinessState";
+import { getApiErrorMessage, normalizeError } from "@/shared/api/api-error";
+import { useCanAny } from "@/shared/components/permission";
+import {
+  applyStocktakeAdjustment,
+  createStocktakeSession,
+  fetchInventorySnapshots,
+  fetchStocktakeCounts,
+  fetchStocktakeSessions,
+  fetchStocktakeVariances,
+  submitStocktakeCount,
+} from "@/modules/stocktake/services/stocktakeService";
+import type {
+  ApplyAdjustmentResponse,
+  CreateStocktakeSessionRequest,
+  StocktakeCount,
+  StocktakeSession,
+  StocktakeSnapshot,
+  StocktakeVariance,
+} from "@/modules/stocktake/types";
 
-const mockStocktakeSessions = [
-  { id: 1, code: 'STK-20260724-01', scope: 'Toàn kho', start: '24/07 08:00', progress: 84, variance: 4, movement: 6, status: 'REVIEWING', owner: 'Chị Phương' },
-  { id: 2, code: 'STK-20260720-02', scope: 'SKU linh kiện', start: '20/07 14:00', progress: 100, variance: 0, movement: 0, status: 'APPLIED', owner: 'QL kho' },
+type CountDraft = Record<string, { actual_qty?: number; notes?: string }>;
+
+const scopeOptions = [
+  { label: "Toàn kho", value: "FULL_WAREHOUSE" },
+  { label: "Theo SKU", value: "SKU" },
+  { label: "Theo nhóm SKU", value: "SKU_GROUP" },
+  { label: "Theo vị trí", value: "LOCATION" },
 ];
 
-const mockCountLines = [
-  { id: 1, sku: 'DCH-DRILL-DJZ10A...', mode: 'Serial scan', snapshot: 100, movement: -10, expected: 90, actual: 90, variance: 0, warning: 'Đã xem MOV-826', lineStatus: 'PENDING' },
-  { id: 2, sku: 'LK-DCH-OC-VIT-M2...', mode: 'Quantity', snapshot: 450, movement: 0, expected: 450, actual: 448, variance: -2, warning: 'Không có', lineStatus: 'PENDING' },
-  { id: 3, sku: 'LK-DCH-SAC-20V...', mode: 'Serial scan', snapshot: 78, movement: 2, expected: 80, actual: 82, variance: 2, warning: 'Chưa ack', lineStatus: 'PENDING' },
-];
+const reviewStatuses = new Set([
+  "REVIEWING",
+  "COMPLETED",
+  "COUNTING",
+  "IN_PROGRESS",
+]);
+const adjustedStatuses = new Set(["ADJUSTED", "APPLIED", "CANCELLED"]);
+
+function idempotencyKey(prefix: string) {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function statusTag(value?: string) {
+  const status = value || "-";
+  const color = adjustedStatuses.has(status)
+    ? "success"
+    : status === "CANCELLED"
+      ? "default"
+      : reviewStatuses.has(status)
+        ? "processing"
+        : "warning";
+  return <Tag color={color}>{status}</Tag>;
+}
+
+function varianceTag(value: number) {
+  if (value > 0) return <Tag color="green">+{value}</Tag>;
+  if (value < 0) return <Tag color="red">{value}</Tag>;
+  return <Tag>0</Tag>;
+}
+
+function progressOf(session: StocktakeSession) {
+  if (!session.total_sku) return 0;
+  return Math.round((session.counted_sku / session.total_sku) * 100);
+}
+
+function formatQty(value?: number) {
+  return Number(value ?? 0).toLocaleString("vi-VN");
+}
 
 export default function StocktakePage() {
-  const [activeTab, setActiveTab] = useState('list');
+  const [activeTab, setActiveTab] = useState("sessions");
+  const [sessions, setSessions] = useState<StocktakeSession[]>([]);
+  const [snapshots, setSnapshots] = useState<StocktakeSnapshot[]>([]);
+  const [counts, setCounts] = useState<StocktakeCount[]>([]);
+  const [variances, setVariances] = useState<StocktakeVariance[]>([]);
+  const [selectedSession, setSelectedSession] = useState<StocktakeSession>();
+  const [loading, setLoading] = useState(false);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<unknown>(null);
+  const [detailError, setDetailError] = useState<unknown>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [applyResult, setApplyResult] = useState<ApplyAdjustmentResponse>();
+  const [draft, setDraft] = useState<CountDraft>({});
+  const [form] = Form.useForm<CreateStocktakeSessionRequest>();
+  const canCreateOrManage = useCanAny([
+    "stocktake.create",
+    "stocktake.manage",
+    "stocktake.count",
+  ]);
+  const canApply = useCanAny(["stocktake.apply", "stocktake.manage"]);
 
-  const sessionColumns = [
-    { title: 'Mã phiên', dataIndex: 'code', key: 'code', render: (v: string) => <span style={{ fontFamily: 'monospace' }}>{v}</span> },
-    { title: 'Scope', dataIndex: 'scope', key: 'scope' },
-    { title: 'Bắt đầu', dataIndex: 'start', key: 'start' },
-    { title: 'Tiến độ đếm', dataIndex: 'progress', key: 'progress', render: (v: number) => <><Progress percent={v} size="small" /><div style={{ fontSize: 12, color: '#888' }}>{v}% dòng đã đếm</div></> },
-    { title: 'Variance', dataIndex: 'variance', key: 'variance', render: (v: number) => <span style={{ color: v > 0 ? '#cf1322' : '#3f8600' }}>{v} dòng</span> },
-    { title: 'Movement warning', dataIndex: 'movement', key: 'movement', render: (v: number) => v > 0 ? <Tag color="warning">{v} movement</Tag> : <Tag color="default">{v}</Tag> },
-    { title: 'Trạng thái', dataIndex: 'status', key: 'status', render: (v: string) => <Tag color={v === 'REVIEWING' ? 'purple' : v === 'APPLIED' ? 'success' : 'default'}>{v}</Tag> },
-    { title: 'Owner', dataIndex: 'owner', key: 'owner' },
-    { title: 'Action', key: 'action', render: () => <Space><a>Review</a></Space> },
-  ];
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
 
-  const lineColumns = [
-    { title: 'SKU', dataIndex: 'sku', key: 'sku' },
-    { title: 'Mode', dataIndex: 'mode', key: 'mode' },
-    { title: 'Snapshot', dataIndex: 'snapshot', key: 'snapshot', render: (v: number) => <span style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{v}</span> },
-    { title: 'Movement đến cutoff', dataIndex: 'movement', key: 'movement', render: (v: number) => <span style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: v < 0 ? '#cf1322' : '#3f8600' }}>{v > 0 ? `+${v}` : v}</span> },
-    { title: 'Expected', dataIndex: 'expected', key: 'expected', render: (v: number) => <span style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}><strong>{v}</strong></span> },
-    { title: 'Actual', dataIndex: 'actual', key: 'actual', render: (v: number) => <span style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{v}</span> },
-    { title: 'Variance', dataIndex: 'variance', key: 'variance', render: (v: number) => <span style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: v > 0 ? '#3f8600' : v < 0 ? '#cf1322' : '#888' }}>{v > 0 ? `+${v}` : v}</span> },
-    { title: 'Warning/Ack', dataIndex: 'warning', key: 'warning', render: (v: string) => <Tag color={v === 'Đã xem MOV-826' ? 'success' : 'default'}>{v}</Tag> },
-    { title: 'Line status', dataIndex: 'lineStatus', key: 'lineStatus', render: (v: string) => <Tag color={v === 'PENDING' ? 'default' : v === 'APPROVED' ? 'success' : 'warning'}>{v}</Tag> },
-  ];
+    const request =
+      activeTab === "snapshots"
+        ? fetchInventorySnapshots({ per_page: 50 }).then((data) => {
+            if (!cancelled) setSnapshots(data);
+          })
+        : fetchStocktakeSessions({ per_page: 50 }).then((data) => {
+            if (!cancelled) {
+              setSessions(data);
+              setSelectedSession((current) => {
+                if (current && data.some((item) => item.id === current.id))
+                  return current;
+                return data[0];
+              });
+            }
+          });
+
+    request
+      .catch((fetchError: unknown) => {
+        if (!cancelled) {
+          if (activeTab === "snapshots") setSnapshots([]);
+          else setSessions([]);
+          setError(fetchError);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, reloadKey]);
+
+  useEffect(() => {
+    if (!selectedSession?.id || activeTab !== "sessions") return;
+    let cancelled = false;
+    setDetailLoading(true);
+    setDetailError(null);
+    Promise.all([
+      fetchStocktakeCounts(selectedSession.id, { per_page: 200 }),
+      fetchStocktakeVariances(selectedSession.id, { per_page: 200 }),
+    ])
+      .then(([countRows, varianceRows]) => {
+        if (cancelled) return;
+        setCounts(countRows);
+        setVariances(varianceRows);
+        setDraft(
+          Object.fromEntries(
+            countRows.map((line) => [
+              line.sku,
+              { actual_qty: line.actual_qty, notes: line.notes },
+            ]),
+          ),
+        );
+      })
+      .catch((fetchError: unknown) => {
+        if (!cancelled) {
+          setCounts([]);
+          setVariances([]);
+          setDetailError(fetchError);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setDetailLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedSession?.id, activeTab, reloadKey]);
+
+  const approvedLines = useMemo(
+    () =>
+      variances
+        .filter(
+          (line) => line.variance !== 0 && line.reconcile_status !== "REJECTED",
+        )
+        .map((line) => ({
+          sku: line.sku,
+          actual_qty: line.actual_qty,
+          reason: `Stocktake ${selectedSession?.code ?? selectedSession?.id}`,
+        })),
+    [selectedSession?.code, selectedSession?.id, variances],
+  );
+
+  const totalVariance = variances.reduce((sum, line) => sum + line.variance, 0);
+  const canApplySession =
+    Boolean(selectedSession) &&
+    canApply &&
+    approvedLines.length > 0 &&
+    !adjustedStatuses.has(selectedSession?.status ?? "");
+
+  const retry = () => setReloadKey((value) => value + 1);
+
+  const handleCreate = async () => {
+    const values = await form.validateFields();
+    const payload: CreateStocktakeSessionRequest = {
+      ...values,
+      sku_codes:
+        values.scope_type === "SKU" && typeof values.sku_codes === "string"
+          ? String(values.sku_codes)
+              .split(",")
+              .map((item) => item.trim())
+              .filter(Boolean)
+          : values.sku_codes,
+      idempotency_key: idempotencyKey("stocktake-create"),
+    };
+    setSubmitting(true);
+    try {
+      const created = await createStocktakeSession(payload);
+      message.success("Đã tạo phiên kiểm kê và yêu cầu backend chụp snapshot");
+      setCreateOpen(false);
+      form.resetFields();
+      setSelectedSession(created);
+      retry();
+    } catch (createError) {
+      message.error(
+        getApiErrorMessage(createError, "Không thể tạo phiên kiểm kê"),
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const saveCount = async (line: StocktakeCount) => {
+    const lineDraft = draft[line.sku] ?? {};
+    if (lineDraft.actual_qty === undefined || lineDraft.actual_qty < 0) {
+      message.warning("Số đếm thực tế phải lớn hơn hoặc bằng 0");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const updated = await submitStocktakeCount(selectedSession!.id, {
+        sku: line.sku,
+        actual_qty: lineDraft.actual_qty,
+        notes: lineDraft.notes,
+      });
+      setCounts((rows) =>
+        rows.map((item) => (item.sku === line.sku ? updated : item)),
+      );
+      message.success(`Đã lưu số đếm cho ${line.sku}`);
+      retry();
+    } catch (saveError) {
+      message.error(getApiErrorMessage(saveError, "Không thể lưu số đếm"));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const confirmApply = () => {
+    if (!selectedSession) return;
+    Modal.confirm({
+      title: "Áp dụng điều chỉnh tồn kho?",
+      icon: <WarningOutlined />,
+      okText: "Áp dụng điều chỉnh",
+      cancelText: "Kiểm tra lại",
+      content: (
+        <Space direction="vertical">
+          <Typography.Text>
+            Phiên {selectedSession.code} có {approvedLines.length} dòng chênh
+            lệch sẽ tạo stock adjustment append-only. Backend vẫn là nguồn quyết
+            định cuối cùng.
+          </Typography.Text>
+          <Typography.Text strong>
+            Tổng chênh lệch dự kiến: {totalVariance > 0 ? "+" : ""}
+            {formatQty(totalVariance)}
+          </Typography.Text>
+          <Typography.Text type="secondary">
+            Idempotency-Key sẽ được tạo cho lần gửi này; nếu BE yêu cầu version,
+            UI gửi If-Match từ version/etag của phiên.
+          </Typography.Text>
+        </Space>
+      ),
+      onOk: async () => {
+        setSubmitting(true);
+        try {
+          const result = await applyStocktakeAdjustment({
+            session_id: selectedSession.id,
+            lines: approvedLines,
+            idempotency_key: idempotencyKey("stocktake-apply"),
+            version: selectedSession.version ?? selectedSession.etag ?? "",
+          });
+          setApplyResult(result);
+          message.success("Backend đã xử lý apply adjustment");
+          retry();
+        } catch (applyError) {
+          const normalized = normalizeError(applyError);
+          message.error(
+            normalized.status === 409 ||
+              normalized.status === 412 ||
+              normalized.status === 428
+              ? `${normalized.message}. Vui lòng tải lại trạng thái phiên trước khi gửi lại.`
+              : getApiErrorMessage(applyError, "Không thể apply adjustment"),
+          );
+        } finally {
+          setSubmitting(false);
+        }
+      },
+    });
+  };
 
   return (
     <div style={{ padding: 24 }}>
@@ -47,44 +337,601 @@ export default function StocktakePage() {
         onChange={setActiveTab}
         items={[
           {
-            key: 'list',
-            label: 'Danh sách phiên kiểm kê',
+            key: "sessions",
+            label: "Phiên kiểm kê",
             children: (
-              <div>
-                <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
-                  <Space>
-                    <Input.Search placeholder="Mã phiên..." style={{ width: 285 }} />
-                    <Select placeholder="Scope" style={{ width: 125 }} allowClear />
-                    <Select placeholder="Trạng thái" style={{ width: 125 }} allowClear />
-                  </Space>
-                  <Button type="primary" icon={<ExperimentOutlined />}>＋ Tạo phiên kiểm kê</Button>
-                </div>
-                <Table dataSource={mockStocktakeSessions} columns={sessionColumns} rowKey="id" pagination={{ pageSize: 10 }} />
-              </div>
+              <Row gutter={[16, 16]}>
+                <Col xs={24}>
+                  <ResponsiveToolbar>
+                    <Input.Search
+                      placeholder="Mã phiên, kho, owner..."
+                      style={{ width: 285 }}
+                    />
+                    <Select
+                      placeholder="Trạng thái"
+                      allowClear
+                      style={{ width: 180 }}
+                      options={[
+                        "DRAFT",
+                        "COUNTING",
+                        "REVIEWING",
+                        "COMPLETED",
+                        "ADJUSTED",
+                      ].map((status) => ({ label: status, value: status }))}
+                    />
+                    <Button icon={<ReloadOutlined />} onClick={retry}>
+                      Tải lại
+                    </Button>
+                    <Button
+                      type="primary"
+                      icon={<ExperimentOutlined />}
+                      disabled={!canCreateOrManage}
+                      onClick={() => setCreateOpen(true)}
+                    >
+                      Tạo phiên
+                    </Button>
+                  </ResponsiveToolbar>
+                  <InlineApiError
+                    error={error}
+                    title="Không thể tải danh sách phiên kiểm kê"
+                    onRetry={retry}
+                  />
+                </Col>
+                <Col xs={24} xl={13}>
+                  <Table
+                    dataSource={sessions}
+                    rowKey="id"
+                    loading={loading}
+                    pagination={{ pageSize: 10 }}
+                    scroll={{ x: 1120 }}
+                    locale={{
+                      emptyText: tableEmptyText(error, "Chưa có phiên kiểm kê"),
+                    }}
+                    onRow={(record) => ({
+                      onClick: () => setSelectedSession(record),
+                    })}
+                    rowClassName={(record) =>
+                      record.id === selectedSession?.id
+                        ? "ant-table-row-selected"
+                        : ""
+                    }
+                    columns={[
+                      {
+                        title: "Mã phiên",
+                        dataIndex: "code",
+                        fixed: "left",
+                        width: 150,
+                      },
+                      { title: "Kho", dataIndex: "warehouse_name", width: 160 },
+                      {
+                        title: "Scope",
+                        width: 160,
+                        render: (_, row) =>
+                          row.scope_label ||
+                          row.scope_type ||
+                          "Theo contract BE",
+                      },
+                      {
+                        title: "Snapshot",
+                        dataIndex: "snapshot_at",
+                        width: 180,
+                      },
+                      {
+                        title: "Tiến độ",
+                        width: 180,
+                        render: (_, row) => (
+                          <Space
+                            direction="vertical"
+                            size={0}
+                            style={{ width: "100%" }}
+                          >
+                            <Progress percent={progressOf(row)} size="small" />
+                            <Typography.Text type="secondary">
+                              {row.counted_sku}/{row.total_sku} SKU
+                            </Typography.Text>
+                          </Space>
+                        ),
+                      },
+                      {
+                        title: "Variance",
+                        width: 120,
+                        render: (_, row) => varianceTag(row.variance_sku),
+                      },
+                      {
+                        title: "Movement",
+                        width: 130,
+                        render: (_, row) =>
+                          row.movement_warning_count ? (
+                            <Tag color="orange">
+                              {row.movement_warning_count} cảnh báo
+                            </Tag>
+                          ) : (
+                            <Tag>Không có</Tag>
+                          ),
+                      },
+                      {
+                        title: "Trạng thái",
+                        dataIndex: "status",
+                        width: 130,
+                        render: statusTag,
+                      },
+                      { title: "Owner", dataIndex: "owner_name", width: 160 },
+                    ]}
+                  />
+                </Col>
+                <Col xs={24} xl={11}>
+                  <Card
+                    title={
+                      selectedSession
+                        ? `Chi tiết ${selectedSession.code}`
+                        : "Chi tiết phiên"
+                    }
+                  >
+                    {selectedSession ? (
+                      <Space
+                        direction="vertical"
+                        size={16}
+                        style={{ width: "100%" }}
+                      >
+                        <Descriptions size="small" column={{ xs: 1, md: 2 }}>
+                          <Descriptions.Item label="Kho">
+                            {selectedSession.warehouse_name}
+                          </Descriptions.Item>
+                          <Descriptions.Item label="Trạng thái">
+                            {statusTag(selectedSession.status)}
+                          </Descriptions.Item>
+                          <Descriptions.Item label="Snapshot">
+                            {selectedSession.snapshot_at || "-"}
+                          </Descriptions.Item>
+                          <Descriptions.Item label="Version">
+                            {selectedSession.version ??
+                              selectedSession.etag ??
+                              "Chưa có"}
+                          </Descriptions.Item>
+                        </Descriptions>
+                        {selectedSession.movement_warning_count ? (
+                          <Alert
+                            type="warning"
+                            showIcon
+                            message="Có movement sau snapshot"
+                            description="Variance phải đối chiếu expected_at_count = snapshot_qty + net movement sau snapshot đến cutoff. FE chỉ hiển thị dữ liệu BE trả, không tự chốt số canonical."
+                          />
+                        ) : null}
+                        <Row gutter={[12, 12]}>
+                          <Col xs={12} md={6}>
+                            <Statistic
+                              title="SKU"
+                              value={selectedSession.total_sku}
+                            />
+                          </Col>
+                          <Col xs={12} md={6}>
+                            <Statistic
+                              title="Đã đếm"
+                              value={selectedSession.counted_sku}
+                            />
+                          </Col>
+                          <Col xs={12} md={6}>
+                            <Statistic
+                              title="Chênh lệch"
+                              value={selectedSession.variance_sku}
+                            />
+                          </Col>
+                          <Col xs={12} md={6}>
+                            <Statistic
+                              title="Movement"
+                              value={
+                                selectedSession.movement_warning_count ?? 0
+                              }
+                            />
+                          </Col>
+                        </Row>
+                        <InlineApiError
+                          error={detailError}
+                          title="Không thể tải count/variance của phiên"
+                          onRetry={retry}
+                        />
+                        <Tabs
+                          items={[
+                            {
+                              key: "count",
+                              label: "Nhập số đếm",
+                              children: (
+                                <Table
+                                  size="small"
+                                  dataSource={counts}
+                                  rowKey="sku"
+                                  loading={detailLoading}
+                                  pagination={{ pageSize: 6 }}
+                                  scroll={{ x: 980 }}
+                                  locale={{
+                                    emptyText: tableEmptyText(
+                                      detailError,
+                                      "Chưa có dòng đếm từ backend",
+                                    ),
+                                  }}
+                                  columns={[
+                                    {
+                                      title: "SKU",
+                                      dataIndex: "sku",
+                                      width: 130,
+                                    },
+                                    {
+                                      title: "Tên",
+                                      dataIndex: "sku_name",
+                                      width: 180,
+                                    },
+                                    {
+                                      title: "Snapshot",
+                                      width: 100,
+                                      render: (_, row) =>
+                                        formatQty(row.snapshot_qty),
+                                    },
+                                    {
+                                      title: "Net move",
+                                      width: 100,
+                                      render: (_, row) =>
+                                        formatQty(
+                                          row.net_movement_after_snapshot,
+                                        ),
+                                    },
+                                    {
+                                      title: "Expected",
+                                      width: 100,
+                                      render: (_, row) =>
+                                        formatQty(
+                                          row.expected_at_count ??
+                                            row.expected_qty,
+                                        ),
+                                    },
+                                    {
+                                      title: "Actual",
+                                      width: 150,
+                                      render: (_, row) => (
+                                        <InputNumber
+                                          min={0}
+                                          value={draft[row.sku]?.actual_qty}
+                                          onChange={(value) =>
+                                            setDraft((current) => ({
+                                              ...current,
+                                              [row.sku]: {
+                                                ...current[row.sku],
+                                                actual_qty: Number(value ?? 0),
+                                              },
+                                            }))
+                                          }
+                                        />
+                                      ),
+                                    },
+                                    {
+                                      title: "Ghi chú",
+                                      width: 220,
+                                      render: (_, row) => (
+                                        <Input
+                                          value={draft[row.sku]?.notes}
+                                          placeholder="Lý do đếm lại, ghi chú..."
+                                          onChange={(event) =>
+                                            setDraft((current) => ({
+                                              ...current,
+                                              [row.sku]: {
+                                                ...current[row.sku],
+                                                notes: event.target.value,
+                                              },
+                                            }))
+                                          }
+                                        />
+                                      ),
+                                    },
+                                    {
+                                      title: "Trạng thái",
+                                      dataIndex: "status",
+                                      width: 120,
+                                      render: statusTag,
+                                    },
+                                    {
+                                      title: "Lưu",
+                                      fixed: "right",
+                                      width: 100,
+                                      render: (_, row) => (
+                                        <Button
+                                          size="small"
+                                          icon={<SaveOutlined />}
+                                          loading={submitting}
+                                          disabled={row.status === "VERIFIED"}
+                                          onClick={() => saveCount(row)}
+                                        >
+                                          Lưu
+                                        </Button>
+                                      ),
+                                    },
+                                  ]}
+                                />
+                              ),
+                            },
+                            {
+                              key: "variance",
+                              label: "Đối soát variance",
+                              children: (
+                                <Space
+                                  direction="vertical"
+                                  style={{ width: "100%" }}
+                                >
+                                  <Alert
+                                    type="info"
+                                    showIcon
+                                    message="Công thức hiển thị"
+                                    description="expected_at_count = snapshot_qty + net_movement_after_snapshot_to_count_cutoff; variance_to_apply = actual_qty - expected_at_count."
+                                  />
+                                  <Table
+                                    size="small"
+                                    dataSource={variances}
+                                    rowKey="sku"
+                                    loading={detailLoading}
+                                    pagination={{ pageSize: 6 }}
+                                    scroll={{ x: 980 }}
+                                    locale={{
+                                      emptyText: tableEmptyText(
+                                        detailError,
+                                        "Chưa có variance cần review",
+                                      ),
+                                    }}
+                                    columns={[
+                                      {
+                                        title: "SKU",
+                                        dataIndex: "sku",
+                                        width: 130,
+                                      },
+                                      {
+                                        title: "Tên",
+                                        dataIndex: "sku_name",
+                                        width: 180,
+                                      },
+                                      {
+                                        title: "Snapshot",
+                                        width: 100,
+                                        render: (_, row) =>
+                                          formatQty(row.snapshot_qty),
+                                      },
+                                      {
+                                        title: "Net move",
+                                        width: 100,
+                                        render: (_, row) =>
+                                          varianceTag(
+                                            row.net_movement_after_snapshot ??
+                                              0,
+                                          ),
+                                      },
+                                      {
+                                        title: "Expected",
+                                        width: 110,
+                                        render: (_, row) =>
+                                          formatQty(
+                                            row.expected_at_count ??
+                                              row.expected_qty,
+                                          ),
+                                      },
+                                      {
+                                        title: "Actual",
+                                        dataIndex: "actual_qty",
+                                        width: 100,
+                                        render: formatQty,
+                                      },
+                                      {
+                                        title: "Variance",
+                                        dataIndex: "variance",
+                                        width: 110,
+                                        render: varianceTag,
+                                      },
+                                      {
+                                        title: "Movement",
+                                        width: 120,
+                                        render: (_, row) =>
+                                          row.movement_warning_count ? (
+                                            <Tag color="orange">
+                                              {row.movement_warning_count} cảnh
+                                              báo
+                                            </Tag>
+                                          ) : (
+                                            <Tag>Ổn</Tag>
+                                          ),
+                                      },
+                                      {
+                                        title: "Disposition",
+                                        dataIndex: "reconcile_status",
+                                        width: 130,
+                                        render: statusTag,
+                                      },
+                                    ]}
+                                  />
+                                  <Button
+                                    type="primary"
+                                    icon={<CheckCircleOutlined />}
+                                    disabled={!canApplySession}
+                                    loading={submitting}
+                                    onClick={confirmApply}
+                                  >
+                                    Apply adjustment
+                                  </Button>
+                                  {!canApply ? (
+                                    <Alert
+                                      type="warning"
+                                      showIcon
+                                      message="Thiếu quyền stocktake.apply"
+                                      description="Route chỉ yêu cầu stocktake.count; action ảnh hưởng tồn kho cần permission apply/manage theo matrix."
+                                    />
+                                  ) : null}
+                                  {applyResult ? (
+                                    <Alert
+                                      type={
+                                        applyResult.status === "FAILED"
+                                          ? "error"
+                                          : "success"
+                                      }
+                                      showIcon
+                                      message={`Kết quả apply: ${applyResult.status}`}
+                                      description={`Adjusted lines: ${applyResult.adjusted_lines}; total variance: ${applyResult.total_variance}; errors: ${applyResult.errors?.length ?? 0}`}
+                                    />
+                                  ) : null}
+                                </Space>
+                              ),
+                            },
+                          ]}
+                        />
+                      </Space>
+                    ) : (
+                      <Alert
+                        type="info"
+                        showIcon
+                        message="Chọn một phiên để nhập đếm, review variance và apply adjustment"
+                      />
+                    )}
+                  </Card>
+                </Col>
+              </Row>
             ),
           },
           {
-            key: 'workspace',
-            label: 'Workspace đếm & variance',
+            key: "snapshots",
+            label: "Tồn chụp",
             children: (
-              <div>
-                <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
-                  <Space>
-                    <Input.Search placeholder="⌁ Scan batch / nhập số đếm..." style={{ width: 285 }} />
-                    <Button type="primary" icon={<ExperimentOutlined />}>Demo máy quét</Button>
-                    <Select placeholder="Chỉ variance" style={{ width: 125 }} allowClear />
-                  </Space>
-                  <Button>Kết thúc đếm</Button>
-                </div>
-                <Table dataSource={mockCountLines} columns={lineColumns} rowKey="id" pagination={false} size="small" />
-                <div style={{ marginTop: 12, background: '#eaf1f8', border: '1px dashed #bcd2e6', borderRadius: 4, padding: 10, fontSize: 12.5, color: '#314e68' }}>
-                  <b>Công thức hiển thị:</b> expected_at_count = snapshot_qty + net_movement_after_snapshot_to_count_cutoff; variance_to_apply = actual_qty - expected_at_count.
-                </div>
-              </div>
+              <>
+                <InlineApiError
+                  error={error}
+                  title="Không thể tải tồn chụp"
+                  onRetry={retry}
+                />
+                <Table
+                  dataSource={snapshots}
+                  rowKey="id"
+                  loading={loading}
+                  pagination={{ pageSize: 10 }}
+                  scroll={{ x: 760 }}
+                  locale={{
+                    emptyText: tableEmptyText(error, "Chưa có tồn chụp"),
+                  }}
+                  columns={[
+                    { title: "SKU", dataIndex: "sku" },
+                    { title: "Tên SKU", dataIndex: "sku_name" },
+                    {
+                      title: "SL kỳ vọng",
+                      dataIndex: "expected_qty",
+                      render: formatQty,
+                    },
+                    {
+                      title: "SL tồn chụp",
+                      dataIndex: "snapshot_qty",
+                      render: formatQty,
+                    },
+                    { title: "Vị trí", dataIndex: "location_hint" },
+                  ]}
+                />
+              </>
             ),
           },
         ]}
       />
+      <Modal
+        title="Tạo phiên kiểm kê"
+        open={createOpen}
+        onCancel={() => setCreateOpen(false)}
+        onOk={handleCreate}
+        okText="Tạo và chụp snapshot"
+        cancelText="Hủy"
+        confirmLoading={submitting}
+        width={720}
+      >
+        <Alert
+          type="warning"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message="FE không khóa tồn kho"
+          description="Khi tạo phiên, backend là authority chụp snapshot/stocktake_started_at và xử lý duplicate/open-session rule."
+        />
+        <Form
+          form={form}
+          layout="vertical"
+          initialValues={{ scope_type: "FULL_WAREHOUSE" }}
+        >
+          <Row gutter={12}>
+            <Col xs={24} md={12}>
+              <Form.Item
+                name="name"
+                label="Tên phiên"
+                rules={[{ required: true }]}
+              >
+                <Input placeholder="VD: Kiểm kê cuối tháng 08" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={12}>
+              <Form.Item
+                name="warehouse_id"
+                label="Kho"
+                rules={[{ required: true }]}
+              >
+                <InputNumber
+                  min={1}
+                  style={{ width: "100%" }}
+                  placeholder="warehouse_id"
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={12}>
+              <Form.Item
+                name="scope_type"
+                label="Scope"
+                rules={[{ required: true }]}
+              >
+                <Select options={scopeOptions} />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={12}>
+              <Form.Item noStyle shouldUpdate>
+                {({ getFieldValue }) => {
+                  const scope = getFieldValue("scope_type");
+                  if (scope === "SKU") {
+                    return (
+                      <Form.Item
+                        name="sku_codes"
+                        label="SKU"
+                        rules={[{ required: true }]}
+                      >
+                        <Input placeholder="SKU001, SKU002" />
+                      </Form.Item>
+                    );
+                  }
+                  if (scope === "SKU_GROUP") {
+                    return (
+                      <Form.Item
+                        name="group_code"
+                        label="Nhóm SKU"
+                        rules={[{ required: true }]}
+                      >
+                        <Input placeholder="GROUP-A" />
+                      </Form.Item>
+                    );
+                  }
+                  if (scope === "LOCATION") {
+                    return (
+                      <Form.Item
+                        name="location_code"
+                        label="Vị trí"
+                        rules={[{ required: true }]}
+                      >
+                        <Input placeholder="A-01-01" />
+                      </Form.Item>
+                    );
+                  }
+                  return null;
+                }}
+              </Form.Item>
+            </Col>
+            <Col xs={24}>
+              <Form.Item name="notes" label="Ghi chú">
+                <Input.TextArea rows={3} />
+              </Form.Item>
+            </Col>
+          </Row>
+        </Form>
+      </Modal>
     </div>
   );
 }

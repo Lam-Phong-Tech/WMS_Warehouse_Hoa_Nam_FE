@@ -1,7 +1,7 @@
-import type { ReactNode } from 'react';
-import type { Control, FieldValues, Path } from 'react-hook-form';
-import { InputNumber } from 'antd';
-import { FormField } from '@/shared/components/forms/FormField';
+import type { ReactNode } from "react";
+import type { Control, FieldValues, Path } from "react-hook-form";
+import { InputNumber } from "antd";
+import { FormField } from "@/shared/components/forms/FormField";
 
 export interface FormNumberProps<T extends FieldValues> {
   control: Control<T>;
@@ -13,7 +13,7 @@ export interface FormNumberProps<T extends FieldValues> {
   step?: number;
   addonAfter?: ReactNode;
   disabled?: boolean;
-  size?: 'small' | 'middle' | 'large';
+  size?: "small" | "middle" | "large";
 }
 
 /** Ô nhập số tích hợp react-hook-form. */
@@ -27,7 +27,7 @@ export function FormNumber<T extends FieldValues>({
   step,
   addonAfter,
   disabled = false,
-  size = 'large',
+  size = "large",
 }: FormNumberProps<T>) {
   return (
     <FormField control={control} name={name} label={label}>
@@ -41,7 +41,7 @@ export function FormNumber<T extends FieldValues>({
           addonAfter={addonAfter}
           disabled={disabled}
           size={size}
-          style={{ width: '100%' }}
+          style={{ width: "100%" }}
           autoComplete="off"
         />
       )}

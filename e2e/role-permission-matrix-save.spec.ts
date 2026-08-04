@@ -17,6 +17,12 @@ const ADMIN_PASS = process.env.QA_ADMIN_PASSWORD ?? 'password_placeholder';
 const TARGET_PERMISSION_CODE = 'TASK_CREATE';
 
 test.describe('Role Permission Matrix — Save & Effective', () => {
+  test.skip(
+    ADMIN_USER === 'admin@placeholder.test' ||
+      ADMIN_PASS === 'password_placeholder',
+    'Requires QA_ADMIN_EMAIL and QA_ADMIN_PASSWORD against a real QA backend.',
+  );
+
   test.beforeEach(async ({ page }) => {
     await page.goto(`${BASE_URL}/login`);
     await page.fill('input[name="email"]', ADMIN_USER);

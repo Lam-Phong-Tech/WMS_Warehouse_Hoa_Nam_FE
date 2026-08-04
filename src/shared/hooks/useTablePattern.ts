@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export interface TableFilters {
   [key: string]: string | number | boolean | string[] | undefined;
@@ -6,7 +6,7 @@ export interface TableFilters {
 
 export interface TableSort {
   field: string;
-  order: 'asc' | 'desc';
+  order: "asc" | "desc";
 }
 
 export interface UseTablePatternOptions {
@@ -89,7 +89,7 @@ export function useTablePattern(
   options: UseTablePatternOptions = {},
 ): UseTablePatternReturn {
   const {
-    initialSearch = '',
+    initialSearch = "",
     initialFilters = {},
     initialPageSize = 10,
     searchDebounceMs = 400,

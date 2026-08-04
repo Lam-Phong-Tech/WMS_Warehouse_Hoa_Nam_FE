@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react';
-import { Layout } from 'antd';
+import type { ReactNode } from "react";
+import { Layout } from "antd";
 
 const { Sider } = Layout;
 

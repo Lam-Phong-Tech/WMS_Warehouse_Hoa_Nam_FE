@@ -1,15 +1,15 @@
-import { render, screen } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ProtectedRoute } from '@/app/router/ProtectedRoute';
-import { useAuthStore } from '@/shared/store/auth.store';
-import { ROUTES } from '@/shared/constants/routes';
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { ProtectedRoute } from "@/app/router/ProtectedRoute";
+import { useAuthStore } from "@/shared/store/auth.store";
+import { ROUTES } from "@/shared/constants/routes";
 
-// useMe() gọi thật GET /auth/me qua React Query — không liên quan tới điều
-// P1.3 muốn khoá lại (3 trạng thái của ProtectedRoute), nên mock để test
-// không phụ thuộc network.
-vi.mock('@/modules/auth/hooks/use-me', () => ({
-  useMe: () => ({ data: undefined, isError: false }),
+const useMeMock = vi.hoisted(() => vi.fn());
+
+vi.mock("@/modules/auth/hooks/use-me", () => ({
+  useMe: useMeMock,
 }));
 
 function renderProtectedRoute() {
@@ -25,38 +25,63 @@ function renderProtectedRoute() {
   );
 }
 
-describe('ProtectedRoute', () => {
+describe("ProtectedRoute", () => {
   beforeEach(() => {
     useAuthStore.getState().logout();
-    // Trong app thật, main.tsx set true sau khi rehydrate cookie xong (P2).
-    // Test giả lập bootstrap đã xong để kiểm 3 trạng thái auth/profile như cũ.
     useAuthStore.setState({ isBootstrapped: true });
+    useMeMock.mockReturnValue({
+      data: undefined,
+      error: null,
+      isError: false,
+      refetch: vi.fn(),
+    });
   });
 
-  it('chưa bootstrap xong (rehydrate cookie chưa resolve) → hiện Loading, không redirect nhầm', () => {
+  it("not bootstrapped -> shows loading and does not redirect", () => {
     useAuthStore.setState({ isBootstrapped: false, isAuthenticated: false });
     renderProtectedRoute();
-    expect(screen.queryByText('Login Page')).not.toBeInTheDocument();
-    expect(screen.queryByText('Org Units Page')).not.toBeInTheDocument();
+    expect(screen.queryByText("Login Page")).not.toBeInTheDocument();
+    expect(screen.queryByText("Org Units Page")).not.toBeInTheDocument();
   });
 
-  it('chưa đăng nhập → redirect về /login', () => {
+  it("anonymous -> redirects to /login", () => {
     useAuthStore.setState({ isAuthenticated: false });
     renderProtectedRoute();
-    expect(screen.getByText('Login Page')).toBeInTheDocument();
-    expect(screen.queryByText('Org Units Page')).not.toBeInTheDocument();
+    expect(screen.getByText("Login Page")).toBeInTheDocument();
+    expect(screen.queryByText("Org Units Page")).not.toBeInTheDocument();
   });
 
-  it('đã đăng nhập nhưng chưa nạp profile (F5) → hiện Loading, chưa render Outlet', () => {
+  it("authenticated but profile is not loaded -> shows loading, no Outlet", () => {
     useAuthStore.setState({ isAuthenticated: true, isProfileLoaded: false });
     renderProtectedRoute();
-    expect(screen.queryByText('Org Units Page')).not.toBeInTheDocument();
-    expect(screen.queryByText('Login Page')).not.toBeInTheDocument();
+    expect(screen.queryByText("Org Units Page")).not.toBeInTheDocument();
+    expect(screen.queryByText("Login Page")).not.toBeInTheDocument();
   });
 
-  it('đã đăng nhập + đã nạp profile → render Outlet', () => {
+  it("/auth/me error before profile load -> fail-closed with retry, no Outlet", async () => {
+    const refetch = vi.fn();
+    useMeMock.mockReturnValue({
+      data: undefined,
+      error: new Error("GET /auth/me failed"),
+      isError: true,
+      refetch,
+    });
+    useAuthStore.setState({ isAuthenticated: true, isProfileLoaded: false });
+
+    renderProtectedRoute();
+
+    expect(screen.queryByText("Org Units Page")).not.toBeInTheDocument();
+    expect(
+      screen.getByText("Khong the tai ho so va phan quyen"),
+    ).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /Thử lại/u }));
+    expect(refetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("authenticated and profile loaded -> renders Outlet", () => {
     useAuthStore.setState({ isAuthenticated: true, isProfileLoaded: true });
     renderProtectedRoute();
-    expect(screen.getByText('Org Units Page')).toBeInTheDocument();
+    expect(screen.getByText("Org Units Page")).toBeInTheDocument();
   });
 });

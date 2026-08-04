@@ -1,0 +1,6 @@
+{
+  "status": "ok",
+  "service": "wms-hoa-nam-frontend",
+  "component": "frontend",
+  "healthcheck": "static"
+}

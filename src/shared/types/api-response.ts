@@ -1,5 +1,7 @@
 /** Meta phân trang (kèm trong response danh sách). */
 export interface ApiMeta {
+  request_id?: string;
+  timestamp?: string;
   current_page?: number;
   per_page?: number;
   last_page?: number;
@@ -22,7 +24,7 @@ export interface ApiMeta {
  */
 export interface ApiSuccessResponse<T> {
   success?: true;
-  status?: 'success';
+  status?: "success";
   message?: string;
   data: T;
   meta?: ApiMeta;
@@ -55,7 +57,7 @@ export interface ApiSuccessResponse<T> {
  */
 export interface ApiErrorResponse {
   success?: false;
-  status?: 'error';
+  status?: "error";
   message: string;
   error_code?: string;
   errors?: Record<string, string[] | string>;
@@ -107,8 +109,8 @@ export class ApiEnvelopeError extends Error {
   readonly data: ApiErrorResponse;
 
   constructor(data: ApiErrorResponse) {
-    super(data.message ?? 'Yêu cầu không thành công');
-    this.name = 'ApiEnvelopeError';
+    super(data.message ?? "Yêu cầu không thành công");
+    this.name = "ApiEnvelopeError";
     this.data = data;
   }
 }
@@ -124,5 +126,5 @@ export function isErrorEnvelope(
   body: { success?: boolean; status?: string } | null | undefined,
 ): body is ApiErrorResponse {
   if (!body) return false;
-  return body.success === false || body.status === 'error';
+  return body.success === false || body.status === "error";
 }

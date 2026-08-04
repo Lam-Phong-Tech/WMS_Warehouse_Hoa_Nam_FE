@@ -1,10 +1,10 @@
-import { Input } from 'antd';
-import type { InputProps } from 'antd';
-import { SearchOutlined } from '@ant-design/icons';
+import { Input } from "antd";
+import type { InputProps } from "antd";
+import { SearchOutlined } from "@ant-design/icons";
 
 export interface SearchInputProps extends Omit<
   InputProps,
-  'onChange' | 'prefix' | 'allowClear'
+  "onChange" | "prefix" | "allowClear"
 > {
   value?: string;
   onChange?: (value: string) => void;
@@ -20,9 +20,9 @@ export interface SearchInputProps extends Omit<
 export function SearchInput({
   value,
   onChange,
-  placeholder = 'Tìm kiếm...',
+  placeholder = "Tìm kiếm...",
   width = 260,
-  size = 'large',
+  size = "large",
   style,
   ...rest
 }: SearchInputProps) {
@@ -34,7 +34,7 @@ export function SearchInput({
       value={value}
       onChange={(e) => onChange?.(e.target.value)}
       size={size}
-      aria-label={rest['aria-label'] ?? placeholder}
+      aria-label={rest["aria-label"] ?? placeholder}
       style={{ width, ...style }}
       autoComplete="off"
       {...rest}

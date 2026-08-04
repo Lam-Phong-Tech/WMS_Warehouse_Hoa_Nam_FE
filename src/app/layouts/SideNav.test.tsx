@@ -1,15 +1,10 @@
-import { describe, it, expect, afterEach, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
-import { useAuthStore } from '@/shared/store/auth.store';
-import { SideNav } from '@/app/layouts/SideNav';
-
-// Suite này render SideNav THẬT (không chỉ test helper filterMenu như
-// menu.test.tsx) để khoá lại hành vi thực tế người dùng thấy trên màn hình:
-// menu M1/M2/M3 có xuất hiện đúng khi auth store có đủ quyền hay không.
-// menu.test.tsx test riêng filterMenu() là hàm thuần, không phát hiện được
-// lỗi nếu SideNav quên truyền `can` hoặc dùng sai state.
-vi.unmock('@/modules/auth/utils/permission');
+import { afterEach, describe, expect, it } from "vitest";
+import { render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+import { SideNav } from "@/app/layouts/SideNav";
+import { getBreadcrumb, getOpenKeys, getSelectedKey } from "@/app/layouts/menu";
+import { ROUTES } from "@/shared/constants/routes";
+import { useAuthStore } from "@/shared/store/auth.store";
 
 function withPermissions(codes: string[], isSuperAdmin = false) {
   useAuthStore.setState({
@@ -29,7 +24,7 @@ function resetAuthStore() {
   });
 }
 
-function renderSideNav(initialPath = '/org-units') {
+function renderSideNav(initialPath = ROUTES.INBOUND) {
   return render(
     <MemoryRouter initialEntries={[initialPath]}>
       <SideNav />
@@ -37,43 +32,64 @@ function renderSideNav(initialPath = '/org-units') {
   );
 }
 
-const M1_M2_M3_PERMISSIONS = [
-  'ORG_VIEW',
-  'WAREHOUSE_VIEW',
-  'STOCK_RECEIPT_VIEW',
-  'BUSINESS_VIEW',
-  'PRODUCT_VIEW',
-];
-
-describe('SideNav — render thực tế với permission mock', () => {
+describe("SideNav RBAC filtering", () => {
   afterEach(() => {
     resetAuthStore();
   });
 
-  it('hiện đủ Module 1/2/3 khi có quyền *_VIEW tương ứng', () => {
-    withPermissions(M1_M2_M3_PERMISSIONS);
+  it("shows allowed WMS route items when the user has matching permissions", () => {
+    withPermissions([
+      "inbound.create",
+      "outbound.create",
+      "inventory.view",
+      "report.view",
+    ]);
+
     renderSideNav();
 
-    expect(screen.getByText('Module 1 · Tổ chức')).toBeInTheDocument();
-    expect(screen.getByText('Module 2 · Kho')).toBeInTheDocument();
-    expect(screen.getByText('Module 3 · Kinh doanh')).toBeInTheDocument();
+    expect(screen.getByText(/WMS/)).toBeInTheDocument();
+    expect(screen.getByText("Nhập kho")).toBeInTheDocument();
+    expect(screen.getByText("Xuất kho")).toBeInTheDocument();
+    expect(screen.getByText("Tồn & truy vết")).toBeInTheDocument();
+    expect(screen.getByText("Báo cáo")).toBeInTheDocument();
   });
 
-  it('ẩn Module 2 và 3 khi chỉ có quyền M1', () => {
-    withPermissions(['ORG_VIEW']);
+  it("hides routes and groups that the user cannot access", () => {
+    withPermissions(["inbound.create"]);
+
     renderSideNav();
 
-    expect(screen.getByText('Module 1 · Tổ chức')).toBeInTheDocument();
-    expect(screen.queryByText('Module 2 · Kho')).not.toBeInTheDocument();
-    expect(screen.queryByText('Module 3 · Kinh doanh')).not.toBeInTheDocument();
+    expect(screen.getByText(/WMS/)).toBeInTheDocument();
+    expect(screen.getByText("Nhập kho")).toBeInTheDocument();
+    expect(screen.queryByText("Bảo hành")).not.toBeInTheDocument();
+    expect(screen.queryByText("Báo cáo")).not.toBeInTheDocument();
+    expect(screen.getByText("Hệ thống")).toBeInTheDocument();
+    expect(screen.getByText("Component catalog")).toBeInTheDocument();
+    expect(screen.queryByText("Nhật ký kiểm tra")).not.toBeInTheDocument();
   });
 
-  it('Super Admin thấy đủ M1/M2/M3 dù permissionCodes rỗng', () => {
+  it("lets Super Admin see all WMS/System menu items even with no permission codes", () => {
     withPermissions([], true);
+
     renderSideNav();
 
-    expect(screen.getByText('Module 1 · Tổ chức')).toBeInTheDocument();
-    expect(screen.getByText('Module 2 · Kho')).toBeInTheDocument();
-    expect(screen.getByText('Module 3 · Kinh doanh')).toBeInTheDocument();
+    expect(screen.getByText(/WMS/)).toBeInTheDocument();
+    expect(screen.getByText("Bảo hành")).toBeInTheDocument();
+    expect(screen.getByText("Báo cáo")).toBeInTheDocument();
+    expect(screen.getByText("Hệ thống")).toBeInTheDocument();
+    expect(screen.getByText("Nhật ký kiểm tra")).toBeInTheDocument();
+  });
+});
+
+describe("navigation metadata", () => {
+  it("uses one metadata source for selected key, open keys and breadcrumb", () => {
+    expect(getSelectedKey(`${ROUTES.INBOUND}/draft/PO-001`)).toBe(
+      ROUTES.INBOUND,
+    );
+    expect(getOpenKeys(`${ROUTES.INBOUND}/draft/PO-001`)).toEqual(["wms"]);
+    expect(getBreadcrumb(ROUTES.PROFILE)).toEqual([
+      { label: "Tài khoản" },
+      { label: "Hồ sơ cá nhân", path: ROUTES.PROFILE },
+    ]);
   });
 });

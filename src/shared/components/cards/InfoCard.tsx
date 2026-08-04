@@ -1,6 +1,6 @@
-import type { ReactNode } from 'react';
-import { Card } from 'antd';
-import type { CommonProps } from './types';
+import type { ReactNode } from "react";
+import { Card } from "antd";
+import type { CommonProps } from "./types";
 
 export interface InfoCardProps extends CommonProps {
   title?: ReactNode;

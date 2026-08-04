@@ -1,7 +1,7 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import type { AxiosInstance } from 'axios';
-import { api } from '@/shared/api/axios';
+import { useState, useCallback, useRef, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import type { AxiosInstance } from "axios";
+import { api } from "@/shared/api/axios";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -88,10 +88,10 @@ function defaultFilterFn(
 /** Loại bỏ dấu tiếng Việt */
 function removeAccents(str: string): string {
   return str
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/đ/g, 'd')
-    .replace(/Đ/g, 'D');
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D");
 }
 
 // ---------------------------------------------------------------------------
@@ -126,13 +126,13 @@ export function useAutocomplete(
     debounceMs = 300,
     minSearchLength = 1,
     staticOptions,
-    queryKey = 'autocomplete',
+    queryKey = "autocomplete",
     enabled = true,
     transformResponse,
     filterFn = defaultFilterFn,
   } = options;
 
-  const [searchText, setSearchText] = useState('');
+  const [searchText, setSearchText] = useState("");
   const debouncedSearch = useDebounce(searchText, debounceMs);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -140,7 +140,7 @@ export function useAutocomplete(
   useEffect(() => {
     if (!enabled) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setSearchText('');
+      setSearchText("");
     }
   }, [enabled]);
 
@@ -201,7 +201,7 @@ export function useAutocomplete(
   const optionsList = isRemote ? (remoteQuery.data ?? []) : localOptions();
 
   const reset = useCallback(() => {
-    setSearchText('');
+    setSearchText("");
     abortControllerRef.current?.abort();
   }, []);
 

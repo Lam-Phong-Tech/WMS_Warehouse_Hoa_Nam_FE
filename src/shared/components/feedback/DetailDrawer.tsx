@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react';
-import { Drawer, Skeleton } from 'antd';
+import type { ReactNode } from "react";
+import { Drawer, Skeleton } from "antd";
 
 export interface DetailDrawerProps {
   /** Whether the drawer is visible */
@@ -11,7 +11,7 @@ export interface DetailDrawerProps {
   /** Width of the drawer (default: 420) */
   width?: number | string;
   /** Placement of the drawer */
-  placement?: 'left' | 'right' | 'top' | 'bottom';
+  placement?: "left" | "right" | "top" | "bottom";
   /** Loading state - shows skeleton when true */
   loading?: boolean;
   /** Skeleton paragraph rows when loading (default: 6) */
@@ -50,7 +50,7 @@ export function DetailDrawer({
   title,
   onClose,
   width = 420,
-  placement = 'right',
+  placement = "right",
   loading = false,
   skeletonRows = 6,
   extra,

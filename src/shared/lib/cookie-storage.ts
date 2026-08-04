@@ -1,13 +1,13 @@
-import Cookies from 'js-cookie';
-import type { StateStorage } from 'zustand/middleware';
+import Cookies from "js-cookie";
+import type { StateStorage } from "zustand/middleware";
 
 const COOKIE_OPTIONS: Cookies.CookieAttributes = {
   expires: 7, // số ngày cookie tồn tại
-  sameSite: 'Lax',
+  sameSite: "Lax",
   // Chỉ gửi qua HTTPS khi đang chạy production (https)
   secure:
-    typeof window !== 'undefined' && window.location.protocol === 'https:',
-  path: '/',
+    typeof window !== "undefined" && window.location.protocol === "https:",
+  path: "/",
 };
 
 /**
@@ -20,6 +20,6 @@ export const cookieStorage: StateStorage = {
     Cookies.set(name, value, COOKIE_OPTIONS);
   },
   removeItem: (name) => {
-    Cookies.remove(name, { path: '/' });
+    Cookies.remove(name, { path: "/" });
   },
 };

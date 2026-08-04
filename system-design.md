@@ -1,9 +1,8 @@
-# Review Guidelines & System Design
+# Hướng dẫn Đánh giá & Thiết kế Hệ thống
 
-Repo Agent reads this file before every code review and flags any change that
-violates the rules below (it cites the rule it broke).
+Repo Agent đọc file này trước mọi đánh giá code và gắn cờ bất kỳ thay đổi nào vi phạm các quy tắc dưới đây (nó trích dẫn quy tắc đã vi phạm).
 
-## System design / architecture
+## Thiết kế hệ thống / kiến trúc
 
 React 19 + TypeScript + Vite SPA (ERP admin). Chi tiết đầy đủ ở
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md); tóm tắt các ràng buộc mà reviewer
@@ -27,20 +26,20 @@ cần soi:
   suy đoán/tạo mã quyền mới theo prefix/heuristic.
 - Import alias `@/` trỏ tới `src/`.
 
-## Review rules
+## Quy tắc đánh giá
 
-- **No debug output**: không `console.log` trong code commit — dùng cách xử lý
+- **Không debug output**: không `console.log` trong code commit — dùng cách xử lý
   lỗi/log đã có trong `shared/api/api-error.ts` hoặc toast (`sonner`).
-- **Error handling**: mọi call API qua react-query mutation/query phải xử lý
+- **Xử lý lỗi**: mọi call API qua react-query mutation/query phải xử lý
   `isError`/`onError` và hiển thị lỗi qua `getApiErrorMessage` — không nuốt lỗi.
-- **Naming**: hàm là động từ, type/interface là PascalCase noun; theo đúng style
+- **Đặt tên**: hàm là động từ, type/interface là PascalCase noun; theo đúng style
   file xung quanh (đã có ESLint + Prettier + Husky pre-commit).
-- **Tests**: hàm helper thuần (không phụ thuộc DOM/API) khi thêm mới hoặc sửa
+- **Kiểm thử**: hàm helper thuần (không phụ thuộc DOM/API) khi thêm mới hoặc sửa
   logic quan trọng (vd matching, validation, mapping) nên có test Vitest đi kèm.
-- **No secrets**: không hardcode API key/token; dùng biến môi trường (`import.meta.env`).
-- **Permission matching phải strict**: không thêm lại kiểu match theo
+- **Không secrets**: không hardcode API key/token; dùng biến môi trường (`import.meta.env`).
+- **So khớp quyền phải strict**: không thêm lại kiểu match theo
   prefix/action-word (heuristic fallback) cho permission code — chỉ so khớp
   chính xác với catalog đã khai báo tĩnh.
-- **Docs đồng bộ**: khi đổi endpoint path/method hoặc permission code, cập nhật
+- **Đồng bộ tài liệu**: khi đổi endpoint path/method hoặc permission code, cập nhật
   cùng lúc `docs/api-evidence/*.md` và `docs/ARCHITECTURE.md`/`README.md` liên
   quan trong cùng PR — không để lệch tài liệu vs code.

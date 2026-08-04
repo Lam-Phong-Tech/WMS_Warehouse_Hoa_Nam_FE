@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "1.0.0",
+  "capturedFromSourceSha": "5cd10ec46021cecd24949075cb4eeefaa1fcc9b2",
+  "capturedFromCiRun": 30875821616,
+  "policy": "Read-only gate: no new Prettier drift is allowed. A listed file is tolerated only while its Git blob still starts with the captured prefix. Cleaning a listed file is allowed without changing this baseline.",
+  "owner": "FE1",
+  "cleanupTask": "WWHN-153-P2-FORMAT-DEBT",
+  "knownDebt": [
+    { "path": "src/app/router/ProtectedRoute.tsx", "blobPrefix": "32fe827" },
+    { "path": "src/modules/auth/services/auth.service.ts", "blobPrefix": "57a6c08" },
+    { "path": "src/modules/master-data/hooks/use-master-data.ts", "blobPrefix": "babcd1f" },
+    { "path": "src/modules/master-data/pages/MasterPage.tsx", "blobPrefix": "6bbaa87" },
+    { "path": "src/modules/master-data/services/master-data.service.test.ts", "blobPrefix": "99be3b7" },
+    { "path": "src/modules/master-data/services/master-data.service.ts", "blobPrefix": "74fb3f9" },
+    { "path": "src/modules/master-data/services/warehouse.service.ts", "blobPrefix": "9301d9c" },
+    { "path": "src/modules/putaway/pages/PutawayPage.tsx", "blobPrefix": "c3cb934" },
+    { "path": "src/modules/putaway/services/putawayService.ts", "blobPrefix": "755833f" },
+    { "path": "src/test/auth-security-rbac-audit.test.ts", "blobPrefix": "bc0244c" }
+  ]
+}

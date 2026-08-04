@@ -1,4 +1,4 @@
-import { QueryClient } from '@tanstack/react-query';
+import { QueryClient } from "@tanstack/react-query";
 
 // Tách riêng khỏi query-provider.tsx (chỉ export component) — gộp chung sẽ
 // vi phạm react-refresh/only-export-components (file export cả component lẫn

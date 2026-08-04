@@ -1,8 +1,11 @@
-import { Navigate, Outlet, useLocation } from 'react-router-dom';
-import { useMe } from '@/modules/auth/hooks/use-me';
-import { Loading } from '@/shared/components/feedback/Loading';
-import { ROUTES } from '@/shared/constants/routes';
-import { useAuthStore } from '@/shared/store/auth.store';
+import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { isAxiosError } from "axios";
+import { useMe } from "@/modules/auth/hooks/use-me";
+import { Loading } from "@/shared/components/feedback/Loading";
+import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
+import { ROUTES } from "@/shared/constants/routes";
+import { useAuthStore } from "@/shared/store/auth.store";
+import { getErrorCode, type ApiErrorResponse } from "@/shared/types/api-response";
 
 /**
  * Auth route guard:
@@ -16,12 +19,34 @@ export function ProtectedRoute() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const isProfileLoaded = useAuthStore((s) => s.isProfileLoaded);
 
-  useMe();
+  const meQuery = useMe();
 
   if (!isBootstrapped) return <Loading />;
 
   if (!isAuthenticated) {
     return <Navigate to={ROUTES.LOGIN} replace state={{ from: location }} />;
+  }
+
+  if (!isProfileLoaded && meQuery.isError) {
+    if (
+      isAxiosError<ApiErrorResponse>(meQuery.error) &&
+      meQuery.error.response?.status === 403 &&
+      getErrorCode(meQuery.error.response.data) === "PASSWORD_CHANGE_REQUIRED"
+    ) {
+      return <Navigate to={ROUTES.CHANGE_PASSWORD} replace />;
+    }
+
+    return (
+      <div style={{ margin: "48px auto", maxWidth: 720, padding: 24 }}>
+        <ApiErrorAlert
+          error={meQuery.error}
+          title="Khong the tai ho so va phan quyen"
+          onRetry={() => {
+            void meQuery.refetch();
+          }}
+        />
+      </div>
+    );
   }
 
   if (!isProfileLoaded) return <Loading />;

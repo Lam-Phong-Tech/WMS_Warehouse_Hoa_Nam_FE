@@ -1,6 +1,6 @@
 :root {
   font-family:
-    'Inter', system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    "Inter", system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -25,7 +25,7 @@ body,
 
 /* Toast (sonner): khi ẩn/kéo xuống thì trượt xuống dưới thay vì lên trên */
 .app-toaster
-  [data-sonner-toast][data-y-position='top'][data-removed='true'][data-swipe-out='false'] {
+  [data-sonner-toast][data-y-position="top"][data-removed="true"][data-swipe-out="false"] {
   --y: translateY(100%) !important;
 }
 
@@ -155,11 +155,165 @@ body,
 /* Phân trang bảng: "Tổng ... bản ghi" ở góc trái, điều hướng trang ở góc phải */
 .ant-table-pagination.ant-pagination {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   width: 100%;
 }
 .ant-table-pagination .ant-pagination-total-text {
-  margin-right: 0;
+  margin-right: auto;
   order: -1;
+}
+
+.hn-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: space-between;
+  align-items: center;
+  min-width: 0;
+}
+
+.hn-filter-bar__controls,
+.hn-filter-bar__actions {
+  min-width: 0;
+}
+
+.hn-filter-bar__controls {
+  flex: 1 1 360px;
+}
+
+.hn-filter-bar__actions {
+  flex: 0 1 auto;
+  justify-content: flex-end;
+}
+
+.hn-data-table {
+  min-width: 0;
+  width: 100%;
+}
+
+.hn-data-table .ant-table-wrapper,
+.hn-data-table .ant-table-container,
+.hn-data-table .ant-table-content {
+  min-width: 0;
+}
+
+.hn-data-table .ant-table-cell {
+  overflow-wrap: anywhere;
+}
+
+.hn-form-actions,
+.hn-modal-footer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.hn-drawer-footer-actions {
+  background: inherit;
+}
+
+.hn-modal-footer-actions .ant-btn,
+.hn-form-actions .ant-btn {
+  min-width: 96px;
+}
+
+.table-page-size {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 12px;
+}
+
+.master-data-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.master-data-page .page-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.master-data-page .page-heading h1 {
+  margin: 0;
+  color: #152033;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.master-data-page .page-heading p {
+  margin: 4px 0 0;
+  color: #64748b;
+}
+
+.master-data-page .trace-alert,
+.master-data-page .filter-row,
+.master-data-page .table-search {
+  margin-bottom: 16px;
+}
+
+.master-data-page .full-width {
+  width: 100%;
+}
+
+.master-data-page .font-mono {
+  font-family: "Cascadia Code", Consolas, "Courier New", monospace;
+}
+
+@media (max-width: 768px) {
+  .master-data-page .page-heading {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 576px) {
+  .hn-filter-bar,
+  .hn-filter-bar__controls,
+  .hn-filter-bar__actions {
+    width: 100%;
+  }
+
+  .hn-filter-bar__controls .ant-space-item,
+  .hn-filter-bar__actions .ant-space-item,
+  .hn-filter-bar__controls .ant-input-affix-wrapper,
+  .hn-filter-bar__controls .ant-picker,
+  .hn-filter-bar__controls .ant-select,
+  .hn-filter-bar__controls .ant-btn {
+    width: 100%;
+  }
+
+  .hn-filter-bar__actions .ant-btn {
+    min-width: 0;
+  }
+
+  .hn-data-table .ant-pagination {
+    row-gap: 8px;
+  }
+
+  .hn-data-table .ant-pagination-total-text {
+    flex-basis: 100%;
+    margin-right: 0;
+  }
+
+  .ant-modal {
+    max-width: calc(100vw - 24px);
+  }
+
+  .ant-drawer-content-wrapper {
+    max-width: 100vw;
+  }
+
+  .hn-form-actions,
+  .hn-modal-footer-actions {
+    flex-direction: column-reverse;
+  }
+
+  .hn-form-actions .ant-btn,
+  .hn-modal-footer-actions .ant-btn {
+    width: 100%;
+  }
 }

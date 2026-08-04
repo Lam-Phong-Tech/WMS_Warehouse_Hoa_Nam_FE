@@ -6,6 +6,7 @@
 
 // Lưu token trong biến toàn cục (memory-only)
 let accessToken: string | null = null;
+let refreshToken: string | null = null;
 
 export const memoryStorage = {
   getItem: (): string | null => {
@@ -25,6 +26,7 @@ export const memoryStorage = {
    */
   clear: (): void => {
     accessToken = null;
+    refreshToken = null;
   },
 
   /**
@@ -32,5 +34,17 @@ export const memoryStorage = {
    */
   getToken: (): string | null => {
     return accessToken;
+  },
+
+  getRefreshToken: (): string | null => {
+    return refreshToken;
+  },
+
+  setRefreshToken: (value: string): void => {
+    refreshToken = value;
+  },
+
+  removeRefreshToken: (): void => {
+    refreshToken = null;
   },
 };

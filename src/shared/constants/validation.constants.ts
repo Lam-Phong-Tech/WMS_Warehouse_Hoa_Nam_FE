@@ -21,35 +21,35 @@ export const EMAIL_LOCAL_PART_MAX_LENGTH = 64;
  * Common email provider domains for typo detection
  */
 export const COMMON_EMAIL_DOMAINS = [
-  'gmail.com',
-  'yahoo.com',
-  'hotmail.com',
-  'outlook.com',
-  'live.com',
-  'msn.com',
-  'aol.com',
-  'icloud.com',
-  'mail.com',
-  'protonmail.com',
-  'yandex.com',
-  'zoho.com',
-  'company.com.vn',
-  'company.vn',
+  "gmail.com",
+  "yahoo.com",
+  "hotmail.com",
+  "outlook.com",
+  "live.com",
+  "msn.com",
+  "aol.com",
+  "icloud.com",
+  "mail.com",
+  "protonmail.com",
+  "yandex.com",
+  "zoho.com",
+  "company.com.vn",
+  "company.vn",
 ] as const;
 
 /**
  * Common typos mapping for email domains
  */
 export const EMAIL_DOMAIN_TYPOS: Record<string, string> = {
-  'gmai.com': 'gmail.com',
-  'gmal.com': 'gmail.com',
-  'gamil.com': 'gmail.com',
-  'yahooo.com': 'yahoo.com',
-  'yaho.com': 'yahoo.com',
-  'hotmial.com': 'hotmail.com',
-  'hotmai.com': 'hotmail.com',
-  'outloo.com': 'outlook.com',
-  'outlok.com': 'outlook.com',
+  "gmai.com": "gmail.com",
+  "gmal.com": "gmail.com",
+  "gamil.com": "gmail.com",
+  "yahooo.com": "yahoo.com",
+  "yaho.com": "yahoo.com",
+  "hotmial.com": "hotmail.com",
+  "hotmai.com": "hotmail.com",
+  "outloo.com": "outlook.com",
+  "outlok.com": "outlook.com",
 };
 
 // ---------------------------------------------------------------------------
@@ -68,7 +68,7 @@ export const PHONE_REGEX = /^(03|05|07|08|09)[0-9]{8}$/;
 /**
  * Đầu số di động hợp lệ (2 chữ số đầu, sau đầu số 0)
  */
-export const VALID_MOBILE_PREFIXES = ['03', '05', '07', '08', '09'] as const;
+export const VALID_MOBILE_PREFIXES = ["03", "05", "07", "08", "09"] as const;
 
 export const PHONE_MAX_LENGTH = 10;
 export const PHONE_MIN_LENGTH = 10;
@@ -92,7 +92,7 @@ export function validateEmail(email: string): ValidationResult {
 
   // Check length
   if (trimmedEmail.length === 0) {
-    return { isValid: false, errorMessage: 'Email không được để trống' };
+    return { isValid: false, errorMessage: "Email không được để trống" };
   }
 
   if (trimmedEmail.length > EMAIL_MAX_LENGTH) {
@@ -103,7 +103,7 @@ export function validateEmail(email: string): ValidationResult {
   }
 
   // Check local part length
-  const atIndex = trimmedEmail.indexOf('@');
+  const atIndex = trimmedEmail.indexOf("@");
   if (atIndex > EMAIL_LOCAL_PART_MAX_LENGTH) {
     return {
       isValid: false,
@@ -112,19 +112,19 @@ export function validateEmail(email: string): ValidationResult {
   }
 
   // Check for consecutive dots
-  if (trimmedEmail.includes('..')) {
+  if (trimmedEmail.includes("..")) {
     return {
       isValid: false,
-      errorMessage: 'Email không được chứa dấu chấm liên tiếp',
+      errorMessage: "Email không được chứa dấu chấm liên tiếp",
     };
   }
 
   // Check for leading/trailing dots in local part
   const localPart = trimmedEmail.slice(0, atIndex);
-  if (localPart.startsWith('.') || localPart.endsWith('.')) {
+  if (localPart.startsWith(".") || localPart.endsWith(".")) {
     return {
       isValid: false,
-      errorMessage: 'Email không được bắt đầu hoặc kết thúc bằng dấu chấm',
+      errorMessage: "Email không được bắt đầu hoặc kết thúc bằng dấu chấm",
     };
   }
 
@@ -132,7 +132,7 @@ export function validateEmail(email: string): ValidationResult {
   if (!EMAIL_REGEX.test(trimmedEmail)) {
     return {
       isValid: false,
-      errorMessage: 'Email không hợp lệ, chỉ chấp nhận địa chỉ @gmail.com',
+      errorMessage: "Email không hợp lệ, chỉ chấp nhận địa chỉ @gmail.com",
     };
   }
 
@@ -145,13 +145,13 @@ export function validateEmail(email: string): ValidationResult {
  */
 export function validatePhone(phone: string): ValidationResult {
   // Remove common formatting characters
-  const cleanedPhone = phone.replace(/[\s\-().]/g, '');
+  const cleanedPhone = phone.replace(/[\s\-().]/g, "");
 
   // Check length
   if (cleanedPhone.length === 0) {
     return {
       isValid: false,
-      errorMessage: 'Số điện thoại không được để trống',
+      errorMessage: "Số điện thoại không được để trống",
     };
   }
 
@@ -167,7 +167,7 @@ export function validatePhone(phone: string): ValidationResult {
     return {
       isValid: false,
       errorMessage:
-        'Số điện thoại không hợp lệ (định dạng: 0xxxxxxxxx, đầu số 03/05/07/08/09)',
+        "Số điện thoại không hợp lệ (định dạng: 0xxxxxxxxx, đầu số 03/05/07/08/09)",
     };
   }
 
@@ -178,7 +178,7 @@ export function validatePhone(phone: string): ValidationResult {
  * Normalize phone number to standard format (0xxxxxxxxx)
  */
 export function normalizePhone(phone: string): string {
-  return phone.replace(/[\s\-().]/g, '');
+  return phone.replace(/[\s\-().]/g, "");
 }
 
 /**

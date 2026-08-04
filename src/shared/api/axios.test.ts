@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 /**
  * Test riêng cho response interceptor trong axios.ts (401/403/422/409),
@@ -16,7 +16,7 @@ const { logoutMock, clearStorageMock, setStateMock } = vi.hoisted(() => ({
   setStateMock: vi.fn(),
 }));
 
-vi.mock('@/shared/store/auth.store', () => ({
+vi.mock("@/shared/store/auth.store", () => ({
   useAuthStore: {
     getState: () => ({ logout: logoutMock }),
     persist: { clearStorage: clearStorageMock },
@@ -25,16 +25,21 @@ vi.mock('@/shared/store/auth.store', () => ({
 }));
 
 const { memoryStorageMock } = vi.hoisted(() => ({
-  memoryStorageMock: { getToken: vi.fn(() => null), setItem: vi.fn() },
+  memoryStorageMock: {
+    getToken: vi.fn(() => null),
+    getRefreshToken: vi.fn<() => string | null>(() => null),
+    setItem: vi.fn(),
+    setRefreshToken: vi.fn(),
+  },
 }));
 
-vi.mock('@/shared/lib/memory-storage', () => ({
+vi.mock("@/shared/lib/memory-storage", () => ({
   memoryStorage: memoryStorageMock,
 }));
 
-import { api } from '@/shared/api/axios';
-import { ROUTES } from '@/shared/constants/routes';
-import { API_ENDPOINTS } from '@/shared/api/endpoints';
+import { api } from "@/shared/api/axios";
+import { ROUTES } from "@/shared/constants/routes";
+import { API_ENDPOINTS } from "@/shared/api/endpoints";
 
 function getRejectedHandler() {
   const handlers = (
@@ -43,7 +48,7 @@ function getRejectedHandler() {
     }
   ).handlers;
   const handler = handlers.find((h) => h?.rejected);
-  if (!handler) throw new Error('Không tìm thấy response interceptor');
+  if (!handler) throw new Error("Không tìm thấy response interceptor");
   return handler.rejected;
 }
 
@@ -60,19 +65,23 @@ function makeError(status: number, data: unknown = {}) {
   };
 }
 
-describe('axios response interceptor', () => {
+describe("axios response interceptor", () => {
   const originalLocation = window.location;
 
   beforeEach(() => {
     logoutMock.mockReset();
     clearStorageMock.mockReset();
-    Object.defineProperty(window, 'location', {
+    Object.defineProperty(window, "location", {
       configurable: true,
-      value: { ...originalLocation, pathname: '/employees', assign: vi.fn() },
+      value: { ...originalLocation, pathname: "/employees", assign: vi.fn() },
     });
   });
 
-  it('401: logout, clear storage, redirect về /login', async () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("401: logout, clear storage, redirect về /login", async () => {
     const rejected = getRejectedHandler();
     const error = makeError(401);
 
@@ -82,8 +91,8 @@ describe('axios response interceptor', () => {
     expect(window.location.assign).toHaveBeenCalledWith(ROUTES.LOGIN);
   });
 
-  it('401: không redirect lặp nếu đã ở /login', async () => {
-    Object.defineProperty(window, 'location', {
+  it("401: không redirect lặp nếu đã ở /login", async () => {
+    Object.defineProperty(window, "location", {
       configurable: true,
       value: { ...originalLocation, pathname: ROUTES.LOGIN, assign: vi.fn() },
     });
@@ -94,36 +103,36 @@ describe('axios response interceptor', () => {
     expect(window.location.assign).not.toHaveBeenCalled();
   });
 
-  it('403 thường: đánh dấu _isNoPermission, không redirect', async () => {
+  it("403 thường: đánh dấu _isNoPermission, không redirect", async () => {
     const rejected = getRejectedHandler();
-    const error = makeError(403, { message: 'Không có quyền' });
+    const error = makeError(403, { message: "Không có quyền" });
 
     await expect(rejected(error)).rejects.toBe(error);
     expect(error._isNoPermission).toBe(true);
     expect(window.location.assign).not.toHaveBeenCalled();
   });
 
-  it('403 PASSWORD_CHANGE_REQUIRED (root-level error_code): redirect /change-password, không đánh dấu _isNoPermission', async () => {
+  it("403 PASSWORD_CHANGE_REQUIRED (root-level error_code): redirect /change-password, không đánh dấu _isNoPermission", async () => {
     const rejected = getRejectedHandler();
-    const error = makeError(403, { error_code: 'PASSWORD_CHANGE_REQUIRED' });
+    const error = makeError(403, { error_code: "PASSWORD_CHANGE_REQUIRED" });
 
     await expect(rejected(error)).rejects.toBe(error);
     expect(window.location.assign).toHaveBeenCalledWith(ROUTES.CHANGE_PASSWORD);
     expect(error._isNoPermission).toBeUndefined();
   });
 
-  it('403 PASSWORD_CHANGE_REQUIRED (nested error.code): redirect /change-password', async () => {
+  it("403 PASSWORD_CHANGE_REQUIRED (nested error.code): redirect /change-password", async () => {
     const rejected = getRejectedHandler();
     const error = makeError(403, {
-      error: { code: 'PASSWORD_CHANGE_REQUIRED' },
+      error: { code: "PASSWORD_CHANGE_REQUIRED" },
     });
 
     await expect(rejected(error)).rejects.toBe(error);
     expect(window.location.assign).toHaveBeenCalledWith(ROUTES.CHANGE_PASSWORD);
   });
 
-  it('403 PASSWORD_CHANGE_REQUIRED: không redirect lặp nếu đã ở /change-password (rơi xuống nhánh _isNoPermission)', async () => {
-    Object.defineProperty(window, 'location', {
+  it("403 PASSWORD_CHANGE_REQUIRED: không redirect lặp nếu đã ở /change-password (rơi xuống nhánh _isNoPermission)", async () => {
+    Object.defineProperty(window, "location", {
       configurable: true,
       value: {
         ...originalLocation,
@@ -132,30 +141,30 @@ describe('axios response interceptor', () => {
       },
     });
     const rejected = getRejectedHandler();
-    const error = makeError(403, { error_code: 'PASSWORD_CHANGE_REQUIRED' });
+    const error = makeError(403, { error_code: "PASSWORD_CHANGE_REQUIRED" });
 
     await expect(rejected(error)).rejects.toBe(error);
     expect(window.location.assign).not.toHaveBeenCalled();
     expect(error._isNoPermission).toBe(true);
   });
 
-  it('422: đánh dấu _isValidationError', async () => {
+  it("422: đánh dấu _isValidationError", async () => {
     const rejected = getRejectedHandler();
-    const error = makeError(422, { errors: { name: ['bắt buộc'] } });
+    const error = makeError(422, { errors: { name: ["bắt buộc"] } });
 
     await expect(rejected(error)).rejects.toBe(error);
     expect(error._isValidationError).toBe(true);
   });
 
-  it('409: đánh dấu _isConflictError', async () => {
+  it("409: đánh dấu _isConflictError", async () => {
     const rejected = getRejectedHandler();
-    const error = makeError(409, { message: 'Trùng dữ liệu' });
+    const error = makeError(409, { message: "Trùng dữ liệu" });
 
     await expect(rejected(error)).rejects.toBe(error);
     expect(error._isConflictError).toBe(true);
   });
 
-  it('lỗi khác (5xx): không đánh dấu cờ nào, reject nguyên trạng', async () => {
+  it("lỗi khác (5xx): không đánh dấu cờ nào, reject nguyên trạng", async () => {
     const rejected = getRejectedHandler();
     const error = makeError(500);
 
@@ -187,7 +196,7 @@ function makeErrorWithConfig(
   };
 }
 
-describe('axios response interceptor: 401 refresh flow', () => {
+describe("axios response interceptor: 401 refresh flow", () => {
   const originalLocation = window.location;
 
   beforeEach(() => {
@@ -195,56 +204,63 @@ describe('axios response interceptor: 401 refresh flow', () => {
     clearStorageMock.mockReset();
     setStateMock.mockReset();
     memoryStorageMock.setItem.mockReset();
-    Object.defineProperty(window, 'location', {
+    Object.defineProperty(window, "location", {
       configurable: true,
-      value: { ...originalLocation, pathname: '/employees', assign: vi.fn() },
+      value: { ...originalLocation, pathname: "/employees", assign: vi.fn() },
     });
   });
 
-  it('refresh thành công → retry request gốc với Authorization header mới', async () => {
-    const postSpy = vi.spyOn(api, 'post').mockResolvedValue({
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("refresh thành công → retry request gốc với Authorization header mới", async () => {
+    memoryStorageMock.getRefreshToken.mockReturnValue("refresh-token");
+    const postSpy = vi.spyOn(api, "post").mockResolvedValue({
       data: {
         success: true,
         data: {
-          access_token: 'new-token',
-          token_type: 'bearer',
+          access_token: "new-token",
+          token_type: "bearer",
           expires_in: 900,
         },
       },
     });
     const requestSpy = vi
-      .spyOn(api, 'request')
-      .mockResolvedValue({ data: 'ok' });
+      .spyOn(api, "request")
+      .mockResolvedValue({ data: "ok" });
 
     const rejected = getRejectedHandler();
-    const error = makeErrorWithConfig(401, '/employees');
+    const error = makeErrorWithConfig(401, "/employees");
 
     const result = await rejected(error);
 
-    expect(postSpy).toHaveBeenCalledWith(API_ENDPOINTS.REFRESH);
-    expect(memoryStorageMock.setItem).toHaveBeenCalledWith('new-token');
+    expect(postSpy).toHaveBeenCalledWith(API_ENDPOINTS.REFRESH, {
+      refresh_token: "refresh-token",
+    });
+    expect(memoryStorageMock.setItem).toHaveBeenCalledWith("new-token");
     expect(setStateMock).toHaveBeenCalledWith({
-      token: 'new-token',
+      token: "new-token",
       isAuthenticated: true,
     });
     expect(error.config._isRetryAfterRefresh).toBe(true);
-    expect(error.config.headers.Authorization).toBe('Bearer new-token');
+    expect(error.config.headers.Authorization).toBe("Bearer new-token");
     expect(requestSpy).toHaveBeenCalledWith(error.config);
-    expect(result).toEqual({ data: 'ok' });
+    expect(result).toEqual({ data: "ok" });
     expect(logoutMock).not.toHaveBeenCalled();
 
     postSpy.mockRestore();
     requestSpy.mockRestore();
   });
 
-  it('refresh thất bại → logout + redirect /login, không retry', async () => {
+  it("refresh thất bại → logout + redirect /login, không retry", async () => {
     const postSpy = vi
-      .spyOn(api, 'post')
-      .mockRejectedValue(new Error('refresh failed'));
-    const requestSpy = vi.spyOn(api, 'request');
+      .spyOn(api, "post")
+      .mockRejectedValue(new Error("refresh failed"));
+    const requestSpy = vi.spyOn(api, "request");
 
     const rejected = getRejectedHandler();
-    const error = makeErrorWithConfig(401, '/employees');
+    const error = makeErrorWithConfig(401, "/employees");
 
     await expect(rejected(error)).rejects.toBe(error);
     expect(logoutMock).toHaveBeenCalledTimes(1);
@@ -256,20 +272,21 @@ describe('axios response interceptor: 401 refresh flow', () => {
     requestSpy.mockRestore();
   });
 
-  it('hai 401 đồng thời → chỉ gọi /auth/refresh một lần (gom qua refreshPromise)', async () => {
+  it("hai 401 đồng thời → chỉ gọi /auth/refresh một lần (gom qua refreshPromise)", async () => {
+    memoryStorageMock.getRefreshToken.mockReturnValue("refresh-token");
     let resolvePost: (v: unknown) => void;
-    const postSpy = vi.spyOn(api, 'post').mockReturnValue(
+    const postSpy = vi.spyOn(api, "post").mockReturnValue(
       new Promise((resolve) => {
         resolvePost = resolve;
       }) as ReturnType<typeof api.post>,
     );
     const requestSpy = vi
-      .spyOn(api, 'request')
-      .mockResolvedValue({ data: 'ok' });
+      .spyOn(api, "request")
+      .mockResolvedValue({ data: "ok" });
 
     const rejected = getRejectedHandler();
-    const error1 = makeErrorWithConfig(401, '/employees');
-    const error2 = makeErrorWithConfig(401, '/departments');
+    const error1 = makeErrorWithConfig(401, "/employees");
+    const error2 = makeErrorWithConfig(401, "/departments");
 
     const p1 = rejected(error1);
     const p2 = rejected(error2);
@@ -278,8 +295,8 @@ describe('axios response interceptor: 401 refresh flow', () => {
       data: {
         success: true,
         data: {
-          access_token: 'shared-token',
-          token_type: 'bearer',
+          access_token: "shared-token",
+          token_type: "bearer",
           expires_in: 900,
         },
       },
@@ -293,14 +310,14 @@ describe('axios response interceptor: 401 refresh flow', () => {
     requestSpy.mockRestore();
   });
 
-  it('request đã retry vẫn 401 → không refresh vòng lặp, logout thẳng', async () => {
-    const postSpy = vi.spyOn(api, 'post');
-    const requestSpy = vi.spyOn(api, 'request');
+  it("request đã retry vẫn 401 → không refresh vòng lặp, logout thẳng", async () => {
+    const postSpy = vi.spyOn(api, "post");
+    const requestSpy = vi.spyOn(api, "request");
 
     const rejected = getRejectedHandler();
     const error = makeErrorWithConfig(
       401,
-      '/employees',
+      "/employees",
       {},
       {
         _isRetryAfterRefresh: true,
@@ -317,8 +334,8 @@ describe('axios response interceptor: 401 refresh flow', () => {
     requestSpy.mockRestore();
   });
 
-  it('login 401 không gọi refresh', async () => {
-    const postSpy = vi.spyOn(api, 'post');
+  it("login 401 không gọi refresh", async () => {
+    const postSpy = vi.spyOn(api, "post");
 
     const rejected = getRejectedHandler();
     const error = makeErrorWithConfig(401, API_ENDPOINTS.LOGIN);
@@ -330,8 +347,8 @@ describe('axios response interceptor: 401 refresh flow', () => {
     postSpy.mockRestore();
   });
 
-  it('refresh endpoint 401 không tự refresh chính nó', async () => {
-    const postSpy = vi.spyOn(api, 'post');
+  it("refresh endpoint 401 không tự refresh chính nó", async () => {
+    const postSpy = vi.spyOn(api, "post");
 
     const rejected = getRejectedHandler();
     const error = makeErrorWithConfig(401, API_ENDPOINTS.REFRESH);

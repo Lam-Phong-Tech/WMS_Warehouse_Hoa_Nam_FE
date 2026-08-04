@@ -1,8 +1,8 @@
-import { type ReactNode } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
-import { Loading } from '@/shared/components/feedback/Loading';
-import { ROUTES } from '@/shared/constants/routes';
-import { useAuthStore } from '@/shared/store/auth.store';
+import { type ReactNode } from "react";
+import { Navigate, useLocation } from "react-router-dom";
+import { Loading } from "@/shared/components/feedback/Loading";
+import { ROUTES } from "@/shared/constants/routes";
+import { useAuthStore } from "@/shared/store/auth.store";
 
 interface Props {
   /**

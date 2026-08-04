@@ -19,7 +19,7 @@ const SECONDARY_ROUTES = [
   // () => import('@/modules/tasks/pages/TasksPage'),
 ] as const;
 
-type PreloadStatus = 'idle' | 'loading' | 'ready';
+type PreloadStatus = "idle" | "loading" | "ready";
 
 interface RoutePreloadState {
   status: PreloadStatus;
@@ -36,13 +36,13 @@ class PreloadManager {
    * Gọi khi app khởi động (sau khi login)
    */
   preloadCriticalRoutes(): void {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
 
     CRITICAL_ROUTES.forEach((importFn, index) => {
       const routeName = this.getRouteName(importFn);
       if (!this.criticalRoutes.has(routeName)) {
         this.criticalRoutes.set(routeName, {
-          status: 'idle',
+          status: "idle",
           promise: null,
         });
 
@@ -58,11 +58,11 @@ class PreloadManager {
    * Preload secondary routes khi browser idle
    */
   preloadSecondaryRoutesOnIdle(): void {
-    if (typeof window === 'undefined' || this.isIdleCallbackRegistered) return;
+    if (typeof window === "undefined" || this.isIdleCallbackRegistered) return;
 
     // Sử dụng requestIdleCallback nếu có, fallback to setTimeout
     const idleCallback =
-      'requestIdleCallback' in window
+      "requestIdleCallback" in window
         ? window.requestIdleCallback.bind(window)
         : (cb: IdleRequestCallback) => setTimeout(cb, 1000);
 
@@ -74,7 +74,7 @@ class PreloadManager {
           const routeName = this.getRouteName(importFn);
           if (!this.secondaryRoutes.has(routeName)) {
             this.secondaryRoutes.set(routeName, {
-              status: 'idle',
+              status: "idle",
               promise: null,
             });
             this.preloadRoute(routeName, importFn, this.secondaryRoutes);
@@ -100,7 +100,7 @@ class PreloadManager {
 
     if (!routesMap.has(routeName)) {
       routesMap.set(routeName, {
-        status: 'idle',
+        status: "idle",
         promise: null,
       });
     }
@@ -118,7 +118,7 @@ class PreloadManager {
     const routeName = this.getRouteName(importFn);
     const state =
       this.criticalRoutes.get(routeName) || this.secondaryRoutes.get(routeName);
-    return state?.status === 'ready';
+    return state?.status === "ready";
   }
 
   /**
@@ -130,20 +130,23 @@ class PreloadManager {
     routesMap: Map<string, RoutePreloadState>,
   ): void {
     const state = routesMap.get(routeName);
-    if (!state || state.status === 'loading' || state.status === 'ready') {
+    if (!state || state.status === "loading" || state.status === "ready") {
       return;
     }
 
-    state.status = 'loading';
+    state.status = "loading";
     state.promise = importFn()
       .then(() => {
-        state.status = 'ready';
+        state.status = "ready";
       })
       .catch((error) => {
         if (import.meta.env.DEV) {
-          console.warn(`[Preload] Failed to preload route: ${routeName}`, error);
+          console.warn(
+            `[Preload] Failed to preload route: ${routeName}`,
+            error,
+          );
         }
-        state.status = 'idle';
+        state.status = "idle";
         state.promise = null;
       });
   }
@@ -153,7 +156,7 @@ class PreloadManager {
    */
   private getRouteName(importFn: () => Promise<unknown>): string {
     return (
-      importFn.toString().match(/@\/modules\/([^/]+)\/pages/)?.[1] || 'unknown'
+      importFn.toString().match(/@\/modules\/([^/]+)\/pages/)?.[1] || "unknown"
     );
   }
 

@@ -1,5 +1,5 @@
-import { Pagination as AntPagination } from 'antd';
-import type { PaginationProps } from 'antd';
+import { Pagination as AntPagination } from "antd";
+import type { PaginationProps } from "antd";
 
 export type { PaginationProps };
 

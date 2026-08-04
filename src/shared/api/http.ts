@@ -1,5 +1,5 @@
-import type { AxiosRequestConfig, AxiosResponse } from 'axios';
-import { api } from '@/shared/api/axios';
+import type { AxiosRequestConfig, AxiosResponse } from "axios";
+import { api } from "@/shared/api/axios";
 import {
   isErrorEnvelope,
   ApiEnvelopeError,
@@ -7,7 +7,7 @@ import {
   type ApiResponse,
   type ApiErrorResponse,
   type ApiSuccessResponse,
-} from '@/shared/types/api-response';
+} from "@/shared/types/api-response";
 
 /**
  * Check if error is an AxiosError without relying on axios.isAxiosError mock.
@@ -15,16 +15,16 @@ import {
  */
 function isAxiosError(error: unknown): boolean {
   return (
-    typeof error === 'object' &&
+    typeof error === "object" &&
     error !== null &&
-    'isAxiosError' in error &&
+    "isAxiosError" in error &&
     (error as Record<string, unknown>).isAxiosError === true
   );
 }
 
 /** `body` là object thường (không phải null/array/primitive). */
 function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 /**
@@ -71,7 +71,7 @@ function unwrap<T>(res: AxiosResponse<ApiResponse<T>>, url: string): T {
     res.status === 204 ||
     body === undefined ||
     body === null ||
-    (body as unknown) === ''
+    (body as unknown) === ""
   ) {
     return undefined as T;
   }
@@ -87,7 +87,7 @@ function unwrap<T>(res: AxiosResponse<ApiResponse<T>>, url: string): T {
   }
 
   // Object hợp lệ nhưng thiếu field `data` — fallback trả thẳng object.
-  if (!('data' in body)) {
+  if (!("data" in body)) {
     warnUnexpectedShape(url, body);
     return body as unknown as T;
   }
@@ -107,7 +107,7 @@ async function parseBlobError(error: unknown): Promise<unknown> {
   const axiosErr = error as Record<string, unknown>;
   const response = axiosErr.response as Record<string, unknown> | undefined;
   const data = response?.data;
-  if (data instanceof Blob && !data.type?.startsWith('application/json')) {
+  if (data instanceof Blob && !data.type?.startsWith("application/json")) {
     try {
       const text = await data.text();
       (axiosErr.response as Record<string, unknown>).data = JSON.parse(text);
@@ -143,7 +143,7 @@ export const http = {
       throw new ApiEnvelopeError(body as ApiErrorResponse);
     }
 
-    if (!('data' in body)) {
+    if (!("data" in body)) {
       warnUnexpectedShape(url, body);
       return { data: body as unknown as T, meta: {} };
     }
@@ -183,7 +183,7 @@ export const http = {
     try {
       const res = await api.get<Blob>(url, {
         ...config,
-        responseType: 'blob',
+        responseType: "blob",
       });
       return res.data;
     } catch (error) {

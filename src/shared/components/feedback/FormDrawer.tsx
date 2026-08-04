@@ -1,13 +1,13 @@
-import type { ReactNode } from 'react';
-import type { ButtonProps } from 'antd';
-import { Drawer, Form } from 'antd';
-import { FormActions } from './FormActions';
+import type { ReactNode } from "react";
+import type { ButtonProps } from "antd";
+import { Drawer, Form } from "antd";
+import { FormActions } from "./FormActions";
 
 export interface FormDrawerProps {
   /** Whether the drawer is visible */
   open: boolean;
   /** Title of the drawer - can be a string or function that receives mode */
-  title?: ReactNode | ((mode: 'create' | 'edit' | 'view') => ReactNode);
+  title?: ReactNode | ((mode: "create" | "edit" | "view") => ReactNode);
   /** Default title when mode is create */
   createTitle?: ReactNode;
   /** Default title when mode is edit */
@@ -27,7 +27,7 @@ export interface FormDrawerProps {
   /** Width of the drawer */
   width?: number | string;
   /** Placement of the drawer */
-  placement?: 'left' | 'right' | 'top' | 'bottom';
+  placement?: "left" | "right" | "top" | "bottom";
   /** Whether to show the cancel button */
   showCancel?: boolean;
   /** Whether to show the OK button */
@@ -47,7 +47,7 @@ export interface FormDrawerProps {
   /** Children form content */
   children: ReactNode;
   /** Current form mode - determines title and button behavior */
-  mode?: 'create' | 'edit' | 'view';
+  mode?: "create" | "edit" | "view";
 }
 
 /**
@@ -85,16 +85,16 @@ export interface FormDrawerProps {
 export function FormDrawer({
   open,
   title,
-  createTitle = 'Thêm mới',
-  editTitle = 'Chỉnh sửa',
-  viewTitle = 'Chi tiết',
+  createTitle = "Thêm mới",
+  editTitle = "Chỉnh sửa",
+  viewTitle = "Chi tiết",
   onOk,
   onCancel,
   loading = false,
-  okText = 'Lưu',
-  cancelText = 'Hủy',
-  width = 520,
-  placement = 'right',
+  okText = "Lưu",
+  cancelText = "Hủy",
+  width = "min(520px, calc(100vw - 32px))",
+  placement = "right",
   showCancel = true,
   showOk = true,
   okButtonProps,
@@ -104,21 +104,21 @@ export function FormDrawer({
   destroyOnClose = true,
   afterClose,
   children,
-  mode = 'create',
+  mode = "create",
 }: FormDrawerProps) {
   // Resolve title based on mode
   const resolvedTitle =
-    typeof title === 'function'
+    typeof title === "function"
       ? title(mode)
       : (title ??
-        (mode === 'create'
+        (mode === "create"
           ? createTitle
-          : mode === 'edit'
+          : mode === "edit"
             ? editTitle
             : viewTitle));
 
   // In view mode, typically we don't show action buttons
-  const showActions = mode !== 'view';
+  const showActions = mode !== "view";
 
   return (
     <Drawer
@@ -141,17 +141,19 @@ export function FormDrawer({
       footer={
         footer ??
         (showActions ? (
-          <FormActions
-            onOk={onOk}
-            onCancel={onCancel}
-            loading={loading}
-            okText={okText}
-            cancelText={cancelText}
-            showOk={showOk}
-            showCancel={showCancel}
-            okButtonProps={okButtonProps}
-            cancelButtonProps={cancelButtonProps}
-          />
+          <div className="hn-drawer-footer-actions">
+            <FormActions
+              onOk={onOk}
+              onCancel={onCancel}
+              loading={loading}
+              okText={okText}
+              cancelText={cancelText}
+              showOk={showOk}
+              showCancel={showCancel}
+              okButtonProps={okButtonProps}
+              cancelButtonProps={cancelButtonProps}
+            />
+          </div>
         ) : null)
       }
     >

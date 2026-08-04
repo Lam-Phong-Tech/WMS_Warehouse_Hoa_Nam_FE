@@ -1,5 +1,5 @@
-import { Alert as AntAlert } from 'antd';
-import type { AlertProps } from 'antd';
+import { Alert as AntAlert } from "antd";
+import type { AlertProps } from "antd";
 
 export type { AlertProps };
 

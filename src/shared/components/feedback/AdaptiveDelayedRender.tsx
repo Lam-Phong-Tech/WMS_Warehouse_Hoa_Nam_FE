@@ -1,6 +1,6 @@
-import { useEffect, useState, useRef, type ReactNode } from 'react';
-import { useLocation } from 'react-router-dom';
-import { PageSkeleton } from '@/shared/components/ui-states/PageSkeleton';
+import { useEffect, useState, useRef, type ReactNode } from "react";
+import { useLocation } from "react-router-dom";
+import { PageSkeleton } from "@/shared/components/ui-states/PageSkeleton";
 
 interface Props {
   children: ReactNode;
@@ -21,19 +21,19 @@ interface NetworkInformation {
 function computeAdaptiveDelay(minDelay: number, maxDelay: number): number {
   let adaptiveDelay = minDelay;
 
-  if (typeof navigator !== 'undefined' && 'connection' in navigator) {
+  if (typeof navigator !== "undefined" && "connection" in navigator) {
     const connection = (
       navigator as Navigator & { connection?: NetworkInformation }
     ).connection;
 
     if (connection) {
-      if (connection.effectiveType === '4g') {
+      if (connection.effectiveType === "4g") {
         adaptiveDelay = minDelay; // Mạng nhanh - delay ngắn
-      } else if (connection.effectiveType === '3g') {
+      } else if (connection.effectiveType === "3g") {
         adaptiveDelay = Math.max(minDelay, 300); // Mạng trung bình
       } else if (
-        connection.effectiveType === '2g' ||
-        connection.effectiveType === 'slow-2g'
+        connection.effectiveType === "2g" ||
+        connection.effectiveType === "slow-2g"
       ) {
         adaptiveDelay = Math.max(minDelay, 500); // Mạng chậm - delay dài hơn
       }
@@ -117,8 +117,8 @@ function AdaptiveDelayedRenderInner({
             style={{
               marginTop: 8,
               fontSize: 12,
-              color: '#999',
-              textAlign: 'center',
+              color: "#999",
+              textAlign: "center",
             }}
           >
             Đang tải... ({elapsed}ms / {currentDelay}ms)

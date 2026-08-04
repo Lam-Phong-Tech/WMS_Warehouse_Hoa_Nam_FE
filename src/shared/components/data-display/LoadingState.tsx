@@ -1,4 +1,4 @@
-import { Spin } from 'antd';
+import { Spin } from "antd";
 
 export interface LoadingStateProps {
   /** Nhãn hiển thị dưới spinner. */
@@ -12,15 +12,15 @@ export interface LoadingStateProps {
  * Khác với `Loading` (phủ toàn màn hình); dùng trong card/section.
  */
 export function LoadingState({
-  tip = 'Đang tải…',
+  tip = "Đang tải…",
   minHeight = 160,
 }: LoadingStateProps) {
   return (
     <div
       style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
         minHeight,
       }}
     >

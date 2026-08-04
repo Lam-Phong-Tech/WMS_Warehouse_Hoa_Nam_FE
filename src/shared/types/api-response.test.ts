@@ -1,10 +1,10 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from "vitest";
 import {
   isErrorEnvelope,
   getErrorCode,
   getFieldErrors,
   getRequestId,
-} from '@/shared/types/api-response';
+} from "@/shared/types/api-response";
 
 /**
  * isErrorEnvelope() nhận tham số kiểu hẹp `{ success?; status? }` — response
@@ -26,15 +26,15 @@ function envelope(body: {
 // /user-role-scopes, /user-data-scopes — xem docs/api-evidence/). Trước đây
 // isErrorEnvelope chỉ check `success === false` nên các response chỉ có
 // `status: "error"` bị coi là thành công và unwrap thành `data: undefined`.
-describe('isErrorEnvelope', () => {
-  it('nhận diện lỗi qua success: false (contract cũ)', () => {
-    expect(isErrorEnvelope(envelope({ success: false, message: 'lỗi' }))).toBe(
+describe("isErrorEnvelope", () => {
+  it("nhận diện lỗi qua success: false (contract cũ)", () => {
+    expect(isErrorEnvelope(envelope({ success: false, message: "lỗi" }))).toBe(
       true,
     );
   });
 
   it('nhận diện lỗi qua CHỈ status: "error", không có success', () => {
-    expect(isErrorEnvelope(envelope({ status: 'error', message: 'lỗi' }))).toBe(
+    expect(isErrorEnvelope(envelope({ status: "error", message: "lỗi" }))).toBe(
       true,
     );
   });
@@ -42,7 +42,7 @@ describe('isErrorEnvelope', () => {
   it('nhận diện lỗi khi cả success: false lẫn status: "error"', () => {
     expect(
       isErrorEnvelope(
-        envelope({ success: false, status: 'error', message: 'lỗi' }),
+        envelope({ success: false, status: "error", message: "lỗi" }),
       ),
     ).toBe(true);
   });
@@ -51,22 +51,22 @@ describe('isErrorEnvelope', () => {
     // Case rủi ro nhất theo P0.3: BE trả HTTP 200/201 nhưng body báo lỗi.
     expect(
       isErrorEnvelope(
-        envelope({ status: 'error', message: 'Validation failed' }),
+        envelope({ status: "error", message: "Validation failed" }),
       ),
     ).toBe(true);
   });
 
-  it('coi success: true là thành công', () => {
+  it("coi success: true là thành công", () => {
     expect(isErrorEnvelope(envelope({ success: true, data: {} }))).toBe(false);
   });
 
   it('coi status: "success" (không có success boolean) là thành công', () => {
-    expect(isErrorEnvelope(envelope({ status: 'success', data: {} }))).toBe(
+    expect(isErrorEnvelope(envelope({ status: "success", data: {} }))).toBe(
       false,
     );
   });
 
-  it('body null/undefined không phải lỗi', () => {
+  it("body null/undefined không phải lỗi", () => {
     expect(isErrorEnvelope(null)).toBe(false);
     expect(isErrorEnvelope(undefined)).toBe(false);
   });
@@ -77,54 +77,54 @@ describe('isErrorEnvelope', () => {
 // employee-assignments) và nested theo API_Convention.md (schema ErrorResponse,
 // đa số endpoint mới: webhooks, sales-order, price-list...). Các hàm dưới đây
 // phải đọc đúng cả 2 dạng để FE không "mù" khi BE dùng dạng nested.
-describe('getErrorCode / getFieldErrors / getRequestId (bridge 2 contract lỗi)', () => {
-  it('đọc error_code dạng flat (root-level)', () => {
+describe("getErrorCode / getFieldErrors / getRequestId (bridge 2 contract lỗi)", () => {
+  it("đọc error_code dạng flat (root-level)", () => {
     expect(
-      getErrorCode({ message: 'x', error_code: 'VALIDATION_FAILED' }),
-    ).toBe('VALIDATION_FAILED');
+      getErrorCode({ message: "x", error_code: "VALIDATION_FAILED" }),
+    ).toBe("VALIDATION_FAILED");
   });
 
-  it('đọc error.code dạng nested', () => {
+  it("đọc error.code dạng nested", () => {
     expect(
-      getErrorCode({ message: 'x', error: { code: 'VALIDATION_FAILED' } }),
-    ).toBe('VALIDATION_FAILED');
+      getErrorCode({ message: "x", error: { code: "VALIDATION_FAILED" } }),
+    ).toBe("VALIDATION_FAILED");
   });
 
-  it('ưu tiên error_code flat nếu cả 2 cùng có', () => {
+  it("ưu tiên error_code flat nếu cả 2 cùng có", () => {
     expect(
       getErrorCode({
-        message: 'x',
-        error_code: 'FLAT',
-        error: { code: 'NESTED' },
+        message: "x",
+        error_code: "FLAT",
+        error: { code: "NESTED" },
       }),
-    ).toBe('FLAT');
+    ).toBe("FLAT");
   });
 
-  it('đọc errors dạng flat (root-level)', () => {
+  it("đọc errors dạng flat (root-level)", () => {
     expect(
-      getFieldErrors({ message: 'x', errors: { email: ['Bắt buộc'] } }),
-    ).toEqual({ email: ['Bắt buộc'] });
+      getFieldErrors({ message: "x", errors: { email: ["Bắt buộc"] } }),
+    ).toEqual({ email: ["Bắt buộc"] });
   });
 
-  it('đọc error.details dạng nested', () => {
+  it("đọc error.details dạng nested", () => {
     expect(
       getFieldErrors({
-        message: 'x',
-        error: { code: 'VALIDATION_FAILED', details: { email: ['Bắt buộc'] } },
+        message: "x",
+        error: { code: "VALIDATION_FAILED", details: { email: ["Bắt buộc"] } },
       }),
-    ).toEqual({ email: ['Bắt buộc'] });
+    ).toEqual({ email: ["Bắt buộc"] });
   });
 
-  it('đọc request_id dạng flat và meta.request_id dạng nested', () => {
-    expect(getRequestId({ message: 'x', request_id: 'abc' })).toBe('abc');
-    expect(getRequestId({ message: 'x', meta: { request_id: 'xyz' } })).toBe(
-      'xyz',
+  it("đọc request_id dạng flat và meta.request_id dạng nested", () => {
+    expect(getRequestId({ message: "x", request_id: "abc" })).toBe("abc");
+    expect(getRequestId({ message: "x", meta: { request_id: "xyz" } })).toBe(
+      "xyz",
     );
   });
 
-  it('trả undefined khi không có field nào', () => {
-    expect(getErrorCode({ message: 'x' })).toBeUndefined();
-    expect(getFieldErrors({ message: 'x' })).toBeUndefined();
-    expect(getRequestId({ message: 'x' })).toBeUndefined();
+  it("trả undefined khi không có field nào", () => {
+    expect(getErrorCode({ message: "x" })).toBeUndefined();
+    expect(getFieldErrors({ message: "x" })).toBeUndefined();
+    expect(getRequestId({ message: "x" })).toBeUndefined();
   });
 });

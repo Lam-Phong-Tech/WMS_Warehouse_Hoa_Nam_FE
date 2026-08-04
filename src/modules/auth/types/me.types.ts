@@ -10,7 +10,7 @@
 // role+scope qua user_role_scopes) — khiến FE coi nhầm là không phải Super
 // Admin và chặn UI dù BE cho phép. Xem docs/api-evidence/roles.md mục
 // "PHÁT HIỆN QUAN TRỌNG" (2026-07-11) về sự cố liên quan.
-import type { AuthContext } from '@/modules/auth/types/auth.types';
+import type { AuthContext } from "@/modules/auth/types/auth.types";
 
 export interface MeOrgRef {
   id: number;
@@ -39,10 +39,20 @@ export interface MeContext extends AuthContext {
 }
 
 export interface MeResponse {
-  id: number;
+  id: number | string;
+  user_id?: string;
+  username?: string;
   name: string;
+  display_name?: string;
   email: string;
   code: string;
+  status?: string;
+  roles?: Array<{
+    role_id: string;
+    role_code: string;
+    role_name: string;
+  }>;
+  permissions?: string[];
   phone?: string | null;
   company: MeOrgRef | null;
   branch: MeOrgRef | null;

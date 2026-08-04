@@ -1,5 +1,5 @@
-import type { SizeType } from 'antd/es/config-provider/SizeContext';
-import type { ThemeConfig } from 'antd';
+import type { SizeType } from "antd/es/config-provider/SizeContext";
+import type { ThemeConfig } from "antd";
 
 /**
  * Màu thương hiệu dùng chung toàn app (đồng bộ với theme antd).
@@ -8,21 +8,21 @@ import type { ThemeConfig } from 'antd';
  * mode, whitelabel) chỉ sửa 1 chỗ thay vì lục từng component.
  */
 export const BRAND = {
-  primary: '#7c3aed',
-  primaryHover: '#6d28d9',
-  siderBg: '#1f1d2b',
-  siderTrigger: '#161320',
-  gradient: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)',
+  primary: "#7c3aed",
+  primaryHover: "#6d28d9",
+  siderBg: "#1f1d2b",
+  siderTrigger: "#161320",
+  gradient: "linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)",
   /** Nền Header khi sticky — hơi trong suốt để thấy nội dung cuộn phía sau. */
-  headerBg: 'rgba(255, 255, 255, 0.95)',
-  headerBlur: 'blur(8px)',
+  headerBg: "rgba(255, 255, 255, 0.95)",
+  headerBlur: "blur(8px)",
 };
 
 /** Token thiết kế dùng chung — spacing, radius, typography, table density. */
 export const DESIGN_TOKENS = {
   spacing: { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 },
   radius: { sm: 4, md: 8, lg: 12 },
-  table: { size: 'middle' as SizeType },
+  table: { size: "middle" as SizeType },
   typography: {
     pageTitle: { fontSize: 20, fontWeight: 700, lineHeight: 1.3 },
     sectionTitle: { fontSize: 16, fontWeight: 600 },
@@ -38,16 +38,16 @@ export const themeConfig: ThemeConfig = {
     borderRadius: 8,
     fontFamily:
       "'Inter', system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
-    colorBgLayout: '#f4f5fa',
+    colorBgLayout: "#f4f5fa",
   },
   components: {
     Layout: {
-      headerBg: '#ffffff',
+      headerBg: "#ffffff",
       headerHeight: 64,
-      headerPadding: '0 24px',
+      headerPadding: "0 24px",
       siderBg: BRAND.siderBg,
       triggerBg: BRAND.siderTrigger,
-      bodyBg: '#f4f5fa',
+      bodyBg: "#f4f5fa",
     },
     Menu: {
       darkItemBg: BRAND.siderBg,

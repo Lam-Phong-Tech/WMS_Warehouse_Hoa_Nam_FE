@@ -15,15 +15,15 @@
  * Khi `usePermission()`, `PermissionGuard`, `ActionButton`, ... kiểm tra quyền,
  * chúng sẽ xét CẢ permission code lẫn scope requirement để quyết định ẩn/disable action.
  */
-import type { PermissionAction } from './permission';
-import { getPermissionCode } from './permission';
+import type { PermissionAction } from "./permission";
+import { getPermissionCode } from "./permission";
 
 /**
  * Các scope type được BE định nghĩa trong AuthContext.scope_type.
  * Thứ tự từ cao → thấp:
  *   he_thong > co_so > phong_ban > kho
  */
-export type ScopeType = 'he_thong' | 'co_so' | 'phong_ban' | 'kho';
+export type ScopeType = "he_thong" | "co_so" | "phong_ban" | "kho";
 
 /** Số rank cho mỗi scope type (cao hơn = rộng hơn). */
 const SCOPE_RANK: Record<ScopeType, number> = {
@@ -57,7 +57,7 @@ export function meetsMinScope(
  * Nếu module + action không có trong map này, scope check sẽ bỏ qua
  * (backward compatible — không breaking change).
  */
-export type ScopeRequirement = ScopeType | 'none';
+export type ScopeRequirement = ScopeType | "none";
 
 export interface ModuleScopeConfig {
   [action: string]: ScopeRequirement;
@@ -80,113 +80,117 @@ export const MODULE_SCOPE_REQUIREMENTS: Record<string, ModuleScopeConfig> = {
   // ===== ORG UNITS =====
   // Org unit là cấp "cơ sở" — chỉ có scope hệ thống hoặc cơ sở mới tạo/xoá được.
   org_units: {
-    view: 'none',
-    create: 'co_so', // Cần scope cơ sở hoặc hệ thống để tạo org unit
-    edit: 'co_so',
-    delete: 'co_so', // Xoá (vô hiệu) org unit cần scope ≥ cơ sở
-    restore: 'co_so', // Khôi phục cùng scope với vô hiệu hóa
-    approve: 'co_so',
-    export: 'co_so',
-    import: 'co_so',
+    view: "none",
+    create: "co_so", // Cần scope cơ sở hoặc hệ thống để tạo org unit
+    edit: "co_so",
+    delete: "co_so", // Xoá (vô hiệu) org unit cần scope ≥ cơ sở
+    restore: "co_so", // Khôi phục cùng scope với vô hiệu hóa
+    approve: "co_so",
+    export: "co_so",
+    import: "co_so",
   },
   // ===== ORG CHARTS =====
   org_charts: {
-    view: 'none',
-    create: 'co_so',
-    edit: 'co_so',
-    delete: 'co_so',
-    approve: 'co_so',
-    export: 'none',
-    import: 'co_so',
+    view: "none",
+    create: "co_so",
+    edit: "co_so",
+    delete: "co_so",
+    approve: "co_so",
+    export: "none",
+    import: "co_so",
   },
   // ===== DEPARTMENTS =====
   // Phòng ban là cấp dưới cơ sở. Tạo/xoá phòng ban cần scope ≥ cơ sở,
   // sửa/xem có thể OK ở scope phòng ban được giao.
   departments: {
-    view: 'none',
-    create: 'co_so', // Tạo phòng ban mới cần scope cơ sở
-    edit: 'phong_ban', // Sửa phòng ban trong phạm vi được giao
-    delete: 'co_so', // Vô hiệu phòng ban cần scope cơ sở
-    approve: 'phong_ban',
-    export: 'phong_ban',
-    import: 'phong_ban',
+    view: "none",
+    create: "co_so", // Tạo phòng ban mới cần scope cơ sở
+    edit: "phong_ban", // Sửa phòng ban trong phạm vi được giao
+    delete: "co_so", // Vô hiệu phòng ban cần scope cơ sở
+    approve: "phong_ban",
+    export: "phong_ban",
+    import: "phong_ban",
   },
   // ===== EMPLOYEES =====
   employees: {
-    view: 'none',
-    create: 'phong_ban', // Tạo nhân viên trong phạm vi phòng ban/cơ sở
-    edit: 'phong_ban',
-    delete: 'phong_ban', // Vô hiệu nhân viên trong phạm vi được giao
-    approve: 'phong_ban',
-    export: 'none',
-    import: 'phong_ban',
+    view: "none",
+    create: "phong_ban", // Tạo nhân viên trong phạm vi phòng ban/cơ sở
+    edit: "phong_ban",
+    delete: "phong_ban", // Vô hiệu nhân viên trong phạm vi được giao
+    approve: "phong_ban",
+    export: "none",
+    import: "phong_ban",
   },
   // ===== POSITIONS =====
   positions: {
-    view: 'none',
-    create: 'co_so',
-    edit: 'co_so',
-    delete: 'co_so',
-    restore: 'co_so',
-    approve: 'co_so',
-    export: 'co_so',
+    view: "none",
+    create: "co_so",
+    edit: "co_so",
+    delete: "co_so",
+    restore: "co_so",
+    approve: "co_so",
+    export: "co_so",
   },
   // ===== ROLES =====
   // Phân quyền là việc nhạy cảm — chỉ scope hệ thống mới được quản lý
   roles: {
-    view: 'co_so',
-    create: 'he_thong', // Chỉ admin hệ thống tạo/quản lý role
-    edit: 'he_thong',
-    delete: 'he_thong',
-    approve: 'he_thong',
-    export: 'co_so',
+    view: "co_so",
+    create: "he_thong", // Chỉ admin hệ thống tạo/quản lý role
+    edit: "he_thong",
+    delete: "he_thong",
+    approve: "he_thong",
+    export: "co_so",
   },
   // ===== EMPLOYEE STATUS =====
   employee_status: {
-    view: 'none',
-    create: 'phong_ban',
-    edit: 'phong_ban',
-    delete: 'phong_ban',
-    approve: 'phong_ban',
-    export: 'none',
+    view: "none",
+    create: "phong_ban",
+    edit: "phong_ban",
+    delete: "phong_ban",
+    approve: "phong_ban",
+    export: "none",
   },
   // ===== EMPLOYEE ASSIGNMENTS =====
   employee_assignments: {
-    view: 'none',
-    create: 'phong_ban',
-    edit: 'phong_ban',
-    delete: 'phong_ban',
-    approve: 'phong_ban',
-    export: 'none',
+    view: "none",
+    create: "phong_ban",
+    edit: "phong_ban",
+    delete: "phong_ban",
+    approve: "phong_ban",
+    export: "none",
   },
   // ===== TASKS =====
   tasks: {
-    view: 'none',
-    create: 'none',
-    edit: 'none',
-    delete: 'none',
-    approve: 'none',
-    export: 'none',
+    view: "none",
+    create: "none",
+    edit: "none",
+    delete: "none",
+    approve: "none",
+    export: "none",
   },
   // ===== WAREHOUSES =====
   // Kho là entity toàn hệ thống — không bị giới hạn bởi scope department
   warehouses: {
-    view: 'none',
-    create: 'co_so',
-    edit: 'co_so',
-    delete: 'co_so',
-    restore: 'co_so',
-    approve: 'co_so',
-    export: 'none',
+    view: "none",
+    create: "co_so",
+    edit: "co_so",
+    delete: "co_so",
+    restore: "co_so",
+    approve: "co_so",
+    export: "none",
   },
   // ===== AUDIT LOGS =====
   audit_logs: {
-    view: 'he_thong',
-    create: 'he_thong',
-    edit: 'he_thong',
-    delete: 'he_thong',
-    approve: 'he_thong',
-    export: 'he_thong',
+    view: "he_thong",
+    create: "he_thong",
+    edit: "he_thong",
+    delete: "he_thong",
+    approve: "he_thong",
+    export: "he_thong",
+  },
+  reports: {
+    view: "none",
+    export: "none",
   },
 };
 
@@ -198,10 +202,10 @@ export function getScopeRequirement(
   module: string,
   action?: PermissionAction,
 ): ScopeRequirement {
-  if (!action) return 'none';
+  if (!action) return "none";
   const moduleConfig = MODULE_SCOPE_REQUIREMENTS[module];
-  if (!moduleConfig) return 'none';
-  return moduleConfig[action] ?? 'none';
+  if (!moduleConfig) return "none";
+  return moduleConfig[action] ?? "none";
 }
 
 /**
@@ -228,7 +232,7 @@ export function hasScopeForAction(
   if (isSuperAdmin) return true;
 
   const requirement = getScopeRequirement(module, action);
-  if (requirement === 'none') return true;
+  if (requirement === "none") return true;
   return meetsMinScope(currentScopeType, requirement);
 }
 
@@ -290,15 +294,15 @@ export function isRecordInScopeById(
   target: RowScopeTarget,
 ): boolean {
   switch (context.scopeType) {
-    case 'he_thong':
+    case "he_thong":
       return true;
-    case 'co_so':
+    case "co_so":
       return (
         context.orgUnitId != null &&
         target.orgUnitId != null &&
         context.orgUnitId === target.orgUnitId
       );
-    case 'phong_ban':
+    case "phong_ban":
       return (
         context.departmentId != null &&
         target.departmentId != null &&
@@ -331,7 +335,7 @@ export function canActionOnRow(
   if (!hasModulePermission) return false;
 
   const requirement = getScopeRequirement(module, action);
-  if (requirement === 'none' || requirement === 'he_thong') return true;
+  if (requirement === "none" || requirement === "he_thong") return true;
 
   return isRecordInScopeById(context, target);
 }
@@ -372,7 +376,7 @@ export function canActionOnRowWithScope(
   if (!hasModulePermission) return false;
 
   const requirement = getScopeRequirement(module, action);
-  if (requirement === 'none' || requirement === 'he_thong') return true;
+  if (requirement === "none" || requirement === "he_thong") return true;
 
   // Ưu tiên 1: Nếu BE đã trả scope_type theo record → dùng scope thật
   const recordScope = getRecordScope(record);
@@ -405,7 +409,7 @@ export function canAction(
 
   // Bước 3: Kiểm tra scope requirement cho module + action
   const requirement = getScopeRequirement(module, action);
-  if (requirement === 'none') {
+  if (requirement === "none") {
     // Không có scope requirement → chỉ cần permission code
     return true;
   }

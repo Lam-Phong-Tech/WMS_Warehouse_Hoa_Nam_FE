@@ -1,12 +1,12 @@
-import { useEffect, useRef, type ReactNode } from 'react';
-import type { Control, FieldValues, Path } from 'react-hook-form';
-import { AutoComplete, type AutoCompleteProps } from 'antd';
-import { FormField } from '@/shared/components/forms/FormField';
+import { useEffect, useRef, type ReactNode } from "react";
+import type { Control, FieldValues, Path } from "react-hook-form";
+import { AutoComplete, type AutoCompleteProps } from "antd";
+import { FormField } from "@/shared/components/forms/FormField";
 import type {
   AutocompleteOption,
   UseAutocompleteOptions,
-} from '@/shared/hooks/use-autocomplete';
-import { useAutocomplete } from '@/shared/hooks/use-autocomplete';
+} from "@/shared/hooks/use-autocomplete";
+import { useAutocomplete } from "@/shared/hooks/use-autocomplete";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -21,7 +21,7 @@ export interface FormAutocompleteProps<T extends FieldValues> {
   tooltip?: ReactNode;
   required?: boolean;
   disabled?: boolean;
-  size?: 'small' | 'middle' | 'large';
+  size?: "small" | "middle" | "large";
   allowClear?: boolean;
 
   /** Cấu hình autocomplete (local/remote) */
@@ -35,13 +35,13 @@ export interface FormAutocompleteProps<T extends FieldValues> {
   /** Các props khác truyền thẳng xuống Antd AutoComplete */
   autoCompleteProps?: Omit<
     AutoCompleteProps,
-    | 'options'
-    | 'value'
-    | 'onSearch'
-    | 'onSelect'
-    | 'onChange'
-    | 'children'
-    | 'filterOption'
+    | "options"
+    | "value"
+    | "onSearch"
+    | "onSelect"
+    | "onChange"
+    | "children"
+    | "filterOption"
   >;
 }
 
@@ -88,12 +88,12 @@ export function FormAutocomplete<T extends FieldValues>({
   control,
   name,
   label,
-  placeholder = 'Gõ để tìm kiếm...',
+  placeholder = "Gõ để tìm kiếm...",
   help,
   tooltip,
   required = false,
   disabled = false,
-  size = 'large',
+  size = "large",
   allowClear = true,
   autocompleteOptions,
   autoCompleteProps,
@@ -105,7 +105,7 @@ export function FormAutocomplete<T extends FieldValues>({
   } = autocompleteOptions;
 
   const { options, setSearchText } = useAutocomplete(hookOptions);
-  const displayLabelRef = useRef<string>('');
+  const displayLabelRef = useRef<string>("");
 
   return (
     <FormField
@@ -124,7 +124,7 @@ export function FormAutocomplete<T extends FieldValues>({
             hookOptions.staticOptions &&
             field.value !== undefined &&
             field.value !== null &&
-            field.value !== ''
+            field.value !== ""
           ) {
             const match = hookOptions.staticOptions.find(
               (opt) => String(opt.value) === String(field.value),
@@ -151,7 +151,7 @@ export function FormAutocomplete<T extends FieldValues>({
             onSearch={(text) => {
               setSearchText(text);
               if (!text) {
-                displayLabelRef.current = '';
+                displayLabelRef.current = "";
               }
             }}
             onSelect={(value) => {
@@ -162,10 +162,10 @@ export function FormAutocomplete<T extends FieldValues>({
                 field.onChange(getValueFromOption(selected));
                 displayLabelRef.current = selected.label;
               }
-              setSearchText('');
+              setSearchText("");
             }}
             onChange={(value) => {
-              if (typeof value === 'string') {
+              if (typeof value === "string") {
                 field.onChange(value);
                 displayLabelRef.current = value;
               }
@@ -173,14 +173,14 @@ export function FormAutocomplete<T extends FieldValues>({
             onBlur={field.onBlur}
             onClear={() => {
               field.onChange(null);
-              displayLabelRef.current = '';
-              setSearchText('');
+              displayLabelRef.current = "";
+              setSearchText("");
             }}
             disabled={disabled}
             placeholder={placeholder}
             allowClear={allowClear}
             size={size}
-            style={{ width: '100%' }}
+            style={{ width: "100%" }}
             {...autoCompleteProps}
           />
         );

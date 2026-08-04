@@ -1,8 +1,8 @@
-import type { ReactNode } from 'react';
-import { Card, Button, Skeleton } from 'antd';
-import { TableToolbar } from './TableToolbar';
-import { EmptyState } from './EmptyState';
-import { ApiErrorAlert } from '../feedback/ApiErrorAlert';
+import type { ReactNode } from "react";
+import { Card, Button, Skeleton } from "antd";
+import { TableToolbar } from "./TableToolbar";
+import { EmptyState } from "./EmptyState";
+import { ApiErrorAlert } from "../feedback/ApiErrorAlert";
 
 /**
  * Toolbar config object (dùng với TableToolbar component).
@@ -65,16 +65,16 @@ export interface TableContainerProps {
 function isToolbarConfig(
   toolbar: ToolbarConfig | ReactNode,
 ): toolbar is ToolbarConfig {
-  if (typeof toolbar !== 'object' || toolbar === null) return false;
+  if (typeof toolbar !== "object" || toolbar === null) return false;
   // React element có $$typeof, object config thì không
-  if ('$$typeof' in (toolbar as Record<string, unknown>)) return false;
+  if ("$$typeof" in (toolbar as Record<string, unknown>)) return false;
   // Kiểm tra presence của ít nhất 1 key đặc trưng
   return (
-    'searchPlaceholder' in (toolbar as Record<string, unknown>) ||
-    'searchValue' in (toolbar as Record<string, unknown>) ||
-    'onSearchChange' in (toolbar as Record<string, unknown>) ||
-    'filters' in (toolbar as Record<string, unknown>) ||
-    'actions' in (toolbar as Record<string, unknown>)
+    "searchPlaceholder" in (toolbar as Record<string, unknown>) ||
+    "searchValue" in (toolbar as Record<string, unknown>) ||
+    "onSearchChange" in (toolbar as Record<string, unknown>) ||
+    "filters" in (toolbar as Record<string, unknown>) ||
+    "actions" in (toolbar as Record<string, unknown>)
   );
 }
 
@@ -152,7 +152,7 @@ export function TableContainer({
       return (
         <ApiErrorAlert
           error={error}
-          title={errorTitle ?? 'Không thể tải dữ liệu'}
+          title={errorTitle ?? "Không thể tải dữ liệu"}
           onRetry={onRetry}
           style={{ marginBottom: 0 }}
         />
@@ -162,9 +162,9 @@ export function TableContainer({
     // Loading state
     if (loading) {
       return (
-        <div style={{ padding: '8px 0' }}>
+        <div style={{ padding: "8px 0" }}>
           <Skeleton active paragraph={{ rows: 8 }} />
-          <div style={{ textAlign: 'center', marginTop: 12, color: '#8c8c8c' }}>
+          <div style={{ textAlign: "center", marginTop: 12, color: "#8c8c8c" }}>
             Đang tải dữ liệu...
           </div>
         </div>
@@ -182,7 +182,7 @@ export function TableContainer({
       }
       return (
         <EmptyState
-          title={emptyState.title ?? 'Chưa có dữ liệu'}
+          title={emptyState.title ?? "Chưa có dữ liệu"}
           description={emptyState.description}
         >
           {emptyState.action}
@@ -221,14 +221,14 @@ export function FilteredEmptyState({
     <EmptyState
       title="Không có kết quả phù hợp"
       description={
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {activeFilters && (
             <div
               style={{
-                display: 'flex',
+                display: "flex",
                 gap: 6,
-                flexWrap: 'wrap',
-                justifyContent: 'center',
+                flexWrap: "wrap",
+                justifyContent: "center",
               }}
             >
               {activeFilters}

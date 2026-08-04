@@ -34,26 +34,26 @@
  * const params = scopeToParams(scope); // { org_unit_id: 1 }
  * ```
  */
-export { useCan, useHasPermission } from '@/modules/auth/utils/permission';
-export { Can } from '@/modules/auth/components/Can';
-export { RequirePermission } from '@/app/router/RequirePermission';
-export { ProtectedRoute } from '@/app/router/ProtectedRoute';
+export { useCan, useHasPermission } from "@/modules/auth/utils/permission";
+export { Can } from "@/modules/auth/components/Can";
+export { RequirePermission } from "@/app/router/RequirePermission";
+export { ProtectedRoute } from "@/app/router/ProtectedRoute";
 export {
   useDataScope,
   scopeToParams,
   toDataScope,
-} from '@/modules/auth/utils/data-scope';
-export { ROUTE_PERMISSIONS } from '@/app/router/access';
+} from "@/modules/auth/utils/data-scope";
+export { ROUTE_PERMISSIONS } from "@/app/router/access";
 
 // === Data-Scope Permission ===
 // Module: kiểm tra scope requirement cho action
 export type {
   ScopeType,
   ScopeRequirement,
-} from '@/shared/types/permission.scope';
+} from "@/shared/types/permission.scope";
 export {
   MODULE_SCOPE_REQUIREMENTS,
   getScopeRequirement,
   hasScopeForAction,
   meetsMinScope,
-} from '@/shared/types/permission.scope';
+} from "@/shared/types/permission.scope";

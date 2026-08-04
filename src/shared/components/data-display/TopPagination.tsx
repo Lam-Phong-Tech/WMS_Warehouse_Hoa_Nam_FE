@@ -1,4 +1,4 @@
-import { Pagination, Typography } from 'antd';
+import { Pagination, Typography } from "antd";
 
 const { Text } = Typography;
 
@@ -16,7 +16,7 @@ export interface TopPaginationProps {
   /** Callback khi thay đổi trang hoặc số bản ghi/trang */
   onChange: (page: number, pageSize: number) => void;
   /** Vị trí hiển thị: 'top' (mặc định, margin dưới) hoặc 'bottom' (margin trên). */
-  placement?: 'top' | 'bottom';
+  placement?: "top" | "bottom";
   /** Hiển thị dropdown chọn số bản ghi/trang. Mặc định true. */
   showSizeChanger?: boolean;
 }
@@ -30,21 +30,21 @@ export function TopPagination({
   total,
   current,
   pageSize,
-  unitName = 'bản ghi',
+  unitName = "bản ghi",
   pageSizeOptions = [15, 20, 50, 100],
   onChange,
-  placement = 'top',
+  placement = "top",
   showSizeChanger = true,
 }: TopPaginationProps) {
   return (
     <div
       style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        flexWrap: 'wrap',
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        flexWrap: "wrap",
         gap: 8,
-        ...(placement === 'bottom' ? { marginTop: 12 } : { marginBottom: 12 }),
+        ...(placement === "bottom" ? { marginTop: 12 } : { marginBottom: 12 }),
       }}
     >
       <Text type="secondary">

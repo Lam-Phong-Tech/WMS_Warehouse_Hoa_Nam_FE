@@ -1,45 +1,59 @@
-import type { ReactNode } from 'react';
-import { Layout } from 'antd';
+import type { CSSProperties, ReactNode } from "react";
+import { Layout } from "antd";
 
 export interface AppShellProps {
-  /** Thanh điều hướng bên trái (thường là <Sidebar>). */
+  /** Left navigation area, usually an Ant Design Sider or mobile Drawer pair. */
   sider?: ReactNode;
-  /** Thanh trên cùng (thường là <Header>). */
+  /** Top application bar. */
   header?: ReactNode;
+  /** Breadcrumb or route context area above the page body. */
+  breadcrumb?: ReactNode;
   footer?: ReactNode;
   children: ReactNode;
-  /** Có apply responsive padding cho content không (mặc định true). */
+  /** Apply responsive padding for the outer content area. */
   responsivePadding?: boolean;
+  /** Style for the root Layout. */
+  rootStyle?: CSSProperties;
+  /** Style for the inner Layout, for example fixed-sider offset. */
+  mainStyle?: CSSProperties;
+  /** Style for the outer Content area. */
+  contentStyle?: CSSProperties;
+  /** Optional framed page body style. When omitted, children render directly. */
+  bodyStyle?: CSSProperties;
 }
 
 /**
- * Khung bố cục tổng (sider + header + content + footer).
- * Component trình bày thuần — app dùng `app/layouts/MainLayout` để gắn state
- * (collapse, responsive, hồ sơ); AppShell có thể tái dùng cho layout phụ khác.
+ * Reusable app frame for authenticated screens.
+ * It stays presentation-only: callers own RBAC, profile loading, responsive
+ * state, route composition, and business data.
  */
 export function AppShell({
   sider,
   header,
+  breadcrumb,
   footer,
   children,
   responsivePadding = true,
+  rootStyle,
+  mainStyle,
+  contentStyle,
+  bodyStyle,
 }: AppShellProps) {
+  const defaultContentStyle: CSSProperties = {
+    padding: responsivePadding ? "clamp(12px, 2vw, 24px)" : 24,
+    minHeight: "calc(100vh - 64px)",
+  };
+
   return (
-    <Layout style={{ minHeight: '100vh' }}>
+    <Layout style={{ minHeight: "100vh", ...rootStyle }}>
       {sider}
       <Layout
-        style={{
-          transition: 'margin-inline-start 0.2s ease',
-        }}
+        style={{ transition: "margin-inline-start 0.2s ease", ...mainStyle }}
       >
         {header}
-        <Layout.Content
-          style={{
-            padding: responsivePadding ? 'clamp(12px, 2vw, 24px)' : 24,
-            minHeight: 'calc(100vh - 64px)',
-          }}
-        >
-          {children}
+        <Layout.Content style={{ ...defaultContentStyle, ...contentStyle }}>
+          {breadcrumb}
+          {bodyStyle ? <div style={bodyStyle}>{children}</div> : children}
         </Layout.Content>
         {footer}
       </Layout>

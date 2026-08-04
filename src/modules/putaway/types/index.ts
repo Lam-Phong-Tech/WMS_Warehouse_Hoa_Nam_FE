@@ -5,7 +5,7 @@ export interface PutawayTask {
   skuName: string;
   quantity: number;
   receiptCode: string;
-  status: 'RECEIVED_PENDING_PUTAWAY' | 'STORED';
+  status: "RECEIVED_PENDING_PUTAWAY" | "STORED";
   locationHint: string;
   age: string;
   trayCode?: string;

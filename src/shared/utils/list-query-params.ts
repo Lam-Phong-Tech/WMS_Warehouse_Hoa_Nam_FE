@@ -40,12 +40,12 @@ export function buildListSearchParams(
   keyMap: ListQueryKeyMap = {},
 ): URLSearchParams {
   const sp = new URLSearchParams();
-  if (params.page) sp.set(keyMap.page ?? 'page', String(params.page));
+  if (params.page) sp.set(keyMap.page ?? "page", String(params.page));
   if (params.per_page) {
-    sp.set(keyMap.per_page ?? 'per_page', String(params.per_page));
+    sp.set(keyMap.per_page ?? "per_page", String(params.per_page));
   }
   if (params.keyword?.trim()) {
-    sp.set(keyMap.keyword ?? 'keyword', params.keyword.trim());
+    sp.set(keyMap.keyword ?? "keyword", params.keyword.trim());
   }
   return sp;
 }

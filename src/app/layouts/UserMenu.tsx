@@ -1,17 +1,17 @@
-import { Avatar, Dropdown, Space, Typography } from 'antd';
-import type { MenuProps } from 'antd';
+import { Avatar, Dropdown, Space, Typography } from "antd";
+import type { MenuProps } from "antd";
 import {
   LogoutOutlined,
   UserOutlined,
   ProfileOutlined,
-} from '@ant-design/icons';
-import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
-import { useAuthStore } from '@/shared/store/auth.store';
-import { useLogout } from '@/modules/auth/hooks/use-logout';
-import { BRAND } from '@/app/theme';
-import { layoutStyles } from '@/app/layouts/layout.styles';
-import { ROUTES } from '@/shared/constants/routes';
+} from "@ant-design/icons";
+import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
+import { useAuthStore } from "@/shared/store/auth.store";
+import { useLogout } from "@/modules/auth/hooks/use-logout";
+import { BRAND } from "@/app/theme";
+import { layoutStyles } from "@/app/layouts/layout.styles";
+import { ROUTES } from "@/shared/constants/routes";
 
 interface Props {
   /** Ẩn tên cạnh avatar trên màn nhỏ. */
@@ -26,7 +26,7 @@ export function UserMenu({ compact = false }: Props) {
   const logout = useLogout();
 
   const displayName =
-    profile?.name ?? user?.name ?? user?.code ?? user?.email ?? 'Người dùng';
+    profile?.name ?? user?.name ?? user?.code ?? user?.email ?? "Người dùng";
 
   const positionInfo = [
     profile?.position?.name,
@@ -34,19 +34,19 @@ export function UserMenu({ compact = false }: Props) {
     profile?.branch?.name ?? profile?.company?.name,
   ]
     .filter(Boolean)
-    .join(' · ');
+    .join(" · ");
 
   const userEmail = profile?.email ?? user?.email;
 
   const handleLogout = () => {
     logout.mutate(undefined, {
-      onSuccess: () => toast.success('Đăng xuất thành công'),
+      onSuccess: () => toast.success("Đăng xuất thành công"),
     });
   };
 
-  const items: MenuProps['items'] = [
+  const items: MenuProps["items"] = [
     {
-      key: 'profile',
+      key: "profile",
       icon: <UserOutlined />,
       label: (
         <div style={layoutStyles.userMenuProfile}>
@@ -73,18 +73,18 @@ export function UserMenu({ compact = false }: Props) {
       ),
       disabled: true,
     },
-    { type: 'divider' },
+    { type: "divider" },
     {
-      key: 'account',
+      key: "account",
       icon: <ProfileOutlined />,
-      label: 'Thông tin tài khoản',
+      label: "Thông tin tài khoản",
       onClick: () => navigate(ROUTES.PROFILE),
     },
-    { type: 'divider' },
+    { type: "divider" },
     {
-      key: 'logout',
+      key: "logout",
       icon: <LogoutOutlined />,
-      label: 'Đăng xuất',
+      label: "Đăng xuất",
       danger: true,
       disabled: logout.isPending,
       onClick: handleLogout,
@@ -92,7 +92,7 @@ export function UserMenu({ compact = false }: Props) {
   ];
 
   return (
-    <Dropdown menu={{ items }} trigger={['click']} placement="bottomRight">
+    <Dropdown menu={{ items }} trigger={["click"]} placement="bottomRight">
       <Space
         style={layoutStyles.userMenuClickable}
         tabIndex={0}
@@ -100,7 +100,7 @@ export function UserMenu({ compact = false }: Props) {
         aria-haspopup="menu"
         aria-label={`Menu tài khoản của ${displayName}`}
         onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
+          if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
             e.currentTarget.click();
           }
@@ -109,21 +109,21 @@ export function UserMenu({ compact = false }: Props) {
         <Avatar
           style={{
             background: BRAND.primary,
-            verticalAlign: 'middle',
+            verticalAlign: "middle",
             flexShrink: 0,
           }}
           icon={<UserOutlined />}
-          size={compact ? 'default' : 36}
+          size={compact ? "default" : 36}
         />
         {!compact && (
           <div style={{ lineHeight: 1.3 }}>
-            <Typography.Text strong style={{ fontSize: 14, display: 'block' }}>
+            <Typography.Text strong style={{ fontSize: 14, display: "block" }}>
               {displayName}
             </Typography.Text>
             {positionInfo && (
               <Typography.Text
                 type="secondary"
-                style={{ fontSize: 11, display: 'block' }}
+                style={{ fontSize: 11, display: "block" }}
               >
                 {positionInfo}
               </Typography.Text>

@@ -1,30 +1,24 @@
-import { ROUTES } from '@/shared/constants/routes';
+import { ROUTES } from "@/shared/constants/routes";
+import { WMS_PERMISSION_CATALOG as P } from "@/shared/constants/wms-permissions";
 
 /**
- * Nguồn DUY NHẤT khai báo quyền tối thiểu để vào mỗi route.
- * Dùng cho cả route guard (RequirePermission) lẫn lọc menu (SideNav),
- * tránh khai báo mã quyền rải rác hai nơi.
- *
- * `undefined` = ai đăng nhập cũng vào được.
- * Mảng string[] = OR — chỉ cần 1 trong các quyền là vào được route.
+ * Route access is an entry/UX gate only. Sensitive actions require their
+ * action permission at component/service level and backend authorization.
  */
-export const ROUTE_PERMISSIONS: Record<string, string | string[] | undefined> = {
-  // WMS P0 - Quản lý kho
-  // Permission mapping theo Wireframe P0 tab 12A (Screen map & stock effect)
-  // Chi tiết action-level permission xem bảng 12D
-  
-  [ROUTES.DASHBOARD]: undefined, // Dashboard tổng quan - ai cũng xem được
-  [ROUTES.MASTER]: ['sku.manage', 'master.manage'],      // Danh mục & SKU
-  [ROUTES.PHYSICAL_CODES]: ['inventory.trace', 'scan.classify'], // Mã vật lý
-  [ROUTES.INBOUND]: ['inbound.create', 'inbound.post'],          // Nhập kho
-  [ROUTES.PUTAWAY]: ['putaway.manage'],                          // Putaway
-  [ROUTES.OUTBOUND]: ['outbound.create', 'outbound.post'],       // Xuất kho
-  [ROUTES.INVENTORY]: ['inventory.view'],                        // Tồn & truy vết
-  [ROUTES.STOCKTAKE]: ['stocktake.count'],                       // Kiểm kê
-  [ROUTES.WARRANTY]: ['warranty.manage'],                        // Bảo hành
-  [ROUTES.REVERSAL]: ['inventory.reversal.post'],                // Reversal
-  [ROUTES.REPORTS]: ['report.view'],                             // Báo cáo
-
-  // Shared
-  [ROUTES.AUDIT_LOGS]: 'AUDIT_LOG_VIEW',
-};
+export const ROUTE_PERMISSIONS: Record<string, string | string[] | undefined> =
+  {
+    [ROUTES.DASHBOARD]: undefined,
+    [ROUTES.MASTER_DATA]: [P.SKU_MANAGE, P.MASTER_MANAGE],
+    [ROUTES.SCAN]: [P.INVENTORY_TRACE, P.SCAN_CLASSIFY],
+    [ROUTES.INBOUND]: [P.INBOUND_CREATE, P.INBOUND_POST],
+    [ROUTES.PUTAWAY]: [P.PUTAWAY_MANAGE],
+    [ROUTES.OUTBOUND]: [P.OUTBOUND_CREATE, P.OUTBOUND_POST],
+    [ROUTES.INVENTORY]: [P.INVENTORY_VIEW],
+    [ROUTES.STOCKTAKE]: [P.STOCKTAKE_COUNT],
+    [ROUTES.WARRANTY]: [P.WARRANTY_MANAGE],
+    [ROUTES.REVERSE]: [P.REVERSAL_POST],
+    [ROUTES.REPORTS]: [P.REPORT_VIEW],
+    [ROUTES.AUDIT_LOGS]: P.AUDIT_LOG_VIEW,
+    [ROUTES.COMPONENT_CATALOG]: undefined,
+    [ROUTES.PROFILE]: undefined,
+  };

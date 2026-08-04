@@ -1,12 +1,12 @@
-import { Button, Layout, Space, theme, Tooltip } from 'antd';
+import { Button, Layout, Space, theme, Tooltip } from "antd";
 import {
+  BellOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
-  BellOutlined,
-} from '@ant-design/icons';
-import { ContextSwitcher } from '@/modules/auth/components/ContextSwitcher';
-import { UserMenu } from '@/app/layouts/UserMenu';
-import { layoutStyles } from '@/app/layouts/layout.styles';
+} from "@ant-design/icons";
+import { ContextSwitcher } from "@/modules/auth/components/ContextSwitcher";
+import { UserMenu } from "@/app/layouts/UserMenu";
+import { layoutStyles } from "@/app/layouts/layout.styles";
 
 const { Header } = Layout;
 
@@ -16,13 +16,13 @@ interface Props {
   onToggle: () => void;
 }
 
-/** Thanh header admin: nút thu gọn sidebar + ContextSwitcher + thông báo + UserMenu. */
+/** Admin header: sidebar toggle, context switcher, notification placeholder and user menu. */
 export function AppHeader({ isMobile, collapsed, onToggle }: Props) {
   const {
     token: { colorBorderSecondary },
   } = theme.useToken();
 
-  const drawerAriaLabel = 'Mở/đóng menu điều hướng';
+  const drawerAriaLabel = "Mở/đóng menu điều hướng";
 
   return (
     <Header
@@ -37,8 +37,8 @@ export function AppHeader({ isMobile, collapsed, onToggle }: Props) {
           isMobile
             ? drawerAriaLabel
             : collapsed
-              ? 'Mở rộng menu điều hướng'
-              : 'Thu gọn menu điều hướng'
+              ? "Mở rộng menu điều hướng"
+              : "Thu gọn menu điều hướng"
         }
         icon={
           isMobile || collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />
@@ -50,17 +50,11 @@ export function AppHeader({ isMobile, collapsed, onToggle }: Props) {
       <Space size="middle" wrap={false}>
         <ContextSwitcher />
 
-        {/*
-          P2: Bell chưa có endpoint backend (BE /api/documentation hiện không
-          có route notification nào) — disable + tooltip nói rõ "sắp ra mắt"
-          thay vì để nút trông bấm được nhưng không có hành vi nghiệp vụ.
-          Khi BE có API, bỏ `disabled` và nối vào danh sách thông báo thật.
-        */}
-        <Tooltip>
+        <Tooltip title="Thông báo sắp ra mắt. Chưa có endpoint backend được duyệt.">
           <Button
             type="text"
             disabled
-            aria-label="Thông báo (sắp ra mắt, chưa khả dụng)"
+            aria-label="Thông báo sắp ra mắt, chưa khả dụng"
             icon={<BellOutlined />}
             style={layoutStyles.headerToggleButton}
           />

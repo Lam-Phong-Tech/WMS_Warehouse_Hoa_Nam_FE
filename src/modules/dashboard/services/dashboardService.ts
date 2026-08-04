@@ -1,6 +1,11 @@
-import { http } from '@/shared/api/http';
-import type { DashboardKPI, RecentDocument, ReconcileHealth, AlertItem } from '../types';
-import { API_ENDPOINTS } from '@/shared/api/endpoints';
+import { http } from "@/shared/api/http";
+import type {
+  DashboardKPI,
+  RecentDocument,
+  ReconcileHealth,
+  AlertItem,
+} from "../types";
+import { API_ENDPOINTS } from "@/shared/api/endpoints";
 
 export async function fetchDashboardKPI(): Promise<DashboardKPI> {
   return http.get<DashboardKPI>(API_ENDPOINTS.DASHBOARD_KPI);

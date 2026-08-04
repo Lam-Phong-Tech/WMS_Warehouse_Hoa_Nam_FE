@@ -1,5 +1,5 @@
-import { Tabs as AntTabs } from 'antd';
-import type { TabsProps } from 'antd';
+import { Tabs as AntTabs } from "antd";
+import type { TabsProps } from "antd";
 
 export type { TabsProps };
 

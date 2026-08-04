@@ -1,6 +1,6 @@
-import type { ReactNode } from 'react';
-import { FilterBar } from './FilterBar';
-import { SearchInput } from './SearchInput';
+import type { ReactNode } from "react";
+import { FilterBar } from "./FilterBar";
+import { SearchInput } from "./SearchInput";
 
 export interface TableToolbarProps {
   /** Search placeholder text */
@@ -44,7 +44,7 @@ export interface TableToolbarProps {
  * ```
  */
 export function TableToolbar({
-  searchPlaceholder = 'Tìm kiếm...',
+  searchPlaceholder = "Tìm kiếm...",
   searchValue,
   onSearchChange,
   filters,

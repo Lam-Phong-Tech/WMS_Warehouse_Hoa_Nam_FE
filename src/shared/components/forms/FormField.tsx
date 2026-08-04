@@ -1,12 +1,12 @@
-import type { ReactNode } from 'react';
+import type { ReactNode } from "react";
 import {
   Controller,
   type Control,
   type ControllerRenderProps,
   type FieldValues,
   type Path,
-} from 'react-hook-form';
-import { Form } from 'antd';
+} from "react-hook-form";
+import { Form } from "antd";
 
 export interface FormFieldProps<T extends FieldValues> {
   control: Control<T>;
@@ -45,7 +45,7 @@ export function FormField<T extends FieldValues>({
           label={label}
           required={required}
           tooltip={tooltip}
-          validateStatus={fieldState.error ? 'error' : ''}
+          validateStatus={fieldState.error ? "error" : ""}
           help={fieldState.error?.message ?? help}
         >
           {children(field)}

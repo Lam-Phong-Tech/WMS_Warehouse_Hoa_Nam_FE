@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ReactNode } from "react";
 
 /**
  * Props chung cho hầu hết các shared component.
@@ -14,7 +14,7 @@ export interface CommonProps {
  * Kế thừa từ CommonProps và thêm các thuộc tính đặc thù cho input.
  */
 export interface FieldProps extends CommonProps {
-  size?: 'small' | 'middle' | 'large';
+  size?: "small" | "middle" | "large";
   variant?: string;
   disabled?: boolean;
   loading?: boolean;

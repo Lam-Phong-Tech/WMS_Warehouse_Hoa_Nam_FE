@@ -1,8 +1,8 @@
-import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
-import { cookieStorage } from '@/shared/lib/cookie-storage';
-import { memoryStorage } from '@/shared/lib/memory-storage';
-import { queryClient } from '@/app/providers/query-client';
+import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
+import { cookieStorage } from "@/shared/lib/cookie-storage";
+import { memoryStorage } from "@/shared/lib/memory-storage";
+import { queryClient } from "@/app/providers/query-client";
 
 /**
  * Token là memory-only thật sự (không nằm trong `partialize` bên dưới) —
@@ -15,15 +15,15 @@ import { queryClient } from '@/app/providers/query-client';
  *
  * Ref: docs/TOKEN_STORAGE_HARDENING.md, docs/tickets/BE_REFRESH_ENDPOINT_TICKET.md
  */
-import type { User } from '@/shared/types/user';
-import type { AuthContext } from '@/modules/auth/types/auth.types';
-import type { MeContext, MeResponse } from '@/modules/auth/types/me.types';
+import type { User } from "@/shared/types/user";
+import type { AuthContext } from "@/modules/auth/types/auth.types";
+import type { MeContext, MeResponse } from "@/modules/auth/types/me.types";
 
 /** Hồ sơ tài khoản (không gồm active_context/available_contexts — 2 field đó
  * có state riêng vì chi phối permission/data-scope). */
 export type AuthProfile = Omit<
   MeResponse,
-  'active_context' | 'available_contexts'
+  "active_context" | "available_contexts"
 >;
 
 interface AuthState {
@@ -60,6 +60,7 @@ interface AuthState {
 
   setAuth: (data: {
     token: string;
+    refreshToken?: string;
     user: User;
     contexts?: AuthContext[];
   }) => void;
@@ -86,11 +87,14 @@ export const useAuthStore = create<AuthState>()(
       isSuperAdmin: false,
       isProfileLoaded: false,
 
-      setAuth: ({ token, user, contexts = [] }) => {
+      setAuth: ({ token, refreshToken, user, contexts = [] }) => {
         // Đồng bộ token vào memoryStorage để axios.ts đọc — token KHÔNG nằm
         // trong `partialize` bên dưới nên không persist vào cookie; memory-only
         // thật sự (xem docs/TOKEN_STORAGE_HARDENING.md).
         memoryStorage.setItem(token);
+        if (refreshToken) {
+          memoryStorage.setRefreshToken(refreshToken);
+        }
         set({
           token,
           user,
@@ -147,7 +151,7 @@ export const useAuthStore = create<AuthState>()(
       },
     }),
     {
-      name: 'erp-auth',
+      name: "erp-auth",
       storage: createJSONStorage(() => cookieStorage),
       // Chỉ lưu phiên tối thiểu (non-sensitive) vào cookie; hồ sơ/quyền nạp
       // lại qua /auth/me. `token` KHÔNG nằm trong danh sách này — memory-only

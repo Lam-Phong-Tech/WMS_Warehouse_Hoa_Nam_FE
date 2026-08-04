@@ -1,0 +1,128 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - m1
+
+permissions:
+  contents: read
+
+env:
+  SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+  EXECUTION_SHA: ${{ github.sha }}
+  WMS_EVIDENCE_DIR: docs/evidence/wms-contract-signoff/generated
+  VITE_APP_ENV: test
+  VITE_API_BASE_URL: http://127.0.0.1:5173/api/v1
+  VITE_API_HEALTH_PATH: /health
+  VITE_API_WITH_CREDENTIALS: "false"
+
+jobs:
+  quality-gates:
+    name: Quality gates
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+          cache-dependency-path: yarn.lock
+
+      - name: Install dependencies
+        id: install
+        shell: bash
+        run: yarn install --frozen-lockfile --non-interactive
+
+      - name: Check formatting without mutating source
+        id: format
+        run: npm run format:check
+
+      - name: Lint
+        id: lint
+        run: npm run lint
+
+      - name: Type check
+        id: typecheck
+        run: npm run typecheck
+
+      - name: Unit and integration tests
+        id: unit_tests
+        run: npm run test
+
+      - name: Verify env and smoke contract
+        id: env_contract
+        run: npm run env:verify
+
+      - name: Verify UAT P0/P1 readiness contract
+        id: uat_contract
+        run: npm run uat:p0p1:verify
+
+      - name: Verify Master/SKU closure contract
+        id: master_sku
+        run: npm run master-sku:verify
+
+      - name: Verify WMS P0/P1/P2 contract guards
+        id: wms_contract
+        env:
+          WMS_SOURCE_SHA: ${{ env.SOURCE_SHA }}
+          WMS_EXECUTION_SHA: ${{ env.EXECUTION_SHA }}
+        run: npm run wms-contract:verify
+
+      - name: Build production bundle
+        id: build
+        run: npm run build
+
+      - name: Check frontend health artifact
+        id: health
+        run: npm run health:check
+
+      - name: Check API mapping
+        id: api_mapping
+        run: npm run check:api-mapping
+
+      - name: Install Playwright Chromium
+        id: playwright_install
+        run: npx playwright install --with-deps chromium
+
+      - name: Capture responsive and controlled API-error evidence
+        id: runtime_evidence
+        run: npm run test:e2e:evidence
+
+      - name: Collect immutable CI/build/runtime manifest
+        if: always()
+        id: collect_evidence
+        env:
+          WMS_SOURCE_SHA: ${{ env.SOURCE_SHA }}
+          WMS_EXECUTION_SHA: ${{ env.EXECUTION_SHA }}
+          FORMAT_OUTCOME: ${{ steps.format.outcome }}
+          LINT_OUTCOME: ${{ steps.lint.outcome }}
+          TYPECHECK_OUTCOME: ${{ steps.typecheck.outcome }}
+          UNIT_TEST_OUTCOME: ${{ steps.unit_tests.outcome }}
+          ENV_CONTRACT_OUTCOME: ${{ steps.env_contract.outcome }}
+          UAT_CONTRACT_OUTCOME: ${{ steps.uat_contract.outcome }}
+          MASTER_SKU_OUTCOME: ${{ steps.master_sku.outcome }}
+          WMS_CONTRACT_OUTCOME: ${{ steps.wms_contract.outcome }}
+          BUILD_OUTCOME: ${{ steps.build.outcome }}
+          HEALTH_OUTCOME: ${{ steps.health.outcome }}
+          API_MAPPING_OUTCOME: ${{ steps.api_mapping.outcome }}
+          RUNTIME_EVIDENCE_OUTCOME: ${{ steps.runtime_evidence.outcome }}
+        run: npm run wms-evidence:collect
+
+      - name: Upload WMS closure evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: wms-fe-closure-evidence-${{ env.SOURCE_SHA }}
+          path: |
+            docs/evidence/wms-contract-signoff/generated
+            test-results
+            playwright-report
+            dist/health.json
+          if-no-files-found: warn
+          retention-days: 30

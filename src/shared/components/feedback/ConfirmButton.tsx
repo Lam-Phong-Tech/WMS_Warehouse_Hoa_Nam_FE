@@ -1,10 +1,10 @@
-import type { ReactNode } from 'react';
-import { Button, Popconfirm } from 'antd';
-import type { ButtonProps } from 'antd';
+import type { ReactNode } from "react";
+import { Button, Popconfirm } from "antd";
+import type { ButtonProps } from "antd";
 
 export interface ConfirmButtonProps extends Omit<
   ButtonProps,
-  'onClick' | 'title'
+  "onClick" | "title"
 > {
   /** Gọi khi người dùng xác nhận. */
   onConfirm: () => void;
@@ -15,16 +15,16 @@ export interface ConfirmButtonProps extends Omit<
   loading?: boolean;
   children: ReactNode;
   /** aria-label cho nút (accessibility). Nên mô tả rõ hành động + đối tượng, vd "Xoá nhân viên Nguyễn Văn A". */
-  'aria-label'?: string;
+  "aria-label"?: string;
 }
 
 /** Nút kèm hộp xác nhận (dùng cho xoá / hành động nguy hiểm). */
 export function ConfirmButton({
   onConfirm,
-  title = 'Bạn chắc chắn?',
+  title = "Bạn chắc chắn?",
   description,
-  okText = 'Đồng ý',
-  cancelText = 'Huỷ',
+  okText = "Đồng ý",
+  cancelText = "Huỷ",
   loading,
   children,
   ...buttonProps

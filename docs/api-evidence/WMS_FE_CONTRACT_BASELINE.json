@@ -1,0 +1,147 @@
+{
+  "schemaVersion": "2.0.0",
+  "task": "WWHN-153",
+  "sourceReviewScore": 72,
+  "apiBasePath": "/api/v1",
+  "officialContract": {
+    "jira": "WWHN-31",
+    "status": "PENDING_BE1_BE2_QA1_CLOSURE",
+    "version": null,
+    "sha256": null,
+    "changelog": null,
+    "independentReviewer": null,
+    "rule": "FE local constants and snapshots are not an official OpenAPI/schema release. Final sign-off remains fail-closed until all fields are populated from BE evidence and QA1 records an exact-hash review."
+  },
+  "criticalFlows": [
+    {
+      "id": "SCAN_CLASSIFY",
+      "method": "POST",
+      "relativePath": "/scan/classify",
+      "runtimePath": "/api/v1/scan/classify",
+      "permissionsAny": ["inventory.trace", "scan.classify"],
+      "requiredRequest": ["codes"],
+      "requiredSuccess": ["batch_id", "items[].code_value", "items[].status"],
+      "acceptedHttp": [200],
+      "expectedErrors": [403, 409, 422, 500],
+      "feDisposition": "IMPLEMENTED_WITH_REQUEST_RESPONSE_AND_PERMISSION_GUARDS",
+      "officialSignoff": "PENDING_BE_BA_QA"
+    },
+    {
+      "id": "POST_RECEIPT",
+      "method": "POST",
+      "relativePath": "/inbound-documents/:id/post-receipt",
+      "permission": "inbound.post",
+      "requiredHeaders": ["Idempotency-Key", "If-Match"],
+      "requiredRequest": ["lines[].lineId", "lines[].quantity"],
+      "requiredSuccess": ["receipt_id", "movement_ref", "request_id"],
+      "acceptedHttp": [200, 201],
+      "expectedErrors": [403, 409, 412, 422, 428],
+      "feDisposition": "IMPLEMENTED_WITH_REQUEST_RESPONSE_AND_PERMISSION_GUARDS",
+      "officialSignoff": "PENDING_BE_BA_QA"
+    },
+    {
+      "id": "POST_ISSUE",
+      "method": "POST",
+      "relativePath": "/outbound-documents/:id/post-issue",
+      "permission": "outbound.post",
+      "requiredHeaders": ["Idempotency-Key", "If-Match"],
+      "requiredRequest": ["lines[].lineId", "lines[].quantity"],
+      "requiredSuccess": ["issue_id", "movement_ref", "request_id"],
+      "acceptedHttp": [200, 201],
+      "expectedErrors": [403, 409, 412, 422, 428],
+      "feDisposition": "IMPLEMENTED_WITH_REQUEST_RESPONSE_AND_PERMISSION_GUARDS",
+      "officialSignoff": "PENDING_BE_BA_QA"
+    },
+    {
+      "id": "APPLY_ADJUSTMENT",
+      "method": "POST",
+      "relativePath": "/stocktake/sessions/:sessionId/apply-adjustment",
+      "permission": "stocktake.adjust",
+      "requiredHeaders": ["Idempotency-Key", "If-Match"],
+      "requiredRequest": ["lines[].sku", "lines[].actual_qty"],
+      "requiredSuccess": [
+        "session_id",
+        "status",
+        "movement_ref",
+        "request_id"
+      ],
+      "acceptedHttp": [200, 201],
+      "expectedErrors": [403, 409, 412, 422, 428],
+      "feDisposition": "IMPLEMENTED_WITH_REQUEST_RESPONSE_AND_PERMISSION_GUARDS",
+      "officialSignoff": "PENDING_BE_BA_QA"
+    }
+  ],
+  "reviewClosureMatrix": [
+    {
+      "id": "BA-FE-P0-01",
+      "severity": "P0",
+      "owner": "BE1 + BE2",
+      "feDisposition": "FAIL_CLOSED_AND_VERSIONED_INGESTION_READY",
+      "externalEvidence": "Official WWHN-31 OpenAPI/schema version, SHA256, changelog and independent reviewer",
+      "status": "EXTERNAL_BLOCKER"
+    },
+    {
+      "id": "BA-FE-P0-02",
+      "severity": "P0",
+      "owner": "FE1 + BA + QA",
+      "feDisposition": "FINAL_SIGNOFF_GUARD_ENFORCED",
+      "externalEvidence": "WWHN-31/WWHN-180 pass plus independent BA/QA confirmation",
+      "status": "FE_COMPLETE_EXTERNAL_BLOCKER"
+    },
+    {
+      "id": "BA-FE-P1-01",
+      "severity": "P1",
+      "owner": "BE1 + BE2",
+      "feDisposition": "TRACE_AND_VERSION_REQUIREMENTS_LOCKED",
+      "externalEvidence": "WWHN-150/WWHN-151 versioned architecture/OpenAPI/schema attachments",
+      "status": "EXTERNAL_BLOCKER"
+    },
+    {
+      "id": "BA-FE-P1-02",
+      "severity": "P1",
+      "owner": "QA1",
+      "feDisposition": "EXACT_HASH_REVIEW_REQUIRED",
+      "externalEvidence": "WWHN-152 constraints/error/testability review on exact official SHA256",
+      "status": "EXTERNAL_BLOCKER"
+    },
+    {
+      "id": "BA-FE-P1-03",
+      "severity": "P1",
+      "owner": "QA2 + BA",
+      "feDisposition": "RUNTIME_TEMPLATE_AND_CI_MANIFEST_READY",
+      "externalEvidence": "WWHN-182 named-build evidence and WWHN-183 G1 minutes",
+      "status": "FE_COMPLETE_EXTERNAL_BLOCKER"
+    },
+    {
+      "id": "BA-FE-P1-04",
+      "severity": "P1",
+      "owner": "BE/RBAC + FE1 + BA",
+      "feDisposition": "RUNTIME_PERMISSIONS_RECONCILIATION_AND_SERVICE_GUARDS_IMPLEMENTED",
+      "externalEvidence": "Approved /permissions catalog and backend 403 evidence",
+      "status": "FE_COMPLETE_EXTERNAL_BLOCKER"
+    },
+    {
+      "id": "BA-FE-P1-05",
+      "severity": "P1",
+      "owner": "BE1 + BA + QA",
+      "feDisposition": "CRITICAL_REQUEST_RESPONSE_ERROR_PERMISSION_GUARDS_IMPLEMENTED",
+      "externalEvidence": "Official endpoint/payload/error/permission/sample-response sign-off",
+      "status": "FE_COMPLETE_EXTERNAL_BLOCKER"
+    },
+    {
+      "id": "BA-FE-P2-01",
+      "severity": "P2",
+      "owner": "FE1",
+      "feDisposition": "CLOSURE_MATRIX_PUBLISHED_IN_WWHN-153_AND_CI_ARTIFACT",
+      "status": "FE_COMPLETE"
+    },
+    {
+      "id": "BA-FE-P2-02",
+      "severity": "P2",
+      "owner": "FE1 + DevOps + QA2",
+      "feDisposition": "SOURCE_EXECUTION_SHA_BUILD_ENV_LOG_SCREENSHOT_VIDEO_MANIFEST_IMPLEMENTED",
+      "externalEvidence": "QA2 real backend/error/RBAC captures on named UAT build",
+      "status": "FE_COMPLETE_EXTERNAL_BLOCKER"
+    }
+  ]
+}

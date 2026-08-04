@@ -1,12 +1,12 @@
-import { http } from '@/shared/api/http';
-import type { ApiMeta } from '@/shared/types/api-response';
-import type { AuditLog, AuditLogFilters } from '../types/audit-logs.types';
+import { http } from "@/shared/api/http";
+import type { ApiMeta } from "@/shared/types/api-response";
+import type { AuditLog, AuditLogFilters } from "../types/audit-logs.types";
 
 /**
  * API Endpoints cho Audit Logs
  */
 export const AUDIT_LOG_ENDPOINTS = {
-  AUDIT_LOGS: '/audit-logs',
+  AUDIT_LOGS: "/audit-logs",
 } as const;
 
 /**
@@ -33,14 +33,14 @@ export const auditLogService = {
 
     // Chỉ thêm params có giá trị — đúng tên param BE thật (xem ghi chú ở
     // AuditLogFilters): `limit` (không phải `per_page`), `q` (không phải `search`).
-    if (filters.page) params.append('page', filters.page.toString());
-    if (filters.limit) params.append('limit', filters.limit.toString());
-    if (filters.module) params.append('module', filters.module);
-    if (filters.action) params.append('action', filters.action);
-    if (filters.user_id) params.append('user_id', filters.user_id.toString());
-    if (filters.q) params.append('q', filters.q);
-    if (filters.sort_by) params.append('sort_by', filters.sort_by);
-    if (filters.sort_order) params.append('sort_order', filters.sort_order);
+    if (filters.page) params.append("page", filters.page.toString());
+    if (filters.limit) params.append("limit", filters.limit.toString());
+    if (filters.module) params.append("module", filters.module);
+    if (filters.action) params.append("action", filters.action);
+    if (filters.user_id) params.append("user_id", filters.user_id.toString());
+    if (filters.q) params.append("q", filters.q);
+    if (filters.sort_by) params.append("sort_by", filters.sort_by);
+    if (filters.sort_order) params.append("sort_order", filters.sort_order);
 
     const queryString = params.toString();
     const url = queryString

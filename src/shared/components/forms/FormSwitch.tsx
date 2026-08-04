@@ -1,14 +1,14 @@
-import type { Control, FieldValues, Path } from 'react-hook-form';
-import { Switch, type SwitchProps } from 'antd';
+import type { Control, FieldValues, Path } from "react-hook-form";
+import { Switch, type SwitchProps } from "antd";
 import {
   FormField,
   type FormFieldProps,
-} from '@/shared/components/forms/FormField';
+} from "@/shared/components/forms/FormField";
 
 export type FormSwitchProps<T extends FieldValues> = SwitchProps & {
   control: Control<T>;
   name: Path<T>;
-} & Partial<Pick<FormFieldProps<T>, 'label' | 'help' | 'tooltip' | 'required'>>;
+} & Partial<Pick<FormFieldProps<T>, "label" | "help" | "tooltip" | "required">>;
 
 /** Công tắc bật/tắt (boolean) tích hợp react-hook-form. */
 export function FormSwitch<T extends FieldValues>({

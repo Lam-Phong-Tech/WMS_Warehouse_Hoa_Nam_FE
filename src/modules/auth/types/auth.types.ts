@@ -1,4 +1,4 @@
-import type { User } from '@/shared/types/user';
+import type { User } from "@/shared/types/user";
 
 // Mô hình dữ liệu (interface) của module auth.
 
@@ -22,6 +22,7 @@ export interface AuthContext {
 
 export interface LoginResponse {
   access_token: string;
+  refresh_token?: string;
   token_type: string;
   expires_in: number;
   user: User;
@@ -61,6 +62,8 @@ export interface SwitchContextResponse {
  */
 export interface RefreshResponse {
   access_token: string;
+  refresh_token?: string;
   token_type: string;
   expires_in: number;
+  user?: User;
 }

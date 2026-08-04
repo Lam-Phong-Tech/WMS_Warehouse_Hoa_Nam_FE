@@ -1,7 +1,7 @@
-import { Tag } from 'antd';
-import type { TagProps } from 'antd';
+import { Tag } from "antd";
+import type { TagProps } from "antd";
 
-export interface StatusTagProps extends Omit<TagProps, 'color' | 'children'> {
+export interface StatusTagProps extends Omit<TagProps, "color" | "children"> {
   /** Giá trị trạng thái: số (employee status), boolean (active/inactive), hoặc string tuỳ ý. */
   status: string | number | boolean;
   /** Map value → màu Tag antd (preset hoặc hex). */
@@ -11,13 +11,13 @@ export interface StatusTagProps extends Omit<TagProps, 'color' | 'children'> {
 }
 
 const DEFAULT_BOOL_COLOR: Record<string, string> = {
-  true: 'success',
-  false: 'default',
+  true: "success",
+  false: "default",
 };
 
 const DEFAULT_BOOL_LABEL: Record<string, string> = {
-  true: 'Hoạt động',
-  false: 'Ngừng hoạt động',
+  true: "Hoạt động",
+  false: "Ngừng hoạt động",
 };
 
 /**
@@ -45,7 +45,7 @@ export function StatusTag({
     colorMap?.[status as string | number] ??
     colorMap?.[key] ??
     DEFAULT_BOOL_COLOR[key] ??
-    'default';
+    "default";
 
   const label =
     labelMap?.[status as string | number] ??

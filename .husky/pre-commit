@@ -39,10 +39,11 @@ IFS=$OLD_IFS
   fi
 
   # Chỉ lấy các dòng được thêm (bắt đầu bằng +) trong staged diff của đúng file này.
-  # Lọc bỏ: env var reference, CSS selector, comment, import — không phải secret thật.
+  # Lọc bỏ: env var reference, CSS selector, comment, import, placeholder — không phải secret thật.
   ADDED_LINES=$(git diff --cached -- "$FILE" | grep '^+' | grep -v '^+++' \
     | grep -v 'process\.env' | grep -v 'import\.meta\.env' | grep -v '\$env:' \
     | grep -v 'QA_ADMIN' | grep -v 'QA_NOEMPEDIT' \
+    | grep -v "['\"]<[A-Za-z0-9_-][A-Za-z0-9_-]*>['\"]" \
     | grep -v 'input\[type="password"\]' | grep -v 'name="password"' \
     | grep -v '^+.*\/\/' | grep -v '^+.*\*' | grep -v '^+.*import') || true
 

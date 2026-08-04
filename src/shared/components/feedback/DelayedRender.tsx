@@ -1,6 +1,6 @@
-import { useEffect, useState, type ReactNode } from 'react';
-import { useLocation } from 'react-router-dom';
-import { PageSkeleton } from '@/shared/components/ui-states/PageSkeleton';
+import { useEffect, useState, type ReactNode } from "react";
+import { useLocation } from "react-router-dom";
+import { PageSkeleton } from "@/shared/components/ui-states/PageSkeleton";
 
 /**
  * Delay render children tối thiểu `delay` ms.

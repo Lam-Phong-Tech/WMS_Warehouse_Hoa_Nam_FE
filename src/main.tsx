@@ -1,9 +1,9 @@
-import { StrictMode } from 'react';
-import { createRoot } from 'react-dom/client';
-import App from './App';
-import { QueryProvider } from './app/providers/query-provider';
-import { bootstrapAuth } from './app/bootstrap-auth';
-import './index.css';
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import App from "./App";
+import { AppProviders } from "./app/providers/AppProviders";
+import { bootstrapAuth } from "./app/bootstrap-auth";
+import "./index.css";
 
 // auth.store dùng skipHydration để tránh rehydrate cookie chạy ngầm không
 // xác định thời điểm (xem ghi chú trong auth.store.ts) — gọi 1 lần ở đây,
@@ -12,10 +12,10 @@ import './index.css';
 // ProtectedRoute chờ cờ này trước khi quyết định redirect /login.
 void bootstrapAuth();
 
-createRoot(document.getElementById('root')!).render(
+createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <QueryProvider>
+    <AppProviders>
       <App />
-    </QueryProvider>
+    </AppProviders>
   </StrictMode>,
 );

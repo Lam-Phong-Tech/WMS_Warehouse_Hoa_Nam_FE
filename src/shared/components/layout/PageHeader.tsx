@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react';
-import { Space, Typography } from 'antd';
+import type { ReactNode } from "react";
+import { Space, Typography } from "antd";
 
 export interface PageHeaderProps {
   title: ReactNode;
@@ -12,11 +12,11 @@ export function PageHeader({ title, subtitle, extra }: PageHeaderProps) {
   return (
     <div
       style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "flex-start",
         gap: 16,
-        flexWrap: 'wrap',
+        flexWrap: "wrap",
         marginBottom: 24,
       }}
     >
