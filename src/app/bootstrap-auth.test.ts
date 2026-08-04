@@ -1,83 +1,78 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 
-/**
- * Test riêng cho bootstrapAuth() (tách từ main.tsx) — đảm bảo khi refresh
- * lúc khởi động app thất bại (chưa login / refresh cookie hết hạn / lỗi
- * mạng), luồng bootstrap không redirect, không log lỗi ra console (noise),
- * và luôn kết thúc với `isBootstrapped: true` để ProtectedRoute không bị
- * treo ở trạng thái loading vĩnh viễn.
- */
-
-const { rehydrateMock, setTokenMock, setStateMock } = vi.hoisted(() => ({
+const {
+  rehydrateMock,
+  clearStorageMock,
+  setTokenMock,
+  logoutMock,
+  setStateMock,
+} = vi.hoisted(() => ({
   rehydrateMock: vi.fn(),
+  clearStorageMock: vi.fn(),
   setTokenMock: vi.fn(),
+  logoutMock: vi.fn(),
   setStateMock: vi.fn(),
 }));
 
 vi.mock("@/shared/store/auth.store", () => ({
   useAuthStore: {
-    persist: { rehydrate: rehydrateMock },
-    getState: () => ({ setToken: setTokenMock }),
+    persist: {
+      rehydrate: rehydrateMock,
+      clearStorage: clearStorageMock,
+    },
+    getState: () => ({ setToken: setTokenMock, logout: logoutMock }),
     setState: setStateMock,
   },
 }));
 
-const { refreshMock } = vi.hoisted(() => ({
-  refreshMock: vi.fn(),
-}));
-
+const { refreshMock } = vi.hoisted(() => ({ refreshMock: vi.fn() }));
 vi.mock("@/modules/auth/services/auth.service", () => ({
   authService: { refresh: refreshMock },
 }));
 
 import { bootstrapAuth } from "@/app/bootstrap-auth";
 
-describe("bootstrapAuth", () => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let consoleErrorSpy: any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let consoleWarnSpy: any;
-
+describe("bootstrapAuth WWHN-165", () => {
   beforeEach(() => {
-    rehydrateMock.mockReset().mockResolvedValue(undefined);
-    setTokenMock.mockReset();
-    setStateMock.mockReset();
-    refreshMock.mockReset();
-    consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-    consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.clearAllMocks();
+    rehydrateMock.mockResolvedValue(undefined);
+    clearStorageMock.mockResolvedValue(undefined);
   });
 
-  afterEach(() => {
-    consoleErrorSpy.mockRestore();
-    consoleWarnSpy.mockRestore();
-  });
-
-  it("refresh fail (chưa login) → không setToken, không log noise, vẫn set isBootstrapped: true", async () => {
-    refreshMock.mockRejectedValue({
+  it("401 hết phiên -> clear local session, không tạo bootstrapError", async () => {
+    const error = {
       isAxiosError: true,
       response: { status: 401, data: { message: "Unauthenticated" } },
+      toJSON: vi.fn(),
+      name: "AxiosError",
+      message: "Unauthenticated",
+    };
+    refreshMock.mockRejectedValue(error);
+
+    await bootstrapAuth();
+
+    expect(logoutMock).toHaveBeenCalledTimes(1);
+    expect(clearStorageMock).toHaveBeenCalledTimes(1);
+    expect(setTokenMock).not.toHaveBeenCalled();
+    expect(setStateMock).toHaveBeenCalledWith({
+      isBootstrapped: true,
     });
+    expect(setStateMock).not.toHaveBeenCalledWith({ bootstrapError: error });
+  });
+
+  it("network/5xx -> fail-closed bootstrapError, không giả thành anonymous", async () => {
+    const error = new Error("Network Error");
+    refreshMock.mockRejectedValue(error);
 
     await bootstrapAuth();
 
-    expect(setTokenMock).not.toHaveBeenCalled();
-    expect(consoleErrorSpy).not.toHaveBeenCalled();
-    expect(consoleWarnSpy).not.toHaveBeenCalled();
+    expect(logoutMock).not.toHaveBeenCalled();
+    expect(clearStorageMock).not.toHaveBeenCalled();
+    expect(setStateMock).toHaveBeenCalledWith({ bootstrapError: error });
     expect(setStateMock).toHaveBeenCalledWith({ isBootstrapped: true });
   });
 
-  it("refresh lỗi mạng (không phải 401) → vẫn im lặng, vẫn set isBootstrapped: true", async () => {
-    refreshMock.mockRejectedValue(new Error("Network Error"));
-
-    await bootstrapAuth();
-
-    expect(setTokenMock).not.toHaveBeenCalled();
-    expect(consoleErrorSpy).not.toHaveBeenCalled();
-    expect(consoleWarnSpy).not.toHaveBeenCalled();
-    expect(setStateMock).toHaveBeenCalledWith({ isBootstrapped: true });
-  });
-
-  it("refresh thành công → setToken với access_token mới, vẫn set isBootstrapped: true", async () => {
+  it("refresh thành công -> setToken và hoàn tất bootstrap", async () => {
     refreshMock.mockResolvedValue({ access_token: "new-token" });
 
     await bootstrapAuth();
@@ -86,18 +81,20 @@ describe("bootstrapAuth", () => {
     expect(setStateMock).toHaveBeenCalledWith({ isBootstrapped: true });
   });
 
-  it("rehydrate xong trước rồi mới gọi refresh (đảm bảo thứ tự)", async () => {
-    const callOrder: string[] = [];
-    rehydrateMock.mockImplementation(() => {
-      callOrder.push("rehydrate");
-    });
-    refreshMock.mockImplementation(async () => {
-      callOrder.push("refresh");
-      return { access_token: "tok" };
-    });
+  it("single-flight: hai caller chỉ tạo một refresh request", async () => {
+    let resolveRefresh!: (value: { access_token: string }) => void;
+    refreshMock.mockReturnValue(
+      new Promise((resolve) => {
+        resolveRefresh = resolve;
+      }),
+    );
 
-    await bootstrapAuth();
+    const first = bootstrapAuth();
+    const second = bootstrapAuth();
+    resolveRefresh({ access_token: "single-flight-token" });
+    await Promise.all([first, second]);
 
-    expect(callOrder).toEqual(["rehydrate", "refresh"]);
+    expect(refreshMock).toHaveBeenCalledTimes(1);
+    expect(setTokenMock).toHaveBeenCalledWith("single-flight-token");
   });
 });
