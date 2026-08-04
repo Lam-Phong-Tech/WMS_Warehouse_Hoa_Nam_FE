@@ -45,6 +45,7 @@ const outcomes = {
   unitTests: process.env.UNIT_TEST_OUTCOME ?? "not_run",
   envContract: process.env.ENV_CONTRACT_OUTCOME ?? "not_run",
   uatContract: process.env.UAT_CONTRACT_OUTCOME ?? "not_run",
+  wwhn165Closure: process.env.WWHN_165_OUTCOME ?? "not_run",
   wwhn156Closure: process.env.WWHN_156_OUTCOME ?? "not_run",
   smokeContract: process.env.SMOKE_CONTRACT_OUTCOME ?? "not_run",
   masterSku: process.env.MASTER_SKU_OUTCOME ?? "not_run",
@@ -57,7 +58,10 @@ const outcomes = {
 };
 
 const sourceSha =
-  process.env.WMS_SOURCE_SHA ?? process.env.SOURCE_SHA ?? process.env.GITHUB_SHA ?? null;
+  process.env.WMS_SOURCE_SHA ??
+  process.env.SOURCE_SHA ??
+  process.env.GITHUB_SHA ??
+  null;
 const executionSha =
   process.env.WMS_EXECUTION_SHA ??
   process.env.EXECUTION_SHA ??
@@ -76,8 +80,8 @@ const traces = relativeFiles(
 );
 
 const manifest = {
-  schemaVersion: "2.0.0",
-  tasks: ["WWHN-148", "WWHN-153", "WWHN-156"],
+  schemaVersion: "2.1.0",
+  tasks: ["WWHN-148", "WWHN-153", "WWHN-156", "WWHN-165"],
   generatedAt: new Date().toISOString(),
   repository:
     process.env.GITHUB_REPOSITORY ??
@@ -115,6 +119,16 @@ const manifest = {
       path: "dist/build-manifest.json",
       sha256: sha256(join(root, "dist/build-manifest.json")),
     },
+    wwhn165ClosureRegister: {
+      path: "docs/evidence/wwhn-165/WWHN-165_CLOSURE_REGISTER.json",
+      sha256: sha256(
+        join(root, "docs/evidence/wwhn-165/WWHN-165_CLOSURE_REGISTER.json"),
+      ),
+    },
+    wwhn165TaskDocument: {
+      path: "docs/Task_docs_Jira/WWHN-165.md",
+      sha256: sha256(join(root, "docs/Task_docs_Jira/WWHN-165.md")),
+    },
     wwhn156ClosureRegister: {
       path: "docs/evidence/wwhn-156/WWHN-156_CLOSURE_REGISTER.json",
       sha256: sha256(
@@ -135,9 +149,9 @@ const manifest = {
   },
   evidenceBoundary: {
     feOwned:
-      "Exact FE source/build, controlled responsive/UI-state/RBAC/API-error evidence and immutable CI artifact trace.",
+      "Exact FE source/build, fail-closed auth/session controls, controlled responsive/UI-state/RBAC/API-error evidence and immutable CI trace.",
     independent:
-      "QA1 DEV/UAT smoke, DevOps deployment, BA baseline, BE direct API deny and QA2 retest remain independent evidence and are never self-signed by FE.",
+      "QA1 security/RBAC/audit, QA2 UAT/browser retest, BE direct API authorization, BA/BAS approval and Lead final gate remain independent and are never self-signed by FE.",
   },
 };
 
@@ -147,8 +161,9 @@ writeFileSync(
   `${JSON.stringify(manifest, null, 2)}\n`,
 );
 
-const markdown = `# WWHN-148 / WWHN-153 / WWHN-156 CI Evidence Manifest
+const markdown = `# WWHN FE CI Evidence Manifest
 
+- Tasks: ${manifest.tasks.join(", ")}
 - Artifact: \`${artifactName}\`
 - Source SHA: \`${sourceSha ?? "n/a"}\`
 - Execution/merge SHA: \`${executionSha ?? "n/a"}\`
@@ -164,7 +179,7 @@ ${Object.entries(outcomes)
 
 ## Boundary
 
-This artifact proves FE-owned controls from the exact SHA. It does not replace independent QA1, QA2, DevOps, BA, BAS or BE evidence.
+This artifact proves FE-owned controls from the exact SHA. It does not replace independent QA1, QA2, BE, DevOps, BA, BAS or Lead evidence.
 `;
 writeFileSync(join(outputDir, "runtime-manifest.md"), markdown);
 
