@@ -33,9 +33,10 @@ type MaybePaginator<T> =
       [key: string]: unknown;
     };
 
-function normalizePage<T>(
-  result: { data: MaybePaginator<T>; meta: Record<string, unknown> },
-): MasterPageResult<T> {
+function normalizePage<T>(result: {
+  data: MaybePaginator<T>;
+  meta: Record<string, unknown>;
+}): MasterPageResult<T> {
   if (Array.isArray(result.data)) {
     return { data: result.data, meta: result.meta };
   }

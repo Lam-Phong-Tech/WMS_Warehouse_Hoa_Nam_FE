@@ -1,0 +1,145 @@
+name: WWHN-153 Sign-off Integrity
+
+on:
+  push:
+    branches:
+      - m1
+    paths:
+      - "docs/Task_docs_Jira/WWHN-153.md"
+      - "docs/api-evidence/WMS_FE_CONTRACT_BASELINE.json"
+      - "docs/evidence/wwhn-153/**"
+      - "scripts/verify-wms-contract-signoff.mjs"
+      - "scripts/verify-wwhn-153-signoff.mjs"
+      - "scripts/wwhn-153-signoff-core.mjs"
+      - "scripts/run-wwhn-153-runtime-evidence.mjs"
+      - "src/shared/api/wwhn-153-final-signoff.ts"
+      - "src/test/wwhn-153-final-signoff-policy.test.ts"
+      - "package.json"
+      - ".github/workflows/wwhn-153-signoff.yml"
+  workflow_dispatch:
+    inputs:
+      require_final:
+        description: "Enforce final GO instead of integrity-only verification"
+        required: true
+        default: false
+        type: boolean
+      run_live_runtime:
+        description: "Run QA2 direct API evidence with configured environment secrets/variables"
+        required: true
+        default: false
+        type: boolean
+      environment_name:
+        description: "Named runtime environment (DEV/UAT)"
+        required: false
+        default: "UAT"
+        type: string
+      build_id:
+        description: "Immutable deployed build ID"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: wwhn-153-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: false
+
+env:
+  SOURCE_SHA: ${{ github.sha }}
+  EXECUTION_SHA: ${{ github.sha }}
+  WMS_SOURCE_SHA: ${{ github.sha }}
+  WMS_EXECUTION_SHA: ${{ github.sha }}
+  WWHN_153_EVIDENCE_DIR: docs/evidence/wwhn-153/generated/${{ github.sha }}
+
+jobs:
+  integrity:
+    name: Exact-hash sign-off integrity
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact m1 source
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+          cache-dependency-path: yarn.lock
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile --non-interactive
+
+      - name: Verify FE P0/P1/P2 sign-off integrity
+        id: wwhn_153_signoff
+        run: npm run wwhn-153:verify
+
+      - name: Verify full WMS contract and service guards
+        id: wms_contract
+        run: npm run wms-contract:verify
+
+      - name: Verify direct API evidence contract without secrets
+        id: wwhn_153_runtime_contract
+        env:
+          WWHN_153_SOURCE_SHA: ${{ github.sha }}
+          WWHN_153_RUNTIME_EVIDENCE_DIR: docs/evidence/wwhn-153/generated/${{ github.sha }}/runtime-contract
+        run: npm run wwhn-153:runtime -- --contract-only
+
+      - name: Run derived final policy regression tests
+        run: yarn test src/test/wwhn-153-final-signoff-policy.test.ts
+
+      - name: Enforce final GO when explicitly requested
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.require_final }}
+        run: npm run wwhn-153:final
+
+      - name: Upload immutable sign-off evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wwhn-153-signoff-integrity-${{ github.sha }}
+          path: |
+            docs/Task_docs_Jira/WWHN-153.md
+            docs/api-evidence/WMS_FE_CONTRACT_BASELINE.json
+            docs/evidence/wwhn-153
+            docs/evidence/wms-contract-signoff/generated/contract-evidence.json
+          if-no-files-found: error
+          retention-days: 90
+
+  qa2-live-runtime:
+    name: QA2 direct API runtime evidence
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_live_runtime }}
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.environment_name }}
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run non-synthetic direct API probes
+        env:
+          WWHN_153_API_BASE_URL: ${{ vars.WWHN_153_API_BASE_URL }}
+          WWHN_153_ENVIRONMENT: ${{ inputs.environment_name }}
+          WWHN_153_SOURCE_SHA: ${{ github.sha }}
+          WWHN_153_BUILD_ID: ${{ inputs.build_id }}
+          WWHN_153_QA2_ACCOUNT: ${{ github.actor }}
+          WWHN_153_DENIED_TOKEN: ${{ secrets.WWHN_153_DENIED_TOKEN }}
+          WWHN_153_ALLOWED_TOKEN: ${{ secrets.WWHN_153_ALLOWED_TOKEN }}
+          WWHN_153_PERMISSION_DENY_PROBE_JSON: ${{ vars.WWHN_153_PERMISSION_DENY_PROBE_JSON }}
+          WWHN_153_IDEMPOTENCY_PROBE_JSON: ${{ vars.WWHN_153_IDEMPOTENCY_PROBE_JSON }}
+          WWHN_153_STALE_PROBE_JSON: ${{ vars.WWHN_153_STALE_PROBE_JSON }}
+          WWHN_153_RUNTIME_EVIDENCE_DIR: docs/evidence/wwhn-153/generated/${{ github.sha }}/qa2-live
+        run: npm run wwhn-153:runtime
+
+      - name: Upload QA2 direct API request/response evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wwhn-153-qa2-runtime-${{ inputs.environment_name }}-${{ github.sha }}
+          path: docs/evidence/wwhn-153/generated/${{ github.sha }}/qa2-live
+          if-no-files-found: error
+          retention-days: 90

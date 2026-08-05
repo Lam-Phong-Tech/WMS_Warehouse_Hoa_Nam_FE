@@ -1,8 +1,12 @@
 {
-  "schemaVersion": "2.0.0",
+  "schemaVersion": "3.0.0",
   "task": "WWHN-153",
-  "sourceReviewScore": 72,
+  "sourceReviewScore": 80,
+  "previousReviewScore": 72,
+  "assessmentDate": "2026-08-05",
   "apiBasePath": "/api/v1",
+  "signoffManifest": "docs/evidence/wwhn-153/WWHN-153_SIGNOFF_MANIFEST.json",
+  "permissionApprovalManifest": "docs/evidence/wwhn-153/WWHN-153_PERMISSION_APPROVAL.json",
   "officialContract": {
     "jira": "WWHN-31",
     "status": "PENDING_BE1_BE2_QA1_CLOSURE",
@@ -10,7 +14,7 @@
     "sha256": null,
     "changelog": null,
     "independentReviewer": null,
-    "rule": "FE local constants and snapshots are not an official OpenAPI/schema release. Final sign-off remains fail-closed until all fields are populated from BE evidence and QA1 records an exact-hash review."
+    "rule": "FE local constants and snapshots are not an official OpenAPI/schema release. Final sign-off is derived from the WWHN-153 signoff manifest and remains fail-closed until official exact-hash evidence and independent review are PASS."
   },
   "criticalFlows": [
     {
@@ -59,16 +63,69 @@
       "permission": "stocktake.adjust",
       "requiredHeaders": ["Idempotency-Key", "If-Match"],
       "requiredRequest": ["lines[].sku", "lines[].actual_qty"],
-      "requiredSuccess": [
-        "session_id",
-        "status",
-        "movement_ref",
-        "request_id"
-      ],
+      "requiredSuccess": ["session_id", "status", "movement_ref", "request_id"],
       "acceptedHttp": [200, 201],
       "expectedErrors": [403, 409, 412, 422, 428],
       "feDisposition": "IMPLEMENTED_WITH_REQUEST_RESPONSE_AND_PERMISSION_GUARDS",
       "officialSignoff": "PENDING_BE_BA_QA"
+    }
+  ],
+  "currentAssessmentFindings": [
+    {
+      "id": "FE-P0-01",
+      "severity": "P0",
+      "requiredFix": "BE1/BE2 publish official versioned OpenAPI/schema with SHA256, changelog and independent QA1 review",
+      "feControl": "Versioned signoff manifest, publisher separation, exact-hash review and anti-self-sign verifier",
+      "owner": "BE1 + BE2 + QA1",
+      "status": "FE_CONTROL_COMPLETE_EXTERNAL_EVIDENCE_PENDING"
+    },
+    {
+      "id": "FE-P0-02",
+      "severity": "P0",
+      "requiredFix": "Open final only after WWHN-31/WWHN-180 and independent WWHN-182/WWHN-183 PASS",
+      "feControl": "Derived final policy; no source-controlled finalAllowed flag can authorize release",
+      "owner": "FE1 + BA + QA",
+      "status": "FE_CONTROL_COMPLETE_EXTERNAL_EVIDENCE_PENDING"
+    },
+    {
+      "id": "FE-P1-01",
+      "severity": "P1",
+      "requiredFix": "WWHN-151 module schema/API and WWHN-152 QA1 exact-hash review",
+      "feControl": "Hash-chain checks WWHN-151 to WWHN-152 and official contract",
+      "owner": "BE2 + QA1",
+      "status": "FE_CONTROL_COMPLETE_EXTERNAL_EXECUTION_PENDING"
+    },
+    {
+      "id": "FE-P1-02",
+      "severity": "P1",
+      "requiredFix": "QA2 direct API 403, idempotency replay/conflict, stale write and real request/response on exact build/env",
+      "feControl": "Secret-redacting direct API runner, per-call JSON, SHA256SUMS and immutable summary",
+      "owner": "QA2",
+      "status": "FE_RUNNER_COMPLETE_QA2_EXECUTION_PENDING"
+    },
+    {
+      "id": "FE-P1-03",
+      "severity": "P1",
+      "requiredFix": "BA G1 minutes with decision, exact SHA, artifact digest and open P0/P1",
+      "feControl": "Verifier accepts final only for GO, matching QA2 SHA/digest and zero open P0/P1",
+      "owner": "BA",
+      "status": "FE_SCHEMA_COMPLETE_BA_DECISION_PENDING"
+    },
+    {
+      "id": "FE-P1-04",
+      "severity": "P1",
+      "requiredFix": "Approve runtime /permissions, backend catalog and endpoint-permission-role mapping",
+      "feControl": "Approval manifest with BE/RBAC + BA separation, runtime snapshot binding and sensitive-action matrix",
+      "owner": "BE/RBAC + BA + FE",
+      "status": "FE_CONTROL_COMPLETE_APPROVAL_PENDING"
+    },
+    {
+      "id": "FE-P2-01",
+      "severity": "P2",
+      "requiredFix": "Publish readable Jira text closure matrix linked to exact run/artifact/digest",
+      "feControl": "WWHN-153 document and post-commit Jira text comment template",
+      "owner": "FE1",
+      "status": "FE_COMPLETE"
     }
   ],
   "reviewClosureMatrix": [
