@@ -80,6 +80,8 @@ for (const disposition of [
   "1440x900",
   "768x1024",
   "375x812",
+  "exact-SHA",
+  "Prettier drift",
 ]) {
   requireText(taskDoc, disposition, "docs/Task_docs_Jira/WWHN-144.md");
 }
@@ -98,8 +100,15 @@ for (const contract of [
   "sourceSha",
   "timestamp",
   "90 ngày",
+  "Không dùng một ZIP mơ hồ",
+  "folder link chuẩn kèm manifest",
+  "Automation pass là technical evidence",
 ]) {
-  requireText(contract === "sourceSha" ? e2e : evidenceReadme, contract, "WWHN-144 evidence contract");
+  requireText(
+    contract === "sourceSha" ? e2e : evidenceReadme,
+    contract,
+    "WWHN-144 evidence contract",
+  );
 }
 
 if (failures.length > 0) {
@@ -110,5 +119,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  "[wwhn-144] PASS: responsive/RBAC/direct-URL/403 evidence contract, Jira scope disposition and CI gate are complete.",
+  "[wwhn-144] PASS: responsive/RBAC/direct-URL/403 evidence contract, Jira scope disposition, extracted handoff policy and CI gate are complete.",
 );

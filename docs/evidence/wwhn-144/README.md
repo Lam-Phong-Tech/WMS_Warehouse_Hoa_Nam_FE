@@ -29,6 +29,10 @@ Mỗi metadata JSON phải có tối thiểu: `sourceSha`, `environment`, `build
 
 WWHN-144 và parent WWHN-29 là **UX frame scope**: layout responsive, navigation, menu filtering và FE route guard. Đây không phải bằng chứng backend authorization hoặc API integration endpoint scope. Mock API chỉ tạo trạng thái xác định để kiểm thử hành vi FE; BE/QA1 vẫn phải xác nhận direct API denial, data scope và audit độc lập.
 
-## Jira
+## Quy tắc bàn giao Jira/QA2
 
-Jira chỉ tham chiếu commit, workflow run và GitHub Actions artifact chuẩn. Không sử dụng URL `blob:` hoặc ảnh dán tạm trong comment làm nguồn evidence đóng ticket.
+- GitHub Actions artifact là nguồn CI bất biến trên exact SHA.
+- Không dùng một ZIP mơ hồ làm evidence duy nhất; gói bàn giao phải được giải nén thành report, screenshot, video và metadata có tên file rõ ràng, hoặc cung cấp folder link chuẩn kèm manifest.
+- Jira comment phải ghi exact commit SHA, workflow run, artifact name, environment/build và owner review.
+- Không sử dụng URL `blob:` hoặc ảnh dán tạm trong comment làm nguồn evidence đóng ticket.
+- Automation pass là technical evidence; không thay QA2 sign-off độc lập cho WWHN-145.

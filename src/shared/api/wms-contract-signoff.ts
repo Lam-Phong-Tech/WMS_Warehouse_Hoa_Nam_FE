@@ -190,10 +190,12 @@ export const WMS_EXTERNAL_GATES = {
   },
 } as const;
 
-export const WMS_P0_P1_CONTRACT_GATES = WMS_REVIEW_GATES.map((gate) => ({
-  id: gate.id,
-  status: gate.status,
-}));
+function toGateStatus(gate: WmsReviewGate) {
+  return { id: gate.id, status: gate.status };
+}
+
+export const WMS_P0_P1_CONTRACT_GATES =
+  WMS_REVIEW_GATES.map(toGateStatus);
 
 export function getOpenContractGateIds(): string[] {
   return WMS_REVIEW_GATES.filter((gate) => gate.status !== "FE_COMPLETE").map(
