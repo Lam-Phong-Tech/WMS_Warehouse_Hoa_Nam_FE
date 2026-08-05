@@ -1,73 +1,62 @@
 {
-  "schemaVersion": "1.0.0",
+  "schemaVersion": "1.1.0",
   "task": "WWHN-165",
   "parent": "WWHN-35",
   "branch": "m1",
-  "updatedAt": "2026-08-04T20:00:00+07:00",
-  "sourceShaPolicy": "Resolved from GitHub Actions SOURCE_SHA after the single final commit; never hard-coded before commit creation.",
+  "updatedAt": "2026-08-05T21:30:00+07:00",
+  "sourceShaPolicy": "Mỗi lần nghiệm thu phải khóa exact source SHA từ GitHub Actions; không dùng nhãn latest hoặc chỉ tên nhánh.",
   "architectureBaseline": "docs/WMS_Hoa_Nam_Techstack_Architecture_Dev_Guide.md",
   "feOwnedStatus": "COMPLETE",
   "finalAcceptanceStatus": "PENDING_INDEPENDENT_EVIDENCE",
   "p0": {
     "status": "NONE_OPEN_IN_FE_SCOPE",
-    "statement": "No direct P0 code blocker remains for FE auth/session after fail-closed state-machine hardening."
+    "statement": "Không còn P0 code blocker trực tiếp thuộc FE auth/session; các đường lỗi tiếp tục fail-closed."
+  },
+  "verifiedCiBaseline": {
+    "workflow": "CI",
+    "runNumber": 107,
+    "runId": 30913628631,
+    "status": "COMPLETED_SUCCESS",
+    "sourceSha": "57638b1f7a0277a3f87d777668936d5f65f5e743",
+    "event": "pull_request",
+    "artifact": {
+      "id": 8894201626,
+      "name": "wms-fe-closure-evidence-57638b1f7a0277a3f87d777668936d5f65f5e743",
+      "sizeBytes": 11426376,
+      "digest": "sha256:c87c01b37bc8c84dee5cf3788b4bb69026d756364c860a355bad9bef4ff5bc00",
+      "expiresAt": "2026-11-02T13:24:06Z",
+      "expired": false
+    },
+    "scope": "Bằng chứng xác nhận remediation FE tại SHA nêu trên; commit kế tiếp phải có CI riêng và không được tái sử dụng run này như proof cho code mới."
+  },
+  "traceability": {
+    "canonicalTaskDoc": "docs/Task_docs_Jira/WWHN-165.md",
+    "evidenceIndex": "docs/evidence/wwhn-165/WWHN-165_EVIDENCE_INDEX.md",
+    "qa1Matrix": "docs/evidence/wwhn-165/WWHN-166_QA1_SECURITY_MATRIX.md",
+    "qa2Matrix": "docs/evidence/wwhn-165/WWHN-167_QA2_UI_MATRIX.md",
+    "contractExpectation": "docs/api-evidence/WWHN-165_AUTH_CONTRACT_EXPECTATION.md",
+    "blobCommentDisposition": "Jira comment 14612 không có filename/metadata, bị đánh dấu SUPERSEDED_NON_EVIDENCE và không được dùng để nghiệm thu."
   },
   "feControls": {
     "bootstrap": {
       "status": "COMPLETE",
-      "controls": [
-        "single-flight refresh bootstrap",
-        "401/403 invalid-session handling",
-        "network/5xx fail-closed bootstrapError",
-        "retryable protected UI state"
-      ]
+      "controls": ["single-flight refresh bootstrap", "401/403 invalid-session handling", "network/5xx fail-closed bootstrapError", "retryable protected UI state"]
     },
     "session": {
       "status": "COMPLETE",
-      "controls": [
-        "revoke stale profile and permissions when JWT changes",
-        "auth/me query key includes token",
-        "auth/me cache removed on context switch",
-        "logout clears token, context, permission and query cache"
-      ]
+      "controls": ["revoke stale profile and permissions when JWT changes", "auth/me query key includes token", "auth/me cache removed on context switch", "logout clears token, context, permission and query cache"]
     },
     "login": {
       "status": "COMPLETE",
-      "controls": [
-        "multi-context login commits auth state only after switch-context",
-        "switch failure revokes local session",
-        "active context is never inferred from the first available context"
-      ]
+      "controls": ["multi-context login commits auth state only after switch-context", "switch failure revokes local session", "active context is never inferred from first available context"]
     },
     "contract": {
-      "status": "COMPLETE",
-      "controls": [
-        "non-empty access token",
-        "positive expires_in",
-        "stable user identifier",
-        "context role_id and scope_type",
-        "fail-closed permission fallback"
-      ]
+      "status": "COMPLETE_FE_VALIDATION",
+      "controls": ["non-empty access token", "positive expires_in", "stable user identifier", "context role_id and scope_type", "fail-closed permission fallback"]
     },
     "runtimeEvidence": {
       "status": "COMPLETE_CONTROLLED_CI",
-      "scenarios": [
-        "bootstrap 503 fail-closed",
-        "limited-role navigation",
-        "logout",
-        "403 route",
-        "422 login error",
-        "desktop/tablet/mobile login"
-      ],
-      "filenameMetadata": [
-        "task",
-        "scenario",
-        "environment",
-        "source SHA",
-        "role",
-        "viewport",
-        "timestamp"
-      ]
+      "filenameMetadata": ["task", "scenario", "environment", "source SHA", "role", "viewport", "timestamp"]
     },
     "viteVitestDisposition": {
       "status": "CLOSED_FE_SCOPE",
@@ -75,31 +64,11 @@
     }
   },
   "independentGates": {
-    "qa1": {
-      "task": "WWHN-166",
-      "status": "PENDING",
-      "required": "DEV/UAT 401, 403, token expiry, refresh, permission, data-scope, audit, no-stack-trace, 409, 422 and idempotency evidence on exact build/SHA."
-    },
-    "qa2": {
-      "task": "WWHN-167",
-      "status": "PENDING",
-      "required": "Login redirect, session refresh, logout, /errors/403, role navigation, Chrome/Edge and desktop/tablet/mobile evidence on exact build/SHA."
-    },
-    "backend": {
-      "task": "WWHN-35",
-      "status": "PENDING",
-      "required": "Direct API deny 403, data-scope deny, audit correctness, OpenAPI/Postman version/hash, permission catalog and sample 403/409/422/idempotency."
-    },
-    "bas": {
-      "task": "WWHN-146",
-      "status": "PENDING",
-      "required": "Versioned field/state matrix with approver and traceability."
-    },
-    "ba": {
-      "task": "WWHN-147",
-      "status": "PENDING",
-      "required": "Approved business rule, label, validation and error-state mapping."
-    }
+    "qa1": {"task": "WWHN-166", "status": "PENDING", "required": "QA1 ký PASS/FAIL độc lập cho 401/403/token expiry/permission/data-scope/audit/no-stack-trace/409/422/idempotency trên exact env/build/SHA."},
+    "qa2": {"task": "WWHN-167", "status": "PENDING", "required": "QA2 ký PASS/FAIL độc lập cho login/refresh/logout/403/role navigation/Chrome/Edge/desktop/tablet/mobile trên exact env/build/SHA."},
+    "backend": {"task": "WWHN-35", "status": "PENDING", "required": "BE1/BE2 cung cấp direct API 403, data-scope deny, audit, OpenAPI/Postman version/hash, permission catalog và sample 403/409/422/idempotency."},
+    "bas": {"task": "WWHN-146", "status": "PENDING", "required": "BAS phê duyệt field/state matrix có version, approver và traceability."},
+    "ba": {"task": "WWHN-147", "status": "PENDING", "required": "BA phê duyệt business rule, label, validation và error-state mapping."}
   },
-  "finalGateRule": "WWHN-35 may be Done only when FE1, BE1, QA1, QA2, BAS and BA evidence all pass against the same approved environment/build/source SHA."
+  "finalGateRule": "WWHN-35 chỉ được Done khi FE1, BE1, QA1, QA2, BAS và BA cùng PASS trên một bộ exact environment/build/source SHA; thiếu một gate phải fail-closed."
 }
