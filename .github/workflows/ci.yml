@@ -4,7 +4,7 @@ on:
   pull_request:
   push:
     branches:
-      - main
+      - dev
       - m1
 
 permissions:
@@ -19,6 +19,7 @@ env:
   EXECUTION_SHA: ${{ github.sha }}
   WMS_EVIDENCE_DIR: docs/evidence/wms-contract-signoff/generated
   WWHN_144_EVIDENCE_DIR: test-results/wwhn-144/${{ github.event.pull_request.head.sha || github.sha }}
+  WWHN_175_EVIDENCE_DIR: test-results/wwhn-175/${{ github.event.pull_request.head.sha || github.sha }}
   VITE_APP_ENV: test
   VITE_APP_VERSION: 1.0.0-ci.${{ github.run_number }}.${{ github.run_attempt }}
   VITE_API_BASE_URL: http://127.0.0.1:5173/api/v1
@@ -79,6 +80,11 @@ jobs:
         id: uat_contract
         continue-on-error: true
         run: npm run uat:p0p1:verify
+
+      - name: Verify WWHN-175 foundation closure controls
+        id: wwhn_175
+        continue-on-error: true
+        run: npm run wwhn-175:verify
 
       - name: Verify WWHN-165 auth session closure controls
         id: wwhn_165
@@ -158,6 +164,22 @@ jobs:
           WWHN_144_EVIDENCE_DIR: ${{ env.WWHN_144_EVIDENCE_DIR }}
         run: npm run test:e2e:wwhn-144
 
+      - name: Capture WWHN-175 responsive accessibility smoke evidence
+        id: wwhn_175_e2e
+        if: ${{ always() && steps.playwright_install.outcome == 'success' }}
+        continue-on-error: true
+        env:
+          WWHN_175_EVIDENCE_DIR: ${{ env.WWHN_175_EVIDENCE_DIR }}
+        run: npm run test:e2e:wwhn-175
+
+      - name: Create WWHN-177 immutable DEV handoff
+        id: wwhn_177_handoff
+        if: ${{ always() && steps.build.outcome == 'success' && steps.health.outcome == 'success' }}
+        continue-on-error: true
+        env:
+          DEV_APP_URL: ${{ vars.DEV_APP_URL }}
+        run: npm run wwhn-177:handoff
+
       - name: Collect immutable CI/build/runtime manifest
         if: always()
         id: collect_evidence
@@ -170,6 +192,7 @@ jobs:
           UNIT_TEST_OUTCOME: ${{ steps.unit_tests.outcome }}
           ENV_CONTRACT_OUTCOME: ${{ steps.env_contract.outcome }}
           UAT_CONTRACT_OUTCOME: ${{ steps.uat_contract.outcome }}
+          WWHN_175_OUTCOME: ${{ steps.wwhn_175.outcome }}
           WWHN_165_OUTCOME: ${{ steps.wwhn_165.outcome }}
           WWHN_156_OUTCOME: ${{ steps.wwhn_156.outcome }}
           SMOKE_CONTRACT_OUTCOME: ${{ steps.smoke_contract.outcome }}
@@ -183,6 +206,8 @@ jobs:
           PLAYWRIGHT_INSTALL_OUTCOME: ${{ steps.playwright_install.outcome }}
           RUNTIME_EVIDENCE_OUTCOME: ${{ steps.runtime_evidence.outcome }}
           WWHN_144_E2E_OUTCOME: ${{ steps.wwhn_144_e2e.outcome }}
+          WWHN_175_E2E_OUTCOME: ${{ steps.wwhn_175_e2e.outcome }}
+          WWHN_177_HANDOFF_OUTCOME: ${{ steps.wwhn_177_handoff.outcome }}
         run: npm run wms-evidence:collect
 
       - name: Upload WMS closure evidence
@@ -193,9 +218,11 @@ jobs:
           path: |
             docs/Task_docs_Jira/WWHN-144.md
             docs/Task_docs_Jira/WWHN-165.md
+            docs/Task_docs_Jira/WWHN-175.md
             docs/api-evidence/WWHN-165_AUTH_CONTRACT_EXPECTATION.md
             docs/evidence/wwhn-144
             docs/evidence/wwhn-165
+            docs/evidence/wwhn-175
             docs/evidence/wms-contract-signoff/generated
             docs/evidence/wwhn-156/WWHN-156_CLOSURE_REGISTER.json
             docs/evidence/wwhn-156/generated
@@ -203,6 +230,7 @@ jobs:
             playwright-report
             dist/health.json
             dist/build-manifest.json
+            dist/index.html
           if-no-files-found: warn
           retention-days: 90
 
@@ -215,6 +243,7 @@ jobs:
           UNIT_TEST_OUTCOME: ${{ steps.unit_tests.outcome }}
           ENV_CONTRACT_OUTCOME: ${{ steps.env_contract.outcome }}
           UAT_CONTRACT_OUTCOME: ${{ steps.uat_contract.outcome }}
+          WWHN_175_OUTCOME: ${{ steps.wwhn_175.outcome }}
           WWHN_165_OUTCOME: ${{ steps.wwhn_165.outcome }}
           WWHN_156_OUTCOME: ${{ steps.wwhn_156.outcome }}
           SMOKE_CONTRACT_OUTCOME: ${{ steps.smoke_contract.outcome }}
@@ -228,4 +257,68 @@ jobs:
           PLAYWRIGHT_INSTALL_OUTCOME: ${{ steps.playwright_install.outcome }}
           RUNTIME_EVIDENCE_OUTCOME: ${{ steps.runtime_evidence.outcome }}
           WWHN_144_E2E_OUTCOME: ${{ steps.wwhn_144_e2e.outcome }}
+          WWHN_175_E2E_OUTCOME: ${{ steps.wwhn_175_e2e.outcome }}
+          WWHN_177_HANDOFF_OUTCOME: ${{ steps.wwhn_177_handoff.outcome }}
         run: node scripts/assert-ci-gates.mjs
+
+  dev-delivery:
+    name: DEV delivery evidence
+    if: github.event_name == 'push' && github.ref == 'refs/heads/m1'
+    needs: quality-gates
+    runs-on: ubuntu-latest
+    environment:
+      name: DEV
+    env:
+      SOURCE_SHA: ${{ github.sha }}
+      DEV_APP_URL: ${{ vars.DEV_APP_URL }}
+    steps:
+      - name: Download exact closure artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: wms-fe-closure-evidence-${{ env.SOURCE_SHA }}
+          path: delivery
+
+      - name: Validate immutable DEV delivery package
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f delivery/dist/index.html
+          test -f delivery/dist/health.json
+          test -f delivery/dist/build-manifest.json
+          test -f delivery/docs/evidence/wwhn-175/generated/WWHN-177_DEV_HANDOFF_MANIFEST.json
+          mkdir -p dev-delivery
+          node --input-type=module <<'NODE'
+          import { writeFileSync } from "node:fs";
+          const devAppUrl = (process.env.DEV_APP_URL ?? "").trim();
+          const record = {
+            schemaVersion: "1.0.0",
+            task: "WWHN-177",
+            sourceTask: "WWHN-175",
+            sourceSha: process.env.SOURCE_SHA,
+            environment: "DEV",
+            githubEnvironmentStatus: "ACCEPTED",
+            deliveryMode: devAppUrl
+              ? "TARGET_CONFIGURED"
+              : "NOT_CONFIGURED_ARTIFACT_ONLY",
+            devAppUrl: devAppUrl || null,
+            workflowRunUrl: `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`,
+            generatedAt: new Date().toISOString(),
+            liveRuntimeBoundary: devAppUrl
+              ? "Target configured; DevOps must attach runtime health, smoke and rollback evidence."
+              : "No live target configured; this record proves immutable artifact delivery only.",
+          };
+          writeFileSync(
+            "dev-delivery/WWHN-177_DEV_ENVIRONMENT_RECORD.json",
+            `${JSON.stringify(record, null, 2)}\n`,
+          );
+          NODE
+          cp delivery/docs/evidence/wwhn-175/generated/WWHN-177_DEV_HANDOFF_MANIFEST.* dev-delivery/
+          cp delivery/dist/health.json delivery/dist/build-manifest.json dev-delivery/
+
+      - name: Publish DEV environment evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: wwhn-177-dev-environment-evidence-${{ env.SOURCE_SHA }}
+          path: dev-delivery
+          if-no-files-found: error
+          retention-days: 90

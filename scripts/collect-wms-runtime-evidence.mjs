@@ -45,16 +45,22 @@ const outcomes = {
   unitTests: process.env.UNIT_TEST_OUTCOME ?? "not_run",
   envContract: process.env.ENV_CONTRACT_OUTCOME ?? "not_run",
   uatContract: process.env.UAT_CONTRACT_OUTCOME ?? "not_run",
+  wwhn175Closure: process.env.WWHN_175_OUTCOME ?? "not_run",
   wwhn165Closure: process.env.WWHN_165_OUTCOME ?? "not_run",
   wwhn156Closure: process.env.WWHN_156_OUTCOME ?? "not_run",
   smokeContract: process.env.SMOKE_CONTRACT_OUTCOME ?? "not_run",
   masterSku: process.env.MASTER_SKU_OUTCOME ?? "not_run",
   wmsContract: process.env.WMS_CONTRACT_OUTCOME ?? "not_run",
   wwhn148Closure: process.env.WWHN_148_OUTCOME ?? "not_run",
+  wwhn144Closure: process.env.WWHN_144_OUTCOME ?? "not_run",
   build: process.env.BUILD_OUTCOME ?? "not_run",
   health: process.env.HEALTH_OUTCOME ?? "not_run",
   apiMapping: process.env.API_MAPPING_OUTCOME ?? "not_run",
+  playwrightInstall: process.env.PLAYWRIGHT_INSTALL_OUTCOME ?? "not_run",
   runtimeEvidence: process.env.RUNTIME_EVIDENCE_OUTCOME ?? "not_run",
+  wwhn144E2E: process.env.WWHN_144_E2E_OUTCOME ?? "not_run",
+  wwhn175E2E: process.env.WWHN_175_E2E_OUTCOME ?? "not_run",
+  wwhn177Handoff: process.env.WWHN_177_HANDOFF_OUTCOME ?? "not_run",
 };
 
 const sourceSha =
@@ -73,15 +79,26 @@ const screenshots = relativeFiles(
   testFiles.filter((path) => extname(path).toLowerCase() === ".png"),
 );
 const videos = relativeFiles(
-  testFiles.filter((path) => [".webm", ".mp4"].includes(extname(path).toLowerCase())),
+  testFiles.filter((path) =>
+    [".webm", ".mp4"].includes(extname(path).toLowerCase()),
+  ),
 );
 const traces = relativeFiles(
   testFiles.filter((path) => extname(path).toLowerCase() === ".zip"),
 );
 
 const manifest = {
-  schemaVersion: "2.1.0",
-  tasks: ["WWHN-148", "WWHN-153", "WWHN-156", "WWHN-165"],
+  schemaVersion: "3.0.0",
+  tasks: [
+    "WWHN-144",
+    "WWHN-148",
+    "WWHN-153",
+    "WWHN-156",
+    "WWHN-165",
+    "WWHN-175",
+    "WWHN-176",
+    "WWHN-177",
+  ],
   generatedAt: new Date().toISOString(),
   repository:
     process.env.GITHUB_REPOSITORY ??
@@ -100,6 +117,12 @@ const manifest = {
     attempt: process.env.GITHUB_RUN_ATTEMPT ?? null,
     workflow: process.env.GITHUB_WORKFLOW ?? null,
     job: process.env.GITHUB_JOB ?? null,
+    url:
+      process.env.GITHUB_SERVER_URL &&
+      process.env.GITHUB_REPOSITORY &&
+      process.env.GITHUB_RUN_ID
+        ? `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
+        : null,
   },
   environment: {
     runnerOs: process.env.RUNNER_OS ?? process.platform,
@@ -119,10 +142,36 @@ const manifest = {
       path: "dist/build-manifest.json",
       sha256: sha256(join(root, "dist/build-manifest.json")),
     },
+    wwhn175ClosureRegister: {
+      path: "docs/evidence/wwhn-175/WWHN-175_CLOSURE_REGISTER.json",
+      sha256: sha256(
+        join(
+          root,
+          "docs/evidence/wwhn-175/WWHN-175_CLOSURE_REGISTER.json",
+        ),
+      ),
+    },
+    wwhn175TaskDocument: {
+      path: "docs/Task_docs_Jira/WWHN-175.md",
+      sha256: sha256(join(root, "docs/Task_docs_Jira/WWHN-175.md")),
+    },
+    wwhn177DevHandoff: {
+      path:
+        "docs/evidence/wwhn-175/generated/WWHN-177_DEV_HANDOFF_MANIFEST.json",
+      sha256: sha256(
+        join(
+          root,
+          "docs/evidence/wwhn-175/generated/WWHN-177_DEV_HANDOFF_MANIFEST.json",
+        ),
+      ),
+    },
     wwhn165ClosureRegister: {
       path: "docs/evidence/wwhn-165/WWHN-165_CLOSURE_REGISTER.json",
       sha256: sha256(
-        join(root, "docs/evidence/wwhn-165/WWHN-165_CLOSURE_REGISTER.json"),
+        join(
+          root,
+          "docs/evidence/wwhn-165/WWHN-165_CLOSURE_REGISTER.json",
+        ),
       ),
     },
     wwhn165TaskDocument: {
@@ -132,7 +181,10 @@ const manifest = {
     wwhn156ClosureRegister: {
       path: "docs/evidence/wwhn-156/WWHN-156_CLOSURE_REGISTER.json",
       sha256: sha256(
-        join(root, "docs/evidence/wwhn-156/WWHN-156_CLOSURE_REGISTER.json"),
+        join(
+          root,
+          "docs/evidence/wwhn-156/WWHN-156_CLOSURE_REGISTER.json",
+        ),
       ),
     },
     wwhn156TaskDocument: {
@@ -140,7 +192,8 @@ const manifest = {
       sha256: sha256(join(root, "docs/Task_docs_Jira/WWHN-156.md")),
     },
     contractEvidence: {
-      path: "docs/evidence/wms-contract-signoff/generated/contract-evidence.json",
+      path:
+        "docs/evidence/wms-contract-signoff/generated/contract-evidence.json",
       sha256: sha256(join(outputDir, "contract-evidence.json")),
     },
     screenshots,
@@ -149,9 +202,9 @@ const manifest = {
   },
   evidenceBoundary: {
     feOwned:
-      "Exact FE source/build, fail-closed auth/session controls, controlled responsive/UI-state/RBAC/API-error evidence and immutable CI trace.",
+      "Exact FE source/build, foundation closure controls, controlled responsive/accessibility/UI-state/RBAC/API-error evidence and immutable CI/DEV handoff trace.",
     independent:
-      "QA1 security/RBAC/audit, QA2 UAT/browser retest, BE direct API authorization, BA/BAS approval and Lead final gate remain independent and are never self-signed by FE.",
+      "QA2 browser/UAT sign-off, DevOps live target/deployment acceptance, BA/Tech Lead architecture disposition and Lead final gate remain independent and are never self-signed by FE.",
   },
 };
 
@@ -179,7 +232,7 @@ ${Object.entries(outcomes)
 
 ## Boundary
 
-This artifact proves FE-owned controls from the exact SHA. It does not replace independent QA1, QA2, BE, DevOps, BA, BAS or Lead evidence.
+This artifact proves FE-owned controls from the exact SHA. It does not replace independent QA2, DevOps, BA, Tech Lead or Lead evidence.
 `;
 writeFileSync(join(outputDir, "runtime-manifest.md"), markdown);
 
