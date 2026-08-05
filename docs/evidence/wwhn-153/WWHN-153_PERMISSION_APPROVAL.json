@@ -1,0 +1,44 @@
+{
+  "schemaVersion": "2.0.0",
+  "task": "WWHN-153",
+  "issue": "FE-P1-04",
+  "status": "PENDING",
+  "runtimeEndpoint": "/permissions",
+  "backendCatalog": {
+    "version": null,
+    "sourceCommitSha": null,
+    "artifactPath": null,
+    "artifactSha256": null,
+    "publishedBy": null,
+    "publisherRole": "BE/RBAC"
+  },
+  "runtimeSnapshot": {
+    "environment": null,
+    "sourceSha": null,
+    "buildId": null,
+    "capturedAt": null,
+    "artifactPath": null,
+    "artifactSha256": null,
+    "missingCanonicalCodes": [],
+    "aliasesObserved": []
+  },
+  "approvals": {
+    "backend": { "status": "PENDING", "approvedBy": null, "role": "BE/RBAC", "approvedAt": null },
+    "business": { "status": "PENDING", "approvedBy": null, "role": "BA", "approvedAt": null },
+    "frontend": { "status": "PENDING", "approvedBy": null, "role": "FE1", "approvedAt": null }
+  },
+  "endpointPermissionRoleMatrix": [
+    { "method": "POST", "path": "/scan/classify", "permissionsAny": ["inventory.trace", "scan.classify"], "roles": [], "approvalStatus": "PENDING" },
+    { "method": "POST", "path": "/inbound-documents/:id/post-receipt", "permissionsAny": ["inbound.post"], "roles": [], "approvalStatus": "PENDING" },
+    { "method": "POST", "path": "/outbound-documents/:id/post-issue", "permissionsAny": ["outbound.post"], "roles": [], "approvalStatus": "PENDING" },
+    { "method": "POST", "path": "/stocktake/sessions/:sessionId/apply-adjustment", "permissionsAny": ["stocktake.adjust"], "roles": [], "approvalStatus": "PENDING" },
+    { "method": "GET", "path": "/reports/inventory-xnt/export-excel", "permissionsAny": ["report.export"], "roles": [], "approvalStatus": "PENDING" },
+    { "method": "POST", "path": "/warranty/cases", "condition": "identification_type=TEMP_ONLY", "permissionsAny": ["warranty.temp_only"], "roles": [], "approvalStatus": "PENDING" }
+  ],
+  "rules": [
+    "Role names are evidence only; FE authorization remains permission-code based.",
+    "A broad role or page permission cannot substitute for a sensitive action permission.",
+    "Approval is valid only when BE/RBAC and BA approvers are distinct named accounts and the runtime snapshot matches WWHN-182 source SHA/build/environment.",
+    "The stocktake.manage code must never authorize stocktake.adjust."
+  ]
+}
