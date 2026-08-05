@@ -31,15 +31,12 @@ export function MainLayout() {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
 
-  // Preload critical routes khi app đã load xong profile
   useEffect(() => {
     if (isProfileLoaded && !isLoadingProfile) {
-      // Preload critical routes sau 1-2s để không block initial load
       const timer = setTimeout(() => {
         preloadManager.preloadCriticalRoutes();
       }, 1000);
 
-      // Preload secondary routes khi browser idle
       preloadManager.preloadSecondaryRoutesOnIdle();
 
       return () => clearTimeout(timer);
@@ -47,9 +44,10 @@ export function MainLayout() {
   }, [isProfileLoaded, isLoadingProfile]);
 
   const toggleSidebar = () =>
-    isMobile ? setDrawerOpen((v) => !v) : setCollapsed((v) => !v);
+    isMobile
+      ? setDrawerOpen((value) => !value)
+      : setCollapsed((value) => !value);
 
-  // Chờ nạp hồ sơ + quyền lần đầu (sau login / F5) để menu hiển thị đúng quyền.
   if (isLoadingProfile && !isProfileLoaded) {
     return <Loading />;
   }
@@ -58,6 +56,8 @@ export function MainLayout() {
     <>
       {!isMobile ? (
         <Sider
+          data-testid="desktop-navigation"
+          aria-label="Menu điều hướng desktop"
           collapsible
           collapsed={collapsed}
           onCollapse={setCollapsed}

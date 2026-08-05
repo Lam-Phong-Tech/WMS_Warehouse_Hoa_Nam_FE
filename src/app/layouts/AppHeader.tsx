@@ -32,6 +32,7 @@ export function AppHeader({ isMobile, collapsed, onToggle }: Props) {
       }}
     >
       <Button
+        data-testid="navigation-toggle"
         type="text"
         aria-label={
           isMobile

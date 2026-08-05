@@ -21,20 +21,10 @@ interface Props {
 export function SideNav({ collapsed = false, onNavigate }: Props) {
   const location = useLocation();
   const navigate = useNavigate();
-  // Standalone mode: hiển thị tất cả menu items không lọc quyền
   const permissionCodes = useAuthStore((state) => state.permissionCodes);
   const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
   const can = (code: string) => isSuperAdmin || permissionCodes.includes(code);
 
-  // Controlled openKeys thay vì defaultOpenKeys (P2): defaultOpenKeys chỉ áp
-  // dụng lần render đầu — điều hướng bằng code (breadcrumb, link ngoài menu)
-  // sang route ở nhóm khác không tự mở submenu tương ứng. Merge thay vì thay
-  // thế để không đóng lại nhóm user đã tự mở tay.
-  //
-  // Đồng bộ openKeys theo pathname bằng cách điều chỉnh state ngay trong
-  // render (so sánh với `prevPathname`) thay vì `setState` trong `useEffect`
-  // — pattern React khuyến nghị cho "adjusting state when props change",
-  // tránh render thừa 1 nhịp mà `react-hooks/set-state-in-effect` cảnh báo.
   const [prevPathname, setPrevPathname] = useState(location.pathname);
   const [openKeys, setOpenKeys] = useState<string[]>(() =>
     getOpenKeys(location.pathname, location.search),
@@ -42,18 +32,22 @@ export function SideNav({ collapsed = false, onNavigate }: Props) {
 
   if (prevPathname !== location.pathname) {
     setPrevPathname(location.pathname);
-    setOpenKeys((prev) => {
-      const needed = getOpenKeys(location.pathname, location.search);
-      const merged = [...new Set([...prev, ...needed])];
-      return merged.length === prev.length &&
-        merged.every((k) => prev.includes(k))
-        ? prev
+    setOpenKeys((previous) => {
+      const required = getOpenKeys(location.pathname, location.search);
+      const merged = [...new Set([...previous, ...required])];
+      return merged.length === previous.length &&
+        merged.every((key) => previous.includes(key))
+        ? previous
         : merged;
     });
   }
 
   return (
-    <>
+    <nav
+      data-testid="primary-navigation"
+      aria-label="Điều hướng chính"
+      style={{ height: "100%" }}
+    >
       <div style={layoutStyles.sideNavBrand}>
         <span style={layoutStyles.sideNavBrandIcon}>E</span>
         {!collapsed && <span>Hoa Nam</span>}
@@ -75,6 +69,6 @@ export function SideNav({ collapsed = false, onNavigate }: Props) {
           paddingBottom: 24,
         }}
       />
-    </>
+    </nav>
   );
 }
