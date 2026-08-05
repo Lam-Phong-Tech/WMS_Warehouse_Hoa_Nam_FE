@@ -1,0 +1,92 @@
+{
+  "schemaVersion": "2.0.0",
+  "task": "WWHN-148",
+  "branch": "m1",
+  "generatedAt": "2026-08-05T20:53:00+07:00",
+  "sourceSha": "__SOURCE_SHA_FROM_CI__",
+  "build": {
+    "environment": "__NAMED_DEV_OR_UAT__",
+    "immutableBuildId": "__BUILD_ID__",
+    "frontendUrl": "__DEPLOYMENT_URL__",
+    "backendSha": "__BACKEND_SHA__",
+    "backendContractVersion": "__OPENAPI_VERSION__",
+    "backendContractSha256": "__OPENAPI_SHA256__"
+  },
+  "gates": {
+    "WWHN-146": {
+      "ownerRole": "BAS",
+      "requiredDecision": "APPROVED",
+      "evidenceUrl": "__REQUIRED__",
+      "evidenceSha256": "__REQUIRED__",
+      "status": "PENDING_INDEPENDENT_APPROVAL"
+    },
+    "WWHN-147": {
+      "ownerRole": "BA",
+      "requiredDecision": "APPROVED",
+      "evidenceUrl": "__REQUIRED__",
+      "evidenceSha256": "__REQUIRED__",
+      "status": "PENDING_INDEPENDENT_APPROVAL"
+    },
+    "WWHN-149": {
+      "ownerRole": "QA2",
+      "requiredDecision": "PASS",
+      "namedEnvironmentRequired": true,
+      "realBackendRequired": true,
+      "artifactUrl": "__REQUIRED__",
+      "artifactSha256": "__REQUIRED__",
+      "status": "PENDING_INDEPENDENT_EXECUTION"
+    },
+    "WWHN-180": {
+      "ownerRole": "BE1_BE2",
+      "requiredDecision": "PASS",
+      "requiredArtifacts": [
+        "versioned OpenAPI JSON/YAML",
+        "permission catalog",
+        "403 sample",
+        "409 sample",
+        "422 sample",
+        "idempotency replay/conflict sample"
+      ],
+      "artifactUrl": "__REQUIRED__",
+      "artifactSha256": "__REQUIRED__",
+      "status": "PENDING_INDEPENDENT_CONFIRMATION"
+    },
+    "WWHN-182": {
+      "ownerRole": "QA2",
+      "requiredDecision": "PASS",
+      "artifactUrl": "__REQUIRED__",
+      "artifactSha256": "__REQUIRED__",
+      "status": "PENDING_INDEPENDENT_EXECUTION"
+    },
+    "WWHN-183": {
+      "ownerRole": "BA",
+      "allowedDecision": ["GO", "CONDITIONAL_GO", "NO_GO"],
+      "finalDecisionRequired": "GO",
+      "openP0Required": 0,
+      "openP1Required": 0,
+      "minutesUrl": "__REQUIRED__",
+      "minutesSha256": "__REQUIRED__",
+      "status": "PENDING_BA_DECISION"
+    }
+  },
+  "qa2RuntimeScenarios": [
+    "RESPONSIVE_DESKTOP_TABLET_MOBILE",
+    "UI_LOADING_EMPTY_ERROR_SUCCESS_DISABLED_CONFIRM",
+    "RBAC_ROUTE_DENY_403",
+    "RBAC_ACTION_VISIBILITY",
+    "DIRECT_API_403",
+    "VALIDATION_422_FIELD_MAPPING",
+    "CONFLICT_409",
+    "IDEMPOTENCY_REPLAY",
+    "IDEMPOTENCY_CONFLICT",
+    "STALE_WRITE_409_OR_412",
+    "NO_STACK_TRACE_OR_SECRET",
+    "REQUEST_ID_TRACEABILITY"
+  ],
+  "finalPolicy": {
+    "failClosed": true,
+    "finalAllowedWhen": "all required evidence URLs and SHA256 values are non-placeholder, WWHN-146/147 approved, WWHN-149/180/182 pass, WWHN-183 decision GO, openP0=0 and openP1=0, and exact FE/BE/build/contract identifiers match across artifacts",
+    "controlledMocksMayOpenFinal": false,
+    "blobImageCommentsAccepted": false
+  }
+}

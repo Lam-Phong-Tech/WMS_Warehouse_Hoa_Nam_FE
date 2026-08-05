@@ -1,178 +1,145 @@
 # WWHN-148 — [FE1] Rà soát khả năng triển khai và tái sử dụng
 
-Cập nhật: 2026-08-04 ICT  
-Nhánh thực hiện: `m1`  
-Task cha: `WWHN-30` — `[UX] Đặc tả field và trạng thái UI cho luồng core`  
+Cập nhật: 2026-08-05 ICT  
+Nhánh: `m1`  
+Task cha: `WWHN-30`  
 Dependency: `HN-UX-002-ST01`
 
 ## 1. Kết luận điều hành
 
-FE1 đã xử lý toàn bộ phần có thể kiểm soát trong repository cho review 72/100:
+FE-owned remediation đã hoàn tất ở mức repository và được siết thêm theo đánh giá 82/100. Trạng thái chính xác là:
 
-- Khôi phục evidence API mapping bắt buộc và giữ `check:api-mapping` fail-fast.
-- Khóa traceability WWHN-148 bằng một tài liệu canonical và một CI gate riêng.
-- Sửa lỗi format làm CI `m1` đỏ trước khi lint/type/test/build/API/E2E được chạy.
-- Tách sạch Vite và Vitest config, loại bỏ coupling type không cần thiết và chặn quay lại `__dirname`/CommonJS config-loader pattern.
-- Mở rộng browser evidence để có desktop/tablet/mobile, shared UI states, role không quyền và API 422 retry-safe.
-- Đặt policy canonical cho response của mutation ảnh hưởng tồn kho; read-side fallback được đóng băng trong normalization register cho đến khi BE lock contract.
+**FE-owned remediation complete; final acceptance pending independent evidence.**
 
-Trạng thái chính xác sau thay đổi là **FE-owned closure complete, final acceptance pending independent gates**. FE1 không tự đánh dấu 100/100 thay BAS, BA, BE1/BE2 hoặc QA2.
+Không có P0 trực tiếp thuộc FE1. Tuy nhiên final sign-off vẫn phải fail-closed cho đến khi BAS, BA, BE1/BE2 và QA2 cung cấp evidence độc lập, cùng exact FE SHA, BE SHA, immutable build ID, named DEV/UAT environment và SHA256 artifact.
 
-## 2. Trạng thái dependency đọc trực tiếp từ Jira
+## 2. Root-cause closure theo đánh giá 82/100
 
-| Jira | Owner | Trạng thái tại 2026-08-04 | Evidence bắt buộc để đóng |
-| --- | --- | --- | --- |
-| `WWHN-146` — Field/state matrix | BAS | `To Do` | Field Spec Master có version/date/approver, state matrix loading/empty/error/success/disabled/confirm |
-| `WWHN-147` — Rule/label/validation | BA | `To Do` | BA approval comment cho rule, label, validation, error copy và open-point disposition |
-| `WWHN-148` — FE review | FE1 | `In Progress` | Commit exact SHA, full CI, API mapping, runtime evidence, blocker matrix |
-| `WWHN-149` — QA2 testability | QA2 | `To Do` | Pass/fail theo build/env/browser cho UI state, responsive, RBAC, API error và testability |
+| Mức | Vấn đề | Root cause | Xử lý trong `m1` | Gate cuối |
+| --- | --- | --- | --- | --- |
+| P1 | `HN-UX-002-ST01` chưa chốt | WWHN-146/147 chưa có approval độc lập | Thêm closure manifest bắt buộc evidence URL + SHA256 + decision | BAS WWHN-146 approved; BA WWHN-147 approved |
+| P1 | QA2 chưa review testability | Controlled evidence không phải runtime thật | Thêm QA2 runtime runbook với named env/build/backend, scenario và artifact schema | WWHN-149 PASS |
+| P1 | Contract/permission/sample data conditional | FE không được tự ký contract BE | Manifest yêu cầu OpenAPI version/hash, permission catalog và sample 403/409/422/idempotency | WWHN-180 independent PASS |
+| P1 | G1 contract gate mở | Evidence cross-role không cùng SHA/digest | Manifest khóa WWHN-180/182/183 và final policy | WWHN-182 PASS; WWHN-183 GO; P0/P1=0 |
+| P1 | Runtime evidence là controlled mocks | Chưa có named DEV/UAT + backend thật | Runbook bắt buộc direct API, raw trace đã redact và request ID | QA2 artifact hash hợp lệ |
+| P2 | Normalization fallback tạm thời | BE contract chưa được lock chính thức | Giữ registry có owner/removal gate; CI không cho mở rộng alias âm thầm | Xóa alias sau BE lock contract |
+| P2 | Blob image comment không truy vết | Blob URL không có filename/env/build/SHA/hash | Chính sách mới reject blob image comment cho final; bắt buộc artifact URL + SHA256 | Jira comment chuẩn hóa |
 
-Không chuyển `WWHN-148` sang Done trước khi các evidence độc lập trên được đính kèm hoặc có formal disposition từ owner.
+## 3. Baseline kỹ thuật
 
-## 3. Baseline kỹ thuật áp dụng
-
-Các thay đổi tuân theo `docs/WMS_Hoa_Nam_Techstack_Architecture_Dev_Guide.md`:
+Tuân thủ `docs/WMS_Hoa_Nam_Techstack_Architecture_Dev_Guide.md`:
 
 - React/Vite/TypeScript SPA theo module.
-- API call đi qua `src/shared/api/http.ts`; endpoint nằm tại `src/shared/api/endpoints.ts`.
-- RBAC dựa trên permission code, không dựa role name; FE là UX gate, BE là security authority.
-- Server response theo envelope chuẩn và được unwrap tập trung tại shared HTTP client.
-- Unit/integration dùng Vitest; runtime evidence dùng Playwright.
-- Quality gates bắt buộc gồm format, lint, typecheck, test, build, health và API mapping.
+- API qua `src/shared/api/http.ts`; endpoint qua `src/shared/api/endpoints.ts`.
+- RBAC theo permission code; FE là UX gate, BE là security authority.
+- 401/403/409/412/422 xử lý fail-safe; không lộ stack trace/secret.
+- Critical mutation dùng `Idempotency-Key` và `If-Match` khi contract yêu cầu.
+- Vitest cho unit/integration; Playwright cho browser evidence.
+- CI bắt buộc format, lint, typecheck, test, build, health, API mapping và WWHN-148 verifier.
 
-## 4. Ma trận xử lý review 72/100
+## 4. Canonical evidence package
 
-| Mức | Vấn đề | Root cause | Thay đổi trong `m1` | Trạng thái sau sửa |
-| --- | --- | --- | --- | --- |
-| P1 | `HN-UX-002-ST01` chưa chốt | `WWHN-146` và `WWHN-147` chưa có sign-off thực tế | Ghi đúng trạng thái Jira, owner, evidence tối thiểu; final gate giữ fail-closed | FE disposition hoàn tất; chờ BAS + BA |
-| P1 | QA2 chưa review testability | `WWHN-149` còn To Do; evidence CI cũ chỉ cover login | Mở rộng `e2e/wms-runtime-evidence.spec.ts` cho UI states và role 403; tài liệu hóa checklist QA2 | FE test package sẵn; chờ QA2 pass/fail |
-| P1 | `check:api-mapping` thiếu M1 evidence | File bị mất sau merge, tài liệu cũ vẫn ghi đã pass | Khôi phục `docs/api-evidence/M1_API_MAPPING.md`; gate WWHN-148 kiểm tra nội dung và script API mapping tiếp tục fail-fast | Đóng trong phạm vi FE |
-| P1 | Contract/permission/sample data conditional | BE contract, catalog và negative samples chưa final | Mapping rõ active/fail-closed; critical mutation giữ permission/idempotency/optimistic-lock/success-evidence guards | FE guard hoàn tất; chờ BE1/BE2 |
-| P1 | Runtime evidence chưa đủ | Chỉ có 3 viewport login + 422 | Bổ sung component-catalog states và limited-role 403, giữ screenshot/video/trace theo exact CI SHA | FE controlled evidence hoàn tất; named-backend QA evidence còn mở |
-| P2 | Nhiều fallback normalization | Read services chịu nhiều response alias trong lúc contract chưa khóa | Tạo `WWHN-148_NORMALIZATION_REGISTER.json`; critical mutation ưu tiên canonical fields và chỉ chấp nhận alias whitelist đã đăng ký; đóng băng read aliases và quy định removal gate | Đóng policy/code guard; cleanup cuối chờ BE lock |
-| P2 | Vite/Vitest warning | Vite config còn tham chiếu type Vitest dù config test đã tách | Loại bỏ Vitest reference khỏi Vite config; dùng ESM `node:path`/`node:url`; verifier chặn CommonJS/`__dirname` regression | Đóng trong phạm vi FE/Tech Lead |
+### Repository artifacts
 
-## 5. API, permission và sample-error disposition
-
-Nguồn FE canonical:
-
+- `docs/evidence/wwhn-148/WWHN-148_CLOSURE_MANIFEST.json`
+- `docs/evidence/wwhn-148/QA2_RUNTIME_EVIDENCE_RUNBOOK.md`
 - `docs/api-evidence/M1_API_MAPPING.md`
-- `docs/api-evidence/WMS_FE_CONTRACT_BASELINE.json`
-- `src/shared/api/endpoints.ts`
-- `src/shared/constants/wms-permissions.ts`
-- `src/shared/api/wms-action-permission.ts`
+- `docs/api-evidence/WWHN-148_NORMALIZATION_REGISTER.json`
+- `scripts/verify-wwhn-148-closure.mjs`
+- `e2e/wms-runtime-evidence.spec.ts`
+- `src/test/wwhn-148-critical-response-contract.test.ts`
 
-Critical flows:
+### Không được dùng làm final evidence
 
-| Flow | Endpoint | Permission | Request safeguards | Success evidence bắt buộc |
-| --- | --- | --- | --- | --- |
-| Scan classify | `POST /api/v1/scan/classify` | `scan.classify` / route alternative theo catalog | unique codes, positive warehouse, enum source | `batch_id`, item code/status |
-| Post receipt | `POST /api/v1/inbound-documents/{id}/post-receipt` | `inbound.post` | unique lines, positive qty, `Idempotency-Key`, `If-Match` | `receipt_id`, `movement_ref`, `request_id` |
-| Post issue | `POST /api/v1/outbound-documents/{id}/post-issue` | `outbound.post` | unique lines, positive qty, `Idempotency-Key`, `If-Match` | `issue_id`, `movement_ref`, `request_id` |
-| Apply adjustment | `POST /api/v1/stocktake/sessions/{id}/apply-adjustment` | `stocktake.adjust` | unique SKU, non-negative qty, `Idempotency-Key`, `If-Match` | `session_id`, valid status, `movement_ref`, `request_id` |
+- Controlled mocks hoặc local fixture.
+- Screenshot đơn lẻ không có build/env/SHA.
+- Blob image comment.
+- Branch URL động.
+- Comment tự claim PASS không có artifact hash.
+- Evidence từ SHA/build khác với release candidate.
 
-Independent BE evidence still required:
+## 5. QA2 runtime matrix bắt buộc
 
-- Versioned OpenAPI/schema and changelog/hash.
-- Permission catalog approved by BE/RBAC + BA.
-- Canonical request/response samples.
-- Negative samples: 403, 409, 412/428, 422.
-- Idempotency replay/conflict behavior against named backend build.
+QA2 phải chạy trên named DEV/UAT environment và backend thật:
 
-## 6. UI state, responsive và RBAC evidence
+1. Responsive: 1440×900, 1024×768, 390×844.
+2. UI states: loading, empty, error, success, disabled, confirm.
+3. Route RBAC và action visibility.
+4. Direct API 403 không có business write.
+5. 422 field mapping và retry-safe.
+6. 409 business conflict.
+7. Idempotency replay cùng key/cùng payload, không side effect lần hai.
+8. Idempotency conflict cùng key/payload khác trả 409.
+9. Stale `If-Match` trả 409 hoặc 412.
+10. Không stack trace, SQL, path nội bộ, token hoặc secret.
+11. Request ID truy vết từ UI/API sang audit/backend log.
 
-CI controlled browser suite phải tạo screenshot, video và trace cho:
+Artifact bắt buộc gồm build metadata, QA2 identity, contract metadata, raw request/response đã redact, screenshots/videos/traces, request-ID map, redaction report, result summary, `SHA256SUMS` và package digest.
 
-| Scenario | Viewport / role | Assertion tối thiểu |
-| --- | --- | --- |
-| Login responsive | 1440×900, 1024×768, 390×844 | Heading/action visible, no horizontal overflow |
-| Shared UI states | Desktop component catalog | Loading, empty, error, no-permission, API field error, confirm và disabled action visible |
-| Limited-role RBAC | Authenticated user không có `sku.manage/master.manage` | Điều hướng `/master-data` bị chặn và render `/errors/403` |
-| API validation error | Login API 422 | POST thật được intercept, payload đúng, message visible, submit được enable lại |
+## 6. Cross-role final gate
 
-Ranh giới: controlled mocks chứng minh FE state machine và rendering. QA2 vẫn phải chạy cùng checklist trên named build/environment với backend thật để final pass.
+Final chỉ được mở khi đồng thời:
 
-## 7. Service normalization policy
+| Gate | Điều kiện |
+| --- | --- |
+| WWHN-146 | BAS `APPROVED`, evidence URL và SHA256 |
+| WWHN-147 | BA `APPROVED`, evidence URL và SHA256 |
+| WWHN-149 | QA2 `PASS` trên named build/env/backend thật |
+| WWHN-180 | Versioned OpenAPI/schema, permission catalog, sample 403/409/422/idempotency; independent confirmation |
+| WWHN-182 | QA2 API/DB/runtime evidence `PASS`, artifact digest hợp lệ |
+| WWHN-183 | BA decision `GO`, open P0=0, open P1=0, minutes URL + SHA256 |
 
-`docs/api-evidence/WWHN-148_NORMALIZATION_REGISTER.json` là source register cho debt normalization.
+`CONDITIONAL_GO`, missing hash, placeholder, mismatched SHA/build hoặc còn P0/P1 đều giữ `finalAllowed=NO`.
 
-Quy tắc:
+## 7. Normalization disposition
 
-1. Shared HTTP client là nơi duy nhất unwrap API envelope.
-2. Mutation ảnh hưởng tồn kho ưu tiên canonical success payload; chỉ alias whitelist trong register được phép tạm thời. Alias ngoài register hoặc thiếu evidence bắt buộc phải fail closed.
-3. Read-side aliases hiện có chỉ được giữ tạm thời và không được mở rộng âm thầm.
-4. Sau khi BE lock OpenAPI/schema và BA/BAS chốt field/state/rule, FE thay aliases bằng official/generated type, cập nhật tests và xóa registry entry đã hết hiệu lực.
-5. Mọi thay đổi registry phải có owner, lý do và contract reference.
+Critical mutation hiện ưu tiên canonical snake_case success evidence và reject alias không có trong registry. Các fallback còn lại là debt có kiểm soát, không phải contract chính thức.
 
-## 8. Vite/Vitest config disposition
+Removal gate:
 
-- `vite.config.ts` chỉ nhập `defineConfig` từ `vite`; không tham chiếu `vitest/config`.
-- `vitest.config.ts` là config test riêng và nhập `defineConfig` từ `vitest/config`.
-- Cả hai dùng ESM-safe `fileURLToPath(import.meta.url)` với `node:path`/`node:url`.
-- Gate `wwhn-148:verify` fail nếu quay lại `__dirname`, `__filename`, `require(...)` hoặc nhúng Vitest types vào Vite config.
+1. BE1/BE2 phát hành OpenAPI/schema versioned và hash.
+2. BA/BAS duyệt field/state/rule.
+3. FE cập nhật official/generated types.
+4. Xóa alias/fallback và registry entry tương ứng.
+5. Unit/integration/API mapping/CI pass trên exact SHA.
 
-Không nâng version Vite/Vitest trong task này vì review yêu cầu xử lý config loader, không yêu cầu dependency upgrade. Tránh tạo regression ngoài scope.
+Không được mở rộng alias âm thầm trước removal gate.
 
-## 9. Automated gates
+## 8. Automated gate
 
 `npm run wwhn-148:verify` kiểm tra:
 
-- Canonical WWHN-148 document và legacy pointer.
-- M1 API mapping, normalization register và dependency keys.
-- Required 403/409/422/idempotency evidence language.
+- Canonical document và legacy pointer.
+- API mapping và fail-closed boundary.
+- Cross-role closure manifest đủ WWHN-146/147/149/180/182/183.
+- QA2 runbook có named env/build/backend, 403/409/412/422, idempotency và SHA256.
+- Normalization registry hợp lệ.
 - Vite/Vitest config isolation.
-- Runtime evidence có đủ 3 viewport, component catalog, role 403 và API 422.
-- Package/CI thực sự gọi gate, không chỉ ghi trong tài liệu.
+- Responsive/RBAC/API-error controlled scenarios vẫn tồn tại.
+- Package và CI thực sự gọi verifier.
 
-Full gate order:
+## 9. Jira handoff format
 
-```bash
-npm run format:check
-npm run lint
-npm run typecheck
-npm run test
-npm run env:verify
-npm run uat:p0p1:verify
-npm run master-sku:verify
-npm run wms-contract:verify
-npm run wwhn-148:verify
-npm run build
-npm run health:check
-npm run check:api-mapping
-npm run test:e2e:evidence
-```
+Comment WWHN-148 sau commit phải ghi:
 
-## 10. Evidence package cần gắn Jira
+- exact FE commit SHA;
+- CI run URL/status;
+- artifact filename + digest;
+- file paths đã thay đổi;
+- FE scope PASS;
+- external gate status của WWHN-146/147/149/180/182/183;
+- không đính blob image comment làm canonical evidence.
 
-| Artifact | Owner | Trạng thái |
-| --- | --- | --- |
-| Commit exact SHA trên `m1` | FE1 | Ghi sau commit duy nhất |
-| CI run + raw outcomes | FE1/DevOps | Ghi sau workflow exact SHA |
-| `M1_API_MAPPING.md` + script log | FE1 | Có trong repo; CI xác minh |
-| Screenshot/video/trace controlled | FE1 | CI artifact |
-| Field/state matrix | BAS (`WWHN-146`) | Chưa có — external blocker |
-| Rule/label/validation approval | BA (`WWHN-147`) | Chưa có — external blocker |
-| QA2 pass/fail | QA2 (`WWHN-149`) | Chưa có — external blocker |
-| OpenAPI/permission/negative samples | BE1/BE2 | Chưa có — external blocker |
-
-## 11. Definition of Done và sign-off rule
+## 10. Definition of Done
 
 ### FE-owned DoD
 
-- Code/docs/evidence nằm trên đúng nhánh `m1`.
-- Không tạo branch phụ.
-- Một commit tiếng Việt duy nhất chứa toàn bộ remediation.
-- Full CI exact SHA phải pass trước khi ghi FE closure complete.
-- Jira comment phải nêu commit, CI, evidence và blocker owner.
+- Chỉ sửa nhánh `m1`.
+- Một commit tiếng Việt duy nhất.
+- Repository artifacts và verifier hoàn chỉnh.
+- CI exact SHA phải pass trước khi claim FE closure.
+- Jira handoff có SHA/build/env/artifact/hash rõ ràng.
 
-### Final 100/100 DoD
+### Final 100% DoD
 
-Chỉ đạt khi đồng thời:
-
-1. FE-owned DoD pass.
-2. `WWHN-146` có BAS evidence approved.
-3. `WWHN-147` có BA approval.
-4. `WWHN-149` có QA2 pass/fail và không còn P0/P1 defect mở.
-5. BE1/BE2 cung cấp contract/permission/sample data versioned và QA xác minh trên exact backend build.
-
-Cho đến thời điểm đó, trạng thái hợp lệ là **Conditional Pass — FE complete, independent gates pending**; không ghi “100% final” sai bằng chứng.
+Chỉ đạt 100% khi toàn bộ cross-role gate ở mục 6 pass bằng evidence độc lập. FE1 không tự ký thay BAS, BA, BE hoặc QA2 và không được ghi 100% khi các gate còn pending.
