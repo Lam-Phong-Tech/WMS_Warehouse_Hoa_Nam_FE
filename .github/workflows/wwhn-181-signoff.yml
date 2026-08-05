@@ -1,0 +1,84 @@
+name: WWHN-181 Exact Contract Sign-off Evidence
+
+on:
+  push:
+    branches: [m1]
+    paths:
+      - "src/shared/api/wms-contract-signoff.ts"
+      - "src/test/wms-contract-signoff-guards.test.ts"
+      - "docs/api-evidence/WMS_FE_CONTRACT_BASELINE.json"
+      - "docs/Task_docs_Jira/WWHN-181.md"
+      - "docs/evidence/WWHN-181/**"
+      - "scripts/verify-wwhn-181-exact-sha.mjs"
+      - ".github/workflows/wwhn-181-signoff.yml"
+  workflow_dispatch:
+    inputs:
+      backend_sha:
+        description: "Exact BE contract SHA v1.5.0"
+        required: true
+        default: "54d5f4ff9cbaa678e16dcf322bd55836e177409a"
+
+permissions:
+  contents: read
+
+env:
+  WWHN_181_BE_SHA: ${{ inputs.backend_sha || '54d5f4ff9cbaa678e16dcf322bd55836e177409a' }}
+
+jobs:
+  verify-exact-pair:
+    name: Verify FE/BE exact SHA pair and immutable evidence
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact FE commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Static and regression gates
+        run: |
+          npm run format:check
+          npm run lint
+          npm run test -- --run src/test/wms-contract-signoff-guards.test.ts
+          npm run build
+          npm run health:check
+          npm run check:api-mapping
+
+      - name: Generate exact-SHA manifest
+        run: node scripts/verify-wwhn-181-exact-sha.mjs
+
+      - name: Verify generated manifest binds current commit
+        shell: bash
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const m = JSON.parse(fs.readFileSync('docs/evidence/WWHN-181/exact-sha-manifest.json', 'utf8'));
+          if (m.task !== 'WWHN-181') throw new Error('Wrong task');
+          if (m.exact_pair.frontend_sha !== process.env.GITHUB_SHA) throw new Error('FE SHA mismatch');
+          if (m.exact_pair.backend_sha !== process.env.WWHN_181_BE_SHA) throw new Error('BE SHA mismatch');
+          if (m.gates.final_allowed !== false) throw new Error('Final gate must remain fail-closed');
+          if (!m.integrity.canonical_payload_sha256) throw new Error('Missing manifest digest');
+          console.log(JSON.stringify(m.ci, null, 2));
+          NODE
+
+      - name: Upload immutable WWHN-181 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: wwhn-181-exact-sha-evidence-${{ github.sha }}
+          if-no-files-found: error
+          retention-days: 90
+          path: |
+            docs/evidence/WWHN-181/exact-sha-manifest.json
+            docs/evidence/WWHN-181/RUNTIME_EVIDENCE_CHECKLIST.md
+            docs/Task_docs_Jira/WWHN-181.md
+            docs/api-evidence/WMS_FE_CONTRACT_BASELINE.json
