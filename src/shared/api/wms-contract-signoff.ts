@@ -28,7 +28,8 @@ export const WWHN_181_EXACT_REVIEW = {
     "idempotency-and-optimistic-locking",
   ],
   manifestPath: "docs/evidence/WWHN-181/exact-sha-manifest.json",
-  runtimeEvidencePath: "docs/evidence/WWHN-181/RUNTIME_EVIDENCE_CHECKLIST.md",
+  runtimeEvidencePath:
+    "docs/evidence/WWHN-181/RUNTIME_EVIDENCE_CHECKLIST.md",
 } as const;
 
 export const WMS_CONTRACT_BASELINE = {
@@ -70,12 +71,28 @@ export const WMS_REVIEW_GATES: readonly WmsReviewGate[] = [
       "Independent FE review of BE 54d5f4ff9cbaa678e16dcf322bd55836e177409a with immutable CI manifest",
   },
   {
+    id: "WWHN-181-P0-OFFICIAL-CONTRACT",
+    severity: "P0",
+    owner: "BE1 + BE2 + independent reviewer",
+    status: "EXTERNAL_BLOCKER",
+    requiredEvidence:
+      "WWHN-31 official OpenAPI/schema artifact with version, SHA256, changelog and independent confirmation",
+  },
+  {
     id: "WWHN-181-P1-CI-MANIFEST",
     severity: "P1",
     owner: "FE1 + BE1 + DevOps",
     status: "FE_COMPLETE",
     requiredEvidence:
       "CI URL, artifact name and SHA256 manifest generated from the exact workflow commit",
+  },
+  {
+    id: "WWHN-181-P1-SCHEMA-REVIEW",
+    severity: "P1",
+    owner: "BE2 + QA1",
+    status: "EXTERNAL_BLOCKER",
+    requiredEvidence:
+      "WWHN-150/151/152 schema, API module and QA1 constraint review on the exact official contract hash",
   },
   {
     id: "WWHN-181-P1-QA2-RUNTIME",
@@ -130,12 +147,28 @@ export const WMS_FE_IMPLEMENTATION_READINESS = {
 } as const;
 
 export const WMS_EXTERNAL_GATE_LIST = [
+  { id: "WWHN-31", status: "pending_official_contract_approval" },
+  { id: "WWHN-150", status: "pending_schema_package" },
+  { id: "WWHN-151", status: "pending_api_module_handoff" },
+  { id: "WWHN-152", status: "pending_qa1_constraint_review" },
   { id: "WWHN-180", status: "pending_pass_on_exact_contract" },
   { id: "WWHN-182", status: "pending_qa2_execution" },
   { id: "WWHN-183", status: "pending_ba_g1_decision" },
 ] as const;
 
 export const WMS_EXTERNAL_GATES = {
+  officialContract: {
+    id: "WWHN-31",
+    status: "PENDING_OFFICIAL_CONTRACT_APPROVAL",
+    required:
+      "Versioned OpenAPI/schema, changelog, exact SHA256 and independent reviewer evidence.",
+  },
+  schemaReview: {
+    ids: ["WWHN-150", "WWHN-151", "WWHN-152"],
+    status: "PENDING_SCHEMA_AND_QA1_REVIEW",
+    required:
+      "BE2 schema/API module handoff and QA1 constraints/error/testability review on the same contract hash.",
+  },
   beContract: {
     id: "WWHN-180",
     token: "BE-CONFIRMATION-EVIDENCE",
@@ -146,7 +179,8 @@ export const WMS_EXTERNAL_GATES = {
     id: "WWHN-182",
     token: "QA-BA-GATES",
     status: "PENDING_QA2_EXECUTION",
-    required: "Named-build happy/negative/RBAC/idempotency/retry/DB/reconcile evidence.",
+    required:
+      "Named-build happy/negative/RBAC/idempotency/retry/DB/reconcile evidence.",
   },
   baDecision: {
     id: "WWHN-183",
@@ -173,8 +207,9 @@ export const WMS_FINAL_SIGNOFF = {
   finalAllowed: false,
   status: "CONDITIONAL_PASS_NOT_FINAL",
   reason:
-    "Final is fail-closed until WWHN-180, WWHN-182 and WWHN-183 independently pass on the same exact FE/BE build pair.",
-  dependentTasks: "WWHN-180/WWHN-182/WWHN-183",
+    "Final is fail-closed until WWHN-31, WWHN-150/151/152, WWHN-180, WWHN-182 and WWHN-183 independently pass on the same exact FE/BE build pair.",
+  dependentTasks:
+    "WWHN-31/WWHN-150/WWHN-151/WWHN-152/WWHN-180/WWHN-182/WWHN-183",
 } as const;
 
 export function assertFinalSignoffAllowed(): void {
