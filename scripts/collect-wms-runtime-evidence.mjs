@@ -50,6 +50,8 @@ const outcomes = {
   wwhn156Closure: process.env.WWHN_156_OUTCOME ?? "not_run",
   smokeContract: process.env.SMOKE_CONTRACT_OUTCOME ?? "not_run",
   masterSku: process.env.MASTER_SKU_OUTCOME ?? "not_run",
+  wwhn178RbacContract:
+    process.env.WWHN_178_RBAC_CONTRACT_OUTCOME ?? "not_run",
   wmsContract: process.env.WMS_CONTRACT_OUTCOME ?? "not_run",
   wwhn148Closure: process.env.WWHN_148_OUTCOME ?? "not_run",
   wwhn144Closure: process.env.WWHN_144_OUTCOME ?? "not_run",
@@ -60,6 +62,7 @@ const outcomes = {
   runtimeEvidence: process.env.RUNTIME_EVIDENCE_OUTCOME ?? "not_run",
   wwhn144E2E: process.env.WWHN_144_E2E_OUTCOME ?? "not_run",
   wwhn175E2E: process.env.WWHN_175_E2E_OUTCOME ?? "not_run",
+  wwhn178E2E: process.env.WWHN_178_E2E_OUTCOME ?? "not_run",
   wwhn177Handoff: process.env.WWHN_177_HANDOFF_OUTCOME ?? "not_run",
 };
 
@@ -88,7 +91,7 @@ const traces = relativeFiles(
 );
 
 const manifest = {
-  schemaVersion: "3.0.0",
+  schemaVersion: "3.1.0",
   tasks: [
     "WWHN-144",
     "WWHN-148",
@@ -98,6 +101,8 @@ const manifest = {
     "WWHN-175",
     "WWHN-176",
     "WWHN-177",
+    "WWHN-178",
+    "WWHN-179",
   ],
   generatedAt: new Date().toISOString(),
   repository:
@@ -191,6 +196,30 @@ const manifest = {
       path: "docs/Task_docs_Jira/WWHN-156.md",
       sha256: sha256(join(root, "docs/Task_docs_Jira/WWHN-156.md")),
     },
+    wwhn178TaskDocument: {
+      path: "docs/Task_docs_Jira/WWHN-178.md",
+      sha256: sha256(join(root, "docs/Task_docs_Jira/WWHN-178.md")),
+    },
+    wwhn178ContractBaseline: {
+      path: "docs/api-evidence/WWHN-178_MASTER_SKU_CONTRACT_BASELINE.json",
+      sha256: sha256(
+        join(
+          root,
+          "docs/api-evidence/WWHN-178_MASTER_SKU_CONTRACT_BASELINE.json",
+        ),
+      ),
+    },
+    wwhn178DirectApiPlan: {
+      path: `docs/evidence/wwhn-178/generated/${sourceSha ?? "unknown"}/WWHN-178_DIRECT_API_RBAC_PLAN.json`,
+      sha256: sha256(
+        join(
+          root,
+          "docs/evidence/wwhn-178/generated",
+          sourceSha ?? "unknown",
+          "WWHN-178_DIRECT_API_RBAC_PLAN.json",
+        ),
+      ),
+    },
     contractEvidence: {
       path:
         "docs/evidence/wms-contract-signoff/generated/contract-evidence.json",
@@ -202,9 +231,9 @@ const manifest = {
   },
   evidenceBoundary: {
     feOwned:
-      "Exact FE source/build, foundation closure controls, controlled responsive/accessibility/UI-state/RBAC/API-error evidence and immutable CI/DEV handoff trace.",
+      "Exact FE source/build, foundation and WWHN-178 closure controls, controlled responsive/accessibility/UI-state/RBAC/API-error evidence and immutable CI/DEV handoff trace.",
     independent:
-      "QA2 browser/UAT sign-off, DevOps live target/deployment acceptance, BA/Tech Lead architecture disposition and Lead final gate remain independent and are never self-signed by FE.",
+      "QA2 browser/UAT sign-off, BE/QA live direct API authorization and data-scope proof, DevOps live target/deployment acceptance, BA/BAS baseline, Tech Lead disposition and Lead final gate remain independent and are never self-signed by FE.",
   },
 };
 
@@ -232,7 +261,7 @@ ${Object.entries(outcomes)
 
 ## Boundary
 
-This artifact proves FE-owned controls from the exact SHA. It does not replace independent QA2, DevOps, BA, Tech Lead or Lead evidence.
+This artifact proves FE-owned controls from the exact SHA. It does not replace independent QA2, BE/QA live authorization, DevOps, BA/BAS, Tech Lead or Lead evidence.
 `;
 writeFileSync(join(outputDir, "runtime-manifest.md"), markdown);
 

@@ -1,0 +1,275 @@
+{
+  "schemaVersion": "1.0.0",
+  "task": "WWHN-178",
+  "qaTask": "WWHN-179",
+  "baseline": "HN-MC-001",
+  "generatedForBranch": "m1",
+  "architectureReference": "docs/WMS_Hoa_Nam_Techstack_Architecture_Dev_Guide.md",
+  "principles": {
+    "apiFirst": true,
+    "permissionByCode": true,
+    "typescriptStrict": true,
+    "unitAndE2e": true,
+    "failClosedWhenContractIsNotApproved": true
+  },
+  "approvedCapabilities": [
+    {
+      "capability": "PRODUCT_LIST",
+      "method": "GET",
+      "path": "/products",
+      "permissionAny": [
+        "sku.manage",
+        "master.manage"
+      ],
+      "feStatus": "ENABLED"
+    },
+    {
+      "capability": "PRODUCT_CREATE",
+      "method": "POST",
+      "path": "/products",
+      "permissionAny": [
+        "sku.manage",
+        "master.manage"
+      ],
+      "feStatus": "ENABLED"
+    },
+    {
+      "capability": "PRODUCT_STATUS",
+      "method": "PATCH",
+      "path": "/products/:id/enable|disable",
+      "permissionAny": [
+        "sku.manage",
+        "master.manage"
+      ],
+      "feStatus": "ENABLED"
+    },
+    {
+      "capability": "PRODUCT_CATEGORY",
+      "method": "GET|POST",
+      "path": "/product-categories",
+      "permissionAny": [
+        "master.manage"
+      ],
+      "feStatus": "ENABLED"
+    },
+    {
+      "capability": "REFERENCE_UOM",
+      "method": "GET",
+      "path": "/uoms",
+      "permissionAny": [
+        "sku.manage",
+        "master.manage"
+      ],
+      "feStatus": "ENABLED"
+    },
+    {
+      "capability": "REFERENCE_SUPPLIER",
+      "method": "GET",
+      "path": "/suppliers",
+      "permissionAny": [
+        "sku.manage",
+        "master.manage"
+      ],
+      "feStatus": "ENABLED"
+    }
+  ],
+  "blockedCapabilities": [
+    {
+      "capability": "ITEM_LIST",
+      "method": "GET",
+      "path": "/items",
+      "feStatus": "FAIL_CLOSED",
+      "reason": "Not present in approved OpenAPI contract",
+      "requiredOwnerIssues": [
+        "WWHN-14",
+        "WWHN-100",
+        "WWHN-101",
+        "WWHN-36",
+        "WWHN-37",
+        "WWHN-171"
+      ]
+    },
+    {
+      "capability": "PHYSICAL_CODE_LIST",
+      "method": "GET",
+      "path": "/physical-codes",
+      "feStatus": "FAIL_CLOSED",
+      "reason": "Not present in approved OpenAPI contract",
+      "requiredOwnerIssues": [
+        "WWHN-14",
+        "WWHN-100",
+        "WWHN-101",
+        "WWHN-36",
+        "WWHN-37",
+        "WWHN-171"
+      ]
+    },
+    {
+      "capability": "SKU_IMPORT",
+      "method": "POST",
+      "path": "/skus/import-excel",
+      "feStatus": "FAIL_CLOSED",
+      "reason": "Endpoint, multipart payload, atomicity, error and result schema are not approved",
+      "requiredOwnerIssues": [
+        "WWHN-14",
+        "WWHN-100",
+        "WWHN-101",
+        "WWHN-36",
+        "WWHN-37",
+        "WWHN-171"
+      ]
+    }
+  ],
+  "fieldBaselineProposal": {
+    "product": {
+      "identity": {
+        "id": "Backend-generated immutable identifier",
+        "product_code": "Business SKU/product code; required and unique under backend rule",
+        "barcode": "Optional product barcode; backend owns uniqueness and generation"
+      },
+      "requiredCreateFields": [
+        "product_code",
+        "name",
+        "uom_id",
+        "list_price_net",
+        "vat_rate",
+        "status"
+      ],
+      "optionalCreateFields": [
+        "barcode",
+        "description",
+        "supplier_id",
+        "category_id"
+      ],
+      "statusEnum": [
+        "active",
+        "inactive",
+        "discontinued"
+      ],
+      "vatRateAllowedByCurrentUI": [
+        0,
+        5,
+        8,
+        10
+      ],
+      "openPoints": [
+        "BA/BAS must confirm code normalization, maximum length and uniqueness scope",
+        "BE must publish validation error codes and sample 409/422 responses"
+      ]
+    },
+    "item": {
+      "semanticBoundary": "An inventory instance/traceable unit linked to a product/SKU; not a synonym of product_code",
+      "candidateFields": [
+        "item_code",
+        "sku_code",
+        "sku_name",
+        "serial_no",
+        "lot_no",
+        "warehouse_name",
+        "status"
+      ],
+      "openPoints": [
+        "Identity generation and uniqueness",
+        "Serial/lot requirement matrix",
+        "Warehouse and data-scope semantics",
+        "Lifecycle status enum"
+      ]
+    },
+    "physicalCode": {
+      "semanticBoundary": "A scannable carrier code mapped to an item or SKU; not the product/SKU business code",
+      "candidateFields": [
+        "code_value",
+        "code_type",
+        "carrier",
+        "sku_code",
+        "item_code",
+        "duplicate_flag",
+        "status",
+        "last_scanned_at"
+      ],
+      "openPoints": [
+        "Supported code_type enum",
+        "Duplicate resolution rule",
+        "Carrier semantics",
+        "Mapping cardinality and lifecycle"
+      ]
+    },
+    "import": {
+      "currentFeStatus": "DISABLED",
+      "minimumRequiredContract": [
+        "Official endpoint and multipart field name",
+        "Accepted file type, encoding, size and row limit",
+        "Column names, required fields and enum dictionary",
+        "Duplicate/upsert rule",
+        "Atomic rollback versus partial-write rule",
+        "Row-level error schema and downloadable error report",
+        "Permission code, data-scope and audit requirements",
+        "Sample success, 403, 409, 413, 415 and 422 responses"
+      ]
+    }
+  },
+  "evidenceMatrix": [
+    {
+      "severity": "P0",
+      "issue": "Unapproved endpoints called at runtime",
+      "control": "Central contract registry plus typed fail-closed error",
+      "automatedEvidence": "master-data.contract.test.ts and master-data.service.test.ts",
+      "status": "FE_COMPLETE"
+    },
+    {
+      "severity": "P1",
+      "issue": "QA2 WWHN-179",
+      "control": "Deterministic Playwright suite with screenshots, video, trace and metadata",
+      "automatedEvidence": "e2e/wwhn-178-master-sku-qa2.spec.ts",
+      "status": "READY_FOR_INDEPENDENT_QA2_EXECUTION"
+    },
+    {
+      "severity": "P1",
+      "issue": "HN-MC-001 baseline",
+      "control": "Field/enum/import/item/code decision checklist",
+      "automatedEvidence": "This JSON is a FE proposal, not BA/BAS sign-off",
+      "status": "EXTERNAL_OWNER_SIGNOFF_REQUIRED"
+    },
+    {
+      "severity": "P1",
+      "issue": "BE contract",
+      "control": "Capabilities remain disabled until OpenAPI/Postman evidence is attached",
+      "automatedEvidence": "MASTER_DATA_CONTRACT",
+      "status": "EXTERNAL_OWNER_SIGNOFF_REQUIRED"
+    },
+    {
+      "severity": "P1",
+      "issue": "Backend authorization",
+      "control": "Direct API 403/data-scope runner with secret redaction",
+      "automatedEvidence": "scripts/run-wwhn-178-direct-api-rbac.mjs",
+      "status": "READY_FOR_BE_QA_EXECUTION"
+    },
+    {
+      "severity": "P1",
+      "issue": "PR/CI trace",
+      "control": "Single commit on m1; source SHA and workflow artifact recorded after push",
+      "status": "COMPLETED_AFTER_COMMIT_AND_CI"
+    },
+    {
+      "severity": "P2",
+      "issue": "UI evidence",
+      "control": "Loading, empty, error, success, disabled, validation, responsive, accessibility/keyboard and RBAC scenarios",
+      "automatedEvidence": "e2e/wwhn-178-master-sku-qa2.spec.ts",
+      "status": "READY_FOR_CAPTURE"
+    }
+  ],
+  "signoffBoundary": {
+    "feMayClaim": [
+      "Runtime fail-closed control",
+      "Typed contract registry",
+      "Unit tests and QA2 executable test pack",
+      "Evidence templates and direct API runner"
+    ],
+    "feMustNotClaim": [
+      "BA/BAS baseline approval",
+      "Official BE OpenAPI/Postman approval",
+      "Independent backend authorization proof before live runner output exists",
+      "QA2 pass before WWHN-179 is executed on exact build"
+    ]
+  }
+}

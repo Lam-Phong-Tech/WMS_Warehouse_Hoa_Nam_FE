@@ -1,5 +1,6 @@
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { http } from "@/shared/api/http";
+import { assertMasterDataContractApproved } from "@/modules/master-data/contracts/master-data.contract";
 import type {
   ImportResult,
   ItemRecord,
@@ -62,13 +63,20 @@ function productParams(params: MasterListParams) {
 export async function getProducts(
   params: MasterListParams,
 ): Promise<MasterPageResult<ProductRecord>> {
-  const result = await http.getPage<MaybePaginator<ProductRecord>>(API_ENDPOINTS.PRODUCTS, {
-    params: productParams(params),
-  });
+  assertMasterDataContractApproved("PRODUCT_LIST");
+  const result = await http.getPage<MaybePaginator<ProductRecord>>(
+    API_ENDPOINTS.PRODUCTS,
+    {
+      params: productParams(params),
+    },
+  );
   return normalizePage(result);
 }
 
-export async function createProduct(payload: ProductPayload): Promise<ProductRecord> {
+export async function createProduct(
+  payload: ProductPayload,
+): Promise<ProductRecord> {
+  assertMasterDataContractApproved("PRODUCT_CREATE");
   return http.post<ProductRecord>(API_ENDPOINTS.PRODUCTS, payload);
 }
 
@@ -76,13 +84,16 @@ export async function updateProductStatus(
   id: number | string,
   status: "active" | "inactive" | "discontinued",
 ): Promise<ProductRecord> {
+  assertMasterDataContractApproved("PRODUCT_STATUS");
   const endpoint =
     status === "active"
       ? API_ENDPOINTS.PRODUCT_ENABLE
       : status === "inactive"
         ? API_ENDPOINTS.PRODUCT_DISABLE
         : API_ENDPOINTS.PRODUCT.replace(":id", String(id)) + "/status";
-  return http.patch<ProductRecord>(endpoint.replace(":id", String(id)), { status });
+  return http.patch<ProductRecord>(endpoint.replace(":id", String(id)), {
+    status,
+  });
 }
 
 // ===== Legacy aliases kept for UI tabs until BE confirms new endpoints =====
@@ -92,7 +103,9 @@ export async function getSkus(
   return getProducts(params);
 }
 
-export async function createSku(payload: ProductPayload): Promise<ProductRecord> {
+export async function createSku(
+  payload: ProductPayload,
+): Promise<ProductRecord> {
   return createProduct(payload);
 }
 
@@ -105,15 +118,15 @@ export async function updateSkuStatus(
 
 export async function importSkus(file: File): Promise<ImportResult> {
   void file;
-  throw new Error(
-    "Import SKU is disabled because /skus/import-excel is not in OpenAPI 3.0.0.",
-  );
+  assertMasterDataContractApproved("SKU_IMPORT");
+  throw new Error("Unreachable: SKU_IMPORT must remain fail-closed.");
 }
 
 // ===== Categories =====
 export async function getProductCategories(
   params: MasterListParams,
 ): Promise<MasterPageResult<ProductCategoryRecord>> {
+  assertMasterDataContractApproved("PRODUCT_CATEGORY");
   const result = await http.getPage<MaybePaginator<ProductCategoryRecord>>(
     API_ENDPOINTS.PRODUCT_CATEGORIES,
     { params: cleanParams(params) },
@@ -124,11 +137,16 @@ export async function getProductCategories(
 export async function createProductCategory(
   payload: ProductCategoryPayload,
 ): Promise<ProductCategoryRecord> {
-  return http.post<ProductCategoryRecord>(API_ENDPOINTS.PRODUCT_CATEGORIES, payload);
+  assertMasterDataContractApproved("PRODUCT_CATEGORY");
+  return http.post<ProductCategoryRecord>(
+    API_ENDPOINTS.PRODUCT_CATEGORIES,
+    payload,
+  );
 }
 
 // ===== Reference data =====
 export async function getUoms(): Promise<ReferenceOptionRecord[]> {
+  assertMasterDataContractApproved("REFERENCE_UOM");
   const result = await http.getPage<MaybePaginator<ReferenceOptionRecord>>(
     API_ENDPOINTS.UOMS,
     { params: { per_page: 100, status: 1 } },
@@ -137,6 +155,7 @@ export async function getUoms(): Promise<ReferenceOptionRecord[]> {
 }
 
 export async function getSuppliers(): Promise<ReferenceOptionRecord[]> {
+  assertMasterDataContractApproved("REFERENCE_SUPPLIER");
   const result = await http.getPage<MaybePaginator<ReferenceOptionRecord>>(
     API_ENDPOINTS.SUPPLIERS,
     { params: { per_page: 100, status: 1 } },
@@ -149,14 +168,14 @@ export async function getItems(
   params: MasterListParams,
 ): Promise<MasterPageResult<ItemRecord>> {
   void params;
-  throw new Error("Item list is disabled because /items is not in OpenAPI 3.0.0.");
+  assertMasterDataContractApproved("ITEM_LIST");
+  throw new Error("Unreachable: ITEM_LIST must remain fail-closed.");
 }
 
 export async function getPhysicalCodes(
   params: MasterListParams,
 ): Promise<MasterPageResult<PhysicalCodeRecord>> {
   void params;
-  throw new Error(
-    "Physical code list is disabled because /physical-codes is not in OpenAPI 3.0.0.",
-  );
+  assertMasterDataContractApproved("PHYSICAL_CODE_LIST");
+  throw new Error("Unreachable: PHYSICAL_CODE_LIST must remain fail-closed.");
 }
