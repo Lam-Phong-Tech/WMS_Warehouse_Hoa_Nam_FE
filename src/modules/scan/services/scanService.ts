@@ -3,17 +3,15 @@ import { assertWmsActionPermission } from "@/shared/api/wms-action-permission";
 import { http } from "@/shared/api/http";
 import {
   WmsContractError,
-  requireArray,
   requireNonEmptyString,
-  requirePositiveNumber,
-  requireUniqueStrings,
 } from "@/shared/api/wms-contract";
 import { WMS_ACTION_PERMISSIONS } from "@/shared/constants/wms-permissions";
 import type {
   ScanClassifyRequest,
   ScanClassifyResponse,
-  ScanClassifyItem,
-  ScanClassifyStatus,
+  ScanClassification,
+  ScanContext,
+  ScanResolvedSource,
   ScanBatch,
   ScanEvent,
   PhysicalCode,
@@ -21,11 +19,24 @@ import type {
 
 type RawRecord = Record<string, unknown>;
 
-const CLASSIFY_STATUSES = new Set<ScanClassifyStatus>([
-  "VALID",
-  "DUPLICATE",
-  "UNKNOWN",
-  "INVALID",
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
+const SCAN_CONTEXTS = new Set<ScanContext>([
+  "INBOUND",
+  "OUTBOUND",
+  "STOCKTAKE",
+  "WARRANTY_TEMP_ONLY",
+]);
+const CLASSIFICATIONS = new Set<ScanClassification>([
+  "ITEM",
+  "CONTAINER",
+  "SKU",
+]);
+const RESOLVED_SOURCES = new Set<ScanResolvedSource>([
+  "physical_code",
+  "inventory_serials.serial_no",
+  "container.container_code",
+  "products.code",
 ]);
 
 function rowsOf<T>(value: T[] | { data?: T[] }): T[] {
@@ -44,105 +55,186 @@ function num(value: unknown): number {
   return Number(value ?? 0);
 }
 
+function requireUuid(
+  value: unknown,
+  field: string,
+  code = "WMS_FE_INVALID_PAYLOAD",
+): string {
+  const normalized = requireNonEmptyString(value, field, code);
+  if (!UUID_PATTERN.test(normalized)) {
+    throw new WmsContractError(code, `${field} must be a UUID`);
+  }
+  return normalized;
+}
+
+function requireFalse(value: unknown, field: string): false {
+  if (value !== false) {
+    throw new WmsContractError(
+      "WMS_FE_INVALID_SCAN_RESPONSE",
+      `${field} must be false for read-only scan classification`,
+    );
+  }
+  return false;
+}
+
+function nullableUuid(value: unknown, field: string): string | null {
+  if (value === null || value === undefined) return null;
+  return requireUuid(value, field, "WMS_FE_INVALID_SCAN_RESPONSE");
+}
+
 function normalizeClassifyRequest(
   request: ScanClassifyRequest,
 ): ScanClassifyRequest {
-  const rawCodes = requireArray(request.codes, "codes");
-  const codes = requireUniqueStrings(rawCodes, "codes", "WMS_SCAN_DUPLICATE");
-  return {
-    codes,
-    ...(request.warehouse_id === undefined
-      ? {}
-      : {
-          warehouse_id: requirePositiveNumber(
-            request.warehouse_id,
-            "warehouse_id",
-          ),
-        }),
-    ...(request.scan_source ? { scan_source: request.scan_source } : {}),
-  };
-}
-
-function normalizeClassifyItem(
-  row: RawRecord,
-  index: number,
-): ScanClassifyItem {
-  const status = text(row.status).toUpperCase() as ScanClassifyStatus;
-  if (!CLASSIFY_STATUSES.has(status)) {
+  const rawCode = requireNonEmptyString(request.raw_code, "raw_code");
+  if (rawCode.length > 150) {
     throw new WmsContractError(
-      "WMS_FE_INVALID_SCAN_RESPONSE",
-      `items.${index}.status is not a supported scan status`,
+      "WMS_FE_INVALID_PAYLOAD",
+      "raw_code must contain at most 150 characters",
     );
   }
+
+  if (!SCAN_CONTEXTS.has(request.context)) {
+    throw new WmsContractError(
+      "WMS_FE_INVALID_PAYLOAD",
+      "context is not supported by WWHN-150.1.1.0",
+    );
+  }
+
   return {
-    code_value: requireNonEmptyString(
-      row.code_value ?? row.code,
-      `items.${index}.code_value`,
-      "WMS_FE_INVALID_SCAN_RESPONSE",
-    ),
-    code_type: text(row.code_type, "UNKNOWN"),
-    status,
-    scan_source: text(row.scan_source, "unknown"),
-    sku_code: text(row.sku_code ?? row.sku) || undefined,
-    error_code: text(row.error_code) as ScanClassifyItem["error_code"],
-    message: text(row.message) || undefined,
+    raw_code: rawCode,
+    context: request.context,
+    warehouse_id: requireUuid(request.warehouse_id, "warehouse_id"),
   };
 }
 
 function normalizeClassifyResponse(
   value: unknown,
-  requestedCodes: readonly string[],
+  request: ScanClassifyRequest,
 ): ScanClassifyResponse {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new WmsContractError(
       "WMS_FE_INVALID_SCAN_RESPONSE",
-      "Scan classify response must be an object",
+      "Scan classify response data must be an object",
     );
   }
+
   const row = value as RawRecord;
-  const items = requireArray(
-    rowsOf(
-      (row.items ?? row.results ?? row.data ?? []) as
-        | RawRecord[]
-        | { data?: RawRecord[] },
-    ),
-    "items",
+  const rawCode = requireNonEmptyString(
+    row.raw_code,
+    "raw_code",
     "WMS_FE_INVALID_SCAN_RESPONSE",
-  ).map(normalizeClassifyItem);
-
-  if (items.length !== requestedCodes.length) {
-    throw new WmsContractError(
-      "WMS_FE_INVALID_SCAN_RESPONSE",
-      `Scan classify response returned ${items.length} items for ${requestedCodes.length} requested codes`,
-    );
-  }
-
-  const responseCodes = items.map((item) => item.code_value);
-  if (new Set(responseCodes).size !== responseCodes.length) {
-    throw new WmsContractError(
-      "WMS_FE_INVALID_SCAN_RESPONSE",
-      "Scan classify response contains duplicate code_value entries",
-    );
-  }
-  const requestedSet = new Set(requestedCodes);
-  const missingOrUnexpected = responseCodes.filter(
-    (code) => !requestedSet.has(code),
   );
-  if (missingOrUnexpected.length > 0) {
+  if (rawCode !== request.raw_code) {
     throw new WmsContractError(
       "WMS_FE_INVALID_SCAN_RESPONSE",
-      `Scan classify response contains unexpected code(s): ${missingOrUnexpected.join(", ")}`,
+      "Scan classify response raw_code does not match the request",
+    );
+  }
+
+  const context = text(row.context).toUpperCase() as ScanContext;
+  if (!SCAN_CONTEXTS.has(context) || context !== request.context) {
+    throw new WmsContractError(
+      "WMS_FE_INVALID_SCAN_RESPONSE",
+      "Scan classify response context is invalid or mismatched",
+    );
+  }
+
+  const classification = text(
+    row.classification,
+  ).toUpperCase() as ScanClassification;
+  if (!CLASSIFICATIONS.has(classification)) {
+    throw new WmsContractError(
+      "WMS_FE_INVALID_SCAN_RESPONSE",
+      "classification is not ITEM, CONTAINER or SKU",
+    );
+  }
+
+  const resolvedSource = text(row.resolved_source) as ScanResolvedSource;
+  if (!RESOLVED_SOURCES.has(resolvedSource)) {
+    throw new WmsContractError(
+      "WMS_FE_INVALID_SCAN_RESPONSE",
+      "resolved_source is not supported by WWHN-150.1.1.0",
+    );
+  }
+
+  if (row.contract_version !== "WWHN-150.1.1.0") {
+    throw new WmsContractError(
+      "WMS_FE_INVALID_SCAN_RESPONSE",
+      "contract_version must be WWHN-150.1.1.0",
+    );
+  }
+  if (row.stock_effect !== "NONE") {
+    throw new WmsContractError(
+      "WMS_FE_INVALID_SCAN_RESPONSE",
+      "stock_effect must be NONE",
+    );
+  }
+
+  const location = row.current_location;
+  if (!location || typeof location !== "object" || Array.isArray(location)) {
+    throw new WmsContractError(
+      "WMS_FE_INVALID_SCAN_RESPONSE",
+      "current_location must be an object",
+    );
+  }
+  const currentLocation = location as RawRecord;
+  const responseWarehouseId = requireUuid(
+    currentLocation.warehouse_id,
+    "current_location.warehouse_id",
+    "WMS_FE_INVALID_SCAN_RESPONSE",
+  );
+  if (responseWarehouseId !== request.warehouse_id) {
+    throw new WmsContractError(
+      "WMS_FE_INVALID_SCAN_RESPONSE",
+      "current_location.warehouse_id does not match the request",
     );
   }
 
   return {
-    batch_id: requireNonEmptyString(
-      row.batch_id ?? row.batchId,
-      "batch_id",
+    raw_code: rawCode,
+    context,
+    classification,
+    item_id: nullableUuid(row.item_id, "item_id"),
+    sku_id: nullableUuid(row.sku_id, "sku_id"),
+    product_id: nullableUuid(row.product_id, "product_id"),
+    stock_status: requireNonEmptyString(
+      row.stock_status,
+      "stock_status",
       "WMS_FE_INVALID_SCAN_RESPONSE",
     ),
-    request_id: text(row.request_id ?? row.requestId) || undefined,
-    items,
+    object_status:
+      row.object_status === null || row.object_status === undefined
+        ? undefined
+        : requireNonEmptyString(
+            row.object_status,
+            "object_status",
+            "WMS_FE_INVALID_SCAN_RESPONSE",
+          ),
+    resolved_source: resolvedSource,
+    contract_version: "WWHN-150.1.1.0",
+    stock_effect: "NONE",
+    movement_created: requireFalse(row.movement_created, "movement_created"),
+    posting_event_created: requireFalse(
+      row.posting_event_created,
+      "posting_event_created",
+    ),
+    idempotency_cache_written: requireFalse(
+      row.idempotency_cache_written,
+      "idempotency_cache_written",
+    ),
+    current_location: {
+      warehouse_id: responseWarehouseId,
+      warehouse_code: requireNonEmptyString(
+        currentLocation.warehouse_code,
+        "current_location.warehouse_code",
+        "WMS_FE_INVALID_SCAN_RESPONSE",
+      ),
+      warehouse_name: requireNonEmptyString(
+        currentLocation.warehouse_name,
+        "current_location.warehouse_name",
+        "WMS_FE_INVALID_SCAN_RESPONSE",
+      ),
+    },
   };
 }
 
@@ -177,7 +269,10 @@ function normalizeEvent(row: RawRecord): ScanEvent {
   };
 }
 
-/** POST /api/v1/scan/classify at runtime. */
+/**
+ * WWHN-150.1.1.0: read-only classification.
+ * No movement, posting event, scan event or idempotency cache may be created.
+ */
 export async function classifyScanCodes(
   request: ScanClassifyRequest,
 ): Promise<ScanClassifyResponse> {
@@ -190,7 +285,7 @@ export async function classifyScanCodes(
     API_ENDPOINTS.SCAN_BATCHES_CLASSIFY,
     normalized,
   );
-  return normalizeClassifyResponse(result, normalized.codes);
+  return normalizeClassifyResponse(result, normalized);
 }
 
 export async function fetchScanBatches(

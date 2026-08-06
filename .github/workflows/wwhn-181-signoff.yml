@@ -39,11 +39,12 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: npm
+          node-version: 22
+          cache: yarn
+          cache-dependency-path: yarn.lock
 
       - name: Install locked dependencies
-        run: npm ci
+        run: yarn install --frozen-lockfile --non-interactive
 
       - name: Static and regression gates
         run: |

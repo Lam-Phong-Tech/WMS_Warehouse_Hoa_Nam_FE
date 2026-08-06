@@ -83,7 +83,8 @@ describe("WWHN-153 contract and FE sign-off guards", () => {
     grant();
   });
 
-  it("uses canonical Scan runtime URL and validates the exact response code set", async () => {
+  it("uses the exact WWHN-150.1.1.0 read-only Scan contract", async () => {
+    const warehouseId = "11111111-1111-4111-8111-111111111111";
     grant(P.SCAN_CLASSIFY);
     expect(WMS_CONTRACT_BASELINE.apiBasePath).toBe("/api/v1");
     expect(API_ENDPOINTS.SCAN_BATCHES_CLASSIFY).toBe("/scan/classify");
@@ -92,74 +93,135 @@ describe("WWHN-153 contract and FE sign-off guards", () => {
     );
 
     vi.mocked(http.post).mockResolvedValue({
-      batch_id: "B1",
-      request_id: "REQ-SCAN-1",
-      items: [
-        {
-          code_value: "QR-001",
-          code_type: "QR",
-          status: "VALID",
-          scan_source: "manual",
-        },
-      ],
+      raw_code: "QR-001",
+      context: "STOCKTAKE",
+      classification: "ITEM",
+      item_id: "22222222-2222-4222-8222-222222222222",
+      sku_id: "33333333-3333-4333-8333-333333333333",
+      product_id: "44444444-4444-4444-8444-444444444444",
+      stock_status: "AVAILABLE",
+      object_status: "ACTIVE",
+      resolved_source: "physical_code",
+      contract_version: "WWHN-150.1.1.0",
+      stock_effect: "NONE",
+      movement_created: false,
+      posting_event_created: false,
+      idempotency_cache_written: false,
+      current_location: {
+        warehouse_id: warehouseId,
+        warehouse_code: "WH-01",
+        warehouse_name: "Kho 01",
+      },
     });
 
     await expect(
       classifyScanCodes({
-        codes: ["QR-001"],
-        warehouse_id: 12,
-        scan_source: "manual",
+        raw_code: " QR-001 ",
+        context: "STOCKTAKE",
+        warehouse_id: warehouseId,
       }),
     ).resolves.toMatchObject({
-      batch_id: "B1",
-      request_id: "REQ-SCAN-1",
-      items: [{ code_value: "QR-001", status: "VALID" }],
+      raw_code: "QR-001",
+      classification: "ITEM",
+      stock_effect: "NONE",
+      movement_created: false,
+      posting_event_created: false,
+      idempotency_cache_written: false,
     });
 
     expect(http.post).toHaveBeenCalledWith("/scan/classify", {
-      codes: ["QR-001"],
-      warehouse_id: 12,
-      scan_source: "manual",
+      raw_code: "QR-001",
+      context: "STOCKTAKE",
+      warehouse_id: warehouseId,
     });
 
     vi.mocked(http.post).mockResolvedValue({
-      batch_id: "B2",
-      items: [
-        {
-          code_value: "QR-WRONG",
-          code_type: "QR",
-          status: "VALID",
-          scan_source: "manual",
-        },
-      ],
+      raw_code: "QR-WRONG",
+      context: "STOCKTAKE",
+      classification: "ITEM",
+      item_id: null,
+      sku_id: null,
+      product_id: null,
+      stock_status: "AVAILABLE",
+      resolved_source: "physical_code",
+      contract_version: "WWHN-150.1.1.0",
+      stock_effect: "NONE",
+      movement_created: false,
+      posting_event_created: false,
+      idempotency_cache_written: false,
+      current_location: {
+        warehouse_id: warehouseId,
+        warehouse_code: "WH-01",
+        warehouse_name: "Kho 01",
+      },
     });
+
     await expect(
-      classifyScanCodes({ codes: ["QR-002"] }),
+      classifyScanCodes({
+        raw_code: "QR-002",
+        context: "STOCKTAKE",
+        warehouse_id: warehouseId,
+      }),
     ).rejects.toMatchObject({ code: "WMS_FE_INVALID_SCAN_RESPONSE" });
   });
 
-  it("rejects invalid Scan payload and response before polluted state reaches UI", async () => {
+  it("rejects invalid Scan payload and any write-side-effect response", async () => {
+    const warehouseId = "11111111-1111-4111-8111-111111111111";
     grant(P.SCAN_CLASSIFY);
+
     await expect(
-      classifyScanCodes({ codes: ["QR-001", " QR-001 "] }),
-    ).rejects.toMatchObject({ code: "WMS_SCAN_DUPLICATE" });
+      classifyScanCodes({
+        raw_code: "",
+        context: "STOCKTAKE",
+        warehouse_id: warehouseId,
+      }),
+    ).rejects.toBeInstanceOf(WmsContractError);
     await expect(
-      classifyScanCodes({ codes: ["QR-002"], warehouse_id: 0 }),
+      classifyScanCodes({
+        raw_code: "QR-002",
+        context: "STOCKTAKE",
+        warehouse_id: "not-a-uuid",
+      }),
     ).rejects.toBeInstanceOf(WmsContractError);
     expect(http.post).not.toHaveBeenCalled();
 
     vi.mocked(http.post).mockResolvedValue({
-      batch_id: "B2",
-      items: [{ code_value: "QR-002", status: "UNSUPPORTED" }],
+      raw_code: "QR-002",
+      context: "STOCKTAKE",
+      classification: "SKU",
+      item_id: null,
+      sku_id: "33333333-3333-4333-8333-333333333333",
+      product_id: "44444444-4444-4444-8444-444444444444",
+      stock_status: "AVAILABLE",
+      resolved_source: "products.code",
+      contract_version: "WWHN-150.1.1.0",
+      stock_effect: "NONE",
+      movement_created: true,
+      posting_event_created: false,
+      idempotency_cache_written: false,
+      current_location: {
+        warehouse_id: warehouseId,
+        warehouse_code: "WH-01",
+        warehouse_name: "Kho 01",
+      },
     });
+
     await expect(
-      classifyScanCodes({ codes: ["QR-002"] }),
+      classifyScanCodes({
+        raw_code: "QR-002",
+        context: "STOCKTAKE",
+        warehouse_id: warehouseId,
+      }),
     ).rejects.toMatchObject({ code: "WMS_FE_INVALID_SCAN_RESPONSE" });
   });
 
   it("blocks sensitive service calls without action permission", async () => {
     await expect(
-      classifyScanCodes({ codes: ["QR-001"] }),
+      classifyScanCodes({
+        raw_code: "QR-001",
+        context: "STOCKTAKE",
+        warehouse_id: "11111111-1111-4111-8111-111111111111",
+      }),
     ).rejects.toMatchObject({ code: "WMS_FE_PERMISSION_REQUIRED" });
     await expect(
       postInboundReceipt({
@@ -411,6 +473,7 @@ describe("WWHN-153 contract and FE sign-off guards", () => {
     expect(ROUTE_PERMISSIONS[ROUTES.WARRANTY]).toEqual([P.WARRANTY_MANAGE]);
 
     expect(WMS_ACTION_PERMISSIONS).toMatchObject({
+      SCAN_CLASSIFY_GENERIC: [P.SCAN_CLASSIFY],
       POST_RECEIPT: [P.INBOUND_POST],
       POST_ISSUE: [P.OUTBOUND_POST],
       APPLY_STOCKTAKE_ADJUSTMENT: [P.STOCKTAKE_ADJUST],

@@ -1,9 +1,9 @@
 {
-  "schemaVersion": "3.0.0",
+  "schemaVersion": "3.1.0",
   "task": "WWHN-153",
-  "sourceReviewScore": 80,
+  "sourceReviewScore": 96,
   "previousReviewScore": 72,
-  "assessmentDate": "2026-08-05",
+  "assessmentDate": "2026-08-06",
   "apiBasePath": "/api/v1",
   "signoffManifest": "docs/evidence/wwhn-153/WWHN-153_SIGNOFF_MANIFEST.json",
   "permissionApprovalManifest": "docs/evidence/wwhn-153/WWHN-153_PERMISSION_APPROVAL.json",
@@ -22,13 +22,39 @@
       "method": "POST",
       "relativePath": "/scan/classify",
       "runtimePath": "/api/v1/scan/classify",
-      "permissionsAny": ["inventory.trace", "scan.classify"],
-      "requiredRequest": ["codes"],
-      "requiredSuccess": ["batch_id", "items[].code_value", "items[].status"],
+      "permission": "scan.classify",
+      "requiredRequest": ["raw_code", "context", "warehouse_id"],
+      "requestConstraints": {
+        "raw_code": "non-empty string, maxLength=150",
+        "context": ["INBOUND", "OUTBOUND", "STOCKTAKE", "WARRANTY_TEMP_ONLY"],
+        "warehouse_id": "UUID"
+      },
+      "requiredSuccess": [
+        "raw_code",
+        "context",
+        "classification",
+        "stock_status",
+        "resolved_source",
+        "contract_version",
+        "stock_effect",
+        "movement_created",
+        "posting_event_created",
+        "idempotency_cache_written",
+        "current_location.warehouse_id",
+        "current_location.warehouse_code",
+        "current_location.warehouse_name"
+      ],
+      "readOnlyAssertions": {
+        "contract_version": "WWHN-150.1.1.0",
+        "stock_effect": "NONE",
+        "movement_created": false,
+        "posting_event_created": false,
+        "idempotency_cache_written": false
+      },
       "acceptedHttp": [200],
-      "expectedErrors": [403, 409, 422, 500],
-      "feDisposition": "IMPLEMENTED_WITH_REQUEST_RESPONSE_AND_PERMISSION_GUARDS",
-      "officialSignoff": "PENDING_BE_BA_QA"
+      "expectedErrors": [401, 403, 404, 409, 422],
+      "feDisposition": "IMPLEMENTED_EXACT_WWHN_150_1_1_0_FAIL_CLOSED",
+      "officialSignoff": "PENDING_BE2_QA1"
     },
     {
       "id": "POST_RECEIPT",
@@ -200,5 +226,16 @@
       "externalEvidence": "QA2 real backend/error/RBAC captures on named UAT build",
       "status": "FE_COMPLETE_EXTERNAL_BLOCKER"
     }
-  ]
+  ],
+  "reviewedContract": {
+    "sourceTask": "WWHN-150",
+    "beRepository": "Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_BE",
+    "beSha": "25eae1594f5384a936e7f45e74042905a5ec8300",
+    "workflowRunId": "31071690282",
+    "artifactName": "wwhn-150-contract-evidence-25eae1594f5384a936e7f45e74042905a5ec8300",
+    "artifactDigestSha256": "3620d63cabd2156a76c075a76e98b5a733b17f260773bf1205954c564ba000e3",
+    "openapiSha256": "4e47fe127f9219a69b63878286b60666f2512e6e3865f3185756ccc60dbb2eff",
+    "postmanCollectionSha256": "91dfe8e19d1d84b5e78e113679b7a26ec3baf531188bf0ba90021514709568dc",
+    "status": "FE_EXACT_CONTRACT_REVIEW_COMPLETE_PENDING_BE2_QA1"
+  }
 }

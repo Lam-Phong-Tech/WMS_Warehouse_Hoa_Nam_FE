@@ -1,166 +1,161 @@
-# WWHN-153 — Khóa contract, runtime evidence và final sign-off FE
+# WWHN-153 — Remediation P0/P1/P2 và final sign-off FE
 
-## 1. Trạng thái bàn giao
+## 1. Baseline đã xác minh
 
 | Trường | Giá trị |
 | --- | --- |
 | Repository | `Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_FE` |
-| Nhánh | `m1` — không tạo nhánh phụ |
-| Đánh giá đầu vào | **PASS có điều kiện — 80/100**, ngày 2026-08-05 |
-| Phạm vi | `FE-P0-01..02`, `FE-P1-01..04`, `FE-P2-01` |
-| FE-owned remediation | **Hoàn tất 100% về code, policy, CI, runner và tài liệu** |
-| Final cross-role | **Fail-closed / chưa được phép final** đến khi BE1/BE2/QA1/QA2/BA cung cấp evidence độc lập hợp lệ |
-| Nguồn SHA chính xác | GitHub Actions `SOURCE_SHA` và artifact `wwhn-153-signoff-integrity-<SHA>`; không hard-code SHA tự tham chiếu trong chính commit |
+| Branch | `m1`; không tạo branch phụ |
+| Pre-remediation HEAD | `e36750ae5a6163f6a8c0bfb6f5a0259c6c306829` |
+| SHA cũ | `f6e137d...` và assessment `eade7f...` là superseded, không authoritative |
+| Authoritative source sau commit | GitHub Actions derive `GITHUB_SHA`, parent, tree, run URL và artifact name |
+| Final state | Fail-closed; không tự ký thay BE1/BE2/QA1/QA2/BA |
 
-> FE không tự ký thay BE/QA/BA. Mục tiêu của remediation là loại bỏ khả năng mở final bằng comment, ảnh, boolean thủ công hoặc artifact sai hash.
+Không hard-code SHA của chính commit vào nội dung commit vì tạo vòng tự tham chiếu. File `WWHN-153_FE_SOURCE_PROVENANCE.json` khóa expected parent; workflow chứng minh exact final SHA từ checkout immutable.
 
-## 2. Nguyên nhân gốc và cách đóng
+## 2. Root cause và sửa triệt để
 
-1. **Contract source chưa có chuỗi tin cậy**: trước đây verifier chỉ giữ `version/hash = null`, nhưng chưa có cấu trúc ingest + kiểm tra release thật. Nay có manifest versioned, kiểm BE1/BE2 là hai account khác nhau, QA1 độc lập, và hash review phải trùng artifact phát hành.
-2. **Final sign-off là constant tĩnh**: constant `false` có tác dụng chặn nhưng không chứng minh điều kiện mở. Nay final được tính từ evidence; không chấp nhận field `finalAllowed` do người dùng điền.
-3. **QA runtime evidence thiếu tính tái lập**: bổ sung direct HTTP runner ghi từng request/response đã sanitize, exact SHA/build/env, `SHA256SUMS` và artifact digest.
-4. **Permission mapping thiếu approval chain**: bổ sung backend catalog, runtime `/permissions` snapshot, BE/RBAC + BA + FE approval, endpoint → permission → role matrix và binding với đúng QA2 build.
-5. **Jira closure khó đọc**: closure matrix bên dưới là text; sau commit FE đăng cùng nội dung rút gọn lên Jira kèm exact SHA/run/artifact/digest.
+1. **Evidence từng là dữ liệu tự khai**: trạng thái `PASS` có thể tồn tại nhưng thiếu path/hash/reviewer. Policy v4 chỉ coi PASS hợp lệ khi toàn bộ field, account separation và exact-hash chain hợp lệ; PASS sai cấu trúc trở thành FAIL.
+2. **Open risk count bị hard-code**: core cũ trả cố định P0/P1. Nay P0/P1/P2 được derive từ từng finding/gate, không thể lệch assessment.
+3. **Runtime side effect chưa được đo**: runner cũ gán `secondSideEffectCreated=false`. Runner v2 đọc effect trước/sau; idempotency bắt after-first=after-replay, denied/stale bắt before=after.
+4. **Request/response dùng chung artifact**: runner v2 tách file/hash, bắt request_id, scan secret/JWT và package bằng `SHA256SUMS`.
+5. **Permission approval chưa bind runtime package**: catalog response hash, source/build/env/artifact digest/summary/SHA256SUMS phải khớp WWHN-182; ba approver BE/RBAC, BA, FE phải độc lập.
+6. **SHA Jira lệch HEAD**: thêm provenance policy và CI parent/tree/run/artifact gate. SHA cũ được ghi rõ superseded.
+7. **Dev Guide là ví dụ không đầy đủ**: architecture alignment khóa canonical catalog tại `wms-permissions.ts`, gồm `stocktake.adjust`, `report.export`, `warranty.temp_only`.
+8. **Cross-contract verifier dùng ID assessment legacy**: giữ mapping tương thích một-một với finding v4 để CI cũ và gate mới cùng đọc một closure matrix, không nhân đôi trạng thái.
 
-## 3. Closure matrix hiện tại
+## 3. RISK & ACTION REGISTER sau remediation
 
-| ID | Sev | Required fix | Remediation trong FE | Điều kiện độc lập còn phải thực thi | Trạng thái |
-| --- | --- | --- | --- | --- | --- |
-| `FE-P0-01` | P0 | OpenAPI/schema chính thức có version, SHA256, changelog, independent reviewer | `WWHN-153_SIGNOFF_MANIFEST.json`; verifier kiểm BE1/BE2 publisher separation, QA1 independence, exact hash và optional local digest | BE1 + BE2 phát hành WWHN-31; QA1 review đúng hash tại WWHN-152 | **FE control complete; external pending** |
-| `FE-P0-02` | P0 | Chỉ mở final khi WWHN-31/180/182/183 pass độc lập | `evaluateWwhn153FinalSignoff`; `wwhn-153:final` chỉ pass khi toàn bộ chain hợp lệ, BA=`GO`, P0=P1=0 | WWHN-31, WWHN-180, WWHN-182, WWHN-183 chuyển PASS bằng evidence thật | **Fail-closed enforced** |
-| `FE-P1-01` | P1 | WWHN-151/152 chạy trên exact hash | Hash chain bắt WWHN-151 artifact hash xuất hiện trong QA1 `reviewedArtifacts`; kiểm constraints/error/testability đều PASS | BE2 attach schema/API module; QA1 thực thi review | **FE control complete; external pending** |
-| `FE-P1-02` | P1 | QA2 direct 403, idempotency, stale/conflict, req/resp thật | `run-wwhn-153-runtime-evidence.mjs`; workflow dispatch QA2; reject local/CI/mock/test; redact secret; hash từng record | QA2 chạy trên DEV/UAT và attach artifact vào WWHN-182 | **Runner complete; execution pending** |
-| `FE-P1-03` | P1 | BA G1 minutes có decision, exact SHA/digest, open P0/P1 | Manifest + verifier yêu cầu `GO`, SHA/digest khớp WWHN-182, `openP0=0`, `openP1=0`; Conditional Go không mở final | BA ghi minutes WWHN-183 sau independent review | **Schema complete; BA pending** |
-| `FE-P1-04` | P1 | Permission catalog được BE/BA duyệt | `WWHN-153_PERMISSION_APPROVAL.json`; kiểm `/permissions`, backend catalog, approver separation, exact build binding, sensitive action matrix | BE/RBAC + BA điền và duyệt catalog/matrix; QA2 attach snapshot | **FE reconciliation complete; approval pending** |
-| `FE-P2-01` | P2 | Jira closure matrix dạng text | Tài liệu này + report JSON/Markdown + comment post-commit có exact SHA/run/artifact/digest | FE đăng comment sau commit và bổ sung run/digest sau CI | **Complete** |
+| ID | Sev | FE control đã triển khai | Evidence đóng cuối | Trạng thái hiện tại |
+| --- | --- | --- | --- | --- |
+| FE-P0-01 | P0 | Official release gate: version, backend SHA, artifact/changelog path+SHA256, BE1/BE2 separation, QA1 exact-hash review | WWHN-31 + WWHN-152 PASS thật | External pending |
+| FE-P0-02 | P0 | Derived final; không đọc boolean `finalAllowed`; mọi gate phải PASS, P0/P1=0 | Final report `FINAL_GO` | Fail-closed enforced |
+| FE-P1-01 | P1 | WWHN-151 module artifact phải được QA1 reviewedArtifacts đối chiếu exact SHA256 và đủ 3 dimension | WWHN-151/152 PASS | External pending |
+| FE-P1-02 | P1 | Direct API runner v2, effect proof, request/response hash, request_id, secret hygiene | QA2 package WWHN-182 | Execution pending |
+| FE-P1-03 | P1 | BA minutes gate bắt `GO`, source SHA, artifact digest, minutes hash, open P0/P1=0 | WWHN-183 minutes | BA pending |
+| FE-P1-04 | P1 | Permission catalog/runtime/package binding + critical endpoint→permission→role approval | BE/RBAC + BA + FE approval | Approval pending |
+| FE-P1-05 | P1 | CI source provenance: repo/ref/source/execution/parent/tree/run/artifact | CI integrity artifact của commit này | FE control implemented; CI verification required |
+| FE-P2-01 | P2 | Versioned JSON schemas, input SHA256, separate artifacts, secret scan, immutable upload | Integrity report | Complete |
+| FE-P2-02 | P2 | Closure matrix ghi pre-head/superseded/CI-authoritative strategy | Tài liệu này + Jira comment | Complete |
 
-## 4. Chuỗi khóa final
+### 3.1. Mapping assessment legacy → finding v4
 
-Final chỉ được phép khi đồng thời:
+Bảng này là compatibility contract cho `scripts/verify-wms-contract-signoff.mjs`; trạng thái authoritative vẫn được derive từ finding v4, không duy trì hai bộ kết quả độc lập.
 
-- WWHN-31 `PASS`: source commit SHA hợp lệ; version; OpenAPI/schema path + SHA256; changelog path + SHA256; BE1 và BE2 là hai account khác nhau.
-- WWHN-152 `PASS`: QA1 không trùng publisher; review đúng hash WWHN-31 và WWHN-151; constraints, error contract, testability đều pass.
-- WWHN-151 `PASS`: BE2 phát hành module schema/API có version, source SHA và artifact SHA256.
-- WWHN-180 `PASS`: independent confirmer không trùng publisher và xác nhận đúng official contract hash.
-- WWHN-182 `PASS`: QA2, exact FE SHA/build/env, artifact digest, direct non-synthetic API evidence đủ bốn scenario.
-- Permission approval `PASS`: BE/RBAC và BA là hai account khác nhau; runtime snapshot trùng source SHA/build/env của WWHN-182; không thiếu canonical code; từng critical endpoint có approved role mapping.
-- WWHN-183 `PASS`: BA decision là `GO`, SHA/digest trùng WWHN-182, open P0/P1 bằng 0.
+| Legacy ID | Finding v4 | Disposition |
+| --- | --- | --- |
+| BA-FE-P0-01 | FE-P0-01 | Official contract source + QA1 exact-hash review |
+| BA-FE-P0-02 | FE-P0-02 | Derived final fail-closed |
+| BA-FE-P1-01 | FE-P1-01 | WWHN-151/WWHN-152 schema chain |
+| BA-FE-P1-02 | FE-P1-02 | QA2 direct runtime/API package |
+| BA-FE-P1-03 | FE-P1-03 | BA G1 minutes |
+| BA-FE-P1-04 | FE-P1-04 | Permission catalog approval |
+| BA-FE-P1-05 | FE-P1-05 | Authoritative FE source provenance |
+| BA-FE-P2-01 | FE-P2-01 | Evidence hygiene |
+| BA-FE-P2-02 | FE-P2-02 | HEAD/closure matrix hygiene |
 
-`CONDITIONAL_GO`, hash mismatch, self-review, synthetic evidence, environment local/CI/mock/test hoặc permission matrix thiếu role đều giữ final ở trạng thái blocked.
+## 4. Gate model v4
 
-## 5. Runtime/API evidence contract cho QA2
+Các gate độc lập:
 
-### Scenarios bắt buộc
+- `FE-SOURCE-PROVENANCE`
+- `OFFICIAL-RELEASE`
+- `MODULE-SCHEMA`
+- `QA1-INDEPENDENT-REVIEW`
+- `INDEPENDENT-CONFIRMATION`
+- `QA2-DIRECT-RUNTIME`
+- `PERMISSION-APPROVAL`
+- `BA-G1-MINUTES`
 
-| ID | Assertion |
+`npm run wwhn-153:verify` kiểm integrity và cho phép evidence external còn PENDING. `npm run wwhn-153:final` phải FAIL cho đến khi toàn bộ gate PASS.
+
+## 5. Files thay đổi
+
+| File | Nội dung |
 | --- | --- |
-| `PERMISSION_DENY_403` | Direct request bằng denied token trả 403. |
-| `IDEMPOTENCY_REPLAY` | Hai request cùng key/payload đều 2xx, cùng business result, không tạo side effect thứ hai. |
-| `IDEMPOTENCY_CONFLICT` | Cùng key nhưng payload khác trả 409. |
-| `STALE_WRITE` | `If-Match` cũ trả 409 hoặc 412. |
-| `PERMISSION_CATALOG` | GET `/permissions` 2xx và snapshot được hash. |
+| `scripts/wwhn-153-signoff-core.mjs` | Policy v4, dynamic findings/count, exact-hash, source provenance, runtime effect proof, permission binding |
+| `scripts/verify-wwhn-153-signoff.mjs` | Derive git HEAD/parent/tree/run, hash input, JSON/Markdown report |
+| `scripts/test-wwhn-153-signoff-core.mjs` | Self-test positive + negative: hash, provenance, side effect, catalog |
+| `scripts/run-wwhn-153-runtime-evidence.mjs` | Direct API runner v2 và package hygiene |
+| `src/shared/api/wwhn-153-final-signoff.ts` | Runtime-safe fail-closed policy tương ứng |
+| `src/test/wwhn-153-final-signoff-policy.test.ts` | Regression cho final chain |
+| `WWHN-153_SIGNOFF_MANIFEST.json` | Schema 4.0.0, đủ P0/P1/P2 |
+| `WWHN-153_FE_SOURCE_PROVENANCE.json` | HEAD lineage và authoritative CI rules |
+| `WWHN-153_PERMISSION_APPROVAL.json` | Schema 3.0.0, runtime/package/catalog binding |
+| `RUNTIME_API_EVIDENCE_RUNBOOK.md` | Probe contract và handoff QA2 |
+| `WWHN-153_ARCHITECTURE_ALIGNMENT.md` | Alignment với Dev Guide và canonical permission source |
+| `.github/workflows/wwhn-153-signoff.yml` | fetch-depth 2, self-test, exact provenance, DEV/UAT choice, immutable build required |
+| `package.json` | `wwhn-153:self-test` |
 
-### Lệnh
+## 6. Commands bắt buộc
 
 ```bash
+npm run wwhn-153:self-test
+npm run wwhn-153:verify
 npm run wwhn-153:runtime -- --contract-only
-npm run wwhn-153:runtime
-```
-
-Chi tiết cấu hình: `docs/evidence/wwhn-153/RUNTIME_API_EVIDENCE_RUNBOOK.md`.
-
-## 6. Permission approval matrix
-
-Nguồn: `docs/evidence/wwhn-153/WWHN-153_PERMISSION_APPROVAL.json`.
-
-| Endpoint/action | Permission bắt buộc |
-| --- | --- |
-| `POST /scan/classify` | `inventory.trace` hoặc `scan.classify` |
-| `POST /inbound-documents/:id/post-receipt` | `inbound.post` |
-| `POST /outbound-documents/:id/post-issue` | `outbound.post` |
-| `POST /stocktake/sessions/:sessionId/apply-adjustment` | `stocktake.adjust` |
-| `GET /reports/inventory-xnt/export-excel` | `report.export` |
-| `POST /warranty/cases` với `TEMP_ONLY` | `warranty.temp_only` |
-
-Role chỉ là mapping được duyệt; FE và backend vẫn authorize bằng permission code. `stocktake.manage` không bao giờ thay thế `stocktake.adjust`.
-
-## 7. Commands và CI
-
-```bash
-npm run wwhn-153:verify       # kiểm integrity; pass khi pending được khai báo trung thực
-npm run wms-contract:verify   # kiểm toàn bộ FE contract/service/CI guards
-npm run wwhn-153:final        # fail cho tới khi tất cả independent gate PASS
-npm run test                  # gồm regression derived sign-off policy
+npm run wms-contract:verify
+npm run test -- src/test/wwhn-153-final-signoff-policy.test.ts
 npm run typecheck
 npm run build
 ```
 
-Workflow `.github/workflows/wwhn-153-signoff.yml`:
+Manual QA2 live run dùng workflow `WWHN-153 Sign-off Integrity`, chọn DEV/UAT, nhập immutable `build_id`, cấu hình ba probe JSON có `effectProbe`.
 
-- Push `m1`: chạy integrity, runtime contract-only và unit regression; upload artifact immutable.
-- Manual `require_final=true`: enforce final GO.
-- Manual `run_live_runtime=true`: chạy direct API bằng GitHub Environment secrets/variables và upload QA2 evidence.
+## 7. External handoff không được giả PASS
 
-## 8. Artifact và traceability
+Trạng thái Jira lúc rà soát 2026-08-06:
 
-| Artifact | Mục đích |
-| --- | --- |
-| `WWHN-153_SIGNOFF_MANIFEST.json` | Source-of-truth cho chain WWHN-31/151/152/180/182/183 |
-| `WWHN-153_PERMISSION_APPROVAL.json` | Catalog + runtime snapshot + endpoint/permission/role approval |
-| `wwhn-153-signoff-report.json/.md` | Kết quả derived gate, blockers, open P0/P1 |
-| `contract-evidence.json` | Contract/service/CI verification tổng hợp |
-| `WWHN-153_RUNTIME_API_SUMMARY.json` | QA2 live direct API summary |
-| `SHA256SUMS` + `WWHN-153_RUNTIME_ARTIFACT_DIGEST.txt` | Integrity của toàn bộ request/response evidence |
+- WWHN-31: In Progress
+- WWHN-151: To Do
+- WWHN-152: In Progress
+- WWHN-180: Done nhưng evidence vẫn phải khớp exact official hash trong manifest
+- WWHN-182: In Progress
+- WWHN-183: In Progress
 
-## 9. Mẫu Jira closure comment sau commit
+Do đó FE remediation có thể hoàn tất, nhưng final project không thể tuyên bố 100% cho đến khi owner độc lập điền evidence thật và `wwhn-153:final` PASS.
+
+## 8. Evidence để đóng từng owner
+
+- **BE1 + BE2**: OpenAPI/schema official, version, backend SHA, artifact/changelog path+SHA256, publisher accounts độc lập.
+- **BE2**: WWHN-151 module schema/API artifact exact hash.
+- **QA1**: WWHN-152 reviewedArtifacts chứa cả official và module hash; constraints/error/testability PASS; reviewer không phải publisher.
+- **QA2**: chạy live runner trên exact FE source/build/env; attach nguyên artifact gồm summary, request/response, SHA256SUMS, digest.
+- **BE/RBAC + BA + FE**: duyệt catalog/runtime hash và endpoint→permission→role mapping.
+- **BA**: WWHN-183 `GO`, exact source SHA/artifact digest, minutes hash, open P0/P1=0.
+
+## 9. Jira closure comment format
 
 ```text
-WWHN-153 — FE closure matrix (text)
+WWHN-153 — FE remediation commit
 Branch: m1
-Commit: <exact 40-hex SHA>
-CI run: <run URL / run id>
-Artifact: wwhn-153-signoff-integrity-<SHA>
-Artifact digest: <SHA256 từ GitHub artifact hoặc QA2 package>
-FE controls: FE-P0-01..02, FE-P1-01..04, FE-P2-01 complete
-Final allowed: NO — fail-closed
-Open external gates: WWHN-31, WWHN-151, WWHN-152, WWHN-180, WWHN-182, WWHN-183
-Next owners: BE1/BE2 publish; QA1 exact-hash review; QA2 live direct API; BE/RBAC+BA permission approval; BA G1 minutes.
+Pre-remediation parent: e36750ae5a6163f6a8c0bfb6f5a0259c6c306829
+Authoritative source: <exact commit SHA from GitHub>
+Tree: <tree SHA>
+CI run: <run URL/id>
+Integrity artifact: wwhn-153-signoff-integrity-<SHA>
+Integrity result: <PASS/FAIL>; open P0/P1/P2: <derived counts>
+Final allowed: NO until WWHN-31/151/152/182/183 and permission approval pass exact-hash validation.
 ```
 
 ## 10. Definition of Done
 
-### FE scope — hoàn tất
+### FE-owned remediation
 
-- [x] Fail-closed là derived policy, không phải boolean tin cậy.
-- [x] Contract/schema exact-hash chain và independent-review controls.
-- [x] QA2 direct API runner đủ 403/idempotency/conflict/stale + request/response hash.
-- [x] Permission approval artifact và endpoint→permission→role matrix.
-- [x] CI integrity/final/live-runtime modes.
-- [x] Regression tests chống hash mismatch, self-review, thiếu scenario, Conditional Go và build mismatch.
-- [x] Jira closure matrix dạng text.
+- [x] Policy v4 fail-closed và dynamic risk count.
+- [x] Exact source provenance, superseded SHA disposition.
+- [x] Runtime effect proof, separate artifacts, request_id, secret hygiene.
+- [x] Permission catalog/runtime/package binding.
+- [x] Self-test và TypeScript regression.
+- [x] CI immutable evidence và manual QA2 mode.
+- [x] Runbook, architecture alignment và closure matrix.
+- [x] Cross-contract legacy ID compatibility và baseline artifact trigger/upload.
 
-### Cross-role final — chưa được tự đánh dấu
+### Cross-role final
 
-- [ ] WWHN-31 official release.
-- [ ] WWHN-151 BE2 module schema/API artifact.
-- [ ] WWHN-152 QA1 exact-hash review.
-- [ ] WWHN-180 independent confirmation.
-- [ ] WWHN-182 QA2 live evidence.
-- [ ] Permission catalog approvals.
-- [ ] WWHN-183 BA `GO`, exact SHA/digest, P0=P1=0.
-
-## 11. Compatibility trace cho gate hiện hữu
-
-Bảng này giữ traceability với assessment 72/100 trước đó để verifier legacy và assessment 80/100 hiện tại cùng kiểm được một chuỗi remediation, không tạo hai nguồn sự thật độc lập.
-
-| Legacy gate | Finding hiện tại | Disposition |
-| --- | --- | --- |
-| `BA-FE-P0-01` | `FE-P0-01` | Official contract exact-hash + independent QA1 review |
-| `BA-FE-P0-02` | `FE-P0-02` | Derived final sign-off fail-closed |
-| `BA-FE-P1-01` | `FE-P1-01` | WWHN-151 versioned module schema/API |
-| `BA-FE-P1-02` | `FE-P1-01` | WWHN-152 exact-hash QA1 review |
-| `BA-FE-P1-03` | `FE-P1-02` + `FE-P1-03` | QA2 runtime evidence + BA G1 minutes |
-| `BA-FE-P1-04` | `FE-P1-04` | Runtime permission reconciliation + formal approval |
-| `BA-FE-P1-05` | `FE-P0-01` + `FE-P1-01` | Endpoint/payload/error/permission/sample response locked by official artifacts |
-| `BA-FE-P2-01` | `FE-P2-01` | Text closure matrix |
-| `BA-FE-P2-02` | `FE-P1-02` + `FE-P2-01` | Exact SHA/build/env/run/artifact/digest trace |
+- [ ] WWHN-31 official release PASS.
+- [ ] WWHN-151 module schema PASS.
+- [ ] WWHN-152 QA1 exact-hash review PASS.
+- [ ] WWHN-182 QA2 live runtime package PASS.
+- [ ] Permission approval PASS.
+- [ ] WWHN-183 BA `GO`, P0/P1=0.
+- [ ] `npm run wwhn-153:final` PASS trên exact authoritative commit/build.

@@ -1,92 +1,105 @@
 #!/usr/bin/env node
-import { mkdirSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
-import {
-  evaluateWwhn153Signoff,
-  loadWwhn153Evidence,
-  sha256Buffer,
-} from "./wwhn-153-signoff-core.mjs";
+import crypto from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { evaluateWwhn153Signoff, loadWwhn153Evidence } from './wwhn-153-signoff-core.mjs';
 
-const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const args = new Set(process.argv.slice(2));
-const requireFinal = args.has("--require-final");
-const outputDir = join(
-  root,
-  process.env.WWHN_153_EVIDENCE_DIR ??
-    process.env.WMS_EVIDENCE_DIR ??
-    "docs/evidence/wms-contract-signoff/generated",
+const rootDir = process.cwd();
+const requireFinal = process.argv.includes('--require-final');
+const evidenceDir = path.resolve(
+  rootDir,
+  process.env.WWHN_153_EVIDENCE_DIR || 'docs/evidence/wwhn-153/generated/local',
 );
+fs.mkdirSync(evidenceDir, { recursive: true });
 
-const evidence = loadWwhn153Evidence(root);
-const result = evaluateWwhn153Signoff({
-  manifest: evidence.manifest,
-  permissionApproval: evidence.permissionApproval,
-  root,
-});
-const report = {
-  ...result,
-  repository:
-    process.env.GITHUB_REPOSITORY ??
-    "Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_FE",
-  branchOrRef: process.env.GITHUB_REF ?? "m1",
-  sourceSha:
-    process.env.WMS_SOURCE_SHA ??
-    process.env.SOURCE_SHA ??
-    process.env.GITHUB_SHA ??
-    null,
-  executionSha:
-    process.env.WMS_EXECUTION_SHA ??
-    process.env.EXECUTION_SHA ??
-    process.env.GITHUB_SHA ??
-    null,
-  inputs: {
-    signoffManifest: {
-      path: "docs/evidence/wwhn-153/WWHN-153_SIGNOFF_MANIFEST.json",
-      sha256: sha256Buffer(evidence.manifestText),
-    },
-    permissionApproval: {
-      path: "docs/evidence/wwhn-153/WWHN-153_PERMISSION_APPROVAL.json",
-      sha256: sha256Buffer(evidence.permissionText),
-    },
-  },
+function git(args) {
+  try {
+    return execFileSync('git', args, { cwd: rootDir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+  } catch {
+    return '';
+  }
+}
+
+function sha256File(filePath) {
+  return crypto.createHash('sha256').update(fs.readFileSync(filePath)).digest('hex');
+}
+
+const loaded = loadWwhn153Evidence(rootDir);
+const sourceSha = process.env.SOURCE_SHA || process.env.WWHN_153_SOURCE_SHA || git(['rev-parse', 'HEAD']);
+const executionSha = process.env.EXECUTION_SHA || process.env.WWHN_153_EXECUTION_SHA || sourceSha;
+const repository = process.env.GITHUB_REPOSITORY || loaded.sourceProvenance.repository;
+const branch = process.env.GITHUB_REF_NAME || git(['branch', '--show-current']) || loaded.sourceProvenance.branch;
+const runId = process.env.GITHUB_RUN_ID || '';
+const serverUrl = process.env.GITHUB_SERVER_URL || 'https://github.com';
+const runUrl = runId ? `${serverUrl}/${repository}/actions/runs/${runId}` : '';
+const isCi = process.env.GITHUB_ACTIONS === 'true';
+
+const sourceContext = {
+  status: isCi ? 'PASS' : 'PENDING',
+  isCi,
+  repository,
+  branch,
+  sourceSha,
+  executionSha,
+  parentSha: process.env.WWHN_153_PARENT_SHA || git(['rev-parse', 'HEAD^']),
+  treeSha: process.env.WWHN_153_TREE_SHA || git(['rev-parse', 'HEAD^{tree}']),
+  runId,
+  runUrl,
+  artifactName: sourceSha ? `wwhn-153-signoff-integrity-${sourceSha}` : '',
 };
 
-mkdirSync(outputDir, { recursive: true });
-writeFileSync(
-  join(outputDir, "wwhn-153-signoff-report.json"),
-  `${JSON.stringify(report, null, 2)}\n`,
+const result = evaluateWwhn153Signoff({ ...loaded, sourceContext, rootDir });
+const inputDigests = Object.fromEntries(
+  Object.entries(loaded.paths).map(([key, filePath]) => [key, { path: path.relative(rootDir, filePath), sha256: sha256File(filePath) }]),
 );
-const markdown = `# WWHN-153 sign-off report\n\n- Integrity: **${
-  report.integrityOk ? "PASS" : "FAIL"
-}**\n- Final allowed: **${
-  report.finalAllowed ? "YES" : "NO — fail-closed"
-}**\n- Source SHA: \`${report.sourceSha ?? "n/a"}\`\n- Open P0/P1: **${
-  report.openP0
-}/${report.openP1}**\n\n## Gate status\n\n${report.gates
-  .map(
-    (gate) =>
-      `- ${gate.id}: **${gate.status}**${
-        gate.blockers.length ? ` — ${gate.blockers.join("; ")}` : ""
-      }`,
-  )
-  .join("\n")}\n\n## Integrity errors\n\n${
-  report.errors.length
-    ? report.errors.map((item) => `- ${item}`).join("\n")
-    : "- None"
-}\n`;
-writeFileSync(join(outputDir, "wwhn-153-signoff-report.md"), markdown);
+const report = {
+  generatedAt: new Date().toISOString(),
+  mode: requireFinal ? 'FINAL' : 'INTEGRITY',
+  sourceContext,
+  inputDigests,
+  ...result,
+};
 
-if (!report.integrityOk) {
-  for (const error of report.errors) console.error(`[wwhn-153] ${error}`);
-  process.exit(1);
-}
-if (requireFinal && !report.finalAllowed) {
-  for (const blocker of report.blockers) {
-    console.error(`[wwhn-153-final] ${blocker}`);
-  }
-  process.exit(1);
-}
-console.log(
-  `[wwhn-153] PASS integrity; finalAllowed=${report.finalAllowed}; blockers=${report.blockers.length}.`,
+const jsonPath = path.join(evidenceDir, 'wwhn-153-signoff-report.json');
+const markdownPath = path.join(evidenceDir, 'wwhn-153-signoff-report.md');
+fs.writeFileSync(jsonPath, `${JSON.stringify(report, null, 2)}\n`);
+fs.writeFileSync(
+  markdownPath,
+  [
+    '# WWHN-153 sign-off report',
+    '',
+    `- Mode: \`${report.mode}\``,
+    `- Repository/ref: \`${sourceContext.repository}@${sourceContext.branch}\``,
+    `- Source SHA: \`${sourceContext.sourceSha || 'UNRESOLVED'}\``,
+    `- Parent SHA: \`${sourceContext.parentSha || 'UNRESOLVED'}\``,
+    `- Tree SHA: \`${sourceContext.treeSha || 'UNRESOLVED'}\``,
+    `- Integrity: **${result.integrityOk ? 'PASS' : 'FAIL'}**`,
+    `- Final allowed: **${result.finalAllowed ? 'YES' : 'NO'}**`,
+    `- Open P0/P1/P2: **${result.openP0}/${result.openP1}/${result.openP2}**`,
+    '',
+    '## Gates',
+    '',
+    ...result.gates.map((gate) => `- ${gate.id}: **${gate.status}**`),
+    '',
+    '## Findings',
+    '',
+    ...result.findings.map((item) => `- ${item.id} (${item.severity}): **${item.status}**`),
+    '',
+    '## Blockers',
+    '',
+    ...(result.blockers.length ? result.blockers.map((item) => `- ${item}`) : ['- None']),
+    '',
+  ].join('\n'),
 );
+
+console.log(JSON.stringify({
+  integrityOk: result.integrityOk,
+  finalAllowed: result.finalAllowed,
+  openP0: result.openP0,
+  openP1: result.openP1,
+  openP2: result.openP2,
+  report: path.relative(rootDir, jsonPath),
+}, null, 2));
+
+if (!result.integrityOk || (requireFinal && !result.finalAllowed)) process.exit(1);

@@ -2,8 +2,7 @@ name: WWHN-153 Sign-off Integrity
 
 on:
   push:
-    branches:
-      - m1
+    branches: [m1]
     paths:
       - "docs/Task_docs_Jira/WWHN-153.md"
       - "docs/api-evidence/WMS_FE_CONTRACT_BASELINE.json"
@@ -11,6 +10,7 @@ on:
       - "scripts/verify-wms-contract-signoff.mjs"
       - "scripts/verify-wwhn-153-signoff.mjs"
       - "scripts/wwhn-153-signoff-core.mjs"
+      - "scripts/test-wwhn-153-signoff-core.mjs"
       - "scripts/run-wwhn-153-runtime-evidence.mjs"
       - "src/shared/api/wwhn-153-final-signoff.ts"
       - "src/test/wwhn-153-final-signoff-policy.test.ts"
@@ -29,12 +29,13 @@ on:
         default: false
         type: boolean
       environment_name:
-        description: "Named runtime environment (DEV/UAT)"
+        description: "Named runtime environment"
         required: false
         default: "UAT"
-        type: string
+        type: choice
+        options: [DEV, UAT]
       build_id:
-        description: "Immutable deployed build ID"
+        description: "Immutable deployed build ID (required for live runtime)"
         required: false
         type: string
 
@@ -57,8 +58,10 @@ jobs:
     name: Exact-hash sign-off integrity
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout exact m1 source
+      - name: Checkout exact m1 source with provenance parent
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -70,22 +73,22 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile --non-interactive
 
-      - name: Verify FE P0/P1/P2 sign-off integrity
-        id: wwhn_153_signoff
+      - name: Self-test fail-closed policy and negative cases
+        run: npm run wwhn-153:self-test
+
+      - name: Verify FE source provenance and P0/P1/P2 evidence schema
         run: npm run wwhn-153:verify
 
       - name: Verify full WMS contract and service guards
-        id: wms_contract
         run: npm run wms-contract:verify
 
       - name: Verify direct API evidence contract without secrets
-        id: wwhn_153_runtime_contract
         env:
           WWHN_153_SOURCE_SHA: ${{ github.sha }}
           WWHN_153_RUNTIME_EVIDENCE_DIR: docs/evidence/wwhn-153/generated/${{ github.sha }}/runtime-contract
         run: npm run wwhn-153:runtime -- --contract-only
 
-      - name: Run derived final policy regression tests
+      - name: Run TypeScript derived policy regressions
         run: yarn test src/test/wwhn-153-final-signoff-policy.test.ts
 
       - name: Enforce final GO when explicitly requested
@@ -112,8 +115,16 @@ jobs:
     environment:
       name: ${{ inputs.environment_name }}
     steps:
+      - name: Reject missing immutable build ID
+        if: ${{ inputs.build_id == '' }}
+        run: |
+          echo "build_id is mandatory for QA2 live runtime evidence" >&2
+          exit 1
+
       - name: Checkout exact source
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
       - name: Setup Node.js
         uses: actions/setup-node@v4

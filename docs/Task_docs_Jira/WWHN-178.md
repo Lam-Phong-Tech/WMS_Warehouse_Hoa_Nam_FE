@@ -103,7 +103,7 @@ node scripts/run-wwhn-178-direct-api-rbac.mjs
 
 Pass criteria: request trực tiếp API, HTTP 403, deny code nếu contract quy định, request ID, token redacted, role/permission/scope fixture được BE/QA xác nhận. UI disabled không thay thế bằng chứng này.
 
-## 7. CI provenance — một nguồn nghiệm thu
+## 7. Trace PR / CI — một nguồn nghiệm thu
 
 Do chỉ sửa trực tiếp `m1`, PR riêng là N/A theo delivery instruction. Exact commit SHA không thể tự ghi trong chính commit vì tạo vòng hash.
 
@@ -137,7 +137,7 @@ npm run test:e2e:wwhn-178
 `master-sku:verify` fail khi:
 
 - endpoint chưa approved có thể phát sinh HTTP;
-- task doc khai overall 100% khi owner gates còn pending;
+- task doc khai overall hoàn tất tuyệt đối khi owner gates còn pending;
 - hard-code một run ID làm acceptance source;
 - thiếu QA2/BA/BE/live authorization gate;
 - thiếu hàng WWHN-178, WWHN-179 hoặc WWHN-39 trong parent matrix;

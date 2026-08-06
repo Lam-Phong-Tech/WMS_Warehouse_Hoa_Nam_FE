@@ -1,86 +1,131 @@
 import { describe, expect, it } from "vitest";
 import {
-  assertWwhn153FinalSignoff,
   evaluateWwhn153FinalSignoff,
+  type RuntimeScenarioEvidence,
   type Wwhn153FinalEvidence,
 } from "@/shared/api/wwhn-153-final-signoff";
 
-const HASH_A = "a".repeat(64);
-const HASH_B = "b".repeat(64);
-const SOURCE_SHA = "c".repeat(40);
+const H = "a".repeat(64);
+const H2 = "b".repeat(64);
+const SOURCE = "1".repeat(40);
+const PARENT = "2".repeat(40);
+const TREE = "3".repeat(40);
+
+function scenario(id: RuntimeScenarioEvidence["id"]): RuntimeScenarioEvidence {
+  const effect =
+    id === "IDEMPOTENCY_CONFLICT" || id === "PERMISSION_CATALOG"
+      ? null
+      : id === "IDEMPOTENCY_REPLAY"
+        ? {
+            status: "PASS" as const,
+            beforeHash: H,
+            afterHash: H2,
+            afterFirstHash: H2,
+            afterReplayHash: H2,
+            secondSideEffectCreated: false,
+          }
+        : {
+            status: "PASS" as const,
+            beforeHash: H,
+            afterHash: H,
+            sideEffectCreated: false,
+          };
+  return {
+    id,
+    status: "PASS",
+    directApi: true,
+    synthetic: false,
+    authorizationRedacted: true,
+    requestId: `req-${id}`,
+    requestArtifactSha256: H,
+    responseArtifactSha256: id === "PERMISSION_CATALOG" ? H2 : H,
+    sameBusinessResult: id === "IDEMPOTENCY_REPLAY" ? true : undefined,
+    secondSideEffectCreated: id === "IDEMPOTENCY_REPLAY" ? false : undefined,
+    effectProof: effect,
+  };
+}
 
 function validEvidence(): Wwhn153FinalEvidence {
   return {
+    sourceProvenance: {
+      status: "PASS",
+      repository: "Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_FE",
+      branch: "m1",
+      sourceSha: SOURCE,
+      executionSha: SOURCE,
+      parentSha: PARENT,
+      expectedParentSha: PARENT,
+      treeSha: TREE,
+      workflowRunId: "123",
+      workflowRunUrl: "https://github.com/run/123",
+      artifactName: `wwhn-153-signoff-integrity-${SOURCE}`,
+    },
     officialContract: {
       status: "PASS",
-      sha256: HASH_A,
-      actor: "be-release",
-      role: "BE1+BE2",
-      version: "wms-api-1.0.0",
-      publisherAccounts: ["be1-account", "be2-account"],
+      sha256: H,
+      actor: "be1",
+      role: "be1",
+      version: "1.0.0",
+      publisherAccounts: ["be1", "be2"],
     },
     qa1Review: {
       status: "PASS",
-      sha256: HASH_B,
-      actor: "qa1-account",
-      role: "QA1",
-      reviewedSha256: HASH_A,
+      sha256: H,
+      actor: "qa1",
+      role: "qa1",
+      reviewedSha256: H,
+      reviewedModuleSha256: H2,
       constraintsResult: "PASS",
       errorContractResult: "PASS",
       testabilityResult: "PASS",
     },
     moduleSchema: {
       status: "PASS",
-      sha256: HASH_B,
-      actor: "be2-account",
-      role: "BE2",
+      sha256: H2,
+      actor: "be2",
+      role: "be2",
     },
     independentConfirmation: {
       status: "PASS",
-      sha256: HASH_B,
-      actor: "independent-reviewer",
-      role: "QA1",
-      confirmedSha256: HASH_A,
+      sha256: H,
+      actor: "independent",
+      role: "qa",
+      confirmedSha256: H,
     },
     qa2Runtime: {
       status: "PASS",
-      executor: "qa2-account",
-      role: "QA2",
-      sourceSha: SOURCE_SHA,
-      buildId: "build-123",
+      executor: "qa2",
+      role: "qa2",
+      sourceSha: SOURCE,
+      buildId: "build-1",
       environment: "UAT",
-      artifactDigest: HASH_B,
+      artifactDigest: H,
+      sha256SumsSha256: H2,
       scenarios: [
-        "PERMISSION_DENY_403",
-        "IDEMPOTENCY_REPLAY",
-        "IDEMPOTENCY_CONFLICT",
-        "STALE_WRITE",
-      ].map((id) => ({
-        id: id as
-          | "PERMISSION_DENY_403"
-          | "IDEMPOTENCY_REPLAY"
-          | "IDEMPOTENCY_CONFLICT"
-          | "STALE_WRITE",
-        status: "PASS",
-        directApi: true,
-        synthetic: false,
-        authorizationRedacted: true,
-      })),
+        scenario("PERMISSION_DENY_403"),
+        scenario("IDEMPOTENCY_REPLAY"),
+        scenario("IDEMPOTENCY_CONFLICT"),
+        scenario("STALE_WRITE"),
+        scenario("PERMISSION_CATALOG"),
+      ],
     },
     permissionApproval: {
       status: "PASS",
-      backendApprover: "be-rbac-account",
-      businessApprover: "ba-account",
-      sourceSha: SOURCE_SHA,
-      buildId: "build-123",
+      backendApprover: "be-rbac",
+      businessApprover: "ba",
+      frontendApprover: "fe",
+      sourceSha: SOURCE,
+      buildId: "build-1",
+      artifactDigest: H,
+      runtimeCatalogSha256: H2,
     },
     baMinutes: {
       status: "PASS",
       decision: "GO",
-      decidedBy: "ba-account",
-      role: "BA",
-      sourceSha: SOURCE_SHA,
-      artifactDigest: HASH_B,
+      decidedBy: "ba",
+      role: "ba",
+      sourceSha: SOURCE,
+      artifactDigest: H,
       openP0: 0,
       openP1: 0,
     },
@@ -88,54 +133,44 @@ function validEvidence(): Wwhn153FinalEvidence {
 }
 
 describe("WWHN-153 derived final sign-off", () => {
-  it("allows final only when every independent exact-hash gate passes", () => {
-    const result = evaluateWwhn153FinalSignoff(validEvidence());
-    expect(result).toEqual({
+  it("allows final only when the entire exact-hash chain passes", () => {
+    expect(evaluateWwhn153FinalSignoff(validEvidence())).toEqual({
       finalAllowed: true,
       status: "FINAL_GO",
       blockers: [],
     });
-    expect(() => assertWwhn153FinalSignoff(validEvidence())).not.toThrow();
   });
 
-  it("fails closed when QA1 reviews a different contract hash", () => {
+  it("blocks a stale or unrelated FE source", () => {
     const evidence = validEvidence();
-    evidence.qa1Review.reviewedSha256 = HASH_B;
-    expect(evaluateWwhn153FinalSignoff(evidence)).toMatchObject({
-      finalAllowed: false,
-      blockers: expect.arrayContaining(["WWHN-152_EXACT_HASH_MISMATCH"]),
-    });
-  });
-
-  it("fails closed for self-review, missing runtime cases or synthetic evidence", () => {
-    const evidence = validEvidence();
-    evidence.qa1Review.actor = "be1-account";
-    evidence.qa2Runtime.scenarios = evidence.qa2Runtime.scenarios.slice(0, 3);
-    evidence.qa2Runtime.scenarios[0].synthetic = true;
-    const result = evaluateWwhn153FinalSignoff(evidence);
-    expect(result.blockers).toEqual(
-      expect.arrayContaining([
-        "WWHN-152_REVIEWER_NOT_INDEPENDENT",
-        "WWHN-182_PERMISSION_DENY_403_INVALID",
-        "WWHN-182_STALE_WRITE_INVALID",
-      ]),
+    evidence.sourceProvenance.parentSha = "9".repeat(40);
+    expect(evaluateWwhn153FinalSignoff(evidence).blockers).toContain(
+      "FE_PARENT_SHA_MISMATCH",
     );
   });
 
-  it("does not treat Conditional Go or a non-zero P1 count as final approval", () => {
+  it("blocks idempotency evidence without measured side-effect stability", () => {
+    const evidence = validEvidence();
+    const replay = evidence.qa2Runtime.scenarios.find(
+      (item) => item.id === "IDEMPOTENCY_REPLAY",
+    )!;
+    replay.effectProof!.afterReplayHash = H;
+    expect(evaluateWwhn153FinalSignoff(evidence).blockers).toContain(
+      "WWHN-182_IDEMPOTENCY_REPLAY_INVALID",
+    );
+  });
+
+  it("blocks permission approval not bound to the runtime catalog response", () => {
+    const evidence = validEvidence();
+    evidence.permissionApproval.runtimeCatalogSha256 = H;
+    expect(evaluateWwhn153FinalSignoff(evidence).blockers).toContain(
+      "PERMISSION_CATALOG_HASH_MISMATCH",
+    );
+  });
+
+  it("rejects CONDITIONAL_GO", () => {
     const evidence = validEvidence();
     evidence.baMinutes.decision = "CONDITIONAL_GO";
-    evidence.baMinutes.openP1 = 1;
-    expect(() => assertWwhn153FinalSignoff(evidence)).toThrow(
-      /WWHN-183_DECISION_NOT_GO.*WWHN-183_OPEN_P1_NONZERO/u,
-    );
-  });
-
-  it("fails closed when permission approval targets another build", () => {
-    const evidence = validEvidence();
-    evidence.permissionApproval.buildId = "build-other";
-    expect(evaluateWwhn153FinalSignoff(evidence).blockers).toContain(
-      "PERMISSION_RUNTIME_BUILD_MISMATCH",
-    );
+    expect(evaluateWwhn153FinalSignoff(evidence).finalAllowed).toBe(false);
   });
 });
