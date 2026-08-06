@@ -1,0 +1,109 @@
+{
+  "schemaVersion": "2.0.0",
+  "task": "WWHN-178",
+  "parent": "WWHN-39",
+  "repository": "Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_FE",
+  "branch": "m1",
+  "updatedAt": "2026-08-06T10:52:00+07:00",
+  "acceptancePolicy": {
+    "overallResult": "BLOCKED_BY_INDEPENDENT_OWNER_GATES",
+    "feOwnedResult": "COMPLETE",
+    "runSelectionRule": "CURRENT_SUCCESSFUL_PUSH_RUN_FOR_EXACT_SOURCE_SHA",
+    "artifactSelectionRule": "wms-fe-closure-evidence-<SOURCE_SHA> from the selected run",
+    "hardCodedAcceptanceRunId": null,
+    "supersededRunIds": [30987735727, 30987738397],
+    "rule": "A historical run is reference-only. Acceptance must use exactly one successful push run whose head_sha equals the commit under review."
+  },
+  "feControls": [
+    {
+      "id": "FE-P0-CONTRACT-GATE",
+      "status": "PASS",
+      "evidence": [
+        "src/modules/master-data/contracts/master-data.contract.ts",
+        "src/modules/master-data/contracts/master-data.contract.test.ts",
+        "src/modules/master-data/services/master-data.service.test.ts"
+      ]
+    },
+    {
+      "id": "FE-P1-QA2-PACK",
+      "status": "PASS",
+      "evidence": ["e2e/wwhn-178-master-sku-qa2.spec.ts"]
+    },
+    {
+      "id": "FE-P1-DIRECT-API-RUNNER",
+      "status": "PASS_CONTRACT_ONLY",
+      "evidence": ["scripts/run-wwhn-178-direct-api-rbac.mjs"]
+    },
+    {
+      "id": "FE-P1-CI-PROVENANCE",
+      "status": "PASS_BY_DYNAMIC_SELECTION_RULE",
+      "evidence": ["acceptancePolicy.runSelectionRule"]
+    },
+    {
+      "id": "FE-P2-PARENT-MATRIX",
+      "status": "PASS",
+      "evidence": ["parentClosureMatrix"]
+    }
+  ],
+  "independentOwnerGates": [
+    {
+      "id": "QA2-WWHN-179",
+      "owner": "QA2",
+      "jiraStatusObserved": "TO_DO",
+      "acceptanceStatus": "PENDING",
+      "required": "Run exact SHA/build/browser/environment; attach screenshot/video/trace and comment PASS or FAIL."
+    },
+    {
+      "id": "HN-MC-001-BASELINE",
+      "owner": "BA+BAS+QA2",
+      "jiraIssues": ["WWHN-14", "WWHN-100", "WWHN-101"],
+      "jiraStatusObserved": ["IN_PROGRESS", "TO_DO", "TO_DO"],
+      "acceptanceStatus": "PENDING",
+      "required": "Baseline fields, enums, import rules, item/code/physical-code semantics."
+    },
+    {
+      "id": "BE-OFFICIAL-CONTRACT",
+      "owner": "BE2+BE1",
+      "jiraIssues": ["WWHN-36", "WWHN-37", "WWHN-171"],
+      "jiraStatusObserved": ["IN_PROGRESS", "IN_PROGRESS", "IN_PROGRESS"],
+      "acceptanceStatus": "PENDING",
+      "required": "Publish and sign exact OpenAPI/Postman/payload/error/permission/sample-data version and hash."
+    },
+    {
+      "id": "BE-QA-LIVE-AUTHORIZATION",
+      "owner": "BE+QA",
+      "acceptanceStatus": "PENDING",
+      "required": "Live direct API 403, permission deny and data-scope deny evidence with real request metadata and redacted tokens."
+    }
+  ],
+  "parentClosureMatrix": [
+    {
+      "issue": "WWHN-178",
+      "role": "FE1",
+      "statusObserved": "IN_PROGRESS_REDF",
+      "deliveryStatus": "FE_COMPLETE_AWAITING_INDEPENDENT_GATES",
+      "evidence": [
+        "docs/Task_docs_Jira/WWHN-178.md",
+        "docs/api-evidence/WWHN-178_MASTER_SKU_CONTRACT_BASELINE.json",
+        "docs/evidence/wwhn-178/WWHN-178_CLOSURE_REGISTER.json"
+      ],
+      "remainingBlocker": "Independent BA/BE/QA gates only"
+    },
+    {
+      "issue": "WWHN-179",
+      "role": "QA2",
+      "statusObserved": "TO_DO",
+      "deliveryStatus": "PENDING_OWNER_EXECUTION",
+      "evidence": ["e2e/wwhn-178-master-sku-qa2.spec.ts"],
+      "remainingBlocker": "QA2 PASS/FAIL on exact SHA/build/browser/environment"
+    },
+    {
+      "issue": "WWHN-39",
+      "role": "FE1_LEAD",
+      "statusObserved": "IN_PROGRESS",
+      "deliveryStatus": "NOT_READY_TO_CLOSE",
+      "evidence": ["parentClosureMatrix"],
+      "remainingBlocker": "WWHN-179 plus BA/BE/live authorization gates"
+    }
+  ]
+}
