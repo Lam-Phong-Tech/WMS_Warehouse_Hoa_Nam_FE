@@ -28,8 +28,7 @@ export const WWHN_181_EXACT_REVIEW = {
     "idempotency-and-optimistic-locking",
   ],
   manifestPath: "docs/evidence/WWHN-181/exact-sha-manifest.json",
-  runtimeEvidencePath:
-    "docs/evidence/WWHN-181/RUNTIME_EVIDENCE_CHECKLIST.md",
+  runtimeEvidencePath: "docs/evidence/WWHN-181/RUNTIME_EVIDENCE_CHECKLIST.md",
 } as const;
 
 export const WMS_CONTRACT_BASELINE = {
@@ -194,8 +193,7 @@ function toGateStatus(gate: WmsReviewGate) {
   return { id: gate.id, status: gate.status };
 }
 
-export const WMS_P0_P1_CONTRACT_GATES =
-  WMS_REVIEW_GATES.map(toGateStatus);
+export const WMS_P0_P1_CONTRACT_GATES = WMS_REVIEW_GATES.map(toGateStatus);
 
 export function getOpenContractGateIds(): string[] {
   return WMS_REVIEW_GATES.filter((gate) => gate.status !== "FE_COMPLETE").map(

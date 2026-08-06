@@ -32,6 +32,7 @@
     "wwhn-153:verify": "node scripts/verify-wwhn-153-signoff.mjs",
     "wwhn-153:final": "node scripts/verify-wwhn-153-signoff.mjs --require-final",
     "wwhn-153:runtime": "node scripts/run-wwhn-153-runtime-evidence.mjs",
+    "wwhn-153:self-test": "node scripts/test-wwhn-153-signoff-core.mjs",
     "wms-contract:verify": "node scripts/verify-wms-contract-signoff.mjs",
     "wwhn-148:verify": "node scripts/verify-wwhn-148-closure.mjs",
     "wwhn-144:verify": "node scripts/verify-wwhn-144-closure.mjs",
@@ -42,13 +43,8 @@
     "postinstall": "patch-package"
   },
   "lint-staged": {
-    "*.{ts,tsx}": [
-      "eslint --fix --config eslint.config.js",
-      "prettier --write"
-    ],
-    "*.{css,json,md}": [
-      "prettier --write"
-    ]
+    "*.{ts,tsx}": ["eslint --fix --config eslint.config.js", "prettier --write"],
+    "*.{css,json,md}": ["prettier --write"]
   },
   "dependencies": {
     "@ant-design/icons": "^6.2.5",

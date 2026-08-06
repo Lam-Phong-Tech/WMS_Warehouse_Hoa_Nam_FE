@@ -1,52 +1,54 @@
 /**
  * Scan module types for WMS Hoa Nam.
- * Canonical runtime classify route: POST /api/v1/scan/classify.
- * FE endpoint constants stay relative because API base URL already includes
- * /api/v1.
+ * Canonical read-only classify contract:
+ * POST /api/v1/scan/classify — WWHN-150.1.1.0.
  */
 
-export type ScanCodeState =
-  | "waiting"
-  | "scanned"
-  | "duplicate"
-  | "unknown"
-  | "invalid"
-  | "success"
-  | "error";
+export type ScanCodeState = "waiting" | "scanned" | "success" | "error";
+
+export type ScanContext =
+  | "INBOUND"
+  | "OUTBOUND"
+  | "STOCKTAKE"
+  | "WARRANTY_TEMP_ONLY";
+
+export type ScanClassification = "ITEM" | "CONTAINER" | "SKU";
+
+export type ScanResolvedSource =
+  | "physical_code"
+  | "inventory_serials.serial_no"
+  | "container.container_code"
+  | "products.code";
 
 export interface ScanClassifyRequest {
-  codes: string[];
-  warehouse_id?: number;
-  scan_source?: "manual" | "barcode" | "rfid" | "lookup";
+  raw_code: string;
+  context: ScanContext;
+  warehouse_id: string;
 }
 
-export type ScanClassifyStatus = "VALID" | "DUPLICATE" | "UNKNOWN" | "INVALID";
-
-export const SCAN_ERROR_CODES = [
-  "WMS_SCAN_DUPLICATE",
-  "WMS_SCAN_UNKNOWN",
-  "WMS_SCAN_INVALID",
-  "WMS_SCAN_BATCH_NOT_FOUND",
-  "WMS_SCAN_WAREHOUSE_MISMATCH",
-] as const;
-
-export interface ScanClassifyItem {
-  code_value: string;
-  code_type: string;
-  status: ScanClassifyStatus;
-  scan_source: string;
-  sku_code?: string;
-  error_code?: ScanErrorCode;
-  message?: string;
+export interface ScanCurrentLocation {
+  warehouse_id: string;
+  warehouse_code: string;
+  warehouse_name: string;
 }
 
 export interface ScanClassifyResponse {
-  batch_id: string;
-  request_id?: string;
-  items: ScanClassifyItem[];
+  raw_code: string;
+  context: ScanContext;
+  classification: ScanClassification;
+  item_id: string | null;
+  sku_id: string | null;
+  product_id: string | null;
+  stock_status: string;
+  object_status?: string;
+  resolved_source: ScanResolvedSource;
+  contract_version: "WWHN-150.1.1.0";
+  stock_effect: "NONE";
+  movement_created: false;
+  posting_event_created: false;
+  idempotency_cache_written: false;
+  current_location: ScanCurrentLocation;
 }
-
-export type ScanErrorCode = (typeof SCAN_ERROR_CODES)[number];
 
 export interface ScanBatch {
   id: string;

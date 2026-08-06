@@ -1,111 +1,52 @@
 {
-  "schemaVersion": "3.0.0",
+  "schemaVersion": "4.0.0",
   "task": "WWHN-153",
-  "assessment": {
-    "date": "2026-08-05",
-    "score": 80,
-    "result": "CONDITIONAL_PASS",
-    "findings": [
-      { "id": "FE-P0-01", "severity": "P0", "owner": "BE1 + BE2 + QA1", "status": "PENDING_EXTERNAL_EVIDENCE" },
-      { "id": "FE-P0-02", "severity": "P0", "owner": "FE1 + BA + QA", "status": "FE_FAIL_CLOSED_COMPLETE_EXTERNAL_EVIDENCE_PENDING" },
-      { "id": "FE-P1-01", "severity": "P1", "owner": "BE2 + QA1", "status": "PENDING_EXTERNAL_EVIDENCE" },
-      { "id": "FE-P1-02", "severity": "P1", "owner": "QA2", "status": "FE_RUNTIME_RUNNER_COMPLETE_EXECUTION_PENDING" },
-      { "id": "FE-P1-03", "severity": "P1", "owner": "BA", "status": "FE_MINUTES_SCHEMA_COMPLETE_DECISION_PENDING" },
-      { "id": "FE-P1-04", "severity": "P1", "owner": "BE/RBAC + BA + FE", "status": "FE_RECONCILIATION_COMPLETE_APPROVAL_PENDING" },
-      { "id": "FE-P2-01", "severity": "P2", "owner": "FE1", "status": "FE_TEXT_CLOSURE_READY" }
-    ]
+  "assessmentDate": "2026-08-06",
+  "requiredIssueKeys": ["WWHN-31", "WWHN-151", "WWHN-152", "WWHN-180", "WWHN-182", "WWHN-183"],
+  "findings": [
+    {"id": "FE-P0-01", "severity": "P0", "title": "Official contract source chưa khóa"},
+    {"id": "FE-P0-02", "severity": "P0", "title": "Final FE sign-off fail-closed"},
+    {"id": "FE-P1-01", "severity": "P1", "title": "WWHN-151/WWHN-152 exact-hash chain"},
+    {"id": "FE-P1-02", "severity": "P1", "title": "QA2 direct runtime/API evidence"},
+    {"id": "FE-P1-03", "severity": "P1", "title": "BA G1 minutes"},
+    {"id": "FE-P1-04", "severity": "P1", "title": "Permission catalog approval"},
+    {"id": "FE-P1-05", "severity": "P1", "title": "Authoritative FE source provenance"},
+    {"id": "FE-P2-01", "severity": "P2", "title": "Evidence hygiene"},
+    {"id": "FE-P2-02", "severity": "P2", "title": "Closure matrix theo HEAD mới"}
+  ],
+  "sourceProvenancePath": "docs/evidence/wwhn-153/WWHN-153_FE_SOURCE_PROVENANCE.json",
+  "permissionApprovalPath": "docs/evidence/wwhn-153/WWHN-153_PERMISSION_APPROVAL.json",
+  "officialContractRelease": {
+    "issueKey": "WWHN-31", "status": "PENDING", "version": null, "backendCommitSha": null,
+    "artifactPath": null, "artifactSha256": null, "changelogPath": null, "changelogSha256": null,
+    "publisherAccounts": []
   },
-  "repositoryPolicy": {
-    "repository": "Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_FE",
-    "branch": "m1",
-    "noSideBranch": true,
-    "singleFinalCommit": true,
-    "sourceShaResolvedByCi": true
+  "moduleSchemaRelease": {
+    "issueKey": "WWHN-151", "status": "PENDING", "version": null, "backendCommitSha": null,
+    "artifactPath": null, "artifactSha256": null
   },
-  "officialContract": {
-    "issue": "WWHN-31",
-    "status": "PENDING",
-    "release": {
-      "repository": "Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_BE",
-      "ref": "m1-be-2",
-      "sourceCommitSha": null,
-      "version": null,
-      "artifactPath": null,
-      "artifactSha256": null,
-      "changelogPath": null,
-      "changelogSha256": null,
-      "publishedBy": []
-    },
-    "independentReview": {
-      "issue": "WWHN-152",
-      "status": "PENDING",
-      "reviewer": null,
-      "reviewerRole": "QA1",
-      "reviewedAt": null,
-      "reviewedArtifacts": [],
-      "constraintsResult": null,
-      "errorContractResult": null,
-      "testabilityResult": null
-    }
+  "qa1Review": {
+    "issueKey": "WWHN-152", "status": "PENDING", "reviewerAccount": null, "reviewedArtifacts": [],
+    "dimensions": {"constraints": "PENDING", "errorContract": "PENDING", "testability": "PENDING"}
   },
-  "moduleSchema": {
-    "issue": "WWHN-151",
-    "status": "PENDING",
-    "sourceCommitSha": null,
-    "version": null,
-    "artifactPath": null,
-    "artifactSha256": null,
-    "publishedBy": null,
-    "publisherRole": "BE2"
+  "independentConfirmation": {
+    "issueKey": "WWHN-180", "status": "PENDING", "confirmerAccount": null, "artifactSha256": null
   },
-  "independentConfirmations": {
-    "WWHN-180": {
-      "status": "PENDING",
-      "confirmedContractSha256": null,
-      "reviewer": null,
-      "reviewerRole": null,
-      "evidencePath": null,
-      "evidenceSha256": null
-    },
-    "WWHN-182": {
-      "status": "PENDING",
-      "executor": null,
-      "executorRole": "QA2",
-      "sourceSha": null,
-      "buildId": null,
-      "environment": null,
-      "artifactName": null,
-      "artifactDigest": null,
-      "executedAt": null,
-      "directApi": true,
-      "synthetic": false,
-      "scenarios": []
-    },
-    "WWHN-183": {
-      "status": "PENDING",
-      "decision": null,
-      "decidedBy": null,
-      "deciderRole": "BA",
-      "decidedAt": null,
-      "sourceSha": null,
-      "artifactDigest": null,
-      "openP0": null,
-      "openP1": null,
-      "minutesPath": null,
-      "minutesSha256": null
-    }
+  "qa2Runtime": {
+    "issueKey": "WWHN-182", "status": "PENDING", "sourceSha": null, "buildId": null,
+    "environment": null, "qa2Account": null, "artifactDigest": null, "sha256SumsPath": null,
+    "sha256SumsSha256": null, "summaryPath": null, "scenarios": []
   },
-  "permissionApproval": {
-    "manifestPath": "docs/evidence/wwhn-153/WWHN-153_PERMISSION_APPROVAL.json",
-    "status": "PENDING"
+  "baG1Minutes": {
+    "issueKey": "WWHN-183", "status": "PENDING", "decision": null, "sourceSha": null,
+    "artifactDigest": null, "openP0": null, "openP1": null, "minutesPath": null,
+    "minutesSha256": null, "baAccount": null
   },
   "finalPolicy": {
-    "derivedOnly": true,
-    "requiredIssues": ["WWHN-31", "WWHN-151", "WWHN-152", "WWHN-180", "WWHN-182", "WWHN-183"],
-    "requiredRuntimeScenarios": ["PERMISSION_DENY_403", "IDEMPOTENCY_REPLAY", "IDEMPOTENCY_CONFLICT", "STALE_WRITE"],
-    "acceptedFinalDecision": "GO",
-    "requireZeroOpenP0": true,
-    "requireZeroOpenP1": true,
-    "rule": "finalAllowed is computed by scripts/wwhn-153-signoff-core.mjs. A source-controlled boolean is never accepted as authorization."
+    "mode": "DERIVED_FAIL_CLOSED",
+    "requiredDecision": "GO",
+    "rejectConditionalGo": true,
+    "requireOpenP0": 0,
+    "requireOpenP1": 0
   }
 }

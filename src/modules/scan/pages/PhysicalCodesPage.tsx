@@ -1,9 +1,10 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-import { useEffect, useState, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   Button,
   Input,
+  Select,
   Space,
   Table,
   Tabs,
@@ -15,33 +16,37 @@ import {
   InlineApiError,
   tableEmptyText,
 } from "@/shared/components/feedback/BusinessState";
-import type { ScanCodeState, ScanClassifyItem } from "../types";
 import {
   classifyScanCodes,
+  fetchPhysicalCodes,
   fetchScanBatches,
   fetchScanEvents,
-  fetchPhysicalCodes,
 } from "../services/scanService";
-import type { ScanBatch, ScanEvent, PhysicalCode } from "../types";
+import type {
+  PhysicalCode,
+  ScanBatch,
+  ScanClassifyResponse,
+  ScanCodeState,
+  ScanContext,
+  ScanEvent,
+} from "../types";
 
-/** Map scan code state to Tag color */
 const stateColorMap: Record<ScanCodeState, string> = {
   waiting: "default",
   scanned: "processing",
-  duplicate: "warning",
-  unknown: "geekblue",
-  invalid: "error",
   success: "success",
   error: "error",
 };
 
-/** Map classify status to Tag color */
-const classifyColorMap: Record<string, string> = {
-  VALID: "success",
-  DUPLICATE: "warning",
-  UNKNOWN: "geekblue",
-  INVALID: "error",
-};
+const SCAN_CONTEXT_OPTIONS: Array<{
+  value: ScanContext;
+  label: string;
+}> = [
+  { value: "INBOUND", label: "Inbound" },
+  { value: "OUTBOUND", label: "Outbound" },
+  { value: "STOCKTAKE", label: "Stocktake" },
+  { value: "WARRANTY_TEMP_ONLY", label: "Warranty temp only" },
+];
 
 export default function PhysicalCodesPage() {
   const [activeTab, setActiveTab] = useState("list");
@@ -49,20 +54,21 @@ export default function PhysicalCodesPage() {
   const [batches, setBatches] = useState<ScanBatch[]>([]);
   const [events, setEvents] = useState<ScanEvent[]>([]);
   const [scanValue, setScanValue] = useState("");
+  const [warehouseId, setWarehouseId] = useState("");
+  const [scanContext, setScanContext] = useState<ScanContext>("STOCKTAKE");
   const [loading, setLoading] = useState(false);
   const [listError, setListError] = useState<unknown>(null);
   const [historyError, setHistoryError] = useState<unknown>(null);
   const [reloadKey, setReloadKey] = useState(0);
-
-  // Classify-specific state
-  const [classifyResult, setClassifyResult] = useState<
-    ScanClassifyItem[] | null
-  >(null);
+  const [classifyResult, setClassifyResult] =
+    useState<ScanClassifyResponse | null>(null);
   const [classifyState, setClassifyState] = useState<ScanCodeState>("waiting");
   const [classifyMessage, setClassifyMessage] = useState("");
+
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
+
     if (activeTab === "list") {
       setListError(null);
       fetchPhysicalCodes({ page: 1, per_page: 20 })
@@ -78,7 +84,7 @@ export default function PhysicalCodesPage() {
         .finally(() => {
           if (!cancelled) setLoading(false);
         });
-    } else {
+    } else if (activeTab === "history") {
       setHistoryError(null);
       Promise.all([
         fetchScanBatches({ per_page: 20 }),
@@ -100,16 +106,19 @@ export default function PhysicalCodesPage() {
         .finally(() => {
           if (!cancelled) setLoading(false);
         });
+    } else {
+      setLoading(false);
     }
+
     return () => {
       cancelled = true;
     };
   }, [activeTab, reloadKey]);
 
-  /** Submit scan code via POST /scan-batches/classify */
+  /** POST /api/v1/scan/classify — exact WWHN-150.1.1.0 read-only contract. */
   const submitScan = useCallback(async () => {
-    const code = scanValue.trim();
-    if (!code) return;
+    const rawCode = scanValue.trim();
+    if (!rawCode || !warehouseId.trim()) return;
 
     setLoading(true);
     setClassifyState("scanned");
@@ -118,45 +127,17 @@ export default function PhysicalCodesPage() {
 
     try {
       const response = await classifyScanCodes({
-        codes: [code],
-        scan_source: "manual",
+        raw_code: rawCode,
+        context: scanContext,
+        warehouse_id: warehouseId.trim(),
       });
 
-      setClassifyResult(response.items);
-
-      // Determine overall state from classify results
-      const allValid = response.items.every((item) => item.status === "VALID");
-      const hasDuplicate = response.items.some(
-        (item) => item.status === "DUPLICATE",
+      setClassifyResult(response);
+      setClassifyState("success");
+      setClassifyMessage(
+        `Mã ${response.raw_code} được nhận diện là ${response.classification}. ` +
+          "Đây là thao tác chỉ đọc, không phát sinh biến động tồn kho.",
       );
-      const hasUnknown = response.items.some(
-        (item) => item.status === "UNKNOWN",
-      );
-      const hasInvalid = response.items.some(
-        (item) => item.status === "INVALID",
-      );
-
-      if (allValid) {
-        setClassifyState("success");
-        setClassifyMessage(`Mã ${code} hợp lệ.`);
-      } else if (hasDuplicate) {
-        setClassifyState("duplicate");
-        setClassifyMessage(`Mã ${code} đã được quét trước đó.`);
-      } else if (hasUnknown) {
-        setClassifyState("unknown");
-        setClassifyMessage(`Mã ${code} không được nhận diện trong hệ thống.`);
-      } else if (hasInvalid) {
-        setClassifyState("invalid");
-        setClassifyMessage(`Mã ${code} không hợp lệ.`);
-      }
-
-      // Refresh batches and events after successful classify
-      const [batchRows, eventRows] = await Promise.all([
-        fetchScanBatches({ per_page: 20 }),
-        fetchScanEvents({ per_page: 20 }),
-      ]);
-      setBatches(batchRows);
-      setEvents(eventRows);
       setScanValue("");
     } catch (error: unknown) {
       setClassifyState("error");
@@ -168,7 +149,7 @@ export default function PhysicalCodesPage() {
     } finally {
       setLoading(false);
     }
-  }, [scanValue]);
+  }, [scanContext, scanValue, warehouseId]);
 
   return (
     <div style={{ padding: 24 }}>
@@ -191,7 +172,7 @@ export default function PhysicalCodesPage() {
                     placeholder="Giá trị mã / UID..."
                     style={{ width: 285 }}
                   />
-                  <Button type="primary" icon={<BarcodeOutlined />}>
+                  <Button type="primary" icon={<BarcodeOutlined />} disabled>
                     Tạo mã
                   </Button>
                 </Space>
@@ -250,7 +231,26 @@ export default function PhysicalCodesPage() {
             label: "Phân loại mã quét",
             children: (
               <>
-                <Space style={{ marginBottom: 16 }}>
+                <Alert
+                  type="info"
+                  showIcon
+                  message="Contract WWHN-150.1.1.0 — read-only"
+                  description="Phân loại không tạo stock movement, posting event hoặc idempotency cache. Warehouse ID phải là UUID đúng scope hiện hành."
+                  style={{ marginBottom: 16 }}
+                />
+                <Space wrap style={{ marginBottom: 16 }}>
+                  <Input
+                    placeholder="Warehouse UUID..."
+                    value={warehouseId}
+                    onChange={(event) => setWarehouseId(event.target.value)}
+                    style={{ width: 320 }}
+                  />
+                  <Select<ScanContext>
+                    value={scanContext}
+                    onChange={setScanContext}
+                    options={SCAN_CONTEXT_OPTIONS}
+                    style={{ width: 210 }}
+                  />
                   <Input.Search
                     placeholder="Quét/nhập mã..."
                     value={scanValue}
@@ -258,29 +258,22 @@ export default function PhysicalCodesPage() {
                     onSearch={submitScan}
                     style={{ width: 360 }}
                     enterButton="Phân loại"
+                    disabled={!warehouseId.trim()}
                   />
                   <Button
                     type="primary"
                     onClick={submitScan}
                     loading={loading && classifyState === "scanned"}
+                    disabled={!scanValue.trim() || !warehouseId.trim()}
                     icon={<BarcodeOutlined />}
                   >
                     Gửi quét
                   </Button>
                 </Space>
 
-                {/* Classify result display */}
                 {classifyState !== "waiting" && classifyState !== "scanned" && (
                   <Alert
-                    type={
-                      classifyState === "success"
-                        ? "success"
-                        : classifyState === "duplicate"
-                          ? "warning"
-                          : classifyState === "unknown"
-                            ? "info"
-                            : "error"
-                    }
+                    type={classifyState === "success" ? "success" : "error"}
                     message={
                       <Space>
                         <Typography.Text strong>Kết quả:</Typography.Text>
@@ -304,39 +297,59 @@ export default function PhysicalCodesPage() {
                   />
                 )}
 
-                {/* Classify detail table */}
-                {classifyResult && classifyResult.length > 0 && (
+                {classifyResult && (
                   <Table
-                    dataSource={classifyResult}
-                    rowKey="code_value"
+                    dataSource={[classifyResult]}
+                    rowKey="raw_code"
                     pagination={false}
                     size="small"
-                    style={{ marginBottom: 16 }}
                     scroll={{ x: "max-content" }}
                     columns={[
                       {
                         title: "Mã",
-                        dataIndex: "code_value",
-                        key: "code_value",
+                        dataIndex: "raw_code",
+                        key: "raw_code",
                       },
                       {
-                        title: "Loại mã",
-                        dataIndex: "code_type",
-                        key: "code_type",
+                        title: "Context",
+                        dataIndex: "context",
+                        key: "context",
                       },
                       {
-                        title: "Kết quả",
-                        dataIndex: "status",
-                        key: "status",
-                        render: (value: string) => (
-                          <Tag color={classifyColorMap[value]}>{value}</Tag>
-                        ),
+                        title: "Phân loại",
+                        dataIndex: "classification",
+                        key: "classification",
+                        render: (value: string) => <Tag>{value}</Tag>,
                       },
-                      { title: "SKU", dataIndex: "sku_code", key: "sku_code" },
                       {
-                        title: "Ghi chú",
-                        dataIndex: "message",
-                        key: "message",
+                        title: "Trạng thái tồn",
+                        dataIndex: "stock_status",
+                        key: "stock_status",
+                      },
+                      {
+                        title: "Nguồn resolve",
+                        dataIndex: "resolved_source",
+                        key: "resolved_source",
+                      },
+                      {
+                        title: "Kho hiện tại",
+                        dataIndex: "current_location",
+                        key: "current_location",
+                        render: (
+                          location: ScanClassifyResponse["current_location"],
+                        ) =>
+                          `${location.warehouse_code} — ${location.warehouse_name}`,
+                      },
+                      {
+                        title: "Stock effect",
+                        dataIndex: "stock_effect",
+                        key: "stock_effect",
+                        render: (value: string) => <Tag>{value}</Tag>,
+                      },
+                      {
+                        title: "Contract",
+                        dataIndex: "contract_version",
+                        key: "contract_version",
                       },
                     ]}
                   />
@@ -384,22 +397,16 @@ export default function PhysicalCodesPage() {
                       title: "Trùng",
                       dataIndex: "duplicate_count",
                       key: "duplicate_count",
-                      render: (v: number) =>
-                        v > 0 ? <Tag color="warning">{v}</Tag> : v,
                     },
                     {
                       title: "Không rõ",
                       dataIndex: "unknown_count",
                       key: "unknown_count",
-                      render: (v: number) =>
-                        v > 0 ? <Tag color="geekblue">{v}</Tag> : v,
                     },
                     {
                       title: "Lỗi",
                       dataIndex: "invalid_count",
                       key: "invalid_count",
-                      render: (v: number) =>
-                        v > 0 ? <Tag color="error">{v}</Tag> : v,
                     },
                     {
                       title: "Tạo lúc",
@@ -422,9 +429,7 @@ export default function PhysicalCodesPage() {
                       title: "Kết quả",
                       dataIndex: "status",
                       key: "status",
-                      render: (value: string) => (
-                        <Tag color={classifyColorMap[value]}>{value}</Tag>
-                      ),
+                      render: (value: string) => <Tag>{value}</Tag>,
                     },
                     {
                       title: "Tạo lúc",

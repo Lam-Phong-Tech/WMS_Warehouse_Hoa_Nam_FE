@@ -1,44 +1,32 @@
 {
-  "schemaVersion": "2.0.0",
+  "schemaVersion": "3.0.0",
   "task": "WWHN-153",
-  "issue": "FE-P1-04",
+  "issueKey": "WWHN-153",
   "status": "PENDING",
-  "runtimeEndpoint": "/permissions",
-  "backendCatalog": {
-    "version": null,
-    "sourceCommitSha": null,
-    "artifactPath": null,
-    "artifactSha256": null,
-    "publishedBy": null,
-    "publisherRole": "BE/RBAC"
+  "approverAccounts": [],
+  "approverRoles": [],
+  "runtimeLink": {
+    "sourceSha": null, "buildId": null, "environment": null, "artifactDigest": null,
+    "summaryPath": null, "sha256SumsPath": null
   },
-  "runtimeSnapshot": {
-    "environment": null,
-    "sourceSha": null,
-    "buildId": null,
-    "capturedAt": null,
-    "artifactPath": null,
-    "artifactSha256": null,
-    "missingCanonicalCodes": [],
-    "aliasesObserved": []
+  "runtimeCatalogSnapshot": {
+    "path": null, "sha256": null, "requestId": null, "missingCanonicalCodes": []
   },
-  "approvals": {
-    "backend": { "status": "PENDING", "approvedBy": null, "role": "BE/RBAC", "approvedAt": null },
-    "business": { "status": "PENDING", "approvedBy": null, "role": "BA", "approvedAt": null },
-    "frontend": { "status": "PENDING", "approvedBy": null, "role": "FE1", "approvedAt": null }
+  "backendPermissionCatalog": {
+    "path": null, "sha256": null, "version": null, "backendCommitSha": null
   },
-  "endpointPermissionRoleMatrix": [
-    { "method": "POST", "path": "/scan/classify", "permissionsAny": ["inventory.trace", "scan.classify"], "roles": [], "approvalStatus": "PENDING" },
-    { "method": "POST", "path": "/inbound-documents/:id/post-receipt", "permissionsAny": ["inbound.post"], "roles": [], "approvalStatus": "PENDING" },
-    { "method": "POST", "path": "/outbound-documents/:id/post-issue", "permissionsAny": ["outbound.post"], "roles": [], "approvalStatus": "PENDING" },
-    { "method": "POST", "path": "/stocktake/sessions/:sessionId/apply-adjustment", "permissionsAny": ["stocktake.adjust"], "roles": [], "approvalStatus": "PENDING" },
-    { "method": "GET", "path": "/reports/inventory-xnt/export-excel", "permissionsAny": ["report.export"], "roles": [], "approvalStatus": "PENDING" },
-    { "method": "POST", "path": "/warranty/cases", "condition": "identification_type=TEMP_ONLY", "permissionsAny": ["warranty.temp_only"], "roles": [], "approvalStatus": "PENDING" }
+  "endpointPermissionRoleMapping": [
+    {"endpointAction": "POST /scan/classify", "permission": "inventory.trace|scan.classify", "roles": [], "approved": false},
+    {"endpointAction": "POST /inbound-documents/:id/post-receipt", "permission": "inbound.post", "roles": [], "approved": false},
+    {"endpointAction": "POST /outbound-documents/:id/post-issue", "permission": "outbound.post", "roles": [], "approved": false},
+    {"endpointAction": "POST /stocktake/sessions/:sessionId/apply-adjustment", "permission": "stocktake.adjust", "roles": [], "approved": false},
+    {"endpointAction": "GET /reports/inventory-xnt/export-excel", "permission": "report.export", "roles": [], "approved": false},
+    {"endpointAction": "POST /warranty/cases:TEMP_ONLY", "permission": "warranty.temp_only", "roles": [], "approved": false}
   ],
   "rules": [
-    "Role names are evidence only; FE authorization remains permission-code based.",
-    "A broad role or page permission cannot substitute for a sensitive action permission.",
-    "Approval is valid only when BE/RBAC and BA approvers are distinct named accounts and the runtime snapshot matches WWHN-182 source SHA/build/environment.",
-    "The stocktake.manage code must never authorize stocktake.adjust."
+    "Backend remains authorization authority; FE guard is defense-in-depth only.",
+    "Runtime catalog response hash must equal PERMISSION_CATALOG response artifact hash in WWHN-182 package.",
+    "BE/RBAC, BA and FE approvers must be three distinct accounts.",
+    "stocktake.manage must never authorize stocktake.adjust."
   ]
 }
