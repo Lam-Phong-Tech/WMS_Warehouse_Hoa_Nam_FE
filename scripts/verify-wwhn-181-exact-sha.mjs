@@ -1,83 +1,235 @@
 #!/usr/bin/env node
-import { createHash } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import process from "node:process";
+import crypto from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
+import { execFileSync } from "node:child_process";
 
-const EXPECTED_BE_SHA = "54d5f4ff9cbaa678e16dcf322bd55836e177409a";
-const task = "WWHN-181";
-const feSha = process.env.GITHUB_SHA || process.env.FE_SHA;
-const beSha = process.env.WWHN_181_BE_SHA || EXPECTED_BE_SHA;
-const runId = process.env.GITHUB_RUN_ID || "local";
-const runAttempt = process.env.GITHUB_RUN_ATTEMPT || "local";
-const repository = process.env.GITHUB_REPOSITORY || "Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_FE";
+const PINNED = Object.freeze({
+  task: "WWHN-181",
+  contractVersion: "1.7.0",
+  beSha: "fc534ed8c00dadd91ce60e7bac5a8660dda74d08",
+  beParentSha: "04026757d679446b54e1e0c54ea18c3c0a0423ed",
+  beObservedFeBaselineSha: "f6e137d01ed7afec5d30e8fecde6a2cc31bb7c8b",
+  beReleaseManifestSha256:
+    "ba8bc5841b5865095e51d21064ead90ad4c37129ee28142a3f507b497ddcc776",
+  beReleaseManifestBlobSha: "a77557dcf5ccbd58d2f36a36bf6f660ee863e4f6",
+  beReleasePackSha256:
+    "a20b0d8d8a9145bceb2e797c51befa20d7da9e6439be512b39f72f3d8010cdb9",
+  beRepositorySha256sumsSha256:
+    "0f4dcd23ceb84e39799fae5cb3f112932e6260a34ccff63b1ab7c623c839cb36",
+});
 
-if (!feSha || !/^[0-9a-f]{40}$/i.test(feSha)) {
-  throw new Error("WWHN-181 requires an exact 40-character FE SHA via GITHUB_SHA or FE_SHA");
-}
-if (beSha !== EXPECTED_BE_SHA) {
-  throw new Error(`WWHN-181 BE SHA mismatch: expected ${EXPECTED_BE_SHA}, received ${beSha}`);
-}
-
-const evidenceFiles = [
-  "src/shared/api/wms-contract-signoff.ts",
-  "docs/api-evidence/WMS_FE_CONTRACT_BASELINE.json",
+const sourceFiles = [
+  ".github/workflows/ci.yml",
+  ".github/workflows/wwhn-181-signoff.yml",
+  "package.json",
   "docs/Task_docs_Jira/WWHN-181.md",
+  "docs/api-evidence/WMS_FE_CONTRACT_BASELINE.json",
+  "docs/evidence/WWHN-181/FINAL_GATE_EVIDENCE.template.json",
   "docs/evidence/WWHN-181/RUNTIME_EVIDENCE_CHECKLIST.md",
+  "scripts/run-wwhn-153-runtime-evidence.mjs",
+  "scripts/run-wwhn-181-runtime-ui-evidence.mjs",
+  "scripts/verify-wms-contract-signoff.mjs",
+  "scripts/verify-wwhn-181-exact-sha.mjs",
+  "scripts/verify-wwhn-181-final-gates.mjs",
+  "src/modules/receiving/services/receivingService.ts",
+  "src/modules/receiving/types/index.ts",
+  "src/modules/shipping/services/shippingService.ts",
+  "src/modules/shipping/types/index.ts",
+  "src/modules/stocktake/services/stocktakeService.ts",
+  "src/modules/stocktake/types/index.ts",
+  "src/modules/warranty/services/warrantyService.ts",
+  "src/shared/api/endpoints.ts",
+  "src/shared/api/http.ts",
+  "src/shared/api/wms-contract-signoff.ts",
+  "src/shared/api/wms-contract.ts",
+  "src/test/warranty-v17-fail-closed.test.ts",
+  "src/test/wms-contract-signoff-guards.test.ts",
 ];
 
-const sha256 = (buffer) => createHash("sha256").update(buffer).digest("hex");
-const files = [];
-for (const path of evidenceFiles) {
-  const content = await readFile(path);
-  files.push({ path, bytes: content.byteLength, sha256: sha256(content) });
+function sha256(buffer) {
+  return crypto.createHash("sha256").update(buffer).digest("hex");
 }
 
-const generatedAt = new Date().toISOString();
-const artifactName = `wwhn-181-exact-sha-evidence-${feSha}`;
-const ciUrl = process.env.GITHUB_SERVER_URL && process.env.GITHUB_REPOSITORY && process.env.GITHUB_RUN_ID
-  ? `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
-  : null;
+function exactSha(value, label) {
+  if (!/^[a-f0-9]{40}$/.test(value ?? "")) {
+    throw new Error(`${label} must be an exact 40-hex commit SHA, received: ${value}`);
+  }
+  return value;
+}
 
-const manifest = {
-  schema_version: "1.0.0",
-  task,
-  disposition: "CONDITIONAL_PASS_NOT_FINAL",
-  generated_at: generatedAt,
-  exact_pair: {
-    frontend_repository: repository,
-    frontend_sha: feSha,
-    backend_repository: "Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_BE",
-    backend_contract_version: "1.5.0",
-    backend_sha: beSha,
+function gitHead() {
+  return execFileSync("git", ["rev-parse", "HEAD"], {
+    encoding: "utf8",
+  }).trim();
+}
+
+const requestedBeSha =
+  process.argv[2] ?? process.env.WWHN_181_BE_SHA ?? PINNED.beSha;
+const beSha = exactSha(requestedBeSha, "BE SHA");
+if (beSha !== PINNED.beSha) {
+  throw new Error(
+    `WWHN-181 is pinned to BE ${PINNED.beSha}; received ${beSha}. A superseding contract requires an explicit FE source review before changing the pin.`,
+  );
+}
+const feSha = exactSha(
+  process.env.WMS_SOURCE_SHA ?? process.env.GITHUB_SHA ?? gitHead(),
+  "FE SHA",
+);
+const actualHead = gitHead();
+if (process.env.GITHUB_ACTIONS === "true" && actualHead !== feSha) {
+  throw new Error(
+    `Checked-out HEAD ${actualHead} does not match workflow source ${feSha}`,
+  );
+}
+
+for (const file of sourceFiles) {
+  if (!fs.existsSync(file) || !fs.statSync(file).isFile()) {
+    throw new Error(`Required WWHN-181 evidence source is missing: ${file}`);
+  }
+}
+
+const outputDir = path.resolve(
+  process.env.WWHN_181_EVIDENCE_DIR ??
+    `docs/evidence/WWHN-181/generated/${feSha}`,
+);
+fs.mkdirSync(outputDir, { recursive: true });
+
+const files = sourceFiles.map((file) => ({
+  path: file.replaceAll("\\", "/"),
+  bytes: fs.statSync(file).size,
+  sha256: sha256(fs.readFileSync(file)),
+}));
+const sha256sums =
+  files.map((file) => `${file.sha256}  ${file.path}`).join("\n") + "\n";
+fs.writeFileSync(path.join(outputDir, "SHA256SUMS"), sha256sums);
+const sha256sumsDigest = sha256(Buffer.from(sha256sums));
+
+const runUrl =
+  process.env.GITHUB_SERVER_URL &&
+  process.env.GITHUB_REPOSITORY &&
+  process.env.GITHUB_RUN_ID
+    ? `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
+    : null;
+const artifactName = `wwhn-181-exact-sha-evidence-${feSha}`;
+
+const manifestCore = {
+  schema_version: "2.1.0",
+  task: PINNED.task,
+  disposition: "BLOCKED_FAIL_CLOSED",
+  identity: {
+    fe_sha: feSha,
+    be_sha: beSha,
+    contract_version: PINNED.contractVersion,
+    be_parent_sha: PINNED.beParentSha,
+    be_observed_fe_baseline_sha: PINNED.beObservedFeBaselineSha,
+    be_release_manifest_sha256: PINNED.beReleaseManifestSha256,
+    be_release_manifest_blob_sha: PINNED.beReleaseManifestBlobSha,
+    be_release_pack_sha256: PINNED.beReleasePackSha256,
+    be_repository_sha256sums_sha256: PINNED.beRepositorySha256sumsSha256,
   },
   ci: {
-    run_id: runId,
-    run_attempt: runAttempt,
-    url: ciUrl,
+    workflow: "WWHN-181 Exact SHA Sign-off",
+    run_url: runUrl,
+    run_id: process.env.GITHUB_RUN_ID ?? null,
+    run_attempt: process.env.GITHUB_RUN_ATTEMPT ?? null,
     artifact_name: artifactName,
+    source_sha: feSha,
   },
-  files,
-  gates: {
-    WWHN_180: "PENDING_INDEPENDENT_PASS",
-    WWHN_182: "PENDING_QA2_RUNTIME_PASS",
+  independent_be_source_review: {
+    result: "CHANGES_REQUIRED",
+    reviewed_be_sha: beSha,
+    findings: [
+      {
+        id: "BE-HANDOFF-SCAN-CONTEXT-DRIFT",
+        focused_artifact:
+          "docs/api-contract/WWHN-180-posting-openapi.yaml: Scan context WARRANTY",
+        exact_runtime:
+          "Modules/Warehouse/app/Http/Controllers/ScanController.php: WARRANTY_TEMP_ONLY",
+        fe_disposition:
+          "Keep exact runtime WARRANTY_TEMP_ONLY; WWHN-180 must reconcile and independently approve one source.",
+      },
+      {
+        id: "BE-HANDOFF-WARRANTY-BODY-DRIFT",
+        focused_artifact:
+          "WWHN-180 focused TEMP_ONLY path omits requestBody",
+        exact_runtime:
+          "WarrantyController requires temporary_item_code, missing_code_reason, condition_status and Idempotency-Key",
+        fe_disposition:
+          "No speculative FE contract rewrite; WWHN-180 remains blocked.",
+      },
+    ],
+  },
+  fe_runtime_remediations: {
+    response_meta_request_id_preserved: true,
+    inbound_scan_canonical_line_payload: true,
+    outbound_scan_canonical_line_payload: true,
+    inbound_atomic_post_body_removed: true,
+    outbound_atomic_post_body_removed: true,
+    posting_if_match_removed: true,
+    stocktake_full_approved_variance_set: true,
+    stocktake_session_version_body_cas: true,
+    warranty_legacy_mutations_fail_closed: true,
+    backend_authority_preserved: true,
+  },
+  external_gates: {
+    WWHN_180: "PENDING_PASS_AND_HANDOFF_DRIFT_RESOLUTION",
+    WWHN_182: "PENDING_QA2_PASS",
     WWHN_183: "PENDING_BA_DECISION",
-    final_allowed: false,
+    WWHN_337: "GITHUB_ACTIONS_RUNNER_PROVISIONING_BLOCKER",
   },
   integrity: {
-    algorithm: "sha256",
-    canonical_payload_sha256: null,
+    checksum_file: "SHA256SUMS",
+    sha256sums_digest: sha256sumsDigest,
+    source_file_count: files.length,
+    files,
   },
+  final_allowed: false,
 };
-manifest.integrity.canonical_payload_sha256 = sha256(
-  Buffer.from(JSON.stringify({ ...manifest, integrity: { algorithm: "sha256" } })),
+const canonicalPayload = JSON.stringify(manifestCore);
+const manifest = {
+  ...manifestCore,
+  canonical_payload_sha256: sha256(Buffer.from(canonicalPayload)),
+  generated_at: new Date().toISOString(),
+};
+const manifestPath = path.join(outputDir, "manifest.json");
+fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+const manifestDigest = sha256(fs.readFileSync(manifestPath));
+fs.writeFileSync(
+  path.join(outputDir, "MANIFEST.sha256"),
+  `${manifestDigest}  manifest.json\n`,
+);
+fs.writeFileSync(
+  path.join(outputDir, "SHA256SUMS.sha256"),
+  `${sha256sumsDigest}  SHA256SUMS\n`,
+);
+fs.writeFileSync(
+  path.join(outputDir, "IDENTITY.json"),
+  `${JSON.stringify(
+    {
+      task: PINNED.task,
+      fe_sha: feSha,
+      be_sha: beSha,
+      contract_version: PINNED.contractVersion,
+      be_release_manifest_sha256: PINNED.beReleaseManifestSha256,
+      artifact_name: artifactName,
+      manifest_digest: manifestDigest,
+      sha256sums_digest: sha256sumsDigest,
+      ci_url: runUrl,
+      final_allowed: false,
+    },
+    null,
+    2,
+  )}\n`,
 );
 
-await mkdir("docs/evidence/WWHN-181", { recursive: true });
-await writeFile(
-  "docs/evidence/WWHN-181/exact-sha-manifest.json",
-  `${JSON.stringify(manifest, null, 2)}\n`,
-);
-
-console.log(`WWHN-181 exact pair verified: FE ${feSha} / BE ${beSha}`);
+console.log(`WWHN-181 FE SHA: ${feSha}`);
+console.log(`WWHN-181 BE SHA: ${beSha}`);
+console.log(`Contract: ${PINNED.contractVersion}`);
 console.log(`Artifact: ${artifactName}`);
-console.log(`Manifest digest: ${manifest.integrity.canonical_payload_sha256}`);
+console.log(`Manifest SHA256: ${manifestDigest}`);
+console.log(`SHA256SUMS SHA256: ${sha256sumsDigest}`);
+console.log(`Evidence directory: ${outputDir}`);
+console.log(
+  "Final sign-off: BLOCKED (WWHN-180/WWHN-182/WWHN-183 remain independent gates)",
+);

@@ -1,13 +1,16 @@
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { assertWmsActionPermission } from "@/shared/api/wms-action-permission";
 import { http } from "@/shared/api/http";
-import { requireNonEmptyString } from "@/shared/api/wms-contract";
+import {
+  requireNonEmptyString,
+  WmsContractError,
+} from "@/shared/api/wms-contract";
 import { WMS_ACTION_PERMISSIONS } from "@/shared/constants/wms-permissions";
 import type {
-  WarrantyCase,
-  WarrantyEvent,
   CreateWarrantyCaseRequest,
   UpdateWarrantyStatusRequest,
+  WarrantyCase,
+  WarrantyEvent,
 } from "../types";
 
 type RawRecord = Record<string, unknown>;
@@ -43,15 +46,17 @@ function normalizeWarrantyCase(row: RawRecord): WarrantyCase {
   const missingReason =
     text(row.missing_code_reason ?? row.temp_only_reason) || undefined;
   const identificationType =
-    text(row.identification_type) === "TEMP_ONLY" ||
+    text(row.identification_type ?? row.identification_status) === "TEMP_ONLY" ||
     temporaryCode ||
     missingReason
       ? "TEMP_ONLY"
       : "IDENTIFIED";
 
   return {
-    id: text(row.id),
-    case_code: text(row.case_code ?? row.code ?? row.doc_no),
+    id: text(row.warranty_case_id ?? row.id),
+    case_code: text(
+      row.case_code ?? row.warranty_case_no ?? row.code ?? row.doc_no,
+    ),
     sku: text(row.sku ?? row.sku_code ?? row.product_sku),
     sku_name: text(row.sku_name ?? row.product_name, "-"),
     item_code: text(row.item_code ?? row.item_id) || undefined,
@@ -86,16 +91,27 @@ function normalizeWarrantyCase(row: RawRecord): WarrantyCase {
 
 function normalizeWarrantyEvent(row: RawRecord): WarrantyEvent {
   return {
-    id: text(row.id),
-    case_id: text(row.case_id ?? row.warranty_case_id),
+    id: text(row.warranty_event_id ?? row.id),
+    case_id: text(row.warranty_case_id ?? row.case_id),
     event_type:
       (text(row.event_type) as WarrantyEvent["event_type"]) || "STATUS_CHANGE",
-    from_status: (text(row.from_status) as WarrantyCase["status"]) || undefined,
+    from_status:
+      (text(row.from_status) as WarrantyCase["status"]) || undefined,
     to_status: text(row.to_status ?? row.status) as WarrantyCase["status"],
-    description: text(row.description ?? row.message, "-"),
-    performed_by: text(row.performed_by_name ?? row.performed_by, "-"),
-    performed_at: text(row.performed_at ?? row.created_at),
+    description: text(row.description ?? row.note ?? row.message, "-"),
+    performed_by: text(
+      row.performed_by_name ?? row.performed_by ?? row.created_by,
+      "-",
+    ),
+    performed_at: text(row.performed_at ?? row.event_at ?? row.created_at),
   };
+}
+
+function unsupportedMutation(action: string): never {
+  throw new WmsContractError(
+    "WMS_FE_CONTRACT_NOT_APPROVED",
+    `${action} is blocked because exact BE v1.7 exposes no matching mutation route. WWHN-180 must reconcile and independently approve the canonical warranty contract before FE sends this request.`,
+  );
 }
 
 export async function fetchWarrantyCases(
@@ -123,6 +139,11 @@ export async function fetchWarrantyCaseEvents(
   );
 }
 
+/**
+ * Exact BE v1.7 has no POST /warranty/cases create route. TEMP_ONLY is a
+ * transition of an existing warranty case and has a different request schema.
+ * Do not send the legacy create payload to a read-only endpoint.
+ */
 export async function createWarrantyCase(
   payload: CreateWarrantyCaseRequest,
 ): Promise<WarrantyCase> {
@@ -139,39 +160,54 @@ export async function createWarrantyCase(
       "manual_product_description",
     );
   }
-  const result = await http.post<RawRecord>(
-    API_ENDPOINTS.WARRANTY_CASES,
-    payload,
-  );
-  return normalizeWarrantyCase(result);
+  return unsupportedMutation("Warranty case creation");
 }
 
+/** Exact BE v1.7 exposes no generic PATCH status route. */
 export async function updateWarrantyCaseStatus(
   caseId: string | number,
   request: UpdateWarrantyStatusRequest,
 ): Promise<WarrantyCase> {
-  const normalizedCaseId = requireNonEmptyString(String(caseId), "caseId");
-  const result = await http.patch<RawRecord>(
-    API_ENDPOINTS.WARRANTY_UPDATE_STATUS.replace(":id", normalizedCaseId),
-    { status: request.status, reason: request.reason },
-    {
-      headers: {
-        "Idempotency-Key": requireNonEmptyString(
-          request.idempotency_key,
-          "idempotency_key",
-          "WMS_FE_IDEMPOTENCY_KEY_REQUIRED",
-        ),
-      },
-    },
+  requireNonEmptyString(String(caseId), "caseId");
+  requireNonEmptyString(request.status, "status");
+  requireNonEmptyString(
+    request.idempotency_key,
+    "idempotency_key",
+    "WMS_FE_IDEMPOTENCY_KEY_REQUIRED",
   );
-  return normalizeWarrantyCase(result);
+  return unsupportedMutation("Warranty status update");
 }
 
+/**
+ * Exact BE v1.7 exposes a paginated list plus events, but no GET detail route.
+ * Read pages until the selected primary key is found instead of calling the
+ * legacy /warranty/cases/:id path and generating a false 404 in QA evidence.
+ */
 export async function fetchWarrantyCase(
   caseId: string | number,
 ): Promise<WarrantyCase> {
-  const result = await http.get<RawRecord>(
-    API_ENDPOINTS.WARRANTY_CASE.replace(":id", String(caseId)),
+  const normalizedCaseId = requireNonEmptyString(String(caseId), "caseId");
+  let page = 1;
+  let lastPage = 1;
+
+  do {
+    const result = await http.getPage<RawRecord[] | { data?: RawRecord[] }>(
+      API_ENDPOINTS.WARRANTY_CASES,
+      { params: { page, per_page: 100 } },
+    );
+    const row = rowsOf(
+      result.data as RawRecord[] | { data?: RawRecord[] },
+    ).find(
+      (candidate) =>
+        text(candidate.warranty_case_id ?? candidate.id) === normalizedCaseId,
+    );
+    if (row) return normalizeWarrantyCase(row);
+    lastPage = Math.max(1, Number(result.meta.last_page ?? 1));
+    page += 1;
+  } while (page <= lastPage);
+
+  throw new WmsContractError(
+    "WMS_WARRANTY_CASE_NOT_FOUND",
+    `Warranty case ${normalizedCaseId} was not found in the exact v1.7 list source`,
   );
-  return normalizeWarrantyCase(result);
 }

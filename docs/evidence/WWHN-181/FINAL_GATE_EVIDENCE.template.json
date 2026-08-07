@@ -1,0 +1,72 @@
+{
+  "schema_version": "1.0.0",
+  "identity": {
+    "fe_sha": "<EXACT_40_HEX_FE_SHA>",
+    "be_sha": "fc534ed8c00dadd91ce60e7bac5a8660dda74d08",
+    "contract_version": "1.7.0",
+    "be_release_manifest_sha256": "ba8bc5841b5865095e51d21064ead90ad4c37129ee28142a3f507b497ddcc776",
+    "artifact_name": "wwhn-181-exact-sha-evidence-<EXACT_40_HEX_FE_SHA>",
+    "manifest_digest": "<EXACT_64_HEX_FE_MANIFEST_SHA256>"
+  },
+  "ci": {
+    "result": "PENDING",
+    "fe_sha": "<SAME_FE_SHA>",
+    "be_sha": "fc534ed8c00dadd91ce60e7bac5a8660dda74d08",
+    "manifest_digest": "<SAME_MANIFEST_DIGEST>",
+    "url": null,
+    "artifact_name": "wwhn-181-exact-sha-evidence-<SAME_FE_SHA>",
+    "artifact_id": null,
+    "artifact_digest": null,
+    "sha256sums_verify": "PENDING"
+  },
+  "gates": {
+    "WWHN_180": {
+      "result": "PENDING",
+      "fe_sha": "<SAME_FE_SHA>",
+      "be_sha": "fc534ed8c00dadd91ce60e7bac5a8660dda74d08",
+      "manifest_digest": "<SAME_MANIFEST_DIGEST>",
+      "publisher_account": null,
+      "reviewer_account": null,
+      "evidence_url": null
+    },
+    "WWHN_182": {
+      "result": "PENDING",
+      "fe_sha": "<SAME_FE_SHA>",
+      "be_sha": "fc534ed8c00dadd91ce60e7bac5a8660dda74d08",
+      "manifest_digest": "<SAME_MANIFEST_DIGEST>",
+      "proof": {
+        "happy": "PENDING",
+        "negative": "PENDING",
+        "rbac_403": "PENDING",
+        "data_scope": "PENDING",
+        "idempotency_replay": "PENDING",
+        "idempotency_conflict": "PENDING",
+        "race": "PENDING",
+        "db_before_after": "PENDING",
+        "reconcile_zero_mismatch": "PENDING"
+      },
+      "evidence_url": null
+    },
+    "WWHN_183": {
+      "decision": "PENDING",
+      "fe_sha": "<SAME_FE_SHA>",
+      "be_sha": "fc534ed8c00dadd91ce60e7bac5a8660dda74d08",
+      "manifest_digest": "<SAME_MANIFEST_DIGEST>",
+      "open_p0": null,
+      "open_p1": null,
+      "conditions": [],
+      "owner": null,
+      "evidence_url": null
+    },
+    "runtime_ui": {
+      "result": "PENDING",
+      "fe_sha": "<SAME_FE_SHA>",
+      "be_sha": "fc534ed8c00dadd91ce60e7bac5a8660dda74d08",
+      "manifest_digest": "<SAME_MANIFEST_DIGEST>",
+      "real_api_error_with_request_id": "PENDING",
+      "responsive_matrix": "PENDING",
+      "sanitized_har": "PENDING",
+      "evidence_url": null
+    }
+  }
+}

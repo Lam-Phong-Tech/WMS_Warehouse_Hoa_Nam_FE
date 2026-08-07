@@ -30,6 +30,17 @@ export function requirePositiveNumber(
   return value;
 }
 
+export function requirePositiveInteger(
+  value: unknown,
+  field: string,
+  code = "WMS_FE_INVALID_PAYLOAD",
+): number {
+  if (typeof value !== "number" || !Number.isInteger(value) || value <= 0) {
+    throw new WmsContractError(code, `${field} must be a positive integer`);
+  }
+  return value;
+}
+
 export function requireNonNegativeNumber(
   value: unknown,
   field: string,
@@ -73,24 +84,42 @@ export function requireUniqueStrings(
   return normalized;
 }
 
+/**
+ * Canonical WWHN-180 stock-changing actions require an Idempotency-Key with
+ * 8..100 characters. This helper deliberately does not invent or require an
+ * optimistic-lock header: each endpoint must model its actual CAS contract.
+ */
+export function requireIdempotencyKeyHeader(
+  value: unknown,
+  field = "idempotencyKey",
+  maxLength = 100,
+) {
+  const idempotencyKey = requireNonEmptyString(
+    value,
+    field,
+    "WMS_FE_IDEMPOTENCY_KEY_REQUIRED",
+  );
+  if (idempotencyKey.length < 8 || idempotencyKey.length > maxLength) {
+    throw new WmsContractError(
+      "WMS_FE_INVALID_IDEMPOTENCY_KEY",
+      `${field} must contain 8 to ${maxLength} characters`,
+    );
+  }
+  return { "Idempotency-Key": idempotencyKey };
+}
+
+/**
+ * Compatibility helper for contracts that genuinely require both headers.
+ * WWHN-180 post-receipt/post-issue/apply-adjustment must use
+ * requireIdempotencyKeyHeader instead; their exact BE v1.7 CAS contract does
+ * not use If-Match.
+ */
 export function requireIdempotencyHeaders(input: {
   idempotencyKey?: string;
   ifMatch?: string | number;
 }) {
-  const idempotencyKey = requireNonEmptyString(
-    input.idempotencyKey,
-    "idempotencyKey",
-    "WMS_FE_IDEMPOTENCY_KEY_REQUIRED",
-  );
-  if (idempotencyKey.length < 8 || idempotencyKey.length > 128) {
-    throw new WmsContractError(
-      "WMS_FE_INVALID_IDEMPOTENCY_KEY",
-      "idempotencyKey must contain 8 to 128 characters",
-    );
-  }
-
   return {
-    "Idempotency-Key": idempotencyKey,
+    ...requireIdempotencyKeyHeader(input.idempotencyKey, "idempotencyKey", 128),
     "If-Match": requireNonEmptyString(
       input.ifMatch === undefined ? undefined : String(input.ifMatch),
       "ifMatch",

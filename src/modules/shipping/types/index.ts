@@ -22,11 +22,13 @@ export interface OutboundDocument {
 export interface OutboundLine {
   id: string;
   documentId: string;
+  productId?: string;
   sku: string;
   skuName: string;
   scanSource: string;
   available: number;
   planned: number;
+  scanned: number;
   issued: number;
   subsetNew: number;
   validation: "VALID" | "INVALID" | "UNKNOWN";
@@ -34,16 +36,18 @@ export interface OutboundLine {
   selected: boolean;
 }
 
+/** See PostReceiptRequest: posting is whole-document in WWHN-180 v1.7. */
 export interface PostIssueRequest {
   documentId: string;
-  lines: { lineId: string; quantity: number }[];
+  lines?: { lineId: string; quantity: number }[];
   idempotencyKey: string;
-  ifMatch: number;
+  ifMatch?: number;
 }
 
 export interface IssueEvidence {
   issueId: string;
   movementRef: string;
+  movementRefs?: string[];
   requestId: string;
   traceSource?: string;
   replayed?: boolean;
@@ -56,7 +60,6 @@ export interface CloseRemainderRequest {
   ifMatch: number;
 }
 
-/** Outbound business error codes from backend */
 export type OutboundErrorCode =
   | "WMS_OUTBOUND_DOCUMENT_NOT_FOUND"
   | "WMS_OUTBOUND_ALREADY_POSTED"
@@ -68,7 +71,6 @@ export type OutboundErrorCode =
   | "WMS_OUTBOUND_IDEMPOTENCY_REPLAY"
   | "WMS_OUTBOUND_VERSION_CONFLICT";
 
-/** Outbound scan response item */
 export interface OutboundScanResult {
   code_value: string;
   status: "VALID" | "DUPLICATE" | "UNKNOWN" | "INVALID";

@@ -1,85 +1,183 @@
-name: WWHN-181 Exact Contract Sign-off Evidence
+name: WWHN-181 Exact SHA Sign-off
 
 on:
   push:
-    branches: [m1]
+    branches:
+      - m1
     paths:
-      - "src/shared/api/wms-contract-signoff.ts"
-      - "src/test/wms-contract-signoff-guards.test.ts"
-      - "docs/api-evidence/WMS_FE_CONTRACT_BASELINE.json"
-      - "docs/Task_docs_Jira/WWHN-181.md"
-      - "docs/evidence/WWHN-181/**"
-      - "scripts/verify-wwhn-181-exact-sha.mjs"
       - ".github/workflows/wwhn-181-signoff.yml"
+      - "docs/Task_docs_Jira/WWHN-181.md"
+      - "docs/api-evidence/WMS_FE_CONTRACT_BASELINE.json"
+      - "docs/evidence/WWHN-181/**"
+      - "scripts/run-wwhn-181-runtime-ui-evidence.mjs"
+      - "scripts/run-wwhn-153-runtime-evidence.mjs"
+      - "scripts/verify-wwhn-181-*.mjs"
+      - "scripts/verify-wms-contract-signoff.mjs"
+      - "src/modules/receiving/**"
+      - "src/modules/shipping/**"
+      - "src/modules/stocktake/**"
+      - "src/modules/warranty/**"
+      - "src/shared/api/**"
+      - "src/test/warranty-v17-fail-closed.test.ts"
+      - "src/test/wms-contract-signoff-guards.test.ts"
+      - "package.json"
   workflow_dispatch:
     inputs:
       backend_sha:
-        description: "Exact BE contract SHA v1.5.0"
+        description: "Exact WWHN-180 BE SHA; must equal the independently reviewed pin"
         required: true
-        default: "54d5f4ff9cbaa678e16dcf322bd55836e177409a"
+        default: "fc534ed8c00dadd91ce60e7bac5a8660dda74d08"
+        type: string
 
 permissions:
   contents: read
+  actions: read
+
+concurrency:
+  group: wwhn-181-${{ github.ref }}
+  cancel-in-progress: false
 
 env:
-  WWHN_181_BE_SHA: ${{ inputs.backend_sha || '54d5f4ff9cbaa678e16dcf322bd55836e177409a' }}
+  WWHN_181_BE_SHA: fc534ed8c00dadd91ce60e7bac5a8660dda74d08
+  WWHN_181_CONTRACT_VERSION: 1.7.0
 
 jobs:
-  verify-exact-pair:
-    name: Verify FE/BE exact SHA pair and immutable evidence
+  exact-sha-evidence:
+    name: Exact SHA evidence
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 35
     steps:
-      - name: Checkout exact FE commit
+      - name: Checkout exact FE source
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.sha }}
-          fetch-depth: 1
+          fetch-depth: 2
 
-      - name: Setup Node
+      - name: Assert workflow source identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+          test "${{ github.event.inputs.backend_sha || env.WWHN_181_BE_SHA }}" = "${WWHN_181_BE_SHA}"
+          echo "FE_SHA=${GITHUB_SHA}" >> "$GITHUB_ENV"
+          echo "EVIDENCE_DIR=docs/evidence/WWHN-181/generated/${GITHUB_SHA}" >> "$GITHUB_ENV"
+
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: yarn
           cache-dependency-path: yarn.lock
 
-      - name: Install locked dependencies
+      - name: Install dependencies
         run: yarn install --frozen-lockfile --non-interactive
 
-      - name: Static and regression gates
-        run: |
-          npm run format:check
-          npm run lint
-          npm run test -- --run src/test/wms-contract-signoff-guards.test.ts
-          npm run build
-          npm run health:check
-          npm run check:api-mapping
+      - name: Check formatting without mutating source
+        run: npm run format:check
 
-      - name: Generate exact-SHA manifest
-        run: node scripts/verify-wwhn-181-exact-sha.mjs
+      - name: Lint
+        run: npm run lint
 
-      - name: Verify generated manifest binds current commit
+      - name: Type check
+        run: npm run typecheck
+
+      - name: WWHN-181 focused regression tests
+        run: >-
+          npx vitest run
+          src/test/wms-contract-signoff-guards.test.ts
+          src/test/warranty-v17-fail-closed.test.ts
+
+      - name: Verify WMS exact contract guards
+        env:
+          WMS_SOURCE_SHA: ${{ github.sha }}
+          WMS_EXECUTION_SHA: ${{ github.sha }}
+        run: npm run wms-contract:verify
+
+      - name: Build production bundle
+        env:
+          VITE_APP_ENV: production
+          VITE_APP_VERSION: wwhn-181.${{ github.run_number }}.${{ github.run_attempt }}
+          VITE_API_BASE_URL: /api/v1
+        run: npm run build
+
+      - name: Check frontend health artifact
+        run: npm run health:check
+
+      - name: Check API mapping
+        run: npm run check:api-mapping
+
+      - name: Validate direct-runtime evidence contract without secrets
+        env:
+          WWHN_153_EVIDENCE_DIR: artifacts/WWHN-181/direct-runtime-contract
+        run: npm run wwhn-153:runtime -- --contract-only
+
+      - name: Validate live UI evidence contract without secrets
+        env:
+          WWHN_181_UI_OUTPUT_DIR: artifacts/WWHN-181/ui-runtime-contract
+        run: npm run wwhn-181:ui-runtime -- --contract-only
+
+      - name: Generate exact FE/BE evidence manifest
+        env:
+          WMS_SOURCE_SHA: ${{ github.sha }}
+          WWHN_181_EVIDENCE_DIR: ${{ env.EVIDENCE_DIR }}
+        run: npm run wwhn-181:verify -- "${{ github.event.inputs.backend_sha || env.WWHN_181_BE_SHA }}"
+
+      - name: Verify source SHA256SUMS and generated digests
         shell: bash
         run: |
+          set -euo pipefail
+          sha256sum -c "${EVIDENCE_DIR}/SHA256SUMS"
+          (
+            cd "${EVIDENCE_DIR}"
+            sha256sum -c SHA256SUMS.sha256
+            sha256sum -c MANIFEST.sha256
+          )
+
+      - name: Prove final gate is still fail-closed without independent evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/verify-wwhn-181-final-gates.mjs docs/evidence/WWHN-181/FINAL_GATE_EVIDENCE.template.json
           node - <<'NODE'
-          const fs = require('fs');
-          const m = JSON.parse(fs.readFileSync('docs/evidence/WWHN-181/exact-sha-manifest.json', 'utf8'));
-          if (m.task !== 'WWHN-181') throw new Error('Wrong task');
-          if (m.exact_pair.frontend_sha !== process.env.GITHUB_SHA) throw new Error('FE SHA mismatch');
-          if (m.exact_pair.backend_sha !== process.env.WWHN_181_BE_SHA) throw new Error('BE SHA mismatch');
-          if (m.gates.final_allowed !== false) throw new Error('Final gate must remain fail-closed');
-          if (!m.integrity.canonical_payload_sha256) throw new Error('Missing manifest digest');
-          console.log(JSON.stringify(m.ci, null, 2));
+          const fs = require('node:fs');
+          const p = 'docs/evidence/WWHN-181/FINAL_GATE_EVALUATION.json';
+          const value = JSON.parse(fs.readFileSync(p, 'utf8'));
+          if (value.final_allowed !== false) {
+            throw new Error('Template without independent evidence must never authorize final sign-off');
+          }
           NODE
 
-      - name: Upload immutable WWHN-181 evidence
+      - name: Upload exact SHA evidence
+        id: evidence_upload
         uses: actions/upload-artifact@v4
         with:
           name: wwhn-181-exact-sha-evidence-${{ github.sha }}
           if-no-files-found: error
           retention-days: 90
           path: |
-            docs/evidence/WWHN-181/exact-sha-manifest.json
+            docs/evidence/WWHN-181/generated/${{ github.sha }}/
+            docs/evidence/WWHN-181/FINAL_GATE_EVIDENCE.template.json
+            docs/evidence/WWHN-181/FINAL_GATE_EVALUATION.json
             docs/evidence/WWHN-181/RUNTIME_EVIDENCE_CHECKLIST.md
             docs/Task_docs_Jira/WWHN-181.md
             docs/api-evidence/WMS_FE_CONTRACT_BASELINE.json
+            artifacts/WWHN-181/direct-runtime-contract/
+            artifacts/WWHN-181/ui-runtime-contract/
+            docs/evidence/wms-contract-signoff/generated/
+            dist/build-manifest.json
+
+      - name: Publish immutable artifact identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "## WWHN-181 exact SHA evidence"
+            echo "- FE SHA: \`${GITHUB_SHA}\`"
+            echo "- BE SHA: \`${WWHN_181_BE_SHA}\`"
+            echo "- Contract: \`${WWHN_181_CONTRACT_VERSION}\`"
+            echo "- Artifact: \`wwhn-181-exact-sha-evidence-${GITHUB_SHA}\`"
+            echo "- Artifact ID: \`${{ steps.evidence_upload.outputs.artifact-id }}\`"
+            echo "- Artifact URL: ${{ steps.evidence_upload.outputs.artifact-url }}"
+            echo "- artifact-digest: \`${{ steps.evidence_upload.outputs.artifact-digest }}\`"
+            echo "- SHA256SUMS: **PASS**"
+            echo "- Final FE sign-off: **BLOCKED** until WWHN-180 PASS, WWHN-182 PASS and WWHN-183 GO are bound to this exact identity."
+          } >> "$GITHUB_STEP_SUMMARY"

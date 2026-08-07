@@ -1,21 +1,36 @@
 {
-  "schemaVersion": "3.1.0",
+  "schemaVersion": "4.0.0",
   "task": "WWHN-153",
-  "sourceReviewScore": 96,
-  "previousReviewScore": 72,
-  "assessmentDate": "2026-08-06",
+  "signoffTask": "WWHN-181",
+  "assessmentDate": "2026-08-07",
   "apiBasePath": "/api/v1",
-  "signoffManifest": "docs/evidence/wwhn-153/WWHN-153_SIGNOFF_MANIFEST.json",
-  "permissionApprovalManifest": "docs/evidence/wwhn-153/WWHN-153_PERMISSION_APPROVAL.json",
   "officialContract": {
-    "jira": "WWHN-31",
-    "status": "PENDING_BE1_BE2_QA1_CLOSURE",
-    "version": null,
-    "sha256": null,
-    "changelog": null,
+    "jira": "WWHN-180",
+    "status": "CHANGES_REQUIRED_BE_HANDOFF_DRIFT_AND_INDEPENDENT_APPROVAL_PENDING",
+    "version": "1.7.0",
+    "beSha": "fc534ed8c00dadd91ce60e7bac5a8660dda74d08",
+    "beReleaseManifestSha256": "ba8bc5841b5865095e51d21064ead90ad4c37129ee28142a3f507b497ddcc776",
+    "beReleasePackSha256": "a20b0d8d8a9145bceb2e797c51befa20d7da9e6439be512b39f72f3d8010cdb9",
+    "beRepositorySha256sumsSha256": "0f4dcd23ceb84e39799fae5cb3f112932e6260a34ccff63b1ab7c623c839cb36",
     "independentReviewer": null,
-    "rule": "FE local constants and snapshots are not an official OpenAPI/schema release. Final sign-off is derived from the WWHN-153 signoff manifest and remains fail-closed until official exact-hash evidence and independent review are PASS."
+    "rule": "FE must bind to exact BE source and immutable digest. WWHN-180 cannot be treated as PASS while its focused handoff contradicts exact runtime source."
   },
+  "independentSourceFindings": [
+    {
+      "id": "BE-HANDOFF-SCAN-CONTEXT-DRIFT",
+      "severity": "P0",
+      "focusedArtifact": "docs/api-contract/WWHN-180-posting-openapi.yaml uses WARRANTY",
+      "exactRuntime": "Modules/Warehouse/app/Http/Controllers/ScanController.php validates WARRANTY_TEMP_ONLY",
+      "feDisposition": "KEEP_EXACT_RUNTIME_WARRANTY_TEMP_ONLY_AND_BLOCK_FINAL"
+    },
+    {
+      "id": "BE-HANDOFF-WARRANTY-BODY-DRIFT",
+      "severity": "P0",
+      "focusedArtifact": "WWHN-180 focused TEMP_ONLY path omits requestBody",
+      "exactRuntime": "WarrantyController requires temporary_item_code, missing_code_reason, condition_status and Idempotency-Key",
+      "feDisposition": "DO_NOT_INFER_CONTRACT_REQUIRE_BE_RECONCILIATION"
+    }
+  ],
   "criticalFlows": [
     {
       "id": "SCAN_CLASSIFY",
@@ -33,16 +48,13 @@
         "raw_code",
         "context",
         "classification",
-        "stock_status",
-        "resolved_source",
+        "product_id",
         "contract_version",
         "stock_effect",
         "movement_created",
         "posting_event_created",
         "idempotency_cache_written",
-        "current_location.warehouse_id",
-        "current_location.warehouse_code",
-        "current_location.warehouse_name"
+        "current_location.warehouse_id"
       ],
       "readOnlyAssertions": {
         "contract_version": "WWHN-150.1.1.0",
@@ -53,198 +65,124 @@
       },
       "acceptedHttp": [200],
       "expectedErrors": [401, 403, 404, 409, 422],
-      "feDisposition": "IMPLEMENTED_EXACT_WWHN_150_1_1_0_FAIL_CLOSED",
-      "officialSignoff": "PENDING_BE_BA_QA"
+      "feDisposition": "IMPLEMENTED_EXACT_RUNTIME_FAIL_CLOSED",
+      "officialSignoff": "PENDING_WWHN_180"
+    },
+    {
+      "id": "INBOUND_LINE_SCAN",
+      "method": "POST",
+      "relativePath": "/inbound-documents/:id/scan",
+      "permission": "scan.inbound",
+      "preflight": "POST /scan/classify context=INBOUND then resolve exactly one remaining product line",
+      "requiredRequest": ["line_id", "qty"],
+      "forbiddenRequest": ["codes"],
+      "requiredSuccess": ["stock_effect=NONE", "movement_created=false"],
+      "feDisposition": "IMPLEMENTED_CANONICAL_LINE_SCAN"
+    },
+    {
+      "id": "OUTBOUND_LINE_SCAN",
+      "method": "POST",
+      "relativePath": "/outbound-documents/:id/scan",
+      "permission": "scan.outbound",
+      "preflight": "POST /scan/classify context=OUTBOUND then resolve exactly one remaining product line",
+      "requiredRequest": ["line_id", "qty"],
+      "forbiddenRequest": ["codes"],
+      "requiredSuccess": ["stock_effect=NONE", "movement_created=false"],
+      "feDisposition": "IMPLEMENTED_CANONICAL_LINE_SCAN"
     },
     {
       "id": "POST_RECEIPT",
       "method": "POST",
       "relativePath": "/inbound-documents/:id/post-receipt",
       "permission": "inbound.post",
-      "requiredHeaders": ["Idempotency-Key", "If-Match"],
-      "requiredRequest": ["lines[].lineId", "lines[].quantity"],
-      "requiredSuccess": ["receipt_id", "movement_ref", "request_id"],
-      "acceptedHttp": [200, 201],
-      "expectedErrors": [403, 409, 412, 422, 428],
-      "feDisposition": "IMPLEMENTED_WITH_REQUEST_RESPONSE_AND_PERMISSION_GUARDS",
-      "officialSignoff": "PENDING_BE_BA_QA"
+      "requiredHeaders": ["Idempotency-Key"],
+      "forbiddenHeaders": ["If-Match"],
+      "requestBody": "NONE",
+      "preflight": "All planned lines must be fully scanned because exact BE posts the whole document atomically",
+      "requiredSuccess": ["data.id", "data.movements[].id", "meta.request_id"],
+      "acceptedHttp": [200],
+      "expectedErrors": [403, 409, 422, 428],
+      "feDisposition": "IMPLEMENTED_EXACT_V1_7_ATOMIC_POST",
+      "officialSignoff": "PENDING_WWHN_180_WWHN_182"
     },
     {
       "id": "POST_ISSUE",
       "method": "POST",
       "relativePath": "/outbound-documents/:id/post-issue",
       "permission": "outbound.post",
-      "requiredHeaders": ["Idempotency-Key", "If-Match"],
-      "requiredRequest": ["lines[].lineId", "lines[].quantity"],
-      "requiredSuccess": ["issue_id", "movement_ref", "request_id"],
-      "acceptedHttp": [200, 201],
-      "expectedErrors": [403, 409, 412, 422, 428],
-      "feDisposition": "IMPLEMENTED_WITH_REQUEST_RESPONSE_AND_PERMISSION_GUARDS",
-      "officialSignoff": "PENDING_BE_BA_QA"
+      "requiredHeaders": ["Idempotency-Key"],
+      "forbiddenHeaders": ["If-Match"],
+      "requestBody": "NONE",
+      "preflight": "All planned lines must be fully scanned because exact BE posts the whole document atomically",
+      "requiredSuccess": ["data.id", "data.movements[].id", "meta.request_id"],
+      "acceptedHttp": [200],
+      "expectedErrors": [403, 409, 422, 428],
+      "feDisposition": "IMPLEMENTED_EXACT_V1_7_ATOMIC_POST",
+      "officialSignoff": "PENDING_WWHN_180_WWHN_182"
     },
     {
       "id": "APPLY_ADJUSTMENT",
       "method": "POST",
-      "relativePath": "/stocktake/sessions/:sessionId/apply-adjustment",
+      "relativePath": "/stocktake-sessions/:sessionId/apply-adjustment",
       "permission": "stocktake.adjust",
-      "requiredHeaders": ["Idempotency-Key", "If-Match"],
-      "requiredRequest": ["lines[].sku", "lines[].actual_qty"],
-      "requiredSuccess": ["session_id", "status", "movement_ref", "request_id"],
-      "acceptedHttp": [200, 201],
-      "expectedErrors": [403, 409, 412, 422, 428],
-      "feDisposition": "IMPLEMENTED_WITH_REQUEST_RESPONSE_AND_PERMISSION_GUARDS",
-      "officialSignoff": "PENDING_BE_BA_QA"
+      "requiredHeaders": ["Idempotency-Key"],
+      "forbiddenHeaders": ["If-Match"],
+      "requiredRequest": ["session_version", "variance_ids[]", "reason"],
+      "preflight": "Re-read and send the complete APPROVED variance set immediately before apply",
+      "requiredSuccess": ["data.session_id", "data.status=APPLIED", "data.session_version", "data.variance_count", "data.movement_ids", "meta.request_id"],
+      "acceptedHttp": [200],
+      "expectedErrors": [403, 409, 422, 428],
+      "feDisposition": "IMPLEMENTED_EXACT_V1_7_SESSION_VERSION_CAS",
+      "officialSignoff": "PENDING_WWHN_180_WWHN_182"
     }
   ],
-  "currentAssessmentFindings": [
+  "actionRegister": [
     {
-      "id": "FE-P0-01",
+      "id": "WWHN-181-P0-FINAL",
       "severity": "P0",
-      "requiredFix": "BE1/BE2 publish official versioned OpenAPI/schema with SHA256, changelog and independent QA1 review",
-      "feControl": "Versioned signoff manifest, publisher separation, exact-hash review and anti-self-sign verifier",
-      "owner": "BE1 + BE2 + QA1",
-      "status": "FE_CONTROL_COMPLETE_EXTERNAL_EVIDENCE_PENDING"
+      "status": "FE_CONTROL_COMPLETE_EXTERNAL_BLOCKER",
+      "requiredEvidence": "WWHN-180 PASS + WWHN-182 PASS + WWHN-183 GO on same FE/BE/manifest identity"
     },
     {
-      "id": "FE-P0-02",
+      "id": "WWHN-181-P0-CONTRACT",
       "severity": "P0",
-      "requiredFix": "Open final only after WWHN-31/WWHN-180 and independent WWHN-182/WWHN-183 PASS",
-      "feControl": "Derived final policy; no source-controlled finalAllowed flag can authorize release",
-      "owner": "FE1 + BA + QA",
-      "status": "FE_CONTROL_COMPLETE_EXTERNAL_EVIDENCE_PENDING"
+      "status": "CHANGES_REQUIRED_BE_HANDOFF_DRIFT",
+      "requiredEvidence": "Independent WWHN-180 approval after source reconciliation"
     },
     {
-      "id": "FE-P1-01",
+      "id": "WWHN-181-P1-CI",
       "severity": "P1",
-      "requiredFix": "WWHN-151 module schema/API and WWHN-152 QA1 exact-hash review",
-      "feControl": "Hash-chain checks WWHN-151 to WWHN-152 and official contract",
-      "owner": "BE2 + QA1",
-      "status": "FE_CONTROL_COMPLETE_EXTERNAL_EXECUTION_PENDING"
+      "status": "FE_AUTOMATION_READY_INFRA_BLOCKED",
+      "requiredEvidence": "Exact SHA workflow PASS, artifact digest and SHA256SUMS PASS; WWHN-337 currently blocks runner provisioning"
     },
     {
-      "id": "FE-P1-02",
+      "id": "WWHN-181-P1-QA2",
       "severity": "P1",
-      "requiredFix": "QA2 direct API 403, idempotency replay/conflict, stale write and real request/response on exact build/env",
-      "feControl": "Secret-redacting direct API runner, per-call JSON, SHA256SUMS and immutable summary",
-      "owner": "QA2",
-      "status": "FE_RUNNER_COMPLETE_QA2_EXECUTION_PENDING"
+      "status": "EXTERNAL_BLOCKER",
+      "requiredEvidence": "Happy/negative/RBAC/idempotency/race/DB/reconcile PASS"
     },
     {
-      "id": "FE-P1-03",
+      "id": "WWHN-181-P1-BA",
       "severity": "P1",
-      "requiredFix": "BA G1 minutes with decision, exact SHA, artifact digest and open P0/P1",
-      "feControl": "Verifier accepts final only for GO, matching QA2 SHA/digest and zero open P0/P1",
-      "owner": "BA",
-      "status": "FE_SCHEMA_COMPLETE_BA_DECISION_PENDING"
+      "status": "EXTERNAL_BLOCKER",
+      "requiredEvidence": "WWHN-183 GO with zero open P0/P1"
     },
     {
-      "id": "FE-P1-04",
+      "id": "WWHN-181-P1-BE-AUTH",
       "severity": "P1",
-      "requiredFix": "Approve runtime /permissions, backend catalog and endpoint-permission-role mapping",
-      "feControl": "Approval manifest with BE/RBAC + BA separation, runtime snapshot binding and sensitive-action matrix",
-      "owner": "BE/RBAC + BA + FE",
-      "status": "FE_CONTROL_COMPLETE_APPROVAL_PENDING"
+      "status": "EXTERNAL_BLOCKER",
+      "requiredEvidence": "Direct 403/data-scope/runtime permission catalog"
     },
     {
-      "id": "FE-P2-01",
+      "id": "WWHN-181-P2-UI",
       "severity": "P2",
-      "requiredFix": "Publish readable Jira text closure matrix linked to exact run/artifact/digest",
-      "feControl": "WWHN-153 document and post-commit Jira text comment template",
-      "owner": "FE1",
-      "status": "FE_COMPLETE"
+      "status": "FE_COLLECTOR_READY_EXTERNAL_EXECUTION_PENDING",
+      "requiredEvidence": "Live non-mocked responsive matrix, real API error request_id and sanitized HAR"
     }
   ],
-  "reviewClosureMatrix": [
-    {
-      "id": "BA-FE-P0-01",
-      "severity": "P0",
-      "owner": "BE1 + BE2",
-      "feDisposition": "FAIL_CLOSED_AND_VERSIONED_INGESTION_READY",
-      "externalEvidence": "Official WWHN-31 OpenAPI/schema version, SHA256, changelog and independent reviewer",
-      "status": "EXTERNAL_BLOCKER"
-    },
-    {
-      "id": "BA-FE-P0-02",
-      "severity": "P0",
-      "owner": "FE1 + BA + QA",
-      "feDisposition": "FINAL_SIGNOFF_GUARD_ENFORCED",
-      "externalEvidence": "WWHN-31/WWHN-180 pass plus independent BA/QA confirmation",
-      "status": "FE_COMPLETE_EXTERNAL_BLOCKER"
-    },
-    {
-      "id": "BA-FE-P1-01",
-      "severity": "P1",
-      "owner": "BE1 + BE2",
-      "feDisposition": "TRACE_AND_VERSION_REQUIREMENTS_LOCKED",
-      "externalEvidence": "WWHN-150/WWHN-151 versioned architecture/OpenAPI/schema attachments",
-      "status": "EXTERNAL_BLOCKER"
-    },
-    {
-      "id": "BA-FE-P1-02",
-      "severity": "P1",
-      "owner": "QA1",
-      "feDisposition": "EXACT_HASH_REVIEW_REQUIRED",
-      "externalEvidence": "WWHN-152 constraints/error/testability review on exact official SHA256",
-      "status": "EXTERNAL_BLOCKER"
-    },
-    {
-      "id": "BA-FE-P1-03",
-      "severity": "P1",
-      "owner": "QA2 + BA",
-      "feDisposition": "RUNTIME_TEMPLATE_AND_CI_MANIFEST_READY",
-      "externalEvidence": "WWHN-182 named-build evidence and WWHN-183 G1 minutes",
-      "status": "FE_COMPLETE_EXTERNAL_BLOCKER"
-    },
-    {
-      "id": "BA-FE-P1-04",
-      "severity": "P1",
-      "owner": "BE/RBAC + FE1 + BA",
-      "feDisposition": "RUNTIME_PERMISSIONS_RECONCILIATION_AND_SERVICE_GUARDS_IMPLEMENTED",
-      "externalEvidence": "Approved /permissions catalog and backend 403 evidence",
-      "status": "FE_COMPLETE_EXTERNAL_BLOCKER"
-    },
-    {
-      "id": "BA-FE-P1-05",
-      "severity": "P1",
-      "owner": "BE1 + BA + QA",
-      "feDisposition": "CRITICAL_REQUEST_RESPONSE_ERROR_PERMISSION_GUARDS_IMPLEMENTED",
-      "externalEvidence": "Official endpoint/payload/error/permission/sample-response sign-off",
-      "status": "FE_COMPLETE_EXTERNAL_BLOCKER"
-    },
-    {
-      "id": "BA-FE-P2-01",
-      "severity": "P2",
-      "owner": "FE1",
-      "feDisposition": "CLOSURE_MATRIX_PUBLISHED_IN_WWHN-153_AND_CI_ARTIFACT",
-      "status": "FE_COMPLETE"
-    },
-    {
-      "id": "BA-FE-P2-02",
-      "severity": "P2",
-      "owner": "FE1 + DevOps + QA2",
-      "feDisposition": "SOURCE_EXECUTION_SHA_BUILD_ENV_LOG_SCREENSHOT_VIDEO_MANIFEST_IMPLEMENTED",
-      "externalEvidence": "QA2 real backend/error/RBAC captures on named UAT build",
-      "status": "FE_COMPLETE_EXTERNAL_BLOCKER"
-    }
-  ],
-  "reviewedContract": {
-    "sourceTask": "WWHN-150",
-    "beRepository": "Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_BE",
-    "beSha": "25eae830973f07a4dd0ce9725877f0f75ad907fd",
-    "workflowRunId": "31071690282",
-    "artifactId": "8955879802",
-    "artifactName": "wwhn-150-evidence-25eae830973f07a4dd0ce9725877f0f75ad907fd",
-    "artifactDigestSha256": "3620d63cabd1151377ae877931a9b5305dac88847949c2a0dd66ec4950f9753d",
-    "generatedOpenapiJsonSha256": "8af6d61779709e2508360103d7094d18a8d25f01dac14cd2029ee0a3ef1d4b07",
-    "generatedOpenapiYamlSha256": "8b169be07b9848464d8882dc5882f7bb74e3f72ca8702805f805f4fc44b42209",
-    "focusedOpenapiSha256": "3d01d8750f19f2e8a4a9c7aaafda0ee51615fb6b300771e9cc8ac5bbef982a08",
-    "postmanCollectionSha256": "b78d920c770966319b763074b8077aca3fb4f968c0a7bdcb512e62440aaf2846",
-    "postmanEnvironmentSha256": "037672a9b6e267c261d5ff53d064a94be656c843044973deec3ba5c0ca06e136",
-    "permissionCatalogSha256": "4c8b82486e2545d7a493b34e68bccde9748fe02f0f9690f5847035c36d16f215",
-    "endpointPermissionRoleMatrixSha256": "2dab7d36cd2f831206c9e0920aebccf1487a0809460569e8f62c1408e654d7b6",
-    "contractVersion": "1.1.0",
-    "documentVersion": "1.2.0",
-    "approvalStatus": "PENDING_INDEPENDENT_SIGN_OFF",
-    "status": "FE_EXACT_CONTRACT_REVIEW_COMPLETE_PENDING_BE2_QA1"
+  "finalPolicy": {
+    "finalAllowed": false,
+    "evaluator": "scripts/verify-wwhn-181-final-gates.mjs",
+    "requiredIndependentIssues": ["WWHN-180", "WWHN-182", "WWHN-183"]
   }
 }

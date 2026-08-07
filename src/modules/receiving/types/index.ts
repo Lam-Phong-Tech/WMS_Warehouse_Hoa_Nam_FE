@@ -21,6 +21,7 @@ export interface InboundDocument {
 export interface InboundLine {
   id: string;
   documentId: string;
+  productId?: string;
   sku: string;
   skuName: string;
   scanTarget: string;
@@ -35,16 +36,23 @@ export interface InboundLine {
 export interface ReceiptEvidence {
   receiptId: string;
   movementRef: string;
+  movementRefs?: string[];
   requestId: string;
   traceSource?: string;
   replayed?: boolean;
 }
 
+/**
+ * WWHN-180 v1.7 posts the approved document atomically as a whole. `lines`
+ * and `ifMatch` remain optional only so existing UI callers can migrate without
+ * a breaking type change; the service never serializes them to the canonical
+ * posting request.
+ */
 export interface PostReceiptRequest {
   documentId: string;
-  lines: { lineId: string; quantity: number }[];
+  lines?: { lineId: string; quantity: number }[];
   idempotencyKey: string;
-  ifMatch: number;
+  ifMatch?: number;
 }
 
 export interface CloseRemainderRequest {
@@ -52,7 +60,6 @@ export interface CloseRemainderRequest {
   reason: string;
 }
 
-/** Inbound business error codes from backend */
 export type InboundErrorCode =
   | "WMS_INBOUND_DOCUMENT_NOT_FOUND"
   | "WMS_INBOUND_ALREADY_POSTED"
@@ -63,7 +70,6 @@ export type InboundErrorCode =
   | "WMS_INBOUND_IDEMPOTENCY_REPLAY"
   | "WMS_INBOUND_VERSION_CONFLICT";
 
-/** Inbound scan response item */
 export interface InboundScanResult {
   code_value: string;
   status: "VALID" | "DUPLICATE" | "UNKNOWN" | "INVALID";

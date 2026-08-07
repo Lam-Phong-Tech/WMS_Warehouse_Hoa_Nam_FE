@@ -69,6 +69,7 @@ export const API_ENDPOINTS = {
   REPORTS_XNT: "/reports/inventory-xnt",
   REPORTS_XNT_EXPORT_EXCEL: "/reports/inventory-xnt/export-excel",
   REPORTS_WARRANTY_DEFECTS: "/reports/warranty-defects",
+  INVENTORY_RECONCILIATION: "/reports/inventory-reconciliation",
   INVENTORY_BALANCES: "/inventory/balances",
   STOCK_MOVEMENTS: "/stock-movements",
   STOCK_MOVEMENT: "/stock-movements/:id",
@@ -90,19 +91,24 @@ export const API_ENDPOINTS = {
   ITEMS: "/items",
   PHYSICAL_CODES: "/physical-codes",
   SCAN_BATCHES: "/scan/batches",
-  /**
-   * Axios base URL already ends with /api/v1. Therefore this relative path
-   * resolves to the canonical runtime URL POST /api/v1/scan/classify.
-   */
+  /** Axios base URL already ends with /api/v1. */
   SCAN_BATCHES_CLASSIFY: "/scan/classify",
   SCAN_EVENTS: "/scan/events",
   DOCUMENT_STATUS_HISTORY: "/document-status-history",
   INVENTORY_SNAPSHOTS: "/inventory-snapshots",
-  STOCKTAKE_SESSIONS: "/stocktake/sessions",
-  STOCKTAKE_SESSION: "/stocktake/sessions/:sessionId",
-  STOCKTAKE_CREATE_SESSION: "/stocktake/sessions",
-  STOCKTAKE_COUNT: "/stocktake/sessions/:sessionId/count",
-  STOCKTAKE_APPLY_ADJUSTMENT: "/stocktake/sessions/:sessionId/apply-adjustment",
+  // Exact BE v1.7 runtime routes use stocktake-sessions. The slash-form route
+  // is retained by BE only as a narrow compatibility alias for list/apply.
+  STOCKTAKE_SESSIONS: "/stocktake-sessions",
+  STOCKTAKE_SESSION: "/stocktake-sessions/:sessionId",
+  STOCKTAKE_CREATE_SESSION: "/stocktake-sessions",
+  STOCKTAKE_START: "/stocktake-sessions/:sessionId/start",
+  STOCKTAKE_COUNT: "/stocktake-sessions/:sessionId/counts",
+  STOCKTAKE_REVIEW: "/stocktake-sessions/:sessionId/review",
+  STOCKTAKE_ACKNOWLEDGE_MOVEMENTS:
+    "/stocktake-sessions/:sessionId/acknowledge-movements",
+  STOCKTAKE_VARIANCES: "/stocktake-sessions/:sessionId/variances",
+  STOCKTAKE_APPLY_ADJUSTMENT:
+    "/stocktake-sessions/:sessionId/apply-adjustment",
   REVERSAL_DOCUMENTS: "/reversal-documents",
   REVERSAL_DOCUMENT: "/reversal-documents/:id",
   REVERSAL_CREATE: "/reversal-documents",
@@ -111,5 +117,6 @@ export const API_ENDPOINTS = {
   WARRANTY_CASE: "/warranty/cases/:id",
   WARRANTY_CASE_EVENTS: "/warranty/cases/:caseId/events",
   WARRANTY_UPDATE_STATUS: "/warranty/cases/:id/status",
+  WARRANTY_TEMP_ONLY: "/warranty-cases/:id/temp-only",
   AUDIT_LOGS: "/audit-logs",
-};
+} as const;

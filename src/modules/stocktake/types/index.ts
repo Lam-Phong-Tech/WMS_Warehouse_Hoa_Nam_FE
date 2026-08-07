@@ -1,8 +1,9 @@
-/** Stocktake session status */
+/** Stocktake session status from the exact BE v1.7 runtime plus legacy UI aliases. */
 export type StocktakeSessionStatus =
   | "DRAFT"
   | "IN_PROGRESS"
   | "COUNTING"
+  | "REVIEWED"
   | "REVIEWING"
   | "COMPLETED"
   | "APPLIED"
@@ -12,7 +13,7 @@ export type StocktakeSessionStatus =
 export interface StocktakeSession {
   id: string;
   code: string;
-  warehouse_id: number;
+  warehouse_id: string | number;
   warehouse_name: string;
   status: StocktakeSessionStatus;
   total_sku: number;
@@ -24,6 +25,7 @@ export interface StocktakeSession {
   scope_type?: "FULL_WAREHOUSE" | "SKU" | "SKU_GROUP" | "LOCATION" | string;
   scope_label?: string;
   owner_name?: string;
+  /** Exact BE field is session_version. */
   version?: string;
   etag?: string;
   snapshot_at: string;
@@ -36,9 +38,9 @@ export interface StocktakeSession {
 
 export interface CreateStocktakeSessionRequest {
   name: string;
-  warehouse_id: number;
+  warehouse_id: string | number;
   scope_type: "FULL_WAREHOUSE" | "SKU" | "SKU_GROUP" | "LOCATION";
-  sku_codes?: string[];
+  sku_codes?: string[] | string;
   group_code?: string;
   location_code?: string;
   notes?: string;
@@ -58,6 +60,10 @@ export interface StocktakeSnapshot {
 export interface StocktakeCount {
   id: string;
   session_id: string;
+  grain_type?: "SKU" | "ITEM" | "CONTAINER";
+  grain_id?: string;
+  product_id?: string;
+  stock_status?: "AVAILABLE" | "DAMAGED" | "RESERVED" | string;
   sku: string;
   sku_name: string;
   expected_qty: number;
@@ -73,6 +79,12 @@ export interface StocktakeCount {
 }
 
 export interface StocktakeVariance {
+  variance_id: string;
+  status: "OPEN" | "APPROVED" | "REJECTED" | "APPLIED" | string;
+  grain_type?: "SKU" | "ITEM" | "CONTAINER" | string;
+  grain_id?: string;
+  product_id?: string;
+  stock_status?: string;
   sku: string;
   sku_name: string;
   expected_qty: number;
@@ -84,9 +96,14 @@ export interface StocktakeVariance {
   actual_qty: number;
   variance: number;
   variance_type: "SURPLUS" | "SHORTAGE" | "MATCH";
-  reconcile_status: "PENDING" | "APPROVED" | "REJECTED";
+  reconcile_status: "PENDING" | "APPROVED" | "REJECTED" | "APPLIED" | string;
 }
 
+/**
+ * UI compatibility request. Exact BE v1.7 does not accept the `lines` payload;
+ * service resolves the full APPROVED variance-id set immediately before apply,
+ * then sends session_version + variance_ids + reason.
+ */
 export interface ApplyAdjustmentRequest {
   session_id: string;
   lines: Array<{
@@ -96,16 +113,20 @@ export interface ApplyAdjustmentRequest {
   }>;
   idempotency_key: string;
   version: string;
+  reason?: string;
 }
 
 export interface ApplyAdjustmentResponse {
   session_id: string;
   adjusted_lines: number;
   total_variance: number;
-  status: "ADJUSTED" | "PARTIALLY_ADJUSTED" | "FAILED";
-  movement_ref: string;
+  status: "APPLIED" | "ADJUSTED" | "PARTIALLY_ADJUSTED" | "FAILED";
+  session_version?: number;
+  movement_ref?: string;
+  movement_ids?: string[];
   request_id: string;
   replayed?: boolean;
+  request_hash?: string;
   errors?: Array<{
     sku: string;
     error_code: string;

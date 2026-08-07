@@ -1,6 +1,7 @@
 export type WmsGateStatus =
   | "FE_COMPLETE"
   | "FE_COMPLETE_EXTERNAL_BLOCKER"
+  | "FE_CHANGES_REQUIRED_EXTERNAL_CONTRACT"
   | "EXTERNAL_BLOCKER";
 
 export interface WmsReviewGate {
@@ -15,20 +16,51 @@ export const WWHN_181_EXACT_REVIEW = {
   task: "WWHN-181",
   parentTask: "WWHN-40",
   contractTask: "WWHN-180",
-  contractVersion: "1.5.0",
-  exactBeSha: "54d5f4ff9cbaa678e16dcf322bd55836e177409a",
-  observedFeSha: "5cd10ec46021cecd24949075cb4eeefaa1fcc9b2",
-  reviewResult: "CONDITIONAL",
+  contractVersion: "1.7.0",
+  exactBeSha: "fc534ed8c00dadd91ce60e7bac5a8660dda74d08",
+  backendObservedFeBaselineSha:
+    "f6e137d01ed7afec5d30e8fecde6a2cc31bb7c8b",
+  remediationBaseFeSha: "aa185096211bc5bef7ec966097edfc106a5003b2",
+  backendReleaseManifestSha256:
+    "ba8bc5841b5865095e51d21064ead90ad4c37129ee28142a3f507b497ddcc776",
+  backendReleasePackSha256:
+    "a20b0d8d8a9145bceb2e797c51befa20d7da9e6439be512b39f72f3d8010cdb9",
+  backendRepositorySha256sumsSha256:
+    "0f4dcd23ceb84e39799fae5cb3f112932e6260a34ccff63b1ab7c623c839cb36",
+  reviewResult: "CHANGES_REQUIRED_BE_HANDOFF_DRIFT",
+  independentSourceFindings: [
+    {
+      id: "BE-HANDOFF-SCAN-CONTEXT-DRIFT",
+      focusedArtifact:
+        "docs/api-contract/WWHN-180-posting-openapi.yaml declares WARRANTY",
+      exactRuntime:
+        "Modules/Warehouse/app/Http/Controllers/ScanController.php validates WARRANTY_TEMP_ONLY",
+      disposition:
+        "FE stays on exact runtime WARRANTY_TEMP_ONLY and final sign-off remains blocked until WWHN-180 publishes one canonical source.",
+    },
+    {
+      id: "BE-HANDOFF-WARRANTY-BODY-DRIFT",
+      focusedArtifact:
+        "WWHN-180 focused artifact omits the TEMP_ONLY request body",
+      exactRuntime:
+        "WarrantyController requires temporary_item_code, missing_code_reason and condition_status plus Idempotency-Key",
+      disposition:
+        "Do not infer a replacement contract in FE; require WWHN-180 independent approval/correction.",
+    },
+  ],
   reviewScope: [
-    "scan-classify",
+    "scan-classify-and-line-scan",
     "post-receipt",
     "post-issue",
-    "apply-adjustment",
+    "stocktake-apply-adjustment",
     "permission-alias-boundary",
-    "idempotency-and-optimistic-locking",
+    "idempotency",
+    "cas-session-version",
+    "response-meta-request-id",
   ],
-  manifestPath: "docs/evidence/WWHN-181/exact-sha-manifest.json",
-  runtimeEvidencePath: "docs/evidence/WWHN-181/RUNTIME_EVIDENCE_CHECKLIST.md",
+  manifestPath: "docs/evidence/WWHN-181/generated/<FE_SHA>/manifest.json",
+  runtimeEvidencePath:
+    "docs/evidence/WWHN-181/RUNTIME_EVIDENCE_CHECKLIST.md",
 } as const;
 
 export const WMS_CONTRACT_BASELINE = {
@@ -43,12 +75,13 @@ export const WMS_CONTRACT_BASELINE = {
     jira: "WWHN-180",
     version: WWHN_181_EXACT_REVIEW.contractVersion,
     exactBeSha: WWHN_181_EXACT_REVIEW.exactBeSha,
-    status: "READY_FOR_FE_REVIEW_PENDING_INDEPENDENT_GATES",
+    status: "PENDING_INDEPENDENT_APPROVAL_AND_HANDOFF_DRIFT_RESOLUTION",
   },
   scanClassify: {
     method: "POST",
     relativePath: "/scan/classify",
     runtimePath: "/api/v1/scan/classify",
+    runtimeWarrantyContext: "WARRANTY_TEMP_ONLY",
   },
 } as const;
 
@@ -59,39 +92,23 @@ export const WMS_REVIEW_GATES: readonly WmsReviewGate[] = [
     owner: "FE1 + BA + QA2",
     status: "FE_COMPLETE_EXTERNAL_BLOCKER",
     requiredEvidence:
-      "WWHN-180 PASS, WWHN-182 QA2 PASS and WWHN-183 BA decision on the same exact FE/BE build pair",
+      "WWHN-180 PASS, WWHN-182 QA2 PASS and WWHN-183 GO on the same exact FE SHA, BE SHA and manifest digest",
   },
   {
-    id: "WWHN-181-P0-CONTRACT-V1.5.0",
+    id: "WWHN-181-P0-CONTRACT-V1.7.0",
     severity: "P0",
-    owner: "FE1 + BE1",
-    status: "FE_COMPLETE_EXTERNAL_BLOCKER",
+    owner: "BE1 + BA + FE1 independent reviewer",
+    status: "FE_CHANGES_REQUIRED_EXTERNAL_CONTRACT",
     requiredEvidence:
-      "Independent FE review of BE 54d5f4ff9cbaa678e16dcf322bd55836e177409a with immutable CI manifest",
-  },
-  {
-    id: "WWHN-181-P0-OFFICIAL-CONTRACT",
-    severity: "P0",
-    owner: "BE1 + BE2 + independent reviewer",
-    status: "EXTERNAL_BLOCKER",
-    requiredEvidence:
-      "WWHN-31 official OpenAPI/schema artifact with version, SHA256, changelog and independent confirmation",
+      "Resolve the two exact-source handoff drifts, then independently approve OpenAPI/schema/artifact/digest/changelog on BE fc534ed8c00dadd91ce60e7bac5a8660dda74d08 or a formally superseding exact SHA",
   },
   {
     id: "WWHN-181-P1-CI-MANIFEST",
     severity: "P1",
     owner: "FE1 + BE1 + DevOps",
-    status: "FE_COMPLETE",
+    status: "FE_COMPLETE_EXTERNAL_BLOCKER",
     requiredEvidence:
-      "CI URL, artifact name and SHA256 manifest generated from the exact workflow commit",
-  },
-  {
-    id: "WWHN-181-P1-SCHEMA-REVIEW",
-    severity: "P1",
-    owner: "BE2 + QA1",
-    status: "EXTERNAL_BLOCKER",
-    requiredEvidence:
-      "WWHN-150/151/152 schema, API module and QA1 constraint review on the exact official contract hash",
+      "Exact closure SHA workflow PASS with artifact URL/name/digest and SHA256SUMS verification; current GitHub Actions runner provisioning is blocked by WWHN-337",
   },
   {
     id: "WWHN-181-P1-QA2-RUNTIME",
@@ -99,7 +116,7 @@ export const WMS_REVIEW_GATES: readonly WmsReviewGate[] = [
     owner: "QA2",
     status: "EXTERNAL_BLOCKER",
     requiredEvidence:
-      "Happy/negative/RBAC/idempotency/retry/DB/reconcile evidence on exact SHA/build/env",
+      "WWHN-182 happy/negative/RBAC/idempotency replay+conflict/race/DB before-after/reconcile evidence on exact SHA/build/env",
   },
   {
     id: "WWHN-181-P1-BA-G1",
@@ -107,15 +124,15 @@ export const WMS_REVIEW_GATES: readonly WmsReviewGate[] = [
     owner: "BA",
     status: "EXTERNAL_BLOCKER",
     requiredEvidence:
-      "GO, CONDITIONAL_GO or NO_GO with P0/P1 open count, conditions, owner and evidence URL",
+      "WWHN-183 GO/CONDITIONAL_GO/NO_GO with P0/P1 counts, conditions, owner and evidence URL on the same identity",
   },
   {
     id: "WWHN-181-P1-BE-AUTHORIZATION",
     severity: "P1",
-    owner: "BE/RBAC + QA",
+    owner: "BE/RBAC + QA2",
     status: "EXTERNAL_BLOCKER",
     requiredEvidence:
-      "Direct API 403, data-scope denial and runtime permission catalog; FE guards are UX only",
+      "Direct API 403, warehouse data-scope denial and runtime permission catalog. FE guard remains defense-in-depth only.",
   },
   {
     id: "WWHN-181-P2-RUNTIME-UI",
@@ -123,69 +140,59 @@ export const WMS_REVIEW_GATES: readonly WmsReviewGate[] = [
     owner: "FE1 + QA2",
     status: "FE_COMPLETE_EXTERNAL_BLOCKER",
     requiredEvidence:
-      "Responsive screenshots/video and real API errors with role/env/build/request_id and sanitized HAR",
+      "Live non-mocked responsive screenshots plus at least one real API error carrying request_id and sanitized HAR metadata on exact env/build/SHA",
   },
 ] as const;
 
 export const WMS_FE_IMPLEMENTATION_READINESS = {
   task: "WWHN-181",
-  status: "FE_OWNED_REMEDIATIONS_COMPLETE_PENDING_INDEPENDENT_GATES",
+  status: "FE_CRITICAL_RUNTIME_REMEDIATIONS_COMPLETE_EXTERNAL_GATES_BLOCKED",
   automatedGuardCoverage: "P0_P1_P2_FE_SCOPE",
   traceabilityRule:
-    "WWHN-153 proves implementation guards; WWHN-181 proves exact-contract review and sign-off gating. Evidence is never interchangeable.",
+    "Source review, CI artifact, direct runtime evidence, UI evidence and independent Jira decisions must share one exact identity; none is interchangeable with another.",
   controls: [
-    "CANONICAL-SCAN-PATH",
+    "CANONICAL-SCAN-CLASSIFY-THEN-LINE-SCAN",
     "ACTION-PERMISSION-GUARDS",
     "BACKEND-AUTHORITY-DISCLAIMER",
     "STOCK-CHANGING-IDEMPOTENCY",
-    "OPTIMISTIC-LOCKING",
+    "STOCKTAKE-CAS-IN-SESSION-VERSION-BODY",
+    "PRESERVE-RESPONSE-META-REQUEST-ID",
+    "WHOLE-DOCUMENT-POSTING-PREFLIGHT",
     "FAIL-CLOSED-FINAL-SIGNOFF",
     "EXACT-SHA-CI-MANIFEST",
-    "TASK-SCOPED-EVIDENCE",
+    "LIVE-NON-MOCKED-UI-EVIDENCE",
   ],
 } as const;
 
 export const WMS_EXTERNAL_GATE_LIST = [
-  { id: "WWHN-31", status: "pending_official_contract_approval" },
-  { id: "WWHN-150", status: "pending_schema_package" },
-  { id: "WWHN-151", status: "pending_api_module_handoff" },
-  { id: "WWHN-152", status: "pending_qa1_constraint_review" },
-  { id: "WWHN-180", status: "pending_pass_on_exact_contract" },
+  {
+    id: "WWHN-180",
+    status: "pending_independent_pass_and_handoff_drift_resolution",
+  },
   { id: "WWHN-182", status: "pending_qa2_execution" },
   { id: "WWHN-183", status: "pending_ba_g1_decision" },
 ] as const;
 
 export const WMS_EXTERNAL_GATES = {
-  officialContract: {
-    id: "WWHN-31",
-    status: "PENDING_OFFICIAL_CONTRACT_APPROVAL",
-    required:
-      "Versioned OpenAPI/schema, changelog, exact SHA256 and independent reviewer evidence.",
-  },
-  schemaReview: {
-    ids: ["WWHN-150", "WWHN-151", "WWHN-152"],
-    status: "PENDING_SCHEMA_AND_QA1_REVIEW",
-    required:
-      "BE2 schema/API module handoff and QA1 constraints/error/testability review on the same contract hash.",
-  },
   beContract: {
     id: "WWHN-180",
     token: "BE-CONFIRMATION-EVIDENCE",
-    status: "PENDING_PASS_ON_EXACT_SHA",
-    required: `Contract v1.5.0 at ${WWHN_181_EXACT_REVIEW.exactBeSha}.`,
+    status: "CHANGES_REQUIRED_BE_HANDOFF_DRIFT",
+    required: `Contract v1.7.0 at ${WWHN_181_EXACT_REVIEW.exactBeSha}, immutable manifest ${WWHN_181_EXACT_REVIEW.backendReleaseManifestSha256}, independently approved after focused-artifact/runtime reconciliation.`,
   },
   qa2: {
     id: "WWHN-182",
     token: "QA-BA-GATES",
     status: "PENDING_QA2_EXECUTION",
     required:
-      "Named-build happy/negative/RBAC/idempotency/retry/DB/reconcile evidence.",
+      "Named-build happy/negative/RBAC/idempotency/retry/race/DB/reconcile evidence.",
   },
   baDecision: {
     id: "WWHN-183",
     token: "QA-BA-GATES",
     status: "PENDING_BA_G1_DECISION",
-    required: "BA GO, CONDITIONAL_GO or NO_GO minutes.",
+    required:
+      "BA GO/CONDITIONAL_GO/NO_GO bound to the exact FE SHA, BE SHA and manifest digest.",
   },
 } as const;
 
@@ -205,15 +212,17 @@ export const WMS_FINAL_SIGNOFF = {
   id: "FE-FINAL-SIGNOFF",
   task: "WWHN-181",
   finalAllowed: false,
-  status: "CONDITIONAL_PASS_NOT_FINAL",
+  status: "BLOCKED_FAIL_CLOSED",
   reason:
-    "Final is fail-closed until WWHN-31, WWHN-150/151/152, WWHN-180, WWHN-182 and WWHN-183 independently pass on the same exact FE/BE build pair.",
-  dependentTasks:
-    "WWHN-31/WWHN-150/WWHN-151/WWHN-152/WWHN-180/WWHN-182/WWHN-183",
+    "Final is fail-closed until WWHN-180 PASS, WWHN-182 QA2 PASS, WWHN-183 GO, exact-SHA CI/SHA256SUMS PASS and live UI evidence PASS all share the same FE SHA, BE SHA and manifest digest.",
+  dependentTasks: "WWHN-180/WWHN-182/WWHN-183",
+  evaluator: "npm run wwhn-181:final -- <FINAL_GATE_EVIDENCE.json>",
 } as const;
 
 export function assertFinalSignoffAllowed(): void {
   if (!WMS_FINAL_SIGNOFF.finalAllowed) {
-    throw new Error(`FE-FINAL-SIGNOFF blocked: ${WMS_FINAL_SIGNOFF.reason}`);
+    throw new Error(
+      `FE-FINAL-SIGNOFF blocked: ${WMS_FINAL_SIGNOFF.reason}`,
+    );
   }
 }
