@@ -54,7 +54,7 @@
       "acceptedHttp": [200],
       "expectedErrors": [401, 403, 404, 409, 422],
       "feDisposition": "IMPLEMENTED_EXACT_WWHN_150_1_1_0_FAIL_CLOSED",
-      "officialSignoff": "PENDING_BE2_QA1"
+      "officialSignoff": "PENDING_BE_BA_QA"
     },
     {
       "id": "POST_RECEIPT",
@@ -230,12 +230,21 @@
   "reviewedContract": {
     "sourceTask": "WWHN-150",
     "beRepository": "Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_BE",
-    "beSha": "25eae1594f5384a936e7f45e74042905a5ec8300",
+    "beSha": "25eae830973f07a4dd0ce9725877f0f75ad907fd",
     "workflowRunId": "31071690282",
-    "artifactName": "wwhn-150-contract-evidence-25eae1594f5384a936e7f45e74042905a5ec8300",
-    "artifactDigestSha256": "3620d63cabd2156a76c075a76e98b5a733b17f260773bf1205954c564ba000e3",
-    "openapiSha256": "4e47fe127f9219a69b63878286b60666f2512e6e3865f3185756ccc60dbb2eff",
-    "postmanCollectionSha256": "91dfe8e19d1d84b5e78e113679b7a26ec3baf531188bf0ba90021514709568dc",
+    "artifactId": "8955879802",
+    "artifactName": "wwhn-150-evidence-25eae830973f07a4dd0ce9725877f0f75ad907fd",
+    "artifactDigestSha256": "3620d63cabd1151377ae877931a9b5305dac88847949c2a0dd66ec4950f9753d",
+    "generatedOpenapiJsonSha256": "8af6d61779709e2508360103d7094d18a8d25f01dac14cd2029ee0a3ef1d4b07",
+    "generatedOpenapiYamlSha256": "8b169be07b9848464d8882dc5882f7bb74e3f72ca8702805f805f4fc44b42209",
+    "focusedOpenapiSha256": "3d01d8750f19f2e8a4a9c7aaafda0ee51615fb6b300771e9cc8ac5bbef982a08",
+    "postmanCollectionSha256": "b78d920c770966319b763074b8077aca3fb4f968c0a7bdcb512e62440aaf2846",
+    "postmanEnvironmentSha256": "037672a9b6e267c261d5ff53d064a94be656c843044973deec3ba5c0ca06e136",
+    "permissionCatalogSha256": "4c8b82486e2545d7a493b34e68bccde9748fe02f0f9690f5847035c36d16f215",
+    "endpointPermissionRoleMatrixSha256": "2dab7d36cd2f831206c9e0920aebccf1487a0809460569e8f62c1408e654d7b6",
+    "contractVersion": "1.1.0",
+    "documentVersion": "1.2.0",
+    "approvalStatus": "PENDING_INDEPENDENT_SIGN_OFF",
     "status": "FE_EXACT_CONTRACT_REVIEW_COMPLETE_PENDING_BE2_QA1"
   }
 }
