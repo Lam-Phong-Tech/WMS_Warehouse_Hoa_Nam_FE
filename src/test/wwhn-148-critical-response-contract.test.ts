@@ -12,7 +12,9 @@ vi.mock("@/shared/store/auth.store", () => ({
 
 vi.mock("@/shared/api/http", () => ({
   http: {
+    get: vi.fn(),
     post: vi.fn(),
+    postWithMeta: vi.fn(),
   },
 }));
 
@@ -22,9 +24,38 @@ import { postOutboundIssue } from "@/modules/shipping/services/shippingService";
 import { applyStocktakeAdjustment } from "@/modules/stocktake/services/stocktakeService";
 import { WMS_PERMISSION_CATALOG as P } from "@/shared/constants/wms-permissions";
 
+const fullyScannedDocument = (lineId: string) => ({
+  lines: [
+    {
+      id: lineId,
+      product_id: "SKU-1",
+      qty_planned: 1,
+      scanned_qty: 1,
+    },
+  ],
+});
+
+const approvedVariance = (varianceId: string) => ({
+  variance_id: varianceId,
+  status: "APPROVED",
+  snapshot_qty: 1,
+  expected_at_count: 1,
+  actual_qty: 1,
+  variance: 0,
+});
+
+function mockMutationPreReads(): void {
+  vi.mocked(http.get)
+    .mockResolvedValueOnce(fullyScannedDocument("IN-L1"))
+    .mockResolvedValueOnce(fullyScannedDocument("OUT-L1"))
+    .mockResolvedValueOnce([approvedVariance("VAR-1")]);
+}
+
 describe("WWHN-148 critical response normalization boundary", () => {
   beforeEach(() => {
+    vi.mocked(http.get).mockReset();
     vi.mocked(http.post).mockReset();
+    vi.mocked(http.postWithMeta).mockReset();
     authMocks.getState.mockReturnValue({
       isSuperAdmin: false,
       permissionCodes: [P.INBOUND_POST, P.OUTBOUND_POST, P.STOCKTAKE_ADJUST],
@@ -32,24 +63,31 @@ describe("WWHN-148 critical response normalization boundary", () => {
   });
 
   it("accepts canonical snake_case success evidence", async () => {
-    vi.mocked(http.post)
+    mockMutationPreReads();
+    vi.mocked(http.postWithMeta)
       .mockResolvedValueOnce({
-        receipt_id: "REC-1",
-        movement_ref: "MOV-IN-1",
-        request_id: "REQ-IN-1",
+        data: {
+          stock_document_id: "REC-1",
+          movements: [{ stock_movement_id: "MOV-IN-1" }],
+        },
+        meta: { request_id: "REQ-IN-1" },
       })
       .mockResolvedValueOnce({
-        issue_id: "ISS-1",
-        movement_ref: "MOV-OUT-1",
-        request_id: "REQ-OUT-1",
+        data: {
+          stock_document_id: "ISS-1",
+          movements: [{ stock_movement_id: "MOV-OUT-1" }],
+        },
+        meta: { request_id: "REQ-OUT-1" },
       })
       .mockResolvedValueOnce({
-        session_id: "ST-1",
-        status: "ADJUSTED",
-        adjusted_lines: 1,
-        total_variance: 0,
-        movement_ref: "MOV-ADJ-1",
-        request_id: "REQ-ADJ-1",
+        data: {
+          session_id: "ST-1",
+          status: "APPLIED",
+          variance_count: 1,
+          session_version: 2,
+          movement_ids: ["MOV-ADJ-1"],
+        },
+        meta: { request_id: "REQ-ADJ-1" },
       });
 
     await expect(
@@ -89,28 +127,39 @@ describe("WWHN-148 critical response normalization boundary", () => {
       session_id: "ST-1",
       movement_ref: "MOV-ADJ-1",
       request_id: "REQ-ADJ-1",
+      status: "APPLIED",
     });
   });
 
   it("accepts only the documented temporary alias whitelist", async () => {
-    vi.mocked(http.post)
+    mockMutationPreReads();
+    vi.mocked(http.postWithMeta)
       .mockResolvedValueOnce({
-        receiptId: "REC-ALIAS",
-        movementRef: "MOV-IN-ALIAS",
-        requestId: "REQ-IN-ALIAS",
+        data: {
+          id: "REC-ALIAS",
+          movements: [{ movement_id: "MOV-IN-ALIAS" }],
+          request_id: "REQ-IN-ALIAS",
+        },
+        meta: {},
       })
       .mockResolvedValueOnce({
-        issueId: "ISS-ALIAS",
-        movementRef: "MOV-OUT-ALIAS",
-        requestId: "REQ-OUT-ALIAS",
+        data: {
+          id: "ISS-ALIAS",
+          movements: [{ movement_id: "MOV-OUT-ALIAS" }],
+          request_id: "REQ-OUT-ALIAS",
+        },
+        meta: {},
       })
       .mockResolvedValueOnce({
-        sessionId: "ST-ALIAS",
-        status: "ADJUSTED",
-        adjustedLines: 1,
-        totalVariance: 0,
-        movementRef: "MOV-ADJ-ALIAS",
-        requestId: "REQ-ADJ-ALIAS",
+        data: {
+          sessionId: "ST-ALIAS",
+          status: "APPLIED",
+          variance_count: 1,
+          session_version: 2,
+          movement_ids: ["MOV-ADJ-ALIAS"],
+          requestId: "REQ-ADJ-ALIAS",
+        },
+        meta: {},
       });
 
     await expect(
@@ -142,10 +191,14 @@ describe("WWHN-148 critical response normalization boundary", () => {
   });
 
   it("rejects undocumented receipt aliases", async () => {
-    vi.mocked(http.post).mockResolvedValue({
-      receiptNumber: "REC-UNKNOWN",
-      movement: "MOV-UNKNOWN",
-      request: "REQ-UNKNOWN",
+    vi.mocked(http.get).mockResolvedValueOnce(fullyScannedDocument("IN-L1"));
+    vi.mocked(http.postWithMeta).mockResolvedValueOnce({
+      data: {
+        receiptNumber: "REC-UNKNOWN",
+        movement: "MOV-UNKNOWN",
+        request: "REQ-UNKNOWN",
+      },
+      meta: {},
     });
 
     await expect(
@@ -159,10 +212,14 @@ describe("WWHN-148 critical response normalization boundary", () => {
   });
 
   it("rejects undocumented issue aliases", async () => {
-    vi.mocked(http.post).mockResolvedValue({
-      issueNumber: "ISS-UNKNOWN",
-      movement: "MOV-UNKNOWN",
-      request: "REQ-UNKNOWN",
+    vi.mocked(http.get).mockResolvedValueOnce(fullyScannedDocument("OUT-L1"));
+    vi.mocked(http.postWithMeta).mockResolvedValueOnce({
+      data: {
+        issueNumber: "ISS-UNKNOWN",
+        movement: "MOV-UNKNOWN",
+        request: "REQ-UNKNOWN",
+      },
+      meta: {},
     });
 
     await expect(
@@ -176,11 +233,15 @@ describe("WWHN-148 critical response normalization boundary", () => {
   });
 
   it("rejects undocumented adjustment aliases", async () => {
-    vi.mocked(http.post).mockResolvedValue({
-      session: "ST-UNKNOWN",
-      status: "ADJUSTED",
-      movement: "MOV-UNKNOWN",
-      request: "REQ-UNKNOWN",
+    vi.mocked(http.get).mockResolvedValueOnce([approvedVariance("VAR-UNKNOWN")]);
+    vi.mocked(http.postWithMeta).mockResolvedValueOnce({
+      data: {
+        session: "ST-UNKNOWN",
+        status: "APPLIED",
+        movement_ids: ["MOV-UNKNOWN"],
+        request_id: "REQ-UNKNOWN",
+      },
+      meta: {},
     });
 
     await expect(

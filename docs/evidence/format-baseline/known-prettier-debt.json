@@ -1,20 +1,17 @@
 {
   "schemaVersion": "1.0.0",
-  "capturedFromSourceSha": "5cd10ec46021cecd24949075cb4eeefaa1fcc9b2",
-  "capturedFromCiRun": 30875821616,
-  "policy": "Read-only gate: no new Prettier drift is allowed. A listed file is tolerated only while its Git blob still starts with the captured prefix. Cleaning a listed file is allowed without changing this baseline.",
-  "owner": "FE1",
-  "cleanupTask": "WWHN-153-P2-FORMAT-DEBT",
-  "knownDebt": [
-    { "path": "src/app/router/ProtectedRoute.tsx", "blobPrefix": "32fe827" },
-    { "path": "src/modules/auth/services/auth.service.ts", "blobPrefix": "57a6c08" },
-    { "path": "src/modules/master-data/hooks/use-master-data.ts", "blobPrefix": "babcd1f" },
-    { "path": "src/modules/master-data/pages/MasterPage.tsx", "blobPrefix": "6bbaa87" },
-    { "path": "src/modules/master-data/services/master-data.service.test.ts", "blobPrefix": "99be3b7" },
-    { "path": "src/modules/master-data/services/master-data.service.ts", "blobPrefix": "74fb3f9" },
-    { "path": "src/modules/master-data/services/warehouse.service.ts", "blobPrefix": "9301d9c" },
-    { "path": "src/modules/putaway/pages/PutawayPage.tsx", "blobPrefix": "c3cb934" },
-    { "path": "src/modules/putaway/services/putawayService.ts", "blobPrefix": "755833f" },
-    { "path": "src/test/auth-security-rbac-audit.test.ts", "blobPrefix": "bc0244c" }
-  ]
+  "generatedAt": "2026-08-09T13:12:00.000Z",
+  "policy": "No new Prettier debt. Existing entries are grandfathered by exact Git blob SHA and must be removed after formatting cleanup.",
+  "files": {
+    "src/app/router/ProtectedRoute.tsx": "96ad7c1a0784daab081d1a3477997e31b06b6c88",
+    "src/app/router/index.tsx": "838d4d3de11782430abf380a37f33d94121daef4",
+    "src/modules/auth/hooks/use-change-password.ts": "547c58725b87ed227893a57588ddaae6cf4c06d2",
+    "src/modules/auth/hooks/use-login.test.tsx": "fd0c5ec5b11aaa000b35c49766db88e20d8fdca8",
+    "src/modules/auth/hooks/use-login.ts": "416d2805c3c4cc8eafa696cbe2178ee687aba85a",
+    "src/modules/auth/pages/LoginPage.tsx": "f746168ce5b8d1224ac993d050c196d21e770cf2",
+    "src/modules/auth/schemas/login.schema.ts": "d23cfec7202aade504060178a98a8627936ccffe",
+    "src/modules/auth/services/auth.service.test.ts": "4bee0249ac6d56e72d1fece3d2ae0418e39b1055",
+    "src/modules/auth/services/auth.service.ts": "9f486c557fe7601c41d0deb1635a2d3881c27887",
+    "src/modules/auth/types/auth.types.ts": "b3d7ba1edfbbe322efe806a81554719cdf95c00a"
+  }
 }
