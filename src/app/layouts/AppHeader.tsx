@@ -48,10 +48,25 @@ export function AppHeader({ isMobile, collapsed, onToggle }: Props) {
           onClick={onToggle}
           style={layoutStyles.headerToggleButton}
         />
-        <div className="hn-app-heading" aria-label="Hoa Nam Tools WMS">
-          <strong>Hoa Nam Tools</strong>
-          <span>WMS · Quản lý kho</span>
-        </div>
+        {!isMobile && (
+          <div
+            aria-label="Hoa Nam Tools WMS"
+            style={{
+              display: "flex",
+              alignItems: "baseline",
+              gap: 6,
+              whiteSpace: "nowrap",
+              lineHeight: 1.2,
+            }}
+          >
+            <strong style={{ color: "#2b2b2b", fontSize: 15, fontWeight: 800 }}>
+              Hoa Nam Tools
+            </strong>
+            <span style={{ color: "#7a766c", fontSize: 12.5, fontWeight: 600 }}>
+              WMS · Quản lý kho
+            </span>
+          </div>
+        )}
       </Space>
 
       <Space size="middle" wrap={false}>
