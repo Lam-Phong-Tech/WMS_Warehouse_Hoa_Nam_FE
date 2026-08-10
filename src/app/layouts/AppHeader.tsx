@@ -16,7 +16,7 @@ interface Props {
   onToggle: () => void;
 }
 
-/** Admin header: sidebar toggle, context switcher, notification placeholder and user menu. */
+/** Header vận hành dùng cùng typography/palette với wireframe Hoa Nam WMS. */
 export function AppHeader({ isMobile, collapsed, onToggle }: Props) {
   const {
     token: { colorBorderSecondary },
@@ -31,22 +31,28 @@ export function AppHeader({ isMobile, collapsed, onToggle }: Props) {
         borderBottom: `1px solid ${colorBorderSecondary}`,
       }}
     >
-      <Button
-        data-testid="navigation-toggle"
-        type="text"
-        aria-label={
-          isMobile
-            ? drawerAriaLabel
-            : collapsed
-              ? "Mở rộng menu điều hướng"
-              : "Thu gọn menu điều hướng"
-        }
-        icon={
-          isMobile || collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />
-        }
-        onClick={onToggle}
-        style={layoutStyles.headerToggleButton}
-      />
+      <Space size={10} wrap={false}>
+        <Button
+          data-testid="navigation-toggle"
+          type="text"
+          aria-label={
+            isMobile
+              ? drawerAriaLabel
+              : collapsed
+                ? "Mở rộng menu điều hướng"
+                : "Thu gọn menu điều hướng"
+          }
+          icon={
+            isMobile || collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />
+          }
+          onClick={onToggle}
+          style={layoutStyles.headerToggleButton}
+        />
+        <div className="hn-app-heading" aria-label="Hoa Nam Tools WMS">
+          <strong>Hoa Nam Tools</strong>
+          <span>WMS · Quản lý kho</span>
+        </div>
+      </Space>
 
       <Space size="middle" wrap={false}>
         <ContextSwitcher />
