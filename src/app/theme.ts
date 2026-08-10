@@ -2,31 +2,39 @@ import type { SizeType } from "antd/es/config-provider/SizeContext";
 import type { ThemeConfig } from "antd";
 
 /**
- * Màu thương hiệu dùng chung toàn app (đồng bộ với theme antd).
- * P2: gom cả các giá trị trước đây hardcode rải rác trong layout (header
- * background/blur khi sticky) vào đây — khi cần đổi brand/theme (vd dark
- * mode, whitelabel) chỉ sửa 1 chỗ thay vì lục từng component.
+ * Design tokens đồng bộ với BA_HOA_NAM/WMS_HoaNam_Wireframe_P0.html.
+ * Wireframe dùng low-fi desktop/tablet: canvas be, paper trắng, viền rõ,
+ * accent xanh và Be Vietnam Pro.
  */
 export const BRAND = {
-  primary: "#7c3aed",
-  primaryHover: "#6d28d9",
-  siderBg: "#1f1d2b",
-  siderTrigger: "#161320",
-  gradient: "linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)",
-  /** Nền Header khi sticky — hơi trong suốt để thấy nội dung cuộn phía sau. */
-  headerBg: "rgba(255, 255, 255, 0.95)",
+  primary: "#356fa3",
+  primaryHover: "#2d638f",
+  canvas: "#e7e5df",
+  paper: "#ffffff",
+  paperAlt: "#fcfbf8",
+  ink: "#2b2b2b",
+  inkSecondary: "#4a463e",
+  muted: "#7a766c",
+  border: "#b9b6ad",
+  divider: "#d8d5cc",
+  tableHead: "#f3f1ea",
+  accentBg: "#eaf1f8",
+  accentBorder: "#bcd2e6",
+  siderBg: "#2b2b2b",
+  siderTrigger: "#232323",
+  gradient: "linear-gradient(135deg, #356fa3 0%, #2d638f 100%)",
+  headerBg: "rgba(252, 251, 248, 0.97)",
   headerBlur: "blur(8px)",
 };
 
-/** Token thiết kế dùng chung — spacing, radius, typography, table density. */
 export const DESIGN_TOKENS = {
-  spacing: { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 },
-  radius: { sm: 4, md: 8, lg: 12 },
+  spacing: { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 32 },
+  radius: { sm: 3, md: 4, lg: 4 },
   table: { size: "middle" as SizeType },
   typography: {
-    pageTitle: { fontSize: 20, fontWeight: 700, lineHeight: 1.3 },
-    sectionTitle: { fontSize: 16, fontWeight: 600 },
-    body: { fontSize: 14, lineHeight: 1.5 },
+    pageTitle: { fontSize: 25, fontWeight: 800, lineHeight: 1.12 },
+    sectionTitle: { fontSize: 17, fontWeight: 800 },
+    body: { fontSize: 14, lineHeight: 1.38 },
     caption: { fontSize: 12 },
   },
 } as const;
@@ -35,39 +43,47 @@ export const themeConfig: ThemeConfig = {
   token: {
     colorPrimary: BRAND.primary,
     colorLink: BRAND.primary,
-    borderRadius: 8,
+    colorBgLayout: BRAND.canvas,
+    colorBgContainer: BRAND.paper,
+    colorText: BRAND.ink,
+    colorTextSecondary: BRAND.muted,
+    colorBorder: BRAND.border,
+    colorBorderSecondary: BRAND.divider,
+    borderRadius: 3,
+    controlHeight: 36,
+    fontSize: 14,
+    lineHeight: 1.38,
     fontFamily:
-      "'Inter', system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
-    colorBgLayout: "#f4f5fa",
+      "'Be Vietnam Pro', system-ui, -apple-system, 'Segoe UI', sans-serif",
   },
   components: {
     Layout: {
-      headerBg: "#ffffff",
-      headerHeight: 64,
-      headerPadding: "0 24px",
+      headerBg: BRAND.paperAlt,
+      headerHeight: 60,
+      headerPadding: "0 16px",
       siderBg: BRAND.siderBg,
       triggerBg: BRAND.siderTrigger,
-      bodyBg: "#f4f5fa",
+      bodyBg: BRAND.canvas,
     },
     Menu: {
       darkItemBg: BRAND.siderBg,
       darkSubMenuItemBg: BRAND.siderBg,
       darkItemSelectedBg: BRAND.primary,
-      itemBorderRadius: 8,
-      itemMarginInline: 12,
+      itemBorderRadius: 3,
+      itemMarginInline: 8,
     },
     Card: {
-      borderRadiusLG: 12,
+      borderRadiusLG: 4,
     },
     Button: {
-      controlHeight: 40,
-      fontWeight: 500,
+      controlHeight: 36,
+      fontWeight: 700,
     },
     Input: {
-      controlHeight: 40,
+      controlHeight: 36,
     },
     Select: {
-      controlHeight: 40,
+      controlHeight: 36,
     },
   },
 };
