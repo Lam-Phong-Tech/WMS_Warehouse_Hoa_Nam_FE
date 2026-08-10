@@ -60,12 +60,22 @@ export function ContextSwitcher() {
         if (key === currentKey) return;
         switchContext.mutate(
           {
-            context_type: ctx.context_type ?? (ctx.scope_ref ? "WAREHOUSE" : "SYSTEM"),
+            context_type:
+              ctx.context_type ?? (ctx.scope_ref ? "WAREHOUSE" : "SYSTEM"),
             context_id: ctx.context_id ?? ctx.scope_ref ?? null,
             scope_ref: ctx.scope_ref ?? null,
           },
           {
-            onSuccess: () => setCurrentContext(ctx),
+            onSuccess: (result) => {
+              const confirmed = contexts.find((candidate) => {
+                const active = result.active_context;
+                if (active.scope_ref) return candidate.scope_ref === active.scope_ref;
+                if (active.context_id)
+                  return candidate.context_id === active.context_id;
+                return !candidate.scope_ref && !candidate.context_id;
+              });
+              setCurrentContext(confirmed ?? ctx);
+            },
             onError: () => {
               toast.error("Không thể chuyển phạm vi kho, vui lòng thử lại.");
             },
