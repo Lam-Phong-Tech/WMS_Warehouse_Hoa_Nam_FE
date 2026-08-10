@@ -109,6 +109,10 @@ export const API_ENDPOINTS = {
   STOCKTAKE_VARIANCES: "/stocktake-sessions/:sessionId/variances",
   STOCKTAKE_APPLY_ADJUSTMENT:
     "/stocktake-sessions/:sessionId/apply-adjustment",
+  // M1 evidence also tracks BE's narrow slash-form compatibility alias.
+  // Runtime code stays pinned to STOCKTAKE_APPLY_ADJUSTMENT above.
+  STOCKTAKE_APPLY_ADJUSTMENT_COMPAT:
+    "/stocktake/sessions/:sessionId/apply-adjustment",
   REVERSAL_DOCUMENTS: "/reversal-documents",
   REVERSAL_DOCUMENT: "/reversal-documents/:id",
   REVERSAL_CREATE: "/reversal-documents",

@@ -77,6 +77,20 @@ function requireFalse(value: unknown, field: string): false {
   return false;
 }
 
+function requireKnownCode<T extends string>(
+  value: string,
+  allowed: Set<T>,
+  field: string,
+): T {
+  if (!allowed.has(value as T)) {
+    throw new WmsContractError(
+      "WMS_FE_INVALID_SCAN_RESPONSE",
+      `Scan classify response contains unexpected code(s) for ${field}: ${value || "empty"}`,
+    );
+  }
+  return value as T;
+}
+
 function nullableUuid(value: unknown, field: string): string | null {
   if (value === null || value === undefined) return null;
   return requireUuid(value, field, "WMS_FE_INVALID_SCAN_RESPONSE");
@@ -131,31 +145,28 @@ function normalizeClassifyResponse(
     );
   }
 
-  const context = text(row.context).toUpperCase() as ScanContext;
-  if (!SCAN_CONTEXTS.has(context) || context !== request.context) {
+  const context = requireKnownCode(
+    text(row.context).toUpperCase(),
+    SCAN_CONTEXTS,
+    "context",
+  );
+  if (context !== request.context) {
     throw new WmsContractError(
       "WMS_FE_INVALID_SCAN_RESPONSE",
-      "Scan classify response context is invalid or mismatched",
+      "Scan classify response context does not match the request",
     );
   }
 
-  const classification = text(
-    row.classification,
-  ).toUpperCase() as ScanClassification;
-  if (!CLASSIFICATIONS.has(classification)) {
-    throw new WmsContractError(
-      "WMS_FE_INVALID_SCAN_RESPONSE",
-      "classification is not ITEM, CONTAINER or SKU",
-    );
-  }
-
-  const resolvedSource = text(row.resolved_source) as ScanResolvedSource;
-  if (!RESOLVED_SOURCES.has(resolvedSource)) {
-    throw new WmsContractError(
-      "WMS_FE_INVALID_SCAN_RESPONSE",
-      "resolved_source is not supported by WWHN-150.1.1.0",
-    );
-  }
+  const classification = requireKnownCode(
+    text(row.classification).toUpperCase(),
+    CLASSIFICATIONS,
+    "classification",
+  );
+  const resolvedSource = requireKnownCode(
+    text(row.resolved_source),
+    RESOLVED_SOURCES,
+    "resolved_source",
+  );
 
   if (row.contract_version !== "WWHN-150.1.1.0") {
     throw new WmsContractError(

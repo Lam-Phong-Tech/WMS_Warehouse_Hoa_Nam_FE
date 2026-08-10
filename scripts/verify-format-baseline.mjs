@@ -12,9 +12,39 @@ const baselinePath = join(
 const prettierPath = join(root, "node_modules/prettier/bin/prettier.cjs");
 
 const baseline = JSON.parse(readFileSync(baselinePath, "utf8"));
-const knownDebt = new Map(
-  baseline.knownDebt.map((item) => [item.path.replaceAll("\\", "/"), item]),
+if (!Array.isArray(baseline.knownDebt)) {
+  console.error(
+    "[format-baseline] Invalid baseline schema: knownDebt must be an array.",
+  );
+  process.exit(1);
+}
+
+const invalidDebt = baseline.knownDebt.find(
+  (item) =>
+    !item ||
+    typeof item !== "object" ||
+    typeof item.path !== "string" ||
+    item.path.trim() === "" ||
+    typeof item.blobPrefix !== "string" ||
+    item.blobPrefix.trim() === "",
 );
+if (invalidDebt) {
+  console.error(
+    `[format-baseline] Invalid knownDebt entry: ${JSON.stringify(invalidDebt)}`,
+  );
+  process.exit(1);
+}
+
+const knownDebt = new Map(
+  baseline.knownDebt.map((item) => [
+    item.path.replaceAll("\\", "/"),
+    item,
+  ]),
+);
+if (knownDebt.size !== baseline.knownDebt.length) {
+  console.error("[format-baseline] Duplicate knownDebt path is not allowed.");
+  process.exit(1);
+}
 
 const prettier = spawnSync(
   process.execPath,

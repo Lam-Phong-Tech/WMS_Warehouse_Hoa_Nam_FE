@@ -337,6 +337,7 @@ export async function fetchStocktakeCounts(
   sessionId: string,
   _params: Record<string, unknown> = {},
 ): Promise<StocktakeCount[]> {
+  void _params;
   const detail = await fetchStocktakeSessionRaw(
     requireNonEmptyString(sessionId, "sessionId"),
   );
@@ -349,6 +350,7 @@ export async function fetchStocktakeVariances(
   sessionId: string,
   _params: Record<string, unknown> = {},
 ): Promise<StocktakeVariance[]> {
+  void _params;
   const normalizedSessionId = requireNonEmptyString(sessionId, "sessionId");
   const result = await http.get<RawRecord[] | { data?: RawRecord[] }>(
     sessionEndpoint(API_ENDPOINTS.STOCKTAKE_VARIANCES, normalizedSessionId),

@@ -188,9 +188,8 @@ export async function fetchWarrantyCase(
 ): Promise<WarrantyCase> {
   const normalizedCaseId = requireNonEmptyString(String(caseId), "caseId");
   let page = 1;
-  let lastPage = 1;
 
-  do {
+  while (true) {
     const result = await http.getPage<RawRecord[] | { data?: RawRecord[] }>(
       API_ENDPOINTS.WARRANTY_CASES,
       { params: { page, per_page: 100 } },
@@ -202,9 +201,11 @@ export async function fetchWarrantyCase(
         text(candidate.warranty_case_id ?? candidate.id) === normalizedCaseId,
     );
     if (row) return normalizeWarrantyCase(row);
-    lastPage = Math.max(1, Number(result.meta.last_page ?? 1));
+
+    const lastPage = Math.max(1, Number(result.meta.last_page ?? 1));
+    if (page >= lastPage) break;
     page += 1;
-  } while (page <= lastPage);
+  }
 
   throw new WmsContractError(
     "WMS_WARRANTY_CASE_NOT_FOUND",
