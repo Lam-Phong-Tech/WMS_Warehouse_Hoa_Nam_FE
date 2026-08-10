@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Alert, Button, Card, Form, Typography } from "antd";
+import { Alert, Button, Form, Spin, Typography } from "antd";
 import { LockOutlined } from "@ant-design/icons";
 import { Navigate } from "react-router-dom";
 import { isAxiosError } from "axios";
@@ -11,17 +11,9 @@ import {
   type ChangePasswordFormValues,
 } from "@/modules/auth/schemas/change-password.schema";
 import { FormInput } from "@/shared/components/forms";
-import { BRAND } from "@/app/theme";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { ROUTES } from "@/shared/constants/routes";
 
-/**
- * Màn bắt buộc đổi mật khẩu lần đầu (password_change_required=true).
- * BE chặn 403 PASSWORD_CHANGE_REQUIRED ở mọi API trừ login/logout/change-password
- * (xem docs/employee-account-provisioning-flow.md mục 4) — trang này đứng
- * ngoài ProtectedRoute (không gọi /auth/me) để tránh vòng lặp chặn khi hồ sơ
- * chưa nạp được.
- */
 export function ChangePasswordPage() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const changePassword = useChangePassword();
@@ -51,7 +43,6 @@ export function ChangePasswordPage() {
       : "Đổi mật khẩu thất bại"
     : null;
 
-  // Lỗi "mật khẩu hiện tại không đúng" nên gắn vào đúng field thay vì banner chung.
   useEffect(() => {
     if (!errorMessage) return;
     if (/mật khẩu hiện tại/i.test(errorMessage)) {
@@ -64,101 +55,114 @@ export function ChangePasswordPage() {
   }
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 16,
-        background: BRAND.gradient,
-      }}
-    >
-      <Card
-        variant="borderless"
-        style={{
-          width: 420,
-          maxWidth: "100%",
-          boxShadow: "0 20px 60px rgba(0, 0, 0, 0.25)",
-        }}
-        styles={{ body: { padding: 32 } }}
-      >
-        <div style={{ textAlign: "center", marginBottom: 24 }}>
-          <div
-            style={{
-              width: 56,
-              height: 56,
-              margin: "0 auto 12px",
-              borderRadius: 14,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              background: BRAND.gradient,
-              color: "#fff",
-              fontSize: 24,
-            }}
-          >
-            <LockOutlined />
+    <main className="hn-login-page">
+      {changePassword.isPending && (
+        <div className="hn-login-loading" role="status" aria-live="polite">
+          <div className="hn-login-loading-card">
+            <Spin size="large" />
+            <Typography.Text strong style={{ display: "block", marginTop: 12 }}>
+              Đang cập nhật mật khẩu...
+            </Typography.Text>
+            <Typography.Text
+              type="secondary"
+              style={{ display: "block", marginTop: 4, fontSize: 12 }}
+            >
+              Hoa Nam WMS
+            </Typography.Text>
           </div>
-          <Typography.Title level={3} style={{ margin: 0 }}>
-            Đổi mật khẩu
-          </Typography.Title>
-          <Typography.Text type="secondary">
-            Đây là lần đăng nhập đầu tiên — vui lòng đặt mật khẩu mới trước khi
-            tiếp tục sử dụng hệ thống.
-          </Typography.Text>
+        </div>
+      )}
+
+      <section className="hn-login-wrap" aria-labelledby="change-password-title">
+        <div className="hn-login-kicker">
+          Hoa Nam Tools <span>WMS · Quản lý kho</span>
         </div>
 
-        {errorMessage && !/mật khẩu hiện tại/i.test(errorMessage) && (
-          <Alert
-            type="error"
-            description={errorMessage}
-            style={{ marginBottom: 16 }}
-            showIcon
-          />
-        )}
+        <div className="hn-login-frame">
+          <header className="hn-login-head">
+            <div className="hn-login-brand">
+              <div className="hn-login-mark" aria-hidden="true">
+                HN
+              </div>
+              <div>
+                <h1 id="change-password-title" className="hn-login-title">
+                  Đổi mật khẩu
+                </h1>
+                <div className="hn-login-subtitle">
+                  Thiết lập mật khẩu mới trước khi tiếp tục sử dụng hệ thống.
+                </div>
+              </div>
+            </div>
+          </header>
 
-        <Form layout="vertical" onSubmitCapture={onSubmit} requiredMark={false}>
-          <FormInput
-            control={control}
-            name="currentPassword"
-            label="Mật khẩu hiện tại"
-            placeholder="Mật khẩu tạm/hiện tại"
-            prefix={<LockOutlined style={{ color: "#bbb" }} />}
-            password
-            autoFocus
-          />
+          <div className="hn-login-form">
+            {errorMessage && !/mật khẩu hiện tại/i.test(errorMessage) && (
+              <Alert
+                type="error"
+                message="Không thể đổi mật khẩu"
+                description={errorMessage}
+                style={{ marginBottom: 14 }}
+                showIcon
+              />
+            )}
 
-          <FormInput
-            control={control}
-            name="newPassword"
-            label="Mật khẩu mới"
-            placeholder="Tối thiểu 8 ký tự, có hoa/thường/ký tự đặc biệt"
-            prefix={<LockOutlined style={{ color: "#bbb" }} />}
-            password
-          />
+            <Form
+              layout="vertical"
+              onSubmitCapture={onSubmit}
+              requiredMark={false}
+              noValidate
+            >
+              <FormInput
+                control={control}
+                name="currentPassword"
+                label="Mật khẩu hiện tại"
+                placeholder="Nhập mật khẩu hiện tại"
+                prefix={<LockOutlined style={{ color: "#8c887e" }} />}
+                password
+                autoFocus
+                disabled={changePassword.isPending}
+              />
 
-          <FormInput
-            control={control}
-            name="newPasswordConfirmation"
-            label="Xác nhận mật khẩu mới"
-            placeholder="Nhập lại mật khẩu mới"
-            prefix={<LockOutlined style={{ color: "#bbb" }} />}
-            password
-          />
+              <FormInput
+                control={control}
+                name="newPassword"
+                label="Mật khẩu mới"
+                placeholder="Tối thiểu 8 ký tự"
+                prefix={<LockOutlined style={{ color: "#8c887e" }} />}
+                password
+                disabled={changePassword.isPending}
+              />
 
-          <Button
-            type="primary"
-            htmlType="submit"
-            block
-            size="large"
-            loading={changePassword.isPending}
-            style={{ marginTop: 8 }}
-          >
-            Đổi mật khẩu
-          </Button>
-        </Form>
-      </Card>
-    </div>
+              <FormInput
+                control={control}
+                name="newPasswordConfirmation"
+                label="Xác nhận mật khẩu mới"
+                placeholder="Nhập lại mật khẩu mới"
+                prefix={<LockOutlined style={{ color: "#8c887e" }} />}
+                password
+                disabled={changePassword.isPending}
+              />
+
+              <Button
+                className="hn-login-submit"
+                type="primary"
+                htmlType="submit"
+                block
+                loading={changePassword.isPending}
+                disabled={changePassword.isPending}
+              >
+                Đổi mật khẩu
+              </Button>
+            </Form>
+
+            <div className="hn-login-note">
+              Sau khi đổi mật khẩu thành công, toàn bộ refresh token bị thu hồi
+              theo contract backend. Bạn sẽ được đưa về màn đăng nhập để tạo
+              phiên JWT mới bằng mật khẩu vừa đặt.
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
   );
 }
