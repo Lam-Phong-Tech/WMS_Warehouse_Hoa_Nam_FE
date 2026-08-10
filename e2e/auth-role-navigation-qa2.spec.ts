@@ -1,38 +1,28 @@
 /**
  * WWHN-144 / WWHN-145 – QA2 responsive and RBAC closure suite.
  *
- * This suite intentionally uses mocked API contracts so the FE shell, route
- * guards and menu filtering can be verified deterministically on every commit.
+ * UI baseline: HN_WMS_Wireframe_MVP.html supplied by BA on 2026-08-10.
+ * Desktop = 300px dark aside + main. <=980px = stacked aside + main.
  * Backend authorization remains a separate BE/QA1 responsibility.
  */
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import {
-  expect,
-  test,
-  type Page,
-  type Route,
-  type TestInfo,
-} from "@playwright/test";
+import { expect, test, type Page, type Route, type TestInfo } from "@playwright/test";
 
 const BASE_URL = process.env.E2E_BASE_URL ?? "http://127.0.0.1:5173";
-const SOURCE_SHA =
-  process.env.SOURCE_SHA ?? process.env.GITHUB_SHA ?? "local-uncommitted";
+const SOURCE_SHA = process.env.SOURCE_SHA ?? process.env.GITHUB_SHA ?? "local-uncommitted";
 const APP_ENV = process.env.VITE_APP_ENV ?? "local";
 const BUILD_VERSION = process.env.VITE_APP_VERSION ?? "local-dev";
 const EVIDENCE_ROOT =
-  process.env.WWHN_144_EVIDENCE_DIR ??
-  join("test-results", "wwhn-144", SOURCE_SHA);
+  process.env.WWHN_144_EVIDENCE_DIR ?? join("test-results", "wwhn-144", SOURCE_SHA);
 
-const MOCK_ACCESS_TOKEN =
-  process.env.E2E_MOCK_ACCESS_TOKEN ?? "wwhn-144-access-token";
-const MOCK_REFRESH_TOKEN =
-  process.env.E2E_MOCK_REFRESH_TOKEN ?? "wwhn-144-refresh-token";
+const MOCK_ACCESS_TOKEN = process.env.E2E_MOCK_ACCESS_TOKEN ?? "wwhn-144-access-token";
+const MOCK_REFRESH_TOKEN = process.env.E2E_MOCK_REFRESH_TOKEN ?? "wwhn-144-refresh-token";
 
 const VIEWPORTS = [
-  { key: "desktop", width: 1440, height: 900, navigationMode: "sider" },
-  { key: "tablet", width: 768, height: 1024, navigationMode: "drawer" },
-  { key: "mobile", width: 375, height: 812, navigationMode: "drawer" },
+  { key: "desktop", width: 1440, height: 900 },
+  { key: "tablet", width: 768, height: 1024 },
+  { key: "mobile", width: 375, height: 812 },
 ] as const;
 
 interface MockAuthOptions {
@@ -71,14 +61,11 @@ async function captureEvidence(
     safeName(input.role),
     `${input.viewport.width}x${input.viewport.height}`,
   ].join("__");
-  const screenshotFile = `${prefix}.png`;
-  const metadataFile = `${prefix}.json`;
+  const screenshotFilename = `${prefix}.png`;
+  const metadataFilename = `${prefix}.json`;
 
   mkdirSync(EVIDENCE_ROOT, { recursive: true });
-  await page.screenshot({
-    path: join(EVIDENCE_ROOT, screenshotFile),
-    fullPage: true,
-  });
+  await page.screenshot({ path: join(EVIDENCE_ROOT, screenshotFilename), fullPage: true });
 
   const metadata = {
     ticket: "WWHN-144",
@@ -94,7 +81,7 @@ async function captureEvidence(
     route: input.route,
     finalUrl: page.url(),
     timestamp,
-    screenshotFilename: screenshotFile,
+    screenshotFilename,
     videoPolicy: "on",
     videoFilename: "video.webm",
     reportFilename: "playwright-report/index.html",
@@ -102,8 +89,9 @@ async function captureEvidence(
     apiScopeDisposition:
       "UX frame scope only; mocked API contracts verify FE behaviour, not backend endpoint integration or backend authorization.",
   };
+
   writeFileSync(
-    join(EVIDENCE_ROOT, metadataFile),
+    join(EVIDENCE_ROOT, metadataFilename),
     `${JSON.stringify(metadata, null, 2)}\n`,
     "utf8",
   );
@@ -136,10 +124,7 @@ function authResponse(options: Required<MockAuthOptions>) {
   };
 }
 
-async function setupMockApi(
-  page: Page,
-  partial: MockAuthOptions = {},
-): Promise<void> {
+async function setupMockApi(page: Page, partial: MockAuthOptions = {}): Promise<void> {
   const options: Required<MockAuthOptions> = {
     refreshSuccess: partial.refreshSuccess ?? false,
     isSuperAdmin: partial.isSuperAdmin ?? false,
@@ -148,8 +133,7 @@ async function setupMockApi(
   const user = authResponse(options);
 
   await page.route("**/api/v1/**", async (route: Route) => {
-    const url = new URL(route.request().url());
-    const path = url.pathname;
+    const path = new URL(route.request().url()).pathname;
 
     if (path.endsWith("/auth/login")) {
       await route.fulfill({
@@ -184,6 +168,7 @@ async function setupMockApi(
         });
         return;
       }
+
       await route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -204,11 +189,7 @@ async function setupMockApi(
       await route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({
-          success: true,
-          data: user,
-          meta: { request_id: "wwhn-144-me" },
-        }),
+        body: JSON.stringify({ success: true, data: user }),
       });
       return;
     }
@@ -218,57 +199,6 @@ async function setupMockApi(
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({ success: true }),
-      });
-      return;
-    }
-
-    if (path.includes("/reports/dashboard-quick")) {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          success: true,
-          data: {
-            activeSku: 0,
-            productCount: 0,
-            componentCount: 0,
-            availableStock: 0,
-            pendingPutaway: 0,
-            openStocktake: 0,
-            stocktakeLines: 0,
-            warrantyActive: 0,
-            warrantyTempOnly: 0,
-          },
-        }),
-      });
-      return;
-    }
-
-    if (
-      path.includes("/document-status-history") ||
-      path.includes("/safe-stock-alerts")
-    ) {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({ success: true, data: [] }),
-      });
-      return;
-    }
-
-    if (path.includes("/inventory-snapshots")) {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          success: true,
-          data: {
-            ledgerBalance: "PASS",
-            ledgerSkuCount: 0,
-            subledger: "PASS",
-            subledgerMessage: "No pending reconciliation issues",
-          },
-        }),
       });
       return;
     }
@@ -286,9 +216,7 @@ test.beforeEach(async ({ context }) => {
 });
 
 test.describe("WWHN-144 / WWHN-145 closure", () => {
-  test("anonymous direct URL is fail-closed and redirects to login", async ({
-    page,
-  }, testInfo) => {
+  test("anonymous direct URL is fail-closed and redirects to login", async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await setupMockApi(page, { refreshSuccess: false });
 
@@ -308,9 +236,7 @@ test.describe("WWHN-144 / WWHN-145 closure", () => {
     });
   });
 
-  test("limited role menu is filtered and forbidden direct URL renders 403", async ({
-    page,
-  }, testInfo) => {
+  test("limited role menu is filtered and forbidden direct URL renders 403", async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await setupMockApi(page, {
       refreshSuccess: true,
@@ -318,17 +244,13 @@ test.describe("WWHN-144 / WWHN-145 closure", () => {
     });
 
     await page.goto(`${BASE_URL}/dashboard`);
-    await expect(page.getByTestId("desktop-navigation")).toBeVisible();
-    await expect(page.getByText("Tồn & truy vết", { exact: true })).toBeVisible();
-    await expect(
-      page.getByText("Danh mục & SKU", { exact: true }),
-    ).toHaveCount(0);
+    await expect(page.getByTestId("primary-navigation")).toBeVisible();
+    await expect(page.getByText("Tra cứu tồn & đối soát", { exact: true })).toBeVisible();
+    await expect(page.getByText("Danh sách SKU / Product Master", { exact: true })).toHaveCount(0);
 
     await page.goto(`${BASE_URL}/master-data?source=direct-url`);
     await expect(page).toHaveURL(/\/errors\/403$/);
-    await expect(
-      page.getByText("Không có quyền truy cập", { exact: true }),
-    ).toBeVisible();
+    await expect(page.getByText("Không có quyền truy cập", { exact: true })).toBeVisible();
 
     await captureEvidence(page, testInfo, {
       scenario: "limited-role-menu-direct-url-403",
@@ -345,9 +267,7 @@ test.describe("WWHN-144 / WWHN-145 closure", () => {
     });
   });
 
-  test("authenticated user can open /errors/403 directly", async ({
-    page,
-  }, testInfo) => {
+  test("authenticated user can open /errors/403 directly", async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await setupMockApi(page, {
       refreshSuccess: true,
@@ -356,9 +276,7 @@ test.describe("WWHN-144 / WWHN-145 closure", () => {
 
     await page.goto(`${BASE_URL}/errors/403`);
     await expect(page).toHaveURL(/\/errors\/403$/);
-    await expect(
-      page.getByText("Không có quyền truy cập", { exact: true }),
-    ).toBeVisible();
+    await expect(page.getByText("Không có quyền truy cập", { exact: true })).toBeVisible();
 
     await captureEvidence(page, testInfo, {
       scenario: "authenticated-errors-403-route",
@@ -374,39 +292,39 @@ test.describe("WWHN-144 / WWHN-145 closure", () => {
   });
 
   for (const viewport of VIEWPORTS) {
-    test(`responsive shell ${viewport.width}x${viewport.height}`, async ({
-      page,
-    }, testInfo) => {
-      await page.setViewportSize({
-        width: viewport.width,
-        height: viewport.height,
-      });
-      await setupMockApi(page, {
-        refreshSuccess: true,
-        isSuperAdmin: true,
-      });
+    test(`responsive shell ${viewport.width}x${viewport.height}`, async ({ page }, testInfo) => {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await setupMockApi(page, { refreshSuccess: true, isSuperAdmin: true });
       await page.goto(`${BASE_URL}/dashboard`);
       await expect(page).toHaveURL(/\/dashboard$/);
 
-      const toggle = page.getByTestId("navigation-toggle");
-      await expect(toggle).toBeVisible();
+      const app = page.locator(".hn-mvp-app");
+      const aside = page.locator(".hn-mvp-aside");
+      const main = page.locator(".hn-mvp-main");
+      await expect(app).toBeVisible();
+      await expect(aside).toBeVisible();
+      await expect(main).toBeVisible();
+      await expect(page.getByTestId("primary-navigation")).toBeVisible();
+      await expect(page.getByText("Hoa Nam WMS", { exact: true })).toBeVisible();
+      await expect(page.getByText("Bản đồ màn hình & phạm vi", { exact: true }).first()).toBeVisible();
 
-      if (viewport.navigationMode === "sider") {
-        await expect(page.getByTestId("desktop-navigation")).toBeVisible();
-        await expect(page.getByTestId("primary-navigation")).toBeVisible();
+      const asideBox = await aside.boundingBox();
+      const mainBox = await main.boundingBox();
+      expect(asideBox).not.toBeNull();
+      expect(mainBox).not.toBeNull();
+
+      if (viewport.width > 980) {
+        expect(Math.round(asideBox?.width ?? 0)).toBe(300);
+        expect(Math.round(mainBox?.x ?? 0)).toBe(300);
       } else {
-        await expect(page.getByTestId("desktop-navigation")).toHaveCount(0);
-        await toggle.click();
-        await expect(
-          page.getByRole("navigation", { name: "Menu điều hướng" }),
-        ).toBeVisible();
-        await expect(page.getByTestId("primary-navigation")).toBeVisible();
+        expect(Math.round(asideBox?.width ?? 0)).toBe(viewport.width);
+        expect((mainBox?.y ?? 0) >= (asideBox?.height ?? 0) - 1).toBeTruthy();
       }
 
-      await expect(page.locator("body")).not.toHaveCSS(
-        "overflow-x",
-        "scroll",
+      const hasHorizontalOverflow = await page.evaluate(
+        () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
       );
+      expect(hasHorizontalOverflow).toBeFalsy();
 
       await captureEvidence(page, testInfo, {
         scenario: `responsive-${viewport.key}`,
@@ -417,10 +335,11 @@ test.describe("WWHN-144 / WWHN-145 closure", () => {
         assertions: [
           `Required viewport ${viewport.width}x${viewport.height} rendered`,
           "Authenticated session bootstrap completed before shell assertions",
-          viewport.navigationMode === "sider"
-            ? "Desktop fixed navigation is visible"
-            : "Responsive drawer navigation opens from the header toggle",
+          viewport.width > 980
+            ? "Desktop renders the exact 300px MVP sidebar"
+            : "<=980px renders the MVP stacked sidebar/main layout",
           "Primary navigation remains usable",
+          "No horizontal page overflow",
         ],
       });
     });
