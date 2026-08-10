@@ -9,20 +9,22 @@ export const layoutStyles = {
     alignItems: "center",
     justifyContent: "center",
     gap: 9,
-    color: "#fff",
+    color: BRAND.ink,
+    background: BRAND.paperAlt,
     fontWeight: 800,
     fontSize: 17,
     letterSpacing: 0,
     userSelect: "none",
-    borderBottom: "1px solid rgba(255,255,255,.16)",
+    borderBottom: `1px solid ${BRAND.divider}`,
   } satisfies CSSProperties,
 
   sideNavBrandIcon: {
     width: 32,
     height: 32,
     borderRadius: 3,
-    border: "1.5px solid rgba(255,255,255,.7)",
-    background: "rgba(255,255,255,.08)",
+    border: `1.5px solid ${BRAND.primary}`,
+    background: BRAND.accentBg,
+    color: BRAND.primary,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -87,8 +89,9 @@ export const layoutStyles = {
     top: 0,
     bottom: 0,
     zIndex: 100,
+    background: BRAND.paper,
     scrollbarWidth: "thin",
-    scrollbarColor: "rgba(255,255,255,0.16) transparent",
+    scrollbarColor: `${BRAND.border} transparent`,
     borderInlineEnd: `2px solid ${BRAND.ink}`,
   } satisfies CSSProperties,
 
@@ -115,7 +118,7 @@ export const layoutStyles = {
 
   drawerBody: {
     padding: 0,
-    background: BRAND.siderBg,
+    background: BRAND.paper,
   } satisfies CSSProperties,
 
   contextSwitcherIcon: {
