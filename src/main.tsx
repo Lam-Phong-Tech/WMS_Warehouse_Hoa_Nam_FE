@@ -7,6 +7,7 @@ import "./index.css";
 import "./styles/hoa-nam-wireframe.css";
 import "./styles/hoa-nam-ant-overrides.css";
 import "./styles/hn-wms-mvp-exact.css";
+import "./styles/hn-wms-page-normalize.css";
 
 // auth.store dùng skipHydration để tránh rehydrate cookie chạy ngầm không
 // xác định thời điểm (xem ghi chú trong auth.store.ts) — gọi 1 lần ở đây,
