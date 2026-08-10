@@ -4,6 +4,7 @@ import { useAuthStore } from "@/shared/store/auth.store";
 import { useMe } from "@/modules/auth/hooks/use-me";
 import { SideNav } from "@/app/layouts/SideNav";
 import { Loading } from "@/shared/components";
+import { MvpSourceScreen } from "@/shared/components/mvp/MvpSourceScreen";
 import { preloadManager } from "@/shared/utils/preload-manager";
 import { ROUTES } from "@/shared/constants/routes";
 
@@ -58,40 +59,18 @@ const ROUTE_DEFAULT_SCREEN: Record<string, string> = {
 };
 
 const ROUTE_META: Record<string, ScreenMeta> = {
-  [ROUTES.AUDIT_LOGS]: {
-    title: "Nhật ký kiểm tra",
-    description: "Theo dõi lịch sử thao tác và thay đổi trong hệ thống.",
-  },
-  [ROUTES.STOCKTAKE]: {
-    title: "Kiểm kê",
-    description: "Kiểm kê và kiểm soát chênh lệch tồn kho.",
-  },
-  [ROUTES.PROFILE]: {
-    title: "Hồ sơ cá nhân",
-    description: "Thông tin tài khoản và ngữ cảnh truy cập hiện hành.",
-  },
-  [ROUTES.COMPONENT_CATALOG]: {
-    title: "Component catalog",
-    description: "Danh mục component dùng nội bộ cho FE.",
-  },
+  [ROUTES.AUDIT_LOGS]: { title: "Nhật ký kiểm tra", description: "Theo dõi lịch sử thao tác và thay đổi trong hệ thống." },
+  [ROUTES.STOCKTAKE]: { title: "Kiểm kê", description: "Kiểm kê và kiểm soát chênh lệch tồn kho." },
+  [ROUTES.PROFILE]: { title: "Hồ sơ cá nhân", description: "Thông tin tài khoản và ngữ cảnh truy cập hiện hành." },
+  [ROUTES.COMPONENT_CATALOG]: { title: "Component catalog", description: "Danh mục component dùng nội bộ cho FE." },
 };
 
 function resolveScreenMeta(pathname: string, search: string): ScreenMeta {
   const requestedScreen = new URLSearchParams(search).get("screen");
-  if (requestedScreen && MVP_SCREEN_META[requestedScreen]) {
-    return MVP_SCREEN_META[requestedScreen];
-  }
-
+  if (requestedScreen && MVP_SCREEN_META[requestedScreen]) return MVP_SCREEN_META[requestedScreen];
   const defaultScreen = ROUTE_DEFAULT_SCREEN[pathname];
   if (defaultScreen) return MVP_SCREEN_META[defaultScreen];
-
-  const exact = ROUTE_META[pathname];
-  if (exact) return exact;
-
-  return {
-    title: "Hoa Nam WMS",
-    description: "Bám BRD / SRS-FRD / BPD hiện tại",
-  };
+  return ROUTE_META[pathname] ?? { title: "Hoa Nam WMS", description: "Bám BRD / SRS-FRD / BPD hiện tại" };
 }
 
 /** Exact DOM shell of HN_WMS_Wireframe_MVP.html. */
@@ -99,13 +78,13 @@ export function MainLayout() {
   const location = useLocation();
   const isProfileLoaded = useAuthStore((state) => state.isProfileLoaded);
   const { isLoading: isLoadingProfile } = useMe();
+  const requestedScreen = new URLSearchParams(location.search).get("screen");
+  const sourceScreen = requestedScreen && MVP_SCREEN_META[requestedScreen] ? requestedScreen : null;
   const meta = resolveScreenMeta(location.pathname, location.search);
 
   useEffect(() => {
     if (isProfileLoaded && !isLoadingProfile) {
-      const timer = window.setTimeout(() => {
-        preloadManager.preloadCriticalRoutes();
-      }, 1000);
+      const timer = window.setTimeout(() => preloadManager.preloadCriticalRoutes(), 1000);
       preloadManager.preloadSecondaryRoutesOnIdle();
       return () => window.clearTimeout(timer);
     }
@@ -124,12 +103,10 @@ export function MainLayout() {
             <h2>{meta.title}</h2>
             <p>{meta.description}</p>
           </div>
-          <div className="hn-mvp-note-banner">
-            Giao diện demo, dùng cho trao đổi BA/DEV/TEST.
-          </div>
+          <div className="hn-mvp-note-banner">Giao diện demo, dùng cho trao đổi BA/DEV/TEST.</div>
         </header>
         <section className="hn-mvp-screen">
-          <Outlet />
+          {sourceScreen ? <MvpSourceScreen screenId={sourceScreen} /> : <Outlet />}
         </section>
       </main>
     </div>
