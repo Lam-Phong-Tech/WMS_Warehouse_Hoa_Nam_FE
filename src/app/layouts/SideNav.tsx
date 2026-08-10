@@ -49,8 +49,8 @@ export function SideNav({ collapsed = false, onNavigate }: Props) {
       style={{ height: "100%" }}
     >
       <div style={layoutStyles.sideNavBrand}>
-        <span style={layoutStyles.sideNavBrandIcon}>E</span>
-        {!collapsed && <span>Hoa Nam</span>}
+        <span style={layoutStyles.sideNavBrandIcon}>HN</span>
+        {!collapsed && <span>Hoa Nam WMS</span>}
       </div>
 
       <Menu
