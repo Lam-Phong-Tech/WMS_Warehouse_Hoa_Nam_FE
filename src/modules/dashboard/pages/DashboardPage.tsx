@@ -1,24 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import {
-  Card,
-  Col,
-  Row,
-  Statistic,
-  Table,
-  Tag,
-  Progress,
-  Alert,
-  Button,
-  Space,
-  Tooltip,
-} from "antd";
-import {
-  ArrowUpOutlined,
-  ArrowDownOutlined,
-  EyeOutlined,
-  WarningOutlined,
-  PlusOutlined,
-} from "@ant-design/icons";
+import { Button, Progress, Table } from "antd";
+import { useNavigate } from "react-router-dom";
+import type { ColumnsType } from "antd/es/table";
 import type { RecentDocument } from "../types";
 import {
   fetchDashboardKPI,
@@ -26,15 +9,25 @@ import {
   fetchReconcileHealth,
   fetchAlerts,
 } from "../services/dashboardService";
+import { ROUTES } from "@/shared/constants/routes";
 
-const statusColorMap: Record<string, string> = {
-  PARTIALLY_POSTED: "warning",
-  POSTED: "success",
-  SCANNING: "processing",
-  REVIEWING: "purple",
+const statusClassMap: Record<string, string> = {
+  PARTIALLY_POSTED: "hn-pill hn-pill--warn",
+  POSTED: "hn-pill hn-pill--success",
+  SCANNING: "hn-pill hn-pill--accent",
+  REVIEWING: "hn-pill hn-pill--accent",
+  DRAFT: "hn-pill hn-pill--neutral",
+  CANCELLED: "hn-pill hn-pill--danger",
 };
 
+function documentTypeLabel(type: RecentDocument["type"]): string {
+  if (type === "INBOUND") return "Nhập kho";
+  if (type === "OUTBOUND") return "Xuất kho";
+  return "Kiểm kê";
+}
+
 export default function DashboardPage() {
+  const navigate = useNavigate();
   const { data: kpi } = useQuery({
     queryKey: ["dashboard", "kpi"],
     queryFn: fetchDashboardKPI,
@@ -52,183 +45,244 @@ export default function DashboardPage() {
     queryFn: fetchAlerts,
   });
 
-  const recentColumns = [
-    { title: "Mã chứng từ", dataIndex: "code", key: "code" },
+  const recentColumns: ColumnsType<RecentDocument> = [
+    {
+      title: "Mã chứng từ",
+      dataIndex: "code",
+      key: "code",
+      render: (value: string) => <span className="hn-mono">{value}</span>,
+    },
     {
       title: "Loại",
       dataIndex: "type",
       key: "type",
-      render: (v: string) =>
-        v === "INBOUND"
-          ? "Nhập kho"
-          : v === "OUTBOUND"
-            ? "Xuất kho"
-            : "Kiểm kê",
+      render: (value: RecentDocument["type"]) => documentTypeLabel(value),
     },
     { title: "Đối tác/Nguồn", dataIndex: "partner", key: "partner" },
     {
       title: "Tiến độ",
       key: "progress",
-      render: (_: unknown, r: RecentDocument) => (
-        <>
-          <Progress percent={r.progress} size="small" />
-          <div style={{ fontSize: 12, color: "#888" }}>
-            {r.posted}/{r.total} đã post
-          </div>
-        </>
+      render: (_: unknown, row) => (
+        <div className="hn-progress-cell">
+          <Progress
+            percent={row.progress}
+            showInfo={false}
+            strokeColor="#356fa3"
+            trailColor="#eceae6"
+            size="small"
+          />
+          <span className="hn-wire-hint">
+            {row.posted}/{row.total} đã post
+          </span>
+        </div>
       ),
     },
     {
       title: "Trạng thái",
       dataIndex: "status",
       key: "status",
-      render: (v: string) => (
-        <Tag color={statusColorMap[v] || "default"}>{v}</Tag>
+      render: (value: string) => (
+        <span className={statusClassMap[value] ?? "hn-pill hn-pill--neutral"}>
+          {value}
+        </span>
       ),
     },
     { title: "Người cập nhật", dataIndex: "updatedBy", key: "updatedBy" },
     { title: "Cập nhật", dataIndex: "updatedAt", key: "updatedAt" },
     {
-      title: "Hành động",
+      title: "Action",
       key: "action",
-      render: () => (
-        <Tooltip title="M?">
-          <Button type="text" icon={<EyeOutlined />} />
-        </Tooltip>
+      render: (_: unknown, row) => (
+        <button
+          type="button"
+          className="hn-table-action"
+          onClick={() => {
+            if (row.type === "INBOUND") navigate(ROUTES.INBOUND);
+            else if (row.type === "OUTBOUND") navigate(ROUTES.OUTBOUND);
+            else navigate(ROUTES.STOCKTAKE);
+          }}
+        >
+          Mở
+        </button>
       ),
     },
   ];
 
   return (
-    <div style={{ padding: 24 }}>
-      <Row gutter={[16, 16]}>
-        <Col span={4}>
-          <Card>
-            <Statistic
-              title="SKU đang hoạt động"
-              value={kpi?.activeSku ?? 0}
-              suffix={
-                <small style={{ fontSize: 12, color: "#888" }}>
-                  {kpi?.productCount} PRODUCT · {kpi?.componentCount} COMPONENT
-                </small>
-              }
-            />
-          </Card>
-        </Col>
-        <Col span={4}>
-          <Card>
-            <Statistic title="Tồn khả dụng" value={kpi?.availableStock ?? 0} />
-          </Card>
-        </Col>
-        <Col span={4}>
-          <Card>
-            <Statistic
-              title="Chờ xếp khay"
-              value={kpi?.pendingPutaway ?? 0}
-              suffix="box"
-              valueStyle={{ color: "#faad14" }}
-            />
-          </Card>
-        </Col>
-        <Col span={4}>
-          <Card>
-            <Statistic
-              title="Phiên kiểm kê mở"
-              value={kpi?.openStocktake ?? 0}
-              suffix={<small>{kpi?.stocktakeLines} dòng cần review</small>}
-            />
-          </Card>
-        </Col>
-        <Col span={4}>
-          <Card>
-            <Statistic
-              title="Bảo hành đang xử lý"
-              value={kpi?.warrantyActive ?? 0}
-              suffix={<small>{kpi?.warrantyTempOnly} TEMP_ONLY</small>}
-            />
-          </Card>
-        </Col>
-      </Row>
+    <div className="hn-wireframe-page">
+      <section className="hn-wire-section" aria-labelledby="dashboard-overview-title">
+        <div className="hn-frame-label" id="dashboard-overview-title">
+          1A · Tổng quan vận hành kho <span className="hn-tag">P0</span>
+          <span className="hn-code">WF-WM-DASH-01 · derived overview</span>
+        </div>
 
-      <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
-        <Col span={12}>
-          <Card title="⚠ Cảnh báo cần xử lý" size="small">
-            {alerts.map((a, i) => (
-              <Alert
-                key={i}
-                message={a.message}
-                type={a.severity === "danger" ? "error" : "warning"}
-                showIcon
-                style={{ marginBottom: 8 }}
-              />
-            ))}
-          </Card>
-        </Col>
-        <Col span={12}>
-          <Card title="Thao tác nhanh theo quyền" size="small">
-            <Space wrap>
-              <Button type="primary" icon={<PlusOutlined />}>
-                Tạo phiếu nhập
-              </Button>
-              <Button type="primary" icon={<PlusOutlined />}>
-                Tạo phiếu xuất
-              </Button>
-              <Button icon={<WarningOutlined />}>Máy quét</Button>
-              <Button>+ Tạo phiên kiểm kê</Button>
-            </Space>
-          </Card>
-        </Col>
-      </Row>
+        <div className="hn-wireframe-panel">
+          <div className="hn-api-strip">
+            <span className="hn-label-mini">Nguồn</span>
+            <span className="hn-chip hn-chip--api">GET /inventory</span>
+            <span className="hn-chip hn-chip--api">GET /reports/*</span>
+            <span className="hn-chip hn-chip--rule">01 kho tổng</span>
+            <span className="hn-chip hn-chip--rule">Không hiển thị tồn đại lý</span>
+            <span className="hn-chip hn-chip--tc">Chỉ tổng hợp dữ liệu đã post</span>
+          </div>
 
-      <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
-        <Col span={16}>
-          <Card
-            title="Chứng từ gần đây"
-            size="small"
-            extra={<a>Xem toàn bộ</a>}
-          >
-            <Table
+          <div className="hn-wire-section-body">
+            <div className="hn-kpi-grid">
+              <div className="hn-kpi">
+                <div className="hn-kpi__key">SKU đang hoạt động</div>
+                <div className="hn-kpi__value">{kpi?.activeSku ?? 0}</div>
+                <div className="hn-kpi__detail">
+                  {kpi?.productCount ?? 0} PRODUCT · {kpi?.componentCount ?? 0} COMPONENT
+                </div>
+              </div>
+              <div className="hn-kpi">
+                <div className="hn-kpi__key">Tồn khả dụng</div>
+                <div className="hn-kpi__value">{kpi?.availableStock ?? 0}</div>
+                <div className="hn-kpi__detail">Kho tổng Hoa Nam</div>
+              </div>
+              <div className="hn-kpi">
+                <div className="hn-kpi__key">Chờ xếp khay</div>
+                <div className="hn-kpi__value">{kpi?.pendingPutaway ?? 0}</div>
+                <div className="hn-kpi__detail">Putaway pending · box</div>
+              </div>
+              <div className="hn-kpi">
+                <div className="hn-kpi__key">Phiên kiểm kê mở</div>
+                <div className="hn-kpi__value">{kpi?.openStocktake ?? 0}</div>
+                <div className="hn-kpi__detail">
+                  {kpi?.stocktakeLines ?? 0} dòng cần review
+                </div>
+              </div>
+              <div className="hn-kpi">
+                <div className="hn-kpi__key">Bảo hành đang xử lý</div>
+                <div className="hn-kpi__value">{kpi?.warrantyActive ?? 0}</div>
+                <div className="hn-kpi__detail">
+                  {kpi?.warrantyTempOnly ?? 0} TEMP_ONLY
+                </div>
+              </div>
+            </div>
+
+            <div className="hn-dashboard-two-col">
+              <div className="hn-wire-item">
+                <strong>⚠ Cảnh báo cần xử lý</strong>
+                {alerts.length === 0 ? (
+                  <div className="hn-wire-muted">Không có cảnh báo đang mở.</div>
+                ) : (
+                  <ul className="hn-alert-list">
+                    {alerts.map((alert, index) => (
+                      <li
+                        key={`${alert.message}-${index}`}
+                        className={
+                          alert.severity === "danger"
+                            ? "hn-alert-list__danger"
+                            : undefined
+                        }
+                      >
+                        {alert.message}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              <div className="hn-wire-item">
+                <strong>Thao tác nhanh theo quyền</strong>
+                <div className="hn-wire-actions">
+                  <Button type="primary" onClick={() => navigate(ROUTES.INBOUND)}>
+                    ＋ Tạo phiếu nhập
+                  </Button>
+                  <Button type="primary" onClick={() => navigate(ROUTES.OUTBOUND)}>
+                    ＋ Tạo phiếu xuất
+                  </Button>
+                  <Button onClick={() => navigate(ROUTES.SCAN)}>⌁ Demo máy quét</Button>
+                  <Button onClick={() => navigate(ROUTES.STOCKTAKE)}>
+                    ＋ Tạo phiên kiểm kê
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div className="hn-dashboard-lower-grid">
+        <section className="hn-wire-section hn-dashboard-recent" aria-labelledby="recent-title">
+          <div className="hn-frame-label" id="recent-title">
+            1B · Chứng từ gần đây <span className="hn-tag">P0</span>
+            <span className="hn-code">operational feed</span>
+          </div>
+          <div className="hn-wireframe-panel">
+            <div className="hn-wire-toolbar">
+              <span className="hn-wire-filter">Loại chứng từ ▾</span>
+              <span className="hn-wire-filter">Trạng thái ▾</span>
+              <span className="hn-wire-filter">7 ngày gần nhất ▾</span>
+              <span className="hn-wire-spacer" />
+              <Button onClick={() => navigate(ROUTES.REPORTS)}>Xem toàn bộ</Button>
+            </div>
+            <Table<RecentDocument>
+              className="hn-wire-table"
               dataSource={recent}
               columns={recentColumns}
               rowKey="id"
               pagination={false}
-              size="small"
+              size="middle"
+              scroll={{ x: 980 }}
             />
-          </Card>
-        </Col>
-        <Col span={8}>
-          <Card title="Sức khỏe đối soát" size="small">
-            <Statistic
-              title="Ledger = Balance"
-              value={health?.ledgerBalance}
-              valueStyle={{
-                color: health?.ledgerBalance === "PASS" ? "#3f8600" : "#faad14",
-              }}
-              prefix={
-                health?.ledgerBalance === "PASS" ? (
-                  <ArrowUpOutlined />
-                ) : (
-                  <ArrowDownOutlined />
-                )
-              }
-            />
-            <div style={{ fontSize: 12, color: "#888" }}>
-              {health?.ledgerSkuCount} SKU
+          </div>
+        </section>
+
+        <section className="hn-wire-section hn-dashboard-health" aria-labelledby="health-title">
+          <div className="hn-frame-label" id="health-title">
+            1C · Sức khỏe đối soát <span className="hn-tag">P0</span>
+          </div>
+          <div className="hn-wireframe-panel">
+            <div className="hn-api-strip">
+              <span className="hn-chip hn-chip--api">GET /inventory-snapshots</span>
             </div>
-            <Statistic
-              title="Subledger"
-              value={health?.subledger}
-              valueStyle={{
-                color: health?.subledger === "PASS" ? "#3f8600" : "#faad14",
-              }}
-              style={{ marginTop: 12 }}
-            />
-            <div style={{ fontSize: 12, color: "#888" }}>
-              {health?.subledgerMessage}
+            <div className="hn-health-list">
+              <div className="hn-health-row">
+                <div>
+                  <strong>Ledger = Balance</strong>
+                  <div className="hn-wire-hint">{health?.ledgerSkuCount ?? 0} SKU</div>
+                </div>
+                <span
+                  className={
+                    health?.ledgerBalance === "PASS"
+                      ? "hn-pill hn-pill--success"
+                      : health?.ledgerBalance === "FAIL"
+                        ? "hn-pill hn-pill--danger"
+                        : "hn-pill hn-pill--warn"
+                  }
+                >
+                  {health?.ledgerBalance ?? "--"}
+                </span>
+              </div>
+              <div className="hn-health-row">
+                <div>
+                  <strong>Subledger</strong>
+                  <div className="hn-wire-hint">
+                    {health?.subledgerMessage ?? "Chưa có dữ liệu đối soát"}
+                  </div>
+                </div>
+                <span
+                  className={
+                    health?.subledger === "PASS"
+                      ? "hn-pill hn-pill--success"
+                      : health?.subledger === "FAIL"
+                        ? "hn-pill hn-pill--danger"
+                        : "hn-pill hn-pill--warn"
+                  }
+                >
+                  {health?.subledger ?? "--"}
+                </span>
+              </div>
             </div>
-          </Card>
-        </Col>
-      </Row>
+            <div className="hn-note">
+              <strong>Authority:</strong> Movement là authoritative ledger; Balance và
+              subledger phải reconcile trước khi dùng số tồn để quyết định vận hành.
+            </div>
+          </div>
+        </section>
+      </div>
     </div>
   );
 }
