@@ -23,8 +23,38 @@ import {
 } from "@/modules/auth/services/auth.service";
 import { memoryStorage } from "@/shared/lib/memory-storage";
 
-describe("authService contract WWHN-165", () => {
+describe("authService contract — BE m1 /api/v1/auth/*", () => {
   beforeEach(() => vi.clearAllMocks());
+
+  it("POST /auth/login gửi đúng email + password và lưu refresh token", async () => {
+    postMock.mockResolvedValue({
+      access_token: "access-token",
+      refresh_token: "refresh-token",
+      token_type: "bearer",
+      expires_in: 3600,
+      user: {
+        user_id: "user-1",
+        username: "warehouse01",
+        email: "qa@example.com",
+        display_name: "QA",
+        roles: [],
+        permissions: [],
+        warehouse_scope_ids: [],
+      },
+    });
+
+    const result = await authService.login({
+      email: "qa@example.com",
+      password: "secret",
+    });
+
+    expect(postMock).toHaveBeenCalledWith("/auth/login", {
+      email: "qa@example.com",
+      password: "secret",
+    });
+    expect(result.access_token).toBe("access-token");
+    expect(memoryStorage.setRefreshToken).toHaveBeenCalledWith("refresh-token");
+  });
 
   it("login fail-closed khi thiếu access_token", async () => {
     postMock.mockResolvedValue({
@@ -51,7 +81,7 @@ describe("authService contract WWHN-165", () => {
     ).rejects.toMatchObject({ field: "user.id" });
   });
 
-  it("refresh gửi refresh_token trong body và fail-closed với response sai", async () => {
+  it("POST /auth/refresh gửi refresh_token trong body và fail-closed với response sai", async () => {
     postMock.mockResolvedValue({
       access_token: "",
       refresh_token: "refresh-next",
@@ -67,33 +97,32 @@ describe("authService contract WWHN-165", () => {
     });
   });
 
-  it("login lưu refresh token do BE phát hành", async () => {
+  it("POST /auth/refresh lưu refresh token mới sau rotation", async () => {
     postMock.mockResolvedValue({
-      access_token: "access-token",
-      refresh_token: "refresh-token",
+      access_token: "access-next",
+      refresh_token: "refresh-next",
       token_type: "bearer",
       expires_in: 3600,
-      user: {
-        user_id: "user-1",
-        username: "warehouse01",
-        email: "qa@example.com",
-        display_name: "QA",
-        roles: [],
-        permissions: [],
-        warehouse_scope_ids: [],
-      },
     });
 
-    const result = await authService.login({
-      email: "qa@example.com",
-      password: "secret",
-    });
+    const result = await authService.refresh();
 
-    expect(result.access_token).toBe("access-token");
-    expect(memoryStorage.setRefreshToken).toHaveBeenCalledWith("refresh-token");
+    expect(result.access_token).toBe("access-next");
+    expect(memoryStorage.setRefreshToken).toHaveBeenCalledWith("refresh-next");
   });
 
-  it("/auth/me dựng context kho từ warehouse_scope_ids và dùng permission top-level", async () => {
+  it("POST /auth/logout gửi refresh token hiện tại để BE revoke đúng phiên", async () => {
+    postMock.mockResolvedValue(null);
+
+    await authService.logout();
+
+    expect(postMock).toHaveBeenCalledWith("/auth/logout", {
+      refresh_token: "refresh-current",
+    });
+    expect(memoryStorage.removeRefreshToken).toHaveBeenCalledTimes(1);
+  });
+
+  it("GET /auth/me dựng context kho từ warehouse_scope_ids và permission top-level", async () => {
     getMock.mockResolvedValue({
       user_id: "user-1",
       username: "warehouse01",
@@ -113,6 +142,8 @@ describe("authService contract WWHN-165", () => {
     });
 
     const result = await authService.me();
+
+    expect(getMock).toHaveBeenCalledWith("/auth/me");
     expect(result.permissions).toEqual([
       "inventory.view",
       "stock_movement.view",
@@ -123,6 +154,52 @@ describe("authService contract WWHN-165", () => {
       context_id: "WH-HN-01",
       scope_ref: "WH-HN-01",
       warehouse_name: "WH-HN-01",
+    });
+  });
+
+  it("POST /auth/change-password gửi đúng Laravel confirmed payload", async () => {
+    postMock.mockResolvedValue(null);
+    const payload = {
+      current_password: "old-secret",
+      new_password: "NewSecret@123",
+      new_password_confirmation: "NewSecret@123",
+    };
+
+    await authService.changePassword(payload);
+
+    expect(postMock).toHaveBeenCalledWith("/auth/change-password", payload);
+  });
+
+  it("POST /auth/switch-context gửi warehouse scope và nhận access token mới", async () => {
+    postMock.mockResolvedValue({
+      access_token: "access-warehouse-2",
+      token_type: "bearer",
+      expires_in: 3600,
+      active_context: {
+        context_type: "WAREHOUSE",
+        context_id: "WH-HN-02",
+        scope_ref: "WH-HN-02",
+      },
+      user: {
+        user_id: "user-1",
+        username: "warehouse01",
+        email: "qa@example.com",
+      },
+    });
+
+    const payload = {
+      context_type: "WAREHOUSE",
+      context_id: "WH-HN-02",
+      scope_ref: "WH-HN-02",
+    };
+    const result = await authService.switchContext(payload);
+
+    expect(postMock).toHaveBeenCalledWith("/auth/switch-context", payload);
+    expect(result).toMatchObject({
+      access_token: "access-warehouse-2",
+      token_type: "bearer",
+      expires_in: 3600,
+      active_context: payload,
     });
   });
 });
