@@ -1,6 +1,4 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { ContextSwitcher } from "@/modules/auth/components/ContextSwitcher";
-import { UserMenu } from "@/app/layouts/UserMenu";
 import { ROUTE_PERMISSIONS } from "@/app/router/access";
 import { ROUTES } from "@/shared/constants/routes";
 import { useAuthStore } from "@/shared/store/auth.store";
@@ -120,12 +118,6 @@ export function SideNav() {
           </section>
         );
       })}
-
-      <div className="hn-mvp-account">
-        <div className="hn-mvp-group">Tài khoản</div>
-        <ContextSwitcher />
-        <div style={{ marginTop: 8 }}><UserMenu compact={false} /></div>
-      </div>
     </nav>
   );
 }
