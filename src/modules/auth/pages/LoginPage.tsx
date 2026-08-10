@@ -1,6 +1,6 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Alert, Button, Card, Form, Typography, Spin } from "antd";
+import { Alert, Button, Form, Spin, Typography } from "antd";
 import { LockOutlined, MailOutlined } from "@ant-design/icons";
 import { isAxiosError } from "axios";
 import { useLogin } from "@/modules/auth/hooks/use-login";
@@ -9,7 +9,6 @@ import {
   type LoginFormValues,
 } from "@/modules/auth/schemas/login.schema";
 import { FormInput } from "@/shared/components/forms";
-import { BRAND } from "@/app/theme";
 
 export function LoginPage() {
   const login = useLogin();
@@ -29,133 +28,110 @@ export function LoginPage() {
   const isSubmitting = login.isPending || login.isSuccess;
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 16,
-        background: BRAND.gradient,
-        position: "relative",
-      }}
-    >
-      {/* Loading overlay khi đang xử lý login/switch context */}
+    <main className="hn-login-page">
       {isSubmitting && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: "rgba(255, 255, 255, 0.9)",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 9999,
-          }}
-        >
-          <Spin size="large" />
-          <Typography.Text style={{ marginTop: 16, fontSize: 16 }}>
-            {login.isPending
-              ? "Đang đăng nhập..."
-              : "Đang khởi tạo quyền truy cập..."}
-          </Typography.Text>
-          <Typography.Text type="secondary" style={{ marginTop: 8 }}>
-            {login.isPending
-              ? "Vui lòng chờ trong giây lát"
-              : "Đang chuẩn bị hệ thống cho bạn"}
-          </Typography.Text>
+        <div className="hn-login-loading" role="status" aria-live="polite">
+          <div className="hn-login-loading-card">
+            <Spin size="large" />
+            <Typography.Text
+              strong
+              style={{ display: "block", marginTop: 12 }}
+            >
+              {login.isPending
+                ? "Đang xác thực tài khoản..."
+                : "Đang tải quyền truy cập..."}
+            </Typography.Text>
+            <Typography.Text
+              type="secondary"
+              style={{ display: "block", marginTop: 4, fontSize: 12 }}
+            >
+              Hoa Nam WMS
+            </Typography.Text>
+          </div>
         </div>
       )}
 
-      <Card
-        variant="borderless"
-        style={{
-          width: 400,
-          maxWidth: "100%",
-          boxShadow: "0 20px 60px rgba(0, 0, 0, 0.25)",
-          opacity: isSubmitting ? 0.5 : 1,
-        }}
-        styles={{ body: { padding: 32 } }}
-      >
-        <div style={{ textAlign: "center", marginBottom: 24 }}>
-          <div
-            style={{
-              width: 56,
-              height: 56,
-              margin: "0 auto 12px",
-              borderRadius: 14,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              background: BRAND.gradient,
-              color: "#fff",
-              fontSize: 24,
-              fontWeight: 700,
-            }}
-          >
-            E
-          </div>
-          <Typography.Title level={3} style={{ margin: 0 }}>
-            Hoa Nam
-          </Typography.Title>
-          <Typography.Text type="secondary">
-            Đăng nhập để tiếp tục
-          </Typography.Text>
+      <section className="hn-login-wrap" aria-labelledby="login-title">
+        <div className="hn-login-kicker">
+          Hoa Nam Tools <span>WMS · Quản lý kho</span>
         </div>
 
-        {errorMessage && (
-          <Alert
-            type="error"
-            description={errorMessage}
-            style={{ marginBottom: 16 }}
-            showIcon
-          />
-        )}
+        <div className="hn-login-frame">
+          <header className="hn-login-head">
+            <div className="hn-login-brand">
+              <div className="hn-login-mark" aria-hidden="true">
+                HN
+              </div>
+              <div>
+                <h1 id="login-title" className="hn-login-title">
+                  Đăng nhập hệ thống
+                </h1>
+                <div className="hn-login-subtitle">
+                  Sử dụng tài khoản Hoa Nam để truy cập nghiệp vụ kho.
+                </div>
+              </div>
+            </div>
+          </header>
 
-        <Form
-          layout="vertical"
-          onSubmitCapture={onSubmit}
-          requiredMark={false}
-          noValidate
-        >
-          <FormInput
-            control={control}
-            name="email"
-            label="Gmail"
-            placeholder="Vui lòng nhập gmail của bạn"
-            prefix={<MailOutlined style={{ color: "#bbb" }} />}
-            type="email"
-            autoFocus
-            disabled={isSubmitting}
-          />
+          <div className="hn-login-form">
+            {errorMessage && (
+              <Alert
+                type="error"
+                message="Không thể đăng nhập"
+                description={errorMessage}
+                style={{ marginBottom: 14 }}
+                showIcon
+              />
+            )}
 
-          <FormInput
-            control={control}
-            name="password"
-            label="Mật khẩu"
-            placeholder="••••••••"
-            prefix={<LockOutlined style={{ color: "#bbb" }} />}
-            password
-            disabled={isSubmitting}
-          />
+            <Form
+              layout="vertical"
+              onSubmitCapture={onSubmit}
+              requiredMark={false}
+              noValidate
+            >
+              <FormInput
+                control={control}
+                name="email"
+                label="Email"
+                placeholder="name@hoanam.vn"
+                prefix={<MailOutlined style={{ color: "#8c887e" }} />}
+                type="email"
+                autoComplete="username"
+                autoFocus
+                disabled={isSubmitting}
+              />
 
-          <Button
-            type="primary"
-            htmlType="submit"
-            block
-            size="large"
-            loading={login.isPending}
-            disabled={isSubmitting}
-            style={{ marginTop: 8 }}
-          >
-            Đăng nhập
-          </Button>
-        </Form>
-      </Card>
-    </div>
+              <FormInput
+                control={control}
+                name="password"
+                label="Mật khẩu"
+                placeholder="Nhập mật khẩu"
+                prefix={<LockOutlined style={{ color: "#8c887e" }} />}
+                password
+                autoComplete="current-password"
+                disabled={isSubmitting}
+              />
+
+              <Button
+                className="hn-login-submit"
+                type="primary"
+                htmlType="submit"
+                block
+                loading={login.isPending}
+                disabled={isSubmitting}
+              >
+                Đăng nhập
+              </Button>
+            </Form>
+
+            <div className="hn-login-note">
+              Phiên đăng nhập sử dụng JWT. Hệ thống tự xoay vòng refresh token
+              và cập nhật quyền/phạm vi kho từ tài khoản hiện hành.
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
   );
 }
