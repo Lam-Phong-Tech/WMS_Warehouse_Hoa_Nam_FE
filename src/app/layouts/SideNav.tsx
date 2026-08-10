@@ -6,8 +6,9 @@ import { ROUTES } from "@/shared/constants/routes";
 import { useAuthStore } from "@/shared/store/auth.store";
 
 type NavItem = {
-  path: string;
+  screen: string;
   label: string;
+  path?: string;
 };
 
 type NavGroup = {
@@ -15,53 +16,84 @@ type NavGroup = {
   items: NavItem[];
 };
 
-/**
- * Navigation order and wording follow HN_WMS_Wireframe_MVP.html.
- * Only screens that have real FE routes are rendered; RBAC remains enforced.
- */
+/** Exact screen inventory/order from HN_WMS_Wireframe_MVP.html. */
 const NAV_GROUPS: NavGroup[] = [
   {
     name: "00 · Tổng quan",
     items: [
-      { path: ROUTES.DASHBOARD, label: "Bản đồ màn hình & phạm vi" },
+      { screen: "MAP-01", path: ROUTES.DASHBOARD, label: "Bản đồ màn hình & phạm vi" },
     ],
   },
   {
     name: "01 · Hệ thống & danh mục",
     items: [
-      { path: ROUTES.MASTER_DATA, label: "Danh sách SKU / Product Master" },
-      { path: ROUTES.AUDIT_LOGS, label: "Nhật ký kiểm tra" },
+      { screen: "IAM-01", label: "Danh sách người dùng & phân quyền" },
+      { screen: "IAM-02", label: "Thêm / sửa người dùng" },
+      { screen: "MST-01", path: ROUTES.MASTER_DATA, label: "Danh sách SKU / Product Master" },
+      { screen: "MST-02", path: ROUTES.MASTER_DATA, label: "Tạo / sửa SKU" },
+      { screen: "AGY-01", label: "Danh mục đại lý / nơi nhận" },
+      { screen: "AGY-02", label: "Thêm / sửa đại lý" },
+      { screen: "DEF-01", label: "Danh mục bệnh / lỗi" },
+      { screen: "DEF-02", label: "Thêm / sửa bệnh / lỗi" },
     ],
   },
   {
     name: "02 · Nhập kho",
     items: [
-      { path: ROUTES.INBOUND, label: "Danh sách phiếu nhập" },
-      { path: ROUTES.PUTAWAY, label: "Putaway linh kiện vào khay" },
+      { screen: "IN-01", path: ROUTES.INBOUND, label: "Danh sách phiếu nhập" },
+      { screen: "IN-02", path: ROUTES.INBOUND, label: "Tạo / sửa phiếu nhập DRAFT" },
+      { screen: "IN-03", path: ROUTES.INBOUND, label: "Quét & Full Post Receipt" },
+      { screen: "PTW-00", path: ROUTES.PUTAWAY, label: "Danh sách linh kiện chờ xếp khay" },
+      { screen: "PTW-01", path: ROUTES.PUTAWAY, label: "Putaway linh kiện vào khay" },
     ],
   },
   {
     name: "03 · Xuất kho",
-    items: [{ path: ROUTES.OUTBOUND, label: "Danh sách phiếu xuất" }],
+    items: [
+      { screen: "OUT-REQ-01", path: ROUTES.OUTBOUND, label: "Tiếp nhận Phiếu yêu cầu xuất" },
+      { screen: "OUT-01", path: ROUTES.OUTBOUND, label: "Danh sách phiếu xuất" },
+      { screen: "OUT-03", path: ROUTES.OUTBOUND, label: "Chi tiết phiếu xuất" },
+      { screen: "OUT-02", path: ROUTES.OUTBOUND, label: "Quét & match Item" },
+      { screen: "LBL-01", path: ROUTES.OUTBOUND, label: "Nhãn từng Item" },
+      { screen: "RFID-01", path: ROUTES.OUTBOUND, label: "Map RFID & Full Post Issue" },
+    ],
   },
   {
     name: "04 · Bảo hành & linh kiện",
-    items: [{ path: ROUTES.WARRANTY, label: "Danh sách bảo hành" }],
+    items: [
+      { screen: "WAR-01", path: ROUTES.WARRANTY, label: "Danh sách bảo hành" },
+      { screen: "WAR-02", path: ROUTES.WARRANTY, label: "Tiếp nhận bảo hành" },
+      { screen: "WAR-03", path: ROUTES.WARRANTY, label: "Chi tiết bảo hành" },
+      { screen: "COMP-01", path: ROUTES.WARRANTY, label: "Xuất linh kiện cho bảo hành" },
+    ],
   },
   {
     name: "05 · Tồn kho & kiểm soát",
     items: [
-      { path: ROUTES.INVENTORY, label: "Tra cứu tồn & đối soát" },
-      { path: ROUTES.SCAN, label: "Truy vết mã vật lý" },
-      { path: ROUTES.REVERSE, label: "Danh sách phiếu Reversal" },
-      { path: ROUTES.STOCKTAKE, label: "Kiểm kê" },
+      { screen: "INV-01", path: ROUTES.INVENTORY, label: "Tra cứu tồn & đối soát" },
+      { screen: "TRACE-01", path: ROUTES.SCAN, label: "Truy vết mã vật lý" },
+      { screen: "REV-00", path: ROUTES.REVERSE, label: "Danh sách phiếu Reversal" },
+      { screen: "REV-01", path: ROUTES.REVERSE, label: "Tạo Reversal" },
     ],
   },
   {
     name: "06 · Báo cáo",
-    items: [{ path: ROUTES.REPORTS, label: "Báo cáo vận hành" }],
+    items: [{ screen: "RPT-01", path: ROUTES.REPORTS, label: "Báo cáo vận hành" }],
   },
 ];
+
+const DEFAULT_SCREEN_BY_PATH: Record<string, string> = {
+  [ROUTES.DASHBOARD]: "MAP-01",
+  [ROUTES.MASTER_DATA]: "MST-01",
+  [ROUTES.INBOUND]: "IN-01",
+  [ROUTES.PUTAWAY]: "PTW-00",
+  [ROUTES.OUTBOUND]: "OUT-01",
+  [ROUTES.WARRANTY]: "WAR-01",
+  [ROUTES.INVENTORY]: "INV-01",
+  [ROUTES.SCAN]: "TRACE-01",
+  [ROUTES.REVERSE]: "REV-00",
+  [ROUTES.REPORTS]: "RPT-01",
+};
 
 function matchesPath(currentPath: string, targetPath: string) {
   return (
@@ -75,8 +107,12 @@ export function SideNav() {
   const navigate = useNavigate();
   const permissionCodes = useAuthStore((state) => state.permissionCodes);
   const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
+  const selectedScreen =
+    new URLSearchParams(location.search).get("screen") ??
+    DEFAULT_SCREEN_BY_PATH[location.pathname];
 
-  const canAccess = (path: string) => {
+  const canAccess = (path?: string) => {
+    if (!path) return isSuperAdmin;
     if (isSuperAdmin) return true;
     const required = ROUTE_PERMISSIONS[path];
     if (!required) return true;
@@ -87,9 +123,7 @@ export function SideNav() {
   return (
     <nav data-testid="primary-navigation" aria-label="Điều hướng chính">
       <div className="hn-mvp-brand">
-        <div className="hn-mvp-logo" aria-hidden="true">
-          HN
-        </div>
+        <div className="hn-mvp-logo" aria-hidden="true">HN</div>
         <div className="hn-mvp-brand-copy">
           <h1>Hoa Nam WMS</h1>
           <p>Wireframe BA · MVP · Chưa gồm App PV</p>
@@ -104,14 +138,20 @@ export function SideNav() {
           <section key={group.name} aria-label={group.name}>
             <div className="hn-mvp-group">{group.name}</div>
             {visibleItems.map((item) => {
-              const active = matchesPath(location.pathname, item.path);
+              const routeMatches = item.path
+                ? matchesPath(location.pathname, item.path)
+                : false;
+              const active = selectedScreen === item.screen && (routeMatches || !item.path);
               return (
                 <button
-                  key={item.path}
+                  key={item.screen}
                   type="button"
                   className={`hn-mvp-nav-btn${active ? " active" : ""}`}
                   aria-current={active ? "page" : undefined}
-                  onClick={() => navigate(item.path)}
+                  onClick={() => {
+                    if (!item.path) return;
+                    navigate(`${item.path}?screen=${item.screen}`);
+                  }}
                 >
                   {item.label}
                 </button>
