@@ -6,12 +6,14 @@ const {
   setTokenMock,
   logoutMock,
   setStateMock,
+  getRefreshTokenMock,
 } = vi.hoisted(() => ({
   rehydrateMock: vi.fn(),
   clearStorageMock: vi.fn(),
   setTokenMock: vi.fn(),
   logoutMock: vi.fn(),
   setStateMock: vi.fn(),
+  getRefreshTokenMock: vi.fn(),
 }));
 
 vi.mock("@/shared/store/auth.store", () => ({
@@ -23,6 +25,10 @@ vi.mock("@/shared/store/auth.store", () => ({
     getState: () => ({ setToken: setTokenMock, logout: logoutMock }),
     setState: setStateMock,
   },
+}));
+
+vi.mock("@/shared/lib/memory-storage", () => ({
+  memoryStorage: { getRefreshToken: getRefreshTokenMock },
 }));
 
 const { refreshMock } = vi.hoisted(() => ({ refreshMock: vi.fn() }));
@@ -37,6 +43,18 @@ describe("bootstrapAuth WWHN-165", () => {
     vi.clearAllMocks();
     rehydrateMock.mockResolvedValue(undefined);
     clearStorageMock.mockResolvedValue(undefined);
+    getRefreshTokenMock.mockReturnValue("refresh-token");
+  });
+
+  it("không có refresh token memory -> anonymous bình thường, không gọi API", async () => {
+    getRefreshTokenMock.mockReturnValue(null);
+
+    await bootstrapAuth();
+
+    expect(refreshMock).not.toHaveBeenCalled();
+    expect(logoutMock).toHaveBeenCalledTimes(1);
+    expect(clearStorageMock).toHaveBeenCalledTimes(1);
+    expect(setStateMock).toHaveBeenCalledWith({ isBootstrapped: true });
   });
 
   it("401 hết phiên -> clear local session, không tạo bootstrapError", async () => {
@@ -54,9 +72,7 @@ describe("bootstrapAuth WWHN-165", () => {
     expect(logoutMock).toHaveBeenCalledTimes(1);
     expect(clearStorageMock).toHaveBeenCalledTimes(1);
     expect(setTokenMock).not.toHaveBeenCalled();
-    expect(setStateMock).toHaveBeenCalledWith({
-      isBootstrapped: true,
-    });
+    expect(setStateMock).toHaveBeenCalledWith({ isBootstrapped: true });
     expect(setStateMock).not.toHaveBeenCalledWith({ bootstrapError: error });
   });
 
