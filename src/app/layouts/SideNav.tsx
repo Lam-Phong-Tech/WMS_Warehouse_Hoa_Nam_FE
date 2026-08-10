@@ -54,7 +54,7 @@ export function SideNav({ collapsed = false, onNavigate }: Props) {
       </div>
 
       <Menu
-        theme="dark"
+        theme="light"
         mode="inline"
         selectedKeys={[getSelectedKey(location.pathname, location.search)]}
         openKeys={openKeys}
