@@ -7,17 +7,27 @@
  */
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { expect, test, type Page, type Route, type TestInfo } from "@playwright/test";
+import {
+  expect,
+  test,
+  type Page,
+  type Route,
+  type TestInfo,
+} from "@playwright/test";
 
 const BASE_URL = process.env.E2E_BASE_URL ?? "http://127.0.0.1:5173";
-const SOURCE_SHA = process.env.SOURCE_SHA ?? process.env.GITHUB_SHA ?? "local-uncommitted";
+const SOURCE_SHA =
+  process.env.SOURCE_SHA ?? process.env.GITHUB_SHA ?? "local-uncommitted";
 const APP_ENV = process.env.VITE_APP_ENV ?? "local";
 const BUILD_VERSION = process.env.VITE_APP_VERSION ?? "local-dev";
 const EVIDENCE_ROOT =
-  process.env.WWHN_144_EVIDENCE_DIR ?? join("test-results", "wwhn-144", SOURCE_SHA);
+  process.env.WWHN_144_EVIDENCE_DIR ??
+  join("test-results", "wwhn-144", SOURCE_SHA);
 
-const MOCK_ACCESS_TOKEN = process.env.E2E_MOCK_ACCESS_TOKEN ?? "wwhn-144-access-token";
-const MOCK_REFRESH_TOKEN = process.env.E2E_MOCK_REFRESH_TOKEN ?? "wwhn-144-refresh-token";
+const MOCK_ACCESS_TOKEN =
+  process.env.E2E_MOCK_ACCESS_TOKEN ?? "wwhn-144-access-token";
+const MOCK_REFRESH_TOKEN =
+  process.env.E2E_MOCK_REFRESH_TOKEN ?? "wwhn-144-refresh-token";
 
 const VIEWPORTS = [
   { key: "desktop", width: 1440, height: 900 },
@@ -65,7 +75,10 @@ async function captureEvidence(
   const metadataFilename = `${prefix}.json`;
 
   mkdirSync(EVIDENCE_ROOT, { recursive: true });
-  await page.screenshot({ path: join(EVIDENCE_ROOT, screenshotFilename), fullPage: true });
+  await page.screenshot({
+    path: join(EVIDENCE_ROOT, screenshotFilename),
+    fullPage: true,
+  });
 
   const metadata = {
     ticket: "WWHN-144",
@@ -124,7 +137,10 @@ function authResponse(options: Required<MockAuthOptions>) {
   };
 }
 
-async function setupMockApi(page: Page, partial: MockAuthOptions = {}): Promise<void> {
+async function setupMockApi(
+  page: Page,
+  partial: MockAuthOptions = {},
+): Promise<void> {
   const options: Required<MockAuthOptions> = {
     refreshSuccess: partial.refreshSuccess ?? false,
     isSuperAdmin: partial.isSuperAdmin ?? false,
@@ -216,7 +232,9 @@ test.beforeEach(async ({ context }) => {
 });
 
 test.describe("WWHN-144 / WWHN-145 closure", () => {
-  test("anonymous direct URL is fail-closed and redirects to login", async ({ page }, testInfo) => {
+  test("anonymous direct URL is fail-closed and redirects to login", async ({
+    page,
+  }, testInfo) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await setupMockApi(page, { refreshSuccess: false });
 
@@ -236,7 +254,9 @@ test.describe("WWHN-144 / WWHN-145 closure", () => {
     });
   });
 
-  test("limited role menu is filtered and forbidden direct URL renders 403", async ({ page }, testInfo) => {
+  test("limited role menu is filtered and forbidden direct URL renders 403", async ({
+    page,
+  }, testInfo) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await setupMockApi(page, {
       refreshSuccess: true,
@@ -245,12 +265,18 @@ test.describe("WWHN-144 / WWHN-145 closure", () => {
 
     await page.goto(`${BASE_URL}/dashboard`);
     await expect(page.getByTestId("primary-navigation")).toBeVisible();
-    await expect(page.getByText("Tra cứu tồn & đối soát", { exact: true })).toBeVisible();
-    await expect(page.getByText("Danh sách SKU / Product Master", { exact: true })).toHaveCount(0);
+    await expect(
+      page.getByText("Tra cứu tồn & đối soát", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("Danh sách SKU / Product Master", { exact: true }),
+    ).toHaveCount(0);
 
     await page.goto(`${BASE_URL}/master-data?source=direct-url`);
     await expect(page).toHaveURL(/\/errors\/403$/);
-    await expect(page.getByText("Không có quyền truy cập", { exact: true })).toBeVisible();
+    await expect(
+      page.getByText("Không có quyền truy cập", { exact: true }),
+    ).toBeVisible();
 
     await captureEvidence(page, testInfo, {
       scenario: "limited-role-menu-direct-url-403",
@@ -267,7 +293,9 @@ test.describe("WWHN-144 / WWHN-145 closure", () => {
     });
   });
 
-  test("authenticated user can open /errors/403 directly", async ({ page }, testInfo) => {
+  test("authenticated user can open /errors/403 directly", async ({
+    page,
+  }, testInfo) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await setupMockApi(page, {
       refreshSuccess: true,
@@ -276,7 +304,9 @@ test.describe("WWHN-144 / WWHN-145 closure", () => {
 
     await page.goto(`${BASE_URL}/errors/403`);
     await expect(page).toHaveURL(/\/errors\/403$/);
-    await expect(page.getByText("Không có quyền truy cập", { exact: true })).toBeVisible();
+    await expect(
+      page.getByText("Không có quyền truy cập", { exact: true }),
+    ).toBeVisible();
 
     await captureEvidence(page, testInfo, {
       scenario: "authenticated-errors-403-route",
@@ -291,12 +321,50 @@ test.describe("WWHN-144 / WWHN-145 closure", () => {
     });
   });
 
+  test("BA source-port navigation renders exact screen inventory", async ({
+    page,
+  }, testInfo) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await setupMockApi(page, { refreshSuccess: true, isSuperAdmin: true });
+
+    await page.goto(`${BASE_URL}/dashboard?screen=MAP-01`);
+    await expect(page.locator('[data-mvp-screen="MAP-01"]')).toBeVisible();
+    await expect(
+      page.getByText("Wireframe mức low-fi · Nguồn BA: BRD / SRS-FRD / BPD hiện tại."),
+    ).toBeVisible();
+
+    await page.getByText("Danh sách SKU / Product Master", { exact: true }).click();
+    await expect(page).toHaveURL(/\/master-data\?screen=MST-01$/);
+    await expect(page.locator('[data-mvp-screen="MST-01"]')).toBeVisible();
+    await expect(page.getByRole("columnheader", { name: "Theo dõi serial" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "+ Tạo SKU" })).toBeVisible();
+
+    await captureEvidence(page, testInfo, {
+      scenario: "verbatim-ba-source-screen-navigation",
+      role: "super_admin",
+      viewport: { width: 1440, height: 900 },
+      route: "/master-data?screen=MST-01",
+      result: "PASS",
+      assertions: [
+        "MAP-01 is rendered by the verbatim BA source-port",
+        "Sidebar navigates to the exact MST-01 screen id",
+        "MST-01 preserves BA table column wording",
+        "MST-01 preserves the BA create-SKU action wording",
+      ],
+    });
+  });
+
   for (const viewport of VIEWPORTS) {
-    test(`responsive shell ${viewport.width}x${viewport.height}`, async ({ page }, testInfo) => {
-      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    test(`responsive shell ${viewport.width}x${viewport.height}`, async ({
+      page,
+    }, testInfo) => {
+      await page.setViewportSize({
+        width: viewport.width,
+        height: viewport.height,
+      });
       await setupMockApi(page, { refreshSuccess: true, isSuperAdmin: true });
-      await page.goto(`${BASE_URL}/dashboard`);
-      await expect(page).toHaveURL(/\/dashboard$/);
+      await page.goto(`${BASE_URL}/dashboard?screen=MAP-01`);
+      await expect(page).toHaveURL(/\/dashboard\?screen=MAP-01$/);
 
       const app = page.locator(".hn-mvp-app");
       const aside = page.locator(".hn-mvp-aside");
@@ -305,8 +373,11 @@ test.describe("WWHN-144 / WWHN-145 closure", () => {
       await expect(aside).toBeVisible();
       await expect(main).toBeVisible();
       await expect(page.getByTestId("primary-navigation")).toBeVisible();
+      await expect(page.locator('[data-mvp-screen="MAP-01"]')).toBeVisible();
       await expect(page.getByText("Hoa Nam WMS", { exact: true })).toBeVisible();
-      await expect(page.getByText("Bản đồ màn hình & phạm vi", { exact: true }).first()).toBeVisible();
+      await expect(
+        page.getByText("Bản đồ màn hình & phạm vi", { exact: true }).first(),
+      ).toBeVisible();
 
       const asideBox = await aside.boundingBox();
       const mainBox = await main.boundingBox();
@@ -318,11 +389,15 @@ test.describe("WWHN-144 / WWHN-145 closure", () => {
         expect(Math.round(mainBox?.x ?? 0)).toBe(300);
       } else {
         expect(Math.round(asideBox?.width ?? 0)).toBe(viewport.width);
-        expect((mainBox?.y ?? 0) >= (asideBox?.height ?? 0) - 1).toBeTruthy();
+        expect(
+          (mainBox?.y ?? 0) >= (asideBox?.height ?? 0) - 1,
+        ).toBeTruthy();
       }
 
       const hasHorizontalOverflow = await page.evaluate(
-        () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+        () =>
+          document.documentElement.scrollWidth >
+          document.documentElement.clientWidth,
       );
       expect(hasHorizontalOverflow).toBeFalsy();
 
@@ -330,11 +405,12 @@ test.describe("WWHN-144 / WWHN-145 closure", () => {
         scenario: `responsive-${viewport.key}`,
         role: "super_admin",
         viewport: { width: viewport.width, height: viewport.height },
-        route: "/dashboard",
+        route: "/dashboard?screen=MAP-01",
         result: "PASS",
         assertions: [
           `Required viewport ${viewport.width}x${viewport.height} rendered`,
           "Authenticated session bootstrap completed before shell assertions",
+          "MAP-01 is rendered from the verbatim BA source-port",
           viewport.width > 980
             ? "Desktop renders the exact 300px MVP sidebar"
             : "<=980px renders the MVP stacked sidebar/main layout",
