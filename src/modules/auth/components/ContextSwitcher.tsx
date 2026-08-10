@@ -15,15 +15,11 @@ import {
 } from "@/modules/auth/utils/context";
 import { layoutStyles } from "@/app/layouts/layout.styles";
 
-/**
- * Bộ chuyển bối cảnh làm việc (vai trò + phạm vi) — gọi thật
- * POST /auth/switch-context (cấp JWT mới) rồi refetch /auth/me, không chỉ
- * đổi label cục bộ. Danh sách lựa chọn từ `contexts` (seed từ login,
- * sau đó đồng bộ lại từ available_contexts của /auth/me).
- */
+/** Chuyển warehouse scope bằng đúng contract POST /api/v1/auth/switch-context. */
 export function ContextSwitcher() {
   const contexts = useAuthStore((s) => s.contexts);
   const current = useAuthStore((s) => s.currentContext);
+  const setCurrentContext = useAuthStore((s) => s.setCurrentContext);
   const switchContext = useSwitchContext();
 
   if (!current) return null;
@@ -32,16 +28,11 @@ export function ContextSwitcher() {
     <Space size={6}>
       <ApartmentOutlined style={layoutStyles.contextSwitcherIcon} />
       <span style={layoutStyles.contextSwitcherLabel}>{current.role_name}</span>
-      <Tag color="purple" style={layoutStyles.contextSwitcherTag}>
-        {getScopeName(current)}
-      </Tag>
+      <Tag style={layoutStyles.contextSwitcherTag}>{getScopeName(current)}</Tag>
     </Space>
   );
 
-  // Chỉ có 1 bối cảnh: hiển thị tĩnh, không cần dropdown.
-  if (contexts.length <= 1) {
-    return label;
-  }
+  if (contexts.length <= 1) return label;
 
   const currentKey = getContextKey(current);
   const items: MenuProps["items"] = contexts.map((ctx) => {
@@ -56,9 +47,7 @@ export function ContextSwitcher() {
         ),
       label: (
         <div style={layoutStyles.contextSwitcherItem}>
-          <div style={layoutStyles.contextSwitcherItemTitle}>
-            {ctx.role_name}
-          </div>
+          <div style={layoutStyles.contextSwitcherItemTitle}>{ctx.role_name}</div>
           <Typography.Text
             type="secondary"
             style={layoutStyles.contextSwitcherItemMeta}
@@ -71,16 +60,24 @@ export function ContextSwitcher() {
         if (key === currentKey) return;
         switchContext.mutate(
           {
-            role_id: ctx.role_id,
-            org_unit_id: ctx.org_unit_id,
-            department_id: ctx.department_id,
-            warehouse_id: ctx.warehouse_id,
+            context_type:
+              ctx.context_type ?? (ctx.scope_ref ? "WAREHOUSE" : "SYSTEM"),
+            context_id: ctx.context_id ?? ctx.scope_ref ?? null,
+            scope_ref: ctx.scope_ref ?? null,
           },
           {
+            onSuccess: (result) => {
+              const confirmed = contexts.find((candidate) => {
+                const active = result.active_context;
+                if (active.scope_ref) return candidate.scope_ref === active.scope_ref;
+                if (active.context_id)
+                  return candidate.context_id === active.context_id;
+                return !candidate.scope_ref && !candidate.context_id;
+              });
+              setCurrentContext(confirmed ?? ctx);
+            },
             onError: () => {
-              toast.error(
-                "Không thể chuyển bối cảnh hoạt động, vui lòng thử lại.",
-              );
+              toast.error("Không thể chuyển phạm vi kho, vui lòng thử lại.");
             },
           },
         );

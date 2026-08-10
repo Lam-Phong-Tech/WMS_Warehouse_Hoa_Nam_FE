@@ -76,12 +76,15 @@ requirePatterns("src/shared/store/auth.store.ts", [
   /currentContext:\s*null/,
   /permissionCodes:\s*\[\]/,
   /isProfileLoaded:\s*false/,
+  /permissionCodes:\s*me\.permissions/,
 ]);
-requirePatterns("src/app/bootstrap-auth.ts", [/activeBootstrap/, /isInvalidSession/, /bootstrapError:\s*error/, /persist\.clearStorage/]);
+requirePatterns("src/app/bootstrap-auth.ts", [/activeBootstrap/, /isInvalidSession/, /bootstrapError:\s*error/, /persist\.clearStorage/, /getRefreshToken/]);
 requirePatterns("src/app/router/ProtectedRoute.tsx", [/Không thể khôi phục phiên làm việc/, /bootstrapAuth\(\)/, /Không thể tải hồ sơ và phân quyền/]);
 requirePatterns("src/modules/auth/hooks/use-me.ts", [/queryKey:\s*\["auth",\s*"me",\s*token\]/, /status === 401 \|\| status === 403/]);
-requirePatterns("src/modules/auth/hooks/use-login.ts", [/available_contexts\.length >= 2/, /authService\.switchContext/, /useAuthStore\.getState\(\)\.logout\(\)/]);
-requirePatterns("src/modules/auth/services/auth.service.ts", [/class AuthContractError/, /AUTH_CONTRACT_INVALID/, /requireNonEmptyString\(data\.access_token/, /normalizeTokenResponse/]);
+requirePatterns("src/modules/auth/hooks/use-login.ts", [/authService\.login/, /setAuth\(/, /refreshToken:\s*data\.refresh_token/, /available_contexts/]);
+requirePatterns("src/modules/auth/types/auth.types.ts", [/context_type/, /context_id/, /scope_ref/, /refresh_token:\s*string/]);
+requirePatterns("src/modules/auth/services/auth.service.ts", [/class AuthContractError/, /AUTH_CONTRACT_INVALID/, /requireNonEmptyString\(data\.access_token/, /normalizeTokenResponse/, /warehouse_scope_ids/, /refresh_token:\s*refreshToken/]);
+requirePatterns("src/modules/auth/components/ContextSwitcher.tsx", [/context_type:/, /context_id:/, /scope_ref:/]);
 requirePatterns("src/shared/api/axios.ts", [/isAuthEndpoint/, /refreshStatus === 401 \|\| refreshStatus === 403/, /setToken\(token\)/, /Network\/5xx/]);
 requirePatterns("e2e/wwhn-165-auth-session.spec.ts", [/bootstrap 503 stays fail-closed/, /limited role navigation/, /logout clears protected session/, /env-/, /sha-/, /role-/, /viewport-/]);
 
@@ -119,4 +122,4 @@ if (failures.length) {
   failures.forEach((failure) => console.error(`[wwhn-165] ERROR: ${failure}`));
   process.exit(1);
 }
-console.log("[wwhn-165] PASS: auth/session controls, verified CI artifact, evidence index, blob supersession and independent final gates are enforced.");
+console.log("[wwhn-165] PASS: auth/session controls, backend-m1 auth contract mapping and independent final gates are enforced.");

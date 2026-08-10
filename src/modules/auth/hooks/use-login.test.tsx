@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
@@ -20,15 +20,18 @@ vi.mock("@/modules/auth/services/auth.service", () => ({
 const EMAIL = "operator@gmail.com";
 const PASSWORD = "<TEST_LOGIN_PASSWORD>";
 const CONTEXT = {
-  role_id: 10,
+  role_id: "role-warehouse",
   role_name: "Quản lý kho",
   scope_type: "kho",
   org_unit_id: null,
   org_unit_name: null,
   department_id: null,
   department_name: null,
-  warehouse_id: 20,
-  warehouse_name: "Kho chính",
+  warehouse_id: null,
+  warehouse_name: "WH-HN-01",
+  context_type: "WAREHOUSE",
+  context_id: "WH-HN-01",
+  scope_ref: "WH-HN-01",
 };
 
 function LoginHarness() {
@@ -75,11 +78,11 @@ describe("useLogin WWHN-165", () => {
     useAuthStore.setState({ isBootstrapped: true });
   });
 
-  it("khôi phục protected URL sau login một context", async () => {
+  it("khôi phục protected URL sau login và commit access/refresh token", async () => {
     vi.mocked(authService.login).mockResolvedValue({
       access_token: "access-token",
       refresh_token: "refresh-token",
-      token_type: "Bearer",
+      token_type: "bearer",
       expires_in: 3600,
       available_contexts: [CONTEXT],
       user: { id: 1, name: "Quang", email: EMAIL, code: "HN-FE-01" },
@@ -95,51 +98,24 @@ describe("useLogin WWHN-165", () => {
 
     expect(await screen.findByText("Inbound restored")).toBeInTheDocument();
     expect(useAuthStore.getState().token).toBe("access-token");
-    expect(useAuthStore.getState().currentContext).toBeNull();
+    expect(useAuthStore.getState().currentContext).toEqual(CONTEXT);
   });
 
-  it("nhiều context: switch thất bại thì không mở shell bằng JWT trung gian", async () => {
+  it("nhiều warehouse context không tự gửi payload role_id legacy", async () => {
+    const secondContext = {
+      ...CONTEXT,
+      role_id: "role-warehouse-2",
+      warehouse_name: "WH-HN-02",
+      context_id: "WH-HN-02",
+      scope_ref: "WH-HN-02",
+    };
     vi.mocked(authService.login).mockResolvedValue({
-      access_token: "intermediate-token",
+      access_token: "access-token",
       refresh_token: "refresh-token",
-      token_type: "Bearer",
+      token_type: "bearer",
       expires_in: 3600,
-      available_contexts: [CONTEXT, { ...CONTEXT, role_id: 11 }],
+      available_contexts: [CONTEXT, secondContext],
       user: { id: 1, name: "Quang", email: EMAIL, code: "HN-FE-01" },
-    });
-    vi.mocked(authService.switchContext).mockRejectedValue(
-      new Error("switch-context failed"),
-    );
-    vi.mocked(authService.logout).mockResolvedValue(null);
-
-    renderHarness(
-      <Routes>
-        <Route path={ROUTES.LOGIN} element={<LoginHarness />} />
-        <Route path={ROUTES.INBOUND} element={<div>Protected shell</div>} />
-      </Routes>,
-    );
-    await userEvent.click(screen.getByRole("button", { name: "Login" }));
-
-    expect(await screen.findByText("Login failed")).toBeInTheDocument();
-    await waitFor(() => expect(authService.switchContext).toHaveBeenCalled());
-    expect(screen.queryByText("Protected shell")).not.toBeInTheDocument();
-    expect(useAuthStore.getState().isAuthenticated).toBe(false);
-    expect(useAuthStore.getState().token).toBeNull();
-  });
-
-  it("nhiều context: chỉ commit token cuối sau switch thành công", async () => {
-    vi.mocked(authService.login).mockResolvedValue({
-      access_token: "intermediate-token",
-      refresh_token: "refresh-token",
-      token_type: "Bearer",
-      expires_in: 3600,
-      available_contexts: [CONTEXT, { ...CONTEXT, role_id: 11 }],
-      user: { id: 1, name: "Quang", email: EMAIL, code: "HN-FE-01" },
-    });
-    vi.mocked(authService.switchContext).mockResolvedValue({
-      access_token: "context-token",
-      token_type: "Bearer",
-      expires_in: 3600,
     });
 
     renderHarness(
@@ -151,7 +127,24 @@ describe("useLogin WWHN-165", () => {
     await userEvent.click(screen.getByRole("button", { name: "Login" }));
 
     expect(await screen.findByText("Protected shell")).toBeInTheDocument();
-    expect(useAuthStore.getState().token).toBe("context-token");
-    expect(useAuthStore.getState().isProfileLoaded).toBe(false);
+    expect(authService.switchContext).not.toHaveBeenCalled();
+    expect(useAuthStore.getState().contexts).toEqual([CONTEXT, secondContext]);
+    expect(useAuthStore.getState().token).toBe("access-token");
+  });
+
+  it("login lỗi không tạo authenticated state", async () => {
+    vi.mocked(authService.login).mockRejectedValue(new Error("login failed"));
+
+    renderHarness(
+      <Routes>
+        <Route path={ROUTES.LOGIN} element={<LoginHarness />} />
+        <Route path={ROUTES.INBOUND} element={<div>Protected shell</div>} />
+      </Routes>,
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Login" }));
+
+    expect(await screen.findByText("Login failed")).toBeInTheDocument();
+    expect(useAuthStore.getState().isAuthenticated).toBe(false);
+    expect(useAuthStore.getState().token).toBeNull();
   });
 });

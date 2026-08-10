@@ -11,26 +11,49 @@ const mockUser = {
 };
 
 const CTX_A: AuthContext = {
-  role_id: 1,
+  role_id: "role-a",
   role_name: "Nhân viên",
-  scope_type: "chi_nhanh",
-  org_unit_id: 2,
-  org_unit_name: "Chi nhánh A",
+  scope_type: "kho",
+  org_unit_id: null,
+  org_unit_name: null,
   department_id: null,
   department_name: null,
   warehouse_id: null,
-  warehouse_name: null,
+  warehouse_name: "WH-A",
+  context_type: "WAREHOUSE",
+  context_id: "WH-A",
+  scope_ref: "WH-A",
 };
 
 const CTX_B: AuthContext = {
   ...CTX_A,
-  role_id: 2,
+  role_id: "role-b",
   role_name: "Quản lý kho",
-  scope_type: "kho",
-  org_unit_id: null,
-  org_unit_name: null,
-  warehouse_id: 5,
-  warehouse_name: "Kho Tổng",
+  warehouse_name: "WH-B",
+  context_id: "WH-B",
+  scope_ref: "WH-B",
+};
+
+const baseMe = {
+  id: 1,
+  name: "Test",
+  email: "t@erp.vn",
+  code: "T1",
+  roles: [
+    {
+      role_id: "role-a",
+      role_code: "WAREHOUSE_STAFF",
+      role_name: "Nhân viên",
+      scope_ref: "WH-A",
+    },
+  ],
+  permissions: ["EMP_VIEW", "ORG_VIEW"],
+  warehouse_scope_ids: ["WH-A"],
+  company: null,
+  branch: null,
+  department: null,
+  position: null,
+  role: { id: 1, name: "Nhân viên", permissions: [] },
 };
 
 describe("useAuthStore WWHN-165", () => {
@@ -46,20 +69,22 @@ describe("useAuthStore WWHN-165", () => {
     expect(state.isAuthenticated).toBe(false);
   });
 
-  it("setAuth không suy diễn context/quyền trước GET /auth/me", () => {
+  it("setAuth commit context hiển thị nhưng chưa cấp permission trước /auth/me", () => {
     useAuthStore
       .getState()
       .setAuth({ token: "abc", user: mockUser, contexts: [CTX_A, CTX_B] });
     const state = useAuthStore.getState();
     expect(state.isAuthenticated).toBe(true);
     expect(state.contexts).toEqual([CTX_A, CTX_B]);
-    expect(state.currentContext).toBeNull();
+    expect(state.currentContext).toEqual(CTX_A);
     expect(state.permissionCodes).toEqual([]);
     expect(state.isProfileLoaded).toBe(false);
   });
 
-  it("setToken thu hồi profile/quyền cũ ngay khi JWT đổi", () => {
-    useAuthStore.getState().setAuth({ token: "abc", user: mockUser });
+  it("setToken thu hồi profile/quyền cũ nhưng giữ warehouse context đã chọn", () => {
+    useAuthStore
+      .getState()
+      .setAuth({ token: "abc", user: mockUser, contexts: [CTX_A] });
     useAuthStore.setState({
       currentContext: CTX_A,
       permissionCodes: ["inventory.view"],
@@ -70,27 +95,19 @@ describe("useAuthStore WWHN-165", () => {
     useAuthStore.getState().setToken("new-jwt");
     const state = useAuthStore.getState();
     expect(state.token).toBe("new-jwt");
-    expect(state.currentContext).toBeNull();
+    expect(state.currentContext).toEqual(CTX_A);
     expect(state.permissionCodes).toEqual([]);
     expect(state.isProfileLoaded).toBe(false);
     expect(state.isSuperAdmin).toBe(false);
   });
 
-  it("setProfile nạp quyền đúng active_context", () => {
+  it("setProfile lấy permission top-level theo contract /auth/me BE m1", () => {
     useAuthStore.getState().setProfile({
-      id: 1,
-      name: "Test",
-      email: "t@erp.vn",
-      code: "T1",
-      company: null,
-      branch: null,
-      department: null,
-      position: null,
-      role: { id: 1, name: "Nhân viên", permissions: [] },
-      active_context: { ...CTX_A, permission_codes: ["EMP_VIEW", "ORG_VIEW"] },
+      ...baseMe,
+      active_context: { ...CTX_A, permission_codes: ["LEGACY_CONTEXT_ONLY"] },
       available_contexts: [
-        { ...CTX_A, permission_codes: ["EMP_VIEW", "ORG_VIEW"] },
-        { ...CTX_B, permission_codes: ["WAREHOUSE_VIEW"] },
+        { ...CTX_A, permission_codes: baseMe.permissions },
+        { ...CTX_B, permission_codes: baseMe.permissions },
       ],
     });
 
@@ -101,19 +118,23 @@ describe("useAuthStore WWHN-165", () => {
     expect(state.isProfileLoaded).toBe(true);
   });
 
-  it("is_super_admin runtime được ưu tiên hơn heuristic", () => {
+  it("is_super_admin explicit được ưu tiên", () => {
     useAuthStore.getState().setProfile({
-      id: 1,
+      ...baseMe,
       name: "Super Admin",
       email: "qa-admin@example.com",
-      code: "ADMIN01",
-      company: null,
-      branch: null,
-      department: null,
-      position: null,
-      role: { id: 1, name: "Super Admin", permissions: [] },
-      active_context: { ...CTX_A, permission_codes: [] },
-      available_contexts: [{ ...CTX_A, permission_codes: [] }],
+      roles: [
+        {
+          role_id: "super-admin",
+          role_code: "SUPER_ADMIN",
+          role_name: "Super Admin",
+          scope_ref: null,
+        },
+      ],
+      permissions: [],
+      warehouse_scope_ids: [],
+      active_context: null,
+      available_contexts: [],
       is_super_admin: true,
     });
     expect(useAuthStore.getState().isSuperAdmin).toBe(true);
