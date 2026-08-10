@@ -97,7 +97,6 @@ export function LoginPage() {
                 placeholder="name@hoanam.vn"
                 prefix={<MailOutlined style={{ color: "#8c887e" }} />}
                 type="email"
-                autoComplete="username"
                 autoFocus
                 disabled={isSubmitting}
               />
@@ -109,7 +108,6 @@ export function LoginPage() {
                 placeholder="Nhập mật khẩu"
                 prefix={<LockOutlined style={{ color: "#8c887e" }} />}
                 password
-                autoComplete="current-password"
                 disabled={isSubmitting}
               />
 
