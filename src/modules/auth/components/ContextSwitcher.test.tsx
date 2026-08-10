@@ -8,26 +8,27 @@ import { renderWithProviders } from "@/test/test-utils";
 import type { AuthContext } from "@/modules/auth/types/auth.types";
 
 const CTX_A: AuthContext = {
-  role_id: 1,
-  role_name: "Nhân viên",
-  scope_type: "chi_nhanh",
-  org_unit_id: 2,
-  org_unit_name: "Chi nhánh A",
+  role_id: "role-a",
+  role_name: "Nhân viên kho",
+  scope_type: "kho",
+  org_unit_id: null,
+  org_unit_name: null,
   department_id: null,
   department_name: null,
   warehouse_id: null,
-  warehouse_name: null,
+  warehouse_name: "WH-A",
+  context_type: "WAREHOUSE",
+  context_id: "WH-A",
+  scope_ref: "WH-A",
 };
 
 const CTX_B: AuthContext = {
   ...CTX_A,
-  role_id: 2,
+  role_id: "role-b",
   role_name: "Quản lý kho",
-  scope_type: "kho",
-  org_unit_id: null,
-  org_unit_name: null,
-  warehouse_id: 5,
-  warehouse_name: "Kho Tổng",
+  warehouse_name: "WH-B",
+  context_id: "WH-B",
+  scope_ref: "WH-B",
 };
 
 describe("ContextSwitcher", () => {
@@ -39,17 +40,22 @@ describe("ContextSwitcher", () => {
   it("chỉ có 1 context → hiển thị tĩnh, không có dropdown", () => {
     useAuthStore.setState({ contexts: [CTX_A], currentContext: CTX_A });
     renderWithProviders(<ContextSwitcher />);
-    expect(screen.getByText("Nhân viên")).toBeInTheDocument();
+    expect(screen.getByText("Nhân viên kho")).toBeInTheDocument();
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
   });
 
-  it("nhiều context → chọn context khác gọi POST /auth/switch-context và lưu token mới", async () => {
+  it("chọn kho khác gọi đúng payload BE và lưu token/context mới", async () => {
     const switchContextSpy = vi
       .spyOn(authService, "switchContext")
       .mockResolvedValue({
         access_token: "new-jwt",
         token_type: "bearer",
         expires_in: 3600,
+        active_context: {
+          context_type: "WAREHOUSE",
+          context_id: "WH-B",
+          scope_ref: "WH-B",
+        },
       });
     const user = userEvent.setup();
     useAuthStore.setState({
@@ -59,19 +65,19 @@ describe("ContextSwitcher", () => {
     });
     renderWithProviders(<ContextSwitcher />);
 
-    await user.click(screen.getByText("Nhân viên"));
+    await user.click(screen.getByText("Nhân viên kho"));
     await user.click(await screen.findByText("Quản lý kho"));
 
     await waitFor(() => {
       expect(switchContextSpy).toHaveBeenCalledWith({
-        role_id: CTX_B.role_id,
-        org_unit_id: CTX_B.org_unit_id,
-        department_id: CTX_B.department_id,
-        warehouse_id: CTX_B.warehouse_id,
+        context_type: "WAREHOUSE",
+        context_id: "WH-B",
+        scope_ref: "WH-B",
       });
     });
     await waitFor(() => {
       expect(useAuthStore.getState().token).toBe("new-jwt");
+      expect(useAuthStore.getState().currentContext).toEqual(CTX_B);
     });
   });
 
@@ -80,7 +86,7 @@ describe("ContextSwitcher", () => {
     renderWithProviders(<ContextSwitcher />);
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
     expect(
-      screen.queryByText(/nhân viên|quản lý kho/i),
+      screen.queryByText(/nhân viên kho|quản lý kho/i),
     ).not.toBeInTheDocument();
   });
 });
