@@ -24,7 +24,10 @@ import {
 import { memoryStorage } from "@/shared/lib/memory-storage";
 
 describe("authService contract — BE m1 /api/v1/auth/*", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(memoryStorage.getRefreshToken).mockReturnValue("refresh-current");
+  });
 
   it("POST /auth/login gửi đúng email + password và lưu refresh token", async () => {
     postMock.mockResolvedValue({
@@ -81,7 +84,7 @@ describe("authService contract — BE m1 /api/v1/auth/*", () => {
     ).rejects.toMatchObject({ field: "user.id" });
   });
 
-  it("POST /auth/refresh gửi refresh_token trong body và fail-closed với response sai", async () => {
+  it("POST /auth/refresh gửi memory refresh_token trong body và fail-closed với response sai", async () => {
     postMock.mockResolvedValue({
       access_token: "",
       refresh_token: "refresh-next",
@@ -95,6 +98,24 @@ describe("authService contract — BE m1 /api/v1/auth/*", () => {
     expect(postMock).toHaveBeenCalledWith("/auth/refresh", {
       refresh_token: "refresh-current",
     });
+  });
+
+  it("POST /auth/refresh không có memory token vẫn gọi API để browser gửi HttpOnly cookie", async () => {
+    vi.mocked(memoryStorage.getRefreshToken).mockReturnValue(null);
+    postMock.mockResolvedValue({
+      access_token: "access-from-cookie",
+      refresh_token: "refresh-rotated-from-cookie",
+      token_type: "bearer",
+      expires_in: 3600,
+    });
+
+    const result = await authService.refresh();
+
+    expect(postMock).toHaveBeenCalledWith("/auth/refresh", {});
+    expect(result.access_token).toBe("access-from-cookie");
+    expect(memoryStorage.setRefreshToken).toHaveBeenCalledWith(
+      "refresh-rotated-from-cookie",
+    );
   });
 
   it("POST /auth/refresh lưu refresh token mới sau rotation", async () => {
@@ -119,6 +140,16 @@ describe("authService contract — BE m1 /api/v1/auth/*", () => {
     expect(postMock).toHaveBeenCalledWith("/auth/logout", {
       refresh_token: "refresh-current",
     });
+    expect(memoryStorage.removeRefreshToken).toHaveBeenCalledTimes(1);
+  });
+
+  it("POST /auth/logout không có memory token vẫn gọi API để BE dùng cookie", async () => {
+    vi.mocked(memoryStorage.getRefreshToken).mockReturnValue(null);
+    postMock.mockResolvedValue(null);
+
+    await authService.logout();
+
+    expect(postMock).toHaveBeenCalledWith("/auth/logout", {});
     expect(memoryStorage.removeRefreshToken).toHaveBeenCalledTimes(1);
   });
 
