@@ -66,8 +66,11 @@ export interface SwitchContextResponse {
 }
 
 /**
- * POST /auth/refresh — BE m1 yêu cầu refresh_token trong JSON body và rotate
- * token ở mỗi lần refresh. Token cũ bị revoke; replay có thể khoá toàn bộ phiên.
+ * POST /auth/refresh rotates the refresh token on every success. Browser clients
+ * may omit the JSON refresh_token after F5 because BE reads the long-lived token
+ * from its HttpOnly cookie. Swagger/Postman/non-browser clients may continue to
+ * send refresh_token in the JSON body. The rotated token remains in the response
+ * for backward compatibility and same-tab memory refresh.
  */
 export interface RefreshResponse {
   access_token: string;
