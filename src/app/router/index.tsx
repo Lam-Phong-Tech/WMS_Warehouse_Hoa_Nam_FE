@@ -15,6 +15,7 @@ const AuditLogsPage = lazy(() => import("@/modules/audit-logs/pages/AuditLogsPag
 const DashboardPage = lazy(() => import("@/modules/dashboard/pages/DashboardPage").then((m) => ({ default: m.default })));
 const MasterPage = lazy(() => import("@/modules/master-data/pages/MasterPage").then((m) => ({ default: m.default })));
 const IamUserScreen = lazy(() => import("@/modules/iam/pages/IamUserScreen").then((m) => ({ default: m.IamUserScreen })));
+const IamRolePermissionScreen = lazy(() => import("@/modules/iam/pages/IamRolePermissionScreen").then((m) => ({ default: m.IamRolePermissionScreen })));
 const SkuMasterScreen = lazy(() => import("@/modules/master-data/pages/MvpMasterScreens").then((m) => ({ default: m.SkuMasterScreen })));
 const AgencyMasterScreen = lazy(() => import("@/modules/master-data/pages/MvpMasterScreens").then((m) => ({ default: m.AgencyMasterScreen })));
 const DefectMasterScreen = lazy(() => import("@/modules/master-data/pages/MvpMasterScreens").then((m) => ({ default: m.DefectMasterScreen })));
@@ -50,6 +51,7 @@ export const router = createBrowserRouter([
 
         { path: ROUTES.IAM_USERS, element: routeEl(ROUTES.IAM_USERS, <IamUserScreen />) },
         { path: ROUTES.IAM_USER_CREATE, element: routeEl(ROUTES.IAM_USER_CREATE, <IamUserScreen openCreateOnMount />) },
+        { path: ROUTES.IAM_ROLES, element: routeEl(ROUTES.IAM_ROLES, <IamRolePermissionScreen />) },
         { path: ROUTES.MASTER_DATA, element: routeEl(ROUTES.MASTER_DATA, <SkuMasterScreen />) },
         { path: ROUTES.SKU_CREATE, element: routeEl(ROUTES.SKU_CREATE, <SkuMasterScreen openCreateOnMount />) },
         { path: ROUTES.AGENCIES, element: routeEl(ROUTES.AGENCIES, <AgencyMasterScreen />) },
