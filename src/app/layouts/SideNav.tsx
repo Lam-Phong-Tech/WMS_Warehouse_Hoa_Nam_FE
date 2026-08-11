@@ -8,10 +8,13 @@ type NavItem = { screen: string; label: string; path: string };
 type NavGroup = { name: string; items: NavItem[] };
 
 /**
- * Navigation follows the Hoa Nam MVP screen inventory. Create/edit screens for
- * IAM, SKU, Agency and Defect are folded into their list screens as in-page
- * modals. Each list item deliberately uses its owning route so visibility is
- * evaluated against that domain's RBAC permission rather than /master-data.
+ * Navigation follows the Hoa Nam MVP screen inventory while keeping transactional
+ * subflows inside their owning list screens. Create/edit screens for IAM, SKU,
+ * Agency, Defect and Inbound are in-page modals. Inbound scan/full-post is opened
+ * from the receipt list, and Putaway detail is opened from the pending list.
+ *
+ * Each list item deliberately uses its owning route so visibility is evaluated
+ * against that domain's RBAC permission rather than a presentation-only screen id.
  */
 const NAV_GROUPS: NavGroup[] = [
   {
@@ -58,24 +61,9 @@ const NAV_GROUPS: NavGroup[] = [
         label: "Danh sách phiếu nhập",
       },
       {
-        screen: "IN-02",
-        path: ROUTES.INBOUND,
-        label: "Tạo / sửa phiếu nhập DRAFT",
-      },
-      {
-        screen: "IN-03",
-        path: ROUTES.INBOUND,
-        label: "Quét & Full Post Receipt",
-      },
-      {
         screen: "PTW-00",
         path: ROUTES.PUTAWAY,
         label: "Danh sách linh kiện chờ xếp khay",
-      },
-      {
-        screen: "PTW-01",
-        path: ROUTES.PUTAWAY,
-        label: "Putaway linh kiện vào khay",
       },
     ],
   },
@@ -193,6 +181,9 @@ const MODAL_PARENT_SCREEN: Record<string, string> = {
   "MST-02": "MST-01",
   "AGY-02": "AGY-01",
   "DEF-02": "DEF-01",
+  "IN-02": "IN-01",
+  "IN-03": "IN-01",
+  "PTW-01": "PTW-00",
 };
 
 function matchesPath(currentPath: string, targetPath: string) {
