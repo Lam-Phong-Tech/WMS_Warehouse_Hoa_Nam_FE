@@ -8,12 +8,21 @@ export interface IamRolePivot {
   effective_to?: string | null;
 }
 
+export interface IamPermission {
+  permission_id: string;
+  permission_key: string;
+  permission_name: string;
+  scope_type?: IamRoleScopeType | null;
+  status: IamRoleStatus;
+}
+
 export interface IamRole {
   role_id: string;
   role_code: string;
   role_name: string;
   scope_type?: IamRoleScopeType | null;
   status: IamRoleStatus;
+  permissions?: IamPermission[];
   pivot?: IamRolePivot;
 }
 
@@ -36,6 +45,22 @@ export interface IamUserListParams {
   per_page?: number;
 }
 
+export interface IamRoleListParams {
+  keyword?: string;
+  status?: IamRoleStatus | "";
+  scope_type?: IamRoleScopeType | "";
+  page?: number;
+  per_page?: number;
+}
+
+export interface IamPermissionListParams {
+  keyword?: string;
+  status?: IamRoleStatus | "";
+  scope_type?: IamRoleScopeType | "";
+  page?: number;
+  per_page?: number;
+}
+
 export interface IamUserPayload {
   username: string;
   display_name: string;
@@ -52,4 +77,17 @@ export interface IamUserUpdatePayload extends IamUserPayload {
 export interface IamUserSaveInput {
   user: IamUserPayload | IamUserUpdatePayload;
   roleId: string;
+}
+
+export interface IamRolePayload {
+  role_code: string;
+  role_name: string;
+  scope_type?: IamRoleScopeType | null;
+  status?: IamRoleStatus;
+}
+
+export type IamRoleUpdatePayload = Partial<IamRolePayload>;
+
+export interface IamSyncRolePermissionsPayload {
+  permission_ids: string[];
 }
