@@ -39,10 +39,12 @@ export function useIamUsers(params: IamUserListParams) {
   });
 }
 
+/** Keep data as IamRole[] for existing IAM-01 consumers. */
 export function useIamRoles(params: IamRoleListParams = {}) {
   return useQuery({
     queryKey: iamKeys.roles(params),
     queryFn: () => getIamRoles(params),
+    select: (result) => result.data,
     staleTime: 30_000,
   });
 }
@@ -59,6 +61,7 @@ export function useIamPermissions(params: IamPermissionListParams = {}) {
   return useQuery({
     queryKey: iamKeys.permissions(params),
     queryFn: () => getIamPermissions(params),
+    select: (result) => result.data,
     staleTime: 60_000,
   });
 }
