@@ -7,7 +7,7 @@ export interface RuntimeConfig {
   readonly apiBaseUrl: string;
   readonly apiHealthPath: string;
   readonly apiTimeoutMs: number;
-  readonly apiWithCredentials: boolean;
+  readonly apiWithCredentials: true;
   readonly storageUrl?: string;
   readonly enableAnalytics: boolean;
   readonly enableDebug: boolean;
@@ -85,6 +85,20 @@ function boolEnv(value: string | undefined, key: string): boolean {
   throw new Error(`[env] ${key} must be true, false, 1, or 0.`);
 }
 
+function requiredCredentialedApi(value: string | undefined): true {
+  if (value === undefined || value === "" || value === "true" || value === "1") {
+    return true;
+  }
+  if (value === "false" || value === "0") {
+    throw new Error(
+      "[env] VITE_API_WITH_CREDENTIALS must be true. Browser auth persistence uses an HttpOnly refresh cookie after F5.",
+    );
+  }
+  throw new Error(
+    "[env] VITE_API_WITH_CREDENTIALS must be true or 1 for browser authentication.",
+  );
+}
+
 function numberEnv(value: string | undefined, fallback: number): number {
   if (!value) return fallback;
   const parsed = Number(value);
@@ -121,12 +135,10 @@ export const runtimeConfig: RuntimeConfig = {
     readEnv("VITE_API_TIMEOUT_MS"),
     DEFAULT_API_TIMEOUT_MS,
   ),
-  // Auth bootstrap depends on the BE HttpOnly refresh cookie after F5. Keep
-  // credentialed requests on by default; deployments may explicitly opt out only
-  // if they replace the browser-session transport end to end.
-  apiWithCredentials: boolEnv(
-    readEnv("VITE_API_WITH_CREDENTIALS") ?? "true",
-    "VITE_API_WITH_CREDENTIALS",
+  // This is an authentication invariant, not a feature flag. An old .env with
+  // credentials disabled must fail fast instead of silently reintroducing F5 logout.
+  apiWithCredentials: requiredCredentialedApi(
+    readEnv("VITE_API_WITH_CREDENTIALS"),
   ),
   storageUrl: optionalUrl(readEnv("VITE_STORAGE_URL"), "VITE_STORAGE_URL"),
   enableAnalytics: boolEnv(
