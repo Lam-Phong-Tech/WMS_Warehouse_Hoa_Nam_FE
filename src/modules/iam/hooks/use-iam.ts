@@ -1,10 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import {
   createIamUserWithRole,
   getIamRoles,
   getIamUsers,
   updateIamUserWithRole,
 } from "@/modules/iam/services/iam.service";
+import { getMutationErrorMessage } from "@/shared/api/api-error";
 import type {
   IamUserListParams,
   IamUserPayload,
@@ -37,7 +39,13 @@ export function useCreateIamUser() {
   return useMutation({
     mutationFn: ({ payload, roleId }: { payload: IamUserPayload; roleId: string }) =>
       createIamUserWithRole(payload, roleId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: iamKeys.all }),
+    onSuccess: () => {
+      toast.success("Đã thêm người dùng");
+      queryClient.invalidateQueries({ queryKey: iamKeys.all });
+    },
+    onError: (error) => {
+      toast.error(getMutationErrorMessage(error));
+    },
   });
 }
 
@@ -53,6 +61,12 @@ export function useUpdateIamUser() {
       payload: IamUserUpdatePayload;
       roleId: string;
     }) => updateIamUserWithRole(userId, payload, roleId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: iamKeys.all }),
+    onSuccess: () => {
+      toast.success("Đã cập nhật người dùng");
+      queryClient.invalidateQueries({ queryKey: iamKeys.all });
+    },
+    onError: (error) => {
+      toast.error(getMutationErrorMessage(error));
+    },
   });
 }

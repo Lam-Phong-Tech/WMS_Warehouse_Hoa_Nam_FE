@@ -145,12 +145,7 @@ export function LoginPage() {
               >
                 Đăng nhập
               </Button>
-            </Form>
-
-            <div className="hn-login-note">
-              Phiên đăng nhập sử dụng JWT. Hệ thống tự xoay vòng refresh token
-              và cập nhật quyền/phạm vi kho từ tài khoản hiện hành.
-            </div>
+            </Form>     
           </div>
         </div>
       </section>
