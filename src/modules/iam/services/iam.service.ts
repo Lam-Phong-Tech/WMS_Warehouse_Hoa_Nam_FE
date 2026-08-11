@@ -1,7 +1,13 @@
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { http } from "@/shared/api/http";
 import type {
+  IamPermission,
+  IamPermissionListParams,
   IamRole,
+  IamRoleListParams,
+  IamRolePayload,
+  IamRoleUpdatePayload,
+  IamSyncRolePermissionsPayload,
   IamUser,
   IamUserListParams,
   IamUserPayload,
@@ -30,11 +36,51 @@ export async function getIamUsers(
   return { data: result.data, meta: result.meta };
 }
 
-export async function getIamRoles(): Promise<IamRole[]> {
+export async function getIamRoles(
+  params: IamRoleListParams = {},
+): Promise<IamPageResult<IamRole>> {
   const result = await http.getPage<IamRole[]>(API_ENDPOINTS.ROLES, {
-    params: { per_page: 100, status: "ACTIVE" },
+    params: cleanParams({ ...params, per_page: params.per_page ?? 100 }),
   });
-  return result.data;
+  return { data: result.data, meta: result.meta };
+}
+
+export async function getIamPermissions(
+  params: IamPermissionListParams = {},
+): Promise<IamPageResult<IamPermission>> {
+  const result = await http.getPage<IamPermission[]>(API_ENDPOINTS.PERMISSIONS, {
+    params: cleanParams({ ...params, per_page: params.per_page ?? 100 }),
+  });
+  return { data: result.data, meta: result.meta };
+}
+
+export function getIamRole(roleId: string): Promise<IamRole> {
+  return http.get<IamRole>(`${API_ENDPOINTS.ROLES}/${roleId}`);
+}
+
+export function createIamRole(payload: IamRolePayload): Promise<IamRole> {
+  return http.post<IamRole>(API_ENDPOINTS.ROLES, payload);
+}
+
+export function updateIamRole(
+  roleId: string,
+  payload: IamRoleUpdatePayload,
+): Promise<IamRole> {
+  return http.patch<IamRole>(`${API_ENDPOINTS.ROLES}/${roleId}`, payload);
+}
+
+export function deleteIamRole(roleId: string): Promise<void> {
+  return http.delete<void>(`${API_ENDPOINTS.ROLES}/${roleId}`);
+}
+
+export function syncIamRolePermissions(
+  roleId: string,
+  payload: IamSyncRolePermissionsPayload,
+): Promise<IamRole> {
+  return http.post<IamRole>(
+    `${API_ENDPOINTS.ROLES}/${roleId}/permissions`,
+    payload,
+  );
 }
 
 export function createIamUser(payload: IamUserPayload): Promise<IamUser> {
