@@ -247,7 +247,7 @@ export const authService = {
     memoryStorage.removeRefreshToken();
     return http.post<null>(
       API_ENDPOINTS.LOGOUT,
-      refreshToken ? { refresh_token: refreshToken } : undefined,
+      refreshToken ? { refresh_token: refreshToken } : {},
     );
   },
 
@@ -264,19 +264,24 @@ export const authService = {
     return normalizeTokenResponse(response);
   },
 
-  async refresh() {
-    const refreshToken = memoryStorage.getRefreshToken();
-    if (!refreshToken) {
-      throw new AuthContractError(
-        "refresh_token",
-        "missing refresh token for /auth/refresh",
-      );
-    }
-    const response = await http.post<RefreshResponse>(API_ENDPOINTS.REFRESH, {
-      refresh_token: refreshToken,
-    });
+  /**
+   * Refresh supports two transports:
+   * - memory token in JSON for same-tab/backward-compatible clients;
+   * - HttpOnly cookie when JavaScript memory was lost by F5/new page load.
+   *
+   * The browser cannot inspect the HttpOnly cookie, therefore missing memory state
+   * must never be treated as an unauthenticated session before this request runs.
+   */
+  async refresh(refreshToken?: string) {
+    const token = refreshToken ?? memoryStorage.getRefreshToken();
+    const response = await http.post<RefreshResponse>(
+      API_ENDPOINTS.REFRESH,
+      token ? { refresh_token: token } : {},
+    );
     const normalized = normalizeTokenResponse(response);
-    memoryStorage.setRefreshToken(normalized.refresh_token);
+    memoryStorage.setRefreshToken(
+      requireNonEmptyString(normalized.refresh_token, "refresh_token"),
+    );
     return normalized;
   },
 
