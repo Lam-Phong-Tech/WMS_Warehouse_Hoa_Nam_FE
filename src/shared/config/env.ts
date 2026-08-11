@@ -121,8 +121,11 @@ export const runtimeConfig: RuntimeConfig = {
     readEnv("VITE_API_TIMEOUT_MS"),
     DEFAULT_API_TIMEOUT_MS,
   ),
+  // Auth bootstrap depends on the BE HttpOnly refresh cookie after F5. Keep
+  // credentialed requests on by default; deployments may explicitly opt out only
+  // if they replace the browser-session transport end to end.
   apiWithCredentials: boolEnv(
-    readEnv("VITE_API_WITH_CREDENTIALS"),
+    readEnv("VITE_API_WITH_CREDENTIALS") ?? "true",
     "VITE_API_WITH_CREDENTIALS",
   ),
   storageUrl: optionalUrl(readEnv("VITE_STORAGE_URL"), "VITE_STORAGE_URL"),
