@@ -1,13 +1,23 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
+  createIamRole,
   createIamUserWithRole,
+  deleteIamRole,
+  getIamPermissions,
+  getIamRole,
   getIamRoles,
   getIamUsers,
+  syncIamRolePermissions,
+  updateIamRole,
   updateIamUserWithRole,
 } from "@/modules/iam/services/iam.service";
 import { getMutationErrorMessage } from "@/shared/api/api-error";
 import type {
+  IamPermissionListParams,
+  IamRoleListParams,
+  IamRolePayload,
+  IamRoleUpdatePayload,
   IamUserListParams,
   IamUserPayload,
   IamUserUpdatePayload,
@@ -16,7 +26,10 @@ import type {
 export const iamKeys = {
   all: ["iam"] as const,
   users: (params: IamUserListParams) => [...iamKeys.all, "users", params] as const,
-  roles: () => [...iamKeys.all, "roles"] as const,
+  roles: (params: IamRoleListParams = {}) => [...iamKeys.all, "roles", params] as const,
+  role: (roleId: string) => [...iamKeys.all, "role", roleId] as const,
+  permissions: (params: IamPermissionListParams = {}) =>
+    [...iamKeys.all, "permissions", params] as const,
 };
 
 export function useIamUsers(params: IamUserListParams) {
@@ -26,11 +39,81 @@ export function useIamUsers(params: IamUserListParams) {
   });
 }
 
-export function useIamRoles() {
+export function useIamRoles(params: IamRoleListParams = {}) {
   return useQuery({
-    queryKey: iamKeys.roles(),
-    queryFn: getIamRoles,
+    queryKey: iamKeys.roles(params),
+    queryFn: () => getIamRoles(params),
+    staleTime: 30_000,
+  });
+}
+
+export function useIamRole(roleId?: string) {
+  return useQuery({
+    queryKey: roleId ? iamKeys.role(roleId) : [...iamKeys.all, "role", "none"],
+    queryFn: () => getIamRole(roleId as string),
+    enabled: Boolean(roleId),
+  });
+}
+
+export function useIamPermissions(params: IamPermissionListParams = {}) {
+  return useQuery({
+    queryKey: iamKeys.permissions(params),
+    queryFn: () => getIamPermissions(params),
     staleTime: 60_000,
+  });
+}
+
+function invalidateIam(queryClient: ReturnType<typeof useQueryClient>) {
+  return queryClient.invalidateQueries({ queryKey: iamKeys.all });
+}
+
+export function useCreateIamRole() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: IamRolePayload) => createIamRole(payload),
+    onSuccess: () => {
+      toast.success("Đã tạo vai trò");
+      void invalidateIam(queryClient);
+    },
+    onError: (error) => toast.error(getMutationErrorMessage(error)),
+  });
+}
+
+export function useUpdateIamRole() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ roleId, payload }: { roleId: string; payload: IamRoleUpdatePayload }) =>
+      updateIamRole(roleId, payload),
+    onSuccess: () => {
+      toast.success("Đã cập nhật vai trò");
+      void invalidateIam(queryClient);
+    },
+    onError: (error) => toast.error(getMutationErrorMessage(error)),
+  });
+}
+
+export function useDeleteIamRole() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (roleId: string) => deleteIamRole(roleId),
+    onSuccess: () => {
+      toast.success("Đã xoá vai trò");
+      void invalidateIam(queryClient);
+    },
+    onError: (error) => toast.error(getMutationErrorMessage(error)),
+  });
+}
+
+export function useSyncIamRolePermissions() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ roleId, permissionIds }: { roleId: string; permissionIds: string[] }) =>
+      syncIamRolePermissions(roleId, { permission_ids: permissionIds }),
+    onSuccess: () => {
+      toast.success("Đã áp dụng ma trận quyền");
+      void invalidateIam(queryClient);
+    },
+    onError: (error) => toast.error(getMutationErrorMessage(error)),
   });
 }
 
@@ -41,7 +124,7 @@ export function useCreateIamUser() {
       createIamUserWithRole(payload, roleId),
     onSuccess: () => {
       toast.success("Đã thêm người dùng");
-      queryClient.invalidateQueries({ queryKey: iamKeys.all });
+      void invalidateIam(queryClient);
     },
     onError: (error) => {
       toast.error(getMutationErrorMessage(error));
@@ -63,7 +146,7 @@ export function useUpdateIamUser() {
     }) => updateIamUserWithRole(userId, payload, roleId),
     onSuccess: () => {
       toast.success("Đã cập nhật người dùng");
-      queryClient.invalidateQueries({ queryKey: iamKeys.all });
+      void invalidateIam(queryClient);
     },
     onError: (error) => {
       toast.error(getMutationErrorMessage(error));
