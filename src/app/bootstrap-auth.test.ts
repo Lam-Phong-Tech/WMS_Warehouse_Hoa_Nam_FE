@@ -6,14 +6,12 @@ const {
   setTokenMock,
   logoutMock,
   setStateMock,
-  getRefreshTokenMock,
 } = vi.hoisted(() => ({
   rehydrateMock: vi.fn(),
   clearStorageMock: vi.fn(),
   setTokenMock: vi.fn(),
   logoutMock: vi.fn(),
   setStateMock: vi.fn(),
-  getRefreshTokenMock: vi.fn(),
 }));
 
 vi.mock("@/shared/store/auth.store", () => ({
@@ -27,10 +25,6 @@ vi.mock("@/shared/store/auth.store", () => ({
   },
 }));
 
-vi.mock("@/shared/lib/memory-storage", () => ({
-  memoryStorage: { getRefreshToken: getRefreshTokenMock },
-}));
-
 const { refreshMock } = vi.hoisted(() => ({ refreshMock: vi.fn() }));
 vi.mock("@/modules/auth/services/auth.service", () => ({
   authService: { refresh: refreshMock },
@@ -38,22 +32,22 @@ vi.mock("@/modules/auth/services/auth.service", () => ({
 
 import { bootstrapAuth } from "@/app/bootstrap-auth";
 
-describe("bootstrapAuth WWHN-165", () => {
+describe("bootstrapAuth persistent browser session", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     rehydrateMock.mockResolvedValue(undefined);
     clearStorageMock.mockResolvedValue(undefined);
-    getRefreshTokenMock.mockReturnValue("refresh-token");
   });
 
-  it("không có refresh token memory -> anonymous bình thường, không gọi API", async () => {
-    getRefreshTokenMock.mockReturnValue(null);
+  it("F5: JS memory rỗng vẫn refresh qua HttpOnly cookie và giữ đăng nhập", async () => {
+    refreshMock.mockResolvedValue({ access_token: "access-from-cookie" });
 
     await bootstrapAuth();
 
-    expect(refreshMock).not.toHaveBeenCalled();
-    expect(logoutMock).toHaveBeenCalledTimes(1);
-    expect(clearStorageMock).toHaveBeenCalledTimes(1);
+    expect(refreshMock).toHaveBeenCalledTimes(1);
+    expect(setTokenMock).toHaveBeenCalledWith("access-from-cookie");
+    expect(logoutMock).not.toHaveBeenCalled();
+    expect(clearStorageMock).not.toHaveBeenCalled();
     expect(setStateMock).toHaveBeenCalledWith({ isBootstrapped: true });
   });
 
@@ -76,7 +70,21 @@ describe("bootstrapAuth WWHN-165", () => {
     expect(setStateMock).not.toHaveBeenCalledWith({ bootstrapError: error });
   });
 
-  it("network/5xx -> fail-closed bootstrapError, không giả thành anonymous", async () => {
+  it("422 không có refresh cookie -> anonymous bình thường", async () => {
+    const error = {
+      response: { status: 422, data: { message: "refresh_token required" } },
+    };
+    refreshMock.mockRejectedValue(error);
+
+    await bootstrapAuth();
+
+    expect(refreshMock).toHaveBeenCalledTimes(1);
+    expect(logoutMock).toHaveBeenCalledTimes(1);
+    expect(clearStorageMock).toHaveBeenCalledTimes(1);
+    expect(setTokenMock).not.toHaveBeenCalled();
+  });
+
+  it("network/5xx -> bootstrapError, không destructive logout session hint", async () => {
     const error = new Error("Network Error");
     refreshMock.mockRejectedValue(error);
 
