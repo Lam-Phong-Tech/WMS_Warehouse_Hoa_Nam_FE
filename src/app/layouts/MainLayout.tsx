@@ -3,6 +3,11 @@ import { Outlet, useLocation } from "react-router-dom";
 import { SideNav } from "@/app/layouts/SideNav";
 import { useMe } from "@/modules/auth/hooks/use-me";
 import { IamUserScreen } from "@/modules/iam/pages/IamUserScreen";
+import {
+  AgencyMasterScreen,
+  DefectMasterScreen,
+  SkuMasterScreen,
+} from "@/modules/master-data/pages/MvpMasterScreens";
 import { Loading } from "@/shared/components";
 import { MvpSourceScreen } from "@/shared/components/mvp/MvpSourceScreen";
 import { ROUTES } from "@/shared/constants/routes";
@@ -27,22 +32,13 @@ const MVP_SCREEN_META: Record<string, ScreenMeta> = {
     title: "Danh sách SKU / Product Master",
     description: "Danh sách SKU, chỉ cần action Sửa.",
   },
-  "MST-02": { title: "Tạo / sửa SKU", description: "Form tạo / sửa SKU." },
   "AGY-01": {
     title: "Danh mục đại lý / nơi nhận",
     description: "Danh mục đại lý / nơi nhận hàng.",
   },
-  "AGY-02": {
-    title: "Thêm / sửa đại lý",
-    description: "Form thêm / sửa đại lý.",
-  },
   "DEF-01": {
     title: "Danh mục bệnh / lỗi",
     description: "Danh mục bệnh / lỗi dùng cho bảo hành.",
-  },
-  "DEF-02": {
-    title: "Thêm / sửa bệnh / lỗi",
-    description: "Form thêm / sửa bệnh / lỗi.",
   },
   "IN-01": { title: "Danh sách phiếu nhập", description: "Danh sách phiếu nhập." },
   "IN-02": {
@@ -131,8 +127,16 @@ const ROUTE_META: Record<string, ScreenMeta> = {
   },
 };
 
+const MODAL_PARENT_SCREEN: Record<string, string> = {
+  "IAM-02": "IAM-01",
+  "MST-02": "MST-01",
+  "AGY-02": "AGY-01",
+  "DEF-02": "DEF-01",
+};
+
 function normalizeScreen(screen: string | null) {
-  return screen === "IAM-02" ? "IAM-01" : screen;
+  if (!screen) return screen;
+  return MODAL_PARENT_SCREEN[screen] ?? screen;
 }
 
 function resolveScreenMeta(pathname: string, search: string): ScreenMeta {
@@ -152,7 +156,29 @@ function resolveScreenMeta(pathname: string, search: string): ScreenMeta {
   );
 }
 
-/** Exact DOM shell of HN_WMS_Wireframe_MVP.html. */
+function renderMvpScreen(
+  sourceScreen: string,
+  requestedScreen: string | null,
+) {
+  switch (sourceScreen) {
+    case "IAM-01":
+      return <IamUserScreen openCreateOnMount={requestedScreen === "IAM-02"} />;
+    case "MST-01":
+      return <SkuMasterScreen openCreateOnMount={requestedScreen === "MST-02"} />;
+    case "AGY-01":
+      return (
+        <AgencyMasterScreen openCreateOnMount={requestedScreen === "AGY-02"} />
+      );
+    case "DEF-01":
+      return (
+        <DefectMasterScreen openCreateOnMount={requestedScreen === "DEF-02"} />
+      );
+    default:
+      return <MvpSourceScreen screenId={sourceScreen} />;
+  }
+}
+
+/** Exact DOM shell of HN_WMS_Wireframe_MVP.html with selected edit flows folded into modals. */
 export function MainLayout() {
   const location = useLocation();
   const isProfileLoaded = useAuthStore((state) => state.isProfileLoaded);
@@ -191,13 +217,7 @@ export function MainLayout() {
           </div>
         </header>
         <section className="hn-mvp-screen">
-          {sourceScreen === "IAM-01" ? (
-            <IamUserScreen openCreateOnMount={requestedScreen === "IAM-02"} />
-          ) : sourceScreen ? (
-            <MvpSourceScreen screenId={sourceScreen} />
-          ) : (
-            <Outlet />
-          )}
+          {sourceScreen ? renderMvpScreen(sourceScreen, requestedScreen) : <Outlet />}
         </section>
       </main>
     </div>
