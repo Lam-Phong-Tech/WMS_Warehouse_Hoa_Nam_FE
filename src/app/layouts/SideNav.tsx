@@ -1,6 +1,7 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { ROUTE_PERMISSIONS } from "@/app/router/access";
 import { ROUTES } from "@/shared/constants/routes";
+import { hasAnyWmsPermission } from "@/shared/constants/wms-permissions";
 import { useAuthStore } from "@/shared/store/auth.store";
 
 type NavItem = { screen: string; label: string; path: string };
@@ -9,7 +10,8 @@ type NavGroup = { name: string; items: NavItem[] };
 /**
  * Navigation follows the Hoa Nam MVP screen inventory. Create/edit screens for
  * IAM, SKU, Agency and Defect are folded into their list screens as in-page
- * modals. Legacy *-02 deep links remain supported by MainLayout.
+ * modals. Each list item deliberately uses its owning route so visibility is
+ * evaluated against that domain's RBAC permission rather than /master-data.
  */
 const NAV_GROUPS: NavGroup[] = [
   {
@@ -27,7 +29,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       {
         screen: "IAM-01",
-        path: ROUTES.MASTER_DATA,
+        path: ROUTES.IAM_USERS,
         label: "Danh sách người dùng & phân quyền",
       },
       {
@@ -37,12 +39,12 @@ const NAV_GROUPS: NavGroup[] = [
       },
       {
         screen: "AGY-01",
-        path: ROUTES.MASTER_DATA,
+        path: ROUTES.AGENCIES,
         label: "Danh mục đại lý / nơi nhận",
       },
       {
         screen: "DEF-01",
-        path: ROUTES.MASTER_DATA,
+        path: ROUTES.DEFECTS,
         label: "Danh mục bệnh / lỗi",
       },
     ],
@@ -172,7 +174,10 @@ const NAV_GROUPS: NavGroup[] = [
 
 const DEFAULT_SCREEN_BY_PATH: Record<string, string> = {
   [ROUTES.DASHBOARD]: "MAP-01",
+  [ROUTES.IAM_USERS]: "IAM-01",
   [ROUTES.MASTER_DATA]: "MST-01",
+  [ROUTES.AGENCIES]: "AGY-01",
+  [ROUTES.DEFECTS]: "DEF-01",
   [ROUTES.INBOUND]: "IN-01",
   [ROUTES.PUTAWAY]: "PTW-00",
   [ROUTES.OUTBOUND]: "OUT-01",
@@ -212,11 +217,10 @@ export function SideNav() {
     normalizeScreen(requestedScreen) ?? DEFAULT_SCREEN_BY_PATH[location.pathname];
 
   const canAccess = (path: string) => {
-    if (isSuperAdmin) return true;
     const required = ROUTE_PERMISSIONS[path];
     if (!required) return true;
     const permissions = Array.isArray(required) ? required : [required];
-    return permissions.some((code) => permissionCodes.includes(code));
+    return hasAnyWmsPermission(permissionCodes, permissions, isSuperAdmin);
   };
 
   return (
