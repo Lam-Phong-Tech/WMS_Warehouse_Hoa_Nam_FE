@@ -1,6 +1,5 @@
 import { authService } from "@/modules/auth/services/auth.service";
 import { useAuthStore } from "@/shared/store/auth.store";
-import { memoryStorage } from "@/shared/lib/memory-storage";
 
 let activeBootstrap: Promise<void> | null = null;
 
@@ -24,15 +23,10 @@ async function runBootstrap(): Promise<void> {
   useAuthStore.setState({ isBootstrapped: false, bootstrapError: null });
   await Promise.resolve(useAuthStore.persist.rehydrate());
 
-  // BE m1 yêu cầu refresh_token trong request body. Token hiện được giữ
-  // memory-only, nên sau F5/đóng tab không còn token để restore phiên. Đây là
-  // trạng thái unauthenticated bình thường, không phải lỗi hạ tầng/contract.
-  if (!memoryStorage.getRefreshToken()) {
-    await clearSessionHint();
-    useAuthStore.setState({ isBootstrapped: true });
-    return;
-  }
-
+  // Always attempt one refresh. After F5 the access/refresh tokens held in JS
+  // memory are intentionally gone, while the server-issued HttpOnly refresh cookie
+  // can still represent a valid session. JavaScript cannot inspect that cookie, so
+  // "no memory token" must never be used as proof that the user is logged out.
   try {
     const refreshed = await authService.refresh();
     useAuthStore.getState().setToken(refreshed.access_token);
@@ -41,6 +35,7 @@ async function runBootstrap(): Promise<void> {
       await clearSessionHint();
     } else {
       // Network/5xx/contract lỗi không được giả mạo thành "chưa đăng nhập".
+      // Giữ persisted user/context hint để UI có thể retry thay vì destructive logout.
       useAuthStore.setState({ bootstrapError: error });
     }
   } finally {
