@@ -115,7 +115,10 @@ const MVP_SCREEN_META: Record<string, ScreenMeta> = {
 
 const ROUTE_DEFAULT_SCREEN: Record<string, string> = {
   [ROUTES.DASHBOARD]: "MAP-01",
+  [ROUTES.IAM_USERS]: "IAM-01",
   [ROUTES.MASTER_DATA]: "MST-01",
+  [ROUTES.AGENCIES]: "AGY-01",
+  [ROUTES.DEFECTS]: "DEF-01",
   [ROUTES.INBOUND]: "IN-01",
   [ROUTES.PUTAWAY]: "PTW-00",
   [ROUTES.OUTBOUND]: "OUT-01",
@@ -127,13 +130,13 @@ const ROUTE_DEFAULT_SCREEN: Record<string, string> = {
 };
 
 const ROUTE_META: Record<string, ScreenMeta> = {
+  [ROUTES.IAM_ROLES]: {
+    title: "Vai trò & phân quyền",
+    description: "Quản trị role template và permission theo contract IAM hiện hành.",
+  },
   [ROUTES.AUDIT_LOGS]: {
     title: "Nhật ký kiểm tra",
     description: "Theo dõi lịch sử thao tác và thay đổi trong hệ thống.",
-  },
-  [ROUTES.STOCKTAKE]: {
-    title: "Kiểm kê",
-    description: "Kiểm kê và kiểm soát chênh lệch tồn kho.",
   },
   [ROUTES.PROFILE]: {
     title: "Hồ sơ cá nhân",
