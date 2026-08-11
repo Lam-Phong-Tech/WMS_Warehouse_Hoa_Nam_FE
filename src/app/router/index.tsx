@@ -24,7 +24,6 @@ const InboundPage = lazy(() => import("@/modules/inbound/pages/InboundPage").the
 const PutawayPage = lazy(() => import("@/modules/putaway/pages/PutawayPage").then((m) => ({ default: m.default })));
 const OutboundPage = lazy(() => import("@/modules/outbound/pages/OutboundPage").then((m) => ({ default: m.default })));
 const InventoryPage = lazy(() => import("@/modules/inventory/pages/InventoryPage").then((m) => ({ default: m.default })));
-const StocktakePage = lazy(() => import("@/modules/stocktake/pages/StocktakePage").then((m) => ({ default: m.default })));
 const WarrantyPage = lazy(() => import("@/modules/warranty/pages/WarrantyPage").then((m) => ({ default: m.default })));
 const ReversalPage = lazy(() => import("@/modules/reverse/pages/ReversalPage").then((m) => ({ default: m.default })));
 const ReportsPage = lazy(() => import("@/modules/reports/pages/ReportsPage").then((m) => ({ default: m.default })));
@@ -65,7 +64,6 @@ export const router = createBrowserRouter([
         { path: ROUTES.PUTAWAY, element: routeEl(ROUTES.PUTAWAY, <PutawayPage />) },
         { path: ROUTES.OUTBOUND, element: routeEl(ROUTES.OUTBOUND, <OutboundPage />) },
         { path: ROUTES.INVENTORY, element: routeEl(ROUTES.INVENTORY, <InventoryPage />) },
-        { path: ROUTES.STOCKTAKE, element: routeEl(ROUTES.STOCKTAKE, <StocktakePage />) },
         { path: ROUTES.WARRANTY, element: routeEl(ROUTES.WARRANTY, <WarrantyPage />) },
         { path: ROUTES.REVERSE, element: routeEl(ROUTES.REVERSE, <ReversalPage />) },
         { path: ROUTES.REPORTS, element: routeEl(ROUTES.REPORTS, <ReportsPage />) },
