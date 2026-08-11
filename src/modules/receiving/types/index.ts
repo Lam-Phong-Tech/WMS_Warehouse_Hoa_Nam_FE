@@ -1,27 +1,30 @@
+export type InboundStatus =
+  | "DRAFT"
+  | "SCANNING"
+  | "POSTED"
+  | "CANCELLED";
+
 export interface InboundDocument {
   id: string;
   code: string;
   source: string;
   date: string;
+  warehouseId: string;
   expected: number;
   posted: number;
   remaining: number;
-  status:
-    | "DRAFT"
-    | "SCANNING"
-    | "PARTIALLY_POSTED"
-    | "POSTED"
-    | "CLOSED"
-    | "CANCELLED";
+  status: InboundStatus;
   createdBy: string;
+  updatedAt?: string;
   version: number;
   sourceReference?: string;
+  note?: string;
 }
 
 export interface InboundLine {
   id: string;
   documentId: string;
-  productId?: string;
+  productId: string;
   sku: string;
   skuName: string;
   scanTarget: string;
@@ -31,49 +34,65 @@ export interface InboundLine {
   remaining: number;
   validation: "VALID" | "INVALID" | "UNKNOWN";
   selected: boolean;
+  note?: string;
+}
+
+export interface InboundDetail {
+  document: InboundDocument;
+  lines: InboundLine[];
+}
+
+export interface InboundLinePayload {
+  product_id: string;
+  qty_planned: number;
+  import_batch_id?: string | null;
+  note?: string | null;
+}
+
+export interface CreateInboundPayload {
+  doc_no?: string | null;
+  doc_date?: string | null;
+  dst_warehouse_id: string;
+  source_name?: string | null;
+  note?: string | null;
+  lines: InboundLinePayload[];
+}
+
+export interface UpdateInboundPayload {
+  doc_no?: string | null;
+  doc_date?: string | null;
+  source_name?: string | null;
+  note?: string | null;
+  lines?: InboundLinePayload[];
 }
 
 export interface ReceiptEvidence {
   receiptId: string;
   movementRef: string;
-  movementRefs?: string[];
+  movementRefs: string[];
   requestId: string;
-  traceSource?: string;
+  traceSource: "stock_document.movements";
   replayed?: boolean;
+  version?: number;
 }
 
 /**
- * WWHN-180 v1.7 posts the approved document atomically as a whole. `lines`
- * and `ifMatch` remain optional only so existing UI callers can migrate without
- * a breaking type change; the service never serializes them to the canonical
- * posting request.
+ * Atomic receipt posting requires both optimistic-lock and idempotency headers.
+ * No posting body is sent: BE posts every fully scanned line as one transaction.
  */
 export interface PostReceiptRequest {
   documentId: string;
-  lines?: { lineId: string; quantity: number }[];
   idempotencyKey: string;
-  ifMatch?: number;
+  ifMatch: number;
 }
 
-export interface CloseRemainderRequest {
-  documentId: string;
-  reason: string;
-}
-
-export type InboundErrorCode =
-  | "WMS_INBOUND_DOCUMENT_NOT_FOUND"
-  | "WMS_INBOUND_ALREADY_POSTED"
-  | "WMS_INBOUND_INVALID_STATUS_TRANSITION"
-  | "WMS_INBOUND_LINE_SKU_MISMATCH"
-  | "WMS_INBOUND_EXCEEDS_EXPECTED"
-  | "WMS_INBOUND_DUPLICATE_SCAN"
-  | "WMS_INBOUND_IDEMPOTENCY_REPLAY"
-  | "WMS_INBOUND_VERSION_CONFLICT";
+export type InboundScanStatus = "VALID" | "DUPLICATE" | "UNKNOWN" | "INVALID";
 
 export interface InboundScanResult {
   code_value: string;
-  status: "VALID" | "DUPLICATE" | "UNKNOWN" | "INVALID";
+  status: InboundScanStatus;
   sku?: string;
   line_id?: string;
   message?: string;
+  version: number;
 }
