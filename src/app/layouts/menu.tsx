@@ -9,6 +9,7 @@ import {
   InboxOutlined,
   ProfileOutlined,
   RollbackOutlined,
+  SafetyCertificateOutlined,
   SettingOutlined,
   ShopOutlined,
   StockOutlined,
@@ -17,7 +18,6 @@ import {
   ToolOutlined,
   UserOutlined,
   WarningOutlined,
-  ExperimentOutlined,
 } from "@ant-design/icons";
 import type { MenuProps } from "antd";
 import { ROUTES } from "@/shared/constants/routes";
@@ -36,7 +36,8 @@ export const MENU: AppMenuItem[] = [
     label: "01 · Hệ thống & danh mục",
     icon: <SettingOutlined />,
     children: [
-      { key: ROUTES.IAM_USERS, label: "Người dùng & phân quyền", icon: <TeamOutlined />, permission: ROUTE_PERMISSIONS[ROUTES.IAM_USERS] },
+      { key: ROUTES.IAM_USERS, label: "Người dùng", icon: <TeamOutlined />, permission: ROUTE_PERMISSIONS[ROUTES.IAM_USERS] },
+      { key: ROUTES.IAM_ROLES, label: "Vai trò & phân quyền", icon: <SafetyCertificateOutlined />, permission: ROUTE_PERMISSIONS[ROUTES.IAM_ROLES] },
       { key: ROUTES.MASTER_DATA, label: "SKU / Product Master", icon: <ProfileOutlined />, permission: ROUTE_PERMISSIONS[ROUTES.MASTER_DATA] },
       { key: ROUTES.AGENCIES, label: "Đại lý / nơi nhận", icon: <ShopOutlined />, permission: ROUTE_PERMISSIONS[ROUTES.AGENCIES] },
       { key: ROUTES.DEFECTS, label: "Danh mục bệnh / lỗi", icon: <WarningOutlined />, permission: ROUTE_PERMISSIONS[ROUTES.DEFECTS] },
@@ -60,7 +61,6 @@ export const MENU: AppMenuItem[] = [
     children: [
       { key: ROUTES.OUTBOUND, label: "Xuất kho", icon: <StockOutlined />, permission: ROUTE_PERMISSIONS[ROUTES.OUTBOUND] },
       { key: ROUTES.INVENTORY, label: "Tồn & truy vết", icon: <FundOutlined />, permission: ROUTE_PERMISSIONS[ROUTES.INVENTORY] },
-      { key: ROUTES.STOCKTAKE, label: "Kiểm kê", icon: <ExperimentOutlined />, permission: ROUTE_PERMISSIONS[ROUTES.STOCKTAKE] },
       { key: ROUTES.WARRANTY, label: "Bảo hành", icon: <ToolOutlined />, permission: ROUTE_PERMISSIONS[ROUTES.WARRANTY] },
       { key: ROUTES.REVERSE, label: "Đảo ngược", icon: <RollbackOutlined />, permission: ROUTE_PERMISSIONS[ROUTES.REVERSE] },
       { key: ROUTES.REPORTS, label: "Báo cáo", icon: <FileTextOutlined />, permission: ROUTE_PERMISSIONS[ROUTES.REPORTS] },
