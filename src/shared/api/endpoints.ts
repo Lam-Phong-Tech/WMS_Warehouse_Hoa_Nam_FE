@@ -65,6 +65,8 @@ export const API_ENDPOINTS = {
   OUTBOUND_REVERSE: "/outbound-documents/:id/reverse",
   PUTAWAY_TASKS: "/putaway/tasks",
   PUTAWAY_HISTORY: "/putaway/history",
+  CONTAINERS: "/containers",
+  CONTAINER: "/containers/:id",
   REPORTS_HUB: "/reports/hub",
   REPORTS_XNT: "/reports/inventory-xnt",
   REPORTS_XNT_EXPORT_EXCEL: "/reports/inventory-xnt/export-excel",
