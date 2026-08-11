@@ -7,9 +7,9 @@ type NavItem = { screen: string; label: string; path: string };
 type NavGroup = { name: string; items: NavItem[] };
 
 /**
- * Navigation follows the Hoa Nam MVP screen inventory, with IAM-02 folded into
- * IAM-01 as an in-page modal. Legacy IAM-02 deep links remain supported by the
- * layout but are no longer exposed as a separate navigation destination.
+ * Navigation follows the Hoa Nam MVP screen inventory. Create/edit screens for
+ * IAM, SKU, Agency and Defect are folded into their list screens as in-page
+ * modals. Legacy *-02 deep links remain supported by MainLayout.
  */
 const NAV_GROUPS: NavGroup[] = [
   {
@@ -36,29 +36,14 @@ const NAV_GROUPS: NavGroup[] = [
         label: "Danh sách SKU / Product Master",
       },
       {
-        screen: "MST-02",
-        path: ROUTES.MASTER_DATA,
-        label: "Tạo / sửa SKU",
-      },
-      {
         screen: "AGY-01",
         path: ROUTES.MASTER_DATA,
         label: "Danh mục đại lý / nơi nhận",
       },
       {
-        screen: "AGY-02",
-        path: ROUTES.MASTER_DATA,
-        label: "Thêm / sửa đại lý",
-      },
-      {
         screen: "DEF-01",
         path: ROUTES.MASTER_DATA,
         label: "Danh mục bệnh / lỗi",
-      },
-      {
-        screen: "DEF-02",
-        path: ROUTES.MASTER_DATA,
-        label: "Thêm / sửa bệnh / lỗi",
       },
     ],
   },
@@ -198,6 +183,13 @@ const DEFAULT_SCREEN_BY_PATH: Record<string, string> = {
   [ROUTES.REPORTS]: "RPT-01",
 };
 
+const MODAL_PARENT_SCREEN: Record<string, string> = {
+  "IAM-02": "IAM-01",
+  "MST-02": "MST-01",
+  "AGY-02": "AGY-01",
+  "DEF-02": "DEF-01",
+};
+
 function matchesPath(currentPath: string, targetPath: string) {
   return (
     currentPath === targetPath ||
@@ -206,7 +198,8 @@ function matchesPath(currentPath: string, targetPath: string) {
 }
 
 function normalizeScreen(screen: string | null | undefined) {
-  return screen === "IAM-02" ? "IAM-01" : screen;
+  if (!screen) return screen;
+  return MODAL_PARENT_SCREEN[screen] ?? screen;
 }
 
 export function SideNav() {
