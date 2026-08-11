@@ -110,6 +110,8 @@ export const API_ENDPOINTS = {
   DOCUMENT_STATUS_HISTORY: "/document-status-history",
   INVENTORY_SNAPSHOTS: "/inventory-snapshots",
 
+  // Legacy stocktake constants remain for non-routed compatibility code only.
+  // Stocktake is not registered in the current MVP router or BE route surface.
   STOCKTAKE_SESSIONS: "/stocktake-sessions",
   STOCKTAKE_SESSION: "/stocktake-sessions/:sessionId",
   STOCKTAKE_CREATE_SESSION: "/stocktake-sessions",
@@ -125,10 +127,14 @@ export const API_ENDPOINTS = {
   REVERSAL_DOCUMENT: "/reversal-documents/:id",
   REVERSAL_CREATE: "/reversal-documents",
   REVERSAL_MOVEMENT_LOOKUP: "/stock-movements/reversible",
-  WARRANTY_CASES: "/warranty/cases",
-  WARRANTY_CASE: "/warranty/cases/:id",
-  WARRANTY_CASE_EVENTS: "/warranty/cases/:caseId/events",
-  WARRANTY_UPDATE_STATUS: "/warranty/cases/:id/status",
-  WARRANTY_TEMP_ONLY: "/warranty-cases/:id/temp-only",
+
+  WARRANTY_CASES: "/warranty-cases",
+  WARRANTY_CASE: "/warranty-cases/:id",
+  WARRANTY_CASE_EVENTS: "/warranty-cases/:caseId/events",
+  COMPONENT_ISSUE_DOCUMENTS: "/component-issue-documents",
+  COMPONENT_ISSUE_SCAN: "/component-issue-documents/:id/scan",
+  COMPONENT_ISSUE_CANCEL: "/component-issue-documents/:id/cancel",
+  COMPONENT_ISSUE_POST: "/component-issue-documents/:id/post",
+
   AUDIT_LOGS: "/audit-logs",
 } as const;
