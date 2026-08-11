@@ -5,16 +5,26 @@ import { ProtectedRoute } from "@/app/router/ProtectedRoute";
 import { RequirePermission } from "@/app/router/RequirePermission";
 import { ROUTE_PERMISSIONS } from "@/app/router/access";
 import { PageSkeleton } from "@/shared/components/ui-states/PageSkeleton";
-import { AdaptiveDelayedRender } from "@/shared/components/feedback/AdaptiveDelayedRender";
 import { ROUTES } from "@/shared/constants/routes";
 
-// No Permission page
-import { NoPermissionPage } from "@/modules/errors/pages/NoPermissionPage";
-
-// Import trực tiếp các trang ngoài modules (không lazy load)
-import { MainLayout } from "@/app/layouts/MainLayout";
+// Login stays eager because it is the public first-paint route.
 import { LoginPage } from "@/modules/auth/pages/LoginPage";
-import { ChangePasswordPage } from "@/modules/auth/pages/ChangePasswordPage";
+
+// Keep the authenticated shell and secondary auth/error screens out of the
+// login bundle. They are downloaded only when the route is actually entered.
+const MainLayout = lazy(() =>
+  import("@/app/layouts/MainLayout").then((m) => ({ default: m.MainLayout })),
+);
+const ChangePasswordPage = lazy(() =>
+  import("@/modules/auth/pages/ChangePasswordPage").then((m) => ({
+    default: m.ChangePasswordPage,
+  })),
+);
+const NoPermissionPage = lazy(() =>
+  import("@/modules/errors/pages/NoPermissionPage").then((m) => ({
+    default: m.NoPermissionPage,
+  })),
+);
 
 // Audit Logs
 const AuditLogsPage = lazy(() =>
@@ -92,23 +102,20 @@ const ProfilePage = lazy(() =>
   })),
 );
 
-function withPageTransition(node: ReactNode) {
-  return (
-    <AdaptiveDelayedRender minDelay={100} maxDelay={800}>
-      <Suspense fallback={<PageSkeleton />}>{node}</Suspense>
-    </AdaptiveDelayedRender>
-  );
-}
-
-function withoutDelay(node: ReactNode) {
-  return node;
+/**
+ * Render immediately. Suspense itself already shows a skeleton only while the
+ * requested JS chunk is genuinely loading; adding a timer here makes every
+ * navigation slower even when the chunk is cached.
+ */
+function withPageLoader(node: ReactNode) {
+  return <Suspense fallback={<PageSkeleton />}>{node}</Suspense>;
 }
 
 // Bọc route theo quyền
 function routeEl(path: string, node: ReactNode) {
   return (
     <RequirePermission permission={ROUTE_PERMISSIONS[path]}>
-      {withPageTransition(node)}
+      {withPageLoader(node)}
     </RequirePermission>
   );
 }
@@ -116,18 +123,18 @@ function routeEl(path: string, node: ReactNode) {
 export const router = createBrowserRouter([
   {
     path: ROUTES.LOGIN,
-    element: withoutDelay(<LoginPage />),
+    element: <LoginPage />,
   },
   {
     path: ROUTES.CHANGE_PASSWORD,
-    element: withoutDelay(<ChangePasswordPage />),
+    element: withPageLoader(<ChangePasswordPage />),
   },
   {
     element: <ProtectedRoute />,
     children: [
       {
         path: ROUTES.HOME,
-        element: withoutDelay(<MainLayout />),
+        element: withPageLoader(<MainLayout />),
         children: [
           { index: true, element: <Navigate to={ROUTES.DASHBOARD} replace /> },
           {
@@ -200,7 +207,7 @@ export const router = createBrowserRouter([
     children: [
       {
         path: ROUTES.NO_PERMISSION,
-        element: withoutDelay(<NoPermissionPage />),
+        element: withPageLoader(<NoPermissionPage />),
       },
     ],
   },

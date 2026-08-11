@@ -1,18 +1,36 @@
-import { useEffect } from "react";
+import { lazy, Suspense } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { SideNav } from "@/app/layouts/SideNav";
 import { useMe } from "@/modules/auth/hooks/use-me";
-import { IamUserScreen } from "@/modules/iam/pages/IamUserScreen";
-import {
-  AgencyMasterScreen,
-  DefectMasterScreen,
-  SkuMasterScreen,
-} from "@/modules/master-data/pages/MvpMasterScreens";
 import { Loading } from "@/shared/components";
-import { MvpSourceScreen } from "@/shared/components/mvp/MvpSourceScreen";
 import { ROUTES } from "@/shared/constants/routes";
 import { useAuthStore } from "@/shared/store/auth.store";
-import { preloadManager } from "@/shared/utils/preload-manager";
+
+const IamUserScreen = lazy(() =>
+  import("@/modules/iam/pages/IamUserScreen").then((m) => ({
+    default: m.IamUserScreen,
+  })),
+);
+const SkuMasterScreen = lazy(() =>
+  import("@/modules/master-data/pages/MvpMasterScreens").then((m) => ({
+    default: m.SkuMasterScreen,
+  })),
+);
+const AgencyMasterScreen = lazy(() =>
+  import("@/modules/master-data/pages/MvpMasterScreens").then((m) => ({
+    default: m.AgencyMasterScreen,
+  })),
+);
+const DefectMasterScreen = lazy(() =>
+  import("@/modules/master-data/pages/MvpMasterScreens").then((m) => ({
+    default: m.DefectMasterScreen,
+  })),
+);
+const MvpSourceScreen = lazy(() =>
+  import("@/shared/components/mvp/MvpSourceScreen").then((m) => ({
+    default: m.MvpSourceScreen,
+  })),
+);
 
 type ScreenMeta = {
   title: string;
@@ -191,17 +209,6 @@ export function MainLayout() {
       : null;
   const meta = resolveScreenMeta(location.pathname, location.search);
 
-  useEffect(() => {
-    if (isProfileLoaded && !isLoadingProfile) {
-      const timer = window.setTimeout(
-        () => preloadManager.preloadCriticalRoutes(),
-        1000,
-      );
-      preloadManager.preloadSecondaryRoutesOnIdle();
-      return () => window.clearTimeout(timer);
-    }
-  }, [isProfileLoaded, isLoadingProfile]);
-
   if (isLoadingProfile && !isProfileLoaded) return <Loading />;
 
   return (
@@ -217,7 +224,13 @@ export function MainLayout() {
           </div>
         </header>
         <section className="hn-mvp-screen">
-          {sourceScreen ? renderMvpScreen(sourceScreen, requestedScreen) : <Outlet />}
+          {sourceScreen ? (
+            <Suspense fallback={<Loading />}>
+              {renderMvpScreen(sourceScreen, requestedScreen)}
+            </Suspense>
+          ) : (
+            <Outlet />
+          )}
         </section>
       </main>
     </div>
