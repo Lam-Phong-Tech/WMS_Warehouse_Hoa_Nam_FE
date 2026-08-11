@@ -103,7 +103,7 @@ export function MainLayout() {
             <h2>{meta.title}</h2>
             <p>{meta.description}</p>
           </div>
-          <div className="hn-mvp-note-banner">Giao diện demo, dùng cho trao đổi BA/DEV/TEST.</div>
+         
         </header>
         <section className="hn-mvp-screen">
           {sourceScreen ? <MvpSourceScreen screenId={sourceScreen} /> : <Outlet />}

@@ -91,7 +91,7 @@ export function SideNav() {
         <div className="hn-mvp-logo" aria-hidden="true">HN</div>
         <div className="hn-mvp-brand-copy">
           <h1>Hoa Nam WMS</h1>
-          <p>Wireframe BA · MVP · Chưa gồm App PV</p>
+         
         </div>
       </div>
 
