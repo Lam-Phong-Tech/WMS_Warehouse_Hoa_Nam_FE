@@ -11,6 +11,7 @@ export interface InboundDocument {
   date: string;
   warehouseId: string;
   expected: number;
+  scanned: number;
   posted: number;
   remaining: number;
   status: InboundStatus;
