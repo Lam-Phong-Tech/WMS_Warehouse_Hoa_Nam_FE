@@ -132,6 +132,7 @@ export const API_ENDPOINTS = {
   WARRANTY_CASE: "/warranty-cases/:id",
   WARRANTY_CASE_EVENTS: "/warranty-cases/:caseId/events",
   COMPONENT_ISSUE_DOCUMENTS: "/component-issue-documents",
+  COMPONENT_ISSUE_DOCUMENT: "/component-issue-documents/:id",
   COMPONENT_ISSUE_SCAN: "/component-issue-documents/:id/scan",
   COMPONENT_ISSUE_CANCEL: "/component-issue-documents/:id/cancel",
   COMPONENT_ISSUE_POST: "/component-issue-documents/:id/post",
