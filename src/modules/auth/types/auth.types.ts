@@ -2,10 +2,13 @@ import type { User } from "@/shared/types/user";
 
 // Contract auth bám theo Modules/Auth/AuthController.php của BE branch m1.
 
-export interface LoginRequest {
-  email: string;
-  password: string;
-}
+/**
+ * POST /auth/login accepts exactly one identity field: email OR username.
+ * The UI maps a single "email / username" input into one of these shapes.
+ */
+export type LoginRequest =
+  | { email: string; username?: never; password: string }
+  | { username: string; email?: never; password: string };
 
 /** Context nội bộ của FE, được suy ra từ roles[].scope_ref/warehouse_scope_ids. */
 export interface AuthContext {

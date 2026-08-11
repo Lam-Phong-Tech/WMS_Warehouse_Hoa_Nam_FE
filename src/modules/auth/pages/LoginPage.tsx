@@ -1,29 +1,54 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Alert, Button, Form, Spin, Typography } from "antd";
-import { LockOutlined, MailOutlined } from "@ant-design/icons";
+import { LockOutlined, UserOutlined } from "@ant-design/icons";
 import { isAxiosError } from "axios";
 import { useLogin } from "@/modules/auth/hooks/use-login";
 import {
   loginSchema,
+  toLoginRequest,
   type LoginFormValues,
 } from "@/modules/auth/schemas/login.schema";
 import { FormInput } from "@/shared/components/forms";
+
+function getLoginErrorMessage(error: unknown): string {
+  if (isAxiosError(error)) {
+    const responseData = error.response?.data;
+    if (
+      responseData &&
+      typeof responseData === "object" &&
+      "message" in responseData &&
+      typeof responseData.message === "string" &&
+      responseData.message.trim() !== ""
+    ) {
+      return responseData.message;
+    }
+
+    if (!error.response) {
+      if (error.code === "ECONNABORTED") {
+        return "Máy chủ xác thực phản hồi quá thời gian. Vui lòng thử lại.";
+      }
+      return "Không thể kết nối đến máy chủ xác thực. Kiểm tra Backend hoặc cấu hình CORS.";
+    }
+
+    return `Đăng nhập thất bại (HTTP ${error.response.status}).`;
+  }
+
+  return error instanceof Error && error.message
+    ? error.message
+    : "Đăng nhập thất bại";
+}
 
 export function LoginPage() {
   const login = useLogin();
   const { control, handleSubmit } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: "", password: "" },
+    defaultValues: { identifier: "", password: "" },
   });
 
-  const onSubmit = handleSubmit((values) => login.mutate(values));
+  const onSubmit = handleSubmit((values) => login.mutate(toLoginRequest(values)));
 
-  const errorMessage = login.isError
-    ? isAxiosError(login.error)
-      ? (login.error.response?.data?.message ?? "Đăng nhập thất bại")
-      : "Đăng nhập thất bại"
-    : null;
+  const errorMessage = login.isError ? getLoginErrorMessage(login.error) : null;
 
   const isSubmitting = login.isPending || login.isSuccess;
 
@@ -92,11 +117,10 @@ export function LoginPage() {
             >
               <FormInput
                 control={control}
-                name="email"
-                label="Email"
-                placeholder="name@hoanam.vn"
-                prefix={<MailOutlined style={{ color: "#8c887e" }} />}
-                type="email"
+                name="identifier"
+                label="Email hoặc tên đăng nhập"
+                placeholder="admin@gmail.com hoặc admin"
+                prefix={<UserOutlined style={{ color: "#8c887e" }} />}
                 autoFocus
                 disabled={isSubmitting}
               />
