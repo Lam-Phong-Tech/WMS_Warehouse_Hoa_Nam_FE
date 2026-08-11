@@ -23,7 +23,7 @@ export default defineConfig({
       VITE_API_BASE_URL: "https://astrodev.test8.io.vn/api/v1",
       VITE_API_HEALTH_PATH: "/health",
       VITE_API_TIMEOUT_MS: "10000",
-      VITE_API_WITH_CREDENTIALS: "false",
+      VITE_API_WITH_CREDENTIALS: "true",
       VITE_STORAGE_URL: "",
       VITE_ENABLE_ANALYTICS: "false",
       VITE_ENABLE_DEBUG: "false",
