@@ -6,51 +6,183 @@ import { useAuthStore } from "@/shared/store/auth.store";
 type NavItem = { screen: string; label: string; path: string };
 type NavGroup = { name: string; items: NavItem[] };
 
-/** Exact screen inventory/order from HN_WMS_Wireframe_MVP.html. */
+/**
+ * Navigation follows the Hoa Nam MVP screen inventory, with IAM-02 folded into
+ * IAM-01 as an in-page modal. Legacy IAM-02 deep links remain supported by the
+ * layout but are no longer exposed as a separate navigation destination.
+ */
 const NAV_GROUPS: NavGroup[] = [
-  { name: "00 · Tổng quan", items: [
-    { screen: "MAP-01", path: ROUTES.DASHBOARD, label: "Bản đồ màn hình & phạm vi" },
-  ] },
-  { name: "01 · Hệ thống & danh mục", items: [
-    { screen: "IAM-01", path: ROUTES.MASTER_DATA, label: "Danh sách người dùng & phân quyền" },
-    { screen: "IAM-02", path: ROUTES.MASTER_DATA, label: "Thêm / sửa người dùng" },
-    { screen: "MST-01", path: ROUTES.MASTER_DATA, label: "Danh sách SKU / Product Master" },
-    { screen: "MST-02", path: ROUTES.MASTER_DATA, label: "Tạo / sửa SKU" },
-    { screen: "AGY-01", path: ROUTES.MASTER_DATA, label: "Danh mục đại lý / nơi nhận" },
-    { screen: "AGY-02", path: ROUTES.MASTER_DATA, label: "Thêm / sửa đại lý" },
-    { screen: "DEF-01", path: ROUTES.MASTER_DATA, label: "Danh mục bệnh / lỗi" },
-    { screen: "DEF-02", path: ROUTES.MASTER_DATA, label: "Thêm / sửa bệnh / lỗi" },
-  ] },
-  { name: "02 · Nhập kho", items: [
-    { screen: "IN-01", path: ROUTES.INBOUND, label: "Danh sách phiếu nhập" },
-    { screen: "IN-02", path: ROUTES.INBOUND, label: "Tạo / sửa phiếu nhập DRAFT" },
-    { screen: "IN-03", path: ROUTES.INBOUND, label: "Quét & Full Post Receipt" },
-    { screen: "PTW-00", path: ROUTES.PUTAWAY, label: "Danh sách linh kiện chờ xếp khay" },
-    { screen: "PTW-01", path: ROUTES.PUTAWAY, label: "Putaway linh kiện vào khay" },
-  ] },
-  { name: "03 · Xuất kho", items: [
-    { screen: "OUT-REQ-01", path: ROUTES.OUTBOUND, label: "Tiếp nhận Phiếu yêu cầu xuất" },
-    { screen: "OUT-01", path: ROUTES.OUTBOUND, label: "Danh sách phiếu xuất" },
-    { screen: "OUT-03", path: ROUTES.OUTBOUND, label: "Chi tiết phiếu xuất" },
-    { screen: "OUT-02", path: ROUTES.OUTBOUND, label: "Quét & match Item" },
-    { screen: "LBL-01", path: ROUTES.OUTBOUND, label: "Nhãn từng Item" },
-    { screen: "RFID-01", path: ROUTES.OUTBOUND, label: "Map RFID & Full Post Issue" },
-  ] },
-  { name: "04 · Bảo hành & linh kiện", items: [
-    { screen: "WAR-01", path: ROUTES.WARRANTY, label: "Danh sách bảo hành" },
-    { screen: "WAR-02", path: ROUTES.WARRANTY, label: "Tiếp nhận bảo hành" },
-    { screen: "WAR-03", path: ROUTES.WARRANTY, label: "Chi tiết bảo hành" },
-    { screen: "COMP-01", path: ROUTES.WARRANTY, label: "Xuất linh kiện cho bảo hành" },
-  ] },
-  { name: "05 · Tồn kho & kiểm soát", items: [
-    { screen: "INV-01", path: ROUTES.INVENTORY, label: "Tra cứu tồn & đối soát" },
-    { screen: "TRACE-01", path: ROUTES.SCAN, label: "Truy vết mã vật lý" },
-    { screen: "REV-00", path: ROUTES.REVERSE, label: "Danh sách phiếu Reversal" },
-    { screen: "REV-01", path: ROUTES.REVERSE, label: "Tạo Reversal" },
-  ] },
-  { name: "06 · Báo cáo", items: [
-    { screen: "RPT-01", path: ROUTES.REPORTS, label: "Báo cáo vận hành" },
-  ] },
+  {
+    name: "00 · Tổng quan",
+    items: [
+      {
+        screen: "MAP-01",
+        path: ROUTES.DASHBOARD,
+        label: "Bản đồ màn hình & phạm vi",
+      },
+    ],
+  },
+  {
+    name: "01 · Hệ thống & danh mục",
+    items: [
+      {
+        screen: "IAM-01",
+        path: ROUTES.MASTER_DATA,
+        label: "Danh sách người dùng & phân quyền",
+      },
+      {
+        screen: "MST-01",
+        path: ROUTES.MASTER_DATA,
+        label: "Danh sách SKU / Product Master",
+      },
+      {
+        screen: "MST-02",
+        path: ROUTES.MASTER_DATA,
+        label: "Tạo / sửa SKU",
+      },
+      {
+        screen: "AGY-01",
+        path: ROUTES.MASTER_DATA,
+        label: "Danh mục đại lý / nơi nhận",
+      },
+      {
+        screen: "AGY-02",
+        path: ROUTES.MASTER_DATA,
+        label: "Thêm / sửa đại lý",
+      },
+      {
+        screen: "DEF-01",
+        path: ROUTES.MASTER_DATA,
+        label: "Danh mục bệnh / lỗi",
+      },
+      {
+        screen: "DEF-02",
+        path: ROUTES.MASTER_DATA,
+        label: "Thêm / sửa bệnh / lỗi",
+      },
+    ],
+  },
+  {
+    name: "02 · Nhập kho",
+    items: [
+      {
+        screen: "IN-01",
+        path: ROUTES.INBOUND,
+        label: "Danh sách phiếu nhập",
+      },
+      {
+        screen: "IN-02",
+        path: ROUTES.INBOUND,
+        label: "Tạo / sửa phiếu nhập DRAFT",
+      },
+      {
+        screen: "IN-03",
+        path: ROUTES.INBOUND,
+        label: "Quét & Full Post Receipt",
+      },
+      {
+        screen: "PTW-00",
+        path: ROUTES.PUTAWAY,
+        label: "Danh sách linh kiện chờ xếp khay",
+      },
+      {
+        screen: "PTW-01",
+        path: ROUTES.PUTAWAY,
+        label: "Putaway linh kiện vào khay",
+      },
+    ],
+  },
+  {
+    name: "03 · Xuất kho",
+    items: [
+      {
+        screen: "OUT-REQ-01",
+        path: ROUTES.OUTBOUND,
+        label: "Tiếp nhận Phiếu yêu cầu xuất",
+      },
+      {
+        screen: "OUT-01",
+        path: ROUTES.OUTBOUND,
+        label: "Danh sách phiếu xuất",
+      },
+      {
+        screen: "OUT-03",
+        path: ROUTES.OUTBOUND,
+        label: "Chi tiết phiếu xuất",
+      },
+      {
+        screen: "OUT-02",
+        path: ROUTES.OUTBOUND,
+        label: "Quét & match Item",
+      },
+      { screen: "LBL-01", path: ROUTES.OUTBOUND, label: "Nhãn từng Item" },
+      {
+        screen: "RFID-01",
+        path: ROUTES.OUTBOUND,
+        label: "Map RFID & Full Post Issue",
+      },
+    ],
+  },
+  {
+    name: "04 · Bảo hành & linh kiện",
+    items: [
+      {
+        screen: "WAR-01",
+        path: ROUTES.WARRANTY,
+        label: "Danh sách bảo hành",
+      },
+      {
+        screen: "WAR-02",
+        path: ROUTES.WARRANTY,
+        label: "Tiếp nhận bảo hành",
+      },
+      {
+        screen: "WAR-03",
+        path: ROUTES.WARRANTY,
+        label: "Chi tiết bảo hành",
+      },
+      {
+        screen: "COMP-01",
+        path: ROUTES.WARRANTY,
+        label: "Xuất linh kiện cho bảo hành",
+      },
+    ],
+  },
+  {
+    name: "05 · Tồn kho & kiểm soát",
+    items: [
+      {
+        screen: "INV-01",
+        path: ROUTES.INVENTORY,
+        label: "Tra cứu tồn & đối soát",
+      },
+      {
+        screen: "TRACE-01",
+        path: ROUTES.SCAN,
+        label: "Truy vết mã vật lý",
+      },
+      {
+        screen: "REV-00",
+        path: ROUTES.REVERSE,
+        label: "Danh sách phiếu Reversal",
+      },
+      {
+        screen: "REV-01",
+        path: ROUTES.REVERSE,
+        label: "Tạo Reversal",
+      },
+    ],
+  },
+  {
+    name: "06 · Báo cáo",
+    items: [
+      {
+        screen: "RPT-01",
+        path: ROUTES.REPORTS,
+        label: "Báo cáo vận hành",
+      },
+    ],
+  },
 ];
 
 const DEFAULT_SCREEN_BY_PATH: Record<string, string> = {
@@ -67,7 +199,14 @@ const DEFAULT_SCREEN_BY_PATH: Record<string, string> = {
 };
 
 function matchesPath(currentPath: string, targetPath: string) {
-  return currentPath === targetPath || (targetPath !== "/" && currentPath.startsWith(`${targetPath}/`));
+  return (
+    currentPath === targetPath ||
+    (targetPath !== "/" && currentPath.startsWith(`${targetPath}/`))
+  );
+}
+
+function normalizeScreen(screen: string | null | undefined) {
+  return screen === "IAM-02" ? "IAM-01" : screen;
 }
 
 export function SideNav() {
@@ -75,7 +214,9 @@ export function SideNav() {
   const navigate = useNavigate();
   const permissionCodes = useAuthStore((state) => state.permissionCodes);
   const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
-  const selectedScreen = new URLSearchParams(location.search).get("screen") ?? DEFAULT_SCREEN_BY_PATH[location.pathname];
+  const requestedScreen = new URLSearchParams(location.search).get("screen");
+  const selectedScreen =
+    normalizeScreen(requestedScreen) ?? DEFAULT_SCREEN_BY_PATH[location.pathname];
 
   const canAccess = (path: string) => {
     if (isSuperAdmin) return true;
@@ -88,10 +229,11 @@ export function SideNav() {
   return (
     <nav data-testid="primary-navigation" aria-label="Điều hướng chính">
       <div className="hn-mvp-brand">
-        <div className="hn-mvp-logo" aria-hidden="true">HN</div>
+        <div className="hn-mvp-logo" aria-hidden="true">
+          HN
+        </div>
         <div className="hn-mvp-brand-copy">
           <h1>Hoa Nam WMS</h1>
-         
         </div>
       </div>
 
@@ -102,7 +244,9 @@ export function SideNav() {
           <section key={group.name} aria-label={group.name}>
             <div className="hn-mvp-group">{group.name}</div>
             {visibleItems.map((item) => {
-              const active = selectedScreen === item.screen && matchesPath(location.pathname, item.path);
+              const active =
+                selectedScreen === item.screen &&
+                matchesPath(location.pathname, item.path);
               return (
                 <button
                   key={item.screen}
