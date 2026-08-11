@@ -1,109 +1,71 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Modal } from "antd";
+import {
+  useCreateIamUser,
+  useIamRoles,
+  useIamUsers,
+  useUpdateIamUser,
+} from "@/modules/iam/hooks/use-iam";
+import type {
+  IamRole,
+  IamUser,
+  IamUserStatus,
+} from "@/modules/iam/types/iam.types";
+import { getApiErrorMessage, getMutationErrorMessage } from "@/shared/api/api-error";
+import { useAuthStore } from "@/shared/store/auth.store";
 
-type UserStatus = "ACTIVE" | "INACTIVE" | "LOCKED";
-
-type UserRecord = {
-  id: string;
-  displayName: string;
-  username: string;
-  phone: string;
-  email: string;
-  role: string;
-  scope: string;
-  status: UserStatus;
-  lastLogin: string;
-  note: string;
-};
-
-type UserFormState = Omit<UserRecord, "id" | "lastLogin"> & {
-  password: string;
-};
-
-const ROLE_OPTIONS = [
-  "Admin hệ thống",
-  "Quản lý kho",
-  "Nhân viên kho",
-  "Nhân viên bảo hành",
-  "Lãnh đạo",
-];
-
-const SCOPE_OPTIONS = [
-  "Toàn hệ thống",
-  "Kho tổng Hoa Nam",
-  "Bảo hành",
-  "Chỉ xem báo cáo",
-];
-
-const STATUS_OPTIONS: Array<{ value: UserStatus; label: string }> = [
+const STATUS_OPTIONS: Array<{ value: IamUserStatus; label: string }> = [
   { value: "ACTIVE", label: "Đang hoạt động" },
   { value: "INACTIVE", label: "Tạm ngưng" },
   { value: "LOCKED", label: "Đã khóa" },
 ];
 
-const INITIAL_USERS: UserRecord[] = [
-  {
-    id: "iam-demo-warehouse",
-    displayName: "Nguyễn Văn Kho",
-    username: "nvkho01",
-    phone: "0901234567",
-    email: "nvkho01@hoanam.vn",
-    role: "Nhân viên kho",
-    scope: "Kho tổng Hoa Nam",
-    status: "ACTIVE",
-    lastLogin: "10/08/2026 08:14",
-    note: "Tài khoản dùng cho khu nhập hàng",
-  },
-  {
-    id: "iam-demo-warranty",
-    displayName: "Lê Thu Bảo Hành",
-    username: "warranty02",
-    phone: "0902345678",
-    email: "warranty02@hoanam.vn",
-    role: "Nhân viên bảo hành",
-    scope: "Bảo hành",
-    status: "ACTIVE",
-    lastLogin: "09/08/2026 16:02",
-    note: "Tài khoản tiếp nhận và xử lý bảo hành",
-  },
-  {
-    id: "iam-demo-leadership",
-    displayName: "Trần Lãnh Đạo",
-    username: "report01",
-    phone: "",
-    email: "report01@hoanam.vn",
-    role: "Lãnh đạo",
-    scope: "Chỉ xem báo cáo",
-    status: "INACTIVE",
-    lastLogin: "08/08/2026 09:30",
-    note: "Tài khoản chỉ xem báo cáo",
-  },
-];
+type UserFormState = {
+  displayName: string;
+  username: string;
+  phone: string;
+  email: string;
+  roleId: string;
+  status: IamUserStatus;
+  password: string;
+};
 
 const EMPTY_FORM: UserFormState = {
   displayName: "",
   username: "",
   phone: "",
   email: "",
-  role: "Nhân viên kho",
-  scope: "Kho tổng Hoa Nam",
+  roleId: "",
   status: "ACTIVE",
-  note: "",
   password: "",
 };
 
-function statusLabel(status: UserStatus) {
+function statusLabel(status: IamUserStatus) {
   return STATUS_OPTIONS.find((item) => item.value === status)?.label ?? status;
 }
 
-function statusClass(status: UserStatus) {
+function statusClass(status: IamUserStatus) {
   if (status === "ACTIVE") return "pill ok";
   if (status === "LOCKED") return "pill danger-pill";
   return "pill warn-pill";
 }
 
-function newUserId() {
-  return `iam-user-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+function scopeLabel(role?: IamRole) {
+  if (!role) return "Chưa gán";
+  if (role.pivot?.scope_ref) return role.pivot.scope_ref;
+  if (role.scope_type === "WAREHOUSE") return "Theo kho";
+  if (role.scope_type === "FUNCTION") return "Theo chức năng";
+  return "Toàn hệ thống";
+}
+
+function formatLastLogin(value?: string | null) {
+  if (!value) return "Chưa đăng nhập";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return new Intl.DateTimeFormat("vi-VN", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(parsed);
 }
 
 export interface IamUserScreenProps {
@@ -112,54 +74,80 @@ export interface IamUserScreenProps {
 }
 
 export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps) {
-  const [users, setUsers] = useState<UserRecord[]>(INITIAL_USERS);
+  const permissionCodes = useAuthStore((state) => state.permissionCodes);
+  const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
+  const canManageUsers =
+    isSuperAdmin || permissionCodes.includes("iam.user.manage");
+
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState<IamUserStatus | "">("");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingUser, setEditingUser] = useState<IamUser | null>(null);
   const [formState, setFormState] = useState<UserFormState>(EMPTY_FORM);
   const [formError, setFormError] = useState("");
 
-  useEffect(() => {
-    if (!openCreateOnMount) return;
-    setEditingId(null);
-    setFormState({ ...EMPTY_FORM });
-    setFormError("");
-    setIsModalOpen(true);
-  }, [openCreateOnMount]);
+  const usersQuery = useIamUsers({
+    keyword: search.trim(),
+    status: statusFilter,
+    per_page: 100,
+  });
+  const rolesQuery = useIamRoles();
+  const createUser = useCreateIamUser();
+  const updateUser = useUpdateIamUser();
+
+  const roles = rolesQuery.data ?? [];
+  const users = usersQuery.data?.data ?? [];
+  const isSaving = createUser.isPending || updateUser.isPending;
 
   const filteredUsers = useMemo(() => {
-    const keyword = search.trim().toLocaleLowerCase("vi-VN");
-    return users.filter((user) => {
-      const matchesKeyword =
-        !keyword ||
-        user.displayName.toLocaleLowerCase("vi-VN").includes(keyword) ||
-        user.username.toLocaleLowerCase("vi-VN").includes(keyword);
-      const matchesRole = !roleFilter || user.role === roleFilter;
-      const matchesStatus = !statusFilter || user.status === statusFilter;
-      return matchesKeyword && matchesRole && matchesStatus;
+    if (!roleFilter) return users;
+    return users.filter((user) =>
+      user.roles?.some((role) => role.role_id === roleFilter),
+    );
+  }, [roleFilter, users]);
+
+  const selectedRole = useMemo(
+    () => roles.find((role) => role.role_id === formState.roleId),
+    [formState.roleId, roles],
+  );
+
+  const resetForm = () => {
+    setFormState({
+      ...EMPTY_FORM,
+      roleId: roles[0]?.role_id ?? "",
     });
-  }, [roleFilter, search, statusFilter, users]);
+  };
 
   const openCreate = () => {
-    setEditingId(null);
-    setFormState({ ...EMPTY_FORM });
+    if (!canManageUsers) return;
+    setEditingUser(null);
+    resetForm();
     setFormError("");
     setIsModalOpen(true);
   };
 
-  const openEdit = (user: UserRecord) => {
-    setEditingId(user.id);
+  useEffect(() => {
+    if (!openCreateOnMount || !canManageUsers) return;
+    setEditingUser(null);
     setFormState({
-      displayName: user.displayName,
+      ...EMPTY_FORM,
+      roleId: roles[0]?.role_id ?? "",
+    });
+    setFormError("");
+    setIsModalOpen(true);
+  }, [canManageUsers, openCreateOnMount, roles]);
+
+  const openEdit = (user: IamUser) => {
+    if (!canManageUsers) return;
+    setEditingUser(user);
+    setFormState({
+      displayName: user.display_name,
       username: user.username,
-      phone: user.phone,
-      email: user.email,
-      role: user.role,
-      scope: user.scope,
+      phone: user.phone ?? "",
+      email: user.email ?? "",
+      roleId: user.roles?.[0]?.role_id ?? roles[0]?.role_id ?? "",
       status: user.status,
-      note: user.note,
       password: "",
     });
     setFormError("");
@@ -167,8 +155,9 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
   };
 
   const closeModal = () => {
+    if (isSaving) return;
     setIsModalOpen(false);
-    setEditingId(null);
+    setEditingUser(null);
     setFormError("");
   };
 
@@ -176,79 +165,70 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
     setFormState((current) => ({ ...current, [key]: value }));
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setFormError("");
 
     const displayName = formState.displayName.trim();
-    const username = formState.username.trim();
+    const username = formState.username.trim().toLowerCase();
     const email = formState.email.trim();
+    const phone = formState.phone.trim();
+    const password = formState.password;
 
-    if (!displayName || !username || !formState.role || !formState.scope || !formState.status) {
-      setFormError("Vui lòng nhập đầy đủ các trường bắt buộc.");
+    if (!displayName || !username || !formState.roleId) {
+      setFormError("Vui lòng nhập đầy đủ họ tên, tên đăng nhập và vai trò.");
+      return;
+    }
+    if (!editingUser && password.length < 8) {
+      setFormError("Mật khẩu tạm phải có ít nhất 8 ký tự.");
+      return;
+    }
+    if (editingUser && password && password.length < 8) {
+      setFormError("Mật khẩu đặt lại phải có ít nhất 8 ký tự.");
       return;
     }
 
-    const duplicatedUsername = users.some(
-      (user) =>
-        user.id !== editingId &&
-        user.username.toLocaleLowerCase("vi-VN") === username.toLocaleLowerCase("vi-VN"),
-    );
-    if (duplicatedUsername) {
-      setFormError("Tên đăng nhập đã tồn tại. Vui lòng chọn tên đăng nhập khác.");
-      return;
-    }
+    const basePayload = {
+      display_name: displayName,
+      username,
+      email: email || null,
+      phone: phone || null,
+      status: formState.status,
+      ...(password ? { password } : {}),
+    };
 
-    const duplicatedEmail =
-      email.length > 0 &&
-      users.some(
-        (user) =>
-          user.id !== editingId &&
-          user.email &&
-          user.email.toLocaleLowerCase("vi-VN") === email.toLocaleLowerCase("vi-VN"),
-      );
-    if (duplicatedEmail) {
-      setFormError("Email đã tồn tại. Vui lòng kiểm tra lại.");
-      return;
+    try {
+      if (editingUser) {
+        await updateUser.mutateAsync({
+          userId: editingUser.user_id,
+          roleId: formState.roleId,
+          payload: {
+            ...basePayload,
+            version: editingUser.version,
+          },
+        });
+      } else {
+        await createUser.mutateAsync({
+          roleId: formState.roleId,
+          payload: {
+            ...basePayload,
+            password,
+          },
+        });
+      }
+      setIsModalOpen(false);
+      setEditingUser(null);
+    } catch (error) {
+      setFormError(getMutationErrorMessage(error));
     }
-
-    if (editingId) {
-      setUsers((current) =>
-        current.map((user) =>
-          user.id === editingId
-            ? {
-                ...user,
-                displayName,
-                username,
-                phone: formState.phone.trim(),
-                email,
-                role: formState.role,
-                scope: formState.scope,
-                status: formState.status,
-                note: formState.note.trim(),
-              }
-            : user,
-        ),
-      );
-    } else {
-      setUsers((current) => [
-        {
-          id: newUserId(),
-          displayName,
-          username,
-          phone: formState.phone.trim(),
-          email,
-          role: formState.role,
-          scope: formState.scope,
-          status: formState.status,
-          lastLogin: "Chưa đăng nhập",
-          note: formState.note.trim(),
-        },
-        ...current,
-      ]);
-    }
-
-    closeModal();
   };
+
+  const listError = usersQuery.error
+    ? getApiErrorMessage(usersQuery.error, "Không tải được danh sách người dùng.")
+    : "";
+  const roleError = rolesQuery.error
+    ? getApiErrorMessage(rolesQuery.error, "Không tải được danh sách vai trò.")
+    : "";
 
   return (
     <div className="hn-mvp-source-screen" data-mvp-screen="IAM-01">
@@ -265,18 +245,21 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
           value={roleFilter}
           onChange={(event) => setRoleFilter(event.target.value)}
           aria-label="Lọc theo vai trò"
+          disabled={rolesQuery.isLoading}
         >
           <option value="">Vai trò: Tất cả</option>
-          {ROLE_OPTIONS.map((role) => (
-            <option key={role} value={role}>
-              {role}
+          {roles.map((role) => (
+            <option key={role.role_id} value={role.role_id}>
+              {role.role_name}
             </option>
           ))}
         </select>
         <select
           className="select"
           value={statusFilter}
-          onChange={(event) => setStatusFilter(event.target.value)}
+          onChange={(event) =>
+            setStatusFilter(event.target.value as IamUserStatus | "")
+          }
           aria-label="Lọc theo trạng thái"
         >
           <option value="">Trạng thái: Tất cả</option>
@@ -287,12 +270,33 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
           ))}
         </select>
         <div className="spacer" />
-        <button className="btn primary" type="button" onClick={openCreate}>
-          + Thêm người dùng
-        </button>
+        {canManageUsers ? (
+          <button
+            className="btn primary"
+            type="button"
+            onClick={openCreate}
+            disabled={rolesQuery.isLoading || roles.length === 0}
+          >
+            + Thêm người dùng
+          </button>
+        ) : null}
       </div>
 
-      <div className="table-wrap">
+      {listError ? (
+        <div className="alert" role="alert" style={{ marginBottom: 14 }}>
+          {listError}{" "}
+          <button className="btn small" type="button" onClick={() => usersQuery.refetch()}>
+            Thử lại
+          </button>
+        </div>
+      ) : null}
+      {roleError ? (
+        <div className="alert" role="alert" style={{ marginBottom: 14 }}>
+          {roleError}
+        </div>
+      ) : null}
+
+      <div className="table-wrap" aria-busy={usersQuery.isLoading}>
         <table>
           <thead>
             <tr>
@@ -305,27 +309,40 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
             </tr>
           </thead>
           <tbody>
-            {filteredUsers.length > 0 ? (
-              filteredUsers.map((user) => (
-                <tr key={user.id}>
-                  <td>
-                    {user.displayName}
-                    <br />
-                    <span className="muted">{user.username}</span>
-                  </td>
-                  <td>{user.role}</td>
-                  <td>{user.scope}</td>
-                  <td>
-                    <span className={statusClass(user.status)}>{statusLabel(user.status)}</span>
-                  </td>
-                  <td>{user.lastLogin}</td>
-                  <td>
-                    <button className="btn small" type="button" onClick={() => openEdit(user)}>
-                      Sửa
-                    </button>
-                  </td>
-                </tr>
-              ))
+            {usersQuery.isLoading ? (
+              <tr>
+                <td colSpan={6}>
+                  <span className="muted">Đang tải dữ liệu từ API...</span>
+                </td>
+              </tr>
+            ) : filteredUsers.length > 0 ? (
+              filteredUsers.map((user) => {
+                const primaryRole = user.roles?.[0];
+                return (
+                  <tr key={user.user_id}>
+                    <td>
+                      {user.display_name}
+                      <br />
+                      <span className="muted">{user.username}</span>
+                    </td>
+                    <td>{primaryRole?.role_name ?? "Chưa gán"}</td>
+                    <td>{scopeLabel(primaryRole)}</td>
+                    <td>
+                      <span className={statusClass(user.status)}>{statusLabel(user.status)}</span>
+                    </td>
+                    <td>{formatLastLogin(user.last_login_at)}</td>
+                    <td>
+                      {canManageUsers ? (
+                        <button className="btn small" type="button" onClick={() => openEdit(user)}>
+                          Sửa
+                        </button>
+                      ) : (
+                        <span className="muted">Chỉ xem</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })
             ) : (
               <tr>
                 <td colSpan={6}>
@@ -338,7 +355,7 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
       </div>
 
       <Modal
-        title={editingId ? "Sửa người dùng" : "Thêm người dùng"}
+        title={editingUser ? "Sửa người dùng" : "Thêm người dùng"}
         open={isModalOpen}
         onCancel={closeModal}
         footer={null}
@@ -346,6 +363,7 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
         centered
         getContainer={false}
         maskClosable={false}
+        closable={!isSaving}
       >
         <form onSubmit={handleSubmit}>
           {formError ? (
@@ -366,6 +384,7 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
                   value={formState.displayName}
                   onChange={(event) => updateField("displayName", event.target.value)}
                   autoFocus
+                  disabled={isSaving}
                 />
               </div>
               <div className="field">
@@ -377,6 +396,7 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
                   value={formState.username}
                   onChange={(event) => updateField("username", event.target.value)}
                   autoComplete="off"
+                  disabled={isSaving}
                 />
               </div>
               <div className="field">
@@ -388,6 +408,7 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
                   value={formState.phone}
                   onChange={(event) => updateField("phone", event.target.value)}
                   inputMode="tel"
+                  disabled={isSaving}
                 />
               </div>
               <div className="field">
@@ -400,6 +421,7 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
                   value={formState.email}
                   onChange={(event) => updateField("email", event.target.value)}
                   autoComplete="off"
+                  disabled={isSaving}
                 />
               </div>
               <div className="field">
@@ -409,7 +431,8 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
                   className="select"
                   style={{ width: "100%" }}
                   value={formState.status}
-                  onChange={(event) => updateField("status", event.target.value as UserStatus)}
+                  onChange={(event) => updateField("status", event.target.value as IamUserStatus)}
+                  disabled={isSaving}
                 >
                   {STATUS_OPTIONS.map((status) => (
                     <option key={status.value} value={status.value}>
@@ -428,35 +451,28 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
                   id="iam-role"
                   className="select"
                   style={{ width: "100%" }}
-                  value={formState.role}
-                  onChange={(event) => updateField("role", event.target.value)}
+                  value={formState.roleId}
+                  onChange={(event) => updateField("roleId", event.target.value)}
+                  disabled={isSaving || roles.length === 0}
                 >
-                  {ROLE_OPTIONS.map((role) => (
-                    <option key={role} value={role}>
-                      {role}
+                  <option value="">Chọn vai trò</option>
+                  {roles.map((role) => (
+                    <option key={role.role_id} value={role.role_id}>
+                      {role.role_name}
                     </option>
                   ))}
                 </select>
               </div>
               <div className="field">
-                <label htmlFor="iam-scope">Phạm vi dữ liệu *</label>
-                <select
-                  id="iam-scope"
-                  className="select"
-                  style={{ width: "100%" }}
-                  value={formState.scope}
-                  onChange={(event) => updateField("scope", event.target.value)}
-                >
-                  {SCOPE_OPTIONS.map((scope) => (
-                    <option key={scope} value={scope}>
-                      {scope}
-                    </option>
-                  ))}
-                </select>
+                <label>Phạm vi dữ liệu</label>
+                <div className="value">{scopeLabel(selectedRole)}</div>
+                <div className="muted" style={{ marginTop: 6 }}>
+                  Phạm vi hiện lấy từ scope_type của role backend; API m1 chưa hỗ trợ chỉnh scope_ref riêng theo user.
+                </div>
               </div>
               <div className="field">
                 <label htmlFor="iam-password">
-                  {editingId ? "Mật khẩu tạm / đặt lại" : "Mật khẩu tạm"}
+                  {editingUser ? "Mật khẩu tạm / đặt lại" : "Mật khẩu tạm *"}
                 </label>
                 <input
                   id="iam-password"
@@ -465,31 +481,30 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
                   type="password"
                   value={formState.password}
                   onChange={(event) => updateField("password", event.target.value)}
-                  placeholder={editingId ? "Để trống nếu không đặt lại" : "Nhập mật khẩu tạm"}
                   autoComplete="new-password"
+                  placeholder={editingUser ? "Để trống nếu không đổi mật khẩu" : "Tối thiểu 8 ký tự"}
+                  disabled={isSaving}
                 />
               </div>
-              <div className="field">
-                <label htmlFor="iam-note">Ghi chú</label>
-                <textarea
-                  id="iam-note"
-                  className="textarea"
-                  value={formState.note}
-                  onChange={(event) => updateField("note", event.target.value)}
-                />
-              </div>
-              <div className="alert">
-                Thay đổi vai trò/phạm vi phải được backend kiểm tra quyền và ghi audit; giao diện không thay thế kiểm soát RBAC phía server.
-              </div>
+              {editingUser ? (
+                <div className="field">
+                  <label>Version</label>
+                  <div className="value">{editingUser.version}</div>
+                  <div className="muted" style={{ marginTop: 6 }}>
+                    FE gửi version hiện tại để backend chặn ghi đè khi có xung đột đồng thời.
+                  </div>
+                </div>
+              ) : null}
             </section>
           </div>
 
-          <div className="toolbar" style={{ marginTop: 16, marginBottom: 0, justifyContent: "flex-end" }}>
-            <button className="btn" type="button" onClick={closeModal}>
+          <div className="toolbar" style={{ marginTop: 16, marginBottom: 0 }}>
+            <div className="spacer" />
+            <button className="btn" type="button" onClick={closeModal} disabled={isSaving}>
               Hủy
             </button>
-            <button className="btn primary" type="submit">
-              Lưu người dùng
+            <button className="btn primary" type="submit" disabled={isSaving || !formState.roleId}>
+              {isSaving ? "Đang lưu..." : "Lưu người dùng"}
             </button>
           </div>
         </form>
