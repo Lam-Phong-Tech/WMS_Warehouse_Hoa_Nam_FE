@@ -10,6 +10,7 @@ export const ROUTES = {
   // 01 · Hệ thống & danh mục (HN_WMS_Wireframe_MVP.html)
   IAM_USERS: "/system/users",
   IAM_USER_CREATE: "/system/users/new",
+  IAM_ROLES: "/system/roles",
   MASTER_DATA: "/master-data/skus",
   SKU_CREATE: "/master-data/skus/new",
   AGENCIES: "/master-data/agencies",
