@@ -1,3 +1,10 @@
+export type OutboundStatus = "DRAFT" | "SCANNING" | "POSTED" | "CANCELLED";
+
+/**
+ * Compatibility view model kept for older imports. The active outbound UI uses
+ * mvpOutboundService directly, but this type is intentionally constrained to
+ * the four canonical stock-document states.
+ */
 export interface OutboundDocument {
   id: string;
   code: string;
@@ -8,13 +15,7 @@ export interface OutboundDocument {
   planned: number;
   issued: number;
   remaining: number;
-  status:
-    | "DRAFT"
-    | "SCANNING"
-    | "PARTIALLY_POSTED"
-    | "POSTED"
-    | "CLOSED"
-    | "CANCELLED";
+  status: OutboundStatus;
   createdBy: string;
   version: number;
 }
@@ -36,28 +37,21 @@ export interface OutboundLine {
   selected: boolean;
 }
 
-/** See PostReceiptRequest: posting is whole-document in WWHN-180 v1.7. */
+/** Whole-document Post Issue: no subset body is sent. */
 export interface PostIssueRequest {
   documentId: string;
-  lines?: { lineId: string; quantity: number }[];
   idempotencyKey: string;
-  ifMatch?: number;
+  ifMatch: number;
 }
 
 export interface IssueEvidence {
   issueId: string;
   movementRef: string;
-  movementRefs?: string[];
+  movementRefs: string[];
   requestId: string;
-  traceSource?: string;
+  traceSource: "stock_document.movements";
+  version?: number;
   replayed?: boolean;
-}
-
-export interface CloseRemainderRequest {
-  documentId: string;
-  reason: string;
-  idempotencyKey: string;
-  ifMatch: number;
 }
 
 export type OutboundErrorCode =
@@ -77,4 +71,5 @@ export interface OutboundScanResult {
   sku?: string;
   line_id?: string;
   message?: string;
+  version: number;
 }
