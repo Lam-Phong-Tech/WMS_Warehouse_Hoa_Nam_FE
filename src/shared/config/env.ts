@@ -89,13 +89,20 @@ function requiredCredentialedApi(value: string | undefined): true {
   if (value === undefined || value === "" || value === "true" || value === "1") {
     return true;
   }
+
   if (value === "false" || value === "0") {
-    throw new Error(
-      "[env] VITE_API_WITH_CREDENTIALS must be true. Browser auth persistence uses an HttpOnly refresh cookie after F5.",
+    // Browser auth persistence depends on the HttpOnly refresh cookie. A stale
+    // deployment/local .env must never turn that security requirement off and
+    // must never crash the whole SPA. Force the invariant on at runtime while
+    // still surfacing the configuration drift for operators.
+    console.warn(
+      "[env] VITE_API_WITH_CREDENTIALS=false is deprecated and ignored; credentials are forced on for browser auth persistence.",
     );
+    return true;
   }
+
   throw new Error(
-    "[env] VITE_API_WITH_CREDENTIALS must be true or 1 for browser authentication.",
+    "[env] VITE_API_WITH_CREDENTIALS must be true, false, 1, or 0.",
   );
 }
 
@@ -135,8 +142,8 @@ export const runtimeConfig: RuntimeConfig = {
     readEnv("VITE_API_TIMEOUT_MS"),
     DEFAULT_API_TIMEOUT_MS,
   ),
-  // This is an authentication invariant, not a feature flag. An old .env with
-  // credentials disabled must fail fast instead of silently reintroducing F5 logout.
+  // Authentication invariant: browser requests always include credentials so
+  // the HttpOnly refresh cookie can restore the session after F5/reload.
   apiWithCredentials: requiredCredentialedApi(
     readEnv("VITE_API_WITH_CREDENTIALS"),
   ),
