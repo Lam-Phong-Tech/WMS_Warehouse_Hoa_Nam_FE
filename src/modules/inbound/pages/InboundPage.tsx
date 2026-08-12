@@ -3,10 +3,7 @@ import {
   Alert,
   Button,
   Card,
-  Col,
-  Input,
   Progress,
-  Row,
   Select,
   Space,
   Table,
@@ -305,20 +302,18 @@ function InboundListScreen() {
           <Tag>Full-post only</Tag>
         </div>
 
-        <Row gutter={[12, 12]} className="filter-row">
-          <Col xs={24} md={8}>
-            <Input
-              allowClear
+        <div className="hn-mvp-source-screen">
+          <div className="toolbar">
+            <input
+              className="input search"
               value={searchInput}
               placeholder="Tìm mã phiếu / nguồn nhập..."
               aria-label="Tìm phiếu nhập"
               onChange={(event) => setSearchInput(event.target.value)}
             />
-          </Col>
-          <Col xs={12} md={4}>
             <Select
               allowClear
-              className="full-width"
+              style={{ width: 160 }}
               placeholder="Trạng thái"
               options={STATUS_OPTIONS}
               value={status}
@@ -327,8 +322,8 @@ function InboundListScreen() {
                 setPage(1);
               }}
             />
-          </Col>
-        </Row>
+          </div>
+        </div>
 
         <Alert
           showIcon
