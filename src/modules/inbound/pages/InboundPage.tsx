@@ -22,7 +22,6 @@ import {
   EditOutlined,
   EyeOutlined,
   PlusOutlined,
-  ReloadOutlined,
   ScanOutlined,
 } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
@@ -67,7 +66,15 @@ type DraftModalProps = {
   onSaved: (documentId: string) => void;
 };
 
-type FieldPath = (string | number)[];
+type InboundLineFieldPath = keyof InboundDraftFormValues["lines"][number];
+type InboundDraftFieldPath =
+  | ["warehouseId"]
+  | ["documentDate"]
+  | ["sourceName"]
+  | ["note"]
+  | ["lines"]
+  | ["lines", number]
+  | ["lines", number, InboundLineFieldPath];
 
 const STATUS_OPTIONS = [
   { label: "DRAFT", value: "DRAFT" },
@@ -112,8 +119,8 @@ function toInboundLinePayload(lines: InboundDraftFormValues["lines"]): InboundLi
   });
 }
 
-function backendFieldPath(key: string): FieldPath | null {
-  const direct: Record<string, FieldPath> = {
+function backendFieldPath(key: string): InboundDraftFieldPath | null {
+  const direct: Record<string, InboundDraftFieldPath> = {
     doc_date: ["documentDate"],
     dst_warehouse_id: ["warehouseId"],
     source_name: ["sourceName"],
@@ -122,7 +129,7 @@ function backendFieldPath(key: string): FieldPath | null {
   if (direct[key]) return direct[key];
   const match = key.match(/^lines\.(\d+)\.(product_id|qty_planned|note|import_batch_id)$/);
   if (!match) return null;
-  return ["lines", Number(match[1]), match[2]];
+  return ["lines", Number(match[1]), match[2] as InboundLineFieldPath];
 }
 
 function applyBackendErrors(
@@ -136,7 +143,7 @@ function applyBackendErrors(
       const name = backendFieldPath(key);
       return name ? { name, errors: [errors] } : null;
     })
-    .filter((field): field is { name: FieldPath; errors: string[] } => Boolean(field));
+    .filter((field): field is { name: InboundDraftFieldPath; errors: string[] } => Boolean(field));
   if (fields.length) form.setFields(fields);
 }
 
@@ -699,9 +706,7 @@ function InboundListScreen() {
       <div className="page-heading">
         <div><h1>Danh sách phiếu nhập</h1></div>
         <Space wrap>
-          <Button icon={<ReloadOutlined />} loading={query.isFetching} onClick={() => void query.refetch()}>
-            Làm mới
-          </Button>
+          
           <Button type="primary" icon={<PlusOutlined />} disabled={!canCreate} onClick={openCreateModal}>
             Tạo phiếu nhập
           </Button>

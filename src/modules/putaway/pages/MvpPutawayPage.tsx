@@ -23,7 +23,6 @@ import {
   CheckOutlined,
   CloseOutlined,
   EyeOutlined,
-  ReloadOutlined,
   SwapOutlined,
 } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
@@ -457,17 +456,7 @@ export default function MvpPutawayPage() {
           <h1>Danh sách linh kiện chờ xếp khay</h1>
         </div>
         <Space wrap>
-          <Button
-            icon={<ReloadOutlined />}
-            loading={
-              tasksQuery.isFetching ||
-              historyQuery.isFetching ||
-              traysQuery.isFetching
-            }
-            onClick={() => void invalidate()}
-          >
-            Làm mới
-          </Button>
+         
         </Space>
       </div>
 

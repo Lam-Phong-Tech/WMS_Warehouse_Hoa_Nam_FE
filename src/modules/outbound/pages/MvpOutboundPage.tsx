@@ -27,7 +27,6 @@ import {
   useMvpAgencies,
   useMvpSkus,
 } from "@/modules/master-data/hooks/use-mvp-master";
-import { fetchWarehouses } from "@/modules/master-data/services/warehouse.service";
 import type {
   AgencyRecord,
   SkuRecord,
@@ -54,8 +53,6 @@ import {
   type OutboundScanResult,
   type OutboundStatus,
 } from "@/modules/outbound/services/mvpOutboundService";
-
-type WarehouseRow = Record<string, unknown>;
 
 type IntakeForm = {
   request_no: string;
@@ -172,10 +169,6 @@ export default function MvpOutboundPage() {
     per_page: 100,
   });
   const agencyQuery = useMvpAgencies({ status: "ACTIVE", per_page: 100 });
-  const warehousesQuery = useQuery({
-    queryKey: ["warehouses", "outbound-active"],
-    queryFn: () => fetchWarehouses({ status: "ACTIVE", per_page: 100 }),
-  });
   const labelsQuery = useQuery({
     queryKey: ["mvp-outbound", "labels", selectedId],
     queryFn: fetchLabelSnapshots,
@@ -194,7 +187,6 @@ export default function MvpOutboundPage() {
   const detail = detailQuery.data;
   const skuRows = skuQuery.data?.data ?? [];
   const agencyRows = agencyQuery.data?.data ?? [];
-  const warehouseRows = (warehousesQuery.data ?? []) as WarehouseRow[];
   const activePrinters = (printersQuery.data ?? []).filter(
     (printer) => printer.status === "ACTIVE",
   );
