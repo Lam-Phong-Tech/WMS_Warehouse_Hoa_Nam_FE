@@ -1,0 +1,47 @@
+name: Repair DEV handoff gate
+
+on:
+  push:
+    branches: [m1]
+    paths:
+      - '.github/workflows/repair-dev-handoff-gate.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: m1
+          fetch-depth: 0
+      - name: Repair handoff condition and remove temporary workflows
+        shell: bash
+        run: |
+          set -euo pipefail
+          python <<'PY'
+          from pathlib import Path
+          path = Path('.github/workflows/ci.yml')
+          lines = path.read_text().splitlines()
+          found = False
+          for index, line in enumerate(lines):
+              if line.strip() == 'id: wwhn_177_handoff':
+                  for cursor in range(index + 1, min(index + 6, len(lines))):
+                      if lines[cursor].lstrip().startswith('if:'):
+                          lines[cursor] = '        if: always()'
+                          found = True
+                          break
+                  break
+          if not found:
+              raise SystemExit('WWHN-177 handoff condition not found')
+          path.write_text('\n'.join(lines) + '\n')
+          PY
+          git rm -f .github/workflows/fix-dev-handoff-gate.yml || true
+          git rm -f .github/workflows/repair-dev-handoff-gate.yml || true
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/workflows/ci.yml
+          git commit -m 'fix(ci): evaluate WWHN-177 handoff fail-closed'
+          git push origin HEAD:m1
