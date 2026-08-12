@@ -26,7 +26,7 @@ import type {
 } from "@/modules/receiving/types";
 
 type WarehouseRow = Record<string, unknown>;
-type LineDraft = InboundLinePayload & { key: string };
+type LineDraft = InboundLinePayload & { key: string; scanned_qty: number };
 
 type DraftModalProps = {
   documentId: string | null;
@@ -40,6 +40,12 @@ function text(value: unknown, fallback = ""): string {
 
 function makeKey(prefix: string) {
   return `${prefix}-${globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`}`;
+}
+
+function localToday(): string {
+  const now = new Date();
+  const local = new Date(now.getTime() - now.getTimezoneOffset() * 60_000);
+  return local.toISOString().slice(0, 10);
 }
 
 function statusPill(status: InboundDocument["status"]) {
@@ -65,13 +71,26 @@ function normalizeLines(lines: LineDraft[]): InboundLinePayload[] | null {
   const normalized: InboundLinePayload[] = [];
   for (const line of lines) {
     const quantity = Number(line.qty_planned);
-    if (!line.product_id || !Number.isInteger(quantity) || quantity <= 0) return null;
-    normalized.push({
+    const scannedQuantity = Number(line.scanned_qty ?? 0);
+    const minimumQuantity = Math.max(1, scannedQuantity);
+    if (
+      !line.product_id ||
+      !Number.isInteger(quantity) ||
+      quantity < minimumQuantity
+    ) {
+      return null;
+    }
+
+    const normalizedLine: InboundLinePayload = {
       product_id: line.product_id,
       qty_planned: quantity,
-      import_batch_id: line.import_batch_id ?? null,
       note: line.note ?? null,
-    });
+    };
+    if (line.id) normalizedLine.id = line.id;
+    if (line.import_batch_id !== undefined) {
+      normalizedLine.import_batch_id = line.import_batch_id;
+    }
+    normalized.push(normalizedLine);
   }
   return normalized;
 }
@@ -86,10 +105,11 @@ function InboundDraftModal({ documentId, onClose, onSaved }: DraftModalProps) {
   const createMutation = useCreateInbound();
   const updateMutation = useUpdateInbound();
   const [warehouseId, setWarehouseId] = useState("");
+  const [documentDate, setDocumentDate] = useState(localToday());
   const [sourceName, setSourceName] = useState("");
   const [note, setNote] = useState("");
   const [lines, setLines] = useState<LineDraft[]>([
-    { key: makeKey("line"), product_id: "", qty_planned: 1 },
+    { key: makeKey("line"), product_id: "", qty_planned: 1, scanned_qty: 0 },
   ]);
   const [initializedId, setInitializedId] = useState<string | null>(null);
   const canCreate = useInboundPermission(P.INBOUND_CREATE);
@@ -98,13 +118,16 @@ function InboundDraftModal({ documentId, onClose, onSaved }: DraftModalProps) {
     const detail = detailQuery.data;
     if (!documentId || !detail || initializedId === documentId) return;
     setWarehouseId(detail.document.warehouseId);
+    setDocumentDate(detail.document.date?.slice(0, 10) || localToday());
     setSourceName(detail.document.source === "-" ? "" : detail.document.source);
     setNote(detail.document.note ?? "");
     setLines(
       detail.lines.map((line) => ({
+        id: line.id,
         key: line.id,
         product_id: line.productId,
         qty_planned: line.expected,
+        scanned_qty: line.scanned,
         note: line.note ?? null,
       })),
     );
@@ -117,9 +140,8 @@ function InboundDraftModal({ documentId, onClose, onSaved }: DraftModalProps) {
   const hasScanEvidence = Boolean(
     detailQuery.data?.lines.some((line) => line.scanned > 0),
   );
-  const isMutable =
-    !documentId || status === "DRAFT" || status === "SCANNING";
-  const canEditLines = isMutable && !hasScanEvidence;
+  const isMutable = !documentId || status === "DRAFT" || status === "SCANNING";
+  const canEditStructure = isMutable && !hasScanEvidence;
   const saving = createMutation.isPending || updateMutation.isPending;
 
   const updateLine = (key: string, patch: Partial<LineDraft>) => {
@@ -132,21 +154,25 @@ function InboundDraftModal({ documentId, onClose, onSaved }: DraftModalProps) {
     if (!canCreate || !isMutable) return;
 
     try {
+      const normalizedLines = normalizeLines(lines);
+      if (!normalizedLines) {
+        message.error(
+          hasScanEvidence
+            ? "Expected qty phải là số nguyên và không được nhỏ hơn số lượng đã scan của từng dòng."
+            : "Mỗi dòng phải có SKU và Expected qty là số nguyên lớn hơn 0.",
+        );
+        return;
+      }
+
       if (documentId) {
         const detail = detailQuery.data;
         if (!detail) return;
         const payload: UpdateInboundPayload = {
+          doc_date: documentDate || null,
           source_name: sourceName.trim() || null,
           note: note.trim() || null,
+          lines: normalizedLines,
         };
-        if (canEditLines) {
-          const normalizedLines = normalizeLines(lines);
-          if (!normalizedLines) {
-            message.error("Mỗi dòng phải có SKU và Expected qty là số nguyên lớn hơn 0.");
-            return;
-          }
-          payload.lines = normalizedLines;
-        }
         const updated = await updateMutation.mutateAsync({
           id: documentId,
           payload,
@@ -154,21 +180,19 @@ function InboundDraftModal({ documentId, onClose, onSaved }: DraftModalProps) {
         });
         message.success(
           hasScanEvidence
-            ? "Đã cập nhật thông tin phiếu; dữ liệu scan được giữ nguyên."
+            ? "Đã cập nhật Expected; line ID và toàn bộ scan evidence được giữ nguyên."
             : "Đã cập nhật phiếu nhập.",
         );
         onSaved(updated.id);
         return;
       }
 
-      const normalizedLines = normalizeLines(lines);
-      if (!warehouseId || !normalizedLines) {
-        message.error(
-          "Chọn kho và khai báo ít nhất một dòng SKU có Expected qty hợp lệ.",
-        );
+      if (!warehouseId) {
+        message.error("Chọn kho ACTIVE trước khi tạo phiếu nhập.");
         return;
       }
       const payload: CreateInboundPayload = {
+        doc_date: documentDate || null,
         dst_warehouse_id: warehouseId,
         source_name: sourceName.trim() || null,
         note: note.trim() || null,
@@ -179,12 +203,16 @@ function InboundDraftModal({ documentId, onClose, onSaved }: DraftModalProps) {
       onSaved(created.id);
     } catch (error) {
       message.error(getApiErrorMessage(error, "Không lưu được phiếu nhập."));
+      if (documentId) {
+        setInitializedId(null);
+        void detailQuery.refetch();
+      }
     }
   };
 
   const modalTitle = documentId
     ? status === "SCANNING"
-      ? "Sửa thông tin phiếu nhập đang SCANNING"
+      ? "Sửa phiếu nhập SCANNING"
       : "Sửa phiếu nhập DRAFT"
     : "Tạo phiếu nhập DRAFT";
 
@@ -195,7 +223,9 @@ function InboundDraftModal({ documentId, onClose, onSaved }: DraftModalProps) {
       width={1120}
       footer={null}
       onCancel={onClose}
-      maskClosable={!saving}
+      centered
+      getContainer={false}
+      maskClosable={false}
       closable={!saving}
     >
       {detailQuery.isError && (
@@ -214,9 +244,10 @@ function InboundDraftModal({ documentId, onClose, onSaved }: DraftModalProps) {
 
       {hasScanEvidence && isMutable && (
         <div className="alert" style={{ marginBottom: 14 }}>
-          Phiếu đã có scan evidence. Có thể sửa nguồn/tham chiếu và ghi chú, nhưng
-          không thay SKU/Expected qty để tránh xóa lịch sử scan. Nếu dữ liệu dòng sai,
-          hãy Cancel phiếu và tạo lại theo đúng full-post flow.
+          Phiếu đã có scan evidence: hệ thống giữ nguyên line ID, SKU, import batch và
+          lịch sử quét. Bạn vẫn được sửa <b>Expected qty</b> theo baseline nghiệp vụ,
+          nhưng Expected không được nhỏ hơn số đã quét. Muốn đổi cấu trúc SKU/dòng phải
+          Cancel và tạo phiếu mới.
         </div>
       )}
 
@@ -228,6 +259,16 @@ function InboundDraftModal({ documentId, onClose, onSaved }: DraftModalProps) {
             <div className="value">
               {detailQuery.data?.document.code || "Tự sinh sau khi lưu"}
             </div>
+          </div>
+          <div className="field">
+            <label>Ngày chứng từ *</label>
+            <input
+              className="input"
+              type="date"
+              value={documentDate}
+              disabled={!isMutable}
+              onChange={(event) => setDocumentDate(event.target.value)}
+            />
           </div>
           <div className="field">
             <label>Nguồn / tham chiếu</label>
@@ -292,6 +333,10 @@ function InboundDraftModal({ documentId, onClose, onSaved }: DraftModalProps) {
             <span className="dot" />
             <span>Full Post chỉ mở khi mọi dòng scanned_qty = expected_qty.</span>
           </div>
+          <div className="rule">
+            <span className="dot" />
+            <span>Putaway sau nhận hàng là stock-neutral, không cộng tồn lần hai.</span>
+          </div>
         </div>
       </div>
 
@@ -302,6 +347,7 @@ function InboundDraftModal({ documentId, onClose, onSaved }: DraftModalProps) {
               <th>SKU</th>
               <th>Tên</th>
               <th>Expected qty</th>
+              <th>Đã scan</th>
               <th>Loại</th>
               <th />
             </tr>
@@ -315,7 +361,7 @@ function InboundDraftModal({ documentId, onClose, onSaved }: DraftModalProps) {
                     <select
                       className="select"
                       value={line.product_id}
-                      disabled={!canEditLines}
+                      disabled={!canEditStructure}
                       onChange={(event) =>
                         updateLine(line.key, { product_id: event.target.value })
                       }
@@ -333,19 +379,27 @@ function InboundDraftModal({ documentId, onClose, onSaved }: DraftModalProps) {
                     <input
                       className="input"
                       type="number"
-                      min={1}
+                      min={Math.max(1, line.scanned_qty)}
                       step={1}
                       value={line.qty_planned}
-                      disabled={!canEditLines}
+                      disabled={!isMutable}
                       onChange={(event) =>
                         updateLine(line.key, { qty_planned: Number(event.target.value) })
                       }
                       style={{ width: 110 }}
                     />
                   </td>
+                  <td>
+                    <b>{line.scanned_qty}</b>
+                    {line.scanned_qty > 0 && (
+                      <div className="muted" style={{ fontSize: 12 }}>
+                        Expected ≥ {line.scanned_qty}
+                      </div>
+                    )}
+                  </td>
                   <td>{sku?.sku_type ?? "-"}</td>
                   <td>
-                    {canEditLines && lines.length > 1 && (
+                    {canEditStructure && lines.length > 1 && (
                       <button
                         type="button"
                         className="btn small"
@@ -366,7 +420,7 @@ function InboundDraftModal({ documentId, onClose, onSaved }: DraftModalProps) {
         </table>
       </div>
 
-      {canEditLines && (
+      {canEditStructure && (
         <button
           type="button"
           className="btn"
@@ -374,7 +428,12 @@ function InboundDraftModal({ documentId, onClose, onSaved }: DraftModalProps) {
           onClick={() =>
             setLines((current) => [
               ...current,
-              { key: makeKey("line"), product_id: "", qty_planned: 1 },
+              {
+                key: makeKey("line"),
+                product_id: "",
+                qty_planned: 1,
+                scanned_qty: 0,
+              },
             ])
           }
         >
@@ -556,7 +615,7 @@ function InboundListScreen() {
                           className="btn small"
                           onClick={() => openEditModal(row.id)}
                         >
-                          {row.status === "DRAFT" ? "Sửa" : "Sửa thông tin"}
+                          {row.status === "DRAFT" ? "Sửa" : "Sửa Expected"}
                         </button>
                       )}
                       <button
