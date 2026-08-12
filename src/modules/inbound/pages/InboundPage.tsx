@@ -4,7 +4,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
 import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { useSearchParams } from "react-router-dom";
-import { z } from "zod";
 import { getApiErrorMessage } from "@/shared/api/api-error";
 import {
   hasAnyWmsPermission,
@@ -20,12 +19,18 @@ import {
   useUpdateInbound,
 } from "@/modules/inbound/hooks/use-inbound";
 import { InboundScanModal } from "@/modules/inbound/pages/MvpInboundScreens";
+import {
+  defaultInboundDraftValues,
+  inboundDraftSchema,
+  localToday,
+  type InboundInboundDraftFormValues,
+} from "@/modules/inbound/schemas/inboundDraft.schema";
 import type {
   CreateInboundPayload,
   InboundDocument,
   InboundLinePayload,
   UpdateInboundPayload,
-} from "@/modules/receiving/types";
+} from "@/modules/inbound/types";
 
 type WarehouseRow = Record<string, unknown>;
 
@@ -35,63 +40,8 @@ type DraftModalProps = {
   onSaved: (documentId: string) => void;
 };
 
-const inboundLineSchema = z.object({
-  id: z.string().optional(),
-  product_id: z.string().min(1, "Chọn SKU."),
-  import_batch_id: z.string().nullable().optional(),
-  qty_planned: z.number().int().min(1, "Expected qty phải là số nguyên lớn hơn 0."),
-  scanned_qty: z.number().int().min(0),
-  note: z.string().nullable().optional(),
-});
-
-const inboundDraftSchema = z
-  .object({
-    warehouseId: z.string().min(1, "Chọn kho ACTIVE."),
-    documentDate: z.string().min(1, "Chọn ngày chứng từ."),
-    sourceName: z.string().max(255, "Nguồn/tham chiếu tối đa 255 ký tự."),
-    note: z.string().max(2000, "Ghi chú tối đa 2000 ký tự."),
-    lines: z.array(inboundLineSchema).min(1, "Phiếu nhập phải có ít nhất một dòng."),
-  })
-  .superRefine((values, context) => {
-    values.lines.forEach((line, index) => {
-      const minimum = Math.max(1, line.scanned_qty);
-      if (line.qty_planned < minimum) {
-        context.addIssue({
-          code: "custom",
-          path: ["lines", index, "qty_planned"],
-          message: `Expected qty không được nhỏ hơn ${minimum}.`,
-        });
-      }
-    });
-  });
-
-type DraftFormValues = z.infer<typeof inboundDraftSchema>;
-
 function text(value: unknown, fallback = ""): string {
   return value === undefined || value === null ? fallback : String(value);
-}
-
-function localToday(): string {
-  const now = new Date();
-  const local = new Date(now.getTime() - now.getTimezoneOffset() * 60_000);
-  return local.toISOString().slice(0, 10);
-}
-
-function defaultDraftValues(): DraftFormValues {
-  return {
-    warehouseId: "",
-    documentDate: localToday(),
-    sourceName: "",
-    note: "",
-    lines: [
-      {
-        product_id: "",
-        qty_planned: 1,
-        scanned_qty: 0,
-        note: null,
-      },
-    ],
-  };
 }
 
 function statusPill(status: InboundDocument["status"]) {
@@ -112,7 +62,7 @@ function useInboundPermission(code: string) {
   return hasAnyWmsPermission(permissionCodes, [code], isSuperAdmin);
 }
 
-function toInboundLinePayload(lines: DraftFormValues["lines"]): InboundLinePayload[] {
+function toInboundLinePayload(lines: InboundDraftFormValues["lines"]): InboundLinePayload[] {
   return lines.map((line) => {
     const payload: InboundLinePayload = {
       product_id: line.product_id,
@@ -138,9 +88,9 @@ function InboundDraftModal({ documentId, onClose, onSaved }: DraftModalProps) {
   const updateMutation = useUpdateInbound();
   const initializedIdRef = useRef<string | null>(null);
   const canCreate = useInboundPermission(P.INBOUND_CREATE);
-  const form = useForm<DraftFormValues>({
+  const form = useForm<InboundDraftFormValues>({
     resolver: zodResolver(inboundDraftSchema),
-    defaultValues: defaultDraftValues(),
+    defaultValues: defaultInboundDraftValues(),
     mode: "onSubmit",
   });
   const {
@@ -187,7 +137,7 @@ function InboundDraftModal({ documentId, onClose, onSaved }: DraftModalProps) {
   const canEditStructure = isMutable && !hasScanEvidence;
   const saving = createMutation.isPending || updateMutation.isPending;
 
-  const handleSave = async (values: DraftFormValues) => {
+  const handleSave = async (values: InboundDraftFormValues) => {
     if (!canCreate || !isMutable) return;
 
     try {

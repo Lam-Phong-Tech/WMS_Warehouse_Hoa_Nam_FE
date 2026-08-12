@@ -17,7 +17,7 @@ import {
   useRegisterInboundBox,
   useScanInbound,
 } from "@/modules/inbound/hooks/use-inbound";
-import type { ReceiptEvidence } from "@/modules/receiving/types";
+import type { ReceiptEvidence } from "@/modules/inbound/types";
 
 type BarcodeResult = { rawValue?: string };
 type BarcodeDetectorInstance = {

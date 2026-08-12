@@ -8,8 +8,8 @@ import {
   registerInboundBox,
   scanInboundDocument,
   updateInboundDocument,
-} from "@/modules/receiving/services/receivingService";
-import type { CreateInboundPayload, PostReceiptRequest, UpdateInboundPayload } from "@/modules/receiving/types";
+} from "@/modules/inbound/services/inboundService";
+import type { CreateInboundPayload, PostReceiptRequest, UpdateInboundPayload } from "@/modules/inbound/types";
 
 type InboundListParams = { search?: string; status?: string; page?: number; per_page?: number };
 export const inboundKeys = {
