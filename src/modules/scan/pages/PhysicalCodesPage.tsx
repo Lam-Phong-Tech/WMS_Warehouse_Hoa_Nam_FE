@@ -17,10 +17,15 @@ import {
   tableEmptyText,
 } from "@/shared/components/feedback/BusinessState";
 import {
+  MvpPageSizeSelector,
+  resolveApiPagination,
+} from "@/shared/components/mvp/MvpListPagination";
+import type { ApiMeta } from "@/shared/types/api-response";
+import {
   classifyScanCodes,
   fetchPhysicalCodes,
-  fetchScanBatches,
-  fetchScanEvents,
+  fetchScanBatchesPage,
+  fetchScanEventsPage,
 } from "../services/scanService";
 import type {
   PhysicalCode,
@@ -53,6 +58,14 @@ export default function PhysicalCodesPage() {
   const [codes, setCodes] = useState<PhysicalCode[]>([]);
   const [batches, setBatches] = useState<ScanBatch[]>([]);
   const [events, setEvents] = useState<ScanEvent[]>([]);
+  const [codePage, setCodePage] = useState(1);
+  const [codePerPage, setCodePerPage] = useState(15);
+  const [batchPage, setBatchPage] = useState(1);
+  const [batchPerPage, setBatchPerPage] = useState(15);
+  const [eventPage, setEventPage] = useState(1);
+  const [eventPerPage, setEventPerPage] = useState(15);
+  const [batchMeta, setBatchMeta] = useState<ApiMeta>({});
+  const [eventMeta, setEventMeta] = useState<ApiMeta>({});
   const [scanValue, setScanValue] = useState("");
   const [warehouseId, setWarehouseId] = useState("");
   const [scanContext, setScanContext] = useState<ScanContext>("STOCKTAKE");
@@ -65,13 +78,24 @@ export default function PhysicalCodesPage() {
   const [classifyState, setClassifyState] = useState<ScanCodeState>("waiting");
   const [classifyMessage, setClassifyMessage] = useState("");
 
+  const batchPagination = resolveApiPagination(batchMeta, {
+    page: batchPage,
+    pageSize: batchPerPage,
+    rowCount: batches.length,
+  });
+  const eventPagination = resolveApiPagination(eventMeta, {
+    page: eventPage,
+    pageSize: eventPerPage,
+    rowCount: events.length,
+  });
+
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
 
     if (activeTab === "list") {
       setListError(null);
-      fetchPhysicalCodes({ page: 1, per_page: 20 })
+      fetchPhysicalCodes({ page: codePage, per_page: codePerPage })
         .then((data) => {
           if (!cancelled) setCodes(data);
         })
@@ -87,19 +111,23 @@ export default function PhysicalCodesPage() {
     } else if (activeTab === "history") {
       setHistoryError(null);
       Promise.all([
-        fetchScanBatches({ per_page: 20 }),
-        fetchScanEvents({ per_page: 20 }),
+        fetchScanBatchesPage({ page: batchPage, per_page: batchPerPage }),
+        fetchScanEventsPage({ page: eventPage, per_page: eventPerPage }),
       ])
-        .then(([batchRows, eventRows]) => {
+        .then(([batchResult, eventResult]) => {
           if (!cancelled) {
-            setBatches(batchRows);
-            setEvents(eventRows);
+            setBatches(batchResult.data);
+            setBatchMeta(batchResult.meta);
+            setEvents(eventResult.data);
+            setEventMeta(eventResult.meta);
           }
         })
         .catch((fetchError: unknown) => {
           if (!cancelled) {
             setBatches([]);
             setEvents([]);
+            setBatchMeta({});
+            setEventMeta({});
             setHistoryError(fetchError);
           }
         })
@@ -113,7 +141,16 @@ export default function PhysicalCodesPage() {
     return () => {
       cancelled = true;
     };
-  }, [activeTab, reloadKey]);
+  }, [
+    activeTab,
+    batchPage,
+    batchPerPage,
+    codePage,
+    codePerPage,
+    eventPage,
+    eventPerPage,
+    reloadKey,
+  ]);
 
   /** POST /api/v1/scan/classify — exact WWHN-150.1.1.0 read-only contract. */
   const submitScan = useCallback(async () => {
@@ -181,11 +218,25 @@ export default function PhysicalCodesPage() {
                   title="Không thể tải danh sách mã vật lý"
                   onRetry={() => setReloadKey((value) => value + 1)}
                 />
+                <MvpPageSizeSelector
+                  value={codePerPage}
+                  onChange={(value) => {
+                    setCodePerPage(value);
+                    setCodePage(1);
+                  }}
+                />
                 <Table
                   dataSource={codes}
                   rowKey="id"
                   loading={loading}
-                  pagination={{ pageSize: 10 }}
+                  pagination={{
+                    current: codePage,
+                    pageSize: codePerPage,
+                    total: codes.length,
+                    showSizeChanger: false,
+                    showTotal: (total) => `Tổng ${total} mã vật lý`,
+                    onChange: setCodePage,
+                  }}
                   scroll={{ x: "max-content" }}
                   locale={{ emptyText: tableEmptyText(listError) }}
                   columns={[
@@ -367,11 +418,26 @@ export default function PhysicalCodesPage() {
                   title="Không thể tải lô quét/sự kiện"
                   onRetry={() => setReloadKey((value) => value + 1)}
                 />
+                <Typography.Text strong>Lô quét</Typography.Text>
+                <MvpPageSizeSelector
+                  value={batchPerPage}
+                  onChange={(value) => {
+                    setBatchPerPage(value);
+                    setBatchPage(1);
+                  }}
+                />
                 <Table
                   dataSource={batches}
                   rowKey="id"
                   loading={loading}
-                  pagination={{ pageSize: 5 }}
+                  pagination={{
+                    current: batchPagination.current,
+                    pageSize: batchPerPage,
+                    total: batchPagination.total,
+                    showSizeChanger: false,
+                    showTotal: (total) => `Tổng ${total} lô quét`,
+                    onChange: setBatchPage,
+                  }}
                   style={{ marginBottom: 16 }}
                   scroll={{ x: "max-content" }}
                   locale={{ emptyText: tableEmptyText(historyError) }}
@@ -415,11 +481,26 @@ export default function PhysicalCodesPage() {
                     },
                   ]}
                 />
+                <Typography.Text strong>Sự kiện quét</Typography.Text>
+                <MvpPageSizeSelector
+                  value={eventPerPage}
+                  onChange={(value) => {
+                    setEventPerPage(value);
+                    setEventPage(1);
+                  }}
+                />
                 <Table
                   dataSource={events}
                   rowKey="id"
                   loading={loading}
-                  pagination={{ pageSize: 5 }}
+                  pagination={{
+                    current: eventPagination.current,
+                    pageSize: eventPerPage,
+                    total: eventPagination.total,
+                    showSizeChanger: false,
+                    showTotal: (total) => `Tổng ${total} sự kiện`,
+                    onChange: setEventPage,
+                  }}
                   scroll={{ x: "max-content" }}
                   locale={{ emptyText: tableEmptyText(historyError) }}
                   columns={[
