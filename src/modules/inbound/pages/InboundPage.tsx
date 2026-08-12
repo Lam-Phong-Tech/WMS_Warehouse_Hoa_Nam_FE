@@ -523,6 +523,11 @@ function InboundListScreen() {
     void query.refetch();
   };
 
+  const openExpectedCorrectionFromScan = (documentId: string) => {
+    setScanDocumentId(null);
+    openEditModal(documentId);
+  };
+
   return (
     <>
       <div className="toolbar">
@@ -654,6 +659,7 @@ function InboundListScreen() {
           documentId={scanDocumentId}
           onClose={() => setScanDocumentId(null)}
           onChanged={handleFlowChanged}
+          onEditExpected={() => openExpectedCorrectionFromScan(scanDocumentId)}
         />
       )}
     </>
