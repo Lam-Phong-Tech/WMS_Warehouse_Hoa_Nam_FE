@@ -26,6 +26,16 @@ const DefectMasterScreen = lazy(() =>
     default: m.DefectMasterScreen,
   })),
 );
+const InboundPage = lazy(() =>
+  import("@/modules/inbound/pages/InboundPage").then((m) => ({
+    default: m.default,
+  })),
+);
+const PutawayPage = lazy(() =>
+  import("@/modules/putaway/pages/PutawayPage").then((m) => ({
+    default: m.default,
+  })),
+);
 const MvpSourceScreen = lazy(() =>
   import("@/shared/components/mvp/MvpSourceScreen").then((m) => ({
     default: m.MvpSourceScreen,
@@ -153,6 +163,9 @@ const MODAL_PARENT_SCREEN: Record<string, string> = {
   "MST-02": "MST-01",
   "AGY-02": "AGY-01",
   "DEF-02": "DEF-01",
+  "IN-02": "IN-01",
+  "IN-03": "IN-01",
+  "PTW-01": "PTW-00",
 };
 
 function normalizeScreen(screen: string | null) {
@@ -193,6 +206,18 @@ function renderMvpScreen(
     case "DEF-01":
       return (
         <DefectMasterScreen openCreateOnMount={requestedScreen === "DEF-02"} />
+      );
+    case "IN-01":
+      return (
+        <div className="hn-mvp-source-screen">
+          <InboundPage />
+        </div>
+      );
+    case "PTW-00":
+      return (
+        <div className="hn-mvp-source-screen">
+          <PutawayPage />
+        </div>
       );
     default:
       return <MvpSourceScreen screenId={sourceScreen} />;

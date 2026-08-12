@@ -24,7 +24,7 @@ function resetAuthStore() {
   });
 }
 
-function renderSideNav(initialPath = ROUTES.INBOUND) {
+function renderSideNav(initialPath: string = ROUTES.INBOUND) {
   return render(
     <MemoryRouter initialEntries={[initialPath]}>
       <SideNav />

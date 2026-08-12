@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Button, Form, Input, Modal, Select, Space, Table, Tabs, Tag, message } from "antd";
 import { ReloadOutlined, SwapOutlined } from "@ant-design/icons";
+import { useSearchParams } from "react-router-dom";
 import { getApiErrorMessage } from "@/shared/api/api-error";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { hasAnyWmsPermission, WMS_PERMISSION_CATALOG as P } from "@/shared/constants/wms-permissions";
@@ -17,6 +18,7 @@ import {
 } from "@/modules/putaway/services/putawayService";
 
 export default function PutawayPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const permissionCodes = useAuthStore((state) => state.permissionCodes);
   const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
   const canManage = hasAnyWmsPermission(permissionCodes, [P.CONTAINER_MANAGE], isSuperAdmin);
@@ -27,9 +29,10 @@ export default function PutawayPage() {
   const [trays, setTrays] = useState<TrayOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState<PutawayTask | null>(null);
+  const didInitialLoadRef = useRef(false);
   const [form] = Form.useForm<{ to_tray_id: string; location_hint?: string; note?: string }>();
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const [nextTasks, nextHistory, nextTrays] = await Promise.all([
@@ -45,8 +48,35 @@ export default function PutawayPage() {
     } finally {
       setLoading(false);
     }
-  };
-  useEffect(() => { void load(); }, []);
+  }, [search]);
+
+  useEffect(() => {
+    if (didInitialLoadRef.current) return;
+    didInitialLoadRef.current = true;
+    const handle = window.setTimeout(() => void load(), 0);
+    return () => window.clearTimeout(handle);
+  }, [load]);
+
+  useEffect(() => {
+    if (searchParams.get("screen") !== "PTW-01") return;
+    if (tasks.length === 0) return;
+    const requestedBox = searchParams.get("box");
+    const nextSelected =
+      tasks.find((task) => task.box_code === requestedBox || task.box_container_id === requestedBox) ??
+      tasks[0];
+
+    if (nextSelected) {
+      window.setTimeout(() => {
+        setSelected(nextSelected);
+        form.setFieldsValue({ location_hint: nextSelected.location_hint ?? undefined });
+      }, 0);
+    }
+
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set("screen", "PTW-00");
+    nextParams.delete("box");
+    setSearchParams(nextParams, { replace: true });
+  }, [form, searchParams, setSearchParams, tasks]);
 
   const trayOptions = useMemo(() => trays.map((tray) => ({
     value: tray.container_id,
