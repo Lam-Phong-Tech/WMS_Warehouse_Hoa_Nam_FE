@@ -17,7 +17,28 @@ import {
   confirmPutawayTask,
   createPutawayTask,
   fetchPutawayHistory,
+  fetchPutawayTrays,
+  resolvePutawayTrayByScanCode,
+  type TrayOption,
 } from "./putawayService";
+
+const trays: TrayOption[] = [
+  {
+    container_id: "TRAY-ID-1",
+    container_code: "TRAY-A-01",
+    container_type: "TRAY",
+    status: "EMPTY",
+    zone_code: "A",
+    version: 1,
+  },
+  {
+    container_id: "TRAY-ID-CLOSED",
+    container_code: "TRAY-CLOSED",
+    container_type: "TRAY",
+    status: "CLOSED",
+    version: 1,
+  },
+];
 
 describe("putaway real API contract", () => {
   beforeEach(() => {
@@ -45,6 +66,48 @@ describe("putaway real API contract", () => {
       to_tray_id: "TRAY-1",
     });
     expect(result).toMatchObject({ status: "DRAFT", stock_effect: "NONE" });
+  });
+
+  it("resolves manual/camera scan to exactly one usable TRAY", () => {
+    expect(resolvePutawayTrayByScanCode(trays, " tray-a-01 ")).toMatchObject({
+      container_id: "TRAY-ID-1",
+      status: "EMPTY",
+    });
+    expect(() => resolvePutawayTrayByScanCode(trays, "TRAY-CLOSED")).toThrowError(
+      /Không tìm thấy TRAY khả dụng/,
+    );
+    expect(() => resolvePutawayTrayByScanCode(trays, "TRAY-UNKNOWN")).toThrowError(
+      /Không tìm thấy TRAY khả dụng/,
+    );
+  });
+
+  it("fails closed when a scan code is ambiguous", () => {
+    expect(() =>
+      resolvePutawayTrayByScanCode(
+        [
+          ...trays,
+          {
+            container_id: "TRAY-ID-2",
+            container_code: "TRAY-A-01",
+            container_type: "TRAY",
+            status: "PARTIAL",
+            version: 1,
+          },
+        ],
+        "TRAY-A-01",
+      ),
+    ).toThrowError(/khớp nhiều TRAY/);
+  });
+
+  it("filters terminal TRAY states returned by the API", async () => {
+    vi.mocked(http.getPage).mockResolvedValue({
+      data: trays,
+      meta: {},
+    });
+
+    const result = await fetchPutawayTrays();
+
+    expect(result.map((row) => row.container_code)).toEqual(["TRAY-A-01"]);
   });
 
   it("confirms Putaway with If-Match and rejects any stock effect", async () => {
