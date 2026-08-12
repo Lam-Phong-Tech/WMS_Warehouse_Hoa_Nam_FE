@@ -22,6 +22,11 @@ import type {
   SkuType,
 } from "@/modules/master-data/types/mvp-master.types";
 import { getApiErrorMessage, getMutationErrorMessage } from "@/shared/api/api-error";
+import {
+  MvpPageSizeSelector,
+  MvpPaginationFooter,
+  resolveApiPagination,
+} from "@/shared/components/mvp/MvpListPagination";
 import { useAuthStore } from "@/shared/store/auth.store";
 
 const STATUS_OPTIONS: Array<{ value: MasterStatus; label: string }> = [
@@ -132,16 +137,29 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   const [keyword, setKeyword] = useState("");
   const [status, setStatus] = useState<MasterStatus | "">("");
   const [type, setType] = useState<SkuType | "">("");
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(15);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<SkuRecord | null>(null);
   const [form, setForm] = useState<SkuFormState>(EMPTY_SKU_FORM);
   const [formError, setFormError] = useState("");
 
-  const query = useMvpSkus({ keyword: keyword.trim(), status, sku_type: type, per_page: 100 });
+  const query = useMvpSkus({
+    keyword: keyword.trim(),
+    status,
+    sku_type: type,
+    page,
+    per_page: perPage,
+  });
   const createMutation = useCreateMvpSku();
   const updateMutation = useUpdateMvpSku();
   const isSaving = createMutation.isPending || updateMutation.isPending;
   const rows = query.data?.data ?? [];
+  const pagination = resolveApiPagination(query.data?.meta, {
+    page,
+    pageSize: perPage,
+    rowCount: rows.length,
+  });
 
   const openCreate = () => {
     if (!canManage) return;
@@ -229,11 +247,21 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
         <input
           className="input search"
           value={keyword}
-          onChange={(event) => setKeyword(event.target.value)}
+          onChange={(event) => {
+            setKeyword(event.target.value);
+            setPage(1);
+          }}
           placeholder="Tìm mã / tên SKU"
           aria-label="Tìm SKU"
         />
-        <select className="select" value={type} onChange={(event) => setType(event.target.value as SkuType | "")}>
+        <select
+          className="select"
+          value={type}
+          onChange={(event) => {
+            setType(event.target.value as SkuType | "");
+            setPage(1);
+          }}
+        >
           <option value="">Loại: Tất cả</option>
           <option value="PRODUCT">PRODUCT</option>
           <option value="COMPONENT">COMPONENT</option>
@@ -241,7 +269,10 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
         <select
           className="select"
           value={status}
-          onChange={(event) => setStatus(event.target.value as MasterStatus | "")}
+          onChange={(event) => {
+            setStatus(event.target.value as MasterStatus | "");
+            setPage(1);
+          }}
         >
           <option value="">Trạng thái: Tất cả</option>
           {STATUS_OPTIONS.map((option) => (
@@ -262,6 +293,14 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
         error={query.error}
         fallback="Không tải được danh sách SKU."
         onRetry={() => void query.refetch()}
+      />
+
+      <MvpPageSizeSelector
+        value={perPage}
+        onChange={(value) => {
+          setPerPage(value);
+          setPage(1);
+        }}
       />
 
       <div className="table-wrap" aria-busy={query.isLoading}>
@@ -326,6 +365,14 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           </tbody>
         </table>
       </div>
+
+      <MvpPaginationFooter
+        current={pagination.current}
+        pageSize={perPage}
+        total={pagination.total}
+        itemLabel="SKU"
+        onChange={setPage}
+      />
 
       <Modal
         title={editing ? "Sửa SKU" : "Thêm SKU"}
@@ -417,15 +464,22 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   const canManage = useCanManage("agency.manage");
   const [keyword, setKeyword] = useState("");
   const [status, setStatus] = useState<MasterStatus | "">("");
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(15);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<AgencyRecord | null>(null);
   const [form, setForm] = useState<AgencyPayload>(EMPTY_AGENCY_FORM);
   const [formError, setFormError] = useState("");
-  const query = useMvpAgencies({ keyword: keyword.trim(), status, per_page: 100 });
+  const query = useMvpAgencies({ keyword: keyword.trim(), status, page, per_page: perPage });
   const createMutation = useCreateMvpAgency();
   const updateMutation = useUpdateMvpAgency();
   const isSaving = createMutation.isPending || updateMutation.isPending;
   const rows = query.data?.data ?? [];
+  const pagination = resolveApiPagination(query.data?.meta, {
+    page,
+    pageSize: perPage,
+    rowCount: rows.length,
+  });
 
   const openCreate = () => {
     if (!canManage) return;
@@ -490,8 +544,23 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   return (
     <div className="hn-mvp-source-screen" data-mvp-screen="AGY-01">
       <div className="toolbar">
-        <input className="input search" value={keyword} onChange={(event) => setKeyword(event.target.value)} placeholder="Tìm mã / tên đại lý" />
-        <select className="select" value={status} onChange={(event) => setStatus(event.target.value as MasterStatus | "")}>
+        <input
+          className="input search"
+          value={keyword}
+          onChange={(event) => {
+            setKeyword(event.target.value);
+            setPage(1);
+          }}
+          placeholder="Tìm mã / tên đại lý"
+        />
+        <select
+          className="select"
+          value={status}
+          onChange={(event) => {
+            setStatus(event.target.value as MasterStatus | "");
+            setPage(1);
+          }}
+        >
           <option value="">Trạng thái: Tất cả</option>
           {STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
         </select>
@@ -499,6 +568,13 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
         {canManage ? <button className="btn primary" type="button" onClick={openCreate}>+ Thêm đại lý</button> : null}
       </div>
       <ApiErrorAlert error={query.error} fallback="Không tải được danh sách đại lý." onRetry={() => void query.refetch()} />
+      <MvpPageSizeSelector
+        value={perPage}
+        onChange={(value) => {
+          setPerPage(value);
+          setPage(1);
+        }}
+      />
       <div className="table-wrap" aria-busy={query.isLoading}>
         <table>
           <thead><tr><th>Mã</th><th>Tên đại lý</th><th>Điện thoại</th><th>Địa chỉ</th><th>Trạng thái</th><th aria-label="Hành động" /></tr></thead>
@@ -513,6 +589,13 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           </tbody>
         </table>
       </div>
+      <MvpPaginationFooter
+        current={pagination.current}
+        pageSize={perPage}
+        total={pagination.total}
+        itemLabel="đại lý"
+        onChange={setPage}
+      />
       <Modal title={editing ? "Sửa đại lý" : "Thêm đại lý"} open={modalOpen} onCancel={close} footer={null} width={760} centered getContainer={false} maskClosable={false} closable={!isSaving}>
         <form onSubmit={submit}>
           {formError ? <div className="alert" role="alert" style={{ marginBottom: 14 }}>{formError}</div> : null}
@@ -543,15 +626,22 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   const canManage = useCanManage("defect.manage");
   const [keyword, setKeyword] = useState("");
   const [status, setStatus] = useState<MasterStatus | "">("");
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(15);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<DefectRecord | null>(null);
   const [form, setForm] = useState<DefectPayload>(EMPTY_DEFECT_FORM);
   const [formError, setFormError] = useState("");
-  const query = useMvpDefects({ keyword: keyword.trim(), status, per_page: 100 });
+  const query = useMvpDefects({ keyword: keyword.trim(), status, page, per_page: perPage });
   const createMutation = useCreateMvpDefect();
   const updateMutation = useUpdateMvpDefect();
   const isSaving = createMutation.isPending || updateMutation.isPending;
   const rows = query.data?.data ?? [];
+  const pagination = resolveApiPagination(query.data?.meta, {
+    page,
+    pageSize: perPage,
+    rowCount: rows.length,
+  });
 
   const openCreate = () => {
     if (!canManage) return;
@@ -609,8 +699,23 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   return (
     <div className="hn-mvp-source-screen" data-mvp-screen="DEF-01">
       <div className="toolbar">
-        <input className="input search" value={keyword} onChange={(event) => setKeyword(event.target.value)} placeholder="Tìm mã / tên lỗi" />
-        <select className="select" value={status} onChange={(event) => setStatus(event.target.value as MasterStatus | "")}>
+        <input
+          className="input search"
+          value={keyword}
+          onChange={(event) => {
+            setKeyword(event.target.value);
+            setPage(1);
+          }}
+          placeholder="Tìm mã / tên lỗi"
+        />
+        <select
+          className="select"
+          value={status}
+          onChange={(event) => {
+            setStatus(event.target.value as MasterStatus | "");
+            setPage(1);
+          }}
+        >
           <option value="">Trạng thái: Tất cả</option>
           {STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
         </select>
@@ -618,6 +723,13 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
         {canManage ? <button className="btn primary" type="button" onClick={openCreate}>+ Thêm lỗi</button> : null}
       </div>
       <ApiErrorAlert error={query.error} fallback="Không tải được danh mục lỗi." onRetry={() => void query.refetch()} />
+      <MvpPageSizeSelector
+        value={perPage}
+        onChange={(value) => {
+          setPerPage(value);
+          setPage(1);
+        }}
+      />
       <div className="table-wrap" aria-busy={query.isLoading}>
         <table>
           <thead><tr><th>Mã lỗi</th><th>Tên lỗi / bệnh</th><th>Mô tả</th><th>Trạng thái</th><th aria-label="Hành động" /></tr></thead>
@@ -632,6 +744,13 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           </tbody>
         </table>
       </div>
+      <MvpPaginationFooter
+        current={pagination.current}
+        pageSize={perPage}
+        total={pagination.total}
+        itemLabel="lỗi / bệnh"
+        onChange={setPage}
+      />
       <Modal title={editing ? "Sửa lỗi / bệnh" : "Thêm lỗi / bệnh"} open={modalOpen} onCancel={close} footer={null} width={760} centered getContainer={false} maskClosable={false} closable={!isSaving}>
         <form onSubmit={submit}>
           {formError ? <div className="alert" role="alert" style={{ marginBottom: 14 }}>{formError}</div> : null}
