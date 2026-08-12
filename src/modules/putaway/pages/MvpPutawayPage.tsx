@@ -22,7 +22,6 @@ import {
   CloseOutlined,
   EyeOutlined,
   MoreOutlined,
-  ReloadOutlined,
   SwapOutlined,
 } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
@@ -61,6 +60,7 @@ type PutawayFormValues = {
 };
 
 const PAGE_SIZE_OPTIONS = [15, 20, 50, 100];
+const SEARCH_DEBOUNCE_MS = 250;
 
 const putawayKeys = {
   all: ["putaway"] as const,
@@ -240,6 +240,14 @@ export default function MvpPutawayPage() {
     // openPutaway intentionally uses only current task/form state.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, setSearchParams, tasks]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setSearch(searchDraft.trim());
+    }, SEARCH_DEBOUNCE_MS);
+
+    return () => window.clearTimeout(timer);
+  }, [searchDraft]);
 
   const trayOptions = useMemo(
     () =>
@@ -542,54 +550,16 @@ export default function MvpPutawayPage() {
         {activeTab === "pending" ? (
           <Row gutter={[12, 12]} className="filter-row">
             <Col xs={24} md={8}>
-              <Input.Search
+              <Input
                 value={searchDraft}
                 placeholder="Tìm BOX / SKU..."
                 allowClear
-                onChange={(event) => {
-                  const value = event.target.value;
-                  setSearchDraft(value);
-                  if (!value) setSearch("");
-                }}
-                onSearch={(value) => setSearch(value.trim())}
+                aria-label="Tìm BOX hoặc SKU chờ xếp khay"
+                onChange={(event) => setSearchDraft(event.target.value)}
               />
             </Col>
-            <Col xs={12} md={4}>
-              <Button
-                className="full-width"
-                onClick={() => {
-                  setSearchDraft("");
-                  setSearch("");
-                }}
-              >
-                Xóa lọc
-              </Button>
-            </Col>
-            <Col xs={24} md={4} className="panel-extra-actions">
-              <Button
-                icon={<ReloadOutlined />}
-                className="full-width"
-                loading={tasksQuery.isFetching}
-                onClick={() => void tasksQuery.refetch()}
-              >
-                Làm mới
-              </Button>
-            </Col>
           </Row>
-        ) : (
-          <Row gutter={[12, 12]} className="filter-row">
-            <Col xs={24} md={4}>
-              <Button
-                icon={<ReloadOutlined />}
-                className="full-width"
-                loading={historyQuery.isFetching}
-                onClick={() => void historyQuery.refetch()}
-              >
-                Làm mới
-              </Button>
-            </Col>
-          </Row>
-        )}
+        ) : null}
 
         <Alert
           showIcon
