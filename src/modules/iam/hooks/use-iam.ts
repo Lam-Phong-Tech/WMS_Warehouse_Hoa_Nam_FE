@@ -49,6 +49,15 @@ export function useIamRoles(params: IamRoleListParams = {}) {
   });
 }
 
+/** Use when a screen needs the role list together with API pagination metadata. */
+export function useIamRolesPage(params: IamRoleListParams = {}) {
+  return useQuery({
+    queryKey: iamKeys.roles(params),
+    queryFn: () => getIamRoles(params),
+    staleTime: 30_000,
+  });
+}
+
 export function useIamRole(roleId?: string) {
   return useQuery({
     queryKey: roleId ? iamKeys.role(roleId) : [...iamKeys.all, "role", "none"],
