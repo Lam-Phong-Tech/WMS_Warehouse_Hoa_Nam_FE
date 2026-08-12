@@ -44,6 +44,8 @@ export interface InboundDetail {
 }
 
 export interface InboundLinePayload {
+  /** Existing line id is required by BE when correcting Expected after scan evidence exists. */
+  id?: string;
   product_id: string;
   qty_planned: number;
   import_batch_id?: string | null;
