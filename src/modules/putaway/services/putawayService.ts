@@ -37,6 +37,7 @@ export interface PutawayHistory {
 export interface TrayOption {
   container_id: string;
   container_code: string;
+  container_type?: string;
   status: string;
   zone_code?: string | null;
   location_hint?: string | null;
@@ -54,6 +55,52 @@ export interface PutawayEvent {
 
 function endpoint(template: string, id: string) {
   return template.replace(":id", id);
+}
+
+function normalized(value: unknown) {
+  return String(value ?? "").trim().toUpperCase();
+}
+
+export function isPutawayTrayUsable(tray: TrayOption): boolean {
+  const type = normalized(tray.container_type);
+  const status = normalized(tray.status);
+  return (type === "" || type === "TRAY") && !["CLOSED", "ISSUED"].includes(status);
+}
+
+/**
+ * Resolve a physical TRAY scan fail-closed. A scan is accepted only when it
+ * maps to exactly one usable TRAY returned by the current API dataset.
+ */
+export function resolvePutawayTrayByScanCode(
+  trays: TrayOption[],
+  rawCode: string,
+): TrayOption {
+  const code = normalized(rawCode);
+  if (!code) {
+    throw new WmsContractError(
+      "WMS_FE_PUTAWAY_TRAY_SCAN_REQUIRED",
+      "Vui lòng scan hoặc nhập mã Barcode/QR của TRAY.",
+    );
+  }
+
+  const matches = trays.filter(
+    (tray) => isPutawayTrayUsable(tray) && normalized(tray.container_code) === code,
+  );
+
+  if (matches.length === 0) {
+    throw new WmsContractError(
+      "WMS_FE_PUTAWAY_TRAY_NOT_FOUND",
+      `Không tìm thấy TRAY khả dụng cho mã ${code}.`,
+    );
+  }
+  if (matches.length !== 1) {
+    throw new WmsContractError(
+      "WMS_FE_PUTAWAY_TRAY_AMBIGUOUS",
+      `Mã ${code} khớp nhiều TRAY; từ chối thao tác để tránh xếp sai vị trí.`,
+    );
+  }
+
+  return matches[0];
 }
 
 function assertStockNeutral<T extends { stock_effect?: unknown; movement_created?: unknown }>(
@@ -87,9 +134,7 @@ export async function fetchPutawayTrays(): Promise<TrayOption[]> {
   const result = await http.getPage<TrayOption[]>(API_ENDPOINTS.CONTAINERS, {
     params: { container_type: "TRAY", per_page: 200 },
   });
-  return result.data.filter((tray) =>
-    !["CLOSED", "ISSUED", "INACTIVE"].includes(String(tray.status).toUpperCase()),
-  );
+  return result.data.filter(isPutawayTrayUsable);
 }
 
 export async function createPutawayTask(payload: {
