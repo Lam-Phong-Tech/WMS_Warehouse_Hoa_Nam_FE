@@ -12,6 +12,8 @@
 }
 
 .hn-mvp-screen > .master-data-page,
+.hn-mvp-screen > .inbound-page,
+.hn-mvp-screen > .putaway-page,
 .hn-mvp-screen > .inventory-page,
 .hn-mvp-screen > .stocktake-page,
 .hn-mvp-screen > .warranty-page,
