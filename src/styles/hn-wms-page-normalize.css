@@ -62,6 +62,32 @@
   padding: 0 !important;
 }
 
+/*
+ * IN-01/PTW-00 are rendered through an extra module wrapper inside MainLayout,
+ * so their root Card is not a direct child of .hn-mvp-screen. Flatten those
+ * specific list-page Cards as well: MainLayout owns the one and only screen box.
+ */
+.hn-mvp-screen .inbound-page > .master-data-panel,
+.hn-mvp-screen .putaway-page > .master-data-panel {
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+.hn-mvp-screen .inbound-page > .master-data-panel > .ant-card-body,
+.hn-mvp-screen .putaway-page > .master-data-panel > .ant-card-body {
+  padding: 0 !important;
+}
+
+/* Developer/API evidence belongs to CI/docs, not the production list toolbar. */
+.hn-mvp-screen .inbound-page > .master-data-panel .master-data-contract-strip,
+.hn-mvp-screen .putaway-page > .master-data-panel .master-data-contract-strip,
+.hn-mvp-screen .inbound-page > .master-data-panel > .ant-card-body > .master-data-state-alert,
+.hn-mvp-screen .putaway-page > .master-data-panel > .ant-card-body > .master-data-state-alert {
+  display: none !important;
+}
+
 /* Page title already lives in the exact HTML header. Keep actions, remove duplicate copy. */
 .hn-mvp-screen .page-heading {
   margin: 0 0 14px !important;
@@ -70,6 +96,29 @@
 }
 
 .hn-mvp-screen .page-heading > div:first-child:has(h1) {
+  display: none !important;
+}
+
+/*
+ * IAM/DEF list screens keep the primary create action at the far right of the
+ * same toolbar row. Position the existing IN-01 action there without another
+ * wrapper/card; on narrow layouts it falls back to the normal flow.
+ */
+.hn-mvp-screen .inbound-page {
+  position: relative;
+}
+
+@media (min-width: 981px) {
+  .hn-mvp-screen .inbound-page > .page-heading {
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 2;
+    margin: 0 !important;
+  }
+}
+
+.hn-mvp-screen .putaway-page > .page-heading {
   display: none !important;
 }
 
@@ -169,6 +218,11 @@
 
   .hn-mvp-screen .ant-row {
     row-gap: 14px !important;
+  }
+
+  .hn-mvp-screen .inbound-page > .page-heading {
+    position: static;
+    margin: 0 0 8px !important;
   }
 
   .hn-mvp-screen .putaway-page .filter-row > .ant-col:first-child {
