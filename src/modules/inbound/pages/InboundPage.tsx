@@ -18,7 +18,6 @@ import {
   EditOutlined,
   EyeOutlined,
   PlusOutlined,
-  ReloadOutlined,
   ScanOutlined,
 } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
@@ -47,6 +46,7 @@ const STATUS_OPTIONS = [
 ];
 
 const PAGE_SIZE_OPTIONS = [15, 20, 50, 100];
+const SEARCH_DEBOUNCE_MS = 250;
 
 function statusTag(status: InboundDocument["status"]) {
   const color =
@@ -136,6 +136,15 @@ function InboundListScreen() {
     setSearchParams(nextParams, { replace: true });
   }, [searchParams, setSearchParams]);
 
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setSearch(searchInput.trim());
+      setPage(1);
+    }, SEARCH_DEBOUNCE_MS);
+
+    return () => window.clearTimeout(timer);
+  }, [searchInput]);
+
   const openCreateModal = () => {
     setDraftDocumentId(null);
     setDraftOpen(true);
@@ -159,20 +168,6 @@ function InboundListScreen() {
   const openExpectedCorrectionFromScan = (documentId: string) => {
     setScanDocumentId(null);
     openEditModal(documentId);
-  };
-
-  const applySearch = (value: string) => {
-    const normalized = value.trim();
-    setSearchInput(value);
-    setSearch(normalized);
-    setPage(1);
-  };
-
-  const resetFilters = () => {
-    setSearchInput("");
-    setSearch("");
-    setStatus(undefined);
-    setPage(1);
   };
 
   const columns: ColumnsType<InboundDocument> = [
@@ -312,19 +307,12 @@ function InboundListScreen() {
 
         <Row gutter={[12, 12]} className="filter-row">
           <Col xs={24} md={8}>
-            <Input.Search
+            <Input
               allowClear
               value={searchInput}
               placeholder="Tìm mã phiếu / nguồn nhập..."
-              onSearch={applySearch}
-              onChange={(event) => {
-                const value = event.target.value;
-                setSearchInput(value);
-                if (!value) {
-                  setSearch("");
-                  setPage(1);
-                }
-              }}
+              aria-label="Tìm phiếu nhập"
+              onChange={(event) => setSearchInput(event.target.value)}
             />
           </Col>
           <Col xs={12} md={4}>
@@ -339,21 +327,6 @@ function InboundListScreen() {
                 setPage(1);
               }}
             />
-          </Col>
-          <Col xs={12} md={4}>
-            <Button className="full-width" onClick={resetFilters}>
-              Xóa lọc
-            </Button>
-          </Col>
-          <Col xs={24} md={4} className="panel-extra-actions">
-            <Button
-              icon={<ReloadOutlined />}
-              className="full-width"
-              loading={query.isFetching}
-              onClick={() => void query.refetch()}
-            >
-              Làm mới
-            </Button>
           </Col>
         </Row>
 
