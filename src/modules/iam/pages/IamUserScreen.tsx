@@ -12,6 +12,11 @@ import type {
   IamUserStatus,
 } from "@/modules/iam/types/iam.types";
 import { getApiErrorMessage, getMutationErrorMessage } from "@/shared/api/api-error";
+import {
+  MvpPageSizeSelector,
+  MvpPaginationFooter,
+  resolveApiPagination,
+} from "@/shared/components/mvp/MvpListPagination";
 import { useAuthStore } from "@/shared/store/auth.store";
 
 const STATUS_OPTIONS: Array<{ value: IamUserStatus; label: string }> = [
@@ -82,6 +87,8 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState<IamUserStatus | "">("");
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(15);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<IamUser | null>(null);
   const [formState, setFormState] = useState<UserFormState>(EMPTY_FORM);
@@ -90,9 +97,10 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
   const usersQuery = useIamUsers({
     keyword: search.trim(),
     status: statusFilter,
-    per_page: 100,
+    page: roleFilter ? 1 : page,
+    per_page: roleFilter ? 100 : perPage,
   });
-  const rolesQuery = useIamRoles();
+  const rolesQuery = useIamRoles({ per_page: 100 });
   const createUser = useCreateIamUser();
   const updateUser = useUpdateIamUser();
 
@@ -100,12 +108,22 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
   const users = usersQuery.data?.data ?? [];
   const isSaving = createUser.isPending || updateUser.isPending;
 
-  const filteredUsers = useMemo(() => {
+  const roleFilteredUsers = useMemo(() => {
     if (!roleFilter) return users;
     return users.filter((user) =>
       user.roles?.some((role) => role.role_id === roleFilter),
     );
   }, [roleFilter, users]);
+
+  const pagination = resolveApiPagination(usersQuery.data?.meta, {
+    page,
+    pageSize: perPage,
+    rowCount: users.length,
+  });
+  const total = roleFilter ? roleFilteredUsers.length : pagination.total;
+  const displayedUsers = roleFilter
+    ? roleFilteredUsers.slice((page - 1) * perPage, page * perPage)
+    : users;
 
   const selectedRole = useMemo(
     () => roles.find((role) => role.role_id === formState.roleId),
@@ -137,6 +155,11 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
     setFormError("");
     setIsModalOpen(true);
   }, [canManageUsers, openCreateOnMount, roles]);
+
+  useEffect(() => {
+    const maxPage = Math.max(1, Math.ceil(total / perPage));
+    if (page > maxPage) setPage(maxPage);
+  }, [page, perPage, total]);
 
   const openEdit = (user: IamUser) => {
     if (!canManageUsers) return;
@@ -236,14 +259,20 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
         <input
           className="input search"
           value={search}
-          onChange={(event) => setSearch(event.target.value)}
+          onChange={(event) => {
+            setSearch(event.target.value);
+            setPage(1);
+          }}
           placeholder="Tìm tên / tên đăng nhập"
           aria-label="Tìm người dùng"
         />
         <select
           className="select"
           value={roleFilter}
-          onChange={(event) => setRoleFilter(event.target.value)}
+          onChange={(event) => {
+            setRoleFilter(event.target.value);
+            setPage(1);
+          }}
           aria-label="Lọc theo vai trò"
           disabled={rolesQuery.isLoading}
         >
@@ -257,9 +286,10 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
         <select
           className="select"
           value={statusFilter}
-          onChange={(event) =>
-            setStatusFilter(event.target.value as IamUserStatus | "")
-          }
+          onChange={(event) => {
+            setStatusFilter(event.target.value as IamUserStatus | "");
+            setPage(1);
+          }}
           aria-label="Lọc theo trạng thái"
         >
           <option value="">Trạng thái: Tất cả</option>
@@ -296,6 +326,14 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
         </div>
       ) : null}
 
+      <MvpPageSizeSelector
+        value={perPage}
+        onChange={(value) => {
+          setPerPage(value);
+          setPage(1);
+        }}
+      />
+
       <div className="table-wrap" aria-busy={usersQuery.isLoading}>
         <table>
           <thead>
@@ -315,8 +353,8 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
                   <span className="muted">Đang tải dữ liệu từ API...</span>
                 </td>
               </tr>
-            ) : filteredUsers.length > 0 ? (
-              filteredUsers.map((user) => {
+            ) : displayedUsers.length > 0 ? (
+              displayedUsers.map((user) => {
                 const primaryRole = user.roles?.[0];
                 return (
                   <tr key={user.user_id}>
@@ -353,6 +391,14 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
           </tbody>
         </table>
       </div>
+
+      <MvpPaginationFooter
+        current={page}
+        pageSize={perPage}
+        total={total}
+        itemLabel="người dùng"
+        onChange={setPage}
+      />
 
       <Modal
         title={editingUser ? "Sửa người dùng" : "Thêm người dùng"}
