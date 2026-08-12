@@ -1,74 +1,255 @@
-import { useState } from "react";
-import { Menu } from "antd";
 import { useLocation, useNavigate } from "react-router-dom";
-import {
-  filterMenu,
-  getOpenKeys,
-  getSelectedKey,
-  MENU,
-  toMenuItems,
-} from "@/app/layouts/menu";
-import { layoutStyles } from "@/app/layouts/layout.styles";
+import { ROUTE_PERMISSIONS } from "@/app/router/access";
+import { ROUTES } from "@/shared/constants/routes";
+import { hasAnyWmsPermission } from "@/shared/constants/wms-permissions";
 import { useAuthStore } from "@/shared/store/auth.store";
 
-interface Props {
-  /** Đang thu gọn (ẩn chữ thương hiệu) — chỉ áp dụng cho Sider desktop. */
-  collapsed?: boolean;
-  /** Gọi sau khi điều hướng (vd đóng Drawer trên mobile). */
-  onNavigate?: () => void;
+type NavItem = { screen: string; label: string; path: string };
+type NavGroup = { name: string; items: NavItem[] };
+
+/**
+ * Navigation follows the Hoa Nam MVP screen inventory while keeping transactional
+ * subflows inside their owning list screens. Create/edit screens for IAM, SKU,
+ * Agency, Defect and Inbound are in-page modals. Inbound scan/full-post is opened
+ * from the receipt list, and Putaway detail is opened from the pending list.
+ *
+ * Each list item deliberately uses its owning route so visibility is evaluated
+ * against that domain's RBAC permission rather than a presentation-only screen id.
+ */
+const NAV_GROUPS: NavGroup[] = [
+  {
+    name: "00 · Tổng quan",
+    items: [
+      {
+        screen: "MAP-01",
+        path: ROUTES.DASHBOARD,
+        label: "Bản đồ màn hình & phạm vi",
+      },
+    ],
+  },
+  {
+    name: "01 · Hệ thống & danh mục",
+    items: [
+      {
+        screen: "IAM-01",
+        path: ROUTES.IAM_USERS,
+        label: "Danh sách người dùng & phân quyền",
+      },
+      {
+        screen: "MST-01",
+        path: ROUTES.MASTER_DATA,
+        label: "Danh sách SKU / Product Master",
+      },
+      {
+        screen: "AGY-01",
+        path: ROUTES.AGENCIES,
+        label: "Danh mục đại lý / nơi nhận",
+      },
+      {
+        screen: "DEF-01",
+        path: ROUTES.DEFECTS,
+        label: "Danh mục bệnh / lỗi",
+      },
+    ],
+  },
+  {
+    name: "02 · Nhập kho",
+    items: [
+      {
+        screen: "IN-01",
+        path: ROUTES.INBOUND,
+        label: "Danh sách phiếu nhập",
+      },
+      {
+        screen: "PTW-00",
+        path: ROUTES.PUTAWAY,
+        label: "Danh sách linh kiện chờ xếp khay",
+      },
+    ],
+  },
+  {
+    name: "03 · Xuất kho",
+    items: [
+      {
+        screen: "OUT-REQ-01",
+        path: ROUTES.OUTBOUND,
+        label: "Tiếp nhận Phiếu yêu cầu xuất",
+      },
+      {
+        screen: "OUT-01",
+        path: ROUTES.OUTBOUND,
+        label: "Danh sách phiếu xuất",
+      },
+      {
+        screen: "OUT-03",
+        path: ROUTES.OUTBOUND,
+        label: "Chi tiết phiếu xuất",
+      },
+      {
+        screen: "OUT-02",
+        path: ROUTES.OUTBOUND,
+        label: "Quét & match Item",
+      },
+      { screen: "LBL-01", path: ROUTES.OUTBOUND, label: "Nhãn từng Item" },
+      {
+        screen: "RFID-01",
+        path: ROUTES.OUTBOUND,
+        label: "Map RFID & Full Post Issue",
+      },
+    ],
+  },
+  {
+    name: "04 · Bảo hành & linh kiện",
+    items: [
+      {
+        screen: "WAR-01",
+        path: ROUTES.WARRANTY,
+        label: "Danh sách bảo hành",
+      },
+      {
+        screen: "WAR-02",
+        path: ROUTES.WARRANTY,
+        label: "Tiếp nhận bảo hành",
+      },
+      {
+        screen: "WAR-03",
+        path: ROUTES.WARRANTY,
+        label: "Chi tiết bảo hành",
+      },
+      {
+        screen: "COMP-01",
+        path: ROUTES.WARRANTY,
+        label: "Xuất linh kiện cho bảo hành",
+      },
+    ],
+  },
+  {
+    name: "05 · Tồn kho & kiểm soát",
+    items: [
+      {
+        screen: "INV-01",
+        path: ROUTES.INVENTORY,
+        label: "Tra cứu tồn & đối soát",
+      },
+      {
+        screen: "TRACE-01",
+        path: ROUTES.SCAN,
+        label: "Truy vết mã vật lý",
+      },
+      {
+        screen: "REV-00",
+        path: ROUTES.REVERSE,
+        label: "Danh sách phiếu Reversal",
+      },
+      {
+        screen: "REV-01",
+        path: ROUTES.REVERSE,
+        label: "Tạo Reversal",
+      },
+    ],
+  },
+  {
+    name: "06 · Báo cáo",
+    items: [
+      {
+        screen: "RPT-01",
+        path: ROUTES.REPORTS,
+        label: "Báo cáo vận hành",
+      },
+    ],
+  },
+];
+
+const DEFAULT_SCREEN_BY_PATH: Record<string, string> = {
+  [ROUTES.DASHBOARD]: "MAP-01",
+  [ROUTES.IAM_USERS]: "IAM-01",
+  [ROUTES.MASTER_DATA]: "MST-01",
+  [ROUTES.AGENCIES]: "AGY-01",
+  [ROUTES.DEFECTS]: "DEF-01",
+  [ROUTES.INBOUND]: "IN-01",
+  [ROUTES.PUTAWAY]: "PTW-00",
+  [ROUTES.OUTBOUND]: "OUT-01",
+  [ROUTES.WARRANTY]: "WAR-01",
+  [ROUTES.INVENTORY]: "INV-01",
+  [ROUTES.SCAN]: "TRACE-01",
+  [ROUTES.REVERSE]: "REV-00",
+  [ROUTES.REPORTS]: "RPT-01",
+};
+
+const MODAL_PARENT_SCREEN: Record<string, string> = {
+  "IAM-02": "IAM-01",
+  "MST-02": "MST-01",
+  "AGY-02": "AGY-01",
+  "DEF-02": "DEF-01",
+  "IN-02": "IN-01",
+  "IN-03": "IN-01",
+  "PTW-01": "PTW-00",
+};
+
+function matchesPath(currentPath: string, targetPath: string) {
+  return (
+    currentPath === targetPath ||
+    (targetPath !== "/" && currentPath.startsWith(`${targetPath}/`))
+  );
 }
 
-export function SideNav({ collapsed = false, onNavigate }: Props) {
+function normalizeScreen(screen: string | null | undefined) {
+  if (!screen) return screen;
+  return MODAL_PARENT_SCREEN[screen] ?? screen;
+}
+
+export function SideNav() {
   const location = useLocation();
   const navigate = useNavigate();
   const permissionCodes = useAuthStore((state) => state.permissionCodes);
   const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
-  const can = (code: string) => isSuperAdmin || permissionCodes.includes(code);
+  const requestedScreen = new URLSearchParams(location.search).get("screen");
+  const selectedScreen =
+    normalizeScreen(requestedScreen) ?? DEFAULT_SCREEN_BY_PATH[location.pathname];
 
-  const [prevPathname, setPrevPathname] = useState(location.pathname);
-  const [openKeys, setOpenKeys] = useState<string[]>(() =>
-    getOpenKeys(location.pathname, location.search),
-  );
-
-  if (prevPathname !== location.pathname) {
-    setPrevPathname(location.pathname);
-    setOpenKeys((previous) => {
-      const required = getOpenKeys(location.pathname, location.search);
-      const merged = [...new Set([...previous, ...required])];
-      return merged.length === previous.length &&
-        merged.every((key) => previous.includes(key))
-        ? previous
-        : merged;
-    });
-  }
+  const canAccess = (path: string) => {
+    const required = ROUTE_PERMISSIONS[path];
+    if (!required) return true;
+    const permissions = Array.isArray(required) ? required : [required];
+    return hasAnyWmsPermission(permissionCodes, permissions, isSuperAdmin);
+  };
 
   return (
-    <nav
-      data-testid="primary-navigation"
-      aria-label="Điều hướng chính"
-      style={{ height: "100%" }}
-    >
-      <div style={layoutStyles.sideNavBrand}>
-        <span style={layoutStyles.sideNavBrandIcon}>E</span>
-        {!collapsed && <span>Hoa Nam</span>}
+    <nav data-testid="primary-navigation" aria-label="Điều hướng chính">
+      <div className="hn-mvp-brand">
+        <div className="hn-mvp-logo" aria-hidden="true">
+          HN
+        </div>
+        <div className="hn-mvp-brand-copy">
+          <h1>Hoa Nam WMS</h1>
+        </div>
       </div>
 
-      <Menu
-        theme="dark"
-        mode="inline"
-        selectedKeys={[getSelectedKey(location.pathname, location.search)]}
-        openKeys={openKeys}
-        onOpenChange={setOpenKeys}
-        items={toMenuItems(filterMenu(MENU, can))}
-        onClick={({ key }) => {
-          navigate(key);
-          onNavigate?.();
-        }}
-        style={{
-          borderInlineEnd: "none",
-          paddingBottom: 24,
-        }}
-      />
+      {NAV_GROUPS.map((group) => {
+        const visibleItems = group.items.filter((item) => canAccess(item.path));
+        if (visibleItems.length === 0) return null;
+        return (
+          <section key={group.name} aria-label={group.name}>
+            <div className="hn-mvp-group">{group.name}</div>
+            {visibleItems.map((item) => {
+              const active =
+                selectedScreen === item.screen &&
+                matchesPath(location.pathname, item.path);
+              return (
+                <button
+                  key={item.screen}
+                  type="button"
+                  className={`hn-mvp-nav-btn${active ? " active" : ""}`}
+                  aria-current={active ? "page" : undefined}
+                  onClick={() => navigate(`${item.path}?screen=${item.screen}`)}
+                >
+                  {item.label}
+                </button>
+              );
+            })}
+          </section>
+        );
+      })}
     </nav>
   );
 }

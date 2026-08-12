@@ -24,7 +24,8 @@ import { postOutboundIssue } from "@/modules/shipping/services/shippingService";
 import { applyStocktakeAdjustment } from "@/modules/stocktake/services/stocktakeService";
 import { WMS_PERMISSION_CATALOG as P } from "@/shared/constants/wms-permissions";
 
-const fullyScannedDocument = (lineId: string) => ({
+const fullyScannedDocument = (lineId: string, version = 1) => ({
+  version,
   lines: [
     {
       id: lineId,
@@ -67,15 +68,17 @@ describe("WWHN-148 critical response normalization boundary", () => {
     vi.mocked(http.postWithMeta)
       .mockResolvedValueOnce({
         data: {
-          stock_document_id: "REC-1",
-          movements: [{ stock_movement_id: "MOV-IN-1" }],
+          document_id: "REC-1",
+          movement_ids: ["MOV-IN-1"],
+          version: 2,
         },
         meta: { request_id: "REQ-IN-1" },
       })
       .mockResolvedValueOnce({
         data: {
-          stock_document_id: "ISS-1",
-          movements: [{ stock_movement_id: "MOV-OUT-1" }],
+          document_id: "ISS-1",
+          movement_ids: ["MOV-OUT-1"],
+          version: 2,
         },
         meta: { request_id: "REQ-OUT-1" },
       })
@@ -93,7 +96,6 @@ describe("WWHN-148 critical response normalization boundary", () => {
     await expect(
       postInboundReceipt({
         documentId: "IN-1",
-        lines: [{ lineId: "IN-L1", quantity: 1 }],
         idempotencyKey: "IDEM-IN-1",
         ifMatch: 1,
       }),
@@ -106,7 +108,6 @@ describe("WWHN-148 critical response normalization boundary", () => {
     await expect(
       postOutboundIssue({
         documentId: "OUT-1",
-        lines: [{ lineId: "OUT-L1", quantity: 1 }],
         idempotencyKey: "IDEM-OUT-1",
         ifMatch: 1,
       }),
@@ -165,7 +166,6 @@ describe("WWHN-148 critical response normalization boundary", () => {
     await expect(
       postInboundReceipt({
         documentId: "IN-ALIAS",
-        lines: [{ lineId: "IN-L1", quantity: 1 }],
         idempotencyKey: "IDEM-IN-ALIAS",
         ifMatch: 1,
       }),
@@ -174,7 +174,6 @@ describe("WWHN-148 critical response normalization boundary", () => {
     await expect(
       postOutboundIssue({
         documentId: "OUT-ALIAS",
-        lines: [{ lineId: "OUT-L1", quantity: 1 }],
         idempotencyKey: "IDEM-OUT-ALIAS",
         ifMatch: 1,
       }),
@@ -204,7 +203,6 @@ describe("WWHN-148 critical response normalization boundary", () => {
     await expect(
       postInboundReceipt({
         documentId: "IN-UNKNOWN",
-        lines: [{ lineId: "IN-L1", quantity: 1 }],
         idempotencyKey: "IDEM-IN-UNKNOWN",
         ifMatch: 1,
       }),
@@ -225,7 +223,6 @@ describe("WWHN-148 critical response normalization boundary", () => {
     await expect(
       postOutboundIssue({
         documentId: "OUT-UNKNOWN",
-        lines: [{ lineId: "OUT-L1", quantity: 1 }],
         idempotencyKey: "IDEM-OUT-UNKNOWN",
         ifMatch: 1,
       }),

@@ -32,11 +32,23 @@ vi.mock("@/modules/auth/services/auth.service", () => ({
 
 import { bootstrapAuth } from "@/app/bootstrap-auth";
 
-describe("bootstrapAuth WWHN-165", () => {
+describe("bootstrapAuth persistent browser session", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     rehydrateMock.mockResolvedValue(undefined);
     clearStorageMock.mockResolvedValue(undefined);
+  });
+
+  it("F5: JS memory rỗng vẫn refresh qua HttpOnly cookie và giữ đăng nhập", async () => {
+    refreshMock.mockResolvedValue({ access_token: "access-from-cookie" });
+
+    await bootstrapAuth();
+
+    expect(refreshMock).toHaveBeenCalledTimes(1);
+    expect(setTokenMock).toHaveBeenCalledWith("access-from-cookie");
+    expect(logoutMock).not.toHaveBeenCalled();
+    expect(clearStorageMock).not.toHaveBeenCalled();
+    expect(setStateMock).toHaveBeenCalledWith({ isBootstrapped: true });
   });
 
   it("401 hết phiên -> clear local session, không tạo bootstrapError", async () => {
@@ -54,13 +66,25 @@ describe("bootstrapAuth WWHN-165", () => {
     expect(logoutMock).toHaveBeenCalledTimes(1);
     expect(clearStorageMock).toHaveBeenCalledTimes(1);
     expect(setTokenMock).not.toHaveBeenCalled();
-    expect(setStateMock).toHaveBeenCalledWith({
-      isBootstrapped: true,
-    });
+    expect(setStateMock).toHaveBeenCalledWith({ isBootstrapped: true });
     expect(setStateMock).not.toHaveBeenCalledWith({ bootstrapError: error });
   });
 
-  it("network/5xx -> fail-closed bootstrapError, không giả thành anonymous", async () => {
+  it("422 không có refresh cookie -> anonymous bình thường", async () => {
+    const error = {
+      response: { status: 422, data: { message: "refresh_token required" } },
+    };
+    refreshMock.mockRejectedValue(error);
+
+    await bootstrapAuth();
+
+    expect(refreshMock).toHaveBeenCalledTimes(1);
+    expect(logoutMock).toHaveBeenCalledTimes(1);
+    expect(clearStorageMock).toHaveBeenCalledTimes(1);
+    expect(setTokenMock).not.toHaveBeenCalled();
+  });
+
+  it("network/5xx -> bootstrapError, không destructive logout session hint", async () => {
     const error = new Error("Network Error");
     refreshMock.mockRejectedValue(error);
 

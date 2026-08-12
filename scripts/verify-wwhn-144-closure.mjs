@@ -25,8 +25,8 @@ const packageJson = JSON.parse(read("package.json") || "{}");
 const ci = read(".github/workflows/ci.yml");
 const e2e = read("e2e/auth-role-navigation-qa2.spec.ts");
 const mainLayout = read("src/app/layouts/MainLayout.tsx");
-const appHeader = read("src/app/layouts/AppHeader.tsx");
 const sideNav = read("src/app/layouts/SideNav.tsx");
+const exactCss = read("src/styles/hn-wms-mvp-exact.css");
 const taskDoc = read("docs/Task_docs_Jira/WWHN-144.md");
 const evidenceReadme = read("docs/evidence/wwhn-144/README.md");
 
@@ -39,6 +39,7 @@ for (const script of ["wwhn-144:verify", "test:e2e:wwhn-144"]) {
 for (const viewport of ["1440, height: 900", "768, height: 1024", "375, height: 812"]) {
   requireText(e2e, viewport, "e2e/auth-role-navigation-qa2.spec.ts");
 }
+
 for (const contract of [
   "anonymous-direct-url-login-guard",
   "limited-role-menu-direct-url-403",
@@ -52,13 +53,42 @@ for (const contract of [
   "screenshotFilename",
   "videoFilename",
   "apiScopeDisposition",
+  "300px MVP sidebar",
+  "MVP stacked sidebar/main layout",
 ]) {
   requireText(e2e, contract, "e2e/auth-role-navigation-qa2.spec.ts");
 }
 
-requireText(mainLayout, 'data-testid="desktop-navigation"', "MainLayout.tsx");
-requireText(appHeader, 'data-testid="navigation-toggle"', "AppHeader.tsx");
-requireText(sideNav, 'data-testid="primary-navigation"', "SideNav.tsx");
+for (const shellContract of [
+  'className="hn-mvp-app"',
+  'className="hn-mvp-aside"',
+  'className="hn-mvp-main"',
+  'className="hn-mvp-screen"',
+  "Giao diện demo, dùng cho trao đổi BA/DEV/TEST.",
+]) {
+  requireText(mainLayout, shellContract, "MainLayout.tsx");
+}
+
+for (const navigationContract of [
+  'data-testid="primary-navigation"',
+  "00 · Tổng quan",
+  "02 · Nhập kho",
+  "03 · Xuất kho",
+  "06 · Báo cáo",
+  "Bản đồ màn hình & phạm vi",
+]) {
+  requireText(sideNav, navigationContract, "SideNav.tsx");
+}
+
+for (const visualContract of [
+  "grid-template-columns:300px 1fr",
+  "background:#0f172a",
+  "border-radius:16px",
+  "font-family:Arial,Helvetica,sans-serif",
+  "@media (max-width:980px)",
+]) {
+  requireText(exactCss, visualContract, "hn-wms-mvp-exact.css");
+}
 
 for (const contract of [
   "Verify WWHN-144 closure contract",
@@ -119,5 +149,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  "[wwhn-144] PASS: responsive/RBAC/direct-URL/403 evidence contract, Jira scope disposition, extracted handoff policy and CI gate are complete.",
+  "[wwhn-144] PASS: MVP HTML responsive/RBAC/direct-URL/403 evidence contract, Jira scope disposition and CI gate are complete.",
 );

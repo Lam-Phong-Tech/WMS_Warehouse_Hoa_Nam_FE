@@ -1,3 +1,10 @@
+export interface UserRoleAssignment {
+  role_id: string;
+  role_code: string;
+  role_name: string;
+  scope_ref?: string | null;
+}
+
 export interface User {
   id: number | string;
   user_id?: string;
@@ -6,10 +13,7 @@ export interface User {
   display_name?: string;
   email: string;
   code: string;
-  roles?: Array<{
-    role_id: string;
-    role_code: string;
-    role_name: string;
-  }>;
+  roles?: UserRoleAssignment[];
   permissions?: string[];
+  warehouse_scope_ids?: string[];
 }

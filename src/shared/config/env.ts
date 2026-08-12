@@ -7,7 +7,7 @@ export interface RuntimeConfig {
   readonly apiBaseUrl: string;
   readonly apiHealthPath: string;
   readonly apiTimeoutMs: number;
-  readonly apiWithCredentials: boolean;
+  readonly apiWithCredentials: true;
   readonly storageUrl?: string;
   readonly enableAnalytics: boolean;
   readonly enableDebug: boolean;
@@ -85,6 +85,27 @@ function boolEnv(value: string | undefined, key: string): boolean {
   throw new Error(`[env] ${key} must be true, false, 1, or 0.`);
 }
 
+function requiredCredentialedApi(value: string | undefined): true {
+  if (value === undefined || value === "" || value === "true" || value === "1") {
+    return true;
+  }
+
+  if (value === "false" || value === "0") {
+    // Browser auth persistence depends on the HttpOnly refresh cookie. A stale
+    // deployment/local .env must never turn that security requirement off and
+    // must never crash the whole SPA. Force the invariant on at runtime while
+    // still surfacing the configuration drift for operators.
+    console.warn(
+      "[env] VITE_API_WITH_CREDENTIALS=false is deprecated and ignored; credentials are forced on for browser auth persistence.",
+    );
+    return true;
+  }
+
+  throw new Error(
+    "[env] VITE_API_WITH_CREDENTIALS must be true, false, 1, or 0.",
+  );
+}
+
 function numberEnv(value: string | undefined, fallback: number): number {
   if (!value) return fallback;
   const parsed = Number(value);
@@ -121,9 +142,10 @@ export const runtimeConfig: RuntimeConfig = {
     readEnv("VITE_API_TIMEOUT_MS"),
     DEFAULT_API_TIMEOUT_MS,
   ),
-  apiWithCredentials: boolEnv(
+  // Authentication invariant: browser requests always include credentials so
+  // the HttpOnly refresh cookie can restore the session after F5/reload.
+  apiWithCredentials: requiredCredentialedApi(
     readEnv("VITE_API_WITH_CREDENTIALS"),
-    "VITE_API_WITH_CREDENTIALS",
   ),
   storageUrl: optionalUrl(readEnv("VITE_STORAGE_URL"), "VITE_STORAGE_URL"),
   enableAnalytics: boolEnv(

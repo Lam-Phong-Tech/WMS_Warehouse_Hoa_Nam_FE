@@ -37,7 +37,7 @@ describe("SideNav RBAC filtering", () => {
     resetAuthStore();
   });
 
-  it("shows allowed WMS route items when the user has matching permissions", () => {
+  it("shows list entry points when the user has matching WMS permissions", () => {
     withPermissions([
       "inbound.create",
       "outbound.create",
@@ -47,11 +47,11 @@ describe("SideNav RBAC filtering", () => {
 
     renderSideNav();
 
-    expect(screen.getByText(/WMS/)).toBeInTheDocument();
-    expect(screen.getByText("Nhập kho")).toBeInTheDocument();
-    expect(screen.getByText("Xuất kho")).toBeInTheDocument();
-    expect(screen.getByText("Tồn & truy vết")).toBeInTheDocument();
-    expect(screen.getByText("Báo cáo")).toBeInTheDocument();
+    expect(screen.getByText(/Hoa Nam WMS/)).toBeInTheDocument();
+    expect(screen.getByText("Danh sách phiếu nhập")).toBeInTheDocument();
+    expect(screen.getByText("Danh sách phiếu xuất")).toBeInTheDocument();
+    expect(screen.getByText("Tra cứu tồn & đối soát")).toBeInTheDocument();
+    expect(screen.getByText("Báo cáo vận hành")).toBeInTheDocument();
   });
 
   it("hides routes and groups that the user cannot access", () => {
@@ -59,25 +59,35 @@ describe("SideNav RBAC filtering", () => {
 
     renderSideNav();
 
-    expect(screen.getByText(/WMS/)).toBeInTheDocument();
-    expect(screen.getByText("Nhập kho")).toBeInTheDocument();
-    expect(screen.queryByText("Bảo hành")).not.toBeInTheDocument();
-    expect(screen.queryByText("Báo cáo")).not.toBeInTheDocument();
-    expect(screen.getByText("Hệ thống")).toBeInTheDocument();
-    expect(screen.getByText("Component catalog")).toBeInTheDocument();
-    expect(screen.queryByText("Nhật ký kiểm tra")).not.toBeInTheDocument();
+    expect(screen.getByText("Danh sách phiếu nhập")).toBeInTheDocument();
+    expect(screen.queryByText("Danh sách bảo hành")).not.toBeInTheDocument();
+    expect(screen.queryByText("Báo cáo vận hành")).not.toBeInTheDocument();
+    expect(screen.queryByText("Danh sách linh kiện chờ xếp khay")).not.toBeInTheDocument();
   });
 
-  it("lets Super Admin see all WMS/System menu items even with no permission codes", () => {
+  it("folds inbound and putaway operations into their owning list screens", () => {
+    withPermissions([], true);
+
+    renderSideNav(`${ROUTES.INBOUND}?screen=IN-03&id=receipt-1`);
+
+    const inboundList = screen.getByRole("button", { name: "Danh sách phiếu nhập" });
+    expect(inboundList).toHaveAttribute("aria-current", "page");
+    expect(screen.getByText("Danh sách linh kiện chờ xếp khay")).toBeInTheDocument();
+
+    expect(screen.queryByText("Tạo / sửa phiếu nhập DRAFT")).not.toBeInTheDocument();
+    expect(screen.queryByText("Quét & Full Post Receipt")).not.toBeInTheDocument();
+    expect(screen.queryByText("Putaway linh kiện vào khay")).not.toBeInTheDocument();
+  });
+
+  it("lets Super Admin see all list entry points even with no permission codes", () => {
     withPermissions([], true);
 
     renderSideNav();
 
-    expect(screen.getByText(/WMS/)).toBeInTheDocument();
-    expect(screen.getByText("Bảo hành")).toBeInTheDocument();
-    expect(screen.getByText("Báo cáo")).toBeInTheDocument();
-    expect(screen.getByText("Hệ thống")).toBeInTheDocument();
-    expect(screen.getByText("Nhật ký kiểm tra")).toBeInTheDocument();
+    expect(screen.getByText("Danh sách phiếu nhập")).toBeInTheDocument();
+    expect(screen.getByText("Danh sách linh kiện chờ xếp khay")).toBeInTheDocument();
+    expect(screen.getByText("Danh sách bảo hành")).toBeInTheDocument();
+    expect(screen.getByText("Báo cáo vận hành")).toBeInTheDocument();
   });
 });
 
@@ -86,7 +96,9 @@ describe("navigation metadata", () => {
     expect(getSelectedKey(`${ROUTES.INBOUND}/draft/PO-001`)).toBe(
       ROUTES.INBOUND,
     );
-    expect(getOpenKeys(`${ROUTES.INBOUND}/draft/PO-001`)).toEqual(["wms"]);
+    expect(getOpenKeys(`${ROUTES.INBOUND}/draft/PO-001`)).toEqual([
+      "inbound-group",
+    ]);
     expect(getBreadcrumb(ROUTES.PROFILE)).toEqual([
       { label: "Tài khoản" },
       { label: "Hồ sơ cá nhân", path: ROUTES.PROFILE },

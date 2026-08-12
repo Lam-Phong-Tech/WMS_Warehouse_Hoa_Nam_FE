@@ -13,6 +13,10 @@ describe("runtimeConfig", () => {
     expect(runtimeConfig.apiTimeoutMs).toBeGreaterThan(0);
   });
 
+  it("always enables credentialed API requests for HttpOnly refresh cookies", () => {
+    expect(runtimeConfig.apiWithCredentials).toBe(true);
+  });
+
   it("builds the approved backend health URL", () => {
     expect(apiHealthUrl).toBe(
       resolveApiUrl(runtimeConfig.apiBaseUrl, runtimeConfig.apiHealthPath),

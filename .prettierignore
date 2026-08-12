@@ -1,0 +1,3 @@
+# Verbatim source-port: kept line-for-line friendly for BA HTML comparison.
+src/shared/components/mvp/MvpSourceScreen.tsx
+src/styles/hn-wms-source-screen.css

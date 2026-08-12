@@ -1,36 +1,29 @@
-/**
- * Warranty module types for WMS Hoa Nam.
- * Based on architecture guide: warranty case, warranty event, TEMP_ONLY support,
- * defect/status enum.
- */
-
-/** Warranty case status */
+/** Warranty module types aligned with the current /api/v1/warranty-cases contract. */
 export type WarrantyCaseStatus =
   | "RECEIVED"
   | "CHECKING"
+  | "REPAIRING"
   | "COMPLETED"
   | "RETURNED"
+  | "CANCELLED"
+  // Compatibility aliases accepted only when reading older data snapshots.
   | "OPEN"
   | "PROCESSING"
   | "WAITING_PARTS"
-  | "REPAIRING"
   | "READY"
   | "RETURNED_TO_CUSTOMER"
-  | "CLOSED"
-  | "CANCELLED";
+  | "CLOSED";
 
 export type WarrantyIdentificationType = "IDENTIFIED" | "TEMP_ONLY";
-
-/** Warranty case priority */
 export type WarrantyPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 
-/** Warranty case */
 export interface WarrantyCase {
   id: string;
   case_code: string;
   sku: string;
   sku_name: string;
   item_code?: string;
+  item_id?: string;
   physical_code?: string;
   temporary_item_code?: string;
   identification_type: WarrantyIdentificationType;
@@ -42,6 +35,7 @@ export interface WarrantyCase {
   agency_name?: string;
   defect: string;
   defect_code: string;
+  defect_id?: string;
   status: WarrantyCaseStatus;
   priority: WarrantyPriority;
   missing_code_reason?: string;
@@ -55,9 +49,9 @@ export interface WarrantyCase {
   created_at: string;
   created_by: string;
   notes?: string;
+  version: number;
 }
 
-/** Warranty event */
 export interface WarrantyEvent {
   id: string;
   case_id: string;
@@ -69,8 +63,8 @@ export interface WarrantyEvent {
   performed_at: string;
 }
 
-/** Warranty event type */
 export type WarrantyEventType =
+  | "RECEIVED"
   | "STATUS_CHANGE"
   | "NOTE_ADDED"
   | "PARTS_ORDERED"
@@ -79,7 +73,6 @@ export type WarrantyEventType =
   | "CUSTOMER_CONTACTED"
   | "RETURNED";
 
-/** Request to create a warranty case */
 export interface CreateWarrantyCaseRequest {
   identification_type: WarrantyIdentificationType;
   item_code?: string;
@@ -97,14 +90,14 @@ export interface CreateWarrantyCaseRequest {
   priority?: WarrantyPriority;
 }
 
-/** Request to update warranty case status */
 export interface UpdateWarrantyStatusRequest {
   status: WarrantyCaseStatus;
   reason?: string;
-  idempotency_key: string;
+  /** Kept for caller compatibility; current BE uses If-Match rather than body idempotency. */
+  idempotency_key?: string;
+  ifMatch?: number;
 }
 
-/** Warranty defect type */
 export interface WarrantyDefect {
   code: string;
   name: string;
@@ -112,11 +105,12 @@ export interface WarrantyDefect {
   description?: string;
 }
 
-/** Warranty error codes */
 export type WarrantyErrorCode =
   | "WMS_WARRANTY_CASE_NOT_FOUND"
   | "WMS_WARRANTY_INVALID_STATUS_TRANSITION"
   | "WMS_WARRANTY_SKU_NOT_FOUND"
   | "WMS_WARRANTY_DUPLICATE_SERIAL"
   | "WMS_WARRANTY_TEMP_ONLY_REQUIRED"
-  | "WMS_WARRANTY_IDEMPOTENCY_REPLAY";
+  | "WMS_WARRANTY_ITEM_NOT_FOUND"
+  | "WMS_WARRANTY_DEFECT_NOT_FOUND"
+  | "WMS_WARRANTY_VERSION_CONFLICT";

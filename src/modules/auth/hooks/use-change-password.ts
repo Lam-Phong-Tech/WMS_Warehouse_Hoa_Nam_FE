@@ -1,25 +1,34 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { authService } from "@/modules/auth/services/auth.service";
 import { ROUTES } from "@/shared/constants/routes";
+import { useAuthStore } from "@/shared/store/auth.store";
 import type { ChangePasswordRequest } from "@/modules/auth/types/auth.types";
 
 /**
- * POST /auth/change-password — bắt buộc dùng khi password_change_required=true
- * (sau khi được cấp tài khoản/reset mật khẩu). Sau khi đổi thành công, BE tự
- * chuyển password_change_required về false — cần refetch /auth/me để mọi API
- * khác (đang bị chặn 403 PASSWORD_CHANGE_REQUIRED) hoạt động lại bình thường.
+ * POST /auth/change-password revokes every refresh token on BE m1. Keeping the
+ * current FE session after a successful change would leave a JWT that cannot be
+ * refreshed later, so the client deliberately clears all local auth state and
+ * requires a clean login with the new password.
  */
 export function useChangePassword() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const logoutLocal = useAuthStore((s) => s.logout);
 
   return useMutation({
     mutationFn: (data: ChangePasswordRequest) =>
       authService.changePassword(data),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
-      navigate(ROUTES.DASHBOARD, { replace: true });
+    onSuccess: () => {
+      toast.success("Đổi mật khẩu thành công, vui lòng đăng nhập lại");
+      queryClient.clear();
+      logoutLocal();
+      useAuthStore.persist.clearStorage();
+      navigate(ROUTES.LOGIN, { replace: true });
+    },
+    onError: () => {
+      toast.error("Đổi mật khẩu thất bại");
     },
   });
 }

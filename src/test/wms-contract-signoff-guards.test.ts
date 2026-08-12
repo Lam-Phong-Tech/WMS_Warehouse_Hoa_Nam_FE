@@ -144,12 +144,14 @@ describe("WWHN-181 exact BE v1.7 guards", () => {
       postInboundReceipt({
         documentId: "IN-1",
         idempotencyKey: "idem-inbound-1",
+        ifMatch: 1,
       }),
     ).rejects.toMatchObject({ code: "WMS_FE_PERMISSION_REQUIRED" });
     await expect(
       postOutboundIssue({
         documentId: "OUT-1",
         idempotencyKey: "idem-outbound-1",
+        ifMatch: 1,
       }),
     ).rejects.toMatchObject({ code: "WMS_FE_PERMISSION_REQUIRED" });
     await expect(
@@ -163,10 +165,11 @@ describe("WWHN-181 exact BE v1.7 guards", () => {
     expect(http.postWithMeta).not.toHaveBeenCalled();
   });
 
-  it("resolves inbound raw code to canonical line_id + qty", async () => {
+  it("resolves inbound raw code to canonical line_id + qty with If-Match", async () => {
     grant(P.SCAN_INBOUND, P.SCAN_CLASSIFY);
     vi.mocked(http.get).mockResolvedValue({
       id: "IN-1",
+      version: 1,
       dst_warehouse_id: WAREHOUSE_ID,
       lines: [
         {
@@ -184,6 +187,7 @@ describe("WWHN-181 exact BE v1.7 guards", () => {
         line_id: "LINE-IN-1",
         stock_effect: "NONE",
         movement_created: false,
+        version: 2,
       });
 
     await scanInboundDocument("IN-1", ["RAW-IN"]);
@@ -196,14 +200,16 @@ describe("WWHN-181 exact BE v1.7 guards", () => {
     expect(http.post).toHaveBeenNthCalledWith(
       2,
       "/inbound-documents/IN-1/scan",
-      { line_id: "LINE-IN-1", qty: 1 },
+      { line_id: "LINE-IN-1", qty: 1, code_value: "RAW-IN" },
+      { headers: { "If-Match": "1" } },
     );
   });
 
-  it("resolves outbound raw codes and never sends the obsolete codes[] payload", async () => {
+  it("resolves outbound raw codes and sends item-level canonical scan with If-Match", async () => {
     grant(P.SCAN_OUTBOUND, P.SCAN_CLASSIFY);
     vi.mocked(http.get).mockResolvedValue({
       id: "OUT-1",
+      version: 1,
       src_warehouse_id: WAREHOUSE_ID,
       lines: [
         {
@@ -221,6 +227,7 @@ describe("WWHN-181 exact BE v1.7 guards", () => {
         line_id: "LINE-OUT-1",
         stock_effect: "NONE",
         movement_created: false,
+        version: 2,
       });
 
     await scanOutboundDocument("OUT-1", ["RAW-OUT"]);
@@ -228,25 +235,28 @@ describe("WWHN-181 exact BE v1.7 guards", () => {
     expect(http.post).toHaveBeenNthCalledWith(
       2,
       "/outbound-documents/OUT-1/scan",
-      { line_id: "LINE-OUT-1", qty: 1 },
+      { line_id: "LINE-OUT-1", quantity: 1, code_value: "RAW-OUT" },
+      { headers: { "If-Match": "1" } },
     );
     expect(JSON.stringify(vi.mocked(http.post).mock.calls)).not.toContain(
       '"codes"',
     );
   });
 
-  it("posts inbound atomically with Idempotency-Key only", async () => {
+  it("posts inbound atomically with If-Match + Idempotency-Key", async () => {
     grant(P.INBOUND_POST);
     vi.mocked(http.get).mockResolvedValue({
       id: "IN-1",
-      status: "approved",
+      version: 99,
+      status: "SCANNING",
       lines: [{ id: "L1", qty_planned: 1, scanned_qty: 1 }],
     });
     vi.mocked(http.postWithMeta).mockResolvedValue({
       data: {
-        id: "IN-1",
-        status: "received",
-        movements: [{ id: "MOV-IN-1" }],
+        document_id: "IN-1",
+        status: "POSTED",
+        movement_ids: ["MOV-IN-1"],
+        version: 100,
       },
       meta: { request_id: "REQ-IN-1" },
     });
@@ -254,7 +264,6 @@ describe("WWHN-181 exact BE v1.7 guards", () => {
     await expect(
       postInboundReceipt({
         documentId: "IN-1",
-        lines: [{ lineId: "L1", quantity: 1 }],
         idempotencyKey: "idem-inbound-1",
         ifMatch: 99,
       }),
@@ -266,22 +275,29 @@ describe("WWHN-181 exact BE v1.7 guards", () => {
     expect(http.postWithMeta).toHaveBeenCalledWith(
       "/inbound-documents/IN-1/post-receipt",
       undefined,
-      { headers: { "Idempotency-Key": "idem-inbound-1" } },
+      {
+        headers: {
+          "If-Match": "99",
+          "Idempotency-Key": "idem-inbound-1",
+        },
+      },
     );
   });
 
-  it("posts outbound atomically and preserves meta.request_id", async () => {
+  it("posts outbound atomically with If-Match + Idempotency-Key", async () => {
     grant(P.OUTBOUND_POST);
     vi.mocked(http.get).mockResolvedValue({
       id: "OUT-1",
-      status: "approved",
+      version: 7,
+      status: "SCANNING",
       lines: [{ id: "L1", qty_planned: 1, scanned_qty: 1 }],
     });
     vi.mocked(http.postWithMeta).mockResolvedValue({
       data: {
-        id: "OUT-1",
-        status: "issued",
-        movements: [{ movement_id: "MOV-OUT-1" }],
+        document_id: "OUT-1",
+        status: "POSTED",
+        movement_ids: ["MOV-OUT-1"],
+        version: 8,
       },
       meta: { request_id: "REQ-OUT-1" },
     });
@@ -300,7 +316,12 @@ describe("WWHN-181 exact BE v1.7 guards", () => {
     expect(http.postWithMeta).toHaveBeenCalledWith(
       "/outbound-documents/OUT-1/post-issue",
       undefined,
-      { headers: { "Idempotency-Key": "idem-outbound-1" } },
+      {
+        headers: {
+          "If-Match": "7",
+          "Idempotency-Key": "idem-outbound-1",
+        },
+      },
     );
   });
 
@@ -308,6 +329,7 @@ describe("WWHN-181 exact BE v1.7 guards", () => {
     grant(P.INBOUND_POST);
     vi.mocked(http.get).mockResolvedValue({
       id: "IN-1",
+      version: 1,
       lines: [{ id: "L1", qty_planned: 2, scanned_qty: 1 }],
     });
 
@@ -315,6 +337,7 @@ describe("WWHN-181 exact BE v1.7 guards", () => {
       postInboundReceipt({
         documentId: "IN-1",
         idempotencyKey: "idem-inbound-1",
+        ifMatch: 1,
       }),
     ).rejects.toMatchObject({ code: "WMS_FE_POST_REQUIRES_FULL_SCAN" });
     expect(http.postWithMeta).not.toHaveBeenCalled();

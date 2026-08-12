@@ -26,7 +26,7 @@ env:
   VITE_API_BASE_URL: http://127.0.0.1:5173/api/v1
   VITE_API_HEALTH_PATH: /health
   VITE_API_TIMEOUT_MS: "10000"
-  VITE_API_WITH_CREDENTIALS: "false"
+  VITE_API_WITH_CREDENTIALS: "true"
   VITE_STORAGE_URL: ""
   VITE_ENABLE_ANALYTICS: "false"
   VITE_ENABLE_DEBUG: "false"
@@ -191,7 +191,7 @@ jobs:
 
       - name: Create WWHN-177 immutable DEV handoff
         id: wwhn_177_handoff
-        if: ${{ always() && steps.build.outcome == 'success' && steps.health.outcome == 'success' }}
+        if: always()
         continue-on-error: true
         env:
           DEV_APP_URL: ${{ vars.DEV_APP_URL }}

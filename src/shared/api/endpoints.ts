@@ -6,6 +6,8 @@ export const API_ENDPOINTS = {
   REFRESH: "/auth/refresh",
   CHANGE_PASSWORD: "/auth/change-password",
   USERS: "/users",
+  ROLES: "/roles",
+  PERMISSIONS: "/permissions",
   EMPLOYEES: "/employees",
   EMPLOYEE_STATUS_HISTORIES: "/employee-status-histories",
   EMPLOYEES_ASSIGNABLE: "/employees/assignable-employees",
@@ -16,8 +18,6 @@ export const API_ENDPOINTS = {
   ORG_UNITS_CHECK_TAX_CODE: "/org_units/check-tax-code",
   ORG_UNITS_COMPANIES: "/org_units/companies",
   DEPARTMENTS: "/departments",
-  ROLES: "/roles",
-  PERMISSIONS: "/permissions",
   ORG_UNITS_EXPORT: "/org_units/export-excel",
   ORG_UNITS_EXPORT_PDF: "/org_units/export-pdf",
   ORG_UNITS_CHART_EXPORT_PDF: "/org_units/chart/export-pdf",
@@ -34,6 +34,7 @@ export const API_ENDPOINTS = {
   USER_ROLE_SCOPES: "/user-role-scopes",
   USER_DATA_SCOPES: "/user-data-scopes",
   TASKS: "/tasks",
+
   WAREHOUSES: "/warehouses",
   WEBHOOKS_M2_ORDER_PROCESSING: "/webhooks/m2/order-processing",
   DASHBOARD: "/reports/dashboard-quick",
@@ -41,30 +42,40 @@ export const API_ENDPOINTS = {
   DASHBOARD_RECENT_DOCUMENTS: "/document-status-history",
   DASHBOARD_RECONCILE_HEALTH: "/inventory-snapshots",
   DASHBOARD_ALERTS: "/safe-stock-alerts",
+
   INBOUND_DOCUMENTS: "/inbound-documents",
   INBOUND_DOCUMENT: "/inbound-documents/:id",
   INBOUND_LINES: "/inbound-documents/:id",
-  INBOUND_SUBMIT: "/inbound-documents/:id/submit",
-  INBOUND_APPROVE: "/inbound-documents/:id/approve",
-  INBOUND_REJECT: "/inbound-documents/:id/reject",
   INBOUND_CANCEL: "/inbound-documents/:id/cancel",
+  INBOUND_BOXES: "/inbound-documents/:id/boxes",
   INBOUND_POST_RECEIPT: "/inbound-documents/:id/post-receipt",
   INBOUND_SCAN: "/inbound-documents/:id/scan",
-  INBOUND_CLOSE_REMAINDER: "/inbound-documents/:id/close-remainder",
   INBOUND_REVERSE: "/inbound-documents/:id/reverse",
+
   OUTBOUND_DOCUMENTS: "/outbound-documents",
   OUTBOUND_DOCUMENT: "/outbound-documents/:id",
   OUTBOUND_LINES: "/outbound-documents/:id",
-  OUTBOUND_SUBMIT: "/outbound-documents/:id/submit",
-  OUTBOUND_APPROVE: "/outbound-documents/:id/approve",
-  OUTBOUND_REJECT: "/outbound-documents/:id/reject",
   OUTBOUND_CANCEL: "/outbound-documents/:id/cancel",
   OUTBOUND_POST_ISSUE: "/outbound-documents/:id/post-issue",
   OUTBOUND_SCAN: "/outbound-documents/:id/scan",
-  OUTBOUND_CLOSE_REMAINDER: "/outbound-documents/:id/close-remainder",
   OUTBOUND_REVERSE: "/outbound-documents/:id/reverse",
+  OUTBOUND_REQUEST_IMPORTS: "/outbound-request-imports",
+  OUTBOUND_REQUEST_IMPORT: "/outbound-request-imports/:id",
+  OUTBOUND_REQUEST_IMPORT_CONSUME: "/outbound-request-imports/:id/consume",
+
+  LABEL_SNAPSHOTS: "/label-snapshots",
+  LABEL_SNAPSHOT_PRINT: "/label-snapshots/:id/print",
+  LABEL_SNAPSHOT_REPRINT: "/label-snapshots/:id/reprint",
+  PRINTER_CONFIGS: "/printer-configs",
+
   PUTAWAY_TASKS: "/putaway/tasks",
+  PUTAWAY_TASK: "/putaway/tasks/:id",
+  PUTAWAY_CONFIRM: "/putaway/tasks/:id/confirm",
+  PUTAWAY_CANCEL: "/putaway/tasks/:id/cancel",
   PUTAWAY_HISTORY: "/putaway/history",
+  CONTAINERS: "/containers",
+  CONTAINER: "/containers/:id",
+
   REPORTS_HUB: "/reports/hub",
   REPORTS_XNT: "/reports/inventory-xnt",
   REPORTS_XNT_EXPORT_EXCEL: "/reports/inventory-xnt/export-excel",
@@ -77,50 +88,54 @@ export const API_ENDPOINTS = {
   SAFE_STOCK_ALERTS: "/safe-stock-alerts",
   SAFE_STOCK_CONFIGS: "/safe-stock-configs",
   SAFE_STOCK_CONFIG: "/safe-stock-configs/:id",
+
+  // Canonical foundation/master routes from BE m1.
   PRODUCTS: "/products",
   PRODUCT: "/products/:id",
-  PRODUCT_ENABLE: "/products/:id/enable",
-  PRODUCT_DISABLE: "/products/:id/disable",
+  PRODUCT_MASTERS: "/product-masters",
   PRODUCT_CATEGORIES: "/product-categories",
   PRODUCT_CATEGORY: "/product-categories/:id",
-  UOMS: "/uoms",
-  SUPPLIERS: "/suppliers",
-  SKUS: "/skus",
-  SKU: "/skus/:id",
-  SKU_IMPORT_EXCEL: "/skus/import-excel",
-  ITEMS: "/items",
+  AGENCIES: "/agencies",
+  DEFECT_CATALOGS: "/defect-catalogs",
+  ITEMS: "/item-instances",
   PHYSICAL_CODES: "/physical-codes",
+  // Compatibility names point to canonical routes; never issue /skus or /items.
+  SKUS: "/products",
+  SKU: "/products/:id",
+  SKU_IMPORT_EXCEL: "/import-batches",
+
   SCAN_BATCHES: "/scan/batches",
-  /** Axios base URL already ends with /api/v1. */
   SCAN_BATCHES_CLASSIFY: "/scan/classify",
   SCAN_EVENTS: "/scan/events",
   DOCUMENT_STATUS_HISTORY: "/document-status-history",
   INVENTORY_SNAPSHOTS: "/inventory-snapshots",
-  // Exact BE v1.7 runtime routes use stocktake-sessions. The slash-form route
-  // is retained by BE only as a narrow compatibility alias for list/apply.
+
+  // Legacy stocktake constants remain for non-routed compatibility code only.
+  // Stocktake is not registered in the current MVP router or BE route surface.
   STOCKTAKE_SESSIONS: "/stocktake-sessions",
   STOCKTAKE_SESSION: "/stocktake-sessions/:sessionId",
   STOCKTAKE_CREATE_SESSION: "/stocktake-sessions",
   STOCKTAKE_START: "/stocktake-sessions/:sessionId/start",
   STOCKTAKE_COUNT: "/stocktake-sessions/:sessionId/counts",
   STOCKTAKE_REVIEW: "/stocktake-sessions/:sessionId/review",
-  STOCKTAKE_ACKNOWLEDGE_MOVEMENTS:
-    "/stocktake-sessions/:sessionId/acknowledge-movements",
+  STOCKTAKE_ACKNOWLEDGE_MOVEMENTS: "/stocktake-sessions/:sessionId/acknowledge-movements",
   STOCKTAKE_VARIANCES: "/stocktake-sessions/:sessionId/variances",
-  STOCKTAKE_APPLY_ADJUSTMENT:
-    "/stocktake-sessions/:sessionId/apply-adjustment",
-  // M1 evidence also tracks BE's narrow slash-form compatibility alias.
-  // Runtime code stays pinned to STOCKTAKE_APPLY_ADJUSTMENT above.
-  STOCKTAKE_APPLY_ADJUSTMENT_COMPAT:
-    "/stocktake/sessions/:sessionId/apply-adjustment",
+  STOCKTAKE_APPLY_ADJUSTMENT: "/stocktake-sessions/:sessionId/apply-adjustment",
+  STOCKTAKE_APPLY_ADJUSTMENT_COMPAT: "/stocktake/sessions/:sessionId/apply-adjustment",
+
   REVERSAL_DOCUMENTS: "/reversal-documents",
   REVERSAL_DOCUMENT: "/reversal-documents/:id",
   REVERSAL_CREATE: "/reversal-documents",
   REVERSAL_MOVEMENT_LOOKUP: "/stock-movements/reversible",
-  WARRANTY_CASES: "/warranty/cases",
-  WARRANTY_CASE: "/warranty/cases/:id",
-  WARRANTY_CASE_EVENTS: "/warranty/cases/:caseId/events",
-  WARRANTY_UPDATE_STATUS: "/warranty/cases/:id/status",
-  WARRANTY_TEMP_ONLY: "/warranty-cases/:id/temp-only",
+
+  WARRANTY_CASES: "/warranty-cases",
+  WARRANTY_CASE: "/warranty-cases/:id",
+  WARRANTY_CASE_EVENTS: "/warranty-cases/:caseId/events",
+  COMPONENT_ISSUE_DOCUMENTS: "/component-issue-documents",
+  COMPONENT_ISSUE_DOCUMENT: "/component-issue-documents/:id",
+  COMPONENT_ISSUE_SCAN: "/component-issue-documents/:id/scan",
+  COMPONENT_ISSUE_CANCEL: "/component-issue-documents/:id/cancel",
+  COMPONENT_ISSUE_POST: "/component-issue-documents/:id/post",
+
   AUDIT_LOGS: "/audit-logs",
 } as const;

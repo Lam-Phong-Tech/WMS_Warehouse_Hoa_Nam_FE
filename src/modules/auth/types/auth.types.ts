@@ -1,15 +1,18 @@
 import type { User } from "@/shared/types/user";
 
-// Mô hình dữ liệu (interface) của module auth.
+// Contract auth bám theo Modules/Auth/AuthController.php của BE branch m1.
 
-export interface LoginRequest {
-  email: string;
-  password: string;
-}
+/**
+ * POST /auth/login accepts exactly one identity field: email OR username.
+ * The UI maps a single "email / username" input into one of these shapes.
+ */
+export type LoginRequest =
+  | { email: string; username?: never; password: string }
+  | { username: string; email?: never; password: string };
 
-/** Một bối cảnh làm việc (vai trò + phạm vi) khả dụng của tài khoản. */
+/** Context nội bộ của FE, được suy ra từ roles[].scope_ref/warehouse_scope_ids. */
 export interface AuthContext {
-  role_id: number;
+  role_id: number | string;
   role_name: string;
   scope_type: string;
   org_unit_id: number | null;
@@ -18,51 +21,60 @@ export interface AuthContext {
   department_name: string | null;
   warehouse_id: number | null;
   warehouse_name: string | null;
+  /** Các field contract thật của POST /auth/switch-context. */
+  context_type?: string | null;
+  context_id?: string | null;
+  scope_ref?: string | null;
 }
 
 export interface LoginResponse {
   access_token: string;
-  refresh_token?: string;
+  refresh_token: string;
   token_type: string;
   expires_in: number;
   user: User;
+  /** FE dựng từ user.roles/user.warehouse_scope_ids vì BE m1 không trả available_contexts. */
   available_contexts: AuthContext[];
 }
 
-/** POST /auth/change-password — bắt buộc sau khi cấp tài khoản/reset (password_change_required). */
+/** POST /auth/change-password — BE dùng Laravel confirmed cho new_password. */
 export interface ChangePasswordRequest {
   current_password: string;
   new_password: string;
   new_password_confirmation: string;
 }
 
-/**
- * POST /auth/switch-context — chọn 1 context trong available_contexts để BE
- * cấp JWT mới đã nhúng context đó (role_id lấy từ AuthContext.role_id).
- * Token cũ bị blacklist ngay khi token mới được phát.
- */
+/** Payload thật của POST /api/v1/auth/switch-context trên BE m1. */
 export interface SwitchContextRequest {
-  role_id: number;
-  org_unit_id?: number | null;
-  department_id?: number | null;
-  warehouse_id?: number | null;
+  context_type?: string | null;
+  context_id?: string | null;
+  scope_ref?: string | null;
+}
+
+export interface AuthActiveContext {
+  context_type: string;
+  context_id: string | null;
+  scope_ref: string | null;
 }
 
 export interface SwitchContextResponse {
   access_token: string;
   token_type: string;
   expires_in: number;
+  active_context: AuthActiveContext;
+  user?: User;
 }
 
 /**
- * POST /auth/refresh — BE đọc `refresh_token` từ HttpOnly cookie (không cần
- * body/header), trả access token mới. BE cũng rotate cookie `refresh_token`
- * (Set-Cookie mới mỗi lần refresh) — xác nhận qua curl thật trên
- * astrodev.test8.io.vn 2026-07-15.
+ * POST /auth/refresh rotates the refresh token on every success. Browser clients
+ * may omit the JSON refresh_token after F5 because BE reads the long-lived token
+ * from its HttpOnly cookie. Swagger/Postman/non-browser clients may continue to
+ * send refresh_token in the JSON body. The rotated token remains in the response
+ * for backward compatibility and same-tab memory refresh.
  */
 export interface RefreshResponse {
   access_token: string;
-  refresh_token?: string;
+  refresh_token: string;
   token_type: string;
   expires_in: number;
   user?: User;

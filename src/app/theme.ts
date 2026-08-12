@@ -2,30 +2,43 @@ import type { SizeType } from "antd/es/config-provider/SizeContext";
 import type { ThemeConfig } from "antd";
 
 /**
- * Màu thương hiệu dùng chung toàn app (đồng bộ với theme antd).
- * P2: gom cả các giá trị trước đây hardcode rải rác trong layout (header
- * background/blur khi sticky) vào đây — khi cần đổi brand/theme (vd dark
- * mode, whitelabel) chỉ sửa 1 chỗ thay vì lục từng component.
+ * Source of truth: HN_WMS_Wireframe_MVP.html supplied by BA.
+ * Keep these values in lock-step with the HTML variables so Ant Design
+ * controls render with the same palette, radius and typography.
  */
 export const BRAND = {
-  primary: "#7c3aed",
-  primaryHover: "#6d28d9",
-  siderBg: "#1f1d2b",
-  siderTrigger: "#161320",
-  gradient: "linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)",
-  /** Nền Header khi sticky — hơi trong suốt để thấy nội dung cuộn phía sau. */
-  headerBg: "rgba(255, 255, 255, 0.95)",
-  headerBlur: "blur(8px)",
-};
+  primary: "#2563eb",
+  primaryHover: "#1d4ed8",
+  canvas: "#f5f7fb",
+  paper: "#ffffff",
+  paperAlt: "#f8fafc",
+  ink: "#1f2937",
+  inkSecondary: "#1f2937",
+  muted: "#6b7280",
+  border: "#d8dfeb",
+  divider: "#d8dfeb",
+  tableHead: "#f8fafc",
+  accentBg: "#dbeafe",
+  accentBorder: "#60a5fa",
+  success: "#16a34a",
+  warning: "#d97706",
+  danger: "#dc2626",
+  siderBg: "#0f172a",
+  siderHover: "#111f3d",
+  siderText: "#e5e7eb",
+  siderMuted: "#94a3b8",
+  siderSelected: "#1d4ed8",
+  siderSelectedBorder: "#60a5fa",
+  headerBg: "#f5f7fb",
+} as const;
 
-/** Token thiết kế dùng chung — spacing, radius, typography, table density. */
 export const DESIGN_TOKENS = {
-  spacing: { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 },
-  radius: { sm: 4, md: 8, lg: 12 },
+  spacing: { xs: 4, sm: 8, md: 12, lg: 14, xl: 18, xxl: 24 },
+  radius: { sm: 10, md: 12, lg: 16 },
   table: { size: "middle" as SizeType },
   typography: {
-    pageTitle: { fontSize: 20, fontWeight: 700, lineHeight: 1.3 },
-    sectionTitle: { fontSize: 16, fontWeight: 600 },
+    pageTitle: { fontSize: 24, fontWeight: 700, lineHeight: 1.2 },
+    sectionTitle: { fontSize: 15, fontWeight: 700 },
     body: { fontSize: 14, lineHeight: 1.5 },
     caption: { fontSize: 12 },
   },
@@ -35,39 +48,67 @@ export const themeConfig: ThemeConfig = {
   token: {
     colorPrimary: BRAND.primary,
     colorLink: BRAND.primary,
-    borderRadius: 8,
-    fontFamily:
-      "'Inter', system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
-    colorBgLayout: "#f4f5fa",
+    colorSuccess: BRAND.success,
+    colorWarning: BRAND.warning,
+    colorError: BRAND.danger,
+    colorBgLayout: BRAND.canvas,
+    colorBgContainer: BRAND.paper,
+    colorText: BRAND.ink,
+    colorTextSecondary: BRAND.muted,
+    colorBorder: BRAND.border,
+    colorBorderSecondary: BRAND.divider,
+    borderRadius: 10,
+    controlHeight: 36,
+    fontSize: 14,
+    lineHeight: 1.5,
+    fontFamily: "Arial, Helvetica, sans-serif",
   },
   components: {
     Layout: {
-      headerBg: "#ffffff",
-      headerHeight: 64,
-      headerPadding: "0 24px",
+      bodyBg: BRAND.canvas,
       siderBg: BRAND.siderBg,
-      triggerBg: BRAND.siderTrigger,
-      bodyBg: "#f4f5fa",
+      headerBg: BRAND.canvas,
     },
     Menu: {
       darkItemBg: BRAND.siderBg,
       darkSubMenuItemBg: BRAND.siderBg,
-      darkItemSelectedBg: BRAND.primary,
-      itemBorderRadius: 8,
-      itemMarginInline: 12,
+      darkItemColor: BRAND.siderText,
+      darkItemHoverBg: BRAND.siderHover,
+      darkItemSelectedBg: BRAND.siderSelected,
+      darkItemSelectedColor: "#ffffff",
+      itemBorderRadius: 10,
+      itemMarginInline: 0,
+      itemMarginBlock: 3,
     },
     Card: {
-      borderRadiusLG: 12,
+      borderRadiusLG: 14,
     },
     Button: {
-      controlHeight: 40,
-      fontWeight: 500,
+      controlHeight: 36,
+      borderRadius: 10,
+      fontWeight: 600,
     },
     Input: {
-      controlHeight: 40,
+      controlHeight: 36,
+      borderRadius: 10,
     },
     Select: {
-      controlHeight: 40,
+      controlHeight: 36,
+      borderRadius: 10,
+    },
+    Table: {
+      headerBg: BRAND.paperAlt,
+      headerColor: BRAND.ink,
+      borderColor: BRAND.border,
+      cellPaddingBlock: 10,
+      cellPaddingInline: 10,
+      fontSize: 13,
+    },
+    Modal: {
+      borderRadiusLG: 16,
+    },
+    Drawer: {
+      borderRadiusLG: 16,
     },
   },
 };

@@ -25,10 +25,13 @@ function evidenceName(
 async function mockAuthenticatedSession(
   page: Page,
   permissionCodes: string[],
-) {
+): Promise<string[]> {
+  const refreshBodies: string[] = [];
+
   await page.route("**/api/v1/**", async (route: Route) => {
     const url = route.request().url();
     if (url.endsWith("/auth/refresh")) {
+      refreshBodies.push(route.request().postData() ?? "");
       await route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -36,6 +39,7 @@ async function mockAuthenticatedSession(
           success: true,
           data: {
             access_token: "wwhn-165-access-token",
+            refresh_token: `wwhn-165-refresh-${refreshBodies.length}`,
             token_type: "bearer",
             expires_in: 3600,
           },
@@ -104,6 +108,8 @@ async function mockAuthenticatedSession(
       body: JSON.stringify({ success: true, data: [] }),
     });
   });
+
+  return refreshBodies;
 }
 
 test.use({ video: "on", trace: "on", screenshot: "on" });
@@ -135,6 +141,37 @@ test("bootstrap 503 stays fail-closed and exposes retry", async ({
   await page.screenshot({
     path: testInfo.outputPath(
       evidenceName("bootstrap-503-fail-closed", "anonymous", "1440x900"),
+    ),
+    fullPage: true,
+  });
+});
+
+test("F5 restores protected session instead of redirecting to login", async ({
+  page,
+}, testInfo) => {
+  const refreshBodies = await mockAuthenticatedSession(page, ["inventory.view"]);
+  await page.setViewportSize({ width: 1440, height: 900 });
+
+  await page.goto("/profile");
+  await expect(page).toHaveURL(/\/profile$/);
+  await expect(page.getByRole("button", { name: /Menu tài khoản/u })).toBeVisible();
+  await expect.poll(() => refreshBodies.length).toBe(1);
+  expect(JSON.parse(refreshBodies[0] || "{}"), "initial bootstrap must allow cookie transport").toEqual({});
+
+  // A full reload destroys the module-level access/refresh token memory. The app
+  // must still bootstrap by calling /auth/refresh with an empty JSON body so the
+  // browser can attach the HttpOnly refresh cookie managed by BE.
+  await page.reload();
+
+  await expect(page).toHaveURL(/\/profile$/);
+  await expect(page).not.toHaveURL(/\/login$/);
+  await expect(page.getByRole("button", { name: /Menu tài khoản/u })).toBeVisible();
+  await expect.poll(() => refreshBodies.length).toBe(2);
+  expect(JSON.parse(refreshBodies[1] || "{}"), "reload bootstrap must use HttpOnly cookie fallback").toEqual({});
+
+  await page.screenshot({
+    path: testInfo.outputPath(
+      evidenceName("f5-session-persistence", "inventory-viewer", "1440x900"),
     ),
     fullPage: true,
   });

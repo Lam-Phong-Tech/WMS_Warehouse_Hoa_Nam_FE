@@ -1,28 +1,31 @@
-export interface PutawayTask {
+export type ContainerType = "CARTON" | "BOX" | "TRAY";
+
+export interface ContainerItemRecord {
   id: string;
-  boxCode: string;
-  sku: string;
-  skuName: string;
+  itemId?: string;
+  skuId?: string;
   quantity: number;
-  receiptCode: string;
-  status: "RECEIVED_PENDING_PUTAWAY" | "STORED";
-  locationHint: string;
-  age: string;
-  trayCode?: string;
+  sourceType?: string;
+  sourceId?: string;
+  status: string;
 }
 
-export interface PutawayConfirm {
-  boxCode: string;
-  trayCode: string;
-  locationHint: string;
-}
-
-export interface PutawayHistory {
+export interface PutawayContainer {
   id: string;
-  time: string;
-  boxCode: string;
-  oldTray: string | null;
-  newTray: string;
-  locationHint: string;
-  actor: string;
+  code: string;
+  type: ContainerType;
+  primarySkuId?: string;
+  parentContainerId?: string;
+  zoneCode?: string;
+  locationHint?: string;
+  status: string;
+  version: number;
+  items: ContainerItemRecord[];
+  quantity: number;
+}
+
+export interface PutawayResult {
+  container: PutawayContainer;
+  putawayConfirmed: boolean;
+  stockEffect: "NONE";
 }

@@ -16,19 +16,38 @@ describe("WMS route access contract", () => {
     }
   });
 
-  it("keeps route entry separate from sensitive action permissions", async () => {
+  it("pins each business domain to its owning permission set", async () => {
     const { ROUTE_PERMISSIONS } = await import("@/app/router/access");
     const { ROUTES } = await import("@/shared/constants/routes");
 
     expect(ROUTE_PERMISSIONS).toMatchObject({
       [ROUTES.DASHBOARD]: undefined,
-      [ROUTES.MASTER_DATA]: ["sku.manage", "master.manage"],
+      [ROUTES.IAM_USERS]: ["iam.user.view", "iam.user.manage"],
+      [ROUTES.IAM_USER_CREATE]: ["iam.user.manage"],
+      [ROUTES.IAM_ROLES]: [
+        "iam.role.view",
+        "iam.role.manage",
+        "iam.permission.view",
+      ],
+      [ROUTES.MASTER_DATA]: ["sku.view", "sku.manage"],
+      [ROUTES.AGENCIES]: ["agency.view", "agency.manage"],
+      [ROUTES.DEFECTS]: ["defect.view", "defect.manage"],
       [ROUTES.SCAN]: ["inventory.trace", "scan.classify"],
-      [ROUTES.INBOUND]: ["inbound.create", "inbound.post"],
-      [ROUTES.PUTAWAY]: ["putaway.manage"],
-      [ROUTES.OUTBOUND]: ["outbound.create", "outbound.post"],
+      [ROUTES.INBOUND]: [
+        "inbound.view",
+        "inbound.create",
+        "inbound.scan",
+        "inbound.post",
+      ],
+      [ROUTES.PUTAWAY]: ["container.view", "container.manage"],
+      [ROUTES.OUTBOUND]: [
+        "outbound.view",
+        "outbound.create",
+        "outbound.scan",
+        "outbound.post",
+        "outbound.import",
+      ],
       [ROUTES.INVENTORY]: ["inventory.view"],
-      [ROUTES.STOCKTAKE]: ["stocktake.count"],
       [ROUTES.WARRANTY]: ["warranty.manage"],
       [ROUTES.REVERSE]: ["inventory.reversal.post"],
       [ROUTES.REPORTS]: ["report.view"],
@@ -36,9 +55,7 @@ describe("WMS route access contract", () => {
       [ROUTES.PROFILE]: undefined,
     });
 
-    expect(ROUTE_PERMISSIONS[ROUTES.STOCKTAKE]).not.toContain(
-      "stocktake.adjust",
-    );
+    expect(ROUTE_PERMISSIONS).not.toHaveProperty(ROUTES.STOCKTAKE);
     expect(ROUTE_PERMISSIONS[ROUTES.REPORTS]).not.toContain("report.export");
   });
 });

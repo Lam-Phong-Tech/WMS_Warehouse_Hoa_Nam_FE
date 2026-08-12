@@ -15,7 +15,7 @@ export default defineConfig({
   },
 
   build: {
-    chunkSizeWarningLimit: 1500,
+    chunkSizeWarningLimit: 1000,
 
     rollupOptions: {
       output: {
@@ -46,27 +46,20 @@ export default defineConfig({
             return "vendor-form";
           }
 
-          if (/[\\/]node_modules[\\/](antd|@ant-design)[\\/]/.test(id)) {
-            return "vendor-antd";
-          }
-
-          if (/[\\/]node_modules[\\/].*rc-/.test(id)) {
-            return "vendor-rc";
-          }
-
-          if (/[\\/]node_modules[\\/]@emotion[\\/]/.test(id)) {
-            return "vendor-emotion";
-          }
-
           if (/[\\/]node_modules[\\/]dayjs[\\/]/.test(id)) {
             return "vendor-dayjs";
           }
 
-          if (/[\\/]node_modules[\\/](lodash|uuid)[\\/]/.test(id)) {
-            return "vendor-utils";
+          // XLSX is large and only needed by import/export flows. Isolating it
+          // prevents login and ordinary navigation from downloading it.
+          if (/[\\/]node_modules[\\/]xlsx[\\/]/.test(id)) {
+            return "vendor-xlsx";
           }
 
-          return "vendor";
+          // Do not force Ant Design, rc-* and every remaining dependency into
+          // monolithic vendor chunks. Rollup can then keep modules that are only
+          // used by lazy pages out of the initial login/shell request graph.
+          return undefined;
         },
       },
     },

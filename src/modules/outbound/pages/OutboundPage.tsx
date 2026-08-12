@@ -1,1 +1,1 @@
-export { default } from "@/modules/shipping/pages/ShippingPage";
+export { default } from "@/modules/outbound/pages/MvpOutboundPage";
