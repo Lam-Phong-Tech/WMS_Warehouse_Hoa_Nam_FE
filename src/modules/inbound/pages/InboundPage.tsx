@@ -2,21 +2,14 @@ import { useEffect, useState } from "react";
 import {
   Alert,
   Button,
-  Card,
   Progress,
   Select,
   Space,
   Table,
   Tag,
-  Tooltip,
   type TablePaginationConfig,
 } from "antd";
-import {
-  EditOutlined,
-  EyeOutlined,
-  PlusOutlined,
-  ScanOutlined,
-} from "@ant-design/icons";
+import { EditOutlined, EyeOutlined, ScanOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import { useSearchParams } from "react-router-dom";
 import {
@@ -277,108 +270,86 @@ function InboundListScreen() {
   };
 
   return (
-    <div className="inbound-page master-data-page">
-      <div className="page-heading">
-        <div>
-          <h1>Danh sách phiếu nhập</h1>
-        </div>
-        <Space wrap>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            disabled={!canCreate}
-            title={canCreate ? undefined : "Bạn không có quyền tạo phiếu nhập"}
-            onClick={openCreateModal}
-          >
-            Tạo phiếu nhập
-          </Button>
-        </Space>
+    <div className="inbound-page">
+      <div className="toolbar">
+        <input
+          className="input search"
+          value={searchInput}
+          placeholder="Tìm mã phiếu / nguồn nhập..."
+          aria-label="Tìm phiếu nhập"
+          onChange={(event) => setSearchInput(event.target.value)}
+        />
+        <select
+          className="select"
+          value={status ?? ""}
+          aria-label="Lọc trạng thái phiếu nhập"
+          onChange={(event) => {
+            setStatus(event.target.value || undefined);
+            setPage(1);
+          }}
+        >
+          <option value="">Trạng thái: Tất cả</option>
+          {STATUS_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        <div className="spacer" />
+        {canCreate ? (
+          <button className="btn primary" type="button" onClick={openCreateModal}>
+            + Tạo phiếu nhập
+          </button>
+        ) : null}
       </div>
 
-      <Card className="master-data-panel">
-        <div className="master-data-contract-strip">
-          <Tag color="blue">GET /inbound-documents</Tag>
-          <Tag color="gold">inbound.view / create / scan / post</Tag>
-          <Tag>Full-post only</Tag>
-        </div>
-
-        <div className="hn-mvp-source-screen">
-          <div className="toolbar">
-            <input
-              className="input search"
-              value={searchInput}
-              placeholder="Tìm mã phiếu / nguồn nhập..."
-              aria-label="Tìm phiếu nhập"
-              onChange={(event) => setSearchInput(event.target.value)}
-            />
-            <Select
-              allowClear
-              style={{ width: 160 }}
-              placeholder="Trạng thái"
-              options={STATUS_OPTIONS}
-              value={status}
-              onChange={(value) => {
-                setStatus(value);
-                setPage(1);
-              }}
-            />
-          </div>
-        </div>
-
-        <Alert
-          showIcon
-          type="info"
-          className="master-data-state-alert"
-          message="Luồng chuẩn: DRAFT → SCANNING → Full Post Receipt → POSTED"
-          description="DRAFT/SCANNING và mọi scan đều stock-neutral. Chỉ Full Post khi mọi dòng đủ chính xác; COMPONENT sau Post mới đi Putaway và Putaway không đổi tồn."
-        />
-
-        {query.isError ? (
+      {query.isError ? (
+        <div style={{ marginBottom: 14 }}>
           <ApiErrorAlert
             error={query.error}
             fallback="Không tải được danh sách phiếu nhập."
           />
-        ) : null}
-
-        <div className="table-page-size">
-          <Select
-            size="small"
-            value={perPage}
-            style={{ width: 110 }}
-            showSearch={false}
-            labelRender={({ value }) => `${value} / trang`}
-            options={PAGE_SIZE_OPTIONS.map((size) => ({
-              value: size,
-              label: `${size} / trang`,
-            }))}
-            onChange={(nextPageSize) => {
-              setPerPage(nextPageSize);
-              setPage(1);
-            }}
-          />
         </div>
+      ) : null}
 
-        <Table<InboundDocument>
-          rowKey="id"
-          columns={columns}
-          dataSource={rows}
-          loading={query.isLoading || query.isFetching}
-          onChange={handleTableChange}
-          pagination={{
-            current: Number(meta?.current_page ?? page),
-            pageSize: perPage,
-            total,
-            showSizeChanger: false,
-            showTotal: (count) => `Tổng ${count} phiếu nhập`,
+      <div className="table-page-size">
+        <Select
+          size="small"
+          value={perPage}
+          style={{ width: 110 }}
+          showSearch={false}
+          labelRender={({ value }) => `${value} / trang`}
+          options={PAGE_SIZE_OPTIONS.map((size) => ({
+            value: size,
+            label: `${size} / trang`,
+          }))}
+          onChange={(nextPageSize) => {
+            setPerPage(nextPageSize);
+            setPage(1);
           }}
-          locale={{
-            emptyText: query.isError
-              ? "Không tải được dữ liệu"
-              : "Chưa có phiếu nhập phù hợp",
-          }}
-          scroll={{ x: 1080 }}
         />
-      </Card>
+      </div>
+
+      <Table<InboundDocument>
+        rowKey="id"
+        columns={columns}
+        dataSource={rows}
+        loading={query.isLoading || query.isFetching}
+        onChange={handleTableChange}
+        pagination={{
+          current: Number(meta?.current_page ?? page),
+          pageSize: perPage,
+          total,
+          showSizeChanger: false,
+          showTotal: (count) => `Tổng ${count} phiếu nhập`,
+        }}
+        locale={{
+          emptyText: query.isError
+            ? "Không tải được dữ liệu"
+            : "Chưa có phiếu nhập phù hợp",
+        }}
+        scroll={{ x: 1080 }}
+      />
 
       {draftOpen ? (
         <InboundDraftModal
