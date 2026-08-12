@@ -17,77 +17,34 @@ jobs:
         with:
           ref: m1
           fetch-depth: 0
-      - name: Move active inbound imports to module-local boundaries
+      - name: Verify and repair module-local inbound boundaries
         shell: bash
         run: |
           python <<'PY'
           from pathlib import Path
-          import re
 
           page_path = Path('src/modules/inbound/pages/InboundPage.tsx')
-          page = page_path.read_text()
-          original = page
-
-          page = page.replace('import { z } from "zod";\n', '')
-          marker = 'import { InboundScanModal } from "@/modules/inbound/pages/MvpInboundScreens";\n'
-          schema_import = '''import {
-            defaultInboundDraftValues,
-            inboundDraftSchema,
-            localToday,
-            type InboundDraftFormValues,
-          } from "@/modules/inbound/schemas/inboundDraft.schema";
-          '''.replace('          ', '')
-          if schema_import not in page:
-              page = page.replace(marker, marker + schema_import)
-
-          page = page.replace('from "@/modules/receiving/types";', 'from "@/modules/inbound/types";')
-          page = re.sub(
-              r'const inboundLineSchema = z\.object\(\{.*?type DraftFormValues = z\.infer<typeof inboundDraftSchema>;\n\n',
-              '',
-              page,
-              flags=re.S,
+          page = page_path.read_text().replace(
+              'InboundInboundDraftFormValues',
+              'InboundDraftFormValues',
           )
-          page = re.sub(
-              r'function localToday\(\): string \{.*?\n\}\n\nfunction statusPill',
-              'function statusPill',
-              page,
-              flags=re.S,
-          )
-          page = page.replace('DraftFormValues', 'InboundDraftFormValues')
-          page = page.replace('defaultDraftValues()', 'defaultInboundDraftValues()')
-
-          if page == original:
-              raise SystemExit('InboundPage refactor made no changes')
           if 'from "zod"' in page or 'const inboundLineSchema' in page:
-              raise SystemExit('Inline Zod schema was not fully removed')
+              raise SystemExit('InboundPage still owns an inline Zod schema')
           if '@/modules/receiving/types' in page:
-              raise SystemExit('InboundPage still imports receiving types')
+              raise SystemExit('InboundPage still imports legacy receiving types')
           page_path.write_text(page)
 
           hook_path = Path('src/modules/inbound/hooks/use-inbound.ts')
           hook = hook_path.read_text()
-          hook = hook.replace(
-              '"@/modules/receiving/services/receivingService"',
-              '"@/modules/inbound/services/inboundService"',
-          )
-          hook = hook.replace(
-              '"@/modules/receiving/types"',
-              '"@/modules/inbound/types"',
-          )
           if '@/modules/receiving/' in hook:
               raise SystemExit('Inbound hook still imports legacy receiving module')
-          hook_path.write_text(hook)
 
           screen_path = Path('src/modules/inbound/pages/MvpInboundScreens.tsx')
-          screen = screen_path.read_text().replace(
-              '"@/modules/receiving/types"',
-              '"@/modules/inbound/types"',
-          )
+          screen = screen_path.read_text()
           if '@/modules/receiving/types' in screen:
               raise SystemExit('Inbound screens still import legacy receiving types')
-          screen_path.write_text(screen)
           PY
-      - name: Commit refactor
+      - name: Commit repair
         shell: bash
         run: |
           if git diff --quiet; then
@@ -97,5 +54,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/modules/inbound
-          git commit -m "refactor(inbound): align module boundaries with tech guide"
+          git commit -m "fix(inbound): correct extracted form type"
           git push origin HEAD:m1
