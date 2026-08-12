@@ -38,6 +38,7 @@ type InboundScanModalProps = {
   documentId: string;
   onClose: () => void;
   onChanged?: () => void;
+  onEditExpected?: () => void;
 };
 
 function makeKey(prefix: string) {
@@ -183,7 +184,16 @@ function CameraScanModal({
   }, [open]);
 
   return (
-    <Modal title={title} open={open} onCancel={onClose} footer={null} destroyOnHidden>
+    <Modal
+      title={title}
+      open={open}
+      onCancel={onClose}
+      footer={null}
+      destroyOnHidden
+      centered
+      getContainer={false}
+      maskClosable={false}
+    >
       {cameraError ? (
         <Alert type="warning" showIcon message={cameraError} />
       ) : (
@@ -216,6 +226,7 @@ export function InboundScanModal({
   documentId,
   onClose,
   onChanged,
+  onEditExpected,
 }: InboundScanModalProps) {
   const detailQuery = useInboundDetail(documentId);
   const skuQuery = useMvpSkus({ status: "ACTIVE", per_page: 100 });
@@ -236,6 +247,7 @@ export function InboundScanModal({
   const [receiptEvidence, setReceiptEvidence] = useState<ReceiptEvidence | null>(null);
   const [cameraTarget, setCameraTarget] = useState<"box" | "code" | null>(null);
   const postKeyRef = useRef<string | null>(null);
+  const canEdit = useInboundPermission(P.INBOUND_CREATE);
   const canScan = useInboundPermission(P.INBOUND_SCAN);
   const canPost = useInboundPermission(P.INBOUND_POST);
   const canCancel = useInboundPermission(P.INBOUND_CANCEL);
@@ -439,8 +451,10 @@ export function InboundScanModal({
         width={1180}
         footer={null}
         onCancel={onClose}
+        centered
+        getContainer={false}
         closable={!working}
-        maskClosable={!working}
+        maskClosable={false}
       >
         {detailQuery.isLoading && <div className="card">Đang tải phiếu nhập...</div>}
         {detailQuery.isError && (
@@ -691,6 +705,16 @@ export function InboundScanModal({
                 Đóng
               </button>
               <div className="spacer" />
+              {canEdit && isMutable && onEditExpected && (
+                <button
+                  type="button"
+                  className="btn"
+                  disabled={working}
+                  onClick={onEditExpected}
+                >
+                  Sửa Expected
+                </button>
+              )}
               {canCancel && isMutable && (
                 <button
                   type="button"
@@ -738,6 +762,10 @@ export function InboundScanModal({
         open={cancelOpen}
         onCancel={() => setCancelOpen(false)}
         onOk={() => void handleCancel()}
+        centered
+        getContainer={false}
+        maskClosable={false}
+        closable={!cancelMutation.isPending}
         okButtonProps={{ danger: true, disabled: !cancelReason.trim() || cancelMutation.isPending }}
         okText={cancelMutation.isPending ? "Đang Cancel..." : "Xác nhận Cancel"}
         cancelText="Quay lại"
