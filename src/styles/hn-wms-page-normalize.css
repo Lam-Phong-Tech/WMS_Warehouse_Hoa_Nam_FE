@@ -82,6 +82,39 @@
   border-radius: 10px;
 }
 
+/*
+ * AntD allowClear renders an affix wrapper plus a nested .ant-input. The global
+ * MVP rule adds vertical padding to both nodes, which made search fields roughly
+ * double-height. Keep padding only on the wrapper so clearable inputs have the
+ * same visual height as the native .input.search used by IAM-01.
+ */
+.hn-mvp-screen .ant-input-affix-wrapper > input.ant-input {
+  min-height: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* IAM-01 search baseline is 280px on desktop, 100% only on narrow screens. */
+@media (min-width: 981px) {
+  .hn-mvp-screen .putaway-page .filter-row > .ant-col:first-child {
+    flex: 0 0 280px !important;
+    width: 280px !important;
+    max-width: 280px !important;
+  }
+
+  .hn-mvp-screen .putaway-page .filter-row .ant-input-affix-wrapper {
+    width: 280px !important;
+    min-width: 280px !important;
+    max-width: 280px !important;
+    padding: 9px 10px !important;
+    font-family: Arial, Helvetica, sans-serif !important;
+    font-size: 14px !important;
+  }
+}
+
 .hn-mvp-screen .ant-table-wrapper + .ant-table-wrapper,
 .hn-mvp-screen .ant-table-wrapper + .ant-card,
 .hn-mvp-screen .ant-card + .ant-table-wrapper {
@@ -130,5 +163,11 @@
 
   .hn-mvp-screen .ant-row {
     row-gap: 14px !important;
+  }
+
+  .hn-mvp-screen .putaway-page .filter-row .ant-input-affix-wrapper {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
   }
 }
