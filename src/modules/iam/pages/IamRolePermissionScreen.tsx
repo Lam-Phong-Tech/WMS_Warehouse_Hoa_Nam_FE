@@ -32,7 +32,7 @@ import {
   useCreateIamRole,
   useDeleteIamRole,
   useIamPermissions,
-  useIamRoles,
+  useIamRolesPage,
   useSyncIamRolePermissions,
   useUpdateIamRole,
 } from "@/modules/iam/hooks/use-iam";
@@ -43,6 +43,10 @@ import type {
   IamRoleScopeType,
   IamRoleStatus,
 } from "@/modules/iam/types/iam.types";
+import {
+  MvpPageSizeSelector,
+  resolveApiPagination,
+} from "@/shared/components/mvp/MvpListPagination";
 import { useCan } from "@/shared/components/permission";
 import { WMS_PERMISSION_CATALOG as P } from "@/shared/constants/wms-permissions";
 
@@ -69,6 +73,8 @@ export function IamRolePermissionScreen() {
   const { message } = App.useApp();
   const [form] = Form.useForm<RoleFormValues>();
   const [keyword, setKeyword] = useState("");
+  const [rolePage, setRolePage] = useState(1);
+  const [rolePerPage, setRolePerPage] = useState(15);
   const [selectedRoleId, setSelectedRoleId] = useState<string>();
   const [checkedIds, setCheckedIds] = useState<string[]>([]);
   const [roleModalOpen, setRoleModalOpen] = useState(false);
@@ -77,15 +83,24 @@ export function IamRolePermissionScreen() {
   const canManageRoles = useCan(P.IAM_ROLE_MANAGE);
   const canViewPermissions = useCan(P.IAM_PERMISSION_VIEW);
 
-  const rolesQuery = useIamRoles({ keyword: keyword || undefined });
-  const permissionsQuery = useIamPermissions();
+  const rolesQuery = useIamRolesPage({
+    keyword: keyword || undefined,
+    page: rolePage,
+    per_page: rolePerPage,
+  });
+  const permissionsQuery = useIamPermissions({ per_page: 100 });
   const createRole = useCreateIamRole();
   const updateRole = useUpdateIamRole();
   const deleteRole = useDeleteIamRole();
   const syncPermissions = useSyncIamRolePermissions();
 
-  const roles = rolesQuery.data ?? [];
+  const roles = rolesQuery.data?.data ?? [];
   const permissions = permissionsQuery.data ?? [];
+  const rolePagination = resolveApiPagination(rolesQuery.data?.meta, {
+    page: rolePage,
+    pageSize: rolePerPage,
+    rowCount: roles.length,
+  });
   const selectedRole = roles.find((role) => role.role_id === selectedRoleId);
 
   useEffect(() => {
@@ -270,15 +285,39 @@ export function IamRolePermissionScreen() {
         <Col xs={24} xl={10}>
           <Card title="Vai trò" styles={{ body: { padding: 0 } }}>
             <div style={{ padding: 16 }}>
-              <Input.Search allowClear placeholder="Tìm mã / tên vai trò" value={keyword} onChange={(event) => setKeyword(event.target.value)} />
+              <Input.Search
+                allowClear
+                placeholder="Tìm mã / tên vai trò"
+                value={keyword}
+                onChange={(event) => {
+                  setKeyword(event.target.value);
+                  setRolePage(1);
+                }}
+              />
+            </div>
+            <div style={{ padding: "0 16px 12px" }}>
+              <MvpPageSizeSelector
+                value={rolePerPage}
+                onChange={(value) => {
+                  setRolePerPage(value);
+                  setRolePage(1);
+                }}
+              />
             </div>
             <Table<IamRole>
               rowKey="role_id"
               size="small"
-              loading={rolesQuery.isLoading}
+              loading={rolesQuery.isLoading || rolesQuery.isFetching}
               dataSource={roles}
               columns={columns}
-              pagination={false}
+              pagination={{
+                current: rolePagination.current,
+                pageSize: rolePerPage,
+                total: rolePagination.total,
+                showSizeChanger: false,
+                showTotal: (total) => `Tổng ${total} vai trò`,
+                onChange: setRolePage,
+              }}
               rowClassName={(role) => role.role_id === selectedRoleId ? "ant-table-row-selected" : ""}
               onRow={(role) => ({ onClick: () => setSelectedRoleId(role.role_id), style: { cursor: "pointer" } })}
             />
