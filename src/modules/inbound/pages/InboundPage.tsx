@@ -1,8 +1,10 @@
-/* eslint-disable react-hooks/set-state-in-effect */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Modal, message } from "antd";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
+import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { useSearchParams } from "react-router-dom";
+import { z } from "zod";
 import { getApiErrorMessage } from "@/shared/api/api-error";
 import {
   hasAnyWmsPermission,
@@ -26,7 +28,6 @@ import type {
 } from "@/modules/receiving/types";
 
 type WarehouseRow = Record<string, unknown>;
-type LineDraft = InboundLinePayload & { key: string; scanned_qty: number };
 
 type DraftModalProps = {
   documentId: string | null;
@@ -34,18 +35,63 @@ type DraftModalProps = {
   onSaved: (documentId: string) => void;
 };
 
+const inboundLineSchema = z.object({
+  id: z.string().optional(),
+  product_id: z.string().min(1, "Chọn SKU."),
+  import_batch_id: z.string().nullable().optional(),
+  qty_planned: z.number().int().min(1, "Expected qty phải là số nguyên lớn hơn 0."),
+  scanned_qty: z.number().int().min(0),
+  note: z.string().nullable().optional(),
+});
+
+const inboundDraftSchema = z
+  .object({
+    warehouseId: z.string().min(1, "Chọn kho ACTIVE."),
+    documentDate: z.string().min(1, "Chọn ngày chứng từ."),
+    sourceName: z.string().max(255, "Nguồn/tham chiếu tối đa 255 ký tự."),
+    note: z.string().max(2000, "Ghi chú tối đa 2000 ký tự."),
+    lines: z.array(inboundLineSchema).min(1, "Phiếu nhập phải có ít nhất một dòng."),
+  })
+  .superRefine((values, context) => {
+    values.lines.forEach((line, index) => {
+      const minimum = Math.max(1, line.scanned_qty);
+      if (line.qty_planned < minimum) {
+        context.addIssue({
+          code: "custom",
+          path: ["lines", index, "qty_planned"],
+          message: `Expected qty không được nhỏ hơn ${minimum}.`,
+        });
+      }
+    });
+  });
+
+type DraftFormValues = z.infer<typeof inboundDraftSchema>;
+
 function text(value: unknown, fallback = ""): string {
   return value === undefined || value === null ? fallback : String(value);
-}
-
-function makeKey(prefix: string) {
-  return `${prefix}-${globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`}`;
 }
 
 function localToday(): string {
   const now = new Date();
   const local = new Date(now.getTime() - now.getTimezoneOffset() * 60_000);
   return local.toISOString().slice(0, 10);
+}
+
+function defaultDraftValues(): DraftFormValues {
+  return {
+    warehouseId: "",
+    documentDate: localToday(),
+    sourceName: "",
+    note: "",
+    lines: [
+      {
+        product_id: "",
+        qty_planned: 1,
+        scanned_qty: 0,
+        note: null,
+      },
+    ],
+  };
 }
 
 function statusPill(status: InboundDocument["status"]) {
@@ -66,33 +112,19 @@ function useInboundPermission(code: string) {
   return hasAnyWmsPermission(permissionCodes, [code], isSuperAdmin);
 }
 
-function normalizeLines(lines: LineDraft[]): InboundLinePayload[] | null {
-  if (lines.length === 0) return null;
-  const normalized: InboundLinePayload[] = [];
-  for (const line of lines) {
-    const quantity = Number(line.qty_planned);
-    const scannedQuantity = Number(line.scanned_qty ?? 0);
-    const minimumQuantity = Math.max(1, scannedQuantity);
-    if (
-      !line.product_id ||
-      !Number.isInteger(quantity) ||
-      quantity < minimumQuantity
-    ) {
-      return null;
-    }
-
-    const normalizedLine: InboundLinePayload = {
+function toInboundLinePayload(lines: DraftFormValues["lines"]): InboundLinePayload[] {
+  return lines.map((line) => {
+    const payload: InboundLinePayload = {
       product_id: line.product_id,
-      qty_planned: quantity,
+      qty_planned: line.qty_planned,
       note: line.note ?? null,
     };
-    if (line.id) normalizedLine.id = line.id;
+    if (line.id) payload.id = line.id;
     if (line.import_batch_id !== undefined) {
-      normalizedLine.import_batch_id = line.import_batch_id;
+      payload.import_batch_id = line.import_batch_id;
     }
-    normalized.push(normalizedLine);
-  }
-  return normalized;
+    return payload;
+  });
 }
 
 function InboundDraftModal({ documentId, onClose, onSaved }: DraftModalProps) {
@@ -104,35 +136,46 @@ function InboundDraftModal({ documentId, onClose, onSaved }: DraftModalProps) {
   });
   const createMutation = useCreateInbound();
   const updateMutation = useUpdateInbound();
-  const [warehouseId, setWarehouseId] = useState("");
-  const [documentDate, setDocumentDate] = useState(localToday());
-  const [sourceName, setSourceName] = useState("");
-  const [note, setNote] = useState("");
-  const [lines, setLines] = useState<LineDraft[]>([
-    { key: makeKey("line"), product_id: "", qty_planned: 1, scanned_qty: 0 },
-  ]);
-  const [initializedId, setInitializedId] = useState<string | null>(null);
+  const initializedIdRef = useRef<string | null>(null);
   const canCreate = useInboundPermission(P.INBOUND_CREATE);
+  const form = useForm<DraftFormValues>({
+    resolver: zodResolver(inboundDraftSchema),
+    defaultValues: defaultDraftValues(),
+    mode: "onSubmit",
+  });
+  const {
+    control,
+    formState: { errors },
+    handleSubmit,
+    register,
+    reset,
+  } = form;
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "lines",
+    keyName: "fieldKey",
+  });
+  const watchedLines = useWatch({ control, name: "lines" }) ?? [];
 
   useEffect(() => {
     const detail = detailQuery.data;
-    if (!documentId || !detail || initializedId === documentId) return;
-    setWarehouseId(detail.document.warehouseId);
-    setDocumentDate(detail.document.date?.slice(0, 10) || localToday());
-    setSourceName(detail.document.source === "-" ? "" : detail.document.source);
-    setNote(detail.document.note ?? "");
-    setLines(
-      detail.lines.map((line) => ({
+    if (!documentId || !detail || initializedIdRef.current === documentId) return;
+
+    reset({
+      warehouseId: detail.document.warehouseId,
+      documentDate: detail.document.date?.slice(0, 10) || localToday(),
+      sourceName: detail.document.source === "-" ? "" : detail.document.source,
+      note: detail.document.note ?? "",
+      lines: detail.lines.map((line) => ({
         id: line.id,
-        key: line.id,
         product_id: line.productId,
         qty_planned: line.expected,
         scanned_qty: line.scanned,
         note: line.note ?? null,
       })),
-    );
-    setInitializedId(documentId);
-  }, [detailQuery.data, documentId, initializedId]);
+    });
+    initializedIdRef.current = documentId;
+  }, [detailQuery.data, documentId, reset]);
 
   const skuRows = skuQuery.data?.data ?? [];
   const warehouseRows = (warehousesQuery.data ?? []) as WarehouseRow[];
@@ -144,33 +187,19 @@ function InboundDraftModal({ documentId, onClose, onSaved }: DraftModalProps) {
   const canEditStructure = isMutable && !hasScanEvidence;
   const saving = createMutation.isPending || updateMutation.isPending;
 
-  const updateLine = (key: string, patch: Partial<LineDraft>) => {
-    setLines((current) =>
-      current.map((line) => (line.key === key ? { ...line, ...patch } : line)),
-    );
-  };
-
-  const handleSave = async () => {
+  const handleSave = async (values: DraftFormValues) => {
     if (!canCreate || !isMutable) return;
 
     try {
-      const normalizedLines = normalizeLines(lines);
-      if (!normalizedLines) {
-        message.error(
-          hasScanEvidence
-            ? "Expected qty phải là số nguyên và không được nhỏ hơn số lượng đã scan của từng dòng."
-            : "Mỗi dòng phải có SKU và Expected qty là số nguyên lớn hơn 0.",
-        );
-        return;
-      }
+      const normalizedLines = toInboundLinePayload(values.lines);
 
       if (documentId) {
         const detail = detailQuery.data;
         if (!detail) return;
         const payload: UpdateInboundPayload = {
-          doc_date: documentDate || null,
-          source_name: sourceName.trim() || null,
-          note: note.trim() || null,
+          doc_date: values.documentDate || null,
+          source_name: values.sourceName.trim() || null,
+          note: values.note.trim() || null,
           lines: normalizedLines,
         };
         const updated = await updateMutation.mutateAsync({
@@ -187,15 +216,11 @@ function InboundDraftModal({ documentId, onClose, onSaved }: DraftModalProps) {
         return;
       }
 
-      if (!warehouseId) {
-        message.error("Chọn kho ACTIVE trước khi tạo phiếu nhập.");
-        return;
-      }
       const payload: CreateInboundPayload = {
-        doc_date: documentDate || null,
-        dst_warehouse_id: warehouseId,
-        source_name: sourceName.trim() || null,
-        note: note.trim() || null,
+        doc_date: values.documentDate || null,
+        dst_warehouse_id: values.warehouseId,
+        source_name: values.sourceName.trim() || null,
+        note: values.note.trim() || null,
         lines: normalizedLines,
       };
       const created = await createMutation.mutateAsync(payload);
@@ -204,11 +229,32 @@ function InboundDraftModal({ documentId, onClose, onSaved }: DraftModalProps) {
     } catch (error) {
       message.error(getApiErrorMessage(error, "Không lưu được phiếu nhập."));
       if (documentId) {
-        setInitializedId(null);
-        void detailQuery.refetch();
+        initializedIdRef.current = null;
+        const refreshed = await detailQuery.refetch();
+        if (refreshed.data) {
+          reset({
+            warehouseId: refreshed.data.document.warehouseId,
+            documentDate: refreshed.data.document.date?.slice(0, 10) || localToday(),
+            sourceName:
+              refreshed.data.document.source === "-" ? "" : refreshed.data.document.source,
+            note: refreshed.data.document.note ?? "",
+            lines: refreshed.data.lines.map((line) => ({
+              id: line.id,
+              product_id: line.productId,
+              qty_planned: line.expected,
+              scanned_qty: line.scanned,
+              note: line.note ?? null,
+            })),
+          });
+          initializedIdRef.current = documentId;
+        }
       }
     }
   };
+
+  const submitForm = handleSubmit(handleSave, () => {
+    message.error("Kiểm tra lại các trường bắt buộc và Expected qty trước khi lưu.");
+  });
 
   const modalTitle = documentId
     ? status === "SCANNING"
@@ -228,239 +274,295 @@ function InboundDraftModal({ documentId, onClose, onSaved }: DraftModalProps) {
       maskClosable={false}
       closable={!saving}
     >
-      {detailQuery.isError && (
-        <div className="footer-note" role="alert" style={{ marginBottom: 14 }}>
-          {getApiErrorMessage(detailQuery.error, "Không tải được phiếu nhập.")}
-        </div>
-      )}
+      <form onSubmit={submitForm} noValidate>
+        {detailQuery.isError && (
+          <div className="footer-note" role="alert" style={{ marginBottom: 14 }}>
+            {getApiErrorMessage(detailQuery.error, "Không tải được phiếu nhập.")}
+          </div>
+        )}
 
-      {documentId && detailQuery.data && !isMutable && (
-        <div className="alert" style={{ marginBottom: 14 }}>
-          Phiếu <b>{detailQuery.data.document.status}</b> là trạng thái kết thúc và chỉ
-          được xem. Chứng từ đã POSTED không sửa/xóa; sai giao dịch phải đi luồng
-          Reversal/Correction.
-        </div>
-      )}
+        {documentId && detailQuery.data && !isMutable && (
+          <div className="alert" style={{ marginBottom: 14 }}>
+            Phiếu <b>{detailQuery.data.document.status}</b> là trạng thái kết thúc và chỉ
+            được xem. Chứng từ đã POSTED không sửa/xóa; sai giao dịch phải đi luồng
+            Reversal/Correction.
+          </div>
+        )}
 
-      {hasScanEvidence && isMutable && (
-        <div className="alert" style={{ marginBottom: 14 }}>
-          Phiếu đã có scan evidence: hệ thống giữ nguyên line ID, SKU, import batch và
-          lịch sử quét. Bạn vẫn được sửa <b>Expected qty</b> theo baseline nghiệp vụ,
-          nhưng Expected không được nhỏ hơn số đã quét. Muốn đổi cấu trúc SKU/dòng phải
-          Cancel và tạo phiếu mới.
-        </div>
-      )}
+        {hasScanEvidence && isMutable && (
+          <div className="alert" style={{ marginBottom: 14 }}>
+            Phiếu đã có scan evidence: hệ thống giữ nguyên line ID, SKU, import batch và
+            lịch sử quét. Bạn vẫn được sửa <b>Expected qty</b> theo baseline nghiệp vụ,
+            nhưng Expected không được nhỏ hơn số đã quét. Muốn đổi cấu trúc SKU/dòng phải
+            Cancel và tạo phiếu mới.
+          </div>
+        )}
 
-      <div className="grid-2">
-        <div className="card">
-          <div className="section-title">Thông tin phiếu</div>
-          <div className="field">
-            <label>Mã phiếu</label>
-            <div className="value">
-              {detailQuery.data?.document.code || "Tự sinh sau khi lưu"}
+        <div className="grid-2">
+          <div className="card">
+            <div className="section-title">Thông tin phiếu</div>
+            <div className="field">
+              <label>Mã phiếu</label>
+              <div className="value">
+                {detailQuery.data?.document.code || "Tự sinh sau khi lưu"}
+              </div>
+            </div>
+            <div className="field">
+              <label>Ngày chứng từ *</label>
+              <input
+                className="input"
+                type="date"
+                disabled={!isMutable}
+                {...register("documentDate")}
+              />
+              {errors.documentDate?.message && (
+                <div className="footer-note" role="alert">
+                  {errors.documentDate.message}
+                </div>
+              )}
+            </div>
+            <div className="field">
+              <label>Nguồn / tham chiếu</label>
+              <input
+                className="input"
+                disabled={!isMutable}
+                placeholder="Nhà cung cấp / nguồn nhập"
+                {...register("sourceName")}
+              />
+              {errors.sourceName?.message && (
+                <div className="footer-note" role="alert">
+                  {errors.sourceName.message}
+                </div>
+              )}
+            </div>
+            <div className="field">
+              <label>Kho *</label>
+              {documentId ? (
+                <>
+                  <input type="hidden" {...register("warehouseId")} />
+                  <div className="value">
+                    {warehouseRows.find(
+                      (warehouse) =>
+                        text(warehouse.id ?? warehouse.warehouse_id) ===
+                        detailQuery.data?.document.warehouseId,
+                    )
+                      ? (() => {
+                          const warehouse = warehouseRows.find(
+                            (item) =>
+                              text(item.id ?? item.warehouse_id) ===
+                              detailQuery.data?.document.warehouseId,
+                          );
+                          return warehouse
+                            ? `${text(warehouse.code)} · ${text(warehouse.name)}`
+                            : detailQuery.data?.document.warehouseId;
+                        })()
+                      : detailQuery.data?.document.warehouseId || "Đang tải..."}
+                  </div>
+                </>
+              ) : (
+                <select className="select" disabled={!isMutable} {...register("warehouseId")}>
+                  <option value="">Chọn kho ACTIVE</option>
+                  {warehouseRows.map((warehouse) => {
+                    const warehouseKey = text(warehouse.id ?? warehouse.warehouse_id);
+                    return (
+                      <option key={warehouseKey} value={warehouseKey}>
+                        {text(warehouse.code)} · {text(warehouse.name)}
+                      </option>
+                    );
+                  })}
+                </select>
+              )}
+              {errors.warehouseId?.message && (
+                <div className="footer-note" role="alert">
+                  {errors.warehouseId.message}
+                </div>
+              )}
+            </div>
+            <div className="field">
+              <label>Ghi chú</label>
+              <textarea
+                className="input"
+                disabled={!isMutable}
+                rows={3}
+                {...register("note")}
+              />
+              {errors.note?.message && (
+                <div className="footer-note" role="alert">
+                  {errors.note.message}
+                </div>
+              )}
             </div>
           </div>
-          <div className="field">
-            <label>Ngày chứng từ *</label>
-            <input
-              className="input"
-              type="date"
-              value={documentDate}
-              disabled={!isMutable}
-              onChange={(event) => setDocumentDate(event.target.value)}
-            />
+
+          <div className="card soft">
+            <div className="section-title">Quy tắc nhập kho bắt buộc</div>
+            <div className="rule">
+              <span className="dot" />
+              <span>Expected qty là toàn bộ số lượng phải nhận của từng dòng.</span>
+            </div>
+            <div className="rule">
+              <span className="dot" />
+              <span>DRAFT và SCANNING không làm thay đổi tồn kho.</span>
+            </div>
+            <div className="rule">
+              <span className="dot" />
+              <span>Không có nhập một phần, thiếu/thừa, remainder hay PARTIALLY_POSTED.</span>
+            </div>
+            <div className="rule">
+              <span className="dot" />
+              <span>Scan vượt Expected qty hoặc sai SKU/state phải bị từ chối.</span>
+            </div>
+            <div className="rule">
+              <span className="dot" />
+              <span>Full Post chỉ mở khi mọi dòng scanned_qty = expected_qty.</span>
+            </div>
+            <div className="rule">
+              <span className="dot" />
+              <span>Putaway sau nhận hàng là stock-neutral, không cộng tồn lần hai.</span>
+            </div>
           </div>
-          <div className="field">
-            <label>Nguồn / tham chiếu</label>
-            <input
-              className="input"
-              value={sourceName}
-              disabled={!isMutable}
-              onChange={(event) => setSourceName(event.target.value)}
-              placeholder="Nhà cung cấp / nguồn nhập"
-            />
-          </div>
-          <div className="field">
-            <label>Kho *</label>
-            <select
-              className="select"
-              value={warehouseId}
-              disabled={Boolean(documentId) || !isMutable}
-              onChange={(event) => setWarehouseId(event.target.value)}
-            >
-              <option value="">Chọn kho ACTIVE</option>
-              {warehouseRows.map((warehouse) => {
-                const warehouseKey = text(warehouse.id ?? warehouse.warehouse_id);
+        </div>
+
+        <div className="table-wrap" style={{ marginTop: 14 }}>
+          <table>
+            <thead>
+              <tr>
+                <th>SKU</th>
+                <th>Tên</th>
+                <th>Expected qty</th>
+                <th>Đã scan</th>
+                <th>Loại</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {fields.map((field, index) => {
+                const line = watchedLines[index] ?? field;
+                const sku = skuRows.find((item) => item.sku_id === line.product_id);
+                const scannedQty = Number(line.scanned_qty ?? 0);
                 return (
-                  <option key={warehouseKey} value={warehouseKey}>
-                    {text(warehouse.code)} · {text(warehouse.name)}
-                  </option>
+                  <tr key={field.fieldKey}>
+                    <td>
+                      {field.id && <input type="hidden" {...register(`lines.${index}.id`)} />}
+                      <input
+                        type="hidden"
+                        {...register(`lines.${index}.scanned_qty`, { valueAsNumber: true })}
+                      />
+                      {field.import_batch_id !== undefined && (
+                        <input
+                          type="hidden"
+                          {...register(`lines.${index}.import_batch_id`)}
+                        />
+                      )}
+                      {canEditStructure ? (
+                        <select
+                          className="select"
+                          {...register(`lines.${index}.product_id`)}
+                        >
+                          <option value="">Chọn SKU</option>
+                          {skuRows.map((item) => (
+                            <option key={item.sku_id} value={item.sku_id}>
+                              {item.sku_code}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <>
+                          <input
+                            type="hidden"
+                            {...register(`lines.${index}.product_id`)}
+                          />
+                          <div className="value">{sku?.sku_code ?? line.product_id}</div>
+                        </>
+                      )}
+                      {errors.lines?.[index]?.product_id?.message && (
+                        <div className="footer-note" role="alert">
+                          {errors.lines[index]?.product_id?.message}
+                        </div>
+                      )}
+                    </td>
+                    <td>{sku?.sku_name ?? "-"}</td>
+                    <td>
+                      <input
+                        className="input"
+                        type="number"
+                        min={Math.max(1, scannedQty)}
+                        step={1}
+                        disabled={!isMutable}
+                        style={{ width: 110 }}
+                        {...register(`lines.${index}.qty_planned`, { valueAsNumber: true })}
+                      />
+                      {errors.lines?.[index]?.qty_planned?.message && (
+                        <div className="footer-note" role="alert">
+                          {errors.lines[index]?.qty_planned?.message}
+                        </div>
+                      )}
+                    </td>
+                    <td>
+                      <b>{scannedQty}</b>
+                      {scannedQty > 0 && (
+                        <div className="muted" style={{ fontSize: 12 }}>
+                          Expected ≥ {scannedQty}
+                        </div>
+                      )}
+                    </td>
+                    <td>{sku?.sku_type ?? "-"}</td>
+                    <td>
+                      {canEditStructure && fields.length > 1 && (
+                        <button
+                          type="button"
+                          className="btn small"
+                          onClick={() => remove(index)}
+                        >
+                          Xóa dòng
+                        </button>
+                      )}
+                    </td>
+                  </tr>
                 );
               })}
-            </select>
-          </div>
-          <div className="field">
-            <label>Ghi chú</label>
-            <textarea
-              className="input"
-              value={note}
-              disabled={!isMutable}
-              onChange={(event) => setNote(event.target.value)}
-              rows={3}
-            />
-          </div>
+            </tbody>
+          </table>
         </div>
 
-        <div className="card soft">
-          <div className="section-title">Quy tắc nhập kho bắt buộc</div>
-          <div className="rule">
-            <span className="dot" />
-            <span>Expected qty là toàn bộ số lượng phải nhận của từng dòng.</span>
-          </div>
-          <div className="rule">
-            <span className="dot" />
-            <span>DRAFT và SCANNING không làm thay đổi tồn kho.</span>
-          </div>
-          <div className="rule">
-            <span className="dot" />
-            <span>Không có nhập một phần, thiếu/thừa, remainder hay PARTIALLY_POSTED.</span>
-          </div>
-          <div className="rule">
-            <span className="dot" />
-            <span>Scan vượt Expected qty hoặc sai SKU/state phải bị từ chối.</span>
-          </div>
-          <div className="rule">
-            <span className="dot" />
-            <span>Full Post chỉ mở khi mọi dòng scanned_qty = expected_qty.</span>
-          </div>
-          <div className="rule">
-            <span className="dot" />
-            <span>Putaway sau nhận hàng là stock-neutral, không cộng tồn lần hai.</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="table-wrap" style={{ marginTop: 14 }}>
-        <table>
-          <thead>
-            <tr>
-              <th>SKU</th>
-              <th>Tên</th>
-              <th>Expected qty</th>
-              <th>Đã scan</th>
-              <th>Loại</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {lines.map((line) => {
-              const sku = skuRows.find((item) => item.sku_id === line.product_id);
-              return (
-                <tr key={line.key}>
-                  <td>
-                    <select
-                      className="select"
-                      value={line.product_id}
-                      disabled={!canEditStructure}
-                      onChange={(event) =>
-                        updateLine(line.key, { product_id: event.target.value })
-                      }
-                    >
-                      <option value="">Chọn SKU</option>
-                      {skuRows.map((item) => (
-                        <option key={item.sku_id} value={item.sku_id}>
-                          {item.sku_code}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                  <td>{sku?.sku_name ?? "-"}</td>
-                  <td>
-                    <input
-                      className="input"
-                      type="number"
-                      min={Math.max(1, line.scanned_qty)}
-                      step={1}
-                      value={line.qty_planned}
-                      disabled={!isMutable}
-                      onChange={(event) =>
-                        updateLine(line.key, { qty_planned: Number(event.target.value) })
-                      }
-                      style={{ width: 110 }}
-                    />
-                  </td>
-                  <td>
-                    <b>{line.scanned_qty}</b>
-                    {line.scanned_qty > 0 && (
-                      <div className="muted" style={{ fontSize: 12 }}>
-                        Expected ≥ {line.scanned_qty}
-                      </div>
-                    )}
-                  </td>
-                  <td>{sku?.sku_type ?? "-"}</td>
-                  <td>
-                    {canEditStructure && lines.length > 1 && (
-                      <button
-                        type="button"
-                        className="btn small"
-                        onClick={() =>
-                          setLines((current) =>
-                            current.filter((item) => item.key !== line.key),
-                          )
-                        }
-                      >
-                        Xóa dòng
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-
-      {canEditStructure && (
-        <button
-          type="button"
-          className="btn"
-          style={{ marginTop: 10 }}
-          onClick={() =>
-            setLines((current) => [
-              ...current,
-              {
-                key: makeKey("line"),
+        {canEditStructure && (
+          <button
+            type="button"
+            className="btn"
+            style={{ marginTop: 10 }}
+            onClick={() =>
+              append({
                 product_id: "",
                 qty_planned: 1,
                 scanned_qty: 0,
-              },
-            ])
-          }
-        >
-          + Thêm dòng SKU
-        </button>
-      )}
-
-      <div className="toolbar" style={{ marginTop: 16, marginBottom: 0 }}>
-        <button type="button" className="btn" disabled={saving} onClick={onClose}>
-          {isMutable ? "Hủy thao tác" : "Đóng"}
-        </button>
-        <div className="spacer" />
-        {isMutable && (
-          <button
-            type="button"
-            className="btn primary"
-            disabled={!canCreate || saving || detailQuery.isLoading}
-            onClick={() => void handleSave()}
+                note: null,
+              })
+            }
           >
-            {saving
-              ? "Đang lưu..."
-              : documentId
-                ? "Lưu & tiếp tục quét"
-                : "Lưu & bắt đầu quét"}
+            + Thêm dòng SKU
           </button>
         )}
-      </div>
+
+        <div className="toolbar" style={{ marginTop: 16, marginBottom: 0 }}>
+          <button type="button" className="btn" disabled={saving} onClick={onClose}>
+            {isMutable ? "Hủy thao tác" : "Đóng"}
+          </button>
+          <div className="spacer" />
+          {isMutable && (
+            <button
+              type="submit"
+              className="btn primary"
+              disabled={!canCreate || saving || detailQuery.isLoading}
+            >
+              {saving
+                ? "Đang lưu..."
+                : documentId
+                  ? "Lưu & tiếp tục quét"
+                  : "Lưu & bắt đầu quét"}
+            </button>
+          )}
+        </div>
+      </form>
     </Modal>
   );
 }
@@ -470,6 +572,8 @@ function InboundListScreen() {
   const [searchDraft, setSearchDraft] = useState("");
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(20);
   const [draftOpen, setDraftOpen] = useState(false);
   const [draftDocumentId, setDraftDocumentId] = useState<string | null>(null);
   const [scanDocumentId, setScanDocumentId] = useState<string | null>(null);
@@ -478,8 +582,16 @@ function InboundListScreen() {
   const query = useInboundDocuments({
     search,
     status: status || undefined,
-    per_page: 100,
+    page,
+    per_page: perPage,
   });
+  const rows = query.data?.data ?? [];
+  const meta = query.data?.meta;
+  const currentPage = Number(meta?.current_page ?? page);
+  const lastPage = Math.max(1, Number(meta?.last_page ?? 1));
+  const total = Number(meta?.total ?? rows.length);
+  const from = Number(meta?.from ?? (rows.length ? (currentPage - 1) * perPage + 1 : 0));
+  const to = Number(meta?.to ?? (rows.length ? from + rows.length - 1 : 0));
 
   useEffect(() => {
     const requestedScreen = searchParams.get("screen");
@@ -498,6 +610,11 @@ function InboundListScreen() {
     nextParams.delete("id");
     setSearchParams(nextParams, { replace: true });
   }, [searchParams, setSearchParams]);
+
+  const applySearch = () => {
+    setPage(1);
+    setSearch(searchDraft.trim());
+  };
 
   const openCreateModal = () => {
     setDraftDocumentId(null);
@@ -536,17 +653,27 @@ function InboundListScreen() {
           value={searchDraft}
           placeholder="Tìm mã phiếu / nguồn nhập"
           onChange={(event) => {
-            setSearchDraft(event.target.value);
-            if (!event.target.value) setSearch("");
+            const value = event.target.value;
+            setSearchDraft(value);
+            if (!value) {
+              setPage(1);
+              setSearch("");
+            }
           }}
           onKeyDown={(event) => {
-            if (event.key === "Enter") setSearch(searchDraft.trim());
+            if (event.key === "Enter") applySearch();
           }}
         />
+        <button type="button" className="btn" onClick={applySearch}>
+          Tìm
+        </button>
         <select
           className="select"
           value={status}
-          onChange={(event) => setStatus(event.target.value)}
+          onChange={(event) => {
+            setStatus(event.target.value);
+            setPage(1);
+          }}
         >
           <option value="">Trạng thái: Tất cả</option>
           <option value="DRAFT">DRAFT</option>
@@ -571,7 +698,8 @@ function InboundListScreen() {
       </div>
 
       <div className="alert" style={{ marginBottom: 14 }}>
-        Luồng chuẩn: <b>Tạo DRAFT → Quét Barcode/QR → đủ chính xác từng dòng → Full Post</b>.
+        Luồng chuẩn:{" "}
+        <b>Tạo DRAFT → Quét Barcode/QR → đủ chính xác từng dòng → Full Post</b>.
         DRAFT/SCANNING và scan không đổi tồn; tồn chỉ tăng khi Full Post Receipt thành công.
       </div>
 
@@ -594,7 +722,7 @@ function InboundListScreen() {
             </tr>
           </thead>
           <tbody>
-            {(query.data ?? []).map((row) => {
+            {rows.map((row) => {
               const mutable = row.status === "DRAFT" || row.status === "SCANNING";
               const flowLabel = mutable
                 ? canScan
@@ -635,7 +763,7 @@ function InboundListScreen() {
                 </tr>
               );
             })}
-            {!query.isLoading && (query.data?.length ?? 0) === 0 && (
+            {!query.isLoading && rows.length === 0 && (
               <tr>
                 <td colSpan={6} className="muted">
                   Không có phiếu nhập phù hợp.
@@ -644,6 +772,48 @@ function InboundListScreen() {
             )}
           </tbody>
         </table>
+      </div>
+
+      <div className="toolbar" style={{ marginTop: 12, marginBottom: 0 }}>
+        <span className="muted">
+          {total > 0 ? `Hiển thị ${from}-${to} / ${total} phiếu` : "0 phiếu"}
+        </span>
+        <div className="spacer" />
+        <label className="muted" htmlFor="inbound-page-size">
+          Số dòng/trang
+        </label>
+        <select
+          id="inbound-page-size"
+          className="select"
+          value={perPage}
+          onChange={(event) => {
+            setPerPage(Number(event.target.value));
+            setPage(1);
+          }}
+        >
+          <option value={20}>20</option>
+          <option value={50}>50</option>
+          <option value={100}>100</option>
+        </select>
+        <button
+          type="button"
+          className="btn small"
+          disabled={currentPage <= 1 || query.isFetching}
+          onClick={() => setPage(Math.max(1, currentPage - 1))}
+        >
+          ← Trước
+        </button>
+        <span className="muted">
+          Trang {currentPage}/{lastPage}
+        </span>
+        <button
+          type="button"
+          className="btn small"
+          disabled={currentPage >= lastPage || query.isFetching}
+          onClick={() => setPage(Math.min(lastPage, currentPage + 1))}
+        >
+          Sau →
+        </button>
       </div>
 
       {draftOpen && (
