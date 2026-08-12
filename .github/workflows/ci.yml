@@ -191,7 +191,7 @@ jobs:
 
       - name: Create WWHN-177 immutable DEV handoff
         id: wwhn_177_handoff
-        if: ${{ always() && steps.build.outcome == 'success' && steps.health.outcome == 'success' }}
+        if: always()
         continue-on-error: true
         env:
           DEV_APP_URL: ${{ vars.DEV_APP_URL }}
