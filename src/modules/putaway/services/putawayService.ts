@@ -1,5 +1,8 @@
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
+import { assertWmsActionPermission } from "@/shared/api/wms-action-permission";
 import { http } from "@/shared/api/http";
+import { WMS_ACTION_PERMISSIONS } from "@/shared/constants/wms-permissions";
+import { WmsContractError } from "@/shared/api/wms-contract";
 
 export interface PutawayTask {
   id: string;
@@ -48,25 +51,83 @@ export interface PutawayEvent {
   stock_effect: "NONE";
   movement_created: false;
 }
-function endpoint(template: string, id: string) { return template.replace(":id", id); }
-export async function fetchPutawayTasks(params: Record<string, unknown> = {}): Promise<PutawayTask[]> {
+
+function endpoint(template: string, id: string) {
+  return template.replace(":id", id);
+}
+
+function assertStockNeutral<T extends { stock_effect?: unknown; movement_created?: unknown }>(
+  result: T,
+  operation: string,
+): T {
+  if (result.stock_effect !== "NONE" || result.movement_created !== false) {
+    throw new WmsContractError(
+      "WMS_FE_PUTAWAY_STOCK_EFFECT_VIOLATION",
+      `${operation} must be stock-neutral and must not create inventory movement`,
+    );
+  }
+  return result;
+}
+
+export async function fetchPutawayTasks(
+  params: Record<string, unknown> = {},
+): Promise<PutawayTask[]> {
   return http.get<PutawayTask[]>(API_ENDPOINTS.PUTAWAY_TASKS, { params });
 }
-export async function fetchPutawayHistory(params: Record<string, unknown> = {}): Promise<PutawayHistory[]> {
-  return http.get<PutawayHistory[]>(API_ENDPOINTS.PUTAWAY_HISTORY, { params });
+
+export async function fetchPutawayHistory(
+  params: Record<string, unknown> = {},
+): Promise<PutawayHistory[]> {
+  const rows = await http.get<PutawayHistory[]>(API_ENDPOINTS.PUTAWAY_HISTORY, { params });
+  rows.forEach((row) => assertStockNeutral(row, "Putaway history"));
+  return rows;
 }
+
 export async function fetchPutawayTrays(): Promise<TrayOption[]> {
   const result = await http.getPage<TrayOption[]>(API_ENDPOINTS.CONTAINERS, {
     params: { container_type: "TRAY", per_page: 200 },
   });
-  return result.data.filter((tray) => !["CLOSED", "ISSUED"].includes(String(tray.status).toUpperCase()));
+  return result.data.filter((tray) =>
+    !["CLOSED", "ISSUED", "INACTIVE"].includes(String(tray.status).toUpperCase()),
+  );
 }
-export function createPutawayTask(payload: { box_container_id: string; to_tray_id: string; location_hint?: string | null; note?: string | null }) {
-  return http.post<PutawayEvent>(API_ENDPOINTS.PUTAWAY_TASKS, payload);
+
+export async function createPutawayTask(payload: {
+  box_container_id: string;
+  to_tray_id: string;
+  location_hint?: string | null;
+  note?: string | null;
+}): Promise<PutawayEvent> {
+  assertWmsActionPermission(
+    WMS_ACTION_PERMISSIONS.PUTAWAY_CONTAINER,
+    "create putaway draft",
+  );
+  const result = await http.post<PutawayEvent>(API_ENDPOINTS.PUTAWAY_TASKS, payload);
+  return assertStockNeutral(result, "Create Putaway DRAFT");
 }
-export function confirmPutawayTask(id: string, version: number) {
-  return http.post<PutawayEvent>(endpoint(API_ENDPOINTS.PUTAWAY_CONFIRM, id), undefined, { headers: { "If-Match": String(version) } });
+
+export async function confirmPutawayTask(id: string, version: number): Promise<PutawayEvent> {
+  assertWmsActionPermission(
+    WMS_ACTION_PERMISSIONS.PUTAWAY_CONTAINER,
+    "confirm putaway",
+  );
+  const result = await http.post<PutawayEvent>(
+    endpoint(API_ENDPOINTS.PUTAWAY_CONFIRM, id),
+    undefined,
+    { headers: { "If-Match": String(version) } },
+  );
+  return assertStockNeutral(result, "Confirm Putaway");
 }
-export function cancelPutawayTask(id: string, version: number) {
-  return http.post<PutawayEvent>(endpoint(API_ENDPOINTS.PUTAWAY_CANCEL, id), undefined, { headers: { "If-Match": String(version) } });
+
+export async function cancelPutawayTask(id: string, version: number): Promise<PutawayEvent> {
+  assertWmsActionPermission(
+    WMS_ACTION_PERMISSIONS.PUTAWAY_CONTAINER,
+    "cancel putaway draft",
+  );
+  const result = await http.post<PutawayEvent>(
+    endpoint(API_ENDPOINTS.PUTAWAY_CANCEL, id),
+    undefined,
+    { headers: { "If-Match": String(version) } },
+  );
+  return assertStockNeutral(result, "Cancel Putaway DRAFT");
 }
