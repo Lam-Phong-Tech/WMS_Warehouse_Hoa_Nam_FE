@@ -97,7 +97,7 @@
   box-shadow: none !important;
 }
 
-/* IAM-01 search baseline is 280px on desktop, 100% only on narrow screens. */
+/* IAM-01 search baseline: 280px desktop, native 14px/normal-line-height rhythm. */
 @media (min-width: 981px) {
   .hn-mvp-screen .putaway-page .filter-row > .ant-col:first-child {
     flex: 0 0 280px !important;
@@ -112,6 +112,12 @@
     padding: 9px 10px !important;
     font-family: Arial, Helvetica, sans-serif !important;
     font-size: 14px !important;
+  }
+
+  .hn-mvp-screen .putaway-page .filter-row .ant-input-affix-wrapper > input.ant-input {
+    font-family: Arial, Helvetica, sans-serif !important;
+    font-size: 14px !important;
+    line-height: normal !important;
   }
 }
 
@@ -155,7 +161,7 @@
   background: rgba(15,23,42,.35) !important;
 }
 
-/* Exact mobile rule from the HTML: stacked sidebar/content, not a floating drawer shell. */
+/* Exact mobile/tablet rule from IAM-01: search fills the available toolbar width. */
 @media (max-width:980px) {
   .hn-mvp-screen > div[style*="padding"] {
     padding: 0 !important;
@@ -163,6 +169,12 @@
 
   .hn-mvp-screen .ant-row {
     row-gap: 14px !important;
+  }
+
+  .hn-mvp-screen .putaway-page .filter-row > .ant-col:first-child {
+    flex: 0 0 100% !important;
+    width: 100% !important;
+    max-width: 100% !important;
   }
 
   .hn-mvp-screen .putaway-page .filter-row .ant-input-affix-wrapper {
