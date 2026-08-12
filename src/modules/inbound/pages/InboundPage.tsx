@@ -23,7 +23,7 @@ import {
   defaultInboundDraftValues,
   inboundDraftSchema,
   localToday,
-  type InboundInboundDraftFormValues,
+  type InboundDraftFormValues,
 } from "@/modules/inbound/schemas/inboundDraft.schema";
 import type {
   CreateInboundPayload,
