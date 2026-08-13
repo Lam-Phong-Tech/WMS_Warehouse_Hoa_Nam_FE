@@ -4,7 +4,10 @@ import { IamUserScreen } from "@/modules/iam/pages/IamUserScreen";
 import { useAuthStore } from "@/shared/store/auth.store";
 
 const { mutation } = vi.hoisted(() => ({
-  mutation: () => ({ isPending: false, mutateAsync: vi.fn().mockResolvedValue({}) }),
+  mutation: () => ({
+    isPending: false,
+    mutateAsync: vi.fn().mockResolvedValue({}),
+  }),
 }));
 
 vi.mock("@/modules/iam/hooks/use-iam", () => ({
@@ -76,10 +79,14 @@ describe("IamUserScreen", () => {
     render(<IamUserScreen />);
     const row = screen.getByText("Nguyễn Văn Kho").closest("tr");
     expect(row).not.toBeNull();
-    fireEvent.click(within(row as HTMLTableRowElement).getByRole("button", { name: "Sửa" }));
+    fireEvent.click(
+      within(row as HTMLTableRowElement).getByRole("button", { name: "Sửa" }),
+    );
 
     const dialog = screen.getByRole("dialog");
-    expect(within(dialog).getByLabelText("Họ và tên *")).toHaveValue("Nguyễn Văn Kho");
+    expect(within(dialog).getByLabelText("Họ và tên *")).toHaveValue(
+      "Nguyễn Văn Kho",
+    );
     expect(within(dialog).getByText("2")).toBeInTheDocument();
   });
 

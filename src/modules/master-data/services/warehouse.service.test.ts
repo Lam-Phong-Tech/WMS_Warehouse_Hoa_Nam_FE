@@ -40,8 +40,16 @@ describe("canonical warehouse guard", () => {
   it("fails closed when canonical ACTIVE data is ambiguous", () => {
     expect(() =>
       assertCanonicalActiveWarehouse([
-        { warehouse_id: "WH-1", code: CANONICAL_WAREHOUSE_CODE, status: "ACTIVE" },
-        { warehouse_id: "WH-2", code: CANONICAL_WAREHOUSE_CODE, status: "ACTIVE" },
+        {
+          warehouse_id: "WH-1",
+          code: CANONICAL_WAREHOUSE_CODE,
+          status: "ACTIVE",
+        },
+        {
+          warehouse_id: "WH-2",
+          code: CANONICAL_WAREHOUSE_CODE,
+          status: "ACTIVE",
+        },
       ]),
     ).toThrowError(/received 2/);
   });

@@ -175,7 +175,9 @@ export function OutboundDetailModal({
   const [cameraOpen, setCameraOpen] = useState(false);
   const [previewSnapshot, setPreviewSnapshot] =
     useState<LabelSnapshotRecord | null>(null);
-  const [rfidTarget, setRfidTarget] = useState<LabelSnapshotRecord | null>(null);
+  const [rfidTarget, setRfidTarget] = useState<LabelSnapshotRecord | null>(
+    null,
+  );
   const [editOpen, setEditOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
@@ -224,8 +226,7 @@ export function OutboundDetailModal({
     return (labelsQuery.data ?? []).filter(
       (snapshot) =>
         (snapshot.documentId && snapshot.documentId === detail.document.id) ||
-        (snapshot.outboundNo &&
-          snapshot.outboundNo === detail.document.code),
+        (snapshot.outboundNo && snapshot.outboundNo === detail.document.code),
     );
   }, [detail, labelsQuery.data]);
 
@@ -269,14 +270,18 @@ export function OutboundDetailModal({
           itemId: match.itemId,
           itemCode: match.itemCode ?? snapshot?.itemCodeValue ?? null,
           skuCode:
-            skuById.get(match.skuId)?.sku_code ?? snapshot?.skuCode ?? match.skuId,
+            skuById.get(match.skuId)?.sku_code ??
+            snapshot?.skuCode ??
+            match.skuId,
           labelCode: snapshot?.labelCode ?? null,
           labelSnapshotId: match.labelSnapshotId ?? snapshot?.id ?? null,
           labelStatus: match.labelStatus ?? snapshot?.status ?? null,
           reprintCount: snapshot?.reprintCount ?? 0,
           rfidCode:
             match.rfidCode ??
-            (match.itemId ? activeRfidByItem.get(match.itemId) ?? null : null),
+            (match.itemId
+              ? (activeRfidByItem.get(match.itemId) ?? null)
+              : null),
         };
       });
     }
@@ -295,11 +300,17 @@ export function OutboundDetailModal({
         labelStatus: snapshot.status,
         reprintCount: snapshot.reprintCount,
         rfidCode: snapshot.itemId
-          ? activeRfidByItem.get(snapshot.itemId) ?? null
+          ? (activeRfidByItem.get(snapshot.itemId) ?? null)
           : null,
       }),
     );
-  }, [matchDriven, activeMatches, labelsForDocument, skuById, activeRfidByItem]);
+  }, [
+    matchDriven,
+    activeMatches,
+    labelsForDocument,
+    skuById,
+    activeRfidByItem,
+  ]);
 
   useEffect(() => {
     if (!detail) return;
@@ -326,10 +337,10 @@ export function OutboundDetailModal({
     detail?.lines.reduce((sum, line) => sum + line.scanned, 0) ?? 0;
   const fullScan = Boolean(
     detail &&
-      detail.lines.length > 0 &&
-      detail.lines.every(
-        (line) => line.expected > 0 && line.scanned === line.expected,
-      ),
+    detail.lines.length > 0 &&
+    detail.lines.every(
+      (line) => line.expected > 0 && line.scanned === line.expected,
+    ),
   );
   const labeledItemRows = itemRows.filter((row) => row.itemId);
   const printedCount = labeledItemRows.filter(
@@ -348,8 +359,7 @@ export function OutboundDetailModal({
     rfidCount >= totalExpected;
 
   const hasRequest = Boolean(doc?.outboundRequestId);
-  const isMutable =
-    doc?.status === "DRAFT" || doc?.status === "SCANNING";
+  const isMutable = doc?.status === "DRAFT" || doc?.status === "SCANNING";
 
   const postBlockReason = !doc
     ? ""
@@ -614,8 +624,7 @@ export function OutboundDetailModal({
     if (!doc) return;
     editForm.setFieldsValue({
       agency_id: doc.agencyId ?? undefined,
-      recipient_name:
-        doc.recipientName === "-" ? "" : doc.recipientName,
+      recipient_name: doc.recipientName === "-" ? "" : doc.recipientName,
       recipient_address:
         doc.recipientAddress === "-" ? "" : doc.recipientAddress,
       doc_date: doc.date?.slice(0, 10),
@@ -641,7 +650,9 @@ export function OutboundDetailModal({
       key: "sku",
       width: 230,
       render: (_, line) => (
-        <strong>{skuById.get(line.productId)?.sku_code ?? line.productId}</strong>
+        <strong>
+          {skuById.get(line.productId)?.sku_code ?? line.productId}
+        </strong>
       ),
     },
     {
@@ -671,9 +682,7 @@ export function OutboundDetailModal({
       key: "label",
       width: 150,
       render: (_, row) => (
-        <strong>
-          {row.labelCode || shortId(row.labelSnapshotId) }
-        </strong>
+        <strong>{row.labelCode || shortId(row.labelSnapshotId)}</strong>
       ),
     },
     {
@@ -885,7 +894,11 @@ export function OutboundDetailModal({
 
         {detail && doc ? (
           <Space direction="vertical" size={14} style={{ width: "100%" }}>
-            <Descriptions bordered size="small" column={{ xs: 1, sm: 2, lg: 3 }}>
+            <Descriptions
+              bordered
+              size="small"
+              column={{ xs: 1, sm: 2, lg: 3 }}
+            >
               <Descriptions.Item label="Phiếu xuất">
                 <strong>{doc.code}</strong>
               </Descriptions.Item>
@@ -924,7 +937,9 @@ export function OutboundDetailModal({
             <Row gutter={[12, 12]}>
               <Col xs={12} md={6}>
                 <Card size="small">
-                  <div style={{ fontSize: 12, color: "#6b7280" }}>Match Item</div>
+                  <div style={{ fontSize: 12, color: "#6b7280" }}>
+                    Match Item
+                  </div>
                   <div style={{ fontSize: 22, fontWeight: 700 }}>
                     {totalScanned} / {totalExpected}
                   </div>
@@ -932,7 +947,9 @@ export function OutboundDetailModal({
               </Col>
               <Col xs={12} md={6}>
                 <Card size="small">
-                  <div style={{ fontSize: 12, color: "#6b7280" }}>Nhãn đã in</div>
+                  <div style={{ fontSize: 12, color: "#6b7280" }}>
+                    Nhãn đã in
+                  </div>
                   <div style={{ fontSize: 22, fontWeight: 700 }}>
                     {printedCount} / {totalExpected}
                   </div>
@@ -986,8 +1003,9 @@ export function OutboundDetailModal({
                   thành công im lặng).
                 </div>
                 <div>
-                  {allRfidMapped ? "✅" : "⚠️"} RFID: {rfidCount}/{totalExpected}{" "}
-                  (PRODUCT bắt buộc active RFID trước Post Issue).
+                  {allRfidMapped ? "✅" : "⚠️"} RFID: {rfidCount}/
+                  {totalExpected} (PRODUCT bắt buộc active RFID trước Post
+                  Issue).
                 </div>
                 {doc.status !== "POSTED" && postBlockReason ? (
                   <Typography.Text type="warning">
@@ -1094,7 +1112,10 @@ export function OutboundDetailModal({
                   <Button
                     icon={<CameraOutlined />}
                     disabled={
-                      !canScan || !lineId || !hasRequest || scanMutation.isPending
+                      !canScan ||
+                      !lineId ||
+                      !hasRequest ||
+                      scanMutation.isPending
                     }
                     onClick={() => setCameraOpen(true)}
                   >
@@ -1176,15 +1197,18 @@ export function OutboundDetailModal({
                     style={{ marginTop: 10, marginBottom: 0 }}
                   >
                     Camera và nhập tay đi qua cùng validation/API. Backend từ
-                    chối mã sai SKU / trùng / đã ISSUED trước khi tạo nhãn.
-                    Quét nhầm item thì dùng nút <b>Gỡ match</b> ở bảng bên dưới
+                    chối mã sai SKU / trùng / đã ISSUED trước khi tạo nhãn. Quét
+                    nhầm item thì dùng nút <b>Gỡ match</b> ở bảng bên dưới
                     (stock-neutral) rồi quét lại mã đúng.
                   </Typography.Paragraph>
                 )}
               </Card>
             ) : null}
 
-            <Card size="small" title="LBL-01 & RFID-01 · Nhãn từng Item + Map RFID">
+            <Card
+              size="small"
+              title="LBL-01 & RFID-01 · Nhãn từng Item + Map RFID"
+            >
               <Space direction="vertical" size={10} style={{ width: "100%" }}>
                 <Alert
                   type="info"
@@ -1300,7 +1324,11 @@ export function OutboundDetailModal({
                           : row.toStatus,
                     },
                     { title: "Thời điểm", dataIndex: "changedAt", width: 190 },
-                    { title: "Người thao tác", dataIndex: "changedBy", width: 180 },
+                    {
+                      title: "Người thao tác",
+                      dataIndex: "changedBy",
+                      width: 180,
+                    },
                     { title: "Ghi chú", dataIndex: "note" },
                   ]}
                 />
@@ -1364,7 +1392,9 @@ export function OutboundDetailModal({
               <div className="label-head">
                 <div>
                   <div className="label-brand">HOA NAM</div>
-                  <div className="label-sub">Nhãn dán sản phẩm khi xuất kho</div>
+                  <div className="label-sub">
+                    Nhãn dán sản phẩm khi xuất kho
+                  </div>
                 </div>
                 <Tag
                   color={
@@ -1403,7 +1433,10 @@ export function OutboundDetailModal({
                 </div>
                 <div className="label-cell">
                   <b>Item</b>
-                  <span>{previewSnapshot.itemCodeValue || shortId(previewSnapshot.itemId)}</span>
+                  <span>
+                    {previewSnapshot.itemCodeValue ||
+                      shortId(previewSnapshot.itemId)}
+                  </span>
                 </div>
                 <div className="label-cell" style={{ gridColumn: "1 / -1" }}>
                   <b>Địa chỉ giao</b>
@@ -1461,7 +1494,10 @@ export function OutboundDetailModal({
             label="Hardware UID *"
             rules={[{ required: true, message: "Nhập hardware UID của tag" }]}
           >
-            <Input placeholder="UID phần cứng từ đầu đọc RFID" maxLength={200} />
+            <Input
+              placeholder="UID phần cứng từ đầu đọc RFID"
+              maxLength={200}
+            />
           </Form.Item>
         </Form>
         <ApiErrorAlert error={rfidMutation.error} title="Không map được RFID" />

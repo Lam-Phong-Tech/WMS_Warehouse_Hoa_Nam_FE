@@ -88,13 +88,20 @@ function useInboundPermission(code: string) {
 
 function getBarcodeDetector(): BarcodeDetectorConstructor | null {
   return (
-    globalThis as typeof globalThis & {
-      BarcodeDetector?: BarcodeDetectorConstructor;
-    }
-  ).BarcodeDetector ?? null;
+    (
+      globalThis as typeof globalThis & {
+        BarcodeDetector?: BarcodeDetectorConstructor;
+      }
+    ).BarcodeDetector ?? null
+  );
 }
 
-function CameraScanModal({ open, title, onDetected, onClose }: CameraScanModalProps) {
+function CameraScanModal({
+  open,
+  title,
+  onDetected,
+  onClose,
+}: CameraScanModalProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const frameRef = useRef<number | null>(null);
@@ -126,15 +133,21 @@ function CameraScanModal({ open, title, onDetected, onClose }: CameraScanModalPr
     const start = async () => {
       const Detector = getBarcodeDetector();
       if (!Detector) {
-        setCameraError("Trình duyệt chưa hỗ trợ BarcodeDetector. Hãy đóng camera và nhập Barcode/QR thủ công.");
+        setCameraError(
+          "Trình duyệt chưa hỗ trợ BarcodeDetector. Hãy đóng camera và nhập Barcode/QR thủ công.",
+        );
         return;
       }
       if (!window.isSecureContext) {
-        setCameraError("Camera Web WMS yêu cầu HTTPS/secure context. Hãy đóng camera và nhập mã thủ công.");
+        setCameraError(
+          "Camera Web WMS yêu cầu HTTPS/secure context. Hãy đóng camera và nhập mã thủ công.",
+        );
         return;
       }
       if (!navigator.mediaDevices?.getUserMedia) {
-        setCameraError("Thiết bị/trình duyệt không cung cấp camera API. Hãy dùng nhập mã thủ công.");
+        setCameraError(
+          "Thiết bị/trình duyệt không cung cấp camera API. Hãy dùng nhập mã thủ công.",
+        );
         return;
       }
 
@@ -158,7 +171,15 @@ function CameraScanModal({ open, title, onDetected, onClose }: CameraScanModalPr
         setCameraReady(true);
 
         const detector = new Detector({
-          formats: ["qr_code", "code_128", "code_39", "ean_13", "ean_8", "upc_a", "upc_e"],
+          formats: [
+            "qr_code",
+            "code_128",
+            "code_39",
+            "ean_13",
+            "ean_8",
+            "upc_a",
+            "upc_e",
+          ],
         });
 
         const detectFrame = async () => {
@@ -184,8 +205,11 @@ function CameraScanModal({ open, title, onDetected, onClose }: CameraScanModalPr
 
         frameRef.current = requestAnimationFrame(() => void detectFrame());
       } catch (error) {
-        const reason = error instanceof Error ? error.message : "Không xác định";
-        setCameraError(`Không truy cập được camera (${reason}). Hãy đóng camera và nhập Barcode/QR thủ công.`);
+        const reason =
+          error instanceof Error ? error.message : "Không xác định";
+        setCameraError(
+          `Không truy cập được camera (${reason}). Hãy đóng camera và nhập Barcode/QR thủ công.`,
+        );
         stop();
       }
     };
@@ -216,13 +240,20 @@ function CameraScanModal({ open, title, onDetected, onClose }: CameraScanModalPr
             muted
             playsInline
             autoPlay
-            style={{ width: "100%", minHeight: 260, borderRadius: 12, background: "#0f172a" }}
+            style={{
+              width: "100%",
+              minHeight: 260,
+              borderRadius: 12,
+              background: "#0f172a",
+            }}
           />
           <Alert
             style={{ marginTop: 12 }}
             type="info"
             showIcon
-            message={cameraReady ? "Camera sẵn sàng" : "Đang khởi tạo camera..."}
+            message={
+              cameraReady ? "Camera sẵn sàng" : "Đang khởi tạo camera..."
+            }
             description="Đưa Barcode/QR vào khung hình. Camera chỉ đọc mã; dữ liệu vẫn phải qua cùng validation và API như nhập tay. Camera không dùng để đọc RFID."
           />
         </>
@@ -263,7 +294,8 @@ export function InboundScanModal({
   const [scanLog, setScanLog] = useState<ScanLogRow[]>([]);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
-  const [receiptEvidence, setReceiptEvidence] = useState<ReceiptEvidence | null>(null);
+  const [receiptEvidence, setReceiptEvidence] =
+    useState<ReceiptEvidence | null>(null);
   const [cameraTarget, setCameraTarget] = useState<"box" | "code" | null>(null);
   const postKeyRef = useRef<string | null>(null);
   const canEdit = useInboundPermission(P.INBOUND_CREATE);
@@ -285,7 +317,11 @@ export function InboundScanModal({
       (line) => line.id === lineId && line.scanned < line.expected,
     );
     if (!selected) {
-      setLineId(detail.lines.find((line) => line.scanned < line.expected)?.id ?? detail.lines[0]?.id ?? "");
+      setLineId(
+        detail.lines.find((line) => line.scanned < line.expected)?.id ??
+          detail.lines[0]?.id ??
+          "",
+      );
     }
   }, [detail, lineId]);
 
@@ -296,16 +332,25 @@ export function InboundScanModal({
   }, [lineId]);
 
   const selectedLine = detail?.lines.find((line) => line.id === lineId);
-  const selectedSku = selectedLine ? skuById.get(selectedLine.productId) : undefined;
-  const remaining = selectedLine ? Math.max(selectedLine.expected - selectedLine.scanned, 0) : 0;
+  const selectedSku = selectedLine
+    ? skuById.get(selectedLine.productId)
+    : undefined;
+  const remaining = selectedLine
+    ? Math.max(selectedLine.expected - selectedLine.scanned, 0)
+    : 0;
   const isComponent = selectedSku?.sku_type === "COMPONENT";
   const isSerialTracked = Boolean(selectedSku?.is_serial_tracked);
-  const totalExpected = detail?.lines.reduce((sum, line) => sum + line.expected, 0) ?? 0;
-  const totalScanned = detail?.lines.reduce((sum, line) => sum + line.scanned, 0) ?? 0;
+  const totalExpected =
+    detail?.lines.reduce((sum, line) => sum + line.expected, 0) ?? 0;
+  const totalScanned =
+    detail?.lines.reduce((sum, line) => sum + line.scanned, 0) ?? 0;
   const isFullScan = Boolean(
-    detail?.lines.length && detail.lines.every((line) => line.scanned === line.expected),
+    detail?.lines.length &&
+    detail.lines.every((line) => line.scanned === line.expected),
   );
-  const isMutable = detail?.document.status === "DRAFT" || detail?.document.status === "SCANNING";
+  const isMutable =
+    detail?.document.status === "DRAFT" ||
+    detail?.document.status === "SCANNING";
   const busy = scanMutation.isPending || registerBoxMutation.isPending;
   const working = busy || postMutation.isPending || cancelMutation.isPending;
   const progressPercent = totalExpected
@@ -318,12 +363,21 @@ export function InboundScanModal({
   }, [isSerialTracked, quantity, remaining]);
 
   const handleScan = async () => {
-    if (!detail || !selectedLine || !selectedSku || scanVersion === null || !canScan || !isMutable) return;
+    if (
+      !detail ||
+      !selectedLine ||
+      !selectedSku ||
+      scanVersion === null ||
+      !canScan ||
+      !isMutable
+    )
+      return;
     const normalizedBox = boxCode.trim();
     const normalizedCode = scanCode.trim();
-    const scanQuantity = isSerialTracked || !isComponent
-      ? 1
-      : Math.max(1, Math.min(Number(quantity) || 1, remaining));
+    const scanQuantity =
+      isSerialTracked || !isComponent
+        ? 1
+        : Math.max(1, Math.min(Number(quantity) || 1, remaining));
 
     if (isComponent && !normalizedBox) {
       message.error("SKU COMPONENT bắt buộc có BOX trước khi ghi nhận scan.");
@@ -344,7 +398,9 @@ export function InboundScanModal({
           boxCode: normalizedBox,
         });
         if (box.stock_effect !== "NONE" || box.movement_created !== false) {
-          throw new Error("Invariant lỗi: đăng ký BOX không được làm thay đổi tồn kho.");
+          throw new Error(
+            "Invariant lỗi: đăng ký BOX không được làm thay đổi tồn kho.",
+          );
         }
         containerId = box.container_id;
       }
@@ -361,32 +417,36 @@ export function InboundScanModal({
       const first = result[0];
       if (!first) throw new Error("API không trả kết quả scan.");
       setScanVersion(first.version);
-      setScanLog((current) => [
-        {
-          key: makeKey("scan"),
-          code: logicalCode,
-          result: `Hợp lệ · +${scanQuantity}`,
-          success: true,
-          lineId: first.line_id,
-        },
-        ...current,
-      ].slice(0, 20));
+      setScanLog((current) =>
+        [
+          {
+            key: makeKey("scan"),
+            code: logicalCode,
+            result: `Hợp lệ · +${scanQuantity}`,
+            success: true,
+            lineId: first.line_id,
+          },
+          ...current,
+        ].slice(0, 20),
+      );
       setScanCode("");
       if (!isSerialTracked) setQuantity(1);
       await detailQuery.refetch();
       onChanged?.();
     } catch (error) {
       const errorText = getApiErrorMessage(error, "Scan không hợp lệ.");
-      setScanLog((current) => [
-        {
-          key: makeKey("scan-error"),
-          code: logicalCode,
-          result: errorText,
-          success: false,
-          lineId: selectedLine.id,
-        },
-        ...current,
-      ].slice(0, 20));
+      setScanLog((current) =>
+        [
+          {
+            key: makeKey("scan-error"),
+            code: logicalCode,
+            result: errorText,
+            success: false,
+            lineId: selectedLine.id,
+          },
+          ...current,
+        ].slice(0, 20),
+      );
       message.error(errorText);
       await detailQuery.refetch();
       onChanged?.();
@@ -394,8 +454,16 @@ export function InboundScanModal({
   };
 
   const handlePost = async () => {
-    if (!detail || scanVersion === null || !isFullScan || !canPost || detail.document.status !== "SCANNING") return;
-    const idempotencyKey = postKeyRef.current ?? makeKey(`post-receipt-${documentId}`);
+    if (
+      !detail ||
+      scanVersion === null ||
+      !isFullScan ||
+      !canPost ||
+      detail.document.status !== "SCANNING"
+    )
+      return;
+    const idempotencyKey =
+      postKeyRef.current ?? makeKey(`post-receipt-${documentId}`);
     postKeyRef.current = idempotencyKey;
     try {
       const evidence = await postMutation.mutateAsync({
@@ -405,7 +473,9 @@ export function InboundScanModal({
       });
       postKeyRef.current = null;
       setReceiptEvidence(evidence);
-      message.success("Full Post Receipt thành công. Tồn kho tăng đúng một lần.");
+      message.success(
+        "Full Post Receipt thành công. Tồn kho tăng đúng một lần.",
+      );
       await detailQuery.refetch();
       onChanged?.();
     } catch (error) {
@@ -416,7 +486,8 @@ export function InboundScanModal({
   };
 
   const handleCancel = async () => {
-    if (!detail || scanVersion === null || !cancelReason.trim() || !canCancel) return;
+    if (!detail || scanVersion === null || !cancelReason.trim() || !canCancel)
+      return;
     try {
       await cancelMutation.mutateAsync({
         id: documentId,
@@ -439,7 +510,11 @@ export function InboundScanModal({
       title: "SKU",
       key: "sku",
       width: 220,
-      render: (_, line) => <strong>{skuById.get(line.productId)?.sku_code ?? line.productId}</strong>,
+      render: (_, line) => (
+        <strong>
+          {skuById.get(line.productId)?.sku_code ?? line.productId}
+        </strong>
+      ),
     },
     {
       title: "Tên / loại",
@@ -450,7 +525,9 @@ export function InboundScanModal({
         return (
           <div>
             <div>{sku?.sku_name ?? "-"}</div>
-            {sku?.sku_type ? <Tag style={{ marginTop: 4 }}>{sku.sku_type}</Tag> : null}
+            {sku?.sku_type ? (
+              <Tag style={{ marginTop: 4 }}>{sku.sku_type}</Tag>
+            ) : null}
           </div>
         );
       },
@@ -483,7 +560,11 @@ export function InboundScanModal({
       dataIndex: "result",
       render: (value: string, row) => (
         <Space>
-          {row.success ? <CheckCircleOutlined style={{ color: "#16a34a" }} /> : <CloseCircleOutlined style={{ color: "#dc2626" }} />}
+          {row.success ? (
+            <CheckCircleOutlined style={{ color: "#16a34a" }} />
+          ) : (
+            <CloseCircleOutlined style={{ color: "#dc2626" }} />
+          )}
           <span>{value}</span>
         </Space>
       ),
@@ -493,7 +574,11 @@ export function InboundScanModal({
   return (
     <>
       <Modal
-        title={detail ? `Quét & Full Post · ${detail.document.code || documentId}` : "Quét & Full Post Receipt"}
+        title={
+          detail
+            ? `Quét & Full Post · ${detail.document.code || documentId}`
+            : "Quét & Full Post Receipt"
+        }
         open
         width={1200}
         footer={null}
@@ -515,33 +600,94 @@ export function InboundScanModal({
           <Alert
             type="error"
             showIcon
-            message={getApiErrorMessage(detailQuery.error, "Không tải được phiếu nhập.")}
+            message={getApiErrorMessage(
+              detailQuery.error,
+              "Không tải được phiếu nhập.",
+            )}
             description={errorDescription(detailQuery.error)}
           />
         ) : null}
 
         {detail ? (
           <>
-            <Descriptions bordered size="small" column={{ xs: 1, sm: 2, lg: 4 }} style={{ marginBottom: 14 }}>
-              <Descriptions.Item label="Phiếu">{detail.document.code || documentId}</Descriptions.Item>
-              <Descriptions.Item label="Nguồn">{detail.document.source || "-"}</Descriptions.Item>
+            <Descriptions
+              bordered
+              size="small"
+              column={{ xs: 1, sm: 2, lg: 4 }}
+              style={{ marginBottom: 14 }}
+            >
+              <Descriptions.Item label="Phiếu">
+                {detail.document.code || documentId}
+              </Descriptions.Item>
+              <Descriptions.Item label="Nguồn">
+                {detail.document.source || "-"}
+              </Descriptions.Item>
               <Descriptions.Item label="Trạng thái">
-                <Tag color={detail.document.status === "POSTED" ? "success" : detail.document.status === "SCANNING" ? "processing" : detail.document.status === "CANCELLED" ? "error" : "warning"}>
+                <Tag
+                  color={
+                    detail.document.status === "POSTED"
+                      ? "success"
+                      : detail.document.status === "SCANNING"
+                        ? "processing"
+                        : detail.document.status === "CANCELLED"
+                          ? "error"
+                          : "warning"
+                  }
+                >
                   {detail.document.status}
                 </Tag>
               </Descriptions.Item>
-              <Descriptions.Item label="Version / If-Match">{scanVersion ?? detail.document.version}</Descriptions.Item>
+              <Descriptions.Item label="Version / If-Match">
+                {scanVersion ?? detail.document.version}
+              </Descriptions.Item>
             </Descriptions>
 
             <Row gutter={[12, 12]} style={{ marginBottom: 14 }}>
-              <Col xs={12} md={6}><Card size="small"><div style={{ fontSize: 12, color: "#6b7280" }}>Đã scan</div><div style={{ fontSize: 22, fontWeight: 700 }}>{totalScanned}</div></Card></Col>
-              <Col xs={12} md={6}><Card size="small"><div style={{ fontSize: 12, color: "#6b7280" }}>Expected</div><div style={{ fontSize: 22, fontWeight: 700 }}>{totalExpected}</div></Card></Col>
-              <Col xs={12} md={6}><Card size="small"><div style={{ fontSize: 12, color: "#6b7280" }}>Còn lại</div><div style={{ fontSize: 22, fontWeight: 700 }}>{Math.max(totalExpected - totalScanned, 0)}</div></Card></Col>
-              <Col xs={12} md={6}><Card size="small"><div style={{ fontSize: 12, color: "#6b7280" }}>Điều kiện Post</div><div style={{ fontSize: 18, fontWeight: 700 }}>{isFullScan ? "ĐỦ" : "CHƯA ĐỦ"}</div></Card></Col>
+              <Col xs={12} md={6}>
+                <Card size="small">
+                  <div style={{ fontSize: 12, color: "#6b7280" }}>Đã scan</div>
+                  <div style={{ fontSize: 22, fontWeight: 700 }}>
+                    {totalScanned}
+                  </div>
+                </Card>
+              </Col>
+              <Col xs={12} md={6}>
+                <Card size="small">
+                  <div style={{ fontSize: 12, color: "#6b7280" }}>Expected</div>
+                  <div style={{ fontSize: 22, fontWeight: 700 }}>
+                    {totalExpected}
+                  </div>
+                </Card>
+              </Col>
+              <Col xs={12} md={6}>
+                <Card size="small">
+                  <div style={{ fontSize: 12, color: "#6b7280" }}>Còn lại</div>
+                  <div style={{ fontSize: 22, fontWeight: 700 }}>
+                    {Math.max(totalExpected - totalScanned, 0)}
+                  </div>
+                </Card>
+              </Col>
+              <Col xs={12} md={6}>
+                <Card size="small">
+                  <div style={{ fontSize: 12, color: "#6b7280" }}>
+                    Điều kiện Post
+                  </div>
+                  <div style={{ fontSize: 18, fontWeight: 700 }}>
+                    {isFullScan ? "ĐỦ" : "CHƯA ĐỦ"}
+                  </div>
+                </Card>
+              </Col>
             </Row>
 
-            <Card size="small" title="Tiến độ Full Post" style={{ marginBottom: 14 }}>
-              <Progress percent={progressPercent} status={isFullScan ? "success" : "active"} />
+            <Card
+              size="small"
+              title="Tiến độ Full Post"
+              style={{ marginBottom: 14 }}
+            >
+              <Progress
+                percent={progressPercent}
+                status={isFullScan ? "success" : "active"}
+              />
               <div style={{ color: "#6b7280", marginTop: 6 }}>
                 {isFullScan
                   ? "Mọi dòng đã scan đủ chính xác. Full Post chỉ được thực hiện khi phiếu đang SCANNING và người dùng có inbound.post."
@@ -554,7 +700,15 @@ export function InboundScanModal({
                 <Col xs={24} lg={13}>
                   <Card size="small" title="Ghi nhận Barcode / QR / BOX">
                     <div style={{ marginBottom: 12 }}>
-                      <div style={{ marginBottom: 6, fontSize: 12, color: "#6b7280" }}>Dòng nhận *</div>
+                      <div
+                        style={{
+                          marginBottom: 6,
+                          fontSize: 12,
+                          color: "#6b7280",
+                        }}
+                      >
+                        Dòng nhận *
+                      </div>
                       <Select
                         style={{ width: "100%" }}
                         value={lineId || undefined}
@@ -574,7 +728,15 @@ export function InboundScanModal({
 
                     {isComponent ? (
                       <div style={{ marginBottom: 12 }}>
-                        <div style={{ marginBottom: 6, fontSize: 12, color: "#6b7280" }}>BOX *</div>
+                        <div
+                          style={{
+                            marginBottom: 6,
+                            fontSize: 12,
+                            color: "#6b7280",
+                          }}
+                        >
+                          BOX *
+                        </div>
                         <Space.Compact style={{ width: "100%" }}>
                           <Input
                             value={boxCode}
@@ -582,7 +744,11 @@ export function InboundScanModal({
                             placeholder="Quét / nhập BOX chứa đúng một SKU COMPONENT"
                             onChange={(event) => setBoxCode(event.target.value)}
                           />
-                          <Button icon={<CameraOutlined />} disabled={!canScan || busy} onClick={() => setCameraTarget("box")}>
+                          <Button
+                            icon={<CameraOutlined />}
+                            disabled={!canScan || busy}
+                            onClick={() => setCameraTarget("box")}
+                          >
                             Camera
                           </Button>
                         </Space.Compact>
@@ -590,18 +756,34 @@ export function InboundScanModal({
                     ) : null}
 
                     <div style={{ marginBottom: 12 }}>
-                      <div style={{ marginBottom: 6, fontSize: 12, color: "#6b7280" }}>
-                        {isComponent && !isSerialTracked ? "Barcode/serial (không bắt buộc với COMPONENT quantity)" : "Barcode / Serial *"}
+                      <div
+                        style={{
+                          marginBottom: 6,
+                          fontSize: 12,
+                          color: "#6b7280",
+                        }}
+                      >
+                        {isComponent && !isSerialTracked
+                          ? "Barcode/serial (không bắt buộc với COMPONENT quantity)"
+                          : "Barcode / Serial *"}
                       </div>
                       <Space.Compact style={{ width: "100%" }}>
                         <Input
                           value={scanCode}
                           disabled={!canScan || busy}
-                          placeholder={isSerialTracked ? "Quét serial / Barcode" : "Quét Barcode/QR hoặc nhập tay fallback"}
+                          placeholder={
+                            isSerialTracked
+                              ? "Quét serial / Barcode"
+                              : "Quét Barcode/QR hoặc nhập tay fallback"
+                          }
                           onChange={(event) => setScanCode(event.target.value)}
                           onPressEnter={() => void handleScan()}
                         />
-                        <Button icon={<CameraOutlined />} disabled={!canScan || busy} onClick={() => setCameraTarget("code")}>
+                        <Button
+                          icon={<CameraOutlined />}
+                          disabled={!canScan || busy}
+                          onClick={() => setCameraTarget("code")}
+                        >
                           Camera
                         </Button>
                       </Space.Compact>
@@ -609,7 +791,15 @@ export function InboundScanModal({
 
                     {isComponent && !isSerialTracked ? (
                       <div style={{ marginBottom: 12 }}>
-                        <div style={{ marginBottom: 6, fontSize: 12, color: "#6b7280" }}>Số lượng lần nhận *</div>
+                        <div
+                          style={{
+                            marginBottom: 6,
+                            fontSize: 12,
+                            color: "#6b7280",
+                          }}
+                        >
+                          Số lượng lần nhận *
+                        </div>
                         <InputNumber
                           min={1}
                           max={Math.max(1, remaining)}
@@ -624,7 +814,13 @@ export function InboundScanModal({
                     <Button
                       type="primary"
                       icon={<ScanOutlined />}
-                      disabled={!canScan || !lineId || busy || remaining <= 0 || !selectedSku}
+                      disabled={
+                        !canScan ||
+                        !lineId ||
+                        busy ||
+                        remaining <= 0 ||
+                        !selectedSku
+                      }
                       loading={busy}
                       onClick={() => void handleScan()}
                     >
@@ -650,12 +846,32 @@ export function InboundScanModal({
                 <Col xs={24} lg={11}>
                   <Card size="small" title="Guard nghiệp vụ">
                     <Space direction="vertical" size={10}>
-                      <div>{isFullScan ? "✅" : "⚠️"} {isFullScan ? "Tất cả dòng đã scan đủ chính xác." : `Còn ${Math.max(totalExpected - totalScanned, 0)} đơn vị chưa ghi nhận.`}</div>
-                      <div>• Camera và nhập tay cùng đi một validation/API path; camera không đọc RFID.</div>
-                      <div>• Scan/đăng ký BOX bắt buộc stock_effect=NONE và không tạo movement.</div>
-                      <div>• Scan vượt Expected, sai SKU/state hoặc duplicate phải bị backend từ chối.</div>
-                      <div>• Full Post dùng If-Match + Idempotency-Key và là transaction atomic.</div>
-                      <div>• COMPONENT sau Post mới vào Putaway; Confirm Putaway stock-neutral.</div>
+                      <div>
+                        {isFullScan ? "✅" : "⚠️"}{" "}
+                        {isFullScan
+                          ? "Tất cả dòng đã scan đủ chính xác."
+                          : `Còn ${Math.max(totalExpected - totalScanned, 0)} đơn vị chưa ghi nhận.`}
+                      </div>
+                      <div>
+                        • Camera và nhập tay cùng đi một validation/API path;
+                        camera không đọc RFID.
+                      </div>
+                      <div>
+                        • Scan/đăng ký BOX bắt buộc stock_effect=NONE và không
+                        tạo movement.
+                      </div>
+                      <div>
+                        • Scan vượt Expected, sai SKU/state hoặc duplicate phải
+                        bị backend từ chối.
+                      </div>
+                      <div>
+                        • Full Post dùng If-Match + Idempotency-Key và là
+                        transaction atomic.
+                      </div>
+                      <div>
+                        • COMPONENT sau Post mới vào Putaway; Confirm Putaway
+                        stock-neutral.
+                      </div>
                     </Space>
                   </Card>
                 </Col>
@@ -664,7 +880,11 @@ export function InboundScanModal({
               <Alert
                 type={detail.document.status === "POSTED" ? "success" : "info"}
                 showIcon
-                message={detail.document.status === "POSTED" ? "Phiếu đã Full Post và chỉ đọc" : "Phiếu đã CANCELLED và chỉ đọc"}
+                message={
+                  detail.document.status === "POSTED"
+                    ? "Phiếu đã Full Post và chỉ đọc"
+                    : "Phiếu đã CANCELLED và chỉ đọc"
+                }
                 description={
                   detail.document.status === "POSTED"
                     ? "Không sửa/xóa chứng từ POSTED. Sai giao dịch phải xử lý bằng Reversal/Correction append-only."
@@ -674,7 +894,11 @@ export function InboundScanModal({
               />
             )}
 
-            <Card size="small" title="Đối soát từng dòng" style={{ marginTop: 14 }}>
+            <Card
+              size="small"
+              title="Đối soát từng dòng"
+              style={{ marginTop: 14 }}
+            >
               <Table<InboundLine>
                 size="small"
                 rowKey="id"
@@ -686,7 +910,11 @@ export function InboundScanModal({
             </Card>
 
             {scanLog.length ? (
-              <Card size="small" title="Kết quả scan trong phiên thao tác" style={{ marginTop: 14 }}>
+              <Card
+                size="small"
+                title="Kết quả scan trong phiên thao tác"
+                style={{ marginTop: 14 }}
+              >
                 <Table<ScanLogRow>
                   size="small"
                   rowKey="key"
@@ -705,30 +933,57 @@ export function InboundScanModal({
                 message="Evidence Full Post Receipt"
                 description={
                   <div>
-                    <div>Request ID: <strong>{receiptEvidence.requestId}</strong></div>
-                    <div>Movement: {receiptEvidence.movementRefs.join(", ")}</div>
+                    <div>
+                      Request ID: <strong>{receiptEvidence.requestId}</strong>
+                    </div>
+                    <div>
+                      Movement: {receiptEvidence.movementRefs.join(", ")}
+                    </div>
                     <div>Receipt: {receiptEvidence.receiptId}</div>
                   </div>
                 }
               />
             ) : null}
 
-            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 16, flexWrap: "wrap" }}>
-              <Button disabled={working} onClick={onClose}>Đóng</Button>
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+                justifyContent: "flex-end",
+                marginTop: 16,
+                flexWrap: "wrap",
+              }}
+            >
+              <Button disabled={working} onClick={onClose}>
+                Đóng
+              </Button>
               {canEdit && isMutable && onEditExpected ? (
-                <Button icon={<EditOutlined />} disabled={working} onClick={onEditExpected}>
+                <Button
+                  icon={<EditOutlined />}
+                  disabled={working}
+                  onClick={onEditExpected}
+                >
                   Hiệu chỉnh Expected
                 </Button>
               ) : null}
               {canCancel && isMutable ? (
-                <Button danger disabled={working} onClick={() => setCancelOpen(true)}>
+                <Button
+                  danger
+                  disabled={working}
+                  onClick={() => setCancelOpen(true)}
+                >
                   Cancel phiếu
                 </Button>
               ) : null}
               {isMutable ? (
                 <Button
                   type="primary"
-                  disabled={!canPost || !isFullScan || detail.document.status !== "SCANNING" || postMutation.isPending}
+                  disabled={
+                    !canPost ||
+                    !isFullScan ||
+                    detail.document.status !== "SCANNING" ||
+                    postMutation.isPending
+                  }
                   loading={postMutation.isPending}
                   onClick={() => void handlePost()}
                 >
@@ -742,13 +997,19 @@ export function InboundScanModal({
 
       <CameraScanModal
         open={cameraTarget !== null}
-        title={cameraTarget === "box" ? "Quét mã BOX bằng camera" : "Quét Barcode / QR bằng camera"}
+        title={
+          cameraTarget === "box"
+            ? "Quét mã BOX bằng camera"
+            : "Quét Barcode / QR bằng camera"
+        }
         onClose={() => setCameraTarget(null)}
         onDetected={(code) => {
           if (cameraTarget === "box") setBoxCode(code);
           else setScanCode(code);
           setCameraTarget(null);
-          message.success("Đã đọc mã từ camera. Kiểm tra và bấm Ghi nhận scan.");
+          message.success(
+            "Đã đọc mã từ camera. Kiểm tra và bấm Ghi nhận scan.",
+          );
         }}
       />
 
@@ -760,7 +1021,10 @@ export function InboundScanModal({
         centered
         maskClosable={false}
         closable={!cancelMutation.isPending}
-        okButtonProps={{ danger: true, disabled: !cancelReason.trim() || cancelMutation.isPending }}
+        okButtonProps={{
+          danger: true,
+          disabled: !cancelReason.trim() || cancelMutation.isPending,
+        }}
         okText={cancelMutation.isPending ? "Đang Cancel..." : "Xác nhận Cancel"}
         cancelText="Quay lại"
       >
@@ -786,7 +1050,11 @@ export function InboundScanModal({
 
 type LegacyScreenId = "IN-01" | "IN-02" | "IN-03";
 
-export function InboundSourceScreen({ screenId }: { screenId: LegacyScreenId }) {
+export function InboundSourceScreen({
+  screenId,
+}: {
+  screenId: LegacyScreenId;
+}) {
   return (
     <Card>
       {screenId === "IN-03"

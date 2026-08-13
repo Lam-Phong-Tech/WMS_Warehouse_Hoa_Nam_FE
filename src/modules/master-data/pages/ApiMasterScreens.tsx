@@ -23,7 +23,11 @@ import type {
   SkuRecord,
   SkuType,
 } from "@/modules/master-data/types/mvp-master.types";
-import { getApiErrorMessage, getMutationErrorMessage, normalizeError } from "@/shared/api/api-error";
+import {
+  getApiErrorMessage,
+  getMutationErrorMessage,
+  normalizeError,
+} from "@/shared/api/api-error";
 import {
   MvpPageSizeSelector,
   MvpPaginationFooter,
@@ -87,7 +91,12 @@ function ModalActions({
   return (
     <div className="toolbar" style={{ marginTop: 16, marginBottom: 0 }}>
       <div className="spacer" />
-      <button className="btn" type="button" onClick={onCancel} disabled={isSaving}>
+      <button
+        className="btn"
+        type="button"
+        onClick={onCancel}
+        disabled={isSaving}
+      >
         Hủy
       </button>
       <button className="btn primary" type="submit" disabled={isSaving}>
@@ -164,7 +173,10 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   // BR-SKU-10 proactive UX: khoá mã SKU/theo dõi serial ngay khi biết SKU đang
   // có tồn > 0, thay vì chỉ phản ứng sau khi BE trả lỗi 409 lúc lưu. Best-effort
   // (xem hasMvpSkuStock) — BE luôn là chốt chặn thật sự.
-  const stockLockQuery = useMvpSkuHasStock(editingId, modalOpen && Boolean(editing));
+  const stockLockQuery = useMvpSkuHasStock(
+    editingId,
+    modalOpen && Boolean(editing),
+  );
   const identityLocked = Boolean(editing) && stockLockQuery.data === true;
   const rows = query.data?.data ?? [];
   const pagination = resolveApiPagination(query.data?.meta, {
@@ -251,7 +263,9 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
       status: form.status,
       published_to_app: form.publishedToApp,
       ...(form.brandCode.trim() ? { brand_code: form.brandCode.trim() } : {}),
-      ...(form.categoryCode.trim() ? { category_code: form.categoryCode.trim() } : {}),
+      ...(form.categoryCode.trim()
+        ? { category_code: form.categoryCode.trim() }
+        : {}),
       ...(form.modelCode.trim() ? { model_code: form.modelCode.trim() } : {}),
       ...(form.powerSourceCode.trim()
         ? { power_source_code: form.powerSourceCode.trim() }
@@ -276,7 +290,10 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
       // hiện tại để người dùng có thể lưu lại các thay đổi khác mà không phải
       // tự dò ra field nào gây lỗi. Thông báo lấy trực tiếp từ message của BE
       // (đã thân thiện, tiếng Việt) qua getMutationErrorMessage bên dưới.
-      if (normalizeError(error).code === "SKU_IDENTITY_IMMUTABLE_AFTER_STOCK" && editing) {
+      if (
+        normalizeError(error).code === "SKU_IDENTITY_IMMUTABLE_AFTER_STOCK" &&
+        editing
+      ) {
         setForm((current) => ({
           ...current,
           code: editing.sku_code ?? editing.code ?? current.code,
@@ -342,8 +359,15 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
       />
       {publishError ? (
         <div className="alert" role="alert" style={{ marginBottom: 14 }}>
-          {getApiErrorMessage(publishError, "Không cập nhật được trạng thái publish.")}{" "}
-          <button className="btn small" type="button" onClick={() => setPublishError(null)}>
+          {getApiErrorMessage(
+            publishError,
+            "Không cập nhật được trạng thái publish.",
+          )}{" "}
+          <button
+            className="btn small"
+            type="button"
+            onClick={() => setPublishError(null)}
+          >
             Đóng
           </button>
         </div>
@@ -391,33 +415,55 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                     <td>
                       {record.sku_code ?? record.code}
                       <br />
-                      <span className="muted">{record.sku_name ?? record.name}</span>
+                      <span className="muted">
+                        {record.sku_name ?? record.name}
+                      </span>
                     </td>
                     <td>{record.sku_type}</td>
                     <td>{record.unit || "—"}</td>
-                    <td title={record.brand_id ?? undefined}>{compactRef(record.brand_id)}</td>
-                    <td title={record.category_id ?? undefined}>{compactRef(record.category_id)}</td>
-                    <td title={record.model_id ?? undefined}>{compactRef(record.model_id)}</td>
-                    <td>{record.power_or_voltage || compactRef(record.power_source_id)}</td>
-                    <td>{record.is_serial_tracked ? "Có" : "Không"}</td>
-                    <td>
-                      <span className={statusClass(record.status)}>{record.status}</span>
+                    <td title={record.brand_id ?? undefined}>
+                      {compactRef(record.brand_id)}
+                    </td>
+                    <td title={record.category_id ?? undefined}>
+                      {compactRef(record.category_id)}
+                    </td>
+                    <td title={record.model_id ?? undefined}>
+                      {compactRef(record.model_id)}
                     </td>
                     <td>
-                      <span className={isPublished ? "pill ok" : "pill warn-pill"}>
+                      {record.power_or_voltage ||
+                        compactRef(record.power_source_id)}
+                    </td>
+                    <td>{record.is_serial_tracked ? "Có" : "Không"}</td>
+                    <td>
+                      <span className={statusClass(record.status)}>
+                        {record.status}
+                      </span>
+                    </td>
+                    <td>
+                      <span
+                        className={isPublished ? "pill ok" : "pill warn-pill"}
+                      >
                         {isPublished ? "PUBLISHED" : "UNPUBLISHED"}
                       </span>
                     </td>
                     <td>
                       {canManage ? (
                         <>
-                          <button className="btn small" type="button" onClick={() => openEdit(record)}>
+                          <button
+                            className="btn small"
+                            type="button"
+                            onClick={() => openEdit(record)}
+                          >
                             Sửa
                           </button>{" "}
                           <button
                             className="btn small"
                             type="button"
-                            disabled={publishMutation.isPending || (!isPublished && !canPublish)}
+                            disabled={
+                              publishMutation.isPending ||
+                              (!isPublished && !canPublish)
+                            }
                             title={
                               !isPublished && !canPublish
                                 ? "Chỉ SKU ACTIVE mới được publish cho App PV."
@@ -466,12 +512,27 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
         closable={!isSaving}
       >
         <form onSubmit={submit}>
-          {formError ? <div className="alert" role="alert">{formError}</div> : null}
+          {formError ? (
+            <div className="alert" role="alert">
+              {formError}
+            </div>
+          ) : null}
           <div className="grid-2" style={{ marginTop: formError ? 14 : 0 }}>
             <section className="card">
               <div className="section-title">Thông tin SKU</div>
               <Field label="Mã SKU *">
-                <input className="input" style={{ width: "100%" }} value={form.code} onChange={(event) => setForm((current) => ({ ...current, code: event.target.value }))} disabled={isSaving || identityLocked} />
+                <input
+                  className="input"
+                  style={{ width: "100%" }}
+                  value={form.code}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      code: event.target.value,
+                    }))
+                  }
+                  disabled={isSaving || identityLocked}
+                />
                 {identityLocked ? (
                   <div className="muted" style={{ marginTop: 4 }}>
                     SKU đã có tồn kho — không thể đổi mã SKU (BR-SKU-10).
@@ -479,16 +540,49 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                 ) : null}
               </Field>
               <Field label="Tên SKU *">
-                <input className="input" style={{ width: "100%" }} value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} disabled={isSaving} />
+                <input
+                  className="input"
+                  style={{ width: "100%" }}
+                  value={form.name}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      name: event.target.value,
+                    }))
+                  }
+                  disabled={isSaving}
+                />
               </Field>
               <Field label="Loại SKU">
-                <select className="select" style={{ width: "100%" }} value={form.type} onChange={(event) => setForm((current) => ({ ...current, type: event.target.value as SkuType }))} disabled={isSaving}>
+                <select
+                  className="select"
+                  style={{ width: "100%" }}
+                  value={form.type}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      type: event.target.value as SkuType,
+                    }))
+                  }
+                  disabled={isSaving}
+                >
                   <option value="PRODUCT">PRODUCT</option>
                   <option value="COMPONENT">COMPONENT</option>
                 </select>
               </Field>
               <Field label="Đơn vị tính">
-                <input className="input" style={{ width: "100%" }} value={form.unit} onChange={(event) => setForm((current) => ({ ...current, unit: event.target.value }))} disabled={isSaving} />
+                <input
+                  className="input"
+                  style={{ width: "100%" }}
+                  value={form.unit}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      unit: event.target.value,
+                    }))
+                  }
+                  disabled={isSaving}
+                />
               </Field>
               <Field label="Trạng thái">
                 <select
@@ -502,22 +596,32 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                       status,
                       // AC-SRS-020: inactive không được publish — bỏ publish ngay
                       // trên UI khi chuyển khỏi ACTIVE, khớp cascade unpublish của BE.
-                      publishedToApp: status === "ACTIVE" ? current.publishedToApp : false,
+                      publishedToApp:
+                        status === "ACTIVE" ? current.publishedToApp : false,
                     }));
                   }}
                   disabled={isSaving}
                 >
                   {STATUS_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
                   ))}
                 </select>
               </Field>
               <Field label="Publish cho App PV">
-                <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <label
+                  style={{ display: "flex", gap: 8, alignItems: "center" }}
+                >
                   <input
                     type="checkbox"
                     checked={form.publishedToApp}
-                    onChange={(event) => setForm((current) => ({ ...current, publishedToApp: event.target.checked }))}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        publishedToApp: event.target.checked,
+                      }))
+                    }
                     disabled={isSaving || form.status !== "ACTIVE"}
                   />
                   Hiển thị SKU này trên App PV
@@ -532,28 +636,86 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
             <section className="card">
               <div className="section-title">Master tham chiếu</div>
               <div className="muted" style={{ marginBottom: 10 }}>
-                Nhập code master ACTIVE. Khi sửa, để trống để giữ nguyên liên kết hiện tại.
+                Nhập code master ACTIVE. Khi sửa, để trống để giữ nguyên liên
+                kết hiện tại.
               </div>
               <Field label="Brand code">
-                <input className="input" style={{ width: "100%" }} value={form.brandCode} onChange={(event) => setForm((current) => ({ ...current, brandCode: event.target.value }))} disabled={isSaving} />
+                <input
+                  className="input"
+                  style={{ width: "100%" }}
+                  value={form.brandCode}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      brandCode: event.target.value,
+                    }))
+                  }
+                  disabled={isSaving}
+                />
               </Field>
               <Field label="Category code">
-                <input className="input" style={{ width: "100%" }} value={form.categoryCode} onChange={(event) => setForm((current) => ({ ...current, categoryCode: event.target.value }))} disabled={isSaving} />
+                <input
+                  className="input"
+                  style={{ width: "100%" }}
+                  value={form.categoryCode}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      categoryCode: event.target.value,
+                    }))
+                  }
+                  disabled={isSaving}
+                />
               </Field>
               <Field label="Model code">
-                <input className="input" style={{ width: "100%" }} value={form.modelCode} onChange={(event) => setForm((current) => ({ ...current, modelCode: event.target.value }))} disabled={isSaving} />
+                <input
+                  className="input"
+                  style={{ width: "100%" }}
+                  value={form.modelCode}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      modelCode: event.target.value,
+                    }))
+                  }
+                  disabled={isSaving}
+                />
               </Field>
               <Field label="Power source code">
-                <input className="input" style={{ width: "100%" }} value={form.powerSourceCode} onChange={(event) => setForm((current) => ({ ...current, powerSourceCode: event.target.value }))} disabled={isSaving} />
+                <input
+                  className="input"
+                  style={{ width: "100%" }}
+                  value={form.powerSourceCode}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      powerSourceCode: event.target.value,
+                    }))
+                  }
+                  disabled={isSaving}
+                />
               </Field>
               <Field label="Theo dõi serial">
-                <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  <input type="checkbox" checked={form.serialTracked} onChange={(event) => setForm((current) => ({ ...current, serialTracked: event.target.checked }))} disabled={isSaving || identityLocked} />
+                <label
+                  style={{ display: "flex", gap: 8, alignItems: "center" }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={form.serialTracked}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        serialTracked: event.target.checked,
+                      }))
+                    }
+                    disabled={isSaving || identityLocked}
+                  />
                   Có quản lý serial/item identity
                 </label>
                 {identityLocked ? (
                   <div className="muted" style={{ marginTop: 4 }}>
-                    SKU đã có tồn kho — không thể đổi chế độ theo dõi serial (BR-SKU-10).
+                    SKU đã có tồn kho — không thể đổi chế độ theo dõi serial
+                    (BR-SKU-10).
                   </div>
                 ) : null}
               </Field>
@@ -564,7 +726,11 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               ) : null}
             </section>
           </div>
-          <ModalActions isSaving={isSaving} onCancel={close} submitLabel="Lưu SKU" />
+          <ModalActions
+            isSaving={isSaving}
+            onCancel={close}
+            submitLabel="Lưu SKU"
+          />
         </form>
       </Modal>
     </div>
@@ -591,7 +757,12 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   const [editing, setEditing] = useState<AgencyRecord | null>(null);
   const [form, setForm] = useState<AgencyPayload>(EMPTY_AGENCY_FORM);
   const [formError, setFormError] = useState("");
-  const query = useMvpAgencies({ keyword: keyword.trim(), status, page, per_page: perPage });
+  const query = useMvpAgencies({
+    keyword: keyword.trim(),
+    status,
+    page,
+    per_page: perPage,
+  });
   const createMutation = useCreateMvpAgency();
   const updateMutation = useUpdateMvpAgency();
   const isSaving = createMutation.isPending || updateMutation.isPending;
@@ -683,12 +854,24 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           }}
         >
           <option value="">Trạng thái: Tất cả</option>
-          {STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+          {STATUS_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
         </select>
         <div className="spacer" />
-        {canManage ? <button className="btn primary" type="button" onClick={openCreate}>+ Thêm đại lý</button> : null}
+        {canManage ? (
+          <button className="btn primary" type="button" onClick={openCreate}>
+            + Thêm đại lý
+          </button>
+        ) : null}
       </div>
-      <ApiErrorAlert error={query.error} fallback="Không tải được danh sách đại lý." onRetry={() => void query.refetch()} />
+      <ApiErrorAlert
+        error={query.error}
+        fallback="Không tải được danh sách đại lý."
+        onRetry={() => void query.refetch()}
+      />
       <MvpPageSizeSelector
         value={perPage}
         onChange={(value) => {
@@ -698,15 +881,57 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
       />
       <div className="table-wrap" aria-busy={query.isLoading}>
         <table>
-          <thead><tr><th>Mã</th><th>Tên đại lý</th><th>Điện thoại</th><th>Địa chỉ</th><th>Trạng thái</th><th aria-label="Hành động" /></tr></thead>
+          <thead>
+            <tr>
+              <th>Mã</th>
+              <th>Tên đại lý</th>
+              <th>Điện thoại</th>
+              <th>Địa chỉ</th>
+              <th>Trạng thái</th>
+              <th aria-label="Hành động" />
+            </tr>
+          </thead>
           <tbody>
-            {query.isLoading ? <tr><td colSpan={6} className="muted">Đang tải dữ liệu từ API...</td></tr> : rows.length > 0 ? rows.map((record) => (
-              <tr key={record.agency_id}>
-                <td>{record.agency_code}</td><td>{record.agency_name}</td><td>{record.phone || "—"}</td><td>{record.address || "—"}</td>
-                <td><span className={statusClass(record.status)}>{record.status}</span></td>
-                <td>{canManage ? <button className="btn small" type="button" onClick={() => openEdit(record)}>Sửa</button> : <span className="muted">Chỉ xem</span>}</td>
+            {query.isLoading ? (
+              <tr>
+                <td colSpan={6} className="muted">
+                  Đang tải dữ liệu từ API...
+                </td>
               </tr>
-            )) : <tr><td colSpan={6} className="muted">Không có đại lý phù hợp bộ lọc.</td></tr>}
+            ) : rows.length > 0 ? (
+              rows.map((record) => (
+                <tr key={record.agency_id}>
+                  <td>{record.agency_code}</td>
+                  <td>{record.agency_name}</td>
+                  <td>{record.phone || "—"}</td>
+                  <td>{record.address || "—"}</td>
+                  <td>
+                    <span className={statusClass(record.status)}>
+                      {record.status}
+                    </span>
+                  </td>
+                  <td>
+                    {canManage ? (
+                      <button
+                        className="btn small"
+                        type="button"
+                        onClick={() => openEdit(record)}
+                      >
+                        Sửa
+                      </button>
+                    ) : (
+                      <span className="muted">Chỉ xem</span>
+                    )}
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={6} className="muted">
+                  Không có đại lý phù hợp bộ lọc.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -717,17 +942,106 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
         itemLabel="đại lý"
         onChange={setPage}
       />
-      <Modal title={editing ? "Sửa đại lý" : "Thêm đại lý"} open={modalOpen} onCancel={close} footer={null} width={760} centered getContainer={false} maskClosable={false} closable={!isSaving}>
+      <Modal
+        title={editing ? "Sửa đại lý" : "Thêm đại lý"}
+        open={modalOpen}
+        onCancel={close}
+        footer={null}
+        width={760}
+        centered
+        getContainer={false}
+        maskClosable={false}
+        closable={!isSaving}
+      >
         <form onSubmit={submit}>
-          {formError ? <div className="alert" role="alert" style={{ marginBottom: 14 }}>{formError}</div> : null}
+          {formError ? (
+            <div className="alert" role="alert" style={{ marginBottom: 14 }}>
+              {formError}
+            </div>
+          ) : null}
           <div className="grid-2">
-            <Field label="Mã đại lý *"><input className="input" style={{ width: "100%" }} value={form.agency_code} onChange={(event) => setForm((current) => ({ ...current, agency_code: event.target.value }))} disabled={isSaving} /></Field>
-            <Field label="Tên đại lý *"><input className="input" style={{ width: "100%" }} value={form.agency_name} onChange={(event) => setForm((current) => ({ ...current, agency_name: event.target.value }))} disabled={isSaving} /></Field>
-            <Field label="Điện thoại"><input className="input" style={{ width: "100%" }} value={form.phone ?? ""} onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))} disabled={isSaving} /></Field>
-            <Field label="Trạng thái"><select className="select" style={{ width: "100%" }} value={form.status} onChange={(event) => setForm((current) => ({ ...current, status: event.target.value as MasterStatus }))} disabled={isSaving}>{STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></Field>
+            <Field label="Mã đại lý *">
+              <input
+                className="input"
+                style={{ width: "100%" }}
+                value={form.agency_code}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    agency_code: event.target.value,
+                  }))
+                }
+                disabled={isSaving}
+              />
+            </Field>
+            <Field label="Tên đại lý *">
+              <input
+                className="input"
+                style={{ width: "100%" }}
+                value={form.agency_name}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    agency_name: event.target.value,
+                  }))
+                }
+                disabled={isSaving}
+              />
+            </Field>
+            <Field label="Điện thoại">
+              <input
+                className="input"
+                style={{ width: "100%" }}
+                value={form.phone ?? ""}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    phone: event.target.value,
+                  }))
+                }
+                disabled={isSaving}
+              />
+            </Field>
+            <Field label="Trạng thái">
+              <select
+                className="select"
+                style={{ width: "100%" }}
+                value={form.status}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    status: event.target.value as MasterStatus,
+                  }))
+                }
+                disabled={isSaving}
+              >
+                {STATUS_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
           </div>
-          <Field label="Địa chỉ"><textarea className="input" style={{ width: "100%", minHeight: 88 }} value={form.address ?? ""} onChange={(event) => setForm((current) => ({ ...current, address: event.target.value }))} disabled={isSaving} /></Field>
-          <ModalActions isSaving={isSaving} onCancel={close} submitLabel="Lưu đại lý" />
+          <Field label="Địa chỉ">
+            <textarea
+              className="input"
+              style={{ width: "100%", minHeight: 88 }}
+              value={form.address ?? ""}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  address: event.target.value,
+                }))
+              }
+              disabled={isSaving}
+            />
+          </Field>
+          <ModalActions
+            isSaving={isSaving}
+            onCancel={close}
+            submitLabel="Lưu đại lý"
+          />
         </form>
       </Modal>
     </div>
@@ -753,7 +1067,12 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   const [editing, setEditing] = useState<DefectRecord | null>(null);
   const [form, setForm] = useState<DefectPayload>(EMPTY_DEFECT_FORM);
   const [formError, setFormError] = useState("");
-  const query = useMvpDefects({ keyword: keyword.trim(), status, page, per_page: perPage });
+  const query = useMvpDefects({
+    keyword: keyword.trim(),
+    status,
+    page,
+    per_page: perPage,
+  });
   const createMutation = useCreateMvpDefect();
   const updateMutation = useUpdateMvpDefect();
   const isSaving = createMutation.isPending || updateMutation.isPending;
@@ -779,7 +1098,12 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   const openEdit = (record: DefectRecord) => {
     if (!canManage) return;
     setEditing(record);
-    setForm({ defect_code: record.defect_code, defect_name: record.defect_name, description: record.description ?? "", status: record.status });
+    setForm({
+      defect_code: record.defect_code,
+      defect_name: record.defect_name,
+      description: record.description ?? "",
+      status: record.status,
+    });
     setFormError("");
     setModalOpen(true);
   };
@@ -838,12 +1162,24 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           }}
         >
           <option value="">Trạng thái: Tất cả</option>
-          {STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+          {STATUS_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
         </select>
         <div className="spacer" />
-        {canManage ? <button className="btn primary" type="button" onClick={openCreate}>+ Thêm lỗi</button> : null}
+        {canManage ? (
+          <button className="btn primary" type="button" onClick={openCreate}>
+            + Thêm lỗi
+          </button>
+        ) : null}
       </div>
-      <ApiErrorAlert error={query.error} fallback="Không tải được danh mục lỗi." onRetry={() => void query.refetch()} />
+      <ApiErrorAlert
+        error={query.error}
+        fallback="Không tải được danh mục lỗi."
+        onRetry={() => void query.refetch()}
+      />
       <MvpPageSizeSelector
         value={perPage}
         onChange={(value) => {
@@ -853,15 +1189,55 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
       />
       <div className="table-wrap" aria-busy={query.isLoading}>
         <table>
-          <thead><tr><th>Mã lỗi</th><th>Tên lỗi / bệnh</th><th>Mô tả</th><th>Trạng thái</th><th aria-label="Hành động" /></tr></thead>
+          <thead>
+            <tr>
+              <th>Mã lỗi</th>
+              <th>Tên lỗi / bệnh</th>
+              <th>Mô tả</th>
+              <th>Trạng thái</th>
+              <th aria-label="Hành động" />
+            </tr>
+          </thead>
           <tbody>
-            {query.isLoading ? <tr><td colSpan={5} className="muted">Đang tải dữ liệu từ API...</td></tr> : rows.length > 0 ? rows.map((record) => (
-              <tr key={record.defect_id}>
-                <td>{record.defect_code}</td><td>{record.defect_name}</td><td>{record.description || "—"}</td>
-                <td><span className={statusClass(record.status)}>{record.status}</span></td>
-                <td>{canManage ? <button className="btn small" type="button" onClick={() => openEdit(record)}>Sửa</button> : <span className="muted">Chỉ xem</span>}</td>
+            {query.isLoading ? (
+              <tr>
+                <td colSpan={5} className="muted">
+                  Đang tải dữ liệu từ API...
+                </td>
               </tr>
-            )) : <tr><td colSpan={5} className="muted">Không có danh mục lỗi phù hợp bộ lọc.</td></tr>}
+            ) : rows.length > 0 ? (
+              rows.map((record) => (
+                <tr key={record.defect_id}>
+                  <td>{record.defect_code}</td>
+                  <td>{record.defect_name}</td>
+                  <td>{record.description || "—"}</td>
+                  <td>
+                    <span className={statusClass(record.status)}>
+                      {record.status}
+                    </span>
+                  </td>
+                  <td>
+                    {canManage ? (
+                      <button
+                        className="btn small"
+                        type="button"
+                        onClick={() => openEdit(record)}
+                      >
+                        Sửa
+                      </button>
+                    ) : (
+                      <span className="muted">Chỉ xem</span>
+                    )}
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={5} className="muted">
+                  Không có danh mục lỗi phù hợp bộ lọc.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -872,16 +1248,92 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
         itemLabel="lỗi / bệnh"
         onChange={setPage}
       />
-      <Modal title={editing ? "Sửa lỗi / bệnh" : "Thêm lỗi / bệnh"} open={modalOpen} onCancel={close} footer={null} width={760} centered getContainer={false} maskClosable={false} closable={!isSaving}>
+      <Modal
+        title={editing ? "Sửa lỗi / bệnh" : "Thêm lỗi / bệnh"}
+        open={modalOpen}
+        onCancel={close}
+        footer={null}
+        width={760}
+        centered
+        getContainer={false}
+        maskClosable={false}
+        closable={!isSaving}
+      >
         <form onSubmit={submit}>
-          {formError ? <div className="alert" role="alert" style={{ marginBottom: 14 }}>{formError}</div> : null}
+          {formError ? (
+            <div className="alert" role="alert" style={{ marginBottom: 14 }}>
+              {formError}
+            </div>
+          ) : null}
           <div className="grid-2">
-            <Field label="Mã lỗi *"><input className="input" style={{ width: "100%" }} value={form.defect_code} onChange={(event) => setForm((current) => ({ ...current, defect_code: event.target.value }))} disabled={isSaving} /></Field>
-            <Field label="Tên lỗi / bệnh *"><input className="input" style={{ width: "100%" }} value={form.defect_name} onChange={(event) => setForm((current) => ({ ...current, defect_name: event.target.value }))} disabled={isSaving} /></Field>
+            <Field label="Mã lỗi *">
+              <input
+                className="input"
+                style={{ width: "100%" }}
+                value={form.defect_code}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    defect_code: event.target.value,
+                  }))
+                }
+                disabled={isSaving}
+              />
+            </Field>
+            <Field label="Tên lỗi / bệnh *">
+              <input
+                className="input"
+                style={{ width: "100%" }}
+                value={form.defect_name}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    defect_name: event.target.value,
+                  }))
+                }
+                disabled={isSaving}
+              />
+            </Field>
           </div>
-          <Field label="Mô tả"><textarea className="input" style={{ width: "100%", minHeight: 110 }} value={form.description ?? ""} onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} disabled={isSaving} /></Field>
-          <Field label="Trạng thái"><select className="select" style={{ width: "100%" }} value={form.status} onChange={(event) => setForm((current) => ({ ...current, status: event.target.value as MasterStatus }))} disabled={isSaving}>{STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></Field>
-          <ModalActions isSaving={isSaving} onCancel={close} submitLabel="Lưu danh mục lỗi" />
+          <Field label="Mô tả">
+            <textarea
+              className="input"
+              style={{ width: "100%", minHeight: 110 }}
+              value={form.description ?? ""}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  description: event.target.value,
+                }))
+              }
+              disabled={isSaving}
+            />
+          </Field>
+          <Field label="Trạng thái">
+            <select
+              className="select"
+              style={{ width: "100%" }}
+              value={form.status}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  status: event.target.value as MasterStatus,
+                }))
+              }
+              disabled={isSaving}
+            >
+              {STATUS_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <ModalActions
+            isSaving={isSaving}
+            onCancel={close}
+            submitLabel="Lưu danh mục lỗi"
+          />
         </form>
       </Modal>
     </div>

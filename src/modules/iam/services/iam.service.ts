@@ -48,9 +48,12 @@ export async function getIamRoles(
 export async function getIamPermissions(
   params: IamPermissionListParams = {},
 ): Promise<IamPageResult<IamPermission>> {
-  const result = await http.getPage<IamPermission[]>(API_ENDPOINTS.PERMISSIONS, {
-    params: cleanParams({ ...params, per_page: params.per_page ?? 100 }),
-  });
+  const result = await http.getPage<IamPermission[]>(
+    API_ENDPOINTS.PERMISSIONS,
+    {
+      params: cleanParams({ ...params, per_page: params.per_page ?? 100 }),
+    },
+  );
   return { data: result.data, meta: result.meta };
 }
 

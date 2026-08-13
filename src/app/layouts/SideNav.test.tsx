@@ -62,7 +62,9 @@ describe("SideNav RBAC filtering", () => {
     expect(screen.getByText("Danh sách phiếu nhập")).toBeInTheDocument();
     expect(screen.queryByText("Danh sách bảo hành")).not.toBeInTheDocument();
     expect(screen.queryByText("Báo cáo vận hành")).not.toBeInTheDocument();
-    expect(screen.queryByText("Danh sách linh kiện chờ xếp khay")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Danh sách linh kiện chờ xếp khay"),
+    ).not.toBeInTheDocument();
   });
 
   it("folds inbound and putaway operations into their owning list screens", () => {
@@ -70,13 +72,23 @@ describe("SideNav RBAC filtering", () => {
 
     renderSideNav(`${ROUTES.INBOUND}?screen=IN-03&id=receipt-1`);
 
-    const inboundList = screen.getByRole("button", { name: "Danh sách phiếu nhập" });
+    const inboundList = screen.getByRole("button", {
+      name: "Danh sách phiếu nhập",
+    });
     expect(inboundList).toHaveAttribute("aria-current", "page");
-    expect(screen.getByText("Danh sách linh kiện chờ xếp khay")).toBeInTheDocument();
+    expect(
+      screen.getByText("Danh sách linh kiện chờ xếp khay"),
+    ).toBeInTheDocument();
 
-    expect(screen.queryByText("Tạo / sửa phiếu nhập DRAFT")).not.toBeInTheDocument();
-    expect(screen.queryByText("Quét & Full Post Receipt")).not.toBeInTheDocument();
-    expect(screen.queryByText("Putaway linh kiện vào khay")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Tạo / sửa phiếu nhập DRAFT"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Quét & Full Post Receipt"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Putaway linh kiện vào khay"),
+    ).not.toBeInTheDocument();
   });
 
   it("lets Super Admin see all list entry points even with no permission codes", () => {
@@ -85,7 +97,9 @@ describe("SideNav RBAC filtering", () => {
     renderSideNav();
 
     expect(screen.getByText("Danh sách phiếu nhập")).toBeInTheDocument();
-    expect(screen.getByText("Danh sách linh kiện chờ xếp khay")).toBeInTheDocument();
+    expect(
+      screen.getByText("Danh sách linh kiện chờ xếp khay"),
+    ).toBeInTheDocument();
     expect(screen.getByText("Danh sách bảo hành")).toBeInTheDocument();
     expect(screen.getByText("Báo cáo vận hành")).toBeInTheDocument();
   });

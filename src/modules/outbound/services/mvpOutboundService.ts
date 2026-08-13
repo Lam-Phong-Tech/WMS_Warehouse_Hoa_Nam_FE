@@ -266,11 +266,7 @@ function parseJsonArray(value: unknown): OutboundImportRow["errors"] {
 
 function normalizeStatus(value: unknown): OutboundStatus {
   const status = text(value).toUpperCase();
-  if (
-    status === "SCANNING" ||
-    status === "POSTED" ||
-    status === "CANCELLED"
-  ) {
+  if (status === "SCANNING" || status === "POSTED" || status === "CANCELLED") {
     return status;
   }
   return "DRAFT";
@@ -280,10 +276,7 @@ function rawLines(row: RawRecord): RawRecord[] {
   return rowsOf((row.lines ?? []) as RawRecord[] | { data?: RawRecord[] });
 }
 
-function normalizeLine(
-  row: RawRecord,
-  documentId: string,
-): OutboundLineRecord {
+function normalizeLine(row: RawRecord, documentId: string): OutboundLineRecord {
   const expected = num(row.qty_planned ?? row.required_qty ?? row.quantity);
   const scanned = num(row.scanned_qty ?? row.qty_scanned);
   return {
@@ -293,8 +286,7 @@ function normalizeLine(
     expected,
     scanned,
     remaining: Math.max(expected - scanned, 0),
-    note:
-      row.note === undefined || row.note === null ? null : text(row.note),
+    note: row.note === undefined || row.note === null ? null : text(row.note),
   };
 }
 
@@ -320,12 +312,8 @@ function normalizeDocument(row: RawRecord): OutboundDocumentRecord {
     outboundRequestId: text(row.outbound_request_id) || null,
     agencyId: text(row.agency_id) || null,
     recipientName: text(row.recipient_name ?? row.customer_name, "-"),
-    recipientAddress: text(
-      row.recipient_address ?? row.customer_address,
-      "-",
-    ),
-    note:
-      row.note === undefined || row.note === null ? null : text(row.note),
+    recipientAddress: text(row.recipient_address ?? row.customer_address, "-"),
+    note: row.note === undefined || row.note === null ? null : text(row.note),
     expected,
     scanned,
     status: normalizeStatus(row.status),
@@ -374,7 +362,9 @@ function normalizeStatusHistory(row: RawRecord): OutboundStatusHistoryRecord {
     fromStatus: text(row.from_status ?? row.old_status) || null,
     toStatus: text(row.to_status ?? row.new_status ?? row.status, "-"),
     changedAt: text(row.created_at ?? row.changed_at) || undefined,
-    changedBy: text(row.changed_by_name ?? row.created_by_name ?? row.changed_by) || null,
+    changedBy:
+      text(row.changed_by_name ?? row.created_by_name ?? row.changed_by) ||
+      null,
     note: text(row.note ?? row.reason) || null,
   };
 }
@@ -462,9 +452,7 @@ async function fetchAllPages(
   return rows;
 }
 
-export async function fetchOutboundDetail(
-  id: string,
-): Promise<OutboundDetail> {
+export async function fetchOutboundDetail(id: string): Promise<OutboundDetail> {
   return normalizeDetail(
     await http.get<RawRecord>(endpoint(API_ENDPOINTS.OUTBOUND_DOCUMENT, id)),
   );
@@ -579,10 +567,7 @@ export async function unmatchOutboundItem(input: {
   };
 }
 
-function normalizeIssueEvidence(
-  row: RawRecord,
-  meta: ApiMeta,
-): IssueEvidence {
+function normalizeIssueEvidence(row: RawRecord, meta: ApiMeta): IssueEvidence {
   const movementRefs = Array.isArray(row.movement_ids)
     ? row.movement_ids.map((value) => text(value)).filter(Boolean)
     : [];
@@ -702,10 +687,8 @@ function normalizeLabelSnapshot(row: RawRecord): LabelSnapshotRecord {
     skuId: text(row.sku_id) || null,
     skuCode: text(row.sku_code ?? payload.sku_code) || null,
     skuName: text(row.product_name ?? payload.sku_name) || null,
-    itemCodeValue:
-      text(row.item_code_value ?? payload.item_code_value) || null,
-    recipientName:
-      text(row.customer_name ?? payload.recipient_name) || null,
+    itemCodeValue: text(row.item_code_value ?? payload.item_code_value) || null,
+    recipientName: text(row.customer_name ?? payload.recipient_name) || null,
     recipientAddress:
       text(row.customer_address ?? payload.recipient_address) || null,
     status: text(row.status),
@@ -715,16 +698,12 @@ function normalizeLabelSnapshot(row: RawRecord): LabelSnapshotRecord {
   };
 }
 
-export async function fetchLabelSnapshots(): Promise<
-  LabelSnapshotRecord[]
-> {
+export async function fetchLabelSnapshots(): Promise<LabelSnapshotRecord[]> {
   const rows = await fetchAllPages(API_ENDPOINTS.LABEL_SNAPSHOTS, {});
   return rows.map(normalizeLabelSnapshot);
 }
 
-export async function fetchPrinterConfigs(): Promise<
-  PrinterConfigRecord[]
-> {
+export async function fetchPrinterConfigs(): Promise<PrinterConfigRecord[]> {
   const result = await http.getPage<RawRecord[] | { data?: RawRecord[] }>(
     API_ENDPOINTS.PRINTER_CONFIGS,
     { params: { per_page: 100 } },
@@ -757,12 +736,13 @@ export async function fetchAvailableQtyBySku(
         API_ENDPOINTS.INVENTORY_BALANCES,
         { params: { product_id: skuId, per_page: 100 } },
       );
-      const total = rowsOf(result.data as RawRecord[] | { data?: RawRecord[] })
-        .reduce(
-          (sum, row) =>
-            sum + num(row.available_qty ?? row.quantity ?? row.on_hand_qty),
-          0,
-        );
+      const total = rowsOf(
+        result.data as RawRecord[] | { data?: RawRecord[] },
+      ).reduce(
+        (sum, row) =>
+          sum + num(row.available_qty ?? row.quantity ?? row.on_hand_qty),
+        0,
+      );
       return [skuId, total];
     }),
   );
@@ -801,18 +781,14 @@ function normalizePhysicalCode(row: RawRecord): PhysicalCodeRecord {
   };
 }
 
-export async function fetchActiveRfidCodes(): Promise<
-  PhysicalCodeRecord[]
-> {
+export async function fetchActiveRfidCodes(): Promise<PhysicalCodeRecord[]> {
   const rows = await fetchAllPages(API_ENDPOINTS.PHYSICAL_CODES, {
     carrier_type: "RFID",
     status: "ACTIVE",
   });
   return rows
     .map(normalizePhysicalCode)
-    .filter(
-      (code) => code.carrierType === "RFID" && code.status === "ACTIVE",
-    );
+    .filter((code) => code.carrierType === "RFID" && code.status === "ACTIVE");
 }
 
 export async function assignRfidToItem(input: {

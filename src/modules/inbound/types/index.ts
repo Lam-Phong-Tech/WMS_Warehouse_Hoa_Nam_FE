@@ -1,8 +1,4 @@
-export type InboundStatus =
-  | "DRAFT"
-  | "SCANNING"
-  | "POSTED"
-  | "CANCELLED";
+export type InboundStatus = "DRAFT" | "SCANNING" | "POSTED" | "CANCELLED";
 
 export interface InboundDocument {
   id: string;

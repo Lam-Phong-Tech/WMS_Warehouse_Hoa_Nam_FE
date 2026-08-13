@@ -183,10 +183,7 @@ function InboundListScreen() {
       render: (_, row) => {
         const percent =
           row.expected > 0
-            ? Math.min(
-                100,
-                Math.round((row.scanned / row.expected) * 100),
-              )
+            ? Math.min(100, Math.round((row.scanned / row.expected) * 100))
             : 0;
         return (
           <div style={{ minWidth: 170 }}>
@@ -297,7 +294,11 @@ function InboundListScreen() {
         </select>
         <div className="spacer" />
         {canCreate ? (
-          <button className="btn primary" type="button" onClick={openCreateModal}>
+          <button
+            className="btn primary"
+            type="button"
+            onClick={openCreateModal}
+          >
             + Tạo phiếu nhập
           </button>
         ) : null}
@@ -364,9 +365,7 @@ function InboundListScreen() {
           documentId={scanDocumentId}
           onClose={() => setScanDocumentId(null)}
           onChanged={() => void query.refetch()}
-          onEditExpected={() =>
-            openExpectedCorrectionFromScan(scanDocumentId)
-          }
+          onEditExpected={() => openExpectedCorrectionFromScan(scanDocumentId)}
         />
       ) : null}
     </div>

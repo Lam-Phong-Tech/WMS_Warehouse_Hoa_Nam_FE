@@ -1,12 +1,6 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState } from "react";
-import {
-  Progress,
-  Space,
-  Table,
-  Tag,
-  type TablePaginationConfig,
-} from "antd";
+import { Progress, Space, Table, Tag, type TablePaginationConfig } from "antd";
 import { EyeOutlined, ScanOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import { useQuery, useQueryClient } from "@tanstack/react-query";

@@ -41,7 +41,9 @@ describe("inbound real API contract", () => {
           dst_warehouse_id: "WH-1",
           status: "DRAFT",
           version: 3,
-          lines: [{ id: "L-1", product_id: "SKU-1", qty_planned: 5, scanned_qty: 0 }],
+          lines: [
+            { id: "L-1", product_id: "SKU-1", qty_planned: 5, scanned_qty: 0 },
+          ],
         },
       ],
       meta: {
@@ -79,7 +81,11 @@ describe("inbound real API contract", () => {
       status: "DRAFT",
       version: 3,
     });
-    expect(result.meta).toMatchObject({ current_page: 2, last_page: 4, total: 63 });
+    expect(result.meta).toMatchObject({
+      current_page: 2,
+      last_page: 4,
+      total: 63,
+    });
   });
 
   it("fails closed when BE returns a superseded inbound status", async () => {
@@ -102,7 +108,9 @@ describe("inbound real API contract", () => {
       source_name: "NCC A",
       status: "DRAFT",
       version: 1,
-      lines: [{ id: "L-1", product_id: "SKU-1", qty_planned: 2, scanned_qty: 0 }],
+      lines: [
+        { id: "L-1", product_id: "SKU-1", qty_planned: 2, scanned_qty: 0 },
+      ],
     });
 
     const result = await createInboundDocument({
@@ -119,7 +127,9 @@ describe("inbound real API contract", () => {
         lines: [{ product_id: "SKU-1", qty_planned: 2 }],
       }),
       expect.objectContaining({
-        headers: { "Idempotency-Key": expect.stringContaining("fe:inbound-create:") },
+        headers: {
+          "Idempotency-Key": expect.stringContaining("fe:inbound-create:"),
+        },
       }),
     );
     expect(result.status).toBe("DRAFT");
@@ -134,7 +144,9 @@ describe("inbound real API contract", () => {
       source_name: "NCC A",
       status: "SCANNING",
       version: 5,
-      lines: [{ id: "L-1", product_id: "SKU-1", qty_planned: 3, scanned_qty: 2 }],
+      lines: [
+        { id: "L-1", product_id: "SKU-1", qty_planned: 3, scanned_qty: 2 },
+      ],
     });
 
     await updateInboundDocument(
@@ -159,7 +171,9 @@ describe("inbound real API contract", () => {
       dst_warehouse_id: "WH-1",
       status: "SCANNING",
       version: 4,
-      lines: [{ id: "L-1", product_id: "SKU-1", qty_planned: 2, scanned_qty: 1 }],
+      lines: [
+        { id: "L-1", product_id: "SKU-1", qty_planned: 2, scanned_qty: 1 },
+      ],
     });
     vi.mocked(http.post).mockResolvedValue({
       version: 5,
@@ -179,7 +193,11 @@ describe("inbound real API contract", () => {
       { line_id: "L-1", qty: 1, code_value: "BC-001" },
       { headers: { "If-Match": "4" } },
     );
-    expect(result[0]).toMatchObject({ status: "VALID", version: 5, line_id: "L-1" });
+    expect(result[0]).toMatchObject({
+      status: "VALID",
+      version: 5,
+      line_id: "L-1",
+    });
   });
 
   it("full-posts only fully scanned data and sends If-Match plus Idempotency-Key", async () => {
@@ -189,7 +207,9 @@ describe("inbound real API contract", () => {
       dst_warehouse_id: "WH-1",
       status: "SCANNING",
       version: 5,
-      lines: [{ id: "L-1", product_id: "SKU-1", qty_planned: 2, scanned_qty: 2 }],
+      lines: [
+        { id: "L-1", product_id: "SKU-1", qty_planned: 2, scanned_qty: 2 },
+      ],
     });
     vi.mocked(http.postWithMeta).mockResolvedValue({
       data: {
@@ -227,7 +247,9 @@ describe("inbound real API contract", () => {
       dst_warehouse_id: "WH-1",
       status: "SCANNING",
       version: 5,
-      lines: [{ id: "L-1", product_id: "SKU-1", qty_planned: 2, scanned_qty: 1 }],
+      lines: [
+        { id: "L-1", product_id: "SKU-1", qty_planned: 2, scanned_qty: 1 },
+      ],
     });
 
     await expect(

@@ -73,12 +73,12 @@ describe("putaway real API contract", () => {
       container_id: "TRAY-ID-1",
       status: "EMPTY",
     });
-    expect(() => resolvePutawayTrayByScanCode(trays, "TRAY-CLOSED")).toThrowError(
-      /Không tìm thấy TRAY khả dụng/,
-    );
-    expect(() => resolvePutawayTrayByScanCode(trays, "TRAY-UNKNOWN")).toThrowError(
-      /Không tìm thấy TRAY khả dụng/,
-    );
+    expect(() =>
+      resolvePutawayTrayByScanCode(trays, "TRAY-CLOSED"),
+    ).toThrowError(/Không tìm thấy TRAY khả dụng/);
+    expect(() =>
+      resolvePutawayTrayByScanCode(trays, "TRAY-UNKNOWN"),
+    ).toThrowError(/Không tìm thấy TRAY khả dụng/);
   });
 
   it("fails closed when a scan code is ambiguous", () => {

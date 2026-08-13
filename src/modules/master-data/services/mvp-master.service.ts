@@ -22,7 +22,9 @@ type ProductMasterRecord = {
 
 function cleanParams(params: MasterListParams) {
   return Object.fromEntries(
-    Object.entries(params).filter(([, value]) => value !== undefined && value !== null && value !== ""),
+    Object.entries(params).filter(
+      ([, value]) => value !== undefined && value !== null && value !== "",
+    ),
   );
 }
 
@@ -34,24 +36,42 @@ function idempotencyKey(operation: string) {
   return `fe:${operation}:${uuid}`;
 }
 
-async function listPage<T>(endpoint: string, params: MasterListParams): Promise<MasterPageResult<T>> {
+async function listPage<T>(
+  endpoint: string,
+  params: MasterListParams,
+): Promise<MasterPageResult<T>> {
   const result = await http.getPage<T[]>(endpoint, {
     params: cleanParams({ ...params, per_page: params.per_page ?? 100 }),
   });
   return { data: result.data, meta: result.meta };
 }
 
-async function resolveMasterId(code: string | null | undefined, type: ProductMasterType) {
+async function resolveMasterId(
+  code: string | null | undefined,
+  type: ProductMasterType,
+) {
   const normalized = code?.trim();
   if (!normalized) return null;
-  const result = await http.getPage<ProductMasterRecord[]>(API_ENDPOINTS.PRODUCT_MASTERS, {
-    params: { master_type: type, keyword: normalized, status: "ACTIVE", per_page: 100 },
-  });
+  const result = await http.getPage<ProductMasterRecord[]>(
+    API_ENDPOINTS.PRODUCT_MASTERS,
+    {
+      params: {
+        master_type: type,
+        keyword: normalized,
+        status: "ACTIVE",
+        per_page: 100,
+      },
+    },
+  );
   const exact = result.data.find(
-    (row) => row.master_type === type && row.code.toLowerCase() === normalized.toLowerCase(),
+    (row) =>
+      row.master_type === type &&
+      row.code.toLowerCase() === normalized.toLowerCase(),
   );
   if (!exact) {
-    throw new Error(`Không tìm thấy ${type} ACTIVE có mã "${normalized}" trong Product Master.`);
+    throw new Error(
+      `Không tìm thấy ${type} ACTIVE có mã "${normalized}" trong Product Master.`,
+    );
   }
   return exact.master_id;
 }
@@ -70,7 +90,8 @@ async function canonicalSkuPayload(payload: SkuPayload) {
     is_serial_tracked: payload.is_serial_tracked,
     status: payload.status,
   };
-  if (payload.published_to_app !== undefined) body.published_to_app = payload.published_to_app;
+  if (payload.published_to_app !== undefined)
+    body.published_to_app = payload.published_to_app;
   // Master-link boxes are left blank on edit to mean "keep the current link"
   // (see the "Master tham chiếu" hint in ApiMasterScreens.tsx). Omitting the
   // key when blank preserves that on PATCH; sending an explicit null would
@@ -113,14 +134,21 @@ export async function createMvpSku(payload: SkuPayload) {
     headers: { "Idempotency-Key": idempotencyKey("sku-create") },
   });
   if (payload.status === "INACTIVE" && created.status !== "INACTIVE") {
-    return http.patch<SkuRecord>(API_ENDPOINTS.PRODUCT.replace(":id", created.sku_id), {
-      status: "INACTIVE",
-    });
+    return http.patch<SkuRecord>(
+      API_ENDPOINTS.PRODUCT.replace(":id", created.sku_id),
+      {
+        status: "INACTIVE",
+      },
+    );
   }
   return created;
 }
 
-export async function updateMvpSku(id: string, version: number, payload: SkuPayload) {
+export async function updateMvpSku(
+  id: string,
+  version: number,
+  payload: SkuPayload,
+) {
   const body = await canonicalSkuPayload(payload);
   return http.patch<SkuRecord>(API_ENDPOINTS.PRODUCT.replace(":id", id), body, {
     headers: {
@@ -134,7 +162,11 @@ export async function updateMvpSku(id: string, version: number, payload: SkuPayl
 // lại toàn bộ form sửa SKU. BE (ProductController::assertPublishRequiresActive)
 // là nguồn thực thi rule "chỉ SKU active mới publish" — lỗi 422
 // SKU_PUBLISH_REQUIRES_ACTIVE khi cố publish SKU không ACTIVE.
-export function setMvpSkuPublished(id: string, version: number, publishedToApp: boolean) {
+export function setMvpSkuPublished(
+  id: string,
+  version: number,
+  publishedToApp: boolean,
+) {
   return http.patch<SkuRecord>(
     API_ENDPOINTS.PRODUCT.replace(":id", id),
     { published_to_app: publishedToApp },
@@ -164,5 +196,8 @@ export function createMvpDefect(payload: DefectPayload) {
   return http.post<DefectRecord>(API_ENDPOINTS.DEFECT_CATALOGS, payload);
 }
 export function updateMvpDefect(id: string, payload: DefectPayload) {
-  return http.patch<DefectRecord>(`${API_ENDPOINTS.DEFECT_CATALOGS}/${id}`, payload);
+  return http.patch<DefectRecord>(
+    `${API_ENDPOINTS.DEFECT_CATALOGS}/${id}`,
+    payload,
+  );
 }

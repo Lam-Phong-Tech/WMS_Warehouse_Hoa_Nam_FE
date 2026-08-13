@@ -41,17 +41,29 @@
   background: transparent !important;
 }
 
-.hn-mvp-screen > div[style*="padding"] > .ant-card:first-child > .ant-card-head .ant-card-head-wrapper,
+.hn-mvp-screen
+  > div[style*="padding"]
+  > .ant-card:first-child
+  > .ant-card-head
+  .ant-card-head-wrapper,
 .hn-mvp-screen > .ant-card:first-child > .ant-card-head .ant-card-head-wrapper {
   display: block;
 }
 
-.hn-mvp-screen > div[style*="padding"] > .ant-card:first-child > .ant-card-head .ant-card-head-title,
+.hn-mvp-screen
+  > div[style*="padding"]
+  > .ant-card:first-child
+  > .ant-card-head
+  .ant-card-head-title,
 .hn-mvp-screen > .ant-card:first-child > .ant-card-head .ant-card-head-title {
   display: none;
 }
 
-.hn-mvp-screen > div[style*="padding"] > .ant-card:first-child > .ant-card-head .ant-card-extra,
+.hn-mvp-screen
+  > div[style*="padding"]
+  > .ant-card:first-child
+  > .ant-card-head
+  .ant-card-extra,
 .hn-mvp-screen > .ant-card:first-child > .ant-card-head .ant-card-extra {
   margin: 0 !important;
   width: 100%;
@@ -88,8 +100,16 @@
 /* Developer/API evidence belongs to CI/docs, not the production list toolbar. */
 .hn-mvp-screen .inbound-page > .master-data-panel .master-data-contract-strip,
 .hn-mvp-screen .putaway-page > .master-data-panel .master-data-contract-strip,
-.hn-mvp-screen .inbound-page > .master-data-panel > .ant-card-body > .master-data-state-alert,
-.hn-mvp-screen .putaway-page > .master-data-panel > .ant-card-body > .master-data-state-alert {
+.hn-mvp-screen
+  .inbound-page
+  > .master-data-panel
+  > .ant-card-body
+  > .master-data-state-alert,
+.hn-mvp-screen
+  .putaway-page
+  > .master-data-panel
+  > .ant-card-body
+  > .master-data-state-alert {
   display: none !important;
 }
 
@@ -168,7 +188,11 @@
     font-size: 14px !important;
   }
 
-  .hn-mvp-screen .putaway-page .filter-row .ant-input-affix-wrapper > input.ant-input {
+  .hn-mvp-screen
+    .putaway-page
+    .filter-row
+    .ant-input-affix-wrapper
+    > input.ant-input {
     font-family: Arial, Helvetica, sans-serif !important;
     font-size: 14px !important;
     line-height: normal !important;
@@ -212,11 +236,11 @@
 /* Drawers/modals are overlays; no old black wireframe borders or offset shadows. */
 .ant-modal-mask,
 .ant-drawer-mask {
-  background: rgba(15,23,42,.35) !important;
+  background: rgba(15, 23, 42, 0.35) !important;
 }
 
 /* Exact mobile/tablet rule from IAM-01: search fills the available toolbar width. */
-@media (max-width:980px) {
+@media (max-width: 980px) {
   .hn-mvp-screen > div[style*="padding"] {
     padding: 0 !important;
   }

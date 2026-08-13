@@ -11,7 +11,10 @@ import type {
   IamUser,
   IamUserStatus,
 } from "@/modules/iam/types/iam.types";
-import { getApiErrorMessage, getMutationErrorMessage } from "@/shared/api/api-error";
+import {
+  getApiErrorMessage,
+  getMutationErrorMessage,
+} from "@/shared/api/api-error";
 import {
   MvpPageSizeSelector,
   MvpPaginationFooter,
@@ -78,7 +81,9 @@ export interface IamUserScreenProps {
   openCreateOnMount?: boolean;
 }
 
-export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps) {
+export function IamUserScreen({
+  openCreateOnMount = false,
+}: IamUserScreenProps) {
   const permissionCodes = useAuthStore((state) => state.permissionCodes);
   const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
   const currentUserId = useAuthStore((state) => state.profile?.user_id);
@@ -192,7 +197,10 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
     setFormError("");
   };
 
-  const updateField = <K extends keyof UserFormState>(key: K, value: UserFormState[K]) => {
+  const updateField = <K extends keyof UserFormState>(
+    key: K,
+    value: UserFormState[K],
+  ) => {
     setFormState((current) => ({ ...current, [key]: value }));
   };
 
@@ -256,7 +264,10 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
   };
 
   const listError = usersQuery.error
-    ? getApiErrorMessage(usersQuery.error, "Không tải được danh sách người dùng.")
+    ? getApiErrorMessage(
+        usersQuery.error,
+        "Không tải được danh sách người dùng.",
+      )
     : "";
   const roleError = rolesQuery.error
     ? getApiErrorMessage(rolesQuery.error, "Không tải được danh sách vai trò.")
@@ -324,7 +335,11 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
       {listError ? (
         <div className="alert" role="alert" style={{ marginBottom: 14 }}>
           {listError}{" "}
-          <button className="btn small" type="button" onClick={() => usersQuery.refetch()}>
+          <button
+            className="btn small"
+            type="button"
+            onClick={() => usersQuery.refetch()}
+          >
             Thử lại
           </button>
         </div>
@@ -375,12 +390,18 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
                     <td>{primaryRole?.role_name ?? "Chưa gán"}</td>
                     <td>{scopeLabel(primaryRole)}</td>
                     <td>
-                      <span className={statusClass(user.status)}>{statusLabel(user.status)}</span>
+                      <span className={statusClass(user.status)}>
+                        {statusLabel(user.status)}
+                      </span>
                     </td>
                     <td>{formatLastLogin(user.last_login_at)}</td>
                     <td>
                       {canManageUsers ? (
-                        <button className="btn small" type="button" onClick={() => openEdit(user)}>
+                        <button
+                          className="btn small"
+                          type="button"
+                          onClick={() => openEdit(user)}
+                        >
                           Sửa
                         </button>
                       ) : (
@@ -393,7 +414,9 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
             ) : (
               <tr>
                 <td colSpan={6}>
-                  <span className="muted">Không có người dùng phù hợp bộ lọc.</span>
+                  <span className="muted">
+                    Không có người dùng phù hợp bộ lọc.
+                  </span>
                 </td>
               </tr>
             )}
@@ -437,7 +460,9 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
                   className="input"
                   style={{ width: "100%" }}
                   value={formState.displayName}
-                  onChange={(event) => updateField("displayName", event.target.value)}
+                  onChange={(event) =>
+                    updateField("displayName", event.target.value)
+                  }
                   autoFocus
                   disabled={isSaving}
                 />
@@ -449,7 +474,9 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
                   className="input"
                   style={{ width: "100%" }}
                   value={formState.username}
-                  onChange={(event) => updateField("username", event.target.value)}
+                  onChange={(event) =>
+                    updateField("username", event.target.value)
+                  }
                   autoComplete="off"
                   disabled={isSaving}
                 />
@@ -486,7 +513,9 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
                   className="select"
                   style={{ width: "100%" }}
                   value={formState.status}
-                  onChange={(event) => updateField("status", event.target.value as IamUserStatus)}
+                  onChange={(event) =>
+                    updateField("status", event.target.value as IamUserStatus)
+                  }
                   disabled={isSaving}
                 >
                   {STATUS_OPTIONS.map((status) => (
@@ -507,7 +536,9 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
                   className="select"
                   style={{ width: "100%" }}
                   value={formState.roleId}
-                  onChange={(event) => updateField("roleId", event.target.value)}
+                  onChange={(event) =>
+                    updateField("roleId", event.target.value)
+                  }
                   disabled={isSaving || roles.length === 0 || isEditingSelf}
                 >
                   <option value="">Chọn vai trò</option>
@@ -519,8 +550,9 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
                 </select>
                 {isEditingSelf ? (
                   <div className="muted" style={{ marginTop: 6 }}>
-                    Không thể tự đổi vai trò của chính mình (SCR-IAM-01 — chống tự leo thang đặc quyền).
-                    Nhờ một quản trị viên khác thực hiện thay đổi này.
+                    Không thể tự đổi vai trò của chính mình (SCR-IAM-01 — chống
+                    tự leo thang đặc quyền). Nhờ một quản trị viên khác thực
+                    hiện thay đổi này.
                   </div>
                 ) : null}
               </div>
@@ -528,7 +560,8 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
                 <label>Phạm vi dữ liệu</label>
                 <div className="value">{scopeLabel(selectedRole)}</div>
                 <div className="muted" style={{ marginTop: 6 }}>
-                  Phạm vi hiện lấy từ scope_type của role backend; API m1 chưa hỗ trợ chỉnh scope_ref riêng theo user.
+                  Phạm vi hiện lấy từ scope_type của role backend; API m1 chưa
+                  hỗ trợ chỉnh scope_ref riêng theo user.
                 </div>
               </div>
               <div className="field">
@@ -541,9 +574,15 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
                   style={{ width: "100%" }}
                   type="password"
                   value={formState.password}
-                  onChange={(event) => updateField("password", event.target.value)}
+                  onChange={(event) =>
+                    updateField("password", event.target.value)
+                  }
                   autoComplete="new-password"
-                  placeholder={editingUser ? "Để trống nếu không đổi mật khẩu" : "Tối thiểu 8 ký tự"}
+                  placeholder={
+                    editingUser
+                      ? "Để trống nếu không đổi mật khẩu"
+                      : "Tối thiểu 8 ký tự"
+                  }
                   disabled={isSaving}
                 />
               </div>
@@ -552,7 +591,8 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
                   <label>Version</label>
                   <div className="value">{editingUser.version}</div>
                   <div className="muted" style={{ marginTop: 6 }}>
-                    FE gửi version hiện tại để backend chặn ghi đè khi có xung đột đồng thời.
+                    FE gửi version hiện tại để backend chặn ghi đè khi có xung
+                    đột đồng thời.
                   </div>
                 </div>
               ) : null}
@@ -561,10 +601,19 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
 
           <div className="toolbar" style={{ marginTop: 16, marginBottom: 0 }}>
             <div className="spacer" />
-            <button className="btn" type="button" onClick={closeModal} disabled={isSaving}>
+            <button
+              className="btn"
+              type="button"
+              onClick={closeModal}
+              disabled={isSaving}
+            >
               Hủy
             </button>
-            <button className="btn primary" type="submit" disabled={isSaving || !formState.roleId}>
+            <button
+              className="btn primary"
+              type="submit"
+              disabled={isSaving || !formState.roleId}
+            >
               {isSaving ? "Đang lưu..." : "Lưu người dùng"}
             </button>
           </div>

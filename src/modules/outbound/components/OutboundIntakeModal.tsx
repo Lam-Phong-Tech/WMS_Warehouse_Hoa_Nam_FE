@@ -163,13 +163,16 @@ export function OutboundIntakeModal({
 
   const validateFileMutation = useMutation({
     mutationFn: async () => {
-      if (!file) throw new Error("Chọn file Excel (.xlsx/.xls) trước khi kiểm tra.");
+      if (!file)
+        throw new Error("Chọn file Excel (.xlsx/.xls) trước khi kiểm tra.");
       return uploadOutboundRequestFile(file);
     },
     onSuccess: (result) => {
       setPreview(result);
       if (result.status === "VALIDATED") {
-        message.success("File Excel đã VALIDATED. Confirm để tạo Outbound DRAFT.");
+        message.success(
+          "File Excel đã VALIDATED. Confirm để tạo Outbound DRAFT.",
+        );
       } else {
         message.warning(
           "File có row lỗi. Blocking error khiến toàn bộ batch không được consume (không consume một phần).",
@@ -218,7 +221,10 @@ export function OutboundIntakeModal({
       key: "recipient",
       width: 180,
       render: (_, row) =>
-        text(row.normalized.recipient_name ?? row.normalized.customer_name, "-"),
+        text(
+          row.normalized.recipient_name ?? row.normalized.customer_name,
+          "-",
+        ),
     },
     {
       title: "SKU",
@@ -241,9 +247,7 @@ export function OutboundIntakeModal({
       align: "right",
       render: (_, row) => {
         const skuId = text(row.normalized.sku_id);
-        const available = skuId
-          ? availabilityQuery.data?.[skuId]
-          : undefined;
+        const available = skuId ? availabilityQuery.data?.[skuId] : undefined;
         if (available === undefined) {
           return (
             <Typography.Text type="secondary">
@@ -337,7 +341,9 @@ export function OutboundIntakeModal({
               <Form.Item
                 name="request_no"
                 label="source_request_no *"
-                rules={[{ required: true, message: "Nhập mã phiếu yêu cầu xuất" }]}
+                rules={[
+                  { required: true, message: "Nhập mã phiếu yêu cầu xuất" },
+                ]}
               >
                 <Input placeholder="VD: REQ-20260813-001" maxLength={80} />
               </Form.Item>
@@ -400,7 +406,11 @@ export function OutboundIntakeModal({
                         label="Số lượng *"
                         rules={[{ required: true, message: "Nhập số lượng" }]}
                       >
-                        <InputNumber min={1} precision={0} style={{ width: 130 }} />
+                        <InputNumber
+                          min={1}
+                          precision={0}
+                          style={{ width: 130 }}
+                        />
                       </Form.Item>
                       <Button
                         danger
@@ -483,7 +493,9 @@ export function OutboundIntakeModal({
                 <Typography.Text type="success">
                   Hợp lệ: {preview.validRows}
                 </Typography.Text>
-                <Typography.Text type={preview.errorRows > 0 ? "danger" : undefined}>
+                <Typography.Text
+                  type={preview.errorRows > 0 ? "danger" : undefined}
+                >
                   Lỗi: {preview.errorRows}
                 </Typography.Text>
               </Space>

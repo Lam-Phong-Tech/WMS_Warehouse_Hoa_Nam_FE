@@ -54,7 +54,11 @@ export interface InboundBoxRegistration {
 }
 
 function rowsOf<T>(value: T[] | { data?: T[] }): T[] {
-  return Array.isArray(value) ? value : Array.isArray(value.data) ? value.data : [];
+  return Array.isArray(value)
+    ? value
+    : Array.isArray(value.data)
+      ? value.data
+      : [];
 }
 function num(value: unknown): number {
   return Number(value ?? 0);
@@ -66,7 +70,9 @@ function endpoint(template: string, id: string | number): string {
   return template.replace(":id", String(id));
 }
 function rawLines(row: RawRecord): RawRecord[] {
-  return rowsOf((row.lines ?? row.items ?? []) as RawRecord[] | { data?: RawRecord[] });
+  return rowsOf(
+    (row.lines ?? row.items ?? []) as RawRecord[] | { data?: RawRecord[] },
+  );
 }
 function normalizeStatus(value: unknown): InboundDocument["status"] {
   const status = text(value).toUpperCase();
@@ -88,7 +94,8 @@ function normalizeDocument(row: RawRecord): InboundDocument {
   const lines = rawLines(row);
   const expected = lines.length
     ? lines.reduce(
-        (sum, line) => sum + num(line.qty_planned ?? line.qty_expected ?? line.quantity),
+        (sum, line) =>
+          sum + num(line.qty_planned ?? line.qty_expected ?? line.quantity),
         0,
       )
     : num(row.qty_expected ?? row.qty_planned ?? row.total_qty);
@@ -103,7 +110,10 @@ function normalizeDocument(row: RawRecord): InboundDocument {
   return {
     id: text(row.id ?? row.stock_document_id),
     code: text(row.doc_no ?? row.code ?? row.document_no),
-    source: text(row.source_name ?? row.supplier_name ?? row.source ?? row.note, "-"),
+    source: text(
+      row.source_name ?? row.supplier_name ?? row.source ?? row.note,
+      "-",
+    ),
     date: text(row.doc_date ?? row.date ?? row.created_at),
     warehouseId: text(row.dst_warehouse_id ?? row.warehouse_id),
     expected,
@@ -111,7 +121,10 @@ function normalizeDocument(row: RawRecord): InboundDocument {
     posted,
     remaining: Math.max(expected - scanned, 0),
     status,
-    createdBy: text(row.created_by_name ?? row.created_by ?? row.creator_name, "-"),
+    createdBy: text(
+      row.created_by_name ?? row.created_by ?? row.creator_name,
+      "-",
+    ),
     updatedAt: text(row.updated_at) || undefined,
     version: num(row.version ?? row.lock_version ?? 1),
     sourceReference: text(row.source_reference) || undefined,
@@ -146,7 +159,9 @@ function normalizeDetail(row: RawRecord): InboundDetail {
   const document = normalizeDocument(row);
   return {
     document,
-    lines: rawLines(row).map((line) => normalizeLine(line, document.id, document.status)),
+    lines: rawLines(row).map((line) =>
+      normalizeLine(line, document.id, document.status),
+    ),
   };
 }
 function assertReadOnlyScanResponse(row: RawRecord): void {
@@ -191,7 +206,8 @@ function findSingleLineForProduct(
 }
 function findLineById(lines: RawRecord[], lineId: string): RawRecord {
   const line = lines.find(
-    (candidate) => text(candidate.id ?? candidate.stock_document_line_id) === lineId,
+    (candidate) =>
+      text(candidate.id ?? candidate.stock_document_line_id) === lineId,
   );
   if (!line) {
     throw new WmsContractError(
@@ -215,7 +231,10 @@ function assertFullyScanned(detail: InboundDetail): void {
     );
   }
 }
-function normalizeReceiptEvidence(row: RawRecord, meta: ApiMeta): ReceiptEvidence {
+function normalizeReceiptEvidence(
+  row: RawRecord,
+  meta: ApiMeta,
+): ReceiptEvidence {
   const receiptId = requireNonEmptyString(
     row.document_id ?? row.id ?? row.stock_document_id,
     "document_id",
@@ -269,7 +288,8 @@ function mutationHeaders(ifMatch: number, idempotencyKey?: string) {
   };
 }
 function makeIdempotencyKey(operation: string) {
-  const uuid = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
+  const uuid =
+    globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
   return `fe:${operation}:${uuid}`;
 }
 
@@ -300,10 +320,14 @@ export async function fetchInboundDetail(id: string): Promise<InboundDetail> {
     await http.get<RawRecord>(endpoint(API_ENDPOINTS.INBOUND_DOCUMENT, id)),
   );
 }
-export async function fetchInboundLines(documentId: string): Promise<InboundLine[]> {
+export async function fetchInboundLines(
+  documentId: string,
+): Promise<InboundLine[]> {
   return (await fetchInboundDetail(documentId)).lines;
 }
-export async function fetchInboundDocument(id: string): Promise<InboundDocument> {
+export async function fetchInboundDocument(
+  id: string,
+): Promise<InboundDocument> {
   return (await fetchInboundDetail(id)).document;
 }
 

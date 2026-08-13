@@ -25,8 +25,10 @@ import type {
 
 export const iamKeys = {
   all: ["iam"] as const,
-  users: (params: IamUserListParams) => [...iamKeys.all, "users", params] as const,
-  roles: (params: IamRoleListParams = {}) => [...iamKeys.all, "roles", params] as const,
+  users: (params: IamUserListParams) =>
+    [...iamKeys.all, "users", params] as const,
+  roles: (params: IamRoleListParams = {}) =>
+    [...iamKeys.all, "roles", params] as const,
   role: (roleId: string) => [...iamKeys.all, "role", roleId] as const,
   permissions: (params: IamPermissionListParams = {}) =>
     [...iamKeys.all, "permissions", params] as const,
@@ -94,8 +96,13 @@ export function useCreateIamRole() {
 export function useUpdateIamRole() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ roleId, payload }: { roleId: string; payload: IamRoleUpdatePayload }) =>
-      updateIamRole(roleId, payload),
+    mutationFn: ({
+      roleId,
+      payload,
+    }: {
+      roleId: string;
+      payload: IamRoleUpdatePayload;
+    }) => updateIamRole(roleId, payload),
     onSuccess: () => {
       toast.success("Đã cập nhật vai trò");
       void invalidateIam(queryClient);
@@ -119,8 +126,13 @@ export function useDeleteIamRole() {
 export function useSyncIamRolePermissions() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ roleId, permissionIds }: { roleId: string; permissionIds: string[] }) =>
-      syncIamRolePermissions(roleId, { permission_ids: permissionIds }),
+    mutationFn: ({
+      roleId,
+      permissionIds,
+    }: {
+      roleId: string;
+      permissionIds: string[];
+    }) => syncIamRolePermissions(roleId, { permission_ids: permissionIds }),
     onSuccess: () => {
       toast.success("Đã áp dụng ma trận quyền");
       void invalidateIam(queryClient);
@@ -132,8 +144,13 @@ export function useSyncIamRolePermissions() {
 export function useCreateIamUser() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ payload, roleId }: { payload: IamUserPayload; roleId: string }) =>
-      createIamUserWithRole(payload, roleId),
+    mutationFn: ({
+      payload,
+      roleId,
+    }: {
+      payload: IamUserPayload;
+      roleId: string;
+    }) => createIamUserWithRole(payload, roleId),
     onSuccess: () => {
       toast.success("Đã thêm người dùng");
       void invalidateIam(queryClient);

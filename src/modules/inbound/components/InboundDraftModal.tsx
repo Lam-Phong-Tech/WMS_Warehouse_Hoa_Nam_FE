@@ -103,11 +103,7 @@ function backendFieldPath(key: string): InboundDraftFieldPath | null {
     /^lines\.(\d+)\.(product_id|qty_planned|note|import_batch_id)$/,
   );
   if (!match) return null;
-  return [
-    "lines",
-    Number(match[1]),
-    match[2] as InboundLineFieldPath,
-  ];
+  return ["lines", Number(match[1]), match[2] as InboundLineFieldPath];
 }
 
 function applyBackendErrors(
@@ -123,7 +119,9 @@ function applyBackendErrors(
       return name ? { name, errors: [errors] } : null;
     })
     .filter(
-      (field): field is {
+      (
+        field,
+      ): field is {
         name: InboundDraftFieldPath;
         errors: string[];
       } => Boolean(field),
@@ -211,8 +209,7 @@ export function InboundDraftModal({
   const hasScanEvidence = Boolean(
     detail?.lines.some((line) => line.scanned > 0),
   );
-  const isMutable =
-    !documentId || status === "DRAFT" || status === "SCANNING";
+  const isMutable = !documentId || status === "DRAFT" || status === "SCANNING";
   const canEditStructure = isMutable && !hasScanEvidence;
   const saving = createMutation.isPending || updateMutation.isPending;
 
@@ -252,9 +249,7 @@ export function InboundDraftModal({
     const invalidExpected = lines.some((line) => {
       const expected = Number(line.qty_planned);
       const scanned = Number(line.scanned_qty ?? 0);
-      return (
-        !Number.isInteger(expected) || expected < 1 || expected < scanned
-      );
+      return !Number.isInteger(expected) || expected < 1 || expected < scanned;
     });
     if (invalidExpected) {
       message.error(
@@ -301,9 +296,7 @@ export function InboundDraftModal({
       onSaved(created.id);
     } catch (error) {
       applyBackendErrors(form, error);
-      message.error(
-        getApiErrorMessage(error, "Không lưu được phiếu nhập."),
-      );
+      message.error(getApiErrorMessage(error, "Không lưu được phiếu nhập."));
       if (documentId) {
         initializedIdRef.current = null;
         await detailQuery.refetch();
@@ -383,9 +376,7 @@ export function InboundDraftModal({
                 <Col xs={24} md={12}>
                   <Form.Item label="Mã phiếu">
                     <Input
-                      value={
-                        detail?.document.code || "Tự sinh sau khi lưu"
-                      }
+                      value={detail?.document.code || "Tự sinh sau khi lưu"}
                       disabled
                     />
                   </Form.Item>
@@ -394,18 +385,13 @@ export function InboundDraftModal({
                   <Form.Item
                     label="Ngày chứng từ"
                     name="documentDate"
-                    rules={[
-                      { required: true, message: "Chọn ngày chứng từ." },
-                    ]}
+                    rules={[{ required: true, message: "Chọn ngày chứng từ." }]}
                   >
                     <Input type="date" disabled={!isMutable} />
                   </Form.Item>
                 </Col>
                 <Col xs={24}>
-                  <Form.Item
-                    label="Nguồn / tham chiếu"
-                    name="sourceName"
-                  >
+                  <Form.Item label="Nguồn / tham chiếu" name="sourceName">
                     <Input
                       maxLength={255}
                       disabled={!isMutable}
@@ -458,10 +444,12 @@ export function InboundDraftModal({
                   • DRAFT/SCANNING, scan và đăng ký BOX đều stock-neutral.
                 </div>
                 <div>
-                  • Không có partial, thiếu/thừa, remainder hoặc PARTIALLY_POSTED.
+                  • Không có partial, thiếu/thừa, remainder hoặc
+                  PARTIALLY_POSTED.
                 </div>
                 <div>
-                  • Scan sai SKU/state, trùng hoặc vượt Expected phải bị từ chối.
+                  • Scan sai SKU/state, trùng hoặc vượt Expected phải bị từ
+                  chối.
                 </div>
                 <div>
                   • Chỉ Full Post khi mọi dòng scanned_qty = expected_qty.
@@ -474,11 +462,7 @@ export function InboundDraftModal({
           </Col>
         </Row>
 
-        <Card
-          size="small"
-          title="Dòng hàng dự kiến"
-          style={{ marginTop: 14 }}
-        >
+        <Card size="small" title="Dòng hàng dự kiến" style={{ marginTop: 14 }}>
           <Form.List name="lines">
             {(fields, { add, remove }) => (
               <>
@@ -489,8 +473,7 @@ export function InboundDraftModal({
                   dataSource={fields}
                   scroll={{ x: 900 }}
                   locale={{
-                    emptyText:
-                      "Phiếu nhập phải có ít nhất một dòng SKU",
+                    emptyText: "Phiếu nhập phải có ít nhất một dòng SKU",
                   }}
                   columns={[
                     {
@@ -503,10 +486,7 @@ export function InboundDraftModal({
                         );
                         return (
                           <>
-                            <Form.Item
-                              name={[field.name, "id"]}
-                              hidden
-                            >
+                            <Form.Item name={[field.name, "id"]} hidden>
                               <Input />
                             </Form.Item>
                             <Form.Item
@@ -549,9 +529,7 @@ export function InboundDraftModal({
                                   <Input />
                                 </Form.Item>
                                 <strong>
-                                  {sku?.sku_code ??
-                                    line?.product_id ??
-                                    "-"}
+                                  {sku?.sku_code ?? line?.product_id ?? "-"}
                                 </strong>
                               </>
                             )}
@@ -571,9 +549,7 @@ export function InboundDraftModal({
                           <div>
                             <div>{sku?.sku_name ?? "-"}</div>
                             {sku?.sku_type ? (
-                              <Tag style={{ marginTop: 4 }}>
-                                {sku.sku_type}
-                              </Tag>
+                              <Tag style={{ marginTop: 4 }}>{sku.sku_type}</Tag>
                             ) : null}
                           </div>
                         );
@@ -607,9 +583,7 @@ export function InboundDraftModal({
                                   }
                                   if (expected < scanned) {
                                     return Promise.reject(
-                                      new Error(
-                                        `Không nhỏ hơn ${scanned}.`,
-                                      ),
+                                      new Error(`Không nhỏ hơn ${scanned}.`),
                                     );
                                   }
                                   return Promise.resolve();
@@ -716,9 +690,7 @@ export function InboundDraftModal({
                 loading={saving}
                 disabled={!canCreate || detailQuery.isLoading}
               >
-                {documentId
-                  ? "Lưu & tiếp tục quét"
-                  : "Lưu & bắt đầu quét"}
+                {documentId ? "Lưu & tiếp tục quét" : "Lưu & bắt đầu quét"}
               </Button>
             ) : null}
           </div>

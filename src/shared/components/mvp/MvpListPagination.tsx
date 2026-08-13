@@ -70,7 +70,9 @@ export function MvpPaginationFooter({
 
   return (
     <div className="mvp-pagination-footer">
-      <span>Tổng {total} {itemLabel}</span>
+      <span>
+        Tổng {total} {itemLabel}
+      </span>
       <Pagination
         current={safeCurrent}
         pageSize={pageSize}

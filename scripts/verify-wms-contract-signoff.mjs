@@ -38,10 +38,21 @@ const permissions = read("src/shared/constants/wms-permissions.ts");
 const permissionHook = read("src/shared/hooks/usePermission.ts");
 const permissionCatalog = read("src/shared/api/wms-permission-catalog.ts");
 const scan = read("src/modules/scan/services/scanService.ts");
-const receiving = read("src/modules/receiving/services/receivingService.ts");
+const receivingShim = read(
+  "src/modules/receiving/services/receivingService.ts",
+);
+requirePattern(
+  receivingShim,
+  /export \* from "@\/modules\/inbound\/services\/inboundService"/u,
+  "receiving legacy shim must re-export the active inbound service",
+);
+const receiving = read("src/modules/inbound/services/inboundService.ts");
 const shipping = read("src/modules/shipping/services/shippingService.ts");
 const stocktake = read("src/modules/stocktake/services/stocktakeService.ts");
 const warranty = read("src/modules/warranty/services/warrantyService.ts");
+const componentIssue = read(
+  "src/modules/warranty/services/componentIssueService.ts",
+);
 const reports = read("src/modules/reports/services/reportsService.ts");
 const tests = read("src/test/wms-contract-signoff-guards.test.ts");
 const warrantyTests = read("src/test/warranty-v17-fail-closed.test.ts");
@@ -89,14 +100,29 @@ const expectedPaths = {
   POST_ISSUE: "/outbound-documents/:id/post-issue",
   APPLY_ADJUSTMENT: "/stocktake-sessions/:sessionId/apply-adjustment",
 };
-requireValue(
-  baseline.criticalFlows.length === 6,
-  "critical flow matrix must contain six exact v1.7 flows",
+const flowsById = new Map(
+  baseline.criticalFlows.map((flow) => [flow.id, flow]),
 );
+requireValue(
+  flowsById.size === baseline.criticalFlows.length,
+  "critical flow matrix must not contain duplicate flow ids",
+);
+for (const [id, relativePath] of Object.entries(expectedPaths)) {
+  const flow = flowsById.get(id);
+  requireValue(
+    flow !== undefined,
+    `critical flow matrix must retain foundation v1.7 flow ${id}`,
+  );
+  requireValue(flow.relativePath === relativePath, `${id} path mismatch`);
+}
 for (const flow of baseline.criticalFlows) {
   requireValue(
-    flow.relativePath === expectedPaths[flow.id],
-    `${flow.id} path mismatch`,
+    typeof flow.id === "string" && flow.id.length > 0,
+    "every critical flow must declare a non-empty id",
+  );
+  requireValue(
+    typeof flow.relativePath === "string" && flow.relativePath.startsWith("/"),
+    `${flow.id} must declare an absolute relativePath`,
   );
 }
 
@@ -172,7 +198,11 @@ for (const [content, label, permission] of [
   [stocktake, "apply adjustment", "APPLY_STOCKTAKE_ADJUSTMENT"],
   [reports, "report export", "EXPORT_REPORT"],
 ]) {
-  requirePattern(content, /assertWmsActionPermission/u, `${label} service guard`);
+  requirePattern(
+    content,
+    /assertWmsActionPermission/u,
+    `${label} service guard`,
+  );
   requirePattern(content, new RegExp(permission), `${label} action permission`);
 }
 
@@ -189,7 +219,7 @@ for (const [content, label] of [
   );
   requirePattern(
     content,
-    /line_id:\s*lineId,\s*qty/u,
+    /line_id:\s*lineId,\s*(?:qty|quantity)/u,
     `${label} canonical line_id+qty scan payload`,
   );
   requirePattern(
@@ -235,18 +265,33 @@ requirePattern(
 );
 requirePattern(
   warranty,
-  /WMS_FE_CONTRACT_NOT_APPROVED/u,
-  "warranty mutation fail-closed code",
+  /assertWmsActionPermission/u,
+  "warranty mutation permission guard",
 );
 requirePattern(
   warranty,
-  /no matching mutation route/u,
-  "warranty exact-route fail-closed rationale",
+  /"If-Match":\s*String\(/u,
+  "warranty optimistic-concurrency If-Match header",
+);
+requirePattern(
+  componentIssue,
+  /assertWmsActionPermission/u,
+  "component issue permission guard",
+);
+requirePattern(
+  componentIssue,
+  /requireIdempotencyKeyHeader/u,
+  "component issue post exact idempotency header",
+);
+requirePattern(
+  componentIssue,
+  /WMS_FE_MISSING_COMPONENT_MOVEMENT/u,
+  "component issue post movement evidence guard",
 );
 requirePattern(
   warrantyTests,
-  /does not POST the legacy create payload/u,
-  "warranty no-legacy-mutation regression test",
+  /does not POST the create payload when actor only holds the legacy temp_only permission/u,
+  "warranty legacy-permission fail-closed regression test",
 );
 
 requireValue(
@@ -271,11 +316,7 @@ requirePattern(
   "read-only format gate",
 );
 requirePattern(ciWorkflow, /npm run typecheck/u, "CI typecheck gate");
-requirePattern(
-  ciWorkflow,
-  /npm run test:e2e:evidence/u,
-  "CI Playwright gate",
-);
+requirePattern(ciWorkflow, /npm run test:e2e:evidence/u, "CI Playwright gate");
 requirePattern(
   wwhn181Workflow,
   /npm run wwhn-181:verify/u,
@@ -296,16 +337,8 @@ requirePattern(
   /beReleaseManifestSha256/u,
   "BE release manifest pin",
 );
-requirePattern(
-  finalVerifier,
-  /WWHN-180-PASS/u,
-  "final WWHN-180 PASS gate",
-);
-requirePattern(
-  finalVerifier,
-  /WWHN-182-PASS/u,
-  "final WWHN-182 PASS gate",
-);
+requirePattern(finalVerifier, /WWHN-180-PASS/u, "final WWHN-180 PASS gate");
+requirePattern(finalVerifier, /WWHN-182-PASS/u, "final WWHN-182 PASS gate");
 requirePattern(finalVerifier, /WWHN-183-GO/u, "final BA GO gate");
 requirePattern(
   uiEvidence,
@@ -328,14 +361,14 @@ for (const id of ["WWHN-180", "WWHN-182", "WWHN-183"]) {
   requirePattern(taskDoc, new RegExp(id), `WWHN-181 documentation ${id}`);
 }
 for (const phrase of [
-  "posts inbound atomically with Idempotency-Key only",
-  "resolves outbound raw codes and never sends the obsolete codes[] payload",
+  "posts inbound atomically with If-Match + Idempotency-Key",
+  "resolves outbound raw codes and sends item-level canonical scan with If-Match",
   "applies the complete APPROVED variance set",
   "keeps final sign-off fail-closed",
 ]) {
   requirePattern(
     tests,
-    new RegExp(phrase.replace(/[\[\]]/g, "\\$&")),
+    new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")),
     `regression test: ${phrase}`,
   );
 }

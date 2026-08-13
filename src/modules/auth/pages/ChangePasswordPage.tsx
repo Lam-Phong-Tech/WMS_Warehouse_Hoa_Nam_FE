@@ -73,7 +73,10 @@ export function ChangePasswordPage() {
         </div>
       )}
 
-      <section className="hn-login-wrap" aria-labelledby="change-password-title">
+      <section
+        className="hn-login-wrap"
+        aria-labelledby="change-password-title"
+      >
         <div className="hn-login-kicker">
           Hoa Nam Tools <span>WMS · Quản lý kho</span>
         </div>

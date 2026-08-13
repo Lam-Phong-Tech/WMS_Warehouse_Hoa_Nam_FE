@@ -92,7 +92,10 @@ export const useAuthStore = create<AuthState>()(
           me.is_super_admin ??
           me.roles.some((role) => role.role_code === "SUPER_ADMIN");
         const currentContext =
-          active_context ?? get().currentContext ?? available_contexts[0] ?? null;
+          active_context ??
+          get().currentContext ??
+          available_contexts[0] ??
+          null;
 
         set({
           profile,

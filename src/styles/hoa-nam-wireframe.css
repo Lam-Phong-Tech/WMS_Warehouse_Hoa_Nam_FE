@@ -36,7 +36,11 @@
 html,
 body,
 #root {
-  font-family: "Be Vietnam Pro", system-ui, -apple-system, sans-serif;
+  font-family:
+    "Be Vietnam Pro",
+    system-ui,
+    -apple-system,
+    sans-serif;
   color: var(--hn-ink);
   background: var(--hn-canvas);
 }

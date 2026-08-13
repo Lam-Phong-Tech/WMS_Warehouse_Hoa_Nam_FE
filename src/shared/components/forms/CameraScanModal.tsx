@@ -18,10 +18,12 @@ export interface CameraScanModalProps {
 
 function getBarcodeDetector(): BarcodeDetectorConstructor | null {
   return (
-    globalThis as typeof globalThis & {
-      BarcodeDetector?: BarcodeDetectorConstructor;
-    }
-  ).BarcodeDetector ?? null;
+    (
+      globalThis as typeof globalThis & {
+        BarcodeDetector?: BarcodeDetectorConstructor;
+      }
+    ).BarcodeDetector ?? null
+  );
 }
 
 /**
@@ -137,7 +139,8 @@ export function CameraScanModal({
 
         frameRef.current = requestAnimationFrame(() => void detectFrame());
       } catch (error) {
-        const reason = error instanceof Error ? error.message : "Không xác định";
+        const reason =
+          error instanceof Error ? error.message : "Không xác định";
         setCameraError(
           `Không truy cập được camera (${reason}). Hãy đóng camera và nhập Barcode/QR thủ công.`,
         );
@@ -182,7 +185,9 @@ export function CameraScanModal({
             style={{ marginTop: 12 }}
             type="info"
             showIcon
-            message={cameraReady ? "Camera sẵn sàng" : "Đang khởi tạo camera..."}
+            message={
+              cameraReady ? "Camera sẵn sàng" : "Đang khởi tạo camera..."
+            }
             description="Đưa Barcode/QR vào khung hình. Camera chỉ đọc mã; dữ liệu vẫn phải qua validation nghiệp vụ như nhập tay. Camera không đọc RFID."
           />
         </>

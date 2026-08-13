@@ -118,9 +118,7 @@ function PageSizeSelector({
         value={value}
         style={{ width: 110 }}
         showSearch={false}
-        labelRender={({ value: selectedValue }) =>
-          `${selectedValue} / trang`
-        }
+        labelRender={({ value: selectedValue }) => `${selectedValue} / trang`}
         options={PAGE_SIZE_OPTIONS.map((size) => ({
           value: size,
           label: `${size} / trang`,
@@ -298,10 +296,7 @@ export default function MvpPutawayPage() {
         location_hint: values.location_hint?.trim() || null,
         note: values.note?.trim() || null,
       });
-      if (
-        result.stock_effect !== "NONE" ||
-        result.movement_created !== false
-      ) {
+      if (result.stock_effect !== "NONE" || result.movement_created !== false) {
         throw new Error(
           "Invariant lỗi: tạo Putaway DRAFT không được ảnh hưởng tồn kho.",
         );
@@ -312,9 +307,7 @@ export default function MvpPutawayPage() {
       closePutaway();
     } catch (error) {
       if ((error as { errorFields?: unknown }).errorFields) return;
-      message.error(
-        getApiErrorMessage(error, "Không tạo được Putaway DRAFT."),
-      );
+      message.error(getApiErrorMessage(error, "Không tạo được Putaway DRAFT."));
     }
   };
 
@@ -325,10 +318,7 @@ export default function MvpPutawayPage() {
         id: row.draft_id,
         version: row.draft_version,
       });
-      if (
-        result.stock_effect !== "NONE" ||
-        result.movement_created !== false
-      ) {
+      if (result.stock_effect !== "NONE" || result.movement_created !== false) {
         throw new Error(
           "Invariant lỗi: Confirm Putaway không được tạo stock movement.",
         );
@@ -337,9 +327,7 @@ export default function MvpPutawayPage() {
         "Putaway thành công. BOX đã map vào TRAY; available_qty không đổi.",
       );
     } catch (error) {
-      message.error(
-        getApiErrorMessage(error, "Không xác nhận được Putaway."),
-      );
+      message.error(getApiErrorMessage(error, "Không xác nhận được Putaway."));
       throw error;
     }
   };
@@ -351,10 +339,7 @@ export default function MvpPutawayPage() {
         id: row.draft_id,
         version: row.draft_version,
       });
-      if (
-        result.stock_effect !== "NONE" ||
-        result.movement_created !== false
-      ) {
+      if (result.stock_effect !== "NONE" || result.movement_created !== false) {
         throw new Error(
           "Invariant lỗi: Cancel Putaway không được ảnh hưởng tồn kho.",
         );
@@ -363,9 +348,7 @@ export default function MvpPutawayPage() {
         "Đã hủy Putaway DRAFT. BOX vẫn chờ xếp khay; tồn kho không đổi.",
       );
     } catch (error) {
-      message.error(
-        getApiErrorMessage(error, "Không hủy được Putaway DRAFT."),
-      );
+      message.error(getApiErrorMessage(error, "Không hủy được Putaway DRAFT."));
       throw error;
     }
   };
@@ -418,9 +401,7 @@ export default function MvpPutawayPage() {
       dataIndex: "status",
       width: 210,
       render: (value: string) => (
-        <Tag color={value === "STORED" ? "success" : "warning"}>
-          {value}
-        </Tag>
+        <Tag color={value === "STORED" ? "success" : "warning"}>{value}</Tag>
       ),
     },
     {
@@ -429,9 +410,7 @@ export default function MvpPutawayPage() {
       width: 180,
       render: (_, row) =>
         row.draft_id ? (
-          <Tag color="processing">
-            {row.to_tray_code || "Đã chọn TRAY"}
-          </Tag>
+          <Tag color="processing">{row.to_tray_code || "Đã chọn TRAY"}</Tag>
         ) : (
           <Tag>Chưa tạo</Tag>
         ),
@@ -649,8 +628,7 @@ export default function MvpPutawayPage() {
         confirmLoading={createMutation.isPending}
         okButtonProps={{
           disabled:
-            !canManage ||
-            selected?.status !== "RECEIVED_PENDING_PUTAWAY",
+            !canManage || selected?.status !== "RECEIVED_PENDING_PUTAWAY",
         }}
         width={760}
         centered
@@ -725,9 +703,7 @@ export default function MvpPutawayPage() {
           <Form.Item
             name="to_tray_id"
             label="TRAY đã resolve / chọn fallback"
-            rules={[
-              { required: true, message: "Scan hoặc chọn TRAY đích." },
-            ]}
+            rules={[{ required: true, message: "Scan hoặc chọn TRAY đích." }]}
           >
             <Select
               showSearch
@@ -739,10 +715,7 @@ export default function MvpPutawayPage() {
             />
           </Form.Item>
           <Form.Item name="location_hint" label="Vị trí gợi ý">
-            <Input
-              maxLength={255}
-              placeholder="VD: Dãy trái khu linh kiện"
-            />
+            <Input maxLength={255} placeholder="VD: Dãy trái khu linh kiện" />
           </Form.Item>
           <Form.Item name="note" label="Ghi chú">
             <Input.TextArea rows={3} maxLength={2000} showCount />
@@ -768,9 +741,7 @@ export default function MvpPutawayPage() {
         }
         open={Boolean(detailRow)}
         onCancel={() => setDetailRow(null)}
-        footer={
-          <Button onClick={() => setDetailRow(null)}>Đóng</Button>
-        }
+        footer={<Button onClick={() => setDetailRow(null)}>Đóng</Button>}
         width={680}
       >
         {detailRow ? (
@@ -795,9 +766,7 @@ export default function MvpPutawayPage() {
             </Descriptions.Item>
             <Descriptions.Item label="Trạng thái BOX">
               <Tag
-                color={
-                  detailRow.status === "STORED" ? "success" : "warning"
-                }
+                color={detailRow.status === "STORED" ? "success" : "warning"}
               >
                 {detailRow.status}
               </Tag>

@@ -8,7 +8,10 @@ import {
 import { useAuthStore } from "@/shared/store/auth.store";
 
 const { mutation } = vi.hoisted(() => ({
-  mutation: () => ({ isPending: false, mutateAsync: vi.fn().mockResolvedValue({}) }),
+  mutation: () => ({
+    isPending: false,
+    mutateAsync: vi.fn().mockResolvedValue({}),
+  }),
 }));
 
 vi.mock("@/modules/master-data/hooks/use-mvp-master", () => ({
@@ -93,7 +96,9 @@ describe("API-backed MVP master screens", () => {
 
     const row = screen.getByText("DCH-DRILL-DJZ10A-220V-V1").closest("tr");
     expect(row).not.toBeNull();
-    fireEvent.click(within(row as HTMLTableRowElement).getByRole("button", { name: "Sửa" }));
+    fireEvent.click(
+      within(row as HTMLTableRowElement).getByRole("button", { name: "Sửa" }),
+    );
     dialog = screen.getByRole("dialog");
     expect(within(dialog).getByText("Sửa SKU")).toBeInTheDocument();
     expect(within(dialog).getByText("3")).toBeInTheDocument();
