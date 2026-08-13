@@ -46,9 +46,7 @@ function extractRows(markdown) {
     const method = cells
       .map((cell) => cell.replace(/[^A-Z]/g, ""))
       .find((cell) => methods.has(cell));
-    const pathCell = cells.find((cell) =>
-      /`\/(?:api\/v1\/)?[^`]+`/.test(cell),
-    );
+    const pathCell = cells.find((cell) => /`\/(?:api\/v1\/)?[^`]+`/.test(cell));
     if (!method || !pathCell) continue;
     const path = pathCell.match(/`(\/[^`]+)`/)?.[1];
     if (!path) continue;
@@ -58,7 +56,9 @@ function extractRows(markdown) {
       method,
       path,
       disposition,
-      failClosed: /fail-closed|blocked until|pending contract/i.test(disposition),
+      failClosed: /fail-closed|blocked until|pending contract/i.test(
+        disposition,
+      ),
     });
   }
   return rows;
@@ -104,7 +104,8 @@ for (const file of mappingFiles) {
   if (!existsSync(file)) failures.push(`Missing ${relative(root, file)}`);
 }
 if (failures.length) {
-  for (const failure of failures) console.error(`[api-mapping] ERROR: ${failure}`);
+  for (const failure of failures)
+    console.error(`[api-mapping] ERROR: ${failure}`);
   process.exit(1);
 }
 
@@ -144,7 +145,9 @@ for (const file of mappingFiles) {
             `${rel}:${row.line} ${key} is intentionally fail-closed pending canonical contract.`,
           );
         } else {
-          failures.push(`${rel}:${row.line} ${key} not found in swagger-api.json`);
+          failures.push(
+            `${rel}:${row.line} ${key} not found in swagger-api.json`,
+          );
         }
       }
     } else if (isM1 && !endpointPaths.has(normalized)) {
@@ -166,6 +169,27 @@ for (const flow of baseline.criticalFlows ?? []) {
     failures.push(
       `Baseline ${flow.id} path ${rawPath} not represented by endpoints.ts`,
     );
+  }
+
+  // Contract gate FE↔BE (WAR-P1-04): mỗi critical flow có method phải tồn tại
+  // trong BE OpenAPI snapshot — bắt được endpoint FE gọi nhưng BE chưa đăng ký
+  // route (vd GET /component-issue-documents/{id} từng thiếu ở audit 08/2026).
+  if (swaggerRoutes && normalized && typeof flow.method === "string") {
+    const key = `${flow.method.toUpperCase()} ${normalized}`;
+    if (!swaggerRoutes.has(key)) {
+      const pendingExternalSignoff =
+        typeof flow.officialSignoff === "string" &&
+        flow.officialSignoff.startsWith("PENDING");
+      if (pendingExternalSignoff) {
+        warnings.push(
+          `Baseline ${flow.id} ${key} not in swagger-api.json; tolerated only while ${flow.officialSignoff}.`,
+        );
+      } else {
+        failures.push(
+          `Baseline ${flow.id} ${key} not found in swagger-api.json (BE route missing or drifted)`,
+        );
+      }
+    }
   }
 
   const flowPermissions = [
@@ -197,9 +221,11 @@ for (const code of [
   }
 }
 
-for (const warning of warnings) console.warn(`[api-mapping] WARNING: ${warning}`);
+for (const warning of warnings)
+  console.warn(`[api-mapping] WARNING: ${warning}`);
 if (failures.length) {
-  for (const failure of failures) console.error(`[api-mapping] ERROR: ${failure}`);
+  for (const failure of failures)
+    console.error(`[api-mapping] ERROR: ${failure}`);
   process.exit(1);
 }
 console.log(

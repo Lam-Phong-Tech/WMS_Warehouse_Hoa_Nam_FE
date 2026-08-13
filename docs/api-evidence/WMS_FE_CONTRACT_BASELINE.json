@@ -134,6 +134,147 @@
       "expectedErrors": [403, 409, 422, 428],
       "feDisposition": "IMPLEMENTED_EXACT_V1_7_SESSION_VERSION_CAS",
       "officialSignoff": "PENDING_WWHN_180_WWHN_182"
+    },
+    {
+      "id": "WARRANTY_LIST",
+      "method": "GET",
+      "relativePath": "/warranty-cases",
+      "permission": "warranty.manage",
+      "requiredSuccess": ["data", "meta"],
+      "feDisposition": "IMPLEMENTED_WAR_01_HUB"
+    },
+    {
+      "id": "WARRANTY_INTAKE",
+      "method": "POST",
+      "relativePath": "/warranty-cases",
+      "permissionsAny": ["warranty.manage", "warranty.temp_only"],
+      "requiredHeaders": ["Idempotency-Key"],
+      "requiredSuccess": ["data.id", "data.case_code"],
+      "readOnlyAssertions": { "stock_effect": "NONE", "movement_created": false },
+      "feDisposition": "IMPLEMENTED_WAR_02_IDENTIFIED_AND_TEMP_ONLY"
+    },
+    {
+      "id": "WARRANTY_DETAIL",
+      "method": "GET",
+      "relativePath": "/warranty-cases/:id",
+      "permission": "warranty.manage",
+      "requiredSuccess": ["data.id", "data.version"],
+      "feDisposition": "IMPLEMENTED_WAR_03_DETAIL"
+    },
+    {
+      "id": "WARRANTY_UPDATE",
+      "method": "PATCH",
+      "relativePath": "/warranty-cases/:id",
+      "permission": "warranty.manage",
+      "requiredHeaders": ["If-Match", "Idempotency-Key"],
+      "requiredRequest": [],
+      "persistedFields": [
+        "status",
+        "confirmed_defect",
+        "received_condition",
+        "accessories_received",
+        "cancel_reason"
+      ],
+      "readOnlyAssertions": { "stock_effect": "NONE", "movement_created": false },
+      "feDisposition": "IMPLEMENTED_WAR_P1_02_FULL_FIELD_PERSISTENCE"
+    },
+    {
+      "id": "WARRANTY_EVENTS",
+      "method": "GET",
+      "relativePath": "/warranty-cases/:caseId/events",
+      "permission": "warranty.manage",
+      "feDisposition": "IMPLEMENTED_TIMELINE"
+    },
+    {
+      "id": "WARRANTY_ATTACHMENT_LIST",
+      "method": "GET",
+      "relativePath": "/warranty-cases/:caseId/attachments",
+      "permission": "warranty.manage",
+      "feDisposition": "IMPLEMENTED_WAR_P1_01"
+    },
+    {
+      "id": "WARRANTY_ATTACHMENT_UPLOAD",
+      "method": "POST",
+      "relativePath": "/warranty-cases/:caseId/attachments",
+      "permission": "warranty.manage",
+      "readOnlyAssertions": { "stock_effect": "NONE" },
+      "feDisposition": "IMPLEMENTED_WAR_P1_01"
+    },
+    {
+      "id": "WARRANTY_ATTACHMENT_DOWNLOAD",
+      "method": "GET",
+      "relativePath": "/warranty-attachments/:id/download",
+      "permission": "warranty.manage",
+      "feDisposition": "IMPLEMENTED_WAR_P1_01"
+    },
+    {
+      "id": "WARRANTY_ATTACHMENT_DELETE",
+      "method": "DELETE",
+      "relativePath": "/warranty-attachments/:id",
+      "permission": "warranty.manage",
+      "feDisposition": "IMPLEMENTED_WAR_P1_01_LOGICAL_DELETE"
+    },
+    {
+      "id": "COMPONENT_ISSUE_LIST",
+      "method": "GET",
+      "relativePath": "/component-issue-documents",
+      "permission": "warranty.component_issue",
+      "feDisposition": "IMPLEMENTED_COMP_01_WITH_WARRANTY_CASE_FILTER"
+    },
+    {
+      "id": "COMPONENT_ISSUE_CREATE",
+      "method": "POST",
+      "relativePath": "/component-issue-documents",
+      "permission": "warranty.component_issue",
+      "requiredRequest": ["warehouse_id", "warranty_case_id", "document_date", "purpose", "lines"],
+      "requestConstraints": { "purpose": ["WARRANTY"] },
+      "readOnlyAssertions": { "stock_effect": "NONE", "movement_created": false },
+      "feDisposition": "IMPLEMENTED_COMP_01_DRAFT_STOCK_NEUTRAL"
+    },
+    {
+      "id": "COMPONENT_ISSUE_DETAIL",
+      "method": "GET",
+      "relativePath": "/component-issue-documents/:id",
+      "permission": "warranty.component_issue",
+      "requiredSuccess": ["data.document.id", "data.lines"],
+      "feDisposition": "IMPLEMENTED_WAR_P0_01_DETAIL_ROUTE"
+    },
+    {
+      "id": "COMPONENT_ISSUE_SCAN",
+      "method": "POST",
+      "relativePath": "/component-issue-documents/:id/scan",
+      "permission": "warranty.component_issue",
+      "requiredHeaders": ["If-Match"],
+      "requiredRequest": ["line_id", "code_value", "quantity"],
+      "readOnlyAssertions": { "stock_effect": "NONE", "movement_created": false },
+      "feDisposition": "IMPLEMENTED_COMP_01_SCAN_STOCK_NEUTRAL"
+    },
+    {
+      "id": "COMPONENT_ISSUE_CANCEL",
+      "method": "POST",
+      "relativePath": "/component-issue-documents/:id/cancel",
+      "permission": "warranty.component_issue",
+      "requiredHeaders": ["If-Match"],
+      "requiredRequest": ["reason"],
+      "feDisposition": "IMPLEMENTED_COMP_01_CANCEL_WITH_REASON"
+    },
+    {
+      "id": "COMPONENT_ISSUE_POST",
+      "method": "POST",
+      "relativePath": "/component-issue-documents/:id/post",
+      "permission": "warranty.component_issue",
+      "requiredHeaders": ["If-Match", "Idempotency-Key"],
+      "requiredSuccess": ["version", "status", "movement_ids"],
+      "readOnlyAssertions": { "stock_effect": "DECREASE" },
+      "feDisposition": "IMPLEMENTED_COMP_01_FULL_POST_DECREASE"
+    },
+    {
+      "id": "WARRANTY_DEFECTS_REPORT",
+      "method": "GET",
+      "relativePath": "/reports/warranty-defects",
+      "permission": "report.view",
+      "requiredSuccess": ["data.summary", "data.rows", "data.pii_included"],
+      "feDisposition": "IMPLEMENTED_PII_MASKED_REPORT"
     }
   ],
   "actionRegister": [

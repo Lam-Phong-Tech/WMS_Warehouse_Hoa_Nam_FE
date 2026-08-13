@@ -16,7 +16,27 @@ Final sign-off của `WWHN-148` vẫn fail-closed cho đến khi `WWHN-146`, `WW
 | Scan classify | `scanService.ts` | POST | `/scan/classify` | `/api/v1/scan/classify` | `scan.classify` | FE implemented; BE1 + BA + QA2 sign-off pending. |
 | Post receipt | `receivingService.ts` | POST | `/inbound-documents/{id}/post-receipt` | `/api/v1/inbound-documents/{id}/post-receipt` | `inbound.post` | FE enforces `Idempotency-Key`, `If-Match` and success evidence; BE sign-off pending. |
 | Post issue | `shippingService.ts` | POST | `/outbound-documents/{id}/post-issue` | `/api/v1/outbound-documents/{id}/post-issue` | `outbound.post` | FE enforces `Idempotency-Key`, `If-Match` and success evidence; BE sign-off pending. |
-| Apply adjustment | `stocktakeService.ts` | POST | `/stocktake/sessions/{sessionId}/apply-adjustment` | `/api/v1/stocktake/sessions/{sessionId}/apply-adjustment` | `stocktake.adjust` | Action-level permission; route entry alone never grants stock adjustment. |
+| Apply adjustment | `stocktakeService.ts` | POST | `/stocktake/sessions/{sessionId}/apply-adjustment` | `/api/v1/stocktake/sessions/{sessionId}/apply-adjustment` | `stocktake.adjust` | Action-level permission; blocked until BE registers canonical stocktake session routes (2026-08-13 dev snapshot: route absent). |
+
+## Warranty & Component Issue mappings (luồng 04)
+
+| Flow | FE service | Method | Endpoint constant path | Effective runtime path | Permission | Disposition |
+| --- | --- | --- | --- | --- | --- | --- |
+| Warranty list (WAR-01) | `warrantyService.ts` | GET | `/warranty-cases` | `/api/v1/warranty-cases` | `warranty.manage` | Implemented; BE route present in dev Swagger snapshot 2026-08-13. |
+| Warranty intake (WAR-02) | `warrantyService.ts` | POST | `/warranty-cases` | `/api/v1/warranty-cases` | `warranty.manage` (+`warranty.temp_only` for TEMP_ONLY) | FE enforces `Idempotency-Key` and `stock_effect=NONE`. |
+| Warranty detail (WAR-03) | `warrantyService.ts` | GET | `/warranty-cases/{id}` | `/api/v1/warranty-cases/{id}` | `warranty.manage` | Implemented; ETag/version surfaced for CAS. |
+| Warranty update (WAR-03) | `warrantyService.ts` | PATCH | `/warranty-cases/{id}` | `/api/v1/warranty-cases/{id}` | `warranty.manage` | FE sends `If-Match` + persists confirmed_defect / received_condition / accessories_received / cancel_reason. |
+| Warranty events | `warrantyService.ts` | GET | `/warranty-cases/{id}/events` | `/api/v1/warranty-cases/{id}/events` | `warranty.manage` | Implemented; ERD event taxonomy. |
+| Attachments list | `warrantyService.ts` | GET | `/warranty-cases/{id}/attachments` | `/api/v1/warranty-cases/{id}/attachments` | `warranty.manage` | Implemented (WAR-P1-01 closed at BE dev SHA). |
+| Attachments upload | `warrantyService.ts` | POST | `/warranty-cases/{id}/attachments` | `/api/v1/warranty-cases/{id}/attachments` | `warranty.manage` | Multipart upload, `stock_effect=NONE`. |
+| Attachment download | `warrantyService.ts` | GET | `/warranty-attachments/{id}/download` | `/api/v1/warranty-attachments/{id}/download` | `warranty.manage` | Implemented. |
+| Attachment delete | `warrantyService.ts` | DELETE | `/warranty-attachments/{id}` | `/api/v1/warranty-attachments/{id}` | `warranty.manage` | Logical delete. |
+| Component issues list | `componentIssueService.ts` | GET | `/component-issue-documents` | `/api/v1/component-issue-documents` | `warranty.component_issue` | Supports `warranty_case_id` filter. |
+| Component issue create | `componentIssueService.ts` | POST | `/component-issue-documents` | `/api/v1/component-issue-documents` | `warranty.component_issue` | FE forces `purpose=WARRANTY`; DRAFT stock-neutral. |
+| Component issue detail | `componentIssueService.ts` | GET | `/component-issue-documents/{id}` | `/api/v1/component-issue-documents/{id}` | `warranty.component_issue` | WAR-P0-01 closed: BE GET detail route present at dev SHA. |
+| Component issue scan | `componentIssueService.ts` | POST | `/component-issue-documents/{id}/scan` | `/api/v1/component-issue-documents/{id}/scan` | `warranty.component_issue` | `If-Match` CAS; scan stock-neutral. |
+| Component issue cancel | `componentIssueService.ts` | POST | `/component-issue-documents/{id}/cancel` | `/api/v1/component-issue-documents/{id}/cancel` | `warranty.component_issue` | Reason required. |
+| Component issue post | `componentIssueService.ts` | POST | `/component-issue-documents/{id}/post` | `/api/v1/component-issue-documents/{id}/post` | `warranty.component_issue` | Full-post; `Idempotency-Key`; FE asserts `stock_effect=DECREASE` + `movement_ids`. |
 
 ## Dashboard and reports disposition
 
@@ -26,7 +46,7 @@ Final sign-off của `WWHN-148` vẫn fail-closed cho đến khi `WWHN-146`, `WW
 | Inventory XNT | GET | `/reports/inventory-xnt` | Active | Mapping implemented; independent BE approval pending. |
 | Export XNT | GET | `/reports/inventory-xnt/export-excel` | Active and action-gated by `report.export` | Mapping implemented; independent BE approval pending. |
 | Reports hub | GET | `/reports/hub` | Fail-closed before network | Blocked until BE1/BE2 + BA publish canonical contract disposition. |
-| Warranty defects report | GET | `/reports/warranty-defects` | Fail-closed before network | Blocked until BE1/BE2 + BA publish canonical contract disposition. |
+| Warranty defects report | GET | `/reports/warranty-defects` | Active | Mapping implemented; BE route + PII-mask + export audit present at dev SHA (Swagger snapshot 2026-08-13). |
 
 ## RBAC mapping
 

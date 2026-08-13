@@ -444,7 +444,9 @@ vi.mock("antd", () => {
           : null,
       );
     },
-    Space: renderWithChildren("div"),
+    Space: Object.assign(renderWithChildren("div"), {
+      Compact: renderWithChildren("div"),
+    }),
     Typography: Object.assign(stub, {
       Text: renderWithChildren("span"),
       Title: renderWithChildren("h1"),
@@ -511,8 +513,34 @@ vi.mock("antd", () => {
       },
     ),
     Modal: Object.assign(
-      ({ open, title, children, footer }: any) => {
+      ({
+        open,
+        title,
+        children,
+        footer,
+        onOk,
+        onCancel,
+        okText,
+        cancelText,
+      }: any) => {
         if (!open) return null;
+        // Không có footer tùy biến → render nút OK/Cancel mặc định như antd
+        // để test bấm được okText/cancelText của Modal chuẩn.
+        const footerContent =
+          footer === undefined && (onOk || onCancel)
+            ? [
+                React.createElement(
+                  "button",
+                  { key: "cancel", type: "button", onClick: onCancel },
+                  cancelText ?? "Hủy",
+                ),
+                React.createElement(
+                  "button",
+                  { key: "ok", type: "button", onClick: onOk },
+                  okText ?? "OK",
+                ),
+              ]
+            : (footer ?? null);
         return React.createElement(
           "div",
           { className: "ant-modal", role: "dialog" },
@@ -532,7 +560,7 @@ vi.mock("antd", () => {
             ? React.createElement(
                 "div",
                 { className: "ant-modal-footer" },
-                footer ?? null,
+                footerContent,
               )
             : null,
         );
@@ -832,7 +860,7 @@ vi.mock("sonner", () => ({
 vi.mock("@ant-design/icons", () => {
   const stub = () => null;
   const icons: Record<string, any> = {};
-  "AimOutlined ApartmentOutlined AppstoreOutlined ArrowRightOutlined AuditOutlined BankOutlined BarChartOutlined BarcodeOutlined BellOutlined CarOutlined CheckCircleOutlined CheckOutlined CloseCircleOutlined CloseOutlined ClusterOutlined CopyOutlined DeleteOutlined DownOutlined DownloadOutlined EditOutlined EnvironmentOutlined ExclamationCircleFilled ExpandAltOutlined ExperimentOutlined ExportOutlined EyeOutlined FileExcelOutlined FilePdfOutlined FileSearchOutlined FileTextOutlined FundOutlined HomeOutlined IdcardOutlined ImportOutlined InboxOutlined KeyOutlined LockOutlined LogoutOutlined MailOutlined MenuFoldOutlined MenuUnfoldOutlined NodeIndexOutlined PlayCircleOutlined PlusOutlined ProfileOutlined ReloadOutlined RollbackOutlined SafetyCertificateOutlined SaveOutlined SearchOutlined SendOutlined SettingOutlined ShopOutlined ShoppingCartOutlined ShrinkOutlined SolutionOutlined StockOutlined StopOutlined SwapOutlined SyncOutlined TeamOutlined ToolOutlined UndoOutlined UnorderedListOutlined UploadOutlined UserAddOutlined UserOutlined UserSwitchOutlined WarningOutlined ZoomInOutlined ZoomOutOutlined"
+  "AimOutlined ApartmentOutlined AppstoreOutlined ArrowRightOutlined AuditOutlined BankOutlined BarChartOutlined BarcodeOutlined BellOutlined CameraOutlined CarOutlined CheckCircleOutlined PaperClipOutlined CheckOutlined CloseCircleOutlined CloseOutlined ClusterOutlined CopyOutlined DeleteOutlined DownOutlined DownloadOutlined EditOutlined EnvironmentOutlined ExclamationCircleFilled ExpandAltOutlined ExperimentOutlined ExportOutlined EyeOutlined FileExcelOutlined FilePdfOutlined FileSearchOutlined FileTextOutlined FundOutlined HomeOutlined IdcardOutlined ImportOutlined InboxOutlined KeyOutlined LockOutlined LogoutOutlined MailOutlined MenuFoldOutlined MenuUnfoldOutlined NodeIndexOutlined PlayCircleOutlined PlusOutlined ProfileOutlined ReloadOutlined RollbackOutlined SafetyCertificateOutlined SaveOutlined SearchOutlined SendOutlined SettingOutlined ShopOutlined ShoppingCartOutlined ShrinkOutlined SolutionOutlined StockOutlined StopOutlined SwapOutlined SyncOutlined TeamOutlined ToolOutlined UndoOutlined UnorderedListOutlined UploadOutlined UserAddOutlined UserOutlined UserSwitchOutlined WarningOutlined ZoomInOutlined ZoomOutOutlined"
     .split(" ")
     .forEach((n) => (icons[n] = stub));
   return { default: stub, ...icons };
@@ -864,6 +892,10 @@ vi.mock("@/modules/auth/utils/permission", async () => {
       return Boolean(state?.isSuperAdmin || permissionCodes.includes(code));
     },
     useCan: () => true,
+    useHasPermission: () => (code: string) => {
+      const { isSuperAdmin, permissionCodes } = useAuthStore.getState();
+      return Boolean(isSuperAdmin || permissionCodes.includes(code));
+    },
   };
 });
 
@@ -872,7 +904,11 @@ vi.mock("@/app/router/access", () => ({
     "/dashboard": undefined,
     "/system/users": ["iam.user.view", "iam.user.manage"],
     "/system/users/new": ["iam.user.manage"],
-    "/system/roles": ["iam.role.view", "iam.role.manage", "iam.permission.view"],
+    "/system/roles": [
+      "iam.role.view",
+      "iam.role.manage",
+      "iam.permission.view",
+    ],
     "/master-data/skus": ["sku.view", "sku.manage"],
     "/master-data/skus/new": ["sku.manage"],
     "/master-data/agencies": ["agency.view", "agency.manage"],
@@ -880,7 +916,12 @@ vi.mock("@/app/router/access", () => ({
     "/master-data/defects": ["defect.view", "defect.manage"],
     "/master-data/defects/new": ["defect.manage"],
     "/scan": ["inventory.trace", "scan.classify"],
-    "/inbound": ["inbound.view", "inbound.create", "inbound.scan", "inbound.post"],
+    "/inbound": [
+      "inbound.view",
+      "inbound.create",
+      "inbound.scan",
+      "inbound.post",
+    ],
     "/putaway": ["container.view", "container.manage"],
     "/outbound": [
       "outbound.view",

@@ -8,8 +8,8 @@ M1 happy-path mapping.
 
 | Screen | FE service/source | UI action | Method | Path | Contract disposition |
 | --- | --- | --- | --- | --- | --- |
-| Inventory | src/modules/inventory/services/inventoryService.ts | Load safe stock alerts | GET | `/safe-stock-alerts` | Present in local Swagger snapshot. |
-| Inventory | src/modules/inventory/services/inventoryService.ts | Load safe stock history | GET | `/safe-stock-alerts/history` | Present in local Swagger snapshot. |
+| Inventory | src/modules/inventory/services/inventoryService.ts | Load safe stock alerts | GET | `/safe-stock-alerts` | Blocked until BE registers canonical safe-stock routes (2026-08-13 dev snapshot: route absent). |
+| Inventory | src/modules/inventory/services/inventoryService.ts | Load safe stock history | GET | `/safe-stock-alerts/history` | Blocked until BE registers canonical safe-stock routes (2026-08-13 dev snapshot: route absent). |
 
 ## Audit Logs
 
