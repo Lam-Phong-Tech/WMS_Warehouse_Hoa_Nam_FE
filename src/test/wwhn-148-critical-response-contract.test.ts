@@ -26,6 +26,7 @@ import { WMS_PERMISSION_CATALOG as P } from "@/shared/constants/wms-permissions"
 
 const fullyScannedDocument = (lineId: string, version = 1) => ({
   version,
+  status: "SCANNING",
   lines: [
     {
       id: lineId,

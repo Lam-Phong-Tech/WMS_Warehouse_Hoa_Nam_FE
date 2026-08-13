@@ -44,8 +44,8 @@ describe("context helpers", () => {
   });
 
   it("getContextKey sinh khoá duy nhất cho từng bối cảnh", () => {
-    expect(getContextKey(branchCtx)).toBe("2:chi_nhanh:3::");
-    expect(getContextKey(systemCtx)).toBe("1:he_thong:::");
+    expect(getContextKey(branchCtx)).toBe("2:chi_nhanh::3::");
+    expect(getContextKey(systemCtx)).toBe("1:he_thong::::");
     expect(getContextKey(branchCtx)).not.toBe(getContextKey(systemCtx));
   });
 });

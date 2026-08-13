@@ -3,7 +3,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { IamUserScreen } from "@/modules/iam/pages/IamUserScreen";
 import { useAuthStore } from "@/shared/store/auth.store";
 
-const mutation = () => ({ isPending: false, mutateAsync: vi.fn().mockResolvedValue({}) });
+const { mutation } = vi.hoisted(() => ({
+  mutation: () => ({ isPending: false, mutateAsync: vi.fn().mockResolvedValue({}) }),
+}));
 
 vi.mock("@/modules/iam/hooks/use-iam", () => ({
   useIamUsers: () => ({
@@ -60,8 +62,11 @@ describe("IamUserScreen", () => {
 
   it("renders backend users and opens create inside IAM-01", () => {
     render(<IamUserScreen />);
-    expect(screen.getByText("Nguyễn Văn Kho")).toBeInTheDocument();
-    expect(screen.getByText("Nhân viên kho")).toBeInTheDocument();
+    const row = screen.getByText("Nguyễn Văn Kho").closest("tr");
+    expect(row).not.toBeNull();
+    expect(
+      within(row as HTMLTableRowElement).getByText("Nhân viên kho"),
+    ).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "+ Thêm người dùng" }));
     expect(screen.getByRole("dialog")).toBeInTheDocument();

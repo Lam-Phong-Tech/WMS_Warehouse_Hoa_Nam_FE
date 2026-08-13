@@ -413,12 +413,12 @@ describe("QA1.4: RBAC — Route Permission Matrix", () => {
     expect(ROUTE_PERMISSIONS["/dashboard"]).toBeUndefined();
   });
 
-  it("Master Data yêu cầu sku.manage hoặc master.manage", async () => {
+  it("Master Data yêu cầu sku.view hoặc sku.manage", async () => {
     const { ROUTE_PERMISSIONS } = await import("@/app/router/access");
-    const perms = ROUTE_PERMISSIONS["/master-data"];
+    const perms = ROUTE_PERMISSIONS["/master-data/skus"];
     expect(Array.isArray(perms)).toBe(true);
+    expect(perms).toContain("sku.view");
     expect(perms).toContain("sku.manage");
-    expect(perms).toContain("master.manage");
   });
 
   it("Audit Logs yêu cầu AUDIT_LOG_VIEW (string đơn)", async () => {

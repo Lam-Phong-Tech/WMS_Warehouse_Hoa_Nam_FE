@@ -166,7 +166,7 @@ describe("WWHN-181 exact BE v1.7 guards", () => {
   });
 
   it("resolves inbound raw code to canonical line_id + qty with If-Match", async () => {
-    grant(P.SCAN_INBOUND, P.SCAN_CLASSIFY);
+    grant(P.INBOUND_SCAN, P.SCAN_CLASSIFY);
     vi.mocked(http.get).mockResolvedValue({
       id: "IN-1",
       version: 1,
@@ -330,6 +330,7 @@ describe("WWHN-181 exact BE v1.7 guards", () => {
     vi.mocked(http.get).mockResolvedValue({
       id: "IN-1",
       version: 1,
+      status: "SCANNING",
       lines: [{ id: "L1", qty_planned: 2, scanned_qty: 1 }],
     });
 
