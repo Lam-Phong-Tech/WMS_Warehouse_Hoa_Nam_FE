@@ -1,0 +1,18 @@
+{
+  "schemaVersion": "2.0.0",
+  "task": "WWHN-153/WWHN-182",
+  "evidenceRules": [
+    "Direct HTTP only; no browser interception or mock server",
+    "Separate sanitized request and response artifacts with SHA256",
+    "Every business response must expose request_id/x-request-id",
+    "Denied and stale writes require unchanged before/after effect probe",
+    "Idempotency replay requires after-first = after-replay effect proof",
+    "Authorization/cookie/token/secret values must never be persisted",
+    "PERMISSION_CATALOG response hash must bind formal permission approval"
+  ],
+  "requiredProbeShape": {
+    "permissionDeny": "method/path/body/effectProbe(method/path/valuePath)",
+    "idempotency": "method/path/body/changedBody/idempotencyKey/effectProbe(method/path/valuePath)",
+    "stale": "method/path/body/staleIfMatch/effectProbe(method/path/valuePath)"
+  }
+}

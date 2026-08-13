@@ -1,0 +1,12 @@
+{
+  "task": "WWHN-181",
+  "fe_sha": "7c6c0124a5a9134e728abb9efab10422c0a75e6f",
+  "be_sha": "fc534ed8c00dadd91ce60e7bac5a8660dda74d08",
+  "contract_version": "1.7.0",
+  "be_release_manifest_sha256": "ba8bc5841b5865095e51d21064ead90ad4c37129ee28142a3f507b497ddcc776",
+  "artifact_name": "wwhn-181-exact-sha-evidence-7c6c0124a5a9134e728abb9efab10422c0a75e6f",
+  "manifest_digest": "83bc1b55bb0669ffa4c5a9678394cf5905fe600219790ffa45cdafb9fc635901",
+  "sha256sums_digest": "20bb6652b21e1914556a6f863261c9f8d4038f500b8ad7cd8f5b5298dc55c497",
+  "ci_url": null,
+  "final_allowed": false
+}

@@ -1,0 +1,126 @@
+{
+  "generatedAt": "2026-08-13T11:58:59.879Z",
+  "mode": "INTEGRITY",
+  "sourceContext": {
+    "status": "PENDING",
+    "isCi": false,
+    "repository": "Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_FE",
+    "branch": "m1",
+    "sourceSha": "7c6c0124a5a9134e728abb9efab10422c0a75e6f",
+    "executionSha": "7c6c0124a5a9134e728abb9efab10422c0a75e6f",
+    "parentSha": "f5325572659a8ffca2394790dd91f70d8e6a4d61",
+    "treeSha": "6b5e9ecf96eb79885ee9eb30bb3a323cd7adad70",
+    "runId": "",
+    "runUrl": "",
+    "artifactName": "wwhn-153-signoff-integrity-7c6c0124a5a9134e728abb9efab10422c0a75e6f"
+  },
+  "inputDigests": {
+    "manifestPath": {
+      "path": "docs\\evidence\\wwhn-153\\WWHN-153_SIGNOFF_MANIFEST.json",
+      "sha256": "7713290f6c96e7265530a5c65f919805b8a8a6d26aa465590a0b60348c0b86bb"
+    },
+    "permissionPath": {
+      "path": "docs\\evidence\\wwhn-153\\WWHN-153_PERMISSION_APPROVAL.json",
+      "sha256": "8c3d6d8a8d8ee2247217d621d1d0d4c3a059047e3d44450931226c3f34d5023a"
+    },
+    "provenancePath": {
+      "path": "docs\\evidence\\wwhn-153\\WWHN-153_FE_SOURCE_PROVENANCE.json",
+      "sha256": "0d302d1dd2d347a049eced5ab88d3aefb86e46616db4836b674e7fe3c32aaf53"
+    }
+  },
+  "schemaVersion": "4.0.0",
+  "task": "WWHN-153",
+  "integrityOk": true,
+  "finalAllowed": false,
+  "openP0": 2,
+  "openP1": 5,
+  "openP2": 0,
+  "errors": [],
+  "blockers": [
+    "FINAL-SIGNOFF: fail-closed until every independent gate is PASS and open P0/P1 = 0."
+  ],
+  "gates": [
+    {
+      "id": "FE-SOURCE-PROVENANCE",
+      "status": "PENDING",
+      "sourceSha": "7c6c0124a5a9134e728abb9efab10422c0a75e6f",
+      "parentSha": "f5325572659a8ffca2394790dd91f70d8e6a4d61",
+      "treeSha": "6b5e9ecf96eb79885ee9eb30bb3a323cd7adad70"
+    },
+    {
+      "id": "OFFICIAL-RELEASE",
+      "status": "PENDING"
+    },
+    {
+      "id": "MODULE-SCHEMA",
+      "status": "PENDING"
+    },
+    {
+      "id": "QA1-INDEPENDENT-REVIEW",
+      "status": "PENDING"
+    },
+    {
+      "id": "INDEPENDENT-CONFIRMATION",
+      "status": "PENDING"
+    },
+    {
+      "id": "QA2-DIRECT-RUNTIME",
+      "status": "PENDING"
+    },
+    {
+      "id": "PERMISSION-APPROVAL",
+      "status": "PENDING"
+    },
+    {
+      "id": "BA-G1-MINUTES",
+      "status": "PENDING"
+    }
+  ],
+  "findings": [
+    {
+      "id": "FE-P0-01",
+      "severity": "P0",
+      "status": "PENDING"
+    },
+    {
+      "id": "FE-P0-02",
+      "severity": "P0",
+      "status": "PENDING"
+    },
+    {
+      "id": "FE-P1-01",
+      "severity": "P1",
+      "status": "PENDING"
+    },
+    {
+      "id": "FE-P1-02",
+      "severity": "P1",
+      "status": "PENDING"
+    },
+    {
+      "id": "FE-P1-03",
+      "severity": "P1",
+      "status": "PENDING"
+    },
+    {
+      "id": "FE-P1-04",
+      "severity": "P1",
+      "status": "PENDING"
+    },
+    {
+      "id": "FE-P1-05",
+      "severity": "P1",
+      "status": "PENDING"
+    },
+    {
+      "id": "FE-P2-01",
+      "severity": "P2",
+      "status": "PASS"
+    },
+    {
+      "id": "FE-P2-02",
+      "severity": "P2",
+      "status": "PASS"
+    }
+  ]
+}
