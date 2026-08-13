@@ -42,7 +42,6 @@ export const MENU: AppMenuItem[] = [
       { key: ROUTES.AGENCIES, label: "Đại lý / nơi nhận", icon: <ShopOutlined />, permission: ROUTE_PERMISSIONS[ROUTES.AGENCIES] },
       { key: ROUTES.DEFECTS, label: "Danh mục bệnh / lỗi", icon: <WarningOutlined />, permission: ROUTE_PERMISSIONS[ROUTES.DEFECTS] },
       { key: ROUTES.SCAN, label: "Mã vật lý", icon: <BarcodeOutlined />, permission: ROUTE_PERMISSIONS[ROUTES.SCAN] },
-      { key: ROUTES.MASTER_ADVANCED, label: "Dữ liệu nền nâng cao", icon: <AppstoreOutlined />, permission: ROUTE_PERMISSIONS[ROUTES.MASTER_ADVANCED] },
     ],
   },
   {
@@ -55,11 +54,18 @@ export const MENU: AppMenuItem[] = [
     ],
   },
   {
+    key: "outbound-group",
+    label: "03 · Xuất kho",
+    icon: <StockOutlined />,
+    children: [
+      { key: ROUTES.OUTBOUND, label: "Phiếu xuất & Post Issue", icon: <StockOutlined />, permission: ROUTE_PERMISSIONS[ROUTES.OUTBOUND] },
+    ],
+  },
+  {
     key: "wms-remaining",
     label: "Nghiệp vụ WMS khác",
     icon: <ShopOutlined />,
     children: [
-      { key: ROUTES.OUTBOUND, label: "Xuất kho", icon: <StockOutlined />, permission: ROUTE_PERMISSIONS[ROUTES.OUTBOUND] },
       { key: ROUTES.INVENTORY, label: "Tồn & truy vết", icon: <FundOutlined />, permission: ROUTE_PERMISSIONS[ROUTES.INVENTORY] },
       { key: ROUTES.WARRANTY, label: "Bảo hành", icon: <ToolOutlined />, permission: ROUTE_PERMISSIONS[ROUTES.WARRANTY] },
       { key: ROUTES.REVERSE, label: "Đảo ngược", icon: <RollbackOutlined />, permission: ROUTE_PERMISSIONS[ROUTES.REVERSE] },

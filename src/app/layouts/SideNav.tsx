@@ -71,30 +71,9 @@ const NAV_GROUPS: NavGroup[] = [
     name: "03 · Xuất kho",
     items: [
       {
-        screen: "OUT-REQ-01",
-        path: ROUTES.OUTBOUND,
-        label: "Tiếp nhận Phiếu yêu cầu xuất",
-      },
-      {
         screen: "OUT-01",
         path: ROUTES.OUTBOUND,
         label: "Danh sách phiếu xuất",
-      },
-      {
-        screen: "OUT-03",
-        path: ROUTES.OUTBOUND,
-        label: "Chi tiết phiếu xuất",
-      },
-      {
-        screen: "OUT-02",
-        path: ROUTES.OUTBOUND,
-        label: "Quét & match Item",
-      },
-      { screen: "LBL-01", path: ROUTES.OUTBOUND, label: "Nhãn từng Item" },
-      {
-        screen: "RFID-01",
-        path: ROUTES.OUTBOUND,
-        label: "Map RFID & Full Post Issue",
       },
     ],
   },
@@ -184,6 +163,11 @@ const MODAL_PARENT_SCREEN: Record<string, string> = {
   "IN-02": "IN-01",
   "IN-03": "IN-01",
   "PTW-01": "PTW-00",
+  "OUT-REQ-01": "OUT-01",
+  "OUT-03": "OUT-01",
+  "OUT-02": "OUT-01",
+  "LBL-01": "OUT-01",
+  "RFID-01": "OUT-01",
 };
 
 function matchesPath(currentPath: string, targetPath: string) {

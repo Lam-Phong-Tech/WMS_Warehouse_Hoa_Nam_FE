@@ -30,6 +30,7 @@ export interface SkuRecord {
   power_source_id?: string | null;
   power_or_voltage?: string | null;
   status: MasterStatus;
+  published_to_app?: boolean;
   version: number;
 }
 
@@ -44,6 +45,7 @@ export interface SkuPayload {
   power_source_code?: string | null;
   is_serial_tracked: boolean;
   status: MasterStatus;
+  published_to_app?: boolean;
 }
 
 export interface AgencyRecord {

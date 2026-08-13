@@ -13,7 +13,6 @@ const ChangePasswordPage = lazy(() => import("@/modules/auth/pages/ChangePasswor
 const NoPermissionPage = lazy(() => import("@/modules/errors/pages/NoPermissionPage").then((m) => ({ default: m.NoPermissionPage })));
 const AuditLogsPage = lazy(() => import("@/modules/audit-logs/pages/AuditLogsPage").then((m) => ({ default: m.AuditLogsPage })));
 const DashboardPage = lazy(() => import("@/modules/dashboard/pages/DashboardPage").then((m) => ({ default: m.default })));
-const MasterPage = lazy(() => import("@/modules/master-data/pages/MasterPage").then((m) => ({ default: m.default })));
 const IamUserScreen = lazy(() => import("@/modules/iam/pages/IamUserScreen").then((m) => ({ default: m.IamUserScreen })));
 const IamRolePermissionScreen = lazy(() => import("@/modules/iam/pages/IamRolePermissionScreen").then((m) => ({ default: m.IamRolePermissionScreen })));
 const SkuMasterScreen = lazy(() => import("@/modules/master-data/pages/MvpMasterScreens").then((m) => ({ default: m.SkuMasterScreen })));
@@ -57,7 +56,6 @@ export const router = createBrowserRouter([
         { path: ROUTES.AGENCY_CREATE, element: routeEl(ROUTES.AGENCY_CREATE, <AgencyMasterScreen openCreateOnMount />) },
         { path: ROUTES.DEFECTS, element: routeEl(ROUTES.DEFECTS, <DefectMasterScreen />) },
         { path: ROUTES.DEFECT_CREATE, element: routeEl(ROUTES.DEFECT_CREATE, <DefectMasterScreen openCreateOnMount />) },
-        { path: ROUTES.MASTER_ADVANCED, element: routeEl(ROUTES.MASTER_ADVANCED, <MasterPage />) },
         { path: ROUTES.SCAN, element: routeEl(ROUTES.SCAN, <PhysicalCodesPage />) },
 
         { path: ROUTES.INBOUND, element: routeEl(ROUTES.INBOUND, <InboundPage />) },

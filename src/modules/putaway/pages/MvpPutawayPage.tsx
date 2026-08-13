@@ -539,7 +539,7 @@ export default function MvpPutawayPage() {
         </div>
       </div>
 
-      <Card className="master-data-panel">
+      <Card className="master-data-panel" variant="borderless">
         <div className="master-data-contract-strip">
           <Tag color="blue">GET/POST /putaway/tasks</Tag>
           <Tag color="blue">POST /putaway/tasks/:id/confirm</Tag>

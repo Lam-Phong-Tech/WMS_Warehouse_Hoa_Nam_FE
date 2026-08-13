@@ -58,6 +58,7 @@ export const API_ENDPOINTS = {
   OUTBOUND_CANCEL: "/outbound-documents/:id/cancel",
   OUTBOUND_POST_ISSUE: "/outbound-documents/:id/post-issue",
   OUTBOUND_SCAN: "/outbound-documents/:id/scan",
+  OUTBOUND_UNMATCH: "/outbound-documents/:id/unmatch",
   OUTBOUND_REVERSE: "/outbound-documents/:id/reverse",
   OUTBOUND_REQUEST_IMPORTS: "/outbound-request-imports",
   OUTBOUND_REQUEST_IMPORT: "/outbound-request-imports/:id",

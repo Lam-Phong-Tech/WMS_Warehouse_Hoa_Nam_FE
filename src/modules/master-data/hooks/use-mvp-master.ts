@@ -6,6 +6,8 @@ import {
   getMvpAgencies,
   getMvpDefects,
   getMvpSkus,
+  hasMvpSkuStock,
+  setMvpSkuPublished,
   updateMvpAgency,
   updateMvpDefect,
   updateMvpSku,
@@ -44,6 +46,15 @@ export function useMvpDefects(params: MasterListParams) {
   });
 }
 
+export function useMvpSkuHasStock(skuId: string, enabled: boolean) {
+  return useQuery({
+    queryKey: [...mvpMasterKeys.all, "sku-has-stock", skuId],
+    queryFn: () => hasMvpSkuStock(skuId),
+    enabled: enabled && Boolean(skuId),
+    staleTime: 30_000,
+  });
+}
+
 function useInvalidateMasterMutation<TVariables>(mutationFn: (variables: TVariables) => Promise<unknown>) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -60,6 +71,13 @@ export function useUpdateMvpSku() {
   return useInvalidateMasterMutation(
     ({ id, version, payload }: { id: string; version: number; payload: SkuPayload }) =>
       updateMvpSku(id, version, payload),
+  );
+}
+
+export function useSetMvpSkuPublished() {
+  return useInvalidateMasterMutation(
+    ({ id, version, publishedToApp }: { id: string; version: number; publishedToApp: boolean }) =>
+      setMvpSkuPublished(id, version, publishedToApp),
   );
 }
 

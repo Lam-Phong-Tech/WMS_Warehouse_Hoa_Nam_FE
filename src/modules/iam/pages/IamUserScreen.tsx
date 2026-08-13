@@ -81,6 +81,7 @@ export interface IamUserScreenProps {
 export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps) {
   const permissionCodes = useAuthStore((state) => state.permissionCodes);
   const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
+  const currentUserId = useAuthStore((state) => state.profile?.user_id);
   const canManageUsers =
     isSuperAdmin || permissionCodes.includes("iam.user.manage");
 
@@ -128,6 +129,13 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
   const selectedRole = useMemo(
     () => roles.find((role) => role.role_id === formState.roleId),
     [formState.roleId, roles],
+  );
+
+  // SCR-IAM-01 (no self-escalation): BE luôn từ chối POST /users/{own_id}/roles
+  // bất kể giá trị mới là gì, nên khoá luôn ô chọn vai trò khi đang sửa chính
+  // tài khoản actor thay vì để họ đổi rồi mới nhận lỗi 409 lúc submit.
+  const isEditingSelf = Boolean(
+    editingUser && currentUserId && editingUser.user_id === currentUserId,
   );
 
   const resetForm = () => {
@@ -225,6 +233,7 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
         await updateUser.mutateAsync({
           userId: editingUser.user_id,
           roleId: formState.roleId,
+          currentRoleId: editingUser.roles?.[0]?.role_id,
           payload: {
             ...basePayload,
             version: editingUser.version,
@@ -499,7 +508,7 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
                   style={{ width: "100%" }}
                   value={formState.roleId}
                   onChange={(event) => updateField("roleId", event.target.value)}
-                  disabled={isSaving || roles.length === 0}
+                  disabled={isSaving || roles.length === 0 || isEditingSelf}
                 >
                   <option value="">Chọn vai trò</option>
                   {roles.map((role) => (
@@ -508,6 +517,12 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
                     </option>
                   ))}
                 </select>
+                {isEditingSelf ? (
+                  <div className="muted" style={{ marginTop: 6 }}>
+                    Không thể tự đổi vai trò của chính mình (SCR-IAM-01 — chống tự leo thang đặc quyền).
+                    Nhờ một quản trị viên khác thực hiện thay đổi này.
+                  </div>
+                ) : null}
               </div>
               <div className="field">
                 <label>Phạm vi dữ liệu</label>

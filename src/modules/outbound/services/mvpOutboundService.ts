@@ -32,11 +32,57 @@ export interface OutboundDocumentRecord {
   version: number;
   createdBy: string;
   updatedAt?: string;
+  /** Aggregate BE trả kèm ở GET /outbound-documents (SCR-OUT-01). */
+  matchedCount?: number;
+  labelPrintedCount?: number;
+  rfidMappedCount?: number;
+}
+
+export interface OutboundItemMatchRecord {
+  id: string;
+  lineId: string;
+  itemId?: string | null;
+  containerId?: string | null;
+  skuId: string;
+  itemCode?: string | null;
+  serialNumber?: string | null;
+  quantity: number;
+  status: "ACTIVE" | "REMOVED" | "POSTED";
+  matchedAt?: string;
+  removedAt?: string | null;
+  labelSnapshotId?: string | null;
+  labelStatus?: string | null;
+  rfidCode?: string | null;
+}
+
+export interface OutboundMovementRecord {
+  id: string;
+  movementType: string;
+  productId?: string | null;
+  quantity: number;
+  createdAt?: string;
+}
+
+export interface OutboundStatusHistoryRecord {
+  id: string;
+  fromStatus?: string | null;
+  toStatus: string;
+  changedAt?: string;
+  changedBy?: string | null;
+  note?: string | null;
 }
 
 export interface OutboundDetail {
   document: OutboundDocumentRecord;
   lines: OutboundLineRecord[];
+  itemMatches: OutboundItemMatchRecord[];
+  movements: OutboundMovementRecord[];
+  statusHistory: OutboundStatusHistoryRecord[];
+}
+
+export interface OutboundListResult {
+  data: OutboundDocumentRecord[];
+  meta: ApiMeta;
 }
 
 export interface OutboundLinePayload {
@@ -45,16 +91,19 @@ export interface OutboundLinePayload {
   note?: string | null;
 }
 
+/**
+ * BP-WMS-04/05: phiếu xuất luôn sinh từ toa đã consume — BE bắt buộc
+ * outbound_request_id và từ chối lines thủ công (lines hydrate từ toa).
+ */
 export interface CreateOutboundPayload {
   doc_no?: string | null;
   doc_date?: string | null;
   src_warehouse_id: string;
-  outbound_request_id?: string | null;
+  outbound_request_id: string;
   agency_id?: string | null;
   recipient_name?: string | null;
   recipient_address?: string | null;
   note?: string | null;
-  lines?: OutboundLinePayload[];
 }
 
 export interface UpdateOutboundPayload {
@@ -132,9 +181,18 @@ export interface ConsumeOutboundImportResult {
 
 export interface LabelSnapshotRecord {
   id: string;
+  labelCode?: string | null;
+  documentId?: string | null;
+  itemMatchId?: string | null;
   itemId?: string | null;
   skuId?: string | null;
+  skuCode?: string | null;
+  skuName?: string | null;
+  itemCodeValue?: string | null;
+  recipientName?: string | null;
+  recipientAddress?: string | null;
   status: string;
+  reprintCount: number;
   outboundNo?: string | null;
   payload: RawRecord;
 }
@@ -145,6 +203,8 @@ export interface PrinterConfigRecord {
   name: string;
   status: string;
   labelSize?: string | null;
+  lastHealthAt?: string | null;
+  lastHealthResult?: string | null;
 }
 
 export interface PhysicalCodeRecord {
@@ -238,12 +298,21 @@ function normalizeLine(
   };
 }
 
+function optionalNum(value: unknown): number | undefined {
+  if (value === undefined || value === null) return undefined;
+  const result = Number(value);
+  return Number.isFinite(result) ? result : undefined;
+}
+
 function normalizeDocument(row: RawRecord): OutboundDocumentRecord {
   const id = text(row.id ?? row.stock_document_id);
   const lines = rawLines(row).map((line) => normalizeLine(line, id));
   const expected = lines.reduce((sum, line) => sum + line.expected, 0);
   const scanned = lines.reduce((sum, line) => sum + line.scanned, 0);
   return {
+    matchedCount: optionalNum(row.matched_count),
+    labelPrintedCount: optionalNum(row.label_printed_count),
+    rfidMappedCount: optionalNum(row.rfid_mapped_count),
     id,
     code: text(row.doc_no ?? row.document_no ?? row.code, id),
     date: text(row.doc_date ?? row.created_at),
@@ -266,11 +335,69 @@ function normalizeDocument(row: RawRecord): OutboundDocumentRecord {
   };
 }
 
+function normalizeItemMatch(row: RawRecord): OutboundItemMatchRecord {
+  const status = text(row.status, "ACTIVE").toUpperCase();
+  return {
+    id: text(row.id),
+    lineId: text(row.line_id ?? row.outbound_line_id),
+    itemId: text(row.item_id) || null,
+    containerId: text(row.container_id) || null,
+    skuId: text(row.sku_id ?? row.product_id),
+    itemCode: text(row.item_code) || null,
+    serialNumber: text(row.serial_number) || null,
+    quantity: num(row.quantity ?? 1) || 1,
+    status:
+      status === "REMOVED" || status === "POSTED"
+        ? (status as "REMOVED" | "POSTED")
+        : "ACTIVE",
+    matchedAt: text(row.matched_at) || undefined,
+    removedAt: text(row.removed_at) || null,
+    labelSnapshotId: text(row.label_snapshot_id) || null,
+    labelStatus: text(row.label_status) || null,
+    rfidCode: text(row.rfid_code) || null,
+  };
+}
+
+function normalizeMovement(row: RawRecord): OutboundMovementRecord {
+  return {
+    id: text(row.id ?? row.movement_id),
+    movementType: text(row.movement_type ?? row.type, "-"),
+    productId: text(row.product_id ?? row.sku_id) || null,
+    quantity: num(row.quantity ?? row.qty ?? row.quantity_delta),
+    createdAt: text(row.created_at ?? row.occurred_at) || undefined,
+  };
+}
+
+function normalizeStatusHistory(row: RawRecord): OutboundStatusHistoryRecord {
+  return {
+    id: text(row.id),
+    fromStatus: text(row.from_status ?? row.old_status) || null,
+    toStatus: text(row.to_status ?? row.new_status ?? row.status, "-"),
+    changedAt: text(row.created_at ?? row.changed_at) || undefined,
+    changedBy: text(row.changed_by_name ?? row.created_by_name ?? row.changed_by) || null,
+    note: text(row.note ?? row.reason) || null,
+  };
+}
+
 function normalizeDetail(row: RawRecord): OutboundDetail {
   const document = normalizeDocument(row);
+  const movements = rowsOf(
+    (row.movements ?? []) as RawRecord[] | { data?: RawRecord[] },
+  ).map(normalizeMovement);
+  const statusHistory = rowsOf(
+    (row.status_history ?? row.statusHistory ?? []) as
+      | RawRecord[]
+      | { data?: RawRecord[] },
+  ).map(normalizeStatusHistory);
+  const itemMatches = rowsOf(
+    (row.item_matches ?? []) as RawRecord[] | { data?: RawRecord[] },
+  ).map(normalizeItemMatch);
   return {
     document,
     lines: rawLines(row).map((line) => normalizeLine(line, document.id)),
+    itemMatches,
+    movements,
+    statusHistory,
   };
 }
 
@@ -290,21 +417,49 @@ export async function fetchOutboundDocuments(
     page?: number;
     per_page?: number;
   } = {},
-): Promise<OutboundDocumentRecord[]> {
+): Promise<OutboundListResult> {
   const result = await http.getPage<RawRecord[] | { data?: RawRecord[] }>(
     API_ENDPOINTS.OUTBOUND_DOCUMENTS,
     {
       params: {
         ...(params.search ? { keyword: params.search } : {}),
         ...(params.status ? { status: params.status } : {}),
-        ...(params.page ? { page: params.page } : {}),
-        per_page: params.per_page ?? 100,
+        page: params.page ?? 1,
+        per_page: params.per_page ?? 15,
       },
     },
   );
-  return rowsOf(result.data as RawRecord[] | { data?: RawRecord[] }).map(
-    normalizeDocument,
-  );
+  return {
+    data: rowsOf(result.data as RawRecord[] | { data?: RawRecord[] }).map(
+      normalizeDocument,
+    ),
+    meta: result.meta,
+  };
+}
+
+/**
+ * Backend clamp per_page tối đa 100; các màn cần "toàn bộ" label/RFID phải
+ * gom nhiều trang. Cap số trang để tránh loop vô hạn khi meta bất thường.
+ */
+async function fetchAllPages(
+  endpointPath: string,
+  params: Record<string, unknown>,
+  maxPages = 10,
+): Promise<RawRecord[]> {
+  const rows: RawRecord[] = [];
+  let page = 1;
+  for (;;) {
+    const result = await http.getPage<RawRecord[] | { data?: RawRecord[] }>(
+      endpointPath,
+      { params: { ...params, page, per_page: 100 } },
+    );
+    const chunk = rowsOf(result.data as RawRecord[] | { data?: RawRecord[] });
+    rows.push(...chunk);
+    const lastPage = num(result.meta.last_page ?? 1) || 1;
+    if (page >= lastPage || page >= maxPages || chunk.length === 0) break;
+    page += 1;
+  }
+  return rows;
 }
 
 export async function fetchOutboundDetail(
@@ -382,6 +537,45 @@ export async function scanOutboundItem(input: {
     labelSnapshotId: text(row.label_snapshot_id) || null,
     labelStatus: text(row.label_status) || null,
     printError: text(row.print_error) || null,
+  };
+}
+
+export interface OutboundUnmatchResult {
+  documentId: string;
+  lineId: string;
+  matchId: string;
+  itemId?: string | null;
+  scannedQuantity: number;
+  requiredQuantity: number;
+  version: number;
+}
+
+/**
+ * Gỡ một item đã match khỏi phiếu xuất trước Post (match → REMOVED,
+ * scanned_qty giảm; stock-neutral). Item có thể quét lại sau đó.
+ */
+export async function unmatchOutboundItem(input: {
+  documentId: string;
+  matchId: string;
+  reason?: string;
+  ifMatch: number;
+}): Promise<OutboundUnmatchResult> {
+  const row = await http.post<RawRecord>(
+    endpoint(API_ENDPOINTS.OUTBOUND_UNMATCH, input.documentId),
+    {
+      outbound_item_match_id: input.matchId,
+      ...(input.reason ? { reason: input.reason } : {}),
+    },
+    headers(input.ifMatch),
+  );
+  return {
+    documentId: text(row.document_id, input.documentId),
+    lineId: text(row.line_id),
+    matchId: text(row.outbound_item_match_id, input.matchId),
+    itemId: text(row.item_id) || null,
+    scannedQuantity: num(row.scanned_quantity),
+    requiredQuantity: num(row.required_quantity),
+    version: num(row.version),
   };
 }
 
@@ -494,29 +688,38 @@ export async function consumeOutboundImport(
 }
 
 function labelPayload(row: RawRecord): RawRecord {
-  return parseJsonObject(row.label_payload);
+  return parseJsonObject(row.label_payload ?? row.payload);
+}
+
+function normalizeLabelSnapshot(row: RawRecord): LabelSnapshotRecord {
+  const payload = labelPayload(row);
+  return {
+    id: text(row.id),
+    labelCode: text(row.label_code) || null,
+    documentId: text(row.outbound_document_id) || null,
+    itemMatchId: text(row.outbound_item_match_id) || null,
+    itemId: text(row.item_id ?? payload.item_id) || null,
+    skuId: text(row.sku_id) || null,
+    skuCode: text(row.sku_code ?? payload.sku_code) || null,
+    skuName: text(row.product_name ?? payload.sku_name) || null,
+    itemCodeValue:
+      text(row.item_code_value ?? payload.item_code_value) || null,
+    recipientName:
+      text(row.customer_name ?? payload.recipient_name) || null,
+    recipientAddress:
+      text(row.customer_address ?? payload.recipient_address) || null,
+    status: text(row.status),
+    reprintCount: num(row.reprint_count),
+    outboundNo: text(row.outbound_no ?? payload.outbound_no) || null,
+    payload,
+  };
 }
 
 export async function fetchLabelSnapshots(): Promise<
   LabelSnapshotRecord[]
 > {
-  const result = await http.getPage<RawRecord[] | { data?: RawRecord[] }>(
-    API_ENDPOINTS.LABEL_SNAPSHOTS,
-    { params: { per_page: 500 } },
-  );
-  return rowsOf(result.data as RawRecord[] | { data?: RawRecord[] }).map(
-    (row) => {
-      const payload = labelPayload(row);
-      return {
-        id: text(row.id),
-        itemId: text(row.item_id) || null,
-        skuId: text(row.sku_id) || null,
-        status: text(row.status),
-        outboundNo: text(payload.outbound_no) || null,
-        payload,
-      };
-    },
-  );
+  const rows = await fetchAllPages(API_ENDPOINTS.LABEL_SNAPSHOTS, {});
+  return rows.map(normalizeLabelSnapshot);
 }
 
 export async function fetchPrinterConfigs(): Promise<
@@ -533,8 +736,37 @@ export async function fetchPrinterConfigs(): Promise<
       name: text(row.printer_name, text(row.printer_code)),
       status: text(row.status, "ACTIVE"),
       labelSize: text(row.label_size) || null,
+      lastHealthAt: text(row.last_health_at) || null,
+      lastHealthResult: text(row.last_health_result) || null,
     }),
   );
+}
+
+/**
+ * Tổng available_qty theo từng SKU (OUT-REQ-01: cột "Khả dụng" trong preview).
+ * Chỉ mang tính tham khảo tại thời điểm mở màn — availability thật được BE
+ * kiểm tra lại lúc scan/Post (nguyên tắc 2.1 tài liệu tổng hợp).
+ */
+export async function fetchAvailableQtyBySku(
+  skuIds: string[],
+): Promise<Record<string, number>> {
+  const unique = [...new Set(skuIds.filter(Boolean))];
+  const entries = await Promise.all(
+    unique.map(async (skuId): Promise<[string, number]> => {
+      const result = await http.getPage<RawRecord[] | { data?: RawRecord[] }>(
+        API_ENDPOINTS.INVENTORY_BALANCES,
+        { params: { product_id: skuId, per_page: 100 } },
+      );
+      const total = rowsOf(result.data as RawRecord[] | { data?: RawRecord[] })
+        .reduce(
+          (sum, row) =>
+            sum + num(row.available_qty ?? row.quantity ?? row.on_hand_qty),
+          0,
+        );
+      return [skuId, total];
+    }),
+  );
+  return Object.fromEntries(entries);
 }
 
 export async function reprintLabelSnapshot(
@@ -547,24 +779,40 @@ export async function reprintLabelSnapshot(
   );
 }
 
+export async function printLabelSnapshot(
+  id: string,
+  printerConfigId: string,
+): Promise<RawRecord> {
+  return http.post<RawRecord>(
+    endpoint(API_ENDPOINTS.LABEL_SNAPSHOT_PRINT, id),
+    { printer_config_id: printerConfigId },
+  );
+}
+
+function normalizePhysicalCode(row: RawRecord): PhysicalCodeRecord {
+  return {
+    id: text(row.physical_code_id ?? row.id),
+    codeValue: text(row.code_value),
+    carrierType: text(row.carrier_type),
+    hardwareUid: text(row.hardware_uid) || null,
+    itemId: text(row.item_id ?? row.assigned_object_id) || null,
+    status: text(row.status),
+    version: num(row.version),
+  };
+}
+
 export async function fetchActiveRfidCodes(): Promise<
   PhysicalCodeRecord[]
 > {
-  const result = await http.getPage<RawRecord[] | { data?: RawRecord[] }>(
-    API_ENDPOINTS.PHYSICAL_CODES,
-    { params: { carrier_type: "RFID", status: "ACTIVE", per_page: 500 } },
-  );
-  return rowsOf(result.data as RawRecord[] | { data?: RawRecord[] }).map(
-    (row) => ({
-      id: text(row.physical_code_id ?? row.id),
-      codeValue: text(row.code_value),
-      carrierType: text(row.carrier_type),
-      hardwareUid: text(row.hardware_uid) || null,
-      itemId: text(row.item_id ?? row.assigned_object_id) || null,
-      status: text(row.status),
-      version: num(row.version),
-    }),
-  );
+  const rows = await fetchAllPages(API_ENDPOINTS.PHYSICAL_CODES, {
+    carrier_type: "RFID",
+    status: "ACTIVE",
+  });
+  return rows
+    .map(normalizePhysicalCode)
+    .filter(
+      (code) => code.carrierType === "RFID" && code.status === "ACTIVE",
+    );
 }
 
 export async function assignRfidToItem(input: {

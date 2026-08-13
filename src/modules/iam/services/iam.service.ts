@@ -115,7 +115,15 @@ export async function updateIamUserWithRole(
   userId: string,
   payload: IamUserUpdatePayload,
   roleId: string,
+  currentRoleId?: string,
 ): Promise<IamUser> {
-  await updateIamUser(userId, payload);
+  const updated = await updateIamUser(userId, payload);
+  // Chỉ gọi endpoint gán role khi role thực sự đổi. BE chặn tự gán role cho
+  // chính mình (SCR-IAM-01, no self-escalation) bất kể giá trị mới là gì, nên
+  // gọi lại endpoint này một cách vô ích trên mỗi lần sửa hồ sơ của chính actor
+  // (đổi số điện thoại, trạng thái...) sẽ luôn bị 409 dù không đổi vai trò.
+  if (roleId === currentRoleId) {
+    return updated;
+  }
   return assignIamUserRole(userId, roleId);
 }

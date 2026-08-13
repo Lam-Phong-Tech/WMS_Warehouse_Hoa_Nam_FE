@@ -2,7 +2,6 @@ import { http } from "@/shared/api/http";
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import type {
   ChangePasswordRequest,
-  AuthContext,
   LoginRequest,
   LoginResponse,
   RefreshResponse,

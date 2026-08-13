@@ -6,7 +6,9 @@ import {
   useCreateMvpSku,
   useMvpAgencies,
   useMvpDefects,
+  useMvpSkuHasStock,
   useMvpSkus,
+  useSetMvpSkuPublished,
   useUpdateMvpAgency,
   useUpdateMvpDefect,
   useUpdateMvpSku,
@@ -21,7 +23,7 @@ import type {
   SkuRecord,
   SkuType,
 } from "@/modules/master-data/types/mvp-master.types";
-import { getApiErrorMessage, getMutationErrorMessage } from "@/shared/api/api-error";
+import { getApiErrorMessage, getMutationErrorMessage, normalizeError } from "@/shared/api/api-error";
 import {
   MvpPageSizeSelector,
   MvpPaginationFooter,
@@ -117,6 +119,7 @@ type SkuFormState = {
   powerSourceCode: string;
   serialTracked: boolean;
   status: MasterStatus;
+  publishedToApp: boolean;
 };
 
 const EMPTY_SKU_FORM: SkuFormState = {
@@ -130,6 +133,7 @@ const EMPTY_SKU_FORM: SkuFormState = {
   powerSourceCode: "",
   serialTracked: true,
   status: "ACTIVE",
+  publishedToApp: false,
 };
 
 export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
@@ -153,13 +157,35 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   });
   const createMutation = useCreateMvpSku();
   const updateMutation = useUpdateMvpSku();
+  const publishMutation = useSetMvpSkuPublished();
+  const [publishError, setPublishError] = useState<unknown>(null);
   const isSaving = createMutation.isPending || updateMutation.isPending;
+  const editingId = editing?.sku_id ?? editing?.id ?? "";
+  // BR-SKU-10 proactive UX: khoá mã SKU/theo dõi serial ngay khi biết SKU đang
+  // có tồn > 0, thay vì chỉ phản ứng sau khi BE trả lỗi 409 lúc lưu. Best-effort
+  // (xem hasMvpSkuStock) — BE luôn là chốt chặn thật sự.
+  const stockLockQuery = useMvpSkuHasStock(editingId, modalOpen && Boolean(editing));
+  const identityLocked = Boolean(editing) && stockLockQuery.data === true;
   const rows = query.data?.data ?? [];
   const pagination = resolveApiPagination(query.data?.meta, {
     page,
     pageSize: perPage,
     rowCount: rows.length,
   });
+
+  const togglePublish = async (record: SkuRecord) => {
+    if (!canManage) return;
+    setPublishError(null);
+    try {
+      await publishMutation.mutateAsync({
+        id: record.sku_id ?? record.id ?? "",
+        version: record.version,
+        publishedToApp: !record.published_to_app,
+      });
+    } catch (error) {
+      setPublishError(error);
+    }
+  };
 
   const openCreate = () => {
     if (!canManage) return;
@@ -187,6 +213,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
       powerSourceCode: "",
       serialTracked: Boolean(record.is_serial_tracked),
       status: record.status,
+      publishedToApp: Boolean(record.published_to_app),
     });
     setFormError("");
     setModalOpen(true);
@@ -208,6 +235,12 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
       setFormError("Mã SKU và tên SKU là bắt buộc.");
       return;
     }
+    // REQ-SRS-020: chỉ SKU active mới publish. BE là nguồn thực thi (422
+    // SKU_PUBLISH_REQUIRES_ACTIVE); chặn thêm phía client để tránh round-trip lỗi.
+    if (form.publishedToApp && form.status !== "ACTIVE") {
+      setFormError("Chỉ SKU ACTIVE mới được publish cho App PV.");
+      return;
+    }
 
     const payload: SkuPayload = {
       code,
@@ -216,6 +249,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
       unit: form.unit.trim() || null,
       is_serial_tracked: form.serialTracked,
       status: form.status,
+      published_to_app: form.publishedToApp,
       ...(form.brandCode.trim() ? { brand_code: form.brandCode.trim() } : {}),
       ...(form.categoryCode.trim() ? { category_code: form.categoryCode.trim() } : {}),
       ...(form.modelCode.trim() ? { model_code: form.modelCode.trim() } : {}),
@@ -237,6 +271,18 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
       setModalOpen(false);
       setEditing(null);
     } catch (error) {
+      // BR-SKU-10: BE khoá sku_code/is_serial_tracked ngay khi SKU đã có
+      // stock/movement, bất kể giá trị mới là gì. Khôi phục 2 ô này về giá trị
+      // hiện tại để người dùng có thể lưu lại các thay đổi khác mà không phải
+      // tự dò ra field nào gây lỗi. Thông báo lấy trực tiếp từ message của BE
+      // (đã thân thiện, tiếng Việt) qua getMutationErrorMessage bên dưới.
+      if (normalizeError(error).code === "SKU_IDENTITY_IMMUTABLE_AFTER_STOCK" && editing) {
+        setForm((current) => ({
+          ...current,
+          code: editing.sku_code ?? editing.code ?? current.code,
+          serialTracked: Boolean(editing.is_serial_tracked),
+        }));
+      }
       setFormError(getMutationErrorMessage(error));
     }
   };
@@ -294,6 +340,14 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
         fallback="Không tải được danh sách SKU."
         onRetry={() => void query.refetch()}
       />
+      {publishError ? (
+        <div className="alert" role="alert" style={{ marginBottom: 14 }}>
+          {getApiErrorMessage(publishError, "Không cập nhật được trạng thái publish.")}{" "}
+          <button className="btn small" type="button" onClick={() => setPublishError(null)}>
+            Đóng
+          </button>
+        </div>
+      ) : null}
 
       <MvpPageSizeSelector
         value={perPage}
@@ -316,48 +370,74 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               <th>Nguồn điện</th>
               <th>Serial</th>
               <th>Trạng thái</th>
+              <th>App PV</th>
               <th aria-label="Hành động" />
             </tr>
           </thead>
           <tbody>
             {query.isLoading ? (
               <tr>
-                <td colSpan={10} className="muted">
+                <td colSpan={11} className="muted">
                   Đang tải dữ liệu từ API...
                 </td>
               </tr>
             ) : rows.length > 0 ? (
-              rows.map((record) => (
-                <tr key={record.sku_id ?? record.id}>
-                  <td>
-                    {record.sku_code ?? record.code}
-                    <br />
-                    <span className="muted">{record.sku_name ?? record.name}</span>
-                  </td>
-                  <td>{record.sku_type}</td>
-                  <td>{record.unit || "—"}</td>
-                  <td title={record.brand_id ?? undefined}>{compactRef(record.brand_id)}</td>
-                  <td title={record.category_id ?? undefined}>{compactRef(record.category_id)}</td>
-                  <td title={record.model_id ?? undefined}>{compactRef(record.model_id)}</td>
-                  <td>{record.power_or_voltage || compactRef(record.power_source_id)}</td>
-                  <td>{record.is_serial_tracked ? "Có" : "Không"}</td>
-                  <td>
-                    <span className={statusClass(record.status)}>{record.status}</span>
-                  </td>
-                  <td>
-                    {canManage ? (
-                      <button className="btn small" type="button" onClick={() => openEdit(record)}>
-                        Sửa
-                      </button>
-                    ) : (
-                      <span className="muted">Chỉ xem</span>
-                    )}
-                  </td>
-                </tr>
-              ))
+              rows.map((record) => {
+                const recordId = record.sku_id ?? record.id ?? "";
+                const isPublished = Boolean(record.published_to_app);
+                const canPublish = record.status === "ACTIVE";
+                return (
+                  <tr key={recordId}>
+                    <td>
+                      {record.sku_code ?? record.code}
+                      <br />
+                      <span className="muted">{record.sku_name ?? record.name}</span>
+                    </td>
+                    <td>{record.sku_type}</td>
+                    <td>{record.unit || "—"}</td>
+                    <td title={record.brand_id ?? undefined}>{compactRef(record.brand_id)}</td>
+                    <td title={record.category_id ?? undefined}>{compactRef(record.category_id)}</td>
+                    <td title={record.model_id ?? undefined}>{compactRef(record.model_id)}</td>
+                    <td>{record.power_or_voltage || compactRef(record.power_source_id)}</td>
+                    <td>{record.is_serial_tracked ? "Có" : "Không"}</td>
+                    <td>
+                      <span className={statusClass(record.status)}>{record.status}</span>
+                    </td>
+                    <td>
+                      <span className={isPublished ? "pill ok" : "pill warn-pill"}>
+                        {isPublished ? "PUBLISHED" : "UNPUBLISHED"}
+                      </span>
+                    </td>
+                    <td>
+                      {canManage ? (
+                        <>
+                          <button className="btn small" type="button" onClick={() => openEdit(record)}>
+                            Sửa
+                          </button>{" "}
+                          <button
+                            className="btn small"
+                            type="button"
+                            disabled={publishMutation.isPending || (!isPublished && !canPublish)}
+                            title={
+                              !isPublished && !canPublish
+                                ? "Chỉ SKU ACTIVE mới được publish cho App PV."
+                                : undefined
+                            }
+                            onClick={() => void togglePublish(record)}
+                          >
+                            {isPublished ? "Unpublish" : "Publish"}
+                          </button>
+                        </>
+                      ) : (
+                        <span className="muted">Chỉ xem</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })
             ) : (
               <tr>
-                <td colSpan={10} className="muted">
+                <td colSpan={11} className="muted">
                   Không có SKU phù hợp bộ lọc.
                 </td>
               </tr>
@@ -391,7 +471,12 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
             <section className="card">
               <div className="section-title">Thông tin SKU</div>
               <Field label="Mã SKU *">
-                <input className="input" style={{ width: "100%" }} value={form.code} onChange={(event) => setForm((current) => ({ ...current, code: event.target.value }))} disabled={isSaving} />
+                <input className="input" style={{ width: "100%" }} value={form.code} onChange={(event) => setForm((current) => ({ ...current, code: event.target.value }))} disabled={isSaving || identityLocked} />
+                {identityLocked ? (
+                  <div className="muted" style={{ marginTop: 4 }}>
+                    SKU đã có tồn kho — không thể đổi mã SKU (BR-SKU-10).
+                  </div>
+                ) : null}
               </Field>
               <Field label="Tên SKU *">
                 <input className="input" style={{ width: "100%" }} value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} disabled={isSaving} />
@@ -406,11 +491,42 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                 <input className="input" style={{ width: "100%" }} value={form.unit} onChange={(event) => setForm((current) => ({ ...current, unit: event.target.value }))} disabled={isSaving} />
               </Field>
               <Field label="Trạng thái">
-                <select className="select" style={{ width: "100%" }} value={form.status} onChange={(event) => setForm((current) => ({ ...current, status: event.target.value as MasterStatus }))} disabled={isSaving}>
+                <select
+                  className="select"
+                  style={{ width: "100%" }}
+                  value={form.status}
+                  onChange={(event) => {
+                    const status = event.target.value as MasterStatus;
+                    setForm((current) => ({
+                      ...current,
+                      status,
+                      // AC-SRS-020: inactive không được publish — bỏ publish ngay
+                      // trên UI khi chuyển khỏi ACTIVE, khớp cascade unpublish của BE.
+                      publishedToApp: status === "ACTIVE" ? current.publishedToApp : false,
+                    }));
+                  }}
+                  disabled={isSaving}
+                >
                   {STATUS_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>{option.label}</option>
                   ))}
                 </select>
+              </Field>
+              <Field label="Publish cho App PV">
+                <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <input
+                    type="checkbox"
+                    checked={form.publishedToApp}
+                    onChange={(event) => setForm((current) => ({ ...current, publishedToApp: event.target.checked }))}
+                    disabled={isSaving || form.status !== "ACTIVE"}
+                  />
+                  Hiển thị SKU này trên App PV
+                </label>
+                {form.status !== "ACTIVE" ? (
+                  <div className="muted" style={{ marginTop: 4 }}>
+                    Chỉ SKU ACTIVE mới publish được.
+                  </div>
+                ) : null}
               </Field>
             </section>
             <section className="card">
@@ -432,9 +548,14 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               </Field>
               <Field label="Theo dõi serial">
                 <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  <input type="checkbox" checked={form.serialTracked} onChange={(event) => setForm((current) => ({ ...current, serialTracked: event.target.checked }))} disabled={isSaving} />
+                  <input type="checkbox" checked={form.serialTracked} onChange={(event) => setForm((current) => ({ ...current, serialTracked: event.target.checked }))} disabled={isSaving || identityLocked} />
                   Có quản lý serial/item identity
                 </label>
+                {identityLocked ? (
+                  <div className="muted" style={{ marginTop: 4 }}>
+                    SKU đã có tồn kho — không thể đổi chế độ theo dõi serial (BR-SKU-10).
+                  </div>
+                ) : null}
               </Field>
               {editing ? (
                 <Field label="Version hiện tại">

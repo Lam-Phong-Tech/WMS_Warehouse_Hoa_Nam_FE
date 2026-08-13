@@ -151,11 +151,13 @@ export function useUpdateIamUser() {
       userId,
       payload,
       roleId,
+      currentRoleId,
     }: {
       userId: string;
       payload: IamUserUpdatePayload;
       roleId: string;
-    }) => updateIamUserWithRole(userId, payload, roleId),
+      currentRoleId?: string;
+    }) => updateIamUserWithRole(userId, payload, roleId, currentRoleId),
     onSuccess: () => {
       toast.success("Đã cập nhật người dùng");
       void invalidateIam(queryClient);

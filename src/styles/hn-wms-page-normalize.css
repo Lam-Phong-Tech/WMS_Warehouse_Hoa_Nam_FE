@@ -75,6 +75,11 @@
   background: transparent !important;
 }
 
+#root .hn-mvp-screen .inbound-page .ant-tabs > .ant-tabs-nav::before,
+#root .hn-mvp-screen .putaway-page .ant-tabs > .ant-tabs-nav::before {
+  border-bottom: 0 !important;
+}
+
 .hn-mvp-screen .inbound-page > .master-data-panel > .ant-card-body,
 .hn-mvp-screen .putaway-page > .master-data-panel > .ant-card-body {
   padding: 0 !important;
@@ -197,7 +202,7 @@
 }
 
 /* Keep nested business cards exactly at the HTML card size. */
-.hn-mvp-screen .ant-card:not(:first-child),
+.hn-mvp-screen .ant-card:not(:first-child):not(.master-data-panel),
 .hn-mvp-screen .ant-row .ant-card {
   border: 1px solid var(--line) !important;
   border-radius: 14px !important;

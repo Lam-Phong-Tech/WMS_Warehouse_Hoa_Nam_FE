@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { SideNav } from "@/app/layouts/SideNav";
+import { UserMenu } from "@/app/layouts/UserMenu";
 import { useMe } from "@/modules/auth/hooks/use-me";
 import { Loading } from "@/shared/components";
 import { ROUTES } from "@/shared/constants/routes";
@@ -33,6 +34,11 @@ const InboundPage = lazy(() =>
 );
 const PutawayPage = lazy(() =>
   import("@/modules/putaway/pages/PutawayPage").then((m) => ({
+    default: m.default,
+  })),
+);
+const OutboundPage = lazy(() =>
+  import("@/modules/outbound/pages/OutboundPage").then((m) => ({
     default: m.default,
   })),
 );
@@ -166,6 +172,11 @@ const MODAL_PARENT_SCREEN: Record<string, string> = {
   "IN-02": "IN-01",
   "IN-03": "IN-01",
   "PTW-01": "PTW-00",
+  "OUT-REQ-01": "OUT-01",
+  "OUT-03": "OUT-01",
+  "OUT-02": "OUT-01",
+  "LBL-01": "OUT-01",
+  "RFID-01": "OUT-01",
 };
 
 function normalizeScreen(screen: string | null) {
@@ -219,6 +230,12 @@ function renderMvpScreen(
           <PutawayPage />
         </div>
       );
+    case "OUT-01":
+      return (
+        <div className="hn-mvp-source-screen">
+          <OutboundPage />
+        </div>
+      );
     default:
       return <MvpSourceScreen screenId={sourceScreen} />;
   }
@@ -250,16 +267,22 @@ export function MainLayout() {
             <h2>{meta.title}</h2>
             <p>{meta.description}</p>
           </div>
+          <UserMenu />
         </header>
-        <section className="hn-mvp-screen">
-          {sourceScreen ? (
-            <Suspense fallback={<Loading />}>
-              {renderMvpScreen(sourceScreen, requestedScreen)}
-            </Suspense>
-          ) : (
-            <Outlet />
-          )}
-        </section>
+        <div className="hn-mvp-content">
+          <section className="hn-mvp-screen">
+            {sourceScreen ? (
+              <Suspense fallback={<Loading />}>
+                {renderMvpScreen(sourceScreen, requestedScreen)}
+              </Suspense>
+            ) : (
+              <Outlet />
+            )}
+          </section>
+        </div>
+        <footer className="hn-mvp-footer">
+          Hoa Nam ©{new Date().getFullYear()} — Phát triển bởi Lam Phong Tech
+        </footer>
       </main>
     </div>
   );

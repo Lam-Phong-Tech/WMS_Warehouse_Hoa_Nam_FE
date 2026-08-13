@@ -17,7 +17,6 @@ export const ROUTES = {
   AGENCY_CREATE: "/master-data/agencies/new",
   DEFECTS: "/master-data/defects",
   DEFECT_CREATE: "/master-data/defects/new",
-  MASTER_ADVANCED: "/master-data/advanced",
   SCAN: "/scan",
 
   // 02 · Nhập kho
