@@ -16,10 +16,8 @@ import {
   InlineApiError,
   tableEmptyText,
 } from "@/shared/components/feedback/BusinessState";
-import {
-  MvpPageSizeSelector,
-  resolveApiPagination,
-} from "@/shared/components/mvp/MvpListPagination";
+import { MvpPageSizeSelector } from "@/shared/components/mvp/MvpListPagination";
+import { resolveApiPagination } from "@/shared/components/mvp/mvp-pagination";
 import type { ApiMeta } from "@/shared/types/api-response";
 import {
   classifyScanCodes,

@@ -60,7 +60,11 @@ function getRequestFulfilledHandler() {
   return handler.fulfilled;
 }
 
-function makeError(status: number, data: unknown = {}, config?: Record<string, unknown>) {
+function makeError(
+  status: number,
+  data: unknown = {},
+  config?: Record<string, unknown>,
+) {
   return {
     isAxiosError: true,
     response: { status, data },
@@ -68,7 +72,11 @@ function makeError(status: number, data: unknown = {}, config?: Record<string, u
   } as {
     isAxiosError: boolean;
     response: { status: number; data: unknown };
-    config: { url: string; headers: Record<string, string>; _isRetryAfterRefresh?: boolean };
+    config: {
+      url: string;
+      headers: Record<string, string>;
+      _isRetryAfterRefresh?: boolean;
+    };
     _isNoPermission?: boolean;
     _isValidationError?: boolean;
     _isConflictError?: boolean;
@@ -103,7 +111,9 @@ describe("QA1.1: 401 Unauthenticated — Token Expired / Missing", () => {
       ...useAuthStore.getState(),
       logout: logoutMock,
     });
-    vi.spyOn(useAuthStore.persist, "clearStorage").mockImplementation(clearStorageMock);
+    vi.spyOn(useAuthStore.persist, "clearStorage").mockImplementation(
+      clearStorageMock,
+    );
     Object.defineProperty(window, "location", {
       configurable: true,
       value: { ...originalLocation, pathname: "/employees", assign: vi.fn() },
@@ -128,7 +138,11 @@ describe("QA1.1: 401 Unauthenticated — Token Expired / Missing", () => {
     });
 
     const rejected = getRejectedHandler();
-    const error = makeError(401, { message: "Unauthenticated" }, { url: API_ENDPOINTS.REFRESH });
+    const error = makeError(
+      401,
+      { message: "Unauthenticated" },
+      { url: API_ENDPOINTS.REFRESH },
+    );
 
     await expect(rejected(error)).rejects.toBe(error);
     expect(postSpy).not.toHaveBeenCalled(); // Không gọi refresh
@@ -153,7 +167,9 @@ describe("QA1.1: 401 Unauthenticated — Token Expired / Missing", () => {
         },
       },
     });
-    const requestSpy = vi.spyOn(api, "request").mockResolvedValue({ data: "ok" });
+    const requestSpy = vi
+      .spyOn(api, "request")
+      .mockResolvedValue({ data: "ok" });
 
     setAuthStoreToken("old-token");
     const rejected = getRejectedHandler();
@@ -178,7 +194,11 @@ describe("QA1.1: 401 Unauthenticated — Token Expired / Missing", () => {
     // không được tự động refresh hay redirect.
     const postSpy = vi.spyOn(api, "post");
     const rejected = getRejectedHandler();
-    const error = makeError(401, { message: "Invalid credentials" }, { url: API_ENDPOINTS.LOGIN });
+    const error = makeError(
+      401,
+      { message: "Invalid credentials" },
+      { url: API_ENDPOINTS.LOGIN },
+    );
 
     await expect(rejected(error)).rejects.toBe(error);
     expect(postSpy).not.toHaveBeenCalled();
@@ -255,7 +275,9 @@ describe("QA1.2: 403 Forbidden — Permission Denied", () => {
     // Bài test: BE có thể trả error.code dạng nested (theo API_Convention.md).
     // FE phải đọc được cả 2 dạng.
     const rejected = getRejectedHandler();
-    const error = makeError(403, { error: { code: "PASSWORD_CHANGE_REQUIRED" } });
+    const error = makeError(403, {
+      error: { code: "PASSWORD_CHANGE_REQUIRED" },
+    });
 
     await expect(rejected(error)).rejects.toBe(error);
     expect(window.location.assign).toHaveBeenCalledWith(ROUTES.CHANGE_PASSWORD);
@@ -310,7 +332,11 @@ describe("QA1.3: Token Refresh — Concurrent / Race / Edge Cases", () => {
 
   beforeEach(() => {
     useAuthStore.getState().logout();
-    useAuthStore.setState({ isBootstrapped: true, isAuthenticated: true, token: "old-token" });
+    useAuthStore.setState({
+      isBootstrapped: true,
+      isAuthenticated: true,
+      token: "old-token",
+    });
     Object.defineProperty(window, "location", {
       configurable: true,
       value: { ...originalLocation, pathname: "/employees", assign: vi.fn() },
@@ -338,11 +364,21 @@ describe("QA1.3: Token Refresh — Concurrent / Race / Edge Cases", () => {
         resolvePost = resolve;
       }) as ReturnType<typeof api.post>,
     );
-    const requestSpy = vi.spyOn(api, "request").mockResolvedValue({ data: "ok" });
+    const requestSpy = vi
+      .spyOn(api, "request")
+      .mockResolvedValue({ data: "ok" });
 
     const rejected = getRejectedHandler();
-    const error1 = makeError(401, { message: "Token expired" }, { url: "/employees" });
-    const error2 = makeError(401, { message: "Token expired" }, { url: "/departments" });
+    const error1 = makeError(
+      401,
+      { message: "Token expired" },
+      { url: "/employees" },
+    );
+    const error2 = makeError(
+      401,
+      { message: "Token expired" },
+      { url: "/departments" },
+    );
 
     const p1 = rejected(error1);
     const p2 = rejected(error2);
@@ -350,7 +386,11 @@ describe("QA1.3: Token Refresh — Concurrent / Race / Edge Cases", () => {
     resolvePost!({
       data: {
         success: true,
-        data: { access_token: "shared-token", token_type: "bearer", expires_in: 900 },
+        data: {
+          access_token: "shared-token",
+          token_type: "bearer",
+          expires_in: 900,
+        },
       },
     });
     await Promise.all([p1, p2]);
@@ -433,7 +473,9 @@ describe("QA1.4: RBAC — Route Permission Matrix", () => {
     // User không có quyền gì vẫn thấy các route authenticated public.
     const can = () => false;
     const filtered = filterMenu(MENU, can);
-    const allLeafItems = filtered.flatMap((g: { children?: Array<unknown> }) => g.children ?? []);
+    const allLeafItems = filtered.flatMap(
+      (g: { children?: Array<unknown> }) => g.children ?? [],
+    );
     expect(allLeafItems.length).toBe(3);
   });
 });

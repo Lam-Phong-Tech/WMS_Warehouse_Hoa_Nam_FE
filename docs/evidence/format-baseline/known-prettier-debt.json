@@ -1,51 +1,6 @@
 {
   "schemaVersion": "1.1.0",
-  "generatedAt": "2026-08-13T11:55:44.249Z",
+  "generatedAt": "2026-08-13T12:59:48.426Z",
   "policy": "No new Prettier debt. Existing entries are grandfathered by exact Git blob SHA and must be removed after formatting cleanup.",
-  "knownDebt": [
-    {
-      "path": "src/app/router/index.tsx",
-      "blobPrefix": "838d4d3de11782430abf380a37f33d94121daef4"
-    },
-    {
-      "path": "src/modules/auth/pages/LoginPage.tsx",
-      "blobPrefix": "f746168ce5b8d1224ac993d050c196d21e770cf2"
-    },
-    {
-      "path": "src/modules/auth/schemas/login.schema.ts",
-      "blobPrefix": "d23cfec7202aade504060178a98a8627936ccffe"
-    },
-    {
-      "path": "src/modules/auth/services/auth.service.ts",
-      "blobPrefix": "9f486c557fe7601c41d0deb1635a2d3881c27887"
-    },
-    {
-      "path": "src/modules/master-data/services/warehouse.service.ts",
-      "blobPrefix": "9301d9cff1dc76160fb6361e4ba912da2b4434f0"
-    },
-    {
-      "path": "src/modules/putaway/services/putawayService.ts",
-      "blobPrefix": "755833f73cbc8fe884fab4eb5e023810c430d684"
-    },
-    {
-      "path": "src/modules/shipping/services/shippingService.ts",
-      "blobPrefix": "61f13f920b0508452d026970f2a2a89e41b5d170"
-    },
-    {
-      "path": "src/modules/stocktake/services/stocktakeService.ts",
-      "blobPrefix": "7c3cc4db958bb822f31e3ec9da350a96e8b61704"
-    },
-    {
-      "path": "src/shared/api/wms-contract-signoff.ts",
-      "blobPrefix": "e48fa9f73692fbd23c09d8e105b785e2191eda9c"
-    },
-    {
-      "path": "src/test/auth-security-rbac-audit.test.ts",
-      "blobPrefix": "bc0244c25cf4ef5c32a4047463494ce461e939b6"
-    },
-    {
-      "path": "src/test/wwhn-148-critical-response-contract.test.ts",
-      "blobPrefix": "288465149f3f504db7e793f9e0bc14491d717ada"
-    }
-  ]
+  "knownDebt": []
 }

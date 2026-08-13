@@ -231,7 +231,9 @@ describe("WWHN-148 critical response normalization boundary", () => {
   });
 
   it("rejects undocumented adjustment aliases", async () => {
-    vi.mocked(http.get).mockResolvedValueOnce([approvedVariance("VAR-UNKNOWN")]);
+    vi.mocked(http.get).mockResolvedValueOnce([
+      approvedVariance("VAR-UNKNOWN"),
+    ]);
     vi.mocked(http.postWithMeta).mockResolvedValueOnce({
       data: {
         session: "ST-UNKNOWN",

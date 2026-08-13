@@ -18,8 +18,8 @@ import {
 import {
   MvpPageSizeSelector,
   MvpPaginationFooter,
-  resolveApiPagination,
 } from "@/shared/components/mvp/MvpListPagination";
+import { resolveApiPagination } from "@/shared/components/mvp/mvp-pagination";
 import { useAuthStore } from "@/shared/store/auth.store";
 
 const STATUS_OPTIONS: Array<{ value: IamUserStatus; label: string }> = [
@@ -158,16 +158,20 @@ export function IamUserScreen({
     setIsModalOpen(true);
   };
 
+  // Dep phải là string ổn định: `roles` là mảng fallback `?? []` đổi identity
+  // mỗi render — để nguyên trong deps sẽ tạo vòng setState -> render -> effect
+  // vô hạn (test IamUserScreen từng OOM 4GB vì đúng vòng lặp này).
+  const defaultRoleId = roles[0]?.role_id ?? "";
   useEffect(() => {
     if (!openCreateOnMount || !canManageUsers) return;
     setEditingUser(null);
     setFormState({
       ...EMPTY_FORM,
-      roleId: roles[0]?.role_id ?? "",
+      roleId: defaultRoleId,
     });
     setFormError("");
     setIsModalOpen(true);
-  }, [canManageUsers, openCreateOnMount, roles]);
+  }, [canManageUsers, openCreateOnMount, defaultRoleId]);
 
   useEffect(() => {
     const maxPage = Math.max(1, Math.ceil(total / perPage));

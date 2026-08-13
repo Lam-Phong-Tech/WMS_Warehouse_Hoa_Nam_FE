@@ -7,21 +7,31 @@ type RawRecord = Record<string, unknown>;
 export const CANONICAL_WAREHOUSE_CODE = "KHO-TONG-HN";
 
 function rowsOf<T>(value: T[] | { data?: T[] }): T[] {
-  return Array.isArray(value) ? value : Array.isArray(value.data) ? value.data : [];
+  return Array.isArray(value)
+    ? value
+    : Array.isArray(value.data)
+      ? value.data
+      : [];
 }
 
 function clean(params: Record<string, unknown>) {
   return Object.fromEntries(
-    Object.entries(params).filter(([, value]) => value !== "" && value !== undefined),
+    Object.entries(params).filter(
+      ([, value]) => value !== "" && value !== undefined,
+    ),
   );
 }
 
 function warehouseCode(row: RawRecord) {
-  return String(row.code ?? row.warehouse_code ?? "").trim().toUpperCase();
+  return String(row.code ?? row.warehouse_code ?? "")
+    .trim()
+    .toUpperCase();
 }
 
 function warehouseStatus(row: RawRecord) {
-  return String(row.status ?? "").trim().toUpperCase();
+  return String(row.status ?? "")
+    .trim()
+    .toUpperCase();
 }
 
 /**
@@ -31,7 +41,8 @@ function warehouseStatus(row: RawRecord) {
 export function assertCanonicalActiveWarehouse(rows: RawRecord[]): RawRecord[] {
   const matches = rows.filter(
     (row) =>
-      warehouseCode(row) === CANONICAL_WAREHOUSE_CODE && warehouseStatus(row) === "ACTIVE",
+      warehouseCode(row) === CANONICAL_WAREHOUSE_CODE &&
+      warehouseStatus(row) === "ACTIVE",
   );
 
   if (matches.length !== 1) {
@@ -53,7 +64,11 @@ export async function fetchWarehouses(
   );
   const rows = rowsOf(result.data as RawRecord[] | { data?: RawRecord[] });
 
-  if (String(params.status ?? "").trim().toUpperCase() === "ACTIVE") {
+  if (
+    String(params.status ?? "")
+      .trim()
+      .toUpperCase() === "ACTIVE"
+  ) {
     return assertCanonicalActiveWarehouse(rows);
   }
 

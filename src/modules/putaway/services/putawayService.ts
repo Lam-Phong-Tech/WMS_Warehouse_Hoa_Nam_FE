@@ -58,13 +58,17 @@ function endpoint(template: string, id: string) {
 }
 
 function normalized(value: unknown) {
-  return String(value ?? "").trim().toUpperCase();
+  return String(value ?? "")
+    .trim()
+    .toUpperCase();
 }
 
 export function isPutawayTrayUsable(tray: TrayOption): boolean {
   const type = normalized(tray.container_type);
   const status = normalized(tray.status);
-  return (type === "" || type === "TRAY") && !["CLOSED", "ISSUED"].includes(status);
+  return (
+    (type === "" || type === "TRAY") && !["CLOSED", "ISSUED"].includes(status)
+  );
 }
 
 /**
@@ -84,7 +88,8 @@ export function resolvePutawayTrayByScanCode(
   }
 
   const matches = trays.filter(
-    (tray) => isPutawayTrayUsable(tray) && normalized(tray.container_code) === code,
+    (tray) =>
+      isPutawayTrayUsable(tray) && normalized(tray.container_code) === code,
   );
 
   if (matches.length === 0) {
@@ -103,10 +108,9 @@ export function resolvePutawayTrayByScanCode(
   return matches[0];
 }
 
-function assertStockNeutral<T extends { stock_effect?: unknown; movement_created?: unknown }>(
-  result: T,
-  operation: string,
-): T {
+function assertStockNeutral<
+  T extends { stock_effect?: unknown; movement_created?: unknown },
+>(result: T, operation: string): T {
   if (result.stock_effect !== "NONE" || result.movement_created !== false) {
     throw new WmsContractError(
       "WMS_FE_PUTAWAY_STOCK_EFFECT_VIOLATION",
@@ -125,7 +129,9 @@ export async function fetchPutawayTasks(
 export async function fetchPutawayHistory(
   params: Record<string, unknown> = {},
 ): Promise<PutawayHistory[]> {
-  const rows = await http.get<PutawayHistory[]>(API_ENDPOINTS.PUTAWAY_HISTORY, { params });
+  const rows = await http.get<PutawayHistory[]>(API_ENDPOINTS.PUTAWAY_HISTORY, {
+    params,
+  });
   rows.forEach((row) => assertStockNeutral(row, "Putaway history"));
   return rows;
 }
@@ -147,11 +153,17 @@ export async function createPutawayTask(payload: {
     WMS_ACTION_PERMISSIONS.PUTAWAY_CONTAINER,
     "create putaway draft",
   );
-  const result = await http.post<PutawayEvent>(API_ENDPOINTS.PUTAWAY_TASKS, payload);
+  const result = await http.post<PutawayEvent>(
+    API_ENDPOINTS.PUTAWAY_TASKS,
+    payload,
+  );
   return assertStockNeutral(result, "Create Putaway DRAFT");
 }
 
-export async function confirmPutawayTask(id: string, version: number): Promise<PutawayEvent> {
+export async function confirmPutawayTask(
+  id: string,
+  version: number,
+): Promise<PutawayEvent> {
   assertWmsActionPermission(
     WMS_ACTION_PERMISSIONS.PUTAWAY_CONTAINER,
     "confirm putaway",
@@ -164,7 +176,10 @@ export async function confirmPutawayTask(id: string, version: number): Promise<P
   return assertStockNeutral(result, "Confirm Putaway");
 }
 
-export async function cancelPutawayTask(id: string, version: number): Promise<PutawayEvent> {
+export async function cancelPutawayTask(
+  id: string,
+  version: number,
+): Promise<PutawayEvent> {
   assertWmsActionPermission(
     WMS_ACTION_PERMISSIONS.PUTAWAY_CONTAINER,
     "cancel putaway draft",

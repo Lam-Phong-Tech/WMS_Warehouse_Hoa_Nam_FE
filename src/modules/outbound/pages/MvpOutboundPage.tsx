@@ -6,10 +6,8 @@ import type { ColumnsType } from "antd/es/table";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
-import {
-  MvpPageSizeSelector,
-  resolveApiPagination,
-} from "@/shared/components/mvp/MvpListPagination";
+import { MvpPageSizeSelector } from "@/shared/components/mvp/MvpListPagination";
+import { resolveApiPagination } from "@/shared/components/mvp/mvp-pagination";
 import { useHasPermission } from "@/shared/components/permission";
 import { OutboundDetailModal } from "@/modules/outbound/components/OutboundDetailModal";
 import { OutboundIntakeModal } from "@/modules/outbound/components/OutboundIntakeModal";

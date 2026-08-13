@@ -6,10 +6,8 @@ import type { ColumnsType, TablePaginationConfig } from "antd/es/table";
 import { EyeOutlined, ToolOutlined } from "@ant-design/icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
-import {
-  MvpPageSizeSelector,
-  resolveApiPagination,
-} from "@/shared/components/mvp/MvpListPagination";
+import { MvpPageSizeSelector } from "@/shared/components/mvp/MvpListPagination";
+import { resolveApiPagination } from "@/shared/components/mvp/mvp-pagination";
 import { useHasPermission } from "@/shared/components/permission";
 import { useMvpDefects } from "@/modules/master-data/hooks/use-mvp-master";
 import {

@@ -281,9 +281,7 @@ export async function fetchInventorySnapshots(
   );
 }
 
-async function fetchStocktakeSessionRaw(
-  sessionId: string,
-): Promise<RawRecord> {
+async function fetchStocktakeSessionRaw(sessionId: string): Promise<RawRecord> {
   return http.get<RawRecord>(
     sessionEndpoint(API_ENDPOINTS.STOCKTAKE_SESSION, sessionId),
   );
@@ -299,8 +297,7 @@ export async function submitStocktakeCount(
   const existing = rowsOf(
     (detail.counts ?? []) as RawRecord[] | { data?: RawRecord[] },
   ).find(
-    (row) =>
-      text(row.sku ?? row.sku_code ?? row.grain_key) === payload.sku,
+    (row) => text(row.sku ?? row.sku_code ?? row.grain_key) === payload.sku,
   );
   if (!existing) {
     throw new WmsContractError(

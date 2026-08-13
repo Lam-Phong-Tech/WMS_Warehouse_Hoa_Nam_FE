@@ -123,7 +123,10 @@ function normalizeUser(input: BackendUser | undefined): User {
  * warehouse_scope_ids (ưu tiên) hoặc roles[].scope_ref để ContextSwitcher gọi
  * đúng POST /auth/switch-context.
  */
-function deriveContexts(user: User, permissionCodes: string[] = []): MeContext[] {
+function deriveContexts(
+  user: User,
+  permissionCodes: string[] = [],
+): MeContext[] {
   const roles = user.roles ?? [];
   const roleScopeRefs = roles
     .map((role) => role.scope_ref)
@@ -134,7 +137,8 @@ function deriveContexts(user: User, permissionCodes: string[] = []): MeContext[]
 
   if (warehouseScopes.length > 0) {
     return warehouseScopes.map((scopeRef) => {
-      const role = roles.find((item) => item.scope_ref === scopeRef) ?? roles[0];
+      const role =
+        roles.find((item) => item.scope_ref === scopeRef) ?? roles[0];
       return {
         role_id: role?.role_id ?? scopeRef,
         role_name: role?.role_name ?? "Phạm vi kho",
@@ -235,7 +239,10 @@ function normalizeTokenResponse<
 
 export const authService = {
   async login(data: LoginRequest) {
-    const response = await http.post<BackendLoginResponse>(API_ENDPOINTS.LOGIN, data);
+    const response = await http.post<BackendLoginResponse>(
+      API_ENDPOINTS.LOGIN,
+      data,
+    );
     const normalized = normalizeLoginResponse(response);
     memoryStorage.setRefreshToken(normalized.refresh_token);
     return normalized;

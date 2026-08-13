@@ -43,10 +43,8 @@ import type {
   IamRoleScopeType,
   IamRoleStatus,
 } from "@/modules/iam/types/iam.types";
-import {
-  MvpPageSizeSelector,
-  resolveApiPagination,
-} from "@/shared/components/mvp/MvpListPagination";
+import { MvpPageSizeSelector } from "@/shared/components/mvp/MvpListPagination";
+import { resolveApiPagination } from "@/shared/components/mvp/mvp-pagination";
 import { useCan } from "@/shared/components/permission";
 import { WMS_PERMISSION_CATALOG as P } from "@/shared/constants/wms-permissions";
 

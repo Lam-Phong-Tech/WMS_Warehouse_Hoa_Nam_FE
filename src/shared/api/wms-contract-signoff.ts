@@ -18,8 +18,7 @@ export const WWHN_181_EXACT_REVIEW = {
   contractTask: "WWHN-180",
   contractVersion: "1.7.0",
   exactBeSha: "fc534ed8c00dadd91ce60e7bac5a8660dda74d08",
-  backendObservedFeBaselineSha:
-    "f6e137d01ed7afec5d30e8fecde6a2cc31bb7c8b",
+  backendObservedFeBaselineSha: "f6e137d01ed7afec5d30e8fecde6a2cc31bb7c8b",
   remediationBaseFeSha: "aa185096211bc5bef7ec966097edfc106a5003b2",
   backendReleaseManifestSha256:
     "ba8bc5841b5865095e51d21064ead90ad4c37129ee28142a3f507b497ddcc776",
@@ -59,8 +58,7 @@ export const WWHN_181_EXACT_REVIEW = {
     "response-meta-request-id",
   ],
   manifestPath: "docs/evidence/WWHN-181/generated/<FE_SHA>/manifest.json",
-  runtimeEvidencePath:
-    "docs/evidence/WWHN-181/RUNTIME_EVIDENCE_CHECKLIST.md",
+  runtimeEvidencePath: "docs/evidence/WWHN-181/RUNTIME_EVIDENCE_CHECKLIST.md",
 } as const;
 
 export const WMS_CONTRACT_BASELINE = {
@@ -221,8 +219,6 @@ export const WMS_FINAL_SIGNOFF = {
 
 export function assertFinalSignoffAllowed(): void {
   if (!WMS_FINAL_SIGNOFF.finalAllowed) {
-    throw new Error(
-      `FE-FINAL-SIGNOFF blocked: ${WMS_FINAL_SIGNOFF.reason}`,
-    );
+    throw new Error(`FE-FINAL-SIGNOFF blocked: ${WMS_FINAL_SIGNOFF.reason}`);
   }
 }

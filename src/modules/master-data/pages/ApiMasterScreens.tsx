@@ -31,8 +31,8 @@ import {
 import {
   MvpPageSizeSelector,
   MvpPaginationFooter,
-  resolveApiPagination,
 } from "@/shared/components/mvp/MvpListPagination";
+import { resolveApiPagination } from "@/shared/components/mvp/mvp-pagination";
 import { useAuthStore } from "@/shared/store/auth.store";
 
 const STATUS_OPTIONS: Array<{ value: MasterStatus; label: string }> = [
