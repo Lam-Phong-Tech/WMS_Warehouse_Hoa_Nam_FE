@@ -86,12 +86,115 @@ export async function downloadXntReportExcel(
   return http.downloadBlob(API_ENDPOINTS.REPORTS_XNT_EXPORT_EXCEL, { params });
 }
 
+export type WarrantyReportParams = {
+  from: string;
+  to: string;
+  status?: string;
+  defect_id?: string;
+  identification_status?: string;
+};
+
+export type WarrantyReportCaseRow = {
+  id: string;
+  caseNo: string;
+  identification: string;
+  model: string;
+  defect: string;
+  componentsIssued: string;
+  status: string;
+  receivedAt: string;
+  updatedAt: string;
+};
+
+export type WarrantyReportDefectRow = {
+  defect: string;
+  total: number;
+  processing: number;
+  returned: number;
+  cancelled: number;
+  tempOnly: number;
+};
+
+export type WarrantyReportResult = {
+  summary: {
+    total: number;
+    processing: number;
+    returned: number;
+    cancelled: number;
+    tempOnly: number;
+  };
+  rows: WarrantyReportCaseRow[];
+  byDefect: WarrantyReportDefectRow[];
+};
+
+function normalizeWarrantyCaseRow(
+  row: RawRecord,
+  index: number,
+): WarrantyReportCaseRow {
+  return {
+    id: text(row.warranty_case_id ?? row.id, String(index)),
+    caseNo: text(row.case_no ?? row.warranty_case_code),
+    identification: text(row.identification_status, "IDENTIFIED"),
+    model: text(row.model ?? row.sku_code, "UNKNOWN_MODEL"),
+    defect: text(row.defect ?? row.defect_name, "Chưa phân loại"),
+    componentsIssued: text(row.components_issued, "Chưa xuất"),
+    status: text(row.status),
+    receivedAt: text(row.received_at ?? row.created_at),
+    updatedAt: text(row.updated_at ?? row.received_at),
+  };
+}
+
+function normalizeWarrantyDefectRow(row: RawRecord): WarrantyReportDefectRow {
+  return {
+    defect: text(row.defect, "Chưa phân loại"),
+    total: num(row.total),
+    processing: num(row.processing),
+    returned: num(row.returned),
+    cancelled: num(row.cancelled),
+    tempOnly: num(row.temp_only ?? row.tempOnly),
+  };
+}
+
+/**
+ * BP-WMS-12 · Báo cáo Bảo hành & linh kiện (case-level + tổng hợp theo bệnh/lỗi).
+ * Response mặc định không chứa PII; export PII do BE kiểm soát bằng warranty.pii.export.
+ */
 export async function fetchWarrantyDefectsReport(
-  params: Record<string, unknown> = {},
-): Promise<RawRecord[]> {
-  void params;
-  return unapprovedReportContract(
-    "Warranty defects report",
+  params: WarrantyReportParams,
+): Promise<WarrantyReportResult> {
+  const result = await http.get<RawRecord>(
     API_ENDPOINTS.REPORTS_WARRANTY_DEFECTS,
+    { params },
+  );
+  const summary = (result.summary ?? {}) as RawRecord;
+  return {
+    summary: {
+      total: num(summary.total),
+      processing: num(summary.processing),
+      returned: num(summary.returned),
+      cancelled: num(summary.cancelled),
+      tempOnly: num(summary.temp_only),
+    },
+    rows: rowsOf(
+      (result.rows ?? []) as RawRecord[] | { data?: RawRecord[] },
+    ).map(normalizeWarrantyCaseRow),
+    byDefect: rowsOf(
+      (result.by_defect ?? []) as RawRecord[] | { data?: RawRecord[] },
+    ).map(normalizeWarrantyDefectRow),
+  };
+}
+
+export async function downloadWarrantyReportExcel(
+  params: WarrantyReportParams,
+): Promise<Blob> {
+  assertWmsActionPermission(
+    WMS_ACTION_PERMISSIONS.EXPORT_REPORT,
+    "export warranty report",
+  );
+  return http.downloadBlob(
+    API_ENDPOINTS.REPORTS_WARRANTY_DEFECTS_EXPORT_EXCEL,
+    {
+      params,
+    },
   );
 }

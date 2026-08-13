@@ -78,27 +78,14 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
+    // WAR-02 / WAR-03 / COMP-01 mở modal ngay trên danh sách (giống IN-02/OUT-03)
+    // nên không liệt kê trong menu; deep-link ?screen= vẫn được WarrantyPage xử lý.
     name: "04 · Bảo hành & linh kiện",
     items: [
       {
         screen: "WAR-01",
         path: ROUTES.WARRANTY,
         label: "Danh sách bảo hành",
-      },
-      {
-        screen: "WAR-02",
-        path: ROUTES.WARRANTY,
-        label: "Tiếp nhận bảo hành",
-      },
-      {
-        screen: "WAR-03",
-        path: ROUTES.WARRANTY,
-        label: "Chi tiết bảo hành",
-      },
-      {
-        screen: "COMP-01",
-        path: ROUTES.WARRANTY,
-        label: "Xuất linh kiện cho bảo hành",
       },
     ],
   },
@@ -168,6 +155,9 @@ const MODAL_PARENT_SCREEN: Record<string, string> = {
   "OUT-02": "OUT-01",
   "LBL-01": "OUT-01",
   "RFID-01": "OUT-01",
+  "WAR-02": "WAR-01",
+  "WAR-03": "WAR-01",
+  "COMP-01": "WAR-01",
 };
 
 function matchesPath(currentPath: string, targetPath: string) {
@@ -189,7 +179,8 @@ export function SideNav() {
   const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
   const requestedScreen = new URLSearchParams(location.search).get("screen");
   const selectedScreen =
-    normalizeScreen(requestedScreen) ?? DEFAULT_SCREEN_BY_PATH[location.pathname];
+    normalizeScreen(requestedScreen) ??
+    DEFAULT_SCREEN_BY_PATH[location.pathname];
 
   const canAccess = (path: string) => {
     const required = ROUTE_PERMISSIONS[path];

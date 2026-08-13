@@ -42,6 +42,11 @@ const OutboundPage = lazy(() =>
     default: m.default,
   })),
 );
+const WarrantyPage = lazy(() =>
+  import("@/modules/warranty/pages/WarrantyPage").then((m) => ({
+    default: m.default,
+  })),
+);
 const MvpSourceScreen = lazy(() =>
   import("@/shared/components/mvp/MvpSourceScreen").then((m) => ({
     default: m.MvpSourceScreen,
@@ -60,7 +65,8 @@ const MVP_SCREEN_META: Record<string, ScreenMeta> = {
   },
   "IAM-01": {
     title: "Danh sách người dùng & phân quyền",
-    description: "Danh sách người dùng, vai trò, phạm vi dữ liệu và trạng thái.",
+    description:
+      "Danh sách người dùng, vai trò, phạm vi dữ liệu và trạng thái.",
   },
   "MST-01": {
     title: "Danh sách SKU / Product Master",
@@ -74,7 +80,10 @@ const MVP_SCREEN_META: Record<string, ScreenMeta> = {
     title: "Danh mục bệnh / lỗi",
     description: "Danh mục bệnh / lỗi dùng cho bảo hành.",
   },
-  "IN-01": { title: "Danh sách phiếu nhập", description: "Danh sách phiếu nhập." },
+  "IN-01": {
+    title: "Danh sách phiếu nhập",
+    description: "Danh sách phiếu nhập.",
+  },
   "IN-02": {
     title: "Tạo / sửa phiếu nhập DRAFT",
     description: "Tạo / sửa phiếu nhập DRAFT.",
@@ -95,7 +104,10 @@ const MVP_SCREEN_META: Record<string, ScreenMeta> = {
     title: "Tiếp nhận Phiếu yêu cầu xuất",
     description: "Tiếp nhận phiếu yêu cầu xuất, có import file Excel.",
   },
-  "OUT-01": { title: "Danh sách phiếu xuất", description: "Danh sách phiếu xuất." },
+  "OUT-01": {
+    title: "Danh sách phiếu xuất",
+    description: "Danh sách phiếu xuất.",
+  },
   "OUT-03": {
     title: "Chi tiết phiếu xuất",
     description: "Màn chi tiết phiếu xuất khi bấm Mở / Xem.",
@@ -117,7 +129,10 @@ const MVP_SCREEN_META: Record<string, ScreenMeta> = {
     title: "Tra cứu tồn & đối soát",
     description: "Tra cứu tồn và đối soát.",
   },
-  "TRACE-01": { title: "Truy vết mã vật lý", description: "Truy vết mã vật lý." },
+  "TRACE-01": {
+    title: "Truy vết mã vật lý",
+    description: "Truy vết mã vật lý.",
+  },
   "REV-00": {
     title: "Danh sách phiếu Reversal",
     description: "Danh sách phiếu để chọn tạo Reversal.",
@@ -148,7 +163,8 @@ const ROUTE_DEFAULT_SCREEN: Record<string, string> = {
 const ROUTE_META: Record<string, ScreenMeta> = {
   [ROUTES.IAM_ROLES]: {
     title: "Vai trò & phân quyền",
-    description: "Quản trị role template và permission theo contract IAM hiện hành.",
+    description:
+      "Quản trị role template và permission theo contract IAM hiện hành.",
   },
   [ROUTES.AUDIT_LOGS]: {
     title: "Nhật ký kiểm tra",
@@ -177,6 +193,9 @@ const MODAL_PARENT_SCREEN: Record<string, string> = {
   "OUT-02": "OUT-01",
   "LBL-01": "OUT-01",
   "RFID-01": "OUT-01",
+  "WAR-02": "WAR-01",
+  "WAR-03": "WAR-01",
+  "COMP-01": "WAR-01",
 };
 
 function normalizeScreen(screen: string | null) {
@@ -201,15 +220,14 @@ function resolveScreenMeta(pathname: string, search: string): ScreenMeta {
   );
 }
 
-function renderMvpScreen(
-  sourceScreen: string,
-  requestedScreen: string | null,
-) {
+function renderMvpScreen(sourceScreen: string, requestedScreen: string | null) {
   switch (sourceScreen) {
     case "IAM-01":
       return <IamUserScreen openCreateOnMount={requestedScreen === "IAM-02"} />;
     case "MST-01":
-      return <SkuMasterScreen openCreateOnMount={requestedScreen === "MST-02"} />;
+      return (
+        <SkuMasterScreen openCreateOnMount={requestedScreen === "MST-02"} />
+      );
     case "AGY-01":
       return (
         <AgencyMasterScreen openCreateOnMount={requestedScreen === "AGY-02"} />
@@ -234,6 +252,13 @@ function renderMvpScreen(
       return (
         <div className="hn-mvp-source-screen">
           <OutboundPage />
+        </div>
+      );
+    case "WAR-01":
+      // WarrantyPage tự đọc ?screen=WAR-02/WAR-03/COMP-01 để mở modal tương ứng.
+      return (
+        <div className="hn-mvp-source-screen">
+          <WarrantyPage />
         </div>
       );
     default:

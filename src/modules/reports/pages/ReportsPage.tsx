@@ -25,28 +25,25 @@ import {
   tableEmptyText,
 } from "@/shared/components/feedback/BusinessState";
 import { ActionButton } from "@/shared/components/permission/ActionButton";
-import { fetchWarrantyDefectsReport } from "../services/reportsService";
 import {
+  downloadWarrantyReportExcel,
   downloadXntReportExcel,
   fetchReportsHub,
+  fetchWarrantyDefectsReport,
   fetchXntReport,
+  type WarrantyReportResult,
   type XntReportParams,
 } from "../services/reportsService";
 import type { ReportItem, XntReportRow } from "../types";
+import {
+  WARRANTY_STATUS_COLORS,
+  WARRANTY_STATUS_LABELS,
+  formatWarrantyDateTime,
+} from "@/modules/warranty/constants";
 
 type ReportTab = "hub" | "xnt" | "warranty";
 type ReportScope = "warehouse" | "system";
 type MovementType = "all" | "receipt" | "issue" | "adjustment" | "reversal";
-
-type WarrantyReportRow = {
-  id: string;
-  model: string;
-  defect: string;
-  total: number;
-  processing: number;
-  returned: number;
-  tempOnly: number;
-};
 
 const P0_REPORT_CODES = [
   "RPT-INV-01",
@@ -57,52 +54,6 @@ const P0_REPORT_CODES = [
   "RPT-IO-01",
 ] as const;
 
-function rawText(
-  row: Record<string, unknown>,
-  keys: string[],
-  fallback = "",
-): string {
-  for (const key of keys) {
-    const value = row[key];
-    if (value !== undefined && value !== null && String(value).trim() !== "") {
-      return String(value);
-    }
-  }
-  return fallback;
-}
-
-function rawNumber(row: Record<string, unknown>, keys: string[]): number {
-  for (const key of keys) {
-    const value = row[key];
-    if (value !== undefined && value !== null && value !== "")
-      return Number(value);
-  }
-  return 0;
-}
-
-function normalizeWarrantyReportRow(
-  row: Record<string, unknown>,
-  index: number,
-): WarrantyReportRow {
-  return {
-    id: rawText(row, ["id", "defect_code", "defect"], String(index)),
-    model: rawText(row, ["model", "sku", "sku_code"], "Chưa phân loại"),
-    defect: rawText(
-      row,
-      ["defect", "defect_code", "defect_name"],
-      "Chưa phân loại",
-    ),
-    total: rawNumber(row, ["total", "total_case", "case_count"]),
-    processing: rawNumber(row, [
-      "processing",
-      "processing_count",
-      "open_count",
-    ]),
-    returned: rawNumber(row, ["returned", "returned_count", "closed_count"]),
-    tempOnly: rawNumber(row, ["temp_only", "tempOnly", "temp_only_count"]),
-  };
-}
-
 function isReconcileProblem(value: string): boolean {
   return ["FAIL", "WARN", "WARNING"].includes(value.toUpperCase());
 }
@@ -112,7 +63,9 @@ export default function ReportsPage() {
   const [reports, setReports] = useState<ReportItem[]>([]);
   const [hubSearch, setHubSearch] = useState("");
   const [xntRows, setXntRows] = useState<XntReportRow[]>([]);
-  const [warrantyRows, setWarrantyRows] = useState<WarrantyReportRow[]>([]);
+  const [warrantyReport, setWarrantyReport] =
+    useState<WarrantyReportResult | null>(null);
+  const [warrantyExporting, setWarrantyExporting] = useState(false);
   const [period, setPeriod] = useState<[Dayjs, Dayjs]>([
     dayjs().subtract(30, "day"),
     dayjs(),
@@ -211,7 +164,7 @@ export default function ReportsPage() {
   }, [activeTab, invalidPeriod, reloadKey, xntParams]);
 
   useEffect(() => {
-    if (activeTab !== "warranty") return;
+    if (activeTab !== "warranty" || invalidPeriod) return;
     let cancelled = false;
     setWarrantyLoading(true);
     setWarrantyError(null);
@@ -219,12 +172,12 @@ export default function ReportsPage() {
       from: period[0].format("YYYY-MM-DD"),
       to: period[1].format("YYYY-MM-DD"),
     })
-      .then((rows) => {
-        if (!cancelled) setWarrantyRows(rows.map(normalizeWarrantyReportRow));
+      .then((report) => {
+        if (!cancelled) setWarrantyReport(report);
       })
       .catch((fetchError: unknown) => {
         if (!cancelled) {
-          setWarrantyRows([]);
+          setWarrantyReport(null);
           setWarrantyError(fetchError);
         }
       })
@@ -234,7 +187,32 @@ export default function ReportsPage() {
     return () => {
       cancelled = true;
     };
-  }, [activeTab, period, reloadKey]);
+  }, [activeTab, invalidPeriod, period, reloadKey]);
+
+  const handleExportWarranty = async () => {
+    if (invalidPeriod) return;
+    setWarrantyExporting(true);
+    setWarrantyError(null);
+    try {
+      const blob = await downloadWarrantyReportExcel({
+        from: period[0].format("YYYY-MM-DD"),
+        to: period[1].format("YYYY-MM-DD"),
+      });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `bao-cao-bao-hanh-${period[0].format("YYYYMMDD")}-${period[1].format("YYYYMMDD")}.xlsx`;
+      link.click();
+      window.URL.revokeObjectURL(url);
+      toast.success(
+        "Đã xuất báo cáo bảo hành (PII chỉ có khi tài khoản được cấp warranty.pii.export)",
+      );
+    } catch (downloadError: unknown) {
+      setWarrantyError(downloadError);
+    } finally {
+      setWarrantyExporting(false);
+    }
+  };
 
   const reload = () => setReloadKey((value) => value + 1);
 
@@ -546,7 +524,7 @@ export default function ReportsPage() {
           },
           {
             key: "warranty",
-            label: "Bảo hành theo lỗi",
+            label: "Bảo hành & linh kiện",
             children: (
               <>
                 <Alert
@@ -554,15 +532,67 @@ export default function ReportsPage() {
                   type="info"
                   style={{ marginBottom: 16 }}
                   message="Báo cáo bảo hành mặc định không hiển thị PII"
-                  description="Nguồn dữ liệu ưu tiên là endpoint report warranty-defects. Tên khách hàng và số điện thoại không được đưa vào bảng/export mặc định."
+                  description="Nguồn dữ liệu là /reports/warranty-defects. Tên/SĐT/địa chỉ khách chỉ xuất hiện trong file export khi tài khoản được cấp warranty.pii.export; mọi lần export đều được audit."
                 />
+                <ResponsiveToolbar>
+                  <DatePicker
+                    value={period[0]}
+                    status={invalidPeriod ? "error" : undefined}
+                    onChange={(value) => value && setPeriod([value, period[1]])}
+                  />
+                  <DatePicker
+                    value={period[1]}
+                    status={invalidPeriod ? "error" : undefined}
+                    onChange={(value) => value && setPeriod([period[0], value])}
+                  />
+                  <Button
+                    icon={<ReloadOutlined />}
+                    onClick={reload}
+                    loading={warrantyLoading}
+                  >
+                    Tải lại
+                  </Button>
+                  <ActionButton
+                    module="reports"
+                    action="export"
+                    permissionCode="REPORT_EXPORT"
+                    mode="disable"
+                    type="primary"
+                    icon={<DownloadOutlined />}
+                    onClick={handleExportWarranty}
+                    loading={warrantyExporting}
+                    disabled={
+                      invalidPeriod || warrantyLoading || warrantyExporting
+                    }
+                    disabledTooltip="Bạn không có quyền xuất báo cáo hoặc bộ lọc chưa hợp lệ"
+                  >
+                    Xuất Excel
+                  </ActionButton>
+                </ResponsiveToolbar>
+                {warrantyReport ? (
+                  <Space wrap style={{ marginBottom: 12 }}>
+                    <Tag>Tổng {warrantyReport.summary.total} case</Tag>
+                    <Tag color="processing">
+                      Đang xử lý {warrantyReport.summary.processing}
+                    </Tag>
+                    <Tag color="success">
+                      Đã trả {warrantyReport.summary.returned}
+                    </Tag>
+                    <Tag color="error">
+                      Đã hủy {warrantyReport.summary.cancelled}
+                    </Tag>
+                    <Tag color="warning">
+                      TEMP_ONLY {warrantyReport.summary.tempOnly}
+                    </Tag>
+                  </Space>
+                ) : null}
                 <InlineApiError
                   error={warrantyError}
-                  title="Không thể tải báo cáo bảo hành theo lỗi"
+                  title="Không thể tải báo cáo bảo hành & linh kiện"
                   onRetry={reload}
                 />
                 <Table
-                  dataSource={warrantyRows}
+                  dataSource={warrantyReport?.rows ?? []}
                   rowKey="id"
                   loading={warrantyLoading}
                   pagination={{ pageSize: 10 }}
@@ -570,12 +600,68 @@ export default function ReportsPage() {
                   locale={{
                     emptyText: tableEmptyText(
                       warrantyError,
-                      "Không có dữ liệu bảo hành theo lỗi",
+                      "Không có case bảo hành trong khoảng thời gian đã chọn",
                     ),
                   }}
                   columns={[
-                    { title: "Model/SKU", dataIndex: "model", key: "model" },
-                    { title: "Lỗi/bệnh", dataIndex: "defect", key: "defect" },
+                    {
+                      title: "Case",
+                      dataIndex: "caseNo",
+                      key: "caseNo",
+                      render: (value: string, row) => (
+                        <Space size={4}>
+                          <strong>{value}</strong>
+                          {row.identification === "TEMP_ONLY" ? (
+                            <Tag color="warning">TEMP</Tag>
+                          ) : null}
+                        </Space>
+                      ),
+                    },
+                    { title: "SKU/Model", dataIndex: "model", key: "model" },
+                    { title: "Bệnh / lỗi", dataIndex: "defect", key: "defect" },
+                    {
+                      title: "Linh kiện đã xuất",
+                      dataIndex: "componentsIssued",
+                      key: "componentsIssued",
+                    },
+                    {
+                      title: "Trạng thái",
+                      dataIndex: "status",
+                      key: "status",
+                      render: (value: string) => (
+                        <Tag color={WARRANTY_STATUS_COLORS[value]}>
+                          {WARRANTY_STATUS_LABELS[value] ?? value}
+                        </Tag>
+                      ),
+                    },
+                    {
+                      title: "Ngày cập nhật",
+                      dataIndex: "updatedAt",
+                      key: "updatedAt",
+                      render: (value: string) => formatWarrantyDateTime(value),
+                    },
+                  ]}
+                />
+                <Table
+                  style={{ marginTop: 16 }}
+                  dataSource={warrantyReport?.byDefect ?? []}
+                  rowKey="defect"
+                  size="small"
+                  loading={warrantyLoading}
+                  pagination={false}
+                  scroll={{ x: "max-content" }}
+                  locale={{
+                    emptyText: tableEmptyText(
+                      warrantyError,
+                      "Chưa có tổng hợp theo bệnh/lỗi",
+                    ),
+                  }}
+                  columns={[
+                    {
+                      title: "Tổng hợp theo bệnh / lỗi",
+                      dataIndex: "defect",
+                      key: "defect",
+                    },
                     {
                       title: "Số case",
                       dataIndex: "total",
@@ -592,6 +678,12 @@ export default function ReportsPage() {
                       title: "Đã trả",
                       dataIndex: "returned",
                       key: "returned",
+                      align: "right",
+                    },
+                    {
+                      title: "Đã hủy",
+                      dataIndex: "cancelled",
+                      key: "cancelled",
                       align: "right",
                     },
                     {

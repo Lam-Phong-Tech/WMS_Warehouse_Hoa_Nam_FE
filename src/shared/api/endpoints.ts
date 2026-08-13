@@ -81,6 +81,8 @@ export const API_ENDPOINTS = {
   REPORTS_XNT: "/reports/inventory-xnt",
   REPORTS_XNT_EXPORT_EXCEL: "/reports/inventory-xnt/export-excel",
   REPORTS_WARRANTY_DEFECTS: "/reports/warranty-defects",
+  REPORTS_WARRANTY_DEFECTS_EXPORT_EXCEL:
+    "/reports/warranty-defects/export-excel",
   INVENTORY_RECONCILIATION: "/reports/inventory-reconciliation",
   INVENTORY_BALANCES: "/inventory/balances",
   STOCK_MOVEMENTS: "/stock-movements",
@@ -119,10 +121,12 @@ export const API_ENDPOINTS = {
   STOCKTAKE_START: "/stocktake-sessions/:sessionId/start",
   STOCKTAKE_COUNT: "/stocktake-sessions/:sessionId/counts",
   STOCKTAKE_REVIEW: "/stocktake-sessions/:sessionId/review",
-  STOCKTAKE_ACKNOWLEDGE_MOVEMENTS: "/stocktake-sessions/:sessionId/acknowledge-movements",
+  STOCKTAKE_ACKNOWLEDGE_MOVEMENTS:
+    "/stocktake-sessions/:sessionId/acknowledge-movements",
   STOCKTAKE_VARIANCES: "/stocktake-sessions/:sessionId/variances",
   STOCKTAKE_APPLY_ADJUSTMENT: "/stocktake-sessions/:sessionId/apply-adjustment",
-  STOCKTAKE_APPLY_ADJUSTMENT_COMPAT: "/stocktake/sessions/:sessionId/apply-adjustment",
+  STOCKTAKE_APPLY_ADJUSTMENT_COMPAT:
+    "/stocktake/sessions/:sessionId/apply-adjustment",
 
   REVERSAL_DOCUMENTS: "/reversal-documents",
   REVERSAL_DOCUMENT: "/reversal-documents/:id",
@@ -132,6 +136,9 @@ export const API_ENDPOINTS = {
   WARRANTY_CASES: "/warranty-cases",
   WARRANTY_CASE: "/warranty-cases/:id",
   WARRANTY_CASE_EVENTS: "/warranty-cases/:caseId/events",
+  WARRANTY_CASE_ATTACHMENTS: "/warranty-cases/:caseId/attachments",
+  WARRANTY_ATTACHMENT: "/warranty-attachments/:id",
+  WARRANTY_ATTACHMENT_DOWNLOAD: "/warranty-attachments/:id/download",
   COMPONENT_ISSUE_DOCUMENTS: "/component-issue-documents",
   COMPONENT_ISSUE_DOCUMENT: "/component-issue-documents/:id",
   COMPONENT_ISSUE_SCAN: "/component-issue-documents/:id/scan",
