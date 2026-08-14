@@ -10,7 +10,6 @@ import {
   SearchOutlined,
   SwapOutlined,
 } from "@ant-design/icons";
-import { useQueryClient } from "@tanstack/react-query";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { MvpPageSizeSelector } from "@/shared/components/mvp/MvpListPagination";
 import { resolveApiPagination } from "@/shared/components/mvp/mvp-pagination";
@@ -18,7 +17,6 @@ import { useCanAny } from "@/shared/components/permission";
 import {
   useInventoryBalances,
   useStockMovements,
-  inventoryKeys,
 } from "../hooks/use-inventory";
 import { BalanceDetailModal } from "../components/BalanceDetailModal";
 import { TraceModal } from "../components/TraceModal";
@@ -47,7 +45,6 @@ function reconcileColor(status: string) {
  * đồng bộ pattern luồng 02/03/04.
  */
 export default function InventoryPage() {
-  const queryClient = useQueryClient();
   const canTrace = useCanAny(["inventory.trace", "INVENTORY_TRACE"]);
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -124,10 +121,6 @@ export default function InventoryPage() {
     nextParams.delete("id");
     setSearchParams(nextParams, { replace: true });
   }, [searchParams, setSearchParams]);
-
-  const refreshAll = () => {
-    void queryClient.invalidateQueries({ queryKey: inventoryKeys.all });
-  };
 
   const handleOpenTrace = (movementId: string) => {
     setBalanceDetailRow(null);

@@ -1,0 +1,13 @@
+#!/usr/bin/env sh
+# Chặn push nếu TypeScript không compile — cùng gate `npm run typecheck` (tsc -b) với CI,
+# nên lỗi noUnusedLocals/strict bị bắt tại máy dev thay vì fail ở pipeline build/deploy.
+# (POSIX sh thuần, cùng ràng buộc như .husky/pre-commit.)
+
+echo "🔍 Typecheck (tsc -b) trước khi push..."
+npm run typecheck || {
+  echo ""
+  echo "⛔ PUSH REJECTED: TypeScript compile lỗi. Sửa các lỗi trên rồi push lại."
+  echo "   Chạy lại thủ công: npm run typecheck"
+  exit 1
+}
+echo "✅ Typecheck pass. Tiếp tục push."
