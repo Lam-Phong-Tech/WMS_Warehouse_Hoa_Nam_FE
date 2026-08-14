@@ -1,19 +1,27 @@
 import { Modal, Descriptions, Space, Statistic, Table, Tag, Typography } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { HistoryOutlined } from "@ant-design/icons";
+import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import type { InventoryBalanceRow } from "../services/inventoryService";
-import { useStockMovements } from "../hooks/use-inventory";
+import { useStockMovements, useBalanceSubledger } from "../hooks/use-inventory";
+import type { StockMovementRow } from "../services/inventoryService";
 
 const numberFormatter = new Intl.NumberFormat("vi-VN");
+
+type RawRecord = Record<string, unknown>;
 
 function formatQty(value: number | null | undefined, uom = "") {
   if (value === null || value === undefined) return "-";
   return `${numberFormatter.format(value)}${uom ? ` ${uom}` : ""}`;
 }
 
+function text(val: unknown, fallback = "-") {
+  return val === undefined || val === null ? fallback : String(val);
+}
+
 function reconcileColor(status: string) {
-  if (status === "PASS") return "success";
-  if (status === "FAIL") return "error";
+  if (status === "MATCH" || status === "PASS") return "success";
+  if (status === "MISMATCH" || status === "FAIL") return "error";
   return "warning";
 }
 
@@ -28,9 +36,12 @@ export function BalanceDetailModal({ balance, onClose, onTraceMovement }: Props)
     search: balance.sku,
     per_page: 10,
   });
-  const movements = movementsQuery.data ?? [];
+  const movements = movementsQuery.data?.rows ?? [];
 
-  const movementColumns: ColumnsType<(typeof movements)[number]> = [
+  const subledgerQuery = useBalanceSubledger(String(balance.id));
+  const subledger = subledgerQuery.data;
+
+  const movementColumns: ColumnsType<StockMovementRow> = [
     {
       title: "Mã dịch chuyển",
       dataIndex: "movementId",
@@ -97,13 +108,95 @@ export function BalanceDetailModal({ balance, onClose, onTraceMovement }: Props)
     },
   ];
 
+  const itemColumns: ColumnsType<RawRecord> = [
+    {
+      title: "Mã Item",
+      width: 140,
+      render: (_, row) => (
+        <Typography.Text code>{text(row.item_code ?? row.serial_number)}</Typography.Text>
+      ),
+    },
+    {
+      title: "Serial",
+      width: 140,
+      render: (_, row) => text(row.serial_number),
+    },
+    {
+      title: "Trạng thái",
+      width: 100,
+      render: (_, row) => <Tag>{text(row.status)}</Tag>,
+    },
+    {
+      title: "Tình trạng",
+      width: 100,
+      render: (_, row) => text(row.condition),
+    },
+    {
+      title: "Physical Code",
+      width: 130,
+      render: (_, row) => (
+        row.physical_code ? (
+          <Typography.Text code>{text(row.physical_code)}</Typography.Text>
+        ) : (
+          <Typography.Text type="secondary">-</Typography.Text>
+        )
+      ),
+    },
+    {
+      title: "Vị trí",
+      width: 120,
+      render: (_, row) => text(row.location_hint),
+    },
+    {
+      title: "Nhận",
+      width: 130,
+      render: (_, row) => text(row.received_at),
+    },
+  ];
+
+  const containerColumns: ColumnsType<RawRecord> = [
+    {
+      title: "Mã Container",
+      width: 140,
+      render: (_, row) => (
+        <Typography.Text code>{text(row.container_code)}</Typography.Text>
+      ),
+    },
+    {
+      title: "Loại",
+      width: 100,
+      render: (_, row) => <Tag>{text(row.container_type)}</Tag>,
+    },
+    {
+      title: "SL",
+      width: 80,
+      align: "right",
+      render: (_, row) => numberFormatter.format(Number(row.quantity ?? 0)),
+    },
+    {
+      title: "TT Container",
+      width: 110,
+      render: (_, row) => <Tag>{text(row.container_status)}</Tag>,
+    },
+    {
+      title: "Zone",
+      width: 100,
+      render: (_, row) => text(row.zone_code),
+    },
+    {
+      title: "Vị trí",
+      width: 120,
+      render: (_, row) => text(row.location_hint),
+    },
+  ];
+
   return (
     <Modal
       open
       centered
       destroyOnHidden
       maskClosable={false}
-      width={960}
+      width={1060}
       title={`Chi tiết tồn kho — ${balance.sku}`}
       footer={null}
       onCancel={onClose}
@@ -175,6 +268,49 @@ export function BalanceDetailModal({ balance, onClose, onTraceMovement }: Props)
           <Statistic title="Box qty" value={formatQty(balance.boxQty)} />
         </Space>
 
+        {/* ──── Item Subledger ──── */}
+        {subledgerQuery.isError ? (
+          <ApiErrorAlert
+            error={subledgerQuery.error}
+            title="Không tải được subledger"
+            onRetry={() => subledgerQuery.refetch()}
+          />
+        ) : null}
+
+        <div>
+          <Typography.Text strong style={{ display: "block", marginBottom: 8 }}>
+            Item Subledger ({subledger?.item_count ?? balance.serialQty})
+          </Typography.Text>
+          <Table
+            size="small"
+            dataSource={(subledger?.items as RawRecord[]) ?? []}
+            columns={itemColumns}
+            rowKey={(row) => text(row.id, String(Math.random()))}
+            loading={subledgerQuery.isLoading}
+            pagination={false}
+            scroll={{ x: 860 }}
+            locale={{ emptyText: "Không có item instance" }}
+          />
+        </div>
+
+        {/* ──── Container Subledger ──── */}
+        <div>
+          <Typography.Text strong style={{ display: "block", marginBottom: 8 }}>
+            Container Subledger ({subledger?.container_count ?? balance.boxQty})
+          </Typography.Text>
+          <Table
+            size="small"
+            dataSource={(subledger?.containers as RawRecord[]) ?? []}
+            columns={containerColumns}
+            rowKey={(row) => text(row.id, String(Math.random()))}
+            loading={subledgerQuery.isLoading}
+            pagination={false}
+            scroll={{ x: 650 }}
+            locale={{ emptyText: "Không có container" }}
+          />
+        </div>
+
+        {/* ──── Movement liên quan ──── */}
         <div>
           <Typography.Text strong style={{ display: "block", marginBottom: 8 }}>
             Movement liên quan ({movements.length})

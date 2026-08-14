@@ -85,6 +85,7 @@ export const API_ENDPOINTS = {
     "/reports/warranty-defects/export-excel",
   INVENTORY_RECONCILIATION: "/reports/inventory-reconciliation",
   INVENTORY_BALANCES: "/inventory/balances",
+  INVENTORY_BALANCE_SUBLEDGER: "/inventory/balances/:id/subledger",
   STOCK_MOVEMENTS: "/stock-movements",
   STOCK_MOVEMENT: "/stock-movements/:id",
   STOCK_MOVEMENT_TRACE_SOURCE: "/stock-movements/:id/trace-source",
@@ -114,19 +115,20 @@ export const API_ENDPOINTS = {
   DOCUMENT_STATUS_HISTORY: "/document-status-history",
   INVENTORY_SNAPSHOTS: "/inventory-snapshots",
 
-  // Legacy stocktake constants remain for non-routed compatibility code only.
-  // Stocktake is not registered in the current MVP router or BE route surface.
-  STOCKTAKE_SESSIONS: "/stocktake-sessions",
-  STOCKTAKE_SESSION: "/stocktake-sessions/:sessionId",
-  STOCKTAKE_CREATE_SESSION: "/stocktake-sessions",
-  STOCKTAKE_START: "/stocktake-sessions/:sessionId/start",
-  STOCKTAKE_COUNT: "/stocktake-sessions/:sessionId/counts",
-  STOCKTAKE_REVIEW: "/stocktake-sessions/:sessionId/review",
-  STOCKTAKE_ACKNOWLEDGE_MOVEMENTS:
+  // @deprecated — Stocktake Model A removed from MVP scope.
+  // Not routed in FE, no BE endpoints registered, Jira tickets WWHN-58/59 to be dispositioned.
+  // Retain constants for test references only; do NOT import these in new code.
+  /** @deprecated */ STOCKTAKE_SESSIONS: "/stocktake-sessions",
+  /** @deprecated */ STOCKTAKE_SESSION: "/stocktake-sessions/:sessionId",
+  /** @deprecated */ STOCKTAKE_CREATE_SESSION: "/stocktake-sessions",
+  /** @deprecated */ STOCKTAKE_START: "/stocktake-sessions/:sessionId/start",
+  /** @deprecated */ STOCKTAKE_COUNT: "/stocktake-sessions/:sessionId/counts",
+  /** @deprecated */ STOCKTAKE_REVIEW: "/stocktake-sessions/:sessionId/review",
+  /** @deprecated */ STOCKTAKE_ACKNOWLEDGE_MOVEMENTS:
     "/stocktake-sessions/:sessionId/acknowledge-movements",
-  STOCKTAKE_VARIANCES: "/stocktake-sessions/:sessionId/variances",
-  STOCKTAKE_APPLY_ADJUSTMENT: "/stocktake-sessions/:sessionId/apply-adjustment",
-  STOCKTAKE_APPLY_ADJUSTMENT_COMPAT:
+  /** @deprecated */ STOCKTAKE_VARIANCES: "/stocktake-sessions/:sessionId/variances",
+  /** @deprecated */ STOCKTAKE_APPLY_ADJUSTMENT: "/stocktake-sessions/:sessionId/apply-adjustment",
+  /** @deprecated */ STOCKTAKE_APPLY_ADJUSTMENT_COMPAT:
     "/stocktake/sessions/:sessionId/apply-adjustment",
 
   REVERSAL_DOCUMENTS: "/reversal-documents",

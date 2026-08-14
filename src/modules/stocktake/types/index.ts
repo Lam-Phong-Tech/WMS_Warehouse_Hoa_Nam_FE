@@ -1,4 +1,9 @@
-/** Stocktake session status from the exact BE v1.7 runtime plus legacy UI aliases. */
+/**
+ * @deprecated Stocktake Model A — removed from MVP scope.
+ * Retained for reference only. Do NOT import in new code.
+ *
+ * Stocktake session status from the exact BE v1.7 runtime plus legacy UI aliases.
+ */
 export type StocktakeSessionStatus =
   | "DRAFT"
   | "IN_PROGRESS"

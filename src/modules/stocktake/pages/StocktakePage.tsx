@@ -1,3 +1,8 @@
+/**
+ * @deprecated Stocktake Model A — removed from MVP scope.
+ * Not registered in router. Jira WWHN-58/59 to be dispositioned as Out of Scope.
+ * Do NOT import or extend this module. Retained for reference only.
+ */
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useMemo, useState } from "react";
 import {

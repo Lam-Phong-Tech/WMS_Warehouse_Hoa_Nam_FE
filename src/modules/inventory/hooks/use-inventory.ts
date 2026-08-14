@@ -5,11 +5,13 @@ import {
   fetchStockMovement,
   traceStockMovementSource,
   traceByPhysicalCode,
+  fetchBalanceSubledger,
   type InventoryBalanceFilters,
   type StockMovementFilters,
   type PagedResult,
   type InventoryBalanceRow,
   type StockMovementRow,
+  type SubledgerResult,
 } from "../services/inventoryService";
 
 export const inventoryKeys = {
@@ -23,6 +25,8 @@ export const inventoryKeys = {
   trace: (id: string) => [...inventoryKeys.all, "trace", id] as const,
   traceByCode: (code: string) =>
     [...inventoryKeys.all, "traceByCode", code] as const,
+  subledger: (balanceId: string) =>
+    [...inventoryKeys.all, "subledger", balanceId] as const,
 };
 
 export function useInventoryBalances(params: InventoryBalanceFilters) {
@@ -52,6 +56,14 @@ export function useStockMovementTrace(id: string | null | undefined) {
     queryKey: inventoryKeys.trace(id ?? ""),
     queryFn: () => traceStockMovementSource(id ?? ""),
     enabled: Boolean(id),
+  });
+}
+
+export function useBalanceSubledger(balanceId: string | null | undefined) {
+  return useQuery<SubledgerResult>({
+    queryKey: inventoryKeys.subledger(balanceId ?? ""),
+    queryFn: () => fetchBalanceSubledger(balanceId ?? ""),
+    enabled: Boolean(balanceId),
   });
 }
 

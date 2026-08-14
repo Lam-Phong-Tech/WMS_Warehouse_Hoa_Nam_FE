@@ -389,6 +389,24 @@ export type PhysicalCodeTraceResult = {
   container_items: RawRecord[];
 };
 
+export type SubledgerResult = {
+  balance_id: string;
+  product_id: string;
+  warehouse_id: string;
+  items: RawRecord[];
+  containers: RawRecord[];
+  item_count: number;
+  container_count: number;
+};
+
+export async function fetchBalanceSubledger(
+  balanceId: string,
+): Promise<SubledgerResult> {
+  return http.get<SubledgerResult>(
+    API_ENDPOINTS.INVENTORY_BALANCE_SUBLEDGER.replace(":id", balanceId),
+  );
+}
+
 export async function traceByPhysicalCode(
   code: string,
 ): Promise<PhysicalCodeTraceResult> {

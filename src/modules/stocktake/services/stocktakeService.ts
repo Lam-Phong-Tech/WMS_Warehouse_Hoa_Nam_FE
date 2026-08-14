@@ -1,3 +1,7 @@
+/**
+ * @deprecated Stocktake Model A — removed from MVP scope.
+ * Retained for reference only. Do NOT import in new code.
+ */
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { assertWmsActionPermission } from "@/shared/api/wms-action-permission";
 import { http } from "@/shared/api/http";
