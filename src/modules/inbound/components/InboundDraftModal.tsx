@@ -13,8 +13,8 @@ import {
   Space,
   Table,
   Tag,
-  message,
 } from "antd";
+import { toast } from "sonner";
 import { PlusOutlined } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -242,7 +242,7 @@ export function InboundDraftModal({
 
     const lines = values.lines ?? [];
     if (lines.length === 0) {
-      message.error("Phiếu nhập phải có ít nhất một dòng SKU.");
+      toast.error("Phiếu nhập phải có ít nhất một dòng SKU.");
       return;
     }
 
@@ -252,7 +252,7 @@ export function InboundDraftModal({
       return !Number.isInteger(expected) || expected < 1 || expected < scanned;
     });
     if (invalidExpected) {
-      message.error(
+      toast.error(
         "Expected qty phải là số nguyên dương và không được nhỏ hơn số đã scan.",
       );
       return;
@@ -273,7 +273,7 @@ export function InboundDraftModal({
           payload,
           ifMatch: detail.document.version,
         });
-        message.success(
+        toast.success(
           hasScanEvidence
             ? "Đã hiệu chỉnh Expected; toàn bộ line ID và scan evidence được giữ nguyên."
             : "Đã cập nhật phiếu nhập.",
@@ -290,13 +290,13 @@ export function InboundDraftModal({
         lines: normalizedLines,
       };
       const created = await createMutation.mutateAsync(payload);
-      message.success(
+      toast.success(
         "Đã tạo phiếu nhập DRAFT. Chưa phát sinh biến động tồn kho.",
       );
       onSaved(created.id);
     } catch (error) {
       applyBackendErrors(form, error);
-      message.error(getApiErrorMessage(error, "Không lưu được phiếu nhập."));
+      toast.error(getApiErrorMessage(error, "Không lưu được phiếu nhập."));
       if (documentId) {
         initializedIdRef.current = null;
         await detailQuery.refetch();

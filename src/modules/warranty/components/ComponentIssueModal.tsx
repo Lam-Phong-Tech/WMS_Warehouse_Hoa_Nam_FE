@@ -156,7 +156,7 @@ export function ComponentIssueModal({
       return;
     }
     if (!warehouse?.id) {
-      message.error("Chưa xác định được kho tổng ACTIVE.");
+      toast.error("Chưa xác định được kho tổng ACTIVE.");
       return;
     }
     try {
@@ -172,14 +172,14 @@ export function ComponentIssueModal({
             required_qty: Number(line.required_qty),
           })),
       });
-      message.success(
+      toast.success(
         `Đã tạo phiếu xuất linh kiện ${created.component_issue_no}.`,
       );
       setDocumentId(created.id);
       setLocalVersion(created.version);
       onChanged?.();
     } catch (error: unknown) {
-      message.error(errorText(error, "Không tạo được phiếu xuất linh kiện."));
+      toast.error(errorText(error, "Không tạo được phiếu xuất linh kiện."));
     }
   };
 
@@ -187,7 +187,7 @@ export function ComponentIssueModal({
     if (!detail || !documentId) return;
     const line = detail.lines.find((item) => item.id === selectedLineId);
     if (!line) {
-      message.warning("Chọn dòng linh kiện trước khi quét.");
+      toast.warning("Chọn dòng linh kiện trước khi quét.");
       return;
     }
     if (version === null) return;
@@ -201,19 +201,19 @@ export function ComponentIssueModal({
       });
       setLocalVersion(result.version);
       setRecentCodes((current) => [code, ...current].slice(0, 30));
-      message.success(
+      toast.success(
         `Đã ghi nhận ${scanQuantity} × ${line.sku_code} (${result.scanned_qty}/${line.required_qty}).`,
       );
       onChanged?.();
     } catch (error: unknown) {
-      message.error(errorText(error, "Quét linh kiện thất bại."));
+      toast.error(errorText(error, "Quét linh kiện thất bại."));
     }
   };
 
   const handleCancel = async () => {
     if (!documentId || version === null) return;
     if (!cancelReason.trim()) {
-      message.warning("Nhập lý do hủy phiếu.");
+      toast.warning("Nhập lý do hủy phiếu.");
       return;
     }
     try {
@@ -224,10 +224,10 @@ export function ComponentIssueModal({
       });
       setLocalVersion(result.version);
       setCancelOpen(false);
-      message.success("Đã hủy phiếu xuất linh kiện.");
+      toast.success("Đã hủy phiếu xuất linh kiện.");
       onChanged?.();
     } catch (error: unknown) {
-      message.error(errorText(error, "Không hủy được phiếu."));
+      toast.error(errorText(error, "Không hủy được phiếu."));
     }
   };
 
@@ -249,12 +249,12 @@ export function ComponentIssueModal({
             ),
           });
           setLocalVersion(result.version);
-          message.success(
+          toast.success(
             `Đã Post phiếu xuất linh kiện — ${result.movement_ids.length} movement trừ tồn.`,
           );
           onChanged?.();
         } catch (error: unknown) {
-          message.error(
+          toast.error(
             errorText(error, "Post phiếu xuất linh kiện thất bại."),
           );
         }

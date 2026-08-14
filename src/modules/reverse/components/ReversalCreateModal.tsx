@@ -11,8 +11,8 @@ import {
   Table,
   Tag,
   Typography,
-  message,
 } from "antd";
+import { toast } from "sonner";
 import { RollbackOutlined, WarningOutlined } from "@ant-design/icons";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { getApiErrorMessage, normalizeError } from "@/shared/api/api-error";
@@ -148,11 +148,11 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
         };
         try {
           const created = await createMutation.mutateAsync(payload);
-          message.success(`Đã tạo hoàn đảo ${created.reversal_code}`);
+          toast.success(`Đã tạo hoàn đảo ${created.reversal_code}`);
           onCreated(created.reversal_code);
         } catch (submitError) {
           const normalized = normalizeError(submitError);
-          message.error(
+          toast.error(
             normalized.status === 409 ||
               normalized.status === 412 ||
               normalized.status === 428

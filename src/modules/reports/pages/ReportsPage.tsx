@@ -208,6 +208,7 @@ export default function ReportsPage() {
         "Đã xuất báo cáo bảo hành (PII chỉ có khi tài khoản được cấp warranty.pii.export)",
       );
     } catch (downloadError: unknown) {
+      toast.error("Không thể xuất báo cáo bảo hành.");
       setWarrantyError(downloadError);
     } finally {
       setWarrantyExporting(false);
@@ -230,6 +231,7 @@ export default function ReportsPage() {
       window.URL.revokeObjectURL(url);
       toast.success("Đã xuất báo cáo XNT");
     } catch (downloadError: unknown) {
+      toast.error("Không thể xuất báo cáo XNT.");
       setExportError(downloadError);
     } finally {
       setExporting(false);

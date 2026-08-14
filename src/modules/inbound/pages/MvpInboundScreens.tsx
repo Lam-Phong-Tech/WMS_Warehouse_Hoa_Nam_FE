@@ -15,8 +15,8 @@ import {
   Space,
   Table,
   Tag,
-  message,
 } from "antd";
+import { toast } from "sonner";
 import {
   CameraOutlined,
   CheckCircleOutlined,
@@ -380,11 +380,11 @@ export function InboundScanModal({
         : Math.max(1, Math.min(Number(quantity) || 1, remaining));
 
     if (isComponent && !normalizedBox) {
-      message.error("SKU COMPONENT bắt buộc có BOX trước khi ghi nhận scan.");
+      toast.error("SKU COMPONENT bắt buộc có BOX trước khi ghi nhận scan.");
       return;
     }
     if ((!isComponent || isSerialTracked) && !normalizedCode) {
-      message.error("Barcode/serial là bắt buộc cho dòng này.");
+      toast.error("Barcode/serial là bắt buộc cho dòng này.");
       return;
     }
 
@@ -447,7 +447,7 @@ export function InboundScanModal({
           ...current,
         ].slice(0, 20),
       );
-      message.error(errorText);
+      toast.error(errorText);
       await detailQuery.refetch();
       onChanged?.();
     }
@@ -473,13 +473,13 @@ export function InboundScanModal({
       });
       postKeyRef.current = null;
       setReceiptEvidence(evidence);
-      message.success(
+      toast.success(
         "Full Post Receipt thành công. Tồn kho tăng đúng một lần.",
       );
       await detailQuery.refetch();
       onChanged?.();
     } catch (error) {
-      message.error(getApiErrorMessage(error, "Không Full Post Receipt được."));
+      toast.error(getApiErrorMessage(error, "Không Full Post Receipt được."));
       await detailQuery.refetch();
       onChanged?.();
     }
@@ -494,12 +494,12 @@ export function InboundScanModal({
         reason: cancelReason.trim(),
         ifMatch: scanVersion,
       });
-      message.success("Đã Cancel phiếu nhập. Không phát sinh stock movement.");
+      toast.success("Đã Cancel phiếu nhập. Không phát sinh stock movement.");
       setCancelOpen(false);
       onChanged?.();
       onClose();
     } catch (error) {
-      message.error(getApiErrorMessage(error, "Không Cancel được phiếu nhập."));
+      toast.error(getApiErrorMessage(error, "Không Cancel được phiếu nhập."));
       await detailQuery.refetch();
       onChanged?.();
     }
@@ -1007,7 +1007,7 @@ export function InboundScanModal({
           if (cameraTarget === "box") setBoxCode(code);
           else setScanCode(code);
           setCameraTarget(null);
-          message.success(
+          toast.success(
             "Đã đọc mã từ camera. Kiểm tra và bấm Ghi nhận scan.",
           );
         }}

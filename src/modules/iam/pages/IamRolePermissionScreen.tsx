@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import {
   Alert,
   App,
@@ -68,7 +69,7 @@ function isSystemRole(role?: IamRole): boolean {
 }
 
 export function IamRolePermissionScreen() {
-  const { message } = App.useApp();
+
   const [form] = Form.useForm<RoleFormValues>();
   const [keyword, setKeyword] = useState("");
   const [rolePage, setRolePage] = useState(1);
@@ -146,7 +147,7 @@ export function IamRolePermissionScreen() {
 
   const openEdit = (role: IamRole) => {
     if (isSystemRole(role)) {
-      void message.warning(
+      toast.warning(
         "SUPER_ADMIN là vai trò hệ thống và không được chỉnh sửa.",
       );
       return;
@@ -181,7 +182,7 @@ export function IamRolePermissionScreen() {
   const savePermissions = async () => {
     if (!selectedRole) return;
     if (isSystemRole(selectedRole)) {
-      void message.warning(
+      toast.warning(
         "SUPER_ADMIN dùng quyền hệ thống toàn cục và không cho phép sửa ma trận.",
       );
       return;

@@ -14,8 +14,8 @@ import {
   Table,
   Tabs,
   Tag,
-  message,
 } from "antd";
+import { toast } from "sonner";
 import {
   CameraOutlined,
   CheckOutlined,
@@ -204,7 +204,7 @@ export default function MvpPutawayPage() {
 
   const openPutaway = (row: PutawayTask) => {
     if (row.status !== "RECEIVED_PENDING_PUTAWAY") {
-      message.error(
+      toast.error(
         "Initial Putaway chỉ áp dụng cho BOX ở trạng thái RECEIVED_PENDING_PUTAWAY.",
       );
       return;
@@ -261,7 +261,7 @@ export default function MvpPutawayPage() {
       const tray = resolvePutawayTrayByScanCode(trays, rawCode);
       form.setFieldValue("to_tray_id", tray.container_id);
       setTrayScanError(null);
-      message.success(`Đã nhận TRAY ${tray.container_code}.`);
+      toast.success(`Đã nhận TRAY ${tray.container_code}.`);
     } catch (error) {
       form.setFieldValue("to_tray_id", undefined);
       setTrayScanError(
@@ -273,7 +273,7 @@ export default function MvpPutawayPage() {
   const createDraft = async () => {
     if (!selected || !canManage) return;
     if (selected.status !== "RECEIVED_PENDING_PUTAWAY") {
-      message.error(
+      toast.error(
         "BOX không còn ở trạng thái chờ Putaway. Hãy làm mới dữ liệu.",
       );
       return;
@@ -286,7 +286,7 @@ export default function MvpPutawayPage() {
       );
       if (!targetTray) {
         form.setFieldValue("to_tray_id", undefined);
-        message.error("TRAY đích không còn khả dụng. Hãy scan/chọn lại.");
+        toast.error("TRAY đích không còn khả dụng. Hãy scan/chọn lại.");
         return;
       }
 
@@ -301,13 +301,13 @@ export default function MvpPutawayPage() {
           "Invariant lỗi: tạo Putaway DRAFT không được ảnh hưởng tồn kho.",
         );
       }
-      message.success(
+      toast.success(
         "Đã tạo Putaway DRAFT. Xác nhận trên danh sách để hoàn tất BOX → TRAY.",
       );
       closePutaway();
     } catch (error) {
       if ((error as { errorFields?: unknown }).errorFields) return;
-      message.error(getApiErrorMessage(error, "Không tạo được Putaway DRAFT."));
+      toast.error(getApiErrorMessage(error, "Không tạo được Putaway DRAFT."));
     }
   };
 
@@ -323,11 +323,11 @@ export default function MvpPutawayPage() {
           "Invariant lỗi: Confirm Putaway không được tạo stock movement.",
         );
       }
-      message.success(
+      toast.success(
         "Putaway thành công. BOX đã map vào TRAY; available_qty không đổi.",
       );
     } catch (error) {
-      message.error(getApiErrorMessage(error, "Không xác nhận được Putaway."));
+      toast.error(getApiErrorMessage(error, "Không xác nhận được Putaway."));
       throw error;
     }
   };
@@ -344,11 +344,11 @@ export default function MvpPutawayPage() {
           "Invariant lỗi: Cancel Putaway không được ảnh hưởng tồn kho.",
         );
       }
-      message.success(
+      toast.success(
         "Đã hủy Putaway DRAFT. BOX vẫn chờ xếp khay; tồn kho không đổi.",
       );
     } catch (error) {
-      message.error(getApiErrorMessage(error, "Không hủy được Putaway DRAFT."));
+      toast.error(getApiErrorMessage(error, "Không hủy được Putaway DRAFT."));
       throw error;
     }
   };

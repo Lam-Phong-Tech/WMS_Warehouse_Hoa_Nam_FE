@@ -78,6 +78,7 @@ export function ContextSwitcher() {
                 return !candidate.scope_ref && !candidate.context_id;
               });
               setCurrentContext(confirmed ?? ctx);
+              toast.success("Đã chuyển phạm vi kho thành công.");
             },
             onError: () => {
               toast.error("Không thể chuyển phạm vi kho, vui lòng thử lại.");

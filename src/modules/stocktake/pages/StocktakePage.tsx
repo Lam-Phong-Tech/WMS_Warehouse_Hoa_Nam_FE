@@ -24,8 +24,8 @@ import {
   Tabs,
   Tag,
   Typography,
-  message,
 } from "antd";
+import { toast } from "sonner";
 import {
   CheckCircleOutlined,
   ExperimentOutlined,
@@ -244,13 +244,13 @@ export default function StocktakePage() {
     setSubmitting(true);
     try {
       const created = await createStocktakeSession(payload);
-      message.success("Đã tạo phiên kiểm kê và yêu cầu backend chụp snapshot");
+      toast.success("Đã tạo phiên kiểm kê và yêu cầu backend chụp snapshot");
       setCreateOpen(false);
       form.resetFields();
       setSelectedSession(created);
       retry();
     } catch (createError) {
-      message.error(
+      toast.error(
         getApiErrorMessage(createError, "Không thể tạo phiên kiểm kê"),
       );
     } finally {
@@ -261,7 +261,7 @@ export default function StocktakePage() {
   const saveCount = async (line: StocktakeCount) => {
     const lineDraft = draft[line.sku] ?? {};
     if (lineDraft.actual_qty === undefined || lineDraft.actual_qty < 0) {
-      message.warning("Số đếm thực tế phải lớn hơn hoặc bằng 0");
+      toast.warning("Số đếm thực tế phải lớn hơn hoặc bằng 0");
       return;
     }
     setSubmitting(true);
@@ -274,10 +274,10 @@ export default function StocktakePage() {
       setCounts((rows) =>
         rows.map((item) => (item.sku === line.sku ? updated : item)),
       );
-      message.success(`Đã lưu số đếm cho ${line.sku}`);
+      toast.success(`Đã lưu số đếm cho ${line.sku}`);
       retry();
     } catch (saveError) {
-      message.error(getApiErrorMessage(saveError, "Không thể lưu số đếm"));
+      toast.error(getApiErrorMessage(saveError, "Không thể lưu số đếm"));
     } finally {
       setSubmitting(false);
     }
@@ -317,11 +317,11 @@ export default function StocktakePage() {
             version: selectedSession.version ?? selectedSession.etag ?? "",
           });
           setApplyResult(result);
-          message.success("Backend đã xử lý apply adjustment");
+          toast.success("Backend đã xử lý apply adjustment");
           retry();
         } catch (applyError) {
           const normalized = normalizeError(applyError);
-          message.error(
+          toast.error(
             normalized.status === 409 ||
               normalized.status === 412 ||
               normalized.status === 428
