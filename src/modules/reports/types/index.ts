@@ -157,6 +157,39 @@ export interface LabelLogReport {
   rows: LabelLogRow[];
 }
 
+// ── Movement / Trace ──
+
+export interface MovementTraceRow {
+  id: string;
+  occurredAt: string;
+  movementType: "OPENING" | "RECEIPT" | "ISSUE" | "COMPONENT_ISSUE" | "REVERSAL";
+  warehouseId: string;
+  warehouseCode: string;
+  productId: string;
+  productCode: string;
+  productName: string;
+  stockStatus: string;
+  qtyDelta: number;
+  itemId: string | null;
+  containerId: string | null;
+  physicalCode: string;
+  sourceType: string;
+  sourceId: string | null;
+  originalMovementId: string | null;
+  correctionChainId: string | null;
+}
+
+export interface MovementTraceReport {
+  period: { fromDate: string; toDate: string };
+  formula: string;
+  summary: {
+    totalMovements: number;
+    netEffect: number;
+    reversalCount: number;
+  };
+  rows: MovementTraceRow[];
+}
+
 export interface OutboundByAgencyRow {
   agencyCode: string;
   agencyName: string;

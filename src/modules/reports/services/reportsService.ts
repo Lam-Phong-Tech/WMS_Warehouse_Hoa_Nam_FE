@@ -1,7 +1,7 @@
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { assertWmsActionPermission } from "@/shared/api/wms-action-permission";
 import { http } from "@/shared/api/http";
-import { WmsContractError } from "@/shared/api/wms-contract";
+import { normalizeError } from "@/shared/api/api-error";
 import { WMS_ACTION_PERMISSIONS } from "@/shared/constants/wms-permissions";
 import type {
   ReportItem,
@@ -16,6 +16,8 @@ import type {
   ImportMatchRow,
   LabelLogReport,
   LabelLogRow,
+  MovementTraceReport,
+  MovementTraceRow,
   OutboundByAgencyReport,
   OutboundByAgencyRow,
   OutboundByAgencySummaryRow,
@@ -71,15 +73,29 @@ function normalizeXnt(row: RawRecord): XntReportRow {
   };
 }
 
-function unapprovedReportContract(name: string, path: string): never {
-  throw new WmsContractError(
-    "WMS_FE_CONTRACT_NOT_APPROVED",
-    `${name} is blocked because ${path} has no BE/BA canonical contract disposition. Use only after endpoint, payload, error, permission, and sample response are signed off.`,
+export async function fetchReportsHub(): Promise<ReportItem[]> {
+  const result = await http.get<RawRecord[] | { data?: RawRecord[] }>(
+    API_ENDPOINTS.REPORTS_HUB,
   );
+  return rowsOf(result).map((row) => ({
+    id: text(row.key ?? row.id),
+    code: text(row.key ?? row.code),
+    title: text(row.name ?? row.title),
+    description: text(row.description),
+    status: text(row.status),
+    available: row.available !== false,
+  }));
 }
 
-export async function fetchReportsHub(): Promise<ReportItem[]> {
-  return unapprovedReportContract("Reports hub", API_ENDPOINTS.REPORTS_HUB);
+export function isExportRowLimitError(error: unknown): boolean {
+  return normalizeError(error).code === "REPORT_EXPORT_ROW_LIMIT_EXCEEDED";
+}
+
+export function getExportErrorMessage(error: unknown): string {
+  if (isExportRowLimitError(error)) {
+    return "Dữ liệu vượt quá 10.000 dòng. Vui lòng thu hẹp bộ lọc (ngày, trạng thái, kho...) rồi thử lại.";
+  }
+  return normalizeError(error).message;
 }
 
 export async function fetchXntReport(
@@ -546,4 +562,66 @@ export async function downloadOutboundByAgencyExcel(
 ): Promise<Blob> {
   assertWmsActionPermission(WMS_ACTION_PERMISSIONS.EXPORT_REPORT, "export outbound by agency");
   return http.downloadBlob(API_ENDPOINTS.REPORTS_OUTBOUND_BY_AGENCY_EXPORT_EXCEL, { params });
+}
+
+// ── Movement / Trace ──
+
+export type MovementTraceParams = {
+  from_date?: string;
+  to_date?: string;
+  warehouse_id?: string;
+  product_id?: string;
+  movement_type?: string;
+  code_value?: string;
+  source_type?: string;
+};
+
+function normalizeMovementTraceRow(row: RawRecord): MovementTraceRow {
+  return {
+    id: text(row.id),
+    occurredAt: text(row.occurred_at),
+    movementType: text(row.movement_type, "RECEIPT") as MovementTraceRow["movementType"],
+    warehouseId: text(row.warehouse_id),
+    warehouseCode: text(row.warehouse_code),
+    productId: text(row.product_id),
+    productCode: text(row.product_code),
+    productName: text(row.product_name),
+    stockStatus: text(row.stock_status, "AVAILABLE"),
+    qtyDelta: num(row.qty_delta),
+    itemId: row.item_id ? text(row.item_id) : null,
+    containerId: row.container_id ? text(row.container_id) : null,
+    physicalCode: text(row.physical_code),
+    sourceType: text(row.source_type),
+    sourceId: row.source_id ? text(row.source_id) : null,
+    originalMovementId: row.original_movement_id ? text(row.original_movement_id) : null,
+    correctionChainId: row.correction_chain_id ? text(row.correction_chain_id) : null,
+  };
+}
+
+export async function fetchMovementTraceReport(
+  params: MovementTraceParams,
+): Promise<MovementTraceReport> {
+  const result = await http.get<RawRecord>(
+    API_ENDPOINTS.REPORTS_MOVEMENT_TRACE,
+    { params },
+  );
+  const period = (result.period ?? {}) as RawRecord;
+  const summary = (result.summary ?? {}) as RawRecord;
+  return {
+    period: { fromDate: text(period.from_date), toDate: text(period.to_date) },
+    formula: text(result.formula),
+    summary: {
+      totalMovements: num(summary.total_movements),
+      netEffect: num(summary.net_effect),
+      reversalCount: num(summary.reversal_count),
+    },
+    rows: rowsOf((result.rows ?? []) as RawRecord[]).map(normalizeMovementTraceRow),
+  };
+}
+
+export async function downloadMovementTraceExcel(
+  params: MovementTraceParams,
+): Promise<Blob> {
+  assertWmsActionPermission(WMS_ACTION_PERMISSIONS.EXPORT_REPORT, "export movement trace");
+  return http.downloadBlob(API_ENDPOINTS.REPORTS_MOVEMENT_TRACE_EXPORT_EXCEL, { params });
 }

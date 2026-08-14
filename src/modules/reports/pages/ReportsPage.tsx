@@ -24,11 +24,14 @@ import {
   downloadImportMatchExcel,
   downloadLabelLogExcel,
   downloadOutboundByAgencyExcel,
+  downloadMovementTraceExcel,
+  getExportErrorMessage,
   type XntEnhancedParams,
   type DocumentHistoryParams,
   type ImportMatchParams,
   type LabelLogParams,
   type OutboundByAgencyParams,
+  type MovementTraceParams,
   type InventoryBalanceParams,
   type WarrantyReportParams,
 } from "../services/reportsService";
@@ -39,6 +42,7 @@ import {
   useImportMatchReport,
   useLabelLogReport,
   useOutboundByAgencyReport,
+  useMovementTraceReport,
   useWarrantyReport,
 } from "../hooks/use-reports";
 import {
@@ -51,6 +55,7 @@ type ReportTab =
   | "inventory-balance"
   | "xnt"
   | "doc-history"
+  | "movement-trace"
   | "import-match"
   | "label-log"
   | "warranty"
@@ -135,8 +140,8 @@ function InventoryBalanceTab() {
       const blob = await downloadInventoryBalanceExcel(params);
       handleBlobDownload(blob, "bao-cao-ton-kho-hien-tai.xlsx");
       toast.success("Đã xuất báo cáo tồn kho");
-    } catch {
-      toast.error("Không thể xuất báo cáo tồn kho.");
+    } catch (err) {
+      toast.error(getExportErrorMessage(err));
     } finally {
       setExporting(false);
     }
@@ -164,8 +169,9 @@ function InventoryBalanceTab() {
           onChange={(v) => { setStockStatus(v); setPage(1); }}
           options={[
             { value: "AVAILABLE", label: "AVAILABLE" },
-            { value: "DAMAGED", label: "DAMAGED" },
-            { value: "RESERVED", label: "RESERVED" },
+            { value: "NON_SELLABLE", label: "NON_SELLABLE" },
+            { value: "DEFECTIVE", label: "DEFECTIVE" },
+            { value: "QUARANTINE", label: "QUARANTINE" },
           ]}
         />
         <div className="spacer" />
@@ -223,9 +229,14 @@ function InventoryBalanceTab() {
           { title: "Tồn kho", dataIndex: "onHandQty", key: "onHandQty", align: "right" },
           { title: "Khả dụng", dataIndex: "availableQty", key: "availableQty", align: "right" },
           { title: "Đã giữ", dataIndex: "reservedQty", key: "reservedQty", align: "right" },
+          { title: "Ledger", dataIndex: "ledgerQty", key: "ledgerQty", align: "right" },
           {
-            title: "Đối soát", dataIndex: "reconciliationStatus", key: "reconciliationStatus", width: 110,
-            render: (v: string) => <Tag color={v === "MATCH" ? "success" : "warning"}>{v}</Tag>,
+            title: "Chênh lệch", dataIndex: "variance", key: "variance", align: "right", width: 110,
+            render: (v: number) => v !== 0 ? <Tag color="error">{fmtNum(v)}</Tag> : <span>{fmtNum(v)}</span>,
+          },
+          {
+            title: "Đối soát", dataIndex: "reconciliationStatus", key: "reconciliationStatus", width: 120,
+            render: (v: string) => <Tag color={v === "MATCH" ? "success" : "error"}>{v}</Tag>,
           },
         ]}
       />
@@ -255,8 +266,8 @@ function XntEnhancedTab() {
       const blob = await downloadXntEnhancedExcel(params);
       handleBlobDownload(blob, `xnt-chitiet-${from}-${to}.xlsx`);
       toast.success("Đã xuất báo cáo XNT");
-    } catch {
-      toast.error("Không thể xuất báo cáo XNT.");
+    } catch (err) {
+      toast.error(getExportErrorMessage(err));
     } finally {
       setExporting(false);
     }
@@ -360,8 +371,8 @@ function DocumentHistoryTab() {
       const blob = await downloadDocumentHistoryExcel(params);
       handleBlobDownload(blob, `lich-su-phieu-${from}-${to}.xlsx`);
       toast.success("Đã xuất lịch sử phiếu");
-    } catch {
-      toast.error("Không thể xuất lịch sử phiếu.");
+    } catch (err) {
+      toast.error(getExportErrorMessage(err));
     } finally {
       setExporting(false);
     }
@@ -491,8 +502,8 @@ function ImportMatchTab() {
       const blob = await downloadImportMatchExcel(params);
       handleBlobDownload(blob, `doi-soat-toa-${from}-${to}.xlsx`);
       toast.success("Đã xuất báo cáo đối soát toa");
-    } catch {
-      toast.error("Không thể xuất báo cáo đối soát toa.");
+    } catch (err) {
+      toast.error(getExportErrorMessage(err));
     } finally {
       setExporting(false);
     }
@@ -611,8 +622,8 @@ function LabelLogTab() {
       const blob = await downloadLabelLogExcel(params);
       handleBlobDownload(blob, `nhat-ky-nhan-${from}-${to}.xlsx`);
       toast.success("Đã xuất nhật ký nhãn");
-    } catch {
-      toast.error("Không thể xuất nhật ký nhãn.");
+    } catch (err) {
+      toast.error(getExportErrorMessage(err));
     } finally {
       setExporting(false);
     }
@@ -723,8 +734,8 @@ function WarrantyTab() {
       const blob = await downloadWarrantyReportExcel(params);
       handleBlobDownload(blob, `bao-cao-bao-hanh-${from}-${to}.xlsx`);
       toast.success("Đã xuất báo cáo bảo hành (PII chỉ có khi tài khoản được cấp warranty.pii.export)");
-    } catch {
-      toast.error("Không thể xuất báo cáo bảo hành.");
+    } catch (err) {
+      toast.error(getExportErrorMessage(err));
     } finally {
       setExporting(false);
     }
@@ -832,6 +843,160 @@ function WarrantyTab() {
   );
 }
 
+// ─── Tab: Movement / Trace ───
+
+const MOVEMENT_TYPE_COLORS: Record<string, string> = {
+  OPENING: "default",
+  RECEIPT: "blue",
+  ISSUE: "orange",
+  COMPONENT_ISSUE: "purple",
+  REVERSAL: "red",
+};
+
+const MOVEMENT_TYPE_LABELS: Record<string, string> = {
+  OPENING: "Đầu kỳ",
+  RECEIPT: "Nhập",
+  ISSUE: "Xuất",
+  COMPONENT_ISSUE: "Xuất LK",
+  REVERSAL: "Hoàn đảo",
+};
+
+function MovementTraceTab() {
+  const { period, setPeriod, invalidPeriod, from, to } = useDateRange();
+  const [movementType, setMovementType] = useState<string | undefined>();
+  const [keyword, setKeyword] = useState("");
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(15);
+
+  const params = useMemo<MovementTraceParams>(
+    () => ({
+      from_date: from,
+      to_date: to,
+      ...(movementType ? { movement_type: movementType } : {}),
+      ...(keyword.trim() ? { code_value: keyword.trim() } : {}),
+    }),
+    [from, to, movementType, keyword],
+  );
+
+  const { data, isLoading, error, refetch } = useMovementTraceReport(params, !invalidPeriod);
+  const [exporting, setExporting] = useState(false);
+
+  const handleExport = async () => {
+    if (invalidPeriod) return;
+    setExporting(true);
+    try {
+      const blob = await downloadMovementTraceExcel(params);
+      handleBlobDownload(blob, `movement-trace-${from}-${to}.xlsx`);
+      toast.success("Đã xuất báo cáo Movement/Trace");
+    } catch (err) {
+      toast.error(getExportErrorMessage(err));
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const rows = data?.rows ?? [];
+
+  return (
+    <>
+      {data?.formula && (
+        <Alert showIcon type="info" style={{ marginBottom: 16 }}
+          message={`Công thức: ${data.formula}`}
+        />
+      )}
+
+      <div className="toolbar">
+        <DatePicker value={period[0]} status={invalidPeriod ? "error" : undefined}
+          onChange={(v) => { if (v) { setPeriod([v, period[1]]); setPage(1); } }} />
+        <DatePicker value={period[1]} status={invalidPeriod ? "error" : undefined}
+          onChange={(v) => { if (v) { setPeriod([period[0], v]); setPage(1); } }} />
+        <Select allowClear placeholder="Loại movement" style={{ width: 160 }}
+          value={movementType}
+          onChange={(v) => { setMovementType(v); setPage(1); }}
+          options={[
+            { value: "RECEIPT", label: "Nhập kho" },
+            { value: "ISSUE", label: "Xuất kho" },
+            { value: "COMPONENT_ISSUE", label: "Xuất linh kiện BH" },
+            { value: "REVERSAL", label: "Hoàn đảo" },
+            { value: "OPENING", label: "Đầu kỳ" },
+          ]}
+        />
+        <Input allowClear prefix={<SearchOutlined />} placeholder="Mã vật lý / barcode"
+          style={{ maxWidth: 220, width: "100%" }}
+          value={keyword} onChange={(e) => { setKeyword(e.target.value); setPage(1); }}
+        />
+        <div className="spacer" />
+        <ActionButton
+          module="reports" action="export" permissionCode="REPORT_EXPORT" mode="disable"
+          type="primary" icon={<DownloadOutlined />}
+          onClick={handleExport} loading={exporting}
+          disabled={invalidPeriod || isLoading || exporting}
+          disabledTooltip="Bạn không có quyền xuất báo cáo hoặc bộ lọc chưa hợp lệ"
+        >
+          Xuất XLSX
+        </ActionButton>
+      </div>
+
+      {invalidPeriod && <PeriodWarning />}
+
+      {data && (
+        <Space wrap style={{ marginBottom: 12 }}>
+          <Tag>Tổng {fmtNum(data.summary.totalMovements)} movement</Tag>
+          <Tag color="blue">Net effect: {fmtNum(data.summary.netEffect)}</Tag>
+          <Tag color="red">Hoàn đảo: {fmtNum(data.summary.reversalCount)}</Tag>
+        </Space>
+      )}
+
+      {error && !isLoading && (
+        <ApiErrorAlert error={error} title="Không thể tải báo cáo Movement/Trace"
+          onRetry={() => refetch()} style={{ marginBottom: 16 }} />
+      )}
+
+      <MvpPageSizeSelector value={perPage} onChange={(v) => { setPerPage(v); setPage(1); }} />
+
+      <Table
+        dataSource={rows} rowKey="id" loading={isLoading}
+        scroll={{ x: "max-content" }}
+        pagination={{
+          current: page,
+          pageSize: perPage,
+          showSizeChanger: false,
+          showTotal: (total) => `Tổng ${fmtNum(total)} dòng`,
+          onChange: (p) => setPage(p),
+        }}
+        locale={{
+          emptyText: error ? "Không tải được dữ liệu" : "Không có movement trong khoảng thời gian đã chọn",
+        }}
+        columns={[
+          { title: "Thời gian", dataIndex: "occurredAt", key: "occurredAt", width: 170, fixed: "left" },
+          {
+            title: "Loại", dataIndex: "movementType", key: "movementType", width: 120,
+            render: (v: string) => <Tag color={MOVEMENT_TYPE_COLORS[v]}>{MOVEMENT_TYPE_LABELS[v] ?? v}</Tag>,
+          },
+          { title: "Kho", dataIndex: "warehouseCode", key: "warehouseCode", width: 100 },
+          { title: "Mã SKU", dataIndex: "productCode", key: "productCode", width: 140 },
+          { title: "Tên SKU", dataIndex: "productName", key: "productName", width: 200, ellipsis: true },
+          { title: "Trạng thái", dataIndex: "stockStatus", key: "stockStatus", width: 120 },
+          {
+            title: "SL thay đổi", dataIndex: "qtyDelta", key: "qtyDelta", align: "right", width: 110,
+            render: (v: number) => <span style={{ color: v < 0 ? "#cf1322" : v > 0 ? "#389e0d" : undefined }}>{fmtNum(v)}</span>,
+          },
+          { title: "Mã vật lý", dataIndex: "physicalCode", key: "physicalCode", width: 160 },
+          { title: "Nguồn", dataIndex: "sourceType", key: "sourceType", width: 120 },
+          {
+            title: "Gốc (reversal)", dataIndex: "originalMovementId", key: "originalMovementId", width: 140, ellipsis: true,
+            render: (v: string | null) => v ? <Tag color="volcano">{v.substring(0, 8)}...</Tag> : "—",
+          },
+          {
+            title: "Chuỗi sửa", dataIndex: "correctionChainId", key: "correctionChainId", width: 140, ellipsis: true,
+            render: (v: string | null) => v ? <Tag color="geekblue">{v.substring(0, 8)}...</Tag> : "—",
+          },
+        ]}
+      />
+    </>
+  );
+}
+
 // ─── Tab: Xuất theo nơi nhận ───
 
 function OutboundByAgencyTab() {
@@ -854,8 +1019,8 @@ function OutboundByAgencyTab() {
       const blob = await downloadOutboundByAgencyExcel(params);
       handleBlobDownload(blob, `xuat-theo-noi-nhan-${from}-${to}.xlsx`);
       toast.success("Đã xuất báo cáo theo nơi nhận");
-    } catch {
-      toast.error("Không thể xuất báo cáo theo nơi nhận.");
+    } catch (err) {
+      toast.error(getExportErrorMessage(err));
     } finally {
       setExporting(false);
     }
@@ -964,6 +1129,7 @@ export default function ReportsPage() {
           { key: "inventory-balance", label: "Tồn kho", children: <InventoryBalanceTab /> },
           { key: "xnt", label: "Nhập-Xuất-Tồn", children: <XntEnhancedTab /> },
           { key: "doc-history", label: "Lịch sử nhập/xuất", children: <DocumentHistoryTab /> },
+          { key: "movement-trace", label: "Movement / Trace", children: <MovementTraceTab /> },
           { key: "import-match", label: "Đối soát toa", children: <ImportMatchTab /> },
           { key: "label-log", label: "Nhật ký nhãn", children: <LabelLogTab /> },
           { key: "warranty", label: "Bảo hành & linh kiện", children: <WarrantyTab /> },

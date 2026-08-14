@@ -95,6 +95,8 @@ export const API_ENDPOINTS = {
   REPORTS_WARRANTY_DEFECTS: "/reports/warranty-defects",
   REPORTS_WARRANTY_DEFECTS_EXPORT_EXCEL:
     "/reports/warranty-defects/export-excel",
+  REPORTS_MOVEMENT_TRACE: "/reports/movement-trace",
+  REPORTS_MOVEMENT_TRACE_EXPORT_EXCEL: "/reports/movement-trace/export-excel",
   INVENTORY_RECONCILIATION: "/reports/inventory-reconciliation",
   INVENTORY_BALANCES: "/inventory/balances",
   INVENTORY_BALANCE_SUBLEDGER: "/inventory/balances/:id/subledger",

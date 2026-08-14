@@ -6,6 +6,7 @@ import {
   fetchImportMatchReport,
   fetchLabelLogReport,
   fetchOutboundByAgencyReport,
+  fetchMovementTraceReport,
   fetchXntReport,
   fetchWarrantyDefectsReport,
   type InventoryBalanceParams,
@@ -14,6 +15,7 @@ import {
   type ImportMatchParams,
   type LabelLogParams,
   type OutboundByAgencyParams,
+  type MovementTraceParams,
   type XntReportParams,
   type WarrantyReportParams,
 } from "../services/reportsService";
@@ -34,6 +36,8 @@ export const reportKeys = {
     [...reportKeys.all, "label-log", params] as const,
   outboundByAgency: (params: OutboundByAgencyParams) =>
     [...reportKeys.all, "outbound-by-agency", params] as const,
+  movementTrace: (params: MovementTraceParams) =>
+    [...reportKeys.all, "movement-trace", params] as const,
   warranty: (params: WarrantyReportParams) =>
     [...reportKeys.all, "warranty", params] as const,
 };
@@ -105,6 +109,17 @@ export function useOutboundByAgencyReport(
   return useQuery({
     queryKey: reportKeys.outboundByAgency(params),
     queryFn: () => fetchOutboundByAgencyReport(params),
+    enabled,
+  });
+}
+
+export function useMovementTraceReport(
+  params: MovementTraceParams,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: reportKeys.movementTrace(params),
+    queryFn: () => fetchMovementTraceReport(params),
     enabled,
   });
 }
