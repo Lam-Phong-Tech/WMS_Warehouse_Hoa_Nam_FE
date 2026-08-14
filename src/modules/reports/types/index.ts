@@ -129,24 +129,24 @@ export interface ImportMatchReport {
 
 export interface LabelLogRow {
   id: string;
-  labelCode: string;
   outboundNo: string | null;
-  skuCode: string;
-  productName: string;
-  itemCodeValue: string;
+  outboundDate: string | null;
+  recipient: string | null;
+  labelCount: number;
+  itemCount: number;
+  skuCount: number;
+  skuSummary: string;
   status: string;
-  reprintCount: number;
   totalAttempts: number;
   failedCount: number;
-  templateVersion: string;
+  reprintCount: number;
   createdAt: string;
-  createdByName: string | null;
 }
 
 export interface LabelLogReport {
   period: { fromDate: string; toDate: string };
   summary: {
-    totalSnapshots: number;
+    totalLabels: number;
     printed: number;
     pending: number;
     failed: number;

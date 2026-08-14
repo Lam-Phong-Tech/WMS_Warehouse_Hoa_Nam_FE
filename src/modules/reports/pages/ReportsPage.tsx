@@ -10,6 +10,10 @@ import {
   Space,
 } from "antd";
 import { DownloadOutlined, SearchOutlined } from "@ant-design/icons";
+import { useQuery } from "@tanstack/react-query";
+import { fetchWarehouses } from "@/modules/master-data/services/warehouse.service";
+import { useMvpAgencies, useMvpDefects } from "@/modules/master-data/hooks/use-mvp-master";
+import { fetchPrinterConfigs } from "@/modules/outbound/services/mvpOutboundService";
 import dayjs from "dayjs";
 import type { Dayjs } from "dayjs";
 import { toast } from "sonner";
@@ -115,20 +119,55 @@ function PeriodWarning() {
   );
 }
 
+type SelectOption = { value: string; label: string };
+
+function useWarehouseOptions(): { options: SelectOption[]; isLoading: boolean } {
+  const { data, isLoading } = useQuery({
+    queryKey: ["warehouses", "report-filter"],
+    queryFn: () => fetchWarehouses({ status: "ACTIVE", per_page: 100 }),
+  });
+  const options = useMemo<SelectOption[]>(
+    () => (data ?? []).map((w: Record<string, unknown>) => ({
+      value: String(w.id ?? w.warehouse_id ?? ""),
+      label: [w.code, w.name].filter(Boolean).join(" · "),
+    })),
+    [data],
+  );
+  return { options, isLoading };
+}
+
+function usePrinterOptions(): { options: SelectOption[]; isLoading: boolean } {
+  const { data, isLoading } = useQuery({
+    queryKey: ["printers", "report-filter"],
+    queryFn: fetchPrinterConfigs,
+  });
+  const options = useMemo<SelectOption[]>(
+    () => (data ?? []).filter((p) => p.status === "ACTIVE").map((p) => ({
+      value: p.id,
+      label: [p.code, p.name].filter(Boolean).join(" · "),
+    })),
+    [data],
+  );
+  return { options, isLoading };
+}
+
 // ─── Tab: Tồn kho hiện tại ───
 
 function InventoryBalanceTab() {
   const [keyword, setKeyword] = useState("");
   const [stockStatus, setStockStatus] = useState<string | undefined>();
+  const [warehouseId, setWarehouseId] = useState<string | undefined>();
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(15);
+  const wh = useWarehouseOptions();
 
   const params = useMemo<InventoryBalanceParams>(
     () => ({
       ...(keyword.trim() ? { keyword: keyword.trim() } : {}),
       ...(stockStatus ? { stock_status: stockStatus } : {}),
+      ...(warehouseId ? { warehouse_id: warehouseId } : {}),
     }),
-    [keyword, stockStatus],
+    [keyword, stockStatus, warehouseId],
   );
 
   const { data, isLoading, error, refetch } = useInventoryBalanceReport(params);
@@ -160,6 +199,17 @@ function InventoryBalanceTab() {
           style={{ maxWidth: 280, width: "100%" }}
           value={keyword}
           onChange={(e) => { setKeyword(e.target.value); setPage(1); }}
+        />
+        <Select
+          allowClear
+          placeholder="Kho"
+          style={{ width: 200 }}
+          value={warehouseId}
+          onChange={(v) => { setWarehouseId(v); setPage(1); }}
+          options={wh.options}
+          loading={wh.isLoading}
+          showSearch
+          optionFilterProp="label"
         />
         <Select
           allowClear
@@ -248,12 +298,20 @@ function InventoryBalanceTab() {
 
 function XntEnhancedTab() {
   const { period, setPeriod, invalidPeriod, from, to } = useDateRange();
+  const [warehouseId, setWarehouseId] = useState<string | undefined>();
+  const [skuKeyword, setSkuKeyword] = useState("");
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(15);
+  const wh = useWarehouseOptions();
 
   const params = useMemo<XntEnhancedParams>(
-    () => ({ from_date: from, to_date: to }),
-    [from, to],
+    () => ({
+      from_date: from,
+      to_date: to,
+      ...(warehouseId ? { warehouse_id: warehouseId } : {}),
+      ...(skuKeyword.trim() ? { keyword: skuKeyword.trim() } : {}),
+    }),
+    [from, to, warehouseId, skuKeyword],
   );
 
   const { data, isLoading, error, refetch } = useXntEnhancedReport(params, !invalidPeriod);
@@ -288,6 +346,17 @@ function XntEnhancedTab() {
           onChange={(v) => { if (v) { setPeriod([v, period[1]]); setPage(1); } }} />
         <DatePicker value={period[1]} status={invalidPeriod ? "error" : undefined}
           onChange={(v) => { if (v) { setPeriod([period[0], v]); setPage(1); } }} />
+        <Select
+          allowClear placeholder="Kho" style={{ width: 200 }}
+          value={warehouseId}
+          onChange={(v) => { setWarehouseId(v); setPage(1); }}
+          options={wh.options} loading={wh.isLoading}
+          showSearch optionFilterProp="label"
+        />
+        <Input allowClear prefix={<SearchOutlined />} placeholder="Tìm SKU"
+          style={{ maxWidth: 200, width: "100%" }}
+          value={skuKeyword} onChange={(e) => { setSkuKeyword(e.target.value); setPage(1); }}
+        />
         <div className="spacer" />
         <ActionButton
           module="reports" action="export" permissionCode="REPORT_EXPORT" mode="disable"
@@ -480,6 +549,7 @@ function DocumentHistoryTab() {
 function ImportMatchTab() {
   const { period, setPeriod, invalidPeriod, from, to } = useDateRange();
   const [statusFilter, setStatusFilter] = useState<string | undefined>();
+  const [keyword, setKeyword] = useState("");
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(15);
 
@@ -488,8 +558,9 @@ function ImportMatchTab() {
       from_date: from,
       to_date: to,
       ...(statusFilter ? { status: statusFilter } : {}),
+      ...(keyword.trim() ? { keyword: keyword.trim() } : {}),
     }),
-    [from, to, statusFilter],
+    [from, to, statusFilter, keyword],
   );
 
   const { data, isLoading, error, refetch } = useImportMatchReport(params, !invalidPeriod);
@@ -527,6 +598,10 @@ function ImportMatchTab() {
             { value: "CONSUMED", label: "Đã consume" },
             { value: "REJECTED", label: "Bị reject" },
           ]}
+        />
+        <Input allowClear prefix={<SearchOutlined />} placeholder="Mã batch, tên file"
+          style={{ maxWidth: 220, width: "100%" }}
+          value={keyword} onChange={(e) => { setKeyword(e.target.value); setPage(1); }}
         />
         <div className="spacer" />
         <ActionButton
@@ -600,16 +675,19 @@ function ImportMatchTab() {
 function LabelLogTab() {
   const { period, setPeriod, invalidPeriod, from, to } = useDateRange();
   const [statusFilter, setStatusFilter] = useState<string | undefined>();
+  const [printerId, setPrinterId] = useState<string | undefined>();
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(15);
+  const pr = usePrinterOptions();
 
   const params = useMemo<LabelLogParams>(
     () => ({
       from_date: from,
       to_date: to,
       ...(statusFilter ? { status: statusFilter } : {}),
+      ...(printerId ? { printer_id: printerId } : {}),
     }),
-    [from, to, statusFilter],
+    [from, to, statusFilter, printerId],
   );
 
   const { data, isLoading, error, refetch } = useLabelLogReport(params, !invalidPeriod);
@@ -647,6 +725,13 @@ function LabelLogTab() {
             { value: "PRINT_FAILED", label: "Lỗi in" },
           ]}
         />
+        <Select
+          allowClear placeholder="Máy in" style={{ width: 200 }}
+          value={printerId}
+          onChange={(v) => { setPrinterId(v); setPage(1); }}
+          options={pr.options} loading={pr.isLoading}
+          showSearch optionFilterProp="label"
+        />
         <div className="spacer" />
         <ActionButton
           module="reports" action="export" permissionCode="REPORT_EXPORT" mode="disable"
@@ -663,7 +748,7 @@ function LabelLogTab() {
 
       {data && (
         <Space wrap style={{ marginBottom: 12 }}>
-          <Tag>Tổng {fmtNum(data.summary.totalSnapshots)} nhãn</Tag>
+          <Tag>Tổng {fmtNum(data.summary.totalLabels)} packing label</Tag>
           <Tag color="success">Đã in {fmtNum(data.summary.printed)}</Tag>
           <Tag color="processing">Chờ in {fmtNum(data.summary.pending)}</Tag>
           <Tag color="error">Lỗi {fmtNum(data.summary.failed)} ({data.summary.failureRate}%)</Tag>
@@ -685,27 +770,31 @@ function LabelLogTab() {
           current: page,
           pageSize: perPage,
           showSizeChanger: false,
-          showTotal: (total) => `Tổng ${fmtNum(total)} nhãn`,
+          showTotal: (total) => `Tổng ${fmtNum(total)} packing label`,
           onChange: (p) => setPage(p),
         }}
         locale={{
-          emptyText: error ? "Không tải được dữ liệu" : "Không có nhãn trong khoảng thời gian đã chọn",
+          emptyText: error ? "Không tải được dữ liệu" : "Không có packing label trong khoảng thời gian đã chọn",
         }}
         columns={[
-          { title: "Mã nhãn", dataIndex: "labelCode", key: "labelCode", width: 140, fixed: "left" },
-          { title: "Phiếu xuất", dataIndex: "outboundNo", key: "outboundNo", width: 140 },
-          { title: "SKU", dataIndex: "skuCode", key: "skuCode", width: 120 },
-          { title: "Sản phẩm", dataIndex: "productName", key: "productName", width: 200, ellipsis: true },
-          { title: "Mã vật lý", dataIndex: "itemCodeValue", key: "itemCodeValue", width: 160 },
+          {
+            title: "Phiếu xuất", dataIndex: "outboundNo", key: "outboundNo", width: 160, fixed: "left",
+            render: (v: string | null) => v ?? <Tag color="default">Chưa gắn phiếu</Tag>,
+          },
+          { title: "Ngày phiếu", dataIndex: "outboundDate", key: "outboundDate", width: 120 },
+          { title: "Nơi nhận", dataIndex: "recipient", key: "recipient", width: 180, ellipsis: true },
+          { title: "Số nhãn", dataIndex: "labelCount", key: "labelCount", align: "right", width: 80 },
+          { title: "Số item", dataIndex: "itemCount", key: "itemCount", align: "right", width: 80 },
+          { title: "Số SKU", dataIndex: "skuCount", key: "skuCount", align: "right", width: 80 },
+          { title: "Tóm tắt SKU", dataIndex: "skuSummary", key: "skuSummary", width: 200, ellipsis: true },
           {
             title: "Trạng thái", dataIndex: "status", key: "status", width: 120,
             render: (v: string) => <Tag color={LABEL_STATUS_COLORS[v]}>{v}</Tag>,
           },
-          { title: "In lại", dataIndex: "reprintCount", key: "reprintCount", align: "right", width: 80 },
-          { title: "Attempts", dataIndex: "totalAttempts", key: "totalAttempts", align: "right", width: 90 },
+          { title: "Tổng lần in", dataIndex: "totalAttempts", key: "totalAttempts", align: "right", width: 90 },
           { title: "Lỗi", dataIndex: "failedCount", key: "failedCount", align: "right", width: 60 },
-          { title: "Ngày tạo", dataIndex: "createdAt", key: "createdAt", width: 160 },
-          { title: "Người tạo", dataIndex: "createdByName", key: "createdByName", width: 140 },
+          { title: "In lại", dataIndex: "reprintCount", key: "reprintCount", align: "right", width: 80 },
+          { title: "Tạo lúc", dataIndex: "createdAt", key: "createdAt", width: 160 },
         ]}
       />
     </>
@@ -716,12 +805,29 @@ function LabelLogTab() {
 
 function WarrantyTab() {
   const { period, setPeriod, invalidPeriod, from, to } = useDateRange();
+  const [statusFilter, setStatusFilter] = useState<string | undefined>();
+  const [defectId, setDefectId] = useState<string | undefined>();
+  const [identStatus, setIdentStatus] = useState<string | undefined>();
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(15);
+  const defectsQuery = useMvpDefects({ status: "ACTIVE", per_page: 100 });
+  const defectOptions = useMemo<SelectOption[]>(
+    () => (defectsQuery.data?.data ?? []).map((d) => ({
+      value: d.defect_id,
+      label: d.defect_name,
+    })),
+    [defectsQuery.data],
+  );
 
   const params = useMemo<WarrantyReportParams>(
-    () => ({ from, to }),
-    [from, to],
+    () => ({
+      from,
+      to,
+      ...(statusFilter ? { status: statusFilter } : {}),
+      ...(defectId ? { defect_id: defectId } : {}),
+      ...(identStatus ? { identification_status: identStatus } : {}),
+    }),
+    [from, to, statusFilter, defectId, identStatus],
   );
 
   const { data, isLoading, error, refetch } = useWarrantyReport(params, !invalidPeriod);
@@ -755,6 +861,33 @@ function WarrantyTab() {
           onChange={(v) => { if (v) { setPeriod([v, period[1]]); setPage(1); } }} />
         <DatePicker value={period[1]} status={invalidPeriod ? "error" : undefined}
           onChange={(v) => { if (v) { setPeriod([period[0], v]); setPage(1); } }} />
+        <Select allowClear placeholder="Trạng thái" style={{ width: 160 }}
+          value={statusFilter}
+          onChange={(v) => { setStatusFilter(v); setPage(1); }}
+          options={[
+            { value: "RECEIVED", label: "Đã nhận" },
+            { value: "INSPECTING", label: "Đang kiểm" },
+            { value: "REPAIRING", label: "Đang sửa" },
+            { value: "COMPLETED", label: "Hoàn thành" },
+            { value: "RETURNED", label: "Đã trả" },
+            { value: "CANCELLED", label: "Đã hủy" },
+          ]}
+        />
+        <Select allowClear placeholder="Bệnh / lỗi" style={{ width: 200 }}
+          value={defectId}
+          onChange={(v) => { setDefectId(v); setPage(1); }}
+          options={defectOptions}
+          loading={defectsQuery.isLoading}
+          showSearch optionFilterProp="label"
+        />
+        <Select allowClear placeholder="Nhận diện" style={{ width: 150 }}
+          value={identStatus}
+          onChange={(v) => { setIdentStatus(v); setPage(1); }}
+          options={[
+            { value: "IDENTIFIED", label: "Đã nhận diện" },
+            { value: "TEMP_ONLY", label: "TEMP_ONLY" },
+          ]}
+        />
         <div className="spacer" />
         <ActionButton
           module="reports" action="export" permissionCode="REPORT_EXPORT" mode="disable"
@@ -1001,12 +1134,27 @@ function MovementTraceTab() {
 
 function OutboundByAgencyTab() {
   const { period, setPeriod, invalidPeriod, from, to } = useDateRange();
+  const [agencyId, setAgencyId] = useState<string | undefined>();
+  const [keyword, setKeyword] = useState("");
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(15);
+  const agenciesQuery = useMvpAgencies({ status: "ACTIVE", per_page: 100 });
+  const agencyOptions = useMemo<SelectOption[]>(
+    () => (agenciesQuery.data?.data ?? []).map((a) => ({
+      value: a.agency_id,
+      label: `${a.agency_code} - ${a.agency_name}`,
+    })),
+    [agenciesQuery.data],
+  );
 
   const params = useMemo<OutboundByAgencyParams>(
-    () => ({ from_date: from, to_date: to }),
-    [from, to],
+    () => ({
+      from_date: from,
+      to_date: to,
+      ...(agencyId ? { agency_id: agencyId } : {}),
+      ...(keyword.trim() ? { keyword: keyword.trim() } : {}),
+    }),
+    [from, to, agencyId, keyword],
   );
 
   const { data, isLoading, error, refetch } = useOutboundByAgencyReport(params, !invalidPeriod);
@@ -1040,6 +1188,19 @@ function OutboundByAgencyTab() {
           onChange={(v) => { if (v) { setPeriod([v, period[1]]); setPage(1); } }} />
         <DatePicker value={period[1]} status={invalidPeriod ? "error" : undefined}
           onChange={(v) => { if (v) { setPeriod([period[0], v]); setPage(1); } }} />
+        <Select allowClear placeholder="Nơi nhận" style={{ width: 220 }}
+          value={agencyId}
+          onChange={(v) => { setAgencyId(v); setPage(1); }}
+          options={agencyOptions}
+          loading={agenciesQuery.isLoading}
+          showSearch optionFilterProp="label"
+        />
+        <Input.Search allowClear placeholder="Mã SKU, tên SP"
+          style={{ width: 200 }}
+          value={keyword}
+          onChange={(e) => setKeyword(e.target.value)}
+          onSearch={() => setPage(1)}
+        />
         <div className="spacer" />
         <ActionButton
           module="reports" action="export" permissionCode="REPORT_EXPORT" mode="disable"
@@ -1131,7 +1292,7 @@ export default function ReportsPage() {
           { key: "doc-history", label: "Lịch sử nhập/xuất", children: <DocumentHistoryTab /> },
           { key: "movement-trace", label: "Movement / Trace", children: <MovementTraceTab /> },
           { key: "import-match", label: "Đối soát toa", children: <ImportMatchTab /> },
-          { key: "label-log", label: "Nhật ký nhãn", children: <LabelLogTab /> },
+          { key: "label-log", label: "Packing Label", children: <LabelLogTab /> },
           { key: "warranty", label: "Bảo hành & linh kiện", children: <WarrantyTab /> },
           { key: "by-agency", label: "Xuất theo nơi nhận", children: <OutboundByAgencyTab /> },
         ]}

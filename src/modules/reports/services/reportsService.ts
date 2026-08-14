@@ -293,6 +293,7 @@ export type XntEnhancedParams = {
   to_date: string;
   warehouse_id?: string;
   product_id?: string;
+  keyword?: string;
 };
 
 function normalizeXntEnhancedRow(row: RawRecord): XntEnhancedRow {
@@ -395,6 +396,7 @@ export type ImportMatchParams = {
   from_date?: string;
   to_date?: string;
   status?: string;
+  keyword?: string;
 };
 
 function normalizeImportMatchRow(row: RawRecord): ImportMatchRow {
@@ -457,18 +459,18 @@ export type LabelLogParams = {
 function normalizeLabelLogRow(row: RawRecord): LabelLogRow {
   return {
     id: text(row.id),
-    labelCode: text(row.label_code),
     outboundNo: row.outbound_no ? text(row.outbound_no) : null,
-    skuCode: text(row.sku_code),
-    productName: text(row.product_name),
-    itemCodeValue: text(row.item_code_value),
+    outboundDate: row.outbound_date ? text(row.outbound_date) : null,
+    recipient: row.recipient ? text(row.recipient) : null,
+    labelCount: num(row.label_count),
+    itemCount: num(row.item_count),
+    skuCount: num(row.sku_count),
+    skuSummary: text(row.sku_summary),
     status: text(row.status),
-    reprintCount: num(row.reprint_count),
     totalAttempts: num(row.total_attempts),
     failedCount: num(row.failed_count),
-    templateVersion: text(row.template_version),
+    reprintCount: num(row.reprint_count),
     createdAt: text(row.created_at),
-    createdByName: row.created_by_name ? text(row.created_by_name) : null,
   };
 }
 
@@ -484,7 +486,7 @@ export async function fetchLabelLogReport(
   return {
     period: { fromDate: text(period.from_date), toDate: text(period.to_date) },
     summary: {
-      totalSnapshots: num(summary.total_snapshots),
+      totalLabels: num(summary.total_labels),
       printed: num(summary.printed),
       pending: num(summary.pending),
       failed: num(summary.failed),
@@ -510,6 +512,7 @@ export type OutboundByAgencyParams = {
   to_date?: string;
   agency_id?: string;
   product_id?: string;
+  keyword?: string;
 };
 
 function normalizeOutboundByAgencyRow(row: RawRecord): OutboundByAgencyRow {
