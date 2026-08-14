@@ -125,8 +125,11 @@ function clean<T extends Record<string, unknown>>(params: T): T {
   ) as T;
 }
 
-function nested(row: RawRecord, key: string): RawRecord | undefined {
-  const val = row[key];
+function nested(
+  row: RawRecord | undefined,
+  key: string,
+): RawRecord | undefined {
+  const val = row?.[key];
   return val && typeof val === "object" && !Array.isArray(val)
     ? (val as RawRecord)
     : undefined;
