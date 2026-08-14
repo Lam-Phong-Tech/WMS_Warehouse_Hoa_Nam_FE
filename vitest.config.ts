@@ -11,6 +11,18 @@ export default defineConfig({
     setupFiles: ["./src/test/setup.ts"],
     css: true,
     testTimeout: 20000,
+    reporters: ["default", "junit", "json"],
+    outputFile: {
+      junit: "test-results/vitest-junit.xml",
+      json: "test-results/vitest-results.json",
+    },
+    coverage: {
+      provider: "v8",
+      reportsDirectory: "coverage",
+      reporter: ["text-summary", "html", "lcov"],
+      include: ["src/**/*.{ts,tsx}"],
+      exclude: ["src/**/*.{test,spec}.{ts,tsx}", "src/test/**"],
+    },
     include: [
       "src/**/*.{test,spec}.{js,ts,jsx,tsx}",
       "src/**/__tests__/**/*.{js,ts,jsx,tsx}",

@@ -6,10 +6,14 @@ export default defineConfig({
   timeout: 30_000,
   expect: { timeout: 10_000 },
   fullyParallel: false,
+  forbidOnly: Boolean(process.env.CI),
+  retries: process.env.CI ? 1 : 0,
+  workers: process.env.CI ? 1 : undefined,
   reporter: [
     ["list"],
-    ["html", { open: "never" }],
+    ["html", { outputFolder: "playwright-report", open: "never" }],
     ["json", { outputFile: "test-results/playwright-results.json" }],
+    ["junit", { outputFile: "test-results/playwright-junit.xml" }],
   ],
   outputDir: "test-results",
   use: {
