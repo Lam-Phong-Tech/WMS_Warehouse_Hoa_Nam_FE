@@ -18,6 +18,7 @@ import {
 import { toast } from "sonner";
 import {
   CameraOutlined,
+  CheckCircleOutlined,
   CheckOutlined,
   CloseOutlined,
   EyeOutlined,
@@ -625,8 +626,9 @@ export default function MvpPutawayPage() {
         onCancel={closePutaway}
         onOk={() => void createDraft()}
         okText="Tạo Putaway DRAFT"
-        confirmLoading={createMutation.isPending}
         okButtonProps={{
+          icon: <CheckCircleOutlined />,
+          loading: createMutation.isPending,
           disabled:
             !canManage || selected?.status !== "RECEIVED_PENDING_PUTAWAY",
         }}
@@ -741,7 +743,7 @@ export default function MvpPutawayPage() {
         }
         open={Boolean(detailRow)}
         onCancel={() => setDetailRow(null)}
-        footer={<Button onClick={() => setDetailRow(null)}>Đóng</Button>}
+        footer={<Button icon={<CloseOutlined />} onClick={() => setDetailRow(null)}>Đóng</Button>}
         width={680}
       >
         {detailRow ? (

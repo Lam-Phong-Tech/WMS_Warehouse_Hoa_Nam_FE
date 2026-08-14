@@ -9,11 +9,12 @@ import {
   Radio,
   Row,
   Select,
+  Space,
 } from "antd";
 import { toast } from "sonner";
 import type { Dayjs } from "dayjs";
 import dayjs from "dayjs";
-import { CameraOutlined } from "@ant-design/icons";
+import { CameraOutlined, CloseOutlined, SaveOutlined } from "@ant-design/icons";
 import { Button } from "antd";
 import {
   extractFieldErrorsRaw,
@@ -126,10 +127,21 @@ export function WarrantyIntakeModal({
       title="Tiếp nhận bảo hành"
       open={open}
       onCancel={onClose}
-      onOk={submit}
-      okText="Lưu tiếp nhận"
-      cancelText="Hủy"
-      confirmLoading={createMutation.isPending}
+      footer={
+        <Space>
+          <Button icon={<CloseOutlined />} onClick={onClose}>
+            Hủy
+          </Button>
+          <Button
+            type="primary"
+            icon={<SaveOutlined />}
+            loading={createMutation.isPending}
+            onClick={submit}
+          >
+            Lưu tiếp nhận
+          </Button>
+        </Space>
+      }
       width={860}
       centered
       maskClosable={false}

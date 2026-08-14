@@ -1,4 +1,4 @@
-import { LockOutlined } from "@ant-design/icons";
+import { ArrowLeftOutlined, HomeOutlined, LockOutlined } from "@ant-design/icons";
 import { Button, Result, Space, Typography } from "antd";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "@/shared/constants/routes";
@@ -80,11 +80,11 @@ export function NoPermissionState({
               {description}
             </Paragraph>
             <Space>
-              <Button type="primary" onClick={handleAction}>
+              <Button type="primary" icon={<ArrowLeftOutlined />} onClick={handleAction}>
                 {actionText}
               </Button>
               {showHomeButton && (
-                <Button onClick={handleGoHome}>Về trang chủ</Button>
+                <Button icon={<HomeOutlined />} onClick={handleGoHome}>Về trang chủ</Button>
               )}
             </Space>
           </Space>

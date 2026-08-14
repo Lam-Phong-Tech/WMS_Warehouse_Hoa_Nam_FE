@@ -57,6 +57,11 @@ const ReversalPage = lazy(() =>
     default: m.default,
   })),
 );
+const ReportsPage = lazy(() =>
+  import("@/modules/reports/pages/ReportsPage").then((m) => ({
+    default: m.default,
+  })),
+);
 const MvpSourceScreen = lazy(() =>
   import("@/shared/components/mvp/MvpSourceScreen").then((m) => ({
     default: m.MvpSourceScreen,
@@ -150,7 +155,7 @@ const MVP_SCREEN_META: Record<string, ScreenMeta> = {
   "REV-01": { title: "Tạo Reversal", description: "Tạo Reversal." },
   "RPT-01": {
     title: "Báo cáo vận hành",
-    description: "Demo thay đổi nội dung khi chọn các loại báo cáo.",
+    description: "Tồn kho, Nhập-Xuất-Tồn, Lịch sử phiếu, Đối soát toa, Nhật ký nhãn, Bảo hành, Xuất theo nơi nhận.",
   },
 };
 
@@ -285,6 +290,12 @@ function renderMvpScreen(sourceScreen: string, requestedScreen: string | null) {
       return (
         <div className="hn-mvp-source-screen">
           <ReversalPage />
+        </div>
+      );
+    case "RPT-01":
+      return (
+        <div className="hn-mvp-source-screen">
+          <ReportsPage />
         </div>
       );
     default:

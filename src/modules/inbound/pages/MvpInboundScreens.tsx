@@ -21,6 +21,7 @@ import {
   CameraOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
+  CloseOutlined,
   EditOutlined,
   ScanOutlined,
 } from "@ant-design/icons";
@@ -954,7 +955,7 @@ export function InboundScanModal({
                 flexWrap: "wrap",
               }}
             >
-              <Button disabled={working} onClick={onClose}>
+              <Button icon={<CloseOutlined />} disabled={working} onClick={onClose}>
                 Đóng
               </Button>
               {canEdit && isMutable && onEditExpected ? (
@@ -969,6 +970,7 @@ export function InboundScanModal({
               {canCancel && isMutable ? (
                 <Button
                   danger
+                  icon={<CloseCircleOutlined />}
                   disabled={working}
                   onClick={() => setCancelOpen(true)}
                 >
@@ -978,6 +980,7 @@ export function InboundScanModal({
               {isMutable ? (
                 <Button
                   type="primary"
+                  icon={<CheckCircleOutlined />}
                   disabled={
                     !canPost ||
                     !isFullScan ||

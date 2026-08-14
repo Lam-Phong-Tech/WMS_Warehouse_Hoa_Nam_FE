@@ -9,7 +9,12 @@ import {
   Tag,
   type TablePaginationConfig,
 } from "antd";
-import { EditOutlined, EyeOutlined, ScanOutlined } from "@ant-design/icons";
+import {
+  EditOutlined,
+  EyeOutlined,
+  PlusOutlined,
+  ScanOutlined,
+} from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import { useSearchParams } from "react-router-dom";
 import {
@@ -299,7 +304,7 @@ function InboundListScreen() {
             type="button"
             onClick={openCreateModal}
           >
-            + Tạo phiếu nhập
+            <PlusOutlined /> Tạo phiếu nhập
           </button>
         ) : null}
       </div>

@@ -15,7 +15,12 @@ import {
   Tag,
 } from "antd";
 import { toast } from "sonner";
-import { PlusOutlined } from "@ant-design/icons";
+import {
+  CloseOutlined,
+  DeleteOutlined,
+  PlusOutlined,
+  SaveOutlined,
+} from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import {
   extractFieldErrorsRaw,
@@ -643,6 +648,7 @@ export function InboundDraftModal({
                             danger
                             type="link"
                             size="small"
+                            icon={<DeleteOutlined />}
                             onClick={() => remove(field.name)}
                           >
                             Xóa
@@ -680,12 +686,13 @@ export function InboundDraftModal({
               marginTop: 16,
             }}
           >
-            <Button disabled={saving} onClick={onClose}>
+            <Button icon={<CloseOutlined />} disabled={saving} onClick={onClose}>
               {isMutable ? "Hủy thao tác" : "Đóng"}
             </Button>
             {isMutable ? (
               <Button
                 type="primary"
+                icon={<SaveOutlined />}
                 htmlType="submit"
                 loading={saving}
                 disabled={!canCreate || detailQuery.isLoading}

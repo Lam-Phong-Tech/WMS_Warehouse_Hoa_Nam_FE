@@ -22,6 +22,8 @@ import {
   CameraOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
+  CloseOutlined,
+  DisconnectOutlined,
   EditOutlined,
   EyeOutlined,
   PrinterOutlined,
@@ -805,6 +807,7 @@ export function OutboundDetailModal({
               <Button
                 size="small"
                 danger
+                icon={<DisconnectOutlined />}
                 loading={unmatchMutation.isPending}
                 onClick={() => confirmUnmatch(row)}
               >
@@ -868,20 +871,21 @@ export function OutboundDetailModal({
         footer={
           doc ? (
             <Space wrap>
-              <Button onClick={onClose}>Đóng</Button>
+              <Button icon={<CloseOutlined />} onClick={onClose}>Đóng</Button>
               {doc.status === "DRAFT" && canEdit ? (
                 <Button icon={<EditOutlined />} onClick={openEdit}>
                   Sửa DRAFT
                 </Button>
               ) : null}
               {canCancel && isMutable ? (
-                <Button danger onClick={() => setCancelOpen(true)}>
+                <Button danger icon={<CloseCircleOutlined />} onClick={() => setCancelOpen(true)}>
                   Hủy phiếu
                 </Button>
               ) : null}
               {isMutable ? (
                 <Button
                   type="primary"
+                  icon={<CheckCircleOutlined />}
                   disabled={!canPost || !postReady || postMutation.isPending}
                   loading={postMutation.isPending}
                   onClick={confirmPost}
@@ -1379,7 +1383,7 @@ export function OutboundDetailModal({
         width={560}
         footer={
           <Space wrap>
-            <Button onClick={() => setPreviewSnapshot(null)}>Đóng</Button>
+            <Button icon={<CloseOutlined />} onClick={() => setPreviewSnapshot(null)}>Đóng</Button>
             {previewSnapshot &&
             (previewSnapshot.status === "PENDING_PRINT"
               ? canPrint

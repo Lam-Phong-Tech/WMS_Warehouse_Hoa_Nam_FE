@@ -62,7 +62,7 @@
 }
 
 #root .ant-tabs > .ant-tabs-nav::before {
-  border-bottom: 2px dashed var(--hn-divider);
+  border-bottom: none;
 }
 
 #root .ant-tabs .ant-tabs-nav-list {

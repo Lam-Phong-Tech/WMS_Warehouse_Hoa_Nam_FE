@@ -15,6 +15,16 @@ import {
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { toast } from "sonner";
+import {
+  CheckCircleOutlined,
+  CloseOutlined,
+  DeleteOutlined,
+  EditOutlined,
+  EyeOutlined,
+  FileExcelOutlined,
+  PlusOutlined,
+  UploadOutlined,
+} from "@ant-design/icons";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { getApiErrorMessage } from "@/shared/api/api-error";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
@@ -323,6 +333,7 @@ export function OutboundIntakeModal({
         <Space>
           <Button
             type={mode === "manual" ? "primary" : "default"}
+            icon={<EditOutlined />}
             onClick={() => {
               setMode("manual");
               setPreview(null);
@@ -332,6 +343,7 @@ export function OutboundIntakeModal({
           </Button>
           <Button
             type={mode === "excel" ? "primary" : "default"}
+            icon={<FileExcelOutlined />}
             onClick={() => {
               setMode("excel");
               setPreview(null);
@@ -424,6 +436,7 @@ export function OutboundIntakeModal({
                       </Form.Item>
                       <Button
                         danger
+                        icon={<DeleteOutlined />}
                         disabled={fields.length === 1}
                         onClick={() => remove(field.name)}
                       >
@@ -433,9 +446,10 @@ export function OutboundIntakeModal({
                   ))}
                   <Button
                     type="dashed"
+                    icon={<PlusOutlined />}
                     onClick={() => add({ product_id: "", required_qty: 1 })}
                   >
-                    + Thêm dòng SKU
+                    Thêm dòng SKU
                   </Button>
                 </Space>
               )}
@@ -444,6 +458,7 @@ export function OutboundIntakeModal({
             <Space style={{ marginTop: 12 }}>
               <Button
                 type="primary"
+                icon={<EyeOutlined />}
                 loading={validateManualMutation.isPending}
                 disabled={!canImport}
                 onClick={() => validateManualMutation.mutate()}
@@ -476,6 +491,7 @@ export function OutboundIntakeModal({
             </Typography.Text>
             <Button
               type="primary"
+              icon={<UploadOutlined />}
               loading={validateFileMutation.isPending}
               disabled={!canImport || !file}
               onClick={() => validateFileMutation.mutate()}
@@ -525,6 +541,7 @@ export function OutboundIntakeModal({
               <Space>
                 <Button
                   type="primary"
+                  icon={<CheckCircleOutlined />}
                   disabled={!consumable}
                   loading={consumeMutation.isPending}
                   onClick={() => consumeMutation.mutate()}
@@ -548,7 +565,7 @@ export function OutboundIntakeModal({
         )}
 
         <Space style={{ justifyContent: "flex-end", width: "100%" }}>
-          <Button onClick={close}>Đóng</Button>
+          <Button icon={<CloseOutlined />} onClick={close}>Đóng</Button>
         </Space>
       </Space>
     </Modal>

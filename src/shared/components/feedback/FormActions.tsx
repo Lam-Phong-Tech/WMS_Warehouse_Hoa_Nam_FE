@@ -1,5 +1,6 @@
 import type { ButtonProps } from "antd";
 import { Button } from "antd";
+import { CloseOutlined, SaveOutlined } from "@ant-design/icons";
 import {
   ACCENT_COLORS,
   FONT_FAMILY,
@@ -60,13 +61,14 @@ export function FormActions({
       style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}
     >
       {showCancel && (
-        <Button onClick={onCancel} style={cancelStyle} {...cancelButtonProps}>
+        <Button icon={<CloseOutlined />} onClick={onCancel} style={cancelStyle} {...cancelButtonProps}>
           {cancelText}
         </Button>
       )}
       {showOk && (
         <Button
           type="primary"
+          icon={<SaveOutlined />}
           onClick={onOk}
           loading={loading}
           className={loading ? "ant-btn-loading" : undefined}

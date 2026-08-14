@@ -118,7 +118,7 @@ export function LoginPage() {
                 control={control}
                 name="identifier"
                 label="Email hoặc tên đăng nhập"
-                placeholder="user@gmail.com"
+                placeholder="admin@gmail.com hoặc admin"
                 prefix={<UserOutlined style={{ color: "#8c887e" }} />}
                 autoFocus
                 disabled={isSubmitting}
