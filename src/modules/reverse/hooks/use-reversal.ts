@@ -5,8 +5,13 @@ import {
   fetchReversalLines,
   fetchReversibleMovements,
   createReversalDocument,
+  type PagedResult,
 } from "../services/reversalService";
-import type { CreateReversalRequest, ReversalLookupParams } from "../types";
+import type {
+  CreateReversalRequest,
+  ReversalDocument,
+  ReversalLookupParams,
+} from "../types";
 
 export const reversalKeys = {
   all: ["reversal"] as const,
@@ -20,7 +25,7 @@ export const reversalKeys = {
 };
 
 export function useReversalDocuments(params: Record<string, unknown> = {}) {
-  return useQuery({
+  return useQuery<PagedResult<ReversalDocument>>({
     queryKey: reversalKeys.list(params),
     queryFn: () => fetchReversalDocuments(params),
   });

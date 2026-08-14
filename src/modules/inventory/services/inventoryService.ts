@@ -1,5 +1,6 @@
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { http } from "@/shared/api/http";
+import type { ApiMeta } from "@/shared/types/api-response";
 
 type RawRecord = Record<string, unknown>;
 
@@ -146,9 +147,10 @@ function normalizeBalance(row: RawRecord): InventoryBalanceRow {
   );
   const blocked = num(row.blocked_qty ?? row.hold_qty ?? row.qty_blocked);
   const reconcile = text(
-    row.reconcile_status ?? row.reconciliation_status ?? row.reconcile,
-    reserved < 0 || inTransit < 0 ? "FAIL" : "PASS",
+    row.reconciliation_status ?? row.reconcile_status ?? row.reconcile,
+    "",
   );
+  const mismatchReason = text(row.mismatch_reason ?? row.reconcile_note ?? row.warning_reason, "");
   const whName = text(
     row.warehouse_name ?? wh?.name ?? wh?.warehouse_name ?? wh?.code ?? row.warehouse_code,
     "System scope",
@@ -168,17 +170,11 @@ function normalizeBalance(row: RawRecord): InventoryBalanceRow {
     reserved,
     inTransit,
     blocked,
-    serialQty: num(row.serial_qty ?? row.item_qty ?? row.serial_count),
-    boxQty: num(row.box_qty ?? row.container_qty ?? row.qty_box),
+    serialQty: num(row.item_subledger_count ?? row.serial_qty ?? row.item_qty ?? row.serial_count),
+    boxQty: num(row.container_subledger_count ?? row.box_qty ?? row.container_qty ?? row.qty_box),
     location: text(row.location_hint ?? row.lot_no ?? whName, "-"),
     reconcile,
-    reconcileNote: text(
-      row.reconcile_note ??
-        row.reconciliation_note ??
-        row.warning_reason ??
-        row.note,
-      "",
-    ),
+    reconcileNote: mismatchReason,
     updatedAt: text(row.updated_at ?? row.last_movement_at ?? row.created_at),
     dataAsOf: text(
       row.data_as_of ?? row.snapshot_at ?? row.last_inventory_sync_at,
@@ -278,30 +274,38 @@ function normalizeTraceSource(
   };
 }
 
+export type PagedResult<T> = { rows: T[]; meta: ApiMeta };
+
 export async function fetchInventoryBalances(
   params: InventoryBalanceFilters = {},
-): Promise<InventoryBalanceRow[]> {
+): Promise<PagedResult<InventoryBalanceRow>> {
   const result = await http.getPage<
     InventoryBalanceRow[] | { data?: RawRecord[] }
   >(API_ENDPOINTS.INVENTORY_BALANCES, {
     params: clean({ per_page: 20, ...params }),
   });
-  return rowsOf(result.data as RawRecord[] | { data?: RawRecord[] }).map(
-    normalizeBalance,
-  );
+  return {
+    rows: rowsOf(result.data as RawRecord[] | { data?: RawRecord[] }).map(
+      normalizeBalance,
+    ),
+    meta: result.meta,
+  };
 }
 
 export async function fetchStockMovements(
   params: StockMovementFilters = {},
-): Promise<StockMovementRow[]> {
+): Promise<PagedResult<StockMovementRow>> {
   const result = await http.getPage<
     StockMovementRow[] | { data?: RawRecord[] }
   >(API_ENDPOINTS.STOCK_MOVEMENTS, {
     params: clean({ per_page: 20, ...params }),
   });
-  return rowsOf(result.data as RawRecord[] | { data?: RawRecord[] }).map(
-    normalizeMovement,
-  );
+  return {
+    rows: rowsOf(result.data as RawRecord[] | { data?: RawRecord[] }).map(
+      normalizeMovement,
+    ),
+    meta: result.meta,
+  };
 }
 
 export async function fetchStockMovement(
@@ -374,4 +378,22 @@ export async function fetchScanEvents(
     { params: clean(params) },
   );
   return rowsOf(result.data as RawRecord[] | { data?: RawRecord[] });
+}
+
+export type PhysicalCodeTraceResult = {
+  physical_code: RawRecord | null;
+  resolved_type: string;
+  resolved_id: string;
+  resolved_object: RawRecord | null;
+  movements: RawRecord[];
+  container_items: RawRecord[];
+};
+
+export async function traceByPhysicalCode(
+  code: string,
+): Promise<PhysicalCodeTraceResult> {
+  return http.get<PhysicalCodeTraceResult>(
+    API_ENDPOINTS.STOCK_MOVEMENT_TRACE_BY_CODE,
+    { params: { code } },
+  );
 }

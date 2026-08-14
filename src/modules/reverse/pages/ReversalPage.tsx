@@ -7,6 +7,7 @@ import { EyeOutlined } from "@ant-design/icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { MvpPageSizeSelector } from "@/shared/components/mvp/MvpListPagination";
+import { resolveApiPagination } from "@/shared/components/mvp/mvp-pagination";
 import { useHasPermission } from "@/shared/components/permission";
 import {
   useReversalDocuments,
@@ -57,7 +58,13 @@ export default function ReversalPage() {
     page,
     per_page: perPage,
   });
-  const rows = listQuery.data ?? [];
+  const rows = listQuery.data?.rows ?? [];
+  const listMeta = listQuery.data?.meta;
+  const listPagination = resolveApiPagination(listMeta, {
+    page,
+    pageSize: perPage,
+    rowCount: rows.length,
+  });
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -245,11 +252,11 @@ export default function ReversalPage() {
         loading={listQuery.isLoading || listQuery.isFetching}
         onChange={handleTableChange}
         pagination={{
-          current: page,
-          pageSize: perPage,
-          total: rows.length >= perPage ? page * perPage + 1 : (page - 1) * perPage + rows.length,
+          current: listPagination.current,
+          pageSize: listPagination.pageSize,
+          total: listPagination.total,
           showSizeChanger: false,
-          showTotal: (count) => `Tổng ${count} phiếu hoàn đảo`,
+          showTotal: (total) => `Tổng ${new Intl.NumberFormat("vi-VN").format(total)} phiếu hoàn đảo`,
         }}
         locale={{
           emptyText: listQuery.isError

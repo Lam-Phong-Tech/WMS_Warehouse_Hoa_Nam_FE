@@ -30,8 +30,8 @@ function formatQty(value: number | null | undefined, uom = "") {
 }
 
 function reconcileColor(status: string) {
-  if (status === "PASS") return "success";
-  if (status === "FAIL") return "error";
+  if (status === "MATCH" || status === "PASS") return "success";
+  if (status === "MISMATCH" || status === "FAIL") return "error";
   return "warning";
 }
 
@@ -74,8 +74,21 @@ export default function InventoryPage() {
     per_page: movementPerPage,
   });
 
-  const balances = balanceQuery.data ?? [];
-  const movements = movementQuery.data ?? [];
+  const balances = balanceQuery.data?.rows ?? [];
+  const balanceMeta = balanceQuery.data?.meta;
+  const movements = movementQuery.data?.rows ?? [];
+  const movementMeta = movementQuery.data?.meta;
+
+  const balancePagination = resolveApiPagination(balanceMeta, {
+    page: balancePage,
+    pageSize: balancePerPage,
+    rowCount: balances.length,
+  });
+  const movementPagination = resolveApiPagination(movementMeta, {
+    page: movementPage,
+    pageSize: movementPerPage,
+    rowCount: movements.length,
+  });
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -178,6 +191,19 @@ export default function InventoryPage() {
       render: (value: number, row: InventoryBalanceRow) =>
         formatQty(value, row.uom),
     },
+    {
+      title: "Item/Box",
+      key: "subledger",
+      width: 90,
+      align: "center",
+      render: (_, row: InventoryBalanceRow) => (
+        <Tooltip title={`Item: ${row.serialQty} · Container: ${row.boxQty}`}>
+          <Typography.Text style={{ fontSize: 12 }}>
+            {row.serialQty}/{row.boxQty}
+          </Typography.Text>
+        </Tooltip>
+      ),
+    },
     { title: "Vị trí gợi ý", dataIndex: "location", key: "location", width: 120 },
     {
       title: "Đối soát",
@@ -186,7 +212,7 @@ export default function InventoryPage() {
       width: 110,
       render: (value: string, row: InventoryBalanceRow) => (
         <Tooltip
-          title={row.reconcileNote || "Trạng thái đối soát do backend trả về"}
+          title={row.reconcileNote || (value === "MATCH" ? "Ledger ↔ Balance khớp" : "Ledger ↔ Balance lệch")}
         >
           <Tag color={reconcileColor(value)}>{value}</Tag>
         </Tooltip>
@@ -324,8 +350,9 @@ export default function InventoryPage() {
         <span className="pill blue">GET /inventory/balances</span>
         <span className="pill blue">GET /stock-movements</span>
         <span className="pill blue">GET /stock-movements/:id/trace-source</span>
+        <span className="pill blue">GET /stock-movements/trace-by-code</span>
         <span className="pill ok">
-          Balance là chiếu (projection) · Movement là sổ cái (ledger)
+          Balance là chiếu (projection) · Movement là sổ cái (ledger) · Reconciliation authoritative
         </span>
       </div>
 
@@ -394,11 +421,11 @@ export default function InventoryPage() {
         loading={balanceQuery.isLoading || balanceQuery.isFetching}
         onChange={handleBalanceTableChange}
         pagination={{
-          current: balancePage,
-          pageSize: balancePerPage,
-          total: balances.length >= balancePerPage ? balancePage * balancePerPage + 1 : balancePage * balancePerPage,
+          current: balancePagination.current,
+          pageSize: balancePagination.pageSize,
+          total: balancePagination.total,
           showSizeChanger: false,
-          showTotal: (count) => `Tổng ${count} dòng tồn kho`,
+          showTotal: (total) => `Tổng ${numberFormatter.format(total)} dòng tồn kho`,
         }}
         locale={{
           emptyText: balanceQuery.isError
@@ -406,13 +433,13 @@ export default function InventoryPage() {
             : "Không có tồn kho theo bộ lọc hiện tại",
         }}
         onRow={(row) => ({ onDoubleClick: () => setBalanceDetailRow(row) })}
-        scroll={{ x: 1500 }}
+        scroll={{ x: 1600 }}
       />
 
       <div className="footer-note" style={{ marginBottom: 24 }}>
-        <b>Vị trí gợi ý/khay</b> chỉ giúp tìm hàng, không tham gia công thức
-        tồn và không tạo bucket tồn riêng. Bấm <b>Mở</b> để xem chi tiết tồn
-        kho và movement liên quan.
+        <b>Đối soát</b> do backend tính: Ledger (SUM qty_delta) ↔ Balance (on_hand_qty).
+        MATCH = khớp, MISMATCH = lệch. Bấm <b>Mở</b> để xem chi tiết tồn
+        kho, item/box subledger và movement liên quan.
       </div>
 
       {/* ──── Lịch sử dịch chuyển ──── */}
@@ -473,11 +500,11 @@ export default function InventoryPage() {
         loading={movementQuery.isLoading || movementQuery.isFetching}
         onChange={handleMovementTableChange}
         pagination={{
-          current: movementPage,
-          pageSize: movementPerPage,
-          total: movements.length >= movementPerPage ? movementPage * movementPerPage + 1 : movementPage * movementPerPage,
+          current: movementPagination.current,
+          pageSize: movementPagination.pageSize,
+          total: movementPagination.total,
           showSizeChanger: false,
-          showTotal: (count) => `Tổng ${count} movement`,
+          showTotal: (total) => `Tổng ${numberFormatter.format(total)} movement`,
         }}
         locale={{
           emptyText: movementQuery.isError

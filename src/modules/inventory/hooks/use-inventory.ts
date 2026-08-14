@@ -4,8 +4,12 @@ import {
   fetchStockMovements,
   fetchStockMovement,
   traceStockMovementSource,
+  traceByPhysicalCode,
   type InventoryBalanceFilters,
   type StockMovementFilters,
+  type PagedResult,
+  type InventoryBalanceRow,
+  type StockMovementRow,
 } from "../services/inventoryService";
 
 export const inventoryKeys = {
@@ -17,17 +21,19 @@ export const inventoryKeys = {
   movement: (id: string) =>
     [...inventoryKeys.all, "movement", id] as const,
   trace: (id: string) => [...inventoryKeys.all, "trace", id] as const,
+  traceByCode: (code: string) =>
+    [...inventoryKeys.all, "traceByCode", code] as const,
 };
 
 export function useInventoryBalances(params: InventoryBalanceFilters) {
-  return useQuery({
+  return useQuery<PagedResult<InventoryBalanceRow>>({
     queryKey: inventoryKeys.balances(params),
     queryFn: () => fetchInventoryBalances(params),
   });
 }
 
 export function useStockMovements(params: StockMovementFilters) {
-  return useQuery({
+  return useQuery<PagedResult<StockMovementRow>>({
     queryKey: inventoryKeys.movements(params),
     queryFn: () => fetchStockMovements(params),
   });
@@ -46,5 +52,13 @@ export function useStockMovementTrace(id: string | null | undefined) {
     queryKey: inventoryKeys.trace(id ?? ""),
     queryFn: () => traceStockMovementSource(id ?? ""),
     enabled: Boolean(id),
+  });
+}
+
+export function usePhysicalCodeTrace(code: string | null | undefined) {
+  return useQuery({
+    queryKey: inventoryKeys.traceByCode(code ?? ""),
+    queryFn: () => traceByPhysicalCode(code ?? ""),
+    enabled: Boolean(code && code.trim().length > 0),
   });
 }

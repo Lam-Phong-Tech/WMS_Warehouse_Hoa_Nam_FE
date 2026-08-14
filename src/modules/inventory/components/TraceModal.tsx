@@ -13,6 +13,7 @@ import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import {
   useStockMovement,
   useStockMovementTrace,
+  usePhysicalCodeTrace,
 } from "../hooks/use-inventory";
 
 interface Props {
@@ -23,16 +24,21 @@ interface Props {
 /**
  * TRACE-01 · Truy vết mã vật lý / movement.
  * Hiển thị chi tiết movement, chứng từ nguồn, timeline chuỗi nghiệp vụ.
+ * Hỗ trợ tra cứu bằng Physical Code → Item/Container/SKU → Movement chain.
  */
 export function TraceModal({ movementId, onClose }: Props) {
   const [lookupCode, setLookupCode] = useState("");
+  const [submittedCode, setSubmittedCode] = useState<string | null>(null);
+
   const effectiveId = movementId;
 
   const movementQuery = useStockMovement(effectiveId);
   const traceQuery = useStockMovementTrace(effectiveId);
+  const physicalCodeQuery = usePhysicalCodeTrace(submittedCode);
 
   const movement = movementQuery.data as Record<string, unknown> | undefined;
   const trace = traceQuery.data;
+  const codeTrace = physicalCodeQuery.data;
 
   const text = (val: unknown, fallback = "-") =>
     val === undefined || val === null ? fallback : String(val);
@@ -42,13 +48,26 @@ export function TraceModal({ movementId, onClose }: Props) {
       ? (obj[key] as Record<string, unknown>)
       : undefined;
 
+  const handleLookup = () => {
+    const trimmed = lookupCode.trim();
+    if (trimmed.length > 0) {
+      setSubmittedCode(trimmed);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleLookup();
+    }
+  };
+
   return (
     <Modal
       open
       centered
       destroyOnHidden
       maskClosable={false}
-      width={900}
+      width={960}
       title="Truy vết chứng từ nguồn (TRACE-01)"
       footer={null}
       onCancel={onClose}
@@ -57,25 +76,210 @@ export function TraceModal({ movementId, onClose }: Props) {
         <div className="toolbar" style={{ marginBottom: 0 }}>
           <input
             className="input search"
-            placeholder="Nhập mã vật lý / movement để tra cứu..."
+            placeholder="Nhập mã vật lý (barcode/QR/RFID) để tra cứu..."
             value={lookupCode}
             aria-label="Tra cứu mã vật lý"
             onChange={(e) => setLookupCode(e.target.value)}
+            onKeyDown={handleKeyDown}
             style={{ flex: 1 }}
           />
-          <button className="btn" type="button" disabled>
+          <button
+            className="btn"
+            type="button"
+            disabled={lookupCode.trim().length === 0}
+            onClick={handleLookup}
+          >
             <SearchOutlined style={{ marginRight: 4 }} />
             Tra cứu
           </button>
         </div>
 
-        {!effectiveId ? (
+        {!effectiveId && !submittedCode ? (
           <div className="footer-note">
             Chọn một movement từ danh sách tồn kho hoặc nhập mã vật lý để truy
             vết.
           </div>
         ) : null}
 
+        {/* ──── Physical Code Trace Results ──── */}
+        {physicalCodeQuery.isError ? (
+          <ApiErrorAlert
+            error={physicalCodeQuery.error}
+            title="Không tìm thấy mã vật lý"
+            onRetry={() => physicalCodeQuery.refetch()}
+          />
+        ) : null}
+
+        {physicalCodeQuery.isLoading ? (
+          <div style={{ padding: 16, textAlign: "center" }}>
+            Đang tra cứu mã vật lý...
+          </div>
+        ) : null}
+
+        {codeTrace ? (
+          <>
+            <Descriptions
+              bordered
+              column={{ xs: 1, md: 2 }}
+              size="small"
+              title="Kết quả tra cứu mã vật lý"
+            >
+              <Descriptions.Item label="Mã vật lý">
+                <Typography.Text code copyable>
+                  {text((codeTrace.physical_code as Record<string, unknown>)?.code_value)}
+                </Typography.Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="Loại mã">
+                <Tag>{text((codeTrace.physical_code as Record<string, unknown>)?.carrier_type)}</Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="Đối tượng gắn">
+                <Tag color="blue">{text(codeTrace.resolved_type)}</Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="Trạng thái">
+                <Tag color={
+                  text((codeTrace.physical_code as Record<string, unknown>)?.status) === "ACTIVE" ? "success" : "default"
+                }>
+                  {text((codeTrace.physical_code as Record<string, unknown>)?.status)}
+                </Tag>
+              </Descriptions.Item>
+              {codeTrace.resolved_type === "ITEM" && codeTrace.resolved_object ? (
+                <>
+                  <Descriptions.Item label="SKU">
+                    <Typography.Text code>
+                      {text((codeTrace.resolved_object as Record<string, unknown>).sku_code)}
+                    </Typography.Text>
+                    {" "}
+                    {text((codeTrace.resolved_object as Record<string, unknown>).sku_name)}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Trạng thái Item">
+                    <Tag>{text((codeTrace.resolved_object as Record<string, unknown>).status)}</Tag>
+                  </Descriptions.Item>
+                </>
+              ) : null}
+              {codeTrace.resolved_type === "CONTAINER" && codeTrace.resolved_object ? (
+                <>
+                  <Descriptions.Item label="Mã container">
+                    <Typography.Text code>
+                      {text((codeTrace.resolved_object as Record<string, unknown>).container_code)}
+                    </Typography.Text>
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Loại container">
+                    <Tag>{text((codeTrace.resolved_object as Record<string, unknown>).container_type)}</Tag>
+                  </Descriptions.Item>
+                </>
+              ) : null}
+              {codeTrace.resolved_type === "SKU" && codeTrace.resolved_object ? (
+                <>
+                  <Descriptions.Item label="Mã SKU">
+                    <Typography.Text code>
+                      {text((codeTrace.resolved_object as Record<string, unknown>).sku_code)}
+                    </Typography.Text>
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Tên SKU">
+                    {text((codeTrace.resolved_object as Record<string, unknown>).sku_name)}
+                  </Descriptions.Item>
+                </>
+              ) : null}
+            </Descriptions>
+
+            {codeTrace.container_items.length > 0 ? (
+              <div>
+                <Typography.Text strong style={{ display: "block", marginBottom: 8 }}>
+                  Container Items ({codeTrace.container_items.length})
+                </Typography.Text>
+                <Table
+                  size="small"
+                  dataSource={codeTrace.container_items}
+                  rowKey={(_, index) => String(index)}
+                  pagination={false}
+                  scroll={{ x: 500 }}
+                  columns={[
+                    {
+                      title: "Container",
+                      width: 160,
+                      render: (_, row) => text(row.container_code),
+                    },
+                    {
+                      title: "Loại",
+                      width: 100,
+                      render: (_, row) => <Tag>{text(row.container_type)}</Tag>,
+                    },
+                    {
+                      title: "SL",
+                      width: 80,
+                      align: "right",
+                      render: (_, row) => Number(row.quantity ?? 0).toLocaleString("vi-VN"),
+                    },
+                    {
+                      title: "Trạng thái",
+                      width: 100,
+                      render: (_, row) => text(row.status, "-"),
+                    },
+                  ]}
+                />
+              </div>
+            ) : null}
+
+            {codeTrace.movements.length > 0 ? (
+              <div>
+                <Typography.Text strong style={{ display: "block", marginBottom: 8 }}>
+                  Lịch sử movement ({codeTrace.movements.length})
+                </Typography.Text>
+                <Table
+                  size="small"
+                  dataSource={codeTrace.movements}
+                  rowKey={(row) => text(row.id, String(Math.random()))}
+                  pagination={false}
+                  scroll={{ x: 700 }}
+                  columns={[
+                    {
+                      title: "Movement",
+                      width: 130,
+                      render: (_, row) => (
+                        <Typography.Text code>{text(row.movement_no)}</Typography.Text>
+                      ),
+                    },
+                    {
+                      title: "Loại",
+                      width: 110,
+                      render: (_, row) => <Tag>{text(row.movement_type)}</Tag>,
+                    },
+                    {
+                      title: "SKU",
+                      width: 100,
+                      render: (_, row) => text(row.product_code),
+                    },
+                    {
+                      title: "SL",
+                      width: 80,
+                      align: "right",
+                      render: (_, row) => {
+                        const qty = Number(row.qty_delta ?? row.quantity ?? 0);
+                        return (
+                          <Typography.Text style={{ color: qty >= 0 ? "#237804" : "#cf1322", fontWeight: 600 }}>
+                            {qty >= 0 ? `+${qty.toLocaleString("vi-VN")}` : qty.toLocaleString("vi-VN")}
+                          </Typography.Text>
+                        );
+                      },
+                    },
+                    {
+                      title: "Chứng từ",
+                      width: 130,
+                      render: (_, row) => <Typography.Text code>{text(row.doc_no)}</Typography.Text>,
+                    },
+                    {
+                      title: "Thời gian",
+                      width: 150,
+                      render: (_, row) => text(row.occurred_at ?? row.created_at),
+                    },
+                  ]}
+                />
+              </div>
+            ) : null}
+          </>
+        ) : null}
+
+        {/* ──── Movement-based Trace (original) ──── */}
         {movementQuery.isError ? (
           <ApiErrorAlert
             error={movementQuery.error}

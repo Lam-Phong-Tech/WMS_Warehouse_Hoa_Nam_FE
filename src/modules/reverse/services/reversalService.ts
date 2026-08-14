@@ -5,6 +5,7 @@ import {
   requireNonEmptyString,
   requirePositiveNumber,
 } from "@/shared/api/wms-contract";
+import type { ApiMeta } from "@/shared/types/api-response";
 import type {
   ReversalDocument,
   ReversalLine,
@@ -16,6 +17,8 @@ import type {
 } from "../types";
 
 type RawRecord = Record<string, unknown>;
+
+export type PagedResult<T> = { rows: T[]; meta: ApiMeta };
 
 function rowsOf<T>(value: T[] | { data?: T[]; rows?: T[] }): T[] {
   if (Array.isArray(value)) return value;
@@ -133,14 +136,17 @@ function normalizeReversibleMovement(row: RawRecord): ReversibleMovement {
  */
 export async function fetchReversalDocuments(
   params: Record<string, unknown> = {},
-): Promise<ReversalDocument[]> {
+): Promise<PagedResult<ReversalDocument>> {
   const result = await http.getPage<RawRecord[] | { data?: RawRecord[] }>(
     API_ENDPOINTS.REVERSAL_DOCUMENTS,
     { params: clean(params) },
   );
-  return rowsOf(result.data as RawRecord[] | { data?: RawRecord[] }).map(
-    normalizeReversalDocument,
-  );
+  return {
+    rows: rowsOf(result.data as RawRecord[] | { data?: RawRecord[] }).map(
+      normalizeReversalDocument,
+    ),
+    meta: result.meta,
+  };
 }
 
 /**

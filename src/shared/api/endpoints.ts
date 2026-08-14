@@ -88,6 +88,7 @@ export const API_ENDPOINTS = {
   STOCK_MOVEMENTS: "/stock-movements",
   STOCK_MOVEMENT: "/stock-movements/:id",
   STOCK_MOVEMENT_TRACE_SOURCE: "/stock-movements/:id/trace-source",
+  STOCK_MOVEMENT_TRACE_BY_CODE: "/stock-movements/trace-by-code",
   SAFE_STOCK_ALERTS: "/safe-stock-alerts",
   SAFE_STOCK_CONFIGS: "/safe-stock-configs",
   SAFE_STOCK_CONFIG: "/safe-stock-configs/:id",
