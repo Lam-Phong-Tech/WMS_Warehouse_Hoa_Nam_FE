@@ -3,7 +3,23 @@ import { assertWmsActionPermission } from "@/shared/api/wms-action-permission";
 import { http } from "@/shared/api/http";
 import { WmsContractError } from "@/shared/api/wms-contract";
 import { WMS_ACTION_PERMISSIONS } from "@/shared/constants/wms-permissions";
-import type { ReportItem, XntReportRow } from "../types";
+import type {
+  ReportItem,
+  XntReportRow,
+  InventoryBalanceReport,
+  InventoryBalanceRow,
+  XntEnhancedReport,
+  XntEnhancedRow,
+  DocumentHistoryReport,
+  DocumentHistoryRow,
+  ImportMatchReport,
+  ImportMatchRow,
+  LabelLogReport,
+  LabelLogRow,
+  OutboundByAgencyReport,
+  OutboundByAgencyRow,
+  OutboundByAgencySummaryRow,
+} from "../types";
 
 type RawRecord = Record<string, unknown>;
 
@@ -197,4 +213,337 @@ export async function downloadWarrantyReportExcel(
       params,
     },
   );
+}
+
+// ── Tồn kho hiện tại ──
+
+export type InventoryBalanceParams = {
+  warehouse_id?: string;
+  product_id?: string;
+  stock_status?: string;
+  keyword?: string;
+};
+
+function normalizeInventoryBalanceRow(row: RawRecord): InventoryBalanceRow {
+  return {
+    id: text(row.id),
+    warehouseId: text(row.warehouse_id),
+    warehouseCode: text(row.warehouse_code),
+    productId: text(row.product_id),
+    productCode: text(row.product_code),
+    productName: text(row.product_name),
+    stockStatus: text(row.stock_status, "AVAILABLE"),
+    onHandQty: num(row.on_hand_qty),
+    availableQty: num(row.available_qty),
+    reservedQty: num(row.reserved_qty),
+    ledgerQty: num(row.ledger_qty),
+    variance: num(row.variance),
+    reconciliationStatus: text(row.reconciliation_status, "MATCH") as "MATCH" | "MISMATCH",
+    updatedAt: text(row.updated_at),
+  };
+}
+
+export async function fetchInventoryBalanceReport(
+  params: InventoryBalanceParams,
+): Promise<InventoryBalanceReport> {
+  const result = await http.get<RawRecord>(
+    API_ENDPOINTS.REPORTS_INVENTORY_BALANCE,
+    { params },
+  );
+  const summary = (result.summary ?? {}) as RawRecord;
+  return {
+    dataAsOf: text(result.data_as_of),
+    summary: {
+      totalRows: num(summary.total_rows),
+      totalOnHand: num(summary.total_on_hand),
+      totalAvailable: num(summary.total_available),
+      mismatchCount: num(summary.mismatch_count),
+    },
+    rows: rowsOf((result.rows ?? []) as RawRecord[]).map(normalizeInventoryBalanceRow),
+  };
+}
+
+export async function downloadInventoryBalanceExcel(
+  params: InventoryBalanceParams,
+): Promise<Blob> {
+  assertWmsActionPermission(WMS_ACTION_PERMISSIONS.EXPORT_REPORT, "export inventory balance");
+  return http.downloadBlob(API_ENDPOINTS.REPORTS_INVENTORY_BALANCE_EXPORT_EXCEL, { params });
+}
+
+// ── XNT nâng cấp ──
+
+export type XntEnhancedParams = {
+  from_date: string;
+  to_date: string;
+  warehouse_id?: string;
+  product_id?: string;
+};
+
+function normalizeXntEnhancedRow(row: RawRecord): XntEnhancedRow {
+  return {
+    warehouseCode: text(row.warehouse_code),
+    productCode: text(row.product_code),
+    productName: text(row.product_name),
+    stockStatus: text(row.stock_status, "AVAILABLE"),
+    opening: num(row.opening),
+    receipt: num(row.receipt),
+    issue: num(row.issue),
+    componentIssue: num(row.component_issue),
+    reversalNet: num(row.reversal_net),
+    closing: num(row.closing),
+  };
+}
+
+export async function fetchXntEnhancedReport(
+  params: XntEnhancedParams,
+): Promise<XntEnhancedReport> {
+  const result = await http.get<RawRecord>(
+    API_ENDPOINTS.REPORTS_XNT_ENHANCED,
+    { params },
+  );
+  return {
+    fromDate: text(result.from_date),
+    toDate: text(result.to_date),
+    formula: text(result.formula),
+    lines: rowsOf((result.lines ?? []) as RawRecord[]).map(normalizeXntEnhancedRow),
+  };
+}
+
+export async function downloadXntEnhancedExcel(
+  params: XntEnhancedParams,
+): Promise<Blob> {
+  assertWmsActionPermission(WMS_ACTION_PERMISSIONS.EXPORT_REPORT, "export XNT enhanced");
+  return http.downloadBlob(API_ENDPOINTS.REPORTS_XNT_ENHANCED_EXPORT_EXCEL, { params });
+}
+
+// ── Lịch sử phiếu nhập/xuất ──
+
+export type DocumentHistoryParams = {
+  from_date?: string;
+  to_date?: string;
+  doc_type?: "inbound" | "outbound" | "all";
+  status?: string;
+  keyword?: string;
+};
+
+function normalizeDocumentHistoryRow(row: RawRecord): DocumentHistoryRow {
+  return {
+    id: text(row.id),
+    documentNo: text(row.document_no),
+    docType: text(row.doc_type) as "INBOUND" | "OUTBOUND",
+    warehouseCode: text(row.warehouse_code),
+    counterpart: text(row.counterpart),
+    documentDate: text(row.document_date),
+    status: text(row.status),
+    postedAt: row.posted_at ? text(row.posted_at) : null,
+    cancelledAt: row.cancelled_at ? text(row.cancelled_at) : null,
+    createdByName: row.created_by_name ? text(row.created_by_name) : null,
+    postedByName: row.posted_by_name ? text(row.posted_by_name) : null,
+    note: row.note ? text(row.note) : null,
+  };
+}
+
+export async function fetchDocumentHistoryReport(
+  params: DocumentHistoryParams,
+): Promise<DocumentHistoryReport> {
+  const result = await http.get<RawRecord>(
+    API_ENDPOINTS.REPORTS_DOCUMENT_HISTORY,
+    { params },
+  );
+  const period = (result.period ?? {}) as RawRecord;
+  const summary = (result.summary ?? {}) as RawRecord;
+  return {
+    period: { fromDate: text(period.from_date), toDate: text(period.to_date) },
+    docTypeFilter: text(result.doc_type_filter, "all"),
+    summary: {
+      total: num(summary.total),
+      draft: num(summary.draft),
+      scanning: num(summary.scanning),
+      posted: num(summary.posted),
+      cancelled: num(summary.cancelled),
+    },
+    rows: rowsOf((result.rows ?? []) as RawRecord[]).map(normalizeDocumentHistoryRow),
+  };
+}
+
+export async function downloadDocumentHistoryExcel(
+  params: DocumentHistoryParams,
+): Promise<Blob> {
+  assertWmsActionPermission(WMS_ACTION_PERMISSIONS.EXPORT_REPORT, "export document history");
+  return http.downloadBlob(API_ENDPOINTS.REPORTS_DOCUMENT_HISTORY_EXPORT_EXCEL, { params });
+}
+
+// ── Đối soát toa (Excel Import/Match) ──
+
+export type ImportMatchParams = {
+  from_date?: string;
+  to_date?: string;
+  status?: string;
+};
+
+function normalizeImportMatchRow(row: RawRecord): ImportMatchRow {
+  return {
+    id: text(row.id),
+    importNo: text(row.import_no),
+    sourceFileName: text(row.source_file_name),
+    status: text(row.status),
+    totalRows: num(row.total_rows),
+    validRows: num(row.valid_rows),
+    errorRows: num(row.error_rows),
+    passRate: num(row.pass_rate),
+    matchedQty: num(row.matched_qty),
+    uploadedAt: text(row.uploaded_at),
+    uploadedByName: row.uploaded_by_name ? text(row.uploaded_by_name) : null,
+    validatedAt: row.validated_at ? text(row.validated_at) : null,
+    consumedAt: row.consumed_at ? text(row.consumed_at) : null,
+    consumedByName: row.consumed_by_name ? text(row.consumed_by_name) : null,
+  };
+}
+
+export async function fetchImportMatchReport(
+  params: ImportMatchParams,
+): Promise<ImportMatchReport> {
+  const result = await http.get<RawRecord>(
+    API_ENDPOINTS.REPORTS_IMPORT_MATCH,
+    { params },
+  );
+  const period = (result.period ?? {}) as RawRecord;
+  const summary = (result.summary ?? {}) as RawRecord;
+  return {
+    period: { fromDate: text(period.from_date), toDate: text(period.to_date) },
+    summary: {
+      totalBatches: num(summary.total_batches),
+      consumed: num(summary.consumed),
+      rejected: num(summary.rejected),
+      avgPassRate: num(summary.avg_pass_rate),
+      totalMatchedQty: num(summary.total_matched_qty),
+    },
+    rows: rowsOf((result.rows ?? []) as RawRecord[]).map(normalizeImportMatchRow),
+  };
+}
+
+export async function downloadImportMatchExcel(
+  params: ImportMatchParams,
+): Promise<Blob> {
+  assertWmsActionPermission(WMS_ACTION_PERMISSIONS.EXPORT_REPORT, "export import match");
+  return http.downloadBlob(API_ENDPOINTS.REPORTS_IMPORT_MATCH_EXPORT_EXCEL, { params });
+}
+
+// ── Nhật ký nhãn (Label/Print log) ──
+
+export type LabelLogParams = {
+  from_date?: string;
+  to_date?: string;
+  status?: string;
+  printer_id?: string;
+};
+
+function normalizeLabelLogRow(row: RawRecord): LabelLogRow {
+  return {
+    id: text(row.id),
+    labelCode: text(row.label_code),
+    outboundNo: row.outbound_no ? text(row.outbound_no) : null,
+    skuCode: text(row.sku_code),
+    productName: text(row.product_name),
+    itemCodeValue: text(row.item_code_value),
+    status: text(row.status),
+    reprintCount: num(row.reprint_count),
+    totalAttempts: num(row.total_attempts),
+    failedCount: num(row.failed_count),
+    templateVersion: text(row.template_version),
+    createdAt: text(row.created_at),
+    createdByName: row.created_by_name ? text(row.created_by_name) : null,
+  };
+}
+
+export async function fetchLabelLogReport(
+  params: LabelLogParams,
+): Promise<LabelLogReport> {
+  const result = await http.get<RawRecord>(
+    API_ENDPOINTS.REPORTS_LABEL_LOG,
+    { params },
+  );
+  const period = (result.period ?? {}) as RawRecord;
+  const summary = (result.summary ?? {}) as RawRecord;
+  return {
+    period: { fromDate: text(period.from_date), toDate: text(period.to_date) },
+    summary: {
+      totalSnapshots: num(summary.total_snapshots),
+      printed: num(summary.printed),
+      pending: num(summary.pending),
+      failed: num(summary.failed),
+      reprinted: num(summary.reprinted),
+      failureRate: num(summary.failure_rate),
+      reprintRate: num(summary.reprint_rate),
+    },
+    rows: rowsOf((result.rows ?? []) as RawRecord[]).map(normalizeLabelLogRow),
+  };
+}
+
+export async function downloadLabelLogExcel(
+  params: LabelLogParams,
+): Promise<Blob> {
+  assertWmsActionPermission(WMS_ACTION_PERMISSIONS.EXPORT_REPORT, "export label log");
+  return http.downloadBlob(API_ENDPOINTS.REPORTS_LABEL_LOG_EXPORT_EXCEL, { params });
+}
+
+// ── Xuất theo nơi nhận ──
+
+export type OutboundByAgencyParams = {
+  from_date?: string;
+  to_date?: string;
+  agency_id?: string;
+  product_id?: string;
+};
+
+function normalizeOutboundByAgencyRow(row: RawRecord): OutboundByAgencyRow {
+  return {
+    agencyCode: text(row.agency_code),
+    agencyName: text(row.agency_name),
+    productCode: text(row.product_code),
+    productName: text(row.product_name),
+    outboundNo: text(row.outbound_no),
+    documentDate: text(row.document_date),
+    postedAt: text(row.posted_at),
+    requiredQty: num(row.required_qty),
+    scannedQty: num(row.scanned_qty),
+  };
+}
+
+function normalizeOutboundByAgencySummaryRow(row: RawRecord): OutboundByAgencySummaryRow {
+  return {
+    agencyCode: text(row.agency_code),
+    agencyName: text(row.agency_name),
+    documentCount: num(row.document_count),
+    totalIssuedQty: num(row.total_issued_qty),
+    skuCount: num(row.sku_count),
+  };
+}
+
+export async function fetchOutboundByAgencyReport(
+  params: OutboundByAgencyParams,
+): Promise<OutboundByAgencyReport> {
+  const result = await http.get<RawRecord>(
+    API_ENDPOINTS.REPORTS_OUTBOUND_BY_AGENCY,
+    { params },
+  );
+  const period = (result.period ?? {}) as RawRecord;
+  const summary = (result.summary ?? {}) as RawRecord;
+  return {
+    period: { fromDate: text(period.from_date), toDate: text(period.to_date) },
+    summary: {
+      totalAgencies: num(summary.total_agencies),
+      totalDocuments: num(summary.total_documents),
+      totalIssuedQty: num(summary.total_issued_qty),
+    },
+    byAgency: rowsOf((result.by_agency ?? []) as RawRecord[]).map(normalizeOutboundByAgencySummaryRow),
+    rows: rowsOf((result.rows ?? []) as RawRecord[]).map(normalizeOutboundByAgencyRow),
+  };
+}
+
+export async function downloadOutboundByAgencyExcel(
+  params: OutboundByAgencyParams,
+): Promise<Blob> {
+  assertWmsActionPermission(WMS_ACTION_PERMISSIONS.EXPORT_REPORT, "export outbound by agency");
+  return http.downloadBlob(API_ENDPOINTS.REPORTS_OUTBOUND_BY_AGENCY_EXPORT_EXCEL, { params });
 }

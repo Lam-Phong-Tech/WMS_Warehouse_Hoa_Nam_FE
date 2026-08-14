@@ -21,3 +21,169 @@ export interface XntReportRow {
   partialRemaining: number | string;
   reconcile: "PASS" | "WARN" | "WARNING" | "FAIL" | string;
 }
+
+export interface InventoryBalanceRow {
+  id: string;
+  warehouseId: string;
+  warehouseCode: string;
+  productId: string;
+  productCode: string;
+  productName: string;
+  stockStatus: string;
+  onHandQty: number;
+  availableQty: number;
+  reservedQty: number;
+  ledgerQty: number;
+  variance: number;
+  reconciliationStatus: "MATCH" | "MISMATCH";
+  updatedAt: string;
+}
+
+export interface InventoryBalanceReport {
+  dataAsOf: string;
+  summary: {
+    totalRows: number;
+    totalOnHand: number;
+    totalAvailable: number;
+    mismatchCount: number;
+  };
+  rows: InventoryBalanceRow[];
+}
+
+export interface XntEnhancedRow {
+  warehouseCode: string;
+  productCode: string;
+  productName: string;
+  stockStatus: string;
+  opening: number;
+  receipt: number;
+  issue: number;
+  componentIssue: number;
+  reversalNet: number;
+  closing: number;
+}
+
+export interface XntEnhancedReport {
+  fromDate: string;
+  toDate: string;
+  formula: string;
+  lines: XntEnhancedRow[];
+}
+
+export interface DocumentHistoryRow {
+  id: string;
+  documentNo: string;
+  docType: "INBOUND" | "OUTBOUND";
+  warehouseCode: string;
+  counterpart: string;
+  documentDate: string;
+  status: string;
+  postedAt: string | null;
+  cancelledAt: string | null;
+  createdByName: string | null;
+  postedByName: string | null;
+  note: string | null;
+}
+
+export interface DocumentHistoryReport {
+  period: { fromDate: string; toDate: string };
+  docTypeFilter: string;
+  summary: {
+    total: number;
+    draft: number;
+    scanning: number;
+    posted: number;
+    cancelled: number;
+  };
+  rows: DocumentHistoryRow[];
+}
+
+export interface ImportMatchRow {
+  id: string;
+  importNo: string;
+  sourceFileName: string;
+  status: string;
+  totalRows: number;
+  validRows: number;
+  errorRows: number;
+  passRate: number;
+  matchedQty: number;
+  uploadedAt: string;
+  uploadedByName: string | null;
+  validatedAt: string | null;
+  consumedAt: string | null;
+  consumedByName: string | null;
+}
+
+export interface ImportMatchReport {
+  period: { fromDate: string; toDate: string };
+  summary: {
+    totalBatches: number;
+    consumed: number;
+    rejected: number;
+    avgPassRate: number;
+    totalMatchedQty: number;
+  };
+  rows: ImportMatchRow[];
+}
+
+export interface LabelLogRow {
+  id: string;
+  labelCode: string;
+  outboundNo: string | null;
+  skuCode: string;
+  productName: string;
+  itemCodeValue: string;
+  status: string;
+  reprintCount: number;
+  totalAttempts: number;
+  failedCount: number;
+  templateVersion: string;
+  createdAt: string;
+  createdByName: string | null;
+}
+
+export interface LabelLogReport {
+  period: { fromDate: string; toDate: string };
+  summary: {
+    totalSnapshots: number;
+    printed: number;
+    pending: number;
+    failed: number;
+    reprinted: number;
+    failureRate: number;
+    reprintRate: number;
+  };
+  rows: LabelLogRow[];
+}
+
+export interface OutboundByAgencyRow {
+  agencyCode: string;
+  agencyName: string;
+  productCode: string;
+  productName: string;
+  outboundNo: string;
+  documentDate: string;
+  postedAt: string;
+  requiredQty: number;
+  scannedQty: number;
+}
+
+export interface OutboundByAgencySummaryRow {
+  agencyCode: string;
+  agencyName: string;
+  documentCount: number;
+  totalIssuedQty: number;
+  skuCount: number;
+}
+
+export interface OutboundByAgencyReport {
+  period: { fromDate: string; toDate: string };
+  summary: {
+    totalAgencies: number;
+    totalDocuments: number;
+    totalIssuedQty: number;
+  };
+  byAgency: OutboundByAgencySummaryRow[];
+  rows: OutboundByAgencyRow[];
+}

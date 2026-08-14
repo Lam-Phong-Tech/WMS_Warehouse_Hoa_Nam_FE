@@ -1,704 +1,973 @@
-/* eslint-disable react-hooks/set-state-in-effect */
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Alert,
-  Button,
   DatePicker,
   Input,
   Select,
-  Space,
   Table,
   Tabs,
   Tag,
+  Space,
 } from "antd";
-import {
-  DownloadOutlined,
-  ReloadOutlined,
-  SearchOutlined,
-} from "@ant-design/icons";
+import { DownloadOutlined, SearchOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import type { Dayjs } from "dayjs";
 import { toast } from "sonner";
-import {
-  InlineApiError,
-  ResponsiveToolbar,
-  tableEmptyText,
-} from "@/shared/components/feedback/BusinessState";
+import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
+import { MvpPageSizeSelector } from "@/shared/components/mvp/MvpListPagination";
 import { ActionButton } from "@/shared/components/permission/ActionButton";
 import {
+  downloadXntEnhancedExcel,
   downloadWarrantyReportExcel,
-  downloadXntReportExcel,
-  fetchReportsHub,
-  fetchWarrantyDefectsReport,
-  fetchXntReport,
-  type WarrantyReportResult,
-  type XntReportParams,
+  downloadInventoryBalanceExcel,
+  downloadDocumentHistoryExcel,
+  downloadImportMatchExcel,
+  downloadLabelLogExcel,
+  downloadOutboundByAgencyExcel,
+  type XntEnhancedParams,
+  type DocumentHistoryParams,
+  type ImportMatchParams,
+  type LabelLogParams,
+  type OutboundByAgencyParams,
+  type InventoryBalanceParams,
+  type WarrantyReportParams,
 } from "../services/reportsService";
-import type { ReportItem, XntReportRow } from "../types";
+import {
+  useInventoryBalanceReport,
+  useXntEnhancedReport,
+  useDocumentHistoryReport,
+  useImportMatchReport,
+  useLabelLogReport,
+  useOutboundByAgencyReport,
+  useWarrantyReport,
+} from "../hooks/use-reports";
 import {
   WARRANTY_STATUS_COLORS,
   WARRANTY_STATUS_LABELS,
   formatWarrantyDateTime,
 } from "@/modules/warranty/constants";
 
-type ReportTab = "hub" | "xnt" | "warranty";
-type ReportScope = "warehouse" | "system";
-type MovementType = "all" | "receipt" | "issue" | "adjustment" | "reversal";
+type ReportTab =
+  | "inventory-balance"
+  | "xnt"
+  | "doc-history"
+  | "import-match"
+  | "label-log"
+  | "warranty"
+  | "by-agency";
 
-const P0_REPORT_CODES = [
-  "RPT-INV-01",
-  "RPT-XNT-01",
-  "RPT-MOV-01",
-  "RPT-STK-01",
-  "RPT-WAR-01",
-  "RPT-IO-01",
-] as const;
+const DOC_STATUS_COLORS: Record<string, string> = {
+  DRAFT: "default",
+  SCANNING: "processing",
+  POSTED: "success",
+  CANCELLED: "error",
+};
 
-function isReconcileProblem(value: string): boolean {
-  return ["FAIL", "WARN", "WARNING"].includes(value.toUpperCase());
-}
+const LABEL_STATUS_COLORS: Record<string, string> = {
+  PENDING_PRINT: "processing",
+  PRINTED: "success",
+  PRINT_FAILED: "error",
+};
 
-export default function ReportsPage() {
-  const [activeTab, setActiveTab] = useState<ReportTab>("hub");
-  const [reports, setReports] = useState<ReportItem[]>([]);
-  const [hubSearch, setHubSearch] = useState("");
-  const [xntRows, setXntRows] = useState<XntReportRow[]>([]);
-  const [warrantyReport, setWarrantyReport] =
-    useState<WarrantyReportResult | null>(null);
-  const [warrantyExporting, setWarrantyExporting] = useState(false);
+const IMPORT_STATUS_COLORS: Record<string, string> = {
+  UPLOADED: "default",
+  VALIDATED: "processing",
+  CONSUMED: "success",
+  REJECTED: "error",
+};
+
+const fmtNum = (n: number) => new Intl.NumberFormat("vi-VN").format(n);
+
+function useDateRange(defaultDays = 30) {
   const [period, setPeriod] = useState<[Dayjs, Dayjs]>([
-    dayjs().subtract(30, "day"),
+    dayjs().subtract(defaultDays, "day"),
     dayjs(),
   ]);
-  const [scope, setScope] = useState<ReportScope>("system");
-  const [sku, setSku] = useState("");
-  const [category, setCategory] = useState("");
-  const [movementType, setMovementType] = useState<MovementType>("all");
-  const [hubLoading, setHubLoading] = useState(false);
-  const [xntLoading, setXntLoading] = useState(false);
-  const [warrantyLoading, setWarrantyLoading] = useState(false);
-  const [exporting, setExporting] = useState(false);
-  const [hubError, setHubError] = useState<unknown>(null);
-  const [xntError, setXntError] = useState<unknown>(null);
-  const [warrantyError, setWarrantyError] = useState<unknown>(null);
-  const [exportError, setExportError] = useState<unknown>(null);
-  const [reloadKey, setReloadKey] = useState(0);
-
   const invalidPeriod = period[0].isAfter(period[1], "day");
-  const xntParams = useMemo<XntReportParams>(
+  const from = period[0].format("YYYY-MM-DD");
+  const to = period[1].format("YYYY-MM-DD");
+  return { period, setPeriod, invalidPeriod, from, to };
+}
+
+function handleBlobDownload(blob: Blob, filename: string) {
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  window.URL.revokeObjectURL(url);
+}
+
+function PeriodWarning() {
+  return (
+    <Alert
+      showIcon
+      type="error"
+      style={{ marginBottom: 16 }}
+      message="Bộ lọc ngày chưa hợp lệ"
+      description="Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc."
+    />
+  );
+}
+
+// ─── Tab: Tồn kho hiện tại ───
+
+function InventoryBalanceTab() {
+  const [keyword, setKeyword] = useState("");
+  const [stockStatus, setStockStatus] = useState<string | undefined>();
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(15);
+
+  const params = useMemo<InventoryBalanceParams>(
     () => ({
-      from: period[0].format("YYYY-MM-DD"),
-      to: period[1].format("YYYY-MM-DD"),
-      scope,
-      ...(sku.trim() ? { sku: sku.trim() } : {}),
-      ...(category.trim() ? { category: category.trim() } : {}),
-      ...(movementType !== "all" ? { movement_type: movementType } : {}),
+      ...(keyword.trim() ? { keyword: keyword.trim() } : {}),
+      ...(stockStatus ? { stock_status: stockStatus } : {}),
     }),
-    [category, movementType, period, scope, sku],
+    [keyword, stockStatus],
   );
 
-  const filteredReports = useMemo(() => {
-    const keyword = hubSearch.trim().toLowerCase();
-    if (!keyword) return reports;
-    return reports.filter((report) =>
-      [report.code, report.title, report.description]
-        .join(" ")
-        .toLowerCase()
-        .includes(keyword),
-    );
-  }, [hubSearch, reports]);
+  const { data, isLoading, error, refetch } = useInventoryBalanceReport(params);
+  const [exporting, setExporting] = useState(false);
 
-  const missingP0Codes = useMemo(() => {
-    const availableCodes = new Set(reports.map((report) => report.code));
-    return P0_REPORT_CODES.filter((code) => !availableCodes.has(code));
-  }, [reports]);
-
-  const reconcileProblems = useMemo(
-    () => xntRows.filter((row) => isReconcileProblem(row.reconcile)),
-    [xntRows],
-  );
-
-  useEffect(() => {
-    let cancelled = false;
-    setHubLoading(true);
-    setHubError(null);
-    fetchReportsHub()
-      .then((rows) => {
-        if (!cancelled) setReports(rows);
-      })
-      .catch((fetchError: unknown) => {
-        if (!cancelled) {
-          setReports([]);
-          setHubError(fetchError);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setHubLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [reloadKey]);
-
-  useEffect(() => {
-    if (activeTab !== "xnt" || invalidPeriod) return;
-    let cancelled = false;
-    setXntLoading(true);
-    setXntError(null);
-    fetchXntReport(xntParams)
-      .then((data) => {
-        if (!cancelled) setXntRows(data);
-      })
-      .catch((fetchError: unknown) => {
-        if (!cancelled) {
-          setXntRows([]);
-          setXntError(fetchError);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setXntLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [activeTab, invalidPeriod, reloadKey, xntParams]);
-
-  useEffect(() => {
-    if (activeTab !== "warranty" || invalidPeriod) return;
-    let cancelled = false;
-    setWarrantyLoading(true);
-    setWarrantyError(null);
-    fetchWarrantyDefectsReport({
-      from: period[0].format("YYYY-MM-DD"),
-      to: period[1].format("YYYY-MM-DD"),
-    })
-      .then((report) => {
-        if (!cancelled) setWarrantyReport(report);
-      })
-      .catch((fetchError: unknown) => {
-        if (!cancelled) {
-          setWarrantyReport(null);
-          setWarrantyError(fetchError);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setWarrantyLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [activeTab, invalidPeriod, period, reloadKey]);
-
-  const handleExportWarranty = async () => {
-    if (invalidPeriod) return;
-    setWarrantyExporting(true);
-    setWarrantyError(null);
-    try {
-      const blob = await downloadWarrantyReportExcel({
-        from: period[0].format("YYYY-MM-DD"),
-        to: period[1].format("YYYY-MM-DD"),
-      });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `bao-cao-bao-hanh-${period[0].format("YYYYMMDD")}-${period[1].format("YYYYMMDD")}.xlsx`;
-      link.click();
-      window.URL.revokeObjectURL(url);
-      toast.success(
-        "Đã xuất báo cáo bảo hành (PII chỉ có khi tài khoản được cấp warranty.pii.export)",
-      );
-    } catch (downloadError: unknown) {
-      toast.error("Không thể xuất báo cáo bảo hành.");
-      setWarrantyError(downloadError);
-    } finally {
-      setWarrantyExporting(false);
-    }
-  };
-
-  const reload = () => setReloadKey((value) => value + 1);
-
-  const handleExportXnt = async () => {
-    if (invalidPeriod) return;
+  const handleExport = async () => {
     setExporting(true);
-    setExportError(null);
     try {
-      const blob = await downloadXntReportExcel(xntParams);
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `xnt-report-${period[0].format("YYYYMMDD")}-${period[1].format("YYYYMMDD")}.xlsx`;
-      link.click();
-      window.URL.revokeObjectURL(url);
-      toast.success("Đã xuất báo cáo XNT");
-    } catch (downloadError: unknown) {
-      toast.error("Không thể xuất báo cáo XNT.");
-      setExportError(downloadError);
+      const blob = await downloadInventoryBalanceExcel(params);
+      handleBlobDownload(blob, "bao-cao-ton-kho-hien-tai.xlsx");
+      toast.success("Đã xuất báo cáo tồn kho");
+    } catch {
+      toast.error("Không thể xuất báo cáo tồn kho.");
     } finally {
       setExporting(false);
     }
   };
 
+  const mismatchCount = data?.summary.mismatchCount ?? 0;
+  const rows = data?.rows ?? [];
+
   return (
-    <div style={{ padding: 24 }}>
+    <>
+      <div className="toolbar">
+        <Input
+          allowClear
+          prefix={<SearchOutlined />}
+          placeholder="Tìm SKU hoặc tên sản phẩm"
+          style={{ maxWidth: 280, width: "100%" }}
+          value={keyword}
+          onChange={(e) => { setKeyword(e.target.value); setPage(1); }}
+        />
+        <Select
+          allowClear
+          placeholder="Trạng thái tồn"
+          style={{ width: 160 }}
+          value={stockStatus}
+          onChange={(v) => { setStockStatus(v); setPage(1); }}
+          options={[
+            { value: "AVAILABLE", label: "AVAILABLE" },
+            { value: "DAMAGED", label: "DAMAGED" },
+            { value: "RESERVED", label: "RESERVED" },
+          ]}
+        />
+        <div className="spacer" />
+        <ActionButton
+          module="reports" action="export" permissionCode="REPORT_EXPORT" mode="disable"
+          type="primary" icon={<DownloadOutlined />}
+          onClick={handleExport} loading={exporting} disabled={isLoading || exporting}
+          disabledTooltip="Bạn không có quyền xuất báo cáo"
+        >
+          Xuất XLSX
+        </ActionButton>
+      </div>
+
+      {mismatchCount > 0 && (
+        <Alert showIcon type="warning" style={{ marginBottom: 16 }}
+          message={`Phát hiện ${mismatchCount} dòng tồn kho lệch ledger`}
+          description="Kiểm tra chi tiết cột Đối soát để xử lý."
+        />
+      )}
+
+      {data && (
+        <Space wrap style={{ marginBottom: 12 }}>
+          <Tag>Tổng {fmtNum(data.summary.totalRows)} dòng</Tag>
+          <Tag color="blue">Tồn kho: {fmtNum(data.summary.totalOnHand)}</Tag>
+          <Tag color="green">Khả dụng: {fmtNum(data.summary.totalAvailable)}</Tag>
+          <Tag>Cập nhật: {data.dataAsOf}</Tag>
+        </Space>
+      )}
+
+      {error && !isLoading && (
+        <ApiErrorAlert error={error} title="Không thể tải báo cáo tồn kho"
+          onRetry={() => refetch()} style={{ marginBottom: 16 }} />
+      )}
+
+      <MvpPageSizeSelector value={perPage} onChange={(v) => { setPerPage(v); setPage(1); }} />
+
+      <Table
+        dataSource={rows} rowKey="id" loading={isLoading}
+        scroll={{ x: "max-content" }}
+        pagination={{
+          current: page,
+          pageSize: perPage,
+          showSizeChanger: false,
+          showTotal: (total) => `Tổng ${fmtNum(total)} bản ghi`,
+          onChange: (p) => setPage(p),
+        }}
+        locale={{
+          emptyText: error ? "Không tải được dữ liệu" : "Không có dữ liệu tồn kho",
+        }}
+        columns={[
+          { title: "Kho", dataIndex: "warehouseCode", key: "warehouseCode", width: 100 },
+          { title: "Mã SKU", dataIndex: "productCode", key: "productCode", width: 140, fixed: "left" },
+          { title: "Tên sản phẩm", dataIndex: "productName", key: "productName", width: 220 },
+          { title: "Trạng thái", dataIndex: "stockStatus", key: "stockStatus", width: 120 },
+          { title: "Tồn kho", dataIndex: "onHandQty", key: "onHandQty", align: "right" },
+          { title: "Khả dụng", dataIndex: "availableQty", key: "availableQty", align: "right" },
+          { title: "Đã giữ", dataIndex: "reservedQty", key: "reservedQty", align: "right" },
+          {
+            title: "Đối soát", dataIndex: "reconciliationStatus", key: "reconciliationStatus", width: 110,
+            render: (v: string) => <Tag color={v === "MATCH" ? "success" : "warning"}>{v}</Tag>,
+          },
+        ]}
+      />
+    </>
+  );
+}
+
+// ─── Tab: Nhập-Xuất-Tồn (nâng cấp) ───
+
+function XntEnhancedTab() {
+  const { period, setPeriod, invalidPeriod, from, to } = useDateRange();
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(15);
+
+  const params = useMemo<XntEnhancedParams>(
+    () => ({ from_date: from, to_date: to }),
+    [from, to],
+  );
+
+  const { data, isLoading, error, refetch } = useXntEnhancedReport(params, !invalidPeriod);
+  const [exporting, setExporting] = useState(false);
+
+  const handleExport = async () => {
+    if (invalidPeriod) return;
+    setExporting(true);
+    try {
+      const blob = await downloadXntEnhancedExcel(params);
+      handleBlobDownload(blob, `xnt-chitiet-${from}-${to}.xlsx`);
+      toast.success("Đã xuất báo cáo XNT");
+    } catch {
+      toast.error("Không thể xuất báo cáo XNT.");
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const lines = data?.lines ?? [];
+
+  return (
+    <>
+      {data?.formula && (
+        <Alert showIcon type="info" style={{ marginBottom: 16 }}
+          message={`Công thức: ${data.formula}`}
+        />
+      )}
+
+      <div className="toolbar">
+        <DatePicker value={period[0]} status={invalidPeriod ? "error" : undefined}
+          onChange={(v) => { if (v) { setPeriod([v, period[1]]); setPage(1); } }} />
+        <DatePicker value={period[1]} status={invalidPeriod ? "error" : undefined}
+          onChange={(v) => { if (v) { setPeriod([period[0], v]); setPage(1); } }} />
+        <div className="spacer" />
+        <ActionButton
+          module="reports" action="export" permissionCode="REPORT_EXPORT" mode="disable"
+          type="primary" icon={<DownloadOutlined />}
+          onClick={handleExport} loading={exporting}
+          disabled={invalidPeriod || isLoading || exporting}
+          disabledTooltip="Bạn không có quyền xuất báo cáo hoặc bộ lọc chưa hợp lệ"
+        >
+          Xuất XLSX
+        </ActionButton>
+      </div>
+
+      {invalidPeriod && <PeriodWarning />}
+
+      {error && !isLoading && (
+        <ApiErrorAlert error={error} title="Không thể tải báo cáo XNT"
+          onRetry={() => refetch()} style={{ marginBottom: 16 }} />
+      )}
+
+      <MvpPageSizeSelector value={perPage} onChange={(v) => { setPerPage(v); setPage(1); }} />
+
+      <Table
+        dataSource={lines}
+        rowKey={(r) => `${r.warehouseCode}-${r.productCode}-${r.stockStatus}`}
+        loading={isLoading} scroll={{ x: "max-content" }}
+        pagination={{
+          current: page,
+          pageSize: perPage,
+          showSizeChanger: false,
+          showTotal: (total) => `Tổng ${fmtNum(total)} dòng`,
+          onChange: (p) => setPage(p),
+        }}
+        locale={{
+          emptyText: error ? "Không tải được dữ liệu" : "Không có dữ liệu XNT theo bộ lọc",
+        }}
+        columns={[
+          { title: "Kho", dataIndex: "warehouseCode", key: "warehouseCode", width: 100 },
+          { title: "Mã SKU", dataIndex: "productCode", key: "productCode", fixed: "left", width: 140 },
+          { title: "Tên SKU", dataIndex: "productName", key: "productName", width: 200 },
+          { title: "Trạng thái", dataIndex: "stockStatus", key: "stockStatus", width: 110 },
+          { title: "Đầu kỳ", dataIndex: "opening", key: "opening", align: "right" },
+          { title: "Nhập", dataIndex: "receipt", key: "receipt", align: "right" },
+          { title: "Xuất", dataIndex: "issue", key: "issue", align: "right" },
+          { title: "Xuất LK", dataIndex: "componentIssue", key: "componentIssue", align: "right" },
+          { title: "Hoàn đảo", dataIndex: "reversalNet", key: "reversalNet", align: "right" },
+          { title: "Cuối kỳ", dataIndex: "closing", key: "closing", align: "right" },
+        ]}
+      />
+    </>
+  );
+}
+
+// ─── Tab: Lịch sử phiếu nhập/xuất ───
+
+function DocumentHistoryTab() {
+  const { period, setPeriod, invalidPeriod, from, to } = useDateRange();
+  const [docType, setDocType] = useState<"inbound" | "outbound" | "all">("all");
+  const [statusFilter, setStatusFilter] = useState<string | undefined>();
+  const [keyword, setKeyword] = useState("");
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(15);
+
+  const params = useMemo<DocumentHistoryParams>(
+    () => ({
+      from_date: from,
+      to_date: to,
+      doc_type: docType,
+      ...(statusFilter ? { status: statusFilter } : {}),
+      ...(keyword.trim() ? { keyword: keyword.trim() } : {}),
+    }),
+    [from, to, docType, statusFilter, keyword],
+  );
+
+  const { data, isLoading, error, refetch } = useDocumentHistoryReport(params, !invalidPeriod);
+  const [exporting, setExporting] = useState(false);
+
+  const handleExport = async () => {
+    if (invalidPeriod) return;
+    setExporting(true);
+    try {
+      const blob = await downloadDocumentHistoryExcel(params);
+      handleBlobDownload(blob, `lich-su-phieu-${from}-${to}.xlsx`);
+      toast.success("Đã xuất lịch sử phiếu");
+    } catch {
+      toast.error("Không thể xuất lịch sử phiếu.");
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const rows = data?.rows ?? [];
+
+  return (
+    <>
+      <div className="toolbar">
+        <DatePicker value={period[0]} status={invalidPeriod ? "error" : undefined}
+          onChange={(v) => { if (v) { setPeriod([v, period[1]]); setPage(1); } }} />
+        <DatePicker value={period[1]} status={invalidPeriod ? "error" : undefined}
+          onChange={(v) => { if (v) { setPeriod([period[0], v]); setPage(1); } }} />
+        <Select style={{ width: 150 }} value={docType}
+          onChange={(v) => { setDocType(v); setPage(1); }}
+          options={[
+            { value: "all", label: "Tất cả" },
+            { value: "inbound", label: "Phiếu nhập" },
+            { value: "outbound", label: "Phiếu xuất" },
+          ]}
+        />
+        <Select allowClear placeholder="Trạng thái" style={{ width: 140 }}
+          value={statusFilter}
+          onChange={(v) => { setStatusFilter(v); setPage(1); }}
+          options={[
+            { value: "DRAFT", label: "DRAFT" },
+            { value: "SCANNING", label: "SCANNING" },
+            { value: "POSTED", label: "POSTED" },
+            { value: "CANCELLED", label: "CANCELLED" },
+          ]}
+        />
+        <Input allowClear prefix={<SearchOutlined />} placeholder="Số phiếu, đối tác"
+          style={{ maxWidth: 220, width: "100%" }}
+          value={keyword} onChange={(e) => { setKeyword(e.target.value); setPage(1); }}
+        />
+        <div className="spacer" />
+        <ActionButton
+          module="reports" action="export" permissionCode="REPORT_EXPORT" mode="disable"
+          type="primary" icon={<DownloadOutlined />}
+          onClick={handleExport} loading={exporting}
+          disabled={invalidPeriod || isLoading || exporting}
+          disabledTooltip="Bạn không có quyền xuất báo cáo hoặc bộ lọc chưa hợp lệ"
+        >
+          Xuất XLSX
+        </ActionButton>
+      </div>
+
+      {invalidPeriod && <PeriodWarning />}
+
+      {data && (
+        <Space wrap style={{ marginBottom: 12 }}>
+          <Tag>Tổng {fmtNum(data.summary.total)}</Tag>
+          <Tag color="default">Nháp {fmtNum(data.summary.draft)}</Tag>
+          <Tag color="processing">Scanning {fmtNum(data.summary.scanning)}</Tag>
+          <Tag color="success">Đã post {fmtNum(data.summary.posted)}</Tag>
+          <Tag color="error">Đã hủy {fmtNum(data.summary.cancelled)}</Tag>
+        </Space>
+      )}
+
+      {error && !isLoading && (
+        <ApiErrorAlert error={error} title="Không thể tải lịch sử phiếu"
+          onRetry={() => refetch()} style={{ marginBottom: 16 }} />
+      )}
+
+      <MvpPageSizeSelector value={perPage} onChange={(v) => { setPerPage(v); setPage(1); }} />
+
+      <Table
+        dataSource={rows} rowKey="id" loading={isLoading}
+        scroll={{ x: "max-content" }}
+        pagination={{
+          current: page,
+          pageSize: perPage,
+          showSizeChanger: false,
+          showTotal: (total) => `Tổng ${fmtNum(total)} phiếu`,
+          onChange: (p) => setPage(p),
+        }}
+        locale={{
+          emptyText: error ? "Không tải được dữ liệu" : "Không có phiếu trong khoảng thời gian đã chọn",
+        }}
+        columns={[
+          { title: "Số phiếu", dataIndex: "documentNo", key: "documentNo", width: 160, fixed: "left" },
+          {
+            title: "Loại", dataIndex: "docType", key: "docType", width: 100,
+            render: (v: string) => <Tag color={v === "INBOUND" ? "blue" : "orange"}>{v === "INBOUND" ? "Nhập" : "Xuất"}</Tag>,
+          },
+          { title: "Kho", dataIndex: "warehouseCode", key: "warehouseCode", width: 100 },
+          { title: "Đối tác / Nơi nhận", dataIndex: "counterpart", key: "counterpart", width: 200 },
+          { title: "Ngày chứng từ", dataIndex: "documentDate", key: "documentDate", width: 120 },
+          {
+            title: "Trạng thái", dataIndex: "status", key: "status", width: 120,
+            render: (v: string) => <Tag color={DOC_STATUS_COLORS[v]}>{v}</Tag>,
+          },
+          { title: "Ngày post", dataIndex: "postedAt", key: "postedAt", width: 160 },
+          { title: "Người tạo", dataIndex: "createdByName", key: "createdByName", width: 140 },
+          { title: "Ghi chú", dataIndex: "note", key: "note", ellipsis: true },
+        ]}
+      />
+    </>
+  );
+}
+
+// ─── Tab: Đối soát toa (Excel Import/Match) ───
+
+function ImportMatchTab() {
+  const { period, setPeriod, invalidPeriod, from, to } = useDateRange();
+  const [statusFilter, setStatusFilter] = useState<string | undefined>();
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(15);
+
+  const params = useMemo<ImportMatchParams>(
+    () => ({
+      from_date: from,
+      to_date: to,
+      ...(statusFilter ? { status: statusFilter } : {}),
+    }),
+    [from, to, statusFilter],
+  );
+
+  const { data, isLoading, error, refetch } = useImportMatchReport(params, !invalidPeriod);
+  const [exporting, setExporting] = useState(false);
+
+  const handleExport = async () => {
+    if (invalidPeriod) return;
+    setExporting(true);
+    try {
+      const blob = await downloadImportMatchExcel(params);
+      handleBlobDownload(blob, `doi-soat-toa-${from}-${to}.xlsx`);
+      toast.success("Đã xuất báo cáo đối soát toa");
+    } catch {
+      toast.error("Không thể xuất báo cáo đối soát toa.");
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const rows = data?.rows ?? [];
+
+  return (
+    <>
+      <div className="toolbar">
+        <DatePicker value={period[0]} status={invalidPeriod ? "error" : undefined}
+          onChange={(v) => { if (v) { setPeriod([v, period[1]]); setPage(1); } }} />
+        <DatePicker value={period[1]} status={invalidPeriod ? "error" : undefined}
+          onChange={(v) => { if (v) { setPeriod([period[0], v]); setPage(1); } }} />
+        <Select allowClear placeholder="Trạng thái" style={{ width: 160 }}
+          value={statusFilter}
+          onChange={(v) => { setStatusFilter(v); setPage(1); }}
+          options={[
+            { value: "UPLOADED", label: "Đã upload" },
+            { value: "VALIDATED", label: "Đã validate" },
+            { value: "CONSUMED", label: "Đã consume" },
+            { value: "REJECTED", label: "Bị reject" },
+          ]}
+        />
+        <div className="spacer" />
+        <ActionButton
+          module="reports" action="export" permissionCode="REPORT_EXPORT" mode="disable"
+          type="primary" icon={<DownloadOutlined />}
+          onClick={handleExport} loading={exporting}
+          disabled={invalidPeriod || isLoading || exporting}
+          disabledTooltip="Bạn không có quyền xuất báo cáo hoặc bộ lọc chưa hợp lệ"
+        >
+          Xuất XLSX
+        </ActionButton>
+      </div>
+
+      {invalidPeriod && <PeriodWarning />}
+
+      {data && (
+        <Space wrap style={{ marginBottom: 12 }}>
+          <Tag>Tổng {fmtNum(data.summary.totalBatches)} batch</Tag>
+          <Tag color="success">Consumed {fmtNum(data.summary.consumed)}</Tag>
+          <Tag color="error">Rejected {fmtNum(data.summary.rejected)}</Tag>
+          <Tag color="blue">TB tỷ lệ {data.summary.avgPassRate}%</Tag>
+          <Tag>SL khớp: {fmtNum(data.summary.totalMatchedQty)}</Tag>
+        </Space>
+      )}
+
+      {error && !isLoading && (
+        <ApiErrorAlert error={error} title="Không thể tải báo cáo đối soát toa"
+          onRetry={() => refetch()} style={{ marginBottom: 16 }} />
+      )}
+
+      <MvpPageSizeSelector value={perPage} onChange={(v) => { setPerPage(v); setPage(1); }} />
+
+      <Table
+        dataSource={rows} rowKey="id" loading={isLoading}
+        scroll={{ x: "max-content" }}
+        pagination={{
+          current: page,
+          pageSize: perPage,
+          showSizeChanger: false,
+          showTotal: (total) => `Tổng ${fmtNum(total)} batch`,
+          onChange: (p) => setPage(p),
+        }}
+        locale={{
+          emptyText: error ? "Không tải được dữ liệu" : "Không có batch import trong khoảng thời gian đã chọn",
+        }}
+        columns={[
+          { title: "Mã batch", dataIndex: "importNo", key: "importNo", width: 140, fixed: "left" },
+          { title: "File", dataIndex: "sourceFileName", key: "sourceFileName", width: 200, ellipsis: true },
+          {
+            title: "Trạng thái", dataIndex: "status", key: "status", width: 120,
+            render: (v: string) => <Tag color={IMPORT_STATUS_COLORS[v]}>{v}</Tag>,
+          },
+          { title: "Tổng dòng", dataIndex: "totalRows", key: "totalRows", align: "right" },
+          { title: "Hợp lệ", dataIndex: "validRows", key: "validRows", align: "right" },
+          { title: "Lỗi", dataIndex: "errorRows", key: "errorRows", align: "right" },
+          {
+            title: "Tỷ lệ (%)", dataIndex: "passRate", key: "passRate", align: "right", width: 100,
+            render: (v: number) => <Tag color={v >= 99.5 ? "success" : v >= 90 ? "warning" : "error"}>{v}%</Tag>,
+          },
+          { title: "SL khớp", dataIndex: "matchedQty", key: "matchedQty", align: "right" },
+          { title: "Ngày upload", dataIndex: "uploadedAt", key: "uploadedAt", width: 160 },
+          { title: "Người upload", dataIndex: "uploadedByName", key: "uploadedByName", width: 140 },
+        ]}
+      />
+    </>
+  );
+}
+
+// ─── Tab: Nhật ký nhãn ───
+
+function LabelLogTab() {
+  const { period, setPeriod, invalidPeriod, from, to } = useDateRange();
+  const [statusFilter, setStatusFilter] = useState<string | undefined>();
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(15);
+
+  const params = useMemo<LabelLogParams>(
+    () => ({
+      from_date: from,
+      to_date: to,
+      ...(statusFilter ? { status: statusFilter } : {}),
+    }),
+    [from, to, statusFilter],
+  );
+
+  const { data, isLoading, error, refetch } = useLabelLogReport(params, !invalidPeriod);
+  const [exporting, setExporting] = useState(false);
+
+  const handleExport = async () => {
+    if (invalidPeriod) return;
+    setExporting(true);
+    try {
+      const blob = await downloadLabelLogExcel(params);
+      handleBlobDownload(blob, `nhat-ky-nhan-${from}-${to}.xlsx`);
+      toast.success("Đã xuất nhật ký nhãn");
+    } catch {
+      toast.error("Không thể xuất nhật ký nhãn.");
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const rows = data?.rows ?? [];
+
+  return (
+    <>
+      <div className="toolbar">
+        <DatePicker value={period[0]} status={invalidPeriod ? "error" : undefined}
+          onChange={(v) => { if (v) { setPeriod([v, period[1]]); setPage(1); } }} />
+        <DatePicker value={period[1]} status={invalidPeriod ? "error" : undefined}
+          onChange={(v) => { if (v) { setPeriod([period[0], v]); setPage(1); } }} />
+        <Select allowClear placeholder="Trạng thái" style={{ width: 170 }}
+          value={statusFilter}
+          onChange={(v) => { setStatusFilter(v); setPage(1); }}
+          options={[
+            { value: "PENDING_PRINT", label: "Chờ in" },
+            { value: "PRINTED", label: "Đã in" },
+            { value: "PRINT_FAILED", label: "Lỗi in" },
+          ]}
+        />
+        <div className="spacer" />
+        <ActionButton
+          module="reports" action="export" permissionCode="REPORT_EXPORT" mode="disable"
+          type="primary" icon={<DownloadOutlined />}
+          onClick={handleExport} loading={exporting}
+          disabled={invalidPeriod || isLoading || exporting}
+          disabledTooltip="Bạn không có quyền xuất báo cáo hoặc bộ lọc chưa hợp lệ"
+        >
+          Xuất XLSX
+        </ActionButton>
+      </div>
+
+      {invalidPeriod && <PeriodWarning />}
+
+      {data && (
+        <Space wrap style={{ marginBottom: 12 }}>
+          <Tag>Tổng {fmtNum(data.summary.totalSnapshots)} nhãn</Tag>
+          <Tag color="success">Đã in {fmtNum(data.summary.printed)}</Tag>
+          <Tag color="processing">Chờ in {fmtNum(data.summary.pending)}</Tag>
+          <Tag color="error">Lỗi {fmtNum(data.summary.failed)} ({data.summary.failureRate}%)</Tag>
+          <Tag color="warning">In lại {fmtNum(data.summary.reprinted)} ({data.summary.reprintRate}%)</Tag>
+        </Space>
+      )}
+
+      {error && !isLoading && (
+        <ApiErrorAlert error={error} title="Không thể tải nhật ký nhãn"
+          onRetry={() => refetch()} style={{ marginBottom: 16 }} />
+      )}
+
+      <MvpPageSizeSelector value={perPage} onChange={(v) => { setPerPage(v); setPage(1); }} />
+
+      <Table
+        dataSource={rows} rowKey="id" loading={isLoading}
+        scroll={{ x: "max-content" }}
+        pagination={{
+          current: page,
+          pageSize: perPage,
+          showSizeChanger: false,
+          showTotal: (total) => `Tổng ${fmtNum(total)} nhãn`,
+          onChange: (p) => setPage(p),
+        }}
+        locale={{
+          emptyText: error ? "Không tải được dữ liệu" : "Không có nhãn trong khoảng thời gian đã chọn",
+        }}
+        columns={[
+          { title: "Mã nhãn", dataIndex: "labelCode", key: "labelCode", width: 140, fixed: "left" },
+          { title: "Phiếu xuất", dataIndex: "outboundNo", key: "outboundNo", width: 140 },
+          { title: "SKU", dataIndex: "skuCode", key: "skuCode", width: 120 },
+          { title: "Sản phẩm", dataIndex: "productName", key: "productName", width: 200, ellipsis: true },
+          { title: "Mã vật lý", dataIndex: "itemCodeValue", key: "itemCodeValue", width: 160 },
+          {
+            title: "Trạng thái", dataIndex: "status", key: "status", width: 120,
+            render: (v: string) => <Tag color={LABEL_STATUS_COLORS[v]}>{v}</Tag>,
+          },
+          { title: "In lại", dataIndex: "reprintCount", key: "reprintCount", align: "right", width: 80 },
+          { title: "Attempts", dataIndex: "totalAttempts", key: "totalAttempts", align: "right", width: 90 },
+          { title: "Lỗi", dataIndex: "failedCount", key: "failedCount", align: "right", width: 60 },
+          { title: "Ngày tạo", dataIndex: "createdAt", key: "createdAt", width: 160 },
+          { title: "Người tạo", dataIndex: "createdByName", key: "createdByName", width: 140 },
+        ]}
+      />
+    </>
+  );
+}
+
+// ─── Tab: Bảo hành & linh kiện ───
+
+function WarrantyTab() {
+  const { period, setPeriod, invalidPeriod, from, to } = useDateRange();
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(15);
+
+  const params = useMemo<WarrantyReportParams>(
+    () => ({ from, to }),
+    [from, to],
+  );
+
+  const { data, isLoading, error, refetch } = useWarrantyReport(params, !invalidPeriod);
+  const [exporting, setExporting] = useState(false);
+
+  const handleExport = async () => {
+    if (invalidPeriod) return;
+    setExporting(true);
+    try {
+      const blob = await downloadWarrantyReportExcel(params);
+      handleBlobDownload(blob, `bao-cao-bao-hanh-${from}-${to}.xlsx`);
+      toast.success("Đã xuất báo cáo bảo hành (PII chỉ có khi tài khoản được cấp warranty.pii.export)");
+    } catch {
+      toast.error("Không thể xuất báo cáo bảo hành.");
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const rows = data?.rows ?? [];
+
+  return (
+    <>
+      <Alert showIcon type="info" style={{ marginBottom: 16 }}
+        message="Báo cáo bảo hành mặc định không hiển thị PII"
+        description="Tên/SĐT/địa chỉ khách chỉ xuất hiện trong file export khi tài khoản được cấp warranty.pii.export; mọi lần export đều được audit."
+      />
+
+      <div className="toolbar">
+        <DatePicker value={period[0]} status={invalidPeriod ? "error" : undefined}
+          onChange={(v) => { if (v) { setPeriod([v, period[1]]); setPage(1); } }} />
+        <DatePicker value={period[1]} status={invalidPeriod ? "error" : undefined}
+          onChange={(v) => { if (v) { setPeriod([period[0], v]); setPage(1); } }} />
+        <div className="spacer" />
+        <ActionButton
+          module="reports" action="export" permissionCode="REPORT_EXPORT" mode="disable"
+          type="primary" icon={<DownloadOutlined />}
+          onClick={handleExport} loading={exporting}
+          disabled={invalidPeriod || isLoading || exporting}
+          disabledTooltip="Bạn không có quyền xuất báo cáo hoặc bộ lọc chưa hợp lệ"
+        >
+          Xuất Excel
+        </ActionButton>
+      </div>
+
+      {invalidPeriod && <PeriodWarning />}
+
+      {data && (
+        <Space wrap style={{ marginBottom: 12 }}>
+          <Tag>Tổng {fmtNum(data.summary.total)} case</Tag>
+          <Tag color="processing">Đang xử lý {fmtNum(data.summary.processing)}</Tag>
+          <Tag color="success">Đã trả {fmtNum(data.summary.returned)}</Tag>
+          <Tag color="error">Đã hủy {fmtNum(data.summary.cancelled)}</Tag>
+          <Tag color="warning">TEMP_ONLY {fmtNum(data.summary.tempOnly)}</Tag>
+        </Space>
+      )}
+
+      {error && !isLoading && (
+        <ApiErrorAlert error={error} title="Không thể tải báo cáo bảo hành & linh kiện"
+          onRetry={() => refetch()} style={{ marginBottom: 16 }} />
+      )}
+
+      <MvpPageSizeSelector value={perPage} onChange={(v) => { setPerPage(v); setPage(1); }} />
+
+      <Table
+        dataSource={rows} rowKey="id" loading={isLoading}
+        scroll={{ x: "max-content" }}
+        pagination={{
+          current: page,
+          pageSize: perPage,
+          showSizeChanger: false,
+          showTotal: (total) => `Tổng ${fmtNum(total)} case bảo hành`,
+          onChange: (p) => setPage(p),
+        }}
+        locale={{
+          emptyText: error ? "Không tải được dữ liệu" : "Không có case bảo hành trong khoảng thời gian đã chọn",
+        }}
+        columns={[
+          {
+            title: "Case", dataIndex: "caseNo", key: "caseNo",
+            render: (v: string, row) => (
+              <Space size={4}>
+                <strong>{v}</strong>
+                {row.identification === "TEMP_ONLY" && <Tag color="warning">TEMP</Tag>}
+              </Space>
+            ),
+          },
+          { title: "SKU/Model", dataIndex: "model", key: "model" },
+          { title: "Bệnh / lỗi", dataIndex: "defect", key: "defect" },
+          { title: "Linh kiện đã xuất", dataIndex: "componentsIssued", key: "componentsIssued" },
+          {
+            title: "Trạng thái", dataIndex: "status", key: "status",
+            render: (v: string) => <Tag color={WARRANTY_STATUS_COLORS[v]}>{WARRANTY_STATUS_LABELS[v] ?? v}</Tag>,
+          },
+          {
+            title: "Ngày cập nhật", dataIndex: "updatedAt", key: "updatedAt",
+            render: (v: string) => formatWarrantyDateTime(v),
+          },
+        ]}
+      />
+
+      <Table
+        style={{ marginTop: 16 }}
+        dataSource={data?.byDefect ?? []} rowKey="defect" size="small"
+        loading={isLoading} pagination={false} scroll={{ x: "max-content" }}
+        locale={{
+          emptyText: error ? "Không tải được dữ liệu" : "Chưa có tổng hợp theo bệnh/lỗi",
+        }}
+        columns={[
+          { title: "Tổng hợp theo bệnh / lỗi", dataIndex: "defect", key: "defect" },
+          { title: "Số case", dataIndex: "total", key: "total", align: "right" },
+          { title: "Đang xử lý", dataIndex: "processing", key: "processing", align: "right" },
+          { title: "Đã trả", dataIndex: "returned", key: "returned", align: "right" },
+          { title: "Đã hủy", dataIndex: "cancelled", key: "cancelled", align: "right" },
+          { title: "TEMP_ONLY", dataIndex: "tempOnly", key: "tempOnly", align: "right" },
+        ]}
+      />
+    </>
+  );
+}
+
+// ─── Tab: Xuất theo nơi nhận ───
+
+function OutboundByAgencyTab() {
+  const { period, setPeriod, invalidPeriod, from, to } = useDateRange();
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(15);
+
+  const params = useMemo<OutboundByAgencyParams>(
+    () => ({ from_date: from, to_date: to }),
+    [from, to],
+  );
+
+  const { data, isLoading, error, refetch } = useOutboundByAgencyReport(params, !invalidPeriod);
+  const [exporting, setExporting] = useState(false);
+
+  const handleExport = async () => {
+    if (invalidPeriod) return;
+    setExporting(true);
+    try {
+      const blob = await downloadOutboundByAgencyExcel(params);
+      handleBlobDownload(blob, `xuat-theo-noi-nhan-${from}-${to}.xlsx`);
+      toast.success("Đã xuất báo cáo theo nơi nhận");
+    } catch {
+      toast.error("Không thể xuất báo cáo theo nơi nhận.");
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const detailRows = data?.rows ?? [];
+
+  return (
+    <>
+      <Alert showIcon type="info" style={{ marginBottom: 16 }}
+        message="Agency là chiều báo cáo, không phải stock"
+        description="Báo cáo thống kê xuất cho nơi nhận (đại lý). Chỉ tính phiếu POSTED."
+      />
+
+      <div className="toolbar">
+        <DatePicker value={period[0]} status={invalidPeriod ? "error" : undefined}
+          onChange={(v) => { if (v) { setPeriod([v, period[1]]); setPage(1); } }} />
+        <DatePicker value={period[1]} status={invalidPeriod ? "error" : undefined}
+          onChange={(v) => { if (v) { setPeriod([period[0], v]); setPage(1); } }} />
+        <div className="spacer" />
+        <ActionButton
+          module="reports" action="export" permissionCode="REPORT_EXPORT" mode="disable"
+          type="primary" icon={<DownloadOutlined />}
+          onClick={handleExport} loading={exporting}
+          disabled={invalidPeriod || isLoading || exporting}
+          disabledTooltip="Bạn không có quyền xuất báo cáo hoặc bộ lọc chưa hợp lệ"
+        >
+          Xuất XLSX
+        </ActionButton>
+      </div>
+
+      {invalidPeriod && <PeriodWarning />}
+
+      {data && (
+        <Space wrap style={{ marginBottom: 12 }}>
+          <Tag>{fmtNum(data.summary.totalAgencies)} nơi nhận</Tag>
+          <Tag color="blue">{fmtNum(data.summary.totalDocuments)} phiếu</Tag>
+          <Tag color="green">Tổng xuất: {fmtNum(data.summary.totalIssuedQty)}</Tag>
+        </Space>
+      )}
+
+      {error && !isLoading && (
+        <ApiErrorAlert error={error} title="Không thể tải báo cáo theo nơi nhận"
+          onRetry={() => refetch()} style={{ marginBottom: 16 }} />
+      )}
+
+      <Table
+        style={{ marginBottom: 16 }}
+        dataSource={data?.byAgency ?? []} rowKey="agencyCode" size="small"
+        loading={isLoading} pagination={false} scroll={{ x: "max-content" }}
+        locale={{
+          emptyText: error ? "Không tải được dữ liệu" : "Không có dữ liệu",
+        }}
+        columns={[
+          { title: "Mã đại lý", dataIndex: "agencyCode", key: "agencyCode", width: 120 },
+          { title: "Tên nơi nhận", dataIndex: "agencyName", key: "agencyName", width: 200 },
+          { title: "Số phiếu", dataIndex: "documentCount", key: "documentCount", align: "right" },
+          { title: "Tổng SL xuất", dataIndex: "totalIssuedQty", key: "totalIssuedQty", align: "right" },
+          { title: "Số SKU", dataIndex: "skuCount", key: "skuCount", align: "right" },
+        ]}
+      />
+
+      <MvpPageSizeSelector value={perPage} onChange={(v) => { setPerPage(v); setPage(1); }} />
+
+      <Table
+        dataSource={detailRows}
+        rowKey={(r) => `${r.agencyCode}-${r.outboundNo}-${r.productCode}`}
+        loading={isLoading} scroll={{ x: "max-content" }}
+        pagination={{
+          current: page,
+          pageSize: perPage,
+          showSizeChanger: false,
+          showTotal: (total) => `Tổng ${fmtNum(total)} dòng chi tiết`,
+          onChange: (p) => setPage(p),
+        }}
+        locale={{
+          emptyText: error ? "Không tải được dữ liệu" : "Không có chi tiết xuất theo nơi nhận",
+        }}
+        columns={[
+          { title: "Mã đại lý", dataIndex: "agencyCode", key: "agencyCode", width: 120 },
+          { title: "Nơi nhận", dataIndex: "agencyName", key: "agencyName", width: 180 },
+          { title: "Mã SKU", dataIndex: "productCode", key: "productCode", width: 120 },
+          { title: "Tên SP", dataIndex: "productName", key: "productName", width: 200, ellipsis: true },
+          { title: "Số phiếu", dataIndex: "outboundNo", key: "outboundNo", width: 140 },
+          { title: "Ngày", dataIndex: "documentDate", key: "documentDate", width: 110 },
+          { title: "Ngày post", dataIndex: "postedAt", key: "postedAt", width: 160 },
+          { title: "SL yêu cầu", dataIndex: "requiredQty", key: "requiredQty", align: "right" },
+          { title: "SL xuất", dataIndex: "scannedQty", key: "scannedQty", align: "right" },
+        ]}
+      />
+    </>
+  );
+}
+
+// ─── Main Page ───
+
+export default function ReportsPage() {
+  const [activeTab, setActiveTab] = useState<ReportTab>("inventory-balance");
+
+  return (
+    <div className="reversal-page">
       <Tabs
         activeKey={activeTab}
         onChange={(key) => setActiveTab(key as ReportTab)}
         items={[
-          {
-            key: "hub",
-            label: "Trung tâm báo cáo",
-            children: (
-              <>
-                <ResponsiveToolbar>
-                  <Input
-                    allowClear
-                    prefix={<SearchOutlined />}
-                    placeholder="Tìm mã, tên hoặc mô tả báo cáo"
-                    style={{ maxWidth: 360, width: "100%" }}
-                    value={hubSearch}
-                    onChange={(event) => setHubSearch(event.target.value)}
-                  />
-                  <Button
-                    icon={<ReloadOutlined />}
-                    onClick={reload}
-                    loading={hubLoading}
-                  >
-                    Tải lại
-                  </Button>
-                </ResponsiveToolbar>
-                {missingP0Codes.length > 0 && !hubError && !hubLoading && (
-                  <Alert
-                    showIcon
-                    type="warning"
-                    style={{ marginBottom: 16 }}
-                    message="Danh sách report P0 chưa đủ theo baseline"
-                    description={`Thiếu: ${missingP0Codes.join(", ")}. Cần BE/BA xác nhận contract /reports/hub trước khi sign-off production.`}
-                  />
-                )}
-                <InlineApiError
-                  error={hubError}
-                  title="Không thể tải trung tâm báo cáo"
-                  onRetry={reload}
-                />
-                <Table
-                  dataSource={filteredReports}
-                  rowKey="id"
-                  loading={hubLoading}
-                  pagination={{ pageSize: 10 }}
-                  scroll={{ x: "max-content" }}
-                  locale={{
-                    emptyText: tableEmptyText(
-                      hubError,
-                      "Chưa có báo cáo phù hợp",
-                    ),
-                  }}
-                  columns={[
-                    { title: "Mã", dataIndex: "code", key: "code", width: 140 },
-                    {
-                      title: "Tên báo cáo",
-                      dataIndex: "title",
-                      key: "title",
-                      width: 220,
-                    },
-                    {
-                      title: "Mô tả",
-                      dataIndex: "description",
-                      key: "description",
-                    },
-                    {
-                      title: "Trạng thái",
-                      key: "status",
-                      width: 140,
-                      render: (_, row) => {
-                        const blocked = row.available === false;
-                        return (
-                          <Tag color={blocked ? "default" : "success"}>
-                            {blocked
-                              ? "Chưa khả dụng"
-                              : row.status || "Khả dụng"}
-                          </Tag>
-                        );
-                      },
-                    },
-                  ]}
-                />
-              </>
-            ),
-          },
-          {
-            key: "xnt",
-            label: "Báo cáo XNT",
-            children: (
-              <>
-                <ResponsiveToolbar>
-                  <DatePicker
-                    value={period[0]}
-                    status={invalidPeriod ? "error" : undefined}
-                    onChange={(value) => value && setPeriod([value, period[1]])}
-                  />
-                  <DatePicker
-                    value={period[1]}
-                    status={invalidPeriod ? "error" : undefined}
-                    onChange={(value) => value && setPeriod([period[0], value])}
-                  />
-                  <Input
-                    allowClear
-                    placeholder="SKU"
-                    style={{ width: 180 }}
-                    value={sku}
-                    onChange={(event) => setSku(event.target.value)}
-                  />
-                  <Input
-                    allowClear
-                    placeholder="Nhóm hàng"
-                    style={{ width: 180 }}
-                    value={category}
-                    onChange={(event) => setCategory(event.target.value)}
-                  />
-                  <Select
-                    placeholder="Loại phát sinh"
-                    style={{ width: 180 }}
-                    value={movementType}
-                    onChange={setMovementType}
-                    options={[
-                      { value: "all", label: "Tất cả phát sinh" },
-                      { value: "receipt", label: "Nhập" },
-                      { value: "issue", label: "Xuất" },
-                      { value: "adjustment", label: "Điều chỉnh" },
-                      { value: "reversal", label: "Hoàn đảo" },
-                    ]}
-                  />
-                  <Select
-                    placeholder="Phạm vi"
-                    style={{ width: 160 }}
-                    value={scope}
-                    onChange={setScope}
-                    options={[
-                      { value: "system", label: "Toàn hệ thống" },
-                      { value: "warehouse", label: "Theo kho" },
-                    ]}
-                  />
-                  <Space.Compact>
-                    <Button
-                      icon={<ReloadOutlined />}
-                      onClick={reload}
-                      loading={xntLoading}
-                    >
-                      Tải lại
-                    </Button>
-                    <ActionButton
-                      module="reports"
-                      action="export"
-                      permissionCode="REPORT_EXPORT"
-                      mode="disable"
-                      type="primary"
-                      icon={<DownloadOutlined />}
-                      onClick={handleExportXnt}
-                      loading={exporting}
-                      disabled={invalidPeriod || xntLoading || exporting}
-                      disabledTooltip="Bạn không có quyền xuất báo cáo hoặc bộ lọc chưa hợp lệ"
-                    >
-                      Xuất XLSX
-                    </ActionButton>
-                  </Space.Compact>
-                </ResponsiveToolbar>
-                {invalidPeriod && (
-                  <Alert
-                    showIcon
-                    type="error"
-                    style={{ marginBottom: 16 }}
-                    message="Bộ lọc ngày chưa hợp lệ"
-                    description="Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc. Filter hiện tại được giữ nguyên để bạn chỉnh và thử lại."
-                  />
-                )}
-                {reconcileProblems.length > 0 && (
-                  <Alert
-                    showIcon
-                    type="warning"
-                    style={{ marginBottom: 16 }}
-                    message="Có dòng XNT cần đối soát trước khi sign-off"
-                    description={`Phát hiện ${reconcileProblems.length} SKU WARN/FAIL. Export dữ liệu xem nhanh vẫn dùng đúng filter hiện tại; export final cần disposition BA/BE theo baseline Ledger/Balance/Subledger.`}
-                  />
-                )}
-                <InlineApiError
-                  error={xntError}
-                  title="Không thể tải báo cáo XNT"
-                  onRetry={reload}
-                />
-                <InlineApiError
-                  error={exportError}
-                  title="Không thể xuất báo cáo XNT"
-                  onRetry={handleExportXnt}
-                />
-                <Table
-                  dataSource={xntRows}
-                  rowKey={(row) => row.sku}
-                  loading={xntLoading}
-                  pagination={{ pageSize: 10 }}
-                  scroll={{ x: "max-content" }}
-                  locale={{
-                    emptyText: tableEmptyText(
-                      xntError,
-                      "Không có dữ liệu XNT theo bộ lọc",
-                    ),
-                  }}
-                  columns={[
-                    {
-                      title: "SKU",
-                      dataIndex: "sku",
-                      key: "sku",
-                      fixed: "left",
-                      width: 160,
-                    },
-                    {
-                      title: "Nhóm hàng",
-                      dataIndex: "category",
-                      key: "category",
-                      width: 160,
-                    },
-                    {
-                      title: "Đầu kỳ",
-                      dataIndex: "opening",
-                      key: "opening",
-                      align: "right",
-                    },
-                    {
-                      title: "Nhập",
-                      dataIndex: "receipt",
-                      key: "receipt",
-                      align: "right",
-                    },
-                    {
-                      title: "Xuất",
-                      dataIndex: "issue",
-                      key: "issue",
-                      align: "right",
-                    },
-                    {
-                      title: "Điều chỉnh tăng",
-                      dataIndex: "adjustIn",
-                      key: "adjustIn",
-                      align: "right",
-                    },
-                    {
-                      title: "Điều chỉnh giảm",
-                      dataIndex: "adjustOut",
-                      key: "adjustOut",
-                      align: "right",
-                    },
-                    {
-                      title: "Hoàn đảo ròng",
-                      dataIndex: "reversalNet",
-                      key: "reversalNet",
-                      align: "right",
-                    },
-                    {
-                      title: "Cuối kỳ",
-                      dataIndex: "closing",
-                      key: "closing",
-                      align: "right",
-                    },
-                    {
-                      title: "Còn lại từng phần",
-                      dataIndex: "partialRemaining",
-                      key: "partialRemaining",
-                      align: "right",
-                    },
-                    {
-                      title: "Đối soát",
-                      dataIndex: "reconcile",
-                      key: "reconcile",
-                      width: 130,
-                      render: (value: string) => (
-                        <Tag
-                          color={
-                            isReconcileProblem(value) ? "warning" : "success"
-                          }
-                        >
-                          {value || "PASS"}
-                        </Tag>
-                      ),
-                    },
-                  ]}
-                />
-              </>
-            ),
-          },
-          {
-            key: "warranty",
-            label: "Bảo hành & linh kiện",
-            children: (
-              <>
-                <Alert
-                  showIcon
-                  type="info"
-                  style={{ marginBottom: 16 }}
-                  message="Báo cáo bảo hành mặc định không hiển thị PII"
-                  description="Nguồn dữ liệu là /reports/warranty-defects. Tên/SĐT/địa chỉ khách chỉ xuất hiện trong file export khi tài khoản được cấp warranty.pii.export; mọi lần export đều được audit."
-                />
-                <ResponsiveToolbar>
-                  <DatePicker
-                    value={period[0]}
-                    status={invalidPeriod ? "error" : undefined}
-                    onChange={(value) => value && setPeriod([value, period[1]])}
-                  />
-                  <DatePicker
-                    value={period[1]}
-                    status={invalidPeriod ? "error" : undefined}
-                    onChange={(value) => value && setPeriod([period[0], value])}
-                  />
-                  <Button
-                    icon={<ReloadOutlined />}
-                    onClick={reload}
-                    loading={warrantyLoading}
-                  >
-                    Tải lại
-                  </Button>
-                  <ActionButton
-                    module="reports"
-                    action="export"
-                    permissionCode="REPORT_EXPORT"
-                    mode="disable"
-                    type="primary"
-                    icon={<DownloadOutlined />}
-                    onClick={handleExportWarranty}
-                    loading={warrantyExporting}
-                    disabled={
-                      invalidPeriod || warrantyLoading || warrantyExporting
-                    }
-                    disabledTooltip="Bạn không có quyền xuất báo cáo hoặc bộ lọc chưa hợp lệ"
-                  >
-                    Xuất Excel
-                  </ActionButton>
-                </ResponsiveToolbar>
-                {warrantyReport ? (
-                  <Space wrap style={{ marginBottom: 12 }}>
-                    <Tag>Tổng {warrantyReport.summary.total} case</Tag>
-                    <Tag color="processing">
-                      Đang xử lý {warrantyReport.summary.processing}
-                    </Tag>
-                    <Tag color="success">
-                      Đã trả {warrantyReport.summary.returned}
-                    </Tag>
-                    <Tag color="error">
-                      Đã hủy {warrantyReport.summary.cancelled}
-                    </Tag>
-                    <Tag color="warning">
-                      TEMP_ONLY {warrantyReport.summary.tempOnly}
-                    </Tag>
-                  </Space>
-                ) : null}
-                <InlineApiError
-                  error={warrantyError}
-                  title="Không thể tải báo cáo bảo hành & linh kiện"
-                  onRetry={reload}
-                />
-                <Table
-                  dataSource={warrantyReport?.rows ?? []}
-                  rowKey="id"
-                  loading={warrantyLoading}
-                  pagination={{ pageSize: 10 }}
-                  scroll={{ x: "max-content" }}
-                  locale={{
-                    emptyText: tableEmptyText(
-                      warrantyError,
-                      "Không có case bảo hành trong khoảng thời gian đã chọn",
-                    ),
-                  }}
-                  columns={[
-                    {
-                      title: "Case",
-                      dataIndex: "caseNo",
-                      key: "caseNo",
-                      render: (value: string, row) => (
-                        <Space size={4}>
-                          <strong>{value}</strong>
-                          {row.identification === "TEMP_ONLY" ? (
-                            <Tag color="warning">TEMP</Tag>
-                          ) : null}
-                        </Space>
-                      ),
-                    },
-                    { title: "SKU/Model", dataIndex: "model", key: "model" },
-                    { title: "Bệnh / lỗi", dataIndex: "defect", key: "defect" },
-                    {
-                      title: "Linh kiện đã xuất",
-                      dataIndex: "componentsIssued",
-                      key: "componentsIssued",
-                    },
-                    {
-                      title: "Trạng thái",
-                      dataIndex: "status",
-                      key: "status",
-                      render: (value: string) => (
-                        <Tag color={WARRANTY_STATUS_COLORS[value]}>
-                          {WARRANTY_STATUS_LABELS[value] ?? value}
-                        </Tag>
-                      ),
-                    },
-                    {
-                      title: "Ngày cập nhật",
-                      dataIndex: "updatedAt",
-                      key: "updatedAt",
-                      render: (value: string) => formatWarrantyDateTime(value),
-                    },
-                  ]}
-                />
-                <Table
-                  style={{ marginTop: 16 }}
-                  dataSource={warrantyReport?.byDefect ?? []}
-                  rowKey="defect"
-                  size="small"
-                  loading={warrantyLoading}
-                  pagination={false}
-                  scroll={{ x: "max-content" }}
-                  locale={{
-                    emptyText: tableEmptyText(
-                      warrantyError,
-                      "Chưa có tổng hợp theo bệnh/lỗi",
-                    ),
-                  }}
-                  columns={[
-                    {
-                      title: "Tổng hợp theo bệnh / lỗi",
-                      dataIndex: "defect",
-                      key: "defect",
-                    },
-                    {
-                      title: "Số case",
-                      dataIndex: "total",
-                      key: "total",
-                      align: "right",
-                    },
-                    {
-                      title: "Đang xử lý",
-                      dataIndex: "processing",
-                      key: "processing",
-                      align: "right",
-                    },
-                    {
-                      title: "Đã trả",
-                      dataIndex: "returned",
-                      key: "returned",
-                      align: "right",
-                    },
-                    {
-                      title: "Đã hủy",
-                      dataIndex: "cancelled",
-                      key: "cancelled",
-                      align: "right",
-                    },
-                    {
-                      title: "TEMP_ONLY",
-                      dataIndex: "tempOnly",
-                      key: "tempOnly",
-                      align: "right",
-                    },
-                  ]}
-                />
-              </>
-            ),
-          },
+          { key: "inventory-balance", label: "Tồn kho", children: <InventoryBalanceTab /> },
+          { key: "xnt", label: "Nhập-Xuất-Tồn", children: <XntEnhancedTab /> },
+          { key: "doc-history", label: "Lịch sử nhập/xuất", children: <DocumentHistoryTab /> },
+          { key: "import-match", label: "Đối soát toa", children: <ImportMatchTab /> },
+          { key: "label-log", label: "Nhật ký nhãn", children: <LabelLogTab /> },
+          { key: "warranty", label: "Bảo hành & linh kiện", children: <WarrantyTab /> },
+          { key: "by-agency", label: "Xuất theo nơi nhận", children: <OutboundByAgencyTab /> },
         ]}
       />
     </div>
