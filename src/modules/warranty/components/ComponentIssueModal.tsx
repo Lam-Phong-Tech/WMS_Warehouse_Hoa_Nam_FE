@@ -14,8 +14,8 @@ import {
   Table,
   Tag,
   Typography,
-  message,
 } from "antd";
+import { toast } from "sonner";
 import type { TableProps } from "antd";
 import {
   CameraOutlined,

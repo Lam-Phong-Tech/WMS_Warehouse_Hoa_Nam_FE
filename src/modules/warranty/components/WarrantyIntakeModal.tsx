@@ -9,8 +9,8 @@ import {
   Radio,
   Row,
   Select,
-  message,
 } from "antd";
+import { toast } from "sonner";
 import type { Dayjs } from "dayjs";
 import dayjs from "dayjs";
 import { CameraOutlined } from "@ant-design/icons";
@@ -94,7 +94,7 @@ export function WarrantyIntakeModal({
         accessories_received: values.accessories_received?.trim(),
         received_condition: values.received_condition?.trim(),
       });
-      message.success(
+      toast.success(
         created.identification_type === "TEMP_ONLY" &&
           created.temporary_item_code
           ? `Đã tạo case ${created.case_code} — mã tạm ${created.temporary_item_code}.`
@@ -113,11 +113,11 @@ export function WarrantyIntakeModal({
         );
       }
       const requestId = getErrorRequestId(error);
-      setFormError(
-        `${getApiErrorMessage(error, "Không tạo được case bảo hành.")}${
-          requestId ? ` — Request ${requestId}` : ""
-        }`,
-      );
+      const errorMsg = `${getApiErrorMessage(error, "Không tạo được case bảo hành.")}${
+        requestId ? ` — Request ${requestId}` : ""
+      }`;
+      toast.error(errorMsg);
+      setFormError(errorMsg);
     }
   };
 

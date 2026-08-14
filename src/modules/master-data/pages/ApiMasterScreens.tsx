@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Modal } from "antd";
+import { toast } from "sonner";
 import {
   useCreateMvpAgency,
   useCreateMvpDefect,
@@ -188,13 +189,20 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   const togglePublish = async (record: SkuRecord) => {
     if (!canManage) return;
     setPublishError(null);
+    const willPublish = !record.published_to_app;
     try {
       await publishMutation.mutateAsync({
         id: record.sku_id ?? record.id ?? "",
         version: record.version,
-        publishedToApp: !record.published_to_app,
+        publishedToApp: willPublish,
       });
+      toast.success(
+        willPublish
+          ? "Đã publish SKU cho App Phân Vùng"
+          : "Đã gỡ publish SKU khỏi App Phân Vùng",
+      );
     } catch (error) {
+      toast.error(getMutationErrorMessage(error));
       setPublishError(error);
     }
   };
@@ -279,8 +287,10 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           version: editing.version,
           payload,
         });
+        toast.success("Đã cập nhật SKU");
       } else {
         await createMutation.mutateAsync(payload);
+        toast.success("Đã thêm SKU");
       }
       setModalOpen(false);
       setEditing(null);
@@ -300,6 +310,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           serialTracked: Boolean(editing.is_serial_tracked),
         }));
       }
+      toast.error(getMutationErrorMessage(error));
       setFormError(getMutationErrorMessage(error));
     }
   };
@@ -443,8 +454,13 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                     <td>
                       <span
                         className={isPublished ? "pill ok" : "pill warn-pill"}
+                        title={
+                          isPublished
+                            ? "SKU đang hiển thị trên App Phân Vùng"
+                            : "SKU chưa được đẩy lên App Phân Vùng"
+                        }
                       >
-                        {isPublished ? "PUBLISHED" : "UNPUBLISHED"}
+                        {isPublished ? "Đã publish" : "Chưa publish"}
                       </span>
                     </td>
                     <td>
@@ -467,11 +483,13 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                             title={
                               !isPublished && !canPublish
                                 ? "Chỉ SKU ACTIVE mới được publish cho App PV."
-                                : undefined
+                                : isPublished
+                                  ? "Gỡ SKU khỏi App Phân Vùng"
+                                  : "Đẩy SKU lên App Phân Vùng"
                             }
                             onClick={() => void togglePublish(record)}
                           >
-                            {isPublished ? "Unpublish" : "Publish"}
+                            {isPublished ? "Gỡ publish" : "Publish App PV"}
                           </button>
                         </>
                       ) : (
@@ -823,12 +841,15 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
     try {
       if (editing) {
         await updateMutation.mutateAsync({ id: editing.agency_id, payload });
+        toast.success("Đã cập nhật đại lý");
       } else {
         await createMutation.mutateAsync(payload);
+        toast.success("Đã thêm đại lý");
       }
       setModalOpen(false);
       setEditing(null);
     } catch (error) {
+      toast.error(getMutationErrorMessage(error));
       setFormError(getMutationErrorMessage(error));
     }
   };
@@ -1131,12 +1152,15 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
     try {
       if (editing) {
         await updateMutation.mutateAsync({ id: editing.defect_id, payload });
+        toast.success("Đã cập nhật danh mục lỗi");
       } else {
         await createMutation.mutateAsync(payload);
+        toast.success("Đã thêm danh mục lỗi");
       }
       setModalOpen(false);
       setEditing(null);
     } catch (error) {
+      toast.error(getMutationErrorMessage(error));
       setFormError(getMutationErrorMessage(error));
     }
   };

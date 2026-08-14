@@ -15,8 +15,8 @@ import {
   Timeline,
   Typography,
   Upload,
-  message,
 } from "antd";
+import { toast } from "sonner";
 import type { TableProps, UploadProps } from "antd";
 import {
   DeleteOutlined,
@@ -154,7 +154,7 @@ export function WarrantyDetailModal({
           ifMatch: detail.version,
         },
       });
-      message.success(
+      toast.success(
         `Đã cập nhật case ${updated.case_code} → ${
           WARRANTY_STATUS_LABELS[updated.status] ?? updated.status
         }.`,
@@ -171,6 +171,7 @@ export function WarrantyDetailModal({
           })),
         );
       }
+      toast.error(errorText(error, "Không cập nhật được trạng thái."));
       setStatusError(errorText(error, "Không cập nhật được trạng thái."));
     }
   };
@@ -182,14 +183,14 @@ export function WarrantyDetailModal({
       !canManage || uploadMutation.isPending || detail?.status === "CANCELLED",
     beforeUpload: (file) => {
       if (file.size > 10 * 1024 * 1024) {
-        message.error("Tệp vượt quá 10MB.");
+        toast.error("Tệp vượt quá 10MB.");
         return Upload.LIST_IGNORE;
       }
       uploadMutation
         .mutateAsync({ caseId, file, attachmentType })
-        .then(() => message.success(`Đã tải lên ${file.name}.`))
+        .then(() => toast.success(`Đã tải lên ${file.name}.`))
         .catch((error: unknown) =>
-          message.error(errorText(error, "Tải tệp lên thất bại.")),
+          toast.error(errorText(error, "Tải tệp lên thất bại.")),
         );
       return false;
     },
@@ -233,7 +234,7 @@ export function WarrantyDetailModal({
                 attachmentId: row.id,
                 fileName: row.file_name,
               }).catch((error: unknown) =>
-                message.error(errorText(error, "Tải tệp xuống thất bại.")),
+                toast.error(errorText(error, "Tải tệp xuống thất bại.")),
               )
             }
           />
@@ -244,9 +245,9 @@ export function WarrantyDetailModal({
             onConfirm={() =>
               deleteAttachmentMutation
                 .mutateAsync(row.id)
-                .then(() => message.success("Đã xóa tệp đính kèm."))
+                .then(() => toast.success("Đã xóa tệp đính kèm."))
                 .catch((error: unknown) =>
-                  message.error(errorText(error, "Không xóa được tệp.")),
+                  toast.error(errorText(error, "Không xóa được tệp.")),
                 )
             }
           >

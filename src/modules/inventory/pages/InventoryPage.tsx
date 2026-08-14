@@ -1,9 +1,15 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Space, Table, Tag, Tooltip, Typography } from "antd";
+import { Space, Table, Tabs, Tag, Tooltip, Typography } from "antd";
 import type { ColumnsType, TablePaginationConfig } from "antd/es/table";
-import { EyeOutlined, HistoryOutlined, SearchOutlined } from "@ant-design/icons";
+import {
+  AppstoreOutlined,
+  EyeOutlined,
+  HistoryOutlined,
+  SearchOutlined,
+  SwapOutlined,
+} from "@ant-design/icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { MvpPageSizeSelector } from "@/shared/components/mvp/MvpListPagination";
@@ -54,6 +60,8 @@ export default function InventoryPage() {
   const [balancePerPage, setBalancePerPage] = useState(15);
   const [movementPage, setMovementPage] = useState(1);
   const [movementPerPage, setMovementPerPage] = useState(15);
+
+  const [activeTab, setActiveTab] = useState("balance");
 
   const [balanceDetailRow, setBalanceDetailRow] =
     useState<InventoryBalanceRow | null>(null);
@@ -356,162 +364,184 @@ export default function InventoryPage() {
         </span>
       </div>
 
-      {/* ──── Tồn kho hiện tại ──── */}
-      <Typography.Title level={5} style={{ margin: "16px 0 8px" }}>
-        Tồn kho hiện tại
-      </Typography.Title>
+      <Tabs
+        activeKey={activeTab}
+        onChange={setActiveTab}
+        style={{ marginTop: 12 }}
+        items={[
+          {
+            key: "balance",
+            label: (
+              <span>
+                <AppstoreOutlined style={{ marginRight: 6 }} />
+                Tồn kho hiện tại
+              </span>
+            ),
+            children: (
+              <>
+                <div className="toolbar">
+                  <input
+                    className="input search"
+                    value={searchInput}
+                    placeholder="SKU, tên hàng, kho..."
+                    aria-label="Tìm tồn kho"
+                    onChange={(e) => setSearchInput(e.target.value)}
+                  />
+                  <select
+                    className="select"
+                    value={stockStatus}
+                    aria-label="Lọc trạng thái tồn"
+                    onChange={(e) => {
+                      setStockStatus(e.target.value);
+                      setBalancePage(1);
+                    }}
+                  >
+                    <option value="">Trạng thái: Tất cả</option>
+                    <option value="normal">Bình thường</option>
+                    <option value="low_stock">Sắp hết</option>
+                    <option value="overflow">Vượt mức</option>
+                  </select>
+                  <div className="spacer" />
+                  {canTrace ? (
+                    <button
+                      className="btn"
+                      type="button"
+                      onClick={() => setTraceMovementId("__lookup__")}
+                    >
+                      <SearchOutlined style={{ marginRight: 4 }} />
+                      Truy vết mã
+                    </button>
+                  ) : null}
+                </div>
 
-      <div className="toolbar">
-        <input
-          className="input search"
-          value={searchInput}
-          placeholder="SKU, tên hàng, kho..."
-          aria-label="Tìm tồn kho"
-          onChange={(e) => setSearchInput(e.target.value)}
-        />
-        <select
-          className="select"
-          value={stockStatus}
-          aria-label="Lọc trạng thái tồn"
-          onChange={(e) => {
-            setStockStatus(e.target.value);
-            setBalancePage(1);
-          }}
-        >
-          <option value="">Trạng thái: Tất cả</option>
-          <option value="normal">Bình thường</option>
-          <option value="low_stock">Sắp hết</option>
-          <option value="overflow">Vượt mức</option>
-        </select>
-        <div className="spacer" />
-        {canTrace ? (
-          <button
-            className="btn"
-            type="button"
-            onClick={() => setTraceMovementId("__lookup__")}
-          >
-            <SearchOutlined style={{ marginRight: 4 }} />
-            Truy vết mã
-          </button>
-        ) : null}
-      </div>
+                {balanceQuery.isError ? (
+                  <div style={{ marginBottom: 14 }}>
+                    <ApiErrorAlert
+                      error={balanceQuery.error}
+                      title="Không thể tải tồn kho hiện tại"
+                      onRetry={() => balanceQuery.refetch()}
+                    />
+                  </div>
+                ) : null}
 
-      {balanceQuery.isError ? (
-        <div style={{ marginBottom: 14 }}>
-          <ApiErrorAlert
-            error={balanceQuery.error}
-            title="Không thể tải tồn kho hiện tại"
-            onRetry={() => balanceQuery.refetch()}
-          />
-        </div>
-      ) : null}
+                <MvpPageSizeSelector
+                  value={balancePerPage}
+                  onChange={(v) => {
+                    setBalancePerPage(v);
+                    setBalancePage(1);
+                  }}
+                />
 
-      <MvpPageSizeSelector
-        value={balancePerPage}
-        onChange={(v) => {
-          setBalancePerPage(v);
-          setBalancePage(1);
-        }}
-      />
+                <Table<InventoryBalanceRow>
+                  rowKey="id"
+                  columns={balanceColumns}
+                  dataSource={balances}
+                  loading={balanceQuery.isLoading || balanceQuery.isFetching}
+                  onChange={handleBalanceTableChange}
+                  pagination={{
+                    current: balancePagination.current,
+                    pageSize: balancePagination.pageSize,
+                    total: balancePagination.total,
+                    showSizeChanger: false,
+                    showTotal: (total) => `Tổng ${numberFormatter.format(total)} dòng tồn kho`,
+                  }}
+                  locale={{
+                    emptyText: balanceQuery.isError
+                      ? "Không tải được dữ liệu"
+                      : "Không có tồn kho theo bộ lọc hiện tại",
+                  }}
+                  onRow={(row) => ({ onDoubleClick: () => setBalanceDetailRow(row) })}
+                  scroll={{ x: 1600 }}
+                />
 
-      <Table<InventoryBalanceRow>
-        rowKey="id"
-        columns={balanceColumns}
-        dataSource={balances}
-        loading={balanceQuery.isLoading || balanceQuery.isFetching}
-        onChange={handleBalanceTableChange}
-        pagination={{
-          current: balancePagination.current,
-          pageSize: balancePagination.pageSize,
-          total: balancePagination.total,
-          showSizeChanger: false,
-          showTotal: (total) => `Tổng ${numberFormatter.format(total)} dòng tồn kho`,
-        }}
-        locale={{
-          emptyText: balanceQuery.isError
-            ? "Không tải được dữ liệu"
-            : "Không có tồn kho theo bộ lọc hiện tại",
-        }}
-        onRow={(row) => ({ onDoubleClick: () => setBalanceDetailRow(row) })}
-        scroll={{ x: 1600 }}
-      />
+                <div className="footer-note" style={{ marginBottom: 8 }}>
+                  <b>Đối soát</b> do backend tính: Ledger (SUM qty_delta) ↔ Balance (on_hand_qty).
+                  MATCH = khớp, MISMATCH = lệch. Bấm <b>Mở</b> để xem chi tiết tồn
+                  kho, item/box subledger và movement liên quan.
+                </div>
+              </>
+            ),
+          },
+          {
+            key: "movement",
+            label: (
+              <span>
+                <SwapOutlined style={{ marginRight: 6 }} />
+                Lịch sử dịch chuyển
+              </span>
+            ),
+            children: (
+              <>
+                <div className="toolbar">
+                  <input
+                    className="input search"
+                    value={movementSearch}
+                    placeholder="Movement, chứng từ, SKU..."
+                    aria-label="Tìm movement"
+                    onChange={(e) => {
+                      setMovementSearch(e.target.value);
+                      setMovementPage(1);
+                    }}
+                  />
+                  <select
+                    className="select"
+                    value={movementType}
+                    aria-label="Lọc loại dịch chuyển"
+                    onChange={(e) => {
+                      setMovementType(e.target.value);
+                      setMovementPage(1);
+                    }}
+                  >
+                    <option value="">Loại: Tất cả</option>
+                    <option value="RECEIPT">Nhập kho</option>
+                    <option value="ISSUE">Xuất kho</option>
+                    <option value="COMPONENT_ISSUE">Xuất linh kiện BH</option>
+                    <option value="REVERSAL">Hoàn đảo</option>
+                  </select>
+                </div>
 
-      <div className="footer-note" style={{ marginBottom: 24 }}>
-        <b>Đối soát</b> do backend tính: Ledger (SUM qty_delta) ↔ Balance (on_hand_qty).
-        MATCH = khớp, MISMATCH = lệch. Bấm <b>Mở</b> để xem chi tiết tồn
-        kho, item/box subledger và movement liên quan.
-      </div>
+                {movementQuery.isError ? (
+                  <div style={{ marginBottom: 14 }}>
+                    <ApiErrorAlert
+                      error={movementQuery.error}
+                      title="Không thể tải lịch sử dịch chuyển"
+                      onRetry={() => movementQuery.refetch()}
+                    />
+                  </div>
+                ) : null}
 
-      {/* ──── Lịch sử dịch chuyển ──── */}
-      <Typography.Title level={5} style={{ margin: "8px 0 8px" }}>
-        Lịch sử dịch chuyển
-      </Typography.Title>
+                <MvpPageSizeSelector
+                  value={movementPerPage}
+                  onChange={(v) => {
+                    setMovementPerPage(v);
+                    setMovementPage(1);
+                  }}
+                />
 
-      <div className="toolbar">
-        <input
-          className="input search"
-          value={movementSearch}
-          placeholder="Movement, chứng từ, SKU..."
-          aria-label="Tìm movement"
-          onChange={(e) => {
-            setMovementSearch(e.target.value);
-            setMovementPage(1);
-          }}
-        />
-        <select
-          className="select"
-          value={movementType}
-          aria-label="Lọc loại dịch chuyển"
-          onChange={(e) => {
-            setMovementType(e.target.value);
-            setMovementPage(1);
-          }}
-        >
-          <option value="">Loại: Tất cả</option>
-          <option value="RECEIPT">Nhập kho</option>
-          <option value="ISSUE">Xuất kho</option>
-          <option value="COMPONENT_ISSUE">Xuất linh kiện BH</option>
-          <option value="REVERSAL">Hoàn đảo</option>
-        </select>
-      </div>
-
-      {movementQuery.isError ? (
-        <div style={{ marginBottom: 14 }}>
-          <ApiErrorAlert
-            error={movementQuery.error}
-            title="Không thể tải lịch sử dịch chuyển"
-            onRetry={() => movementQuery.refetch()}
-          />
-        </div>
-      ) : null}
-
-      <MvpPageSizeSelector
-        value={movementPerPage}
-        onChange={(v) => {
-          setMovementPerPage(v);
-          setMovementPage(1);
-        }}
-      />
-
-      <Table<StockMovementRow>
-        rowKey="id"
-        columns={movementColumns}
-        dataSource={movements}
-        loading={movementQuery.isLoading || movementQuery.isFetching}
-        onChange={handleMovementTableChange}
-        pagination={{
-          current: movementPagination.current,
-          pageSize: movementPagination.pageSize,
-          total: movementPagination.total,
-          showSizeChanger: false,
-          showTotal: (total) => `Tổng ${numberFormatter.format(total)} movement`,
-        }}
-        locale={{
-          emptyText: movementQuery.isError
-            ? "Không tải được dữ liệu"
-            : "Không có movement theo bộ lọc hiện tại",
-        }}
-        scroll={{ x: 1200 }}
+                <Table<StockMovementRow>
+                  rowKey="id"
+                  columns={movementColumns}
+                  dataSource={movements}
+                  loading={movementQuery.isLoading || movementQuery.isFetching}
+                  onChange={handleMovementTableChange}
+                  pagination={{
+                    current: movementPagination.current,
+                    pageSize: movementPagination.pageSize,
+                    total: movementPagination.total,
+                    showSizeChanger: false,
+                    showTotal: (total) => `Tổng ${numberFormatter.format(total)} movement`,
+                  }}
+                  locale={{
+                    emptyText: movementQuery.isError
+                      ? "Không tải được dữ liệu"
+                      : "Không có movement theo bộ lọc hiện tại",
+                  }}
+                  scroll={{ x: 1200 }}
+                />
+              </>
+            ),
+          },
+        ]}
       />
 
       {/* ──── Modals ──── */}

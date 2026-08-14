@@ -12,10 +12,11 @@ import {
   Table,
   Tag,
   Typography,
-  message,
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
+import { toast } from "sonner";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { getApiErrorMessage } from "@/shared/api/api-error";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import {
   useMvpAgencies,
@@ -150,14 +151,17 @@ export function OutboundIntakeModal({
     onSuccess: (result) => {
       setPreview(result);
       if (result.status === "VALIDATED") {
-        message.success(
+        toast.success(
           "Yêu cầu xuất hợp lệ. Kiểm tra preview rồi Confirm để tạo Outbound DRAFT.",
         );
       } else {
-        message.warning(
+        toast.warning(
           "Dữ liệu còn lỗi blocking — chưa thể consume. Sửa theo bảng lỗi bên dưới.",
         );
       }
+    },
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "Xác nhận yêu cầu xuất kho thất bại."));
     },
   });
 
@@ -170,14 +174,17 @@ export function OutboundIntakeModal({
     onSuccess: (result) => {
       setPreview(result);
       if (result.status === "VALIDATED") {
-        message.success(
+        toast.success(
           "File Excel đã VALIDATED. Confirm để tạo Outbound DRAFT.",
         );
       } else {
-        message.warning(
+        toast.warning(
           "File có row lỗi. Blocking error khiến toàn bộ batch không được consume (không consume một phần).",
         );
       }
+    },
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "Xác nhận file thất bại."));
     },
   });
 
@@ -187,12 +194,15 @@ export function OutboundIntakeModal({
       return consumeOutboundImport(preview.id, makeKey("consume-outbound"));
     },
     onSuccess: (result) => {
-      message.success(
+      toast.success(
         `Đã tạo ${result.outboundRequestIds.length} request OPEN và ${result.outboundDocumentIds.length} phiếu xuất DRAFT.`,
       );
       const ids = result.outboundDocumentIds;
       resetAll();
       onConsumed(ids);
+    },
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "Không thể tạo phiếu xuất kho."));
     },
   });
 

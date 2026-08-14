@@ -16,8 +16,8 @@ import {
   Table,
   Tag,
   Typography,
-  message,
 } from "antd";
+import { toast } from "sonner";
 import {
   CameraOutlined,
   CheckCircleOutlined,
@@ -428,11 +428,11 @@ export function OutboundDetailModal({
         ].slice(0, 30),
       );
       if (result.labelStatus === "PRINT_FAILED") {
-        message.warning(
+        toast.warning(
           "Item đã match nhưng in nhãn thất bại (PRINT_FAILED). Hãy In lại trước khi Post Issue.",
         );
       } else {
-        message.success(
+        toast.success(
           "Item đã match; scan stock-neutral, nhãn được BE tạo & in trực tiếp.",
         );
       }
@@ -472,13 +472,13 @@ export function OutboundDetailModal({
         : reprintLabelSnapshot(snapshot.id, printerId);
     },
     onSuccess: async () => {
-      message.success("Đã gửi lệnh in nhãn. In/in lại là stock-neutral.");
+      toast.success("Đã gửi lệnh in nhãn. In/in lại là stock-neutral.");
       await queryClient.invalidateQueries({
         queryKey: ["mvp-outbound", "labels"],
       });
     },
     onError: (error) => {
-      message.error(
+      toast.error(
         getApiErrorMessage(
           error,
           "In nhãn thất bại. Kiểm tra printer agent rồi In lại.",
@@ -503,12 +503,15 @@ export function OutboundDetailModal({
       });
     },
     onSuccess: async () => {
-      message.success("Đã map RFID vào item. Thao tác không tạo movement.");
+      toast.success("Đã map RFID vào item. Thao tác không tạo movement.");
       setRfidTarget(null);
       rfidForm.resetFields();
       await queryClient.invalidateQueries({
         queryKey: ["mvp-outbound", "rfids"],
       });
+    },
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "Map RFID thất bại."));
     },
   });
 
@@ -523,10 +526,13 @@ export function OutboundDetailModal({
     },
     onSuccess: async (result) => {
       setVersion(result.version || null);
-      message.success(
+      toast.success(
         "Đã gỡ item khỏi phiếu (stock-neutral). Item có thể được quét lại.",
       );
       await refreshAll();
+    },
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "Gỡ match thất bại."));
     },
   });
 
@@ -575,9 +581,12 @@ export function OutboundDetailModal({
       );
     },
     onSuccess: async () => {
-      message.success("Đã cập nhật phiếu xuất DRAFT.");
+      toast.success("Đã cập nhật phiếu xuất DRAFT.");
       setEditOpen(false);
       await refreshAll();
+    },
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "Không thể cập nhật phiếu xuất."));
     },
   });
 
@@ -593,12 +602,15 @@ export function OutboundDetailModal({
       );
     },
     onSuccess: async () => {
-      message.success(
+      toast.success(
         "Đã hủy phiếu xuất. CANCELLED là trạng thái kết thúc, không có stock effect.",
       );
       setCancelOpen(false);
       setCancelReason("");
       await refreshAll();
+    },
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "Không thể hủy phiếu xuất."));
     },
   });
 
@@ -613,10 +625,13 @@ export function OutboundDetailModal({
     },
     onSuccess: async (result) => {
       setEvidence(result);
-      message.success(
+      toast.success(
         `Full Post Issue thành công · ${result.movementRefs.length} movement · tồn kho giảm đúng một lần.`,
       );
       await refreshAll();
+    },
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "Post Issue thất bại."));
     },
   });
 
