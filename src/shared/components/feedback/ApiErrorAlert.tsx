@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import { Alert, Button } from "antd";
+import { ReloadOutlined } from "@ant-design/icons";
 import { isNoPermissionError, normalizeError } from "@/shared/api/api-error";
 import { NoPermissionState } from "./NoPermissionState";
 
@@ -68,7 +69,7 @@ export function ApiErrorAlert({
       }
       action={
         onRetry ? (
-          <Button size="small" onClick={onRetry}>
+          <Button size="small" icon={<ReloadOutlined />} onClick={onRetry}>
             Thử lại
           </Button>
         ) : undefined

@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState } from "react";
 import { Progress, Space, Table, Tag, type TablePaginationConfig } from "antd";
-import { EyeOutlined, ScanOutlined } from "@ant-design/icons";
+import { EyeOutlined, PlusOutlined, ScanOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
@@ -283,7 +283,7 @@ export default function MvpOutboundPage() {
             type="button"
             onClick={() => setIntakeOpen(true)}
           >
-            + Tiếp nhận yêu cầu xuất
+            <PlusOutlined /> Tiếp nhận yêu cầu xuất
           </button>
         ) : null}
       </div>

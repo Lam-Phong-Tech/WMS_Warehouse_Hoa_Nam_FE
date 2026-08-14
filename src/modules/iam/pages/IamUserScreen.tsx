@@ -1,6 +1,13 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Modal } from "antd";
 import {
+  CloseOutlined,
+  EditOutlined,
+  ReloadOutlined,
+  SaveOutlined,
+  UserAddOutlined,
+} from "@ant-design/icons";
+import {
   useCreateIamUser,
   useIamRoles,
   useIamUsers,
@@ -331,7 +338,7 @@ export function IamUserScreen({
             onClick={openCreate}
             disabled={rolesQuery.isLoading || roles.length === 0}
           >
-            + Thêm người dùng
+            <UserAddOutlined /> Thêm người dùng
           </button>
         ) : null}
       </div>
@@ -344,7 +351,7 @@ export function IamUserScreen({
             type="button"
             onClick={() => usersQuery.refetch()}
           >
-            Thử lại
+            <ReloadOutlined /> Thử lại
           </button>
         </div>
       ) : null}
@@ -406,7 +413,7 @@ export function IamUserScreen({
                           type="button"
                           onClick={() => openEdit(user)}
                         >
-                          Sửa
+                          <EditOutlined /> Sửa
                         </button>
                       ) : (
                         <span className="muted">Chỉ xem</span>
@@ -611,14 +618,14 @@ export function IamUserScreen({
               onClick={closeModal}
               disabled={isSaving}
             >
-              Hủy
+              <CloseOutlined /> Hủy
             </button>
             <button
               className="btn primary"
               type="submit"
               disabled={isSaving || !formState.roleId}
             >
-              {isSaving ? "Đang lưu..." : "Lưu người dùng"}
+              <SaveOutlined /> {isSaving ? "Đang lưu..." : "Lưu người dùng"}
             </button>
           </div>
         </form>

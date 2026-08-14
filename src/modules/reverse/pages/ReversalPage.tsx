@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Table, Tag, Typography } from "antd";
 import type { ColumnsType, TablePaginationConfig } from "antd/es/table";
-import { EyeOutlined } from "@ant-design/icons";
+import { EyeOutlined, PlusOutlined } from "@ant-design/icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { MvpPageSizeSelector } from "@/shared/components/mvp/MvpListPagination";
@@ -222,7 +222,7 @@ export default function ReversalPage() {
             type="button"
             onClick={() => setCreateOpen(true)}
           >
-            + Tạo hoàn đảo
+            <PlusOutlined /> Tạo hoàn đảo
           </button>
         ) : null}
       </div>

@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "dev",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["--prefix", "C:\\LAM_PHONG_TECH\\HoaNam_FE\\Hoa_Nam_Tools", "vite", "--port", "5173"],
       "port": 5173
     }
   ]

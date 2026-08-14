@@ -1,5 +1,15 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Modal } from "antd";
+import {
+  CloseCircleOutlined,
+  CloseOutlined,
+  CloudDownloadOutlined,
+  CloudUploadOutlined,
+  EditOutlined,
+  PlusOutlined,
+  ReloadOutlined,
+  SaveOutlined,
+} from "@ant-design/icons";
 import { toast } from "sonner";
 import {
   useCreateMvpAgency,
@@ -74,7 +84,7 @@ function ApiErrorAlert({
     <div className="alert" role="alert" style={{ marginBottom: 14 }}>
       {getApiErrorMessage(error, fallback)}{" "}
       <button className="btn small" type="button" onClick={onRetry}>
-        Thử lại
+        <ReloadOutlined /> Thử lại
       </button>
     </div>
   );
@@ -98,10 +108,10 @@ function ModalActions({
         onClick={onCancel}
         disabled={isSaving}
       >
-        Hủy
+        <CloseOutlined /> Hủy
       </button>
       <button className="btn primary" type="submit" disabled={isSaving}>
-        {isSaving ? "Đang lưu..." : submitLabel}
+        <SaveOutlined /> {isSaving ? "Đang lưu..." : submitLabel}
       </button>
     </div>
   );
@@ -358,7 +368,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
         <div className="spacer" />
         {canManage ? (
           <button className="btn primary" type="button" onClick={openCreate}>
-            + Thêm SKU
+            <PlusOutlined /> Thêm SKU
           </button>
         ) : null}
       </div>
@@ -379,7 +389,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
             type="button"
             onClick={() => setPublishError(null)}
           >
-            Đóng
+            <CloseCircleOutlined /> Đóng
           </button>
         </div>
       ) : null}
@@ -471,7 +481,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                             type="button"
                             onClick={() => openEdit(record)}
                           >
-                            Sửa
+                            <EditOutlined /> Sửa
                           </button>{" "}
                           <button
                             className="btn small"
@@ -489,7 +499,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                             }
                             onClick={() => void togglePublish(record)}
                           >
-                            {isPublished ? "Gỡ publish" : "Publish App PV"}
+                            {isPublished ? <><CloudDownloadOutlined /> Gỡ publish</> : <><CloudUploadOutlined /> Publish App PV</>}
                           </button>
                         </>
                       ) : (
@@ -884,7 +894,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
         <div className="spacer" />
         {canManage ? (
           <button className="btn primary" type="button" onClick={openCreate}>
-            + Thêm đại lý
+            <PlusOutlined /> Thêm đại lý
           </button>
         ) : null}
       </div>
@@ -938,7 +948,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                         type="button"
                         onClick={() => openEdit(record)}
                       >
-                        Sửa
+                        <EditOutlined /> Sửa
                       </button>
                     ) : (
                       <span className="muted">Chỉ xem</span>
@@ -1195,7 +1205,7 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
         <div className="spacer" />
         {canManage ? (
           <button className="btn primary" type="button" onClick={openCreate}>
-            + Thêm lỗi
+            <PlusOutlined /> Thêm lỗi
           </button>
         ) : null}
       </div>
@@ -1247,7 +1257,7 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                         type="button"
                         onClick={() => openEdit(record)}
                       >
-                        Sửa
+                        <EditOutlined /> Sửa
                       </button>
                     ) : (
                       <span className="muted">Chỉ xem</span>

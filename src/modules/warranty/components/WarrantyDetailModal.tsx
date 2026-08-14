@@ -19,9 +19,11 @@ import {
 import { toast } from "sonner";
 import type { TableProps, UploadProps } from "antd";
 import {
+  CloseOutlined,
   DeleteOutlined,
   DownloadOutlined,
   PaperClipOutlined,
+  SyncOutlined,
   ToolOutlined,
   UploadOutlined,
 } from "@ant-design/icons";
@@ -335,7 +337,7 @@ export function WarrantyDetailModal({
       destroyOnHidden
       footer={
         <Space wrap>
-          <Button onClick={onClose}>Đóng</Button>
+          <Button icon={<CloseOutlined />} onClick={onClose}>Đóng</Button>
           <Button
             icon={<ToolOutlined />}
             disabled={!canIssue || !detail}
@@ -353,6 +355,7 @@ export function WarrantyDetailModal({
           </Button>
           <Button
             type="primary"
+            icon={<SyncOutlined />}
             disabled={!canManage || isTerminal || nextStatuses.length === 0}
             onClick={() => {
               statusForm.setFieldsValue({ status: nextStatuses[0] });
