@@ -26,6 +26,7 @@ import { WMS_PERMISSION_CATALOG as P } from "@/shared/constants/wms-permissions"
 
 const fullyScannedDocument = (lineId: string, version = 1) => ({
   version,
+  status: "SCANNING",
   lines: [
     {
       id: lineId,
@@ -230,7 +231,9 @@ describe("WWHN-148 critical response normalization boundary", () => {
   });
 
   it("rejects undocumented adjustment aliases", async () => {
-    vi.mocked(http.get).mockResolvedValueOnce([approvedVariance("VAR-UNKNOWN")]);
+    vi.mocked(http.get).mockResolvedValueOnce([
+      approvedVariance("VAR-UNKNOWN"),
+    ]);
     vi.mocked(http.postWithMeta).mockResolvedValueOnce({
       data: {
         session: "ST-UNKNOWN",

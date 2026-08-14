@@ -9,10 +9,14 @@ import {
 import { WMS_PERMISSION_CATALOG as P } from "@/shared/constants/wms-permissions";
 import type {
   CreateWarrantyCaseRequest,
-  UpdateWarrantyStatusRequest,
+  UpdateWarrantyCaseRequest,
+  WarrantyAttachment,
+  WarrantyAttachmentType,
   WarrantyCase,
+  WarrantyCasePage,
   WarrantyCaseStatus,
   WarrantyEvent,
+  WarrantyListParams,
 } from "../types";
 
 type RawRecord = Record<string, unknown>;
@@ -42,8 +46,18 @@ function numberOrUndefined(value: unknown): number | undefined {
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
-function endpoint(template: string, key: string, value: string | number): string {
+function endpoint(
+  template: string,
+  key: string,
+  value: string | number,
+): string {
   return template.replace(key, String(value));
+}
+
+export function makeWarrantyIdempotencyKey(operation: string): string {
+  const uuid =
+    globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
+  return `fe:${operation}:${uuid}`;
 }
 
 function canonicalStatus(value: unknown): WarrantyCaseStatus {
@@ -78,7 +92,8 @@ function normalizeWarrantyCase(row: RawRecord): WarrantyCase {
   const missingReason =
     text(row.missing_code_reason ?? row.temp_only_reason) || undefined;
   const identificationType =
-    text(row.identification_type ?? row.identification_status) === "TEMP_ONLY" ||
+    text(row.identification_type ?? row.identification_status) ===
+      "TEMP_ONLY" ||
     Boolean(temporaryCode) ||
     Boolean(missingReason)
       ? "TEMP_ONLY"
@@ -102,15 +117,25 @@ function normalizeWarrantyCase(row: RawRecord): WarrantyCase {
     physical_code: text(row.physical_code) || undefined,
     temporary_item_code: temporaryCode,
     identification_type: identificationType,
+    sales_trace_status: text(row.sales_trace_status) || undefined,
     serial_number: text(row.serial_number ?? row.serial) || undefined,
     customer_name: text(row.customer_name ?? row.customer, "-"),
     customer_phone: text(row.customer_phone) || undefined,
+    customer_address: text(row.customer_address) || undefined,
+    purchase_date: text(row.purchase_date) || undefined,
     masked_customer_name: text(row.masked_customer_name) || undefined,
     masked_customer_phone: text(row.masked_customer_phone) || undefined,
     agency_name: text(row.agency_name ?? row.agency) || undefined,
     defect: text(row.defect_name ?? row.defect ?? row.defect_description, "-"),
     defect_code: text(row.defect_code),
     defect_id: text(row.defect_id) || undefined,
+    reported_defect: text(row.reported_defect ?? row.description) || undefined,
+    confirmed_defect: text(row.confirmed_defect) || undefined,
+    accessories_received: text(row.accessories_received) || undefined,
+    received_condition:
+      text(row.received_condition ?? row.condition_status) || undefined,
+    condition_status: text(row.condition_status) || undefined,
+    cancel_reason: text(row.cancel_reason) || undefined,
     status,
     priority: text(row.priority, "MEDIUM") as WarrantyCase["priority"],
     missing_code_reason: missingReason,
@@ -121,9 +146,11 @@ function normalizeWarrantyCase(row: RawRecord): WarrantyCase {
     warehouse_name: text(row.warehouse_name ?? row.scope_name) || undefined,
     received_at: text(row.received_at ?? row.created_at),
     expected_return_at: text(row.expected_return_at) || undefined,
+    completed_at: text(row.completed_at) || undefined,
     returned_at:
-      text(row.returned_at ?? (status === "RETURNED" ? row.closed_at : undefined)) ||
-      undefined,
+      text(
+        row.returned_at ?? (status === "RETURNED" ? row.closed_at : undefined),
+      ) || undefined,
     case_age_days: numberOrUndefined(row.case_age_days ?? row.age_days),
     created_at: text(row.created_at),
     created_by: text(row.created_by_name ?? row.created_by, "-"),
@@ -149,6 +176,24 @@ function normalizeWarrantyEvent(row: RawRecord): WarrantyEvent {
   };
 }
 
+function normalizeAttachment(row: RawRecord): WarrantyAttachment {
+  return {
+    id: text(row.id),
+    warranty_case_id: text(row.warranty_case_id),
+    file_name: text(row.file_name, "-"),
+    content_type: text(row.content_type ?? row.mime_type),
+    file_size_bytes:
+      numberOrUndefined(row.file_size_bytes ?? row.file_size) ?? 0,
+    checksum: text(row.checksum) || undefined,
+    attachment_type:
+      (text(row.attachment_type, "OTHER") as WarrantyAttachmentType) || "OTHER",
+    status:
+      (text(row.status, "ACTIVE") as WarrantyAttachment["status"]) || "ACTIVE",
+    uploaded_at: text(row.uploaded_at ?? row.created_at) || undefined,
+    uploaded_by: text(row.uploaded_by ?? row.created_by) || undefined,
+  };
+}
+
 function assertStockNeutral(row: RawRecord, action: string): void {
   if (row.stock_effect !== undefined && row.stock_effect !== "NONE") {
     throw new WmsContractError(
@@ -169,22 +214,27 @@ function assertWarrantyAccess(action: string): void {
 }
 
 export async function fetchWarrantyCases(
-  params: Record<string, unknown> = {},
-): Promise<WarrantyCase[]> {
+  params: WarrantyListParams = {},
+): Promise<WarrantyCasePage> {
   assertWarrantyAccess("view warranty cases");
   const mappedParams = {
     page: params.page,
-    per_page: params.per_page ?? 100,
+    per_page: params.per_page ?? 15,
     status: params.status ? canonicalStatus(params.status) : undefined,
+    identification_status: params.identification_status,
+    defect_id: params.defect_id,
     keyword: params.search ?? params.keyword,
   };
   const result = await http.getPage<RawRecord[] | { data?: RawRecord[] }>(
     API_ENDPOINTS.WARRANTY_CASES,
     { params: clean(mappedParams) },
   );
-  return rowsOf(result.data as RawRecord[] | { data?: RawRecord[] }).map(
-    normalizeWarrantyCase,
-  );
+  return {
+    data: rowsOf(result.data as RawRecord[] | { data?: RawRecord[] }).map(
+      normalizeWarrantyCase,
+    ),
+    meta: result.meta as Record<string, unknown> | undefined,
+  };
 }
 
 export async function fetchWarrantyCase(
@@ -205,11 +255,7 @@ export async function fetchWarrantyCaseEvents(
   assertWarrantyAccess("view warranty events");
   const normalizedCaseId = requireNonEmptyString(String(caseId), "caseId");
   const result = await http.getPage<RawRecord[] | { data?: RawRecord[] }>(
-    endpoint(
-      API_ENDPOINTS.WARRANTY_CASE_EVENTS,
-      ":caseId",
-      normalizedCaseId,
-    ),
+    endpoint(API_ENDPOINTS.WARRANTY_CASE_EVENTS, ":caseId", normalizedCaseId),
     { params: clean({ ...params, per_page: params.per_page ?? 100 }) },
   );
   return rowsOf(result.data as RawRecord[] | { data?: RawRecord[] }).map(
@@ -222,14 +268,26 @@ export async function createWarrantyCase(
 ): Promise<WarrantyCase> {
   assertWarrantyAccess("create warranty case");
   const description = requireNonEmptyString(
-    payload.defect_description || payload.notes,
+    payload.defect_description || payload.reported_defect || payload.notes,
     "defect_description",
   );
   const body: Record<string, unknown> = {
-    customer_name: requireNonEmptyString(payload.customer_name, "customer_name"),
-    customer_phone: requireNonEmptyString(payload.customer_phone, "customer_phone"),
+    customer_name: requireNonEmptyString(
+      payload.customer_name,
+      "customer_name",
+    ),
+    customer_phone: requireNonEmptyString(
+      payload.customer_phone,
+      "customer_phone",
+    ),
+    customer_address: payload.customer_address?.trim() || undefined,
+    purchase_date: payload.purchase_date || undefined,
+    defect_id: payload.defect_id || undefined,
     defect_code: payload.defect_code || undefined,
     description,
+    reported_defect: payload.reported_defect?.trim() || description,
+    accessories_received: payload.accessories_received?.trim() || undefined,
+    received_condition: payload.received_condition?.trim() || undefined,
   };
 
   if (payload.identification_type === "IDENTIFIED") {
@@ -248,20 +306,23 @@ export async function createWarrantyCase(
   const row = await http.post<RawRecord>(
     API_ENDPOINTS.WARRANTY_CASES,
     clean(body),
+    {
+      headers: {
+        "Idempotency-Key": makeWarrantyIdempotencyKey("warranty-create"),
+      },
+    },
   );
   assertStockNeutral(row, "Warranty case creation");
   return normalizeWarrantyCase(row);
 }
 
-export async function updateWarrantyCaseStatus(
+export async function updateWarrantyCase(
   caseId: string | number,
-  request: UpdateWarrantyStatusRequest,
+  request: UpdateWarrantyCaseRequest,
 ): Promise<WarrantyCase> {
   assertWarrantyAccess("update warranty case");
   const normalizedCaseId = requireNonEmptyString(String(caseId), "caseId");
-  const status = canonicalStatus(
-    requireNonEmptyString(request.status, "status"),
-  );
+  const status = request.status ? canonicalStatus(request.status) : undefined;
   const current = request.ifMatch
     ? undefined
     : await fetchWarrantyCase(normalizedCaseId);
@@ -274,9 +335,104 @@ export async function updateWarrantyCaseStatus(
     clean({
       status,
       description: request.reason,
+      confirmed_defect: request.confirmed_defect,
+      condition_status: request.condition_status,
+      received_condition: request.received_condition,
+      accessories_received: request.accessories_received,
+      cancel_reason: request.cancel_reason,
     }),
-    { headers: { "If-Match": String(ifMatch) } },
+    {
+      headers: {
+        "If-Match": String(ifMatch),
+        "Idempotency-Key":
+          request.idempotency_key ??
+          makeWarrantyIdempotencyKey(`warranty-update-${normalizedCaseId}`),
+      },
+    },
   );
   assertStockNeutral(row, "Warranty status update");
   return normalizeWarrantyCase(row);
+}
+
+/** @deprecated dùng updateWarrantyCase. */
+export const updateWarrantyCaseStatus = updateWarrantyCase;
+
+export async function fetchWarrantyAttachments(
+  caseId: string | number,
+): Promise<WarrantyAttachment[]> {
+  assertWarrantyAccess("view warranty attachments");
+  const normalizedCaseId = requireNonEmptyString(String(caseId), "caseId");
+  const result = await http.getPage<RawRecord[] | { data?: RawRecord[] }>(
+    endpoint(
+      API_ENDPOINTS.WARRANTY_CASE_ATTACHMENTS,
+      ":caseId",
+      normalizedCaseId,
+    ),
+    { params: { per_page: 100 } },
+  );
+  return rowsOf(result.data as RawRecord[] | { data?: RawRecord[] }).map(
+    normalizeAttachment,
+  );
+}
+
+export async function uploadWarrantyAttachment(input: {
+  caseId: string;
+  file: File;
+  attachmentType?: WarrantyAttachmentType;
+}): Promise<WarrantyAttachment> {
+  assertWarrantyAccess("upload warranty attachment");
+  const normalizedCaseId = requireNonEmptyString(input.caseId, "caseId");
+  const formData = new FormData();
+  formData.append("file", input.file);
+  if (input.attachmentType) {
+    formData.append("attachment_type", input.attachmentType);
+  }
+  const row = await http.post<RawRecord>(
+    endpoint(
+      API_ENDPOINTS.WARRANTY_CASE_ATTACHMENTS,
+      ":caseId",
+      normalizedCaseId,
+    ),
+    formData,
+  );
+  assertStockNeutral(row, "Warranty attachment upload");
+  return normalizeAttachment(row);
+}
+
+export async function downloadWarrantyAttachment(input: {
+  attachmentId: string;
+  fileName?: string;
+}): Promise<void> {
+  assertWarrantyAccess("download warranty attachment");
+  const attachmentId = requireNonEmptyString(
+    input.attachmentId,
+    "attachmentId",
+  );
+  const blob = await http.downloadBlob(
+    endpoint(API_ENDPOINTS.WARRANTY_ATTACHMENT_DOWNLOAD, ":id", attachmentId),
+  );
+  const url = URL.createObjectURL(blob);
+  try {
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = input.fileName || `warranty-attachment-${attachmentId}`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+export async function deleteWarrantyAttachment(
+  attachmentId: string,
+): Promise<void> {
+  assertWarrantyAccess("delete warranty attachment");
+  await http.delete(
+    endpoint(
+      API_ENDPOINTS.WARRANTY_ATTACHMENT,
+      ":id",
+      requireNonEmptyString(attachmentId, "attachmentId"),
+    ),
+  );
 }

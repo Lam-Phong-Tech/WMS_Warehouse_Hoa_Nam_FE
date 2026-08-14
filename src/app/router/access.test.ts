@@ -48,7 +48,7 @@ describe("WMS route access contract", () => {
         "outbound.import",
       ],
       [ROUTES.INVENTORY]: ["inventory.view"],
-      [ROUTES.WARRANTY]: ["warranty.manage"],
+      [ROUTES.WARRANTY]: ["warranty.manage", "warranty.component_issue"],
       [ROUTES.REVERSE]: ["inventory.reversal.post"],
       [ROUTES.REPORTS]: ["report.view"],
       [ROUTES.AUDIT_LOGS]: "AUDIT_LOG_VIEW",

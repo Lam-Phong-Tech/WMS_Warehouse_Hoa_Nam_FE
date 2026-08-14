@@ -36,7 +36,11 @@
 html,
 body,
 #root {
-  font-family: "Be Vietnam Pro", system-ui, -apple-system, sans-serif;
+  font-family:
+    "Be Vietnam Pro",
+    system-ui,
+    -apple-system,
+    sans-serif;
   color: var(--hn-ink);
   background: var(--hn-canvas);
 }
@@ -477,12 +481,20 @@ body {
 .hn-login-page {
   min-height: 100vh;
   display: grid;
+  /* Track phải minmax(0,...) — nếu để auto, grid track nở theo content 460px
+     và max-width:100% của card mất tác dụng, gây tràn ngang ở mobile ≤460px. */
+  grid-template-columns: minmax(0, 1fr);
   place-items: center;
   padding: 32px 20px;
   background:
     radial-gradient(circle at 1px 1px, #d8d5cc 1px, transparent 1px),
     var(--hn-canvas);
   background-size: 18px 18px;
+}
+
+/* Specificity cao hơn .hn-login-wrap của hn-wms-mvp-exact.css (width:460px). */
+.hn-login-page .hn-login-wrap {
+  width: min(460px, 100%);
 }
 
 .hn-login-wrap {

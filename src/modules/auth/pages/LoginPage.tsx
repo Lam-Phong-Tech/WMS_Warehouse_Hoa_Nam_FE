@@ -46,7 +46,9 @@ export function LoginPage() {
     defaultValues: { identifier: "", password: "" },
   });
 
-  const onSubmit = handleSubmit((values) => login.mutate(toLoginRequest(values)));
+  const onSubmit = handleSubmit((values) =>
+    login.mutate(toLoginRequest(values)),
+  );
 
   const errorMessage = login.isError ? getLoginErrorMessage(login.error) : null;
 
@@ -58,10 +60,7 @@ export function LoginPage() {
         <div className="hn-login-loading" role="status" aria-live="polite">
           <div className="hn-login-loading-card">
             <Spin size="large" />
-            <Typography.Text
-              strong
-              style={{ display: "block", marginTop: 12 }}
-            >
+            <Typography.Text strong style={{ display: "block", marginTop: 12 }}>
               {login.isPending
                 ? "Đang xác thực tài khoản..."
                 : "Đang tải quyền truy cập..."}
@@ -145,7 +144,7 @@ export function LoginPage() {
               >
                 Đăng nhập
               </Button>
-            </Form>     
+            </Form>
           </div>
         </div>
       </section>

@@ -15,8 +15,8 @@ html,body,#root{margin:0;min-height:100%;font-family:Arial,Helvetica,sans-serif;
 body{font-size:14px;line-height:1.5}
 
 /* Exact application shell from HN_WMS_Wireframe_MVP.html */
-.hn-mvp-app{display:grid;grid-template-columns:300px 1fr;min-height:100vh;background:var(--bg)}
-.hn-mvp-aside{background:#0f172a;color:#e5e7eb;padding:18px 14px;overflow:auto;min-width:0}
+.hn-mvp-app{min-height:100vh;background:var(--bg)}
+.hn-mvp-aside{position:fixed;top:0;left:0;width:300px;height:100vh;background:#0f172a;color:#e5e7eb;padding:18px 14px;overflow:auto;z-index:40}
 .hn-mvp-brand{display:flex;gap:10px;align-items:center;margin-bottom:18px}
 .hn-mvp-logo{width:40px;height:40px;border-radius:10px;background:#2563eb;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;flex:none}
 .hn-mvp-brand-copy h1{font-size:18px;line-height:1.25;margin:0;color:#e5e7eb;font-weight:700}
@@ -28,12 +28,14 @@ body{font-size:14px;line-height:1.5}
 .hn-mvp-account{margin-top:18px;padding-top:14px;border-top:1px solid rgba(148,163,184,.25)}
 .hn-mvp-account .ant-btn,.hn-mvp-account .ant-dropdown-trigger{color:#e5e7eb!important}
 
-.hn-mvp-main{padding:18px;overflow:auto;min-width:0;background:var(--bg)}
-.hn-mvp-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:16px}
+.hn-mvp-main{margin-left:300px;min-height:100vh;display:flex;flex-direction:column;min-width:0;background:var(--bg)}
+.hn-mvp-header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 18px;background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:30}
 .hn-mvp-title h2{margin:0;font-size:24px;line-height:1.2;color:var(--text);font-weight:700}
 .hn-mvp-title p{margin:4px 0 0;color:var(--muted);font-size:13px}
 .hn-mvp-note-banner{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 14px;font-size:13px;color:var(--muted);white-space:nowrap}
+.hn-mvp-content{flex:1;padding:18px}
 .hn-mvp-screen{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:0 4px 14px rgba(15,23,42,.05);min-width:0}
+.hn-mvp-footer{padding:14px 18px;border-top:1px solid var(--line);background:var(--panel);text-align:center;color:var(--muted);font-size:12px}
 
 /* HTML utility vocabulary, reusable inside React screens */
 .hn-toolbar,.hn-toolbar-wrap{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
@@ -80,6 +82,7 @@ body{font-size:14px;line-height:1.5}
 .ant-btn-sm{min-height:30px!important;padding:5px 10px!important;font-size:12px!important}
 
 .ant-input,.ant-input-affix-wrapper,.ant-input-number,.ant-picker,.ant-select-selector,.ant-input-number-input{border-color:var(--line)!important;border-radius:10px!important;background:#fff!important}
+.ant-input-affix-wrapper .ant-input{border:none!important;background:transparent!important}
 .ant-input,.ant-input-affix-wrapper,.ant-picker{padding-top:7px!important;padding-bottom:7px!important}
 .ant-select-single:not(.ant-select-customize-input) .ant-select-selector{min-height:36px!important;padding:2px 10px!important}
 .ant-select-selection-item,.ant-select-selection-placeholder{line-height:30px!important}
@@ -109,10 +112,10 @@ body{font-size:14px;line-height:1.5}
 .hn-login-wrap{width:460px;max-width:100%}.hn-login-kicker{display:none!important}.hn-login-frame{overflow:hidden;background:#fff;border:1px solid var(--line)!important;border-radius:16px!important;box-shadow:0 4px 14px rgba(15,23,42,.05)!important}.hn-login-head{padding:18px;border-bottom:1px solid var(--line)!important;background:#fff!important}.hn-login-mark{width:40px!important;height:40px!important;border:0!important;border-radius:10px!important;background:#2563eb!important;color:#fff!important}.hn-login-title{font-size:24px!important;color:var(--text)!important}.hn-login-subtitle{color:var(--muted)!important;font-size:13px!important}.hn-login-form{padding:18px!important}.hn-login-note{margin-top:14px;color:var(--muted)!important;font-size:12px!important}.hn-login-submit{min-height:40px!important}
 
 @media (max-width:980px){
-  .hn-mvp-app{grid-template-columns:1fr}
-  .hn-mvp-aside{max-height:none}
+  .hn-mvp-aside{position:static;width:100%;height:auto;max-height:none}
+  .hn-mvp-main{margin-left:0}
   .hn-grid-2,.hn-grid-3,.hn-stats{grid-template-columns:1fr}
-  .hn-mvp-header{flex-direction:column}
+  .hn-mvp-header{flex-direction:column;align-items:flex-start}
   .hn-mvp-note-banner{white-space:normal;width:100%}
   .search,.hn-search{min-width:0!important;width:100%!important}
 }

@@ -43,7 +43,11 @@ export function AppHeader({ isMobile, collapsed, onToggle }: Props) {
                 : "Thu gọn menu điều hướng"
           }
           icon={
-            isMobile || collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />
+            isMobile || collapsed ? (
+              <MenuUnfoldOutlined />
+            ) : (
+              <MenuFoldOutlined />
+            )
           }
           onClick={onToggle}
           style={layoutStyles.headerToggleButton}

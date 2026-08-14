@@ -104,10 +104,7 @@ export const layoutStyles = {
     margin: isMobile ? 12 : 20,
   }),
 
-  contentBody: (
-    _colorBgContainer: string,
-    _borderRadiusLG: number,
-  ): CSSProperties => ({
+  contentBody: (): CSSProperties => ({
     padding: "clamp(16px, 2vw, 20px)",
     minHeight: "calc(100vh - 60px - 62px - 40px)",
     background: BRAND.paper,
@@ -180,7 +177,6 @@ export const layoutStyles = {
     position: "sticky",
     top: 0,
     zIndex: 99,
-    backdropFilter: BRAND.headerBlur,
     background: BRAND.headerBg,
   } satisfies CSSProperties,
 

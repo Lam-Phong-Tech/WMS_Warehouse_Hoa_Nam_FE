@@ -12,6 +12,8 @@
 }
 
 .hn-mvp-screen > .master-data-page,
+.hn-mvp-screen > .inbound-page,
+.hn-mvp-screen > .putaway-page,
 .hn-mvp-screen > .inventory-page,
 .hn-mvp-screen > .stocktake-page,
 .hn-mvp-screen > .warranty-page,
@@ -39,17 +41,29 @@
   background: transparent !important;
 }
 
-.hn-mvp-screen > div[style*="padding"] > .ant-card:first-child > .ant-card-head .ant-card-head-wrapper,
+.hn-mvp-screen
+  > div[style*="padding"]
+  > .ant-card:first-child
+  > .ant-card-head
+  .ant-card-head-wrapper,
 .hn-mvp-screen > .ant-card:first-child > .ant-card-head .ant-card-head-wrapper {
   display: block;
 }
 
-.hn-mvp-screen > div[style*="padding"] > .ant-card:first-child > .ant-card-head .ant-card-head-title,
+.hn-mvp-screen
+  > div[style*="padding"]
+  > .ant-card:first-child
+  > .ant-card-head
+  .ant-card-head-title,
 .hn-mvp-screen > .ant-card:first-child > .ant-card-head .ant-card-head-title {
   display: none;
 }
 
-.hn-mvp-screen > div[style*="padding"] > .ant-card:first-child > .ant-card-head .ant-card-extra,
+.hn-mvp-screen
+  > div[style*="padding"]
+  > .ant-card:first-child
+  > .ant-card-head
+  .ant-card-extra,
 .hn-mvp-screen > .ant-card:first-child > .ant-card-head .ant-card-extra {
   margin: 0 !important;
   width: 100%;
@@ -58,6 +72,45 @@
 .hn-mvp-screen > div[style*="padding"] > .ant-card:first-child > .ant-card-body,
 .hn-mvp-screen > .ant-card:first-child > .ant-card-body {
   padding: 0 !important;
+}
+
+/*
+ * IN-01/PTW-00 are rendered through an extra module wrapper inside MainLayout,
+ * so their root Card is not a direct child of .hn-mvp-screen. Flatten those
+ * specific list-page Cards as well: MainLayout owns the one and only screen box.
+ */
+.hn-mvp-screen .inbound-page > .master-data-panel,
+.hn-mvp-screen .putaway-page > .master-data-panel {
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+#root .hn-mvp-screen .inbound-page .ant-tabs > .ant-tabs-nav::before,
+#root .hn-mvp-screen .putaway-page .ant-tabs > .ant-tabs-nav::before {
+  border-bottom: 0 !important;
+}
+
+.hn-mvp-screen .inbound-page > .master-data-panel > .ant-card-body,
+.hn-mvp-screen .putaway-page > .master-data-panel > .ant-card-body {
+  padding: 0 !important;
+}
+
+/* Developer/API evidence belongs to CI/docs, not the production list toolbar. */
+.hn-mvp-screen .inbound-page > .master-data-panel .master-data-contract-strip,
+.hn-mvp-screen .putaway-page > .master-data-panel .master-data-contract-strip,
+.hn-mvp-screen
+  .inbound-page
+  > .master-data-panel
+  > .ant-card-body
+  > .master-data-state-alert,
+.hn-mvp-screen
+  .putaway-page
+  > .master-data-panel
+  > .ant-card-body
+  > .master-data-state-alert {
+  display: none !important;
 }
 
 /* Page title already lives in the exact HTML header. Keep actions, remove duplicate copy. */
@@ -71,6 +124,29 @@
   display: none !important;
 }
 
+/*
+ * IAM/DEF list screens keep the primary create action at the far right of the
+ * same toolbar row. Position the existing IN-01 action there without another
+ * wrapper/card; on narrow layouts it falls back to the normal flow.
+ */
+.hn-mvp-screen .inbound-page {
+  position: relative;
+}
+
+@media (min-width: 981px) {
+  .hn-mvp-screen .inbound-page > .page-heading {
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 2;
+    margin: 0 !important;
+  }
+}
+
+.hn-mvp-screen .putaway-page > .page-heading {
+  display: none !important;
+}
+
 /* Toolbars use the HTML 8px rhythm and 14px bottom spacing. */
 .hn-mvp-screen .ant-space {
   column-gap: 8px;
@@ -78,6 +154,49 @@
 
 .hn-mvp-screen .ant-space-compact {
   border-radius: 10px;
+}
+
+/*
+ * AntD allowClear renders an affix wrapper plus a nested .ant-input. The global
+ * MVP rule adds vertical padding to both nodes, which made search fields roughly
+ * double-height. Keep padding only on the wrapper so clearable inputs have the
+ * same visual height as the native .input.search used by IAM-01.
+ */
+.hn-mvp-screen .ant-input-affix-wrapper > input.ant-input {
+  min-height: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* IAM-01 search baseline: 280px desktop, native 14px/normal-line-height rhythm. */
+@media (min-width: 981px) {
+  .hn-mvp-screen .putaway-page .filter-row > .ant-col:first-child {
+    flex: 0 0 280px !important;
+    width: 280px !important;
+    max-width: 280px !important;
+  }
+
+  .hn-mvp-screen .putaway-page .filter-row .ant-input-affix-wrapper {
+    width: 280px !important;
+    min-width: 280px !important;
+    max-width: 280px !important;
+    padding: 9px 10px !important;
+    font-family: Arial, Helvetica, sans-serif !important;
+    font-size: 14px !important;
+  }
+
+  .hn-mvp-screen
+    .putaway-page
+    .filter-row
+    .ant-input-affix-wrapper
+    > input.ant-input {
+    font-family: Arial, Helvetica, sans-serif !important;
+    font-size: 14px !important;
+    line-height: normal !important;
+  }
 }
 
 .hn-mvp-screen .ant-table-wrapper + .ant-table-wrapper,
@@ -107,7 +226,7 @@
 }
 
 /* Keep nested business cards exactly at the HTML card size. */
-.hn-mvp-screen .ant-card:not(:first-child),
+.hn-mvp-screen .ant-card:not(:first-child):not(.master-data-panel),
 .hn-mvp-screen .ant-row .ant-card {
   border: 1px solid var(--line) !important;
   border-radius: 14px !important;
@@ -117,16 +236,33 @@
 /* Drawers/modals are overlays; no old black wireframe borders or offset shadows. */
 .ant-modal-mask,
 .ant-drawer-mask {
-  background: rgba(15,23,42,.35) !important;
+  background: rgba(15, 23, 42, 0.35) !important;
 }
 
-/* Exact mobile rule from the HTML: stacked sidebar/content, not a floating drawer shell. */
-@media (max-width:980px) {
+/* Exact mobile/tablet rule from IAM-01: search fills the available toolbar width. */
+@media (max-width: 980px) {
   .hn-mvp-screen > div[style*="padding"] {
     padding: 0 !important;
   }
 
   .hn-mvp-screen .ant-row {
     row-gap: 14px !important;
+  }
+
+  .hn-mvp-screen .inbound-page > .page-heading {
+    position: static;
+    margin: 0 0 8px !important;
+  }
+
+  .hn-mvp-screen .putaway-page .filter-row > .ant-col:first-child {
+    flex: 0 0 100% !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .hn-mvp-screen .putaway-page .filter-row .ant-input-affix-wrapper {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
   }
 }

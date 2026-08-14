@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import {
   Alert,
   App,
@@ -32,7 +33,7 @@ import {
   useCreateIamRole,
   useDeleteIamRole,
   useIamPermissions,
-  useIamRoles,
+  useIamRolesPage,
   useSyncIamRolePermissions,
   useUpdateIamRole,
 } from "@/modules/iam/hooks/use-iam";
@@ -43,6 +44,8 @@ import type {
   IamRoleScopeType,
   IamRoleStatus,
 } from "@/modules/iam/types/iam.types";
+import { MvpPageSizeSelector } from "@/shared/components/mvp/MvpListPagination";
+import { resolveApiPagination } from "@/shared/components/mvp/mvp-pagination";
 import { useCan } from "@/shared/components/permission";
 import { WMS_PERMISSION_CATALOG as P } from "@/shared/constants/wms-permissions";
 
@@ -66,9 +69,11 @@ function isSystemRole(role?: IamRole): boolean {
 }
 
 export function IamRolePermissionScreen() {
-  const { message } = App.useApp();
+
   const [form] = Form.useForm<RoleFormValues>();
   const [keyword, setKeyword] = useState("");
+  const [rolePage, setRolePage] = useState(1);
+  const [rolePerPage, setRolePerPage] = useState(15);
   const [selectedRoleId, setSelectedRoleId] = useState<string>();
   const [checkedIds, setCheckedIds] = useState<string[]>([]);
   const [roleModalOpen, setRoleModalOpen] = useState(false);
@@ -77,27 +82,43 @@ export function IamRolePermissionScreen() {
   const canManageRoles = useCan(P.IAM_ROLE_MANAGE);
   const canViewPermissions = useCan(P.IAM_PERMISSION_VIEW);
 
-  const rolesQuery = useIamRoles({ keyword: keyword || undefined });
-  const permissionsQuery = useIamPermissions();
+  const rolesQuery = useIamRolesPage({
+    keyword: keyword || undefined,
+    page: rolePage,
+    per_page: rolePerPage,
+  });
+  const permissionsQuery = useIamPermissions({ per_page: 100 });
   const createRole = useCreateIamRole();
   const updateRole = useUpdateIamRole();
   const deleteRole = useDeleteIamRole();
   const syncPermissions = useSyncIamRolePermissions();
 
-  const roles = rolesQuery.data ?? [];
+  const roles = rolesQuery.data?.data ?? [];
   const permissions = permissionsQuery.data ?? [];
+  const rolePagination = resolveApiPagination(rolesQuery.data?.meta, {
+    page: rolePage,
+    pageSize: rolePerPage,
+    rowCount: roles.length,
+  });
   const selectedRole = roles.find((role) => role.role_id === selectedRoleId);
 
   useEffect(() => {
     if (!selectedRoleId && roles.length > 0) {
       setSelectedRoleId(roles[0].role_id);
-    } else if (selectedRoleId && !roles.some((role) => role.role_id === selectedRoleId)) {
+    } else if (
+      selectedRoleId &&
+      !roles.some((role) => role.role_id === selectedRoleId)
+    ) {
       setSelectedRoleId(roles[0]?.role_id);
     }
   }, [roles, selectedRoleId]);
 
   useEffect(() => {
-    setCheckedIds(selectedRole?.permissions?.map((permission) => permission.permission_id) ?? []);
+    setCheckedIds(
+      selectedRole?.permissions?.map(
+        (permission) => permission.permission_id,
+      ) ?? [],
+    );
   }, [selectedRole]);
 
   const groupedPermissions = useMemo(() => {
@@ -126,7 +147,9 @@ export function IamRolePermissionScreen() {
 
   const openEdit = (role: IamRole) => {
     if (isSystemRole(role)) {
-      void message.warning("SUPER_ADMIN là vai trò hệ thống và không được chỉnh sửa.");
+      toast.warning(
+        "SUPER_ADMIN là vai trò hệ thống và không được chỉnh sửa.",
+      );
       return;
     }
     setEditingRole(role);
@@ -159,7 +182,9 @@ export function IamRolePermissionScreen() {
   const savePermissions = async () => {
     if (!selectedRole) return;
     if (isSystemRole(selectedRole)) {
-      void message.warning("SUPER_ADMIN dùng quyền hệ thống toàn cục và không cho phép sửa ma trận.");
+      toast.warning(
+        "SUPER_ADMIN dùng quyền hệ thống toàn cục và không cho phép sửa ma trận.",
+      );
       return;
     }
     await syncPermissions.mutateAsync({
@@ -184,7 +209,9 @@ export function IamRolePermissionScreen() {
       render: (_, role) => (
         <Space direction="vertical" size={0}>
           <Typography.Text strong>{role.role_name}</Typography.Text>
-          <Typography.Text type="secondary" copyable>{role.role_code}</Typography.Text>
+          <Typography.Text type="secondary" copyable>
+            {role.role_code}
+          </Typography.Text>
         </Space>
       ),
     },
@@ -217,7 +244,15 @@ export function IamRolePermissionScreen() {
         if (!canManageRoles || isSystemRole(role)) return null;
         return (
           <Space size={4}>
-            <Button type="text" icon={<EditOutlined />} aria-label={`Sửa ${role.role_name}`} onClick={(event) => { event.stopPropagation(); openEdit(role); }} />
+            <Button
+              type="text"
+              icon={<EditOutlined />}
+              aria-label={`Sửa ${role.role_name}`}
+              onClick={(event) => {
+                event.stopPropagation();
+                openEdit(role);
+              }}
+            />
             <Popconfirm
               title="Xoá vai trò?"
               description="BE sẽ từ chối nếu vai trò vẫn đang được gán cho người dùng."
@@ -225,7 +260,13 @@ export function IamRolePermissionScreen() {
               cancelText="Huỷ"
               onConfirm={() => deleteRole.mutateAsync(role.role_id)}
             >
-              <Button danger type="text" icon={<DeleteOutlined />} aria-label={`Xoá ${role.role_name}`} onClick={(event) => event.stopPropagation()} />
+              <Button
+                danger
+                type="text"
+                icon={<DeleteOutlined />}
+                aria-label={`Xoá ${role.role_name}`}
+                onClick={(event) => event.stopPropagation()}
+              />
             </Popconfirm>
           </Space>
         );
@@ -234,9 +275,16 @@ export function IamRolePermissionScreen() {
   ];
 
   const permissionsChanged = useMemo(() => {
-    const original = new Set(selectedRole?.permissions?.map((permission) => permission.permission_id) ?? []);
+    const original = new Set(
+      selectedRole?.permissions?.map(
+        (permission) => permission.permission_id,
+      ) ?? [],
+    );
     const current = new Set(checkedIds);
-    return original.size !== current.size || [...original].some((id) => !current.has(id));
+    return (
+      original.size !== current.size ||
+      [...original].some((id) => !current.has(id))
+    );
   }, [checkedIds, selectedRole]);
 
   return (
@@ -246,15 +294,36 @@ export function IamRolePermissionScreen() {
           <Space align="center">
             <SafetyCertificateOutlined />
             <div>
-              <Typography.Title level={3} style={{ margin: 0 }}>IAM · Vai trò & ma trận quyền</Typography.Title>
-              <Typography.Text type="secondary">Permission là catalog hệ thống chỉ đọc; role được CRUD và sync quyền toàn bộ.</Typography.Text>
+              <Typography.Title level={3} style={{ margin: 0 }}>
+                IAM · Vai trò & ma trận quyền
+              </Typography.Title>
+              <Typography.Text type="secondary">
+                Permission là catalog hệ thống chỉ đọc; role được CRUD và sync
+                quyền toàn bộ.
+              </Typography.Text>
             </div>
           </Space>
         </Col>
         <Col>
           <Space>
-            <Button icon={<ReloadOutlined />} onClick={() => { void rolesQuery.refetch(); void permissionsQuery.refetch(); }}>Làm mới</Button>
-            {canManageRoles && <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>Tạo vai trò</Button>}
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={() => {
+                void rolesQuery.refetch();
+                void permissionsQuery.refetch();
+              }}
+            >
+              Làm mới
+            </Button>
+            {canManageRoles && (
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={openCreate}
+              >
+                Tạo vai trò
+              </Button>
+            )}
           </Space>
         </Col>
       </Row>
@@ -270,67 +339,151 @@ export function IamRolePermissionScreen() {
         <Col xs={24} xl={10}>
           <Card title="Vai trò" styles={{ body: { padding: 0 } }}>
             <div style={{ padding: 16 }}>
-              <Input.Search allowClear placeholder="Tìm mã / tên vai trò" value={keyword} onChange={(event) => setKeyword(event.target.value)} />
+              <Input.Search
+                allowClear
+                placeholder="Tìm mã / tên vai trò"
+                value={keyword}
+                onChange={(event) => {
+                  setKeyword(event.target.value);
+                  setRolePage(1);
+                }}
+              />
+            </div>
+            <div style={{ padding: "0 16px 12px" }}>
+              <MvpPageSizeSelector
+                value={rolePerPage}
+                onChange={(value) => {
+                  setRolePerPage(value);
+                  setRolePage(1);
+                }}
+              />
             </div>
             <Table<IamRole>
               rowKey="role_id"
               size="small"
-              loading={rolesQuery.isLoading}
+              loading={rolesQuery.isLoading || rolesQuery.isFetching}
               dataSource={roles}
               columns={columns}
-              pagination={false}
-              rowClassName={(role) => role.role_id === selectedRoleId ? "ant-table-row-selected" : ""}
-              onRow={(role) => ({ onClick: () => setSelectedRoleId(role.role_id), style: { cursor: "pointer" } })}
+              pagination={{
+                current: rolePagination.current,
+                pageSize: rolePerPage,
+                total: rolePagination.total,
+                showSizeChanger: false,
+                showTotal: (total) => `Tổng ${total} vai trò`,
+                onChange: setRolePage,
+              }}
+              rowClassName={(role) =>
+                role.role_id === selectedRoleId ? "ant-table-row-selected" : ""
+              }
+              onRow={(role) => ({
+                onClick: () => setSelectedRoleId(role.role_id),
+                style: { cursor: "pointer" },
+              })}
             />
           </Card>
         </Col>
 
         <Col xs={24} xl={14}>
           <Card
-            title={selectedRole ? `Ma trận quyền · ${selectedRole.role_name}` : "Ma trận quyền"}
-            extra={selectedRole && <Tag color={isSystemRole(selectedRole) ? "gold" : "blue"}>{selectedRole.role_code}</Tag>}
+            title={
+              selectedRole
+                ? `Ma trận quyền · ${selectedRole.role_name}`
+                : "Ma trận quyền"
+            }
+            extra={
+              selectedRole && (
+                <Tag color={isSystemRole(selectedRole) ? "gold" : "blue"}>
+                  {selectedRole.role_code}
+                </Tag>
+              )
+            }
           >
             {!canViewPermissions ? (
-              <Alert type="warning" showIcon message="Tài khoản không có iam.permission.view nên không thể đọc permission catalog." />
+              <Alert
+                type="warning"
+                showIcon
+                message="Tài khoản không có iam.permission.view nên không thể đọc permission catalog."
+              />
             ) : permissionsQuery.isLoading ? (
-              <div style={{ textAlign: "center", padding: 48 }}><Spin /></div>
+              <div style={{ textAlign: "center", padding: 48 }}>
+                <Spin />
+              </div>
             ) : !selectedRole ? (
               <Empty description="Chọn một vai trò để xem quyền" />
             ) : (
               <Space direction="vertical" size={16} style={{ width: "100%" }}>
                 {isSystemRole(selectedRole) && (
-                  <Alert type="warning" showIcon message="SUPER_ADMIN là vai trò hệ thống" description="Không cho phép đổi mã, xoá hoặc thay ma trận quyền. Runtime Super Admin vẫn có quyền toàn cục theo invariant của hệ thống." />
+                  <Alert
+                    type="warning"
+                    showIcon
+                    message="SUPER_ADMIN là vai trò hệ thống"
+                    description="Không cho phép đổi mã, xoá hoặc thay ma trận quyền. Runtime Super Admin vẫn có quyền toàn cục theo invariant của hệ thống."
+                  />
                 )}
                 {groupedPermissions.map(([group, items]) => {
-                  const ids = items.map((permission) => permission.permission_id);
-                  const checkedCount = ids.filter((id) => checkedIds.includes(id)).length;
-                  const allChecked = ids.length > 0 && checkedCount === ids.length;
+                  const ids = items.map(
+                    (permission) => permission.permission_id,
+                  );
+                  const checkedCount = ids.filter((id) =>
+                    checkedIds.includes(id),
+                  ).length;
+                  const allChecked =
+                    ids.length > 0 && checkedCount === ids.length;
                   const indeterminate = checkedCount > 0 && !allChecked;
                   return (
                     <Card
                       key={group}
                       size="small"
-                      title={<Space><Typography.Text strong>{group}</Typography.Text><Tag>{checkedCount}/{items.length}</Tag></Space>}
-                      extra={canManageRoles && !isSystemRole(selectedRole) ? (
-                        <Checkbox checked={allChecked} indeterminate={indeterminate} onChange={(event) => toggleGroup(items, event.target.checked)}>Chọn nhóm</Checkbox>
-                      ) : null}
+                      title={
+                        <Space>
+                          <Typography.Text strong>{group}</Typography.Text>
+                          <Tag>
+                            {checkedCount}/{items.length}
+                          </Tag>
+                        </Space>
+                      }
+                      extra={
+                        canManageRoles && !isSystemRole(selectedRole) ? (
+                          <Checkbox
+                            checked={allChecked}
+                            indeterminate={indeterminate}
+                            onChange={(event) =>
+                              toggleGroup(items, event.target.checked)
+                            }
+                          >
+                            Chọn nhóm
+                          </Checkbox>
+                        ) : null
+                      }
                     >
                       <Row gutter={[12, 10]}>
                         {items.map((permission) => (
                           <Col xs={24} md={12} key={permission.permission_id}>
                             <Checkbox
-                              checked={checkedIds.includes(permission.permission_id)}
-                              disabled={!canManageRoles || isSystemRole(selectedRole)}
+                              checked={checkedIds.includes(
+                                permission.permission_id,
+                              )}
+                              disabled={
+                                !canManageRoles || isSystemRole(selectedRole)
+                              }
                               onChange={(event) => {
                                 const next = new Set(checkedIds);
-                                if (event.target.checked) next.add(permission.permission_id);
+                                if (event.target.checked)
+                                  next.add(permission.permission_id);
                                 else next.delete(permission.permission_id);
                                 setCheckedIds([...next]);
                               }}
                             >
                               <Space direction="vertical" size={0}>
-                                <Typography.Text code>{permission.permission_key}</Typography.Text>
-                                <Typography.Text type="secondary" style={{ fontSize: 12 }}>{permission.permission_name}</Typography.Text>
+                                <Typography.Text code>
+                                  {permission.permission_key}
+                                </Typography.Text>
+                                <Typography.Text
+                                  type="secondary"
+                                  style={{ fontSize: 12 }}
+                                >
+                                  {permission.permission_name}
+                                </Typography.Text>
                               </Space>
                             </Checkbox>
                           </Col>
@@ -370,17 +523,54 @@ export function IamRolePermissionScreen() {
         destroyOnHidden
       >
         <Form form={form} layout="vertical" preserve={false}>
-          <Form.Item name="role_code" label="Mã vai trò" rules={[{ required: true, message: "Nhập mã vai trò" }, { pattern: /^[A-Za-z0-9_.-]+$/, message: "Chỉ dùng chữ, số, dấu _, . hoặc -" }]}>
-            <Input maxLength={100} placeholder="VD: WAREHOUSE_QA" autoComplete="off" />
+          <Form.Item
+            name="role_code"
+            label="Mã vai trò"
+            rules={[
+              { required: true, message: "Nhập mã vai trò" },
+              {
+                pattern: /^[A-Za-z0-9_.-]+$/,
+                message: "Chỉ dùng chữ, số, dấu _, . hoặc -",
+              },
+            ]}
+          >
+            <Input
+              maxLength={100}
+              placeholder="VD: WAREHOUSE_QA"
+              autoComplete="off"
+            />
           </Form.Item>
-          <Form.Item name="role_name" label="Tên vai trò" rules={[{ required: true, message: "Nhập tên vai trò" }]}>
+          <Form.Item
+            name="role_name"
+            label="Tên vai trò"
+            rules={[{ required: true, message: "Nhập tên vai trò" }]}
+          >
             <Input maxLength={255} placeholder="VD: Warehouse QA" />
           </Form.Item>
-          <Form.Item name="scope_type" label="Loại phạm vi" rules={[{ required: true }]}>
-            <Select options={[{ value: "SYSTEM", label: "SYSTEM" }, { value: "WAREHOUSE", label: "WAREHOUSE" }, { value: "FUNCTION", label: "FUNCTION" }]} />
+          <Form.Item
+            name="scope_type"
+            label="Loại phạm vi"
+            rules={[{ required: true }]}
+          >
+            <Select
+              options={[
+                { value: "SYSTEM", label: "SYSTEM" },
+                { value: "WAREHOUSE", label: "WAREHOUSE" },
+                { value: "FUNCTION", label: "FUNCTION" },
+              ]}
+            />
           </Form.Item>
-          <Form.Item name="status" label="Trạng thái" rules={[{ required: true }]}>
-            <Select options={[{ value: "ACTIVE", label: "ACTIVE" }, { value: "INACTIVE", label: "INACTIVE" }]} />
+          <Form.Item
+            name="status"
+            label="Trạng thái"
+            rules={[{ required: true }]}
+          >
+            <Select
+              options={[
+                { value: "ACTIVE", label: "ACTIVE" },
+                { value: "INACTIVE", label: "INACTIVE" },
+              ]}
+            />
           </Form.Item>
         </Form>
       </Modal>

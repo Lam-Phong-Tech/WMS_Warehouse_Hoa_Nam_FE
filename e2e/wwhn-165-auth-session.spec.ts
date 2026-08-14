@@ -61,6 +61,8 @@ async function mockAuthenticatedSession(
             email: "wwhn165.qa@example.com",
             code: "WWHN-165-QA",
             is_super_admin: false,
+            // BE m1 trả permission codes ở top-level /auth/me.
+            permissions: permissionCodes,
             active_context: {
               role_id: 165,
               role_name: "Inventory Viewer",
@@ -184,17 +186,26 @@ test("limited role navigation is filtered by permission code", async ({
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/profile");
 
-  const wmsGroup = page.getByText("Quản lý kho · WMS", { exact: true });
-  await expect(wmsGroup).toBeVisible();
-  await wmsGroup.click();
+  // Sidebar redesign 10-11/8: nhóm hiển thị sẵn theo section "05 · Tồn kho &
+  // kiểm soát", item là button điều hướng client-side.
+  await expect(
+    page.getByText("05 · Tồn kho & kiểm soát", { exact: true }),
+  ).toBeVisible();
 
-  const inventoryRoute = page.getByText("Tồn & truy vết", { exact: true });
+  const inventoryRoute = page.getByRole("button", {
+    name: "Tra cứu tồn & đối soát",
+  });
   await expect(inventoryRoute).toBeVisible();
-  await expect(page.getByText("Danh mục & SKU", { exact: true })).toHaveCount(0);
-  await expect(page.getByText("Nhật ký kiểm tra", { exact: true })).toHaveCount(0);
+  await expect(
+    page.getByText("Danh sách SKU / Product Master", { exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByText("Danh sách người dùng & phân quyền", { exact: true }),
+  ).toHaveCount(0);
 
   await inventoryRoute.click();
-  await expect(page).toHaveURL(/\/inventory$/);
+  // Sidebar mới gắn kèm query ?screen=INV-01 khi điều hướng.
+  await expect(page).toHaveURL(/\/inventory(\?.*)?$/);
   await expect(page).not.toHaveURL(/\/errors\/403$/);
 
   await page.screenshot({

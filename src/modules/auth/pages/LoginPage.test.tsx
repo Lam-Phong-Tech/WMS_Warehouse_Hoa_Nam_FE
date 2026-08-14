@@ -8,7 +8,7 @@ describe("LoginPage", () => {
   it("hiển thị form đăng nhập", () => {
     renderWithProviders(<LoginPage />);
     expect(
-      screen.getByRole("heading", { name: /hoa nam/i }),
+      screen.getByRole("heading", { name: /đăng nhập hệ thống/i }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /đăng nhập/i }),
@@ -21,9 +21,11 @@ describe("LoginPage", () => {
 
     await user.click(screen.getByRole("button", { name: /đăng nhập/i }));
 
-    expect(await screen.findByText(/vui lòng nhập email/i)).toBeInTheDocument();
     expect(
-      await screen.findByText(/mật khẩu tối thiểu 6 ký tự/i),
+      await screen.findByText(/vui lòng nhập email hoặc tên đăng nhập/i),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByText(/vui lòng nhập mật khẩu/i),
     ).toBeInTheDocument();
   });
 
@@ -32,8 +34,8 @@ describe("LoginPage", () => {
     renderWithProviders(<LoginPage />);
 
     await user.type(
-      screen.getByPlaceholderText(/gmail của bạn/i),
-      "not-an-email",
+      screen.getByPlaceholderText(/admin@gmail\.com hoặc admin/i),
+      "not-an-email@",
     );
     await user.click(screen.getByRole("button", { name: /đăng nhập/i }));
 

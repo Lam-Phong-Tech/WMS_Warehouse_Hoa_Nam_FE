@@ -265,13 +265,18 @@ export function getApiErrorMessage(
 ): string {
   const data = getResponseData(error);
   if (data) {
-    const errorCode = getErrorCode(data);
-    if (errorCode) return errorCode;
+    // BE (ApiError::abort / ApiConventionMiddleware) luôn gửi kèm cả `message`
+    // (câu tiếng Việt thân thiện) và `error_code` (mã SCREAMING_SNAKE_CASE
+    // dùng để so sánh bằng code, không phải để hiển thị). Phải ưu tiên message
+    // trước, nếu không người dùng sẽ luôn thấy mã lỗi thô thay vì câu giải
+    // thích — vì error_code hầu như luôn có mặt trên mọi response lỗi.
+    if (data.message) return data.message;
 
     const fieldErrors = formatFieldErrors(getFieldErrors(data));
     if (fieldErrors) return fieldErrors;
 
-    if (data.message) return data.message;
+    const errorCode = getErrorCode(data);
+    if (errorCode) return errorCode;
   }
 
   if (

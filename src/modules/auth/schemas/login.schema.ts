@@ -39,7 +39,8 @@ export const loginSchema = z
       context.addIssue({
         code: "custom",
         path: ["identifier"],
-        message: "Tên đăng nhập chỉ gồm chữ, số, dấu chấm, gạch dưới hoặc gạch ngang",
+        message:
+          "Tên đăng nhập chỉ gồm chữ, số, dấu chấm, gạch dưới hoặc gạch ngang",
       });
     }
   });

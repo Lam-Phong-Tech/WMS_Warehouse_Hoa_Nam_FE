@@ -71,34 +71,15 @@ const NAV_GROUPS: NavGroup[] = [
     name: "03 · Xuất kho",
     items: [
       {
-        screen: "OUT-REQ-01",
-        path: ROUTES.OUTBOUND,
-        label: "Tiếp nhận Phiếu yêu cầu xuất",
-      },
-      {
         screen: "OUT-01",
         path: ROUTES.OUTBOUND,
         label: "Danh sách phiếu xuất",
       },
-      {
-        screen: "OUT-03",
-        path: ROUTES.OUTBOUND,
-        label: "Chi tiết phiếu xuất",
-      },
-      {
-        screen: "OUT-02",
-        path: ROUTES.OUTBOUND,
-        label: "Quét & match Item",
-      },
-      { screen: "LBL-01", path: ROUTES.OUTBOUND, label: "Nhãn từng Item" },
-      {
-        screen: "RFID-01",
-        path: ROUTES.OUTBOUND,
-        label: "Map RFID & Full Post Issue",
-      },
     ],
   },
   {
+    // WAR-02 / WAR-03 / COMP-01 mở modal ngay trên danh sách (giống IN-02/OUT-03)
+    // nên không liệt kê trong menu; deep-link ?screen= vẫn được WarrantyPage xử lý.
     name: "04 · Bảo hành & linh kiện",
     items: [
       {
@@ -106,24 +87,11 @@ const NAV_GROUPS: NavGroup[] = [
         path: ROUTES.WARRANTY,
         label: "Danh sách bảo hành",
       },
-      {
-        screen: "WAR-02",
-        path: ROUTES.WARRANTY,
-        label: "Tiếp nhận bảo hành",
-      },
-      {
-        screen: "WAR-03",
-        path: ROUTES.WARRANTY,
-        label: "Chi tiết bảo hành",
-      },
-      {
-        screen: "COMP-01",
-        path: ROUTES.WARRANTY,
-        label: "Xuất linh kiện cho bảo hành",
-      },
     ],
   },
   {
+    // TRACE-01 / REV-01 mở modal ngay trên danh sách (giống WAR-02/COMP-01)
+    // nên không liệt kê trong menu; deep-link ?screen= vẫn được hub page xử lý.
     name: "05 · Tồn kho & kiểm soát",
     items: [
       {
@@ -132,19 +100,9 @@ const NAV_GROUPS: NavGroup[] = [
         label: "Tra cứu tồn & đối soát",
       },
       {
-        screen: "TRACE-01",
-        path: ROUTES.SCAN,
-        label: "Truy vết mã vật lý",
-      },
-      {
         screen: "REV-00",
         path: ROUTES.REVERSE,
         label: "Danh sách phiếu Reversal",
-      },
-      {
-        screen: "REV-01",
-        path: ROUTES.REVERSE,
-        label: "Tạo Reversal",
       },
     ],
   },
@@ -184,6 +142,16 @@ const MODAL_PARENT_SCREEN: Record<string, string> = {
   "IN-02": "IN-01",
   "IN-03": "IN-01",
   "PTW-01": "PTW-00",
+  "OUT-REQ-01": "OUT-01",
+  "OUT-03": "OUT-01",
+  "OUT-02": "OUT-01",
+  "LBL-01": "OUT-01",
+  "RFID-01": "OUT-01",
+  "WAR-02": "WAR-01",
+  "WAR-03": "WAR-01",
+  "COMP-01": "WAR-01",
+  "TRACE-01": "INV-01",
+  "REV-01": "REV-00",
 };
 
 function matchesPath(currentPath: string, targetPath: string) {
@@ -205,7 +173,8 @@ export function SideNav() {
   const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
   const requestedScreen = new URLSearchParams(location.search).get("screen");
   const selectedScreen =
-    normalizeScreen(requestedScreen) ?? DEFAULT_SCREEN_BY_PATH[location.pathname];
+    normalizeScreen(requestedScreen) ??
+    DEFAULT_SCREEN_BY_PATH[location.pathname];
 
   const canAccess = (path: string) => {
     const required = ROUTE_PERMISSIONS[path];

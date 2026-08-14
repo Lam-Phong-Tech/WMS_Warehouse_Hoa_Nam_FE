@@ -6,6 +6,7 @@ import {
   requireNonEmptyString,
 } from "@/shared/api/wms-contract";
 import { WMS_ACTION_PERMISSIONS } from "@/shared/constants/wms-permissions";
+import type { ApiMeta } from "@/shared/types/api-response";
 import type {
   ScanClassifyRequest,
   ScanClassifyResponse,
@@ -18,6 +19,11 @@ import type {
 } from "../types";
 
 type RawRecord = Record<string, unknown>;
+
+export interface ScanPageResult<T> {
+  data: T[];
+  meta: ApiMeta;
+}
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
@@ -299,28 +305,46 @@ export async function classifyScanCodes(
   return normalizeClassifyResponse(result, normalized);
 }
 
-export async function fetchScanBatches(
+export async function fetchScanBatchesPage(
   params: Record<string, unknown> = {},
-): Promise<ScanBatch[]> {
+): Promise<ScanPageResult<ScanBatch>> {
   const result = await http.getPage<RawRecord[] | { data?: RawRecord[] }>(
     API_ENDPOINTS.SCAN_BATCHES,
     { params },
   );
-  return rowsOf(result.data as RawRecord[] | { data?: RawRecord[] }).map(
-    normalizeBatch,
+  return {
+    data: rowsOf(result.data as RawRecord[] | { data?: RawRecord[] }).map(
+      normalizeBatch,
+    ),
+    meta: result.meta,
+  };
+}
+
+export async function fetchScanBatches(
+  params: Record<string, unknown> = {},
+): Promise<ScanBatch[]> {
+  return (await fetchScanBatchesPage(params)).data;
+}
+
+export async function fetchScanEventsPage(
+  params: Record<string, unknown> = {},
+): Promise<ScanPageResult<ScanEvent>> {
+  const result = await http.getPage<RawRecord[] | { data?: RawRecord[] }>(
+    API_ENDPOINTS.SCAN_EVENTS,
+    { params },
   );
+  return {
+    data: rowsOf(result.data as RawRecord[] | { data?: RawRecord[] }).map(
+      normalizeEvent,
+    ),
+    meta: result.meta,
+  };
 }
 
 export async function fetchScanEvents(
   params: Record<string, unknown> = {},
 ): Promise<ScanEvent[]> {
-  const result = await http.getPage<RawRecord[] | { data?: RawRecord[] }>(
-    API_ENDPOINTS.SCAN_EVENTS,
-    { params },
-  );
-  return rowsOf(result.data as RawRecord[] | { data?: RawRecord[] }).map(
-    normalizeEvent,
-  );
+  return (await fetchScanEventsPage(params)).data;
 }
 
 export async function fetchPhysicalCodes(

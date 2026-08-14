@@ -86,7 +86,12 @@ function boolEnv(value: string | undefined, key: string): boolean {
 }
 
 function requiredCredentialedApi(value: string | undefined): true {
-  if (value === undefined || value === "" || value === "true" || value === "1") {
+  if (
+    value === undefined ||
+    value === "" ||
+    value === "true" ||
+    value === "1"
+  ) {
     return true;
   }
 

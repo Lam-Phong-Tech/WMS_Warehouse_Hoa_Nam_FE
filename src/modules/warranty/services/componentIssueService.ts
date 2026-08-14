@@ -11,7 +11,19 @@ import { WMS_ACTION_PERMISSIONS } from "@/shared/constants/wms-permissions";
 
 type RawRecord = Record<string, unknown>;
 
-export type ComponentIssueStatus = "DRAFT" | "SCANNING" | "POSTED" | "CANCELLED";
+export type ComponentIssueStatus =
+  | "DRAFT"
+  | "SCANNING"
+  | "POSTED"
+  | "CANCELLED";
+
+export type ComponentIssueItem = {
+  id: string;
+  item_id?: string;
+  container_id?: string;
+  quantity: number;
+  status: "ACTIVE" | "REMOVED" | "POSTED";
+};
 
 export type ComponentIssueLine = {
   id: string;
@@ -21,6 +33,20 @@ export type ComponentIssueLine = {
   required_qty: number;
   scanned_qty: number;
   note?: string;
+  items: ComponentIssueItem[];
+};
+
+export type ComponentIssueListParams = {
+  warranty_case_id?: string;
+  status?: ComponentIssueStatus | string;
+  keyword?: string;
+  page?: number;
+  per_page?: number;
+};
+
+export type ComponentIssuePage = {
+  data: ComponentIssueDocument[];
+  meta?: Record<string, unknown>;
 };
 
 export type ComponentIssueDocument = {
@@ -32,6 +58,8 @@ export type ComponentIssueDocument = {
   purpose: "WARRANTY";
   status: ComponentIssueStatus;
   note?: string;
+  cancel_reason?: string;
+  posted_at?: string;
   version: number;
   lines: ComponentIssueLine[];
 };
@@ -65,6 +93,16 @@ function rowsOf<T>(value: T[] | { data?: T[] }): T[] {
       : [];
 }
 
+function normalizeItem(row: RawRecord): ComponentIssueItem {
+  return {
+    id: text(row.id),
+    item_id: text(row.item_id) || undefined,
+    container_id: text(row.container_id) || undefined,
+    quantity: num(row.quantity),
+    status: text(row.status, "ACTIVE") as ComponentIssueItem["status"],
+  };
+}
+
 function normalizeLine(row: RawRecord): ComponentIssueLine {
   return {
     id: text(row.id),
@@ -74,15 +112,18 @@ function normalizeLine(row: RawRecord): ComponentIssueLine {
     required_qty: num(row.required_qty),
     scanned_qty: num(row.scanned_qty),
     note: text(row.note) || undefined,
+    items: rowsOf(
+      (row.items ?? []) as RawRecord[] | { data?: RawRecord[] },
+    ).map(normalizeItem),
   };
 }
 
 function normalizeDocument(row: RawRecord): ComponentIssueDocument {
-  const document = (row.document && typeof row.document === "object"
-    ? row.document
-    : row) as RawRecord;
+  const document = (
+    row.document && typeof row.document === "object" ? row.document : row
+  ) as RawRecord;
   const rawLines = rowsOf(
-    ((row.lines ?? document.lines ?? []) as RawRecord[] | { data?: RawRecord[] }),
+    (row.lines ?? document.lines ?? []) as RawRecord[] | { data?: RawRecord[] },
   );
   return {
     id: text(document.id),
@@ -93,6 +134,8 @@ function normalizeDocument(row: RawRecord): ComponentIssueDocument {
     purpose: "WARRANTY",
     status: text(document.status, "DRAFT") as ComponentIssueStatus,
     note: text(document.note) || undefined,
+    cancel_reason: text(document.cancel_reason) || undefined,
+    posted_at: text(document.posted_at) || undefined,
     version: num(document.version) || 1,
     lines: rawLines.map(normalizeLine),
   };
@@ -124,19 +167,31 @@ function mutationConfig(ifMatch: number, idempotencyKey?: string) {
 }
 
 export async function fetchComponentIssueDocuments(
-  params: Record<string, unknown> = {},
-): Promise<ComponentIssueDocument[]> {
+  params: ComponentIssueListParams = {},
+): Promise<ComponentIssuePage> {
   assertWmsActionPermission(
     WMS_ACTION_PERMISSIONS.WARRANTY_COMPONENT_ISSUE,
     "view component issues",
   );
+  const cleaned = Object.fromEntries(
+    Object.entries({
+      warranty_case_id: params.warranty_case_id,
+      status: params.status,
+      keyword: params.keyword,
+      page: params.page,
+      per_page: params.per_page ?? 15,
+    }).filter(([, value]) => value !== undefined && value !== ""),
+  );
   const result = await http.getPage<RawRecord[] | { data?: RawRecord[] }>(
     API_ENDPOINTS.COMPONENT_ISSUE_DOCUMENTS,
-    { params: { ...params, per_page: params.per_page ?? 100 } },
+    { params: cleaned },
   );
-  return rowsOf(result.data as RawRecord[] | { data?: RawRecord[] }).map(
-    normalizeDocument,
-  );
+  return {
+    data: rowsOf(result.data as RawRecord[] | { data?: RawRecord[] }).map(
+      normalizeDocument,
+    ),
+    meta: result.meta as Record<string, unknown> | undefined,
+  };
 }
 
 export async function fetchComponentIssueDocument(
@@ -147,7 +202,10 @@ export async function fetchComponentIssueDocument(
     "view component issue detail",
   );
   const row = await http.get<RawRecord>(
-    endpoint(API_ENDPOINTS.COMPONENT_ISSUE_DOCUMENT, requireNonEmptyString(id, "id")),
+    endpoint(
+      API_ENDPOINTS.COMPONENT_ISSUE_DOCUMENT,
+      requireNonEmptyString(id, "id"),
+    ),
   );
   return normalizeDocument(row);
 }
@@ -170,17 +228,23 @@ export async function createComponentIssue(
     required_qty: requirePositiveNumber(line.required_qty, "required_qty"),
     note: line.note?.trim() || undefined,
   }));
-  const row = await http.post<RawRecord>(API_ENDPOINTS.COMPONENT_ISSUE_DOCUMENTS, {
-    warehouse_id: requireNonEmptyString(payload.warehouse_id, "warehouse_id"),
-    warranty_case_id: requireNonEmptyString(
-      payload.warranty_case_id,
-      "warranty_case_id",
-    ),
-    document_date: requireNonEmptyString(payload.document_date, "document_date"),
-    purpose: "WARRANTY",
-    note: payload.note?.trim() || undefined,
-    lines,
-  });
+  const row = await http.post<RawRecord>(
+    API_ENDPOINTS.COMPONENT_ISSUE_DOCUMENTS,
+    {
+      warehouse_id: requireNonEmptyString(payload.warehouse_id, "warehouse_id"),
+      warranty_case_id: requireNonEmptyString(
+        payload.warranty_case_id,
+        "warranty_case_id",
+      ),
+      document_date: requireNonEmptyString(
+        payload.document_date,
+        "document_date",
+      ),
+      purpose: "WARRANTY",
+      note: payload.note?.trim() || undefined,
+      lines,
+    },
+  );
   assertNeutral(row, "Component Issue creation");
   return normalizeDocument(row);
 }
@@ -191,7 +255,11 @@ export async function scanComponentIssue(input: {
   codeValue: string;
   quantity: number;
   ifMatch: number;
-}): Promise<{ version: number; scanned_qty: number; status: ComponentIssueStatus }> {
+}): Promise<{
+  version: number;
+  scanned_qty: number;
+  status: ComponentIssueStatus;
+}> {
   assertWmsActionPermission(
     WMS_ACTION_PERMISSIONS.WARRANTY_COMPONENT_ISSUE,
     "scan component issue",
@@ -253,7 +321,9 @@ export async function postComponentIssue(input: {
     WMS_ACTION_PERMISSIONS.WARRANTY_COMPONENT_ISSUE,
     "post component issue",
   );
-  const key = requireIdempotencyKeyHeader(input.idempotencyKey)["Idempotency-Key"];
+  const key = requireIdempotencyKeyHeader(input.idempotencyKey)[
+    "Idempotency-Key"
+  ];
   const row = await http.post<RawRecord>(
     endpoint(
       API_ENDPOINTS.COMPONENT_ISSUE_POST,

@@ -11,7 +11,15 @@ import type {
   IamUser,
   IamUserStatus,
 } from "@/modules/iam/types/iam.types";
-import { getApiErrorMessage, getMutationErrorMessage } from "@/shared/api/api-error";
+import {
+  getApiErrorMessage,
+  getMutationErrorMessage,
+} from "@/shared/api/api-error";
+import {
+  MvpPageSizeSelector,
+  MvpPaginationFooter,
+} from "@/shared/components/mvp/MvpListPagination";
+import { resolveApiPagination } from "@/shared/components/mvp/mvp-pagination";
 import { useAuthStore } from "@/shared/store/auth.store";
 
 const STATUS_OPTIONS: Array<{ value: IamUserStatus; label: string }> = [
@@ -73,15 +81,20 @@ export interface IamUserScreenProps {
   openCreateOnMount?: boolean;
 }
 
-export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps) {
+export function IamUserScreen({
+  openCreateOnMount = false,
+}: IamUserScreenProps) {
   const permissionCodes = useAuthStore((state) => state.permissionCodes);
   const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
+  const currentUserId = useAuthStore((state) => state.profile?.user_id);
   const canManageUsers =
     isSuperAdmin || permissionCodes.includes("iam.user.manage");
 
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState<IamUserStatus | "">("");
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(15);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<IamUser | null>(null);
   const [formState, setFormState] = useState<UserFormState>(EMPTY_FORM);
@@ -90,9 +103,10 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
   const usersQuery = useIamUsers({
     keyword: search.trim(),
     status: statusFilter,
-    per_page: 100,
+    page: roleFilter ? 1 : page,
+    per_page: roleFilter ? 100 : perPage,
   });
-  const rolesQuery = useIamRoles();
+  const rolesQuery = useIamRoles({ per_page: 100 });
   const createUser = useCreateIamUser();
   const updateUser = useUpdateIamUser();
 
@@ -100,16 +114,33 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
   const users = usersQuery.data?.data ?? [];
   const isSaving = createUser.isPending || updateUser.isPending;
 
-  const filteredUsers = useMemo(() => {
+  const roleFilteredUsers = useMemo(() => {
     if (!roleFilter) return users;
     return users.filter((user) =>
       user.roles?.some((role) => role.role_id === roleFilter),
     );
   }, [roleFilter, users]);
 
+  const pagination = resolveApiPagination(usersQuery.data?.meta, {
+    page,
+    pageSize: perPage,
+    rowCount: users.length,
+  });
+  const total = roleFilter ? roleFilteredUsers.length : pagination.total;
+  const displayedUsers = roleFilter
+    ? roleFilteredUsers.slice((page - 1) * perPage, page * perPage)
+    : users;
+
   const selectedRole = useMemo(
     () => roles.find((role) => role.role_id === formState.roleId),
     [formState.roleId, roles],
+  );
+
+  // SCR-IAM-01 (no self-escalation): BE luôn từ chối POST /users/{own_id}/roles
+  // bất kể giá trị mới là gì, nên khoá luôn ô chọn vai trò khi đang sửa chính
+  // tài khoản actor thay vì để họ đổi rồi mới nhận lỗi 409 lúc submit.
+  const isEditingSelf = Boolean(
+    editingUser && currentUserId && editingUser.user_id === currentUserId,
   );
 
   const resetForm = () => {
@@ -127,16 +158,25 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
     setIsModalOpen(true);
   };
 
+  // Dep phải là string ổn định: `roles` là mảng fallback `?? []` đổi identity
+  // mỗi render — để nguyên trong deps sẽ tạo vòng setState -> render -> effect
+  // vô hạn (test IamUserScreen từng OOM 4GB vì đúng vòng lặp này).
+  const defaultRoleId = roles[0]?.role_id ?? "";
   useEffect(() => {
     if (!openCreateOnMount || !canManageUsers) return;
     setEditingUser(null);
     setFormState({
       ...EMPTY_FORM,
-      roleId: roles[0]?.role_id ?? "",
+      roleId: defaultRoleId,
     });
     setFormError("");
     setIsModalOpen(true);
-  }, [canManageUsers, openCreateOnMount, roles]);
+  }, [canManageUsers, openCreateOnMount, defaultRoleId]);
+
+  useEffect(() => {
+    const maxPage = Math.max(1, Math.ceil(total / perPage));
+    if (page > maxPage) setPage(maxPage);
+  }, [page, perPage, total]);
 
   const openEdit = (user: IamUser) => {
     if (!canManageUsers) return;
@@ -161,7 +201,10 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
     setFormError("");
   };
 
-  const updateField = <K extends keyof UserFormState>(key: K, value: UserFormState[K]) => {
+  const updateField = <K extends keyof UserFormState>(
+    key: K,
+    value: UserFormState[K],
+  ) => {
     setFormState((current) => ({ ...current, [key]: value }));
   };
 
@@ -202,6 +245,7 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
         await updateUser.mutateAsync({
           userId: editingUser.user_id,
           roleId: formState.roleId,
+          currentRoleId: editingUser.roles?.[0]?.role_id,
           payload: {
             ...basePayload,
             version: editingUser.version,
@@ -224,7 +268,10 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
   };
 
   const listError = usersQuery.error
-    ? getApiErrorMessage(usersQuery.error, "Không tải được danh sách người dùng.")
+    ? getApiErrorMessage(
+        usersQuery.error,
+        "Không tải được danh sách người dùng.",
+      )
     : "";
   const roleError = rolesQuery.error
     ? getApiErrorMessage(rolesQuery.error, "Không tải được danh sách vai trò.")
@@ -236,14 +283,20 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
         <input
           className="input search"
           value={search}
-          onChange={(event) => setSearch(event.target.value)}
+          onChange={(event) => {
+            setSearch(event.target.value);
+            setPage(1);
+          }}
           placeholder="Tìm tên / tên đăng nhập"
           aria-label="Tìm người dùng"
         />
         <select
           className="select"
           value={roleFilter}
-          onChange={(event) => setRoleFilter(event.target.value)}
+          onChange={(event) => {
+            setRoleFilter(event.target.value);
+            setPage(1);
+          }}
           aria-label="Lọc theo vai trò"
           disabled={rolesQuery.isLoading}
         >
@@ -257,9 +310,10 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
         <select
           className="select"
           value={statusFilter}
-          onChange={(event) =>
-            setStatusFilter(event.target.value as IamUserStatus | "")
-          }
+          onChange={(event) => {
+            setStatusFilter(event.target.value as IamUserStatus | "");
+            setPage(1);
+          }}
           aria-label="Lọc theo trạng thái"
         >
           <option value="">Trạng thái: Tất cả</option>
@@ -285,7 +339,11 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
       {listError ? (
         <div className="alert" role="alert" style={{ marginBottom: 14 }}>
           {listError}{" "}
-          <button className="btn small" type="button" onClick={() => usersQuery.refetch()}>
+          <button
+            className="btn small"
+            type="button"
+            onClick={() => usersQuery.refetch()}
+          >
             Thử lại
           </button>
         </div>
@@ -295,6 +353,14 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
           {roleError}
         </div>
       ) : null}
+
+      <MvpPageSizeSelector
+        value={perPage}
+        onChange={(value) => {
+          setPerPage(value);
+          setPage(1);
+        }}
+      />
 
       <div className="table-wrap" aria-busy={usersQuery.isLoading}>
         <table>
@@ -315,8 +381,8 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
                   <span className="muted">Đang tải dữ liệu từ API...</span>
                 </td>
               </tr>
-            ) : filteredUsers.length > 0 ? (
-              filteredUsers.map((user) => {
+            ) : displayedUsers.length > 0 ? (
+              displayedUsers.map((user) => {
                 const primaryRole = user.roles?.[0];
                 return (
                   <tr key={user.user_id}>
@@ -328,12 +394,18 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
                     <td>{primaryRole?.role_name ?? "Chưa gán"}</td>
                     <td>{scopeLabel(primaryRole)}</td>
                     <td>
-                      <span className={statusClass(user.status)}>{statusLabel(user.status)}</span>
+                      <span className={statusClass(user.status)}>
+                        {statusLabel(user.status)}
+                      </span>
                     </td>
                     <td>{formatLastLogin(user.last_login_at)}</td>
                     <td>
                       {canManageUsers ? (
-                        <button className="btn small" type="button" onClick={() => openEdit(user)}>
+                        <button
+                          className="btn small"
+                          type="button"
+                          onClick={() => openEdit(user)}
+                        >
                           Sửa
                         </button>
                       ) : (
@@ -346,13 +418,23 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
             ) : (
               <tr>
                 <td colSpan={6}>
-                  <span className="muted">Không có người dùng phù hợp bộ lọc.</span>
+                  <span className="muted">
+                    Không có người dùng phù hợp bộ lọc.
+                  </span>
                 </td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
+
+      <MvpPaginationFooter
+        current={page}
+        pageSize={perPage}
+        total={total}
+        itemLabel="người dùng"
+        onChange={setPage}
+      />
 
       <Modal
         title={editingUser ? "Sửa người dùng" : "Thêm người dùng"}
@@ -382,7 +464,9 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
                   className="input"
                   style={{ width: "100%" }}
                   value={formState.displayName}
-                  onChange={(event) => updateField("displayName", event.target.value)}
+                  onChange={(event) =>
+                    updateField("displayName", event.target.value)
+                  }
                   autoFocus
                   disabled={isSaving}
                 />
@@ -394,7 +478,9 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
                   className="input"
                   style={{ width: "100%" }}
                   value={formState.username}
-                  onChange={(event) => updateField("username", event.target.value)}
+                  onChange={(event) =>
+                    updateField("username", event.target.value)
+                  }
                   autoComplete="off"
                   disabled={isSaving}
                 />
@@ -431,7 +517,9 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
                   className="select"
                   style={{ width: "100%" }}
                   value={formState.status}
-                  onChange={(event) => updateField("status", event.target.value as IamUserStatus)}
+                  onChange={(event) =>
+                    updateField("status", event.target.value as IamUserStatus)
+                  }
                   disabled={isSaving}
                 >
                   {STATUS_OPTIONS.map((status) => (
@@ -452,8 +540,10 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
                   className="select"
                   style={{ width: "100%" }}
                   value={formState.roleId}
-                  onChange={(event) => updateField("roleId", event.target.value)}
-                  disabled={isSaving || roles.length === 0}
+                  onChange={(event) =>
+                    updateField("roleId", event.target.value)
+                  }
+                  disabled={isSaving || roles.length === 0 || isEditingSelf}
                 >
                   <option value="">Chọn vai trò</option>
                   {roles.map((role) => (
@@ -462,12 +552,20 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
                     </option>
                   ))}
                 </select>
+                {isEditingSelf ? (
+                  <div className="muted" style={{ marginTop: 6 }}>
+                    Không thể tự đổi vai trò của chính mình (SCR-IAM-01 — chống
+                    tự leo thang đặc quyền). Nhờ một quản trị viên khác thực
+                    hiện thay đổi này.
+                  </div>
+                ) : null}
               </div>
               <div className="field">
                 <label>Phạm vi dữ liệu</label>
                 <div className="value">{scopeLabel(selectedRole)}</div>
                 <div className="muted" style={{ marginTop: 6 }}>
-                  Phạm vi hiện lấy từ scope_type của role backend; API m1 chưa hỗ trợ chỉnh scope_ref riêng theo user.
+                  Phạm vi hiện lấy từ scope_type của role backend; API m1 chưa
+                  hỗ trợ chỉnh scope_ref riêng theo user.
                 </div>
               </div>
               <div className="field">
@@ -480,9 +578,15 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
                   style={{ width: "100%" }}
                   type="password"
                   value={formState.password}
-                  onChange={(event) => updateField("password", event.target.value)}
+                  onChange={(event) =>
+                    updateField("password", event.target.value)
+                  }
                   autoComplete="new-password"
-                  placeholder={editingUser ? "Để trống nếu không đổi mật khẩu" : "Tối thiểu 8 ký tự"}
+                  placeholder={
+                    editingUser
+                      ? "Để trống nếu không đổi mật khẩu"
+                      : "Tối thiểu 8 ký tự"
+                  }
                   disabled={isSaving}
                 />
               </div>
@@ -491,7 +595,8 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
                   <label>Version</label>
                   <div className="value">{editingUser.version}</div>
                   <div className="muted" style={{ marginTop: 6 }}>
-                    FE gửi version hiện tại để backend chặn ghi đè khi có xung đột đồng thời.
+                    FE gửi version hiện tại để backend chặn ghi đè khi có xung
+                    đột đồng thời.
                   </div>
                 </div>
               ) : null}
@@ -500,10 +605,19 @@ export function IamUserScreen({ openCreateOnMount = false }: IamUserScreenProps)
 
           <div className="toolbar" style={{ marginTop: 16, marginBottom: 0 }}>
             <div className="spacer" />
-            <button className="btn" type="button" onClick={closeModal} disabled={isSaving}>
+            <button
+              className="btn"
+              type="button"
+              onClick={closeModal}
+              disabled={isSaving}
+            >
               Hủy
             </button>
-            <button className="btn primary" type="submit" disabled={isSaving || !formState.roleId}>
+            <button
+              className="btn primary"
+              type="submit"
+              disabled={isSaving || !formState.roleId}
+            >
               {isSaving ? "Đang lưu..." : "Lưu người dùng"}
             </button>
           </div>

@@ -41,6 +41,9 @@ async function mockAuthenticatedSession(
           success: true,
           data: {
             access_token: ACCESS_TOKEN,
+            // BE m1 rotate refresh token trong response; thiếu field này
+            // auth store coi phiên không hợp lệ và đá về /login.
+            refresh_token: "<WWHN_148_MOCK_REFRESH_TOKEN>",
             token_type: "bearer",
             expires_in: 3600,
           },
@@ -62,6 +65,8 @@ async function mockAuthenticatedSession(
             email: "wwhn148.qa@gmail.com",
             code: "WWHN-148-QA",
             is_super_admin: false,
+            // BE m1 trả permission codes ở top-level /auth/me.
+            permissions: permissionCodes,
             active_context: {
               role_id: 148,
               role_name: "QA limited role",
@@ -103,7 +108,10 @@ for (const viewport of viewports) {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
     await page.goto("/login");
 
-    await expect(page.getByRole("heading", { name: "Hoa Nam" })).toBeVisible();
+    // Heading login đổi theo redesign 10-11/8.
+    await expect(
+      page.getByRole("heading", { name: "Đăng nhập hệ thống" }),
+    ).toBeVisible();
     await expect(page.getByRole("button", { name: "Đăng nhập" })).toBeVisible();
 
     const hasHorizontalOverflow = await page.evaluate(
@@ -125,7 +133,10 @@ test("component-catalog exposes shared UI states for QA2", async ({
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/component-catalog");
 
-  await expect(page.getByRole("heading", { name: "Component catalog" })).toBeVisible();
+  // Trang hiện có 2 heading trùng tên (h2 shell + h3 antd) -> khóa theo level.
+  await expect(
+    page.getByRole("heading", { name: "Component catalog", level: 2 }),
+  ).toBeVisible();
   await expect(page.getByText("Loading", { exact: true })).toBeVisible();
   await expect(page.getByText("Empty", { exact: true })).toBeVisible();
   await expect(page.getByText("Error", { exact: true })).toBeVisible();
@@ -150,7 +161,8 @@ test("limited role is redirected from master-data to errors/403", async ({
 }, testInfo) => {
   await mockAuthenticatedSession(page, []);
   await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto("/master-data");
+  // Route master-data canonical sau redesign là /master-data/skus.
+  await page.goto("/master-data/skus");
 
   await expect(page).toHaveURL(/\/errors\/403$/);
   await expect(page.getByText("Không có quyền truy cập", { exact: true })).toBeVisible();
@@ -189,7 +201,8 @@ test("controlled login API error includes visible retry-safe state", async ({
   });
 
   await page.goto("/login");
-  await page.locator('input[name="email"]').fill("qa-evidence@gmail.com");
+  // LoginPage dùng field "identifier" (email hoặc username) sau redesign.
+  await page.locator('input[name="identifier"]').fill("qa-evidence@gmail.com");
   await page
     .locator('input[name="password"]')
     .fill(process.env.QA_EVIDENCE_PASSWORD ?? "<QA_EVIDENCE_PASSWORD>");

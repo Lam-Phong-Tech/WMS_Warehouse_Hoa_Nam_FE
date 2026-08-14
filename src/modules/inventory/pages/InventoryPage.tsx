@@ -1,45 +1,34 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { Space, Table, Tabs, Tag, Tooltip, Typography } from "antd";
+import type { ColumnsType, TablePaginationConfig } from "antd/es/table";
 import {
-  Button,
-  Descriptions,
-  Divider,
-  Drawer,
-  Input,
-  Select,
-  Space,
-  Statistic,
-  Table,
-  Tabs,
-  Tag,
-  Timeline,
-  Tooltip,
-  Typography,
-} from "antd";
-import {
+  AppstoreOutlined,
   EyeOutlined,
   HistoryOutlined,
-  ReloadOutlined,
   SearchOutlined,
+  SwapOutlined,
 } from "@ant-design/icons";
-import {
-  fetchInventoryBalances,
-  fetchStockMovement,
-  fetchStockMovements,
-  traceStockMovementSource,
-  type InventoryBalanceRow,
-  type StockMovementRow,
-  type StockMovementTraceSource,
-} from "../services/inventoryService";
-import {
-  InlineApiError,
-  ResponsiveToolbar,
-  tableEmptyText,
-} from "@/shared/components/feedback/BusinessState";
+import { useQueryClient } from "@tanstack/react-query";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
+import { MvpPageSizeSelector } from "@/shared/components/mvp/MvpListPagination";
+import { resolveApiPagination } from "@/shared/components/mvp/mvp-pagination";
 import { useCanAny } from "@/shared/components/permission";
+import {
+  useInventoryBalances,
+  useStockMovements,
+  inventoryKeys,
+} from "../hooks/use-inventory";
+import { BalanceDetailModal } from "../components/BalanceDetailModal";
+import { TraceModal } from "../components/TraceModal";
+import type {
+  InventoryBalanceRow,
+  StockMovementRow,
+} from "../services/inventoryService";
 
 const numberFormatter = new Intl.NumberFormat("vi-VN");
+const SEARCH_DEBOUNCE_MS = 250;
 
 function formatQty(value: number | null | undefined, uom = "") {
   if (value === null || value === undefined) return "-";
@@ -47,154 +36,111 @@ function formatQty(value: number | null | undefined, uom = "") {
 }
 
 function reconcileColor(status: string) {
-  if (status === "PASS") return "success";
-  if (status === "FAIL") return "error";
+  if (status === "MATCH" || status === "PASS") return "success";
+  if (status === "MISMATCH" || status === "FAIL") return "error";
   return "warning";
 }
 
-function JsonPreview({ value }: { value: unknown }) {
-  return (
-    <pre
-      style={{
-        background: "#f6f8fa",
-        border: "1px solid #e5e7eb",
-        borderRadius: 6,
-        maxHeight: 220,
-        overflow: "auto",
-        padding: 12,
-        whiteSpace: "pre-wrap",
-      }}
-    >
-      {JSON.stringify(value, null, 2)}
-    </pre>
-  );
-}
-
+/**
+ * INV-01 · Tra cứu tồn & đối soát — màn hub của luồng 05 · Tồn kho & kiểm soát.
+ * Truy vết (TRACE-01) mở modal ngay trên danh sách, không chuyển trang —
+ * đồng bộ pattern luồng 02/03/04.
+ */
 export default function InventoryPage() {
-  const [activeTab, setActiveTab] = useState("stock");
-  const [balances, setBalances] = useState<InventoryBalanceRow[]>([]);
-  const [movements, setMovements] = useState<StockMovementRow[]>([]);
-  const [stockSearch, setStockSearch] = useState("");
-  const [stockStatus, setStockStatus] = useState<string>();
-  const [movementSearch, setMovementSearch] = useState("");
-  const [movementType, setMovementType] = useState<string>();
-  const [stockLoading, setStockLoading] = useState(false);
-  const [movementLoading, setMovementLoading] = useState(false);
-  const [stockError, setStockError] = useState<unknown>(null);
-  const [movementError, setMovementError] = useState<unknown>(null);
-  const [selectedBalance, setSelectedBalance] =
-    useState<InventoryBalanceRow | null>(null);
-  const [selectedMovement, setSelectedMovement] =
-    useState<StockMovementRow | null>(null);
-  const [movementDetail, setMovementDetail] = useState<unknown>(null);
-  const [movementDetailLoading, setMovementDetailLoading] = useState(false);
-  const [movementDetailError, setMovementDetailError] = useState<unknown>(null);
-  const [traceMovement, setTraceMovement] = useState<StockMovementRow | null>(
-    null,
-  );
-  const [traceSource, setTraceSource] =
-    useState<StockMovementTraceSource | null>(null);
-  const [traceLoading, setTraceLoading] = useState(false);
-  const [traceError, setTraceError] = useState<unknown>(null);
-  const [reloadKey, setReloadKey] = useState(0);
-
+  const queryClient = useQueryClient();
   const canTrace = useCanAny(["inventory.trace", "INVENTORY_TRACE"]);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
+  const [stockStatus, setStockStatus] = useState("");
+  const [movementSearch, setMovementSearch] = useState("");
+  const [movementType, setMovementType] = useState("");
+  const [balancePage, setBalancePage] = useState(1);
+  const [balancePerPage, setBalancePerPage] = useState(15);
+  const [movementPage, setMovementPage] = useState(1);
+  const [movementPerPage, setMovementPerPage] = useState(15);
+
+  const [activeTab, setActiveTab] = useState("balance");
+
+  const [balanceDetailRow, setBalanceDetailRow] =
+    useState<InventoryBalanceRow | null>(null);
+  const [traceMovementId, setTraceMovementId] = useState<string | null>(null);
+
+  const balanceQuery = useInventoryBalances({
+    keyword: search || undefined,
+    status: stockStatus || undefined,
+    page: balancePage,
+    per_page: balancePerPage,
+  });
+
+  const movementQuery = useStockMovements({
+    search: movementSearch || undefined,
+    keyword: movementSearch || undefined,
+    movement_type: movementType || undefined,
+    page: movementPage,
+    per_page: movementPerPage,
+  });
+
+  const balances = balanceQuery.data?.rows ?? [];
+  const balanceMeta = balanceQuery.data?.meta;
+  const movements = movementQuery.data?.rows ?? [];
+  const movementMeta = movementQuery.data?.meta;
+
+  const balancePagination = resolveApiPagination(balanceMeta, {
+    page: balancePage,
+    pageSize: balancePerPage,
+    rowCount: balances.length,
+  });
+  const movementPagination = resolveApiPagination(movementMeta, {
+    page: movementPage,
+    pageSize: movementPerPage,
+    rowCount: movements.length,
+  });
 
   useEffect(() => {
-    if (activeTab !== "stock") return;
-    let cancelled = false;
-    setStockLoading(true);
-    setStockError(null);
-    fetchInventoryBalances({
-      search: stockSearch,
-      status: stockStatus,
-      limit: 20,
-    })
-      .then((data) => {
-        if (!cancelled) setBalances(data);
-      })
-      .catch((fetchError: unknown) => {
-        if (!cancelled) {
-          setBalances([]);
-          setStockError(fetchError);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setStockLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [activeTab, stockSearch, stockStatus, reloadKey]);
+    const timer = window.setTimeout(() => {
+      setSearch(searchInput.trim());
+      setBalancePage(1);
+    }, SEARCH_DEBOUNCE_MS);
+    return () => window.clearTimeout(timer);
+  }, [searchInput]);
 
   useEffect(() => {
-    if (activeTab !== "movement") return;
-    let cancelled = false;
-    setMovementLoading(true);
-    setMovementError(null);
-    fetchStockMovements({
-      search: movementSearch,
-      keyword: movementSearch,
-      movement_type: movementType,
-      per_page: 20,
-    })
-      .then((data) => {
-        if (!cancelled) setMovements(data);
-      })
-      .catch((fetchError: unknown) => {
-        if (!cancelled) {
-          setMovements([]);
-          setMovementError(fetchError);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setMovementLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [activeTab, movementSearch, movementType, reloadKey]);
+    const screen = searchParams.get("screen");
+    if (!screen || screen === "INV-01") return;
+    if (screen === "TRACE-01") {
+      const id = searchParams.get("id");
+      if (id) {
+        setTraceMovementId(id);
+      } else {
+        setTraceMovementId("__lookup__");
+      }
+    } else {
+      return;
+    }
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set("screen", "INV-01");
+    nextParams.delete("id");
+    setSearchParams(nextParams, { replace: true });
+  }, [searchParams, setSearchParams]);
 
-  function openMovementDetail(row: StockMovementRow) {
-    setSelectedMovement(row);
-    setMovementDetail(null);
-    setMovementDetailError(null);
-    setMovementDetailLoading(true);
-    fetchStockMovement(row.id)
-      .then(setMovementDetail)
-      .catch(setMovementDetailError)
-      .finally(() => setMovementDetailLoading(false));
-  }
+  const refreshAll = () => {
+    void queryClient.invalidateQueries({ queryKey: inventoryKeys.all });
+  };
 
-  function openTrace(row: StockMovementRow) {
-    if (!canTrace || !row.id) return;
-    setTraceMovement(row);
-    setTraceSource(null);
-    setTraceError(null);
-    setTraceLoading(true);
-    traceStockMovementSource(row.id)
-      .then(setTraceSource)
-      .catch(setTraceError)
-      .finally(() => setTraceLoading(false));
-  }
+  const handleOpenTrace = (movementId: string) => {
+    setBalanceDetailRow(null);
+    setTraceMovementId(movementId);
+  };
 
-  const relatedMovements = useMemo(() => {
-    if (!selectedBalance) return [];
-    return movements
-      .filter(
-        (movement) =>
-          movement.sku === selectedBalance.sku ||
-          movement.id === selectedBalance.lastMovementId ||
-          movement.movementId === selectedBalance.lastMovementId,
-      )
-      .slice(0, 8);
-  }, [movements, selectedBalance]);
-
-  const stockColumns = [
+  const balanceColumns: ColumnsType<InventoryBalanceRow> = [
     {
       title: "SKU",
       dataIndex: "sku",
       key: "sku",
+      width: 140,
+      fixed: "left",
       render: (value: string) => (
         <Typography.Text code copyable>
           {value || "-"}
@@ -203,22 +149,25 @@ export default function InventoryPage() {
     },
     {
       title: "Tên hàng",
-      dataIndex: "name",
       key: "name",
-      render: (value: string, row: InventoryBalanceRow) => (
+      width: 200,
+      render: (_, row) => (
         <Space direction="vertical" size={0}>
-          <strong>{value || "-"}</strong>
-          <Typography.Text type="secondary">{row.type}</Typography.Text>
+          <strong>{row.name || "-"}</strong>
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            {row.type}
+          </Typography.Text>
         </Space>
       ),
     },
-    { title: "Kho", dataIndex: "warehouse", key: "warehouse" },
-    { title: "Lô", dataIndex: "lotNo", key: "lotNo" },
+    { title: "Kho", dataIndex: "warehouse", key: "warehouse", width: 130 },
+    { title: "Lô", dataIndex: "lotNo", key: "lotNo", width: 90 },
     {
       title: "Khả dụng",
       dataIndex: "available",
       key: "available",
-      align: "right" as const,
+      width: 110,
+      align: "right",
       render: (value: number, row: InventoryBalanceRow) => (
         <strong>{formatQty(value, row.uom)}</strong>
       ),
@@ -227,7 +176,8 @@ export default function InventoryPage() {
       title: "On-hand",
       dataIndex: "onHand",
       key: "onHand",
-      align: "right" as const,
+      width: 100,
+      align: "right",
       render: (value: number, row: InventoryBalanceRow) =>
         formatQty(value, row.uom),
     },
@@ -235,7 +185,8 @@ export default function InventoryPage() {
       title: "Reserved",
       dataIndex: "reserved",
       key: "reserved",
-      align: "right" as const,
+      width: 100,
+      align: "right",
       render: (value: number, row: InventoryBalanceRow) =>
         formatQty(value, row.uom),
     },
@@ -243,18 +194,33 @@ export default function InventoryPage() {
       title: "In-transit",
       dataIndex: "inTransit",
       key: "inTransit",
-      align: "right" as const,
+      width: 100,
+      align: "right",
       render: (value: number, row: InventoryBalanceRow) =>
         formatQty(value, row.uom),
     },
-    { title: "Vị trí gợi ý", dataIndex: "location", key: "location" },
+    {
+      title: "Item/Box",
+      key: "subledger",
+      width: 90,
+      align: "center",
+      render: (_, row: InventoryBalanceRow) => (
+        <Tooltip title={`Item: ${row.serialQty} · Container: ${row.boxQty}`}>
+          <Typography.Text style={{ fontSize: 12 }}>
+            {row.serialQty}/{row.boxQty}
+          </Typography.Text>
+        </Tooltip>
+      ),
+    },
+    { title: "Vị trí gợi ý", dataIndex: "location", key: "location", width: 120 },
     {
       title: "Đối soát",
       dataIndex: "reconcile",
       key: "reconcile",
+      width: 110,
       render: (value: string, row: InventoryBalanceRow) => (
         <Tooltip
-          title={row.reconcileNote || "Trạng thái đối soát do backend trả về"}
+          title={row.reconcileNote || (value === "MATCH" ? "Ledger ↔ Balance khớp" : "Ledger ↔ Balance lệch")}
         >
           <Tag color={reconcileColor(value)}>{value}</Tag>
         </Tooltip>
@@ -262,67 +228,62 @@ export default function InventoryPage() {
     },
     {
       title: "Cập nhật",
-      dataIndex: "updatedAt",
       key: "updatedAt",
-      render: (value: string, row: InventoryBalanceRow) =>
-        value || row.dataAsOf || "-",
+      width: 140,
+      render: (_, row: InventoryBalanceRow) =>
+        row.updatedAt || row.dataAsOf || "-",
     },
     {
-      title: "Hành động",
-      key: "action",
-      fixed: "right" as const,
-      render: (_: unknown, row: InventoryBalanceRow) => (
-        <Space>
-          <Tooltip title="Chi tiết tồn kho">
-            <Button
-              type="text"
-              icon={<EyeOutlined />}
-              onClick={() => setSelectedBalance(row)}
-            />
-          </Tooltip>
-          <Tooltip title="Xem movement liên quan theo SKU">
-            <Button
-              type="text"
-              icon={<HistoryOutlined />}
-              onClick={() => {
-                setMovementSearch(row.sku);
-                setActiveTab("movement");
-              }}
-            />
-          </Tooltip>
-        </Space>
+      title: "",
+      key: "actions",
+      width: 80,
+      fixed: "right",
+      render: (_, row: InventoryBalanceRow) => (
+        <button
+          className="btn small"
+          type="button"
+          onClick={() => setBalanceDetailRow(row)}
+        >
+          <EyeOutlined style={{ marginRight: 4 }} />
+          Mở
+        </button>
       ),
     },
   ];
 
-  const movementColumns = [
+  const movementColumns: ColumnsType<StockMovementRow> = [
     {
       title: "Mã dịch chuyển",
       dataIndex: "movementId",
       key: "movementId",
+      width: 140,
       render: (value: string) => (
         <Typography.Text code>{value || "-"}</Typography.Text>
       ),
     },
-    { title: "Thời gian", dataIndex: "time", key: "time" },
+    { title: "Thời gian", dataIndex: "time", key: "time", width: 150 },
     {
       title: "Loại",
       dataIndex: "type",
       key: "type",
+      width: 130,
       render: (value: string, row: StockMovementRow) => (
         <Space direction="vertical" size={0}>
           <Tag>{value || "-"}</Tag>
-          <Typography.Text type="secondary">{row.status}</Typography.Text>
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            {row.status}
+          </Typography.Text>
         </Space>
       ),
     },
-    { title: "SKU", dataIndex: "sku", key: "sku" },
-    { title: "Kho", dataIndex: "warehouse", key: "warehouse" },
+    { title: "SKU", dataIndex: "sku", key: "sku", width: 120 },
+    { title: "Kho", dataIndex: "warehouse", key: "warehouse", width: 120 },
     {
       title: "SL thay đổi",
       dataIndex: "qty",
       key: "qty",
-      align: "right" as const,
+      width: 110,
+      align: "right",
       render: (value: number) => (
         <Typography.Text
           style={{
@@ -339,181 +300,243 @@ export default function InventoryPage() {
     },
     {
       title: "Nguồn",
-      dataIndex: "source",
       key: "source",
-      render: (value: string, row: StockMovementRow) => (
+      width: 160,
+      render: (_, row: StockMovementRow) => (
         <Space direction="vertical" size={0}>
-          <Typography.Text code>{value || "-"}</Typography.Text>
-          <Typography.Text type="secondary">{row.sourceType}</Typography.Text>
+          <Typography.Text code>{row.source || "-"}</Typography.Text>
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            {row.sourceType}
+          </Typography.Text>
         </Space>
       ),
     },
-    { title: "Người thao tác", dataIndex: "actor", key: "actor" },
-    { title: "Chuỗi", dataIndex: "chain", key: "chain" },
     {
-      title: "Hành động",
-      key: "action",
-      fixed: "right" as const,
-      render: (_: unknown, row: StockMovementRow) => (
-        <Space>
-          <Tooltip title="Chi tiết movement">
-            <Button
-              type="text"
-              icon={<EyeOutlined />}
-              onClick={() => openMovementDetail(row)}
-            />
-          </Tooltip>
-          <Tooltip
-            title={
-              canTrace
-                ? "Truy vết chứng từ nguồn"
-                : "Cần quyền inventory.trace để truy vết"
-            }
+      title: "Người thao tác",
+      dataIndex: "actor",
+      key: "actor",
+      width: 120,
+    },
+    {
+      title: "",
+      key: "actions",
+      width: 80,
+      fixed: "right",
+      render: (_, row: StockMovementRow) => (
+        <Tooltip
+          title={
+            canTrace
+              ? "Truy vết chứng từ nguồn"
+              : "Cần quyền inventory.trace để truy vết"
+          }
+        >
+          <button
+            className="btn small"
+            type="button"
+            disabled={!canTrace || !row.id}
+            onClick={() => handleOpenTrace(String(row.id))}
           >
-            <Button
-              type="text"
-              disabled={!canTrace || !row.id}
-              icon={<HistoryOutlined />}
-              onClick={() => openTrace(row)}
-            />
-          </Tooltip>
-        </Space>
+            <HistoryOutlined style={{ marginRight: 4 }} />
+            Trace
+          </button>
+        </Tooltip>
       ),
     },
   ];
 
+  const handleBalanceTableChange = (p: TablePaginationConfig) => {
+    setBalancePage(p.current ?? 1);
+  };
+
+  const handleMovementTableChange = (p: TablePaginationConfig) => {
+    setMovementPage(p.current ?? 1);
+  };
+
   return (
-    <div style={{ padding: 24 }}>
+    <div className="inventory-page">
+      <div className="toolbar-wrap" style={{ gap: 6 }}>
+        <span className="pill blue">GET /inventory/balances</span>
+        <span className="pill blue">GET /stock-movements</span>
+        <span className="pill blue">GET /stock-movements/:id/trace-source</span>
+        <span className="pill blue">GET /stock-movements/trace-by-code</span>
+        <span className="pill ok">
+          Balance là chiếu (projection) · Movement là sổ cái (ledger) · Reconciliation authoritative
+        </span>
+      </div>
+
       <Tabs
         activeKey={activeTab}
         onChange={setActiveTab}
+        style={{ marginTop: 12 }}
         items={[
           {
-            key: "stock",
-            label: "Tồn kho hiện tại",
+            key: "balance",
+            label: (
+              <span>
+                <AppstoreOutlined style={{ marginRight: 6 }} />
+                Tồn kho hiện tại
+              </span>
+            ),
             children: (
               <>
-                <ResponsiveToolbar>
-                  <Input.Search
-                    placeholder="SKU, tên hàng, chứng từ..."
-                    style={{ width: 300, maxWidth: "100%" }}
-                    allowClear
-                    enterButton={<SearchOutlined />}
-                    onSearch={setStockSearch}
+                <div className="toolbar">
+                  <input
+                    className="input search"
+                    value={searchInput}
+                    placeholder="SKU, tên hàng, kho..."
+                    aria-label="Tìm tồn kho"
+                    onChange={(e) => setSearchInput(e.target.value)}
                   />
-                  <Select
-                    placeholder="Trạng thái tồn"
-                    style={{ width: 170 }}
-                    allowClear
+                  <select
+                    className="select"
                     value={stockStatus}
-                    onChange={setStockStatus}
-                    options={[
-                      { value: "active", label: "Hoạt động" },
-                      { value: "inactive", label: "Ngừng hoạt động" },
-                      { value: "warning", label: "Cần đối soát" },
-                    ]}
-                  />
-                  <Button
-                    icon={<ReloadOutlined />}
-                    onClick={() => setReloadKey((value) => value + 1)}
+                    aria-label="Lọc trạng thái tồn"
+                    onChange={(e) => {
+                      setStockStatus(e.target.value);
+                      setBalancePage(1);
+                    }}
                   >
-                    Tải lại
-                  </Button>
-                </ResponsiveToolbar>
-                <InlineApiError
-                  error={stockError}
-                  title="Không thể tải tồn kho hiện tại"
-                  onRetry={() => setReloadKey((value) => value + 1)}
+                    <option value="">Trạng thái: Tất cả</option>
+                    <option value="normal">Bình thường</option>
+                    <option value="low_stock">Sắp hết</option>
+                    <option value="overflow">Vượt mức</option>
+                  </select>
+                  <div className="spacer" />
+                  {canTrace ? (
+                    <button
+                      className="btn"
+                      type="button"
+                      onClick={() => setTraceMovementId("__lookup__")}
+                    >
+                      <SearchOutlined style={{ marginRight: 4 }} />
+                      Truy vết mã
+                    </button>
+                  ) : null}
+                </div>
+
+                {balanceQuery.isError ? (
+                  <div style={{ marginBottom: 14 }}>
+                    <ApiErrorAlert
+                      error={balanceQuery.error}
+                      title="Không thể tải tồn kho hiện tại"
+                      onRetry={() => balanceQuery.refetch()}
+                    />
+                  </div>
+                ) : null}
+
+                <MvpPageSizeSelector
+                  value={balancePerPage}
+                  onChange={(v) => {
+                    setBalancePerPage(v);
+                    setBalancePage(1);
+                  }}
                 />
-                <Table
-                  dataSource={balances}
-                  columns={stockColumns}
+
+                <Table<InventoryBalanceRow>
                   rowKey="id"
-                  loading={stockLoading}
-                  pagination={{ pageSize: 10, showSizeChanger: true }}
-                  scroll={{ x: "max-content" }}
+                  columns={balanceColumns}
+                  dataSource={balances}
+                  loading={balanceQuery.isLoading || balanceQuery.isFetching}
+                  onChange={handleBalanceTableChange}
+                  pagination={{
+                    current: balancePagination.current,
+                    pageSize: balancePagination.pageSize,
+                    total: balancePagination.total,
+                    showSizeChanger: false,
+                    showTotal: (total) => `Tổng ${numberFormatter.format(total)} dòng tồn kho`,
+                  }}
                   locale={{
-                    emptyText: tableEmptyText(
-                      stockError,
-                      stockSearch || stockStatus
-                        ? "Không có tồn kho khớp bộ lọc"
-                        : "Chưa có dữ liệu tồn kho",
-                    ),
+                    emptyText: balanceQuery.isError
+                      ? "Không tải được dữ liệu"
+                      : "Không có tồn kho theo bộ lọc hiện tại",
                   }}
+                  onRow={(row) => ({ onDoubleClick: () => setBalanceDetailRow(row) })}
+                  scroll={{ x: 1600 }}
                 />
-                <div
-                  style={{
-                    marginTop: 12,
-                    background: "#eef6ff",
-                    border: "1px dashed #9cc7ef",
-                    borderRadius: 6,
-                    padding: 12,
-                    color: "#214d73",
-                  }}
-                >
-                  <b>Vị trí gợi ý/khay</b> chỉ giúp tìm hàng, không tham gia
-                  công thức tồn và không tạo bucket tồn riêng.
+
+                <div className="footer-note" style={{ marginBottom: 8 }}>
+                  <b>Đối soát</b> do backend tính: Ledger (SUM qty_delta) ↔ Balance (on_hand_qty).
+                  MATCH = khớp, MISMATCH = lệch. Bấm <b>Mở</b> để xem chi tiết tồn
+                  kho, item/box subledger và movement liên quan.
                 </div>
               </>
             ),
           },
           {
             key: "movement",
-            label: "Lịch sử dịch chuyển",
+            label: (
+              <span>
+                <SwapOutlined style={{ marginRight: 6 }} />
+                Lịch sử dịch chuyển
+              </span>
+            ),
             children: (
               <>
-                <ResponsiveToolbar>
-                  <Input.Search
-                    placeholder="Movement, chứng từ, SKU..."
-                    style={{ width: 300, maxWidth: "100%" }}
-                    allowClear
-                    enterButton={<SearchOutlined />}
+                <div className="toolbar">
+                  <input
+                    className="input search"
                     value={movementSearch}
-                    onChange={(event) => setMovementSearch(event.target.value)}
-                    onSearch={setMovementSearch}
+                    placeholder="Movement, chứng từ, SKU..."
+                    aria-label="Tìm movement"
+                    onChange={(e) => {
+                      setMovementSearch(e.target.value);
+                      setMovementPage(1);
+                    }}
                   />
-                  <Select
-                    placeholder="Loại dịch chuyển"
-                    style={{ width: 190 }}
-                    allowClear
+                  <select
+                    className="select"
                     value={movementType}
-                    onChange={setMovementType}
-                    options={[
-                      { value: "RECEIPT_IN", label: "Nhập kho" },
-                      { value: "ISSUE_OUT", label: "Xuất kho" },
-                      { value: "TRANSFER_OUT", label: "Chuyển đi" },
-                      { value: "TRANSFER_IN", label: "Chuyển đến" },
-                      { value: "ADJUST", label: "Điều chỉnh" },
-                      { value: "REVERSAL", label: "Hoàn đảo" },
-                    ]}
-                  />
-                  <Button
-                    icon={<ReloadOutlined />}
-                    onClick={() => setReloadKey((value) => value + 1)}
+                    aria-label="Lọc loại dịch chuyển"
+                    onChange={(e) => {
+                      setMovementType(e.target.value);
+                      setMovementPage(1);
+                    }}
                   >
-                    Tải lại
-                  </Button>
-                </ResponsiveToolbar>
-                <InlineApiError
-                  error={movementError}
-                  title="Không thể tải lịch sử dịch chuyển"
-                  onRetry={() => setReloadKey((value) => value + 1)}
-                />
-                <Table
-                  dataSource={movements}
-                  columns={movementColumns}
-                  rowKey="id"
-                  loading={movementLoading}
-                  pagination={{ pageSize: 10, showSizeChanger: true }}
-                  scroll={{ x: "max-content" }}
-                  locale={{
-                    emptyText: tableEmptyText(
-                      movementError,
-                      movementSearch || movementType
-                        ? "Không có movement khớp bộ lọc"
-                        : "Chưa có lịch sử dịch chuyển",
-                    ),
+                    <option value="">Loại: Tất cả</option>
+                    <option value="RECEIPT">Nhập kho</option>
+                    <option value="ISSUE">Xuất kho</option>
+                    <option value="COMPONENT_ISSUE">Xuất linh kiện BH</option>
+                    <option value="REVERSAL">Hoàn đảo</option>
+                  </select>
+                </div>
+
+                {movementQuery.isError ? (
+                  <div style={{ marginBottom: 14 }}>
+                    <ApiErrorAlert
+                      error={movementQuery.error}
+                      title="Không thể tải lịch sử dịch chuyển"
+                      onRetry={() => movementQuery.refetch()}
+                    />
+                  </div>
+                ) : null}
+
+                <MvpPageSizeSelector
+                  value={movementPerPage}
+                  onChange={(v) => {
+                    setMovementPerPage(v);
+                    setMovementPage(1);
                   }}
+                />
+
+                <Table<StockMovementRow>
+                  rowKey="id"
+                  columns={movementColumns}
+                  dataSource={movements}
+                  loading={movementQuery.isLoading || movementQuery.isFetching}
+                  onChange={handleMovementTableChange}
+                  pagination={{
+                    current: movementPagination.current,
+                    pageSize: movementPagination.pageSize,
+                    total: movementPagination.total,
+                    showSizeChanger: false,
+                    showTotal: (total) => `Tổng ${numberFormatter.format(total)} movement`,
+                  }}
+                  locale={{
+                    emptyText: movementQuery.isError
+                      ? "Không tải được dữ liệu"
+                      : "Không có movement theo bộ lọc hiện tại",
+                  }}
+                  scroll={{ x: 1200 }}
                 />
               </>
             ),
@@ -521,248 +544,21 @@ export default function InventoryPage() {
         ]}
       />
 
-      <Drawer
-        title="Chi tiết tồn kho"
-        width={720}
-        open={Boolean(selectedBalance)}
-        onClose={() => setSelectedBalance(null)}
-      >
-        {selectedBalance && (
-          <>
-            <Space direction="vertical" size={16} style={{ width: "100%" }}>
-              <Descriptions bordered column={1} size="small">
-                <Descriptions.Item label="SKU">
-                  <Typography.Text code copyable>
-                    {selectedBalance.sku}
-                  </Typography.Text>
-                </Descriptions.Item>
-                <Descriptions.Item label="Tên hàng">
-                  {selectedBalance.name}
-                </Descriptions.Item>
-                <Descriptions.Item label="Kho / lô">
-                  {selectedBalance.warehouse} / {selectedBalance.lotNo}
-                </Descriptions.Item>
-                <Descriptions.Item label="Đối soát">
-                  <Tag color={reconcileColor(selectedBalance.reconcile)}>
-                    {selectedBalance.reconcile}
-                  </Tag>
-                  {selectedBalance.reconcileNote || ""}
-                </Descriptions.Item>
-                <Descriptions.Item label="Data as of">
-                  {selectedBalance.dataAsOf || selectedBalance.updatedAt || "-"}
-                </Descriptions.Item>
-              </Descriptions>
+      {/* ──── Modals ──── */}
+      {balanceDetailRow ? (
+        <BalanceDetailModal
+          balance={balanceDetailRow}
+          onClose={() => setBalanceDetailRow(null)}
+          onTraceMovement={canTrace ? handleOpenTrace : undefined}
+        />
+      ) : null}
 
-              <Space wrap size="middle">
-                <Statistic
-                  title="Available"
-                  value={selectedBalance.available}
-                  suffix={selectedBalance.uom}
-                />
-                <Statistic
-                  title="On-hand"
-                  value={selectedBalance.onHand}
-                  suffix={selectedBalance.uom}
-                />
-                <Statistic
-                  title="Reserved"
-                  value={selectedBalance.reserved}
-                  suffix={selectedBalance.uom}
-                />
-                <Statistic
-                  title="In-transit"
-                  value={selectedBalance.inTransit}
-                  suffix={selectedBalance.uom}
-                />
-                <Statistic
-                  title="Blocked/Hold"
-                  value={selectedBalance.blocked}
-                  suffix={selectedBalance.uom}
-                />
-              </Space>
-
-              <Descriptions bordered column={1} size="small">
-                <Descriptions.Item label="Serial qty">
-                  {formatQty(selectedBalance.serialQty)}
-                </Descriptions.Item>
-                <Descriptions.Item label="Box qty">
-                  {formatQty(selectedBalance.boxQty)}
-                </Descriptions.Item>
-                <Descriptions.Item label="Vị trí gợi ý">
-                  {selectedBalance.location}
-                </Descriptions.Item>
-                <Descriptions.Item label="Movement gần nhất">
-                  {selectedBalance.lastMovementId || "-"}
-                </Descriptions.Item>
-              </Descriptions>
-            </Space>
-
-            <Divider>Movement liên quan</Divider>
-            <Table
-              size="small"
-              dataSource={relatedMovements}
-              columns={movementColumns}
-              rowKey="id"
-              pagination={false}
-              scroll={{ x: "max-content" }}
-              locale={{
-                emptyText: tableEmptyText(
-                  null,
-                  "Chưa tải được movement liên quan",
-                ),
-              }}
-            />
-          </>
-        )}
-      </Drawer>
-
-      <Drawer
-        title="Chi tiết movement"
-        width={720}
-        open={Boolean(selectedMovement)}
-        onClose={() => setSelectedMovement(null)}
-      >
-        {selectedMovement && (
-          <>
-            <Descriptions bordered column={1} size="small">
-              <Descriptions.Item label="Movement">
-                <Typography.Text code copyable>
-                  {selectedMovement.movementId}
-                </Typography.Text>
-              </Descriptions.Item>
-              <Descriptions.Item label="Thời gian">
-                {selectedMovement.time || "-"}
-              </Descriptions.Item>
-              <Descriptions.Item label="Loại / trạng thái">
-                <Tag>{selectedMovement.type}</Tag> {selectedMovement.status}
-              </Descriptions.Item>
-              <Descriptions.Item label="SKU / kho / lô">
-                {selectedMovement.sku} / {selectedMovement.warehouse} /{" "}
-                {selectedMovement.lotNo}
-              </Descriptions.Item>
-              <Descriptions.Item label="Số lượng thay đổi">
-                {formatQty(selectedMovement.qty)}
-              </Descriptions.Item>
-              <Descriptions.Item label="Before / after">
-                {formatQty(selectedMovement.beforeQty)} /{" "}
-                {formatQty(selectedMovement.afterQty)}
-              </Descriptions.Item>
-              <Descriptions.Item label="Nguồn">
-                {selectedMovement.sourceType} - {selectedMovement.source || "-"}
-              </Descriptions.Item>
-              <Descriptions.Item label="Actor">
-                {selectedMovement.actor}
-              </Descriptions.Item>
-            </Descriptions>
-            <ApiErrorAlert
-              error={movementDetailError}
-              title="Không thể tải chi tiết movement"
-              onRetry={() => openMovementDetail(selectedMovement)}
-              style={{ marginTop: 16 }}
-            />
-            {movementDetailLoading ? (
-              <div style={{ padding: 24 }}>Đang tải chi tiết...</div>
-            ) : movementDetail ? (
-              <>
-                <Divider>Payload chi tiết từ backend</Divider>
-                <JsonPreview value={movementDetail} />
-              </>
-            ) : null}
-          </>
-        )}
-      </Drawer>
-
-      <Drawer
-        title="Trace chứng từ nguồn"
-        width={760}
-        open={Boolean(traceMovement)}
-        onClose={() => setTraceMovement(null)}
-      >
-        {traceMovement && (
-          <>
-            <Descriptions bordered column={1} size="small">
-              <Descriptions.Item label="Movement">
-                <Typography.Text code>
-                  {traceMovement.movementId}
-                </Typography.Text>
-              </Descriptions.Item>
-              <Descriptions.Item label="SKU">
-                {traceMovement.sku}
-              </Descriptions.Item>
-              <Descriptions.Item label="Số lượng">
-                {formatQty(traceMovement.qty)}
-              </Descriptions.Item>
-            </Descriptions>
-            <ApiErrorAlert
-              error={traceError}
-              title="Không thể truy vết nguồn movement"
-              onRetry={() => openTrace(traceMovement)}
-              style={{ marginTop: 16 }}
-            />
-            {traceLoading ? (
-              <div style={{ padding: 24 }}>Đang tải trace-source...</div>
-            ) : traceSource ? (
-              <>
-                <Divider>Chứng từ nguồn</Divider>
-                <Descriptions bordered column={1} size="small">
-                  <Descriptions.Item label="Loại nguồn">
-                    {traceSource.sourceType}
-                  </Descriptions.Item>
-                  <Descriptions.Item label="Mã chứng từ">
-                    <Typography.Text code copyable>
-                      {traceSource.sourceCode}
-                    </Typography.Text>
-                  </Descriptions.Item>
-                  <Descriptions.Item label="Trạng thái">
-                    {traceSource.status}
-                  </Descriptions.Item>
-                  <Descriptions.Item label="Posted at">
-                    {traceSource.postedAt || "-"}
-                  </Descriptions.Item>
-                  <Descriptions.Item label="Actor">
-                    {traceSource.actor}
-                  </Descriptions.Item>
-                  <Descriptions.Item label="Request ID">
-                    {traceSource.requestId || "-"}
-                  </Descriptions.Item>
-                </Descriptions>
-
-                <Divider>Timeline</Divider>
-                {traceSource.timeline.length > 0 ? (
-                  <Timeline
-                    items={traceSource.timeline.map((item, index) => ({
-                      children: (
-                        <Typography.Text>
-                          {String(
-                            item.title ??
-                              item.event ??
-                              item.movement_no ??
-                              item.code ??
-                              `Bước ${index + 1}`,
-                          )}
-                        </Typography.Text>
-                      ),
-                    }))}
-                  />
-                ) : (
-                  <Typography.Text type="secondary">
-                    Backend chưa trả timeline/chain; FE không tự dựng chuỗi từ
-                    document_code.
-                  </Typography.Text>
-                )}
-
-                <Divider>Lines / raw contract</Divider>
-                <JsonPreview
-                  value={{
-                    lines: traceSource.lines,
-                    summary: traceSource.summary,
-                  }}
-                />
-              </>
-            ) : null}
-          </>
-        )}
-      </Drawer>
+      {traceMovementId ? (
+        <TraceModal
+          movementId={traceMovementId === "__lookup__" ? null : traceMovementId}
+          onClose={() => setTraceMovementId(null)}
+        />
+      ) : null}
     </div>
   );
 }

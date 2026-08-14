@@ -5,7 +5,11 @@
 #root .ant-typography h1,
 #root h1.ant-typography {
   color: var(--hn-ink);
-  font-family: "Be Vietnam Pro", system-ui, -apple-system, sans-serif;
+  font-family:
+    "Be Vietnam Pro",
+    system-ui,
+    -apple-system,
+    sans-serif;
   font-size: 25px;
   font-weight: 800;
   line-height: 1.12;
@@ -16,7 +20,11 @@
 #root h3,
 #root h4,
 #root .ant-typography {
-  font-family: "Be Vietnam Pro", system-ui, -apple-system, sans-serif;
+  font-family:
+    "Be Vietnam Pro",
+    system-ui,
+    -apple-system,
+    sans-serif;
 }
 
 /* Cards are paper frames, not floating/rounded dashboard tiles. */
@@ -71,7 +79,10 @@
   color: var(--hn-ink);
   font-size: 13px;
   font-weight: 800;
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
 }
 
 #root .ant-tabs .ant-tabs-tab:hover {

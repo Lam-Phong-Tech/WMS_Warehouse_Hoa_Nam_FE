@@ -47,7 +47,9 @@ export function ContextSwitcher() {
         ),
       label: (
         <div style={layoutStyles.contextSwitcherItem}>
-          <div style={layoutStyles.contextSwitcherItemTitle}>{ctx.role_name}</div>
+          <div style={layoutStyles.contextSwitcherItemTitle}>
+            {ctx.role_name}
+          </div>
           <Typography.Text
             type="secondary"
             style={layoutStyles.contextSwitcherItemMeta}
@@ -69,12 +71,14 @@ export function ContextSwitcher() {
             onSuccess: (result) => {
               const confirmed = contexts.find((candidate) => {
                 const active = result.active_context;
-                if (active.scope_ref) return candidate.scope_ref === active.scope_ref;
+                if (active.scope_ref)
+                  return candidate.scope_ref === active.scope_ref;
                 if (active.context_id)
                   return candidate.context_id === active.context_id;
                 return !candidate.scope_ref && !candidate.context_id;
               });
               setCurrentContext(confirmed ?? ctx);
+              toast.success("Đã chuyển phạm vi kho thành công.");
             },
             onError: () => {
               toast.error("Không thể chuyển phạm vi kho, vui lòng thử lại.");

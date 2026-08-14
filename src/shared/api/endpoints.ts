@@ -58,6 +58,7 @@ export const API_ENDPOINTS = {
   OUTBOUND_CANCEL: "/outbound-documents/:id/cancel",
   OUTBOUND_POST_ISSUE: "/outbound-documents/:id/post-issue",
   OUTBOUND_SCAN: "/outbound-documents/:id/scan",
+  OUTBOUND_UNMATCH: "/outbound-documents/:id/unmatch",
   OUTBOUND_REVERSE: "/outbound-documents/:id/reverse",
   OUTBOUND_REQUEST_IMPORTS: "/outbound-request-imports",
   OUTBOUND_REQUEST_IMPORT: "/outbound-request-imports/:id",
@@ -80,11 +81,15 @@ export const API_ENDPOINTS = {
   REPORTS_XNT: "/reports/inventory-xnt",
   REPORTS_XNT_EXPORT_EXCEL: "/reports/inventory-xnt/export-excel",
   REPORTS_WARRANTY_DEFECTS: "/reports/warranty-defects",
+  REPORTS_WARRANTY_DEFECTS_EXPORT_EXCEL:
+    "/reports/warranty-defects/export-excel",
   INVENTORY_RECONCILIATION: "/reports/inventory-reconciliation",
   INVENTORY_BALANCES: "/inventory/balances",
+  INVENTORY_BALANCE_SUBLEDGER: "/inventory/balances/:id/subledger",
   STOCK_MOVEMENTS: "/stock-movements",
   STOCK_MOVEMENT: "/stock-movements/:id",
   STOCK_MOVEMENT_TRACE_SOURCE: "/stock-movements/:id/trace-source",
+  STOCK_MOVEMENT_TRACE_BY_CODE: "/stock-movements/trace-by-code",
   SAFE_STOCK_ALERTS: "/safe-stock-alerts",
   SAFE_STOCK_CONFIGS: "/safe-stock-configs",
   SAFE_STOCK_CONFIG: "/safe-stock-configs/:id",
@@ -110,18 +115,21 @@ export const API_ENDPOINTS = {
   DOCUMENT_STATUS_HISTORY: "/document-status-history",
   INVENTORY_SNAPSHOTS: "/inventory-snapshots",
 
-  // Legacy stocktake constants remain for non-routed compatibility code only.
-  // Stocktake is not registered in the current MVP router or BE route surface.
-  STOCKTAKE_SESSIONS: "/stocktake-sessions",
-  STOCKTAKE_SESSION: "/stocktake-sessions/:sessionId",
-  STOCKTAKE_CREATE_SESSION: "/stocktake-sessions",
-  STOCKTAKE_START: "/stocktake-sessions/:sessionId/start",
-  STOCKTAKE_COUNT: "/stocktake-sessions/:sessionId/counts",
-  STOCKTAKE_REVIEW: "/stocktake-sessions/:sessionId/review",
-  STOCKTAKE_ACKNOWLEDGE_MOVEMENTS: "/stocktake-sessions/:sessionId/acknowledge-movements",
-  STOCKTAKE_VARIANCES: "/stocktake-sessions/:sessionId/variances",
-  STOCKTAKE_APPLY_ADJUSTMENT: "/stocktake-sessions/:sessionId/apply-adjustment",
-  STOCKTAKE_APPLY_ADJUSTMENT_COMPAT: "/stocktake/sessions/:sessionId/apply-adjustment",
+  // @deprecated — Stocktake Model A removed from MVP scope.
+  // Not routed in FE, no BE endpoints registered, Jira tickets WWHN-58/59 to be dispositioned.
+  // Retain constants for test references only; do NOT import these in new code.
+  /** @deprecated */ STOCKTAKE_SESSIONS: "/stocktake-sessions",
+  /** @deprecated */ STOCKTAKE_SESSION: "/stocktake-sessions/:sessionId",
+  /** @deprecated */ STOCKTAKE_CREATE_SESSION: "/stocktake-sessions",
+  /** @deprecated */ STOCKTAKE_START: "/stocktake-sessions/:sessionId/start",
+  /** @deprecated */ STOCKTAKE_COUNT: "/stocktake-sessions/:sessionId/counts",
+  /** @deprecated */ STOCKTAKE_REVIEW: "/stocktake-sessions/:sessionId/review",
+  /** @deprecated */ STOCKTAKE_ACKNOWLEDGE_MOVEMENTS:
+    "/stocktake-sessions/:sessionId/acknowledge-movements",
+  /** @deprecated */ STOCKTAKE_VARIANCES: "/stocktake-sessions/:sessionId/variances",
+  /** @deprecated */ STOCKTAKE_APPLY_ADJUSTMENT: "/stocktake-sessions/:sessionId/apply-adjustment",
+  /** @deprecated */ STOCKTAKE_APPLY_ADJUSTMENT_COMPAT:
+    "/stocktake/sessions/:sessionId/apply-adjustment",
 
   REVERSAL_DOCUMENTS: "/reversal-documents",
   REVERSAL_DOCUMENT: "/reversal-documents/:id",
@@ -131,6 +139,9 @@ export const API_ENDPOINTS = {
   WARRANTY_CASES: "/warranty-cases",
   WARRANTY_CASE: "/warranty-cases/:id",
   WARRANTY_CASE_EVENTS: "/warranty-cases/:caseId/events",
+  WARRANTY_CASE_ATTACHMENTS: "/warranty-cases/:caseId/attachments",
+  WARRANTY_ATTACHMENT: "/warranty-attachments/:id",
+  WARRANTY_ATTACHMENT_DOWNLOAD: "/warranty-attachments/:id/download",
   COMPONENT_ISSUE_DOCUMENTS: "/component-issue-documents",
   COMPONENT_ISSUE_DOCUMENT: "/component-issue-documents/:id",
   COMPONENT_ISSUE_SCAN: "/component-issue-documents/:id/scan",

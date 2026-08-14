@@ -78,7 +78,9 @@ requirePatterns("src/shared/store/auth.store.ts", [
   /isProfileLoaded:\s*false/,
   /permissionCodes:\s*me\.permissions/,
 ]);
-requirePatterns("src/app/bootstrap-auth.ts", [/activeBootstrap/, /isInvalidSession/, /bootstrapError:\s*error/, /persist\.clearStorage/, /getRefreshToken/]);
+// Bootstrap chuyển sang refresh bằng HttpOnly cookie (authService.refresh) —
+// không còn đọc refresh token từ JS memory khi khởi động.
+requirePatterns("src/app/bootstrap-auth.ts", [/activeBootstrap/, /isInvalidSession/, /bootstrapError:\s*error/, /persist\.clearStorage/, /authService\.refresh\(\)/]);
 requirePatterns("src/app/router/ProtectedRoute.tsx", [/Không thể khôi phục phiên làm việc/, /bootstrapAuth\(\)/, /Không thể tải hồ sơ và phân quyền/]);
 requirePatterns("src/modules/auth/hooks/use-me.ts", [/queryKey:\s*\["auth",\s*"me",\s*token\]/, /status === 401 \|\| status === 403/]);
 requirePatterns("src/modules/auth/hooks/use-login.ts", [/authService\.login/, /setAuth\(/, /refreshToken:\s*data\.refresh_token/, /available_contexts/]);

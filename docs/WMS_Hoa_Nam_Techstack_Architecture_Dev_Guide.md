@@ -44,7 +44,6 @@ src/
 │   ├── outbound/            # Outbound documents, shipping, picking
 │   ├── inventory/           # Inventory balances, movements
 │   ├── scan/                # Scan operations, physical code classification
-│   ├── stocktake/           # Stocktake sessions, counts, adjustments
 │   ├── warranty/            # Warranty cases, events, defects
 │   ├── reverse/             # Reversal documents, adjustments
 │   ├── reports/             # Reports hub, exports
@@ -252,9 +251,6 @@ export const PERMISSION_CATALOG = {
   SCAN_CLASSIFY: 'scan.classify',
   INVENTORY_TRACE: 'inventory.trace',
   
-  // Stocktake
-  STOCKTAKE_COUNT: 'stocktake.count',
-  
   // Warranty
   WARRANTY_MANAGE: 'warranty.manage',
   
@@ -279,7 +275,6 @@ export const ROUTE_PERMISSIONS: Record<string, string | string[]> = {
   '/outbound': ['outbound.create', 'outbound.post'],
   '/inventory': 'inventory.view',
   '/scan': ['scan.classify', 'inventory.trace'],
-  '/stocktake': 'stocktake.count',
   '/warranty': 'warranty.manage',
   '/reverse': 'inventory.reversal.post',
   '/reports': 'report.view',

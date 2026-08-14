@@ -32,7 +32,7 @@ describe("WWHN-181 warranty v1.7 fail-closed boundary", () => {
     vi.mocked(http.post).mockReset();
   });
 
-  it("does not POST the legacy create payload when exact BE exposes no create route", async () => {
+  it("does not POST the create payload when actor only holds the legacy temp_only permission", async () => {
     await expect(
       createWarrantyCase({
         identification_type: "TEMP_ONLY",
@@ -43,7 +43,7 @@ describe("WWHN-181 warranty v1.7 fail-closed boundary", () => {
         missing_code_reason: "Mat tem",
         manual_product_description: "May khoan mau do",
       }),
-    ).rejects.toMatchObject({ code: "WMS_FE_CONTRACT_NOT_APPROVED" });
+    ).rejects.toMatchObject({ code: "WMS_FE_PERMISSION_REQUIRED" });
     expect(http.post).not.toHaveBeenCalled();
   });
 });

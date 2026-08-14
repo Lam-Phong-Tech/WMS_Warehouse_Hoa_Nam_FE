@@ -46,6 +46,7 @@ export const WMS_PERMISSION_CATALOG = {
   WARRANTY_MANAGE: "warranty.manage",
   WARRANTY_TEMP_ONLY: "warranty.temp_only",
   WARRANTY_COMPONENT_ISSUE: "warranty.component_issue",
+  WARRANTY_PII_VIEW: "warranty.pii.view",
   REVERSAL_POST: "inventory.reversal.post",
   REPORT_VIEW: "report.view",
   REPORT_EXPORT: "report.export",
@@ -71,7 +72,9 @@ export const WMS_CANONICAL_PERMISSION_CODES = Object.freeze(
   Object.values(WMS_PERMISSION_CATALOG),
 );
 
-const WMS_CANONICAL_PERMISSION_SET = new Set<string>(WMS_CANONICAL_PERMISSION_CODES);
+const WMS_CANONICAL_PERMISSION_SET = new Set<string>(
+  WMS_CANONICAL_PERMISSION_CODES,
+);
 
 export function canonicalizeWmsPermission(code: string): string {
   return WMS_PERMISSION_ALIASES[code] ?? code;

@@ -27,15 +27,24 @@ export interface WarrantyCase {
   physical_code?: string;
   temporary_item_code?: string;
   identification_type: WarrantyIdentificationType;
+  sales_trace_status?: string;
   serial_number?: string;
   customer_name: string;
   customer_phone?: string;
+  customer_address?: string;
+  purchase_date?: string;
   masked_customer_name?: string;
   masked_customer_phone?: string;
   agency_name?: string;
   defect: string;
   defect_code: string;
   defect_id?: string;
+  reported_defect?: string;
+  confirmed_defect?: string;
+  accessories_received?: string;
+  received_condition?: string;
+  condition_status?: string;
+  cancel_reason?: string;
   status: WarrantyCaseStatus;
   priority: WarrantyPriority;
   missing_code_reason?: string;
@@ -44,6 +53,7 @@ export interface WarrantyCase {
   warehouse_name?: string;
   received_at: string;
   expected_return_at?: string;
+  completed_at?: string;
   returned_at?: string;
   case_age_days?: number;
   created_at: string;
@@ -64,6 +74,16 @@ export interface WarrantyEvent {
 }
 
 export type WarrantyEventType =
+  // Taxonomy ERD §46 (backend hiện hành)
+  | "RECEIVE"
+  | "CHECK"
+  | "REPAIR"
+  | "COMPLETE"
+  | "RETURN"
+  | "CANCEL"
+  | "NOTE"
+  | "TEMP_ONLY"
+  // Giá trị legacy còn trong dữ liệu cũ
   | "RECEIVED"
   | "STATUS_CHANGE"
   | "NOTE_ADDED"
@@ -73,15 +93,55 @@ export type WarrantyEventType =
   | "CUSTOMER_CONTACTED"
   | "RETURNED";
 
+export type WarrantyAttachmentType =
+  | "INTAKE"
+  | "DIAGNOSTIC"
+  | "RETURN"
+  | "OTHER";
+
+export interface WarrantyAttachment {
+  id: string;
+  warranty_case_id: string;
+  file_name: string;
+  content_type: string;
+  file_size_bytes: number;
+  checksum?: string;
+  attachment_type: WarrantyAttachmentType;
+  status: "ACTIVE" | "DELETED" | "QUARANTINED";
+  uploaded_at?: string;
+  uploaded_by?: string;
+}
+
+export interface WarrantyListParams {
+  search?: string;
+  keyword?: string;
+  status?: WarrantyCaseStatus | string;
+  identification_status?: WarrantyIdentificationType | string;
+  defect_id?: string;
+  page?: number;
+  per_page?: number;
+}
+
+export interface WarrantyCasePage {
+  data: WarrantyCase[];
+  meta?: Record<string, unknown>;
+}
+
 export interface CreateWarrantyCaseRequest {
   identification_type: WarrantyIdentificationType;
   item_code?: string;
   sku?: string;
   customer_name: string;
   customer_phone: string;
+  customer_address?: string;
+  purchase_date?: string;
   agency_name?: string;
-  defect_code: string;
+  defect_id?: string;
+  defect_code?: string;
   defect_description: string;
+  reported_defect?: string;
+  accessories_received?: string;
+  received_condition?: string;
   missing_code_reason?: string;
   manual_product_description?: string;
   consent_contact?: boolean;
@@ -90,13 +150,21 @@ export interface CreateWarrantyCaseRequest {
   priority?: WarrantyPriority;
 }
 
-export interface UpdateWarrantyStatusRequest {
-  status: WarrantyCaseStatus;
+export interface UpdateWarrantyCaseRequest {
+  status?: WarrantyCaseStatus;
+  /** Ghi chú/evidence hiển thị trên timeline. */
   reason?: string;
-  /** Kept for caller compatibility; current BE uses If-Match rather than body idempotency. */
+  confirmed_defect?: string;
+  condition_status?: string;
+  received_condition?: string;
+  accessories_received?: string;
+  cancel_reason?: string;
   idempotency_key?: string;
   ifMatch?: number;
 }
+
+/** @deprecated dùng UpdateWarrantyCaseRequest. */
+export type UpdateWarrantyStatusRequest = UpdateWarrantyCaseRequest;
 
 export interface WarrantyDefect {
   code: string;

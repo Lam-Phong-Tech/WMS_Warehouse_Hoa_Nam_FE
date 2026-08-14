@@ -426,7 +426,10 @@ export async function postOutboundIssue(
     endpoint(API_ENDPOINTS.OUTBOUND_DOCUMENT, documentId),
   );
   assertFullyScannedBeforeAtomicPost(detail);
-  const currentVersion = requirePositiveNumber(detail.version, "document.version");
+  const currentVersion = requirePositiveNumber(
+    detail.version,
+    "document.version",
+  );
   if (currentVersion !== ifMatch) {
     throw new WmsContractError(
       "WMS_FE_VERSION_CONFLICT",

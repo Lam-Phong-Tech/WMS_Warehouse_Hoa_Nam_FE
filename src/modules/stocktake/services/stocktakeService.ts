@@ -1,3 +1,7 @@
+/**
+ * @deprecated Stocktake Model A — removed from MVP scope.
+ * Retained for reference only. Do NOT import in new code.
+ */
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { assertWmsActionPermission } from "@/shared/api/wms-action-permission";
 import { http } from "@/shared/api/http";
@@ -281,9 +285,7 @@ export async function fetchInventorySnapshots(
   );
 }
 
-async function fetchStocktakeSessionRaw(
-  sessionId: string,
-): Promise<RawRecord> {
+async function fetchStocktakeSessionRaw(sessionId: string): Promise<RawRecord> {
   return http.get<RawRecord>(
     sessionEndpoint(API_ENDPOINTS.STOCKTAKE_SESSION, sessionId),
   );
@@ -299,8 +301,7 @@ export async function submitStocktakeCount(
   const existing = rowsOf(
     (detail.counts ?? []) as RawRecord[] | { data?: RawRecord[] },
   ).find(
-    (row) =>
-      text(row.sku ?? row.sku_code ?? row.grain_key) === payload.sku,
+    (row) => text(row.sku ?? row.sku_code ?? row.grain_key) === payload.sku,
   );
   if (!existing) {
     throw new WmsContractError(

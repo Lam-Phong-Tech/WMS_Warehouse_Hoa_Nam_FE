@@ -7,7 +7,12 @@ import {
 } from "@/modules/master-data/pages/MvpMasterScreens";
 import { useAuthStore } from "@/shared/store/auth.store";
 
-const mutation = () => ({ isPending: false, mutateAsync: vi.fn().mockResolvedValue({}) });
+const { mutation } = vi.hoisted(() => ({
+  mutation: () => ({
+    isPending: false,
+    mutateAsync: vi.fn().mockResolvedValue({}),
+  }),
+}));
 
 vi.mock("@/modules/master-data/hooks/use-mvp-master", () => ({
   useMvpSkus: () => ({
@@ -65,8 +70,10 @@ vi.mock("@/modules/master-data/hooks/use-mvp-master", () => ({
     error: null,
     refetch: vi.fn(),
   }),
+  useMvpSkuHasStock: () => ({ data: false, isLoading: false }),
   useCreateMvpSku: mutation,
   useUpdateMvpSku: mutation,
+  useSetMvpSkuPublished: mutation,
   useCreateMvpAgency: mutation,
   useUpdateMvpAgency: mutation,
   useCreateMvpDefect: mutation,
@@ -89,7 +96,9 @@ describe("API-backed MVP master screens", () => {
 
     const row = screen.getByText("DCH-DRILL-DJZ10A-220V-V1").closest("tr");
     expect(row).not.toBeNull();
-    fireEvent.click(within(row as HTMLTableRowElement).getByRole("button", { name: "Sửa" }));
+    fireEvent.click(
+      within(row as HTMLTableRowElement).getByRole("button", { name: "Sửa" }),
+    );
     dialog = screen.getByRole("dialog");
     expect(within(dialog).getByText("Sửa SKU")).toBeInTheDocument();
     expect(within(dialog).getByText("3")).toBeInTheDocument();

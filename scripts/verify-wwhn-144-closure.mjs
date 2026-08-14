@@ -64,7 +64,9 @@ for (const shellContract of [
   'className="hn-mvp-aside"',
   'className="hn-mvp-main"',
   'className="hn-mvp-screen"',
-  "Giao diện demo, dùng cho trao đổi BA/DEV/TEST.",
+  // Banner "Giao diện demo..." đã gỡ khi UI lên bản chính thức (redesign 10-11/8);
+  // giữ footer định danh sản phẩm làm marker shell thay thế.
+  'className="hn-mvp-footer"',
 ]) {
   requireText(mainLayout, shellContract, "MainLayout.tsx");
 }
@@ -81,7 +83,9 @@ for (const navigationContract of [
 }
 
 for (const visualContract of [
-  "grid-template-columns:300px 1fr",
+  // Sidebar 300px chuyển từ grid-template-columns sang fixed aside (redesign
+  // 10-11/8) — vẫn khóa đúng bề rộng 300px của khung MVP.
+  "width:300px;height:100vh;background:#0f172a",
   "background:#0f172a",
   "border-radius:16px",
   "font-family:Arial,Helvetica,sans-serif",

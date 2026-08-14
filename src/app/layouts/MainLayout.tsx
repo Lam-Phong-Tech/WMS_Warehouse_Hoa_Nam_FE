@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { SideNav } from "@/app/layouts/SideNav";
+import { UserMenu } from "@/app/layouts/UserMenu";
 import { useMe } from "@/modules/auth/hooks/use-me";
 import { Loading } from "@/shared/components";
 import { ROUTES } from "@/shared/constants/routes";
@@ -26,6 +27,36 @@ const DefectMasterScreen = lazy(() =>
     default: m.DefectMasterScreen,
   })),
 );
+const InboundPage = lazy(() =>
+  import("@/modules/inbound/pages/InboundPage").then((m) => ({
+    default: m.default,
+  })),
+);
+const PutawayPage = lazy(() =>
+  import("@/modules/putaway/pages/PutawayPage").then((m) => ({
+    default: m.default,
+  })),
+);
+const OutboundPage = lazy(() =>
+  import("@/modules/outbound/pages/OutboundPage").then((m) => ({
+    default: m.default,
+  })),
+);
+const WarrantyPage = lazy(() =>
+  import("@/modules/warranty/pages/WarrantyPage").then((m) => ({
+    default: m.default,
+  })),
+);
+const InventoryPage = lazy(() =>
+  import("@/modules/inventory/pages/InventoryPage").then((m) => ({
+    default: m.default,
+  })),
+);
+const ReversalPage = lazy(() =>
+  import("@/modules/reverse/pages/ReversalPage").then((m) => ({
+    default: m.default,
+  })),
+);
 const MvpSourceScreen = lazy(() =>
   import("@/shared/components/mvp/MvpSourceScreen").then((m) => ({
     default: m.MvpSourceScreen,
@@ -44,7 +75,8 @@ const MVP_SCREEN_META: Record<string, ScreenMeta> = {
   },
   "IAM-01": {
     title: "Danh sách người dùng & phân quyền",
-    description: "Danh sách người dùng, vai trò, phạm vi dữ liệu và trạng thái.",
+    description:
+      "Danh sách người dùng, vai trò, phạm vi dữ liệu và trạng thái.",
   },
   "MST-01": {
     title: "Danh sách SKU / Product Master",
@@ -58,7 +90,10 @@ const MVP_SCREEN_META: Record<string, ScreenMeta> = {
     title: "Danh mục bệnh / lỗi",
     description: "Danh mục bệnh / lỗi dùng cho bảo hành.",
   },
-  "IN-01": { title: "Danh sách phiếu nhập", description: "Danh sách phiếu nhập." },
+  "IN-01": {
+    title: "Danh sách phiếu nhập",
+    description: "Danh sách phiếu nhập.",
+  },
   "IN-02": {
     title: "Tạo / sửa phiếu nhập DRAFT",
     description: "Tạo / sửa phiếu nhập DRAFT.",
@@ -79,7 +114,10 @@ const MVP_SCREEN_META: Record<string, ScreenMeta> = {
     title: "Tiếp nhận Phiếu yêu cầu xuất",
     description: "Tiếp nhận phiếu yêu cầu xuất, có import file Excel.",
   },
-  "OUT-01": { title: "Danh sách phiếu xuất", description: "Danh sách phiếu xuất." },
+  "OUT-01": {
+    title: "Danh sách phiếu xuất",
+    description: "Danh sách phiếu xuất.",
+  },
   "OUT-03": {
     title: "Chi tiết phiếu xuất",
     description: "Màn chi tiết phiếu xuất khi bấm Mở / Xem.",
@@ -101,7 +139,10 @@ const MVP_SCREEN_META: Record<string, ScreenMeta> = {
     title: "Tra cứu tồn & đối soát",
     description: "Tra cứu tồn và đối soát.",
   },
-  "TRACE-01": { title: "Truy vết mã vật lý", description: "Truy vết mã vật lý." },
+  "TRACE-01": {
+    title: "Truy vết mã vật lý",
+    description: "Truy vết mã vật lý.",
+  },
   "REV-00": {
     title: "Danh sách phiếu Reversal",
     description: "Danh sách phiếu để chọn tạo Reversal.",
@@ -132,7 +173,8 @@ const ROUTE_DEFAULT_SCREEN: Record<string, string> = {
 const ROUTE_META: Record<string, ScreenMeta> = {
   [ROUTES.IAM_ROLES]: {
     title: "Vai trò & phân quyền",
-    description: "Quản trị role template và permission theo contract IAM hiện hành.",
+    description:
+      "Quản trị role template và permission theo contract IAM hiện hành.",
   },
   [ROUTES.AUDIT_LOGS]: {
     title: "Nhật ký kiểm tra",
@@ -153,6 +195,19 @@ const MODAL_PARENT_SCREEN: Record<string, string> = {
   "MST-02": "MST-01",
   "AGY-02": "AGY-01",
   "DEF-02": "DEF-01",
+  "IN-02": "IN-01",
+  "IN-03": "IN-01",
+  "PTW-01": "PTW-00",
+  "OUT-REQ-01": "OUT-01",
+  "OUT-03": "OUT-01",
+  "OUT-02": "OUT-01",
+  "LBL-01": "OUT-01",
+  "RFID-01": "OUT-01",
+  "WAR-02": "WAR-01",
+  "WAR-03": "WAR-01",
+  "COMP-01": "WAR-01",
+  "TRACE-01": "INV-01",
+  "REV-01": "REV-00",
 };
 
 function normalizeScreen(screen: string | null) {
@@ -177,15 +232,14 @@ function resolveScreenMeta(pathname: string, search: string): ScreenMeta {
   );
 }
 
-function renderMvpScreen(
-  sourceScreen: string,
-  requestedScreen: string | null,
-) {
+function renderMvpScreen(sourceScreen: string, requestedScreen: string | null) {
   switch (sourceScreen) {
     case "IAM-01":
       return <IamUserScreen openCreateOnMount={requestedScreen === "IAM-02"} />;
     case "MST-01":
-      return <SkuMasterScreen openCreateOnMount={requestedScreen === "MST-02"} />;
+      return (
+        <SkuMasterScreen openCreateOnMount={requestedScreen === "MST-02"} />
+      );
     case "AGY-01":
       return (
         <AgencyMasterScreen openCreateOnMount={requestedScreen === "AGY-02"} />
@@ -193,6 +247,45 @@ function renderMvpScreen(
     case "DEF-01":
       return (
         <DefectMasterScreen openCreateOnMount={requestedScreen === "DEF-02"} />
+      );
+    case "IN-01":
+      return (
+        <div className="hn-mvp-source-screen">
+          <InboundPage />
+        </div>
+      );
+    case "PTW-00":
+      return (
+        <div className="hn-mvp-source-screen">
+          <PutawayPage />
+        </div>
+      );
+    case "OUT-01":
+      return (
+        <div className="hn-mvp-source-screen">
+          <OutboundPage />
+        </div>
+      );
+    case "WAR-01":
+      // WarrantyPage tự đọc ?screen=WAR-02/WAR-03/COMP-01 để mở modal tương ứng.
+      return (
+        <div className="hn-mvp-source-screen">
+          <WarrantyPage />
+        </div>
+      );
+    case "INV-01":
+      // InventoryPage tự đọc ?screen=TRACE-01 để mở modal truy vết.
+      return (
+        <div className="hn-mvp-source-screen">
+          <InventoryPage />
+        </div>
+      );
+    case "REV-00":
+      // ReversalPage tự đọc ?screen=REV-01 để mở modal tạo reversal.
+      return (
+        <div className="hn-mvp-source-screen">
+          <ReversalPage />
+        </div>
       );
     default:
       return <MvpSourceScreen screenId={sourceScreen} />;
@@ -225,16 +318,22 @@ export function MainLayout() {
             <h2>{meta.title}</h2>
             <p>{meta.description}</p>
           </div>
+          <UserMenu />
         </header>
-        <section className="hn-mvp-screen">
-          {sourceScreen ? (
-            <Suspense fallback={<Loading />}>
-              {renderMvpScreen(sourceScreen, requestedScreen)}
-            </Suspense>
-          ) : (
-            <Outlet />
-          )}
-        </section>
+        <div className="hn-mvp-content">
+          <section className="hn-mvp-screen">
+            {sourceScreen ? (
+              <Suspense fallback={<Loading />}>
+                {renderMvpScreen(sourceScreen, requestedScreen)}
+              </Suspense>
+            ) : (
+              <Outlet />
+            )}
+          </section>
+        </div>
+        <footer className="hn-mvp-footer">
+          Hoa Nam ©{new Date().getFullYear()} — Phát triển bởi Lam Phong Tech
+        </footer>
       </main>
     </div>
   );
