@@ -47,6 +47,16 @@ const WarrantyPage = lazy(() =>
     default: m.default,
   })),
 );
+const InventoryPage = lazy(() =>
+  import("@/modules/inventory/pages/InventoryPage").then((m) => ({
+    default: m.default,
+  })),
+);
+const ReversalPage = lazy(() =>
+  import("@/modules/reverse/pages/ReversalPage").then((m) => ({
+    default: m.default,
+  })),
+);
 const MvpSourceScreen = lazy(() =>
   import("@/shared/components/mvp/MvpSourceScreen").then((m) => ({
     default: m.MvpSourceScreen,
@@ -196,6 +206,8 @@ const MODAL_PARENT_SCREEN: Record<string, string> = {
   "WAR-02": "WAR-01",
   "WAR-03": "WAR-01",
   "COMP-01": "WAR-01",
+  "TRACE-01": "INV-01",
+  "REV-01": "REV-00",
 };
 
 function normalizeScreen(screen: string | null) {
@@ -259,6 +271,20 @@ function renderMvpScreen(sourceScreen: string, requestedScreen: string | null) {
       return (
         <div className="hn-mvp-source-screen">
           <WarrantyPage />
+        </div>
+      );
+    case "INV-01":
+      // InventoryPage tự đọc ?screen=TRACE-01 để mở modal truy vết.
+      return (
+        <div className="hn-mvp-source-screen">
+          <InventoryPage />
+        </div>
+      );
+    case "REV-00":
+      // ReversalPage tự đọc ?screen=REV-01 để mở modal tạo reversal.
+      return (
+        <div className="hn-mvp-source-screen">
+          <ReversalPage />
         </div>
       );
     default:

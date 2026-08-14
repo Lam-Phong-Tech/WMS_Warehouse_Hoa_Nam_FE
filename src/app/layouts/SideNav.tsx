@@ -90,6 +90,8 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
+    // TRACE-01 / REV-01 mở modal ngay trên danh sách (giống WAR-02/COMP-01)
+    // nên không liệt kê trong menu; deep-link ?screen= vẫn được hub page xử lý.
     name: "05 · Tồn kho & kiểm soát",
     items: [
       {
@@ -98,19 +100,9 @@ const NAV_GROUPS: NavGroup[] = [
         label: "Tra cứu tồn & đối soát",
       },
       {
-        screen: "TRACE-01",
-        path: ROUTES.SCAN,
-        label: "Truy vết mã vật lý",
-      },
-      {
         screen: "REV-00",
         path: ROUTES.REVERSE,
         label: "Danh sách phiếu Reversal",
-      },
-      {
-        screen: "REV-01",
-        path: ROUTES.REVERSE,
-        label: "Tạo Reversal",
       },
     ],
   },
@@ -158,6 +150,8 @@ const MODAL_PARENT_SCREEN: Record<string, string> = {
   "WAR-02": "WAR-01",
   "WAR-03": "WAR-01",
   "COMP-01": "WAR-01",
+  "TRACE-01": "INV-01",
+  "REV-01": "REV-00",
 };
 
 function matchesPath(currentPath: string, targetPath: string) {
