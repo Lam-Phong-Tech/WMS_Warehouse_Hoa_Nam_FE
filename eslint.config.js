@@ -39,6 +39,16 @@ export default defineConfig([
       globals: globals.browser,
     },
     rules: {
+      // Cho phép destructuring bỏ field bằng tên `_...` (ví dụ loại page/per_page
+      // khỏi payload export) nhưng vẫn giữ no-unused-vars ở mức error cho mọi tên khác.
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
+      ],
       // Rule mới của react-hooks v7. Các màn legacy (IAM/Inbound/MasterData/
       // Putaway/CameraScan) còn 10 vị trí setState-sync-trong-effect; hạ xuống
       // warn để giữ nợ hiển thị thay vì chặn CI — refactor dần theo module.
