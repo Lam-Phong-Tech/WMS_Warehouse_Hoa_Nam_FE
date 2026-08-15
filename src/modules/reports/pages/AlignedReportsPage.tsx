@@ -10,7 +10,11 @@ import {
   Tag,
   type TableColumnsType,
 } from "antd";
-import { DownloadOutlined, FilePdfOutlined, SearchOutlined } from "@ant-design/icons";
+import {
+  DownloadOutlined,
+  FilePdfOutlined,
+  SearchOutlined,
+} from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import dayjs, { type Dayjs } from "dayjs";
 import { toast } from "sonner";
@@ -21,7 +25,10 @@ import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { MvpPageSizeSelector } from "@/shared/components/mvp/MvpListPagination";
 import { ActionButton } from "@/shared/components/permission/ActionButton";
 import { fetchWarehouses } from "@/modules/master-data/services/warehouse.service";
-import { useMvpAgencies, useMvpDefects } from "@/modules/master-data/hooks/use-mvp-master";
+import {
+  useMvpAgencies,
+  useMvpDefects,
+} from "@/modules/master-data/hooks/use-mvp-master";
 import { fetchPrinterConfigs } from "@/modules/outbound/services/mvpOutboundService";
 
 type Raw = Record<string, unknown>;
@@ -130,8 +137,12 @@ const STATUS_COLORS: Record<string, string> = {
   PRINT_FAILED: "error",
 };
 
-const fmt = (value: unknown) => new Intl.NumberFormat("vi-VN").format(Number(value ?? 0));
-const text = (value: unknown, fallback = "-") => value === null || value === undefined || value === "" ? fallback : String(value);
+const fmt = (value: unknown) =>
+  new Intl.NumberFormat("vi-VN").format(Number(value ?? 0));
+const text = (value: unknown, fallback = "-") =>
+  value === null || value === undefined || value === ""
+    ? fallback
+    : String(value);
 const n = (value: unknown, fallback = 0) => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
@@ -143,7 +154,9 @@ function rowsOf(data: Raw | undefined, key: "rows" | "lines" = "rows"): Raw[] {
 }
 
 function objectOf(value: unknown): Raw {
-  return value && typeof value === "object" && !Array.isArray(value) ? (value as Raw) : {};
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Raw)
+    : {};
 }
 
 function handleBlobDownload(blob: Blob, filename: string) {
@@ -164,15 +177,20 @@ function useWarehouseOptions(): { options: SelectOption[]; loading: boolean } {
   });
   return {
     loading: query.isLoading,
-    options: (query.data ?? []).map((row: Raw) => ({
-      value: text(row.id ?? row.warehouse_id, ""),
-      label: [row.code, row.name].filter(Boolean).join(" · "),
-    })).filter((row) => row.value !== ""),
+    options: (query.data ?? [])
+      .map((row: Raw) => ({
+        value: text(row.id ?? row.warehouse_id, ""),
+        label: [row.code, row.name].filter(Boolean).join(" · "),
+      }))
+      .filter((row) => row.value !== ""),
   };
 }
 
 function usePrinterOptions(): { options: SelectOption[]; loading: boolean } {
-  const query = useQuery({ queryKey: ["printers", "flow06-filter"], queryFn: fetchPrinterConfigs });
+  const query = useQuery({
+    queryKey: ["printers", "flow06-filter"],
+    queryFn: fetchPrinterConfigs,
+  });
   return {
     loading: query.isLoading,
     options: (query.data ?? [])
@@ -186,79 +204,243 @@ function columnsFor(report: ReportKey): TableColumnsType<Raw> {
     case "inventory-balance":
       return [
         { title: "Kho", dataIndex: "warehouse_code", width: 100 },
-        { title: "Mã SKU", dataIndex: "product_code", width: 140, fixed: "left" },
+        {
+          title: "Mã SKU",
+          dataIndex: "product_code",
+          width: 140,
+          fixed: "left",
+        },
         { title: "Tên SKU", dataIndex: "product_name", width: 220 },
         { title: "Trạng thái", dataIndex: "stock_status", width: 130 },
-        { title: "Tồn kho", dataIndex: "on_hand_qty", align: "right", render: fmt },
-        { title: "Khả dụng", dataIndex: "available_qty", align: "right", render: fmt },
-        { title: "Ledger", dataIndex: "ledger_qty", align: "right", render: fmt },
-        { title: "Chênh lệch", dataIndex: "variance", align: "right", render: (v) => n(v) === 0 ? "0" : <Tag color="error">{fmt(v)}</Tag> },
-        { title: "Đối soát", dataIndex: "reconciliation_status", width: 120, render: (v) => <Tag color={v === "MATCH" ? "success" : "error"}>{text(v)}</Tag> },
+        {
+          title: "Tồn kho",
+          dataIndex: "on_hand_qty",
+          align: "right",
+          render: fmt,
+        },
+        {
+          title: "Khả dụng",
+          dataIndex: "available_qty",
+          align: "right",
+          render: fmt,
+        },
+        {
+          title: "Ledger",
+          dataIndex: "ledger_qty",
+          align: "right",
+          render: fmt,
+        },
+        {
+          title: "Chênh lệch",
+          dataIndex: "variance",
+          align: "right",
+          render: (v) => (n(v) === 0 ? "0" : <Tag color="error">{fmt(v)}</Tag>),
+        },
+        {
+          title: "Đối soát",
+          dataIndex: "reconciliation_status",
+          width: 120,
+          render: (v) => (
+            <Tag color={v === "MATCH" ? "success" : "error"}>{text(v)}</Tag>
+          ),
+        },
       ];
     case "xnt":
       return [
         { title: "Kho", dataIndex: "warehouse_code", width: 100 },
-        { title: "Mã SKU", dataIndex: "product_code", width: 140, fixed: "left" },
+        {
+          title: "Mã SKU",
+          dataIndex: "product_code",
+          width: 140,
+          fixed: "left",
+        },
         { title: "Tên SKU", dataIndex: "product_name", width: 210 },
         { title: "Tồn", dataIndex: "stock_status", width: 120 },
         { title: "Đầu kỳ", dataIndex: "opening", align: "right", render: fmt },
         { title: "Nhập", dataIndex: "receipt", align: "right", render: fmt },
         { title: "Xuất", dataIndex: "issue", align: "right", render: fmt },
-        { title: "Xuất LK", dataIndex: "component_issue", align: "right", render: fmt },
-        { title: "Reversal", dataIndex: "reversal_net", align: "right", render: fmt },
+        {
+          title: "Xuất LK",
+          dataIndex: "component_issue",
+          align: "right",
+          render: fmt,
+        },
+        {
+          title: "Reversal",
+          dataIndex: "reversal_net",
+          align: "right",
+          render: fmt,
+        },
         { title: "Cuối kỳ", dataIndex: "closing", align: "right", render: fmt },
       ];
     case "document-history":
       return [
-        { title: "Số phiếu", dataIndex: "document_no", width: 160, fixed: "left" },
+        {
+          title: "Số phiếu",
+          dataIndex: "document_no",
+          width: 160,
+          fixed: "left",
+        },
         { title: "Loại", dataIndex: "doc_type", width: 100 },
         { title: "Kho", dataIndex: "warehouse_code", width: 100 },
         { title: "Đối tác/Nơi nhận", dataIndex: "counterpart", width: 200 },
         { title: "Ngày", dataIndex: "document_date", width: 120 },
-        { title: "Trạng thái", dataIndex: "status", width: 120, render: statusTag },
+        {
+          title: "Trạng thái",
+          dataIndex: "status",
+          width: 120,
+          render: statusTag,
+        },
         { title: "Người tạo", dataIndex: "created_by_name", width: 140 },
         { title: "Người post", dataIndex: "posted_by_name", width: 140 },
         { title: "Posted at", dataIndex: "posted_at", width: 170 },
       ];
     case "movement-trace":
       return [
-        { title: "Thời gian", dataIndex: "occurred_at", width: 170, fixed: "left" },
-        { title: "Loại", dataIndex: "movement_type", width: 130, render: (v) => <Tag color={MOVEMENT_COLORS[text(v, "")]}>{text(v)}</Tag> },
+        {
+          title: "Thời gian",
+          dataIndex: "occurred_at",
+          width: 170,
+          fixed: "left",
+        },
+        {
+          title: "Loại",
+          dataIndex: "movement_type",
+          width: 130,
+          render: (v) => (
+            <Tag color={MOVEMENT_COLORS[text(v, "")]}>{text(v)}</Tag>
+          ),
+        },
         { title: "Kho", dataIndex: "warehouse_code", width: 100 },
         { title: "SKU", dataIndex: "product_code", width: 130 },
         { title: "Tên SKU", dataIndex: "product_name", width: 190 },
         { title: "SL Δ", dataIndex: "qty_delta", align: "right", render: fmt },
         { title: "Mã vật lý", dataIndex: "physical_code", width: 170 },
         { title: "Nguồn", dataIndex: "source_type", width: 130 },
-        { title: "Movement gốc", dataIndex: "original_movement_id", width: 180 },
-        { title: "Correction chain", dataIndex: "correction_chain_id", width: 180 },
+        {
+          title: "Movement gốc",
+          dataIndex: "original_movement_id",
+          width: 180,
+        },
+        {
+          title: "Correction chain",
+          dataIndex: "correction_chain_id",
+          width: 180,
+        },
       ];
     case "import-match":
       return [
-        { title: "Mã batch", dataIndex: "import_no", width: 150, fixed: "left" },
-        { title: "File", dataIndex: "source_file_name", width: 220, ellipsis: true },
-        { title: "Trạng thái", dataIndex: "status", width: 120, render: statusTag },
-        { title: "Tổng dòng", dataIndex: "total_rows", align: "right", render: fmt },
-        { title: "Hợp lệ", dataIndex: "valid_rows", align: "right", render: fmt },
+        {
+          title: "Mã batch",
+          dataIndex: "import_no",
+          width: 150,
+          fixed: "left",
+        },
+        {
+          title: "File",
+          dataIndex: "source_file_name",
+          width: 220,
+          ellipsis: true,
+        },
+        {
+          title: "Trạng thái",
+          dataIndex: "status",
+          width: 120,
+          render: statusTag,
+        },
+        {
+          title: "Tổng dòng",
+          dataIndex: "total_rows",
+          align: "right",
+          render: fmt,
+        },
+        {
+          title: "Hợp lệ",
+          dataIndex: "valid_rows",
+          align: "right",
+          render: fmt,
+        },
         { title: "Lỗi", dataIndex: "error_rows", align: "right", render: fmt },
-        { title: "Pass rate", dataIndex: "pass_rate", align: "right", render: (v) => `${n(v)}%` },
-        { title: "SL khớp", dataIndex: "matched_qty", align: "right", render: fmt },
+        {
+          title: "Pass rate",
+          dataIndex: "pass_rate",
+          align: "right",
+          render: (v) => `${n(v)}%`,
+        },
+        {
+          title: "SL khớp",
+          dataIndex: "matched_qty",
+          align: "right",
+          render: fmt,
+        },
         { title: "Người upload", dataIndex: "uploaded_by_name", width: 150 },
         { title: "Người consume", dataIndex: "consumed_by_name", width: 150 },
       ];
     case "label-log":
       return [
-        { title: "Phiếu xuất", dataIndex: "outbound_no", width: 160, fixed: "left" },
+        {
+          title: "Phiếu xuất",
+          dataIndex: "outbound_no",
+          width: 160,
+          fixed: "left",
+        },
         { title: "Ngày", dataIndex: "outbound_date", width: 120 },
         { title: "Nơi nhận", dataIndex: "recipient", width: 180 },
-        { title: "Số nhãn", dataIndex: "label_count", width: 90, align: "right", render: fmt },
-        { title: "Item", dataIndex: "item_count", width: 80, align: "right", render: fmt },
-        { title: "SKU", dataIndex: "sku_count", width: 80, align: "right", render: fmt },
-        { title: "Tóm tắt SKU", dataIndex: "sku_summary", width: 240, ellipsis: true },
-        { title: "Trạng thái", dataIndex: "status", width: 130, render: statusTag },
-        { title: "Đã dán", dataIndex: "applied", width: 90, render: (v) => <Tag color={v ? "success" : "warning"}>{v ? "CÓ" : "CHƯA"}</Tag> },
-        { title: "Lần in", dataIndex: "total_attempts", width: 80, align: "right", render: fmt },
-        { title: "In lại", dataIndex: "reprint_count", width: 80, align: "right", render: fmt },
+        {
+          title: "Số nhãn",
+          dataIndex: "label_count",
+          width: 90,
+          align: "right",
+          render: fmt,
+        },
+        {
+          title: "Item",
+          dataIndex: "item_count",
+          width: 80,
+          align: "right",
+          render: fmt,
+        },
+        {
+          title: "SKU",
+          dataIndex: "sku_count",
+          width: 80,
+          align: "right",
+          render: fmt,
+        },
+        {
+          title: "Tóm tắt SKU",
+          dataIndex: "sku_summary",
+          width: 240,
+          ellipsis: true,
+        },
+        {
+          title: "Trạng thái",
+          dataIndex: "status",
+          width: 130,
+          render: statusTag,
+        },
+        {
+          title: "Đã dán",
+          dataIndex: "applied",
+          width: 90,
+          render: (v) => (
+            <Tag color={v ? "success" : "warning"}>{v ? "CÓ" : "CHƯA"}</Tag>
+          ),
+        },
+        {
+          title: "Lần in",
+          dataIndex: "total_attempts",
+          width: 80,
+          align: "right",
+          render: fmt,
+        },
+        {
+          title: "In lại",
+          dataIndex: "reprint_count",
+          width: 80,
+          align: "right",
+          render: fmt,
+        },
       ];
     case "warranty":
       return [
@@ -266,8 +448,17 @@ function columnsFor(report: ReportKey): TableColumnsType<Raw> {
         { title: "Nhận diện", dataIndex: "identification_status", width: 120 },
         { title: "SKU/Model", dataIndex: "model", width: 170 },
         { title: "Bệnh/lỗi", dataIndex: "defect", width: 180 },
-        { title: "Linh kiện đã xuất", dataIndex: "components_issued", width: 200 },
-        { title: "Trạng thái", dataIndex: "status", width: 130, render: statusTag },
+        {
+          title: "Linh kiện đã xuất",
+          dataIndex: "components_issued",
+          width: 200,
+        },
+        {
+          title: "Trạng thái",
+          dataIndex: "status",
+          width: 130,
+          render: statusTag,
+        },
         { title: "Ngày nhận", dataIndex: "received_at", width: 170 },
         { title: "Cập nhật", dataIndex: "updated_at", width: 170 },
       ];
@@ -279,8 +470,18 @@ function columnsFor(report: ReportKey): TableColumnsType<Raw> {
         { title: "Tên SKU", dataIndex: "product_name", width: 200 },
         { title: "Phiếu", dataIndex: "outbound_no", width: 150 },
         { title: "Ngày", dataIndex: "document_date", width: 120 },
-        { title: "SL yêu cầu", dataIndex: "required_qty", align: "right", render: fmt },
-        { title: "SL xuất", dataIndex: "scanned_qty", align: "right", render: fmt },
+        {
+          title: "SL yêu cầu",
+          dataIndex: "required_qty",
+          align: "right",
+          render: fmt,
+        },
+        {
+          title: "SL xuất",
+          dataIndex: "scanned_qty",
+          align: "right",
+          render: fmt,
+        },
       ];
   }
 }
@@ -296,35 +497,85 @@ function Summary({ report, data }: { report: ReportKey; data?: Raw }) {
   const tags: Array<[string, unknown, string?]> = [];
   switch (report) {
     case "inventory-balance":
-      tags.push(["Tổng dòng", summary.total_rows], ["Tồn kho", summary.total_on_hand, "blue"], ["Khả dụng", summary.total_available, "green"], ["Lệch ledger", summary.mismatch_count, n(summary.mismatch_count) > 0 ? "error" : "success"]);
+      tags.push(
+        ["Tổng dòng", summary.total_rows],
+        ["Tồn kho", summary.total_on_hand, "blue"],
+        ["Khả dụng", summary.total_available, "green"],
+        [
+          "Lệch ledger",
+          summary.mismatch_count,
+          n(summary.mismatch_count) > 0 ? "error" : "success",
+        ],
+      );
       break;
     case "document-history":
-      tags.push(["Tổng", summary.total], ["POSTED", summary.posted, "success"], ["SCANNING", summary.scanning, "processing"], ["CANCELLED", summary.cancelled, "error"]);
+      tags.push(
+        ["Tổng", summary.total],
+        ["POSTED", summary.posted, "success"],
+        ["SCANNING", summary.scanning, "processing"],
+        ["CANCELLED", summary.cancelled, "error"],
+      );
       break;
     case "movement-trace":
-      tags.push(["Movement", summary.total_movements], ["Net effect", summary.net_effect, "blue"], ["Reversal", summary.reversal_count, "red"]);
+      tags.push(
+        ["Movement", summary.total_movements],
+        ["Net effect", summary.net_effect, "blue"],
+        ["Reversal", summary.reversal_count, "red"],
+      );
       break;
     case "import-match":
-      tags.push(["Batch", summary.total_batches], ["Consumed", summary.consumed, "success"], ["Rejected", summary.rejected, "error"], ["Matched qty", summary.total_matched_qty, "blue"]);
+      tags.push(
+        ["Batch", summary.total_batches],
+        ["Consumed", summary.consumed, "success"],
+        ["Rejected", summary.rejected, "error"],
+        ["Matched qty", summary.total_matched_qty, "blue"],
+      );
       break;
     case "label-log":
-      tags.push(["Packing Label", summary.total_labels], ["Đã in", summary.printed, "success"], ["Đã dán", summary.applied, "blue"], ["Lỗi", summary.failed, "error"], ["In lại", summary.reprinted, "warning"]);
+      tags.push(
+        ["Packing Label", summary.total_labels],
+        ["Đã in", summary.printed, "success"],
+        ["Đã dán", summary.applied, "blue"],
+        ["Lỗi", summary.failed, "error"],
+        ["In lại", summary.reprinted, "warning"],
+      );
       break;
     case "warranty":
-      tags.push(["Case", summary.total], ["Đang xử lý", summary.processing, "processing"], ["Đã trả", summary.returned, "success"], ["Đã hủy", summary.cancelled, "error"], ["TEMP_ONLY", summary.temp_only, "warning"]);
+      tags.push(
+        ["Case", summary.total],
+        ["Đang xử lý", summary.processing, "processing"],
+        ["Đã trả", summary.returned, "success"],
+        ["Đã hủy", summary.cancelled, "error"],
+        ["TEMP_ONLY", summary.temp_only, "warning"],
+      );
       break;
     case "outbound-by-agency":
-      tags.push(["Nơi nhận", summary.total_agencies], ["Phiếu", summary.total_documents, "blue"], ["Tổng xuất", summary.total_issued_qty, "green"]);
+      tags.push(
+        ["Nơi nhận", summary.total_agencies],
+        ["Phiếu", summary.total_documents, "blue"],
+        ["Tổng xuất", summary.total_issued_qty, "green"],
+      );
       break;
     default:
       break;
   }
-  return tags.length ? <Space wrap style={{ marginBottom: 12 }}>{tags.map(([label, value, color]) => <Tag key={label} color={color}>{label}: {fmt(value)}</Tag>)}</Space> : null;
+  return tags.length ? (
+    <Space wrap style={{ marginBottom: 12 }}>
+      {tags.map(([label, value, color]) => (
+        <Tag key={label} color={color}>
+          {label}: {fmt(value)}
+        </Tag>
+      ))}
+    </Space>
+  ) : null;
 }
 
 export default function AlignedReportsPage() {
   const [report, setReport] = useState<ReportKey>("inventory-balance");
-  const [period, setPeriod] = useState<[Dayjs, Dayjs]>([dayjs().subtract(30, "day"), dayjs()]);
+  const [period, setPeriod] = useState<[Dayjs, Dayjs]>([
+    dayjs().subtract(30, "day"),
+    dayjs(),
+  ]);
   const [keyword, setKeyword] = useState("");
   const [status, setStatus] = useState<string>();
   const [warehouseId, setWarehouseId] = useState<string>();
@@ -393,7 +644,23 @@ export default function AlignedReportsPage() {
       if (agencyId) result.agency_id = agencyId;
     }
     return result;
-  }, [report, config.dateFilter, from, to, keyword, status, warehouseId, agencyId, printerId, defectId, identification, movementType, docType, page, perPage]);
+  }, [
+    report,
+    config.dateFilter,
+    from,
+    to,
+    keyword,
+    status,
+    warehouseId,
+    agencyId,
+    printerId,
+    defectId,
+    identification,
+    movementType,
+    docType,
+    page,
+    perPage,
+  ]);
 
   const query = useQuery({
     queryKey: ["flow06", report, params],
@@ -416,7 +683,9 @@ export default function AlignedReportsPage() {
       });
       const suffix = config.dateFilter ? `-${from}-${to}` : "";
       handleBlobDownload(blob, `${config.fileStem}${suffix}.${format}`);
-      toast.success(`Đã xuất ${format.toUpperCase()} theo đúng bộ lọc hiện tại.`);
+      toast.success(
+        `Đã xuất ${format.toUpperCase()} theo đúng bộ lọc hiện tại.`,
+      );
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Xuất báo cáo thất bại."));
     } finally {
@@ -424,20 +693,35 @@ export default function AlignedReportsPage() {
     }
   };
 
-  const agencyOptions: SelectOption[] = (agencies.data?.data ?? []).map((row) => ({ value: row.agency_id, label: `${row.agency_code} · ${row.agency_name}` }));
-  const defectOptions: SelectOption[] = (defects.data?.data ?? []).map((row) => ({ value: row.defect_id, label: row.defect_name }));
+  const agencyOptions: SelectOption[] = (agencies.data?.data ?? []).map(
+    (row) => ({
+      value: row.agency_id,
+      label: `${row.agency_code} · ${row.agency_name}`,
+    }),
+  );
+  const defectOptions: SelectOption[] = (defects.data?.data ?? []).map(
+    (row) => ({ value: row.defect_id, label: row.defect_name }),
+  );
 
-  const statusOptions = report === "inventory-balance"
-    ? ["AVAILABLE", "NON_SELLABLE", "DEFECTIVE", "QUARANTINE"]
-    : report === "document-history"
-      ? ["DRAFT", "SCANNING", "POSTED", "CANCELLED"]
-      : report === "import-match"
-        ? ["UPLOADED", "VALIDATED", "CONSUMED", "REJECTED"]
-        : report === "label-log"
-          ? ["PENDING_PRINT", "PRINTED", "PRINT_FAILED"]
-          : report === "warranty"
-            ? ["RECEIVED", "CHECKING", "REPAIRING", "COMPLETED", "RETURNED", "CANCELLED"]
-            : [];
+  const statusOptions =
+    report === "inventory-balance"
+      ? ["AVAILABLE", "NON_SELLABLE", "DEFECTIVE", "QUARANTINE"]
+      : report === "document-history"
+        ? ["DRAFT", "SCANNING", "POSTED", "CANCELLED"]
+        : report === "import-match"
+          ? ["UPLOADED", "VALIDATED", "CONSUMED", "REJECTED"]
+          : report === "label-log"
+            ? ["PENDING_PRINT", "PRINTED", "PRINT_FAILED"]
+            : report === "warranty"
+              ? [
+                  "RECEIVED",
+                  "CHECKING",
+                  "REPAIRING",
+                  "COMPLETED",
+                  "RETURNED",
+                  "CANCELLED",
+                ]
+              : [];
 
   return (
     <div className="reversal-page">
@@ -457,7 +741,10 @@ export default function AlignedReportsPage() {
           setKeyword("");
           setPage(1);
         }}
-        items={(Object.keys(CONFIG) as ReportKey[]).map((key) => ({ key, label: CONFIG[key].label }))}
+        items={(Object.keys(CONFIG) as ReportKey[]).map((key) => ({
+          key,
+          label: CONFIG[key].label,
+        }))}
       />
 
       <div className="toolbar" style={{ flexWrap: "wrap" }}>
@@ -474,14 +761,27 @@ export default function AlignedReportsPage() {
           />
         ) : null}
 
-        {["inventory-balance", "xnt", "document-history", "movement-trace", "import-match", "label-log", "outbound-by-agency"].includes(report) ? (
+        {[
+          "inventory-balance",
+          "xnt",
+          "document-history",
+          "movement-trace",
+          "import-match",
+          "label-log",
+          "outbound-by-agency",
+        ].includes(report) ? (
           <Input
             allowClear
             prefix={<SearchOutlined />}
             style={{ width: 230 }}
-            placeholder={report === "movement-trace" ? "Mã vật lý / barcode" : "Từ khóa"}
+            placeholder={
+              report === "movement-trace" ? "Mã vật lý / barcode" : "Từ khóa"
+            }
             value={keyword}
-            onChange={(event) => { setKeyword(event.target.value); resetPage(); }}
+            onChange={(event) => {
+              setKeyword(event.target.value);
+              resetPage();
+            }}
           />
         ) : null}
 
@@ -491,82 +791,165 @@ export default function AlignedReportsPage() {
             style={{ width: 170 }}
             placeholder="Trạng thái"
             value={status}
-            onChange={(value) => { setStatus(value); resetPage(); }}
+            onChange={(value) => {
+              setStatus(value);
+              resetPage();
+            }}
             options={statusOptions.map((value) => ({ value, label: value }))}
           />
         ) : null}
 
         {["inventory-balance", "xnt", "movement-trace"].includes(report) ? (
           <Select
-            allowClear showSearch optionFilterProp="label" style={{ width: 210 }}
-            placeholder="Kho" value={warehouseId} loading={warehouses.loading}
-            options={warehouses.options} onChange={(value) => { setWarehouseId(value); resetPage(); }}
+            allowClear
+            showSearch
+            optionFilterProp="label"
+            style={{ width: 210 }}
+            placeholder="Kho"
+            value={warehouseId}
+            loading={warehouses.loading}
+            options={warehouses.options}
+            onChange={(value) => {
+              setWarehouseId(value);
+              resetPage();
+            }}
           />
         ) : null}
 
         {report === "document-history" ? (
           <Select
-            style={{ width: 150 }} value={docType}
-            onChange={(value) => { setDocType(value); resetPage(); }}
-            options={[{ value: "all", label: "Tất cả phiếu" }, { value: "inbound", label: "Phiếu nhập" }, { value: "outbound", label: "Phiếu xuất" }]}
+            style={{ width: 150 }}
+            value={docType}
+            onChange={(value) => {
+              setDocType(value);
+              resetPage();
+            }}
+            options={[
+              { value: "all", label: "Tất cả phiếu" },
+              { value: "inbound", label: "Phiếu nhập" },
+              { value: "outbound", label: "Phiếu xuất" },
+            ]}
           />
         ) : null}
 
         {report === "movement-trace" ? (
           <Select
-            allowClear style={{ width: 175 }} placeholder="Loại movement"
-            value={movementType} onChange={(value) => { setMovementType(value); resetPage(); }}
-            options={["OPENING", "RECEIPT", "ISSUE", "COMPONENT_ISSUE", "REVERSAL"].map((value) => ({ value, label: value }))}
+            allowClear
+            style={{ width: 175 }}
+            placeholder="Loại movement"
+            value={movementType}
+            onChange={(value) => {
+              setMovementType(value);
+              resetPage();
+            }}
+            options={[
+              "OPENING",
+              "RECEIPT",
+              "ISSUE",
+              "COMPONENT_ISSUE",
+              "REVERSAL",
+            ].map((value) => ({ value, label: value }))}
           />
         ) : null}
 
         {report === "label-log" ? (
           <Select
-            allowClear showSearch optionFilterProp="label" style={{ width: 210 }}
-            placeholder="Máy in" value={printerId} loading={printers.loading}
-            options={printers.options} onChange={(value) => { setPrinterId(value); resetPage(); }}
+            allowClear
+            showSearch
+            optionFilterProp="label"
+            style={{ width: 210 }}
+            placeholder="Máy in"
+            value={printerId}
+            loading={printers.loading}
+            options={printers.options}
+            onChange={(value) => {
+              setPrinterId(value);
+              resetPage();
+            }}
           />
         ) : null}
 
         {report === "warranty" ? (
           <>
             <Select
-              allowClear showSearch optionFilterProp="label" style={{ width: 210 }}
-              placeholder="Bệnh / lỗi" value={defectId} loading={defects.isLoading}
-              options={defectOptions} onChange={(value) => { setDefectId(value); resetPage(); }}
+              allowClear
+              showSearch
+              optionFilterProp="label"
+              style={{ width: 210 }}
+              placeholder="Bệnh / lỗi"
+              value={defectId}
+              loading={defects.isLoading}
+              options={defectOptions}
+              onChange={(value) => {
+                setDefectId(value);
+                resetPage();
+              }}
             />
             <Select
-              allowClear style={{ width: 155 }} placeholder="Nhận diện" value={identification}
-              options={[{ value: "IDENTIFIED", label: "IDENTIFIED" }, { value: "TEMP_ONLY", label: "TEMP_ONLY" }]}
-              onChange={(value) => { setIdentification(value); resetPage(); }}
+              allowClear
+              style={{ width: 155 }}
+              placeholder="Nhận diện"
+              value={identification}
+              options={[
+                { value: "IDENTIFIED", label: "IDENTIFIED" },
+                { value: "TEMP_ONLY", label: "TEMP_ONLY" },
+              ]}
+              onChange={(value) => {
+                setIdentification(value);
+                resetPage();
+              }}
             />
           </>
         ) : null}
 
         {report === "outbound-by-agency" ? (
           <Select
-            allowClear showSearch optionFilterProp="label" style={{ width: 230 }}
-            placeholder="Nơi nhận" value={agencyId} loading={agencies.isLoading}
-            options={agencyOptions} onChange={(value) => { setAgencyId(value); resetPage(); }}
+            allowClear
+            showSearch
+            optionFilterProp="label"
+            style={{ width: 230 }}
+            placeholder="Nơi nhận"
+            value={agencyId}
+            loading={agencies.isLoading}
+            options={agencyOptions}
+            onChange={(value) => {
+              setAgencyId(value);
+              resetPage();
+            }}
           />
         ) : null}
 
         <div className="spacer" />
         <ActionButton
-          module="reports" action="export" permissionCode="REPORT_EXPORT" mode="disable"
+          module="reports"
+          action="export"
+          permissionCode="REPORT_EXPORT"
+          mode="disable"
           icon={<DownloadOutlined />}
           loading={exporting === "xlsx"}
-          disabled={Boolean(exporting) || query.isLoading || (config.dateFilter && invalidPeriod)}
+          disabled={
+            Boolean(exporting) ||
+            query.isLoading ||
+            (config.dateFilter && invalidPeriod)
+          }
           onClick={() => exportReport("xlsx")}
           disabledTooltip="Cần report.export và bộ lọc hợp lệ"
         >
           Xuất XLSX
         </ActionButton>
         <ActionButton
-          module="reports" action="export" permissionCode="REPORT_EXPORT" mode="disable"
-          type="primary" icon={<FilePdfOutlined />}
+          module="reports"
+          action="export"
+          permissionCode="REPORT_EXPORT"
+          mode="disable"
+          type="primary"
+          icon={<FilePdfOutlined />}
           loading={exporting === "pdf"}
-          disabled={Boolean(exporting) || query.isLoading || (config.dateFilter && invalidPeriod)}
+          disabled={
+            Boolean(exporting) ||
+            query.isLoading ||
+            (config.dateFilter && invalidPeriod)
+          }
           onClick={() => exportReport("pdf")}
           disabledTooltip="Cần report.export và bộ lọc hợp lệ"
         >
@@ -574,19 +957,69 @@ export default function AlignedReportsPage() {
         </ActionButton>
       </div>
 
-      {invalidPeriod && config.dateFilter ? <Alert type="error" showIcon style={{ marginBottom: 12 }} message="Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc." /> : null}
-      {report === "warranty" ? <Alert type="info" showIcon style={{ marginBottom: 12 }} message="PII không hiển thị trên màn hình; export chỉ có PII khi BE xác nhận warranty.pii.export và mọi lần export đều audit." /> : null}
-      {report === "outbound-by-agency" ? <Alert type="info" showIcon style={{ marginBottom: 12 }} message="Agency chỉ là chiều báo cáo/nơi nhận, không phải stock bucket." /> : null}
-      {report === "label-log" ? <Alert type="success" showIcon style={{ marginBottom: 12 }} message="Cardinality hiện hành: đúng 01 Packing Label cho mỗi phiếu/lô xuất." /> : null}
+      {invalidPeriod && config.dateFilter ? (
+        <Alert
+          type="error"
+          showIcon
+          style={{ marginBottom: 12 }}
+          message="Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc."
+        />
+      ) : null}
+      {report === "warranty" ? (
+        <Alert
+          type="info"
+          showIcon
+          style={{ marginBottom: 12 }}
+          message="PII không hiển thị trên màn hình; export chỉ có PII khi BE xác nhận warranty.pii.export và mọi lần export đều audit."
+        />
+      ) : null}
+      {report === "outbound-by-agency" ? (
+        <Alert
+          type="info"
+          showIcon
+          style={{ marginBottom: 12 }}
+          message="Agency chỉ là chiều báo cáo/nơi nhận, không phải stock bucket."
+        />
+      ) : null}
+      {report === "label-log" ? (
+        <Alert
+          type="success"
+          showIcon
+          style={{ marginBottom: 12 }}
+          message="Cardinality hiện hành: đúng 01 Packing Label cho mỗi phiếu/lô xuất."
+        />
+      ) : null}
 
       <Summary report={report} data={query.data} />
 
-      {query.isError ? <ApiErrorAlert error={query.error} title={`Không tải được ${config.label}`} onRetry={() => query.refetch()} style={{ marginBottom: 12 }} /> : null}
+      {query.isError ? (
+        <ApiErrorAlert
+          error={query.error}
+          title={`Không tải được ${config.label}`}
+          onRetry={() => query.refetch()}
+          style={{ marginBottom: 12 }}
+        />
+      ) : null}
 
-      <MvpPageSizeSelector value={perPage} onChange={(value) => { setPerPage(value); setPage(1); }} />
+      <MvpPageSizeSelector
+        value={perPage}
+        onChange={(value) => {
+          setPerPage(value);
+          setPage(1);
+        }}
+      />
 
       <Table<Raw>
-        rowKey={(row, index) => text(row.id ?? row.outbound_no ?? row.document_no ?? row.import_no ?? row.case_no, String(index))}
+        rowKey={(row, index) =>
+          text(
+            row.id ??
+              row.outbound_no ??
+              row.document_no ??
+              row.import_no ??
+              row.case_no,
+            String(index),
+          )
+        }
         dataSource={rows}
         columns={columnsFor(report)}
         loading={query.isLoading || query.isFetching}
@@ -599,34 +1032,80 @@ export default function AlignedReportsPage() {
           showTotal: (value) => `Tổng ${fmt(value)} bản ghi`,
           onChange: (next) => setPage(next),
         }}
-        locale={{ emptyText: query.isError ? "Không tải được dữ liệu" : "Không có dữ liệu theo bộ lọc" }}
+        locale={{
+          emptyText: query.isError
+            ? "Không tải được dữ liệu"
+            : "Không có dữ liệu theo bộ lọc",
+        }}
       />
 
       {report === "warranty" && Array.isArray(query.data?.by_defect) ? (
         <Table<Raw>
-          style={{ marginTop: 16 }} size="small" pagination={false}
-          rowKey={(row) => text(row.defect)} dataSource={query.data.by_defect as Raw[]}
+          style={{ marginTop: 16 }}
+          size="small"
+          pagination={false}
+          rowKey={(row) => text(row.defect)}
+          dataSource={query.data.by_defect as Raw[]}
           columns={[
             { title: "Bệnh / lỗi", dataIndex: "defect" },
             { title: "Case", dataIndex: "total", align: "right", render: fmt },
-            { title: "Đang xử lý", dataIndex: "processing", align: "right", render: fmt },
-            { title: "Đã trả", dataIndex: "returned", align: "right", render: fmt },
-            { title: "Đã hủy", dataIndex: "cancelled", align: "right", render: fmt },
-            { title: "TEMP_ONLY", dataIndex: "temp_only", align: "right", render: fmt },
+            {
+              title: "Đang xử lý",
+              dataIndex: "processing",
+              align: "right",
+              render: fmt,
+            },
+            {
+              title: "Đã trả",
+              dataIndex: "returned",
+              align: "right",
+              render: fmt,
+            },
+            {
+              title: "Đã hủy",
+              dataIndex: "cancelled",
+              align: "right",
+              render: fmt,
+            },
+            {
+              title: "TEMP_ONLY",
+              dataIndex: "temp_only",
+              align: "right",
+              render: fmt,
+            },
           ]}
         />
       ) : null}
 
-      {report === "outbound-by-agency" && Array.isArray(query.data?.by_agency) ? (
+      {report === "outbound-by-agency" &&
+      Array.isArray(query.data?.by_agency) ? (
         <Table<Raw>
-          style={{ marginTop: 16 }} size="small" pagination={false}
-          rowKey={(row) => text(row.agency_code)} dataSource={query.data.by_agency as Raw[]}
+          style={{ marginTop: 16 }}
+          size="small"
+          pagination={false}
+          rowKey={(row) => text(row.agency_code)}
+          dataSource={query.data.by_agency as Raw[]}
           columns={[
             { title: "Mã nơi nhận", dataIndex: "agency_code" },
             { title: "Nơi nhận", dataIndex: "agency_name" },
-            { title: "Số phiếu", dataIndex: "document_count", align: "right", render: fmt },
-            { title: "Tổng SL xuất", dataIndex: "total_issued_qty", align: "right", render: fmt },
-            { title: "Số SKU", dataIndex: "sku_count", align: "right", render: fmt },
+            {
+              title: "Số phiếu",
+              dataIndex: "document_count",
+              align: "right",
+              render: fmt,
+            },
+            {
+              title: "Tổng SL xuất",
+              dataIndex: "total_issued_qty",
+              align: "right",
+              render: fmt,
+            },
+            {
+              title: "Số SKU",
+              dataIndex: "sku_count",
+              align: "right",
+              render: fmt,
+            },
           ]}
         />
       ) : null}

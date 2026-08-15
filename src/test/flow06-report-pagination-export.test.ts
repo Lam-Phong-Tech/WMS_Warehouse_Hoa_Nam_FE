@@ -26,7 +26,9 @@ describe("Flow 06 report pagination/export alignment", () => {
     expect(source).toContain('exportReport("xlsx")');
     expect(source).toContain('exportReport("pdf")');
     expect(source).toContain('format: "pdf"');
-    expect(source.match(/permissionCode="REPORT_EXPORT"/g)?.length).toBeGreaterThanOrEqual(2);
+    expect(
+      source.match(/permissionCode="REPORT_EXPORT"/g)?.length,
+    ).toBeGreaterThanOrEqual(2);
   });
 
   it("keeps all eight baseline report groups", () => {

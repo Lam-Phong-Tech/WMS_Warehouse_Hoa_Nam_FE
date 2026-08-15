@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState } from "react";
-import { Progress, Space, Table, Tag, type TablePaginationConfig } from "antd";
+import { Progress, Table, Tag, type TablePaginationConfig } from "antd";
 import { EyeOutlined, PlusOutlined, ScanOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -117,19 +117,39 @@ export default function AlignedMvpOutboundPage() {
       key: "request",
       width: 150,
       render: (value: string | null | undefined) =>
-        value ? <span title={value}>{value.length > 12 ? `${value.slice(0, 8)}…` : value}</span> : <Tag color="error">Thiếu request</Tag>,
+        value ? (
+          <span title={value}>
+            {value.length > 12 ? `${value.slice(0, 8)}…` : value}
+          </span>
+        ) : (
+          <Tag color="error">Thiếu request</Tag>
+        ),
     },
-    { title: "Người nhận", dataIndex: "recipientName", key: "recipientName", width: 190 },
+    {
+      title: "Người nhận",
+      dataIndex: "recipientName",
+      key: "recipientName",
+      width: 190,
+    },
     {
       title: "Match",
       key: "match",
       width: 190,
       render: (_, row) => {
-        const percent = row.expected > 0 ? Math.min(100, Math.round((row.scanned / row.expected) * 100)) : 0;
+        const percent =
+          row.expected > 0
+            ? Math.min(100, Math.round((row.scanned / row.expected) * 100))
+            : 0;
         return (
           <div style={{ minWidth: 150 }}>
-            <Progress percent={percent} size="small" status={row.status === "POSTED" ? "success" : "normal"} />
-            <span style={{ fontSize: 12 }}>{row.scanned} / {row.expected}</span>
+            <Progress
+              percent={percent}
+              size="small"
+              status={row.status === "POSTED" ? "success" : "normal"}
+            />
+            <span style={{ fontSize: 12 }}>
+              {row.scanned} / {row.expected}
+            </span>
           </div>
         );
       },
@@ -140,9 +160,19 @@ export default function AlignedMvpOutboundPage() {
       width: 160,
       render: (_, row) => {
         const printed = row.labelPrintedCount ?? 0;
-        return printed >= 1
-          ? <Tag color="success">1/1 ĐÃ IN</Tag>
-          : <Tag color={row.scanned >= row.expected && row.expected > 0 ? "warning" : "default"}>0/1</Tag>;
+        return printed >= 1 ? (
+          <Tag color="success">1/1 ĐÃ IN</Tag>
+        ) : (
+          <Tag
+            color={
+              row.scanned >= row.expected && row.expected > 0
+                ? "warning"
+                : "default"
+            }
+          >
+            0/1
+          </Tag>
+        );
       },
     },
     {
@@ -150,7 +180,11 @@ export default function AlignedMvpOutboundPage() {
       key: "rfid",
       width: 150,
       render: (_, row) => (
-        <Tag color={row.rfidMappedCount && row.rfidMappedCount > 0 ? "blue" : "default"}>
+        <Tag
+          color={
+            row.rfidMappedCount && row.rfidMappedCount > 0 ? "blue" : "default"
+          }
+        >
           Tùy chọn · {row.rfidMappedCount ?? 0}
         </Tag>
       ),
@@ -160,9 +194,16 @@ export default function AlignedMvpOutboundPage() {
       dataIndex: "status",
       key: "status",
       width: 130,
-      render: (value: OutboundStatus) => <Tag color={STATUS_COLOR[value]}>{STATUS_LABEL[value]}</Tag>,
+      render: (value: OutboundStatus) => (
+        <Tag color={STATUS_COLOR[value]}>{STATUS_LABEL[value]}</Tag>
+      ),
     },
-    { title: "Cập nhật", key: "updatedAt", width: 170, render: (_, row) => row.updatedAt ?? row.date ?? "-" },
+    {
+      title: "Cập nhật",
+      key: "updatedAt",
+      width: 170,
+      render: (_, row) => row.updatedAt ?? row.date ?? "-",
+    },
     {
       title: "Hành động",
       key: "actions",
@@ -171,8 +212,16 @@ export default function AlignedMvpOutboundPage() {
       render: (_, row) => {
         const mutable = row.status === "DRAFT" || row.status === "SCANNING";
         return (
-          <button className="btn small" type="button" onClick={() => setDetailId(row.id)}>
-            {mutable && canScan ? <ScanOutlined style={{ marginRight: 4 }} /> : <EyeOutlined style={{ marginRight: 4 }} />}
+          <button
+            className="btn small"
+            type="button"
+            onClick={() => setDetailId(row.id)}
+          >
+            {mutable && canScan ? (
+              <ScanOutlined style={{ marginRight: 4 }} />
+            ) : (
+              <EyeOutlined style={{ marginRight: 4 }} />
+            )}
             {mutable && canScan ? "Mở" : "Xem"}
           </button>
         );
@@ -180,12 +229,15 @@ export default function AlignedMvpOutboundPage() {
     },
   ];
 
-  const refreshAll = () => void queryClient.invalidateQueries({ queryKey: ["mvp-outbound"] });
+  const refreshAll = () =>
+    void queryClient.invalidateQueries({ queryKey: ["mvp-outbound"] });
 
   return (
     <div className="outbound-page">
       <div className="toolbar-wrap" style={{ gap: 6 }}>
-        <span className="pill ok">Scan → tổng hợp → 1 Packing Label/lô → Post Issue</span>
+        <span className="pill ok">
+          Scan → tổng hợp → 1 Packing Label/lô → Post Issue
+        </span>
         <span className="pill blue">RFID tùy chọn</span>
         <span className="pill warn-pill">Chỉ Post Issue mới trừ tồn</span>
       </div>
@@ -208,11 +260,19 @@ export default function AlignedMvpOutboundPage() {
           }}
         >
           <option value="">Trạng thái: Tất cả</option>
-          {STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+          {STATUS_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
         </select>
         <div className="spacer" />
         {canImport ? (
-          <button className="btn primary" type="button" onClick={() => setIntakeOpen(true)}>
+          <button
+            className="btn primary"
+            type="button"
+            onClick={() => setIntakeOpen(true)}
+          >
             <PlusOutlined /> Tiếp nhận yêu cầu xuất
           </button>
         ) : null}
@@ -220,7 +280,11 @@ export default function AlignedMvpOutboundPage() {
 
       {listQuery.isError ? (
         <div style={{ marginBottom: 14 }}>
-          <ApiErrorAlert error={listQuery.error} title="Không tải được danh sách phiếu xuất" onRetry={() => listQuery.refetch()} />
+          <ApiErrorAlert
+            error={listQuery.error}
+            title="Không tải được danh sách phiếu xuất"
+            onRetry={() => listQuery.refetch()}
+          />
         </div>
       ) : null}
 
@@ -245,12 +309,21 @@ export default function AlignedMvpOutboundPage() {
           showSizeChanger: false,
           showTotal: (count) => `Tổng ${count} phiếu xuất`,
         }}
-        locale={{ emptyText: listQuery.isError ? "Không tải được dữ liệu" : "Chưa có phiếu xuất phù hợp" }}
+        locale={{
+          emptyText: listQuery.isError
+            ? "Không tải được dữ liệu"
+            : "Chưa có phiếu xuất phù hợp",
+        }}
         scroll={{ x: 1390 }}
       />
 
       <div className="footer-note">
-        Mở phiếu để thực hiện đúng thứ tự: <b>Scan đủ → tổng hợp lô → tạo/preview/in/dán đúng 01 Packing Label → RFID tùy chọn → Hoàn tất xuất</b>.
+        Mở phiếu để thực hiện đúng thứ tự:{" "}
+        <b>
+          Scan đủ → tổng hợp lô → tạo/preview/in/dán đúng 01 Packing Label →
+          RFID tùy chọn → Hoàn tất xuất
+        </b>
+        .
       </div>
 
       {intakeOpen ? (
@@ -267,7 +340,11 @@ export default function AlignedMvpOutboundPage() {
       ) : null}
 
       {detailId ? (
-        <AlignedOutboundDetailModal documentId={detailId} onClose={() => setDetailId(null)} onChanged={refreshAll} />
+        <AlignedOutboundDetailModal
+          documentId={detailId}
+          onClose={() => setDetailId(null)}
+          onChanged={refreshAll}
+        />
       ) : null}
     </div>
   );

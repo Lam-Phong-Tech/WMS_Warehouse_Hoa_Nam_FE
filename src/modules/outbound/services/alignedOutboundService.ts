@@ -112,7 +112,10 @@ export interface PackingLabelRecord {
 function normalizeSkuSummary(value: unknown): PackingLabelSkuSummary[] {
   if (!Array.isArray(value)) return [];
   return value
-    .filter((row): row is RawRecord => Boolean(row) && typeof row === "object" && !Array.isArray(row))
+    .filter(
+      (row): row is RawRecord =>
+        Boolean(row) && typeof row === "object" && !Array.isArray(row),
+    )
     .map((row) => ({
       skuId: text(row.sku_id),
       skuCode: text(row.sku_code ?? row.sku_id),
@@ -180,7 +183,9 @@ export async function createPackingLabel(input: {
   return normalizePackingLabel(row);
 }
 
-export async function applyPackingLabel(id: string): Promise<PackingLabelRecord> {
+export async function applyPackingLabel(
+  id: string,
+): Promise<PackingLabelRecord> {
   const row = await http.post<RawRecord>(
     `${API_ENDPOINTS.LABEL_SNAPSHOTS}/${encodeURIComponent(id)}/apply`,
   );
