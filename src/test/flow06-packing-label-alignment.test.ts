@@ -1,0 +1,42 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { describe, expect, it } from "vitest";
+
+function read(path: string): string {
+  return readFileSync(join(process.cwd(), path), "utf8");
+}
+
+describe("Flow 06 Packing Label alignment", () => {
+  it("uses the aligned outbound page and one-label-per-lot semantics", () => {
+    expect(read("src/modules/outbound/pages/OutboundPage.tsx")).toContain(
+      "AlignedMvpOutboundPage",
+    );
+    const page = read("src/modules/outbound/pages/AlignedMvpOutboundPage.tsx");
+    expect(page).toContain("1 Packing Label/lô");
+    expect(page).toContain("RFID tùy chọn");
+    expect(page).toContain("Chỉ Post Issue mới trừ tồn");
+    expect(page).not.toContain("Nhãn từng Item");
+  });
+
+  it("does not include RFID in the FE post readiness gate", () => {
+    const modal = read(
+      "src/modules/outbound/components/AlignedOutboundDetailModal.tsx",
+    );
+    expect(modal).toContain("packingLabels.length !== 1");
+    expect(modal).toContain("!labelPrinted");
+    expect(modal).toContain("!labelApplied");
+    expect(modal).toContain("RFID không phải gate Post Issue");
+    expect(modal).not.toContain("allRfidMapped");
+    expect(modal).not.toContain("ITEM_RFID_REQUIRED");
+  });
+
+  it("creates the packing label at document level with customer phone", () => {
+    const service = read(
+      "src/modules/outbound/services/alignedOutboundService.ts",
+    );
+    expect(service).toContain("outbound_document_id");
+    expect(service).toContain("customer_phone");
+    expect(service).toContain("/apply");
+    expect(service).toContain("Boolean(row.applied_at)");
+  });
+});
