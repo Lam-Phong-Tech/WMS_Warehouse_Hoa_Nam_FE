@@ -634,7 +634,7 @@ export default function MvpPutawayPage() {
         }}
         width={760}
         centered
-        maskClosable={false}
+        mask={{ closable: false }}
       >
         {selected ? (
           <>

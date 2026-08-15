@@ -66,13 +66,13 @@ export function TraceModal({ movementId, onClose }: Props) {
       open
       centered
       destroyOnHidden
-      maskClosable={false}
+      mask={{ closable: false }}
       width={960}
       title="Truy vết chứng từ nguồn (TRACE-01)"
       footer={null}
       onCancel={onClose}
     >
-      <Space direction="vertical" size={16} style={{ width: "100%" }}>
+      <Space orientation="vertical" size={16} style={{ width: "100%" }}>
         <div className="toolbar" style={{ marginBottom: 0 }}>
           <input
             className="input search"

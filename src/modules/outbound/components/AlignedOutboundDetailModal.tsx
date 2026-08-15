@@ -440,7 +440,7 @@ export function AlignedOutboundDetailModal({
       footer={null}
       destroyOnClose
     >
-      <Space direction="vertical" size={16} style={{ width: "100%" }}>
+      <Space orientation="vertical" size={16} style={{ width: "100%" }}>
         <Alert
           type="info"
           showIcon
@@ -471,7 +471,7 @@ export function AlignedOutboundDetailModal({
         </Descriptions>
 
         <Card title="1 · Scan & match item — stock-neutral" size="small">
-          <Space direction="vertical" style={{ width: "100%" }} size={10}>
+          <Space orientation="vertical" style={{ width: "100%" }} size={10}>
             <Progress
               percent={
                 totalExpected > 0
@@ -542,7 +542,7 @@ export function AlignedOutboundDetailModal({
           size="small"
         >
           {!packingLabel ? (
-            <Space direction="vertical" style={{ width: "100%" }}>
+            <Space orientation="vertical" style={{ width: "100%" }}>
               <Alert
                 type={fullScan ? "success" : "warning"}
                 showIcon
@@ -574,7 +574,7 @@ export function AlignedOutboundDetailModal({
               </Space>
             </Space>
           ) : (
-            <Space direction="vertical" style={{ width: "100%" }} size={12}>
+            <Space orientation="vertical" style={{ width: "100%" }} size={12}>
               {packingLabels.length > 1 ? (
                 <Alert
                   type="error"
@@ -692,7 +692,7 @@ export function AlignedOutboundDetailModal({
         </Card>
 
         <Card title="4 · Hoàn tất xuất / Post Issue" size="small">
-          <Space direction="vertical" style={{ width: "100%" }}>
+          <Space orientation="vertical" style={{ width: "100%" }}>
             {postBlockReason ? (
               <Alert type="warning" showIcon title={postBlockReason} />
             ) : (
@@ -751,7 +751,7 @@ export function AlignedOutboundDetailModal({
           type="info"
           title="Có thể đóng và bỏ qua RFID; Post Issue vẫn hợp lệ."
         />
-        <Space direction="vertical" style={{ width: "100%" }}>
+        <Space orientation="vertical" style={{ width: "100%" }}>
           <Input
             value={rfidCode}
             placeholder="RFID code"

@@ -81,7 +81,7 @@ export function BalanceDetailModal({ balance, onClose, onTraceMovement }: Props)
       dataIndex: "source",
       width: 160,
       render: (value: string, row) => (
-        <Space direction="vertical" size={0}>
+        <Space orientation="vertical" size={0}>
           <Typography.Text code>{value || "-"}</Typography.Text>
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
             {row.sourceType}
@@ -195,13 +195,13 @@ export function BalanceDetailModal({ balance, onClose, onTraceMovement }: Props)
       open
       centered
       destroyOnHidden
-      maskClosable={false}
+      mask={{ closable: false }}
       width={1060}
       title={`Chi tiết tồn kho — ${balance.sku}`}
       footer={null}
       onCancel={onClose}
     >
-      <Space direction="vertical" size={16} style={{ width: "100%" }}>
+      <Space orientation="vertical" size={16} style={{ width: "100%" }}>
         <Descriptions bordered column={{ xs: 1, md: 2 }} size="small">
           <Descriptions.Item label="SKU">
             <Typography.Text code copyable>

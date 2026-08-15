@@ -866,7 +866,7 @@ export function OutboundDetailModal({
         width={1220}
         onCancel={onClose}
         centered
-        maskClosable={false}
+        mask={{ closable: false }}
         destroyOnHidden
         footer={
           doc ? (
@@ -912,7 +912,7 @@ export function OutboundDetailModal({
         />
 
         {detail && doc ? (
-          <Space direction="vertical" size={14} style={{ width: "100%" }}>
+          <Space orientation="vertical" size={14} style={{ width: "100%" }}>
             <Descriptions
               bordered
               size="small"
@@ -1005,7 +1005,7 @@ export function OutboundDetailModal({
                 percent={progressPercent}
                 status={fullScan ? "success" : "active"}
               />
-              <Space direction="vertical" size={6} style={{ marginTop: 10 }}>
+              <Space orientation="vertical" size={6} style={{ marginTop: 10 }}>
                 <div>
                   {hasRequest ? "✅" : "⛔"} Request nguồn:{" "}
                   {hasRequest
@@ -1228,7 +1228,7 @@ export function OutboundDetailModal({
               size="small"
               title="LBL-01 & RFID-01 · Nhãn từng Item + Map RFID"
             >
-              <Space direction="vertical" size={10} style={{ width: "100%" }}>
+              <Space orientation="vertical" size={10} style={{ width: "100%" }}>
                 <Alert
                   type="info"
                   showIcon

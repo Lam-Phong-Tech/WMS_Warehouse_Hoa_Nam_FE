@@ -65,7 +65,7 @@ export function FormModal({
       afterClose={afterClose}
       destroyOnHidden
       centered
-      maskClosable={!loading}
+      mask={{ closable: !loading }}
       keyboard={!loading}
       styles={{
         body: { maxHeight: "min(68vh, 640px)", overflowY: "auto" },

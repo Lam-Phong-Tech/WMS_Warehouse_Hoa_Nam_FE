@@ -75,7 +75,7 @@ export function NoPermissionState({
           </Typography.Title>
         }
         extra={
-          <Space direction="vertical" size="middle" style={{ marginTop: 24 }}>
+          <Space orientation="vertical" size="middle" style={{ marginTop: 24 }}>
             <Paragraph type="secondary" style={{ maxWidth: 400 }}>
               {description}
             </Paragraph>

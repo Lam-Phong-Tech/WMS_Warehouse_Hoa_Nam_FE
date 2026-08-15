@@ -58,7 +58,7 @@ export default function ComponentCatalogPage() {
   const [recentCodes, setRecentCodes] = useState(["HN-QR-0001"]);
 
   return (
-    <Space direction="vertical" size={20} style={{ width: "100%" }}>
+    <Space orientation="vertical" size={20} style={{ width: "100%" }}>
       <PageHeader
         title="Component catalog"
         subtitle="Route nội bộ cho BA/QA kiểm tra UI states dùng chung theo HN-FE-001."
@@ -94,7 +94,7 @@ export default function ComponentCatalogPage() {
         </Col>
         <Col xs={24} xl={10}>
           <Card title="Scan states" style={cardStyle}>
-            <Space direction="vertical" size={12} style={{ width: "100%" }}>
+            <Space orientation="vertical" size={12} style={{ width: "100%" }}>
               <ScanInput
                 recentCodes={recentCodes}
                 duplicateMessage="Mã vừa scan bị trùng trong batch hiện tại"

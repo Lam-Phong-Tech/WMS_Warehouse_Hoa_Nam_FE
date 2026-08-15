@@ -155,7 +155,7 @@ export default function WarrantyPage() {
       key: "identification",
       width: 200,
       render: (_, row) => (
-        <Space direction="vertical" size={0}>
+        <Space orientation="vertical" size={0}>
           <Tag
             color={row.identification_type === "TEMP_ONLY" ? "warning" : "blue"}
           >
@@ -172,7 +172,7 @@ export default function WarrantyPage() {
       key: "customer",
       width: 190,
       render: (_, row) => (
-        <Space direction="vertical" size={0}>
+        <Space orientation="vertical" size={0}>
           <Typography.Text>{row.customer_name}</Typography.Text>
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
             {row.customer_phone ?? "—"}

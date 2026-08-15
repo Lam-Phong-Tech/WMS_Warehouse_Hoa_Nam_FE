@@ -273,7 +273,7 @@ export function ComponentIssueModal({
       title: "Linh kiện (COMPONENT)",
       key: "sku",
       render: (_, line) => (
-        <Space direction="vertical" size={0}>
+        <Space orientation="vertical" size={0}>
           <Typography.Text strong>{line.sku_code}</Typography.Text>
           <Typography.Text type="secondary">{line.sku_name}</Typography.Text>
         </Space>
@@ -301,7 +301,7 @@ export function ComponentIssueModal({
         if (!active.length)
           return <Typography.Text type="secondary">—</Typography.Text>;
         return (
-          <Space direction="vertical" size={0}>
+          <Space orientation="vertical" size={0}>
             {active.map((item) => (
               <Typography.Text key={item.id} style={{ fontSize: 12 }}>
                 {item.item_id ? "Serial item" : "Box"} × {item.quantity}
@@ -364,7 +364,7 @@ export function ComponentIssueModal({
       footer={footer}
       width={900}
       centered
-      maskClosable={false}
+      mask={{ closable: false }}
       destroyOnHidden
     >
       {!caseActive && !documentId ? (
@@ -470,7 +470,7 @@ export function ComponentIssueModal({
             style={{ marginBottom: 12 }}
           />
           {detail ? (
-            <Space direction="vertical" size={12} style={{ width: "100%" }}>
+            <Space orientation="vertical" size={12} style={{ width: "100%" }}>
               <Descriptions size="small" column={{ xs: 1, md: 3 }} bordered>
                 <Descriptions.Item label="Trạng thái">
                   <Tag color={STATUS_TAG[detail.status].color}>

@@ -206,7 +206,7 @@ export function IamRolePermissionScreen() {
       title: "Vai trò",
       key: "role",
       render: (_, role) => (
-        <Space direction="vertical" size={0}>
+        <Space orientation="vertical" size={0}>
           <Typography.Text strong>{role.role_name}</Typography.Text>
           <Typography.Text type="secondary" copyable>
             {role.role_code}
@@ -287,7 +287,7 @@ export function IamRolePermissionScreen() {
   }, [checkedIds, selectedRole]);
 
   return (
-    <Space direction="vertical" size={16} style={{ width: "100%" }}>
+    <Space orientation="vertical" size={16} style={{ width: "100%" }}>
       <Row justify="space-between" align="middle" gutter={[12, 12]}>
         <Col>
           <Space align="center">
@@ -410,7 +410,7 @@ export function IamRolePermissionScreen() {
             ) : !selectedRole ? (
               <Empty description="Chọn một vai trò để xem quyền" />
             ) : (
-              <Space direction="vertical" size={16} style={{ width: "100%" }}>
+              <Space orientation="vertical" size={16} style={{ width: "100%" }}>
                 {isSystemRole(selectedRole) && (
                   <Alert
                     type="warning"
@@ -473,7 +473,7 @@ export function IamRolePermissionScreen() {
                                 setCheckedIds([...next]);
                               }}
                             >
-                              <Space direction="vertical" size={0}>
+                              <Space orientation="vertical" size={0}>
                                 <Typography.Text code>
                                   {permission.permission_key}
                                 </Typography.Text>

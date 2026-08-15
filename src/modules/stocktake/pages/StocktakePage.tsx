@@ -291,7 +291,7 @@ export default function StocktakePage() {
       okText: "Áp dụng điều chỉnh",
       cancelText: "Kiểm tra lại",
       content: (
-        <Space direction="vertical">
+        <Space orientation="vertical">
           <Typography.Text>
             Phiên {selectedSession.code} có {approvedLines.length} dòng chênh
             lệch sẽ tạo stock adjustment append-only. Backend vẫn là nguồn quyết
@@ -426,7 +426,7 @@ export default function StocktakePage() {
                         width: 180,
                         render: (_, row) => (
                           <Space
-                            direction="vertical"
+                            orientation="vertical"
                             size={0}
                             style={{ width: "100%" }}
                           >
@@ -474,7 +474,7 @@ export default function StocktakePage() {
                   >
                     {selectedSession ? (
                       <Space
-                        direction="vertical"
+                        orientation="vertical"
                         size={16}
                         style={{ width: "100%" }}
                       >
@@ -657,7 +657,7 @@ export default function StocktakePage() {
                               label: "Đối soát variance",
                               children: (
                                 <Space
-                                  direction="vertical"
+                                  orientation="vertical"
                                   style={{ width: "100%" }}
                                 >
                                   <Alert

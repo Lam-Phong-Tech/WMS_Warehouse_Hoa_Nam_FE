@@ -205,7 +205,7 @@ export function WarrantyDetailModal({
       render: (_, row) => (
         <Space>
           <PaperClipOutlined />
-          <Space direction="vertical" size={0}>
+          <Space orientation="vertical" size={0}>
             <Typography.Text>{row.file_name}</Typography.Text>
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>
               {formatBytes(row.file_size_bytes)} ·{" "}
@@ -333,7 +333,7 @@ export function WarrantyDetailModal({
       onCancel={onClose}
       width={1000}
       centered
-      maskClosable={false}
+      mask={{ closable: false }}
       destroyOnHidden
       footer={
         <Space wrap>
@@ -385,7 +385,7 @@ export function WarrantyDetailModal({
       ) : null}
 
       {detail ? (
-        <Space direction="vertical" size={16} style={{ width: "100%" }}>
+        <Space orientation="vertical" size={16} style={{ width: "100%" }}>
           {detail.identification_type === "TEMP_ONLY" ? (
             <Alert
               type="warning"
@@ -543,7 +543,7 @@ export function WarrantyDetailModal({
                   ? (eventsQuery.data ?? []).map((event) => ({
                       color: WARRANTY_STATUS_COLORS[event.to_status] ?? "blue",
                       children: (
-                        <Space direction="vertical" size={2}>
+                        <Space orientation="vertical" size={2}>
                           <Typography.Text strong>
                             {event.event_type === "NOTE"
                               ? "Ghi chú xử lý"

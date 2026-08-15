@@ -325,7 +325,7 @@ export function InboundDraftModal({
       footer={null}
       onCancel={onClose}
       centered
-      maskClosable={false}
+      mask={{ closable: false }}
       closable={!saving}
       destroyOnHidden
     >
@@ -441,7 +441,7 @@ export function InboundDraftModal({
 
           <Col xs={24} lg={12}>
             <Card size="small" title="Quy tắc nhập kho bắt buộc">
-              <Space direction="vertical" size={10}>
+              <Space orientation="vertical" size={10}>
                 <div>
                   • Expected qty là toàn bộ số lượng phải nhận của từng dòng.
                 </div>

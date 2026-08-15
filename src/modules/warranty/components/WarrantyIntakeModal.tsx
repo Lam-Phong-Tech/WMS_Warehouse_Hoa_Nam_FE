@@ -144,7 +144,7 @@ export function WarrantyIntakeModal({
       }
       width={860}
       centered
-      maskClosable={false}
+      mask={{ closable: false }}
       destroyOnHidden
     >
       {formError ? (

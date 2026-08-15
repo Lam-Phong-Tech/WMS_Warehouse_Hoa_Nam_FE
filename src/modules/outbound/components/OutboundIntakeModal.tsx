@@ -313,10 +313,10 @@ export function OutboundIntakeModal({
       width={1060}
       footer={null}
       onCancel={close}
-      maskClosable={false}
+      mask={{ closable: false }}
       destroyOnHidden
     >
-      <Space direction="vertical" size={14} style={{ width: "100%" }}>
+      <Space orientation="vertical" size={14} style={{ width: "100%" }}>
         <Space wrap>
           <Tag color="blue">POST /outbound-request-imports</Tag>
           <Tag color="blue">POST /outbound-request-imports/:id/consume</Tag>
@@ -401,7 +401,7 @@ export function OutboundIntakeModal({
 
             <Form.List name="lines">
               {(fields, { add, remove }) => (
-                <Space direction="vertical" style={{ width: "100%" }}>
+                <Space orientation="vertical" style={{ width: "100%" }}>
                   {fields.map((field) => (
                     <Space key={field.key} align="baseline" wrap>
                       <Form.Item
@@ -476,7 +476,7 @@ export function OutboundIntakeModal({
             />
           </Form>
         ) : (
-          <Space direction="vertical" style={{ width: "100%" }}>
+          <Space orientation="vertical" style={{ width: "100%" }}>
             <Input
               key={fileInputKey}
               type="file"
@@ -510,7 +510,7 @@ export function OutboundIntakeModal({
             size="small"
             title={`Kết quả import preview · ${preview.importNo || preview.id}`}
           >
-            <Space direction="vertical" style={{ width: "100%" }}>
+            <Space orientation="vertical" style={{ width: "100%" }}>
               <Space wrap>
                 <Tag color={IMPORT_STATUS_COLOR[preview.status] ?? "default"}>
                   {preview.status || "-"}

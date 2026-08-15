@@ -451,7 +451,7 @@ export function IamUserScreen({
         width={920}
         centered
         getContainer={false}
-        maskClosable={false}
+        mask={{ closable: false }}
         closable={!isSaving}
       >
         <form onSubmit={handleSubmit}>

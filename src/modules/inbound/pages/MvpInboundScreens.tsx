@@ -230,7 +230,7 @@ function CameraScanModal({
       footer={<Button onClick={onClose}>Đóng / nhập tay</Button>}
       destroyOnHidden
       centered
-      maskClosable={false}
+      mask={{ closable: false }}
     >
       {cameraError ? (
         <Alert type="warning" showIcon title={cameraError} />
@@ -586,7 +586,7 @@ export function InboundScanModal({
         onCancel={onClose}
         centered
         closable={!working}
-        maskClosable={false}
+        mask={{ closable: false }}
         destroyOnHidden
       >
         <Space wrap style={{ marginBottom: 12 }}>
@@ -846,7 +846,7 @@ export function InboundScanModal({
 
                 <Col xs={24} lg={11}>
                   <Card size="small" title="Guard nghiệp vụ">
-                    <Space direction="vertical" size={10}>
+                    <Space orientation="vertical" size={10}>
                       <div>
                         {isFullScan ? "✅" : "⚠️"}{" "}
                         {isFullScan
@@ -1022,7 +1022,7 @@ export function InboundScanModal({
         onCancel={() => setCancelOpen(false)}
         onOk={() => void handleCancel()}
         centered
-        maskClosable={false}
+        mask={{ closable: false }}
         closable={!cancelMutation.isPending}
         okButtonProps={{
           danger: true,

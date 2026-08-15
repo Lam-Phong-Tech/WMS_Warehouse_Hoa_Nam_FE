@@ -146,7 +146,7 @@ export default function InventoryPage() {
       key: "name",
       width: 200,
       render: (_, row) => (
-        <Space direction="vertical" size={0}>
+        <Space orientation="vertical" size={0}>
           <strong>{row.name || "-"}</strong>
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
             {row.type}
@@ -262,7 +262,7 @@ export default function InventoryPage() {
       key: "type",
       width: 130,
       render: (value: string, row: StockMovementRow) => (
-        <Space direction="vertical" size={0}>
+        <Space orientation="vertical" size={0}>
           <Tag>{value || "-"}</Tag>
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
             {row.status}
@@ -297,7 +297,7 @@ export default function InventoryPage() {
       key: "source",
       width: 160,
       render: (_, row: StockMovementRow) => (
-        <Space direction="vertical" size={0}>
+        <Space orientation="vertical" size={0}>
           <Typography.Text code>{row.source || "-"}</Typography.Text>
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
             {row.sourceType}

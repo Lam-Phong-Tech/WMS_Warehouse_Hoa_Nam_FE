@@ -164,7 +164,7 @@ export function CameraScanModal({
       footer={<Button icon={<CloseOutlined />} onClick={onClose}>Đóng / nhập tay</Button>}
       destroyOnHidden
       centered
-      maskClosable={false}
+      mask={{ closable: false }}
     >
       {cameraError ? (
         <Alert type="warning" showIcon title={cameraError} />

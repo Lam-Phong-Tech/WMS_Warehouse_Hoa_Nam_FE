@@ -40,13 +40,13 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
       open
       centered
       destroyOnHidden
-      maskClosable={false}
+      mask={{ closable: false }}
       width={960}
       title={`Chi tiết hoàn đảo — ${doc?.reversal_code ?? documentId}`}
       footer={null}
       onCancel={onClose}
     >
-      <Space direction="vertical" size={16} style={{ width: "100%" }}>
+      <Space orientation="vertical" size={16} style={{ width: "100%" }}>
         {docQuery.isError ? (
           <ApiErrorAlert
             error={docQuery.error}

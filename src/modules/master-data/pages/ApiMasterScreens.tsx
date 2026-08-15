@@ -536,7 +536,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
         width={980}
         centered
         getContainer={false}
-        maskClosable={false}
+        mask={{ closable: false }}
         closable={!isSaving}
       >
         <form onSubmit={submit}>
@@ -981,7 +981,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
         width={760}
         centered
         getContainer={false}
-        maskClosable={false}
+        mask={{ closable: false }}
         closable={!isSaving}
       >
         <form onSubmit={submit}>
@@ -1290,7 +1290,7 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
         width={760}
         centered
         getContainer={false}
-        maskClosable={false}
+        mask={{ closable: false }}
         closable={!isSaving}
       >
         <form onSubmit={submit}>

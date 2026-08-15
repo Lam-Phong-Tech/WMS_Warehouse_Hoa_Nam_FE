@@ -112,7 +112,7 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
       okText: "Tạo hoàn đảo",
       cancelText: "Kiểm tra lại",
       content: (
-        <Space direction="vertical">
+        <Space orientation="vertical">
           <Typography.Text>
             Movement gốc {selectedMovement.movement_code} sẽ được giữ nguyên.
             Backend sẽ tạo reversal append-only và kiểm tra dependency guard
@@ -169,13 +169,13 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
       open
       centered
       destroyOnHidden
-      maskClosable={false}
+      mask={{ closable: false }}
       width={1100}
       title="Tạo Reversal (REV-01)"
       footer={null}
       onCancel={onClose}
     >
-      <Space direction="vertical" size={16} style={{ width: "100%" }}>
+      <Space orientation="vertical" size={16} style={{ width: "100%" }}>
         <Alert
           type="info"
           showIcon
