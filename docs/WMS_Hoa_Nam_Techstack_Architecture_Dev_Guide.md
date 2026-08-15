@@ -259,6 +259,7 @@ export const PERMISSION_CATALOG = {
   
   // Reports
   REPORT_VIEW: 'report.view',
+  REPORT_EXPORT: 'report.export',
   
   // Audit
   AUDIT_LOG_VIEW: 'AUDIT_LOG_VIEW',
@@ -554,3 +555,13 @@ refactor: simplify permission checking logic
 **Last Updated**: 2026-07-31
 **Maintained By**: FE1 Team
 **Review Cycle**: Mỗi sprint
+
+## Flow 06 — Current Report / Packing Label Baseline (2026-08-15)
+
+- Eight report groups: Inventory Balance, XNT, Document History, Movement/Trace, Import/Match, Packing Label/Print, Warranty/Component, Outbound by recipient/Agency.
+- `report.view` controls reads; `report.export` controls XLSX/PDF. Warranty PII requires `warranty.pii.export`.
+- Report lists use server pagination (`page`, `per_page`, max 100); export reuses filters and caps at 10,000 rows.
+- Packing Label is exactly one immutable snapshot per outbound document/lot, created only after full scan and containing customer phone plus aggregate SKU/item data.
+- RFID is optional for PRODUCT outbound and never blocks Post Issue; concrete item match/full-post/stock/idempotency/concurrency guards remain mandatory.
+- Scan/label/print/reprint/apply/RFID are stock-neutral; only Post Issue decrements stock.
+- Stocktake/Variance/Adjustment are outside current MVP; reconciliation + append-only Reversal is the correction path.
