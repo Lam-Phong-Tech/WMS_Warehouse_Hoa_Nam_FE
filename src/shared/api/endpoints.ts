@@ -118,10 +118,14 @@ export const API_ENDPOINTS = {
   DEFECT_CATALOGS: "/defect-catalogs",
   ITEMS: "/item-instances",
   PHYSICAL_CODES: "/physical-codes",
-  // Compatibility names point to canonical routes; never issue /skus or /items.
+  // Compatibility CRUD names point to canonical routes; do not use /skus for CRUD.
   SKUS: "/products",
   SKU: "/products/:id",
-  SKU_IMPORT_EXCEL: "/import-batches",
+  // WWHN-224 import contract is an explicit BE route family and requires sku.manage.
+  SKU_IMPORT_TEMPLATE: "/skus/import-template",
+  SKU_IMPORT_EXCEL: "/skus/import-excel",
+  SKU_IMPORT_REPORTS: "/skus/import-reports",
+  SKU_IMPORT_REPORT: "/skus/import-reports/:id",
 
   SCAN_BATCHES: "/scan/batches",
   SCAN_BATCHES_CLASSIFY: "/scan/classify",
