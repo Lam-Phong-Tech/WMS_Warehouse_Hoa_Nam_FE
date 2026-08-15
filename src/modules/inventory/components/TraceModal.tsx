@@ -48,6 +48,9 @@ export function TraceModal({ movementId, onClose }: Props) {
       ? (obj[key] as Record<string, unknown>)
       : undefined;
 
+  const withRowKey = (row: Record<string, unknown>, rowKey: string) =>
+    ({ ...row, __rowKey: rowKey }) as Record<string, unknown> & { __rowKey: string };
+
   const handleLookup = () => {
     const trimmed = lookupCode.trim();
     if (trimmed.length > 0) {
@@ -189,10 +192,9 @@ export function TraceModal({ movementId, onClose }: Props) {
                 </Typography.Text>
                 <Table
                   size="small"
-                  dataSource={codeTrace.container_items.map((row, index) => ({
-                    ...row,
-                    __rowKey: text(row.id ?? row.container_code, String(index)) + `-${index}`,
-                  }))}
+                  dataSource={codeTrace.container_items.map((row, index) =>
+                    withRowKey(row, text(row.id ?? row.container_code, String(index)) + `-${index}`),
+                  )}
                   rowKey="__rowKey"
                   pagination={false}
                   scroll={{ x: 500 }}
@@ -435,10 +437,9 @@ export function TraceModal({ movementId, onClose }: Props) {
                 </Typography.Text>
                 <Table
                   size="small"
-                  dataSource={trace.lines.map((row, index) => ({
-                    ...row,
-                    __rowKey: text(row.id ?? row.sku ?? row.sku_code, String(index)) + `-${index}`,
-                  }))}
+                  dataSource={trace.lines.map((row, index) =>
+                    withRowKey(row, text(row.id ?? row.sku ?? row.sku_code, String(index)) + `-${index}`),
+                  )}
                   rowKey="__rowKey"
                   pagination={false}
                   scroll={{ x: 600 }}
