@@ -1,0 +1,63 @@
+name: Flow 06 Format Once
+
+on:
+  push:
+    branches: [m1]
+    paths:
+      - '.github/workflows/flow06-format-once.yml'
+      - 'src/modules/outbound/services/alignedOutboundService.ts'
+      - 'src/modules/outbound/components/AlignedOutboundDetailModal.tsx'
+      - 'src/modules/outbound/pages/AlignedMvpOutboundPage.tsx'
+      - 'src/modules/reports/pages/AlignedReportsPage.tsx'
+      - 'src/test/flow06-packing-label-alignment.test.ts'
+      - 'src/test/flow06-report-pagination-export.test.ts'
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: m1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: yarn
+          cache-dependency-path: yarn.lock
+      - run: yarn install --frozen-lockfile --non-interactive
+      - name: Prettier Flow 06 files
+        run: |
+          npx prettier --write \
+            src/modules/outbound/services/alignedOutboundService.ts \
+            src/modules/outbound/components/AlignedOutboundDetailModal.tsx \
+            src/modules/outbound/pages/AlignedMvpOutboundPage.tsx \
+            src/modules/reports/pages/AlignedReportsPage.tsx \
+            src/test/flow06-packing-label-alignment.test.ts \
+            src/test/flow06-report-pagination-export.test.ts
+      - name: Commit formatting when needed
+        shell: bash
+        run: |
+          if git diff --quiet -- \
+            src/modules/outbound/services/alignedOutboundService.ts \
+            src/modules/outbound/components/AlignedOutboundDetailModal.tsx \
+            src/modules/outbound/pages/AlignedMvpOutboundPage.tsx \
+            src/modules/reports/pages/AlignedReportsPage.tsx \
+            src/test/flow06-packing-label-alignment.test.ts \
+            src/test/flow06-report-pagination-export.test.ts; then
+            echo 'Already formatted.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            src/modules/outbound/services/alignedOutboundService.ts \
+            src/modules/outbound/components/AlignedOutboundDetailModal.tsx \
+            src/modules/outbound/pages/AlignedMvpOutboundPage.tsx \
+            src/modules/reports/pages/AlignedReportsPage.tsx \
+            src/test/flow06-packing-label-alignment.test.ts \
+            src/test/flow06-report-pagination-export.test.ts
+          git commit -m 'style(flow06): chuẩn hóa Prettier'
+          git push origin HEAD:m1
