@@ -14,6 +14,7 @@ import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { MvpPageSizeSelector } from "@/shared/components/mvp/MvpListPagination";
 import { resolveApiPagination } from "@/shared/components/mvp/mvp-pagination";
 import { useCanAny } from "@/shared/components/permission";
+import { WMS_PERMISSION_CATALOG as P } from "@/shared/constants/wms-permissions";
 import {
   useInventoryBalances,
   useStockMovements,
@@ -45,7 +46,7 @@ function reconcileColor(status: string) {
  * đồng bộ pattern luồng 02/03/04.
  */
 export default function InventoryPage() {
-  const canTrace = useCanAny(["inventory.trace", "INVENTORY_TRACE"]);
+  const canTrace = useCanAny([P.INVENTORY_TRACE]);
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [searchInput, setSearchInput] = useState("");

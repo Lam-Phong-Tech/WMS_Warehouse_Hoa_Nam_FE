@@ -14,6 +14,7 @@ import {
   type Route,
   type TestInfo,
 } from "@playwright/test";
+import { MOCK_ACCESS_TOKEN, MOCK_REFRESH_TOKEN } from "./support/mock-tokens";
 
 const BASE_URL = process.env.E2E_BASE_URL ?? "http://127.0.0.1:5173";
 const SOURCE_SHA =
@@ -23,11 +24,6 @@ const BUILD_VERSION = process.env.VITE_APP_VERSION ?? "local-dev";
 const EVIDENCE_ROOT =
   process.env.WWHN_144_EVIDENCE_DIR ??
   join("test-results", "wwhn-144", SOURCE_SHA);
-
-const MOCK_ACCESS_TOKEN =
-  process.env.E2E_MOCK_ACCESS_TOKEN ?? "wwhn-144-access-token";
-const MOCK_REFRESH_TOKEN =
-  process.env.E2E_MOCK_REFRESH_TOKEN ?? "wwhn-144-refresh-token";
 
 const VIEWPORTS = [
   { key: "desktop", width: 1440, height: 900 },
@@ -330,13 +326,19 @@ test.describe("WWHN-144 / WWHN-145 closure", () => {
     await page.goto(`${BASE_URL}/dashboard?screen=MAP-01`);
     await expect(page.locator('[data-mvp-screen="MAP-01"]')).toBeVisible();
     await expect(
-      page.getByText("Wireframe mức low-fi · Nguồn BA: BRD / SRS-FRD / BPD hiện tại."),
+      page.getByText(
+        "Wireframe mức low-fi · Nguồn BA: BRD / SRS-FRD / BPD hiện tại.",
+      ),
     ).toBeVisible();
 
-    await page.getByText("Danh sách SKU / Product Master", { exact: true }).click();
+    await page
+      .getByText("Danh sách SKU / Product Master", { exact: true })
+      .click();
     await expect(page).toHaveURL(/\/master-data\?screen=MST-01$/);
     await expect(page.locator('[data-mvp-screen="MST-01"]')).toBeVisible();
-    await expect(page.getByRole("columnheader", { name: "Theo dõi serial" })).toBeVisible();
+    await expect(
+      page.getByRole("columnheader", { name: "Theo dõi serial" }),
+    ).toBeVisible();
     await expect(page.getByRole("button", { name: "+ Tạo SKU" })).toBeVisible();
 
     await captureEvidence(page, testInfo, {
@@ -374,7 +376,9 @@ test.describe("WWHN-144 / WWHN-145 closure", () => {
       await expect(main).toBeVisible();
       await expect(page.getByTestId("primary-navigation")).toBeVisible();
       await expect(page.locator('[data-mvp-screen="MAP-01"]')).toBeVisible();
-      await expect(page.getByText("Hoa Nam WMS", { exact: true })).toBeVisible();
+      await expect(
+        page.getByText("Hoa Nam WMS", { exact: true }),
+      ).toBeVisible();
       await expect(
         page.getByText("Bản đồ màn hình & phạm vi", { exact: true }).first(),
       ).toBeVisible();
@@ -389,9 +393,7 @@ test.describe("WWHN-144 / WWHN-145 closure", () => {
         expect(Math.round(mainBox?.x ?? 0)).toBe(300);
       } else {
         expect(Math.round(asideBox?.width ?? 0)).toBe(viewport.width);
-        expect(
-          (mainBox?.y ?? 0) >= (asideBox?.height ?? 0) - 1,
-        ).toBeTruthy();
+        expect((mainBox?.y ?? 0) >= (asideBox?.height ?? 0) - 1).toBeTruthy();
       }
 
       const hasHorizontalOverflow = await page.evaluate(

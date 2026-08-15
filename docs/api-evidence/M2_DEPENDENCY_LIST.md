@@ -11,6 +11,17 @@ M1 happy-path mapping.
 | Inventory | src/modules/inventory/services/inventoryService.ts | Load safe stock alerts | GET | `/safe-stock-alerts` | Blocked until BE registers canonical safe-stock routes (2026-08-13 dev snapshot: route absent). |
 | Inventory | src/modules/inventory/services/inventoryService.ts | Load safe stock history | GET | `/safe-stock-alerts/history` | Blocked until BE registers canonical safe-stock routes (2026-08-13 dev snapshot: route absent). |
 
+**WWHN-211 scope note (DEV211-P2-01):** `fetchSafeStockAlerts`, `fetchSafeStockConfigs`,
+`createSafeStockConfig` and the scan-batch helpers (`fetchScanBatches`, `createScanBatch`,
+`fetchScanEvents`) exist in `inventoryService.ts` but are not called by any inventory
+component/page (`InventoryPage.tsx`, `BalanceDetailModal.tsx`, `TraceModal.tsx`). Scan batch
+functionality is otherwise owned by `src/modules/scan/services/scanService.ts` (see "Known
+Mismatch" below), so the `inventoryService.ts` scan helpers duplicate responsibility rather than
+extend it. These functions are orphaned/unused code as of this review and were never in scope for
+WWHN-211's list/detail/trace deliverable. Disposition needed from BA: (a) delete the unused
+functions, or (b) confirm a future ticket that will wire Safe-stock alerts/config UI and retire
+the duplicate scan helpers in favor of `scanService.ts`. Owner: BA + DEV (FE1).
+
 ## Audit Logs
 
 | Screen | FE service/source | UI action | Method | Path | Contract disposition |

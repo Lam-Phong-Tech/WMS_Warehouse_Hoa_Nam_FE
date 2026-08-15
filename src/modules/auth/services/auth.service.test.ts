@@ -103,8 +103,8 @@ describe("authService contract — BE m1 /api/v1/auth/*", () => {
   it("POST /auth/refresh không có memory token vẫn gọi API để browser gửi HttpOnly cookie", async () => {
     vi.mocked(memoryStorage.getRefreshToken).mockReturnValue(null);
     postMock.mockResolvedValue({
-      access_token: "access-from-cookie",
-      refresh_token: "refresh-rotated-from-cookie",
+      access_token: "<access-from-cookie>",
+      refresh_token: "<refresh-rotated-from-cookie>",
       token_type: "bearer",
       expires_in: 3600,
     });
@@ -112,9 +112,9 @@ describe("authService contract — BE m1 /api/v1/auth/*", () => {
     const result = await authService.refresh();
 
     expect(postMock).toHaveBeenCalledWith("/auth/refresh", {});
-    expect(result.access_token).toBe("access-from-cookie");
+    expect(result.access_token).toBe("<access-from-cookie>");
     expect(memoryStorage.setRefreshToken).toHaveBeenCalledWith(
-      "refresh-rotated-from-cookie",
+      "<refresh-rotated-from-cookie>",
     );
   });
 
@@ -203,7 +203,7 @@ describe("authService contract — BE m1 /api/v1/auth/*", () => {
 
   it("POST /auth/switch-context gửi warehouse scope và nhận access token mới", async () => {
     postMock.mockResolvedValue({
-      access_token: "access-warehouse-2",
+      access_token: "<access-warehouse-2>",
       token_type: "bearer",
       expires_in: 3600,
       active_context: {
@@ -227,7 +227,7 @@ describe("authService contract — BE m1 /api/v1/auth/*", () => {
 
     expect(postMock).toHaveBeenCalledWith("/auth/switch-context", payload);
     expect(result).toMatchObject({
-      access_token: "access-warehouse-2",
+      access_token: "<access-warehouse-2>",
       token_type: "bearer",
       expires_in: 3600,
       active_context: payload,

@@ -13,6 +13,7 @@ import {
   type Route,
   type TestInfo,
 } from "@playwright/test";
+import { MOCK_ACCESS_TOKEN, MOCK_REFRESH_TOKEN } from "./support/mock-tokens";
 
 const BASE_URL = process.env.E2E_BASE_URL ?? "http://127.0.0.1:5173";
 const SOURCE_SHA =
@@ -126,8 +127,8 @@ async function mockAuthenticatedSession(page: Page): Promise<void> {
         body: JSON.stringify({
           success: true,
           data: {
-            access_token: "wwhn-175-controlled-access-token",
-            refresh_token: "wwhn-175-controlled-refresh-token",
+            access_token: MOCK_ACCESS_TOKEN,
+            refresh_token: MOCK_REFRESH_TOKEN,
             token_type: "bearer",
             expires_in: 3600,
           },
@@ -193,10 +194,14 @@ test.describe("WWHN-175 / WWHN-176 foundation closure", () => {
       await mockAnonymousSession(page);
       await page.goto(`${BASE_URL}/login`);
 
-      await expect(page.getByRole("heading", { name: "Hoa Nam" })).toBeVisible();
+      await expect(
+        page.getByRole("heading", { name: "Hoa Nam" }),
+      ).toBeVisible();
       await expect(page.locator('input[name="email"]')).toBeVisible();
       await expect(page.locator('input[name="password"]')).toBeVisible();
-      await expect(page.getByRole("button", { name: "Đăng nhập" })).toBeEnabled();
+      await expect(
+        page.getByRole("button", { name: "Đăng nhập" }),
+      ).toBeEnabled();
       await expectNoDocumentOverflow(page);
 
       await captureEvidence(page, testInfo, {
@@ -268,9 +273,7 @@ test.describe("WWHN-175 / WWHN-176 foundation closure", () => {
 
     const dialog = page.getByRole("dialog", { name: "Form modal" });
     await expect(dialog).toBeVisible();
-    await expect(
-      dialog.getByPlaceholder("IN-260729-001"),
-    ).toBeVisible();
+    await expect(dialog.getByPlaceholder("IN-260729-001")).toBeVisible();
 
     await page.keyboard.press("Escape");
     await expect(dialog).toBeHidden();

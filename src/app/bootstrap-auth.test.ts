@@ -40,12 +40,12 @@ describe("bootstrapAuth persistent browser session", () => {
   });
 
   it("F5: JS memory rỗng vẫn refresh qua HttpOnly cookie và giữ đăng nhập", async () => {
-    refreshMock.mockResolvedValue({ access_token: "access-from-cookie" });
+    refreshMock.mockResolvedValue({ access_token: "<access-from-cookie>" });
 
     await bootstrapAuth();
 
     expect(refreshMock).toHaveBeenCalledTimes(1);
-    expect(setTokenMock).toHaveBeenCalledWith("access-from-cookie");
+    expect(setTokenMock).toHaveBeenCalledWith("<access-from-cookie>");
     expect(logoutMock).not.toHaveBeenCalled();
     expect(clearStorageMock).not.toHaveBeenCalled();
     expect(setStateMock).toHaveBeenCalledWith({ isBootstrapped: true });
@@ -115,10 +115,10 @@ describe("bootstrapAuth persistent browser session", () => {
 
     const first = bootstrapAuth();
     const second = bootstrapAuth();
-    resolveRefresh({ access_token: "single-flight-token" });
+    resolveRefresh({ access_token: "<single-flight-token>" });
     await Promise.all([first, second]);
 
     expect(refreshMock).toHaveBeenCalledTimes(1);
-    expect(setTokenMock).toHaveBeenCalledWith("single-flight-token");
+    expect(setTokenMock).toHaveBeenCalledWith("<single-flight-token>");
   });
 });

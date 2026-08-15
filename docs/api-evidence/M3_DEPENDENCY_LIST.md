@@ -7,8 +7,12 @@ Scope: late-core and high-risk workflow dependencies for `WWHN-148`.
 
 | Screen | FE service/source | UI action | Method | Path | Contract disposition |
 | --- | --- | --- | --- | --- | --- |
+| Inventory (WWHN-211) | src/modules/inventory/services/inventoryService.ts | List inventory balances | GET | `/inventory/balances` | Present in local Swagger snapshot (tag "07. Inventory"); FE `fetchInventoryBalances`, covered by `inventoryService.test.ts`. |
+| Inventory (WWHN-211) | src/modules/inventory/services/inventoryService.ts | Load balance item/container subledger | GET | `/inventory/balances/{id}/subledger` | Present in local Swagger snapshot; FE `fetchBalanceSubledger`, covered by `inventoryService.test.ts` and `BalanceDetailModal.test.tsx`. |
+| Stock movements | src/modules/inventory/services/inventoryService.ts | List stock movements | GET | `/stock-movements` | Present in local Swagger snapshot; FE `fetchStockMovements`, covered by `inventoryService.test.ts`. |
 | Stock movements | src/modules/inventory/services/inventoryService.ts | Load movement detail | GET | `/stock-movements/{id}` | Present in local Swagger snapshot. |
 | Stock movements | src/modules/inventory/services/inventoryService.ts | Trace source document | GET | `/stock-movements/{id}/trace-source` | Present in local Swagger snapshot. |
+| Inventory trace (WWHN-211) | src/modules/inventory/services/inventoryService.ts | Trace by physical code (item/container/SKU) | GET | `/stock-movements/trace-by-code` | Present in local Swagger snapshot (tag "07. Inventory", permission `inventory.trace`); resolves `resolved_type` ITEM/CONTAINER/SKU per BE `StockMovementController::traceByPhysicalCode` — not a SKU-only approximation. FE `traceByPhysicalCode`, covered by `inventoryService.test.ts` and `TraceModal.test.tsx`. |
 | Reports | src/modules/reports/services/reportsService.ts | Load inventory XNT | GET | `/reports/inventory-xnt` | Present in local Swagger snapshot. |
 | Reports | src/modules/reports/services/reportsService.ts | Export inventory XNT | GET | `/reports/inventory-xnt/export-excel` | Present in local Swagger snapshot. |
 

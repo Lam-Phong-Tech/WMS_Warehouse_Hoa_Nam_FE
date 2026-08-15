@@ -1,9 +1,11 @@
 import { expect, test, type Page, type Route } from "@playwright/test";
+import { MOCK_ACCESS_TOKEN, MOCK_REFRESH_TOKEN } from "./support/mock-tokens";
 
-const SOURCE_SHA = (process.env.SOURCE_SHA ?? process.env.GITHUB_SHA ?? "local").slice(
-  0,
-  12,
-);
+const SOURCE_SHA = (
+  process.env.SOURCE_SHA ??
+  process.env.GITHUB_SHA ??
+  "local"
+).slice(0, 12);
 const APP_ENV = process.env.VITE_APP_ENV ?? "ci";
 
 function safe(value: string): string {
@@ -38,8 +40,8 @@ async function mockAuthenticatedSession(
         body: JSON.stringify({
           success: true,
           data: {
-            access_token: "wwhn-165-access-token",
-            refresh_token: `wwhn-165-refresh-${refreshBodies.length}`,
+            access_token: MOCK_ACCESS_TOKEN,
+            refresh_token: `${MOCK_REFRESH_TOKEN}-${refreshBodies.length}`,
             token_type: "bearer",
             expires_in: 3600,
           },
@@ -151,14 +153,21 @@ test("bootstrap 503 stays fail-closed and exposes retry", async ({
 test("F5 restores protected session instead of redirecting to login", async ({
   page,
 }, testInfo) => {
-  const refreshBodies = await mockAuthenticatedSession(page, ["inventory.view"]);
+  const refreshBodies = await mockAuthenticatedSession(page, [
+    "inventory.view",
+  ]);
   await page.setViewportSize({ width: 1440, height: 900 });
 
   await page.goto("/profile");
   await expect(page).toHaveURL(/\/profile$/);
-  await expect(page.getByRole("button", { name: /Menu tài khoản/u })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: /Menu tài khoản/u }),
+  ).toBeVisible();
   await expect.poll(() => refreshBodies.length).toBe(1);
-  expect(JSON.parse(refreshBodies[0] || "{}"), "initial bootstrap must allow cookie transport").toEqual({});
+  expect(
+    JSON.parse(refreshBodies[0] || "{}"),
+    "initial bootstrap must allow cookie transport",
+  ).toEqual({});
 
   // A full reload destroys the module-level access/refresh token memory. The app
   // must still bootstrap by calling /auth/refresh with an empty JSON body so the
@@ -167,9 +176,14 @@ test("F5 restores protected session instead of redirecting to login", async ({
 
   await expect(page).toHaveURL(/\/profile$/);
   await expect(page).not.toHaveURL(/\/login$/);
-  await expect(page.getByRole("button", { name: /Menu tài khoản/u })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: /Menu tài khoản/u }),
+  ).toBeVisible();
   await expect.poll(() => refreshBodies.length).toBe(2);
-  expect(JSON.parse(refreshBodies[1] || "{}"), "reload bootstrap must use HttpOnly cookie fallback").toEqual({});
+  expect(
+    JSON.parse(refreshBodies[1] || "{}"),
+    "reload bootstrap must use HttpOnly cookie fallback",
+  ).toEqual({});
 
   await page.screenshot({
     path: testInfo.outputPath(

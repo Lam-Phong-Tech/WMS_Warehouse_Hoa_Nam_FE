@@ -14,6 +14,7 @@ import {
   type Route,
   type TestInfo,
 } from "@playwright/test";
+import { MOCK_ACCESS_TOKEN, MOCK_REFRESH_TOKEN } from "./support/mock-tokens";
 
 const BASE_URL = process.env.E2E_BASE_URL ?? "http://127.0.0.1:5173";
 const SOURCE_SHA =
@@ -127,8 +128,8 @@ async function mockSession(
         body: JSON.stringify({
           success: true,
           data: {
-            access_token: "wwhn-178-controlled-access-token",
-            refresh_token: "wwhn-178-controlled-refresh-token",
+            access_token: MOCK_ACCESS_TOKEN,
+            refresh_token: MOCK_REFRESH_TOKEN,
             token_type: "bearer",
             expires_in: 3600,
           },
@@ -312,7 +313,9 @@ test.describe("WWHN-178 / WWHN-179 Master/SKU closure", () => {
     await mockSession(page, { productMode: "forbidden" });
     await page.goto(`${BASE_URL}/master-data`);
 
-    await expect(page.getByText("Không có quyền truy cập dữ liệu")).toBeVisible();
+    await expect(
+      page.getByText("Không có quyền truy cập dữ liệu"),
+    ).toBeVisible();
     await expect(page.getByText(/HTTP 403/)).toBeVisible();
     await expect(page.getByText(/PERMISSION_DENIED/)).toBeVisible();
     await expect(page.getByText(/req-wwhn-178-forbidden/)).toBeVisible();

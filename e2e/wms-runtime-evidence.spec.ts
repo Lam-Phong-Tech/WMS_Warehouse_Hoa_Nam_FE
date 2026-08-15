@@ -1,13 +1,14 @@
 import { expect, test, type Page, type Route } from "@playwright/test";
+import {
+  MOCK_ACCESS_TOKEN as ACCESS_TOKEN,
+  MOCK_REFRESH_TOKEN,
+} from "./support/mock-tokens";
 
 const viewports = [
   { name: "desktop-1440x900", width: 1440, height: 900 },
   { name: "tablet-1024x768", width: 1024, height: 768 },
   { name: "mobile-390x844", width: 390, height: 844 },
 ] as const;
-
-const ACCESS_TOKEN =
-  process.env.E2E_MOCK_ACCESS_TOKEN ?? "<WWHN_148_MOCK_ACCESS_TOKEN>";
 
 test.use({ video: "on", trace: "on", screenshot: "on" });
 
@@ -43,7 +44,7 @@ async function mockAuthenticatedSession(
             access_token: ACCESS_TOKEN,
             // BE m1 rotate refresh token trong response; thiếu field này
             // auth store coi phiên không hợp lệ và đá về /login.
-            refresh_token: "<WWHN_148_MOCK_REFRESH_TOKEN>",
+            refresh_token: MOCK_REFRESH_TOKEN,
             token_type: "bearer",
             expires_in: 3600,
           },
@@ -103,9 +104,14 @@ async function mockAuthenticatedSession(
 }
 
 for (const viewport of viewports) {
-  test(`login responsive evidence ${viewport.name}`, async ({ page }, testInfo) => {
+  test(`login responsive evidence ${viewport.name}`, async ({
+    page,
+  }, testInfo) => {
     await mockRefreshFailure(page);
-    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    await page.setViewportSize({
+      width: viewport.width,
+      height: viewport.height,
+    });
     await page.goto("/login");
 
     // Heading login đổi theo redesign 10-11/8.
@@ -141,9 +147,13 @@ test("component-catalog exposes shared UI states for QA2", async ({
   await expect(page.getByText("Empty", { exact: true })).toBeVisible();
   await expect(page.getByText("Error", { exact: true })).toBeVisible();
   await expect(page.getByText("No permission", { exact: true })).toBeVisible();
-  await expect(page.getByText("API error + field errors", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("API error + field errors", { exact: true }),
+  ).toBeVisible();
   await expect(page.getByText("Confirm action", { exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Disabled until valid" })).toBeDisabled();
+  await expect(
+    page.getByRole("button", { name: "Disabled until valid" }),
+  ).toBeDisabled();
 
   const hasHorizontalOverflow = await page.evaluate(
     () => document.documentElement.scrollWidth > window.innerWidth + 1,
@@ -165,14 +175,18 @@ test("limited role is redirected from master-data to errors/403", async ({
   await page.goto("/master-data/skus");
 
   await expect(page).toHaveURL(/\/errors\/403$/);
-  await expect(page.getByText("Không có quyền truy cập", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("Không có quyền truy cập", { exact: true }),
+  ).toBeVisible();
   await expect(
     page.getByText(
       "Bạn không có quyền truy cập trang này. Vui lòng liên hệ quản trị viên để được cấp quyền phù hợp.",
       { exact: true },
     ),
   ).toBeVisible();
-  await expect(page.getByRole("button", { name: "Về trang chủ" })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Về trang chủ" }),
+  ).toBeVisible();
 
   await page.screenshot({
     path: testInfo.outputPath("limited-role-403.png"),
@@ -221,7 +235,9 @@ test("controlled login API error includes visible retry-safe state", async ({
     email: "qa-evidence@gmail.com",
     password: process.env.QA_EVIDENCE_PASSWORD ?? "<QA_EVIDENCE_PASSWORD>",
   });
-  await expect(page.getByText("Thông tin đăng nhập không hợp lệ")).toBeVisible();
+  await expect(
+    page.getByText("Thông tin đăng nhập không hợp lệ"),
+  ).toBeVisible();
   await expect(page.getByRole("button", { name: "Đăng nhập" })).toBeEnabled();
 
   await page.screenshot({

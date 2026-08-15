@@ -637,8 +637,87 @@ vi.mock("antd", () => {
     Row: stub,
     Col: stub,
     Divider: stub,
-    Tabs: Object.assign(stub, { TabPane: stub }),
-    Descriptions: Object.assign(stub, { Item: stub }),
+    // Tabs — antd v5 dùng prop `items` (không phải JSX children/TabPane).
+    // Render mọi tab-pane cùng lúc (không lazy theo activeKey) để test có thể
+    // đổi tab bằng click label mà không phải mô phỏng lifecycle ẩn/hiện của
+    // antd thật; đủ cho assertion nội dung, không đúng 100% hành vi rc-tabs.
+    Tabs: Object.assign(
+      ({ items, activeKey, onChange, children }: any) => {
+        if (!Array.isArray(items)) {
+          return React.createElement(React.Fragment, null, children ?? null);
+        }
+        return React.createElement(
+          "div",
+          { className: "ant-tabs" },
+          React.createElement(
+            "div",
+            { role: "tablist", className: "ant-tabs-nav" },
+            items.map((item: any) =>
+              React.createElement(
+                "div",
+                {
+                  key: item.key,
+                  role: "tab",
+                  "aria-selected": item.key === activeKey,
+                  className:
+                    item.key === activeKey
+                      ? "ant-tabs-tab ant-tabs-tab-active"
+                      : "ant-tabs-tab",
+                  onClick: () => onChange?.(item.key),
+                },
+                item.label,
+              ),
+            ),
+          ),
+          items.map((item: any) =>
+            React.createElement(
+              "div",
+              {
+                key: item.key,
+                className: "ant-tabs-tabpane",
+                hidden: item.key !== activeKey,
+              },
+              item.children ?? null,
+            ),
+          ),
+        );
+      },
+      { TabPane: stub },
+    ),
+    Descriptions: Object.assign(
+      ({ children, title }: any) =>
+        React.createElement(
+          "div",
+          { className: "ant-descriptions" },
+          title
+            ? React.createElement(
+                "div",
+                { className: "ant-descriptions-title" },
+                title,
+              )
+            : null,
+          children ?? null,
+        ),
+      {
+        Item: ({ label, children }: any) =>
+          React.createElement(
+            "div",
+            { className: "ant-descriptions-item" },
+            label != null
+              ? React.createElement(
+                  "span",
+                  { className: "ant-descriptions-item-label" },
+                  label,
+                )
+              : null,
+            React.createElement(
+              "span",
+              { className: "ant-descriptions-item-content" },
+              children ?? null,
+            ),
+          ),
+      },
+    ),
     List: Object.assign(stub, { Item: Object.assign(stub, { Meta: stub }) }),
     Checkbox: Object.assign(createCheckbox, { Group: stub }),
     Radio: Object.assign(stub, { Group: stub, Button: stub }),
@@ -647,7 +726,20 @@ vi.mock("antd", () => {
     Upload: Object.assign(stub, { Dragger: stub, LIST_IGNORE: "LIST_IGNORE" }),
     Rate: stub,
     Progress: stub,
-    Timeline: stub,
+    Timeline: ({ items }: any) =>
+      React.createElement(
+        "ul",
+        { className: "ant-timeline" },
+        Array.isArray(items)
+          ? items.map((item: any, index: number) =>
+              React.createElement(
+                "li",
+                { key: index, className: "ant-timeline-item" },
+                item.children ?? null,
+              ),
+            )
+          : null,
+      ),
     Collapse: Object.assign(stub, { Panel: stub }),
     Carousel: stub,
     Calendar: stub,
@@ -860,7 +952,7 @@ vi.mock("sonner", () => ({
 vi.mock("@ant-design/icons", () => {
   const stub = () => null;
   const icons: Record<string, any> = {};
-  "AimOutlined ApartmentOutlined AppstoreOutlined ArrowRightOutlined AuditOutlined BankOutlined BarChartOutlined BarcodeOutlined BellOutlined CameraOutlined CarOutlined CheckCircleOutlined PaperClipOutlined CheckOutlined CloseCircleOutlined CloseOutlined ClusterOutlined CopyOutlined DeleteOutlined DownOutlined DownloadOutlined EditOutlined EnvironmentOutlined ExclamationCircleFilled ExpandAltOutlined ExperimentOutlined ExportOutlined EyeOutlined FileExcelOutlined FilePdfOutlined FileSearchOutlined FileTextOutlined FundOutlined HomeOutlined IdcardOutlined ImportOutlined InboxOutlined KeyOutlined LockOutlined LogoutOutlined MailOutlined MenuFoldOutlined MenuUnfoldOutlined NodeIndexOutlined PlayCircleOutlined PlusOutlined ProfileOutlined ReloadOutlined RollbackOutlined SafetyCertificateOutlined SaveOutlined SearchOutlined SendOutlined SettingOutlined ShopOutlined ShoppingCartOutlined ShrinkOutlined SolutionOutlined StockOutlined StopOutlined SwapOutlined SyncOutlined TeamOutlined ToolOutlined UndoOutlined UnorderedListOutlined UploadOutlined UserAddOutlined UserOutlined UserSwitchOutlined WarningOutlined ZoomInOutlined ZoomOutOutlined"
+  "AimOutlined ApartmentOutlined AppstoreOutlined ArrowRightOutlined AuditOutlined BankOutlined BarChartOutlined BarcodeOutlined BellOutlined CameraOutlined CarOutlined CheckCircleOutlined PaperClipOutlined CheckOutlined CloseCircleOutlined CloseOutlined ClusterOutlined CopyOutlined DeleteOutlined DownOutlined DownloadOutlined EditOutlined EnvironmentOutlined ExclamationCircleFilled ExpandAltOutlined ExperimentOutlined ExportOutlined EyeOutlined FileExcelOutlined FilePdfOutlined FileSearchOutlined FileTextOutlined FundOutlined HistoryOutlined HomeOutlined IdcardOutlined ImportOutlined InboxOutlined KeyOutlined LockOutlined LogoutOutlined MailOutlined MenuFoldOutlined MenuUnfoldOutlined NodeIndexOutlined PlayCircleOutlined PlusOutlined ProfileOutlined ReloadOutlined RollbackOutlined SafetyCertificateOutlined SaveOutlined SearchOutlined SendOutlined SettingOutlined ShopOutlined ShoppingCartOutlined ShrinkOutlined SolutionOutlined StockOutlined StopOutlined SwapOutlined SyncOutlined TeamOutlined ToolOutlined UndoOutlined UnorderedListOutlined UploadOutlined UserAddOutlined UserOutlined UserSwitchOutlined WarningOutlined ZoomInOutlined ZoomOutOutlined"
     .split(" ")
     .forEach((n) => (icons[n] = stub));
   return { default: stub, ...icons };

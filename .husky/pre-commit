@@ -126,6 +126,9 @@ if [ "$HAS_CREDENTIAL" = true ]; then
   echo "   Vui lòng xóa và thay bằng biến môi trường (env var) hoặc placeholder (vd: <QA_ADMIN_EMAIL>)."
   echo "   Ví dụ sai: password = '12345678'"
   echo "   Ví dụ đúng: password = process.env.QA_ADMIN_PASSWORD"
+  echo "   Token GIẢ trong test cũng bị chặn nếu là literal dài — quy ước:"
+  echo "     - e2e spec: import { MOCK_ACCESS_TOKEN, MOCK_REFRESH_TOKEN } from './support/mock-tokens'"
+  echo "     - unit test: bọc giá trị trong ngoặc nhọn, vd: \"<access-from-cookie>\""
   echo ""
   exit 1
 fi
