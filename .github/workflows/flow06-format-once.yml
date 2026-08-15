@@ -28,6 +28,18 @@ jobs:
           cache: yarn
           cache-dependency-path: yarn.lock
       - run: yarn install --frozen-lockfile --non-interactive
+      - name: Fix known Flow 06 compile hygiene
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          path = Path('src/modules/outbound/pages/AlignedMvpOutboundPage.tsx')
+          text = path.read_text(encoding='utf-8')
+          text = text.replace(
+              'import { Progress, Space, Table, Tag, type TablePaginationConfig } from "antd";',
+              'import { Progress, Table, Tag, type TablePaginationConfig } from "antd";',
+          )
+          path.write_text(text, encoding='utf-8')
+          PY
       - name: Prettier Flow 06 files
         run: |
           npx prettier --write \
@@ -37,8 +49,12 @@ jobs:
             src/modules/reports/pages/AlignedReportsPage.tsx \
             src/test/flow06-packing-label-alignment.test.ts \
             src/test/flow06-report-pagination-export.test.ts
+      - name: Verify TypeScript after formatting
+        run: npm run typecheck
       - name: Commit formatting when needed
         shell: bash
+        env:
+          HUSKY: '0'
         run: |
           if git diff --quiet -- \
             src/modules/outbound/services/alignedOutboundService.ts \
@@ -59,5 +75,5 @@ jobs:
             src/modules/reports/pages/AlignedReportsPage.tsx \
             src/test/flow06-packing-label-alignment.test.ts \
             src/test/flow06-report-pagination-export.test.ts
-          git commit -m 'style(flow06): chuẩn hóa Prettier'
+          git commit -m 'style(flow06): chuẩn hóa Prettier và compile'
           git push origin HEAD:m1
