@@ -326,7 +326,7 @@ export function OutboundIntakeModal({
         <Alert
           type="info"
           showIcon
-          message="Luồng chuẩn: validate request/Excel → preview lỗi row/field → consume → BE tạo Outbound DRAFT"
+          title="Luồng chuẩn: validate request/Excel → preview lỗi row/field → consume → BE tạo Outbound DRAFT"
           description="Blocking error khiến cả batch không được consume (không consume một phần). Trùng source key/checksum sẽ replay kết quả, không tạo trùng."
         />
 

@@ -189,8 +189,11 @@ export function TraceModal({ movementId, onClose }: Props) {
                 </Typography.Text>
                 <Table
                   size="small"
-                  dataSource={codeTrace.container_items}
-                  rowKey={(_, index) => String(index)}
+                  dataSource={codeTrace.container_items.map((row, index) => ({
+                    ...row,
+                    __rowKey: text(row.id ?? row.container_code, String(index)) + `-${index}`,
+                  }))}
+                  rowKey="__rowKey"
                   pagination={false}
                   scroll={{ x: 500 }}
                   columns={[
@@ -432,8 +435,11 @@ export function TraceModal({ movementId, onClose }: Props) {
                 </Typography.Text>
                 <Table
                   size="small"
-                  dataSource={trace.lines}
-                  rowKey={(_, index) => String(index)}
+                  dataSource={trace.lines.map((row, index) => ({
+                    ...row,
+                    __rowKey: text(row.id ?? row.sku ?? row.sku_code, String(index)) + `-${index}`,
+                  }))}
+                  rowKey="__rowKey"
                   pagination={false}
                   scroll={{ x: 600 }}
                   columns={[

@@ -379,7 +379,7 @@ export function WarrantyDetailModal({
         <Alert
           type="info"
           showIcon
-          message="Thông tin khách hàng đang được che (mask) theo quyền warranty.pii.view."
+          title="Thông tin khách hàng đang được che (mask) theo quyền warranty.pii.view."
           style={{ marginBottom: 12 }}
         />
       ) : null}
@@ -390,7 +390,7 @@ export function WarrantyDetailModal({
             <Alert
               type="warning"
               showIcon
-              message={`Mã tạm: ${detail.temporary_item_code ?? "—"} · sales_trace_status = NOT_TRACEABLE. Không liên kết item gốc, không sinh stock movement.`}
+              title={`Mã tạm: ${detail.temporary_item_code ?? "—"} · sales_trace_status = NOT_TRACEABLE. Không liên kết item gốc, không sinh stock movement.`}
             />
           ) : null}
 
@@ -583,14 +583,14 @@ export function WarrantyDetailModal({
           <Alert
             type="error"
             showIcon
-            message={statusError}
+            title={statusError}
             style={{ marginBottom: 12 }}
           />
         ) : null}
         <Alert
           type="info"
           showIcon
-          message="Cập nhật trạng thái là stock-neutral: item không tự quay lại tồn bán; trả khách chuyển item sang RETURNED_TO_CUSTOMER."
+          title="Cập nhật trạng thái là stock-neutral: item không tự quay lại tồn bán; trả khách chuyển item sang RETURNED_TO_CUSTOMER."
           style={{ marginBottom: 12 }}
         />
         <Form form={statusForm} layout="vertical">

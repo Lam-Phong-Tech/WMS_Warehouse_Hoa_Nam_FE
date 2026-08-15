@@ -179,7 +179,7 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
         <Alert
           type="info"
           showIcon
-          message="Hoàn đảo là append-only"
+          title="Hoàn đảo là append-only"
           description="FE không sửa/xóa movement gốc; mọi giới hạn reversible_qty, dependency guard, stock effect và audit do backend quyết định."
         />
 
@@ -289,7 +289,7 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
               <Alert
                 type="warning"
                 showIcon
-                message="Dependency guard"
+                title="Dependency guard"
                 description={selectedMovement.dependency_guard}
                 style={{ marginBottom: 12 }}
               />
@@ -389,7 +389,7 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
               <Alert
                 type="error"
                 showIcon
-                message={`SL đảo của ${invalidLine.sku} vượt số còn reversible`}
+                title={`SL đảo của ${invalidLine.sku} vượt số còn reversible`}
                 style={{ marginTop: 12 }}
               />
             ) : null}

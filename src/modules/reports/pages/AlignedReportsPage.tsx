@@ -669,7 +669,14 @@ export default function AlignedReportsPage() {
     placeholderData: (previous) => previous,
   });
 
-  const rows = rowsOf(query.data, config.rowsKey);
+  const rows = rowsOf(query.data, config.rowsKey).map((row, index) => ({
+    ...row,
+    __rowKey:
+      text(
+        row.id ?? row.outbound_no ?? row.document_no ?? row.import_no ?? row.case_no,
+        "",
+      ) || `row-${index}`,
+  }));
   const pagination = objectOf(query.data?.pagination);
   const total = n(pagination.total, rows.length);
 
@@ -729,7 +736,7 @@ export default function AlignedReportsPage() {
         showIcon
         type="info"
         style={{ marginBottom: 14 }}
-        message="Flow 06 · Báo cáo vận hành"
+        title="Flow 06 · Báo cáo vận hành"
         description="Dữ liệu trang được phân trang tại BE; XLSX/PDF giữ nguyên bộ lọc và được kiểm soát bằng report.export. Packing Label được báo cáo theo đúng 01 nhãn/phiếu-lô."
       />
 
@@ -962,7 +969,7 @@ export default function AlignedReportsPage() {
           type="error"
           showIcon
           style={{ marginBottom: 12 }}
-          message="Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc."
+          title="Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc."
         />
       ) : null}
       {report === "warranty" ? (
@@ -970,7 +977,7 @@ export default function AlignedReportsPage() {
           type="info"
           showIcon
           style={{ marginBottom: 12 }}
-          message="PII không hiển thị trên màn hình; export chỉ có PII khi BE xác nhận warranty.pii.export và mọi lần export đều audit."
+          title="PII không hiển thị trên màn hình; export chỉ có PII khi BE xác nhận warranty.pii.export và mọi lần export đều audit."
         />
       ) : null}
       {report === "outbound-by-agency" ? (
@@ -978,7 +985,7 @@ export default function AlignedReportsPage() {
           type="info"
           showIcon
           style={{ marginBottom: 12 }}
-          message="Agency chỉ là chiều báo cáo/nơi nhận, không phải stock bucket."
+          title="Agency chỉ là chiều báo cáo/nơi nhận, không phải stock bucket."
         />
       ) : null}
       {report === "label-log" ? (
@@ -986,7 +993,7 @@ export default function AlignedReportsPage() {
           type="success"
           showIcon
           style={{ marginBottom: 12 }}
-          message="Cardinality hiện hành: đúng 01 Packing Label cho mỗi phiếu/lô xuất."
+          title="Cardinality hiện hành: đúng 01 Packing Label cho mỗi phiếu/lô xuất."
         />
       ) : null}
 
@@ -1010,16 +1017,7 @@ export default function AlignedReportsPage() {
       />
 
       <Table<Raw>
-        rowKey={(row, index) =>
-          text(
-            row.id ??
-              row.outbound_no ??
-              row.document_no ??
-              row.import_no ??
-              row.case_no,
-            String(index),
-          )
-        }
+        rowKey="__rowKey"
         dataSource={rows}
         columns={columnsFor(report)}
         loading={query.isLoading || query.isFetching}

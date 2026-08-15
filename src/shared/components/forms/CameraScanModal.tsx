@@ -167,7 +167,7 @@ export function CameraScanModal({
       maskClosable={false}
     >
       {cameraError ? (
-        <Alert type="warning" showIcon message={cameraError} />
+        <Alert type="warning" showIcon title={cameraError} />
       ) : (
         <>
           <video
@@ -186,7 +186,7 @@ export function CameraScanModal({
             style={{ marginTop: 12 }}
             type="info"
             showIcon
-            message={
+            title={
               cameraReady ? "Camera sẵn sàng" : "Đang khởi tạo camera..."
             }
             description="Đưa Barcode/QR vào khung hình. Camera chỉ đọc mã; dữ liệu vẫn phải qua validation nghiệp vụ như nhập tay. Camera không đọc RFID."

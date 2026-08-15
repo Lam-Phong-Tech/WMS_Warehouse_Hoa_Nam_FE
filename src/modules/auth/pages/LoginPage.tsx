@@ -101,7 +101,7 @@ export function LoginPage() {
             {errorMessage && (
               <Alert
                 type="error"
-                message="Không thể đăng nhập"
+                title="Không thể đăng nhập"
                 description={errorMessage}
                 style={{ marginBottom: 14 }}
                 showIcon

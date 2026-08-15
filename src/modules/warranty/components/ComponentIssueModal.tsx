@@ -371,7 +371,7 @@ export function ComponentIssueModal({
         <Alert
           type="error"
           showIcon
-          message="Warranty case không còn active (RETURNED/CANCELLED) — không được tạo phiếu xuất linh kiện."
+          title="Warranty case không còn active (RETURNED/CANCELLED) — không được tạo phiếu xuất linh kiện."
           style={{ marginBottom: 12 }}
         />
       ) : null}
@@ -381,7 +381,7 @@ export function ComponentIssueModal({
           <Alert
             type="info"
             showIcon
-            message="Phiếu xuất linh kiện chỉ phục vụ bảo hành (purpose=WARRANTY) và bắt buộc gắn với warranty case đang hoạt động. Tạo DRAFT chưa trừ tồn."
+            title="Phiếu xuất linh kiện chỉ phục vụ bảo hành (purpose=WARRANTY) và bắt buộc gắn với warranty case đang hoạt động. Tạo DRAFT chưa trừ tồn."
             style={{ marginBottom: 12 }}
           />
           <Form
@@ -489,14 +489,14 @@ export function ComponentIssueModal({
                 <Alert
                   type="warning"
                   showIcon
-                  message={`Phiếu đã hủy${detail.cancel_reason ? ` — ${detail.cancel_reason}` : ""}. Tồn kho không đổi.`}
+                  title={`Phiếu đã hủy${detail.cancel_reason ? ` — ${detail.cancel_reason}` : ""}. Tồn kho không đổi.`}
                 />
               ) : null}
               {detail.status === "POSTED" ? (
                 <Alert
                   type="success"
                   showIcon
-                  message="Phiếu đã POSTED — tồn linh kiện đã trừ và ghi movement COMPONENT_ISSUE gắn với warranty case."
+                  title="Phiếu đã POSTED — tồn linh kiện đã trừ và ghi movement COMPONENT_ISSUE gắn với warranty case."
                 />
               ) : null}
 

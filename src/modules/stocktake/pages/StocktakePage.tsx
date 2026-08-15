@@ -498,7 +498,7 @@ export default function StocktakePage() {
                           <Alert
                             type="warning"
                             showIcon
-                            message="Có movement sau snapshot"
+                            title="Có movement sau snapshot"
                             description="Variance phải đối chiếu expected_at_count = snapshot_qty + net movement sau snapshot đến cutoff. FE chỉ hiển thị dữ liệu BE trả, không tự chốt số canonical."
                           />
                         ) : null}
@@ -663,7 +663,7 @@ export default function StocktakePage() {
                                   <Alert
                                     type="info"
                                     showIcon
-                                    message="Công thức hiển thị"
+                                    title="Công thức hiển thị"
                                     description="expected_at_count = snapshot_qty + net_movement_after_snapshot_to_count_cutoff; variance_to_apply = actual_qty - expected_at_count."
                                   />
                                   <Table
@@ -760,7 +760,7 @@ export default function StocktakePage() {
                                     <Alert
                                       type="warning"
                                       showIcon
-                                      message="Thiếu quyền stocktake.apply"
+                                      title="Thiếu quyền stocktake.apply"
                                       description="Route chỉ yêu cầu stocktake.count; action ảnh hưởng tồn kho cần permission apply/manage theo matrix."
                                     />
                                   ) : null}
@@ -772,7 +772,7 @@ export default function StocktakePage() {
                                           : "success"
                                       }
                                       showIcon
-                                      message={`Kết quả apply: ${applyResult.status}`}
+                                      title={`Kết quả apply: ${applyResult.status}`}
                                       description={`Adjusted lines: ${applyResult.adjusted_lines}; total variance: ${applyResult.total_variance}; errors: ${applyResult.errors?.length ?? 0}`}
                                     />
                                   ) : null}
@@ -786,7 +786,7 @@ export default function StocktakePage() {
                       <Alert
                         type="info"
                         showIcon
-                        message="Chọn một phiên để nhập đếm, review variance và apply adjustment"
+                        title="Chọn một phiên để nhập đếm, review variance và apply adjustment"
                       />
                     )}
                   </Card>
@@ -848,7 +848,7 @@ export default function StocktakePage() {
           type="warning"
           showIcon
           style={{ marginBottom: 16 }}
-          message="FE không khóa tồn kho"
+          title="FE không khóa tồn kho"
           description="Khi tạo phiên, backend là authority chụp snapshot/stocktake_started_at và xử lý duplicate/open-session rule."
         />
         <Form

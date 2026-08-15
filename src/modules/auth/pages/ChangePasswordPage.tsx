@@ -102,7 +102,7 @@ export function ChangePasswordPage() {
             {errorMessage && !/mật khẩu hiện tại/i.test(errorMessage) && (
               <Alert
                 type="error"
-                message="Không thể đổi mật khẩu"
+                title="Không thể đổi mật khẩu"
                 description={errorMessage}
                 style={{ marginBottom: 14 }}
                 showIcon

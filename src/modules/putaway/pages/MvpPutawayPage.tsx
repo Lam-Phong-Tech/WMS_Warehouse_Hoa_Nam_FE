@@ -83,7 +83,7 @@ function ApiErrorAlert({
     <Alert
       showIcon
       type={normalized.status === 403 ? "warning" : "error"}
-      message={
+      title={
         normalized.status === 403
           ? "Không có quyền truy cập"
           : getApiErrorMessage(error, fallback)
@@ -545,7 +545,7 @@ export default function MvpPutawayPage() {
           showIcon
           type="info"
           className="master-data-state-alert"
-          message="Putaway là bước định vị sau Full Post Receipt, không phải bước nhập tồn"
+          title="Putaway là bước định vị sau Full Post Receipt, không phải bước nhập tồn"
           description="COMPONENT đã tăng tồn tại Post Receipt. PTW-00/PTW-01 chỉ map BOX → TRAY/location; create/confirm/cancel đều stock-neutral. Initial Putaway chỉ nhận BOX RECEIVED_PENDING_PUTAWAY."
         />
 
@@ -664,7 +664,7 @@ export default function MvpPutawayPage() {
               showIcon
               type="warning"
               className="master-data-state-alert"
-              message="Tạo DRAFT chưa thay đổi mapping vật lý"
+              title="Tạo DRAFT chưa thay đổi mapping vật lý"
               description="Chỉ Confirm mới cập nhật BOX → TRAY. confirmed_at/confirmed_by chỉ được ghi tại Confirm; cả DRAFT và Confirm đều không đổi tồn."
             />
           </>

@@ -444,7 +444,7 @@ export function AlignedOutboundDetailModal({
         <Alert
           type="info"
           showIcon
-          message="Baseline hiện hành"
+          title="Baseline hiện hành"
           description="Scan đủ → tổng hợp lô → tạo/preview/in/dán đúng 01 Packing Label → RFID tùy chọn → Hoàn tất xuất. Chỉ Post Issue mới trừ tồn."
         />
 
@@ -515,7 +515,7 @@ export function AlignedOutboundDetailModal({
               <Alert
                 type="warning"
                 showIcon
-                message="Đã tạo Packing Label; match được khóa để bảo toàn snapshot nhãn."
+                title="Đã tạo Packing Label; match được khóa để bảo toàn snapshot nhãn."
               />
             ) : null}
             <Table
@@ -546,7 +546,7 @@ export function AlignedOutboundDetailModal({
               <Alert
                 type={fullScan ? "success" : "warning"}
                 showIcon
-                message={
+                title={
                   fullScan
                     ? "Đã scan đủ. Có thể tạo Packing Label."
                     : "Chưa scan đủ. Chưa được tạo nhãn."
@@ -579,7 +579,7 @@ export function AlignedOutboundDetailModal({
                 <Alert
                   type="error"
                   showIcon
-                  message={`Có ${packingLabels.length} nhãn canonical cho cùng phiếu; không được Post.`}
+                  title={`Có ${packingLabels.length} nhãn canonical cho cùng phiếu; không được Post.`}
                 />
               ) : null}
               <div className="label-preview">
@@ -686,7 +686,7 @@ export function AlignedOutboundDetailModal({
           <Alert
             type="info"
             showIcon
-            message="RFID không phải gate Post Issue"
+            title="RFID không phải gate Post Issue"
             description="Có thể map RFID nếu vận hành có tag. Không tạo RFID giả và không chặn Hoàn tất xuất khi thiếu RFID."
           />
         </Card>
@@ -694,12 +694,12 @@ export function AlignedOutboundDetailModal({
         <Card title="4 · Hoàn tất xuất / Post Issue" size="small">
           <Space direction="vertical" style={{ width: "100%" }}>
             {postBlockReason ? (
-              <Alert type="warning" showIcon message={postBlockReason} />
+              <Alert type="warning" showIcon title={postBlockReason} />
             ) : (
               <Alert
                 type="success"
                 showIcon
-                message="Đủ gate: scan đủ + đúng 01 Packing Label PRINTED + đã dán. RFID không nằm trong gate."
+                title="Đủ gate: scan đủ + đúng 01 Packing Label PRINTED + đã dán. RFID không nằm trong gate."
               />
             )}
             <Space wrap>
@@ -730,7 +730,7 @@ export function AlignedOutboundDetailModal({
               <Alert
                 type="success"
                 showIcon
-                message="Post Issue thành công"
+                title="Post Issue thành công"
                 description={`Document ${evidence.documentId} · ${evidence.movementRefs.length} movement · request ${evidence.requestId || "-"}`}
               />
             ) : null}
@@ -749,7 +749,7 @@ export function AlignedOutboundDetailModal({
         <Alert
           style={{ marginBottom: 12 }}
           type="info"
-          message="Có thể đóng và bỏ qua RFID; Post Issue vẫn hợp lệ."
+          title="Có thể đóng và bỏ qua RFID; Post Issue vẫn hợp lệ."
         />
         <Space direction="vertical" style={{ width: "100%" }}>
           <Input

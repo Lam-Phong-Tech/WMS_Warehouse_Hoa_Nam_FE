@@ -330,7 +330,7 @@ export function IamRolePermissionScreen() {
       <Alert
         type="info"
         showIcon
-        message="Nguyên tắc RBAC"
+        title="Nguyên tắc RBAC"
         description="Route/API là nguồn thực thi quyền. UI chỉ ẩn hoặc khoá action theo permission. SUPER_ADMIN là role hệ thống bất biến; permission catalog không cho tạo/sửa/xoá qua UI."
       />
 
@@ -401,7 +401,7 @@ export function IamRolePermissionScreen() {
               <Alert
                 type="warning"
                 showIcon
-                message="Tài khoản không có iam.permission.view nên không thể đọc permission catalog."
+                title="Tài khoản không có iam.permission.view nên không thể đọc permission catalog."
               />
             ) : permissionsQuery.isLoading ? (
               <div style={{ textAlign: "center", padding: 48 }}>
@@ -415,7 +415,7 @@ export function IamRolePermissionScreen() {
                   <Alert
                     type="warning"
                     showIcon
-                    message="SUPER_ADMIN là vai trò hệ thống"
+                    title="SUPER_ADMIN là vai trò hệ thống"
                     description="Không cho phép đổi mã, xoá hoặc thay ma trận quyền. Runtime Super Admin vẫn có quyền toàn cục theo invariant của hệ thống."
                   />
                 )}

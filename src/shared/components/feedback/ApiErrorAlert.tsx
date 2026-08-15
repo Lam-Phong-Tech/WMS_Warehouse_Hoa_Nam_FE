@@ -54,7 +54,7 @@ export function ApiErrorAlert({
       type="error"
       showIcon
       style={style}
-      message={title}
+      title={title}
       description={
         <>
           <div>{message}</div>

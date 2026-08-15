@@ -148,7 +148,7 @@ function ApiErrorAlert({
     <Alert
       showIcon
       type={normalized.status === 403 ? "warning" : "error"}
-      message={
+      title={
         normalized.status === 403
           ? "Không có quyền truy cập"
           : getApiErrorMessage(error, fallback)
@@ -349,7 +349,7 @@ export function InboundDraftModal({
           showIcon
           type={detail.document.status === "POSTED" ? "success" : "info"}
           className="master-data-state-alert"
-          message={
+          title={
             detail.document.status === "POSTED"
               ? "Phiếu đã POSTED và bất biến"
               : "Phiếu đã CANCELLED và là trạng thái kết thúc"
@@ -363,7 +363,7 @@ export function InboundDraftModal({
           showIcon
           type="warning"
           className="master-data-state-alert"
-          message="Phiếu đã có scan evidence"
+          title="Phiếu đã có scan evidence"
           description="Không được thêm/xóa dòng, đổi SKU hoặc import batch. Chỉ hiệu chỉnh Expected/ghi chú; Expected không được nhỏ hơn scanned_qty. Muốn đổi cấu trúc phải Cancel và tạo phiếu mới."
         />
       ) : null}

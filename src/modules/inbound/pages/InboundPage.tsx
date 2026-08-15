@@ -74,7 +74,7 @@ function ApiErrorAlert({
     <Alert
       showIcon
       type={normalized.status === 403 ? "warning" : "error"}
-      message={
+      title={
         normalized.status === 403
           ? "Không có quyền truy cập"
           : getApiErrorMessage(error, fallback)

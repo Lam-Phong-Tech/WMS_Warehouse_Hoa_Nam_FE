@@ -151,7 +151,7 @@ export function WarrantyIntakeModal({
         <Alert
           type="error"
           showIcon
-          message={formError}
+          title={formError}
           style={{ marginBottom: 12 }}
         />
       ) : null}
@@ -180,7 +180,7 @@ export function WarrantyIntakeModal({
             <Alert
               type="warning"
               showIcon
-              message="Case TEMP_ONLY không liên kết item gốc, không xác nhận lịch sử bán hàng (NOT_TRACEABLE) và không sinh stock movement. Mã tạm sẽ do hệ thống sinh sau khi lưu."
+              title="Case TEMP_ONLY không liên kết item gốc, không xác nhận lịch sử bán hàng (NOT_TRACEABLE) và không sinh stock movement. Mã tạm sẽ do hệ thống sinh sau khi lưu."
               style={{ marginBottom: 12 }}
             />
             <Form.Item

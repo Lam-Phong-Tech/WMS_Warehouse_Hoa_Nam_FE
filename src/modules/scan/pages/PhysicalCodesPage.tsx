@@ -283,7 +283,7 @@ export default function PhysicalCodesPage() {
                 <Alert
                   type="info"
                   showIcon
-                  message="Contract WWHN-150.1.1.0 — read-only"
+                  title="Contract WWHN-150.1.1.0 — read-only"
                   description="Phân loại không tạo stock movement, posting event hoặc idempotency cache. Warehouse ID phải là UUID đúng scope hiện hành."
                   style={{ marginBottom: 16 }}
                 />
@@ -323,7 +323,7 @@ export default function PhysicalCodesPage() {
                 {classifyState !== "waiting" && classifyState !== "scanned" && (
                   <Alert
                     type={classifyState === "success" ? "success" : "error"}
-                    message={
+                    title={
                       <Space>
                         <Typography.Text strong>Kết quả:</Typography.Text>
                         <Tag color={stateColorMap[classifyState]}>
@@ -340,7 +340,7 @@ export default function PhysicalCodesPage() {
                 {loading && classifyState === "scanned" && (
                   <Alert
                     type="info"
-                    message="Đang phân loại mã..."
+                    title="Đang phân loại mã..."
                     showIcon
                     style={{ marginBottom: 16 }}
                   />

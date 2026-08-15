@@ -233,7 +233,7 @@ function CameraScanModal({
       maskClosable={false}
     >
       {cameraError ? (
-        <Alert type="warning" showIcon message={cameraError} />
+        <Alert type="warning" showIcon title={cameraError} />
       ) : (
         <>
           <video
@@ -252,7 +252,7 @@ function CameraScanModal({
             style={{ marginTop: 12 }}
             type="info"
             showIcon
-            message={
+            title={
               cameraReady ? "Camera sẵn sàng" : "Đang khởi tạo camera..."
             }
             description="Đưa Barcode/QR vào khung hình. Camera chỉ đọc mã; dữ liệu vẫn phải qua cùng validation và API như nhập tay. Camera không dùng để đọc RFID."
@@ -601,7 +601,7 @@ export function InboundScanModal({
           <Alert
             type="error"
             showIcon
-            message={getApiErrorMessage(
+            title={getApiErrorMessage(
               detailQuery.error,
               "Không tải được phiếu nhập.",
             )}
@@ -833,7 +833,7 @@ export function InboundScanModal({
                         style={{ marginTop: 12 }}
                         type="info"
                         showIcon
-                        message={`${selectedSku?.sku_code ?? selectedLine.productId}: ${selectedLine.scanned}/${selectedLine.expected}`}
+                        title={`${selectedSku?.sku_code ?? selectedLine.productId}: ${selectedLine.scanned}/${selectedLine.expected}`}
                         description={
                           isComponent
                             ? "COMPONENT: BOX bắt buộc. Với quantity-mode có thể ghi nhận N đơn vị/BOX; serial-tracked vẫn quantity=1. Sau Full Post mới đi Putaway."
@@ -881,7 +881,7 @@ export function InboundScanModal({
               <Alert
                 type={detail.document.status === "POSTED" ? "success" : "info"}
                 showIcon
-                message={
+                title={
                   detail.document.status === "POSTED"
                     ? "Phiếu đã Full Post và chỉ đọc"
                     : "Phiếu đã CANCELLED và chỉ đọc"
@@ -931,7 +931,7 @@ export function InboundScanModal({
                 type="success"
                 showIcon
                 style={{ marginTop: 14 }}
-                message="Evidence Full Post Receipt"
+                title="Evidence Full Post Receipt"
                 description={
                   <div>
                     <div>
@@ -1034,7 +1034,7 @@ export function InboundScanModal({
         <Alert
           type="warning"
           showIcon
-          message="Cancel là trạng thái kết thúc và stock-neutral"
+          title="Cancel là trạng thái kết thúc và stock-neutral"
           description="Phiếu CANCELLED không thể tiếp tục scan/Post. Nếu cần làm lại, tạo phiếu mới để bảo toàn audit trail."
           style={{ marginBottom: 12 }}
         />

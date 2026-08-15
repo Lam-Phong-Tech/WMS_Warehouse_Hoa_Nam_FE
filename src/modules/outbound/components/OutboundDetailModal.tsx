@@ -1038,7 +1038,7 @@ export function OutboundDetailModal({
               <Alert
                 type="error"
                 showIcon
-                message="Phiếu legacy không có outbound_request_id"
+                title="Phiếu legacy không có outbound_request_id"
                 description="Theo baseline, hãy hủy phiếu này và tạo lại từ Tiếp nhận yêu cầu xuất / Import Excel để giữ traceability."
               />
             ) : null}
@@ -1190,7 +1190,7 @@ export function OutboundDetailModal({
                     style={{ marginTop: 10 }}
                     type="warning"
                     showIcon
-                    message="Chưa có printer ACTIVE"
+                    title="Chưa có printer ACTIVE"
                     description="Scan vẫn match item nhưng nhãn sẽ không in trực tiếp được; kết quả PRINT_FAILED phải In lại trước khi Post."
                   />
                 ) : null}
@@ -1232,7 +1232,7 @@ export function OutboundDetailModal({
                 <Alert
                   type="info"
                   showIcon
-                  message="Nhãn snapshot là bất biến và không in SĐT; RFID phải quét bằng đầu đọc RFID (camera không đọc được RFID)."
+                  title="Nhãn snapshot là bất biến và không in SĐT; RFID phải quét bằng đầu đọc RFID (camera không đọc được RFID)."
                   description="Scan PRODUCT hợp lệ tự tạo Label_Snapshot và in trực tiếp. Map RFID gắn vào đúng item, không tạo movement."
                 />
                 <ApiErrorAlert
@@ -1273,7 +1273,7 @@ export function OutboundDetailModal({
               <Alert
                 type="success"
                 showIcon
-                message="Evidence Full Post Issue"
+                title="Evidence Full Post Issue"
                 description={
                   <div>
                     <div>
@@ -1471,7 +1471,7 @@ export function OutboundDetailModal({
               style={{ marginTop: 12 }}
               type="info"
               showIcon
-              message="Nhãn không in SĐT theo baseline PII; nội dung snapshot là bất biến sau khi tạo."
+              title="Nhãn không in SĐT theo baseline PII; nội dung snapshot là bất biến sau khi tạo."
             />
           </div>
         ) : null}
@@ -1497,7 +1497,7 @@ export function OutboundDetailModal({
           type="warning"
           showIcon
           style={{ marginBottom: 12 }}
-          message="RFID quét bằng đầu đọc chuyên dụng — camera không đọc được RFID."
+          title="RFID quét bằng đầu đọc chuyên dụng — camera không đọc được RFID."
           description="hardware_uid là UID thật của tag và phải duy nhất. Map RFID không tạo movement, không đổi tồn."
         />
         <Form<RfidFormValues> form={rfidForm} layout="vertical">
@@ -1538,7 +1538,7 @@ export function OutboundDetailModal({
         <Alert
           type="warning"
           showIcon
-          message="Phiếu sinh từ request/Excel không được sửa dòng SKU/số lượng"
+          title="Phiếu sinh từ request/Excel không được sửa dòng SKU/số lượng"
           description="Muốn đổi hàng hóa: hủy phiếu và tạo request mới để giữ traceability (backend chặn SOURCE_REQUEST_IMMUTABLE)."
           style={{ marginBottom: 14 }}
         />
@@ -1595,7 +1595,7 @@ export function OutboundDetailModal({
         <Alert
           type="warning"
           showIcon
-          message="CANCELLED là trạng thái kết thúc và stock-neutral"
+          title="CANCELLED là trạng thái kết thúc và stock-neutral"
           description="Phiếu đã hủy không thể tiếp tục quét/Post. Muốn xuất lại phải tạo request mới."
           style={{ marginBottom: 12 }}
         />
