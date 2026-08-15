@@ -1,0 +1,63 @@
+name: Flow 06 FE Exact SHA
+
+on:
+  push:
+    branches: [m1]
+    paths:
+      - 'src/modules/reports/**'
+      - 'src/modules/outbound/components/AlignedOutboundDetailModal.tsx'
+      - 'src/modules/outbound/pages/AlignedMvpOutboundPage.tsx'
+      - 'src/modules/outbound/services/alignedOutboundService.ts'
+      - 'src/test/flow06-*.test.ts'
+      - '.github/workflows/flow06-fe-exact-sha.yml'
+  pull_request:
+    branches: [m1]
+    paths:
+      - 'src/modules/reports/**'
+      - 'src/modules/outbound/components/AlignedOutboundDetailModal.tsx'
+      - 'src/modules/outbound/pages/AlignedMvpOutboundPage.tsx'
+      - 'src/modules/outbound/services/alignedOutboundService.ts'
+      - 'src/test/flow06-*.test.ts'
+      - '.github/workflows/flow06-fe-exact-sha.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  flow06-fe:
+    name: Flow 06 FE type / test / build / contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Formatting
+        run: npm run format:raw-check
+      - name: Lint
+        run: npm run lint
+      - name: Type check
+        run: npm run typecheck
+      - name: Flow 06 unit/contract tests
+        run: npx vitest run src/test/flow06-packing-label-alignment.test.ts src/test/flow06-report-pagination-export.test.ts
+      - name: API mapping
+        run: npm run check:api-mapping
+      - name: Production build
+        run: npm run build
+      - name: Exact SHA evidence summary
+        run: |
+          mkdir -p artifacts/flow06-fe
+          printf 'flow=06-report-fe\nsha=%s\nbranch=%s\nresult=PASS\n' "${GITHUB_SHA}" "${GITHUB_REF_NAME}" > artifacts/flow06-fe/manifest.txt
+          sha256sum artifacts/flow06-fe/manifest.txt > artifacts/flow06-fe/SHA256SUMS
+          cp dist/build-manifest.json artifacts/flow06-fe/build-manifest.json
+          cat artifacts/flow06-fe/manifest.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: flow06-fe-exact-sha-${{ github.sha }}
+          path: artifacts/flow06-fe
+          if-no-files-found: error
+          retention-days: 30
