@@ -4,6 +4,7 @@ on:
   push:
     branches: [m1]
     paths:
+      - 'eslint.config.js'
       - 'src/modules/reports/**'
       - 'src/modules/outbound/components/AlignedOutboundDetailModal.tsx'
       - 'src/modules/outbound/pages/AlignedMvpOutboundPage.tsx'
@@ -16,6 +17,7 @@ on:
   pull_request:
     branches: [m1]
     paths:
+      - 'eslint.config.js'
       - 'src/modules/reports/**'
       - 'src/modules/outbound/components/AlignedOutboundDetailModal.tsx'
       - 'src/modules/outbound/pages/AlignedMvpOutboundPage.tsx'
