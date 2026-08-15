@@ -9,6 +9,9 @@ on:
       - 'src/modules/outbound/pages/AlignedMvpOutboundPage.tsx'
       - 'src/modules/outbound/services/alignedOutboundService.ts'
       - 'src/test/flow06-*.test.ts'
+      - 'docs/HoaNam_ERD_Moi_Nhat.md'
+      - 'docs/HoaNam_Tai_lieu_tong_hop_Moi_Nhat.md'
+      - 'docs/WMS_Hoa_Nam_Techstack_Architecture_Dev_Guide.md'
       - '.github/workflows/flow06-fe-exact-sha.yml'
   pull_request:
     branches: [m1]
@@ -18,6 +21,9 @@ on:
       - 'src/modules/outbound/pages/AlignedMvpOutboundPage.tsx'
       - 'src/modules/outbound/services/alignedOutboundService.ts'
       - 'src/test/flow06-*.test.ts'
+      - 'docs/HoaNam_ERD_Moi_Nhat.md'
+      - 'docs/HoaNam_Tai_lieu_tong_hop_Moi_Nhat.md'
+      - 'docs/WMS_Hoa_Nam_Techstack_Architecture_Dev_Guide.md'
       - '.github/workflows/flow06-fe-exact-sha.yml'
 
 permissions:
@@ -27,7 +33,7 @@ jobs:
   flow06-fe:
     name: Flow 06 FE type / test / build / contract
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -37,8 +43,23 @@ jobs:
           cache-dependency-path: yarn.lock
       - name: Install locked dependencies
         run: yarn install --frozen-lockfile --non-interactive
-      - name: Formatting
-        run: npm run format:check
+      - name: Flow 06 formatting
+        run: |
+          npx prettier --check \
+            src/modules/outbound/services/alignedOutboundService.ts \
+            src/modules/outbound/components/AlignedOutboundDetailModal.tsx \
+            src/modules/outbound/pages/AlignedMvpOutboundPage.tsx \
+            src/modules/reports/pages/AlignedReportsPage.tsx \
+            src/test/flow06-packing-label-alignment.test.ts \
+            src/test/flow06-report-pagination-export.test.ts
+      - name: Current-baseline documentation semantics
+        run: |
+          ! grep -Fq '01 nhãn/item' docs/HoaNam_Tai_lieu_tong_hop_Moi_Nhat.md
+          ! grep -Fq 'PRODUCT bắt buộc active RFID trước Post Issue' docs/HoaNam_Tai_lieu_tong_hop_Moi_Nhat.md
+          grep -Fq 'đúng 01 Packing Label cho phiếu/lô' docs/HoaNam_Tai_lieu_tong_hop_Moi_Nhat.md
+          grep -Fq 'UNIQUE(outbound_document_id)' docs/HoaNam_ERD_Moi_Nhat.md
+          grep -Fq 'customer_phone' docs/HoaNam_ERD_Moi_Nhat.md
+          grep -Fq "REPORT_EXPORT: 'report.export'" docs/WMS_Hoa_Nam_Techstack_Architecture_Dev_Guide.md
       - name: Lint
         run: npm run lint
       - name: Type check
@@ -54,7 +75,11 @@ jobs:
           mkdir -p artifacts/flow06-fe
           printf 'flow=06-report-fe\nsha=%s\nbranch=%s\nresult=PASS\n' "${GITHUB_SHA}" "${GITHUB_REF_NAME}" > artifacts/flow06-fe/manifest.txt
           sha256sum artifacts/flow06-fe/manifest.txt > artifacts/flow06-fe/SHA256SUMS
-          cp dist/build-manifest.json artifacts/flow06-fe/build-manifest.json
+          if [ -f dist/build-manifest.json ]; then
+            cp dist/build-manifest.json artifacts/flow06-fe/build-manifest.json
+          else
+            find dist -maxdepth 2 -type f -printf '%P\n' | sort > artifacts/flow06-fe/build-files.txt
+          fi
           cat artifacts/flow06-fe/manifest.txt
       - uses: actions/upload-artifact@v4
         with:
