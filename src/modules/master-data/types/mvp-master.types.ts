@@ -52,6 +52,7 @@ export interface AgencyRecord {
   agency_id: string;
   agency_code: string;
   agency_name: string;
+  contact_name?: string | null;
   phone?: string | null;
   address?: string | null;
   status: MasterStatus;
@@ -60,6 +61,7 @@ export interface AgencyRecord {
 export interface AgencyPayload {
   agency_code: string;
   agency_name: string;
+  contact_name?: string | null;
   phone?: string | null;
   address?: string | null;
   status: MasterStatus;

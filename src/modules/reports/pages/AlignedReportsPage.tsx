@@ -384,6 +384,20 @@ function columnsFor(report: ReportKey): TableColumnsType<Raw> {
           width: 160,
           fixed: "left",
         },
+        {
+          title: "Packing_Label",
+          dataIndex: "label_code",
+          width: 180,
+          ellipsis: true,
+          render: (v) => text(v),
+        },
+        {
+          title: "Label_Snapshot",
+          dataIndex: "id",
+          width: 150,
+          ellipsis: true,
+          render: (v) => text(v),
+        },
         { title: "Ngày", dataIndex: "outbound_date", width: 120 },
         { title: "Nơi nhận", dataIndex: "recipient", width: 180 },
         {

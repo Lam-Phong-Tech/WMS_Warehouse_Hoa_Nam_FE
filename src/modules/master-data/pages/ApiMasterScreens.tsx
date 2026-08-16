@@ -770,6 +770,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
 const EMPTY_AGENCY_FORM: AgencyPayload = {
   agency_code: "",
   agency_name: "",
+  contact_name: "",
   phone: "",
   address: "",
   status: "ACTIVE",
@@ -819,6 +820,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
     setForm({
       agency_code: record.agency_code,
       agency_name: record.agency_name,
+      contact_name: record.contact_name ?? "",
       phone: record.phone ?? "",
       address: record.address ?? "",
       status: record.status,
@@ -840,6 +842,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
     const payload: AgencyPayload = {
       agency_code: form.agency_code.trim(),
       agency_name: form.agency_name.trim(),
+      contact_name: form.contact_name?.trim() || null,
       phone: form.phone?.trim() || null,
       address: form.address?.trim() || null,
       status: form.status,
@@ -916,6 +919,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
             <tr>
               <th>Mã</th>
               <th>Tên đại lý</th>
+              <th>Người liên hệ</th>
               <th>Điện thoại</th>
               <th>Địa chỉ</th>
               <th>Trạng thái</th>
@@ -925,7 +929,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           <tbody>
             {query.isLoading ? (
               <tr>
-                <td colSpan={6} className="muted">
+                <td colSpan={7} className="muted">
                   Đang tải dữ liệu từ API...
                 </td>
               </tr>
@@ -934,6 +938,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                 <tr key={record.agency_id}>
                   <td>{record.agency_code}</td>
                   <td>{record.agency_name}</td>
+                  <td>{record.contact_name || "—"}</td>
                   <td>{record.phone || "—"}</td>
                   <td>{record.address || "—"}</td>
                   <td>
@@ -958,7 +963,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               ))
             ) : (
               <tr>
-                <td colSpan={6} className="muted">
+                <td colSpan={7} className="muted">
                   Không có đại lý phù hợp bộ lọc.
                 </td>
               </tr>
@@ -1014,6 +1019,20 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                   setForm((current) => ({
                     ...current,
                     agency_name: event.target.value,
+                  }))
+                }
+                disabled={isSaving}
+              />
+            </Field>
+            <Field label="Người liên hệ">
+              <input
+                className="input"
+                style={{ width: "100%" }}
+                value={form.contact_name ?? ""}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    contact_name: event.target.value,
                   }))
                 }
                 disabled={isSaving}

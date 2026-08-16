@@ -466,7 +466,8 @@ export function OutboundIntakeModal({
                 Kiểm tra & Preview
               </Button>
               <Typography.Text type="secondary">
-                SĐT không nằm trong dữ liệu request/nhãn theo baseline PII.
+                SĐT khách hàng nhập ở bước Packing Label (bắt buộc trên nhãn),
+                không nằm trong dữ liệu request.
               </Typography.Text>
             </Space>
             <ApiErrorAlert

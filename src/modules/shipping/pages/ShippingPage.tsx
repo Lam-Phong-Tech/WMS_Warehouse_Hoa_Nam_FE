@@ -1,1 +1,1 @@
-export { default } from "@/modules/outbound/pages/MvpOutboundPage";
+export { default } from "@/modules/outbound/pages/AlignedMvpOutboundPage";

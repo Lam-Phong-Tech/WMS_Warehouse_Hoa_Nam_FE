@@ -92,12 +92,19 @@ export interface ReversalLookupParams {
   per_page?: number;
 }
 
+/** BR-REV-06/07: tình trạng hàng quay về khi Reverse Issue. */
+export type ReversalReturnCondition = "SELLABLE" | "DEFECTIVE" | "NON_SELLABLE";
+
 /** Request to create a reversal */
 export interface CreateReversalRequest {
   reversal_type: ReversalType;
   reference_document_id: string;
   reference_document_type: string;
   reason: string;
+  /** Bắt buộc với Reverse Issue; chỉ SELLABLE mới cộng available_qty. */
+  return_condition?: ReversalReturnCondition;
+  /** Xác nhận hàng vật lý đã quay lại kho (điều kiện cộng tồn theo BR-REV-06). */
+  physical_return_confirmed?: boolean;
   lines: Array<{
     sku: string;
     reversal_qty: number;

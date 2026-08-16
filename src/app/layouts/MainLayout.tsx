@@ -128,10 +128,15 @@ const MVP_SCREEN_META: Record<string, ScreenMeta> = {
     description: "Màn chi tiết phiếu xuất khi bấm Mở / Xem.",
   },
   "OUT-02": { title: "Quét & match Item", description: "Quét và match Item." },
-  "LBL-01": { title: "Nhãn từng Item", description: "In nhãn từng Item." },
+  "LBL-01": {
+    title: "Packing Label lô hàng",
+    description:
+      "Tạo/Preview/Ready/Print đúng một Packing Label cho phiếu/lô xuất, sau đó xác nhận đã dán nhãn.",
+  },
   "RFID-01": {
-    title: "Map RFID & Full Post Issue",
-    description: "Map RFID và Full Post Issue.",
+    title: "RFID tùy chọn & Hoàn tất xuất",
+    description:
+      "Map RFID khi có tag (không bắt buộc) và kiểm tra gate trước Hoàn tất xuất/Post Issue.",
   },
   "WAR-01": { title: "Danh sách bảo hành", description: "Danh sách bảo hành." },
   "WAR-02": { title: "Tiếp nhận bảo hành", description: "Tiếp nhận bảo hành." },

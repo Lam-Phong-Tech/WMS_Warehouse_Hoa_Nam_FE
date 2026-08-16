@@ -75,6 +75,7 @@ type ScanLogRow = {
   result: string;
   success: boolean;
   lineId?: string;
+  errorCode?: string;
 };
 
 function makeKey(prefix: string) {
@@ -357,6 +358,12 @@ export function InboundScanModal({
   const progressPercent = totalExpected
     ? Math.min(100, Math.round((totalScanned / totalExpected) * 100))
     : 0;
+  const sessionDuplicateCount = scanLog.filter(
+    (row) => !row.success && (row.errorCode ?? "").includes("DUPLICATE"),
+  ).length;
+  const sessionErrorCount = scanLog.filter(
+    (row) => !row.success && !(row.errorCode ?? "").includes("DUPLICATE"),
+  ).length;
 
   useEffect(() => {
     if (isSerialTracked) setQuantity(1);
@@ -436,6 +443,7 @@ export function InboundScanModal({
       onChanged?.();
     } catch (error) {
       const errorText = getApiErrorMessage(error, "Scan không hợp lệ.");
+      const errorCode = normalizeError(error).code ?? undefined;
       setScanLog((current) =>
         [
           {
@@ -444,6 +452,7 @@ export function InboundScanModal({
             result: errorText,
             success: false,
             lineId: selectedLine.id,
+            errorCode,
           },
           ...current,
         ].slice(0, 20),
@@ -646,7 +655,9 @@ export function InboundScanModal({
             <Row gutter={[12, 12]} style={{ marginBottom: 14 }}>
               <Col xs={12} md={6}>
                 <Card size="small">
-                  <div style={{ fontSize: 12, color: "#6b7280" }}>Đã scan</div>
+                  <div style={{ fontSize: 12, color: "#6b7280" }}>
+                    Mã hợp lệ
+                  </div>
                   <div style={{ fontSize: 22, fontWeight: 700 }}>
                     {totalScanned}
                   </div>
@@ -654,7 +665,9 @@ export function InboundScanModal({
               </Col>
               <Col xs={12} md={6}>
                 <Card size="small">
-                  <div style={{ fontSize: 12, color: "#6b7280" }}>Expected</div>
+                  <div style={{ fontSize: 12, color: "#6b7280" }}>
+                    Số lượng cần nhận
+                  </div>
                   <div style={{ fontSize: 22, fontWeight: 700 }}>
                     {totalExpected}
                   </div>
@@ -662,19 +675,21 @@ export function InboundScanModal({
               </Col>
               <Col xs={12} md={6}>
                 <Card size="small">
-                  <div style={{ fontSize: 12, color: "#6b7280" }}>Còn lại</div>
+                  <div style={{ fontSize: 12, color: "#6b7280" }}>
+                    Mã trùng (phiên)
+                  </div>
                   <div style={{ fontSize: 22, fontWeight: 700 }}>
-                    {Math.max(totalExpected - totalScanned, 0)}
+                    {sessionDuplicateCount}
                   </div>
                 </Card>
               </Col>
               <Col xs={12} md={6}>
                 <Card size="small">
                   <div style={{ fontSize: 12, color: "#6b7280" }}>
-                    Điều kiện Post
+                    Mã lỗi (phiên)
                   </div>
-                  <div style={{ fontSize: 18, fontWeight: 700 }}>
-                    {isFullScan ? "ĐỦ" : "CHƯA ĐỦ"}
+                  <div style={{ fontSize: 22, fontWeight: 700 }}>
+                    {sessionErrorCount}
                   </div>
                 </Card>
               </Col>
@@ -837,7 +852,7 @@ export function InboundScanModal({
                         description={
                           isComponent
                             ? "COMPONENT: BOX bắt buộc. Với quantity-mode có thể ghi nhận N đơn vị/BOX; serial-tracked vẫn quantity=1. Sau Full Post mới đi Putaway."
-                            : "PRODUCT: Barcode/QR inbound. RFID chưa bắt buộc tại Receipt; RFID thuộc guard outbound."
+                            : "PRODUCT: Barcode/QR inbound. RFID không bắt buộc; ở outbound RFID chỉ là mapping tùy chọn, không chặn Post Issue."
                         }
                       />
                     ) : null}

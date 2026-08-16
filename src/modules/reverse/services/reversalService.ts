@@ -220,6 +220,12 @@ export async function createReversalDocument(
         "reference_document_type",
       ),
       reason: requireNonEmptyString(request.reason, "reason"),
+      ...(request.return_condition
+        ? { return_condition: request.return_condition }
+        : {}),
+      ...(request.physical_return_confirmed !== undefined
+        ? { physical_return_confirmed: request.physical_return_confirmed }
+        : {}),
       lines,
     },
     {

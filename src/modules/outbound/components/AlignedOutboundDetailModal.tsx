@@ -23,7 +23,7 @@ import {
 import type { ColumnsType } from "antd/es/table";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { getApiErrorMessage } from "@/shared/api/api-error";
+import { getApiErrorMessage, normalizeError } from "@/shared/api/api-error";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { useHasPermission } from "@/shared/components/permission";
 import {
@@ -85,6 +85,12 @@ export function AlignedOutboundDetailModal({
   const [rfidCode, setRfidCode] = useState("");
   const [rfidHardwareUid, setRfidHardwareUid] = useState("");
   const [evidence, setEvidence] = useState<IssueEvidence | null>(null);
+  // OUT-02: đếm lỗi scan trong phiên (sai SKU / trùng / unknown) — chỉ hiển thị, không phải state nghiệp vụ.
+  const [scanRejects, setScanRejects] = useState({
+    wrongSku: 0,
+    duplicate: 0,
+    unknown: 0,
+  });
 
   const detailQuery = useQuery({
     queryKey: ["mvp-outbound", "detail", documentId],
@@ -153,6 +159,7 @@ export function AlignedOutboundDetailModal({
       (line) => line.expected > 0 && line.scanned === line.expected,
     ),
   );
+  const rfidMappedCount = activeMatches.filter((m) => m.rfidCode).length;
   const mutable = doc?.status === "DRAFT" || doc?.status === "SCANNING";
   const labelPrinted = packingLabel?.status === "PRINTED";
   const labelApplied = Boolean(packingLabel?.applied);
@@ -205,8 +212,17 @@ export function AlignedOutboundDetailModal({
       toast.success("Đã match item. Scan không tạo nhãn và không trừ tồn.");
       await refresh();
     },
-    onError: (error) =>
-      toast.error(getApiErrorMessage(error, "Scan/match thất bại.")),
+    onError: (error) => {
+      const code = normalizeError(error).code ?? "";
+      setScanRejects((current) =>
+        code.includes("DUPLICATE")
+          ? { ...current, duplicate: current.duplicate + 1 }
+          : code.includes("SKU") || code.includes("MISMATCH")
+            ? { ...current, wrongSku: current.wrongSku + 1 }
+            : { ...current, unknown: current.unknown + 1 },
+      );
+      toast.error(getApiErrorMessage(error, "Scan/match thất bại."));
+    },
   });
 
   const unmatchMutation = useMutation({
@@ -462,6 +478,9 @@ export function AlignedOutboundDetailModal({
           <Descriptions.Item label="Địa chỉ" span={2}>
             {doc?.recipientAddress ?? "-"}
           </Descriptions.Item>
+          <Descriptions.Item label="SĐT">
+            {packingLabel?.customerPhone || customerPhone || "-"}
+          </Descriptions.Item>
           <Descriptions.Item label="Request">
             {short(doc?.outboundRequestId)}
           </Descriptions.Item>
@@ -470,8 +489,54 @@ export function AlignedOutboundDetailModal({
           </Descriptions.Item>
         </Descriptions>
 
+        <Card title="Tiến độ & gate" size="small">
+          <Descriptions bordered size="small" column={{ xs: 1, sm: 2, lg: 3 }}>
+            <Descriptions.Item label="Match Item">
+              {totalScanned} / {totalExpected}
+            </Descriptions.Item>
+            <Descriptions.Item label="Tổng hợp lô">
+              {packingLabel
+                ? `${packingLabel.skuCount} SKU · ${packingLabel.itemCount} Item`
+                : `${detail?.lines.length ?? 0} SKU · ${totalScanned} Item`}
+            </Descriptions.Item>
+            <Descriptions.Item label="Packing Label">
+              {packingLabels.length} / 1
+              {packingLabel ? ` · ${packingLabel.status}` : ""}
+            </Descriptions.Item>
+            <Descriptions.Item label="Xác nhận đã dán nhãn">
+              <Tag color={labelApplied ? "success" : "warning"}>
+                {labelApplied ? "Có" : "Chưa"}
+              </Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="RFID đã map">
+              {rfidMappedCount} / {activeMatches.length} · tùy chọn
+            </Descriptions.Item>
+            <Descriptions.Item label="Có thể Hoàn tất xuất">
+              <Tag color={postReady ? "success" : "warning"}>
+                {postReady
+                  ? "Có · thiếu RFID không chặn"
+                  : "Chưa · xem lý do ở mục 4"}
+              </Tag>
+            </Descriptions.Item>
+          </Descriptions>
+        </Card>
+
         <Card title="1 · Scan & match item — stock-neutral" size="small">
           <Space orientation="vertical" style={{ width: "100%" }} size={10}>
+            <Space wrap size={6}>
+              <Tag color="success">
+                Item đã match: {totalScanned} / {totalExpected}
+              </Tag>
+              <Tag color={scanRejects.wrongSku ? "error" : "default"}>
+                Mã sai SKU (phiên): {scanRejects.wrongSku}
+              </Tag>
+              <Tag color={scanRejects.duplicate ? "error" : "default"}>
+                Mã trùng (phiên): {scanRejects.duplicate}
+              </Tag>
+              <Tag color={scanRejects.unknown ? "error" : "default"}>
+                Unknown (phiên): {scanRejects.unknown}
+              </Tag>
+            </Space>
             <Progress
               percent={
                 totalExpected > 0
@@ -606,8 +671,16 @@ export function AlignedOutboundDetailModal({
                   <Descriptions.Item label="Mã nhãn">
                     {packingLabel.labelCode}
                   </Descriptions.Item>
-                  <Descriptions.Item label="Phiếu">
+                  <Descriptions.Item label="Phiếu xuất">
                     {packingLabel.outboundNo || doc?.code}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Phiếu toa / Request">
+                    {short(doc?.outboundRequestId)}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Ngày giờ">
+                    {String(
+                      packingLabel.payload.created_at ?? doc?.date ?? "-",
+                    )}
                   </Descriptions.Item>
                   <Descriptions.Item label="Người nhận">
                     {packingLabel.recipientName}
@@ -615,14 +688,24 @@ export function AlignedOutboundDetailModal({
                   <Descriptions.Item label="SĐT">
                     {packingLabel.customerPhone}
                   </Descriptions.Item>
-                  <Descriptions.Item label="Địa chỉ" span={2}>
+                  <Descriptions.Item label="Địa chỉ giao" span={2}>
                     {packingLabel.recipientAddress}
                   </Descriptions.Item>
-                  <Descriptions.Item label="Tổng item">
+                  <Descriptions.Item label="Tổng SKU">
+                    {packingLabel.skuCount}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Tổng Item">
                     {packingLabel.itemCount}
                   </Descriptions.Item>
-                  <Descriptions.Item label="Số SKU">
-                    {packingLabel.skuCount}
+                  <Descriptions.Item label="Snapshot" span={2}>
+                    {short(packingLabel.id)} · immutable/current
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Tóm tắt hàng" span={2}>
+                    {packingLabel.skuSummary.length
+                      ? packingLabel.skuSummary
+                          .map((row) => `${row.skuCode} × ${row.quantity}`)
+                          .join(" · ")
+                      : "-"}
                   </Descriptions.Item>
                 </Descriptions>
                 <Table
@@ -642,7 +725,25 @@ export function AlignedOutboundDetailModal({
                     },
                   ]}
                 />
+                <div className="barcode-box">
+                  <div className="barcode-bars" />
+                  <div className="barcode-text">
+                    {packingLabel.outboundNo || doc?.code}
+                  </div>
+                </div>
+                <Alert
+                  style={{ marginTop: 10 }}
+                  type="info"
+                  showIcon
+                  title="QR/Barcode đại diện cho kiện/phiếu xuất. Không dùng Barcode của từng Item làm Packing Label."
+                />
               </div>
+              <Alert
+                type="info"
+                showIcon
+                title="Lifecycle: DRAFT → PREVIEWED → READY_TO_PRINT → PRINTED → ĐÃ DÁN"
+                description="Ready đóng băng immutable Packing_Label_Snapshot. Print/Retry/Reprint không đổi tồn."
+              />
               <Space wrap>
                 <Select
                   style={{ width: 300 }}
@@ -683,12 +784,19 @@ export function AlignedOutboundDetailModal({
         </Card>
 
         <Card title="3 · RFID tùy chọn" size="small">
-          <Alert
-            type="info"
-            showIcon
-            title="RFID không phải gate Post Issue"
-            description="Có thể map RFID nếu vận hành có tag. Không tạo RFID giả và không chặn Hoàn tất xuất khi thiếu RFID."
-          />
+          <Space orientation="vertical" style={{ width: "100%" }} size={8}>
+            <Alert
+              type="info"
+              showIcon
+              title="RFID không phải gate Post Issue"
+              description="Có thể map RFID nếu vận hành có tag. Không tạo RFID giả và không chặn Hoàn tất xuất khi thiếu RFID."
+            />
+            <Text>
+              Đã map RFID: <b>{rfidMappedCount}</b> / {activeMatches.length} ·
+              tùy chọn. Item không có tag dùng Barcode/QR fallback (nút map ở
+              bảng item mục 1). RFID mapping là stock-neutral.
+            </Text>
+          </Space>
         </Card>
 
         <Card title="4 · Hoàn tất xuất / Post Issue" size="small">

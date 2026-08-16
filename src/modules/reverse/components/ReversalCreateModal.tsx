@@ -1,11 +1,13 @@
 import { useMemo, useState } from "react";
 import {
   Alert,
+  Checkbox,
   Descriptions,
   Form,
   Input,
   InputNumber,
   Modal,
+  Select,
   Space,
   Statistic,
   Table,
@@ -22,9 +24,22 @@ import {
 } from "../hooks/use-reversal";
 import type {
   CreateReversalRequest,
+  ReversalReturnCondition,
   ReversibleMovement,
   ReversibleMovementLine,
 } from "../types";
+
+const RETURN_CONDITION_OPTIONS: Array<{
+  value: ReversalReturnCondition;
+  label: string;
+}> = [
+  { value: "SELLABLE", label: "SELLABLE · hàng tốt, cộng lại available" },
+  { value: "DEFECTIVE", label: "DEFECTIVE · hàng lỗi, không cộng available" },
+  {
+    value: "NON_SELLABLE",
+    label: "NON_SELLABLE · không bán được, không cộng available",
+  },
+];
 
 type ReversalDraft = Record<string, { reversal_qty?: number; reason?: string }>;
 
@@ -53,6 +68,9 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
     useState<ReversibleMovement>();
   const [reason, setReason] = useState("");
   const [draft, setDraft] = useState<ReversalDraft>({});
+  const [returnCondition, setReturnCondition] =
+    useState<ReversalReturnCondition>("SELLABLE");
+  const [physicalConfirmed, setPhysicalConfirmed] = useState(false);
 
   const movementsQuery = useReversibleMovements({
     search: search || undefined,
@@ -82,15 +100,21 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
   const invalidLine = selectedLines.find(
     (line) => line.reversal_qty > line.max,
   );
+  const isIssueReversal = selectedMovement?.movement_type === "ISSUE";
   const canSubmit =
     Boolean(selectedMovement?.can_reverse) &&
     selectedLines.length > 0 &&
     totalQty > 0 &&
     reason.trim().length >= 5 &&
-    !invalidLine;
+    !invalidLine &&
+    // BR-REV-06: Reverse Issue chỉ hợp lệ khi khai tình trạng trả về và
+    // hàng vật lý đã quay lại kho (FE không hỗ trợ pending-return flow).
+    (!isIssueReversal || (Boolean(returnCondition) && physicalConfirmed));
 
   function handleSelectMovement(movement: ReversibleMovement) {
     setSelectedMovement(movement);
+    setReturnCondition("SELLABLE");
+    setPhysicalConfirmed(false);
     setDraft(
       Object.fromEntries(
         movement.lines.map((line) => [
@@ -121,6 +145,12 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
           <Typography.Text strong>
             {selectedLines.length} dòng, tổng số lượng {qty(totalQty)}
           </Typography.Text>
+          {isIssueReversal ? (
+            <Typography.Text>
+              Tình trạng trả về: <b>{returnCondition}</b> · hàng vật lý đã quay
+              lại kho.
+            </Typography.Text>
+          ) : null}
           <Typography.Text type="secondary">
             UI gửi Idempotency-Key và If-Match nếu lookup trả version.
           </Typography.Text>
@@ -139,6 +169,12 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
             selectedMovement.movement_type,
           reference_version: selectedMovement.version,
           reason,
+          ...(isIssueReversal
+            ? {
+                return_condition: returnCondition,
+                physical_return_confirmed: physicalConfirmed,
+              }
+            : {}),
           lines: selectedLines.map(({ sku, reversal_qty, reason }) => ({
             sku,
             reversal_qty,
@@ -315,6 +351,38 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
                   placeholder="Nhập lý do hoàn đảo (tối thiểu 5 ký tự)..."
                 />
               </Form.Item>
+              {isIssueReversal ? (
+                <>
+                  <Form.Item
+                    label="Tình trạng trả về"
+                    required
+                    extra="Chỉ SELLABLE mới cộng lại available_qty; DEFECTIVE/NON_SELLABLE vẫn ghi movement/audit nhưng không cộng tồn bán (BR-REV-06/07)."
+                  >
+                    <Select<ReversalReturnCondition>
+                      value={returnCondition}
+                      style={{ maxWidth: 420 }}
+                      options={RETURN_CONDITION_OPTIONS}
+                      onChange={setReturnCondition}
+                    />
+                  </Form.Item>
+                  <Form.Item
+                    required
+                    validateStatus={physicalConfirmed ? undefined : "warning"}
+                    help={
+                      physicalConfirmed
+                        ? undefined
+                        : "Reverse Issue chỉ được Post khi hàng vật lý đã quay lại kho."
+                    }
+                  >
+                    <Checkbox
+                      checked={physicalConfirmed}
+                      onChange={(e) => setPhysicalConfirmed(e.target.checked)}
+                    >
+                      Xác nhận hàng vật lý đã quay lại kho
+                    </Checkbox>
+                  </Form.Item>
+                </>
+              ) : null}
             </Form>
 
             <Table
