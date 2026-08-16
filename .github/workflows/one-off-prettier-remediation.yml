@@ -8,15 +8,17 @@ on:
       - ".github/workflows/one-off-prettier-remediation.yml"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  format-snapshot:
+  format-and-commit:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - name: Checkout exact SHA
         uses: actions/checkout@v4
+        with:
+          ref: m1
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -31,19 +33,14 @@ jobs:
       - name: Format src with repository Prettier
         run: npx prettier --write "src/**/*.{ts,tsx,css}"
 
-      - name: Capture changed paths
+      - name: Commit formatting-only remediation
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p format-remediation
-          git diff --name-only -- src > format-remediation/changed-files.txt
-          test -s format-remediation/changed-files.txt
-          cp -R src format-remediation/src
-
-      - name: Upload formatted source snapshot
-        uses: actions/upload-artifact@v4
-        with:
-          name: prettier-remediation-${{ github.sha }}
-          path: format-remediation
-          if-no-files-found: error
-          retention-days: 1
+          git diff --name-only -- src | tee /tmp/changed-files.txt
+          test -s /tmp/changed-files.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src
+          git commit -m "chore(format): remediate Prettier drift for exact-SHA CI"
+          git push origin HEAD:m1
