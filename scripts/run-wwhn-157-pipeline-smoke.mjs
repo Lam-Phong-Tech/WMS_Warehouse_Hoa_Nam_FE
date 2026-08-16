@@ -71,11 +71,7 @@ async function request(method, url, { headers = {}, body } = {}) {
   const startedAt = Date.now();
   const response = await fetch(url, {
     method,
-    headers: {
-      Accept: "application/json",
-      "X-Request-ID": requestId,
-      ...headers,
-    },
+    headers: { Accept: "application/json", "X-Request-ID": requestId, ...headers },
     body: body === undefined ? undefined : JSON.stringify(body),
     redirect: "manual",
     signal: AbortSignal.timeout(timeoutMs),
@@ -106,7 +102,7 @@ async function request(method, url, { headers = {}, body } = {}) {
 }
 
 const plan = {
-  schemaVersion: "1.0.0",
+  schemaVersion: "1.1.0",
   task: "WWHN-157",
   parentTask: "WWHN-32",
   parentTempKey: "HN-DEVOPS-001",
@@ -125,27 +121,17 @@ const plan = {
   },
   candidate: {
     expectedFeSha: expectedFeSha || null,
+    observedFeSha: null,
+    observedFeBuildVersion: null,
     expectedBeSha: expectedBeSha || null,
   },
-  endpoints: {
-    feBaseUrl: null,
-    apiBaseUrl: null,
-  },
+  endpoints: { feBaseUrl: null, apiBaseUrl: null },
   results: [],
   summary: {},
 };
 
 function addResult(name, { pass, required = true, actual, expected, evidence = {}, note = null }) {
-  plan.results.push({
-    name,
-    required,
-    pass: Boolean(pass),
-    timestamp: timestampPlus7(),
-    expected,
-    actual,
-    evidence: sanitize(evidence),
-    note,
-  });
+  plan.results.push({ name, required, pass: Boolean(pass), timestamp: timestampPlus7(), expected, actual, evidence: sanitize(evidence), note });
 }
 
 function httpResult(name, response, { expectedStatus, required = true, extraPass = true, expected, note = null }) {
@@ -172,7 +158,9 @@ function createMarkdown() {
     `- Generated: ${plan.generatedAt}`,
     `- FE URL: ${plan.endpoints.feBaseUrl ?? "MISSING"}`,
     `- API URL: ${plan.endpoints.apiBaseUrl ?? "MISSING"}`,
-    `- Expected FE SHA: ${plan.candidate.expectedFeSha ?? "MISSING"}`,
+    `- Expected FE SHA: ${plan.candidate.expectedFeSha ?? "NOT PROVIDED"}`,
+    `- Observed FE SHA: ${plan.candidate.observedFeSha ?? "NOT OBSERVED"}`,
+    `- Observed FE build: ${plan.candidate.observedFeBuildVersion ?? "NOT OBSERVED"}`,
     `- Expected BE SHA: ${plan.candidate.expectedBeSha ?? "MISSING"}`,
     `- GitHub run: ${plan.runner.workflowRunId ?? "local"}`,
     "",
@@ -180,9 +168,7 @@ function createMarkdown() {
     "|---|---:|---|---|---|---|",
   ];
   for (const result of plan.results) {
-    lines.push(
-      `| ${result.name} | ${result.required ? "Yes" : "No"} | ${result.pass ? "PASS" : "FAIL"} | ${String(result.expected ?? "").replace(/\|/gu, "\\|")} | ${String(result.actual ?? "").replace(/\|/gu, "\\|")} | ${result.evidence?.responseRequestId ?? result.evidence?.sentRequestId ?? "-"} |`,
-    );
+    lines.push(`| ${result.name} | ${result.required ? "Yes" : "No"} | ${result.pass ? "PASS" : "FAIL"} | ${String(result.expected ?? "").replace(/\|/gu, "\\|")} | ${String(result.actual ?? "").replace(/\|/gu, "\\|")} | ${result.evidence?.responseRequestId ?? result.evidence?.sentRequestId ?? "-"} |`);
   }
   lines.push(
     "",
@@ -203,19 +189,15 @@ async function main() {
     plan.endpoints.feBaseUrl = feBaseUrl;
     plan.endpoints.apiBaseUrl = apiBaseUrl;
   } catch (error) {
-    addResult("environment-configuration", {
-      pass: false,
-      expected: "FE_BASE_URL and API_BASE_URL are valid HTTP(S) URLs",
-      actual: error.message,
-    });
+    addResult("environment-configuration", { pass: false, expected: "Valid FE_BASE_URL and API_BASE_URL", actual: error.message });
     return;
   }
 
-  addResult("candidate-binding", {
-    pass: fullSha.test(expectedFeSha) && fullSha.test(expectedBeSha),
-    expected: "Exact deployed FE SHA and BE SHA are both full 40-char commit SHAs",
-    actual: `FE=${expectedFeSha || "MISSING"}; BE=${expectedBeSha || "MISSING"}`,
-    note: "This validates evidence identity input. Runtime SHA must still be reconciled with deploy/manifest evidence in Jira/CI.",
+  addResult("be-candidate-binding", {
+    pass: fullSha.test(expectedBeSha),
+    expected: "Exact deployed BE SHA is supplied as a full 40-char commit SHA",
+    actual: expectedBeSha || "MISSING",
+    note: "The current public backend health response does not expose commit SHA. Reconcile this value with the exact deploy manifest/Jira/CI evidence; do not infer it from API version.",
   });
 
   try {
@@ -231,20 +213,35 @@ async function main() {
 
   try {
     const feHealth = await request("GET", resolveUrl(feBaseUrl, "/health.json"));
+    const oldContract = feHealth.rawBody?.status === "ok" && feHealth.rawBody?.service === "wms-hoa-nam-frontend";
+    const runtimeSha = feHealth.rawBody?.source_sha;
+    const currentContract = feHealth.rawBody?.success === true && feHealth.rawBody?.service === "wms-hoa-nam-fe" && fullSha.test(runtimeSha ?? "");
+    if (fullSha.test(runtimeSha ?? "")) plan.candidate.observedFeSha = runtimeSha;
+    if (typeof feHealth.rawBody?.build_version === "string") plan.candidate.observedFeBuildVersion = feHealth.rawBody.build_version;
+
     httpResult("frontend-health", feHealth, {
       expectedStatus: 200,
-      extraPass: feHealth.rawBody?.status === "ok" && feHealth.rawBody?.service === "wms-hoa-nam-frontend",
-      expected: "HTTP 200; status=ok; service=wms-hoa-nam-frontend",
+      extraPass: oldContract || currentContract,
+      expected: "HTTP 200 and recognized FE health contract; current contract includes success=true, service=wms-hoa-nam-fe, full source_sha",
+    });
+
+    const observedFeSha = plan.candidate.observedFeSha;
+    addResult("fe-candidate-binding", {
+      pass: fullSha.test(observedFeSha ?? "") && (!expectedFeSha || observedFeSha.toLowerCase() === expectedFeSha.toLowerCase()),
+      expected: expectedFeSha ? `Observed FE source_sha equals ${expectedFeSha}` : "Live FE /health.json exposes a full 40-char source_sha",
+      actual: observedFeSha ?? "MISSING",
+      evidence: { buildVersion: plan.candidate.observedFeBuildVersion },
+      note: expectedFeSha ? "Runtime SHA compared with configured expected deployed SHA." : "Runtime exact SHA captured directly from live FE; reviewer should reconcile it with deployment/CI evidence.",
     });
   } catch (error) {
-    addResult("frontend-health", { pass: false, expected: "HTTP 200 valid FE health JSON", actual: error.message });
+    addResult("frontend-health", { pass: false, expected: "HTTP 200 recognized FE health JSON", actual: error.message });
+    addResult("fe-candidate-binding", { pass: false, expected: "Full runtime FE source_sha", actual: "NOT OBSERVED" });
   }
 
   try {
     const backendHealth = await request("GET", resolveUrl(apiBaseUrl, "/api/v1/health"));
-    const missingFields = requiredHealthFields.filter(
-      (field) => backendHealth.rawBody?.[field] === undefined && backendHealth.rawBody?.data?.[field] === undefined,
-    );
+    const data = backendHealth.rawBody?.data ?? backendHealth.rawBody ?? {};
+    const missingFields = requiredHealthFields.filter((field) => data?.[field] === undefined);
     const cacheControl = backendHealth.headers.cacheControl ?? "";
     httpResult("backend-health", backendHealth, {
       expectedStatus: 200,
@@ -253,13 +250,13 @@ async function main() {
       note: missingFields.length > 0 ? `Missing fields: ${missingFields.join(", ")}` : null,
     });
 
-    const healthEnvironment = backendHealth.rawBody?.environment ?? backendHealth.rawBody?.data?.environment ?? null;
+    const healthEnvironment = data?.environment ?? null;
     addResult("backend-health-environment-label", {
       required: false,
       pass: typeof healthEnvironment === "string" && healthEnvironment.toUpperCase() === environment,
       expected: `health.environment=${environment}`,
       actual: `health.environment=${healthEnvironment ?? "MISSING"}`,
-      note: "Advisory only. If runtime profile intentionally reports production on DEV/UAT, DO must provide formal environment-mapping disposition.",
+      note: "Advisory only. If the runtime profile intentionally reports production on DEV/UAT, DO must provide a formal environment-mapping disposition.",
     });
   } catch (error) {
     addResult("backend-health", { pass: false, expected: "HTTP 200 valid readiness health", actual: error.message });
@@ -282,10 +279,7 @@ async function main() {
   try {
     const invalidLogin = await request("POST", resolveUrl(apiBaseUrl, "/api/v1/auth/login"), {
       headers: { "Content-Type": "application/json" },
-      body: {
-        email: `qa1-negative-${Date.now()}@example.invalid`,
-        password: "QA1-INTENTIONALLY-INVALID-CREDENTIAL",
-      },
+      body: { email: `qa1-negative-${Date.now()}@example.invalid`, password: "QA1-INTENTIONALLY-INVALID-CREDENTIAL" },
     });
     httpResult("login-invalid-credential", invalidLogin, { expectedStatus: 401 });
   } catch (error) {
@@ -332,9 +326,7 @@ async function main() {
 
   for (const [name, path] of authenticatedCases) {
     try {
-      const response = await request("GET", resolveUrl(apiBaseUrl, path), {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await request("GET", resolveUrl(apiBaseUrl, path), { headers: { Authorization: `Bearer ${token}` } });
       httpResult(name, response, { expectedStatus: 200 });
     } catch (error) {
       addResult(name, { pass: false, expected: "HTTP 200", actual: error.message });
@@ -345,11 +337,7 @@ async function main() {
 try {
   await main();
 } catch (error) {
-  addResult("runner-unhandled-error", {
-    pass: false,
-    expected: "Runner completes without unhandled exception",
-    actual: error?.message ?? String(error),
-  });
+  addResult("runner-unhandled-error", { pass: false, expected: "Runner completes without unhandled exception", actual: error?.message ?? String(error) });
 } finally {
   const requiredResults = plan.results.filter((result) => result.required);
   const requiredFailed = requiredResults.filter((result) => !result.pass);
