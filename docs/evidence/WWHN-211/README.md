@@ -8,6 +8,8 @@ The inventory service owns exactly six read/trace integrations: balance list, ba
 
 The dedicated workflow `.github/workflows/wwhn-211-fe-closure.yml` runs formatting, lint, typecheck, focused unit tests, production build and the WWHN-212 Playwright matrix on the exact commit SHA. It uploads screenshots/video/trace/test reports plus SHA-256 evidence under `wwhn-211-fe-<FULL_SHA>`.
 
+The repository-wide Prettier debt discovered by the exact-SHA gate was remediated with the repository's own Prettier configuration before the final acceptance run. The one-off remediation workflow is intentionally removed from the final tree so the acceptance SHA is evaluated by check-only CI, not by a mutating formatter.
+
 ## Scope boundary
 
 WWHN-211 FE code scope is limited to Inventory balance/subledger and Stock Movement/Physical Code read/trace. Safe-stock configuration/alerts and scan mutation/workflows remain outside this service and must be traced to their own approved task/flow.
