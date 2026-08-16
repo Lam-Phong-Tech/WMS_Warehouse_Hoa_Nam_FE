@@ -48,8 +48,9 @@ function normalizeReversalDocument(row: RawRecord): ReversalDocument {
     id: text(row.id),
     reversal_code: text(row.reversal_code ?? row.code ?? row.doc_no),
     reversal_type:
-      (text(row.reversal_type ?? row.reference_document_type) as ReversalDocument["reversal_type"]) ||
-      "MANUAL_ADJUSTMENT",
+      (text(
+        row.reversal_type ?? row.reference_document_type,
+      ) as ReversalDocument["reversal_type"]) || "MANUAL_ADJUSTMENT",
     status: (text(row.status) as ReversalDocument["status"]) || "DRAFT",
     reference_document_type: text(row.reference_document_type ?? row.ref_type),
     reference_document_code: text(row.reference_document_code ?? row.ref_code),

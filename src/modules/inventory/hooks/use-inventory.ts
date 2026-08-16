@@ -20,8 +20,7 @@ export const inventoryKeys = {
     [...inventoryKeys.all, "balances", params] as const,
   movements: (params: StockMovementFilters) =>
     [...inventoryKeys.all, "movements", params] as const,
-  movement: (id: string) =>
-    [...inventoryKeys.all, "movement", id] as const,
+  movement: (id: string) => [...inventoryKeys.all, "movement", id] as const,
   trace: (id: string) => [...inventoryKeys.all, "trace", id] as const,
   traceByCode: (code: string) =>
     [...inventoryKeys.all, "traceByCode", code] as const,

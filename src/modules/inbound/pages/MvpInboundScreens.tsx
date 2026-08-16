@@ -253,9 +253,7 @@ function CameraScanModal({
             style={{ marginTop: 12 }}
             type="info"
             showIcon
-            title={
-              cameraReady ? "Camera sẵn sàng" : "Đang khởi tạo camera..."
-            }
+            title={cameraReady ? "Camera sẵn sàng" : "Đang khởi tạo camera..."}
             description="Đưa Barcode/QR vào khung hình. Camera chỉ đọc mã; dữ liệu vẫn phải qua cùng validation và API như nhập tay. Camera không dùng để đọc RFID."
           />
         </>
@@ -483,9 +481,7 @@ export function InboundScanModal({
       });
       postKeyRef.current = null;
       setReceiptEvidence(evidence);
-      toast.success(
-        "Full Post Receipt thành công. Tồn kho tăng đúng một lần.",
-      );
+      toast.success("Full Post Receipt thành công. Tồn kho tăng đúng một lần.");
       await detailQuery.refetch();
       onChanged?.();
     } catch (error) {
@@ -970,7 +966,11 @@ export function InboundScanModal({
                 flexWrap: "wrap",
               }}
             >
-              <Button icon={<CloseOutlined />} disabled={working} onClick={onClose}>
+              <Button
+                icon={<CloseOutlined />}
+                disabled={working}
+                onClick={onClose}
+              >
                 Đóng
               </Button>
               {canEdit && isMutable && onEditExpected ? (
@@ -1025,9 +1025,7 @@ export function InboundScanModal({
           if (cameraTarget === "box") setBoxCode(code);
           else setScanCode(code);
           setCameraTarget(null);
-          toast.success(
-            "Đã đọc mã từ camera. Kiểm tra và bấm Ghi nhận scan.",
-          );
+          toast.success("Đã đọc mã từ camera. Kiểm tra và bấm Ghi nhận scan.");
         }}
       />
 

@@ -17,8 +17,7 @@ export const reversalKeys = {
   all: ["reversal"] as const,
   list: (params: Record<string, unknown>) =>
     [...reversalKeys.all, "list", params] as const,
-  detail: (id: string) =>
-    [...reversalKeys.all, "detail", id] as const,
+  detail: (id: string) => [...reversalKeys.all, "detail", id] as const,
   lines: (id: string) => [...reversalKeys.all, "lines", id] as const,
   reversible: (params: ReversalLookupParams) =>
     [...reversalKeys.all, "reversible", params] as const,

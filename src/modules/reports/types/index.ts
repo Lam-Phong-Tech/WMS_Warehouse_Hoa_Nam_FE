@@ -162,7 +162,12 @@ export interface LabelLogReport {
 export interface MovementTraceRow {
   id: string;
   occurredAt: string;
-  movementType: "OPENING" | "RECEIPT" | "ISSUE" | "COMPONENT_ISSUE" | "REVERSAL";
+  movementType:
+    | "OPENING"
+    | "RECEIPT"
+    | "ISSUE"
+    | "COMPONENT_ISSUE"
+    | "REVERSAL";
   warehouseId: string;
   warehouseCode: string;
   productId: string;

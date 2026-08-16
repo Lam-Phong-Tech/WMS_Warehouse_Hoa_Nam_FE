@@ -1,4 +1,12 @@
-import { Modal, Descriptions, Space, Statistic, Table, Tag, Typography } from "antd";
+import {
+  Modal,
+  Descriptions,
+  Space,
+  Statistic,
+  Table,
+  Tag,
+  Typography,
+} from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { HistoryOutlined } from "@ant-design/icons";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
@@ -31,7 +39,11 @@ interface Props {
   onTraceMovement?: (movementId: string) => void;
 }
 
-export function BalanceDetailModal({ balance, onClose, onTraceMovement }: Props) {
+export function BalanceDetailModal({
+  balance,
+  onClose,
+  onTraceMovement,
+}: Props) {
   const movementsQuery = useStockMovements({
     search: balance.sku,
     per_page: 10,
@@ -113,7 +125,9 @@ export function BalanceDetailModal({ balance, onClose, onTraceMovement }: Props)
       title: "Mã Item",
       width: 140,
       render: (_, row) => (
-        <Typography.Text code>{text(row.item_code ?? row.serial_number)}</Typography.Text>
+        <Typography.Text code>
+          {text(row.item_code ?? row.serial_number)}
+        </Typography.Text>
       ),
     },
     {
@@ -134,13 +148,12 @@ export function BalanceDetailModal({ balance, onClose, onTraceMovement }: Props)
     {
       title: "Physical Code",
       width: 130,
-      render: (_, row) => (
+      render: (_, row) =>
         row.physical_code ? (
           <Typography.Text code>{text(row.physical_code)}</Typography.Text>
         ) : (
           <Typography.Text type="secondary">-</Typography.Text>
-        )
-      ),
+        ),
     },
     {
       title: "Vị trí",
@@ -208,15 +221,9 @@ export function BalanceDetailModal({ balance, onClose, onTraceMovement }: Props)
               {balance.sku}
             </Typography.Text>
           </Descriptions.Item>
-          <Descriptions.Item label="Tên hàng">
-            {balance.name}
-          </Descriptions.Item>
-          <Descriptions.Item label="Kho">
-            {balance.warehouse}
-          </Descriptions.Item>
-          <Descriptions.Item label="Lô">
-            {balance.lotNo}
-          </Descriptions.Item>
+          <Descriptions.Item label="Tên hàng">{balance.name}</Descriptions.Item>
+          <Descriptions.Item label="Kho">{balance.warehouse}</Descriptions.Item>
+          <Descriptions.Item label="Lô">{balance.lotNo}</Descriptions.Item>
           <Descriptions.Item label="Đối soát">
             <Tag color={reconcileColor(balance.reconcile)}>
               {balance.reconcile}

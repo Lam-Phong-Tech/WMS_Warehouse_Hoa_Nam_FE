@@ -254,7 +254,9 @@ function normalizeInventoryBalanceRow(row: RawRecord): InventoryBalanceRow {
     reservedQty: num(row.reserved_qty),
     ledgerQty: num(row.ledger_qty),
     variance: num(row.variance),
-    reconciliationStatus: text(row.reconciliation_status, "MATCH") as "MATCH" | "MISMATCH",
+    reconciliationStatus: text(row.reconciliation_status, "MATCH") as
+      | "MATCH"
+      | "MISMATCH",
     updatedAt: text(row.updated_at),
   };
 }
@@ -275,15 +277,23 @@ export async function fetchInventoryBalanceReport(
       totalAvailable: num(summary.total_available),
       mismatchCount: num(summary.mismatch_count),
     },
-    rows: rowsOf((result.rows ?? []) as RawRecord[]).map(normalizeInventoryBalanceRow),
+    rows: rowsOf((result.rows ?? []) as RawRecord[]).map(
+      normalizeInventoryBalanceRow,
+    ),
   };
 }
 
 export async function downloadInventoryBalanceExcel(
   params: InventoryBalanceParams,
 ): Promise<Blob> {
-  assertWmsActionPermission(WMS_ACTION_PERMISSIONS.EXPORT_REPORT, "export inventory balance");
-  return http.downloadBlob(API_ENDPOINTS.REPORTS_INVENTORY_BALANCE_EXPORT_EXCEL, { params });
+  assertWmsActionPermission(
+    WMS_ACTION_PERMISSIONS.EXPORT_REPORT,
+    "export inventory balance",
+  );
+  return http.downloadBlob(
+    API_ENDPOINTS.REPORTS_INVENTORY_BALANCE_EXPORT_EXCEL,
+    { params },
+  );
 }
 
 // ── XNT nâng cấp ──
@@ -314,23 +324,29 @@ function normalizeXntEnhancedRow(row: RawRecord): XntEnhancedRow {
 export async function fetchXntEnhancedReport(
   params: XntEnhancedParams,
 ): Promise<XntEnhancedReport> {
-  const result = await http.get<RawRecord>(
-    API_ENDPOINTS.REPORTS_XNT_ENHANCED,
-    { params },
-  );
+  const result = await http.get<RawRecord>(API_ENDPOINTS.REPORTS_XNT_ENHANCED, {
+    params,
+  });
   return {
     fromDate: text(result.from_date),
     toDate: text(result.to_date),
     formula: text(result.formula),
-    lines: rowsOf((result.lines ?? []) as RawRecord[]).map(normalizeXntEnhancedRow),
+    lines: rowsOf((result.lines ?? []) as RawRecord[]).map(
+      normalizeXntEnhancedRow,
+    ),
   };
 }
 
 export async function downloadXntEnhancedExcel(
   params: XntEnhancedParams,
 ): Promise<Blob> {
-  assertWmsActionPermission(WMS_ACTION_PERMISSIONS.EXPORT_REPORT, "export XNT enhanced");
-  return http.downloadBlob(API_ENDPOINTS.REPORTS_XNT_ENHANCED_EXPORT_EXCEL, { params });
+  assertWmsActionPermission(
+    WMS_ACTION_PERMISSIONS.EXPORT_REPORT,
+    "export XNT enhanced",
+  );
+  return http.downloadBlob(API_ENDPOINTS.REPORTS_XNT_ENHANCED_EXPORT_EXCEL, {
+    params,
+  });
 }
 
 // ── Lịch sử phiếu nhập/xuất ──
@@ -379,15 +395,23 @@ export async function fetchDocumentHistoryReport(
       posted: num(summary.posted),
       cancelled: num(summary.cancelled),
     },
-    rows: rowsOf((result.rows ?? []) as RawRecord[]).map(normalizeDocumentHistoryRow),
+    rows: rowsOf((result.rows ?? []) as RawRecord[]).map(
+      normalizeDocumentHistoryRow,
+    ),
   };
 }
 
 export async function downloadDocumentHistoryExcel(
   params: DocumentHistoryParams,
 ): Promise<Blob> {
-  assertWmsActionPermission(WMS_ACTION_PERMISSIONS.EXPORT_REPORT, "export document history");
-  return http.downloadBlob(API_ENDPOINTS.REPORTS_DOCUMENT_HISTORY_EXPORT_EXCEL, { params });
+  assertWmsActionPermission(
+    WMS_ACTION_PERMISSIONS.EXPORT_REPORT,
+    "export document history",
+  );
+  return http.downloadBlob(
+    API_ENDPOINTS.REPORTS_DOCUMENT_HISTORY_EXPORT_EXCEL,
+    { params },
+  );
 }
 
 // ── Đối soát toa (Excel Import/Match) ──
@@ -421,10 +445,9 @@ function normalizeImportMatchRow(row: RawRecord): ImportMatchRow {
 export async function fetchImportMatchReport(
   params: ImportMatchParams,
 ): Promise<ImportMatchReport> {
-  const result = await http.get<RawRecord>(
-    API_ENDPOINTS.REPORTS_IMPORT_MATCH,
-    { params },
-  );
+  const result = await http.get<RawRecord>(API_ENDPOINTS.REPORTS_IMPORT_MATCH, {
+    params,
+  });
   const period = (result.period ?? {}) as RawRecord;
   const summary = (result.summary ?? {}) as RawRecord;
   return {
@@ -436,15 +459,22 @@ export async function fetchImportMatchReport(
       avgPassRate: num(summary.avg_pass_rate),
       totalMatchedQty: num(summary.total_matched_qty),
     },
-    rows: rowsOf((result.rows ?? []) as RawRecord[]).map(normalizeImportMatchRow),
+    rows: rowsOf((result.rows ?? []) as RawRecord[]).map(
+      normalizeImportMatchRow,
+    ),
   };
 }
 
 export async function downloadImportMatchExcel(
   params: ImportMatchParams,
 ): Promise<Blob> {
-  assertWmsActionPermission(WMS_ACTION_PERMISSIONS.EXPORT_REPORT, "export import match");
-  return http.downloadBlob(API_ENDPOINTS.REPORTS_IMPORT_MATCH_EXPORT_EXCEL, { params });
+  assertWmsActionPermission(
+    WMS_ACTION_PERMISSIONS.EXPORT_REPORT,
+    "export import match",
+  );
+  return http.downloadBlob(API_ENDPOINTS.REPORTS_IMPORT_MATCH_EXPORT_EXCEL, {
+    params,
+  });
 }
 
 // ── Nhật ký nhãn (Label/Print log) ──
@@ -477,10 +507,9 @@ function normalizeLabelLogRow(row: RawRecord): LabelLogRow {
 export async function fetchLabelLogReport(
   params: LabelLogParams,
 ): Promise<LabelLogReport> {
-  const result = await http.get<RawRecord>(
-    API_ENDPOINTS.REPORTS_LABEL_LOG,
-    { params },
-  );
+  const result = await http.get<RawRecord>(API_ENDPOINTS.REPORTS_LABEL_LOG, {
+    params,
+  });
   const period = (result.period ?? {}) as RawRecord;
   const summary = (result.summary ?? {}) as RawRecord;
   return {
@@ -501,8 +530,13 @@ export async function fetchLabelLogReport(
 export async function downloadLabelLogExcel(
   params: LabelLogParams,
 ): Promise<Blob> {
-  assertWmsActionPermission(WMS_ACTION_PERMISSIONS.EXPORT_REPORT, "export label log");
-  return http.downloadBlob(API_ENDPOINTS.REPORTS_LABEL_LOG_EXPORT_EXCEL, { params });
+  assertWmsActionPermission(
+    WMS_ACTION_PERMISSIONS.EXPORT_REPORT,
+    "export label log",
+  );
+  return http.downloadBlob(API_ENDPOINTS.REPORTS_LABEL_LOG_EXPORT_EXCEL, {
+    params,
+  });
 }
 
 // ── Xuất theo nơi nhận ──
@@ -529,7 +563,9 @@ function normalizeOutboundByAgencyRow(row: RawRecord): OutboundByAgencyRow {
   };
 }
 
-function normalizeOutboundByAgencySummaryRow(row: RawRecord): OutboundByAgencySummaryRow {
+function normalizeOutboundByAgencySummaryRow(
+  row: RawRecord,
+): OutboundByAgencySummaryRow {
   return {
     agencyCode: text(row.agency_code),
     agencyName: text(row.agency_name),
@@ -555,16 +591,26 @@ export async function fetchOutboundByAgencyReport(
       totalDocuments: num(summary.total_documents),
       totalIssuedQty: num(summary.total_issued_qty),
     },
-    byAgency: rowsOf((result.by_agency ?? []) as RawRecord[]).map(normalizeOutboundByAgencySummaryRow),
-    rows: rowsOf((result.rows ?? []) as RawRecord[]).map(normalizeOutboundByAgencyRow),
+    byAgency: rowsOf((result.by_agency ?? []) as RawRecord[]).map(
+      normalizeOutboundByAgencySummaryRow,
+    ),
+    rows: rowsOf((result.rows ?? []) as RawRecord[]).map(
+      normalizeOutboundByAgencyRow,
+    ),
   };
 }
 
 export async function downloadOutboundByAgencyExcel(
   params: OutboundByAgencyParams,
 ): Promise<Blob> {
-  assertWmsActionPermission(WMS_ACTION_PERMISSIONS.EXPORT_REPORT, "export outbound by agency");
-  return http.downloadBlob(API_ENDPOINTS.REPORTS_OUTBOUND_BY_AGENCY_EXPORT_EXCEL, { params });
+  assertWmsActionPermission(
+    WMS_ACTION_PERMISSIONS.EXPORT_REPORT,
+    "export outbound by agency",
+  );
+  return http.downloadBlob(
+    API_ENDPOINTS.REPORTS_OUTBOUND_BY_AGENCY_EXPORT_EXCEL,
+    { params },
+  );
 }
 
 // ── Movement / Trace ──
@@ -583,7 +629,10 @@ function normalizeMovementTraceRow(row: RawRecord): MovementTraceRow {
   return {
     id: text(row.id),
     occurredAt: text(row.occurred_at),
-    movementType: text(row.movement_type, "RECEIPT") as MovementTraceRow["movementType"],
+    movementType: text(
+      row.movement_type,
+      "RECEIPT",
+    ) as MovementTraceRow["movementType"],
     warehouseId: text(row.warehouse_id),
     warehouseCode: text(row.warehouse_code),
     productId: text(row.product_id),
@@ -596,8 +645,12 @@ function normalizeMovementTraceRow(row: RawRecord): MovementTraceRow {
     physicalCode: text(row.physical_code),
     sourceType: text(row.source_type),
     sourceId: row.source_id ? text(row.source_id) : null,
-    originalMovementId: row.original_movement_id ? text(row.original_movement_id) : null,
-    correctionChainId: row.correction_chain_id ? text(row.correction_chain_id) : null,
+    originalMovementId: row.original_movement_id
+      ? text(row.original_movement_id)
+      : null,
+    correctionChainId: row.correction_chain_id
+      ? text(row.correction_chain_id)
+      : null,
   };
 }
 
@@ -618,13 +671,20 @@ export async function fetchMovementTraceReport(
       netEffect: num(summary.net_effect),
       reversalCount: num(summary.reversal_count),
     },
-    rows: rowsOf((result.rows ?? []) as RawRecord[]).map(normalizeMovementTraceRow),
+    rows: rowsOf((result.rows ?? []) as RawRecord[]).map(
+      normalizeMovementTraceRow,
+    ),
   };
 }
 
 export async function downloadMovementTraceExcel(
   params: MovementTraceParams,
 ): Promise<Blob> {
-  assertWmsActionPermission(WMS_ACTION_PERMISSIONS.EXPORT_REPORT, "export movement trace");
-  return http.downloadBlob(API_ENDPOINTS.REPORTS_MOVEMENT_TRACE_EXPORT_EXCEL, { params });
+  assertWmsActionPermission(
+    WMS_ACTION_PERMISSIONS.EXPORT_REPORT,
+    "export movement trace",
+  );
+  return http.downloadBlob(API_ENDPOINTS.REPORTS_MOVEMENT_TRACE_EXPORT_EXCEL, {
+    params,
+  });
 }

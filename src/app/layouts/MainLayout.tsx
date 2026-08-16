@@ -160,7 +160,8 @@ const MVP_SCREEN_META: Record<string, ScreenMeta> = {
   "REV-01": { title: "Tạo Reversal", description: "Tạo Reversal." },
   "RPT-01": {
     title: "Báo cáo vận hành",
-    description: "Tồn kho, Nhập-Xuất-Tồn, Lịch sử phiếu, Đối soát toa, Nhật ký nhãn, Bảo hành, Xuất theo nơi nhận.",
+    description:
+      "Tồn kho, Nhập-Xuất-Tồn, Lịch sử phiếu, Đối soát toa, Nhật ký nhãn, Bảo hành, Xuất theo nơi nhận.",
   },
 };
 

@@ -206,7 +206,12 @@ export default function InventoryPage() {
         </Tooltip>
       ),
     },
-    { title: "Vị trí gợi ý", dataIndex: "location", key: "location", width: 120 },
+    {
+      title: "Vị trí gợi ý",
+      dataIndex: "location",
+      key: "location",
+      width: 120,
+    },
     {
       title: "Đối soát",
       dataIndex: "reconcile",
@@ -214,7 +219,12 @@ export default function InventoryPage() {
       width: 110,
       render: (value: string, row: InventoryBalanceRow) => (
         <Tooltip
-          title={row.reconcileNote || (value === "MATCH" ? "Ledger ↔ Balance khớp" : "Ledger ↔ Balance lệch")}
+          title={
+            row.reconcileNote ||
+            (value === "MATCH"
+              ? "Ledger ↔ Balance khớp"
+              : "Ledger ↔ Balance lệch")
+          }
         >
           <Tag color={reconcileColor(value)}>{value}</Tag>
         </Tooltip>
@@ -354,7 +364,8 @@ export default function InventoryPage() {
         <span className="pill blue">GET /stock-movements/:id/trace-source</span>
         <span className="pill blue">GET /stock-movements/trace-by-code</span>
         <span className="pill ok">
-          Balance là chiếu (projection) · Movement là sổ cái (ledger) · Reconciliation authoritative
+          Balance là chiếu (projection) · Movement là sổ cái (ledger) ·
+          Reconciliation authoritative
         </span>
       </div>
 
@@ -437,21 +448,25 @@ export default function InventoryPage() {
                     pageSize: balancePagination.pageSize,
                     total: balancePagination.total,
                     showSizeChanger: false,
-                    showTotal: (total) => `Tổng ${numberFormatter.format(total)} dòng tồn kho`,
+                    showTotal: (total) =>
+                      `Tổng ${numberFormatter.format(total)} dòng tồn kho`,
                   }}
                   locale={{
                     emptyText: balanceQuery.isError
                       ? "Không tải được dữ liệu"
                       : "Không có tồn kho theo bộ lọc hiện tại",
                   }}
-                  onRow={(row) => ({ onDoubleClick: () => setBalanceDetailRow(row) })}
+                  onRow={(row) => ({
+                    onDoubleClick: () => setBalanceDetailRow(row),
+                  })}
                   scroll={{ x: 1600 }}
                 />
 
                 <div className="footer-note" style={{ marginBottom: 8 }}>
-                  <b>Đối soát</b> do backend tính: Ledger (SUM qty_delta) ↔ Balance (on_hand_qty).
-                  MATCH = khớp, MISMATCH = lệch. Bấm <b>Mở</b> để xem chi tiết tồn
-                  kho, item/box subledger và movement liên quan.
+                  <b>Đối soát</b> do backend tính: Ledger (SUM qty_delta) ↔
+                  Balance (on_hand_qty). MATCH = khớp, MISMATCH = lệch. Bấm{" "}
+                  <b>Mở</b> để xem chi tiết tồn kho, item/box subledger và
+                  movement liên quan.
                 </div>
               </>
             ),
@@ -523,7 +538,8 @@ export default function InventoryPage() {
                     pageSize: movementPagination.pageSize,
                     total: movementPagination.total,
                     showSizeChanger: false,
-                    showTotal: (total) => `Tổng ${numberFormatter.format(total)} movement`,
+                    showTotal: (total) =>
+                      `Tổng ${numberFormatter.format(total)} movement`,
                   }}
                   locale={{
                     emptyText: movementQuery.isError

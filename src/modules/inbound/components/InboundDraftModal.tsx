@@ -686,7 +686,11 @@ export function InboundDraftModal({
               marginTop: 16,
             }}
           >
-            <Button icon={<CloseOutlined />} disabled={saving} onClick={onClose}>
+            <Button
+              icon={<CloseOutlined />}
+              disabled={saving}
+              onClick={onClose}
+            >
               {isMutable ? "Hủy thao tác" : "Đóng"}
             </Button>
             {isMutable ? (

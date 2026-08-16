@@ -254,9 +254,7 @@ export function ComponentIssueModal({
           );
           onChanged?.();
         } catch (error: unknown) {
-          toast.error(
-            errorText(error, "Post phiếu xuất linh kiện thất bại."),
-          );
+          toast.error(errorText(error, "Post phiếu xuất linh kiện thất bại."));
         }
       },
     });

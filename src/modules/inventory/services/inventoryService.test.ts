@@ -187,9 +187,7 @@ describe("inventoryService — WWHN-211 exact six endpoint contract", () => {
 
     const result = await traceStockMovementSource("mv-1");
 
-    expect(http.get).toHaveBeenCalledWith(
-      "/stock-movements/mv-1/trace-source",
-    );
+    expect(http.get).toHaveBeenCalledWith("/stock-movements/mv-1/trace-source");
     expect(result).toMatchObject({
       movementId: "mv-1",
       sourceType: "INBOUND",

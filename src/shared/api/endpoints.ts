@@ -81,17 +81,21 @@ export const API_ENDPOINTS = {
   REPORTS_XNT: "/reports/inventory-xnt",
   REPORTS_XNT_EXPORT_EXCEL: "/reports/inventory-xnt/export-excel",
   REPORTS_XNT_ENHANCED: "/reports/inventory-xnt-enhanced",
-  REPORTS_XNT_ENHANCED_EXPORT_EXCEL: "/reports/inventory-xnt-enhanced/export-excel",
+  REPORTS_XNT_ENHANCED_EXPORT_EXCEL:
+    "/reports/inventory-xnt-enhanced/export-excel",
   REPORTS_INVENTORY_BALANCE: "/reports/inventory-balance",
-  REPORTS_INVENTORY_BALANCE_EXPORT_EXCEL: "/reports/inventory-balance/export-excel",
+  REPORTS_INVENTORY_BALANCE_EXPORT_EXCEL:
+    "/reports/inventory-balance/export-excel",
   REPORTS_DOCUMENT_HISTORY: "/reports/document-history",
-  REPORTS_DOCUMENT_HISTORY_EXPORT_EXCEL: "/reports/document-history/export-excel",
+  REPORTS_DOCUMENT_HISTORY_EXPORT_EXCEL:
+    "/reports/document-history/export-excel",
   REPORTS_IMPORT_MATCH: "/reports/import-match",
   REPORTS_IMPORT_MATCH_EXPORT_EXCEL: "/reports/import-match/export-excel",
   REPORTS_LABEL_LOG: "/reports/label-log",
   REPORTS_LABEL_LOG_EXPORT_EXCEL: "/reports/label-log/export-excel",
   REPORTS_OUTBOUND_BY_AGENCY: "/reports/outbound-by-agency",
-  REPORTS_OUTBOUND_BY_AGENCY_EXPORT_EXCEL: "/reports/outbound-by-agency/export-excel",
+  REPORTS_OUTBOUND_BY_AGENCY_EXPORT_EXCEL:
+    "/reports/outbound-by-agency/export-excel",
   REPORTS_WARRANTY_DEFECTS: "/reports/warranty-defects",
   REPORTS_WARRANTY_DEFECTS_EXPORT_EXCEL:
     "/reports/warranty-defects/export-excel",
@@ -140,8 +144,10 @@ export const API_ENDPOINTS = {
   /** @deprecated */ STOCKTAKE_REVIEW: "/stocktake-sessions/:sessionId/review",
   /** @deprecated */ STOCKTAKE_ACKNOWLEDGE_MOVEMENTS:
     "/stocktake-sessions/:sessionId/acknowledge-movements",
-  /** @deprecated */ STOCKTAKE_VARIANCES: "/stocktake-sessions/:sessionId/variances",
-  /** @deprecated */ STOCKTAKE_APPLY_ADJUSTMENT: "/stocktake-sessions/:sessionId/apply-adjustment",
+  /** @deprecated */ STOCKTAKE_VARIANCES:
+    "/stocktake-sessions/:sessionId/variances",
+  /** @deprecated */ STOCKTAKE_APPLY_ADJUSTMENT:
+    "/stocktake-sessions/:sessionId/apply-adjustment",
   /** @deprecated */ STOCKTAKE_APPLY_ADJUSTMENT_COMPAT:
     "/stocktake/sessions/:sessionId/apply-adjustment",
 

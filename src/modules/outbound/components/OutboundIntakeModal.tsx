@@ -171,7 +171,9 @@ export function OutboundIntakeModal({
       }
     },
     onError: (error) => {
-      toast.error(getApiErrorMessage(error, "Xác nhận yêu cầu xuất kho thất bại."));
+      toast.error(
+        getApiErrorMessage(error, "Xác nhận yêu cầu xuất kho thất bại."),
+      );
     },
   });
 
@@ -566,7 +568,9 @@ export function OutboundIntakeModal({
         )}
 
         <Space style={{ justifyContent: "flex-end", width: "100%" }}>
-          <Button icon={<CloseOutlined />} onClick={close}>Đóng</Button>
+          <Button icon={<CloseOutlined />} onClick={close}>
+            Đóng
+          </Button>
         </Space>
       </Space>
     </Modal>

@@ -26,8 +26,7 @@ export const reportKeys = {
     [...reportKeys.all, "inventory-balance", params] as const,
   xntEnhanced: (params: XntEnhancedParams) =>
     [...reportKeys.all, "xnt-enhanced", params] as const,
-  xnt: (params: XntReportParams) =>
-    [...reportKeys.all, "xnt", params] as const,
+  xnt: (params: XntReportParams) => [...reportKeys.all, "xnt", params] as const,
   documentHistory: (params: DocumentHistoryParams) =>
     [...reportKeys.all, "document-history", params] as const,
   importMatch: (params: ImportMatchParams) =>

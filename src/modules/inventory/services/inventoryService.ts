@@ -179,8 +179,7 @@ function normalizeBalance(row: RawRecord): InventoryBalanceRow {
   );
   return {
     id: text(
-      row.id ??
-        `${row.warehouse_id ?? "system"}-${row.product_id ?? row.sku}`,
+      row.id ?? `${row.warehouse_id ?? "system"}-${row.product_id ?? row.sku}`,
     ),
     sku: text(
       row.sku ??
@@ -261,10 +260,7 @@ function normalizeMovement(row: RawRecord): StockMovementRow {
         row.warehouse_code,
       "-",
     ),
-    lotNo: text(
-      row.lot_no ?? row.batch_no ?? row.stock_status ?? row.lot,
-      "-",
-    ),
+    lotNo: text(row.lot_no ?? row.batch_no ?? row.stock_status ?? row.lot, "-"),
     qty,
     beforeQty: nullableNum(
       row.before_qty ?? row.balance_before ?? row.qty_before,
@@ -296,7 +292,9 @@ function normalizeMovement(row: RawRecord): StockMovementRow {
         row.reference_type ??
         "Original",
     ),
-    status: text(row.status ?? row.posting_status ?? row.stock_status ?? "POSTED"),
+    status: text(
+      row.status ?? row.posting_status ?? row.stock_status ?? "POSTED",
+    ),
   };
 }
 

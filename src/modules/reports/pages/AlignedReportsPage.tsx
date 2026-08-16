@@ -687,7 +687,11 @@ export default function AlignedReportsPage() {
     ...row,
     __rowKey:
       text(
-        row.id ?? row.outbound_no ?? row.document_no ?? row.import_no ?? row.case_no,
+        row.id ??
+          row.outbound_no ??
+          row.document_no ??
+          row.import_no ??
+          row.case_no,
         "",
       ) || `row-${index}`,
   }));

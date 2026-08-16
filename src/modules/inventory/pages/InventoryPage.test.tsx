@@ -6,10 +6,30 @@ import { cleanupTestState } from "@/test/setup";
 vi.mock("@/modules/inventory/hooks/use-inventory", () => ({
   useInventoryBalances: vi.fn(),
   useStockMovements: vi.fn(),
-  useStockMovement: vi.fn(() => ({ data: undefined, isError: false, isLoading: false, refetch: vi.fn() })),
-  useStockMovementTrace: vi.fn(() => ({ data: undefined, isError: false, isLoading: false, refetch: vi.fn() })),
-  useBalanceSubledger: vi.fn(() => ({ data: undefined, isError: false, isLoading: false, refetch: vi.fn() })),
-  usePhysicalCodeTrace: vi.fn(() => ({ data: undefined, isError: false, isLoading: false, refetch: vi.fn() })),
+  useStockMovement: vi.fn(() => ({
+    data: undefined,
+    isError: false,
+    isLoading: false,
+    refetch: vi.fn(),
+  })),
+  useStockMovementTrace: vi.fn(() => ({
+    data: undefined,
+    isError: false,
+    isLoading: false,
+    refetch: vi.fn(),
+  })),
+  useBalanceSubledger: vi.fn(() => ({
+    data: undefined,
+    isError: false,
+    isLoading: false,
+    refetch: vi.fn(),
+  })),
+  usePhysicalCodeTrace: vi.fn(() => ({
+    data: undefined,
+    isError: false,
+    isLoading: false,
+    refetch: vi.fn(),
+  })),
 }));
 
 import {
@@ -64,15 +84,20 @@ function grant(permissionCodes: string[]) {
   useAuthStore.setState({ isSuperAdmin: false, permissionCodes });
 }
 
-function mockQueries(overrides: {
-  balances?: unknown[];
-  balancesError?: boolean;
-  balancesLoading?: boolean;
-  movements?: unknown[];
-  movementsError?: boolean;
-} = {}) {
+function mockQueries(
+  overrides: {
+    balances?: unknown[];
+    balancesError?: boolean;
+    balancesLoading?: boolean;
+    movements?: unknown[];
+    movementsError?: boolean;
+  } = {},
+) {
   vi.mocked(useInventoryBalances).mockReturnValue({
-    data: { rows: overrides.balances ?? [BALANCE_ROW], meta: { total: (overrides.balances ?? [BALANCE_ROW]).length } },
+    data: {
+      rows: overrides.balances ?? [BALANCE_ROW],
+      meta: { total: (overrides.balances ?? [BALANCE_ROW]).length },
+    },
     isLoading: overrides.balancesLoading ?? false,
     isFetching: false,
     isError: overrides.balancesError ?? false,
@@ -80,7 +105,10 @@ function mockQueries(overrides: {
     refetch: vi.fn(),
   } as never);
   vi.mocked(useStockMovements).mockReturnValue({
-    data: { rows: overrides.movements ?? [MOVEMENT_ROW], meta: { total: (overrides.movements ?? [MOVEMENT_ROW]).length } },
+    data: {
+      rows: overrides.movements ?? [MOVEMENT_ROW],
+      meta: { total: (overrides.movements ?? [MOVEMENT_ROW]).length },
+    },
     isLoading: false,
     isFetching: false,
     isError: overrides.movementsError ?? false,
@@ -124,7 +152,9 @@ describe("InventoryPage (INV-01 hub)", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /Mở/ }));
 
-    expect(await screen.findByText(/Chi tiết tồn kho — SKU-001/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Chi tiết tồn kho — SKU-001/),
+    ).toBeInTheDocument();
   });
 
   it("nút Trace bị disable khi thiếu quyền inventory.trace (RBAC)", async () => {
@@ -191,7 +221,9 @@ describe("InventoryPage (INV-01 hub)", () => {
   });
 
   it("deep-link ?screen=TRACE-01&id=mv-9 mở TraceModal đúng movement", async () => {
-    renderWithProviders(<InventoryPage />, ["/inventory?screen=TRACE-01&id=mv-9"]);
+    renderWithProviders(<InventoryPage />, [
+      "/inventory?screen=TRACE-01&id=mv-9",
+    ]);
 
     expect(
       await screen.findByText("Truy vết chứng từ nguồn (TRACE-01)"),

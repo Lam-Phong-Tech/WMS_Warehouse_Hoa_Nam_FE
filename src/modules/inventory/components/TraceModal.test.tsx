@@ -91,10 +91,18 @@ describe("TraceModal (TRACE-01)", () => {
     vi.mocked(usePhysicalCodeTrace).mockReturnValue(
       emptyQuery({
         data: {
-          physical_code: { code_value: "SN-ITEM-1", carrier_type: "QR", status: "ACTIVE" },
+          physical_code: {
+            code_value: "SN-ITEM-1",
+            carrier_type: "QR",
+            status: "ACTIVE",
+          },
           resolved_type: "ITEM",
           resolved_id: "item-1",
-          resolved_object: { sku_code: "SKU-001", sku_name: "Máy khoan", status: "IN_STOCK" },
+          resolved_object: {
+            sku_code: "SKU-001",
+            sku_name: "Máy khoan",
+            status: "IN_STOCK",
+          },
           movements: [],
           container_items: [],
         },
@@ -116,13 +124,22 @@ describe("TraceModal (TRACE-01)", () => {
     vi.mocked(usePhysicalCodeTrace).mockReturnValue(
       emptyQuery({
         data: {
-          physical_code: { code_value: "RFID-BOX-1", carrier_type: "RFID", status: "ACTIVE" },
+          physical_code: {
+            code_value: "RFID-BOX-1",
+            carrier_type: "RFID",
+            status: "ACTIVE",
+          },
           resolved_type: "CONTAINER",
           resolved_id: "box-1",
           resolved_object: { container_code: "BOX-001", container_type: "BOX" },
           movements: [],
           container_items: [
-            { container_code: "BOX-001", container_type: "BOX", quantity: 3, status: "SEALED" },
+            {
+              container_code: "BOX-001",
+              container_type: "BOX",
+              quantity: 3,
+              status: "SEALED",
+            },
           ],
         },
       }) as never,

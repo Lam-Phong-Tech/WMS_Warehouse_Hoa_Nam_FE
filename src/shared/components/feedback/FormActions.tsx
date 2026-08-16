@@ -61,7 +61,12 @@ export function FormActions({
       style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}
     >
       {showCancel && (
-        <Button icon={<CloseOutlined />} onClick={onCancel} style={cancelStyle} {...cancelButtonProps}>
+        <Button
+          icon={<CloseOutlined />}
+          onClick={onCancel}
+          style={cancelStyle}
+          {...cancelButtonProps}
+        >
           {cancelText}
         </Button>
       )}

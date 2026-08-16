@@ -1,9 +1,6 @@
 import { Modal, Descriptions, Space, Table, Tag, Typography } from "antd";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
-import {
-  useReversalDocument,
-  useReversalLines,
-} from "../hooks/use-reversal";
+import { useReversalDocument, useReversalLines } from "../hooks/use-reversal";
 import type { ReversalLine } from "../types";
 
 const numberFormatter = new Intl.NumberFormat("vi-VN");
@@ -83,9 +80,7 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
             <Descriptions.Item label="Kho">
               {doc.warehouse_name}
             </Descriptions.Item>
-            <Descriptions.Item label="Lý do">
-              {doc.reason}
-            </Descriptions.Item>
+            <Descriptions.Item label="Lý do">{doc.reason}</Descriptions.Item>
             <Descriptions.Item label="Tổng dòng / SL">
               {doc.total_lines} dòng · {qty(doc.total_qty)}
             </Descriptions.Item>

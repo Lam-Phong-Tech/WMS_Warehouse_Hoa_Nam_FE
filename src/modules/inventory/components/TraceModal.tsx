@@ -49,7 +49,9 @@ export function TraceModal({ movementId, onClose }: Props) {
       : undefined;
 
   const withRowKey = (row: Record<string, unknown>, rowKey: string) =>
-    ({ ...row, __rowKey: rowKey }) as Record<string, unknown> & { __rowKey: string };
+    ({ ...row, __rowKey: rowKey }) as Record<string, unknown> & {
+      __rowKey: string;
+    };
 
   const handleLookup = () => {
     const trimmed = lookupCode.trim();
@@ -129,57 +131,102 @@ export function TraceModal({ movementId, onClose }: Props) {
             >
               <Descriptions.Item label="Mã vật lý">
                 <Typography.Text code copyable>
-                  {text((codeTrace.physical_code as Record<string, unknown>)?.code_value)}
+                  {text(
+                    (codeTrace.physical_code as Record<string, unknown>)
+                      ?.code_value,
+                  )}
                 </Typography.Text>
               </Descriptions.Item>
               <Descriptions.Item label="Loại mã">
-                <Tag>{text((codeTrace.physical_code as Record<string, unknown>)?.carrier_type)}</Tag>
+                <Tag>
+                  {text(
+                    (codeTrace.physical_code as Record<string, unknown>)
+                      ?.carrier_type,
+                  )}
+                </Tag>
               </Descriptions.Item>
               <Descriptions.Item label="Đối tượng gắn">
                 <Tag color="blue">{text(codeTrace.resolved_type)}</Tag>
               </Descriptions.Item>
               <Descriptions.Item label="Trạng thái">
-                <Tag color={
-                  text((codeTrace.physical_code as Record<string, unknown>)?.status) === "ACTIVE" ? "success" : "default"
-                }>
-                  {text((codeTrace.physical_code as Record<string, unknown>)?.status)}
+                <Tag
+                  color={
+                    text(
+                      (codeTrace.physical_code as Record<string, unknown>)
+                        ?.status,
+                    ) === "ACTIVE"
+                      ? "success"
+                      : "default"
+                  }
+                >
+                  {text(
+                    (codeTrace.physical_code as Record<string, unknown>)
+                      ?.status,
+                  )}
                 </Tag>
               </Descriptions.Item>
-              {codeTrace.resolved_type === "ITEM" && codeTrace.resolved_object ? (
+              {codeTrace.resolved_type === "ITEM" &&
+              codeTrace.resolved_object ? (
                 <>
                   <Descriptions.Item label="SKU">
                     <Typography.Text code>
-                      {text((codeTrace.resolved_object as Record<string, unknown>).sku_code)}
-                    </Typography.Text>
-                    {" "}
-                    {text((codeTrace.resolved_object as Record<string, unknown>).sku_name)}
+                      {text(
+                        (codeTrace.resolved_object as Record<string, unknown>)
+                          .sku_code,
+                      )}
+                    </Typography.Text>{" "}
+                    {text(
+                      (codeTrace.resolved_object as Record<string, unknown>)
+                        .sku_name,
+                    )}
                   </Descriptions.Item>
                   <Descriptions.Item label="Trạng thái Item">
-                    <Tag>{text((codeTrace.resolved_object as Record<string, unknown>).status)}</Tag>
+                    <Tag>
+                      {text(
+                        (codeTrace.resolved_object as Record<string, unknown>)
+                          .status,
+                      )}
+                    </Tag>
                   </Descriptions.Item>
                 </>
               ) : null}
-              {codeTrace.resolved_type === "CONTAINER" && codeTrace.resolved_object ? (
+              {codeTrace.resolved_type === "CONTAINER" &&
+              codeTrace.resolved_object ? (
                 <>
                   <Descriptions.Item label="Mã container">
                     <Typography.Text code>
-                      {text((codeTrace.resolved_object as Record<string, unknown>).container_code)}
+                      {text(
+                        (codeTrace.resolved_object as Record<string, unknown>)
+                          .container_code,
+                      )}
                     </Typography.Text>
                   </Descriptions.Item>
                   <Descriptions.Item label="Loại container">
-                    <Tag>{text((codeTrace.resolved_object as Record<string, unknown>).container_type)}</Tag>
+                    <Tag>
+                      {text(
+                        (codeTrace.resolved_object as Record<string, unknown>)
+                          .container_type,
+                      )}
+                    </Tag>
                   </Descriptions.Item>
                 </>
               ) : null}
-              {codeTrace.resolved_type === "SKU" && codeTrace.resolved_object ? (
+              {codeTrace.resolved_type === "SKU" &&
+              codeTrace.resolved_object ? (
                 <>
                   <Descriptions.Item label="Mã SKU">
                     <Typography.Text code>
-                      {text((codeTrace.resolved_object as Record<string, unknown>).sku_code)}
+                      {text(
+                        (codeTrace.resolved_object as Record<string, unknown>)
+                          .sku_code,
+                      )}
                     </Typography.Text>
                   </Descriptions.Item>
                   <Descriptions.Item label="Tên SKU">
-                    {text((codeTrace.resolved_object as Record<string, unknown>).sku_name)}
+                    {text(
+                      (codeTrace.resolved_object as Record<string, unknown>)
+                        .sku_name,
+                    )}
                   </Descriptions.Item>
                 </>
               ) : null}
@@ -187,13 +234,20 @@ export function TraceModal({ movementId, onClose }: Props) {
 
             {codeTrace.container_items.length > 0 ? (
               <div>
-                <Typography.Text strong style={{ display: "block", marginBottom: 8 }}>
+                <Typography.Text
+                  strong
+                  style={{ display: "block", marginBottom: 8 }}
+                >
                   Container Items ({codeTrace.container_items.length})
                 </Typography.Text>
                 <Table
                   size="small"
                   dataSource={codeTrace.container_items.map((row, index) =>
-                    withRowKey(row, text(row.id ?? row.container_code, String(index)) + `-${index}`),
+                    withRowKey(
+                      row,
+                      text(row.id ?? row.container_code, String(index)) +
+                        `-${index}`,
+                    ),
                   )}
                   rowKey="__rowKey"
                   pagination={false}
@@ -213,7 +267,8 @@ export function TraceModal({ movementId, onClose }: Props) {
                       title: "SL",
                       width: 80,
                       align: "right",
-                      render: (_, row) => Number(row.quantity ?? 0).toLocaleString("vi-VN"),
+                      render: (_, row) =>
+                        Number(row.quantity ?? 0).toLocaleString("vi-VN"),
                     },
                     {
                       title: "Trạng thái",
@@ -227,7 +282,10 @@ export function TraceModal({ movementId, onClose }: Props) {
 
             {codeTrace.movements.length > 0 ? (
               <div>
-                <Typography.Text strong style={{ display: "block", marginBottom: 8 }}>
+                <Typography.Text
+                  strong
+                  style={{ display: "block", marginBottom: 8 }}
+                >
                   Lịch sử movement ({codeTrace.movements.length})
                 </Typography.Text>
                 <Table
@@ -241,7 +299,9 @@ export function TraceModal({ movementId, onClose }: Props) {
                       title: "Movement",
                       width: 130,
                       render: (_, row) => (
-                        <Typography.Text code>{text(row.movement_no)}</Typography.Text>
+                        <Typography.Text code>
+                          {text(row.movement_no)}
+                        </Typography.Text>
                       ),
                     },
                     {
@@ -261,8 +321,15 @@ export function TraceModal({ movementId, onClose }: Props) {
                       render: (_, row) => {
                         const qty = Number(row.qty_delta ?? row.quantity ?? 0);
                         return (
-                          <Typography.Text style={{ color: qty >= 0 ? "#237804" : "#cf1322", fontWeight: 600 }}>
-                            {qty >= 0 ? `+${qty.toLocaleString("vi-VN")}` : qty.toLocaleString("vi-VN")}
+                          <Typography.Text
+                            style={{
+                              color: qty >= 0 ? "#237804" : "#cf1322",
+                              fontWeight: 600,
+                            }}
+                          >
+                            {qty >= 0
+                              ? `+${qty.toLocaleString("vi-VN")}`
+                              : qty.toLocaleString("vi-VN")}
                           </Typography.Text>
                         );
                       },
@@ -270,12 +337,17 @@ export function TraceModal({ movementId, onClose }: Props) {
                     {
                       title: "Chứng từ",
                       width: 130,
-                      render: (_, row) => <Typography.Text code>{text(row.doc_no)}</Typography.Text>,
+                      render: (_, row) => (
+                        <Typography.Text code>
+                          {text(row.doc_no)}
+                        </Typography.Text>
+                      ),
                     },
                     {
                       title: "Thời gian",
                       width: 150,
-                      render: (_, row) => text(row.occurred_at ?? row.created_at),
+                      render: (_, row) =>
+                        text(row.occurred_at ?? row.created_at),
                     },
                   ]}
                 />
@@ -313,9 +385,7 @@ export function TraceModal({ movementId, onClose }: Props) {
               )}
             </Descriptions.Item>
             <Descriptions.Item label="Loại">
-              <Tag>
-                {text(movement.movement_type ?? movement.source_type)}
-              </Tag>
+              <Tag>{text(movement.movement_type ?? movement.source_type)}</Tag>
             </Descriptions.Item>
             <Descriptions.Item label="SKU">
               {text(
@@ -438,7 +508,11 @@ export function TraceModal({ movementId, onClose }: Props) {
                 <Table
                   size="small"
                   dataSource={trace.lines.map((row, index) =>
-                    withRowKey(row, text(row.id ?? row.sku ?? row.sku_code, String(index)) + `-${index}`),
+                    withRowKey(
+                      row,
+                      text(row.id ?? row.sku ?? row.sku_code, String(index)) +
+                        `-${index}`,
+                    ),
                   )}
                   rowKey="__rowKey"
                   pagination={false}
@@ -448,7 +522,10 @@ export function TraceModal({ movementId, onClose }: Props) {
                       title: "SKU",
                       width: 130,
                       render: (_, row) => {
-                        const prod = nested(row as Record<string, unknown>, "product");
+                        const prod = nested(
+                          row as Record<string, unknown>,
+                          "product",
+                        );
                         return text(
                           row.sku ??
                             row.sku_code ??
@@ -463,8 +540,17 @@ export function TraceModal({ movementId, onClose }: Props) {
                       title: "Tên",
                       width: 180,
                       render: (_, row) => {
-                        const prod = nested(row as Record<string, unknown>, "product");
-                        return text(row.product_name ?? row.sku_name ?? row.name ?? prod?.name ?? prod?.sku_name);
+                        const prod = nested(
+                          row as Record<string, unknown>,
+                          "product",
+                        );
+                        return text(
+                          row.product_name ??
+                            row.sku_name ??
+                            row.name ??
+                            prod?.name ??
+                            prod?.sku_name,
+                        );
                       },
                     },
                     {
@@ -497,22 +583,26 @@ export function TraceModal({ movementId, onClose }: Props) {
               {trace.timeline.length > 0 ? (
                 <Timeline
                   items={trace.timeline.map((item, index) => {
-                    const label = item.from_status && item.to_status
-                      ? `${String(item.from_status)} → ${String(item.to_status)}${item.action ? ` (${String(item.action)})` : ""}`
-                      : String(
-                          item.title ??
-                            item.event ??
-                            item.movement_no ??
-                            item.code ??
-                            `Bước ${index + 1}`,
-                        );
+                    const label =
+                      item.from_status && item.to_status
+                        ? `${String(item.from_status)} → ${String(item.to_status)}${item.action ? ` (${String(item.action)})` : ""}`
+                        : String(
+                            item.title ??
+                              item.event ??
+                              item.movement_no ??
+                              item.code ??
+                              `Bước ${index + 1}`,
+                          );
                     const time = item.created_at ?? item.changed_at;
                     return {
                       children: (
                         <Typography.Text>
                           {label}
                           {time ? (
-                            <Typography.Text type="secondary" style={{ marginLeft: 8, fontSize: 12 }}>
+                            <Typography.Text
+                              type="secondary"
+                              style={{ marginLeft: 8, fontSize: 12 }}
+                            >
                               {String(time)}
                             </Typography.Text>
                           ) : null}

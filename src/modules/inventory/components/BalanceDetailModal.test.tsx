@@ -38,12 +38,14 @@ const BALANCE: InventoryBalanceRow = {
   lastMovementId: "mv-1",
 };
 
-function mockSubledger(overrides: {
-  items?: Record<string, unknown>[];
-  containers?: Record<string, unknown>[];
-  isError?: boolean;
-  isLoading?: boolean;
-} = {}) {
+function mockSubledger(
+  overrides: {
+    items?: Record<string, unknown>[];
+    containers?: Record<string, unknown>[];
+    isError?: boolean;
+    isLoading?: boolean;
+  } = {},
+) {
   vi.mocked(useBalanceSubledger).mockReturnValue({
     data: {
       balance_id: "bal-1",
@@ -59,7 +61,12 @@ function mockSubledger(overrides: {
         },
       ],
       containers: overrides.containers ?? [
-        { id: "cont-1", container_code: "BOX-001", container_type: "BOX", quantity: 5 },
+        {
+          id: "cont-1",
+          container_code: "BOX-001",
+          container_type: "BOX",
+          quantity: 5,
+        },
       ],
       item_count: (overrides.items ?? [{}]).length,
       container_count: (overrides.containers ?? [{}]).length,
@@ -137,7 +144,9 @@ describe("BalanceDetailModal", () => {
       <BalanceDetailModal balance={BALANCE} onClose={() => {}} />,
     );
 
-    expect(await screen.findByText("Không có item instance")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Không có item instance"),
+    ).toBeInTheDocument();
     expect(screen.getByText("Không có container")).toBeInTheDocument();
     expect(screen.getByText("Không có movement liên quan")).toBeInTheDocument();
   });

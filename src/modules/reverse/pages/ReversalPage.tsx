@@ -9,10 +9,7 @@ import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { MvpPageSizeSelector } from "@/shared/components/mvp/MvpListPagination";
 import { resolveApiPagination } from "@/shared/components/mvp/mvp-pagination";
 import { useHasPermission } from "@/shared/components/permission";
-import {
-  useReversalDocuments,
-  reversalKeys,
-} from "../hooks/use-reversal";
+import { useReversalDocuments, reversalKeys } from "../hooks/use-reversal";
 import { ReversalCreateModal } from "../components/ReversalCreateModal";
 import { ReversalDetailModal } from "../components/ReversalDetailModal";
 import type { ReversalDocument } from "../types";
@@ -99,9 +96,7 @@ export default function ReversalPage() {
       key: "reversal_code",
       width: 160,
       fixed: "left",
-      render: (value: string, row) => (
-        <strong>{value || row.id}</strong>
-      ),
+      render: (value: string, row) => <strong>{value || row.id}</strong>,
     },
     {
       title: "Chứng từ gốc",
@@ -117,7 +112,9 @@ export default function ReversalPage() {
       title: "Loại",
       key: "reversal_type",
       width: 170,
-      render: (_, row) => <Tag>{row.reversal_type || row.reference_document_type || "-"}</Tag>,
+      render: (_, row) => (
+        <Tag>{row.reversal_type || row.reference_document_type || "-"}</Tag>
+      ),
     },
     {
       title: "Kho",
@@ -256,7 +253,8 @@ export default function ReversalPage() {
           pageSize: listPagination.pageSize,
           total: listPagination.total,
           showSizeChanger: false,
-          showTotal: (total) => `Tổng ${new Intl.NumberFormat("vi-VN").format(total)} phiếu hoàn đảo`,
+          showTotal: (total) =>
+            `Tổng ${new Intl.NumberFormat("vi-VN").format(total)} phiếu hoàn đảo`,
         }}
         locale={{
           emptyText: listQuery.isError

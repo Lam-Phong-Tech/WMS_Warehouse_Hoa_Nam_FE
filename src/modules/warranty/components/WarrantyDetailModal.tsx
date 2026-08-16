@@ -337,7 +337,9 @@ export function WarrantyDetailModal({
       destroyOnHidden
       footer={
         <Space wrap>
-          <Button icon={<CloseOutlined />} onClick={onClose}>Đóng</Button>
+          <Button icon={<CloseOutlined />} onClick={onClose}>
+            Đóng
+          </Button>
           <Button
             icon={<ToolOutlined />}
             disabled={!canIssue || !detail}

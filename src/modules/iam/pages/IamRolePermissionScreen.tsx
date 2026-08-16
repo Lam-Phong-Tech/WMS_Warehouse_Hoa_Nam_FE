@@ -68,7 +68,6 @@ function isSystemRole(role?: IamRole): boolean {
 }
 
 export function IamRolePermissionScreen() {
-
   const [form] = Form.useForm<RoleFormValues>();
   const [keyword, setKeyword] = useState("");
   const [rolePage, setRolePage] = useState(1);
@@ -146,9 +145,7 @@ export function IamRolePermissionScreen() {
 
   const openEdit = (role: IamRole) => {
     if (isSystemRole(role)) {
-      toast.warning(
-        "SUPER_ADMIN là vai trò hệ thống và không được chỉnh sửa.",
-      );
+      toast.warning("SUPER_ADMIN là vai trò hệ thống và không được chỉnh sửa.");
       return;
     }
     setEditingRole(role);

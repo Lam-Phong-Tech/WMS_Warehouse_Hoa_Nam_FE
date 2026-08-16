@@ -499,7 +499,15 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                             }
                             onClick={() => void togglePublish(record)}
                           >
-                            {isPublished ? <><CloudDownloadOutlined /> Gỡ publish</> : <><CloudUploadOutlined /> Publish App PV</>}
+                            {isPublished ? (
+                              <>
+                                <CloudDownloadOutlined /> Gỡ publish
+                              </>
+                            ) : (
+                              <>
+                                <CloudUploadOutlined /> Publish App PV
+                              </>
+                            )}
                           </button>
                         </>
                       ) : (

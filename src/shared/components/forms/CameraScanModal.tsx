@@ -161,7 +161,11 @@ export function CameraScanModal({
       title={title}
       open={open}
       onCancel={onClose}
-      footer={<Button icon={<CloseOutlined />} onClick={onClose}>Đóng / nhập tay</Button>}
+      footer={
+        <Button icon={<CloseOutlined />} onClick={onClose}>
+          Đóng / nhập tay
+        </Button>
+      }
       destroyOnHidden
       centered
       mask={{ closable: false }}
@@ -186,9 +190,7 @@ export function CameraScanModal({
             style={{ marginTop: 12 }}
             type="info"
             showIcon
-            title={
-              cameraReady ? "Camera sẵn sàng" : "Đang khởi tạo camera..."
-            }
+            title={cameraReady ? "Camera sẵn sàng" : "Đang khởi tạo camera..."}
             description="Đưa Barcode/QR vào khung hình. Camera chỉ đọc mã; dữ liệu vẫn phải qua validation nghiệp vụ như nhập tay. Camera không đọc RFID."
           />
         </>

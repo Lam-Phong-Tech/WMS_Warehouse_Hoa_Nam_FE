@@ -471,9 +471,7 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
                 onClick={handleSubmit}
               >
                 <RollbackOutlined style={{ marginRight: 4 }} />
-                {createMutation.isPending
-                  ? "Đang tạo..."
-                  : "Tạo hoàn đảo"}
+                {createMutation.isPending ? "Đang tạo..." : "Tạo hoàn đảo"}
               </button>
             </Space>
           </div>
