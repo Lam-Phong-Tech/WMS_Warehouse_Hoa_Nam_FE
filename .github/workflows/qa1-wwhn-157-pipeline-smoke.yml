@@ -1,0 +1,215 @@
+name: QA1 WWHN-157 Pipeline Smoke
+
+on:
+  pull_request:
+    branches:
+      - m1
+    paths:
+      - scripts/run-wwhn-157-pipeline-smoke.mjs
+      - .github/workflows/qa1-wwhn-157-pipeline-smoke.yml
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Environment to smoke
+        required: true
+        type: choice
+        default: DEV
+        options:
+          - DEV
+          - UAT
+          - BOTH
+      source_ref:
+        description: Source ref containing the QA runner
+        required: true
+        default: m1
+        type: string
+      dev_fe_base_url:
+        description: DEV FE base URL; blank uses DEV environment variable or Hoa Nam DEV default
+        required: false
+        default: https://khohoanamfe.lptech.info.vn
+        type: string
+      dev_api_base_url:
+        description: DEV API base URL; blank uses DEV environment variable or Hoa Nam DEV default
+        required: false
+        default: https://khohoanamdev.lptech.info.vn
+        type: string
+      dev_expected_fe_sha:
+        description: Exact deployed DEV FE 40-char SHA; blank uses DEV variable DEPLOYED_FE_SHA
+        required: false
+        type: string
+      dev_expected_be_sha:
+        description: Exact deployed DEV BE 40-char SHA; blank uses DEV variable DEPLOYED_BE_SHA
+        required: false
+        type: string
+      uat_fe_base_url:
+        description: UAT FE base URL; blank uses UAT environment variable FE_BASE_URL
+        required: false
+        type: string
+      uat_api_base_url:
+        description: UAT API base URL; blank uses UAT environment variable API_BASE_URL
+        required: false
+        type: string
+      uat_expected_fe_sha:
+        description: Exact deployed UAT FE 40-char SHA; blank uses UAT variable DEPLOYED_FE_SHA
+        required: false
+        type: string
+      uat_expected_be_sha:
+        description: Exact deployed UAT BE 40-char SHA; blank uses UAT variable DEPLOYED_BE_SHA
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: qa1-wwhn-157-${{ github.event_name }}-${{ github.ref }}-${{ inputs.target || 'DEV' }}
+  cancel-in-progress: false
+
+jobs:
+  smoke-dev:
+    name: QA1 independent smoke — DEV
+    if: ${{ github.event_name == 'pull_request' || inputs.target == 'DEV' || inputs.target == 'BOTH' }}
+    runs-on: ubuntu-latest
+    environment: DEV
+    timeout-minutes: 15
+    env:
+      QA_SMOKE_ENV: DEV
+      FE_BASE_URL: ${{ inputs.dev_fe_base_url || vars.FE_BASE_URL || 'https://khohoanamfe.lptech.info.vn' }}
+      API_BASE_URL: ${{ inputs.dev_api_base_url || vars.API_BASE_URL || 'https://khohoanamdev.lptech.info.vn' }}
+      EXPECTED_FE_SHA: ${{ inputs.dev_expected_fe_sha || vars.DEPLOYED_FE_SHA }}
+      EXPECTED_BE_SHA: ${{ inputs.dev_expected_be_sha || vars.DEPLOYED_BE_SHA }}
+      QA_SMOKE_EMAIL: ${{ secrets.QA_SMOKE_EMAIL }}
+      QA_SMOKE_PASSWORD: ${{ secrets.QA_SMOKE_PASSWORD }}
+      QA_SMOKE_OUTPUT_DIR: test-results/wwhn-157/dev
+    steps:
+      - name: Checkout QA runner source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || inputs.source_ref }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run independent DEV smoke
+        id: smoke
+        continue-on-error: true
+        run: node scripts/run-wwhn-157-pipeline-smoke.mjs
+
+      - name: Generate evidence checksums
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p "$QA_SMOKE_OUTPUT_DIR"
+          find "$QA_SMOKE_OUTPUT_DIR" -maxdepth 1 -type f ! -name SHA256SUMS.txt -print0 \
+            | sort -z \
+            | xargs -0 -r sha256sum > "$QA_SMOKE_OUTPUT_DIR/SHA256SUMS.txt"
+
+      - name: Publish summary to GitHub job summary
+        if: always()
+        shell: bash
+        run: |
+          summary="$QA_SMOKE_OUTPUT_DIR/WWHN-157-DEV-smoke-summary.md"
+          if [ -f "$summary" ]; then cat "$summary" >> "$GITHUB_STEP_SUMMARY"; fi
+
+      - name: Upload immutable DEV smoke evidence
+        id: artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wwhn-157-qa1-smoke-dev-${{ github.run_id }}-${{ github.run_attempt }}
+          path: test-results/wwhn-157/dev
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Record artifact identity
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "### Artifact identity"
+            echo "- Artifact ID: ${{ steps.artifact.outputs.artifact-id }}"
+            echo "- Artifact digest: ${{ steps.artifact.outputs.artifact-digest }}"
+            echo "- Artifact URL: ${{ steps.artifact.outputs.artifact-url }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Enforce DEV smoke result
+        if: always()
+        shell: bash
+        run: |
+          test "${{ steps.smoke.outcome }}" = "success"
+
+  smoke-uat:
+    name: QA1 independent smoke — UAT
+    if: ${{ github.event_name == 'workflow_dispatch' && (inputs.target == 'UAT' || inputs.target == 'BOTH') }}
+    runs-on: ubuntu-latest
+    environment: UAT
+    timeout-minutes: 15
+    env:
+      QA_SMOKE_ENV: UAT
+      FE_BASE_URL: ${{ inputs.uat_fe_base_url || vars.FE_BASE_URL }}
+      API_BASE_URL: ${{ inputs.uat_api_base_url || vars.API_BASE_URL }}
+      EXPECTED_FE_SHA: ${{ inputs.uat_expected_fe_sha || vars.DEPLOYED_FE_SHA }}
+      EXPECTED_BE_SHA: ${{ inputs.uat_expected_be_sha || vars.DEPLOYED_BE_SHA }}
+      QA_SMOKE_EMAIL: ${{ secrets.QA_SMOKE_EMAIL }}
+      QA_SMOKE_PASSWORD: ${{ secrets.QA_SMOKE_PASSWORD }}
+      QA_SMOKE_OUTPUT_DIR: test-results/wwhn-157/uat
+    steps:
+      - name: Checkout QA runner source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_ref }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run independent UAT smoke
+        id: smoke
+        continue-on-error: true
+        run: node scripts/run-wwhn-157-pipeline-smoke.mjs
+
+      - name: Generate evidence checksums
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p "$QA_SMOKE_OUTPUT_DIR"
+          find "$QA_SMOKE_OUTPUT_DIR" -maxdepth 1 -type f ! -name SHA256SUMS.txt -print0 \
+            | sort -z \
+            | xargs -0 -r sha256sum > "$QA_SMOKE_OUTPUT_DIR/SHA256SUMS.txt"
+
+      - name: Publish summary to GitHub job summary
+        if: always()
+        shell: bash
+        run: |
+          summary="$QA_SMOKE_OUTPUT_DIR/WWHN-157-UAT-smoke-summary.md"
+          if [ -f "$summary" ]; then cat "$summary" >> "$GITHUB_STEP_SUMMARY"; fi
+
+      - name: Upload immutable UAT smoke evidence
+        id: artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wwhn-157-qa1-smoke-uat-${{ github.run_id }}-${{ github.run_attempt }}
+          path: test-results/wwhn-157/uat
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Record artifact identity
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "### Artifact identity"
+            echo "- Artifact ID: ${{ steps.artifact.outputs.artifact-id }}"
+            echo "- Artifact digest: ${{ steps.artifact.outputs.artifact-digest }}"
+            echo "- Artifact URL: ${{ steps.artifact.outputs.artifact-url }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Enforce UAT smoke result
+        if: always()
+        shell: bash
+        run: |
+          test "${{ steps.smoke.outcome }}" = "success"
