@@ -334,7 +334,9 @@ export async function updateWarrantyCase(
     endpoint(API_ENDPOINTS.WARRANTY_CASE, ":id", normalizedCaseId),
     clean({
       status,
-      description: request.reason,
+      // §13.8: ghi chú xử lý đi vào warranty_event.note, KHÔNG ghi đè mô tả
+      // tiếp nhận gốc (description) của case.
+      note: request.reason,
       confirmed_defect: request.confirmed_defect,
       condition_status: request.condition_status,
       received_condition: request.received_condition,

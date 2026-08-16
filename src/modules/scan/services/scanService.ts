@@ -256,9 +256,11 @@ function normalizeClassifyResponse(
 }
 
 function normalizeBatch(row: RawRecord): ScanBatch {
+  // BE trả khoá canonical scan_batch_id (bảng scan_batches).
+  const id = text(row.scan_batch_id ?? row.id);
   return {
-    id: text(row.id),
-    batch_no: text(row.batch_no ?? row.code ?? row.id),
+    id,
+    batch_no: text(row.batch_no ?? row.code ?? id),
     source_type: text(row.source_type),
     source_id: text(row.source_id) || undefined,
     warehouse_id: num(row.warehouse_id) || undefined,
@@ -274,12 +276,16 @@ function normalizeBatch(row: RawRecord): ScanBatch {
 }
 
 function normalizeEvent(row: RawRecord): ScanEvent {
+  // Endpoint /scan/events hợp nhất hai kho evidence: raw_code + result_status là
+  // tên cột canonical, evidence_source cho biết bản ghi đến từ kho nào.
   return {
-    id: text(row.id),
+    id: text(row.id ?? row.scan_event_id),
     batch_id: text(row.batch_id ?? row.scan_batch_id),
-    code_value: text(row.code_value ?? row.code),
-    code_type: text(row.code_type),
-    status: (text(row.status) as ScanEvent["status"]) || "UNKNOWN",
+    code_value: text(row.code_value ?? row.raw_code ?? row.code),
+    code_type: text(row.code_type ?? row.resolved_object_type),
+    status:
+      (text(row.status ?? row.result_status) as ScanEvent["status"]) ||
+      "UNKNOWN",
     message: text(row.message) || undefined,
     scanned_at: text(row.scanned_at ?? row.created_at),
     scanned_by: text(row.scanned_by ?? row.created_by_name, "-"),

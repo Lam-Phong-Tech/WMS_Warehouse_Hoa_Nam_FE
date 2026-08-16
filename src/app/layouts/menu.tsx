@@ -6,6 +6,7 @@ import {
   BarcodeOutlined,
   FileTextOutlined,
   FundOutlined,
+  HomeOutlined,
   InboxOutlined,
   ProfileOutlined,
   RollbackOutlined,
@@ -66,6 +67,18 @@ export const MENU: AppMenuItem[] = [
         label: "SKU / Product Master",
         icon: <ProfileOutlined />,
         permission: ROUTE_PERMISSIONS[ROUTES.MASTER_DATA],
+      },
+      {
+        key: ROUTES.CATALOG_MASTER,
+        label: "Danh mục Product Master",
+        icon: <AppstoreOutlined />,
+        permission: ROUTE_PERMISSIONS[ROUTES.CATALOG_MASTER],
+      },
+      {
+        key: ROUTES.WAREHOUSE_CONFIG,
+        label: "Cấu hình kho tổng",
+        icon: <HomeOutlined />,
+        permission: ROUTE_PERMISSIONS[ROUTES.WAREHOUSE_CONFIG],
       },
       {
         key: ROUTES.AGENCIES,

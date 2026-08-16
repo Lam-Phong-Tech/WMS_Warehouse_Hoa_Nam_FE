@@ -13,8 +13,8 @@ Scope: late-core and high-risk workflow dependencies for `WWHN-148`.
 | Stock movements | src/modules/inventory/services/inventoryService.ts | Load movement detail | GET | `/stock-movements/{id}` | Present in local Swagger snapshot. |
 | Stock movements | src/modules/inventory/services/inventoryService.ts | Trace source document | GET | `/stock-movements/{id}/trace-source` | Present in local Swagger snapshot. |
 | Inventory trace (WWHN-211) | src/modules/inventory/services/inventoryService.ts | Trace by physical code (item/container/SKU) | GET | `/stock-movements/trace-by-code` | Present in local Swagger snapshot (tag "07. Inventory", permission `inventory.trace`); resolves `resolved_type` ITEM/CONTAINER/SKU per BE `StockMovementController::traceByPhysicalCode` — not a SKU-only approximation. FE `traceByPhysicalCode`, covered by `inventoryService.test.ts` and `TraceModal.test.tsx`. |
-| Reports | src/modules/reports/services/reportsService.ts | Load inventory XNT | GET | `/reports/inventory-xnt` | Present in local Swagger snapshot. |
-| Reports | src/modules/reports/services/reportsService.ts | Export inventory XNT | GET | `/reports/inventory-xnt/export-excel` | Present in local Swagger snapshot. |
+| Reports | src/shared/api/endpoints.ts (`REPORTS_XNT`) | Load inventory XNT | GET | `/reports/inventory-xnt` | Present in local Swagger snapshot. Hằng số vẫn giữ; màn hình báo cáo đang chạy (`AlignedReportsPage.tsx`) dùng biến thể `/reports/inventory-xnt-enhanced` theo §13.10. |
+| Reports | src/shared/api/endpoints.ts (`REPORTS_XNT_EXPORT_EXCEL`) | Export inventory XNT | GET | `/reports/inventory-xnt/export-excel` | Present in local Swagger snapshot. Tương tự trên: đường export đang dùng là `/reports/inventory-xnt-enhanced/export-excel`. |
 
 ## Known Mismatch / High-Risk Workflow Dependencies
 
@@ -29,5 +29,5 @@ Scope: late-core and high-risk workflow dependencies for `WWHN-148`.
 | Warranty status | src/modules/warranty/services/warrantyService.ts | warranty update status endpoint uses `/warranty/cases/:id/status` | BE1/BA | Not present in local Swagger snapshot; risky status transition needs final status catalog. |
 | Reversal documents | src/modules/reverse/services/reversalService.ts | reversal documents endpoint uses `/reversal-documents` | BE1/BA | Not present in local Swagger snapshot; reversible quantity/conflict/audit response needed. |
 | Reversal lines | src/modules/reverse/services/reversalService.ts | Uses `/reversal-documents/{id}/lines` inline | BE1/BA | Not present in local Swagger snapshot; should become a shared endpoint constant when contract is locked. |
-| Reports hub | src/modules/reports/services/reportsService.ts | reports hub endpoint uses `/reports/hub` | BE1/BA | Not present in local Swagger snapshot; FE should keep XNT as the contract-ready report row. |
-| Warranty defects report | src/modules/reports/services/reportsService.ts | warranty defects report endpoint uses `/reports/warranty-defects` | BE1/BA | Not present in local Swagger snapshot; endpoint/export permission needs sign-off. |
+| Reports hub | src/shared/api/endpoints.ts (`REPORTS_HUB`) | reports hub endpoint uses `/reports/hub` | BE1/BA | Hằng số còn khai báo nhưng chưa màn hình nào tiêu thụ sau khi gộp về `AlignedReportsPage.tsx`; route BE `GET reports/hub` (permission `report.view`) đã có. |
+| Warranty defects report | src/modules/reports/pages/AlignedReportsPage.tsx | warranty defects report endpoint uses `/reports/warranty-defects` | BE1/BA | Đã nối: trang báo cáo gọi `REPORTS_WARRANTY_DEFECTS` + bản export, guard `EXPORT_REPORT` phía FE và `report.export` phía BE. |

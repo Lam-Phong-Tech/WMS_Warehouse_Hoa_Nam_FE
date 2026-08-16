@@ -46,6 +46,16 @@ const SkuMasterScreen = lazy(() =>
     default: m.SkuMasterScreen,
   })),
 );
+const CatalogMasterScreen = lazy(() =>
+  import("@/modules/master-data/pages/CatalogMasterScreen").then((m) => ({
+    default: m.CatalogMasterScreen,
+  })),
+);
+const WarehouseConfigScreen = lazy(() =>
+  import("@/modules/master-data/pages/WarehouseConfigScreen").then((m) => ({
+    default: m.WarehouseConfigScreen,
+  })),
+);
 const AgencyMasterScreen = lazy(() =>
   import("@/modules/master-data/pages/MvpMasterScreens").then((m) => ({
     default: m.AgencyMasterScreen,
@@ -165,6 +175,17 @@ export const router = createBrowserRouter([
             element: routeEl(
               ROUTES.SKU_CREATE,
               <SkuMasterScreen openCreateOnMount />,
+            ),
+          },
+          {
+            path: ROUTES.CATALOG_MASTER,
+            element: routeEl(ROUTES.CATALOG_MASTER, <CatalogMasterScreen />),
+          },
+          {
+            path: ROUTES.WAREHOUSE_CONFIG,
+            element: routeEl(
+              ROUTES.WAREHOUSE_CONFIG,
+              <WarehouseConfigScreen />,
             ),
           },
           {

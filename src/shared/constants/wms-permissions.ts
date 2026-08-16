@@ -9,6 +9,8 @@ export const WMS_PERMISSION_CATALOG = {
   IAM_PERMISSION_VIEW: "iam.permission.view",
   CATALOG_VIEW: "catalog.view",
   CATALOG_MANAGE: "catalog.manage",
+  WAREHOUSE_VIEW: "warehouse.view",
+  WAREHOUSE_MANAGE: "warehouse.manage",
   MASTER_MANAGE: "master.manage",
   SKU_VIEW: "sku.view",
   SKU_MANAGE: "sku.manage",

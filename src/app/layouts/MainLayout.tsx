@@ -182,6 +182,18 @@ const ROUTE_DEFAULT_SCREEN: Record<string, string> = {
 };
 
 const ROUTE_META: Record<string, ScreenMeta> = {
+  // SCR-MST-01 / SCR-WH-01 nằm ngoài bộ wireframe MVP nên render qua Outlet
+  // (giữ nguyên route guard RequirePermission) thay vì renderMvpScreen.
+  [ROUTES.CATALOG_MASTER]: {
+    title: "Danh mục Product Master",
+    description:
+      "Hãng, nhóm hàng, model, nguồn điện và quy cách đóng gói dùng cho form tạo SKU.",
+  },
+  [ROUTES.WAREHOUSE_CONFIG]: {
+    title: "Cấu hình kho tổng",
+    description:
+      "Thông tin, liên hệ và trạng thái của kho tổng duy nhất theo REQ-SRS-001.",
+  },
   [ROUTES.IAM_ROLES]: {
     title: "Vai trò & phân quyền",
     description:

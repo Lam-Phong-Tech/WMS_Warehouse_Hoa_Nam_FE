@@ -5,6 +5,7 @@ import {
   createMvpSku,
   getMvpAgencies,
   getMvpDefects,
+  getMvpProductCatalogs,
   getMvpSkus,
   hasMvpSkuStock,
   setMvpSkuPublished,
@@ -27,6 +28,7 @@ export const mvpMasterKeys = {
     [...mvpMasterKeys.all, "agencies", params] as const,
   defects: (params: MasterListParams) =>
     [...mvpMasterKeys.all, "defects", params] as const,
+  productCatalogs: () => [...mvpMasterKeys.all, "product-catalogs"] as const,
 };
 
 export function useMvpSkus(params: MasterListParams) {
@@ -47,6 +49,16 @@ export function useMvpDefects(params: MasterListParams) {
   return useQuery({
     queryKey: mvpMasterKeys.defects(params),
     queryFn: () => getMvpDefects(params),
+  });
+}
+
+// MST-01: danh mục Brand/Category/Model đổi ít, cache lâu để mỗi lần đổi trang
+// SKU không phải nạp lại 3 danh mục.
+export function useMvpProductCatalogs() {
+  return useQuery({
+    queryKey: mvpMasterKeys.productCatalogs(),
+    queryFn: getMvpProductCatalogs,
+    staleTime: 5 * 60_000,
   });
 }
 

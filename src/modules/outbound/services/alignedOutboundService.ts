@@ -96,6 +96,8 @@ export interface PackingLabelRecord {
   documentId: string;
   labelCode: string;
   outboundNo: string;
+  /** Mã toa nguồn snapshot trên nhãn (Annex A Packing_Label_Snapshot). */
+  sourceRequestNo: string;
   recipientName: string;
   recipientAddress: string;
   customerPhone: string;
@@ -131,6 +133,7 @@ function normalizePackingLabel(row: RawRecord): PackingLabelRecord {
     documentId: text(row.outbound_document_id),
     labelCode: text(row.label_code ?? payload.label_code, text(row.id)),
     outboundNo: text(row.outbound_no ?? payload.outbound_no),
+    sourceRequestNo: text(row.source_request_no ?? payload.source_request_no),
     recipientName: text(row.customer_name ?? payload.recipient_name),
     recipientAddress: text(row.customer_address ?? payload.recipient_address),
     customerPhone: text(row.customer_phone ?? payload.customer_phone),
@@ -176,9 +179,11 @@ export async function createPackingLabel(input: {
   documentId: string;
   customerPhone: string;
 }): Promise<PackingLabelRecord> {
+  const phone = input.customerPhone.trim();
   const row = await http.post<RawRecord>(API_ENDPOINTS.LABEL_SNAPSHOTS, {
     outbound_document_id: input.documentId,
-    customer_phone: input.customerPhone.trim(),
+    // SĐT optional theo SRS §15; gửi null thay vì chuỗi rỗng để nhãn render blank.
+    customer_phone: phone === "" ? null : phone,
   });
   return normalizePackingLabel(row);
 }

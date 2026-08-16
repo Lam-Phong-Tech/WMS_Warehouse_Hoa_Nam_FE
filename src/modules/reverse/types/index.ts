@@ -54,6 +54,15 @@ export interface ReversalLine {
   error_message?: string;
 }
 
+/** Ứng viên item cho Reverse SKU serial-tracked (BE /stock-movements/reversible). */
+export interface ReversibleItemCandidate {
+  item_id: string;
+  sku_id: string;
+  item_code?: string;
+  serial_number?: string;
+  item_status: string;
+}
+
 export interface ReversibleMovementLine {
   id: string;
   sku: string;
@@ -65,6 +74,9 @@ export interface ReversibleMovementLine {
   uom?: string;
   dependency_guard?: string;
   can_reverse: boolean;
+  /** SKU serial-tracked: BE bắt buộc reverse theo item (quantity=1 + item_id). */
+  is_serial_tracked?: boolean;
+  items?: ReversibleItemCandidate[];
 }
 
 export interface ReversibleMovement {
@@ -109,6 +121,8 @@ export interface CreateReversalRequest {
     sku: string;
     reversal_qty: number;
     reason?: string;
+    /** Bắt buộc với SKU serial-tracked (mỗi line 1 item, quantity=1). */
+    item_id?: string;
   }>;
   idempotency_key: string;
   reference_version?: string;

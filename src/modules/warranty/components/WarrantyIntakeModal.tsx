@@ -10,11 +10,18 @@ import {
   Row,
   Select,
   Space,
+  Upload,
 } from "antd";
+import type { UploadFile, UploadProps } from "antd";
 import { toast } from "sonner";
 import type { Dayjs } from "dayjs";
 import dayjs from "dayjs";
-import { CameraOutlined, CloseOutlined, SaveOutlined } from "@ant-design/icons";
+import {
+  CameraOutlined,
+  CloseOutlined,
+  SaveOutlined,
+  UploadOutlined,
+} from "@ant-design/icons";
 import { Button } from "antd";
 import {
   extractFieldErrorsRaw,
@@ -24,11 +31,24 @@ import {
 import { CameraScanModal } from "@/shared/components/forms/CameraScanModal";
 import { ScanInput } from "@/shared/components/forms/ScanInput";
 import { useMvpDefects } from "@/modules/master-data/hooks/use-mvp-master";
-import { useCreateWarrantyCase } from "@/modules/warranty/hooks/use-warranty";
+import {
+  useCreateWarrantyCase,
+  useUploadWarrantyAttachment,
+} from "@/modules/warranty/hooks/use-warranty";
 import type {
   WarrantyCase,
   WarrantyIdentificationType,
 } from "@/modules/warranty/types";
+
+// Annex D SCR-WAR-01 field `images`: jpg/png/webp; <=10 files; <=10MB/file.
+const MAX_INTAKE_IMAGES = 10;
+const MAX_INTAKE_IMAGE_BYTES = 10 * 1024 * 1024;
+const INTAKE_IMAGE_MIMES = [
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/webp",
+];
 
 interface IntakeFormValues {
   identification_type: WarrantyIdentificationType;
@@ -63,10 +83,67 @@ export function WarrantyIntakeModal({
   const [form] = Form.useForm<IntakeFormValues>();
   const [formError, setFormError] = useState<string | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
+  const [imageFiles, setImageFiles] = useState<UploadFile[]>([]);
   const identificationType = Form.useWatch("identification_type", form);
   const itemCode = Form.useWatch("item_code", form);
   const createMutation = useCreateWarrantyCase();
+  const uploadMutation = useUploadWarrantyAttachment();
   const defectsQuery = useMvpDefects({ status: "ACTIVE", per_page: 100 });
+
+  // Ảnh chỉ được giữ lại ở client tới khi case có id; BE giới hạn 10 file ACTIVE
+  // mỗi case, mimes jpg/jpeg/png/webp/heic/pdf và 10240KB mỗi file.
+  const imageUploadProps: UploadProps = {
+    multiple: true,
+    listType: "picture",
+    accept: ".jpg,.jpeg,.png,.webp",
+    fileList: imageFiles,
+    disabled: createMutation.isPending || uploadMutation.isPending,
+    beforeUpload: (file, batch) => {
+      if (!INTAKE_IMAGE_MIMES.includes(file.type)) {
+        toast.error(`${file.name}: chỉ nhận ảnh JPG/PNG/WEBP.`);
+        return Upload.LIST_IGNORE;
+      }
+      if (file.size > MAX_INTAKE_IMAGE_BYTES) {
+        toast.error(`${file.name}: vượt quá 10MB.`);
+        return Upload.LIST_IGNORE;
+      }
+      const slot = imageFiles.length + Math.max(0, batch.indexOf(file));
+      if (slot >= MAX_INTAKE_IMAGES) {
+        toast.error(`Tối đa ${MAX_INTAKE_IMAGES} ảnh cho một case bảo hành.`);
+        return Upload.LIST_IGNORE;
+      }
+      return false;
+    },
+    onChange: (info) => setImageFiles(info.fileList),
+  };
+
+  // Annex D SCR-WAR-01: `images` chỉ lưu attachment IDs nên case phải tồn tại
+  // trước mới đính kèm được. Lỗi upload không rollback case: case là bản ghi
+  // nghiệp vụ chính, ảnh có thể bổ sung lại ở màn chi tiết case (WAR-03).
+  const uploadIntakeImages = async (created: WarrantyCase) => {
+    const files = imageFiles
+      .map((item) => item.originFileObj)
+      .filter((file): file is NonNullable<typeof file> => Boolean(file));
+    if (files.length === 0) return;
+
+    const results = await Promise.allSettled(
+      files.map((file) =>
+        uploadMutation.mutateAsync({
+          caseId: created.id,
+          file,
+          attachmentType: "INTAKE",
+        }),
+      ),
+    );
+    const failed = results.filter((result) => result.status === "rejected");
+    if (failed.length === 0) {
+      toast.success(`Đã đính kèm ${files.length} ảnh tiếp nhận.`);
+      return;
+    }
+    toast.error(
+      `Đã tạo case ${created.case_code} nhưng ${failed.length}/${files.length} ảnh chưa tải lên được. Vào chi tiết case để đính kèm lại.`,
+    );
+  };
 
   const submit = async () => {
     setFormError(null);
@@ -101,7 +178,9 @@ export function WarrantyIntakeModal({
           ? `Đã tạo case ${created.case_code} — mã tạm ${created.temporary_item_code}.`
           : `Đã tạo case bảo hành ${created.case_code}.`,
       );
+      await uploadIntakeImages(created);
       form.resetFields();
+      setImageFiles([]);
       onCreated(created);
     } catch (error: unknown) {
       const fieldErrors = extractFieldErrorsRaw(error);
@@ -135,7 +214,7 @@ export function WarrantyIntakeModal({
           <Button
             type="primary"
             icon={<SaveOutlined />}
-            loading={createMutation.isPending}
+            loading={createMutation.isPending || uploadMutation.isPending}
             onClick={submit}
           >
             Lưu tiếp nhận
@@ -261,7 +340,8 @@ export function WarrantyIntakeModal({
         <Row gutter={12}>
           <Col xs={24} md={16}>
             <Form.Item name="customer_address" label="Địa chỉ khách (PII)">
-              <Input maxLength={1000} />
+              {/* Annex A/D: customer_address tối đa 500 ký tự. */}
+              <Input maxLength={500} />
             </Form.Item>
           </Col>
           <Col xs={24} md={8}>
@@ -320,6 +400,24 @@ export function WarrantyIntakeModal({
             showCount
             placeholder="VD: Trầy xước nhẹ thân máy, còn nguyên tem"
           />
+        </Form.Item>
+
+        <Form.Item
+          label="Ảnh đính kèm"
+          extra="JPG/PNG/WEBP, tối đa 10 ảnh, mỗi ảnh ≤ 10MB. Ảnh được tải lên sau khi case bảo hành được tạo."
+        >
+          <Upload {...imageUploadProps}>
+            <Button
+              icon={<UploadOutlined />}
+              disabled={
+                imageFiles.length >= MAX_INTAKE_IMAGES ||
+                createMutation.isPending ||
+                uploadMutation.isPending
+              }
+            >
+              Chọn ảnh tiếp nhận ({imageFiles.length}/{MAX_INTAKE_IMAGES})
+            </Button>
+          </Upload>
         </Form.Item>
       </Form>
 

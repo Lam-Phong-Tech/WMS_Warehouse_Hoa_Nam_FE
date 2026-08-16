@@ -41,7 +41,10 @@ const RETURN_CONDITION_OPTIONS: Array<{
   },
 ];
 
-type ReversalDraft = Record<string, { reversal_qty?: number; reason?: string }>;
+type ReversalDraft = Record<
+  string,
+  { reversal_qty?: number; reason?: string; item_ids?: string[] }
+>;
 
 function idempotencyKey() {
   return `reversal-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
@@ -89,9 +92,18 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
         reversal_qty: Number(draft[line.sku]?.reversal_qty ?? 0),
         reason: draft[line.sku]?.reason,
         max: line.reversible_qty,
+        is_serial_tracked: Boolean(line.is_serial_tracked),
+        item_ids: draft[line.sku]?.item_ids ?? [],
       }))
       .filter((line) => line.reversal_qty > 0);
   }, [draft, selectedMovement]);
+
+  // BR-REV / AC-GWT-REV-001: SKU serial-tracked reverse theo từng Item —
+  // mỗi item là một line quantity=1, nên số item chọn phải bằng SL đảo.
+  const serialLineMismatch = selectedLines.find(
+    (line) =>
+      line.is_serial_tracked && line.item_ids.length !== line.reversal_qty,
+  );
 
   const totalQty = selectedLines.reduce(
     (sum, line) => sum + line.reversal_qty,
@@ -107,6 +119,7 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
     totalQty > 0 &&
     reason.trim().length >= 5 &&
     !invalidLine &&
+    !serialLineMismatch &&
     // BR-REV-06: Reverse Issue chỉ hợp lệ khi khai tình trạng trả về và
     // hàng vật lý đã quay lại kho (FE không hỗ trợ pending-return flow).
     (!isIssueReversal || (Boolean(returnCondition) && physicalConfirmed));
@@ -117,13 +130,22 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
     setPhysicalConfirmed(false);
     setDraft(
       Object.fromEntries(
-        movement.lines.map((line) => [
-          line.sku,
-          {
-            reversal_qty: line.can_reverse ? line.reversible_qty : 0,
-            reason: line.dependency_guard,
-          },
-        ]),
+        movement.lines.map((line) => {
+          const candidates = line.items ?? [];
+          const defaultQty = line.can_reverse ? line.reversible_qty : 0;
+          return [
+            line.sku,
+            {
+              reversal_qty: defaultQty,
+              reason: line.dependency_guard,
+              item_ids: line.is_serial_tracked
+                ? candidates
+                    .slice(0, defaultQty)
+                    .map((candidate) => candidate.item_id)
+                : [],
+            },
+          ];
+        }),
       ),
     );
   }
@@ -175,11 +197,19 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
                 physical_return_confirmed: physicalConfirmed,
               }
             : {}),
-          lines: selectedLines.map(({ sku, reversal_qty, reason }) => ({
-            sku,
-            reversal_qty,
-            reason,
-          })),
+          // SKU serial-tracked: mỗi Item là một line quantity=1 kèm item_id
+          // (BE abort 422 REVERSAL_ITEM_REQUIRED nếu gộp số lượng).
+          lines: selectedLines.flatMap(
+            ({ sku, reversal_qty, reason, is_serial_tracked, item_ids }) =>
+              is_serial_tracked
+                ? item_ids.map((item_id) => ({
+                    sku,
+                    reversal_qty: 1,
+                    reason,
+                    item_id,
+                  }))
+                : [{ sku, reversal_qty, reason }],
+          ),
           idempotency_key: idempotencyKey(),
         };
         try {
@@ -441,6 +471,41 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
                   ),
                 },
                 {
+                  title: "Item (serial)",
+                  width: 260,
+                  render: (_: unknown, line: ReversibleMovementLine) =>
+                    line.is_serial_tracked ? (
+                      <Select
+                        mode="multiple"
+                        size="small"
+                        style={{ width: "100%" }}
+                        placeholder="Chọn Item cần đảo"
+                        disabled={!line.can_reverse}
+                        value={draft[line.sku]?.item_ids ?? []}
+                        options={(line.items ?? []).map((item) => ({
+                          value: item.item_id,
+                          label:
+                            item.serial_number ||
+                            item.item_code ||
+                            item.item_id.slice(0, 8),
+                        }))}
+                        onChange={(value) =>
+                          setDraft((current) => ({
+                            ...current,
+                            [line.sku]: {
+                              ...current[line.sku],
+                              item_ids: value,
+                            },
+                          }))
+                        }
+                      />
+                    ) : (
+                      <Typography.Text type="secondary">
+                        Không theo serial
+                      </Typography.Text>
+                    ),
+                },
+                {
                   title: "Guard",
                   width: 180,
                   render: (_: unknown, line: ReversibleMovementLine) =>
@@ -452,6 +517,15 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
                 },
               ]}
             />
+
+            {serialLineMismatch ? (
+              <Alert
+                type="error"
+                showIcon
+                title={`SKU ${serialLineMismatch.sku} theo serial: phải chọn đúng ${serialLineMismatch.reversal_qty} Item (đang chọn ${serialLineMismatch.item_ids.length})`}
+                style={{ marginTop: 12 }}
+              />
+            ) : null}
 
             {invalidLine ? (
               <Alert

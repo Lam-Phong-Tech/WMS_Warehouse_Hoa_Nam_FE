@@ -35,6 +35,7 @@ import {
   hasAnyWmsPermission,
   WMS_PERMISSION_CATALOG as P,
 } from "@/shared/constants/wms-permissions";
+import { ScanInput } from "@/shared/components/forms/ScanInput";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { useMvpSkus } from "@/modules/master-data/hooks/use-mvp-master";
 import type { SkuRecord } from "@/modules/master-data/types/mvp-master.types";
@@ -368,7 +369,9 @@ export function InboundScanModal({
     else setQuantity(Math.max(1, Math.min(remaining || 1, quantity)));
   }, [isSerialTracked, quantity, remaining]);
 
-  const handleScan = async () => {
+  // Annex D SCR-IN-01: Enter/reader event submits — mã đến từ ScanInput được
+  // truyền thẳng vào handler thay vì đọc lại state, tránh lệch nhịp với reader.
+  const handleScan = async (scannedCode?: string) => {
     if (
       !detail ||
       !selectedLine ||
@@ -379,7 +382,7 @@ export function InboundScanModal({
     )
       return;
     const normalizedBox = boxCode.trim();
-    const normalizedCode = scanCode.trim();
+    const normalizedCode = (scannedCode ?? scanCode).trim();
     const scanQuantity =
       isSerialTracked || !isComponent
         ? 1
@@ -779,26 +782,33 @@ export function InboundScanModal({
                           ? "Barcode/serial (không bắt buộc với COMPONENT quantity)"
                           : "Barcode / Serial *"}
                       </div>
-                      <Space.Compact style={{ width: "100%" }}>
-                        <Input
-                          value={scanCode}
-                          disabled={!canScan || busy}
-                          placeholder={
-                            isSerialTracked
-                              ? "Quét serial / Barcode"
-                              : "Quét Barcode/QR hoặc nhập tay fallback"
-                          }
-                          onChange={(event) => setScanCode(event.target.value)}
-                          onPressEnter={() => void handleScan()}
-                        />
-                        <Button
-                          icon={<CameraOutlined />}
-                          disabled={!canScan || busy}
-                          onClick={() => setCameraTarget("code")}
-                        >
-                          Camera
-                        </Button>
-                      </Space.Compact>
+                      {/* Annex D SCR-IN-01: Auto-focus scan input; Enter/reader
+                          event submits; retain focus after success/error. */}
+                      <Row gutter={8} align="top">
+                        <Col flex="auto">
+                          <ScanInput
+                            value={scanCode}
+                            size="middle"
+                            disabled={!canScan || busy}
+                            placeholder={
+                              isSerialTracked
+                                ? "Quét serial / Barcode"
+                                : "Quét Barcode/QR hoặc nhập tay fallback"
+                            }
+                            onChange={setScanCode}
+                            onScan={(code) => void handleScan(code)}
+                          />
+                        </Col>
+                        <Col>
+                          <Button
+                            icon={<CameraOutlined />}
+                            disabled={!canScan || busy}
+                            onClick={() => setCameraTarget("code")}
+                          >
+                            Camera
+                          </Button>
+                        </Col>
+                      </Row>
                     </div>
 
                     {isComponent && !isSerialTracked ? (

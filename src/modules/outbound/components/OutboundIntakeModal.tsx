@@ -48,7 +48,8 @@ type IntakeFormValues = {
   request_no: string;
   agency_id?: string;
   recipient_name: string;
-  recipient_address: string;
+  // SRS v1.12 §15: address nullable.
+  recipient_address?: string;
   lines: Array<{ product_id: string; required_qty: number }>;
 };
 
@@ -151,7 +152,7 @@ export function OutboundIntakeModal({
       const rows: OutboundRequestRowInput[] = values.lines.map((line) => ({
         request_no: values.request_no.trim(),
         customer_name: values.recipient_name.trim(),
-        customer_address: values.recipient_address.trim(),
+        customer_address: (values.recipient_address ?? "").trim(),
         sku_id: line.product_id,
         required_qty: Number(line.required_qty),
         agency_id: values.agency_id || null,
@@ -392,11 +393,9 @@ export function OutboundIntakeModal({
               >
                 <Input maxLength={200} />
               </Form.Item>
-              <Form.Item
-                name="recipient_address"
-                label="Địa chỉ nhận *"
-                rules={[{ required: true, message: "Nhập địa chỉ nhận" }]}
-              >
+              {/* SRS v1.12 §15 + REQ-SRS-014: address/phone của toa nullable —
+                  toa mẫu Kinh doanh phát hành có thể không có địa chỉ. */}
+              <Form.Item name="recipient_address" label="Địa chỉ nhận">
                 <Input maxLength={1000} />
               </Form.Item>
             </div>
@@ -468,8 +467,8 @@ export function OutboundIntakeModal({
                 Kiểm tra & Preview
               </Button>
               <Typography.Text type="secondary">
-                SĐT khách hàng nhập ở bước Packing Label (bắt buộc trên nhãn),
-                không nằm trong dữ liệu request.
+                SĐT khách hàng nhập ở bước Packing Label (tùy chọn theo SRS
+                §15), không nằm trong dữ liệu request.
               </Typography.Text>
             </Space>
             <ApiErrorAlert
@@ -489,8 +488,9 @@ export function OutboundIntakeModal({
             />
             <Typography.Text type="secondary">
               Cột bắt buộc: request_no · sku_code · required_qty ·
-              recipient_name/customer_name · recipient_address/customer_address.
-              Tối đa 10.000 dòng, file ≤ 20MB; row lỗi chặn consume toàn batch.
+              recipient_name/customer_name. Địa chỉ/SĐT là tùy chọn theo SRS
+              §15. Tối đa 10.000 dòng, file ≤ 20MB; row lỗi chặn consume toàn
+              batch.
             </Typography.Text>
             <Button
               type="primary"

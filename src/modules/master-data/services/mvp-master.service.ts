@@ -3,10 +3,12 @@ import { http } from "@/shared/api/http";
 import type {
   AgencyPayload,
   AgencyRecord,
+  CatalogRefRecord,
   DefectPayload,
   DefectRecord,
   MasterListParams,
   MasterPageResult,
+  ProductCatalogRefs,
   SkuPayload,
   SkuRecord,
 } from "@/modules/master-data/types/mvp-master.types";
@@ -108,6 +110,47 @@ async function canonicalSkuPayload(payload: SkuPayload) {
 
 export function getMvpSkus(params: MasterListParams) {
   return listPage<SkuRecord>(API_ENDPOINTS.PRODUCTS, params);
+}
+
+// MST-01 (wireframe: toolbar "Hãng" + cột "Hãng"): danh sách SKU chỉ trả về
+// brand_id/category_id/model_id, nên phải nạp danh mục để map id -> tên.
+// Thiếu quyền catalog.view hoặc lỗi mạng thì fail-open bằng danh sách rỗng —
+// bảng vẫn hiển thị được (rơi về mã rút gọn) thay vì chặn cả màn hình.
+async function listCatalogRefs(
+  endpoint: string,
+  codeKey: string,
+  nameKey: string,
+): Promise<CatalogRefRecord[]> {
+  try {
+    const result = await http.getPage<Array<Record<string, unknown>>>(
+      endpoint,
+      {
+        params: { status: "ACTIVE", per_page: 200 },
+      },
+    );
+    return (result.data ?? [])
+      .map((row) => ({
+        id: String(row.id ?? ""),
+        code: String(row[codeKey] ?? ""),
+        name: String(row[nameKey] ?? ""),
+      }))
+      .filter((row) => Boolean(row.id));
+  } catch {
+    return [];
+  }
+}
+
+export async function getMvpProductCatalogs(): Promise<ProductCatalogRefs> {
+  const [brands, categories, models] = await Promise.all([
+    listCatalogRefs(API_ENDPOINTS.BRANDS, "brand_code", "brand_name"),
+    listCatalogRefs(
+      API_ENDPOINTS.PRODUCT_CATEGORIES,
+      "category_code",
+      "category_name",
+    ),
+    listCatalogRefs(API_ENDPOINTS.PRODUCT_MODELS, "model_code", "model_name"),
+  ]);
+  return { brands, categories, models };
 }
 
 // BR-SKU-10: BE khoá sku_code/is_serial_tracked khi SKU đã có stock/movement

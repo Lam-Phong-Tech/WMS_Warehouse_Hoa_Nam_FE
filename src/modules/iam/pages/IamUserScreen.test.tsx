@@ -71,7 +71,8 @@ describe("IamUserScreen", () => {
       within(row as HTMLTableRowElement).getByText("Nhân viên kho"),
     ).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "+ Thêm người dùng" }));
+    // Nút dùng icon PlusOutlined + label (redesign "thêm icon full cho các hành động").
+    fireEvent.click(screen.getByRole("button", { name: /Thêm người dùng/ }));
     expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 

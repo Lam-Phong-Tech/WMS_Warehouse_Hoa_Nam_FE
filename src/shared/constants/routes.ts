@@ -13,6 +13,8 @@ export const ROUTES = {
   IAM_ROLES: "/system/roles",
   MASTER_DATA: "/master-data/skus",
   SKU_CREATE: "/master-data/skus/new",
+  CATALOG_MASTER: "/master-data/catalog",
+  WAREHOUSE_CONFIG: "/master-data/warehouse",
   AGENCIES: "/master-data/agencies",
   AGENCY_CREATE: "/master-data/agencies/new",
   DEFECTS: "/master-data/defects",

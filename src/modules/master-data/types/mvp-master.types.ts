@@ -5,8 +5,23 @@ export interface MasterListParams {
   keyword?: string;
   status?: MasterStatus | "";
   sku_type?: SkuType | "";
+  /** MST-01 toolbar "Hãng" — gửi kèm GET /products để lọc theo Brand. */
+  brand_id?: string;
   page?: number;
   per_page?: number;
+}
+
+/** Brand / Category / Model dùng để hiển thị tên thay cho *_id trong MST-01. */
+export interface CatalogRefRecord {
+  id: string;
+  code: string;
+  name: string;
+}
+
+export interface ProductCatalogRefs {
+  brands: CatalogRefRecord[];
+  categories: CatalogRefRecord[];
+  models: CatalogRefRecord[];
 }
 
 export interface MasterPageResult<T> {

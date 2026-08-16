@@ -1,4 +1,10 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 import { Modal } from "antd";
 import {
   CloseCircleOutlined,
@@ -17,6 +23,7 @@ import {
   useCreateMvpSku,
   useMvpAgencies,
   useMvpDefects,
+  useMvpProductCatalogs,
   useMvpSkuHasStock,
   useMvpSkus,
   useSetMvpSkuPublished,
@@ -27,6 +34,7 @@ import {
 import type {
   AgencyPayload,
   AgencyRecord,
+  CatalogRefRecord,
   DefectPayload,
   DefectRecord,
   MasterStatus,
@@ -68,6 +76,21 @@ function statusClass(status: MasterStatus) {
 function compactRef(value?: string | null) {
   if (!value) return "—";
   return value.length > 14 ? `${value.slice(0, 8)}…${value.slice(-4)}` : value;
+}
+
+function toRefIndex(rows: CatalogRefRecord[] | undefined) {
+  return new Map((rows ?? []).map((row) => [row.id, row]));
+}
+
+// MST-01 (wireframe): cột "Hãng" hiển thị tên danh mục, không phải UUID. Nếu
+// danh mục chưa nạp được thì rơi về mã rút gọn để vẫn phân biệt được bản ghi.
+function refLabel(
+  index: Map<string, CatalogRefRecord>,
+  value?: string | null,
+): string {
+  if (!value) return "—";
+  const found = index.get(value);
+  return found ? found.name || found.code : compactRef(value);
 }
 
 function ApiErrorAlert({
@@ -161,6 +184,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   const [keyword, setKeyword] = useState("");
   const [status, setStatus] = useState<MasterStatus | "">("");
   const [type, setType] = useState<SkuType | "">("");
+  const [brandId, setBrandId] = useState("");
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(15);
   const [modalOpen, setModalOpen] = useState(false);
@@ -172,9 +196,11 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
     keyword: keyword.trim(),
     status,
     sku_type: type,
+    brand_id: brandId,
     page,
     per_page: perPage,
   });
+  const catalogsQuery = useMvpProductCatalogs();
   const createMutation = useCreateMvpSku();
   const updateMutation = useUpdateMvpSku();
   const publishMutation = useSetMvpSkuPublished();
@@ -189,11 +215,33 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
     modalOpen && Boolean(editing),
   );
   const identityLocked = Boolean(editing) && stockLockQuery.data === true;
-  const rows = query.data?.data ?? [];
+  const apiRows = useMemo(() => query.data?.data ?? [], [query.data]);
+  const brands = catalogsQuery.data?.brands ?? [];
+  const brandIndex = useMemo(
+    () => toRefIndex(catalogsQuery.data?.brands),
+    [catalogsQuery.data],
+  );
+  const categoryIndex = useMemo(
+    () => toRefIndex(catalogsQuery.data?.categories),
+    [catalogsQuery.data],
+  );
+  const modelIndex = useMemo(
+    () => toRefIndex(catalogsQuery.data?.models),
+    [catalogsQuery.data],
+  );
+  // brand_id vẫn được gửi lên GET /products, nhưng BE ProductRepository hiện chỉ
+  // filter ['status','sku_type'] nên param có thể bị bỏ qua. Lọc thêm phía client
+  // trên trang đang xem để bộ lọc "Hãng" hoạt động ngay; khi BE bổ sung brand_id
+  // vào $filterable thì bước lọc này thành no-op.
+  const rows = useMemo(
+    () =>
+      brandId ? apiRows.filter((row) => row.brand_id === brandId) : apiRows,
+    [apiRows, brandId],
+  );
   const pagination = resolveApiPagination(query.data?.meta, {
     page,
     pageSize: perPage,
-    rowCount: rows.length,
+    rowCount: apiRows.length,
   });
 
   const togglePublish = async (record: SkuRecord) => {
@@ -350,6 +398,24 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           <option value="PRODUCT">PRODUCT</option>
           <option value="COMPONENT">COMPONENT</option>
         </select>
+        {/* MST-01 wireframe toolbar: bộ lọc "Hãng" cạnh bộ lọc Loại. */}
+        <select
+          className="select"
+          value={brandId}
+          aria-label="Lọc theo hãng"
+          disabled={catalogsQuery.isLoading}
+          onChange={(event) => {
+            setBrandId(event.target.value);
+            setPage(1);
+          }}
+        >
+          <option value="">Hãng: Tất cả</option>
+          {brands.map((brand) => (
+            <option key={brand.id} value={brand.id}>
+              {brand.name || brand.code}
+            </option>
+          ))}
+        </select>
         <select
           className="select"
           value={status}
@@ -409,7 +475,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               <th>SKU</th>
               <th>Loại</th>
               <th>ĐVT</th>
-              <th>Brand</th>
+              <th>Hãng</th>
               <th>Category</th>
               <th>Model</th>
               <th>Nguồn điện</th>
@@ -443,13 +509,13 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                     <td>{record.sku_type}</td>
                     <td>{record.unit || "—"}</td>
                     <td title={record.brand_id ?? undefined}>
-                      {compactRef(record.brand_id)}
+                      {refLabel(brandIndex, record.brand_id)}
                     </td>
                     <td title={record.category_id ?? undefined}>
-                      {compactRef(record.category_id)}
+                      {refLabel(categoryIndex, record.category_id)}
                     </td>
                     <td title={record.model_id ?? undefined}>
-                      {compactRef(record.model_id)}
+                      {refLabel(modelIndex, record.model_id)}
                     </td>
                     <td>
                       {record.power_or_voltage ||

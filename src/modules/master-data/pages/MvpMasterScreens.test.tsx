@@ -70,6 +70,15 @@ vi.mock("@/modules/master-data/hooks/use-mvp-master", () => ({
     error: null,
     refetch: vi.fn(),
   }),
+  useMvpProductCatalogs: () => ({
+    data: {
+      brands: [{ id: "brand-1", code: "DONGCHENG", name: "Dongcheng" }],
+      categories: [{ id: "cat-1", code: "DRILL", name: "Máy khoan" }],
+      models: [{ id: "model-1", code: "DJZ10A", name: "DJZ10A" }],
+    },
+    isLoading: false,
+    error: null,
+  }),
   useMvpSkuHasStock: () => ({ data: false, isLoading: false }),
   useCreateMvpSku: mutation,
   useUpdateMvpSku: mutation,
@@ -89,7 +98,7 @@ describe("API-backed MVP master screens", () => {
     render(<SkuMasterScreen />);
     expect(screen.getByText("DCH-DRILL-DJZ10A-220V-V1")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "+ Thêm SKU" }));
+    fireEvent.click(screen.getByRole("button", { name: /Thêm SKU/ }));
     let dialog = screen.getByRole("dialog");
     expect(within(dialog).getByText("Thêm SKU")).toBeInTheDocument();
     fireEvent.click(within(dialog).getByRole("button", { name: "Hủy" }));
@@ -107,7 +116,7 @@ describe("API-backed MVP master screens", () => {
   it("loads agency data and opens add/edit modal", () => {
     render(<AgencyMasterScreen />);
     expect(screen.getByText("Đại lý Minh Anh")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "+ Thêm đại lý" }));
+    fireEvent.click(screen.getByRole("button", { name: /Thêm đại lý/ }));
     expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 

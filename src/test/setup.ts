@@ -613,11 +613,14 @@ vi.mock("antd", () => {
         PRESENTED_IMAGE_DEFAULT: "default",
       },
     ),
-    Alert: ({ message, description, action, children }: any) =>
+    // antd v6: prop tiêu đề là `title` (alias deprecated: `message`) — mock render cả hai.
+    Alert: ({ title, message, description, action, children }: any) =>
       React.createElement(
         "div",
         null,
-        message ? React.createElement("div", null, message) : null,
+        (title ?? message)
+          ? React.createElement("div", null, title ?? message)
+          : null,
         description ? React.createElement("div", null, description) : null,
         action ?? null,
         children ?? null,
@@ -952,7 +955,9 @@ vi.mock("sonner", () => ({
 vi.mock("@ant-design/icons", () => {
   const stub = () => null;
   const icons: Record<string, any> = {};
-  "AimOutlined ApartmentOutlined AppstoreOutlined ArrowRightOutlined AuditOutlined BankOutlined BarChartOutlined BarcodeOutlined BellOutlined CameraOutlined CarOutlined CheckCircleOutlined PaperClipOutlined CheckOutlined CloseCircleOutlined CloseOutlined ClusterOutlined CopyOutlined DeleteOutlined DownOutlined DownloadOutlined EditOutlined EnvironmentOutlined ExclamationCircleFilled ExpandAltOutlined ExperimentOutlined ExportOutlined EyeOutlined FileExcelOutlined FilePdfOutlined FileSearchOutlined FileTextOutlined FundOutlined HistoryOutlined HomeOutlined IdcardOutlined ImportOutlined InboxOutlined KeyOutlined LockOutlined LogoutOutlined MailOutlined MenuFoldOutlined MenuUnfoldOutlined NodeIndexOutlined PlayCircleOutlined PlusOutlined ProfileOutlined ReloadOutlined RollbackOutlined SafetyCertificateOutlined SaveOutlined SearchOutlined SendOutlined SettingOutlined ShopOutlined ShoppingCartOutlined ShrinkOutlined SolutionOutlined StockOutlined StopOutlined SwapOutlined SyncOutlined TeamOutlined ToolOutlined UndoOutlined UnorderedListOutlined UploadOutlined UserAddOutlined UserOutlined UserSwitchOutlined WarningOutlined ZoomInOutlined ZoomOutOutlined"
+  // Danh sách sinh từ: grep -rhoE "\b[A-Z][A-Za-z]+(Outlined|Filled|TwoTone)\b" src
+  // — khi UI dùng icon mới, thêm tên vào đây (giữ sort A→Z).
+  "AimOutlined ApartmentOutlined AppstoreOutlined ArrowLeftOutlined ArrowRightOutlined AuditOutlined BankOutlined BarChartOutlined BarcodeOutlined BellOutlined CameraOutlined CarOutlined CheckCircleOutlined CheckOutlined CloseCircleOutlined CloseOutlined CloudDownloadOutlined CloudUploadOutlined ClusterOutlined CopyOutlined DeleteOutlined DisconnectOutlined DownOutlined DownloadOutlined EditOutlined EnvironmentOutlined ExclamationCircleFilled ExpandAltOutlined ExperimentOutlined ExportOutlined EyeOutlined FileExcelOutlined FilePdfOutlined FileSearchOutlined FileTextOutlined FundOutlined HistoryOutlined HomeOutlined IdcardOutlined ImportOutlined InboxOutlined KeyOutlined LockOutlined LogoutOutlined MailOutlined MenuFoldOutlined MenuUnfoldOutlined MoreOutlined NodeIndexOutlined PaperClipOutlined PlayCircleOutlined PlusOutlined PrinterOutlined ProfileOutlined ReloadOutlined RollbackOutlined SafetyCertificateOutlined SaveOutlined ScanOutlined SearchOutlined SendOutlined SettingOutlined ShopOutlined ShoppingCartOutlined ShrinkOutlined SolutionOutlined StockOutlined StopOutlined SwapOutlined SyncOutlined TagOutlined TeamOutlined ToolOutlined UndoOutlined UnorderedListOutlined UploadOutlined UserAddOutlined UserOutlined UserSwitchOutlined WarningOutlined ZoomInOutlined ZoomOutOutlined"
     .split(" ")
     .forEach((n) => (icons[n] = stub));
   return { default: stub, ...icons };
@@ -1003,6 +1008,8 @@ vi.mock("@/app/router/access", () => ({
     ],
     "/master-data/skus": ["sku.view", "sku.manage"],
     "/master-data/skus/new": ["sku.manage"],
+    "/master-data/catalog": ["catalog.view", "catalog.manage"],
+    "/master-data/warehouse": ["warehouse.view", "warehouse.manage"],
     "/master-data/agencies": ["agency.view", "agency.manage"],
     "/master-data/agencies/new": ["agency.manage"],
     "/master-data/defects": ["defect.view", "defect.manage"],

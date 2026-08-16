@@ -14,6 +14,7 @@ import {
   Typography,
 } from "antd";
 import {
+  CameraOutlined,
   CheckCircleOutlined,
   DisconnectOutlined,
   PrinterOutlined,
@@ -25,6 +26,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { getApiErrorMessage, normalizeError } from "@/shared/api/api-error";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
+import { CameraScanModal } from "@/shared/components/forms/CameraScanModal";
 import { useHasPermission } from "@/shared/components/permission";
 import {
   applyPackingLabel,
@@ -77,6 +79,9 @@ export function AlignedOutboundDetailModal({
   const [version, setVersion] = useState<number | null>(null);
   const [lineId, setLineId] = useState("");
   const [scanCode, setScanCode] = useState("");
+  // SRS §5.3: outbound là camera context hợp lệ; camera chỉ decode ra code_value,
+  // validation nghiệp vụ vẫn chạy trên cùng API như nhập tay.
+  const [cameraOpen, setCameraOpen] = useState(false);
   const [customerPhone, setCustomerPhone] = useState("");
   const [printerId, setPrinterId] = useState("");
   const [cancelOpen, setCancelOpen] = useState(false);
@@ -196,13 +201,14 @@ export function AlignedOutboundDetailModal({
   };
 
   const scanMutation = useMutation({
-    mutationFn: async () => {
-      if (!detail || !lineId || !scanCode.trim())
+    mutationFn: async (rawCode: string) => {
+      const codeValue = rawCode.trim();
+      if (!detail || !lineId || !codeValue)
         throw new Error("Chọn dòng và nhập/quét mã item.");
       return scanOutboundItem({
         documentId,
         lineId,
-        codeValue: scanCode.trim(),
+        codeValue,
         ifMatch: version ?? detail.document.version,
       });
     },
@@ -247,8 +253,8 @@ export function AlignedOutboundDetailModal({
     mutationFn: async () => {
       if (!fullScan)
         throw new Error("Phải scan đủ toàn bộ phiếu trước khi tạo nhãn.");
-      if (!customerPhone.trim())
-        throw new Error("SĐT khách hàng là bắt buộc trên Packing Label.");
+      // SRS §5.2 + §15 + AC-GWT-OUTBOUND-REQUEST-001: address/phone optional,
+      // thiếu thì nhãn render blank — không chặn tạo nhãn (REQ-SRS-014).
       return createPackingLabel({ documentId, customerPhone });
     },
     onSuccess: async () => {
@@ -562,16 +568,23 @@ export function AlignedOutboundDetailModal({
                 <Input
                   style={{ width: 310 }}
                   value={scanCode}
-                  placeholder="Barcode/QR hoặc mã item"
+                  placeholder="Quét Barcode / QR item"
                   onChange={(event) => setScanCode(event.target.value)}
-                  onPressEnter={() => scanMutation.mutate()}
+                  onPressEnter={() => scanMutation.mutate(scanCode)}
                 />
+                <Button
+                  icon={<CameraOutlined />}
+                  disabled={!lineId || scanMutation.isPending}
+                  onClick={() => setCameraOpen(true)}
+                >
+                  Quét bằng camera
+                </Button>
                 <Button
                   type="primary"
                   icon={<ScanOutlined />}
                   loading={scanMutation.isPending}
                   disabled={!lineId || !scanCode.trim()}
-                  onClick={() => scanMutation.mutate()}
+                  onClick={() => scanMutation.mutate(scanCode)}
                 >
                   Match item
                 </Button>
@@ -621,16 +634,14 @@ export function AlignedOutboundDetailModal({
                 <Input
                   style={{ width: 300 }}
                   value={customerPhone}
-                  placeholder="SĐT khách hàng trên Packing Label"
+                  placeholder="SĐT khách hàng (tùy chọn) trên Packing Label"
                   disabled={!fullScan}
                   onChange={(event) => setCustomerPhone(event.target.value)}
                 />
                 <Button
                   type="primary"
                   icon={<TagOutlined />}
-                  disabled={
-                    !fullScan || !can("label.print") || !customerPhone.trim()
-                  }
+                  disabled={!fullScan || !can("label.print")}
                   loading={createLabelMutation.isPending}
                   onClick={() => createLabelMutation.mutate()}
                 >
@@ -675,7 +686,8 @@ export function AlignedOutboundDetailModal({
                     {packingLabel.outboundNo || doc?.code}
                   </Descriptions.Item>
                   <Descriptions.Item label="Phiếu toa / Request">
-                    {short(doc?.outboundRequestId)}
+                    {packingLabel.sourceRequestNo ||
+                      short(doc?.outboundRequestId)}
                   </Descriptions.Item>
                   <Descriptions.Item label="Ngày giờ">
                     {String(
@@ -686,10 +698,10 @@ export function AlignedOutboundDetailModal({
                     {packingLabel.recipientName}
                   </Descriptions.Item>
                   <Descriptions.Item label="SĐT">
-                    {packingLabel.customerPhone}
+                    {packingLabel.customerPhone || "-"}
                   </Descriptions.Item>
                   <Descriptions.Item label="Địa chỉ giao" span={2}>
-                    {packingLabel.recipientAddress}
+                    {packingLabel.recipientAddress || "-"}
                   </Descriptions.Item>
                   <Descriptions.Item label="Tổng SKU">
                     {packingLabel.skuCount}
@@ -741,8 +753,8 @@ export function AlignedOutboundDetailModal({
               <Alert
                 type="info"
                 showIcon
-                title="Lifecycle: DRAFT → PREVIEWED → READY_TO_PRINT → PRINTED → ĐÃ DÁN"
-                description="Ready đóng băng immutable Packing_Label_Snapshot. Print/Retry/Reprint không đổi tồn."
+                title="Lifecycle: PENDING_PRINT → PRINTED → ĐÃ DÁN (PRINT_FAILED nếu in lỗi)"
+                description="Tạo nhãn đóng băng ngay một immutable Packing_Label_Snapshot (DR_HN_20260815). Print/Retry/Reprint không đổi tồn."
               />
               <Space wrap>
                 <Select
@@ -845,6 +857,19 @@ export function AlignedOutboundDetailModal({
           </Space>
         </Card>
       </Space>
+
+      {/* SRS §5.3: camera trả đúng một code_value vào field đang hoạt động;
+          permission denied / no camera / unsupported browser rơi về nhập tay. */}
+      <CameraScanModal
+        open={cameraOpen}
+        title="Camera Barcode/QR · Quét item xuất kho"
+        onClose={() => setCameraOpen(false)}
+        onDetected={(code) => {
+          setCameraOpen(false);
+          setScanCode(code);
+          scanMutation.mutate(code);
+        }}
+      />
 
       <Modal
         open={Boolean(rfidTarget)}

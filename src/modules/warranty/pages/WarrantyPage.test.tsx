@@ -118,7 +118,9 @@ describe("WarrantyPage (WAR-01 hub)", () => {
         .some((element) => element.className.includes("ant-tag")),
     ).toBe(true);
     expect(screen.getByText("TEMP-0002")).toBeInTheDocument();
-    expect(screen.getByText("+ Tiếp nhận bảo hành")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Tiếp nhận bảo hành/ }),
+    ).toBeInTheDocument();
     // Không có warranty.pii.view => hiện ghi chú mask PII.
     expect(screen.getByText(/warranty.pii.view/)).toBeInTheDocument();
   });
@@ -128,7 +130,9 @@ describe("WarrantyPage (WAR-01 hub)", () => {
     renderWithProviders(<WarrantyPage />, ["/warranty"]);
 
     await screen.findByText("BH-0001");
-    expect(screen.queryByText("+ Tiếp nhận bảo hành")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Tiếp nhận bảo hành/ }),
+    ).not.toBeInTheDocument();
   });
 
   it("bấm Mở mở modal chi tiết đúng case (WAR-03)", async () => {

@@ -41,6 +41,19 @@ const NAV_GROUPS: NavGroup[] = [
         label: "Danh sách SKU / Product Master",
       },
       {
+        // SCR-MST-01 (REQ-SRS-029): hãng/nhóm hàng/model/nguồn điện/quy cách là
+        // master nuôi form tạo SKU nên đứng ngay cạnh mục SKU.
+        screen: "MST-CAT-01",
+        path: ROUTES.CATALOG_MASTER,
+        label: "Danh mục Product Master",
+      },
+      {
+        // SCR-WH-01 (REQ-SRS-001): cấu hình đúng 01 kho tổng.
+        screen: "WH-01",
+        path: ROUTES.WAREHOUSE_CONFIG,
+        label: "Cấu hình kho tổng",
+      },
+      {
         screen: "AGY-01",
         path: ROUTES.AGENCIES,
         label: "Danh mục đại lý / nơi nhận",
@@ -122,6 +135,8 @@ const DEFAULT_SCREEN_BY_PATH: Record<string, string> = {
   [ROUTES.DASHBOARD]: "MAP-01",
   [ROUTES.IAM_USERS]: "IAM-01",
   [ROUTES.MASTER_DATA]: "MST-01",
+  [ROUTES.CATALOG_MASTER]: "MST-CAT-01",
+  [ROUTES.WAREHOUSE_CONFIG]: "WH-01",
   [ROUTES.AGENCIES]: "AGY-01",
   [ROUTES.DEFECTS]: "DEF-01",
   [ROUTES.INBOUND]: "IN-01",

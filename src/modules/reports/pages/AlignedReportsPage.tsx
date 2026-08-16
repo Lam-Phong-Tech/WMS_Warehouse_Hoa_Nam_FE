@@ -21,6 +21,8 @@ import { toast } from "sonner";
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { http } from "@/shared/api/http";
 import { getApiErrorMessage } from "@/shared/api/api-error";
+import { assertWmsActionPermission } from "@/shared/api/wms-action-permission";
+import { WMS_ACTION_PERMISSIONS } from "@/shared/constants/wms-permissions";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { MvpPageSizeSelector } from "@/shared/components/mvp/MvpListPagination";
 import { ActionButton } from "@/shared/components/permission/ActionButton";
@@ -199,6 +201,27 @@ function usePrinterOptions(): { options: SelectOption[]; loading: boolean } {
   };
 }
 
+/** §13.10: RPT-INV-01 và RPT-XNT-01 đều lọc theo category. */
+function useCategoryOptions(): { options: SelectOption[]; loading: boolean } {
+  const query = useQuery({
+    queryKey: ["product-categories", "flow06-filter"],
+    queryFn: () =>
+      http.getPage<Raw[]>(API_ENDPOINTS.PRODUCT_CATEGORIES, {
+        params: { status: "ACTIVE", per_page: 100 },
+      }),
+  });
+  const rows = Array.isArray(query.data?.data) ? query.data.data : [];
+  return {
+    loading: query.isLoading,
+    options: rows
+      .map((row) => ({
+        value: text(row.id ?? row.category_id, ""),
+        label: [row.category_code, row.category_name].filter(Boolean).join(" · "),
+      }))
+      .filter((row) => row.value !== ""),
+  };
+}
+
 function columnsFor(report: ReportKey): TableColumnsType<Raw> {
   switch (report) {
     case "inventory-balance":
@@ -211,6 +234,8 @@ function columnsFor(report: ReportKey): TableColumnsType<Raw> {
           fixed: "left",
         },
         { title: "Tên SKU", dataIndex: "product_name", width: 220 },
+        // §13.10 RPT-INV-01: category, serial_qty, box_qty, location_hint.
+        { title: "Nhóm hàng", dataIndex: "category", width: 140 },
         { title: "Trạng thái", dataIndex: "stock_status", width: 130 },
         {
           title: "Tồn kho",
@@ -224,6 +249,19 @@ function columnsFor(report: ReportKey): TableColumnsType<Raw> {
           align: "right",
           render: fmt,
         },
+        {
+          title: "Serial",
+          dataIndex: "serial_qty",
+          align: "right",
+          render: fmt,
+        },
+        {
+          title: "Trong khay/thùng",
+          dataIndex: "box_qty",
+          align: "right",
+          render: fmt,
+        },
+        { title: "Vị trí gợi ý", dataIndex: "location_hint", width: 150 },
         {
           title: "Ledger",
           dataIndex: "ledger_qty",
@@ -316,6 +354,8 @@ function columnsFor(report: ReportKey): TableColumnsType<Raw> {
         { title: "Tên SKU", dataIndex: "product_name", width: 190 },
         { title: "SL Δ", dataIndex: "qty_delta", align: "right", render: fmt },
         { title: "Mã vật lý", dataIndex: "physical_code", width: 170 },
+        // §13.10 RPT-MOV-01 yêu cầu cột actor.
+        { title: "Người thực hiện", dataIndex: "actor", width: 150 },
         { title: "Nguồn", dataIndex: "source_type", width: 130 },
         {
           title: "Movement gốc",
@@ -478,8 +518,13 @@ function columnsFor(report: ReportKey): TableColumnsType<Raw> {
       ];
     case "outbound-by-agency":
       return [
+        // §13.10 RPT-RECIPIENT-01: source_request_no là khoá trace về toa nguồn;
+        // contact hiển thị dạng đã mask theo BR-EXP.
+        { title: "Phiếu toa", dataIndex: "source_request_no", width: 150 },
         { title: "Mã nơi nhận", dataIndex: "agency_code", width: 130 },
         { title: "Nơi nhận", dataIndex: "agency_name", width: 190 },
+        { title: "Địa chỉ", dataIndex: "address", width: 220, ellipsis: true },
+        { title: "Liên hệ", dataIndex: "contact_masked", width: 130 },
         { title: "Mã SKU", dataIndex: "product_code", width: 130 },
         { title: "Tên SKU", dataIndex: "product_name", width: 200 },
         { title: "Phiếu", dataIndex: "outbound_no", width: 150 },
@@ -594,6 +639,7 @@ export default function AlignedReportsPage() {
   const [status, setStatus] = useState<string>();
   const [warehouseId, setWarehouseId] = useState<string>();
   const [agencyId, setAgencyId] = useState<string>();
+  const [categoryId, setCategoryId] = useState<string>();
   const [printerId, setPrinterId] = useState<string>();
   const [defectId, setDefectId] = useState<string>();
   const [identification, setIdentification] = useState<string>();
@@ -605,6 +651,7 @@ export default function AlignedReportsPage() {
 
   const warehouses = useWarehouseOptions();
   const printers = usePrinterOptions();
+  const categories = useCategoryOptions();
   const agencies = useMvpAgencies({ status: "ACTIVE", per_page: 100 });
   const defects = useMvpDefects({ status: "ACTIVE", per_page: 100 });
 
@@ -620,14 +667,17 @@ export default function AlignedReportsPage() {
       result.from_date = from;
       result.to_date = to;
     }
+    // §13.10: RPT-INV-01 lọc SKU/category/status + as_of; RPT-XNT-01 lọc SKU/category.
     if (report === "inventory-balance") {
       if (keyword.trim()) result.keyword = keyword.trim();
       if (status) result.stock_status = status;
       if (warehouseId) result.warehouse_id = warehouseId;
+      if (categoryId) result.category_id = categoryId;
     }
     if (report === "xnt") {
       if (keyword.trim()) result.keyword = keyword.trim();
       if (warehouseId) result.warehouse_id = warehouseId;
+      if (categoryId) result.category_id = categoryId;
     }
     if (report === "document-history") {
       result.doc_type = docType;
@@ -667,6 +717,7 @@ export default function AlignedReportsPage() {
     status,
     warehouseId,
     agencyId,
+    categoryId,
     printerId,
     defectId,
     identification,
@@ -702,6 +753,12 @@ export default function AlignedReportsPage() {
     if (config.dateFilter && invalidPeriod) return;
     setExporting(format);
     try {
+      // BR-EXP-01..05: export là hành động riêng, phải chặn tại client trước khi
+      // gọi mạng (BE vẫn là lớp enforce authoritative bằng permission report.export).
+      assertWmsActionPermission(
+        WMS_ACTION_PERMISSIONS.EXPORT_REPORT,
+        "report export",
+      );
       const { page: _page, per_page: _perPage, ...filters } = params;
       const blob = await http.downloadBlob(config.exportEndpoint, {
         params: { ...filters, ...(format === "pdf" ? { format: "pdf" } : {}) },
@@ -836,6 +893,23 @@ export default function AlignedReportsPage() {
             options={warehouses.options}
             onChange={(value) => {
               setWarehouseId(value);
+              resetPage();
+            }}
+          />
+        ) : null}
+
+        {report === "inventory-balance" || report === "xnt" ? (
+          <Select
+            allowClear
+            showSearch
+            optionFilterProp="label"
+            style={{ width: 210 }}
+            placeholder="Nhóm hàng"
+            value={categoryId}
+            loading={categories.loading}
+            options={categories.options}
+            onChange={(value) => {
+              setCategoryId(value);
               resetPage();
             }}
           />

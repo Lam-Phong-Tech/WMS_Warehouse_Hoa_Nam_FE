@@ -9,6 +9,7 @@ import type { ApiMeta } from "@/shared/types/api-response";
 import type {
   ReversalDocument,
   ReversalLine,
+  ReversibleItemCandidate,
   ReversibleMovement,
   ReversibleMovementLine,
   ReversalLookupParams,
@@ -82,6 +83,16 @@ function normalizeReversalLine(row: RawRecord): ReversalLine {
   };
 }
 
+function normalizeItemCandidate(row: RawRecord): ReversibleItemCandidate {
+  return {
+    item_id: text(row.item_id),
+    sku_id: text(row.sku_id),
+    item_code: text(row.item_code) || undefined,
+    serial_number: text(row.serial_number) || undefined,
+    item_status: text(row.item_status),
+  };
+}
+
 function normalizeReversibleLine(row: RawRecord): ReversibleMovementLine {
   const reversibleQty = num(
     row.reversible_qty ?? row.qty_reversible ?? row.remaining_qty,
@@ -98,6 +109,10 @@ function normalizeReversibleLine(row: RawRecord): ReversibleMovementLine {
     uom: text(row.uom) || undefined,
     dependency_guard: guard,
     can_reverse: Boolean(row.can_reverse ?? (!guard && reversibleQty > 0)),
+    is_serial_tracked: Boolean(row.is_serial_tracked),
+    items: Array.isArray(row.items)
+      ? (row.items as RawRecord[]).map(normalizeItemCandidate)
+      : [],
   };
 }
 
@@ -207,6 +222,9 @@ export async function createReversalDocument(
       `lines.${index}.reversal_qty`,
     ),
     ...(line.reason ? { reason: line.reason } : {}),
+    // BR-REV: SKU serial-tracked bắt buộc item_id + quantity=1, nếu thiếu BE
+    // trả 422 REVERSAL_ITEM_REQUIRED.
+    ...(line.item_id ? { item_id: line.item_id } : {}),
   }));
   return http.post<CreateReversalResponse>(
     API_ENDPOINTS.REVERSAL_CREATE,

@@ -53,7 +53,9 @@ const warranty = read("src/modules/warranty/services/warrantyService.ts");
 const componentIssue = read(
   "src/modules/warranty/services/componentIssueService.ts",
 );
-const reports = read("src/modules/reports/services/reportsService.ts");
+// Màn hình báo cáo thật gọi thẳng http.downloadBlob nên guard quyền export phải
+// nằm ở đây; trỏ verifier vào trang đang chạy thay vì service không còn đường vào.
+const reports = read("src/modules/reports/pages/AlignedReportsPage.tsx");
 const tests = read("src/test/wms-contract-signoff-guards.test.ts");
 const warrantyTests = read("src/test/warranty-v17-fail-closed.test.ts");
 const signoff = read("src/shared/api/wms-contract-signoff.ts");

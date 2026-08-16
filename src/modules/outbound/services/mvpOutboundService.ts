@@ -142,7 +142,8 @@ export interface IssueEvidence {
 export interface OutboundRequestRowInput {
   request_no: string;
   customer_name: string;
-  customer_address: string;
+  // SRS v1.12 §15 + REQ-SRS-014: address nullable — toa nguồn có thể không có địa chỉ.
+  customer_address?: string;
   sku_id?: string;
   sku_code?: string;
   required_qty: number;
