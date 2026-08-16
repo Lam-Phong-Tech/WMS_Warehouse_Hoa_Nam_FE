@@ -15,6 +15,7 @@ type ApiHarness = {
   inventoryUrls: string[];
   balanceCalls: () => number;
   refreshCalls: () => number;
+  meCalls: () => number;
 };
 
 const balance = {
@@ -56,13 +57,18 @@ async function installApi(
   const inventoryUrls: string[] = [];
   let balanceCalls = 0;
   let refreshCalls = 0;
+  let meCalls = 0;
 
   await page.route("**/api/v1/**", async (route: Route) => {
     const request = route.request();
-    const url = new URL(request.url());
-    const path = url.pathname.replace(/^\/api\/v1/, "");
+    const rawUrl = request.url();
+    const url = new URL(rawUrl);
+    const path = url.pathname.replace(/^\/api\/v1\/?/, "/");
 
-    if (path === "/auth/refresh") {
+    // Keep auth bootstrap byte-for-byte compatible with the already passing
+    // wms-runtime-evidence.spec.ts contract. WWHN-212 tests inventory behavior,
+    // not a second bespoke authentication protocol.
+    if (rawUrl.endsWith("/auth/refresh")) {
       refreshCalls += 1;
       if (options.balance401 && refreshCalls > 1) {
         await route.fulfill({
@@ -88,40 +94,55 @@ async function installApi(
             token_type: "bearer",
             expires_in: 3600,
           },
+          meta: { request_id: "WWHN-212-REFRESH-200" },
         }),
       });
       return;
     }
 
-    if (path === "/auth/me") {
+    if (rawUrl.endsWith("/auth/me")) {
+      meCalls += 1;
       await route.fulfill({
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({
           success: true,
           data: {
-            id: 211,
-            name: "WWHN-212 QA2",
-            email: "wwhn212@example.com",
-            code: "WWHN-212-QA2",
+            id: 212,
+            name: "WWHN-212 QA User",
+            email: "wwhn212.qa@gmail.com",
+            code: "WWHN-212-QA",
             is_super_admin: false,
             permissions,
             active_context: {
-              role_id: 211,
-              role_name: "QA2 inventory role",
-              scope_type: "kho",
-              warehouse_id: "wh-a",
+              role_id: 212,
+              role_name: "QA limited role",
+              scope_type: "he_thong",
+              org_unit_id: null,
+              department_id: null,
+              warehouse_id: null,
               permission_codes: permissions,
             },
-            available_contexts: [],
+            available_contexts: [
+              {
+                role_id: 212,
+                role_name: "QA limited role",
+                scope_type: "he_thong",
+                org_unit_id: null,
+                department_id: null,
+                warehouse_id: null,
+                permission_codes: permissions,
+              },
+            ],
           },
+          meta: { request_id: "WWHN-212-ME-200" },
         }),
       });
       return;
     }
 
     if (path === "/inventory/balances") {
-      inventoryUrls.push(request.url());
+      inventoryUrls.push(rawUrl);
       balanceCalls += 1;
       if (options.balance401) {
         await route.fulfill({
@@ -163,7 +184,7 @@ async function installApi(
     }
 
     if (path === "/inventory/balances/bal-211/subledger") {
-      inventoryUrls.push(request.url());
+      inventoryUrls.push(rawUrl);
       await route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -184,7 +205,7 @@ async function installApi(
     }
 
     if (path === "/stock-movements") {
-      inventoryUrls.push(request.url());
+      inventoryUrls.push(rawUrl);
       await route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -198,7 +219,7 @@ async function installApi(
     }
 
     if (path === "/stock-movements/mv-211") {
-      inventoryUrls.push(request.url());
+      inventoryUrls.push(rawUrl);
       await route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -208,7 +229,7 @@ async function installApi(
     }
 
     if (path === "/stock-movements/mv-211/trace-source") {
-      inventoryUrls.push(request.url());
+      inventoryUrls.push(rawUrl);
       await route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -231,7 +252,7 @@ async function installApi(
     }
 
     if (path === "/stock-movements/trace-by-code") {
-      inventoryUrls.push(request.url());
+      inventoryUrls.push(rawUrl);
       await route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -245,7 +266,10 @@ async function installApi(
             },
             resolved_type: "ITEM",
             resolved_id: "item-211",
-            resolved_object: { sku_code: "SKU-211", sku_name: "Sản phẩm WWHN-211" },
+            resolved_object: {
+              sku_code: "SKU-211",
+              sku_name: "Sản phẩm WWHN-211",
+            },
             movements: [movement],
             container_items: [],
           },
@@ -265,15 +289,22 @@ async function installApi(
     inventoryUrls,
     balanceCalls: () => balanceCalls,
     refreshCalls: () => refreshCalls,
+    meCalls: () => meCalls,
   };
+}
+
+async function expectBootstrapComplete(api: ApiHarness): Promise<void> {
+  await expect.poll(api.refreshCalls, { timeout: 5_000 }).toBeGreaterThanOrEqual(1);
+  await expect.poll(api.meCalls, { timeout: 5_000 }).toBeGreaterThanOrEqual(1);
 }
 
 test("WWHN-212 route guard: inventory.view missing redirects direct URL to 403", async ({
   page,
 }, testInfo) => {
-  await installApi(page, []);
+  const api = await installApi(page, []);
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/inventory");
+  await expectBootstrapComplete(api);
 
   await expect(page).toHaveURL(/\/errors\/403$/);
   await expect(
@@ -288,9 +319,10 @@ test("WWHN-212 route guard: inventory.view missing redirects direct URL to 403",
 test("WWHN-212 action guard: inventory.view without inventory.trace hides and disables trace", async ({
   page,
 }, testInfo) => {
-  await installApi(page, ["inventory.view"]);
+  const api = await installApi(page, ["inventory.view"]);
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/inventory");
+  await expectBootstrapComplete(api);
 
   await expect(page.getByText("SKU-211", { exact: true })).toBeVisible();
   await expect(
@@ -311,6 +343,7 @@ test("WWHN-212 filters + balance subledger + movement trace + physical-code trac
   const api = await installApi(page, ["inventory.view", "inventory.trace"]);
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/inventory");
+  await expectBootstrapComplete(api);
 
   await expect(page.getByText("SKU-211", { exact: true })).toBeVisible();
   await page.getByLabel("Tìm tồn kho").fill("SKU-211");
@@ -332,7 +365,9 @@ test("WWHN-212 filters + balance subledger + movement trace + physical-code trac
   await expect
     .poll(() =>
       api.inventoryUrls.some((raw) =>
-        new URL(raw).pathname.endsWith("/inventory/balances/bal-211/subledger"),
+        new URL(raw).pathname.endsWith(
+          "/inventory/balances/bal-211/subledger",
+        ),
       ),
     )
     .toBe(true);
@@ -390,6 +425,7 @@ test("WWHN-212 backend 403 is visible and retry recovers without navigation leak
   });
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/inventory");
+  await expectBootstrapComplete(api);
 
   await expect(
     page.getByText("Không có quyền truy cập", { exact: true }),
@@ -409,6 +445,7 @@ test("WWHN-212 backend 401 fails closed to login when refresh is rejected", asyn
 }) => {
   const api = await installApi(page, ["inventory.view"], { balance401: true });
   await page.goto("/inventory");
+  await expect.poll(api.refreshCalls, { timeout: 5_000 }).toBeGreaterThanOrEqual(1);
 
   await expect(page).toHaveURL(/\/login(?:\?|$)/);
   expect(api.refreshCalls()).toBeGreaterThanOrEqual(2);
@@ -420,12 +457,13 @@ for (const viewport of [
   { name: "mobile-375x812", width: 375, height: 812 },
 ]) {
   test(`WWHN-212 responsive ${viewport.name}`, async ({ page }, testInfo) => {
-    await installApi(page, ["inventory.view", "inventory.trace"]);
+    const api = await installApi(page, ["inventory.view", "inventory.trace"]);
     await page.setViewportSize({
       width: viewport.width,
       height: viewport.height,
     });
     await page.goto("/inventory");
+    await expectBootstrapComplete(api);
 
     await expect(page.getByText("SKU-211", { exact: true })).toBeVisible();
     const documentOverflow = await page.evaluate(
