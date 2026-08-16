@@ -7,6 +7,7 @@ on:
     paths:
       - "src/modules/inventory/**"
       - "src/app/router/access.ts"
+      - "src/app/providers/query-client.ts"
       - "src/shared/api/endpoints.ts"
       - "docs/evidence/WWHN-211/**"
       - "scripts/verify-wwhn-211-closure.mjs"
@@ -86,6 +87,7 @@ jobs:
             src/modules/inventory/services/inventoryService.test.ts \
             src/modules/inventory/pages/InventoryPage.tsx \
             src/app/router/access.ts \
+            src/app/providers/query-client.ts \
             src/shared/api/endpoints.ts \
             e2e/wwhn-212-inventory-qa2.spec.ts \
             scripts/verify-wwhn-211-closure.mjs \

@@ -1,4 +1,17 @@
 import { QueryClient } from "@tanstack/react-query";
+import { normalizeError } from "@/shared/api/api-error";
+
+// Retry đúng semantics của HTTP contract:
+// - 4xx là lỗi auth/permission/validation/business contract -> fail fast để UI
+//   hiển thị ngay, không tự gửi lại request không thể tự hết lỗi.
+// - network/timeout/5xx có thể là transient -> retry tối đa 1 lần.
+// Điều này đặc biệt quan trọng với 401/403: route/action/data guard phải quan sát
+// được lỗi thật từ backend thay vì bị một automatic retry che khuất.
+function shouldRetryQuery(failureCount: number, error: unknown): boolean {
+  const { status } = normalizeError(error);
+  if (status !== undefined && status >= 400 && status < 500) return false;
+  return failureCount < 1;
+}
 
 // Tách riêng khỏi query-provider.tsx (chỉ export component) — gộp chung sẽ
 // vi phạm react-refresh/only-export-components (file export cả component lẫn
@@ -7,23 +20,18 @@ import { QueryClient } from "@tanstack/react-query";
 // auth.store gọi clear() khi logout — tránh hiển thị dữ liệu scope cũ sau khi
 // user đổi vai trò/phạm vi hoặc đổi tài khoản (xem docs/TASK_BLOCKERS.md).
 //
-// Defaults thống nhất cho toàn ERP (P2 — trước đây dùng mặc định thư viện:
-// retry 3 lần + staleTime 0 cho MỌI query, gây refetch thừa mỗi lần focus/mount):
-// - staleTime 60s: hầu hết danh mục/danh sách không đổi liên tục, giảm gọi lại
-//   API vô ích. Trang cần dữ liệu tươi hơn tự set staleTime riêng khi gọi useQuery.
-// - gcTime 5 phút: giữ cache đủ lâu để chuyển tab qua lại không phải load lại.
-// - retry 1: tránh chờ lâu vô ích khi API lỗi 4xx (lỗi nghiệp vụ) — request thật
-//   sự đáng retry (timeout/network) đã có logic riêng ở use-me.ts.
-// - refetchOnWindowFocus false: tránh tự refetch gây giật UI khi user chuyển
-//   tab/app — invalidate chủ động (vd sau mutation, sau đổi context) vẫn hoạt động.
-// - mutations retry 0: KHÔNG tự retry POST/PUT/DELETE — tránh lặp side-effect
-//   (vd tạo trùng bản ghi) nếu request đầu đã tới BE nhưng response bị mất.
+// Defaults thống nhất cho toàn ERP:
+// - staleTime 60s: giảm refetch thừa cho danh mục/danh sách.
+// - gcTime 5 phút: giữ cache đủ lâu khi đổi tab.
+// - retry: 4xx không retry; transient/network/5xx retry tối đa 1 lần.
+// - refetchOnWindowFocus false: tránh tự refetch gây giật UI.
+// - mutations retry 0: không tự retry POST/PUT/DELETE để tránh lặp side effect.
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 60 * 1000,
       gcTime: 5 * 60 * 1000,
-      retry: 1,
+      retry: shouldRetryQuery,
       refetchOnWindowFocus: false,
     },
     mutations: {
