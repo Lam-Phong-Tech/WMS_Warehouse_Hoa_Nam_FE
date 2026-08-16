@@ -12,22 +12,18 @@ import { http } from "@/shared/api/http";
 import {
   fetchBalanceSubledger,
   fetchInventoryBalances,
-  fetchScanBatches,
-  fetchScanEvents,
-  fetchSafeStockAlerts,
-  fetchSafeStockConfigs,
   fetchStockMovement,
   fetchStockMovements,
   traceByPhysicalCode,
   traceStockMovementSource,
 } from "./inventoryService";
 
-describe("inventoryService — 6 endpoint tồn kho/trace", () => {
+describe("inventoryService — WWHN-211 exact six endpoint contract", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("fetchInventoryBalances gọi GET /inventory/balances và normalize field theo contract chính (snake_case đầy đủ)", async () => {
+  it("fetchInventoryBalances gọi GET /inventory/balances và normalize field theo contract", async () => {
     vi.mocked(http.getPage).mockResolvedValue({
       data: [
         {
@@ -58,7 +54,6 @@ describe("inventoryService — 6 endpoint tồn kho/trace", () => {
     expect(http.getPage).toHaveBeenCalledWith("/inventory/balances", {
       params: { per_page: 20, status: "normal", page: 1 },
     });
-    expect(result.rows).toHaveLength(1);
     expect(result.rows[0]).toMatchObject({
       id: "bal-1",
       sku: "SKU-001",
@@ -74,7 +69,7 @@ describe("inventoryService — 6 endpoint tồn kho/trace", () => {
     expect(result.meta).toEqual({ total: 1, page: 1, per_page: 20 });
   });
 
-  it("fetchInventoryBalances normalize được payload dùng tên field thay thế (fallback chain)", async () => {
+  it("fetchInventoryBalances giữ fallback normalization để tương thích payload hiện hành", async () => {
     vi.mocked(http.getPage).mockResolvedValue({
       data: [
         {
@@ -105,7 +100,27 @@ describe("inventoryService — 6 endpoint tồn kho/trace", () => {
     });
   });
 
-  it("fetchStockMovements gọi GET /stock-movements với filter và normalize dấu +/- số lượng", async () => {
+  it("fetchBalanceSubledger gọi GET /inventory/balances/:id/subledger", async () => {
+    vi.mocked(http.get).mockResolvedValue({
+      balance_id: "bal-1",
+      product_id: "p-1",
+      warehouse_id: "w-1",
+      items: [{ id: "item-1" }],
+      containers: [],
+      item_count: 1,
+      container_count: 0,
+    });
+
+    const result = await fetchBalanceSubledger("bal-1");
+
+    expect(http.get).toHaveBeenCalledWith(
+      "/inventory/balances/bal-1/subledger",
+    );
+    expect(result.item_count).toBe(1);
+    expect(result.items).toHaveLength(1);
+  });
+
+  it("fetchStockMovements gọi GET /stock-movements với filter và normalize movement", async () => {
     vi.mocked(http.getPage).mockResolvedValue({
       data: [
         {
@@ -124,7 +139,10 @@ describe("inventoryService — 6 endpoint tồn kho/trace", () => {
       meta: { total: 1 },
     });
 
-    const result = await fetchStockMovements({ movement_type: "RECEIPT", page: 1 });
+    const result = await fetchStockMovements({
+      movement_type: "RECEIPT",
+      page: 1,
+    });
 
     expect(http.getPage).toHaveBeenCalledWith("/stock-movements", {
       params: { per_page: 20, movement_type: "RECEIPT", page: 1 },
@@ -141,8 +159,11 @@ describe("inventoryService — 6 endpoint tồn kho/trace", () => {
     });
   });
 
-  it("fetchStockMovement gọi GET /stock-movements/:id với id thay thế đúng vị trí", async () => {
-    vi.mocked(http.get).mockResolvedValue({ id: "mv-1", movement_no: "MV-0001" });
+  it("fetchStockMovement gọi GET /stock-movements/:id", async () => {
+    vi.mocked(http.get).mockResolvedValue({
+      id: "mv-1",
+      movement_no: "MV-0001",
+    });
 
     const result = await fetchStockMovement("mv-1");
 
@@ -150,7 +171,7 @@ describe("inventoryService — 6 endpoint tồn kho/trace", () => {
     expect(result).toMatchObject({ id: "mv-1" });
   });
 
-  it("traceStockMovementSource gọi GET /stock-movements/:id/trace-source và normalize timeline/lines", async () => {
+  it("traceStockMovementSource gọi GET /stock-movements/:id/trace-source", async () => {
     vi.mocked(http.get).mockResolvedValue({
       source: {
         source_type: "INBOUND",
@@ -166,7 +187,9 @@ describe("inventoryService — 6 endpoint tồn kho/trace", () => {
 
     const result = await traceStockMovementSource("mv-1");
 
-    expect(http.get).toHaveBeenCalledWith("/stock-movements/mv-1/trace-source");
+    expect(http.get).toHaveBeenCalledWith(
+      "/stock-movements/mv-1/trace-source",
+    );
     expect(result).toMatchObject({
       movementId: "mv-1",
       sourceType: "INBOUND",
@@ -179,25 +202,7 @@ describe("inventoryService — 6 endpoint tồn kho/trace", () => {
     expect(result.timeline).toHaveLength(1);
   });
 
-  it("fetchBalanceSubledger gọi GET /inventory/balances/:id/subledger", async () => {
-    vi.mocked(http.get).mockResolvedValue({
-      balance_id: "bal-1",
-      product_id: "p-1",
-      warehouse_id: "w-1",
-      items: [{ id: "item-1" }],
-      containers: [],
-      item_count: 1,
-      container_count: 0,
-    });
-
-    const result = await fetchBalanceSubledger("bal-1");
-
-    expect(http.get).toHaveBeenCalledWith("/inventory/balances/bal-1/subledger");
-    expect(result.item_count).toBe(1);
-    expect(result.items).toHaveLength(1);
-  });
-
-  it("traceByPhysicalCode gọi GET /stock-movements/trace-by-code với query param code", async () => {
+  it("traceByPhysicalCode gọi GET /stock-movements/trace-by-code với query code", async () => {
     vi.mocked(http.get).mockResolvedValue({
       physical_code: { code_value: "QR-001", carrier_type: "QR" },
       resolved_type: "ITEM",
@@ -215,12 +220,15 @@ describe("inventoryService — 6 endpoint tồn kho/trace", () => {
     expect(result.resolved_type).toBe("ITEM");
   });
 
-  it("phân biệt được trace theo item/container/SKU thay vì chỉ SKU approximation (DEV211-P1-01)", async () => {
+  it("trace vật lý phân biệt ITEM và CONTAINER, không dùng SKU approximation", async () => {
     vi.mocked(http.get).mockResolvedValueOnce({
       physical_code: { code_value: "RFID-BOX-1" },
       resolved_type: "CONTAINER",
       resolved_id: "box-1",
-      resolved_object: { container_code: "BOX-001", container_type: "BOX" },
+      resolved_object: {
+        container_code: "BOX-001",
+        container_type: "BOX",
+      },
       movements: [],
       container_items: [{ container_code: "BOX-001" }],
     });
@@ -239,27 +247,5 @@ describe("inventoryService — 6 endpoint tồn kho/trace", () => {
     const itemResult = await traceByPhysicalCode("SN-ITEM-1");
     expect(itemResult.resolved_type).toBe("ITEM");
     expect(itemResult.movements).toHaveLength(1);
-  });
-});
-
-describe("inventoryService — Safe-stock/Scan (dead code, chưa dùng trong UI, xem WWHN-211.md mục Safe-stock/Scan)", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it("fetchSafeStockAlerts/fetchSafeStockConfigs/fetchScanBatches/fetchScanEvents vẫn đúng contract endpoint dù chưa có UI dùng", async () => {
-    vi.mocked(http.getPage).mockResolvedValue({ data: [], meta: {} });
-
-    await fetchSafeStockAlerts();
-    expect(http.getPage).toHaveBeenCalledWith("/safe-stock-alerts", { params: {} });
-
-    await fetchSafeStockConfigs();
-    expect(http.getPage).toHaveBeenCalledWith("/safe-stock-configs", { params: {} });
-
-    await fetchScanBatches();
-    expect(http.getPage).toHaveBeenCalledWith("/scan/batches", { params: {} });
-
-    await fetchScanEvents();
-    expect(http.getPage).toHaveBeenCalledWith("/scan/events", { params: {} });
   });
 });

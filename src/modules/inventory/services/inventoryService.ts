@@ -87,14 +87,26 @@ export type StockMovementTraceSource = {
   timeline: RawRecord[];
 };
 
-export type SafeStockConfigPayload = {
-  product_id?: number | string;
-  sku_id?: number | string;
-  warehouse_id?: number | string;
-  min_qty?: number;
-  max_qty?: number;
-  status?: string | number;
+export type PhysicalCodeTraceResult = {
+  physical_code: RawRecord | null;
+  resolved_type: string;
+  resolved_id: string;
+  resolved_object: RawRecord | null;
+  movements: RawRecord[];
+  container_items: RawRecord[];
 };
+
+export type SubledgerResult = {
+  balance_id: string;
+  product_id: string;
+  warehouse_id: string;
+  items: RawRecord[];
+  containers: RawRecord[];
+  item_count: number;
+  container_count: number;
+};
+
+export type PagedResult<T> = { rows: T[]; meta: ApiMeta };
 
 function rowsOf<T>(value: T[] | { data?: T[] } | undefined | null): T[] {
   if (!value) return [];
@@ -153,28 +165,64 @@ function normalizeBalance(row: RawRecord): InventoryBalanceRow {
     row.reconciliation_status ?? row.reconcile_status ?? row.reconcile,
     "",
   );
-  const mismatchReason = text(row.mismatch_reason ?? row.reconcile_note ?? row.warning_reason, "");
+  const mismatchReason = text(
+    row.mismatch_reason ?? row.reconcile_note ?? row.warning_reason,
+    "",
+  );
   const whName = text(
-    row.warehouse_name ?? wh?.name ?? wh?.warehouse_name ?? wh?.code ?? row.warehouse_code,
+    row.warehouse_name ??
+      wh?.name ??
+      wh?.warehouse_name ??
+      wh?.code ??
+      row.warehouse_code,
     "System scope",
   );
   return {
     id: text(
-      row.id ?? `${row.warehouse_id ?? "system"}-${row.product_id ?? row.sku}`,
+      row.id ??
+        `${row.warehouse_id ?? "system"}-${row.product_id ?? row.sku}`,
     ),
-    sku: text(row.sku ?? row.sku_code ?? prod?.sku_code ?? prod?.code ?? row.product_sku ?? row.product_code),
-    name: text(row.product_name ?? row.sku_name ?? prod?.sku_name ?? prod?.name ?? row.name),
-    type: text(row.product_type ?? prod?.sku_type ?? row.type ?? row.category_name, "-"),
+    sku: text(
+      row.sku ??
+        row.sku_code ??
+        prod?.sku_code ??
+        prod?.code ??
+        row.product_sku ??
+        row.product_code,
+    ),
+    name: text(
+      row.product_name ??
+        row.sku_name ??
+        prod?.sku_name ??
+        prod?.name ??
+        row.name,
+    ),
+    type: text(
+      row.product_type ?? prod?.sku_type ?? row.type ?? row.category_name,
+      "-",
+    ),
     warehouse: whName,
-    lotNo: text(row.lot_no ?? row.batch_no ?? row.lot ?? row.stock_status ?? "-"),
+    lotNo: text(
+      row.lot_no ?? row.batch_no ?? row.lot ?? row.stock_status ?? "-",
+    ),
     uom: text(row.uom ?? row.unit ?? prod?.unit ?? row.unit_name, ""),
     available,
     onHand,
     reserved,
     inTransit,
     blocked,
-    serialQty: num(row.item_subledger_count ?? row.serial_qty ?? row.item_qty ?? row.serial_count),
-    boxQty: num(row.container_subledger_count ?? row.box_qty ?? row.container_qty ?? row.qty_box),
+    serialQty: num(
+      row.item_subledger_count ??
+        row.serial_qty ??
+        row.item_qty ??
+        row.serial_count,
+    ),
+    boxQty: num(
+      row.container_subledger_count ??
+        row.box_qty ??
+        row.container_qty ??
+        row.qty_box,
+    ),
     location: text(row.location_hint ?? row.lot_no ?? whName, "-"),
     reconcile,
     reconcileNote: mismatchReason,
@@ -197,26 +245,57 @@ function normalizeMovement(row: RawRecord): StockMovementRow {
     movementId: text(row.movement_no ?? row.code ?? row.id),
     time: text(row.occurred_at ?? row.performed_at ?? row.created_at),
     type: text(row.movement_type ?? row.source_type ?? row.action),
-    sku: text(row.sku ?? row.sku_code ?? prod?.sku_code ?? prod?.code ?? row.product_sku ?? row.product_code),
+    sku: text(
+      row.sku ??
+        row.sku_code ??
+        prod?.sku_code ??
+        prod?.code ??
+        row.product_sku ??
+        row.product_code,
+    ),
     warehouse: text(
-      row.warehouse_name ?? wh?.name ?? wh?.warehouse_name ?? wh?.code ?? row.warehouse_code,
+      row.warehouse_name ??
+        wh?.name ??
+        wh?.warehouse_name ??
+        wh?.code ??
+        row.warehouse_code,
       "-",
     ),
-    lotNo: text(row.lot_no ?? row.batch_no ?? row.stock_status ?? row.lot, "-"),
+    lotNo: text(
+      row.lot_no ?? row.batch_no ?? row.stock_status ?? row.lot,
+      "-",
+    ),
     qty,
     beforeQty: nullableNum(
       row.before_qty ?? row.balance_before ?? row.qty_before,
     ),
     afterQty: nullableNum(row.after_qty ?? row.balance_after ?? row.qty_after),
     source: text(
-      row.document_code ?? row.doc_no ?? row.source_code ?? doc?.doc_no ?? doc?.code ?? row.movement_no,
+      row.document_code ??
+        row.doc_no ??
+        row.source_code ??
+        doc?.doc_no ??
+        doc?.code ??
+        row.movement_no,
     ),
-    sourceType: text(row.document_type ?? row.source_type ?? doc?.doc_type ?? row.ref_type, "-"),
-    actor: text(
-      row.performed_by_name ?? row.actor_name ?? row.created_by_name ?? creator?.display_name ?? creator?.name,
+    sourceType: text(
+      row.document_type ?? row.source_type ?? doc?.doc_type ?? row.ref_type,
       "-",
     ),
-    chain: text(row.chain_type ?? row.correction_chain_id ?? row.reference_type ?? "Original"),
+    actor: text(
+      row.performed_by_name ??
+        row.actor_name ??
+        row.created_by_name ??
+        creator?.display_name ??
+        creator?.name,
+      "-",
+    ),
+    chain: text(
+      row.chain_type ??
+        row.correction_chain_id ??
+        row.reference_type ??
+        "Original",
+    ),
     status: text(row.status ?? row.posting_status ?? row.stock_status ?? "POSTED"),
   };
 }
@@ -229,8 +308,8 @@ function normalizeTraceSource(
     row.document ??
     row.source_document ??
     row) as RawRecord;
-  const sourceLines = (source as RawRecord).lines;
-  const statusHistory = row.status_history ?? (source as RawRecord).status_history;
+  const sourceLines = source.lines;
+  const statusHistory = row.status_history ?? source.status_history;
   const mvCreator = nested(nested(row, "movement"), "creator");
   return {
     movementId,
@@ -277,8 +356,6 @@ function normalizeTraceSource(
   };
 }
 
-export type PagedResult<T> = { rows: T[]; meta: ApiMeta };
-
 export async function fetchInventoryBalances(
   params: InventoryBalanceFilters = {},
 ): Promise<PagedResult<InventoryBalanceRow>> {
@@ -293,6 +370,14 @@ export async function fetchInventoryBalances(
     ),
     meta: result.meta,
   };
+}
+
+export async function fetchBalanceSubledger(
+  balanceId: string,
+): Promise<SubledgerResult> {
+  return http.get<SubledgerResult>(
+    API_ENDPOINTS.INVENTORY_BALANCE_SUBLEDGER.replace(":id", balanceId),
+  );
 }
 
 export async function fetchStockMovements(
@@ -326,88 +411,6 @@ export async function traceStockMovementSource(
     API_ENDPOINTS.STOCK_MOVEMENT_TRACE_SOURCE.replace(":id", String(id)),
   );
   return normalizeTraceSource(result, id);
-}
-
-export async function fetchSafeStockAlerts(
-  params: Record<string, unknown> = {},
-): Promise<RawRecord[]> {
-  const result = await http.getPage<RawRecord[] | { data?: RawRecord[] }>(
-    API_ENDPOINTS.SAFE_STOCK_ALERTS,
-    { params: clean(params) },
-  );
-  return rowsOf(result.data as RawRecord[] | { data?: RawRecord[] });
-}
-
-export async function fetchSafeStockConfigs(
-  params: Record<string, unknown> = {},
-): Promise<RawRecord[]> {
-  const result = await http.getPage<RawRecord[] | { data?: RawRecord[] }>(
-    API_ENDPOINTS.SAFE_STOCK_CONFIGS,
-    { params: clean(params) },
-  );
-  return rowsOf(result.data as RawRecord[] | { data?: RawRecord[] });
-}
-
-export async function createSafeStockConfig(
-  payload: SafeStockConfigPayload,
-): Promise<RawRecord> {
-  return http.post<RawRecord>(API_ENDPOINTS.SAFE_STOCK_CONFIGS, payload);
-}
-
-export async function fetchScanBatches(
-  params: Record<string, unknown> = {},
-): Promise<RawRecord[]> {
-  const result = await http.getPage<RawRecord[] | { data?: RawRecord[] }>(
-    API_ENDPOINTS.SCAN_BATCHES,
-    { params: clean(params) },
-  );
-  return rowsOf(result.data as RawRecord[] | { data?: RawRecord[] });
-}
-
-export async function createScanBatch(payload: {
-  source_type?: string;
-  source_id?: string;
-  warehouse_id?: string;
-  codes?: string[];
-}): Promise<RawRecord> {
-  return http.post<RawRecord>(API_ENDPOINTS.SCAN_BATCHES, payload);
-}
-
-export async function fetchScanEvents(
-  params: Record<string, unknown> = {},
-): Promise<RawRecord[]> {
-  const result = await http.getPage<RawRecord[] | { data?: RawRecord[] }>(
-    API_ENDPOINTS.SCAN_EVENTS,
-    { params: clean(params) },
-  );
-  return rowsOf(result.data as RawRecord[] | { data?: RawRecord[] });
-}
-
-export type PhysicalCodeTraceResult = {
-  physical_code: RawRecord | null;
-  resolved_type: string;
-  resolved_id: string;
-  resolved_object: RawRecord | null;
-  movements: RawRecord[];
-  container_items: RawRecord[];
-};
-
-export type SubledgerResult = {
-  balance_id: string;
-  product_id: string;
-  warehouse_id: string;
-  items: RawRecord[];
-  containers: RawRecord[];
-  item_count: number;
-  container_count: number;
-};
-
-export async function fetchBalanceSubledger(
-  balanceId: string,
-): Promise<SubledgerResult> {
-  return http.get<SubledgerResult>(
-    API_ENDPOINTS.INVENTORY_BALANCE_SUBLEDGER.replace(":id", balanceId),
-  );
 }
 
 export async function traceByPhysicalCode(
