@@ -1,0 +1,49 @@
+name: One-off Prettier Remediation
+
+on:
+  push:
+    branches:
+      - m1
+    paths:
+      - ".github/workflows/one-off-prettier-remediation.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  format-snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact SHA
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: yarn
+          cache-dependency-path: yarn.lock
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile --non-interactive
+
+      - name: Format src with repository Prettier
+        run: npx prettier --write "src/**/*.{ts,tsx,css}"
+
+      - name: Capture changed paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p format-remediation
+          git diff --name-only -- src > format-remediation/changed-files.txt
+          test -s format-remediation/changed-files.txt
+          cp -R src format-remediation/src
+
+      - name: Upload formatted source snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: prettier-remediation-${{ github.sha }}
+          path: format-remediation
+          if-no-files-found: error
+          retention-days: 1
