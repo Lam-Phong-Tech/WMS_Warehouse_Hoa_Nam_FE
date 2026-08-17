@@ -53,7 +53,7 @@ describe("componentIssueService (COMP-01)", () => {
       warranty_case_id: "wc-1",
     });
 
-    expect(http.getPage).toHaveBeenCalledWith("/component-issue-documents", {
+    expect(http.getPage).toHaveBeenCalledWith("/warranty-component-issues", {
       params: expect.objectContaining({ warranty_case_id: "wc-1" }),
     });
     expect(page.data[0]).toMatchObject({ id: "ci-1", status: "DRAFT" });
@@ -86,7 +86,7 @@ describe("componentIssueService (COMP-01)", () => {
 
     const document = await fetchComponentIssueDocument("ci-2");
 
-    expect(http.get).toHaveBeenCalledWith("/component-issue-documents/ci-2");
+    expect(http.get).toHaveBeenCalledWith("/warranty-component-issues/ci-2");
     expect(document).toMatchObject({
       id: "ci-2",
       component_issue_no: "CI-0002",
@@ -130,7 +130,7 @@ describe("componentIssueService (COMP-01)", () => {
       });
 
       const [url, body] = vi.mocked(http.post).mock.calls[0];
-      expect(url).toBe("/component-issue-documents");
+      expect(url).toBe("/warranty-component-issues");
       expect(body).toMatchObject({
         purpose: "WARRANTY",
         warranty_case_id: "wc-3",
@@ -187,7 +187,7 @@ describe("componentIssueService (COMP-01)", () => {
       });
 
       const [url, body, config] = vi.mocked(http.post).mock.calls[0];
-      expect(url).toBe("/component-issue-documents/ci-5/scan");
+      expect(url).toBe("/warranty-component-issues/ci-5/scans");
       expect(body).toEqual({
         line_id: "line-1",
         code_value: "SER-LK-01",
@@ -238,7 +238,7 @@ describe("componentIssueService (COMP-01)", () => {
       });
 
       const [url, , config] = vi.mocked(http.post).mock.calls[0];
-      expect(url).toBe("/component-issue-documents/ci-6/post");
+      expect(url).toBe("/warranty-component-issues/ci-6/post");
       const headers = (config as { headers: Record<string, string> }).headers;
       expect(headers["If-Match"]).toBe("3");
       expect(headers["Idempotency-Key"]).toBe("fe:component-post:abc");
@@ -301,7 +301,7 @@ describe("componentIssueService (COMP-01)", () => {
       ifMatch: 2,
     });
     expect(http.post).toHaveBeenCalledWith(
-      "/component-issue-documents/ci-7/cancel",
+      "/warranty-component-issues/ci-7/cancel",
       { reason: "Nhập nhầm kho" },
       { headers: { "If-Match": "2" } },
     );

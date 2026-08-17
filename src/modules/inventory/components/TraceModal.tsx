@@ -8,8 +8,9 @@ import {
   Timeline,
   Typography,
 } from "antd";
-import { SearchOutlined } from "@ant-design/icons";
+import { CameraOutlined, SearchOutlined } from "@ant-design/icons";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
+import { CameraScanModal } from "@/shared/components/forms/CameraScanModal";
 import {
   useStockMovement,
   useStockMovementTrace,
@@ -29,6 +30,10 @@ interface Props {
 export function TraceModal({ movementId, onClose }: Props) {
   const [lookupCode, setLookupCode] = useState("");
   const [submittedCode, setSubmittedCode] = useState<string | null>(null);
+  // SRS §5.3: "Supported camera contexts: inbound, outbound, inventory trace/search và
+  // warranty receive/search" — TRACE-01 phải quét được bằng camera; nhập tay là manual
+  // fallback và dùng chung server validation.
+  const [cameraOpen, setCameraOpen] = useState(false);
 
   const effectiveId = movementId;
 
@@ -66,6 +71,14 @@ export function TraceModal({ movementId, onClose }: Props) {
     }
   };
 
+  const handleCameraDetected = (code: string) => {
+    const trimmed = code.trim();
+    setCameraOpen(false);
+    if (trimmed.length === 0) return;
+    setLookupCode(trimmed);
+    setSubmittedCode(trimmed);
+  };
+
   return (
     <Modal
       open
@@ -81,13 +94,22 @@ export function TraceModal({ movementId, onClose }: Props) {
         <div className="toolbar" style={{ marginBottom: 0 }}>
           <input
             className="input search"
-            placeholder="Nhập mã vật lý (barcode/QR/RFID) để tra cứu..."
+            placeholder="Item code / Serial / Box / Tray / SKU / Barcode / QR / RFID..."
             value={lookupCode}
             aria-label="Tra cứu mã vật lý"
             onChange={(e) => setLookupCode(e.target.value)}
             onKeyDown={handleKeyDown}
             style={{ flex: 1 }}
           />
+          <button
+            className="btn"
+            type="button"
+            aria-label="Quét camera để truy vết"
+            onClick={() => setCameraOpen(true)}
+          >
+            <CameraOutlined style={{ marginRight: 4 }} />
+            Quét camera
+          </button>
           <button
             className="btn"
             type="button"
@@ -98,6 +120,13 @@ export function TraceModal({ movementId, onClose }: Props) {
             Tra cứu
           </button>
         </div>
+
+        <CameraScanModal
+          open={cameraOpen}
+          title="Quét mã để truy vết (TRACE-01)"
+          onDetected={handleCameraDetected}
+          onClose={() => setCameraOpen(false)}
+        />
 
         {!effectiveId && !submittedCode ? (
           <div className="footer-note">

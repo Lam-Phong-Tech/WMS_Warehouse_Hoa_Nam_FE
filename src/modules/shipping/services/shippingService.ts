@@ -277,35 +277,10 @@ export async function fetchOutboundLines(
   return rawLines(detail).map((line) => normalizeLine(line, documentId));
 }
 
-export async function createOutboundDocument<TPayload extends RawRecord>(
-  payload: TPayload,
-): Promise<OutboundDocument> {
-  assertWmsActionPermission(
-    [WMS_PERMISSION_CATALOG.OUTBOUND_CREATE],
-    "create outbound document",
-  );
-  return normalizeDocument(
-    await http.post<RawRecord>(API_ENDPOINTS.OUTBOUND_DOCUMENTS, payload),
-  );
-}
-
-export async function updateOutboundDocument<TPayload extends RawRecord>(
-  id: string,
-  payload: TPayload,
-  ifMatch: number,
-): Promise<OutboundDocument> {
-  assertWmsActionPermission(
-    [WMS_PERMISSION_CATALOG.OUTBOUND_CREATE],
-    "update outbound document",
-  );
-  return normalizeDocument(
-    await http.patch<RawRecord>(
-      endpoint(API_ENDPOINTS.OUTBOUND_DOCUMENT, id),
-      payload,
-      mutationHeaders(ifMatch),
-    ),
-  );
-}
+// SRS §8.1 (Outbound request / Excel intake): "Confirm creates exactly one outbound
+// DRAFT; no direct POST /outbound-documents create operation." Annex C không khai
+// createOutboundDocument/updateOutboundDocument nên BE đã gỡ 2 endpoint đó; phiếu xuất
+// chỉ sinh qua OUT-REQ-01 (import/nhập tay toa → Confirm).
 
 export async function cancelOutboundDocument(
   id: string,

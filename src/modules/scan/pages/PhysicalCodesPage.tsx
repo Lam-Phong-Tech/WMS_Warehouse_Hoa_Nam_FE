@@ -45,10 +45,12 @@ const SCAN_CONTEXT_OPTIONS: Array<{
   value: ScanContext;
   label: string;
 }> = [
-  { value: "INBOUND", label: "Inbound" },
-  { value: "OUTBOUND", label: "Outbound" },
-  { value: "STOCKTAKE", label: "Stocktake" },
-  { value: "WARRANTY_TEMP_ONLY", label: "Warranty temp only" },
+  { value: "INBOUND", label: "Nhập kho" },
+  { value: "OUTBOUND", label: "Xuất kho" },
+  { value: "INVENTORY", label: "Tra cứu tồn" },
+  { value: "TRACE", label: "Truy vết" },
+  { value: "WARRANTY_RECEIVE", label: "Tiếp nhận bảo hành" },
+  { value: "WARRANTY_TEMP_ONLY", label: "Bảo hành mã tạm" },
 ];
 
 export default function PhysicalCodesPage() {
@@ -66,7 +68,7 @@ export default function PhysicalCodesPage() {
   const [eventMeta, setEventMeta] = useState<ApiMeta>({});
   const [scanValue, setScanValue] = useState("");
   const [warehouseId, setWarehouseId] = useState("");
-  const [scanContext, setScanContext] = useState<ScanContext>("STOCKTAKE");
+  const [scanContext, setScanContext] = useState<ScanContext>("TRACE");
   const [loading, setLoading] = useState(false);
   const [listError, setListError] = useState<unknown>(null);
   const [historyError, setHistoryError] = useState<unknown>(null);

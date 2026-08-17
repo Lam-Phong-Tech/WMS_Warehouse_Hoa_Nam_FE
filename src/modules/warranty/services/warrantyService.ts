@@ -209,14 +209,24 @@ function assertStockNeutral(row: RawRecord, action: string): void {
   }
 }
 
-function assertWarrantyAccess(action: string): void {
+/**
+ * Annex C listWarrantyCases dùng `warranty.view`; BE nhận `warranty.view|warranty.manage`
+ * cho toàn bộ bề mặt đọc SCR-WAR-01. FE phải chấp nhận đúng như vậy, nếu không role chỉ
+ * có warranty.view (LEADERSHIP, WAREHOUSE_APPROVER) bị chặn ngay ở client.
+ */
+function assertWarrantyRead(action: string): void {
+  assertWmsActionPermission([P.WARRANTY_VIEW, P.WARRANTY_MANAGE], action);
+}
+
+/** Mọi mutation case bảo hành vẫn yêu cầu `warranty.manage`. */
+function assertWarrantyWrite(action: string): void {
   assertWmsActionPermission([P.WARRANTY_MANAGE], action);
 }
 
 export async function fetchWarrantyCases(
   params: WarrantyListParams = {},
 ): Promise<WarrantyCasePage> {
-  assertWarrantyAccess("view warranty cases");
+  assertWarrantyRead("view warranty cases");
   const mappedParams = {
     page: params.page,
     per_page: params.per_page ?? 15,
@@ -240,7 +250,7 @@ export async function fetchWarrantyCases(
 export async function fetchWarrantyCase(
   caseId: string | number,
 ): Promise<WarrantyCase> {
-  assertWarrantyAccess("view warranty case detail");
+  assertWarrantyRead("view warranty case detail");
   const normalizedCaseId = requireNonEmptyString(String(caseId), "caseId");
   const row = await http.get<RawRecord>(
     endpoint(API_ENDPOINTS.WARRANTY_CASE, ":id", normalizedCaseId),
@@ -252,7 +262,7 @@ export async function fetchWarrantyCaseEvents(
   caseId: string | number,
   params: Record<string, unknown> = {},
 ): Promise<WarrantyEvent[]> {
-  assertWarrantyAccess("view warranty events");
+  assertWarrantyRead("view warranty events");
   const normalizedCaseId = requireNonEmptyString(String(caseId), "caseId");
   const result = await http.getPage<RawRecord[] | { data?: RawRecord[] }>(
     endpoint(API_ENDPOINTS.WARRANTY_CASE_EVENTS, ":caseId", normalizedCaseId),
@@ -266,7 +276,7 @@ export async function fetchWarrantyCaseEvents(
 export async function createWarrantyCase(
   payload: CreateWarrantyCaseRequest,
 ): Promise<WarrantyCase> {
-  assertWarrantyAccess("create warranty case");
+  assertWarrantyWrite("create warranty case");
   const description = requireNonEmptyString(
     payload.defect_description || payload.reported_defect || payload.notes,
     "defect_description",
@@ -320,7 +330,7 @@ export async function updateWarrantyCase(
   caseId: string | number,
   request: UpdateWarrantyCaseRequest,
 ): Promise<WarrantyCase> {
-  assertWarrantyAccess("update warranty case");
+  assertWarrantyWrite("update warranty case");
   const normalizedCaseId = requireNonEmptyString(String(caseId), "caseId");
   const status = request.status ? canonicalStatus(request.status) : undefined;
   const current = request.ifMatch
@@ -330,8 +340,11 @@ export async function updateWarrantyCase(
     request.ifMatch ?? current?.version,
     "If-Match",
   );
-  const row = await http.patch<RawRecord>(
-    endpoint(API_ENDPOINTS.WARRANTY_CASE, ":id", normalizedCaseId),
+  // Annex C: operation chuẩn là POST /warranty-cases/{id}/status
+  // (transitionWarrantyStatus). PATCH /warranty-cases/{id} là alias legacy của BE,
+  // không thuộc 67 operation OpenAPI v1.7 nên FE không dùng nữa.
+  const row = await http.post<RawRecord>(
+    endpoint(API_ENDPOINTS.WARRANTY_CASE_STATUS, ":id", normalizedCaseId),
     clean({
       status,
       // §13.8: ghi chú xử lý đi vào warranty_event.note, KHÔNG ghi đè mô tả
@@ -342,6 +355,13 @@ export async function updateWarrantyCase(
       received_condition: request.received_condition,
       accessories_received: request.accessories_received,
       cancel_reason: request.cancel_reason,
+      // Annex D SCR-WAR-01: sửa lại chẩn đoán/PII sai lúc tiếp nhận. PII chỉ gửi khi
+      // caller thực sự nhập — BE trả 403 nếu actor thiếu warranty.pii.view.
+      defect_id: request.defect_id,
+      customer_name: request.customer_name,
+      customer_phone: request.customer_phone,
+      customer_address: request.customer_address,
+      purchase_date: request.purchase_date,
     }),
     {
       headers: {
@@ -362,7 +382,7 @@ export const updateWarrantyCaseStatus = updateWarrantyCase;
 export async function fetchWarrantyAttachments(
   caseId: string | number,
 ): Promise<WarrantyAttachment[]> {
-  assertWarrantyAccess("view warranty attachments");
+  assertWarrantyRead("view warranty attachments");
   const normalizedCaseId = requireNonEmptyString(String(caseId), "caseId");
   const result = await http.getPage<RawRecord[] | { data?: RawRecord[] }>(
     endpoint(
@@ -382,7 +402,7 @@ export async function uploadWarrantyAttachment(input: {
   file: File;
   attachmentType?: WarrantyAttachmentType;
 }): Promise<WarrantyAttachment> {
-  assertWarrantyAccess("upload warranty attachment");
+  assertWarrantyWrite("upload warranty attachment");
   const normalizedCaseId = requireNonEmptyString(input.caseId, "caseId");
   const formData = new FormData();
   formData.append("file", input.file);
@@ -405,7 +425,7 @@ export async function downloadWarrantyAttachment(input: {
   attachmentId: string;
   fileName?: string;
 }): Promise<void> {
-  assertWarrantyAccess("download warranty attachment");
+  assertWarrantyRead("download warranty attachment");
   const attachmentId = requireNonEmptyString(
     input.attachmentId,
     "attachmentId",
@@ -429,7 +449,7 @@ export async function downloadWarrantyAttachment(input: {
 export async function deleteWarrantyAttachment(
   attachmentId: string,
 ): Promise<void> {
-  assertWarrantyAccess("delete warranty attachment");
+  assertWarrantyWrite("delete warranty attachment");
   await http.delete(
     endpoint(
       API_ENDPOINTS.WARRANTY_ATTACHMENT,

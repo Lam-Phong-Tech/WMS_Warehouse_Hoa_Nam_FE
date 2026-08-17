@@ -58,21 +58,32 @@ export const API_ENDPOINTS = {
   /** Annex D SCR-IN-01: đọc lại bảng mã đã quét sau khi tải lại trang. */
   INBOUND_SCAN_ENTRIES: "/inbound-documents/:id/scan-entries",
 
+  // Annex C: scanOutboundDocument = /scans, confirmOutboundRequestImport = /confirm,
+  // assignItemRfid = PUT /outbound-documents/{id}/items/{item_id}/rfid,
+  // packing label lifecycle nằm dưới /outbound-documents/{id}/packing-labels/{label_id}.
   OUTBOUND_DOCUMENTS: "/outbound-documents",
   OUTBOUND_DOCUMENT: "/outbound-documents/:id",
   OUTBOUND_LINES: "/outbound-documents/:id",
   OUTBOUND_CANCEL: "/outbound-documents/:id/cancel",
   OUTBOUND_POST_ISSUE: "/outbound-documents/:id/post-issue",
-  OUTBOUND_SCAN: "/outbound-documents/:id/scan",
+  OUTBOUND_SCAN: "/outbound-documents/:id/scans",
   OUTBOUND_UNMATCH: "/outbound-documents/:id/unmatch",
-  OUTBOUND_REVERSE: "/outbound-documents/:id/reverse",
+  OUTBOUND_REVERSE: "/outbound-documents/:id/reversals",
+  OUTBOUND_ITEM_RFID: "/outbound-documents/:id/items/:itemId/rfid",
+  OUTBOUND_PACKING_LABEL_PREVIEW:
+    "/outbound-documents/:id/packing-labels/:labelId/preview",
+  OUTBOUND_PACKING_LABEL_READY:
+    "/outbound-documents/:id/packing-labels/:labelId/ready",
+  OUTBOUND_PACKING_LABEL_PRINT:
+    "/outbound-documents/:id/packing-labels/:labelId/print",
+  OUTBOUND_PACKING_LABEL_REPRINT:
+    "/outbound-documents/:id/packing-labels/:labelId/reprint",
   OUTBOUND_REQUEST_IMPORTS: "/outbound-request-imports",
   OUTBOUND_REQUEST_IMPORT: "/outbound-request-imports/:id",
-  OUTBOUND_REQUEST_IMPORT_CONSUME: "/outbound-request-imports/:id/consume",
+  OUTBOUND_REQUEST_IMPORT_CONFIRM: "/outbound-request-imports/:id/confirm",
 
   LABEL_SNAPSHOTS: "/label-snapshots",
-  LABEL_SNAPSHOT_PRINT: "/label-snapshots/:id/print",
-  LABEL_SNAPSHOT_REPRINT: "/label-snapshots/:id/reprint",
+  LABEL_SNAPSHOT_APPLY: "/label-snapshots/:id/apply",
   PRINTER_CONFIGS: "/printer-configs",
 
   // Annex C listPutawayTasks / createPutawayTask / confirmPutawayTask /
@@ -152,42 +163,35 @@ export const API_ENDPOINTS = {
   SCAN_BATCHES_CLASSIFY: "/scan/classify",
   SCAN_EVENTS: "/scan/events",
   DOCUMENT_STATUS_HISTORY: "/document-status-history",
-  INVENTORY_SNAPSHOTS: "/inventory-snapshots",
 
-  // @deprecated — Stocktake Model A removed from MVP scope.
-  // Not routed in FE, no BE endpoints registered, Jira tickets WWHN-58/59 to be dispositioned.
-  // Retain constants for test references only; do NOT import these in new code.
-  /** @deprecated */ STOCKTAKE_SESSIONS: "/stocktake-sessions",
-  /** @deprecated */ STOCKTAKE_SESSION: "/stocktake-sessions/:sessionId",
-  /** @deprecated */ STOCKTAKE_CREATE_SESSION: "/stocktake-sessions",
-  /** @deprecated */ STOCKTAKE_START: "/stocktake-sessions/:sessionId/start",
-  /** @deprecated */ STOCKTAKE_COUNT: "/stocktake-sessions/:sessionId/counts",
-  /** @deprecated */ STOCKTAKE_REVIEW: "/stocktake-sessions/:sessionId/review",
-  /** @deprecated */ STOCKTAKE_ACKNOWLEDGE_MOVEMENTS:
-    "/stocktake-sessions/:sessionId/acknowledge-movements",
-  /** @deprecated */ STOCKTAKE_VARIANCES:
-    "/stocktake-sessions/:sessionId/variances",
-  /** @deprecated */ STOCKTAKE_APPLY_ADJUSTMENT:
-    "/stocktake-sessions/:sessionId/apply-adjustment",
-  /** @deprecated */ STOCKTAKE_APPLY_ADJUSTMENT_COMPAT:
-    "/stocktake/sessions/:sessionId/apply-adjustment",
-
+  // REQ-SRS-037 / DEC-NO-STOCKTAKE-001: MVP không có Stocktake/Variance/Snapshot ở
+  // bất kỳ lớp nào (entity, API, permission, menu, report). Mọi sửa sai sau Post
+  // dùng Reversal append-only bên dưới.
   REVERSAL_DOCUMENTS: "/reversal-documents",
   REVERSAL_DOCUMENT: "/reversal-documents/:id",
+  REVERSAL_DOCUMENT_LINES: "/reversal-documents/:id/lines",
   REVERSAL_CREATE: "/reversal-documents",
+  REVERSAL_CONFIRM: "/reversal-documents/:id/confirm",
+  REVERSAL_POST: "/reversal-documents/:id/post",
+  REVERSAL_CANCEL: "/reversal-documents/:id/cancel",
   REVERSAL_MOVEMENT_LOOKUP: "/stock-movements/reversible",
 
   WARRANTY_CASES: "/warranty-cases",
   WARRANTY_CASE: "/warranty-cases/:id",
+  // Annex C transitionWarrantyStatus. PATCH /warranty-cases/{id} vẫn tồn tại ở BE cho
+  // client cũ nhưng không nằm trong 67 operation của OpenAPI v1.7.
+  WARRANTY_CASE_STATUS: "/warranty-cases/:id/status",
   WARRANTY_CASE_EVENTS: "/warranty-cases/:caseId/events",
   WARRANTY_CASE_ATTACHMENTS: "/warranty-cases/:caseId/attachments",
   WARRANTY_ATTACHMENT: "/warranty-attachments/:id",
   WARRANTY_ATTACHMENT_DOWNLOAD: "/warranty-attachments/:id/download",
-  COMPONENT_ISSUE_DOCUMENTS: "/component-issue-documents",
-  COMPONENT_ISSUE_DOCUMENT: "/component-issue-documents/:id",
-  COMPONENT_ISSUE_SCAN: "/component-issue-documents/:id/scan",
-  COMPONENT_ISSUE_CANCEL: "/component-issue-documents/:id/cancel",
-  COMPONENT_ISSUE_POST: "/component-issue-documents/:id/post",
+  // Annex C createComponentIssue/scanComponentIssue/cancelComponentIssue/
+  // postComponentIssue — path chuẩn là /warranty-component-issues + /{id}/scans.
+  COMPONENT_ISSUE_DOCUMENTS: "/warranty-component-issues",
+  COMPONENT_ISSUE_DOCUMENT: "/warranty-component-issues/:id",
+  COMPONENT_ISSUE_SCAN: "/warranty-component-issues/:id/scans",
+  COMPONENT_ISSUE_CANCEL: "/warranty-component-issues/:id/cancel",
+  COMPONENT_ISSUE_POST: "/warranty-component-issues/:id/post",
 
   AUDIT_LOGS: "/audit-logs",
 } as const;

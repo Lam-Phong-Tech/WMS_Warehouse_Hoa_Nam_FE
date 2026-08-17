@@ -31,12 +31,12 @@ Final sign-off của `WWHN-148` vẫn fail-closed cho đến khi `WWHN-146`, `WW
 | Attachments upload | `warrantyService.ts` | POST | `/warranty-cases/{id}/attachments` | `/api/v1/warranty-cases/{id}/attachments` | `warranty.manage` | Multipart upload, `stock_effect=NONE`. |
 | Attachment download | `warrantyService.ts` | GET | `/warranty-attachments/{id}/download` | `/api/v1/warranty-attachments/{id}/download` | `warranty.manage` | Implemented. |
 | Attachment delete | `warrantyService.ts` | DELETE | `/warranty-attachments/{id}` | `/api/v1/warranty-attachments/{id}` | `warranty.manage` | Logical delete. |
-| Component issues list | `componentIssueService.ts` | GET | `/component-issue-documents` | `/api/v1/component-issue-documents` | `warranty.component_issue` | Supports `warranty_case_id` filter. |
-| Component issue create | `componentIssueService.ts` | POST | `/component-issue-documents` | `/api/v1/component-issue-documents` | `warranty.component_issue` | FE forces `purpose=WARRANTY`; DRAFT stock-neutral. |
-| Component issue detail | `componentIssueService.ts` | GET | `/component-issue-documents/{id}` | `/api/v1/component-issue-documents/{id}` | `warranty.component_issue` | WAR-P0-01 closed: BE GET detail route present at dev SHA. |
-| Component issue scan | `componentIssueService.ts` | POST | `/component-issue-documents/{id}/scan` | `/api/v1/component-issue-documents/{id}/scan` | `warranty.component_issue` | `If-Match` CAS; scan stock-neutral. |
-| Component issue cancel | `componentIssueService.ts` | POST | `/component-issue-documents/{id}/cancel` | `/api/v1/component-issue-documents/{id}/cancel` | `warranty.component_issue` | Reason required. |
-| Component issue post | `componentIssueService.ts` | POST | `/component-issue-documents/{id}/post` | `/api/v1/component-issue-documents/{id}/post` | `warranty.component_issue` | Full-post; `Idempotency-Key`; FE asserts `stock_effect=DECREASE` + `movement_ids`. |
+| Component issues list | `componentIssueService.ts` | GET | `/warranty-component-issues` | `/api/v1/warranty-component-issues` | `warranty.component_issue` | Supports `warranty_case_id` filter. |
+| Component issue create | `componentIssueService.ts` | POST | `/warranty-component-issues` | `/api/v1/warranty-component-issues` | `warranty.component_issue` | FE forces `purpose=WARRANTY`; DRAFT stock-neutral. |
+| Component issue detail | `componentIssueService.ts` | GET | `/warranty-component-issues/{id}` | `/api/v1/warranty-component-issues/{id}` | `warranty.component_issue` | WAR-P0-01 closed: BE GET detail route present at dev SHA. |
+| Component issue scan | `componentIssueService.ts` | POST | `/warranty-component-issues/{id}/scans` | `/api/v1/warranty-component-issues/{id}/scans` | `warranty.component_issue` | `If-Match` CAS; scan stock-neutral. |
+| Component issue cancel | `componentIssueService.ts` | POST | `/warranty-component-issues/{id}/cancel` | `/api/v1/warranty-component-issues/{id}/cancel` | `warranty.component_issue` | Reason required. |
+| Component issue post | `componentIssueService.ts` | POST | `/warranty-component-issues/{id}/post` | `/api/v1/warranty-component-issues/{id}/post` | `warranty.component_issue` | Full-post; `Idempotency-Key`; FE asserts `stock_effect=DECREASE` + `movement_ids`. |
 
 ## Dashboard and reports disposition
 

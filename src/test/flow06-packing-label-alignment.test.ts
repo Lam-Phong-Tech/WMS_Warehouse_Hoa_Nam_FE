@@ -36,7 +36,61 @@ describe("Flow 06 Packing Label alignment", () => {
     );
     expect(service).toContain("outbound_document_id");
     expect(service).toContain("customer_phone");
-    expect(service).toContain("/apply");
+    expect(service).toContain("LABEL_SNAPSHOT_APPLY");
     expect(service).toContain("Boolean(row.applied_at)");
+  });
+
+  it("drives the §6 label lifecycle through the Annex C endpoints", () => {
+    const endpoints = read("src/shared/api/endpoints.ts");
+    expect(endpoints).toContain(
+      '"/outbound-documents/:id/packing-labels/:labelId/preview"',
+    );
+    expect(endpoints).toContain(
+      '"/outbound-documents/:id/packing-labels/:labelId/ready"',
+    );
+    expect(endpoints).toContain(
+      '"/outbound-documents/:id/packing-labels/:labelId/print"',
+    );
+    expect(endpoints).toContain(
+      '"/outbound-documents/:id/packing-labels/:labelId/reprint"',
+    );
+    // Annex C: scan = /scans, confirm import = /confirm, RFID = PUT .../rfid.
+    expect(endpoints).toContain('OUTBOUND_SCAN: "/outbound-documents/:id/scans"');
+    expect(endpoints).toContain(
+      'OUTBOUND_REQUEST_IMPORT_CONFIRM: "/outbound-request-imports/:id/confirm"',
+    );
+    expect(endpoints).toContain(
+      'OUTBOUND_ITEM_RFID: "/outbound-documents/:id/items/:itemId/rfid"',
+    );
+
+    const service = read(
+      "src/modules/outbound/services/alignedOutboundService.ts",
+    );
+    expect(service).toContain("previewPackingLabel");
+    expect(service).toContain("readyPackingLabel");
+
+    const modal = read(
+      "src/modules/outbound/components/AlignedOutboundDetailModal.tsx",
+    );
+    expect(modal).toContain("LABEL_LIFECYCLE");
+    expect(modal).toContain("READY_TO_PRINT");
+    // §6: không được gửi lệnh in khi nhãn chưa Ready.
+    expect(modal).toContain("canSendPrint");
+    expect(modal).toContain("Phải Preview → Ready trước khi gửi lệnh in");
+  });
+
+  it("keeps outbound documents creatable only through toa confirm (§8.1)", () => {
+    const shipping = read("src/modules/shipping/services/shippingService.ts");
+    expect(shipping).not.toContain("export async function createOutboundDocument");
+    expect(shipping).not.toContain("export async function updateOutboundDocument");
+
+    const intake = read(
+      "src/modules/outbound/components/OutboundIntakeModal.tsx",
+    );
+    // Annex D SCR-OUT-01/SCR-REQ-OUT-01: SĐT + ngày toa + line mapping ở bước tiếp nhận.
+    expect(intake).toContain("recipient_contact_phone");
+    expect(intake).toContain("request_date");
+    expect(intake).toContain("Map SKU (Confirm)");
+    expect(intake).toContain("Override người nhận khi Confirm");
   });
 });

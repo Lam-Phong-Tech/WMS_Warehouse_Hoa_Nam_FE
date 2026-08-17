@@ -28,7 +28,7 @@ export const ROUTES = {
   // Remaining WMS modules
   OUTBOUND: "/outbound",
   INVENTORY: "/inventory",
-  STOCKTAKE: "/stocktake",
+  // REQ-SRS-037 / DEC-NO-STOCKTAKE-001: không có route kiểm kê trong MVP.
   WARRANTY: "/warranty",
   REVERSE: "/reverse",
   REPORTS: "/reports",

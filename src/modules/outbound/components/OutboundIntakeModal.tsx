@@ -46,12 +46,18 @@ type IntakeMode = "manual" | "excel";
 
 type IntakeFormValues = {
   request_no: string;
+  // §5.2: toa mang "số toa - ngày - người nhận".
+  request_date?: string;
   agency_id?: string;
   recipient_name: string;
-  // SRS v1.12 §15: address nullable.
+  // SRS v1.12 §15: address/phone nullable.
   recipient_address?: string;
+  recipient_contact_phone?: string;
   lines: Array<{ product_id: string; required_qty: number }>;
 };
+
+/** Annex C OutboundRequestImportConfirmRequest — resolve mapping ở bước review. */
+type LineResolution = { sku_id?: string; required_qty?: number };
 
 interface OutboundIntakeModalProps {
   open: boolean;
@@ -106,6 +112,16 @@ export function OutboundIntakeModal({
   const [file, setFile] = useState<File | null>(null);
   const [fileInputKey, setFileInputKey] = useState(0);
   const [preview, setPreview] = useState<OutboundImportResult | null>(null);
+  // SCR-REQ-OUT-01 "line mapping" + §8.1: người dùng resolve SKU/số lượng và
+  // override người nhận ngay ở màn review, không phải sửa file rồi upload lại.
+  const [resolutions, setResolutions] = useState<Record<number, LineResolution>>(
+    {},
+  );
+  const [recipientOverride, setRecipientOverride] = useState({
+    receiver_name: "",
+    receiver_address: "",
+    receiver_contact_phone: "",
+  });
   const [form] = Form.useForm<IntakeFormValues>();
 
   const skuQuery = useMvpSkus({
@@ -135,6 +151,12 @@ export function OutboundIntakeModal({
 
   const resetAll = () => {
     setPreview(null);
+    setResolutions({});
+    setRecipientOverride({
+      receiver_name: "",
+      receiver_address: "",
+      receiver_contact_phone: "",
+    });
     setFile(null);
     setFileInputKey((key) => key + 1);
     setMode("manual");
@@ -151,8 +173,12 @@ export function OutboundIntakeModal({
       const values = await form.validateFields();
       const rows: OutboundRequestRowInput[] = values.lines.map((line) => ({
         request_no: values.request_no.trim(),
+        request_date: (values.request_date ?? "").trim() || undefined,
         customer_name: values.recipient_name.trim(),
         customer_address: (values.recipient_address ?? "").trim(),
+        // §5.2 + Annex D SCR-OUT-01: SĐT người nhận tiếp nhận ngay từ toa (nullable).
+        recipient_contact_phone:
+          (values.recipient_contact_phone ?? "").trim() || undefined,
         sku_id: line.product_id,
         required_qty: Number(line.required_qty),
         agency_id: values.agency_id || null,
@@ -203,8 +229,27 @@ export function OutboundIntakeModal({
 
   const consumeMutation = useMutation({
     mutationFn: async () => {
-      if (!preview) throw new Error("Chưa có import để consume.");
-      return consumeOutboundImport(preview.id, makeKey("consume-outbound"));
+      if (!preview) throw new Error("Chưa có import để Confirm.");
+      // Annex C confirmOutboundRequestImport: Idempotency-Key + If-Match(version import),
+      // kèm mapping line và override người nhận đã resolve ở màn review (§8.1).
+      const lines = Object.entries(resolutions)
+        .map(([rowNo, value]) => ({
+          row_no: Number(rowNo),
+          ...(value.sku_id ? { sku_id: value.sku_id } : {}),
+          ...(value.required_qty ? { required_qty: value.required_qty } : {}),
+        }))
+        .filter((line) => line.sku_id || line.required_qty);
+      const recipient = Object.fromEntries(
+        Object.entries(recipientOverride).filter(
+          ([, value]) => value.trim() !== "",
+        ),
+      );
+      return consumeOutboundImport(
+        preview.id,
+        makeKey("confirm-outbound"),
+        preview.version,
+        { ...(lines.length ? { lines } : {}), ...recipient },
+      );
     },
     onSuccess: (result) => {
       toast.success(
@@ -257,11 +302,58 @@ export function OutboundIntakeModal({
         text(row.normalized.sku_code ?? row.normalized.sku_id, "-"),
     },
     {
+      // SCR-REQ-OUT-01: "line mapping" — resolve SKU chưa map ngay ở bước review.
+      title: "Map SKU (Confirm)",
+      key: "sku_mapping",
+      width: 260,
+      render: (_, row) => (
+        <Select
+          allowClear
+          showSearch
+          size="small"
+          style={{ width: 240 }}
+          optionFilterProp="label"
+          placeholder="Giữ nguyên theo file"
+          loading={skuQuery.isLoading}
+          value={resolutions[row.rowNo]?.sku_id}
+          onChange={(value?: string) =>
+            setResolutions((current) => ({
+              ...current,
+              [row.rowNo]: { ...current[row.rowNo], sku_id: value },
+            }))
+          }
+          options={skuRows.map((sku) => ({
+            value: sku.sku_id,
+            label: `${sku.sku_code} · ${sku.sku_name}`,
+          }))}
+        />
+      ),
+    },
+    {
       title: "SL yêu cầu",
       key: "qty",
-      width: 100,
+      width: 140,
       align: "right",
-      render: (_, row) => text(row.normalized.required_qty, "-"),
+      render: (_, row) => (
+        <InputNumber
+          size="small"
+          min={1}
+          style={{ width: 110 }}
+          value={
+            resolutions[row.rowNo]?.required_qty ??
+            (Number(row.normalized.required_qty ?? 0) || undefined)
+          }
+          onChange={(value) =>
+            setResolutions((current) => ({
+              ...current,
+              [row.rowNo]: {
+                ...current[row.rowNo],
+                required_qty: value ? Number(value) : undefined,
+              },
+            }))
+          }
+        />
+      ),
     },
     {
       title: "Khả dụng",
@@ -303,11 +395,9 @@ export function OutboundIntakeModal({
     },
   ];
 
-  const consumable =
-    Boolean(preview) &&
-    preview?.status === "VALIDATED" &&
-    (preview?.errorRows ?? 0) === 0 &&
-    canImport;
+  // §8.1: Confirm re-validate sau khi áp mapping/override, nên batch REJECTED vẫn
+  // được thử Confirm; BE trả 409 IMPORT_HAS_BLOCKING_ERRORS kèm row còn lỗi.
+  const consumable = Boolean(preview) && canImport;
 
   return (
     <Modal
@@ -322,15 +412,15 @@ export function OutboundIntakeModal({
       <Space orientation="vertical" size={14} style={{ width: "100%" }}>
         <Space wrap>
           <Tag color="blue">POST /outbound-request-imports</Tag>
-          <Tag color="blue">POST /outbound-request-imports/:id/consume</Tag>
-          <Tag color="gold">Idempotency-Key khi consume</Tag>
+          <Tag color="blue">POST /outbound-request-imports/:id/confirm</Tag>
+          <Tag color="gold">Idempotency-Key + If-Match khi Confirm</Tag>
           <Tag color="green">stock_effect=NONE</Tag>
         </Space>
         <Alert
           type="info"
           showIcon
-          title="Luồng chuẩn: validate request/Excel → preview lỗi row/field → consume → BE tạo Outbound DRAFT"
-          description="Blocking error khiến cả batch không được consume (không consume một phần). Trùng source key/checksum sẽ replay kết quả, không tạo trùng."
+          title="Luồng chuẩn: validate request/Excel → preview lỗi row/field → map SKU/người nhận → Confirm → BE tạo Outbound DRAFT"
+          description="Blocking error khiến cả batch không được Confirm (không tạo một phần). Một toa chỉ một người nhận; trùng source key/checksum/số toa đều bị chặn, không tạo phiếu trùng."
         />
 
         <Space>
@@ -397,6 +487,21 @@ export function OutboundIntakeModal({
                   toa mẫu Kinh doanh phát hành có thể không có địa chỉ. */}
               <Form.Item name="recipient_address" label="Địa chỉ nhận">
                 <Input maxLength={1000} />
+              </Form.Item>
+              <Form.Item
+                name="recipient_contact_phone"
+                label="SĐT liên hệ"
+                rules={[
+                  {
+                    pattern: /^\+?[0-9\s.-]{6,20}$/,
+                    message: "SĐT chỉ gồm chữ số (6-20 ký tự).",
+                  },
+                ]}
+              >
+                <Input maxLength={50} placeholder="VD: 0901234567" />
+              </Form.Item>
+              <Form.Item name="request_date" label="Ngày toa">
+                <Input placeholder="YYYY-MM-DD" maxLength={10} />
               </Form.Item>
             </div>
 
@@ -467,8 +572,8 @@ export function OutboundIntakeModal({
                 Kiểm tra & Preview
               </Button>
               <Typography.Text type="secondary">
-                SĐT khách hàng nhập ở bước Packing Label (tùy chọn theo SRS
-                §15), không nằm trong dữ liệu request.
+                Người nhận bắt buộc; địa chỉ/SĐT/ngày toa tùy chọn theo SRS §15
+                — thiếu thì Packing Label render blank.
               </Typography.Text>
             </Space>
             <ApiErrorAlert
@@ -488,9 +593,10 @@ export function OutboundIntakeModal({
             />
             <Typography.Text type="secondary">
               Cột bắt buộc: request_no · sku_code · required_qty ·
-              recipient_name/customer_name. Địa chỉ/SĐT là tùy chọn theo SRS
-              §15. Tối đa 10.000 dòng, file ≤ 20MB; row lỗi chặn consume toàn
-              batch.
+              recipient_name/customer_name. Cột tùy chọn: request_date ·
+              recipient_address · recipient_contact_phone · note (SRS §5.2/§15).
+              Tối đa 10.000 dòng, file ≤ 20MB; row lỗi có thể resolve ở bảng
+              preview trước khi Confirm.
             </Typography.Text>
             <Button
               type="primary"
@@ -538,9 +644,51 @@ export function OutboundIntakeModal({
                     ? { pageSize: 10, showSizeChanger: false }
                     : false
                 }
-                scroll={{ x: 1020 }}
+                scroll={{ x: 1420 }}
                 locale={{ emptyText: "Import không có row nào" }}
               />
+              {/* §8.1: ConfirmRequest "may override recipient fields"; hiệu lực
+                  receiver_name bắt buộc, address/phone optional. */}
+              <Card size="small" title="Override người nhận khi Confirm (tùy chọn)">
+                <Space wrap>
+                  <Input
+                    style={{ width: 240 }}
+                    placeholder="Người nhận (receiver_name)"
+                    maxLength={200}
+                    value={recipientOverride.receiver_name}
+                    onChange={(event) =>
+                      setRecipientOverride((current) => ({
+                        ...current,
+                        receiver_name: event.target.value,
+                      }))
+                    }
+                  />
+                  <Input
+                    style={{ width: 300 }}
+                    placeholder="Địa chỉ nhận (tùy chọn)"
+                    maxLength={1000}
+                    value={recipientOverride.receiver_address}
+                    onChange={(event) =>
+                      setRecipientOverride((current) => ({
+                        ...current,
+                        receiver_address: event.target.value,
+                      }))
+                    }
+                  />
+                  <Input
+                    style={{ width: 200 }}
+                    placeholder="SĐT liên hệ (tùy chọn)"
+                    maxLength={50}
+                    value={recipientOverride.receiver_contact_phone}
+                    onChange={(event) =>
+                      setRecipientOverride((current) => ({
+                        ...current,
+                        receiver_contact_phone: event.target.value,
+                      }))
+                    }
+                  />
+                </Space>
+              </Card>
               <Space>
                 <Button
                   type="primary"
@@ -553,15 +701,15 @@ export function OutboundIntakeModal({
                 </Button>
                 {!consumable && (
                   <Typography.Text type="secondary">
-                    {preview.status !== "VALIDATED" || preview.errorRows > 0
-                      ? "Chỉ consume được khi batch VALIDATED và không còn row lỗi."
-                      : "Bạn không có quyền outbound.import."}
+                    {!canImport
+                      ? "Bạn không có quyền outbound.request.confirm."
+                      : "Còn row lỗi — map SKU/số lượng hoặc override người nhận rồi Confirm lại."}
                   </Typography.Text>
                 )}
               </Space>
               <ApiErrorAlert
                 error={consumeMutation.error}
-                title="Không consume được request"
+                title="Không Confirm được toa xuất"
               />
             </Space>
           </Card>

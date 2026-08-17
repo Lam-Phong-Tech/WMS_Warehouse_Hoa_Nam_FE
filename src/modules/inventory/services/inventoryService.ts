@@ -4,17 +4,25 @@ import type { ApiMeta } from "@/shared/types/api-response";
 
 type RawRecord = Record<string, unknown>;
 
+/**
+ * Annex D SCR-INV-01 "Filter SKU/type/status". `status` ở đây là stock_status theo ERD
+ * bảng 29 (AVAILABLE/NON_SELLABLE/DEFECTIVE/QUARANTINE) — MVP không có lô (lot) hay
+ * định mức tồn an toàn.
+ */
+export type InventoryStockStatus =
+  | "AVAILABLE"
+  | "NON_SELLABLE"
+  | "DEFECTIVE"
+  | "QUARANTINE";
+
 export type InventoryBalanceFilters = {
   page?: number;
   per_page?: number;
-  scope?: "system";
-  warehouse_id?: number;
-  product_id?: number;
-  lot_no?: string;
-  status?: string;
-  search?: string;
+  warehouse_id?: string;
+  sku_id?: string;
+  sku_type?: "PRODUCT" | "COMPONENT";
+  stock_status?: InventoryStockStatus;
   keyword?: string;
-  sort?: string;
 };
 
 export type StockMovementFilters = {
@@ -39,17 +47,17 @@ export type InventoryBalanceRow = {
   name: string;
   type: string;
   warehouse: string;
-  lotNo: string;
+  /** ERD bảng 29: bucket trạng thái tồn — chiều phân rã chính của SCR-INV-01. */
+  stockStatus: string;
   uom: string;
   available: number;
   onHand: number;
-  reserved: number;
-  inTransit: number;
-  blocked: number;
   serialQty: number;
   boxQty: number;
+  /** DR-LOC-001: gợi ý tương đối, không tạo bucket tồn và có thể rỗng. */
+  containerCode: string;
   location: string;
-  reconcile: "PASS" | "WARNING" | "FAIL" | string;
+  reconcile: "MATCH" | "MISMATCH" | string;
   reconcileNote: string;
   updatedAt: string;
   dataAsOf: string;
@@ -156,11 +164,6 @@ function normalizeBalance(row: RawRecord): InventoryBalanceRow {
   const onHand = num(
     row.on_hand_qty ?? row.qty_on_hand ?? row.on_hand ?? row.quantity,
   );
-  const reserved = num(row.reserved_qty ?? row.qty_reserved ?? row.reserved);
-  const inTransit = num(
-    row.in_transit_qty ?? row.qty_in_transit ?? row.in_transit,
-  );
-  const blocked = num(row.blocked_qty ?? row.hold_qty ?? row.qty_blocked);
   const reconcile = text(
     row.reconciliation_status ?? row.reconcile_status ?? row.reconcile,
     "",
@@ -196,20 +199,16 @@ function normalizeBalance(row: RawRecord): InventoryBalanceRow {
         prod?.name ??
         row.name,
     ),
+    // ERD bảng SKU: sku_type ∈ PRODUCT/COMPONENT — chiều "type" của bộ lọc SCR-INV-01.
     type: text(
-      row.product_type ?? prod?.sku_type ?? row.type ?? row.category_name,
+      row.sku_type ?? row.product_type ?? prod?.sku_type ?? row.type,
       "-",
     ),
     warehouse: whName,
-    lotNo: text(
-      row.lot_no ?? row.batch_no ?? row.lot ?? row.stock_status ?? "-",
-    ),
+    stockStatus: text(row.stock_status, "AVAILABLE"),
     uom: text(row.uom ?? row.unit ?? prod?.unit ?? row.unit_name, ""),
     available,
     onHand,
-    reserved,
-    inTransit,
-    blocked,
     serialQty: num(
       row.item_subledger_count ??
         row.serial_qty ??
@@ -222,7 +221,8 @@ function normalizeBalance(row: RawRecord): InventoryBalanceRow {
         row.container_qty ??
         row.qty_box,
     ),
-    location: text(row.location_hint ?? row.lot_no ?? whName, "-"),
+    containerCode: text(row.container_code, ""),
+    location: text(row.location_hint, ""),
     reconcile,
     reconcileNote: mismatchReason,
     updatedAt: text(row.updated_at ?? row.last_movement_at ?? row.created_at),

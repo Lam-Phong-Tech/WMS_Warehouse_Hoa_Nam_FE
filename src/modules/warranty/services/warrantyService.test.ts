@@ -177,8 +177,9 @@ describe("warrantyService", () => {
   });
 
   describe("updateWarrantyCase (WAR-03, WAR-P1-02)", () => {
-    it("gửi đủ field chẩn đoán/hủy và header If-Match", async () => {
-      vi.mocked(http.patch).mockResolvedValue({
+    // Annex C transitionWarrantyStatus: POST /warranty-cases/{id}/status.
+    it("gửi đủ field chẩn đoán/hủy và header If-Match qua operation chuẩn", async () => {
+      vi.mocked(http.post).mockResolvedValue({
         id: "wc-4",
         status: "CANCELLED",
         cancel_reason: "Khách từ chối sửa",
@@ -196,8 +197,9 @@ describe("warrantyService", () => {
       });
 
       expect(updated.status).toBe("CANCELLED");
-      const [url, body, config] = vi.mocked(http.patch).mock.calls[0];
-      expect(url).toBe("/warranty-cases/wc-4");
+      expect(http.patch).not.toHaveBeenCalled();
+      const [url, body, config] = vi.mocked(http.post).mock.calls[0];
+      expect(url).toBe("/warranty-cases/wc-4/status");
       expect(body).toMatchObject({
         status: "CANCELLED",
         confirmed_defect: "Chết mạch nguồn",
@@ -210,9 +212,37 @@ describe("warrantyService", () => {
       expect(headers["Idempotency-Key"]).toMatch(/^fe:warranty-update-wc-4:/);
     });
 
+    // Annex D SCR-WAR-01: defect + PII + purchase_date sửa được sau tiếp nhận.
+    it("gửi được defect_id/PII/purchase_date khi hiệu chỉnh dữ liệu tiếp nhận", async () => {
+      vi.mocked(http.post).mockResolvedValue({
+        id: "wc-9",
+        status: "CHECKING",
+        stock_effect: "NONE",
+        version: 4,
+      });
+
+      await updateWarrantyCase("wc-9", {
+        defect_id: "def-1",
+        customer_name: "Nguyễn Văn A",
+        customer_phone: "0901234567",
+        customer_address: "1 Nguyễn Trãi",
+        purchase_date: "2026-01-15",
+        ifMatch: 3,
+      });
+
+      const [, body] = vi.mocked(http.post).mock.calls[0];
+      expect(body).toMatchObject({
+        defect_id: "def-1",
+        customer_name: "Nguyễn Văn A",
+        customer_phone: "0901234567",
+        customer_address: "1 Nguyễn Trãi",
+        purchase_date: "2026-01-15",
+      });
+    });
+
     it("tự đọc version hiện tại khi caller không truyền ifMatch", async () => {
       vi.mocked(http.get).mockResolvedValue({ id: "wc-5", version: 7 });
-      vi.mocked(http.patch).mockResolvedValue({
+      vi.mocked(http.post).mockResolvedValue({
         id: "wc-5",
         status: "CHECKING",
         version: 8,
@@ -221,7 +251,7 @@ describe("warrantyService", () => {
       await updateWarrantyCase("wc-5", { status: "CHECKING" });
 
       expect(http.get).toHaveBeenCalledWith("/warranty-cases/wc-5");
-      const [, , config] = vi.mocked(http.patch).mock.calls[0];
+      const [, , config] = vi.mocked(http.post).mock.calls[0];
       expect(
         (config as { headers: Record<string, string> }).headers["If-Match"],
       ).toBe("7");

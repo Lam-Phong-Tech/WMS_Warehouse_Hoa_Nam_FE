@@ -5,12 +5,18 @@ import {
   fetchReversalLines,
   fetchReversibleMovements,
   createReversalDocument,
+  confirmReversalDocument,
+  postReversalDocument,
+  cancelReversalDocument,
   type PagedResult,
 } from "../services/reversalService";
 import type {
   CreateReversalRequest,
+  ReversalCancelRequest,
+  ReversalConfirmRequest,
   ReversalDocument,
   ReversalLookupParams,
+  ReversalPostRequest,
 } from "../types";
 
 export const reversalKeys = {
@@ -62,6 +68,40 @@ export function useCreateReversal() {
   return useMutation({
     mutationFn: (payload: CreateReversalRequest) =>
       createReversalDocument(payload),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: reversalKeys.all }),
+  });
+}
+
+/**
+ * SRS §6 lifecycle DRAFT → CONFIRMED → POSTED / CANCELLED. Mỗi mutation phải
+ * invalidate cả list lẫn detail vì version đổi sau mỗi bước (BR-REV-02 If-Match).
+ */
+export function useConfirmReversal() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: ReversalConfirmRequest) =>
+      confirmReversalDocument(payload),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: reversalKeys.all }),
+  });
+}
+
+export function usePostReversal() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: ReversalPostRequest) =>
+      postReversalDocument(payload),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: reversalKeys.all }),
+  });
+}
+
+export function useCancelReversal() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: ReversalCancelRequest) =>
+      cancelReversalDocument(payload),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: reversalKeys.all }),
   });

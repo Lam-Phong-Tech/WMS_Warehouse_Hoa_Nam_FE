@@ -23,6 +23,7 @@ import { BalanceDetailModal } from "../components/BalanceDetailModal";
 import { TraceModal } from "../components/TraceModal";
 import type {
   InventoryBalanceRow,
+  InventoryStockStatus,
   StockMovementRow,
 } from "../services/inventoryService";
 
@@ -51,7 +52,10 @@ export default function InventoryPage() {
 
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
-  const [stockStatus, setStockStatus] = useState("");
+  const [stockStatus, setStockStatus] = useState<
+    InventoryStockStatus | ""
+  >("");
+  const [skuType, setSkuType] = useState<"PRODUCT" | "COMPONENT" | "">("");
   const [movementSearch, setMovementSearch] = useState("");
   const [movementType, setMovementType] = useState("");
   const [balancePage, setBalancePage] = useState(1);
@@ -67,7 +71,10 @@ export default function InventoryPage() {
 
   const balanceQuery = useInventoryBalances({
     keyword: search || undefined,
-    status: stockStatus || undefined,
+    // Annex D SCR-INV-01 "Filter SKU/type/status": status là stock_status theo ERD
+    // bảng 29, không phải định mức tồn an toàn (không có trong MVP).
+    stock_status: stockStatus || undefined,
+    sku_type: skuType || undefined,
     page: balancePage,
     per_page: balancePerPage,
   });
@@ -155,7 +162,15 @@ export default function InventoryPage() {
       ),
     },
     { title: "Kho", dataIndex: "warehouse", key: "warehouse", width: 130 },
-    { title: "Lô", dataIndex: "lotNo", key: "lotNo", width: 90 },
+    {
+      title: "Trạng thái tồn",
+      dataIndex: "stockStatus",
+      key: "stockStatus",
+      width: 130,
+      render: (value: string) => (
+        <Tag color={value === "AVAILABLE" ? "success" : "warning"}>{value}</Tag>
+      ),
+    },
     {
       title: "Khả dụng",
       dataIndex: "available",
@@ -176,24 +191,6 @@ export default function InventoryPage() {
         formatQty(value, row.uom),
     },
     {
-      title: "Reserved",
-      dataIndex: "reserved",
-      key: "reserved",
-      width: 100,
-      align: "right",
-      render: (value: number, row: InventoryBalanceRow) =>
-        formatQty(value, row.uom),
-    },
-    {
-      title: "In-transit",
-      dataIndex: "inTransit",
-      key: "inTransit",
-      width: 100,
-      align: "right",
-      render: (value: number, row: InventoryBalanceRow) =>
-        formatQty(value, row.uom),
-    },
-    {
       title: "Item/Box",
       key: "subledger",
       width: 90,
@@ -207,10 +204,22 @@ export default function InventoryPage() {
       ),
     },
     {
+      // DR-LOC-001: chỉ hiển thị, không tham gia available_qty, có thể trống.
       title: "Vị trí gợi ý",
-      dataIndex: "location",
       key: "location",
-      width: 120,
+      width: 160,
+      render: (_, row: InventoryBalanceRow) => {
+        const parts = [row.containerCode, row.location].filter(Boolean);
+        return parts.length > 0 ? (
+          <Typography.Text style={{ fontSize: 12 }}>
+            {parts.join(" · ")}
+          </Typography.Text>
+        ) : (
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            Chưa khảo sát
+          </Typography.Text>
+        );
+      },
     },
     {
       title: "Đối soát",
@@ -394,17 +403,31 @@ export default function InventoryPage() {
                   />
                   <select
                     className="select"
-                    value={stockStatus}
-                    aria-label="Lọc trạng thái tồn"
+                    value={skuType}
+                    aria-label="Lọc loại hàng"
                     onChange={(e) => {
-                      setStockStatus(e.target.value);
+                      setSkuType(e.target.value as "PRODUCT" | "COMPONENT" | "");
                       setBalancePage(1);
                     }}
                   >
-                    <option value="">Trạng thái: Tất cả</option>
-                    <option value="normal">Bình thường</option>
-                    <option value="low_stock">Sắp hết</option>
-                    <option value="overflow">Vượt mức</option>
+                    <option value="">Loại: Tất cả</option>
+                    <option value="PRODUCT">Sản phẩm</option>
+                    <option value="COMPONENT">Linh kiện</option>
+                  </select>
+                  <select
+                    className="select"
+                    value={stockStatus}
+                    aria-label="Lọc trạng thái tồn"
+                    onChange={(e) => {
+                      setStockStatus(e.target.value as InventoryStockStatus | "");
+                      setBalancePage(1);
+                    }}
+                  >
+                    <option value="">Trạng thái tồn: Tất cả</option>
+                    <option value="AVAILABLE">AVAILABLE</option>
+                    <option value="NON_SELLABLE">NON_SELLABLE</option>
+                    <option value="DEFECTIVE">DEFECTIVE</option>
+                    <option value="QUARANTINE">QUARANTINE</option>
                   </select>
                   <div className="spacer" />
                   {canTrace ? (

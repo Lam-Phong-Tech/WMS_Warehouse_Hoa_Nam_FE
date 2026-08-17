@@ -1,11 +1,17 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Space, Table, Tag, Typography, message } from "antd";
 import type { ColumnsType, TablePaginationConfig } from "antd/es/table";
-import { EyeOutlined, PlusOutlined, ToolOutlined } from "@ant-design/icons";
+import {
+  CameraOutlined,
+  EyeOutlined,
+  PlusOutlined,
+  ToolOutlined,
+} from "@ant-design/icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
+import { CameraScanModal } from "@/shared/components/forms/CameraScanModal";
 import { MvpPageSizeSelector } from "@/shared/components/mvp/MvpListPagination";
 import { resolveApiPagination } from "@/shared/components/mvp/mvp-pagination";
 import { useHasPermission } from "@/shared/components/permission";
@@ -67,8 +73,10 @@ export default function WarrantyPage() {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
 
+  const searchRef = useRef<HTMLInputElement>(null);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
+  const [cameraOpen, setCameraOpen] = useState(false);
   const [status, setStatus] = useState<WarrantyCaseStatus | "">("");
   const [identification, setIdentification] = useState<
     WarrantyIdentificationType | ""
@@ -253,7 +261,8 @@ export default function WarrantyPage() {
     <div className="warranty-page">
       <div className="toolbar-wrap" style={{ gap: 6 }}>
         <span className="pill blue">GET/POST /warranty-cases</span>
-        <span className="pill blue">POST /component-issue-documents</span>
+        <span className="pill blue">POST /warranty-cases/:id/status</span>
+        <span className="pill blue">POST /warranty-component-issues</span>
         <span className="pill warn-pill">If-Match · Idempotency-Key</span>
         <span className="pill ok">
           Warranty stock-neutral · Component Issue trừ tồn khi Post
@@ -269,13 +278,33 @@ export default function WarrantyPage() {
       ) : null}
 
       <div className="toolbar">
+        {/* Annex D SCR-WAR-01 scan-focus: auto-focus ô quét, Enter/đầu đọc submit ngay
+            (không chờ debounce) và giữ focus sau khi tìm. §5.3 liệt kê camera là context
+            hợp lệ cho cả "warranty receive/search" nên WAR-01 có nút camera fallback. */}
         <input
+          ref={searchRef}
           className="input search"
           value={searchInput}
-          placeholder="Tìm case / mã máy / mã tạm / SĐT..."
+          autoFocus
+          placeholder="Quét hoặc nhập case / mã máy / mã tạm / SĐT..."
           aria-label="Tìm case bảo hành"
           onChange={(event) => setSearchInput(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key !== "Enter") return;
+            event.preventDefault();
+            setSearch(searchInput.trim());
+            setPage(1);
+            searchRef.current?.focus();
+          }}
         />
+        <button
+          className="btn"
+          type="button"
+          aria-label="Quét mã máy bằng camera"
+          onClick={() => setCameraOpen(true)}
+        >
+          <CameraOutlined /> Camera
+        </button>
         <select
           className="select"
           value={status}
@@ -400,6 +429,18 @@ export default function WarrantyPage() {
           onOpenComponentIssue={(target) => setComponentTarget(target)}
         />
       ) : null}
+
+      <CameraScanModal
+        open={cameraOpen}
+        title="Quét mã máy / mã tạm để tra cứu case"
+        onDetected={(code) => {
+          setSearchInput(code.trim());
+          setSearch(code.trim());
+          setPage(1);
+          setCameraOpen(false);
+        }}
+        onClose={() => setCameraOpen(false)}
+      />
 
       {componentTarget ? (
         <ComponentIssueModal

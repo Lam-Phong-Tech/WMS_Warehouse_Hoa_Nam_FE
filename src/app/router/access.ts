@@ -39,7 +39,13 @@ export const ROUTE_PERMISSIONS: Record<string, string | string[] | undefined> =
       P.OUTBOUND_IMPORT,
     ],
     [ROUTES.INVENTORY]: [P.INVENTORY_VIEW],
-    [ROUTES.WARRANTY]: [P.WARRANTY_MANAGE, P.WARRANTY_COMPONENT_ISSUE],
+    // Annex C listWarrantyCases dùng warranty.view: LEADERSHIP/WAREHOUSE_APPROVER chỉ
+    // được cấp quyền đọc nhưng vẫn phải vào được WAR-01 (nút ghi bị ẩn theo quyền).
+    [ROUTES.WARRANTY]: [
+      P.WARRANTY_VIEW,
+      P.WARRANTY_MANAGE,
+      P.WARRANTY_COMPONENT_ISSUE,
+    ],
     [ROUTES.REVERSE]: [P.REVERSAL_POST],
     [ROUTES.REPORTS]: [P.REPORT_VIEW],
     [ROUTES.AUDIT_LOGS]: P.AUDIT_LOG_VIEW,

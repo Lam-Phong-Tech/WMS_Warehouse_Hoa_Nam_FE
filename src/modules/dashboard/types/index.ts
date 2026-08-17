@@ -4,8 +4,6 @@ export interface DashboardKPI {
   componentCount: number;
   availableStock: number;
   pendingPutaway: number;
-  openStocktake: number;
-  stocktakeLines: number;
   warrantyActive: number;
   warrantyTempOnly: number;
 }
@@ -13,7 +11,7 @@ export interface DashboardKPI {
 export interface RecentDocument {
   id: string;
   code: string;
-  type: "INBOUND" | "OUTBOUND" | "STOCKTAKE";
+  type: "INBOUND" | "OUTBOUND" | "COMPONENT_ISSUE" | "REVERSAL";
   partner: string;
   progress: number;
   posted: number;

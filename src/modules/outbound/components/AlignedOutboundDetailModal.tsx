@@ -17,6 +17,8 @@ import {
   CameraOutlined,
   CheckCircleOutlined,
   DisconnectOutlined,
+  EyeOutlined,
+  LockOutlined,
   PrinterOutlined,
   ScanOutlined,
   TagOutlined,
@@ -33,11 +35,14 @@ import {
   assignRfidToItem,
   cancelOutboundDocument,
   createPackingLabel,
+  fetchAvailableQtyBySku,
   fetchOutboundDetail,
   fetchPackingLabels,
   fetchPrinterConfigs,
   postOutboundIssue,
+  previewPackingLabel,
   printLabelSnapshot,
+  readyPackingLabel,
   reprintLabelSnapshot,
   scanOutboundItem,
   unmatchOutboundItem,
@@ -46,6 +51,15 @@ import {
   type OutboundLineRecord,
   type PackingLabelRecord,
 } from "@/modules/outbound/services/alignedOutboundService";
+
+/** SRS §6 Packing_Label state model. */
+const LABEL_LIFECYCLE = [
+  "DRAFT",
+  "PREVIEWED",
+  "READY_TO_PRINT",
+  "PRINTED",
+  "ĐÃ DÁN",
+] as const;
 
 const { Text } = Typography;
 
@@ -109,6 +123,23 @@ export function AlignedOutboundDetailModal({
     queryKey: ["mvp-outbound", "printers"],
     queryFn: fetchPrinterConfigs,
   });
+  // Annex D SCR-OUT-01 field available_qty: "Refresh at commit; stale warning".
+  const lineSkuIds = useMemo(
+    () => [
+      ...new Set(
+        (detailQuery.data?.lines ?? [])
+          .map((line) => line.productId)
+          .filter(Boolean),
+      ),
+    ],
+    [detailQuery.data],
+  );
+  const availabilityQuery = useQuery({
+    queryKey: ["mvp-outbound", "availability", documentId, lineSkuIds],
+    enabled: lineSkuIds.length > 0,
+    retry: false,
+    queryFn: () => fetchAvailableQtyBySku(lineSkuIds),
+  });
 
   const detail = detailQuery.data;
   const doc = detail?.document;
@@ -168,6 +199,17 @@ export function AlignedOutboundDetailModal({
   const mutable = doc?.status === "DRAFT" || doc?.status === "SCANNING";
   const labelPrinted = packingLabel?.status === "PRINTED";
   const labelApplied = Boolean(packingLabel?.applied);
+  // §6: chỉ được gửi lệnh in khi nhãn đã READY_TO_PRINT (hoặc retry sau PRINT_FAILED).
+  const labelReadyToPrint = packingLabel?.status === "READY_TO_PRINT";
+  const labelPrintFailed = packingLabel?.status === "PRINT_FAILED";
+  const canPreviewLabel =
+    packingLabel !== null &&
+    ["DRAFT", "PENDING_PRINT", "PREVIEWED"].includes(packingLabel.status);
+  const canReadyLabel =
+    packingLabel !== null &&
+    ["DRAFT", "PENDING_PRINT", "PREVIEWED"].includes(packingLabel.status);
+  const canSendPrint = labelReadyToPrint || labelPrintFailed;
+  const canReprint = labelPrinted || labelPrintFailed;
   const postBlockReason = !doc
     ? ""
     : !doc.outboundRequestId
@@ -265,23 +307,67 @@ export function AlignedOutboundDetailModal({
       toast.error(getApiErrorMessage(error, "Không thể tạo Packing Label.")),
   });
 
+  const previewMutation = useMutation({
+    mutationFn: (label: PackingLabelRecord) =>
+      previewPackingLabel({
+        documentId,
+        labelId: label.id,
+        ifMatch: label.version,
+      }),
+    onSuccess: async () => {
+      toast.success("Đã Preview Packing Label; snapshot chưa đóng băng.");
+      await refresh();
+    },
+    onError: (error) =>
+      toast.error(getApiErrorMessage(error, "Preview Packing Label thất bại.")),
+  });
+
+  const readyMutation = useMutation({
+    mutationFn: (label: PackingLabelRecord) =>
+      readyPackingLabel({
+        documentId,
+        labelId: label.id,
+        ifMatch: label.version,
+        idempotencyKey: makeKey(`label-ready-${label.id}`),
+      }),
+    onSuccess: async () => {
+      toast.success(
+        "Đã Ready — snapshot Packing Label được đóng băng, sẵn sàng in.",
+      );
+      await refresh();
+    },
+    onError: (error) =>
+      toast.error(getApiErrorMessage(error, "Ready Packing Label thất bại.")),
+  });
+
   const printMutation = useMutation({
     mutationFn: async (label: PackingLabelRecord) => {
       if (!printerId) throw new Error("Chọn máy in ACTIVE.");
-      return label.status === "PENDING_PRINT"
-        ? printLabelSnapshot(label.id, printerId)
-        : reprintLabelSnapshot(label.id, printerId);
+      const payload = {
+        documentId,
+        labelId: label.id,
+        printerConfigId: printerId,
+        ifMatch: label.version,
+        idempotencyKey: makeKey(`label-print-${label.id}`),
+      };
+      return label.status === "PRINTED"
+        ? reprintLabelSnapshot(payload)
+        : printLabelSnapshot(payload);
     },
     onSuccess: async () => {
       toast.success("Đã gửi lệnh in/in lại Packing Label; tồn kho không đổi.");
       await refresh();
     },
-    onError: (error) =>
-      toast.error(getApiErrorMessage(error, "In Packing Label thất bại.")),
+    onError: async (error) => {
+      // §5.2: print failure đặt nhãn về PRINT_FAILED và chặn hoàn tất xuất.
+      toast.error(getApiErrorMessage(error, "In Packing Label thất bại."));
+      await refresh();
+    },
   });
 
   const applyMutation = useMutation({
-    mutationFn: (label: PackingLabelRecord) => applyPackingLabel(label.id),
+    mutationFn: (label: PackingLabelRecord) =>
+      applyPackingLabel(label.id, label.version),
     onSuccess: async () => {
       toast.success("Đã xác nhận dán Packing Label; tồn kho vẫn chưa đổi.");
       await refresh();
@@ -293,12 +379,16 @@ export function AlignedOutboundDetailModal({
   const rfidMutation = useMutation({
     mutationFn: async () => {
       if (!rfidTarget) throw new Error("Chưa chọn item.");
-      if (!rfidCode.trim() || !rfidHardwareUid.trim())
-        throw new Error("Nhập RFID code và hardware UID, hoặc bỏ qua RFID.");
+      if (!rfidHardwareUid.trim())
+        throw new Error("Nhập hardware UID của tag, hoặc bỏ qua RFID.");
+      if (!detail) throw new Error("Chưa tải phiếu.");
+      // Annex C assignItemRfid: RFID gắn theo item của đúng phiếu xuất này.
       return assignRfidToItem({
+        documentId,
         itemId: rfidTarget.itemId,
-        codeValue: rfidCode.trim(),
+        codeValue: rfidCode.trim() || rfidHardwareUid.trim(),
         hardwareUid: rfidHardwareUid.trim(),
+        ifMatch: version ?? detail.document.version,
       });
     },
     onSuccess: async () => {
@@ -352,6 +442,13 @@ export function AlignedOutboundDetailModal({
       toast.error(getApiErrorMessage(error, "Hủy phiếu thất bại.")),
   });
 
+  const availability = availabilityQuery.data ?? {};
+  const shortStockLines = (detail?.lines ?? []).filter(
+    (line) =>
+      availabilityQuery.isSuccess &&
+      (availability[line.productId] ?? 0) < line.expected,
+  );
+
   const lineColumns: ColumnsType<OutboundLineRecord> = [
     {
       title: "SKU",
@@ -362,6 +459,19 @@ export function AlignedOutboundDetailModal({
     { title: "Yêu cầu", dataIndex: "expected", width: 90, align: "right" },
     { title: "Đã scan", dataIndex: "scanned", width: 90, align: "right" },
     { title: "Còn lại", dataIndex: "remaining", width: 90, align: "right" },
+    {
+      title: "Khả dụng",
+      key: "available",
+      width: 110,
+      align: "right",
+      render: (_, row) => {
+        if (!availabilityQuery.isSuccess) return "-";
+        const qty = availability[row.productId] ?? 0;
+        return (
+          <Text type={qty < row.expected ? "danger" : undefined}>{qty}</Text>
+        );
+      },
+    },
     {
       title: "Kết quả",
       width: 100,
@@ -509,6 +619,17 @@ export function AlignedOutboundDetailModal({
               {packingLabels.length} / 1
               {packingLabel ? ` · ${packingLabel.status}` : ""}
             </Descriptions.Item>
+            <Descriptions.Item label="Tồn khả dụng">
+              {availabilityQuery.isSuccess ? (
+                <Tag color={shortStockLines.length ? "error" : "success"}>
+                  {shortStockLines.length
+                    ? `${shortStockLines.length} SKU thiếu tồn`
+                    : "Đủ tồn cho toàn phiếu"}
+                </Tag>
+              ) : (
+                <Tag>Chưa kiểm tra</Tag>
+              )}
+            </Descriptions.Item>
             <Descriptions.Item label="Xác nhận đã dán nhãn">
               <Tag color={labelApplied ? "success" : "warning"}>
                 {labelApplied ? "Có" : "Chưa"}
@@ -622,30 +743,33 @@ export function AlignedOutboundDetailModal({
           {!packingLabel ? (
             <Space orientation="vertical" style={{ width: "100%" }}>
               <Alert
-                type={fullScan ? "success" : "warning"}
+                type={fullScan ? "warning" : "info"}
                 showIcon
                 title={
                   fullScan
-                    ? "Đã scan đủ. Có thể tạo Packing Label."
-                    : "Chưa scan đủ. Chưa được tạo nhãn."
+                    ? "Đã scan đủ nhưng chưa thấy nhãn — bấm để tạo/đảm bảo lại 01 Packing Label."
+                    : "Chưa scan đủ. Hệ thống sẽ tự tổng hợp lô và tạo 01 Packing Label DRAFT ngay khi full match."
                 }
               />
               <Space wrap>
                 <Input
                   style={{ width: 300 }}
                   value={customerPhone}
-                  placeholder="SĐT khách hàng (tùy chọn) trên Packing Label"
+                  placeholder="SĐT người nhận (tùy chọn) in trên nhãn"
                   disabled={!fullScan}
                   onChange={(event) => setCustomerPhone(event.target.value)}
                 />
                 <Button
                   type="primary"
                   icon={<TagOutlined />}
-                  disabled={!fullScan || !can("label.print")}
+                  disabled={
+                    !fullScan ||
+                    (!can("packing_label.preview") && !can("label.print"))
+                  }
                   loading={createLabelMutation.isPending}
                   onClick={() => createLabelMutation.mutate()}
                 >
-                  Tạo & preview 01 Packing Label
+                  Tạo/đảm bảo 01 Packing Label
                 </Button>
               </Space>
             </Space>
@@ -753,12 +877,36 @@ export function AlignedOutboundDetailModal({
               <Alert
                 type="info"
                 showIcon
-                title="Lifecycle: PENDING_PRINT → PRINTED → ĐÃ DÁN (PRINT_FAILED nếu in lỗi)"
-                description="Tạo nhãn đóng băng ngay một immutable Packing_Label_Snapshot (DR_HN_20260815). Print/Retry/Reprint không đổi tồn."
+                title={`Lifecycle §6: ${LABEL_LIFECYCLE.join(" → ")} (PRINT_FAILED nếu in lỗi)`}
+                description="Ready đóng băng immutable Packing_Label_Snapshot; Print/Retry/Reprint dùng lại đúng snapshot đó và không đổi tồn."
               />
               <Space wrap>
+                <Button
+                  icon={<EyeOutlined />}
+                  disabled={
+                    !canPreviewLabel ||
+                    !mutable ||
+                    (!can("packing_label.preview") && !can("label.print"))
+                  }
+                  loading={previewMutation.isPending}
+                  onClick={() => previewMutation.mutate(packingLabel)}
+                >
+                  Preview
+                </Button>
+                <Button
+                  icon={<LockOutlined />}
+                  disabled={
+                    !canReadyLabel ||
+                    !mutable ||
+                    (!can("packing_label.ready") && !can("label.print"))
+                  }
+                  loading={readyMutation.isPending}
+                  onClick={() => readyMutation.mutate(packingLabel)}
+                >
+                  Ready · đóng băng snapshot
+                </Button>
                 <Select
-                  style={{ width: 300 }}
+                  style={{ width: 260 }}
                   placeholder="Chọn máy in"
                   value={printerId || undefined}
                   onChange={setPrinterId}
@@ -770,20 +918,29 @@ export function AlignedOutboundDetailModal({
                 <Button
                   icon={<PrinterOutlined />}
                   disabled={
-                    !printerId || (!can("label.print") && !can("label.reprint"))
+                    !printerId ||
+                    !(canSendPrint || canReprint) ||
+                    (!can("packing_label.print") &&
+                      !can("packing_label.reprint") &&
+                      !can("label.print") &&
+                      !can("label.reprint"))
                   }
                   loading={printMutation.isPending}
                   onClick={() => printMutation.mutate(packingLabel)}
                 >
-                  {packingLabel.status === "PENDING_PRINT"
-                    ? "In Packing Label"
-                    : "In lại Packing Label"}
+                  {labelPrinted
+                    ? "In lại Packing Label"
+                    : labelPrintFailed
+                      ? "In lại sau lỗi máy in"
+                      : "In Packing Label"}
                 </Button>
                 <Button
                   type="primary"
                   icon={<CheckCircleOutlined />}
                   disabled={
-                    !labelPrinted || labelApplied || !can("label.print")
+                    !labelPrinted ||
+                    labelApplied ||
+                    (!can("packing_label.print") && !can("label.print"))
                   }
                   loading={applyMutation.isPending}
                   onClick={() => applyMutation.mutate(packingLabel)}
@@ -791,6 +948,13 @@ export function AlignedOutboundDetailModal({
                   {labelApplied ? "Đã dán nhãn" : "Xác nhận đã dán nhãn"}
                 </Button>
               </Space>
+              {!canSendPrint && !labelPrinted ? (
+                <Alert
+                  type="warning"
+                  showIcon
+                  title="Phải Preview → Ready trước khi gửi lệnh in (§6)."
+                />
+              ) : null}
             </Space>
           )}
         </Card>
@@ -813,6 +977,16 @@ export function AlignedOutboundDetailModal({
 
         <Card title="4 · Hoàn tất xuất / Post Issue" size="small">
           <Space orientation="vertical" style={{ width: "100%" }}>
+            {shortStockLines.length ? (
+              <Alert
+                type="warning"
+                showIcon
+                title="Tồn khả dụng hiện thấp hơn số lượng cần xuất"
+                description={`BE kiểm tra lại tồn tại thời điểm Post; các SKU thiếu: ${shortStockLines
+                  .map((line) => short(line.productId))
+                  .join(", ")}.`}
+              />
+            ) : null}
             {postBlockReason ? (
               <Alert type="warning" showIcon title={postBlockReason} />
             ) : (

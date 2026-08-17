@@ -294,7 +294,9 @@ export function WarrantyIntakeModal({
                 <ScanInput
                   value={itemCode ?? ""}
                   size="middle"
-                  autoFocus={false}
+                  // Annex D SCR-WAR-01 scan-focus: ô quét tự nhận focus khi mở WAR-02
+                  // ở nhánh IDENTIFIED để đầu đọc bắn được ngay.
+                  autoFocus
                   placeholder="Quét Barcode/QR hoặc nhập serial"
                   onChange={(value) => form.setFieldValue("item_code", value)}
                   onScan={(code) => form.setFieldValue("item_code", code)}

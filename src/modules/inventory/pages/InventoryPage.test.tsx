@@ -45,15 +45,13 @@ const BALANCE_ROW = {
   name: "Máy khoan KT-2000",
   type: "TOOL",
   warehouse: "Kho A",
-  lotNo: "LOT-01",
+  stockStatus: "AVAILABLE",
   uom: "cái",
   available: 10,
   onHand: 12,
-  reserved: 2,
-  inTransit: 0,
-  blocked: 0,
   serialQty: 3,
   boxQty: 1,
+  containerCode: "TRAY-01",
   location: "A-01-01",
   reconcile: "MATCH",
   reconcileNote: "",
@@ -205,17 +203,34 @@ describe("InventoryPage (INV-01 hub)", () => {
     ).toBeInTheDocument();
   });
 
-  it("lọc trạng thái tồn kho gọi lại API với status tương ứng", async () => {
+  // Annex D SCR-INV-01 "Filter SKU/type/status": status là stock_status theo ERD bảng 29
+  // (AVAILABLE/NON_SELLABLE/DEFECTIVE/QUARANTINE), không phải định mức tồn an toàn.
+  it("lọc trạng thái tồn gọi lại API với stock_status theo ERD bảng 29", async () => {
     renderWithProviders(<InventoryPage />);
     await screen.findByText("SKU-001");
 
     fireEvent.change(screen.getByLabelText("Lọc trạng thái tồn"), {
-      target: { value: "low_stock" },
+      target: { value: "DEFECTIVE" },
     });
 
     await waitFor(() => {
       expect(useInventoryBalances).toHaveBeenLastCalledWith(
-        expect.objectContaining({ status: "low_stock", page: 1 }),
+        expect.objectContaining({ stock_status: "DEFECTIVE", page: 1 }),
+      );
+    });
+  });
+
+  it("lọc loại hàng gọi lại API với sku_type", async () => {
+    renderWithProviders(<InventoryPage />);
+    await screen.findByText("SKU-001");
+
+    fireEvent.change(screen.getByLabelText("Lọc loại hàng"), {
+      target: { value: "COMPONENT" },
+    });
+
+    await waitFor(() => {
+      expect(useInventoryBalances).toHaveBeenLastCalledWith(
+        expect.objectContaining({ sku_type: "COMPONENT", page: 1 }),
       );
     });
   });

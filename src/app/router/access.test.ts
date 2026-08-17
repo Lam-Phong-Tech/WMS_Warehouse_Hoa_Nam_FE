@@ -48,14 +48,26 @@ describe("WMS route access contract", () => {
         "outbound.import",
       ],
       [ROUTES.INVENTORY]: ["inventory.view"],
-      [ROUTES.WARRANTY]: ["warranty.manage", "warranty.component_issue"],
+      // Annex C listWarrantyCases = warranty.view.
+      [ROUTES.WARRANTY]: [
+        "warranty.view",
+        "warranty.manage",
+        "warranty.component_issue",
+      ],
       [ROUTES.REVERSE]: ["inventory.reversal.post"],
       [ROUTES.REPORTS]: ["report.view"],
       [ROUTES.AUDIT_LOGS]: "AUDIT_LOG_VIEW",
       [ROUTES.PROFILE]: undefined,
     });
 
-    expect(ROUTE_PERMISSIONS).not.toHaveProperty(ROUTES.STOCKTAKE);
+    // REQ-SRS-037 / DEC-NO-STOCKTAKE-001: không có route, hằng số route hay
+    // permission kiểm kê nào được phép tồn tại trên baseline MVP.
+    expect(Object.keys(ROUTES)).not.toContain("STOCKTAKE");
+    expect(
+      Object.keys(ROUTE_PERMISSIONS).filter((path) =>
+        path.toLowerCase().includes("stocktake"),
+      ),
+    ).toEqual([]);
     expect(ROUTE_PERMISSIONS[ROUTES.REPORTS]).not.toContain("report.export");
   });
 });

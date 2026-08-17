@@ -6,10 +6,17 @@
 
 export type ScanCodeState = "waiting" | "scanned" | "success" | "error";
 
+/**
+ * SRS §5.3 camera/scan context: inbound, outbound, inventory trace/search và
+ * warranty receive/search. Không có context kiểm kê (REQ-SRS-037).
+ * Khớp enum BE tại POST /api/v1/scan/classify.
+ */
 export type ScanContext =
   | "INBOUND"
   | "OUTBOUND"
-  | "STOCKTAKE"
+  | "INVENTORY"
+  | "TRACE"
+  | "WARRANTY_RECEIVE"
   | "WARRANTY_TEMP_ONLY";
 
 export type ScanClassification = "ITEM" | "CONTAINER" | "SKU";

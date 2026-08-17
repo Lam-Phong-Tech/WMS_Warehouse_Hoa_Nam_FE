@@ -113,6 +113,15 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
     (line) => line.reversal_qty > line.max,
   );
   const isIssueReversal = selectedMovement?.movement_type === "ISSUE";
+  // Wireframe REV-01 "Hiện tại → Reversal → Sau Reversal": Reverse Issue cộng lại tồn
+  // (chỉ khi SELLABLE), Reverse Receipt trừ tồn. Dấu ở đây chỉ để preview, backend vẫn
+  // là nơi quyết định stock effect thật.
+  const stockEffectSign = isIssueReversal
+    ? returnCondition === "SELLABLE"
+      ? 1
+      : 0
+    : -1;
+  const availableDelta = stockEffectSign * totalQty;
   const canSubmit =
     Boolean(selectedMovement?.can_reverse) &&
     selectedLines.length > 0 &&
@@ -180,10 +189,6 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
       ),
       onOk: async () => {
         const payload: CreateReversalRequest = {
-          reversal_type:
-            selectedMovement.movement_type === "STOCKTAKE_ADJUSTMENT"
-              ? "STOCKTAKE_ADJUSTMENT"
-              : "MANUAL_ADJUSTMENT",
           reference_document_id:
             selectedMovement.source_document_id || selectedMovement.id,
           reference_document_type:
@@ -535,6 +540,33 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
                 style={{ marginTop: 12 }}
               />
             ) : null}
+
+            {/* Annex D SCR-REV-01: người dùng phải thấy dependency check và ảnh hưởng
+                tồn dự kiến trước khi Post. */}
+            <Alert
+              type={selectedMovement.can_reverse ? "success" : "error"}
+              showIcon
+              style={{ marginTop: 12 }}
+              title={
+                selectedMovement.can_reverse
+                  ? `Kiểm tra phụ thuộc: PASS · tổng reversible_qty = ${qty(
+                      selectedMovement.lines.reduce(
+                        (sum, line) => sum + line.reversible_qty,
+                        0,
+                      ),
+                    )}`
+                  : `Kiểm tra phụ thuộc: BLOCKED · ${selectedMovement.dependency_guard ?? "Có dependency downstream"}`
+              }
+              description={
+                selectedMovement.can_reverse
+                  ? `Dự kiến sau Reversal: khả dụng ${
+                      availableDelta === 0
+                        ? "không đổi (hàng trả về không bán được)"
+                        : `${availableDelta > 0 ? "+" : ""}${qty(availableDelta)}`
+                    }. Movement gốc giữ nguyên, hệ thống tạo movement đối ứng có original_movement_id.`
+                  : "Phải đảo dependency theo thứ tự ngược trước (BR-REV-04)."
+              }
+            />
 
             <Space style={{ marginTop: 16 }} wrap>
               <Statistic title="Tổng SL hoàn đảo" value={qty(totalQty)} />

@@ -30,7 +30,9 @@ const UUID_PATTERN =
 const SCAN_CONTEXTS = new Set<ScanContext>([
   "INBOUND",
   "OUTBOUND",
-  "STOCKTAKE",
+  "INVENTORY",
+  "TRACE",
+  "WARRANTY_RECEIVE",
   "WARRANTY_TEMP_ONLY",
 ]);
 const CLASSIFICATIONS = new Set<ScanClassification>([

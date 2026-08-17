@@ -4,6 +4,7 @@ import {
   assignRfidToItem,
   cancelOutboundDocument,
   fetchActiveRfidCodes,
+  fetchAvailableQtyBySku,
   fetchOutboundDetail,
   fetchOutboundDocuments,
   fetchPrinterConfigs,
@@ -28,6 +29,7 @@ export {
   assignRfidToItem,
   cancelOutboundDocument,
   fetchActiveRfidCodes,
+  fetchAvailableQtyBySku,
   fetchOutboundDetail,
   fetchOutboundDocuments,
   fetchPrinterConfigs,
@@ -93,6 +95,8 @@ export interface PackingLabelSkuSummary {
 
 export interface PackingLabelRecord {
   id: string;
+  /** Optimistic version dùng cho If-Match của preview/ready/print/reprint. */
+  version: number;
   documentId: string;
   labelCode: string;
   outboundNo: string;
@@ -104,7 +108,15 @@ export interface PackingLabelRecord {
   itemCount: number;
   skuCount: number;
   skuSummary: PackingLabelSkuSummary[];
-  status: "PENDING_PRINT" | "PRINTED" | "PRINT_FAILED" | string;
+  /** §6: DRAFT → PREVIEWED → READY_TO_PRINT → PRINTED (PRINT_FAILED khi in lỗi). */
+  status:
+    | "DRAFT"
+    | "PREVIEWED"
+    | "READY_TO_PRINT"
+    | "PRINTED"
+    | "PRINT_FAILED"
+    | "PENDING_PRINT"
+    | string;
   applied: boolean;
   appliedAt?: string | null;
   reprintCount: number;
@@ -130,6 +142,7 @@ function normalizePackingLabel(row: RawRecord): PackingLabelRecord {
   const payload = objectOf(row.label_payload ?? row.payload);
   return {
     id: text(row.id),
+    version: num(row.version),
     documentId: text(row.outbound_document_id),
     labelCode: text(row.label_code ?? payload.label_code, text(row.id)),
     outboundNo: text(row.outbound_no ?? payload.outbound_no),
@@ -140,7 +153,7 @@ function normalizePackingLabel(row: RawRecord): PackingLabelRecord {
     itemCount: num(row.item_count ?? payload.item_count),
     skuCount: num(row.sku_count ?? payload.sku_count),
     skuSummary: normalizeSkuSummary(row.sku_summary ?? payload.sku_summary),
-    status: text(row.status, "PENDING_PRINT"),
+    status: text(row.status, "DRAFT"),
     applied: bool(row.applied) || Boolean(row.applied_at),
     appliedAt: row.applied_at ? text(row.applied_at) : null,
     reprintCount: num(row.reprint_count),
@@ -188,11 +201,65 @@ export async function createPackingLabel(input: {
   return normalizePackingLabel(row);
 }
 
-export async function applyPackingLabel(
-  id: string,
-): Promise<PackingLabelRecord> {
+/**
+ * Annex C previewPackingLabel (If-Match) — SRS §6: DRAFT → PREVIEWED.
+ * Stock-neutral, chỉ chạy khi phiếu xuất chưa hoàn tất.
+ */
+export async function previewPackingLabel(input: {
+  documentId: string;
+  labelId: string;
+  ifMatch: number;
+}): Promise<PackingLabelRecord> {
   const row = await http.post<RawRecord>(
-    `${API_ENDPOINTS.LABEL_SNAPSHOTS}/${encodeURIComponent(id)}/apply`,
+    labelPath(API_ENDPOINTS.OUTBOUND_PACKING_LABEL_PREVIEW, input),
+    undefined,
+    { headers: { "If-Match": String(input.ifMatch) } },
   );
   return normalizePackingLabel(row);
+}
+
+/**
+ * Annex C readyPackingLabel (Idempotency-Key + If-Match) — SRS §6:
+ * PREVIEWED → READY_TO_PRINT, đóng băng immutable Packing_Label_Snapshot.
+ */
+export async function readyPackingLabel(input: {
+  documentId: string;
+  labelId: string;
+  ifMatch: number;
+  idempotencyKey: string;
+}): Promise<PackingLabelRecord> {
+  const row = await http.post<RawRecord>(
+    labelPath(API_ENDPOINTS.OUTBOUND_PACKING_LABEL_READY, input),
+    undefined,
+    {
+      headers: {
+        "If-Match": String(input.ifMatch),
+        "Idempotency-Key": input.idempotencyKey,
+      },
+    },
+  );
+  return normalizePackingLabel(row);
+}
+
+export async function applyPackingLabel(
+  id: string,
+  ifMatch?: number,
+): Promise<PackingLabelRecord> {
+  const row = await http.post<RawRecord>(
+    API_ENDPOINTS.LABEL_SNAPSHOT_APPLY.replace(":id", encodeURIComponent(id)),
+    undefined,
+    ifMatch === undefined
+      ? undefined
+      : { headers: { "If-Match": String(ifMatch) } },
+  );
+  return normalizePackingLabel(row);
+}
+
+function labelPath(
+  template: string,
+  input: { documentId: string; labelId: string },
+): string {
+  return template
+    .replace(":id", encodeURIComponent(input.documentId))
+    .replace(":labelId", encodeURIComponent(input.labelId));
 }

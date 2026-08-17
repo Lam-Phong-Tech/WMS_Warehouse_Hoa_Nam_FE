@@ -30,7 +30,6 @@ import {
   postOutboundIssue,
   scanOutboundDocument,
 } from "@/modules/shipping/services/shippingService";
-import { applyStocktakeAdjustment } from "@/modules/stocktake/services/stocktakeService";
 import { classifyScanCodes } from "@/modules/scan/services/scanService";
 import {
   WWHN_181_EXACT_REVIEW,
@@ -38,6 +37,7 @@ import {
   assertFinalSignoffAllowed,
 } from "@/shared/api/wms-contract-signoff";
 import {
+  WMS_ACTION_PERMISSIONS,
   WMS_PERMISSION_CATALOG as P,
   canonicalizeWmsPermission,
   hasAnyWmsPermission,
@@ -55,7 +55,7 @@ function grant(...permissionCodes: string[]) {
 
 function classification(
   rawCode: string,
-  context: "INBOUND" | "OUTBOUND" | "STOCKTAKE" | "WARRANTY_TEMP_ONLY",
+  context: "INBOUND" | "OUTBOUND" | "INVENTORY" | "TRACE" | "WARRANTY_TEMP_ONLY",
 ) {
   return {
     raw_code: rawCode,
@@ -109,13 +109,13 @@ describe("WWHN-181 exact BE v1.7 guards", () => {
   it("keeps scan classify read-only and rejects side effects", async () => {
     grant(P.SCAN_CLASSIFY);
     vi.mocked(http.post).mockResolvedValue(
-      classification("RAW-01", "STOCKTAKE"),
+      classification("RAW-01", "TRACE"),
     );
 
     await expect(
       classifyScanCodes({
         raw_code: " RAW-01 ",
-        context: "STOCKTAKE",
+        context: "TRACE",
         warehouse_id: WAREHOUSE_ID,
       }),
     ).resolves.toMatchObject({
@@ -127,13 +127,13 @@ describe("WWHN-181 exact BE v1.7 guards", () => {
     });
 
     vi.mocked(http.post).mockResolvedValue({
-      ...classification("RAW-02", "STOCKTAKE"),
+      ...classification("RAW-02", "TRACE"),
       movement_created: true,
     });
     await expect(
       classifyScanCodes({
         raw_code: "RAW-02",
-        context: "STOCKTAKE",
+        context: "TRACE",
         warehouse_id: WAREHOUSE_ID,
       }),
     ).rejects.toMatchObject({ code: "WMS_FE_INVALID_SCAN_RESPONSE" });
@@ -152,14 +152,6 @@ describe("WWHN-181 exact BE v1.7 guards", () => {
         documentId: "OUT-1",
         idempotencyKey: "idem-outbound-1",
         ifMatch: 1,
-      }),
-    ).rejects.toMatchObject({ code: "WMS_FE_PERMISSION_REQUIRED" });
-    await expect(
-      applyStocktakeAdjustment({
-        session_id: "ST-1",
-        lines: [{ sku: "SKU-1", actual_qty: 1 }],
-        idempotency_key: "idem-stocktake-1",
-        version: "1",
       }),
     ).rejects.toMatchObject({ code: "WMS_FE_PERMISSION_REQUIRED" });
     expect(http.postWithMeta).not.toHaveBeenCalled();
@@ -233,9 +225,10 @@ describe("WWHN-181 exact BE v1.7 guards", () => {
 
     await scanOutboundDocument("OUT-1", ["RAW-OUT"]);
 
+    // Annex C scanOutboundDocument: POST /outbound-documents/{id}/scans + If-Match.
     expect(http.post).toHaveBeenNthCalledWith(
       2,
-      "/outbound-documents/OUT-1/scan",
+      "/outbound-documents/OUT-1/scans",
       { line_id: "LINE-OUT-1", quantity: 1, code_value: "RAW-OUT" },
       { headers: { "If-Match": "1" } },
     );
@@ -345,74 +338,27 @@ describe("WWHN-181 exact BE v1.7 guards", () => {
     expect(http.postWithMeta).not.toHaveBeenCalled();
   });
 
-  it("applies the complete APPROVED variance set", async () => {
-    grant(P.STOCKTAKE_ADJUST);
-    vi.mocked(http.get).mockResolvedValue([
-      {
-        variance_id: "11111111-1111-4111-8111-111111111111",
-        status: "APPROVED",
-        grain_key: "SKU-001",
-        expected_at_count: 5,
-        actual_qty: 4,
-        variance_qty: -1,
-      },
-      {
-        variance_id: "22222222-2222-4222-8222-222222222222",
-        status: "APPROVED",
-        grain_key: "SKU-002",
-        expected_at_count: 3,
-        actual_qty: 5,
-        variance_qty: 2,
-      },
-    ]);
-    vi.mocked(http.postWithMeta).mockResolvedValue({
-      data: {
-        session_id: "ST-1",
-        status: "APPLIED",
-        session_version: 10,
-        variance_count: 2,
-        movement_ids: ["MOV-ADJ-1"],
-        request_hash: "hash-1",
-      },
-      meta: { request_id: "REQ-ADJ-1" },
-    });
-
-    await expect(
-      applyStocktakeAdjustment({
-        session_id: "ST-1",
-        lines: [{ sku: "SKU-001", actual_qty: 4, reason: "COUNT" }],
-        idempotency_key: "idem-stocktake-1",
-        version: "9",
-      }),
-    ).resolves.toMatchObject({
-      session_id: "ST-1",
-      status: "APPLIED",
-      adjusted_lines: 2,
-      request_id: "REQ-ADJ-1",
-    });
-    expect(http.postWithMeta).toHaveBeenCalledWith(
-      "/stocktake-sessions/ST-1/apply-adjustment",
-      {
-        session_version: 9,
-        variance_ids: [
-          "11111111-1111-4111-8111-111111111111",
-          "22222222-2222-4222-8222-222222222222",
-        ],
-        reason: "COUNT",
-      },
-      { headers: { "Idempotency-Key": "idem-stocktake-1" } },
-    );
+  // REQ-SRS-037 / DEC-NO-STOCKTAKE-001: "apply variance/adjustment" đã bị gỡ khỏi
+  // baseline MVP nên không còn hành vi nào để test; thay bằng guard chống hồi quy.
+  it("keeps every stocktake capability out of the FE permission surface", () => {
+    const codes: string[] = [
+      ...Object.keys(P),
+      ...Object.values(P),
+      ...Object.keys(WMS_ACTION_PERMISSIONS),
+    ];
+    expect(
+      codes.filter((code) => code.toLowerCase().includes("stocktake")),
+    ).toEqual([]);
   });
 
   it("keeps permission aliases explicit and non-escalating", () => {
-    expect(canonicalizeWmsPermission("stocktake.apply")).toBe(
-      "stocktake.adjust",
-    );
     expect(hasAnyWmsPermission(["REPORT_EXPORT"], ["report.export"])).toBe(
       true,
     );
+    expect(canonicalizeWmsPermission("scan.outbound")).toBe("outbound.scan");
+    // putaway.manage không được ngầm nâng thành container.manage.
     expect(
-      hasAnyWmsPermission(["stocktake.manage"], ["stocktake.adjust"]),
+      hasAnyWmsPermission(["putaway.manage"], ["container.manage"]),
     ).toBe(false);
   });
 

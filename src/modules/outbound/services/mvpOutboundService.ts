@@ -141,9 +141,12 @@ export interface IssueEvidence {
 
 export interface OutboundRequestRowInput {
   request_no: string;
+  /** §5.2: ngày toa do Kinh doanh phát hành (nullable, không được ở tương lai). */
+  request_date?: string;
   customer_name: string;
-  // SRS v1.12 §15 + REQ-SRS-014: address nullable — toa nguồn có thể không có địa chỉ.
+  // SRS v1.12 §15 + REQ-SRS-014: address/phone nullable — toa nguồn có thể để trống.
   customer_address?: string;
+  recipient_contact_phone?: string;
   sku_id?: string;
   sku_code?: string;
   required_qty: number;
@@ -170,6 +173,8 @@ export interface OutboundImportResult {
   totalRows: number;
   validRows: number;
   errorRows: number;
+  /** Annex C confirmOutboundRequestImport dùng version này cho If-Match. */
+  version: number;
   rows: OutboundImportRow[];
 }
 
@@ -235,8 +240,15 @@ function rowsOf<T>(value: T[] | { data?: T[] }): T[] {
       : [];
 }
 
-function endpoint(template: string, id: string): string {
-  return template.replace(":id", id);
+function endpoint(
+  template: string,
+  id: string,
+  params: Record<string, string> = {},
+): string {
+  return Object.entries(params).reduce(
+    (path, [key, value]) => path.replace(`:${key}`, encodeURIComponent(value)),
+    template.replace(":id", encodeURIComponent(id)),
+  );
 }
 
 function parseJsonObject(value: unknown): RawRecord {
@@ -614,6 +626,7 @@ function normalizeImport(payload: RawRecord): OutboundImportResult {
     totalRows: num(importRow.total_rows),
     validRows: num(importRow.valid_rows),
     errorRows: num(importRow.error_rows),
+    version: num(importRow.version),
     rows,
   };
 }
@@ -652,14 +665,36 @@ export async function fetchOutboundImport(
   );
 }
 
+/** Annex C OutboundRequestImportConfirmRequest (§8.1). */
+export interface ConfirmOutboundImportInput {
+  /** Map lại từng source line sang SKU/số lượng chuẩn hoá trước khi Confirm. */
+  lines?: Array<{
+    row_no: number;
+    sku_id?: string;
+    sku_code?: string;
+    required_qty?: number;
+  }>;
+  /** Override người nhận cho toàn bộ toa trong import. */
+  receiver_name?: string;
+  receiver_address?: string;
+  receiver_contact_phone?: string;
+  request_date?: string;
+}
+
+/**
+ * Annex C confirmOutboundRequestImport — POST /outbound-request-imports/{id}/confirm
+ * với Idempotency-Key + If-Match; tạo đúng 01 outbound DRAFT cho mỗi toa.
+ */
 export async function consumeOutboundImport(
   id: string,
   idempotencyKey: string,
+  ifMatch: number,
+  payload: ConfirmOutboundImportInput = {},
 ): Promise<ConsumeOutboundImportResult> {
   const row = await http.post<RawRecord>(
-    endpoint(API_ENDPOINTS.OUTBOUND_REQUEST_IMPORT_CONSUME, id),
-    undefined,
-    headers(undefined, idempotencyKey),
+    endpoint(API_ENDPOINTS.OUTBOUND_REQUEST_IMPORT_CONFIRM, id),
+    payload,
+    headers(ifMatch, idempotencyKey),
   );
   return {
     importId: text(row.import_id, id),
@@ -750,23 +785,40 @@ export async function fetchAvailableQtyBySku(
   return Object.fromEntries(entries);
 }
 
-export async function reprintLabelSnapshot(
-  id: string,
-  printerConfigId: string,
-): Promise<RawRecord> {
+/**
+ * Annex C printPackingLabel/reprintPackingLabel — path theo phiếu xuất, bắt buộc
+ * Idempotency-Key + If-Match (version nhãn). §6: chỉ in khi nhãn READY_TO_PRINT
+ * (hoặc retry sau PRINT_FAILED); reprint dùng lại đúng snapshot và stock-neutral.
+ */
+export async function reprintLabelSnapshot(input: {
+  documentId: string;
+  labelId: string;
+  printerConfigId: string;
+  ifMatch: number;
+  idempotencyKey: string;
+}): Promise<RawRecord> {
   return http.post<RawRecord>(
-    endpoint(API_ENDPOINTS.LABEL_SNAPSHOT_REPRINT, id),
-    { printer_config_id: printerConfigId },
+    endpoint(API_ENDPOINTS.OUTBOUND_PACKING_LABEL_REPRINT, input.documentId, {
+      labelId: input.labelId,
+    }),
+    { printer_config_id: input.printerConfigId },
+    headers(input.ifMatch, input.idempotencyKey),
   );
 }
 
-export async function printLabelSnapshot(
-  id: string,
-  printerConfigId: string,
-): Promise<RawRecord> {
+export async function printLabelSnapshot(input: {
+  documentId: string;
+  labelId: string;
+  printerConfigId: string;
+  ifMatch: number;
+  idempotencyKey: string;
+}): Promise<RawRecord> {
   return http.post<RawRecord>(
-    endpoint(API_ENDPOINTS.LABEL_SNAPSHOT_PRINT, id),
-    { printer_config_id: printerConfigId },
+    endpoint(API_ENDPOINTS.OUTBOUND_PACKING_LABEL_PRINT, input.documentId, {
+      labelId: input.labelId,
+    }),
+    { printer_config_id: input.printerConfigId },
+    headers(input.ifMatch, input.idempotencyKey),
   );
 }
 
@@ -792,18 +844,29 @@ export async function fetchActiveRfidCodes(): Promise<PhysicalCodeRecord[]> {
     .filter((code) => code.carrierType === "RFID" && code.status === "ACTIVE");
 }
 
+/**
+ * Annex C assignItemRfid — PUT /outbound-documents/{id}/items/{item_id}/rfid với
+ * permission physical_code.assign_rfid. Idempotent theo hardware_uid, trả
+ * 409 DUPLICATE_HARDWARE_UID khi UID đã gắn item khác. RFID stock-neutral và
+ * KHÔNG phải gate Post Issue (§15 OP-05).
+ */
 export async function assignRfidToItem(input: {
+  documentId: string;
   itemId: string;
   codeValue: string;
   hardwareUid: string;
+  ifMatch: number;
 }): Promise<PhysicalCodeRecord> {
-  const row = await http.post<RawRecord>(API_ENDPOINTS.PHYSICAL_CODES, {
-    code_value: input.codeValue,
-    carrier_type: "RFID",
-    hardware_uid: input.hardwareUid,
-    item_id: input.itemId,
-    is_primary: true,
-  });
+  const row = await http.put<RawRecord>(
+    endpoint(API_ENDPOINTS.OUTBOUND_ITEM_RFID, input.documentId, {
+      itemId: input.itemId,
+    }),
+    {
+      code_value: input.codeValue,
+      hardware_uid: input.hardwareUid,
+    },
+    headers(input.ifMatch),
+  );
   return {
     id: text(row.physical_code_id ?? row.id),
     codeValue: text(row.code_value),

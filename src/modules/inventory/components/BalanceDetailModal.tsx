@@ -223,7 +223,11 @@ export function BalanceDetailModal({
           </Descriptions.Item>
           <Descriptions.Item label="Tên hàng">{balance.name}</Descriptions.Item>
           <Descriptions.Item label="Kho">{balance.warehouse}</Descriptions.Item>
-          <Descriptions.Item label="Lô">{balance.lotNo}</Descriptions.Item>
+          <Descriptions.Item label="Trạng thái tồn">
+            <Tag color={balance.stockStatus === "AVAILABLE" ? "success" : "warning"}>
+              {balance.stockStatus}
+            </Tag>
+          </Descriptions.Item>
           <Descriptions.Item label="Đối soát">
             <Tag color={reconcileColor(balance.reconcile)}>
               {balance.reconcile}
@@ -238,7 +242,9 @@ export function BalanceDetailModal({
             {balance.dataAsOf || balance.updatedAt || "-"}
           </Descriptions.Item>
           <Descriptions.Item label="Vị trí gợi ý">
-            {balance.location}
+            {[balance.containerCode, balance.location]
+              .filter(Boolean)
+              .join(" · ") || "Chưa khảo sát"}
           </Descriptions.Item>
           <Descriptions.Item label="Movement gần nhất">
             {balance.lastMovementId || "-"}
@@ -254,21 +260,6 @@ export function BalanceDetailModal({
           <Statistic
             title="On-hand"
             value={balance.onHand}
-            suffix={balance.uom}
-          />
-          <Statistic
-            title="Reserved"
-            value={balance.reserved}
-            suffix={balance.uom}
-          />
-          <Statistic
-            title="In-transit"
-            value={balance.inTransit}
-            suffix={balance.uom}
-          />
-          <Statistic
-            title="Blocked/Hold"
-            value={balance.blocked}
             suffix={balance.uom}
           />
           <Statistic title="Serial qty" value={formatQty(balance.serialQty)} />

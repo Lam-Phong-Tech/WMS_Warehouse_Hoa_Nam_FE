@@ -21,7 +21,6 @@ vi.mock("@/shared/api/http", () => ({
 import { http } from "@/shared/api/http";
 import { postInboundReceipt } from "@/modules/receiving/services/receivingService";
 import { postOutboundIssue } from "@/modules/shipping/services/shippingService";
-import { applyStocktakeAdjustment } from "@/modules/stocktake/services/stocktakeService";
 import { WMS_PERMISSION_CATALOG as P } from "@/shared/constants/wms-permissions";
 
 const fullyScannedDocument = (lineId: string, version = 1) => ({
@@ -37,20 +36,10 @@ const fullyScannedDocument = (lineId: string, version = 1) => ({
   ],
 });
 
-const approvedVariance = (varianceId: string) => ({
-  variance_id: varianceId,
-  status: "APPROVED",
-  snapshot_qty: 1,
-  expected_at_count: 1,
-  actual_qty: 1,
-  variance: 0,
-});
-
 function mockMutationPreReads(): void {
   vi.mocked(http.get)
     .mockResolvedValueOnce(fullyScannedDocument("IN-L1"))
-    .mockResolvedValueOnce(fullyScannedDocument("OUT-L1"))
-    .mockResolvedValueOnce([approvedVariance("VAR-1")]);
+    .mockResolvedValueOnce(fullyScannedDocument("OUT-L1"));
 }
 
 describe("WWHN-148 critical response normalization boundary", () => {
@@ -60,7 +49,7 @@ describe("WWHN-148 critical response normalization boundary", () => {
     vi.mocked(http.postWithMeta).mockReset();
     authMocks.getState.mockReturnValue({
       isSuperAdmin: false,
-      permissionCodes: [P.INBOUND_POST, P.OUTBOUND_POST, P.STOCKTAKE_ADJUST],
+      permissionCodes: [P.INBOUND_POST, P.OUTBOUND_POST, P.REVERSAL_POST],
     });
   });
 
@@ -117,20 +106,6 @@ describe("WWHN-148 critical response normalization boundary", () => {
       movementRef: "MOV-OUT-1",
       requestId: "REQ-OUT-1",
     });
-
-    await expect(
-      applyStocktakeAdjustment({
-        session_id: "ST-1",
-        lines: [{ sku: "SKU-1", actual_qty: 1 }],
-        idempotency_key: "IDEM-ADJ-1",
-        version: "1",
-      }),
-    ).resolves.toMatchObject({
-      session_id: "ST-1",
-      movement_ref: "MOV-ADJ-1",
-      request_id: "REQ-ADJ-1",
-      status: "APPLIED",
-    });
   });
 
   it("accepts only the documented temporary alias whitelist", async () => {
@@ -179,15 +154,6 @@ describe("WWHN-148 critical response normalization boundary", () => {
         ifMatch: 1,
       }),
     ).resolves.toMatchObject({ issueId: "ISS-ALIAS" });
-
-    await expect(
-      applyStocktakeAdjustment({
-        session_id: "ST-ALIAS",
-        lines: [{ sku: "SKU-1", actual_qty: 1 }],
-        idempotency_key: "IDEM-ADJ-ALIAS",
-        version: "1",
-      }),
-    ).resolves.toMatchObject({ session_id: "ST-ALIAS" });
   });
 
   it("rejects undocumented receipt aliases", async () => {
@@ -230,27 +196,6 @@ describe("WWHN-148 critical response normalization boundary", () => {
     ).rejects.toMatchObject({ code: "WMS_FE_MISSING_ISSUE_EVIDENCE" });
   });
 
-  it("rejects undocumented adjustment aliases", async () => {
-    vi.mocked(http.get).mockResolvedValueOnce([
-      approvedVariance("VAR-UNKNOWN"),
-    ]);
-    vi.mocked(http.postWithMeta).mockResolvedValueOnce({
-      data: {
-        session: "ST-UNKNOWN",
-        status: "APPLIED",
-        movement_ids: ["MOV-UNKNOWN"],
-        request_id: "REQ-UNKNOWN",
-      },
-      meta: {},
-    });
-
-    await expect(
-      applyStocktakeAdjustment({
-        session_id: "ST-UNKNOWN",
-        lines: [{ sku: "SKU-1", actual_qty: 1 }],
-        idempotency_key: "IDEM-ADJ-UNKNOWN",
-        version: "1",
-      }),
-    ).rejects.toMatchObject({ code: "WMS_FE_INVALID_ADJUSTMENT_RESPONSE" });
-  });
+  // REQ-SRS-037 / DEC-NO-STOCKTAKE-001: không còn adjustment surface để chuẩn hoá
+  // response; sửa sai sau Post đi qua Reversal (xem reverse-service.test.ts).
 });

@@ -12,20 +12,10 @@ import { useHasPermission } from "@/shared/components/permission";
 import { useReversalDocuments, reversalKeys } from "../hooks/use-reversal";
 import { ReversalCreateModal } from "../components/ReversalCreateModal";
 import { ReversalDetailModal } from "../components/ReversalDetailModal";
+import { ReversalStatusTag } from "../components/ReversalStatusTag";
 import type { ReversalDocument } from "../types";
 
 const SEARCH_DEBOUNCE_MS = 250;
-
-function statusTag(value?: string) {
-  const status = value || "-";
-  const color =
-    status === "POSTED"
-      ? "success"
-      : status === "CANCELLED"
-        ? "error"
-        : "processing";
-  return <Tag color={color}>{status}</Tag>;
-}
 
 const numberFormatter = new Intl.NumberFormat("vi-VN");
 
@@ -109,12 +99,10 @@ export default function ReversalPage() {
       ),
     },
     {
-      title: "Loại",
-      key: "reversal_type",
+      title: "Loại chứng từ gốc",
+      key: "reference_document_type",
       width: 170,
-      render: (_, row) => (
-        <Tag>{row.reversal_type || row.reference_document_type || "-"}</Tag>
-      ),
+      render: (_, row) => <Tag>{row.reference_document_type || "-"}</Tag>,
     },
     {
       title: "Kho",
@@ -139,10 +127,15 @@ export default function ReversalPage() {
     },
     {
       title: "Trạng thái",
-      dataIndex: "status",
       key: "status",
-      width: 130,
-      render: statusTag,
+      width: 190,
+      render: (_, row) => (
+        <ReversalStatusTag
+          status={row.status}
+          physicalReturnStatus={row.physical_return_status}
+          compact
+        />
+      ),
     },
     {
       title: "Ngày tạo",

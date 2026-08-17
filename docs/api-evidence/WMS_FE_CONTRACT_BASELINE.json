@@ -217,16 +217,16 @@
     {
       "id": "COMPONENT_ISSUE_LIST",
       "method": "GET",
-      "relativePath": "/component-issue-documents",
+      "relativePath": "/warranty-component-issues",
       "permission": "warranty.component_issue",
       "feDisposition": "IMPLEMENTED_COMP_01_WITH_WARRANTY_CASE_FILTER"
     },
     {
       "id": "COMPONENT_ISSUE_CREATE",
       "method": "POST",
-      "relativePath": "/component-issue-documents",
+      "relativePath": "/warranty-component-issues",
       "permission": "warranty.component_issue",
-      "requiredRequest": ["warehouse_id", "warranty_case_id", "document_date", "purpose", "lines"],
+      "requiredRequest": ["warehouse_id", "warranty_case_id", "purpose", "lines"],
       "requestConstraints": { "purpose": ["WARRANTY"] },
       "readOnlyAssertions": { "stock_effect": "NONE", "movement_created": false },
       "feDisposition": "IMPLEMENTED_COMP_01_DRAFT_STOCK_NEUTRAL"
@@ -234,7 +234,7 @@
     {
       "id": "COMPONENT_ISSUE_DETAIL",
       "method": "GET",
-      "relativePath": "/component-issue-documents/:id",
+      "relativePath": "/warranty-component-issues/:id",
       "permission": "warranty.component_issue",
       "requiredSuccess": ["data.document.id", "data.lines"],
       "feDisposition": "IMPLEMENTED_WAR_P0_01_DETAIL_ROUTE"
@@ -242,7 +242,7 @@
     {
       "id": "COMPONENT_ISSUE_SCAN",
       "method": "POST",
-      "relativePath": "/component-issue-documents/:id/scan",
+      "relativePath": "/warranty-component-issues/:id/scans",
       "permission": "warranty.component_issue",
       "requiredHeaders": ["If-Match"],
       "requiredRequest": ["line_id", "code_value", "quantity"],
@@ -252,7 +252,7 @@
     {
       "id": "COMPONENT_ISSUE_CANCEL",
       "method": "POST",
-      "relativePath": "/component-issue-documents/:id/cancel",
+      "relativePath": "/warranty-component-issues/:id/cancel",
       "permission": "warranty.component_issue",
       "requiredHeaders": ["If-Match"],
       "requiredRequest": ["reason"],
@@ -261,7 +261,7 @@
     {
       "id": "COMPONENT_ISSUE_POST",
       "method": "POST",
-      "relativePath": "/component-issue-documents/:id/post",
+      "relativePath": "/warranty-component-issues/:id/post",
       "permission": "warranty.component_issue",
       "requiredHeaders": ["If-Match", "Idempotency-Key"],
       "requiredSuccess": ["version", "status", "movement_ids"],

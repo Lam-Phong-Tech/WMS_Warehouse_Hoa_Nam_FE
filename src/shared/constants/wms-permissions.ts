@@ -60,12 +60,16 @@ export const WMS_PERMISSION_CATALOG = {
   LABEL_PRINT: "label.print",
   LABEL_REPRINT: "label.reprint",
   PHYSICAL_CODE_ASSIGN_RFID: "physical_code.assign_rfid",
-  STOCKTAKE_COUNT: "stocktake.count",
-  STOCKTAKE_ADJUST: "stocktake.adjust",
+  // REQ-SRS-037 / DEC-NO-STOCKTAKE-001: MVP không có permission kiểm kê hay sửa tồn
+  // trực tiếp. Sửa sai sau Post chỉ đi qua REVERSAL_POST bên dưới.
+  /** Annex C listWarrantyCases — quyền đọc SCR-WAR-01, tách khỏi warranty.manage. */
+  WARRANTY_VIEW: "warranty.view",
   WARRANTY_MANAGE: "warranty.manage",
   WARRANTY_TEMP_ONLY: "warranty.temp_only",
   WARRANTY_COMPONENT_ISSUE: "warranty.component_issue",
   WARRANTY_PII_VIEW: "warranty.pii.view",
+  /** §13.8: export PII bảo hành cần quyền riêng, mọi lần export đều audit. */
+  WARRANTY_PII_EXPORT: "warranty.pii.export",
   REVERSAL_POST: "inventory.reversal.post",
   REPORT_VIEW: "report.view",
   REPORT_EXPORT: "report.export",
@@ -79,7 +83,6 @@ export const WMS_PERMISSION_ALIASES: Readonly<Record<string, string>> = {
   SCAN_OUTBOUND: WMS_PERMISSION_CATALOG.OUTBOUND_SCAN,
   "scan.outbound": WMS_PERMISSION_CATALOG.OUTBOUND_SCAN,
   SCAN_WARRANTY: WMS_PERMISSION_CATALOG.SCAN_WARRANTY,
-  "stocktake.apply": WMS_PERMISSION_CATALOG.STOCKTAKE_ADJUST,
   REPORT_EXPORT: WMS_PERMISSION_CATALOG.REPORT_EXPORT,
   WARRANTY_MANAGE: WMS_PERMISSION_CATALOG.WARRANTY_MANAGE,
   WARRANTY_TEMP_ONLY: WMS_PERMISSION_CATALOG.WARRANTY_TEMP_ONLY,
@@ -122,10 +125,7 @@ export function hasAnyWmsPermission(
 export function resolveWmsPermissionAlternatives(
   codes: readonly string[],
 ): string[] {
-  const canonical = codes.map(canonicalizeWmsPermission);
-  return canonical.includes(WMS_PERMISSION_CATALOG.STOCKTAKE_ADJUST)
-    ? canonical.filter((code) => code !== "stocktake.manage")
-    : canonical;
+  return codes.map(canonicalizeWmsPermission);
 }
 
 export const WMS_ACTION_PERMISSIONS = {
@@ -151,7 +151,8 @@ export const WMS_ACTION_PERMISSIONS = {
     WMS_PERMISSION_CATALOG.CONTAINER_VIEW,
   ],
   POST_ISSUE: [WMS_PERMISSION_CATALOG.OUTBOUND_POST],
-  APPLY_STOCKTAKE_ADJUSTMENT: [WMS_PERMISSION_CATALOG.STOCKTAKE_ADJUST],
+  VIEW_INVENTORY: [WMS_PERMISSION_CATALOG.INVENTORY_VIEW],
+  TRACE_INVENTORY: [WMS_PERMISSION_CATALOG.INVENTORY_TRACE],
   WARRANTY_TEMP_ONLY: [WMS_PERMISSION_CATALOG.WARRANTY_TEMP_ONLY],
   WARRANTY_COMPONENT_ISSUE: [WMS_PERMISSION_CATALOG.WARRANTY_COMPONENT_ISSUE],
   EXPORT_REPORT: [WMS_PERMISSION_CATALOG.REPORT_EXPORT],

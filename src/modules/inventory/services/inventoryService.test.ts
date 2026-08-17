@@ -32,15 +32,14 @@ describe("inventoryService — WWHN-211 exact six endpoint contract", () => {
           product_name: "Máy khoan",
           product_type: "TOOL",
           warehouse_name: "Kho A",
-          lot_no: "LOT-01",
+          stock_status: "AVAILABLE",
           uom: "cái",
           available_qty: 10,
           on_hand_qty: 12,
-          reserved_qty: 2,
-          in_transit_qty: 0,
-          blocked_qty: 0,
           item_subledger_count: 3,
           container_subledger_count: 1,
+          container_code: "TRAY-01",
+          location_hint: "Khay T-01",
           reconciliation_status: "MATCH",
           updated_at: "2026-08-10T00:00:00Z",
           data_as_of: "2026-08-10T00:00:00Z",
@@ -49,21 +48,26 @@ describe("inventoryService — WWHN-211 exact six endpoint contract", () => {
       meta: { total: 1, page: 1, per_page: 20 },
     });
 
-    const result = await fetchInventoryBalances({ status: "normal", page: 1 });
+    const result = await fetchInventoryBalances({
+      stock_status: "AVAILABLE",
+      page: 1,
+    });
 
     expect(http.getPage).toHaveBeenCalledWith("/inventory/balances", {
-      params: { per_page: 20, status: "normal", page: 1 },
+      params: { per_page: 20, stock_status: "AVAILABLE", page: 1 },
     });
     expect(result.rows[0]).toMatchObject({
       id: "bal-1",
       sku: "SKU-001",
       name: "Máy khoan",
       warehouse: "Kho A",
+      stockStatus: "AVAILABLE",
       available: 10,
       onHand: 12,
-      reserved: 2,
       serialQty: 3,
       boxQty: 1,
+      containerCode: "TRAY-01",
+      location: "Khay T-01",
       reconcile: "MATCH",
     });
     expect(result.meta).toEqual({ total: 1, page: 1, per_page: 20 });

@@ -515,7 +515,18 @@ function columnsFor(report: ReportKey): TableColumnsType<Raw> {
           width: 130,
           render: statusTag,
         },
+        // §13.10 RPT-WAR-01 columns: received/returned + turnaround, purchase_date optional.
+        { title: "Ngày mua", dataIndex: "purchase_date", width: 130 },
         { title: "Ngày nhận", dataIndex: "received_at", width: 170 },
+        { title: "Ngày trả khách", dataIndex: "returned_at", width: 170 },
+        {
+          title: "Turnaround",
+          dataIndex: "turnaround_days",
+          width: 110,
+          align: "right",
+          render: (value: number | null | undefined) =>
+            value === null || value === undefined ? "—" : `${value} ngày`,
+        },
         { title: "Cập nhật", dataIndex: "updated_at", width: 170 },
       ];
     case "outbound-by-agency":
@@ -704,6 +715,8 @@ export default function AlignedReportsPage() {
       if (status) result.status = status;
       if (defectId) result.defect_id = defectId;
       if (identification) result.identification_status = identification;
+      // §13.10 RPT-WAR-01 filters: date, model, defect, status.
+      if (keyword.trim()) result.model = keyword.trim();
     }
     if (report === "outbound-by-agency") {
       if (keyword.trim()) result.keyword = keyword.trim();
@@ -853,13 +866,19 @@ export default function AlignedReportsPage() {
           "import-match",
           "label-log",
           "outbound-by-agency",
+          // §13.10 RPT-WAR-01 có filter "model" — dùng chung ô từ khóa.
+          "warranty",
         ].includes(report) ? (
           <Input
             allowClear
             prefix={<SearchOutlined />}
             style={{ width: 230 }}
             placeholder={
-              report === "movement-trace" ? "Mã vật lý / barcode" : "Từ khóa"
+              report === "movement-trace"
+                ? "Mã vật lý / barcode"
+                : report === "warranty"
+                  ? "SKU / model"
+                  : "Từ khóa"
             }
             value={keyword}
             onChange={(event) => {

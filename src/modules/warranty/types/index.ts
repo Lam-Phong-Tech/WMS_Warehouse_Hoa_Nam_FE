@@ -159,6 +159,13 @@ export interface UpdateWarrantyCaseRequest {
   received_condition?: string;
   accessories_received?: string;
   cancel_reason?: string;
+  /** Annex D SCR-WAR-01: gán/sửa bệnh-lỗi danh mục khi CHECKING có kết luận. */
+  defect_id?: string;
+  /** PII — chỉ gửi khi actor có `warranty.pii.view`; BE trả 403 nếu thiếu quyền. */
+  customer_name?: string;
+  customer_phone?: string;
+  customer_address?: string;
+  purchase_date?: string;
   idempotency_key?: string;
   ifMatch?: number;
 }

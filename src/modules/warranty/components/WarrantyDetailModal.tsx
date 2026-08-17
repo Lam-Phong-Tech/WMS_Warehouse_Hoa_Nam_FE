@@ -3,6 +3,7 @@ import {
   Alert,
   Button,
   Card,
+  DatePicker,
   Descriptions,
   Form,
   Input,
@@ -18,10 +19,13 @@ import {
 } from "antd";
 import { toast } from "sonner";
 import type { TableProps, UploadProps } from "antd";
+import type { Dayjs } from "dayjs";
+import dayjs from "dayjs";
 import {
   CloseOutlined,
   DeleteOutlined,
   DownloadOutlined,
+  EditOutlined,
   PaperClipOutlined,
   SyncOutlined,
   ToolOutlined,
@@ -34,6 +38,7 @@ import {
 } from "@/shared/api/api-error";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { useCanAny } from "@/shared/components/permission";
+import { useMvpDefects } from "@/modules/master-data/hooks/use-mvp-master";
 import {
   WARRANTY_ATTACHMENT_TYPE_LABELS,
   WARRANTY_NEXT_STATUS,
@@ -59,6 +64,15 @@ import type {
   WarrantyCaseStatus,
 } from "@/modules/warranty/types";
 
+interface CorrectionFormValues {
+  defect_id?: string;
+  customer_name?: string;
+  customer_phone?: string;
+  customer_address?: string;
+  purchase_date?: Dayjs | null;
+  reason?: string;
+}
+
 interface WarrantyDetailModalProps {
   caseId: string;
   onClose: () => void;
@@ -76,6 +90,14 @@ function errorText(error: unknown, fallback: string): string {
     requestId ? ` — Request ${requestId}` : ""
   }`;
 }
+
+/** Annex D SCR-WAR-01 field `images`: jpg/png/webp. */
+const WARRANTY_IMAGE_MIMES = [
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/webp",
+];
 
 function formatBytes(bytes: number): string {
   if (!bytes) return "0 B";
@@ -118,6 +140,10 @@ export function WarrantyDetailModal({
     confirmed_defect?: string;
     cancel_reason?: string;
   }>();
+  const [correctOpen, setCorrectOpen] = useState(false);
+  const [correctError, setCorrectError] = useState<string | null>(null);
+  const [correctForm] = Form.useForm<CorrectionFormValues>();
+  const defectsQuery = useMvpDefects({ status: "ACTIVE", per_page: 100 });
   const [attachmentType, setAttachmentType] =
     useState<WarrantyAttachmentType>("INTAKE");
   const statusValue = Form.useWatch("status", statusForm);
@@ -178,12 +204,71 @@ export function WarrantyDetailModal({
     }
   };
 
+  /**
+   * Annex D SCR-WAR-01: chẩn đoán và PII phải sửa được sau tiếp nhận (nhập sai lúc nhận
+   * máy không được buộc mở case mới). PII chỉ gửi khi actor có warranty.pii.view — nếu
+   * không, giá trị đang thấy là chuỗi mask và ghi lại sẽ phá dữ liệu thật.
+   */
+  const submitCorrection = async () => {
+    if (!detail) return;
+    setCorrectError(null);
+    let values: CorrectionFormValues;
+    try {
+      values = await correctForm.validateFields();
+    } catch {
+      return;
+    }
+    try {
+      await updateMutation.mutateAsync({
+        id: detail.id,
+        request: {
+          defect_id: values.defect_id || undefined,
+          customer_name: canViewPii
+            ? values.customer_name?.trim() || undefined
+            : undefined,
+          customer_phone: canViewPii
+            ? values.customer_phone?.trim() || undefined
+            : undefined,
+          customer_address: canViewPii
+            ? values.customer_address?.trim() || undefined
+            : undefined,
+          purchase_date: values.purchase_date
+            ? values.purchase_date.format("YYYY-MM-DD")
+            : undefined,
+          reason: values.reason?.trim() || "Hiệu chỉnh dữ liệu tiếp nhận",
+          ifMatch: detail.version,
+        },
+      });
+      toast.success("Đã cập nhật thông tin case.");
+      correctForm.resetFields();
+      setCorrectOpen(false);
+    } catch (error: unknown) {
+      const fieldErrors = extractFieldErrorsRaw(error);
+      if (fieldErrors) {
+        correctForm.setFields(
+          Object.entries(fieldErrors).map(([name, errors]) => ({
+            name: [name] as never,
+            errors: [errors],
+          })),
+        );
+      }
+      const message = errorText(error, "Không cập nhật được thông tin case.");
+      toast.error(message);
+      setCorrectError(message);
+    }
+  };
+
   const uploadProps: UploadProps = {
-    accept: "image/*,.pdf",
+    // Annex D SCR-WAR-01 field `images`: jpg/png/webp, <=10MB. BE cũng chỉ nhận đúng
+    // ba định dạng này và đối chiếu magic bytes (§13.8 content-type check).
+    accept: ".jpg,.jpeg,.png,.webp",
     showUploadList: false,
-    disabled:
-      !canManage || uploadMutation.isPending || detail?.status === "CANCELLED",
+    disabled: !canManage || uploadMutation.isPending || isTerminal,
     beforeUpload: (file) => {
+      if (!WARRANTY_IMAGE_MIMES.includes(file.type)) {
+        toast.error(`${file.name}: chỉ nhận ảnh JPG/PNG/WEBP.`);
+        return Upload.LIST_IGNORE;
+      }
       if (file.size > 10 * 1024 * 1024) {
         toast.error("Tệp vượt quá 10MB.");
         return Upload.LIST_IGNORE;
@@ -339,6 +424,28 @@ export function WarrantyDetailModal({
         <Space wrap>
           <Button icon={<CloseOutlined />} onClick={onClose}>
             Đóng
+          </Button>
+          <Button
+            icon={<EditOutlined />}
+            disabled={!canManage || !detail || isTerminal}
+            onClick={() => {
+              if (!detail) return;
+              correctForm.setFieldsValue({
+                defect_id: detail.defect_id,
+                customer_name: canViewPii ? detail.customer_name : undefined,
+                customer_phone: canViewPii ? detail.customer_phone : undefined,
+                customer_address: canViewPii
+                  ? detail.customer_address
+                  : undefined,
+                purchase_date: detail.purchase_date
+                  ? dayjs(detail.purchase_date)
+                  : null,
+              });
+              setCorrectError(null);
+              setCorrectOpen(true);
+            }}
+          >
+            Sửa thông tin
           </Button>
           <Button
             icon={<ToolOutlined />}
@@ -570,6 +677,83 @@ export function WarrantyDetailModal({
           </Card>
         </Space>
       ) : null}
+
+      <Modal
+        title="Sửa thông tin case bảo hành"
+        open={correctOpen}
+        onCancel={() => setCorrectOpen(false)}
+        onOk={submitCorrection}
+        okText="Lưu"
+        cancelText="Hủy"
+        confirmLoading={updateMutation.isPending}
+        destroyOnHidden
+      >
+        {correctError ? (
+          <Alert
+            type="error"
+            showIcon
+            title={correctError}
+            style={{ marginBottom: 12 }}
+          />
+        ) : null}
+        <Alert
+          type="info"
+          showIcon
+          title={
+            canViewPii
+              ? "Sửa thông tin là stock-neutral; mọi thay đổi được ghi audit (không lưu giá trị PII vào log) và tăng version."
+              : "Bạn không có quyền warranty.pii.view nên chỉ sửa được bệnh/lỗi và ngày mua; thông tin khách hàng bị khóa."
+          }
+          style={{ marginBottom: 12 }}
+        />
+        <Form form={correctForm} layout="vertical">
+          <Form.Item name="defect_id" label="Bệnh / lỗi (danh mục)">
+            <Select
+              allowClear
+              showSearch
+              optionFilterProp="label"
+              loading={defectsQuery.isLoading}
+              placeholder="Chọn từ danh mục bệnh/lỗi ACTIVE"
+              options={(defectsQuery.data?.data ?? []).map((defect) => ({
+                value: defect.defect_id,
+                label: `${defect.defect_code} · ${defect.defect_name}`,
+              }))}
+            />
+          </Form.Item>
+          <Form.Item name="purchase_date" label="Ngày mua">
+            <DatePicker
+              style={{ width: "100%" }}
+              format="DD/MM/YYYY"
+              disabledDate={(current) => current && current > dayjs().endOf("day")}
+            />
+          </Form.Item>
+          <Form.Item
+            name="customer_name"
+            label="Tên khách gửi (PII)"
+            rules={[{ max: 200, message: "Tối đa 200 ký tự." }]}
+          >
+            <Input maxLength={200} disabled={!canViewPii} />
+          </Form.Item>
+          <Form.Item
+            name="customer_phone"
+            label="Số điện thoại (PII)"
+            rules={[
+              {
+                pattern: /^[0-9+\-\s()]{8,20}$/,
+                message: "Số điện thoại chưa hợp lệ.",
+              },
+            ]}
+          >
+            <Input maxLength={30} disabled={!canViewPii} />
+          </Form.Item>
+          <Form.Item name="customer_address" label="Địa chỉ khách (PII)">
+            <Input maxLength={500} disabled={!canViewPii} />
+          </Form.Item>
+          <Form.Item name="reason" label="Lý do hiệu chỉnh (hiện trên timeline)">
+            <Input.TextArea rows={2} maxLength={2000} showCount />
+          </Form.Item>
+        </Form>
+      </Modal>
 
       <Modal
         title="Cập nhật trạng thái bảo hành"
