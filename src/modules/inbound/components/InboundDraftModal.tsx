@@ -99,6 +99,9 @@ function backendFieldPath(key: string): InboundDraftFieldPath | null {
   const direct: Record<string, InboundDraftFieldPath> = {
     doc_date: ["documentDate"],
     dst_warehouse_id: ["warehouseId"],
+    // BE có thể trả field error theo tên chuẩn Annex A (`source_reference`) hoặc
+    // tên cột vật lý (`source_name`); cả hai đều gắn về cùng một input.
+    source_reference: ["sourceName"],
     source_name: ["sourceName"],
     note: ["note"],
   };
@@ -269,7 +272,7 @@ export function InboundDraftModal({
         if (!detail) return;
         const payload: UpdateInboundPayload = {
           doc_date: values.documentDate || null,
-          source_name: values.sourceName?.trim() || null,
+          source_reference: values.sourceName?.trim() || null,
           note: values.note?.trim() || null,
           lines: normalizedLines,
         };
@@ -290,7 +293,7 @@ export function InboundDraftModal({
       const payload: CreateInboundPayload = {
         doc_date: values.documentDate || null,
         dst_warehouse_id: values.warehouseId,
-        source_name: values.sourceName?.trim() || null,
+        source_reference: values.sourceName?.trim() || null,
         note: values.note?.trim() || null,
         lines: normalizedLines,
       };
@@ -398,7 +401,7 @@ export function InboundDraftModal({
                 <Col xs={24}>
                   <Form.Item label="Nguồn / tham chiếu" name="sourceName">
                     <Input
-                      maxLength={255}
+                      maxLength={200}
                       disabled={!isMutable}
                       placeholder="Nhà cung cấp / nguồn nhập"
                     />

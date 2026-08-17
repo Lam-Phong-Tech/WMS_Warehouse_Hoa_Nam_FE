@@ -13,15 +13,6 @@ import type {
   SkuRecord,
 } from "@/modules/master-data/types/mvp-master.types";
 
-type ProductMasterType = "BRAND" | "CATEGORY" | "MODEL";
-type ProductMasterRecord = {
-  master_id: string;
-  master_type: ProductMasterType | "PACKAGE" | "POWER";
-  code: string;
-  name: string;
-  status: "ACTIVE" | "INACTIVE";
-};
-
 function cleanParams(params: MasterListParams) {
   return Object.fromEntries(
     Object.entries(params).filter(
@@ -48,42 +39,17 @@ async function listPage<T>(
   return { data: result.data, meta: result.meta };
 }
 
-async function resolveMasterId(
-  code: string | null | undefined,
-  type: ProductMasterType,
-) {
-  const normalized = code?.trim();
-  if (!normalized) return null;
-  const result = await http.getPage<ProductMasterRecord[]>(
-    API_ENDPOINTS.PRODUCT_MASTERS,
-    {
-      params: {
-        master_type: type,
-        keyword: normalized,
-        status: "ACTIVE",
-        per_page: 100,
-      },
-    },
-  );
-  const exact = result.data.find(
-    (row) =>
-      row.master_type === type &&
-      row.code.toLowerCase() === normalized.toLowerCase(),
-  );
-  if (!exact) {
-    throw new Error(
-      `Không tìm thấy ${type} ACTIVE có mã "${normalized}" trong Product Master.`,
-    );
-  }
-  return exact.master_id;
-}
-
-async function canonicalSkuPayload(payload: SkuPayload) {
-  const [brandId, categoryId, modelId] = await Promise.all([
-    resolveMasterId(payload.brand_code, "BRAND"),
-    resolveMasterId(payload.category_code, "CATEGORY"),
-    resolveMasterId(payload.model_code, "MODEL"),
-  ]);
+/**
+ * MST-02 nay chọn master bằng dropdown nên FE gửi thẳng id canonical
+ * (ERD bảng 16: skus.brand_id/category_id/model_id/power_source_id/
+ * package_variant_id). Trước đây FE nhập mã dạng text rồi tự tra
+ * /product-masters để đổi ra id — vừa thêm round-trip vừa không chạm được tới
+ * hai FK power_source_id / package_variant_id.
+ *
+ * Chuỗi rỗng nghĩa là "không gán / gỡ liên kết" và được gửi null tường minh;
+ * `undefined` (field không có trong form) thì bỏ hẳn khỏi payload.
+ */
+function canonicalSkuPayload(payload: SkuPayload) {
   const body: Record<string, unknown> = {
     sku_code: payload.code.trim(),
     sku_name: payload.name.trim(),
@@ -94,17 +60,23 @@ async function canonicalSkuPayload(payload: SkuPayload) {
   };
   if (payload.published_to_app !== undefined)
     body.published_to_app = payload.published_to_app;
-  // Master-link boxes are left blank on edit to mean "keep the current link"
-  // (see the "Master tham chiếu" hint in ApiMasterScreens.tsx). Omitting the
-  // key when blank preserves that on PATCH; sending an explicit null would
-  // overwrite an existing brand/category/model/power link with nothing.
-  if (payload.brand_code?.trim()) body.brand_id = brandId;
-  if (payload.category_code?.trim()) body.category_id = categoryId;
-  if (payload.model_code?.trim()) body.model_id = modelId;
-  if (payload.power_source_code?.trim()) {
-    // Current canonical schema stores the electrical descriptor as text.
-    body.power_or_voltage = payload.power_source_code.trim();
+  // version_code là master phiên bản của SKU: để trống nghĩa là "giữ nguyên",
+  // không phải "xoá" — gửi null sẽ làm mất giá trị đang có.
+  if (payload.version_code?.trim())
+    body.version_code = payload.version_code.trim();
+
+  const masterLinks: Array<[string, string | null | undefined]> = [
+    ["brand_id", payload.brand_id],
+    ["category_id", payload.category_id],
+    ["model_id", payload.model_id],
+    ["power_source_id", payload.power_source_id],
+    ["package_variant_id", payload.package_variant_id],
+  ];
+  for (const [key, value] of masterLinks) {
+    if (value === undefined) continue;
+    body[key] = value?.trim() ? value.trim() : null;
   }
+
   return body;
 }
 
@@ -141,16 +113,27 @@ async function listCatalogRefs(
 }
 
 export async function getMvpProductCatalogs(): Promise<ProductCatalogRefs> {
-  const [brands, categories, models] = await Promise.all([
-    listCatalogRefs(API_ENDPOINTS.BRANDS, "brand_code", "brand_name"),
-    listCatalogRefs(
-      API_ENDPOINTS.PRODUCT_CATEGORIES,
-      "category_code",
-      "category_name",
-    ),
-    listCatalogRefs(API_ENDPOINTS.PRODUCT_MODELS, "model_code", "model_name"),
-  ]);
-  return { brands, categories, models };
+  const [brands, categories, models, powerSources, packageVariants] =
+    await Promise.all([
+      listCatalogRefs(API_ENDPOINTS.BRANDS, "brand_code", "brand_name"),
+      listCatalogRefs(
+        API_ENDPOINTS.PRODUCT_CATEGORIES,
+        "category_code",
+        "category_name",
+      ),
+      listCatalogRefs(API_ENDPOINTS.PRODUCT_MODELS, "model_code", "model_name"),
+      listCatalogRefs(
+        API_ENDPOINTS.POWER_SOURCES,
+        "power_source_code",
+        "power_source_name",
+      ),
+      listCatalogRefs(
+        API_ENDPOINTS.PACKAGE_VARIANTS,
+        "package_code",
+        "package_name",
+      ),
+    ]);
+  return { brands, categories, models, powerSources, packageVariants };
 }
 
 // BR-SKU-10: BE khoá sku_code/is_serial_tracked khi SKU đã có stock/movement
@@ -172,7 +155,7 @@ export async function hasMvpSkuStock(skuId: string): Promise<boolean> {
 }
 
 export async function createMvpSku(payload: SkuPayload) {
-  const body = await canonicalSkuPayload(payload);
+  const body = canonicalSkuPayload(payload);
   const created = await http.post<SkuRecord>(API_ENDPOINTS.PRODUCTS, body, {
     headers: { "Idempotency-Key": idempotencyKey("sku-create") },
   });
@@ -187,12 +170,8 @@ export async function createMvpSku(payload: SkuPayload) {
   return created;
 }
 
-export async function updateMvpSku(
-  id: string,
-  version: number,
-  payload: SkuPayload,
-) {
-  const body = await canonicalSkuPayload(payload);
+export function updateMvpSku(id: string, version: number, payload: SkuPayload) {
+  const body = canonicalSkuPayload(payload);
   return http.patch<SkuRecord>(API_ENDPOINTS.PRODUCT.replace(":id", id), body, {
     headers: {
       "Idempotency-Key": idempotencyKey(`sku-update-${id}`),
@@ -201,18 +180,19 @@ export async function updateMvpSku(
   });
 }
 
-// REQ-SRS-020: publish/unpublish là thao tác nhanh trên danh sách, không cần mở
-// lại toàn bộ form sửa SKU. BE (ProductController::assertPublishRequiresActive)
-// là nguồn thực thi rule "chỉ SKU active mới publish" — lỗi 422
-// SKU_PUBLISH_REQUIRES_ACTIVE khi cố publish SKU không ACTIVE.
+// REQ-SRS-020 + Annex C publishPvProduct: publish/unpublish đi qua endpoint riêng
+// `PATCH /pv/products/{id}/publish` với quyền `pv.publish` (SRS §3 tách khỏi
+// sku.manage), không phải PATCH /products. BE
+// (ProductController::assertPublishRequiresActive) vẫn là nguồn thực thi rule
+// "chỉ SKU ACTIVE mới publish".
 export function setMvpSkuPublished(
   id: string,
   version: number,
   publishedToApp: boolean,
 ) {
   return http.patch<SkuRecord>(
-    API_ENDPOINTS.PRODUCT.replace(":id", id),
-    { published_to_app: publishedToApp },
+    API_ENDPOINTS.PV_PRODUCT_PUBLISH.replace(":id", id),
+    { published: publishedToApp },
     {
       headers: {
         "Idempotency-Key": idempotencyKey(`sku-publish-${id}`),
@@ -222,14 +202,34 @@ export function setMvpSkuPublished(
   );
 }
 
+/**
+ * ERD bảng 9/15 (agencies.version, defect_catalog.version) + Annex C
+ * updateAgency/updateDefect: PATCH gửi If-Match để BE trả 412 STALE_VERSION khi
+ * bản ghi đã đổi ở phiên khác, thay vì âm thầm ghi đè. Bản ghi không có version
+ * (API cũ) thì bỏ header — BE chỉ enforce khi client gửi.
+ */
+function ifMatchConfig(version?: number | null) {
+  return version === null || version === undefined
+    ? undefined
+    : { headers: { "If-Match": String(version) } };
+}
+
 export function getMvpAgencies(params: MasterListParams) {
   return listPage<AgencyRecord>(API_ENDPOINTS.AGENCIES, params);
 }
 export function createMvpAgency(payload: AgencyPayload) {
   return http.post<AgencyRecord>(API_ENDPOINTS.AGENCIES, payload);
 }
-export function updateMvpAgency(id: string, payload: AgencyPayload) {
-  return http.patch<AgencyRecord>(`${API_ENDPOINTS.AGENCIES}/${id}`, payload);
+export function updateMvpAgency(
+  id: string,
+  payload: AgencyPayload,
+  version?: number | null,
+) {
+  return http.patch<AgencyRecord>(
+    `${API_ENDPOINTS.AGENCIES}/${id}`,
+    payload,
+    ifMatchConfig(version),
+  );
 }
 
 export function getMvpDefects(params: MasterListParams) {
@@ -238,9 +238,14 @@ export function getMvpDefects(params: MasterListParams) {
 export function createMvpDefect(payload: DefectPayload) {
   return http.post<DefectRecord>(API_ENDPOINTS.DEFECT_CATALOGS, payload);
 }
-export function updateMvpDefect(id: string, payload: DefectPayload) {
+export function updateMvpDefect(
+  id: string,
+  payload: DefectPayload,
+  version?: number | null,
+) {
   return http.patch<DefectRecord>(
     `${API_ENDPOINTS.DEFECT_CATALOGS}/${id}`,
     payload,
+    ifMatchConfig(version),
   );
 }

@@ -75,6 +75,11 @@ vi.mock("@/modules/master-data/hooks/use-mvp-master", () => ({
       brands: [{ id: "brand-1", code: "DONGCHENG", name: "Dongcheng" }],
       categories: [{ id: "cat-1", code: "DRILL", name: "Máy khoan" }],
       models: [{ id: "model-1", code: "DJZ10A", name: "DJZ10A" }],
+      // ERD bảng 16: MST-02 gắn cả power_source_id và package_variant_id.
+      powerSources: [
+        { id: "power-1", code: "MAINS_DIRECT", name: "Điện lưới trực tiếp" },
+      ],
+      packageVariants: [{ id: "package-1", code: "KIT", name: "Kit đầy đủ" }],
     },
     isLoading: false,
     error: null,

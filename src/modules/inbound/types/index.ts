@@ -3,6 +3,7 @@ export type InboundStatus = "DRAFT" | "SCANNING" | "POSTED" | "CANCELLED";
 export interface InboundDocument {
   id: string;
   code: string;
+  /** Giá trị hiển thị của Annex A `source_reference` (BE lưu ở cột source_name). */
   source: string;
   date: string;
   warehouseId: string;
@@ -52,7 +53,8 @@ export interface CreateInboundPayload {
   doc_no?: string | null;
   doc_date?: string | null;
   dst_warehouse_id: string;
-  source_name?: string | null;
+  /** Annex A / Annex D SCR-IN-01: tên field chuẩn là `source_reference`, max 200. */
+  source_reference?: string | null;
   note?: string | null;
   lines: InboundLinePayload[];
 }
@@ -60,9 +62,40 @@ export interface CreateInboundPayload {
 export interface UpdateInboundPayload {
   doc_no?: string | null;
   doc_date?: string | null;
-  source_name?: string | null;
+  source_reference?: string | null;
   note?: string | null;
   lines?: InboundLinePayload[];
+}
+
+/**
+ * Annex D SCR-IN-01: bảng "mã / SKU / kết quả / nguồn" của phiếu nhập phải đọc lại
+ * được sau khi tải lại trang, nên nó là dữ liệu server chứ không phải state phiên.
+ */
+export interface InboundScanEntry {
+  id: string;
+  lineId: string;
+  itemId?: string;
+  itemCode?: string;
+  serialNumber?: string;
+  containerId?: string;
+  sku: string;
+  skuName: string;
+  quantity: number;
+  /** CAMERA_OR_MANUAL_CODE khi có code_value, MANUAL khi chọn item/quantity trực tiếp. */
+  scanSource: string;
+  status: "ACTIVE" | "REMOVED";
+  capturedAt?: string;
+}
+
+export interface InboundUnscanResult {
+  documentId: string;
+  lineId: string;
+  entryId: string;
+  itemId?: string;
+  status: "REMOVED";
+  requiredQuantity: number;
+  scannedQuantity: number;
+  version: number;
 }
 
 export interface ReceiptEvidence {

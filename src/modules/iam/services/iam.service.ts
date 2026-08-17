@@ -11,6 +11,7 @@ import type {
   IamUser,
   IamUserListParams,
   IamUserPayload,
+  IamUserRoleAssignment,
   IamUserUpdatePayload,
 } from "@/modules/iam/types/iam.types";
 
@@ -90,43 +91,66 @@ export function createIamUser(payload: IamUserPayload): Promise<IamUser> {
   return http.post<IamUser>(API_ENDPOINTS.USERS, payload);
 }
 
+/**
+ * §8.1 IAM "If-Match on update": optimistic lock đi qua header như mọi aggregate
+ * khác (412 STALE_VERSION), thay vì chỉ nhét `version` vào body.
+ */
 export function updateIamUser(
   userId: string,
   payload: IamUserUpdatePayload,
 ): Promise<IamUser> {
-  return http.patch<IamUser>(`${API_ENDPOINTS.USERS}/${userId}`, payload);
+  return http.patch<IamUser>(`${API_ENDPOINTS.USERS}/${userId}`, payload, {
+    headers: { "If-Match": String(payload.version) },
+  });
 }
 
+/**
+ * BR-IAM-08 + §8.1 IAM "explicit role/scope assignment": gửi dạng `roles[]` để
+ * kèm được scope_ref (id kho) và cửa sổ hiệu lực, thay cho `role_ids[]` chỉ gán
+ * được vai trò trần.
+ */
 export function assignIamUserRole(
   userId: string,
-  roleId: string,
+  assignment: IamUserRoleAssignment,
 ): Promise<IamUser> {
   return http.post<IamUser>(`${API_ENDPOINTS.USERS}/${userId}/roles`, {
-    role_ids: [roleId],
+    roles: [
+      {
+        role_id: assignment.role_id,
+        scope_ref: assignment.scope_ref?.trim() ? assignment.scope_ref : null,
+        effective_from: assignment.effective_from || null,
+        effective_to: assignment.effective_to || null,
+      },
+    ],
   });
 }
 
 export async function createIamUserWithRole(
   payload: IamUserPayload,
-  roleId: string,
+  assignment: IamUserRoleAssignment,
 ): Promise<IamUser> {
   const created = await createIamUser(payload);
-  return assignIamUserRole(created.user_id, roleId);
+  return assignIamUserRole(created.user_id, assignment);
 }
 
 export async function updateIamUserWithRole(
   userId: string,
   payload: IamUserUpdatePayload,
-  roleId: string,
-  currentRoleId?: string,
+  assignment: IamUserRoleAssignment,
+  current?: IamUserRoleAssignment,
 ): Promise<IamUser> {
   const updated = await updateIamUser(userId, payload);
-  // Chỉ gọi endpoint gán role khi role thực sự đổi. BE chặn tự gán role cho
-  // chính mình (SCR-IAM-01, no self-escalation) bất kể giá trị mới là gì, nên
-  // gọi lại endpoint này một cách vô ích trên mỗi lần sửa hồ sơ của chính actor
-  // (đổi số điện thoại, trạng thái...) sẽ luôn bị 409 dù không đổi vai trò.
-  if (roleId === currentRoleId) {
+  // Chỉ gọi endpoint gán role khi role hoặc phạm vi thực sự đổi. BE chặn tự gán
+  // role cho chính mình (SCR-IAM-01, no self-escalation) bất kể giá trị mới là
+  // gì, nên gọi lại endpoint này một cách vô ích trên mỗi lần sửa hồ sơ của
+  // chính actor (đổi số điện thoại, trạng thái...) sẽ luôn bị 409 dù không đổi.
+  const unchanged =
+    assignment.role_id === current?.role_id &&
+    (assignment.scope_ref || null) === (current?.scope_ref || null) &&
+    (assignment.effective_from || null) === (current?.effective_from || null) &&
+    (assignment.effective_to || null) === (current?.effective_to || null);
+  if (unchanged) {
     return updated;
   }
-  return assignIamUserRole(userId, roleId);
+  return assignIamUserRole(userId, assignment);
 }

@@ -49,8 +49,14 @@ export const API_ENDPOINTS = {
   INBOUND_CANCEL: "/inbound-documents/:id/cancel",
   INBOUND_BOXES: "/inbound-documents/:id/boxes",
   INBOUND_POST_RECEIPT: "/inbound-documents/:id/post-receipt",
-  INBOUND_SCAN: "/inbound-documents/:id/scan",
-  INBOUND_REVERSE: "/inbound-documents/:id/reverse",
+  // Path chuẩn theo SRS v1.12 §8.1 + Annex C (scanInboundDocument /
+  // postReceiptReversal). Route số ít /scan, /reverse chỉ là legacy của BE.
+  INBOUND_SCAN: "/inbound-documents/:id/scans",
+  INBOUND_REVERSE: "/inbound-documents/:id/reversals",
+  /** ERD bảng 28: gỡ mã quét sai trước Post (status ACTIVE -> REMOVED). */
+  INBOUND_UNSCAN: "/inbound-documents/:id/unscan",
+  /** Annex D SCR-IN-01: đọc lại bảng mã đã quét sau khi tải lại trang. */
+  INBOUND_SCAN_ENTRIES: "/inbound-documents/:id/scan-entries",
 
   OUTBOUND_DOCUMENTS: "/outbound-documents",
   OUTBOUND_DOCUMENT: "/outbound-documents/:id",
@@ -69,10 +75,14 @@ export const API_ENDPOINTS = {
   LABEL_SNAPSHOT_REPRINT: "/label-snapshots/:id/reprint",
   PRINTER_CONFIGS: "/printer-configs",
 
-  PUTAWAY_TASKS: "/putaway/tasks",
-  PUTAWAY_TASK: "/putaway/tasks/:id",
-  PUTAWAY_CONFIRM: "/putaway/tasks/:id/confirm",
-  PUTAWAY_CANCEL: "/putaway/tasks/:id/cancel",
+  // Annex C listPutawayTasks / createPutawayTask / confirmPutawayTask /
+  // cancelPutawayTask dùng path /putaway-tasks với permission putaway.manage.
+  // Path legacy /putaway/tasks vẫn tồn tại ở BE nhưng không phải contract.
+  PUTAWAY_TASKS: "/putaway-tasks",
+  PUTAWAY_TASK: "/putaway-tasks/:id",
+  PUTAWAY_CONFIRM: "/putaway-tasks/:id/confirm",
+  PUTAWAY_CANCEL: "/putaway-tasks/:id/cancel",
+  // History không nằm trong Annex C; giữ path hiện hành của BE.
   PUTAWAY_HISTORY: "/putaway/history",
   CONTAINERS: "/containers",
   CONTAINER: "/containers/:id",
@@ -127,7 +137,10 @@ export const API_ENDPOINTS = {
   PACKAGE_VARIANTS: "/package-variants",
   PACKAGE_VARIANT: "/package-variants/:id",
   AGENCIES: "/agencies",
-  DEFECT_CATALOGS: "/defect-catalogs",
+  // Annex C listDefects/createDefect/updateDefect — path chuẩn §8.1 Master.
+  DEFECT_CATALOGS: "/defects",
+  /** Annex C publishPvProduct — quyền pv.publish tách khỏi sku.manage (§3). */
+  PV_PRODUCT_PUBLISH: "/pv/products/:id/publish",
   ITEMS: "/item-instances",
   PHYSICAL_CODES: "/physical-codes",
   // Compatibility names point to canonical routes; never issue /skus or /items.

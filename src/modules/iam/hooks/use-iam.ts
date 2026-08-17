@@ -12,6 +12,7 @@ import {
   updateIamRole,
   updateIamUserWithRole,
 } from "@/modules/iam/services/iam.service";
+import { fetchWarehouses } from "@/modules/master-data/services/warehouse.service";
 import { getMutationErrorMessage } from "@/shared/api/api-error";
 import type {
   IamPermissionListParams,
@@ -20,6 +21,7 @@ import type {
   IamRoleUpdatePayload,
   IamUserListParams,
   IamUserPayload,
+  IamUserRoleAssignment,
   IamUserUpdatePayload,
 } from "@/modules/iam/types/iam.types";
 
@@ -65,6 +67,18 @@ export function useIamRole(roleId?: string) {
     queryKey: roleId ? iamKeys.role(roleId) : [...iamKeys.all, "role", "none"],
     queryFn: () => getIamRole(roleId as string),
     enabled: Boolean(roleId),
+  });
+}
+
+/**
+ * BR-IAM-08: phạm vi dữ liệu (user_roles.scope_ref) trỏ tới kho, nên IAM-02 cần
+ * danh sách kho để gán tường minh thay vì chỉ hiển thị scope_type của vai trò.
+ */
+export function useIamScopeWarehouses() {
+  return useQuery({
+    queryKey: [...iamKeys.all, "scope-warehouses"],
+    queryFn: () => fetchWarehouses({ per_page: 100 }),
+    staleTime: 5 * 60_000,
   });
 }
 
@@ -146,11 +160,11 @@ export function useCreateIamUser() {
   return useMutation({
     mutationFn: ({
       payload,
-      roleId,
+      assignment,
     }: {
       payload: IamUserPayload;
-      roleId: string;
-    }) => createIamUserWithRole(payload, roleId),
+      assignment: IamUserRoleAssignment;
+    }) => createIamUserWithRole(payload, assignment),
     onSuccess: () => {
       toast.success("Đã thêm người dùng");
       void invalidateIam(queryClient);
@@ -167,14 +181,14 @@ export function useUpdateIamUser() {
     mutationFn: ({
       userId,
       payload,
-      roleId,
-      currentRoleId,
+      assignment,
+      currentAssignment,
     }: {
       userId: string;
       payload: IamUserUpdatePayload;
-      roleId: string;
-      currentRoleId?: string;
-    }) => updateIamUserWithRole(userId, payload, roleId, currentRoleId),
+      assignment: IamUserRoleAssignment;
+      currentAssignment?: IamUserRoleAssignment;
+    }) => updateIamUserWithRole(userId, payload, assignment, currentAssignment),
     onSuccess: () => {
       toast.success("Đã cập nhật người dùng");
       void invalidateIam(queryClient);

@@ -11,7 +11,7 @@ export interface MasterListParams {
   per_page?: number;
 }
 
-/** Brand / Category / Model dùng để hiển thị tên thay cho *_id trong MST-01. */
+/** Master dùng để hiển thị tên thay cho *_id và để đổ vào select ở MST-02. */
 export interface CatalogRefRecord {
   id: string;
   code: string;
@@ -22,6 +22,10 @@ export interface ProductCatalogRefs {
   brands: CatalogRefRecord[];
   categories: CatalogRefRecord[];
   models: CatalogRefRecord[];
+  /** ERD bảng 16: skus.power_source_id -> power_sources.id. */
+  powerSources: CatalogRefRecord[];
+  /** ERD bảng 16: skus.package_variant_id -> package_variants.id. */
+  packageVariants: CatalogRefRecord[];
 }
 
 export interface MasterPageResult<T> {
@@ -43,9 +47,14 @@ export interface SkuRecord {
   category_id?: string | null;
   model_id?: string | null;
   power_source_id?: string | null;
+  package_variant_id?: string | null;
   power_or_voltage?: string | null;
+  package_variant?: string | null;
+  /** Master "version" của SKU (REQ-SRS-029) — KHÁC với `version` optimistic lock. */
+  version_code?: string | null;
   status: MasterStatus;
   published_to_app?: boolean;
+  /** ERD bảng 16 skus.version — dùng cho If-Match. */
   version: number;
 }
 
@@ -54,10 +63,13 @@ export interface SkuPayload {
   name: string;
   sku_type: SkuType;
   unit?: string | null;
-  brand_code?: string | null;
-  category_code?: string | null;
-  model_code?: string | null;
-  power_source_code?: string | null;
+  /** Gửi thẳng id master canonical (ERD bảng 16); "" nghĩa là gỡ liên kết. */
+  brand_id?: string | null;
+  category_id?: string | null;
+  model_id?: string | null;
+  power_source_id?: string | null;
+  package_variant_id?: string | null;
+  version_code?: string | null;
   is_serial_tracked: boolean;
   status: MasterStatus;
   published_to_app?: boolean;
@@ -71,6 +83,8 @@ export interface AgencyRecord {
   phone?: string | null;
   address?: string | null;
   status: MasterStatus;
+  /** ERD bảng 9 agencies.version — optimistic locking qua If-Match. */
+  version?: number | null;
 }
 
 export interface AgencyPayload {
@@ -88,6 +102,8 @@ export interface DefectRecord {
   defect_name: string;
   description?: string | null;
   status: MasterStatus;
+  /** ERD bảng 15 defect_catalog.version — optimistic locking qua If-Match. */
+  version?: number | null;
 }
 
 export interface DefectPayload {

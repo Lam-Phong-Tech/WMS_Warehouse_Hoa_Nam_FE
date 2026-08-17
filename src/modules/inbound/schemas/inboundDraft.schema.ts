@@ -16,7 +16,9 @@ export const inboundDraftSchema = z
   .object({
     warehouseId: z.string().min(1, "Chọn kho ACTIVE."),
     documentDate: z.string().min(1, "Chọn ngày chứng từ."),
-    sourceName: z.string().max(255, "Nguồn/tham chiếu tối đa 255 ký tự."),
+    // Annex A / Annex D SCR-IN-01: `source_reference` max 200 (không phải 255 của
+    // cột vật lý source_name trong ERD bảng 26).
+    sourceName: z.string().max(200, "Nguồn/tham chiếu tối đa 200 ký tự."),
     note: z.string().max(2000, "Ghi chú tối đa 2000 ký tự."),
     lines: z
       .array(inboundLineSchema)

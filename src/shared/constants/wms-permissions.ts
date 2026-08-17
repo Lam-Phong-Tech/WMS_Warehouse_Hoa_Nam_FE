@@ -18,10 +18,19 @@ export const WMS_PERMISSION_CATALOG = {
   AGENCY_MANAGE: "agency.manage",
   DEFECT_VIEW: "defect.view",
   DEFECT_MANAGE: "defect.manage",
+  /** SRS §3: publish App PV tách khỏi sku.manage (REQ-SRS-020). */
+  PV_PUBLISH: "pv.publish",
   ITEM_INSTANCE_VIEW: "item_instance.view",
   ITEM_INSTANCE_MANAGE: "item_instance.manage",
 
   SCAN_CLASSIFY: "scan.classify",
+  /**
+   * Annex C alias của scan.classify; route BE /scan-batches/classify nhận
+   * `scan.execute|scan.classify`. WAREHOUSE_STAFF được seed scan.execute (không có
+   * scan.classify) nên FE bắt buộc phải nhận cả hai, nếu không nhân viên kho bị
+   * chặn ngay ở bước classify của mọi lần quét.
+   */
+  SCAN_EXECUTE: "scan.execute",
   SCAN_INBOUND: "scan.inbound",
   SCAN_OUTBOUND: "outbound.scan",
   SCAN_WARRANTY: "scan.warranty",
@@ -34,6 +43,14 @@ export const WMS_PERMISSION_CATALOG = {
   INBOUND_CANCEL: "inbound.cancel",
   CONTAINER_VIEW: "container.view",
   CONTAINER_MANAGE: "container.manage",
+  /**
+   * SRS §3 dòng "Putaway task list/create/confirm/cancel" đặt permission key là
+   * putaway.view / putaway.manage (NV kho = A*), và BE seed đúng hai code này
+   * (AuthDatabaseSeeder). Không được coi chúng là alias của container.manage:
+   * container.manage là quyền CRUD container rộng hơn hẳn nên gộp lại là leo quyền.
+   */
+  PUTAWAY_VIEW: "putaway.view",
+  PUTAWAY_MANAGE: "putaway.manage",
   OUTBOUND_VIEW: "outbound.view",
   OUTBOUND_CREATE: "outbound.create",
   OUTBOUND_SCAN: "outbound.scan",
@@ -66,8 +83,10 @@ export const WMS_PERMISSION_ALIASES: Readonly<Record<string, string>> = {
   REPORT_EXPORT: WMS_PERMISSION_CATALOG.REPORT_EXPORT,
   WARRANTY_MANAGE: WMS_PERMISSION_CATALOG.WARRANTY_MANAGE,
   WARRANTY_TEMP_ONLY: WMS_PERMISSION_CATALOG.WARRANTY_TEMP_ONLY,
-  // Old FE-only permission never existed in BE; canonical putaway uses container.manage.
-  "putaway.manage": WMS_PERMISSION_CATALOG.CONTAINER_MANAGE,
+  // Trước đây có alias "putaway.manage" -> container.manage với ghi chú sai rằng
+  // putaway.manage "không tồn tại ở BE". BE seed đúng putaway.view/putaway.manage và
+  // SRS §3 dùng chính key đó, nên alias đã bị gỡ: giữ lại sẽ khiến người chỉ có
+  // putaway.manage bị hiểu là có container.manage (leo quyền phía UI).
 } as const;
 
 export const WMS_CANONICAL_PERMISSION_CODES = Object.freeze(
@@ -110,14 +129,27 @@ export function resolveWmsPermissionAlternatives(
 }
 
 export const WMS_ACTION_PERMISSIONS = {
-  SCAN_CLASSIFY_GENERIC: [WMS_PERMISSION_CATALOG.SCAN_CLASSIFY],
+  // Khớp route BE: permission:scan.execute|scan.classify.
+  SCAN_CLASSIFY_GENERIC: [
+    WMS_PERMISSION_CATALOG.SCAN_EXECUTE,
+    WMS_PERMISSION_CATALOG.SCAN_CLASSIFY,
+  ],
   SCAN_INBOUND: [WMS_PERMISSION_CATALOG.INBOUND_SCAN],
   SCAN_OUTBOUND: [WMS_PERMISSION_CATALOG.OUTBOUND_SCAN],
   SCAN_WARRANTY: [WMS_PERMISSION_CATALOG.SCAN_WARRANTY],
   CREATE_INBOUND: [WMS_PERMISSION_CATALOG.INBOUND_CREATE],
   CANCEL_INBOUND: [WMS_PERMISSION_CATALOG.INBOUND_CANCEL],
   POST_RECEIPT: [WMS_PERMISSION_CATALOG.INBOUND_POST],
-  PUTAWAY_CONTAINER: [WMS_PERMISSION_CATALOG.CONTAINER_MANAGE],
+  // Route BE nhận `putaway.manage|container.manage`; FE gate phải khớp đúng bộ đó.
+  PUTAWAY_CONTAINER: [
+    WMS_PERMISSION_CATALOG.PUTAWAY_MANAGE,
+    WMS_PERMISSION_CATALOG.CONTAINER_MANAGE,
+  ],
+  PUTAWAY_VIEW: [
+    WMS_PERMISSION_CATALOG.PUTAWAY_VIEW,
+    WMS_PERMISSION_CATALOG.PUTAWAY_MANAGE,
+    WMS_PERMISSION_CATALOG.CONTAINER_VIEW,
+  ],
   POST_ISSUE: [WMS_PERMISSION_CATALOG.OUTBOUND_POST],
   APPLY_STOCKTAKE_ADJUSTMENT: [WMS_PERMISSION_CATALOG.STOCKTAKE_ADJUST],
   WARRANTY_TEMP_ONLY: [WMS_PERMISSION_CATALOG.WARRANTY_TEMP_ONLY],

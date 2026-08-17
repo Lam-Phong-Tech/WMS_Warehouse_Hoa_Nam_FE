@@ -16,7 +16,9 @@ import type {
   InboundDetail,
   InboundDocument,
   InboundLine,
+  InboundScanEntry,
   InboundScanResult,
+  InboundUnscanResult,
   PostReceiptRequest,
   ReceiptEvidence,
   UpdateInboundPayload,
@@ -110,8 +112,11 @@ function normalizeDocument(row: RawRecord): InboundDocument {
   return {
     id: text(row.id ?? row.stock_document_id),
     code: text(row.doc_no ?? row.code ?? row.document_no),
+    // Annex A / Annex D gọi field này là `source_reference`; BE trả cả alias đó và
+    // cột vật lý `source_name`. Không fallback sang `note` nữa: ghi chú là field
+    // khác hẳn, đổ vào cột "Nguồn / tham chiếu" là hiển thị sai dữ liệu.
     source: text(
-      row.source_name ?? row.supplier_name ?? row.source ?? row.note,
+      row.source_reference ?? row.source_name ?? row.source,
       "-",
     ),
     date: text(row.doc_date ?? row.date ?? row.created_at),
@@ -127,7 +132,8 @@ function normalizeDocument(row: RawRecord): InboundDocument {
     ),
     updatedAt: text(row.updated_at) || undefined,
     version: num(row.version ?? row.lock_version ?? 1),
-    sourceReference: text(row.source_reference) || undefined,
+    sourceReference:
+      text(row.source_reference ?? row.source_name) || undefined,
     note: text(row.note) || undefined,
   };
 }
@@ -276,6 +282,10 @@ function normalizeReceiptEvidence(
       "WMS_FE_MISSING_RECEIPT_EVIDENCE",
     ),
     traceSource: "stock_document.movements",
+    // AC-GWT-IN-001: retry cùng Idempotency-Key trả business result cũ kèm
+    // replayed=true. Người dùng phải phân biệt được "vừa Post" và "đây là replay",
+    // nếu không sẽ tưởng lần bấm thứ hai đã tăng tồn thêm một lần nữa.
+    replayed: row.replayed === true,
     version: row.version === undefined ? undefined : num(row.version),
   };
 }
@@ -425,21 +435,46 @@ export async function scanInboundDocument(
   for (const code of normalizedCodes) {
     let line: RawRecord;
     let itemId: string | null = null;
-    if (options.lineId) {
-      line = findLineById(lines, options.lineId);
-    } else {
-      const classification = await classifyScanCodes({
-        raw_code: code,
-        context: "INBOUND",
-        warehouse_id: warehouseId,
-      });
+
+    // Annex D SCR-IN-01 map `scan_input` -> `/scan-batches/classify.codes[]`:
+    // mọi mã vật lý đều đi qua classify (read-only, stock_effect=NONE) trước khi
+    // ghi nhận. Trước đây classify bị bỏ qua khi người dùng đã chọn dòng, nên mã
+    // lạ chỉ bị chặn ở tận BE với lỗi thô, và sai SKU cũng không được nói rõ.
+    // Ngoại lệ: COMPONENT quantity-mode gửi mã BOX (includeCodeValue=false) —
+    // đó không phải mã ITEM nên không classify.
+    const shouldClassify = options.includeCodeValue !== false;
+    const classification = shouldClassify
+      ? await classifyScanCodes({
+          raw_code: code,
+          context: "INBOUND",
+          warehouse_id: warehouseId,
+        })
+      : null;
+
+    if (classification) {
       const productId = requireNonEmptyString(
         classification.product_id,
         "classification.product_id",
         "WMS_FE_SCAN_PRODUCT_UNRESOLVED",
       );
       itemId = classification.item_id;
-      line = findSingleLineForProduct(lines, productId, code);
+      if (options.lineId) {
+        line = findLineById(lines, options.lineId);
+        const lineProductId = text(line.product_id ?? line.sku_id);
+        if (lineProductId && lineProductId !== productId) {
+          throw new WmsContractError(
+            "WMS_FE_SCAN_SKU_MISMATCH",
+            `Mã ${code} thuộc SKU khác với dòng đang chọn; chọn đúng dòng trước khi quét.`,
+          );
+        }
+      } else {
+        line = findSingleLineForProduct(lines, productId, code);
+      }
+    } else {
+      line = findLineById(
+        lines,
+        requireNonEmptyString(options.lineId, "line_id"),
+      );
     }
     const lineId = requireNonEmptyString(
       line.id ?? line.stock_document_line_id,
@@ -512,6 +547,76 @@ export async function postInboundReceipt(
     mutationHeaders(request.ifMatch, idempotencyKey),
   );
   return normalizeReceiptEvidence(result.data, result.meta);
+}
+
+/**
+ * Annex D SCR-IN-01: bảng mã đã quét là dữ liệu server, phải đọc lại được sau khi
+ * tải lại trang. `status: "ALL"` dùng để đối soát cả các dòng đã gỡ.
+ */
+export async function fetchInboundScanEntries(
+  documentId: string,
+  status: "ACTIVE" | "ALL" = "ACTIVE",
+): Promise<InboundScanEntry[]> {
+  const result = await http.getPage<RawRecord[] | { data?: RawRecord[] }>(
+    endpoint(API_ENDPOINTS.INBOUND_SCAN_ENTRIES, documentId),
+    { params: { status, per_page: 200 } },
+  );
+
+  return rowsOf(result.data as RawRecord[] | { data?: RawRecord[] }).map(
+    (row): InboundScanEntry => ({
+      id: text(row.id),
+      lineId: text(row.inbound_line_id),
+      itemId: text(row.item_id) || undefined,
+      itemCode: text(row.item_code) || undefined,
+      serialNumber: text(row.serial_number) || undefined,
+      containerId: text(row.container_id) || undefined,
+      sku: text(row.sku_code),
+      skuName: text(row.sku_name),
+      quantity: num(row.quantity),
+      scanSource: text(row.scan_source, "MANUAL"),
+      status: text(row.status, "ACTIVE") === "REMOVED" ? "REMOVED" : "ACTIVE",
+      capturedAt: text(row.created_at) || undefined,
+    }),
+  );
+}
+
+/**
+ * ERD bảng 28: inbound_scan_entries.status ACTIVE -> REMOVED để sửa mã quét sai
+ * trước Post. Stock-neutral; sau Post phải dùng Reversal thay vì gỡ.
+ */
+export async function unscanInboundEntry(
+  documentId: string,
+  entryId: string,
+  ifMatch: number,
+  reason?: string,
+): Promise<InboundUnscanResult> {
+  assertWmsActionPermission(
+    WMS_ACTION_PERMISSIONS.SCAN_INBOUND,
+    "remove inbound scan entry",
+  );
+  const response = await http.post<RawRecord>(
+    endpoint(API_ENDPOINTS.INBOUND_UNSCAN, documentId),
+    {
+      inbound_scan_entry_id: requireNonEmptyString(
+        entryId,
+        "inbound_scan_entry_id",
+      ),
+      ...(reason?.trim() ? { reason: reason.trim() } : {}),
+    },
+    mutationHeaders(ifMatch),
+  );
+  assertReadOnlyScanResponse(response);
+
+  return {
+    documentId: text(response.document_id, documentId),
+    lineId: text(response.line_id),
+    entryId: text(response.inbound_scan_entry_id, entryId),
+    itemId: text(response.item_id) || undefined,
+    status: "REMOVED",
+    requiredQuantity: num(response.required_quantity),
+    scannedQuantity: num(response.scanned_quantity),
+    version: requirePositiveNumber(response.version, "unscan.version"),
+  };
 }
 
 export async function reverseInboundDocument(

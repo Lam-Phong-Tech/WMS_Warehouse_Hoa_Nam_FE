@@ -197,9 +197,10 @@ describe("WWHN-181 exact BE v1.7 guards", () => {
       context: "INBOUND",
       warehouse_id: WAREHOUSE_ID,
     });
+    // Path chuẩn của Annex C scanInboundDocument là /scans (số nhiều).
     expect(http.post).toHaveBeenNthCalledWith(
       2,
-      "/inbound-documents/IN-1/scan",
+      "/inbound-documents/IN-1/scans",
       { line_id: "LINE-IN-1", qty: 1, code_value: "RAW-IN" },
       { headers: { "If-Match": "1" } },
     );

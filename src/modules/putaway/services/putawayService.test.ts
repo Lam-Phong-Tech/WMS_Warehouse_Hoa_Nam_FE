@@ -45,7 +45,7 @@ describe("putaway real API contract", () => {
     vi.clearAllMocks();
   });
 
-  it("creates a stock-neutral Putaway DRAFT through /putaway/tasks", async () => {
+  it("creates a stock-neutral Putaway DRAFT through Annex C /putaway-tasks", async () => {
     vi.mocked(http.post).mockResolvedValue({
       id: "PTW-1",
       box_container_id: "BOX-1",
@@ -61,7 +61,7 @@ describe("putaway real API contract", () => {
       to_tray_id: "TRAY-1",
     });
 
-    expect(http.post).toHaveBeenCalledWith("/putaway/tasks", {
+    expect(http.post).toHaveBeenCalledWith("/putaway-tasks", {
       box_container_id: "BOX-1",
       to_tray_id: "TRAY-1",
     });
@@ -124,7 +124,7 @@ describe("putaway real API contract", () => {
     await confirmPutawayTask("PTW-1", 1);
 
     expect(http.post).toHaveBeenCalledWith(
-      "/putaway/tasks/PTW-1/confirm",
+      "/putaway-tasks/PTW-1/confirm",
       undefined,
       { headers: { "If-Match": "1" } },
     );
@@ -158,7 +158,7 @@ describe("putaway real API contract", () => {
     const result = await cancelPutawayTask("PTW-1", 1);
 
     expect(http.post).toHaveBeenCalledWith(
-      "/putaway/tasks/PTW-1/cancel",
+      "/putaway-tasks/PTW-1/cancel",
       undefined,
       { headers: { "If-Match": "1" } },
     );

@@ -4,9 +4,11 @@ import {
   createInboundDocument,
   fetchInboundDetail,
   fetchInboundDocuments,
+  fetchInboundScanEntries,
   postInboundReceipt,
   registerInboundBox,
   scanInboundDocument,
+  unscanInboundEntry,
   updateInboundDocument,
 } from "@/modules/inbound/services/inboundService";
 import type {
@@ -26,6 +28,8 @@ export const inboundKeys = {
   list: (params: InboundListParams) =>
     [...inboundKeys.all, "list", params] as const,
   detail: (id: string) => [...inboundKeys.all, "detail", id] as const,
+  scanEntries: (id: string, status: "ACTIVE" | "ALL") =>
+    [...inboundKeys.all, "scan-entries", id, status] as const,
 };
 export function useInboundDocuments(params: InboundListParams) {
   return useQuery({
@@ -40,6 +44,21 @@ export function useInboundDetail(id: string | null | undefined) {
     enabled: Boolean(id),
   });
 }
+/**
+ * Annex D SCR-IN-01: bảng mã đã quét phải đọc lại được sau khi tải lại trang, nên
+ * nó là query server chứ không phải state trong phiên thao tác.
+ */
+export function useInboundScanEntries(
+  id: string | null | undefined,
+  status: "ACTIVE" | "ALL" = "ACTIVE",
+) {
+  return useQuery({
+    queryKey: inboundKeys.scanEntries(id ?? "", status),
+    queryFn: () => fetchInboundScanEntries(id ?? "", status),
+    enabled: Boolean(id),
+  });
+}
+
 function useInvalidateInboundMutation<TVariables, TResult>(
   mutationFn: (variables: TVariables) => Promise<TResult>,
 ) {
@@ -122,6 +141,22 @@ export function useScanInbound() {
       }),
   );
 }
+export function useUnscanInbound() {
+  return useInvalidateInboundMutation(
+    ({
+      id,
+      entryId,
+      ifMatch,
+      reason,
+    }: {
+      id: string;
+      entryId: string;
+      ifMatch: number;
+      reason?: string;
+    }) => unscanInboundEntry(id, entryId, ifMatch, reason),
+  );
+}
+
 export function usePostInboundReceipt() {
   return useInvalidateInboundMutation((payload: PostReceiptRequest) =>
     postInboundReceipt(payload),

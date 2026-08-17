@@ -22,6 +22,7 @@ import {
   CheckCircleOutlined,
   CloseCircleOutlined,
   CloseOutlined,
+  DeleteOutlined,
   EditOutlined,
   ScanOutlined,
 } from "@ant-design/icons";
@@ -42,11 +43,17 @@ import type { SkuRecord } from "@/modules/master-data/types/mvp-master.types";
 import {
   useCancelInbound,
   useInboundDetail,
+  useInboundScanEntries,
   usePostInboundReceipt,
   useRegisterInboundBox,
   useScanInbound,
+  useUnscanInbound,
 } from "@/modules/inbound/hooks/use-inbound";
-import type { InboundLine, ReceiptEvidence } from "@/modules/inbound/types";
+import type {
+  InboundLine,
+  InboundScanEntry,
+  ReceiptEvidence,
+} from "@/modules/inbound/types";
 
 type BarcodeResult = { rawValue?: string };
 type BarcodeDetectorInstance = {
@@ -283,8 +290,12 @@ export function InboundScanModal({
 }: InboundScanModalProps) {
   const detailQuery = useInboundDetail(documentId);
   const skuQuery = useMvpSkus({ status: "ACTIVE", per_page: 100 });
+  // Annex D SCR-IN-01: bảng mã đã quét đọc từ server nên F5 / đóng-mở lại modal
+  // vẫn còn bằng chứng, và 4 thẻ số là của cả phiếu chứ không riêng phiên thao tác.
+  const scanEntriesQuery = useInboundScanEntries(documentId, "ALL");
   const registerBoxMutation = useRegisterInboundBox();
   const scanMutation = useScanInbound();
+  const unscanMutation = useUnscanInbound();
   const postMutation = usePostInboundReceipt();
   const cancelMutation = useCancelInbound();
   const [lineId, setLineId] = useState("");
@@ -353,10 +364,17 @@ export function InboundScanModal({
     detail?.document.status === "DRAFT" ||
     detail?.document.status === "SCANNING";
   const busy = scanMutation.isPending || registerBoxMutation.isPending;
-  const working = busy || postMutation.isPending || cancelMutation.isPending;
+  const working =
+    busy ||
+    postMutation.isPending ||
+    cancelMutation.isPending ||
+    unscanMutation.isPending;
   const progressPercent = totalExpected
     ? Math.min(100, Math.round((totalScanned / totalExpected) * 100))
     : 0;
+  const scanEntries = scanEntriesQuery.data ?? [];
+  const activeEntries = scanEntries.filter((entry) => entry.status === "ACTIVE");
+  const removedEntryCount = scanEntries.length - activeEntries.length;
   const sessionDuplicateCount = scanLog.filter(
     (row) => !row.success && (row.errorCode ?? "").includes("DUPLICATE"),
   ).length;
@@ -440,7 +458,7 @@ export function InboundScanModal({
       );
       setScanCode("");
       if (!isSerialTracked) setQuantity(1);
-      await detailQuery.refetch();
+      await Promise.all([detailQuery.refetch(), scanEntriesQuery.refetch()]);
       onChanged?.();
     } catch (error) {
       const errorText = getApiErrorMessage(error, "Scan không hợp lệ.");
@@ -460,6 +478,31 @@ export function InboundScanModal({
       );
       toast.error(errorText);
       await detailQuery.refetch();
+      onChanged?.();
+    }
+  };
+
+  /**
+   * ERD bảng 28: gỡ mã quét sai trước Post (ACTIVE -> REMOVED), stock-neutral.
+   * Trước đây quét sai chỉ còn cách Cancel cả phiếu và tạo lại từ đầu.
+   */
+  const handleUnscan = async (entry: InboundScanEntry) => {
+    if (!detail || scanVersion === null || !canScan || !isMutable) return;
+    try {
+      const result = await unscanMutation.mutateAsync({
+        id: documentId,
+        entryId: entry.id,
+        ifMatch: scanVersion,
+      });
+      setScanVersion(result.version);
+      toast.success(
+        `Đã gỡ mã khỏi phiếu. Dòng còn ${result.scannedQuantity}/${result.requiredQuantity}; tồn kho không đổi.`,
+      );
+      await Promise.all([detailQuery.refetch(), scanEntriesQuery.refetch()]);
+      onChanged?.();
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Không gỡ được mã đã quét."));
+      await Promise.all([detailQuery.refetch(), scanEntriesQuery.refetch()]);
       onChanged?.();
     }
   };
@@ -484,8 +527,14 @@ export function InboundScanModal({
       });
       postKeyRef.current = null;
       setReceiptEvidence(evidence);
-      toast.success("Full Post Receipt thành công. Tồn kho tăng đúng một lần.");
-      await detailQuery.refetch();
+      // AC-GWT-IN-001: replay phải được nói rõ, tránh người dùng hiểu là lần Post
+      // thứ hai đã cộng tồn thêm một lần.
+      toast.success(
+        evidence.replayed
+          ? "Phiếu đã được Post trước đó. Hệ thống trả lại kết quả cũ (replay), tồn kho KHÔNG tăng thêm lần nữa."
+          : "Full Post Receipt thành công. Tồn kho tăng đúng một lần.",
+      );
+      await Promise.all([detailQuery.refetch(), scanEntriesQuery.refetch()]);
       onChanged?.();
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Không Full Post Receipt được."));
@@ -559,6 +608,87 @@ export function InboundScanModal({
           {line.scanned === line.expected ? "ĐỦ" : "CHƯA ĐỦ"}
         </Tag>
       ),
+    },
+  ];
+
+  // Annex D SCR-IN-01: bảng "Mã / SKU / Kết quả / Nguồn" của phiếu, đọc từ
+  // inbound_scan_entries nên tồn tại qua reload; kèm hành động gỡ trước Post.
+  const scanEntryColumns: ColumnsType<InboundScanEntry> = [
+    {
+      title: "Mã",
+      key: "code",
+      width: 240,
+      render: (_, entry) => (
+        <span style={{ fontFamily: "monospace" }}>
+          {entry.itemCode ||
+            entry.serialNumber ||
+            entry.itemId ||
+            entry.containerId ||
+            "-"}
+        </span>
+      ),
+    },
+    {
+      title: "SKU",
+      key: "sku",
+      width: 220,
+      render: (_, entry) => (
+        <div>
+          <div>
+            <strong>{entry.sku || "-"}</strong>
+          </div>
+          <div style={{ fontSize: 12, color: "#6b7280" }}>{entry.skuName}</div>
+        </div>
+      ),
+    },
+    {
+      title: "SL",
+      dataIndex: "quantity",
+      width: 70,
+      align: "right",
+    },
+    {
+      title: "Kết quả",
+      key: "result",
+      width: 130,
+      render: (_, entry) =>
+        entry.status === "ACTIVE" ? (
+          <Tag color="success" icon={<CheckCircleOutlined />}>
+            Hợp lệ
+          </Tag>
+        ) : (
+          <Tag color="default" icon={<CloseCircleOutlined />}>
+            Đã gỡ
+          </Tag>
+        ),
+    },
+    {
+      title: "Nguồn",
+      key: "source",
+      width: 130,
+      render: (_, entry) => (
+        <Tag>
+          {entry.scanSource === "CAMERA_OR_MANUAL_CODE" ? "CAMERA/MÃ" : "NHẬP TAY"}
+        </Tag>
+      ),
+    },
+    {
+      title: "",
+      key: "actions",
+      width: 110,
+      render: (_, entry) =>
+        entry.status === "ACTIVE" && canScan && isMutable ? (
+          <Button
+            danger
+            type="link"
+            size="small"
+            icon={<DeleteOutlined />}
+            disabled={working}
+            onClick={() => void handleUnscan(entry)}
+          >
+            Gỡ mã
+          </Button>
+        ) : null,
     },
   ];
 
@@ -674,21 +804,21 @@ export function InboundScanModal({
               </Col>
               <Col xs={12} md={6}>
                 <Card size="small">
-                  <div style={{ fontSize: 12, color: "#6b7280" }}>
-                    Mã trùng (phiên)
-                  </div>
+                  {/* Đếm ở mức phiếu (đọc từ inbound_scan_entries) nên không mất
+                      sau khi tải lại trang, khác với bộ đếm theo phiên trước đây. */}
+                  <div style={{ fontSize: 12, color: "#6b7280" }}>Mã đã gỡ</div>
                   <div style={{ fontSize: 22, fontWeight: 700 }}>
-                    {sessionDuplicateCount}
+                    {removedEntryCount}
                   </div>
                 </Card>
               </Col>
               <Col xs={12} md={6}>
                 <Card size="small">
                   <div style={{ fontSize: 12, color: "#6b7280" }}>
-                    Mã lỗi (phiên)
+                    Mã trùng / lỗi (phiên)
                   </div>
                   <div style={{ fontSize: 22, fontWeight: 700 }}>
-                    {sessionErrorCount}
+                    {sessionDuplicateCount + sessionErrorCount}
                   </div>
                 </Card>
               </Col>
@@ -931,10 +1061,50 @@ export function InboundScanModal({
               />
             </Card>
 
+            {/* Annex D SCR-IN-01: bảng mã đã quét của phiếu — đọc lại được sau reload. */}
+            <Card
+              size="small"
+              title="Mã đã quét của phiếu"
+              style={{ marginTop: 14 }}
+              loading={scanEntriesQuery.isLoading}
+            >
+              <div
+                style={{ fontSize: 12, color: "#6b7280", marginBottom: 8 }}
+              >
+                {`${activeEntries.length} hợp lệ${
+                  removedEntryCount ? ` · ${removedEntryCount} đã gỡ` : ""
+                }`}
+              </div>
+              {scanEntriesQuery.isError ? (
+                <Alert
+                  type="error"
+                  showIcon
+                  title={getApiErrorMessage(
+                    scanEntriesQuery.error,
+                    "Không tải được danh sách mã đã quét.",
+                  )}
+                  description={errorDescription(scanEntriesQuery.error)}
+                />
+              ) : (
+                <Table<InboundScanEntry>
+                  size="small"
+                  rowKey="id"
+                  columns={scanEntryColumns}
+                  dataSource={scanEntries}
+                  pagination={{ pageSize: 10, hideOnSinglePage: true }}
+                  scroll={{ x: 900 }}
+                  locale={{
+                    emptyText:
+                      "Chưa ghi nhận mã nào. Quét Barcode/QR hoặc đăng ký BOX để bắt đầu.",
+                  }}
+                />
+              )}
+            </Card>
+
             {scanLog.length ? (
               <Card
                 size="small"
-                title="Kết quả scan trong phiên thao tác"
+                title="Diễn biến scan trong phiên thao tác"
                 style={{ marginTop: 14 }}
               >
                 <Table<ScanLogRow>

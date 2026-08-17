@@ -10,6 +10,7 @@ import {
 import {
   useCreateIamUser,
   useIamRoles,
+  useIamScopeWarehouses,
   useIamUsers,
   useUpdateIamUser,
 } from "@/modules/iam/hooks/use-iam";
@@ -41,6 +42,10 @@ type UserFormState = {
   phone: string;
   email: string;
   roleId: string;
+  /** BR-IAM-08: id kho mà vai trò có hiệu lực; rỗng = toàn hệ thống. */
+  scopeRef: string;
+  effectiveFrom: string;
+  effectiveTo: string;
   status: IamUserStatus;
   password: string;
 };
@@ -51,6 +56,9 @@ const EMPTY_FORM: UserFormState = {
   phone: "",
   email: "",
   roleId: "",
+  scopeRef: "",
+  effectiveFrom: "",
+  effectiveTo: "",
   status: "ACTIVE",
   password: "",
 };
@@ -65,10 +73,15 @@ function statusClass(status: IamUserStatus) {
   return "pill warn-pill";
 }
 
-function scopeLabel(role?: IamRole) {
+/**
+ * SCR-IAM-01 cột "Phạm vi": scope_ref trỏ tới kho (ERD user_roles). Hiển thị tên
+ * kho thay vì uuid; không có scope_ref nghĩa là vai trò áp toàn hệ thống.
+ */
+function scopeLabel(role: IamRole | undefined, warehouseNames: Map<string, string>) {
   if (!role) return "Chưa gán";
-  if (role.pivot?.scope_ref) return role.pivot.scope_ref;
-  if (role.scope_type === "WAREHOUSE") return "Theo kho";
+  const scopeRef = role.pivot?.scope_ref;
+  if (scopeRef) return warehouseNames.get(scopeRef) ?? scopeRef;
+  if (role.scope_type === "WAREHOUSE") return "Mọi kho";
   if (role.scope_type === "FUNCTION") return "Theo chức năng";
   return "Toàn hệ thống";
 }
@@ -114,8 +127,23 @@ export function IamUserScreen({
     per_page: roleFilter ? 100 : perPage,
   });
   const rolesQuery = useIamRoles({ per_page: 100 });
+  // BR-IAM-08: phạm vi dữ liệu gán theo kho, nên cần danh sách kho để chọn.
+  const warehousesQuery = useIamScopeWarehouses();
   const createUser = useCreateIamUser();
   const updateUser = useUpdateIamUser();
+
+  const warehouses = useMemo(
+    () =>
+      (warehousesQuery.data ?? []).map((row) => ({
+        id: String(row.id ?? ""),
+        label: String(row.name ?? row.code ?? row.id ?? ""),
+      })),
+    [warehousesQuery.data],
+  );
+  const warehouseNames = useMemo(
+    () => new Map(warehouses.map((row) => [row.id, row.label])),
+    [warehouses],
+  );
 
   const roles = rolesQuery.data ?? [];
   const users = usersQuery.data?.data ?? [];
@@ -187,13 +215,17 @@ export function IamUserScreen({
 
   const openEdit = (user: IamUser) => {
     if (!canManageUsers) return;
+    const primaryRole = user.roles?.[0];
     setEditingUser(user);
     setFormState({
       displayName: user.display_name,
       username: user.username,
       phone: user.phone ?? "",
       email: user.email ?? "",
-      roleId: user.roles?.[0]?.role_id ?? roles[0]?.role_id ?? "",
+      roleId: primaryRole?.role_id ?? roles[0]?.role_id ?? "",
+      scopeRef: primaryRole?.pivot?.scope_ref ?? "",
+      effectiveFrom: primaryRole?.pivot?.effective_from?.slice(0, 10) ?? "",
+      effectiveTo: primaryRole?.pivot?.effective_to?.slice(0, 10) ?? "",
       status: user.status,
       password: "",
     });
@@ -247,12 +279,30 @@ export function IamUserScreen({
       ...(password ? { password } : {}),
     };
 
+    // BR-IAM-08 "scope assignment explicit": gửi kèm scope_ref + cửa sổ hiệu lực.
+    const assignment = {
+      role_id: formState.roleId,
+      scope_ref: formState.scopeRef || null,
+      effective_from: formState.effectiveFrom || null,
+      effective_to: formState.effectiveTo || null,
+    };
+    const currentRole = editingUser?.roles?.[0];
+
     try {
       if (editingUser) {
         await updateUser.mutateAsync({
           userId: editingUser.user_id,
-          roleId: formState.roleId,
-          currentRoleId: editingUser.roles?.[0]?.role_id,
+          assignment,
+          currentAssignment: currentRole
+            ? {
+                role_id: currentRole.role_id,
+                scope_ref: currentRole.pivot?.scope_ref ?? null,
+                effective_from:
+                  currentRole.pivot?.effective_from?.slice(0, 10) ?? null,
+                effective_to:
+                  currentRole.pivot?.effective_to?.slice(0, 10) ?? null,
+              }
+            : undefined,
           payload: {
             ...basePayload,
             version: editingUser.version,
@@ -260,7 +310,7 @@ export function IamUserScreen({
         });
       } else {
         await createUser.mutateAsync({
-          roleId: formState.roleId,
+          assignment,
           payload: {
             ...basePayload,
             password,
@@ -399,7 +449,7 @@ export function IamUserScreen({
                       <span className="muted">{user.username}</span>
                     </td>
                     <td>{primaryRole?.role_name ?? "Chưa gán"}</td>
-                    <td>{scopeLabel(primaryRole)}</td>
+                    <td>{scopeLabel(primaryRole, warehouseNames)}</td>
                     <td>
                       <span className={statusClass(user.status)}>
                         {statusLabel(user.status)}
@@ -568,12 +618,57 @@ export function IamUserScreen({
                 ) : null}
               </div>
               <div className="field">
-                <label>Phạm vi dữ liệu</label>
-                <div className="value">{scopeLabel(selectedRole)}</div>
+                <label htmlFor="iam-scope">Phạm vi dữ liệu *</label>
+                <select
+                  id="iam-scope"
+                  className="select"
+                  style={{ width: "100%" }}
+                  value={formState.scopeRef}
+                  onChange={(event) =>
+                    updateField("scopeRef", event.target.value)
+                  }
+                  disabled={isSaving || isEditingSelf}
+                >
+                  <option value="">Toàn hệ thống (không giới hạn kho)</option>
+                  {warehouses.map((warehouse) => (
+                    <option key={warehouse.id} value={warehouse.id}>
+                      {warehouse.label}
+                    </option>
+                  ))}
+                </select>
                 <div className="muted" style={{ marginTop: 6 }}>
-                  Phạm vi hiện lấy từ scope_type của role backend; API m1 chưa
-                  hỗ trợ chỉnh scope_ref riêng theo user.
+                  BR-IAM-08: phạm vi được gán tường minh theo kho. Vai trò đang
+                  chọn có scope_type “{selectedRole?.scope_type ?? "—"}”.
                 </div>
+              </div>
+              <div className="field">
+                <label htmlFor="iam-effective-from">Hiệu lực từ</label>
+                <input
+                  id="iam-effective-from"
+                  className="input"
+                  style={{ width: "100%" }}
+                  type="date"
+                  value={formState.effectiveFrom}
+                  onChange={(event) =>
+                    updateField("effectiveFrom", event.target.value)
+                  }
+                  disabled={isSaving || isEditingSelf}
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="iam-effective-to">Hiệu lực đến</label>
+                <input
+                  id="iam-effective-to"
+                  className="input"
+                  style={{ width: "100%" }}
+                  type="date"
+                  value={formState.effectiveTo}
+                  min={formState.effectiveFrom || undefined}
+                  onChange={(event) =>
+                    updateField("effectiveTo", event.target.value)
+                  }
+                  disabled={isSaving || isEditingSelf}
+                />
               </div>
               <div className="field">
                 <label htmlFor="iam-password">

@@ -135,9 +135,12 @@ export default function MvpPutawayPage() {
   const queryClient = useQueryClient();
   const permissionCodes = useAuthStore((state) => state.permissionCodes);
   const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
+  // SRS §3: Putaway create/confirm/cancel dùng permission key `putaway.manage`
+  // (NV kho = A*). BE nhận `putaway.manage|container.manage` nên FE gate đúng bộ đó;
+  // gate chỉ theo container.manage sẽ ẩn nút với chính nhân viên kho được phân quyền.
   const canManage = hasAnyWmsPermission(
     permissionCodes,
-    [P.CONTAINER_MANAGE],
+    [P.PUTAWAY_MANAGE, P.CONTAINER_MANAGE],
     isSuperAdmin,
   );
 

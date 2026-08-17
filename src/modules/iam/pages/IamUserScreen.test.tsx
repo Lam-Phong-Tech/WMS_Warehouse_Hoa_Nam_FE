@@ -54,6 +54,12 @@ vi.mock("@/modules/iam/hooks/use-iam", () => ({
     isLoading: false,
     error: null,
   }),
+  // BR-IAM-08: IAM-02 chọn phạm vi dữ liệu theo kho.
+  useIamScopeWarehouses: () => ({
+    data: [{ id: "wh-1", code: "KHO-TONG-HN", name: "Kho tổng Hoa Nam" }],
+    isLoading: false,
+    error: null,
+  }),
   useCreateIamUser: mutation,
   useUpdateIamUser: mutation,
 }));

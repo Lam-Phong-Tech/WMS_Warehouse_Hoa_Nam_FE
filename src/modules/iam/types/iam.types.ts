@@ -79,6 +79,17 @@ export interface IamUserSaveInput {
   roleId: string;
 }
 
+/**
+ * BR-IAM-08 "explicit role/scope assignment" + ERD user_roles: scope_ref là id
+ * kho mà vai trò có hiệu lực (rỗng = toàn hệ thống), kèm cửa sổ hiệu lực.
+ */
+export interface IamUserRoleAssignment {
+  role_id: string;
+  scope_ref?: string | null;
+  effective_from?: string | null;
+  effective_to?: string | null;
+}
+
 export interface IamRolePayload {
   role_code: string;
   role_name: string;

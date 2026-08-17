@@ -17,11 +17,18 @@ vi.mock("@/modules/scan/services/scanService", () => ({
 }));
 
 import { http } from "@/shared/api/http";
+import { classifyScanCodes } from "@/modules/scan/services/scanService";
+import {
+  hasAnyWmsPermission,
+  WMS_ACTION_PERMISSIONS,
+} from "@/shared/constants/wms-permissions";
 import {
   createInboundDocument,
   fetchInboundDocuments,
+  fetchInboundScanEntries,
   postInboundReceipt,
   scanInboundDocument,
+  unscanInboundEntry,
   updateInboundDocument,
 } from "./inboundService";
 
@@ -116,7 +123,8 @@ describe("inbound real API contract", () => {
     const result = await createInboundDocument({
       doc_date: "2026-08-12",
       dst_warehouse_id: "WH-1",
-      source_name: "NCC A",
+      // Annex A / Annex D SCR-IN-01 đặt tên field là `source_reference`.
+      source_reference: "NCC A",
       lines: [{ product_id: "SKU-1", qty_planned: 2 }],
     });
 
@@ -124,6 +132,7 @@ describe("inbound real API contract", () => {
       "/inbound-documents",
       expect.objectContaining({
         dst_warehouse_id: "WH-1",
+        source_reference: "NCC A",
         lines: [{ product_id: "SKU-1", qty_planned: 2 }],
       }),
       expect.objectContaining({
@@ -164,7 +173,7 @@ describe("inbound real API contract", () => {
     );
   });
 
-  it("scans through the canonical endpoint with If-Match and enforces stock-neutral response", async () => {
+  it("scans through the canonical Annex C endpoint with If-Match and enforces stock-neutral response", async () => {
     vi.mocked(http.get).mockResolvedValue({
       id: "DOC-1",
       doc_no: "PN-001",
@@ -175,6 +184,11 @@ describe("inbound real API contract", () => {
         { id: "L-1", product_id: "SKU-1", qty_planned: 2, scanned_qty: 1 },
       ],
     });
+    // Annex D SCR-IN-01 map scan_input -> /scan-batches/classify.codes[].
+    vi.mocked(classifyScanCodes).mockResolvedValue({
+      product_id: "SKU-1",
+      item_id: "ITEM-1",
+    } as never);
     vi.mocked(http.post).mockResolvedValue({
       version: 5,
       stock_effect: "NONE",
@@ -188,9 +202,14 @@ describe("inbound real API contract", () => {
       quantity: 1,
     });
 
+    expect(classifyScanCodes).toHaveBeenCalledWith({
+      raw_code: "BC-001",
+      context: "INBOUND",
+      warehouse_id: "WH-1",
+    });
     expect(http.post).toHaveBeenCalledWith(
-      "/inbound-documents/DOC-1/scan",
-      { line_id: "L-1", qty: 1, code_value: "BC-001" },
+      "/inbound-documents/DOC-1/scans",
+      { line_id: "L-1", qty: 1, code_value: "BC-001", item_id: "ITEM-1" },
       { headers: { "If-Match": "4" } },
     );
     expect(result[0]).toMatchObject({
@@ -198,6 +217,172 @@ describe("inbound real API contract", () => {
       version: 5,
       line_id: "L-1",
     });
+  });
+
+  it("cho phép classify khi actor chỉ có scan.execute (alias Annex C của scan.classify)", async () => {
+    // WAREHOUSE_STAFF được seed scan.execute chứ không phải scan.classify; route BE
+    // nhận `scan.execute|scan.classify` nên FE không được chỉ nhận scan.classify.
+    expect(
+      hasAnyWmsPermission(
+        ["scan.execute", "inbound.scan"],
+        WMS_ACTION_PERMISSIONS.SCAN_CLASSIFY_GENERIC,
+      ),
+    ).toBe(true);
+    expect(
+      hasAnyWmsPermission(
+        ["scan.classify"],
+        WMS_ACTION_PERMISSIONS.SCAN_CLASSIFY_GENERIC,
+      ),
+    ).toBe(true);
+    expect(
+      hasAnyWmsPermission(
+        ["inbound.view"],
+        WMS_ACTION_PERMISSIONS.SCAN_CLASSIFY_GENERIC,
+      ),
+    ).toBe(false);
+  });
+
+  it("blocks a code that classifies to a different SKU than the selected line", async () => {
+    vi.mocked(http.get).mockResolvedValue({
+      id: "DOC-1",
+      dst_warehouse_id: "WH-1",
+      status: "SCANNING",
+      version: 4,
+      lines: [
+        { id: "L-1", product_id: "SKU-1", qty_planned: 2, scanned_qty: 0 },
+      ],
+    });
+    vi.mocked(classifyScanCodes).mockResolvedValue({
+      product_id: "SKU-OTHER",
+      item_id: "ITEM-9",
+    } as never);
+
+    await expect(
+      scanInboundDocument("DOC-1", ["BC-WRONG"], {
+        lineId: "L-1",
+        ifMatch: 4,
+        includeCodeValue: true,
+        quantity: 1,
+      }),
+    ).rejects.toMatchObject({ code: "WMS_FE_SCAN_SKU_MISMATCH" });
+    expect(http.post).not.toHaveBeenCalled();
+  });
+
+  it("skips classify for COMPONENT quantity mode because the code is a BOX code", async () => {
+    vi.mocked(http.get).mockResolvedValue({
+      id: "DOC-1",
+      dst_warehouse_id: "WH-1",
+      status: "SCANNING",
+      version: 2,
+      lines: [
+        { id: "L-1", product_id: "SKU-COMP", qty_planned: 10, scanned_qty: 0 },
+      ],
+    });
+    vi.mocked(http.post).mockResolvedValue({
+      version: 3,
+      stock_effect: "NONE",
+      movement_created: false,
+    });
+
+    await scanInboundDocument("DOC-1", ["BOX-001"], {
+      lineId: "L-1",
+      ifMatch: 2,
+      includeCodeValue: false,
+      quantity: 5,
+      containerId: "CT-1",
+    });
+
+    expect(classifyScanCodes).not.toHaveBeenCalled();
+    expect(http.post).toHaveBeenCalledWith(
+      "/inbound-documents/DOC-1/scans",
+      { line_id: "L-1", qty: 5, container_id: "CT-1" },
+      { headers: { "If-Match": "2" } },
+    );
+  });
+
+  it("removes a scan entry before Post through the ERD unscan endpoint", async () => {
+    vi.mocked(http.post).mockResolvedValue({
+      document_id: "DOC-1",
+      line_id: "L-1",
+      inbound_scan_entry_id: "E-1",
+      item_id: "ITEM-1",
+      status: "REMOVED",
+      required_quantity: 2,
+      scanned_quantity: 1,
+      stock_effect: "NONE",
+      movement_created: false,
+      version: 7,
+    });
+
+    const result = await unscanInboundEntry("DOC-1", "E-1", 6, "Quét sai");
+
+    expect(http.post).toHaveBeenCalledWith(
+      "/inbound-documents/DOC-1/unscan",
+      { inbound_scan_entry_id: "E-1", reason: "Quét sai" },
+      { headers: { "If-Match": "6" } },
+    );
+    expect(result).toMatchObject({
+      entryId: "E-1",
+      status: "REMOVED",
+      scannedQuantity: 1,
+      version: 7,
+    });
+  });
+
+  it("fails closed if the unscan response claims a stock effect", async () => {
+    vi.mocked(http.post).mockResolvedValue({
+      inbound_scan_entry_id: "E-1",
+      stock_effect: "INCREASE",
+      version: 7,
+    });
+
+    await expect(unscanInboundEntry("DOC-1", "E-1", 6)).rejects.toMatchObject({
+      code: "WMS_FE_INVALID_SCAN_RESPONSE",
+    });
+  });
+
+  it("reads the document scan evidence table so it survives a page reload", async () => {
+    vi.mocked(http.getPage).mockResolvedValue({
+      data: [
+        {
+          id: "E-1",
+          inbound_line_id: "L-1",
+          item_id: "ITEM-1",
+          item_code: "ITEM-BC-000008",
+          quantity: 1,
+          scan_source: "CAMERA_OR_MANUAL_CODE",
+          status: "ACTIVE",
+          sku_code: "DCH-DRILL-DJZ10A-220V-V1",
+          sku_name: "Máy khoan DJZ10A",
+        },
+        {
+          id: "E-2",
+          inbound_line_id: "L-1",
+          item_id: "ITEM-2",
+          quantity: 1,
+          scan_source: "MANUAL",
+          status: "REMOVED",
+          sku_code: "DCH-DRILL-DJZ10A-220V-V1",
+          sku_name: "Máy khoan DJZ10A",
+        },
+      ],
+      meta: { current_page: 1, last_page: 1, total: 2 },
+    });
+
+    const entries = await fetchInboundScanEntries("DOC-1", "ALL");
+
+    expect(http.getPage).toHaveBeenCalledWith(
+      "/inbound-documents/DOC-1/scan-entries",
+      { params: { status: "ALL", per_page: 200 } },
+    );
+    expect(entries).toHaveLength(2);
+    expect(entries[0]).toMatchObject({
+      id: "E-1",
+      itemCode: "ITEM-BC-000008",
+      scanSource: "CAMERA_OR_MANUAL_CODE",
+      status: "ACTIVE",
+    });
+    expect(entries[1].status).toBe("REMOVED");
   });
 
   it("full-posts only fully scanned data and sends If-Match plus Idempotency-Key", async () => {

@@ -38,6 +38,7 @@ import type {
   DefectPayload,
   DefectRecord,
   MasterStatus,
+  ProductCatalogRefs,
   SkuPayload,
   SkuRecord,
   SkuType,
@@ -63,10 +64,37 @@ interface ScreenProps {
   openCreateOnMount?: boolean;
 }
 
-function useCanManage(permission: string) {
+function useCanManage(permission: string | string[]) {
   const permissionCodes = useAuthStore((state) => state.permissionCodes);
   const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
-  return isSuperAdmin || permissionCodes.includes(permission);
+  const required = Array.isArray(permission) ? permission : [permission];
+  return isSuperAdmin || required.some((code) => permissionCodes.includes(code));
+}
+
+/**
+ * Annex D §8.3: các màn luồng 01 phải hỏi xác nhận trước hành động phá hủy /
+ * publish / deactivate. Bọc Modal.confirm thành promise để dùng trong submit
+ * handler async mà không phải lồng callback.
+ */
+function confirmAction({
+  title,
+  content,
+  okText,
+}: {
+  title: string;
+  content: string;
+  okText: string;
+}): Promise<boolean> {
+  return new Promise((resolve) => {
+    Modal.confirm({
+      title,
+      content,
+      okText,
+      cancelText: "Hủy",
+      onOk: () => resolve(true),
+      onCancel: () => resolve(false),
+    });
+  });
 }
 
 function statusClass(status: MasterStatus) {
@@ -149,6 +177,53 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
+/**
+ * MST-02: master của SKU là FK theo ERD bảng 16, nên chọn từ danh mục ACTIVE
+ * thay vì gõ mã tự do. Giá trị rỗng = chưa gán / gỡ liên kết.
+ */
+function MasterSelect({
+  value,
+  options,
+  disabled,
+  onChange,
+}: {
+  value: string;
+  options?: CatalogRefRecord[];
+  disabled?: boolean;
+  onChange: (value: string) => void;
+}) {
+  const rows = options ?? [];
+  // Bản ghi đang trỏ tới master đã INACTIVE (không nằm trong danh sách ACTIVE)
+  // vẫn phải hiển thị được, nếu không việc mở form sửa sẽ âm thầm gỡ liên kết.
+  const isMissing = Boolean(value) && !rows.some((row) => row.id === value);
+  return (
+    <>
+      <select
+        className="select"
+        style={{ width: "100%" }}
+        value={value}
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.value)}
+      >
+        <option value="">— Chưa chọn —</option>
+        {isMissing ? (
+          <option value={value}>Giữ liên kết hiện tại (đã ngừng dùng)</option>
+        ) : null}
+        {rows.map((row) => (
+          <option key={row.id} value={row.id}>
+            {row.code} · {row.name}
+          </option>
+        ))}
+      </select>
+      {isMissing ? (
+        <div className="muted" style={{ marginTop: 4 }}>
+          Master đang gán không còn ACTIVE — giữ nguyên hoặc chọn master khác.
+        </div>
+      ) : null}
+    </>
+  );
+}
+
 // ===== SKU Master =====
 
 type SkuFormState = {
@@ -156,10 +231,12 @@ type SkuFormState = {
   name: string;
   type: SkuType;
   unit: string;
-  brandCode: string;
-  categoryCode: string;
-  modelCode: string;
-  powerSourceCode: string;
+  brandId: string;
+  categoryId: string;
+  modelId: string;
+  powerSourceId: string;
+  packageVariantId: string;
+  versionCode: string;
   serialTracked: boolean;
   status: MasterStatus;
   publishedToApp: boolean;
@@ -170,17 +247,29 @@ const EMPTY_SKU_FORM: SkuFormState = {
   name: "",
   type: "PRODUCT",
   unit: "cái",
-  brandCode: "",
-  categoryCode: "",
-  modelCode: "",
-  powerSourceCode: "",
+  brandId: "",
+  categoryId: "",
+  modelId: "",
+  powerSourceId: "",
+  packageVariantId: "",
+  versionCode: "V1",
   serialTracked: true,
   status: "ACTIVE",
   publishedToApp: false,
 };
 
+const EMPTY_CATALOGS: ProductCatalogRefs = {
+  brands: [],
+  categories: [],
+  models: [],
+  powerSources: [],
+  packageVariants: [],
+};
+
 export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   const canManage = useCanManage("sku.manage");
+  // SRS §3: publish App PV là quyền riêng `pv.publish`, không đi kèm sku.manage.
+  const canPublish = useCanManage(["pv.publish", "sku.manage"]);
   const [keyword, setKeyword] = useState("");
   const [status, setStatus] = useState<MasterStatus | "">("");
   const [type, setType] = useState<SkuType | "">("");
@@ -216,18 +305,17 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   );
   const identityLocked = Boolean(editing) && stockLockQuery.data === true;
   const apiRows = useMemo(() => query.data?.data ?? [], [query.data]);
-  const brands = catalogsQuery.data?.brands ?? [];
-  const brandIndex = useMemo(
-    () => toRefIndex(catalogsQuery.data?.brands),
-    [catalogsQuery.data],
-  );
+  const catalogs = catalogsQuery.data ?? EMPTY_CATALOGS;
+  const brands = catalogs.brands;
+  const brandIndex = useMemo(() => toRefIndex(catalogs.brands), [catalogs]);
   const categoryIndex = useMemo(
-    () => toRefIndex(catalogsQuery.data?.categories),
-    [catalogsQuery.data],
+    () => toRefIndex(catalogs.categories),
+    [catalogs],
   );
-  const modelIndex = useMemo(
-    () => toRefIndex(catalogsQuery.data?.models),
-    [catalogsQuery.data],
+  const modelIndex = useMemo(() => toRefIndex(catalogs.models), [catalogs]);
+  const powerSourceIndex = useMemo(
+    () => toRefIndex(catalogs.powerSources),
+    [catalogs],
   );
   // brand_id vẫn được gửi lên GET /products, nhưng BE ProductRepository hiện chỉ
   // filter ['status','sku_type'] nên param có thể bị bỏ qua. Lọc thêm phía client
@@ -245,9 +333,19 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   });
 
   const togglePublish = async (record: SkuRecord) => {
-    if (!canManage) return;
+    if (!canPublish) return;
     setPublishError(null);
     const willPublish = !record.published_to_app;
+    // Annex D SCR-IAM-01/§8.3: publish/gỡ publish là thao tác ra ngoài hệ thống
+    // (App PV) nên phải xác nhận trước.
+    const confirmed = await confirmAction({
+      title: willPublish ? "Publish SKU lên App PV?" : "Gỡ SKU khỏi App PV?",
+      content: willPublish
+        ? `SKU ${record.sku_code ?? record.code} sẽ hiển thị công khai trên App Phân Vùng.`
+        : `SKU ${record.sku_code ?? record.code} sẽ không còn hiển thị trên App Phân Vùng.`,
+      okText: willPublish ? "Publish" : "Gỡ publish",
+    });
+    if (!confirmed) return;
     try {
       await publishMutation.mutateAsync({
         id: record.sku_id ?? record.id ?? "",
@@ -285,10 +383,12 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
       name: record.sku_name ?? record.name ?? "",
       type: record.sku_type,
       unit: record.unit ?? "",
-      brandCode: "",
-      categoryCode: "",
-      modelCode: "",
-      powerSourceCode: "",
+      brandId: record.brand_id ?? "",
+      categoryId: record.category_id ?? "",
+      modelId: record.model_id ?? "",
+      powerSourceId: record.power_source_id ?? "",
+      packageVariantId: record.package_variant_id ?? "",
+      versionCode: record.version_code ?? "",
       serialTracked: Boolean(record.is_serial_tracked),
       status: record.status,
       publishedToApp: Boolean(record.published_to_app),
@@ -319,6 +419,28 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
       setFormError("Chỉ SKU ACTIVE mới được publish cho App PV.");
       return;
     }
+    // Wireframe MST-02: Hãng / Category / Model / Nguồn điện là trường bắt buộc.
+    if (
+      !form.brandId ||
+      !form.categoryId ||
+      !form.modelId ||
+      !form.powerSourceId
+    ) {
+      setFormError(
+        "Vui lòng chọn đủ Hãng, Category, Model và Nguồn điện cho SKU.",
+      );
+      return;
+    }
+    // Annex D SCR-MST-01: xác nhận cho hành động phá hủy — ngừng hoạt động SKU.
+    if (form.status === "INACTIVE" && editing?.status === "ACTIVE") {
+      const confirmed = await confirmAction({
+        title: "Ngừng hoạt động SKU?",
+        content:
+          "SKU sẽ không còn được chọn cho phiếu mới và sẽ bị gỡ khỏi App PV. Lịch sử chứng từ giữ nguyên.",
+        okText: "Ngừng hoạt động",
+      });
+      if (!confirmed) return;
+    }
 
     const payload: SkuPayload = {
       code,
@@ -328,14 +450,12 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
       is_serial_tracked: form.serialTracked,
       status: form.status,
       published_to_app: form.publishedToApp,
-      ...(form.brandCode.trim() ? { brand_code: form.brandCode.trim() } : {}),
-      ...(form.categoryCode.trim()
-        ? { category_code: form.categoryCode.trim() }
-        : {}),
-      ...(form.modelCode.trim() ? { model_code: form.modelCode.trim() } : {}),
-      ...(form.powerSourceCode.trim()
-        ? { power_source_code: form.powerSourceCode.trim() }
-        : {}),
+      brand_id: form.brandId,
+      category_id: form.categoryId,
+      model_id: form.modelId,
+      power_source_id: form.powerSourceId,
+      package_variant_id: form.packageVariantId,
+      version_code: form.versionCode,
     };
 
     try {
@@ -496,7 +616,9 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               rows.map((record) => {
                 const recordId = record.sku_id ?? record.id ?? "";
                 const isPublished = Boolean(record.published_to_app);
-                const canPublish = record.status === "ACTIVE";
+                // AC-SRS-020: chỉ SKU ACTIVE mới được publish (khác với quyền
+                // `pv.publish` ở biến canPublish cấp màn hình).
+                const statusAllowsPublish = record.status === "ACTIVE";
                 return (
                   <tr key={recordId}>
                     <td>
@@ -517,9 +639,10 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                     <td title={record.model_id ?? undefined}>
                       {refLabel(modelIndex, record.model_id)}
                     </td>
-                    <td>
-                      {record.power_or_voltage ||
-                        compactRef(record.power_source_id)}
+                    <td title={record.power_source_id ?? undefined}>
+                      {record.power_source_id
+                        ? refLabel(powerSourceIndex, record.power_source_id)
+                        : record.power_or_voltage || "—"}
                     </td>
                     <td>{record.is_serial_tracked ? "Có" : "Không"}</td>
                     <td>
@@ -540,41 +663,45 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                       </span>
                     </td>
                     <td>
-                      {canManage ? (
+                      {canManage || canPublish ? (
                         <>
-                          <button
-                            className="btn small"
-                            type="button"
-                            onClick={() => openEdit(record)}
-                          >
-                            <EditOutlined /> Sửa
-                          </button>{" "}
-                          <button
-                            className="btn small"
-                            type="button"
-                            disabled={
-                              publishMutation.isPending ||
-                              (!isPublished && !canPublish)
-                            }
-                            title={
-                              !isPublished && !canPublish
-                                ? "Chỉ SKU ACTIVE mới được publish cho App PV."
-                                : isPublished
-                                  ? "Gỡ SKU khỏi App Phân Vùng"
-                                  : "Đẩy SKU lên App Phân Vùng"
-                            }
-                            onClick={() => void togglePublish(record)}
-                          >
-                            {isPublished ? (
-                              <>
-                                <CloudDownloadOutlined /> Gỡ publish
-                              </>
-                            ) : (
-                              <>
-                                <CloudUploadOutlined /> Publish App PV
-                              </>
-                            )}
-                          </button>
+                          {canManage ? (
+                            <button
+                              className="btn small"
+                              type="button"
+                              onClick={() => openEdit(record)}
+                            >
+                              <EditOutlined /> Sửa
+                            </button>
+                          ) : null}{" "}
+                          {canPublish ? (
+                            <button
+                              className="btn small"
+                              type="button"
+                              disabled={
+                                publishMutation.isPending ||
+                                (!isPublished && !statusAllowsPublish)
+                              }
+                              title={
+                                !isPublished && !statusAllowsPublish
+                                  ? "Chỉ SKU ACTIVE mới được publish cho App PV."
+                                  : isPublished
+                                    ? "Gỡ SKU khỏi App Phân Vùng"
+                                    : "Đẩy SKU lên App Phân Vùng"
+                              }
+                              onClick={() => void togglePublish(record)}
+                            >
+                              {isPublished ? (
+                                <>
+                                  <CloudDownloadOutlined /> Gỡ publish
+                                </>
+                              ) : (
+                                <>
+                                  <CloudUploadOutlined /> Publish App PV
+                                </>
+                              )}
+                            </button>
+                          ) : null}
                         </>
                       ) : (
                         <span className="muted">Chỉ xem</span>
@@ -738,64 +865,80 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
             <section className="card">
               <div className="section-title">Master tham chiếu</div>
               <div className="muted" style={{ marginBottom: 10 }}>
-                Nhập code master ACTIVE. Khi sửa, để trống để giữ nguyên liên
-                kết hiện tại.
+                Chọn từ danh mục ACTIVE (Danh mục Product Master). Wireframe
+                MST-02 yêu cầu Hãng / Category / Model / Nguồn điện.
               </div>
-              <Field label="Brand code">
-                <input
-                  className="input"
-                  style={{ width: "100%" }}
-                  value={form.brandCode}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      brandCode: event.target.value,
-                    }))
-                  }
+              <Field label="Hãng *">
+                <MasterSelect
+                  value={form.brandId}
+                  options={catalogs.brands}
                   disabled={isSaving}
+                  onChange={(value) =>
+                    setForm((current) => ({ ...current, brandId: value }))
+                  }
                 />
               </Field>
-              <Field label="Category code">
-                <input
-                  className="input"
-                  style={{ width: "100%" }}
-                  value={form.categoryCode}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      categoryCode: event.target.value,
-                    }))
-                  }
+              <Field label="Category *">
+                <MasterSelect
+                  value={form.categoryId}
+                  options={catalogs.categories}
                   disabled={isSaving}
+                  onChange={(value) =>
+                    setForm((current) => ({ ...current, categoryId: value }))
+                  }
                 />
               </Field>
-              <Field label="Model code">
-                <input
-                  className="input"
-                  style={{ width: "100%" }}
-                  value={form.modelCode}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      modelCode: event.target.value,
-                    }))
-                  }
+              <Field label="Model *">
+                <MasterSelect
+                  value={form.modelId}
+                  options={catalogs.models}
                   disabled={isSaving}
+                  onChange={(value) =>
+                    setForm((current) => ({ ...current, modelId: value }))
+                  }
                 />
               </Field>
-              <Field label="Power source code">
+              <Field label="Nguồn điện *">
+                <MasterSelect
+                  value={form.powerSourceId}
+                  options={catalogs.powerSources}
+                  disabled={isSaving}
+                  onChange={(value) =>
+                    setForm((current) => ({ ...current, powerSourceId: value }))
+                  }
+                />
+              </Field>
+              <Field label="Quy cách đóng gói">
+                <MasterSelect
+                  value={form.packageVariantId}
+                  options={catalogs.packageVariants}
+                  disabled={isSaving}
+                  onChange={(value) =>
+                    setForm((current) => ({
+                      ...current,
+                      packageVariantId: value,
+                    }))
+                  }
+                />
+              </Field>
+              <Field label="Phiên bản (version_code)">
                 <input
                   className="input"
                   style={{ width: "100%" }}
-                  value={form.powerSourceCode}
+                  value={form.versionCode}
+                  placeholder="V1"
                   onChange={(event) =>
                     setForm((current) => ({
                       ...current,
-                      powerSourceCode: event.target.value,
+                      versionCode: event.target.value,
                     }))
                   }
                   disabled={isSaving}
                 />
+                <div className="muted" style={{ marginTop: 4 }}>
+                  Master phiên bản của SKU (REQ-SRS-029), khác với version dùng
+                  cho optimistic locking.
+                </div>
               </Field>
               <Field label="Theo dõi serial">
                 <label
@@ -925,9 +1068,24 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
       setFormError("Mã đại lý và tên đại lý là bắt buộc.");
       return;
     }
+    // BR-AGY-01: deactivate là hành động phá hủy về mặt nghiệp vụ — đại lý sẽ
+    // không còn chọn được cho phiếu mới (Annex D yêu cầu confirm).
+    if (form.status === "INACTIVE" && editing?.status === "ACTIVE") {
+      const confirmed = await confirmAction({
+        title: "Ngừng hoạt động đại lý?",
+        content:
+          "Đại lý sẽ không còn được chọn cho chứng từ mới. Chứng từ đã lập giữ nguyên.",
+        okText: "Ngừng hoạt động",
+      });
+      if (!confirmed) return;
+    }
     try {
       if (editing) {
-        await updateMutation.mutateAsync({ id: editing.agency_id, payload });
+        await updateMutation.mutateAsync({
+          id: editing.agency_id,
+          payload,
+          version: editing.version,
+        });
         toast.success("Đã cập nhật đại lý");
       } else {
         await createMutation.mutateAsync(payload);
@@ -1252,9 +1410,23 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
       setFormError("Mã lỗi và tên lỗi là bắt buộc.");
       return;
     }
+    // BR-DEF-01..04: inactive không chọn mới, lịch sử case giữ nguyên.
+    if (form.status === "INACTIVE" && editing?.status === "ACTIVE") {
+      const confirmed = await confirmAction({
+        title: "Ngừng sử dụng bệnh/lỗi?",
+        content:
+          "Bệnh/lỗi sẽ không còn được chọn cho hồ sơ bảo hành mới. Hồ sơ đã gán giữ nguyên.",
+        okText: "Ngừng sử dụng",
+      });
+      if (!confirmed) return;
+    }
     try {
       if (editing) {
-        await updateMutation.mutateAsync({ id: editing.defect_id, payload });
+        await updateMutation.mutateAsync({
+          id: editing.defect_id,
+          payload,
+          version: editing.version,
+        });
         toast.success("Đã cập nhật danh mục lỗi");
       } else {
         await createMutation.mutateAsync(payload);

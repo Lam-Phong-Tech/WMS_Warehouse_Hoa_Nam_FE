@@ -124,8 +124,15 @@ export function useCreateMvpAgency() {
 
 export function useUpdateMvpAgency() {
   return useInvalidateMasterMutation(
-    ({ id, payload }: { id: string; payload: AgencyPayload }) =>
-      updateMvpAgency(id, payload),
+    ({
+      id,
+      payload,
+      version,
+    }: {
+      id: string;
+      payload: AgencyPayload;
+      version?: number | null;
+    }) => updateMvpAgency(id, payload, version),
   );
 }
 
@@ -137,7 +144,14 @@ export function useCreateMvpDefect() {
 
 export function useUpdateMvpDefect() {
   return useInvalidateMasterMutation(
-    ({ id, payload }: { id: string; payload: DefectPayload }) =>
-      updateMvpDefect(id, payload),
+    ({
+      id,
+      payload,
+      version,
+    }: {
+      id: string;
+      payload: DefectPayload;
+      version?: number | null;
+    }) => updateMvpDefect(id, payload, version),
   );
 }
