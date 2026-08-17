@@ -122,6 +122,10 @@ export const API_ENDPOINTS = {
     "/reports/warranty-defects/export-excel",
   REPORTS_MOVEMENT_TRACE: "/reports/movement-trace",
   REPORTS_MOVEMENT_TRACE_EXPORT_EXCEL: "/reports/movement-trace/export-excel",
+  // Annex C REQ-SRS-031/032: sổ ledger, dispatcher theo report_code và job export.
+  REPORTS_INVENTORY_LEDGER: "/reports/inventory-ledger",
+  REPORTS_BY_CODE: "/reports/:report_code",
+  REPORTS_EXPORT: "/reports/export",
   INVENTORY_RECONCILIATION: "/reports/inventory-reconciliation",
   INVENTORY_BALANCES: "/inventory/balances",
   INVENTORY_BALANCE_SUBLEDGER: "/inventory/balances/:id/subledger",

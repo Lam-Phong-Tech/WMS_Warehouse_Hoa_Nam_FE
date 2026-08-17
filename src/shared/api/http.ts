@@ -151,14 +151,45 @@ export const http = {
   },
 
   async downloadBlob(url: string, config?: AxiosRequestConfig): Promise<Blob> {
+    return (await http.downloadFile(url, config)).blob;
+  },
+
+  /**
+   * BR-EXP-03: tên file export do BE đặt (đã có timestamp) nên client phải đọc
+   * lại từ Content-Disposition thay vì tự dựng, nếu không evidence tải về sẽ mất
+   * dấu thời gian và hai lần xuất cùng bộ lọc sẽ ghi đè nhau.
+   */
+  async downloadFile(
+    url: string,
+    config?: AxiosRequestConfig,
+  ): Promise<{ blob: Blob; fileName: string | null }> {
     try {
       const res = await api.get<Blob>(url, {
         ...config,
         responseType: "blob",
       });
-      return res.data;
+      return {
+        blob: res.data,
+        fileName: parseContentDispositionFileName(
+          res.headers?.["content-disposition"],
+        ),
+      };
     } catch (error) {
       throw await parseBlobError(error);
     }
   },
 };
+
+function parseContentDispositionFileName(value: unknown): string | null {
+  if (typeof value !== "string" || value === "") return null;
+  const utf8 = /filename\*=UTF-8''([^;]+)/i.exec(value);
+  if (utf8?.[1]) {
+    try {
+      return decodeURIComponent(utf8[1].trim());
+    } catch {
+      return utf8[1].trim();
+    }
+  }
+  const plain = /filename="?([^";]+)"?/i.exec(value);
+  return plain?.[1]?.trim() || null;
+}
