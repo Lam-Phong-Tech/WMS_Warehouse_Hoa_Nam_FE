@@ -16,11 +16,7 @@ import {
   Tag,
   Typography,
 } from "antd";
-import {
-  HomeOutlined,
-  ReloadOutlined,
-  SaveOutlined,
-} from "@ant-design/icons";
+import { HomeOutlined, ReloadOutlined, SaveOutlined } from "@ant-design/icons";
 import {
   fetchWarehouse,
   fetchWarehouses,
@@ -143,8 +139,7 @@ export function WarehouseConfigScreen() {
         phone: values.phone?.trim() || null,
         status: values.status,
       }),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["warehouse"] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["warehouse"] }),
   });
 
   const handleSubmit = async () => {
@@ -172,7 +167,9 @@ export function WarehouseConfigScreen() {
     : "";
 
   const statusChanged =
-    Boolean(warehouse) && Boolean(draftStatus) && draftStatus !== warehouse?.status;
+    Boolean(warehouse) &&
+    Boolean(draftStatus) &&
+    draftStatus !== warehouse?.status;
   const saveButton = (
     <Button
       type="primary"
@@ -309,7 +306,9 @@ export function WarehouseConfigScreen() {
                   label: "Trạng thái hiện tại",
                   children: (
                     <Tag
-                      color={warehouse.status === "ACTIVE" ? "success" : "default"}
+                      color={
+                        warehouse.status === "ACTIVE" ? "success" : "default"
+                      }
                     >
                       {warehouse.status === "ACTIVE"
                         ? "Đang hoạt động"

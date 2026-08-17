@@ -134,7 +134,7 @@ function toRecord(
       : 0,
     status: status === "INACTIVE" ? "INACTIVE" : "ACTIVE",
     version: Number.isFinite(rawVersion) ? rawVersion : null,
-    brand_id: definition.supportsBrand ? (text(row.brand_id) || null) : null,
+    brand_id: definition.supportsBrand ? text(row.brand_id) || null : null,
   };
 }
 

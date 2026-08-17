@@ -1,0 +1,76 @@
+{
+  "contract_id": "WWHN-211-FE-INVENTORY-READ-TRACE",
+  "contract_version": "1.0.0",
+  "generated_at": "2026-08-17T03:47:09.599Z",
+  "git_sha": "LOCAL",
+  "endpoint_count": 6,
+  "endpoints": [
+    {
+      "constant": "INVENTORY_BALANCES",
+      "path": "/inventory/balances",
+      "function": "fetchInventoryBalances"
+    },
+    {
+      "constant": "INVENTORY_BALANCE_SUBLEDGER",
+      "path": "/inventory/balances/:id/subledger",
+      "function": "fetchBalanceSubledger"
+    },
+    {
+      "constant": "STOCK_MOVEMENTS",
+      "path": "/stock-movements",
+      "function": "fetchStockMovements"
+    },
+    {
+      "constant": "STOCK_MOVEMENT",
+      "path": "/stock-movements/:id",
+      "function": "fetchStockMovement"
+    },
+    {
+      "constant": "STOCK_MOVEMENT_TRACE_SOURCE",
+      "path": "/stock-movements/:id/trace-source",
+      "function": "traceStockMovementSource"
+    },
+    {
+      "constant": "STOCK_MOVEMENT_TRACE_BY_CODE",
+      "path": "/stock-movements/trace-by-code",
+      "function": "traceByPhysicalCode"
+    }
+  ],
+  "route": "/inventory",
+  "route_permission": "inventory.view",
+  "trace_permission": "inventory.trace",
+  "code_scope": {
+    "in": [
+      "inventory balance list",
+      "inventory balance subledger",
+      "stock movement list",
+      "stock movement detail",
+      "movement source trace",
+      "physical-code trace lookup"
+    ],
+    "out": [
+      "safe-stock configuration/service",
+      "safe-stock alerts",
+      "scan batch mutation/service",
+      "inbound scan workflow",
+      "outbound scan workflow",
+      "stocktake scan workflow"
+    ]
+  },
+  "sha256": {
+    "manifest": "bfc8a7583c732d7f8bd7c3ac2bc68b53a87b0dd47d2ef13ddb87317f2f7c0a0a",
+    "inventory_service": "cb89fd4dbf59f28d3ea76e35d99b34d0fe949412ea6f927194b05bccf7c4686b",
+    "inventory_service_test": "c4341188513d29a3f9607351a75412f5855b801992e7183d2795c3e37b81c9a1",
+    "endpoint_catalog": "7a30e653c25399e18503b46901e20f83bfe7944dc8cdaf4bbd4f018cc358430b",
+    "route_access": "0be8151ec72bf614ca162b11517fb1f97d64c0cdf876c6d51014305592e95d9e",
+    "inventory_page": "63d39fd1499b969576c30e9a259758b59095589e31cd998c4461e80c790b0346"
+  },
+  "p2_dead_inventory_service_scope": "REMOVED",
+  "open_p0_p1_code_blockers": 0,
+  "external_gates": [
+    "WWHN-108",
+    "WWHN-17",
+    "WWHN-212",
+    "BE/QA1 direct API authorization evidence"
+  ]
+}

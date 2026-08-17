@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, globSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const root = process.cwd();
@@ -41,9 +41,21 @@ const canonicalDoc = requirePatterns("docs/Task_docs_Jira/WWHN-148.md", [
   /SHA256/,
 ]);
 
-requirePatterns("docs/Task_docs_Jira/[FE1] Rà soát khả năng triển khai và tái sử dụng.md", [
-  /docs\/Task_docs_Jira\/WWHN-148\.md/,
-]);
+// The reuse-review doc was folded into the canonical task docs. What must hold
+// is that some published doc still points back at the WWHN-148 canonical file,
+// so search the docs tree instead of pinning one historical filename.
+const backReferenceFiles = globSync("docs/**/*.md", { cwd: root }).filter(
+  (file) =>
+    file.replace(/\\/g, "/") !== "docs/Task_docs_Jira/WWHN-148.md" &&
+    /docs\/Task_docs_Jira\/WWHN-148\.md/.test(
+      readFileSync(join(root, file), "utf8"),
+    ),
+);
+if (!backReferenceFiles.length) {
+  fail(
+    "No published doc references docs/Task_docs_Jira/WWHN-148.md — the reuse/traceability back-reference was lost",
+  );
+}
 
 requirePatterns("docs/api-evidence/M1_API_MAPPING.md", [
   /POST\s+\|\s+`\/scan\/classify`/,

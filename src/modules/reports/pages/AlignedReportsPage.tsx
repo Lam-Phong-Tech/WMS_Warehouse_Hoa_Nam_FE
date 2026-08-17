@@ -216,7 +216,9 @@ function useCategoryOptions(): { options: SelectOption[]; loading: boolean } {
     options: rows
       .map((row) => ({
         value: text(row.id ?? row.category_id, ""),
-        label: [row.category_code, row.category_name].filter(Boolean).join(" · "),
+        label: [row.category_code, row.category_name]
+          .filter(Boolean)
+          .join(" · "),
       }))
       .filter((row) => row.value !== ""),
   };

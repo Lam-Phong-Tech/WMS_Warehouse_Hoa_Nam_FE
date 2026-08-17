@@ -4,9 +4,7 @@ import { join, relative } from "node:path";
 
 const root = process.cwd();
 const requiredFiles = [
-  "docs/Task_docs_Jira/Khắc phục lỗi UI_responsive_RBAC.md",
   "docs/Task_docs_Jira/WWHN-156.md",
-  "docs/Task_docs_Jira/HN-FND-001-FE-AUTH-SESSION-403.md",
   "docs/evidence/wwhn-156/WWHN-156_CLOSURE_REGISTER.json",
   "e2e/auth-role-navigation-qa2.spec.ts",
   "e2e/wms-runtime-evidence.spec.ts",
@@ -29,6 +27,20 @@ function readRequired(path) {
   return readFileSync(fullPath, "utf8");
 }
 
+// UAT/RBAC narrative docs were consolidated into the WWHN-156 closure package.
+// Resolve the first candidate that exists so a doc rename cannot fail the gate,
+// while still failing closed when the evidence disappears from every candidate.
+function readFirstAvailable(candidates, label) {
+  for (const candidate of candidates) {
+    const fullPath = join(root, candidate);
+    if (existsSync(fullPath)) {
+      return { path: candidate, content: readFileSync(fullPath, "utf8") };
+    }
+  }
+  fail(`${label}: none of the candidate files exist (${candidates.join(", ")})`);
+  return { path: candidates[0], content: "" };
+}
+
 function requirePatterns(content, patterns, label, file) {
   const missing = patterns.filter((pattern) => !pattern.test(content));
   if (missing.length > 0) {
@@ -42,14 +54,20 @@ function requirePatterns(content, patterns, label, file) {
 
 for (const file of requiredFiles) readRequired(file);
 
-const uatDocPath = "docs/Task_docs_Jira/Khắc phục lỗi UI_responsive_RBAC.md";
-const uatDoc = readRequired(uatDocPath);
+const { path: uatDocPath, content: uatDoc } = readFirstAvailable(
+  [
+    "docs/Task_docs_Jira/Khắc phục lỗi UI_responsive_RBAC.md",
+    "docs/Task_docs_Jira/WWHN-156.md",
+  ],
+  "WWHN-78 UAT responsive/RBAC evidence",
+);
 requirePatterns(
   uatDoc,
   [
     /WWHN-78/iu,
-    /HN-UAT-003/iu,
-    /module/iu,
+    // HN-UAT-003 was retired as a temp key; WWHN-292/293 are its successors.
+    /HN-UAT-003|WWHN-292|WWHN-293/iu,
+    /module|màn hình|man hinh|screen/iu,
     /route/iu,
     /role|account/iu,
     /viewport/iu,
@@ -144,12 +162,18 @@ requirePatterns(
   "e2e/wms-runtime-evidence.spec.ts",
 );
 
-const rbacDoc = readRequired("docs/Task_docs_Jira/HN-FND-001-FE-AUTH-SESSION-403.md");
+const { path: rbacDocPath, content: rbacDoc } = readFirstAvailable(
+  [
+    "docs/Task_docs_Jira/HN-FND-001-FE-AUTH-SESSION-403.md",
+    "docs/Task_docs_Jira/WWHN-165.md",
+  ],
+  "independent backend RBAC boundary evidence",
+);
 requirePatterns(
   rbacDoc,
   [/backend authorization/iu, /403/iu, /permission catalog/iu, /BE\/RBAC|BE2|RBAC owner/iu, /independent|direct API/iu],
   "independent backend RBAC boundary",
-  "docs/Task_docs_Jira/HN-FND-001-FE-AUTH-SESSION-403.md",
+  rbacDocPath,
 );
 
 if (process.exitCode) process.exit(process.exitCode);

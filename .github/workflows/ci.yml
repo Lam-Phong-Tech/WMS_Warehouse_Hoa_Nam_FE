@@ -139,6 +139,19 @@ jobs:
         continue-on-error: true
         run: npm run wwhn-144:verify
 
+      - name: Verify WWHN-211 inventory read/trace closure contract
+        id: wwhn_211
+        continue-on-error: true
+        run: npm run wwhn-211:verify
+
+      - name: Publish WWHN-211 direct API authorization probe plan
+        id: wwhn_211_rbac_contract
+        continue-on-error: true
+        env:
+          WWHN_211_ENV: CI
+          WWHN_211_EVIDENCE_DIR: docs/evidence/WWHN-211/generated/${{ env.SOURCE_SHA }}
+        run: npm run wwhn-211:rbac:contract
+
       - name: Build production bundle and immutable manifest
         id: build
         continue-on-error: true
@@ -194,6 +207,7 @@ jobs:
         if: always()
         continue-on-error: true
         env:
+          # Optional repo/environment variable; empty means artifact-only delivery.
           DEV_APP_URL: ${{ vars.DEV_APP_URL }}
         run: npm run wwhn-177:handoff
 
@@ -218,6 +232,8 @@ jobs:
           WMS_CONTRACT_OUTCOME: ${{ steps.wms_contract.outcome }}
           WWHN_148_OUTCOME: ${{ steps.wwhn_148.outcome }}
           WWHN_144_OUTCOME: ${{ steps.wwhn_144.outcome }}
+          WWHN_211_OUTCOME: ${{ steps.wwhn_211.outcome }}
+          WWHN_211_RBAC_CONTRACT_OUTCOME: ${{ steps.wwhn_211_rbac_contract.outcome }}
           BUILD_OUTCOME: ${{ steps.build.outcome }}
           HEALTH_OUTCOME: ${{ steps.health.outcome }}
           API_MAPPING_OUTCOME: ${{ steps.api_mapping.outcome }}
@@ -245,6 +261,7 @@ jobs:
             docs/evidence/wwhn-165
             docs/evidence/wwhn-175
             docs/evidence/wwhn-178
+            docs/evidence/WWHN-211
             docs/evidence/wms-contract-signoff/generated
             docs/evidence/wwhn-156/WWHN-156_CLOSURE_REGISTER.json
             docs/evidence/wwhn-156/generated
@@ -274,6 +291,8 @@ jobs:
           WMS_CONTRACT_OUTCOME: ${{ steps.wms_contract.outcome }}
           WWHN_148_OUTCOME: ${{ steps.wwhn_148.outcome }}
           WWHN_144_OUTCOME: ${{ steps.wwhn_144.outcome }}
+          WWHN_211_OUTCOME: ${{ steps.wwhn_211.outcome }}
+          WWHN_211_RBAC_CONTRACT_OUTCOME: ${{ steps.wwhn_211_rbac_contract.outcome }}
           BUILD_OUTCOME: ${{ steps.build.outcome }}
           HEALTH_OUTCOME: ${{ steps.health.outcome }}
           API_MAPPING_OUTCOME: ${{ steps.api_mapping.outcome }}

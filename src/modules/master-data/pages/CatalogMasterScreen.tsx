@@ -282,7 +282,9 @@ export function CatalogMasterScreen() {
       title: activeTab.codeLabel,
       dataIndex: "code",
       width: 200,
-      render: (value: string) => <Typography.Text strong>{value}</Typography.Text>,
+      render: (value: string) => (
+        <Typography.Text strong>{value}</Typography.Text>
+      ),
     },
     { title: activeTab.nameLabel, dataIndex: "name" },
     ...(supportsBrand

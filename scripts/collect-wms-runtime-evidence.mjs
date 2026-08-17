@@ -55,6 +55,9 @@ const outcomes = {
   wmsContract: process.env.WMS_CONTRACT_OUTCOME ?? "not_run",
   wwhn148Closure: process.env.WWHN_148_OUTCOME ?? "not_run",
   wwhn144Closure: process.env.WWHN_144_OUTCOME ?? "not_run",
+  wwhn211Closure: process.env.WWHN_211_OUTCOME ?? "not_run",
+  wwhn211RbacContract:
+    process.env.WWHN_211_RBAC_CONTRACT_OUTCOME ?? "not_run",
   build: process.env.BUILD_OUTCOME ?? "not_run",
   health: process.env.HEALTH_OUTCOME ?? "not_run",
   apiMapping: process.env.API_MAPPING_OUTCOME ?? "not_run",

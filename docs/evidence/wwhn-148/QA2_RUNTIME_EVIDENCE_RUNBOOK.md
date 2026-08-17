@@ -1,5 +1,7 @@
 # WWHN-148 — QA2 Runtime Evidence Runbook
 
+Canonical task doc: `docs/Task_docs_Jira/WWHN-148.md` (contract, fail-closed matrix và scope boundary được định nghĩa tại đó; runbook này chỉ mô tả cách sinh evidence runtime).
+
 ## Mục tiêu
 
 Runbook này quy định evidence runtime bắt buộc để QA2 đóng `WWHN-149` và cung cấp đầu vào hợp lệ cho `WWHN-182`/`WWHN-183`. Controlled mock, local fixture, screenshot không có build/env/SHA hoặc blob-image comment không được dùng làm final evidence.

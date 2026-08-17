@@ -145,7 +145,71 @@ Sửa:
 | DEV211-P1-02 | P1 | **Đã đóng** | Raw evidence đầy đủ gắn tại `HEAD 83c94c3e2e09e2b1e193cb51166fe4d0623a0eb0` (mục 3.2): typecheck/lint/test/build/check:api-mapping đều chạy thật và PASS; 33 unit/component test mới + 9 E2E test mới, tất cả PASS; xác nhận không regress trên toàn bộ 440 test hiện có (436 pass, 4 fail là baseline pre-existing không liên quan). **Lưu ý**: SHA `54b11e7` nhắc trong blocker gốc không tồn tại trong repo FE hiện tại (`git cat-file -t` không tìm thấy tại thời điểm review) — evidence vòng này dùng SHA HEAD thật thay thế; cần đối chiếu lại nếu `54b11e7` có nguồn gốc từ nhánh/repo khác. |
 | DEV211-P1-03 | P1 | **Chưa đóng — thuộc QA2 (WWHN-212), ngoài vai trò FE1** | FE1 đã chuẩn bị sẵn hạ tầng: E2E harness (`e2e/wwhn-211-inventory-list-detail-trace.spec.ts`) đã bao phủ filter, responsive 3 viewport, route/RBAC guard, 401/403 error state theo đúng pattern `wwhn-178-master-sku-qa2.spec.ts` mà QA2 đã dùng trước đây — QA2 có thể chạy trực tiếp hoặc dùng làm baseline mở rộng. Việc QA2 tự thực hiện test độc lập trên build định danh và mở blocker riêng tại WWHN-212 vẫn là bước bắt buộc, FE1 không thể thay thế. Đề xuất owner/ETA: QA2, trong sprint hiện tại sau khi FE1 bàn giao evidence này. |
 | DEV211-P1-04 | P1 | **Chưa đóng — thuộc BE + QA1, ngoài vai trò FE1** | FE1 chỉ có thể enforce hide/disable ở tầng UI (đã làm — xem RBAC ở mục 2.1, 2.2, có test xác nhận). FE1 không có khả năng xác nhận backend authorization/data scope hay tạo API error thật (403 với `error_code`/`request_id` từ BE) — đây là evidence phải đến từ BE + QA1. UI hide/disable **không thay thế** API guard, đúng như blocker gốc nêu. Đề xuất owner/ETA: BE + QA1, cần trước khi WWHN-212 sign-off cuối. |
-| DEV211-P2-01 | P2 | **Đã làm rõ, chờ BA quyết định (không tự đóng)** | Xem mục 3.4. FE1 đã xác nhận bằng code rằng Safe-stock/Scan helper trong `inventoryService.ts` là orphan, không thuộc scope WWHN-211, và trùng lặp trách nhiệm với `scanService.ts`. Cần BA chọn 1 trong 2 hướng disposition đã đề xuất trước khi FE1 xóa hoặc giữ code này. |
+| DEV211-P2-01 | P2 | **Đã đóng (cập nhật 2026-08-17)** | BA đã xác nhận scope boundary; cleanup hoàn tất. Safe-stock/Scan helper không còn trong `inventoryService.ts`, scan chỉ còn ở owner hợp lệ `scanService.ts`. `verify-wwhn-211-closure.mjs` chặn CI nếu dead scope quay lại. Xem mục 5b.2. |
+
+> **Cập nhật 2026-08-17**: bảng trên phản ánh vòng khắc phục `2026-08-15`. Trạng thái mới nhất sau vòng rà nguyên nhân gốc rễ: **P1-02 và P2-01 đã đóng dứt điểm**, **P1-04 đã có harness thực thi được** (vẫn chờ BE/QA1 ký), **P1-01 và P0-01 giữ nguyên vì ngoài thẩm quyền FE1**. Chi tiết ở mục 5b.
+
+## 5b. Vòng rà soát cuối (2026-08-17) — truy nguyên gốc rễ và fix chống lặp
+
+Mục tiêu vòng này: kiểm tra 4 mục còn treo (P1-01, P1-02, P1-04, P2-01) xem lỗi còn không, và nếu còn thì **fix tận gốc rễ** thay vì vá triệu chứng.
+
+### 5b.1 DEV211-P1-02 — đã đóng dứt điểm (nguyên nhân gốc rễ khác với giả định ban đầu)
+
+Blocker mô tả "workflow WWHN-211 success nhưng generic CI cùng SHA failure". Truy nguyên cho thấy **hai nguyên nhân độc lập**, đều là lỗi thật:
+
+**Nguyên nhân 1 — CRLF vs LF (gây 281/285 file "drift").** Repo không có `.gitattributes` và `.prettierrc` (bị xóa từ commit `3f168d8`). Prettier 3.x mặc định `endOfLine: "lf"`, trong khi Git trên Windows checkout ra CRLF. Hệ quả: `format:check` fail toàn bộ `src/` trên máy Windows nhưng pass trên CI Linux — đúng kiểu "hai nguồn sự thật trên cùng một SHA". Commit remediation `ce41a6b` trước đây **không thực sự khắc phục**: kiểm tra lại tại chính SHA đó vẫn thấy 285 file drift.
+
+Fix gốc rễ: thêm `.gitattributes` (`* text=auto eol=lf` + allowlist binary) và `.prettierrc.json` khai báo tường minh `endOfLine: "lf"`. Sau đó chuẩn hoá 288 file `src/` về LF. Drift giảm 285 → 4.
+
+**Nguyên nhân 2 — guard CI hard-code đường dẫn đã bị xóa (gây 3 gate fail giả).** Các script `verify-*.mjs` trỏ vào file đã bị xóa ở các commit dọn dẹp (`61ae6db`, `dc4d90e`, `4d3fe03`), và guard không phân biệt "file bị xóa hợp lệ khi refactor" với "code vi phạm contract":
+
+| Gate | Trỏ vào file đã xóa | Fix |
+| --- | --- | --- |
+| `master-sku:verify` | `src/modules/master-data/pages/MasterPage.tsx`, `master-data.service.ts` (xóa ở `dc4d90e`) | Resolve động bằng glob toàn module; assertion fail-closed (`SKU_IMPORT_EXCEL`/`ITEMS`/`PHYSICAL_CODES` không có call site) chuyển sang quét toàn `src/` — mạnh hơn bản cũ vì refactor không thể lách. Pattern RBAC cập nhật theo idiom hiện tại (`useCan(P.*)`, `useCanManage(...)`). |
+| `uat:p0p1:verify` | `Khắc phục lỗi UI_responsive_RBAC.md`, `HN-FND-001-FE-AUTH-SESSION-403.md` | Thêm `readFirstAvailable()` resolve theo danh sách ứng viên (nội dung đã hợp nhất vào `WWHN-156.md` / `WWHN-165.md`), vẫn fail-closed khi không còn ứng viên nào. Pattern `HN-UAT-003` (temp key đã khai tử) mở rộng sang `WWHN-292/293`; `module` mở rộng cho tiếng Việt. |
+| `wwhn-148:verify` | `[FE1] Rà soát khả năng triển khai và tái sử dụng.md` | Đổi sang quét `docs/**/*.md` tìm back-reference tới `WWHN-148.md`. Guard này **phát hiện lỗi thật**: back-reference đã mất hoàn toàn — đã khôi phục trace trong `docs/evidence/wwhn-148/QA2_RUNTIME_EVIDENCE_RUNBOOK.md`. |
+
+**Nguyên nhân 3 — WWHN-211/212 tách rời khỏi CI chính.** `wwhn-211-fe-closure.yml` chạy độc lập; `ci.yml` và `assert-ci-gates.mjs` không hề biết tới WWHN-211. Đây chính là lý do cấu trúc khiến cùng một SHA cho hai kết quả mâu thuẫn. Đã nối `wwhn-211:verify` vào `ci.yml` (gate bắt buộc trong `assert-ci-gates.mjs`, có mặt trong `wms-evidence:collect` và artifact upload).
+
+**Kết quả xác minh tại `HEAD = c1630d7` + thay đổi vòng này:**
+
+```
+PASS  format:check      PASS  wwhn-165:verify    PASS  wwhn-148:verify
+PASS  lint              PASS  wwhn-156:verify    PASS  wwhn-144:verify
+PASS  typecheck         PASS  master-sku:verify  PASS  wwhn-211:verify
+PASS  env:verify        PASS  wms-contract:verify PASS  health:check
+PASS  uat:p0p1:verify   PASS  wwhn-175:verify    PASS  check:api-mapping
+
+npx vitest run  → Test Files 58 passed (58) | Tests 439 passed (439)
+npm run build   → PASS (dist/build-manifest.json ghi nhận)
+```
+
+15/15 gate PASS trên cùng một SHA. Ngoài ra **4 test "baseline pre-existing fail" ghi ở mục 3.2 nay đã hết** (439/439 pass, trước là 436/440) — chúng là hệ quả của cùng nguyên nhân CRLF/mock, không phải nợ kỹ thuật riêng.
+
+### 5b.2 DEV211-P2-01 — đã đóng
+
+Xác minh bằng `grep` toàn `src/`: `fetchSafeStockAlerts`, `fetchSafeStockConfigs`, `createSafeStockConfig`, `fetchScanBatches`, `createScanBatch`, `fetchScanEvents` **không còn tồn tại** trong `inventoryService.ts`. Scan helper chỉ còn ở owner hợp lệ `src/modules/scan/services/scanService.ts` và có UI thật tiêu thụ (`PhysicalCodesPage.tsx`). `scripts/verify-wwhn-211-closure.mjs` PASS và sẽ fail CI nếu dead scope quay lại. BA đã xác nhận scope boundary; cleanup đã hoàn tất.
+
+### 5b.3 DEV211-P1-04 — FE đã giao phần làm được, phần còn lại vẫn thuộc BE/QA1
+
+Trước vòng này FE chỉ có RBAC tầng UI, không có gì để BE/QA1 chạy lại. Nay bổ sung `scripts/run-wwhn-211-direct-api-rbac.mjs` (theo đúng pattern đã được chấp nhận của `run-wwhn-178-direct-api-rbac.mjs`):
+
+- Probe **cả 6/6 endpoint** read/trace bằng token thiếu `inventory.view`/`inventory.trace`, mỗi endpoint một record riêng — guard thủng ở một route không thể ẩn sau route khác.
+- Probe data-scope riêng qua `WWHN_211_SCOPE_DENIED_PATH`; nếu BE/QA1 chưa cấu hình, plan ghi rõ `NOT_CONFIGURED` thay vì im lặng bỏ qua.
+- Bắt buộc HTTP 403 + deny error code (`FORBIDDEN`/`PERMISSION_DENIED`/`DATA_SCOPE_DENIED`), giữ `request_id`, redact `Authorization`, không phụ thuộc UI.
+- `--contract-only` chạy trong CI không cần secret, publish plan theo đúng SHA (`npm run wwhn-211:rbac:contract`, đã nối vào `ci.yml`).
+
+**Ranh giới giữ nguyên**: FE publish plan thực thi được, **không tự nhận** kết quả. Bản ký phải do BE/QA1 chạy `npm run wwhn-211:rbac:live` trên named environment. P1-04 vẫn mở, nhưng nay có công cụ để đóng thay vì chỉ có mô tả.
+
+### 5b.4 DEV211-P1-01 — vẫn mở, đúng thẩm quyền
+
+6/6 endpoint đã có mapping FE đầy đủ trong `M3_DEPENDENCY_LIST.md` kèm test coverage. Phần thiếu là **BE OpenAPI sign-off**: `check:api-mapping` không tìm thấy `swagger-api.json` nên chỉ chạy FE constant/baseline validation và ghi rõ *"this is not BE OpenAPI sign-off"*. Cơ chế này fail-closed đúng — khi BE cung cấp swagger thật, script sẽ tự đối chiếu từng route/permission và fail nếu drift. FE không thể và không nên tự đóng mục này.
+
+### 5b.5 File thay đổi vòng này
+
+Mới: `.gitattributes`, `.prettierrc.json`, `scripts/run-wwhn-211-direct-api-rbac.mjs`
+
+Sửa: `scripts/verify-master-sku-closure.mjs`, `scripts/verify-uat-p0-p1-readiness.mjs`, `scripts/verify-wwhn-148-closure.mjs`, `scripts/assert-ci-gates.mjs`, `scripts/collect-wms-runtime-evidence.mjs`, `.github/workflows/ci.yml`, `package.json`, `docs/evidence/wwhn-148/QA2_RUNTIME_EVIDENCE_RUNBOOK.md`, chuẩn hoá LF cho 288 file `src/**` (thuần line-ending/format, không đổi logic — xác nhận bằng typecheck/lint/439 test/build đều PASS).
 
 ## 6. Ghi chú
 

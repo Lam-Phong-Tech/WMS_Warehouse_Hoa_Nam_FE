@@ -1,0 +1,20 @@
+# Normalize line endings so Prettier's endOfLine:"lf" check produces the same
+# result on Windows checkouts and Linux CI runners. Without this, git checkout
+# on Windows rewrites text files to CRLF and `format:check` reports every file
+# as drifted while the same SHA passes on CI.
+* text=auto eol=lf
+
+# Binary assets must never be normalized.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.pdf binary
+*.zip binary
+*.webm binary
