@@ -6,6 +6,7 @@ import {
 import { Button, Result, Space, Typography } from "antd";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "@/shared/constants/routes";
+import { UI_STATE, uiStateProps } from "@/shared/constants/ui-state";
 
 const { Paragraph } = Typography;
 
@@ -33,6 +34,8 @@ export interface NoPermissionStateProps {
   showHomeButton?: boolean;
   /** Bản thu gọn để nhúng trong 1 khối/section (vd thay cho ApiErrorAlert), không chiếm toàn trang. */
   compact?: boolean;
+  /** Ghi đè testid khi một màn có nhiều vùng 403 cần phân biệt. */
+  testId?: string;
 }
 
 export function NoPermissionState({
@@ -42,6 +45,7 @@ export function NoPermissionState({
   onAction,
   showHomeButton = true,
   compact = false,
+  testId,
 }: NoPermissionStateProps) {
   const navigate = useNavigate();
 
@@ -59,6 +63,8 @@ export function NoPermissionState({
 
   return (
     <div
+      {...uiStateProps(UI_STATE.PERMISSION_DENIED, testId)}
+      role="alert"
       style={{
         display: "flex",
         alignItems: "center",

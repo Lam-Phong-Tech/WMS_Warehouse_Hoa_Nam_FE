@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Button } from "antd";
+import { UI_STATE, uiStateProps } from "@/shared/constants/ui-state";
 
 export interface ErrorStateProps {
   /** Tiêu đề lỗi. */
@@ -12,6 +13,8 @@ export interface ErrorStateProps {
   retryLabel?: ReactNode;
   /** Nội dung tùy chỉnh bên dưới. */
   children?: ReactNode;
+  /** Ghi đè testid khi một màn có nhiều vùng lỗi cần phân biệt. */
+  testId?: string;
 }
 
 /**
@@ -23,9 +26,12 @@ export function ErrorState({
   onRetry,
   retryLabel = "↻ Thử lại",
   children,
+  testId,
 }: ErrorStateProps) {
   return (
     <div
+      {...uiStateProps(UI_STATE.ERROR, testId)}
+      role="alert"
       style={{
         background: "#fff",
         border: "2px solid #2b2b2b",

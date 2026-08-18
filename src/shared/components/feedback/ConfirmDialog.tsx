@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Modal } from "antd";
+import { UI_STATE, uiStateProps } from "@/shared/constants/ui-state";
 
 export interface ConfirmDialogOptions {
   title: ReactNode;
@@ -28,7 +29,7 @@ export function confirmDialog({
   onCancel,
 }: ConfirmDialogOptions) {
   Modal.confirm({
-    title,
+    title: <span {...uiStateProps(UI_STATE.CONFIRM)}>{title}</span>,
     content,
     okText,
     cancelText,

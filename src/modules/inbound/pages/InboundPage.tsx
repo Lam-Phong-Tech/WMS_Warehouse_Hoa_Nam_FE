@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import {
-  Alert,
   Button,
   Progress,
   Select,
@@ -17,12 +16,12 @@ import {
 } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import { useSearchParams } from "react-router-dom";
-import {
-  getApiErrorMessage,
-  getErrorRequestId,
-  normalizeError,
-} from "@/shared/api/api-error";
 import { ActionDropdown } from "@/shared/components/feedback/ActionDropdown";
+import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
+import {
+  TableLoadingBanner,
+  tableEmptyText,
+} from "@/shared/components/feedback/BusinessState";
 import {
   hasAnyWmsPermission,
   WMS_PERMISSION_CATALOG as P,
@@ -59,35 +58,6 @@ function useInboundPermission(code: string) {
   const permissionCodes = useAuthStore((state) => state.permissionCodes);
   const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
   return hasAnyWmsPermission(permissionCodes, [code], isSuperAdmin);
-}
-
-function ApiErrorAlert({
-  error,
-  fallback,
-}: {
-  error: unknown;
-  fallback: string;
-}) {
-  const normalized = normalizeError(error);
-  const requestId = getErrorRequestId(error);
-  return (
-    <Alert
-      showIcon
-      type={normalized.status === 403 ? "warning" : "error"}
-      title={
-        normalized.status === 403
-          ? "Không có quyền truy cập"
-          : getApiErrorMessage(error, fallback)
-      }
-      description={[
-        normalized.status ? `HTTP ${normalized.status}` : undefined,
-        normalized.code ? `Mã lỗi: ${normalized.code}` : undefined,
-        requestId ? `Mã yêu cầu: ${requestId}` : undefined,
-      ]
-        .filter(Boolean)
-        .join(" | ")}
-    />
-  );
 }
 
 function InboundListScreen() {
@@ -313,7 +283,8 @@ function InboundListScreen() {
         <div style={{ marginBottom: 14 }}>
           <ApiErrorAlert
             error={query.error}
-            fallback="Không tải được danh sách phiếu nhập."
+            title="Không tải được danh sách phiếu nhập."
+            onRetry={() => query.refetch()}
           />
         </div>
       ) : null}
@@ -336,6 +307,7 @@ function InboundListScreen() {
         />
       </div>
 
+      <TableLoadingBanner loading={query.isLoading || query.isFetching} />
       <Table<InboundDocument>
         rowKey="id"
         columns={columns}
@@ -350,9 +322,10 @@ function InboundListScreen() {
           showTotal: (count) => `Tổng ${count} phiếu nhập`,
         }}
         locale={{
-          emptyText: query.isError
-            ? "Không tải được dữ liệu"
-            : "Chưa có phiếu nhập phù hợp",
+          emptyText: tableEmptyText(
+            query.isError ? query.error : null,
+            "Chưa có phiếu nhập phù hợp",
+          ),
         }}
         scroll={{ x: 1080 }}
       />

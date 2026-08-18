@@ -6,6 +6,10 @@ import type { ColumnsType, TablePaginationConfig } from "antd/es/table";
 import { EyeOutlined, PlusOutlined } from "@ant-design/icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
+import {
+  TableLoadingBanner,
+  tableEmptyText,
+} from "@/shared/components/feedback/BusinessState";
 import { MvpPageSizeSelector } from "@/shared/components/mvp/MvpListPagination";
 import { resolveApiPagination } from "@/shared/components/mvp/mvp-pagination";
 import { useHasPermission } from "@/shared/components/permission";
@@ -235,6 +239,9 @@ export default function ReversalPage() {
         }}
       />
 
+      <TableLoadingBanner
+        loading={listQuery.isLoading || listQuery.isFetching}
+      />
       <Table<ReversalDocument>
         rowKey="id"
         columns={columns}
@@ -250,9 +257,10 @@ export default function ReversalPage() {
             `Tổng ${new Intl.NumberFormat("vi-VN").format(total)} phiếu hoàn đảo`,
         }}
         locale={{
-          emptyText: listQuery.isError
-            ? "Không tải được dữ liệu"
-            : "Không có phiếu hoàn đảo theo bộ lọc hiện tại",
+          emptyText: tableEmptyText(
+            listQuery.isError ? listQuery.error : null,
+            "Không có phiếu hoàn đảo theo bộ lọc hiện tại",
+          ),
         }}
         onRow={(row) => ({ onDoubleClick: () => setDetailId(row.id) })}
         scroll={{ x: 1400 }}

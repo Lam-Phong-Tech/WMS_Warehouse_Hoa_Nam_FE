@@ -1,8 +1,16 @@
 import { Spin } from "antd";
+import { UI_STATE, uiStateProps } from "@/shared/constants/ui-state";
 
+/**
+ * Overlay loading toàn màn hình (bootstrap phiên, chuyển route bảo vệ).
+ * WWHN-268: phát `data-ui-state="loading"` cho ma trận bằng chứng QA2.
+ */
 export function Loading() {
   return (
     <div
+      {...uiStateProps(UI_STATE.LOADING, "ui-state-loading-fullscreen")}
+      aria-busy="true"
+      aria-live="polite"
       style={{
         position: "fixed",
         inset: 0,

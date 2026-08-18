@@ -8,6 +8,7 @@ import {
   type PermissionAction,
 } from "@/shared/types/permission";
 import { hasScopeForAction } from "@/shared/types/permission.scope";
+import { UI_STATE, uiStateTestId } from "@/shared/constants/ui-state";
 
 export interface ActionButtonProps extends ButtonProps {
   /** Module name */
@@ -86,9 +87,15 @@ export function ActionButton({
 
   const isButtonDisabled = effectiveMode === "disable" && !can;
 
+  // WWHN-268: khi quyền/scope không đủ, nút phải mang test hook "disabled"
+  // để bằng chứng RBAC của QA2 phân biệt được "bị khoá" với "ẩn".
   const button = (
     <Button
       {...buttonProps}
+      data-ui-state={isButtonDisabled ? UI_STATE.DISABLED : undefined}
+      data-testid={
+        isButtonDisabled ? uiStateTestId(UI_STATE.DISABLED) : undefined
+      }
       disabled={Boolean(disabled) || isButtonDisabled}
       title={isButtonDisabled ? disabledTooltip : title}
       icon={icon}

@@ -1,0 +1,83 @@
+{
+  "task": "WWHN-268",
+  "parent": "WWHN-70",
+  "qaSource": "HN-QA-005-ST01",
+  "branch": "m1",
+  "runClass": "LOCAL_CONTROLLED",
+  "truthBoundary": "Lượt chạy tại chỗ trên Windows. KHÔNG đủ cho Beta sign-off và KHÔNG được trích dẫn như bằng chứng exact-SHA. Bằng chứng công bố ra ngoài phải lấy từ workflow WWHN-268 FE defect closure / WWHN-268 BE regression closure chạy trên GITHUB_SHA.",
+  "runs": [
+    {
+      "id": "FE-UNIT",
+      "command": "yarn test",
+      "runner": "vitest 4.1.10",
+      "result": "PASS",
+      "testFiles": 80,
+      "tests": 600,
+      "failed": 0,
+      "note": "Bao gồm src/shared/constants/ui-state.test.tsx (8 test khoá hợp đồng trạng thái UI). Tổng số file/test cao hơn phạm vi WWHN-268 vì cây làm việc dùng chung với công việc đang chạy song song."
+    },
+    {
+      "id": "FE-E2E-268",
+      "command": "yarn test:e2e:wwhn-268",
+      "runner": "playwright chromium",
+      "result": "PASS",
+      "tests": 21,
+      "failed": 0,
+      "durationSeconds": 108,
+      "evidenceDir": "test-results/wwhn-268/local-uncommitted",
+      "captureCount": 33,
+      "capturesByState": {
+        "responsive": 3,
+        "loading": 6,
+        "empty": 6,
+        "error": 6,
+        "permission-denied": 6,
+        "rbac": 6
+      },
+      "rolesCovered": ["SUPER_ADMIN", "LIMITED_ROLE", "DASHBOARD_ONLY"],
+      "viewportsCovered": ["1440x900", "768x1024", "375x812"],
+      "note": "success/disabled/confirm được khẳng định trong ca gallery ở cả 3 viewport (ảnh chụp gộp một khung hình cho toàn bộ gallery), nên không có capture riêng theo từng trạng thái đó."
+    },
+    {
+      "id": "FE-VERIFY-268",
+      "command": "yarn wwhn-268:verify",
+      "runner": "node",
+      "result": "PASS",
+      "note": "Kiểm register defect fail-closed: đủ trường, không chuỗi độn, mọi đường dẫn fix/bằng chứng tồn tại thật, cổng QA1/QA2/BE giữ trạng thái mở."
+    },
+    {
+      "id": "BE-CONTRACT-268",
+      "command": "php artisan test --filter=Wwhn268RegressionContractTest",
+      "runner": "phpunit 12.5.33 / sqlite",
+      "result": "PASS",
+      "tests": 4,
+      "assertions": 70,
+      "failed": 0
+    },
+    {
+      "id": "BE-FEATURE-BASELINE",
+      "command": "php artisan test --testsuite=Feature",
+      "runner": "phpunit 12.5.33 / sqlite",
+      "result": "PASS",
+      "tests": 732,
+      "passed": 705,
+      "skipped": 27,
+      "failed": 0,
+      "assertions": 8586
+    }
+  ],
+  "knownEnvironmentNoise": [
+    {
+      "symptom": "Ở hai lượt chạy đầu, một ca E2E khác nhau bị rớt với ENOENT trên tệp trace (.playwright-artifacts-*/traces/resources/*.jpeg) hoặc timeout 30s; chạy lại riêng ca đó thì PASS.",
+      "cause": "Cây làm việc dùng chung với một phiên làm việc song song ghi file trong lúc chạy, cộng với lượng artifact video/trace/screenshot bật toàn phần gây nghẽn I/O.",
+      "resolution": "Đặt video/trace/screenshot ở chế độ chỉ-khi-lỗi (ảnh bằng chứng vẫn do capture() chụp tường minh). Lượt chạy chốt: 21/21 PASS.",
+      "isProductDefect": false
+    },
+    {
+      "symptom": "yarn typecheck / yarn lint / yarn format:check đỏ trên cây làm việc.",
+      "cause": "Lỗi nằm hoàn toàn trong tệp đang được một phiên khác sửa dở (src/modules/pv/**, src/test/wwhn-247-*, src/modules/master-data/components/SkuImportModal.test.tsx, khối data_scope mới trong AlignedReportsPage.tsx). Không tệp nào thuộc WWHN-268.",
+      "resolution": "Không sửa chéo sang công việc đang dở của phiên khác. Commit của WWHN-268 chỉ chứa nội dung của WWHN-268; cổng CI chạy trên commit đó.",
+      "isProductDefect": false
+    }
+  ]
+}

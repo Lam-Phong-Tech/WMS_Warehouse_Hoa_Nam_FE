@@ -2,6 +2,7 @@ import type { CSSProperties } from "react";
 import { Alert, Button } from "antd";
 import { ReloadOutlined } from "@ant-design/icons";
 import { isNoPermissionError, normalizeError } from "@/shared/api/api-error";
+import { UI_STATE, uiStateProps } from "@/shared/constants/ui-state";
 import { NoPermissionState } from "./NoPermissionState";
 
 export interface ApiErrorAlertProps {
@@ -12,6 +13,8 @@ export interface ApiErrorAlertProps {
   /** Có nút "Thử lại" khi truyền onRetry. */
   onRetry?: () => void;
   style?: CSSProperties;
+  /** Ghi đè testid khi một màn có nhiều vùng lỗi cần phân biệt. */
+  testId?: string;
 }
 
 /**
@@ -27,12 +30,13 @@ export function ApiErrorAlert({
   title = "Đã xảy ra lỗi",
   onRetry,
   style,
+  testId,
 }: ApiErrorAlertProps) {
   if (!error) return null;
 
   if (isNoPermissionError(error)) {
     return (
-      <div style={style}>
+      <div style={style} data-ui-state={UI_STATE.PERMISSION_DENIED}>
         <NoPermissionState
           compact
           showHomeButton={false}
@@ -49,31 +53,35 @@ export function ApiErrorAlert({
     ? Object.values(errors).flatMap((v) => (Array.isArray(v) ? v : [v]))
     : [];
 
+  // antd v6 không forward thuộc tính lạ xuống DOM của Alert, nên test hook
+  // phải nằm trên phần tử bọc do FE tự kiểm soát.
   return (
-    <Alert
-      type="error"
-      showIcon
-      style={style}
-      title={title}
-      description={
-        <>
-          <div>{message}</div>
-          {fieldMessages.length > 0 && (
-            <ul style={{ margin: "4px 0 0", paddingLeft: 18 }}>
-              {fieldMessages.map((m, i) => (
-                <li key={i}>{m}</li>
-              ))}
-            </ul>
-          )}
-        </>
-      }
-      action={
-        onRetry ? (
-          <Button size="small" icon={<ReloadOutlined />} onClick={onRetry}>
-            Thử lại
-          </Button>
-        ) : undefined
-      }
-    />
+    <div {...uiStateProps(UI_STATE.ERROR, testId)} role="alert">
+      <Alert
+        type="error"
+        showIcon
+        style={style}
+        title={title}
+        description={
+          <>
+            <div>{message}</div>
+            {fieldMessages.length > 0 && (
+              <ul style={{ margin: "4px 0 0", paddingLeft: 18 }}>
+                {fieldMessages.map((m, i) => (
+                  <li key={i}>{m}</li>
+                ))}
+              </ul>
+            )}
+          </>
+        }
+        action={
+          onRetry ? (
+            <Button size="small" icon={<ReloadOutlined />} onClick={onRetry}>
+              Thử lại
+            </Button>
+          ) : undefined
+        }
+      />
+    </div>
   );
 }

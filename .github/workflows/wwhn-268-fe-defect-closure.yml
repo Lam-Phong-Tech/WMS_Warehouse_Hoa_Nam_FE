@@ -1,0 +1,90 @@
+name: WWHN-268 FE defect closure
+
+# Vòng sửa lỗi WWHN-70 / HN-QA-005-ST01.
+# Register review đòi "PR URL, commit SHA truy được, build ID/env, CI log" vì log
+# local Windows không đủ cho Beta sign-off. Workflow này là nơi duy nhất sinh ra
+# bộ bằng chứng đó: chạy đúng bộ lệnh của register trên GITHUB_SHA và upload
+# artifact để reviewer đối chiếu thay vì tin lời DEV.
+
+on:
+  push:
+    branches: [m1]
+    paths:
+      - "src/shared/constants/ui-state.ts"
+      - "src/shared/components/**"
+      - "src/modules/**/pages/**"
+      - "e2e/wwhn-268-defect-retest.spec.ts"
+      - "scripts/verify-wwhn-268-closure.mjs"
+      - "docs/evidence/WWHN-268/**"
+      - "docs/Task_docs_Jira/WWHN-268.md"
+      - ".github/workflows/wwhn-268-fe-defect-closure.yml"
+  pull_request:
+    branches: [m1]
+  workflow_dispatch:
+
+jobs:
+  fe-defect-closure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: yarn
+          cache-dependency-path: yarn.lock
+
+      # Repo chỉ có yarn.lock (W274-P0-02): npm ci sẽ hỏng ngay từ bước cài.
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile --non-interactive
+
+      - name: Ghi nhận identity của lượt chạy
+        run: |
+          echo "SOURCE_SHA=${GITHUB_SHA}" >> "$GITHUB_ENV"
+          echo "VITE_APP_ENV=ci" >> "$GITHUB_ENV"
+          echo "VITE_APP_VERSION=${GITHUB_RUN_ID}" >> "$GITHUB_ENV"
+          {
+            echo "### WWHN-268 run identity"
+            echo "- commit: \`${GITHUB_SHA}\`"
+            echo "- run: \`${GITHUB_RUN_ID}\` (attempt ${GITHUB_RUN_ATTEMPT})"
+            echo "- ref: \`${GITHUB_REF}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Verifier register defect (fail-closed)
+        run: yarn wwhn-268:verify
+
+      - name: Lint
+        run: yarn lint
+
+      - name: Typecheck
+        run: yarn typecheck
+
+      - name: Unit test (gồm hợp đồng trạng thái UI)
+        run: yarn test
+
+      - name: Build
+        run: yarn build
+
+      - name: Cài trình duyệt Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Retest bằng chứng theo từng defect
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+          VITE_APP_ENV: ci
+          VITE_APP_VERSION: ${{ github.run_id }}
+        run: yarn test:e2e:wwhn-268
+
+      - name: Upload bằng chứng WWHN-268
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wwhn-268-evidence-${{ github.sha }}
+          path: |
+            test-results/wwhn-268/**
+            test-results/playwright-results.json
+            test-results/playwright-junit.xml
+            playwright-report/**
+          if-no-files-found: error
+          retention-days: 30

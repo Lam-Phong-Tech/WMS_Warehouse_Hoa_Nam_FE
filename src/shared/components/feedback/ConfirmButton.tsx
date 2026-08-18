@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Button, Popconfirm } from "antd";
 import type { ButtonProps } from "antd";
+import { UI_STATE, uiStateProps } from "@/shared/constants/ui-state";
 
 export interface ConfirmButtonProps extends Omit<
   ButtonProps,
@@ -31,7 +32,7 @@ export function ConfirmButton({
 }: ConfirmButtonProps) {
   return (
     <Popconfirm
-      title={title}
+      title={<span {...uiStateProps(UI_STATE.CONFIRM)}>{title}</span>}
       description={description}
       okText={okText}
       cancelText={cancelText}

@@ -11,6 +11,10 @@ import {
   SwapOutlined,
 } from "@ant-design/icons";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
+import {
+  TableLoadingBanner,
+  tableEmptyText,
+} from "@/shared/components/feedback/BusinessState";
 import { MvpPageSizeSelector } from "@/shared/components/mvp/MvpListPagination";
 import { resolveApiPagination } from "@/shared/components/mvp/mvp-pagination";
 import { useCanAny } from "@/shared/components/permission";
@@ -462,6 +466,9 @@ export default function InventoryPage() {
                   }}
                 />
 
+                <TableLoadingBanner
+                  loading={balanceQuery.isLoading || balanceQuery.isFetching}
+                />
                 <Table<InventoryBalanceRow>
                   rowKey="id"
                   columns={balanceColumns}
@@ -477,9 +484,10 @@ export default function InventoryPage() {
                       `Tổng ${numberFormatter.format(total)} dòng tồn kho`,
                   }}
                   locale={{
-                    emptyText: balanceQuery.isError
-                      ? "Không tải được dữ liệu"
-                      : "Không có tồn kho theo bộ lọc hiện tại",
+                    emptyText: tableEmptyText(
+                      balanceQuery.isError ? balanceQuery.error : null,
+                      "Không có tồn kho theo bộ lọc hiện tại",
+                    ),
                   }}
                   onRow={(row) => ({
                     onDoubleClick: () => setBalanceDetailRow(row),
@@ -552,6 +560,9 @@ export default function InventoryPage() {
                   }}
                 />
 
+                <TableLoadingBanner
+                  loading={movementQuery.isLoading || movementQuery.isFetching}
+                />
                 <Table<StockMovementRow>
                   rowKey="id"
                   columns={movementColumns}
@@ -567,9 +578,10 @@ export default function InventoryPage() {
                       `Tổng ${numberFormatter.format(total)} movement`,
                   }}
                   locale={{
-                    emptyText: movementQuery.isError
-                      ? "Không tải được dữ liệu"
-                      : "Không có movement theo bộ lọc hiện tại",
+                    emptyText: tableEmptyText(
+                      movementQuery.isError ? movementQuery.error : null,
+                      "Không có movement theo bộ lọc hiện tại",
+                    ),
                   }}
                   scroll={{ x: 1200 }}
                 />

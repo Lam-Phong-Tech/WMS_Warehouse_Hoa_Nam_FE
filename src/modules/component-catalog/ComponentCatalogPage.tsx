@@ -15,6 +15,7 @@ import {
   PageSkeleton,
   ScanInput,
   StatusTag,
+  SubmitButton,
 } from "@/shared/components";
 
 interface CatalogRow {
@@ -171,7 +172,9 @@ export default function ComponentCatalogPage() {
               >
                 Confirm action
               </ConfirmButton>
-              <Button disabled>Disabled until valid</Button>
+              {/* WWHN-268: dùng SubmitButton để state "disabled" phát ra
+                  data-ui-state chuẩn, thay cho Button trần không có test hook. */}
+              <SubmitButton disabled>Disabled until valid</SubmitButton>
             </Space>
           </Card>
         </Col>

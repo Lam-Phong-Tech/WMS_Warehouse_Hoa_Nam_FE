@@ -6,6 +6,10 @@ import type { ColumnsType } from "antd/es/table";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
+import {
+  TableLoadingBanner,
+  tableEmptyText,
+} from "@/shared/components/feedback/BusinessState";
 import { MvpPageSizeSelector } from "@/shared/components/mvp/MvpListPagination";
 import { resolveApiPagination } from "@/shared/components/mvp/mvp-pagination";
 import { useHasPermission } from "@/shared/components/permission";
@@ -296,6 +300,9 @@ export default function AlignedMvpOutboundPage() {
         }}
       />
 
+      <TableLoadingBanner
+        loading={listQuery.isLoading || listQuery.isFetching}
+      />
       <Table<OutboundDocumentRecord>
         rowKey="id"
         columns={columns}
@@ -310,9 +317,10 @@ export default function AlignedMvpOutboundPage() {
           showTotal: (count) => `Tổng ${count} phiếu xuất`,
         }}
         locale={{
-          emptyText: listQuery.isError
-            ? "Không tải được dữ liệu"
-            : "Chưa có phiếu xuất phù hợp",
+          emptyText: tableEmptyText(
+            listQuery.isError ? listQuery.error : null,
+            "Chưa có phiếu xuất phù hợp",
+          ),
         }}
         scroll={{ x: 1390 }}
       />
