@@ -16,6 +16,12 @@ function requireText(content, needle, label) {
   }
 }
 
+function rejectText(content, needle, label) {
+  if (content.includes(needle)) {
+    failures.push(`Rejected ${label}: ${needle}`);
+  }
+}
+
 const taskDoc = requireFile("docs/Task_docs_Jira/WWHN-274.md");
 const e2e = requireFile("e2e/wwhn-274-release-signoff.spec.ts");
 const workflow = requireFile(".github/workflows/wwhn-274-fe-release-signoff.yml");
@@ -36,6 +42,7 @@ for (const [content, label] of [
 
 requireText(envExample, "VITE_API_BASE_URL=", "API base env contract");
 requireText(envExample, "/api/v1", "canonical API version prefix");
+requireText(envExample, "VITE_API_HEALTH_PATH=/health", "canonical relative backend health path");
 requireText(envExample, "VITE_API_WITH_CREDENTIALS=true", "credentialed browser requests");
 
 for (const viewport of ["1440, height: 900", "768, height: 1024", "375, height: 812"]) {
@@ -70,15 +77,17 @@ for (const gate of [
   "npm run check:api-mapping",
   "npm run build",
   "npm run health:check",
+  "VITE_API_HEALTH_PATH: /health",
   "e2e/wwhn-274-release-signoff.spec.ts",
   "scripts/verify-wwhn-274-closure.mjs",
   "actions/upload-artifact@v4",
 ]) {
   requireText(workflow, gate, `workflow gate ${gate}`);
 }
-requireText(workflow, "branches: [m1]", "m1-only release-signoff branch trigger");
+requireText(workflow, "branches: [m1]", "m1 release-signoff branch trigger");
 requireText(workflow, "github.sha", "workflow exact SHA binding");
 requireText(workflow, "release-signoff.json", "machine-readable release evidence");
+rejectText(workflow, "/api/health", "legacy unversioned backend health route");
 
 for (const boundary of [
   "FE-controlled",
