@@ -152,6 +152,36 @@ describe("DashboardPage / WWHN-327", () => {
     ).toBeInTheDocument();
   });
 
+  // WWHN-327: KPI matrix v1.1 §1 khai warranty là ngoại lệ GLOBAL có chủ đích. Người
+  // dùng bị giới hạn kho vừa đọc "Giới hạn N kho" ở KPI sẽ quy nhầm số ca bảo hành về
+  // kho của mình nếu màn hình không nói ngoại lệ đó ra.
+  it("declares the warranty GLOBAL exception when the payload is warehouse-scoped", async () => {
+    mockedFetchDashboardKPI.mockResolvedValue({
+      ...populatedDashboard,
+      data_scope: "WAREHOUSE_SCOPED",
+      scope_warehouse_ids: ["wh-1"],
+    });
+
+    renderDashboard();
+
+    const exception = await screen.findByRole("note");
+    expect(exception).toHaveTextContent(
+      /số liệu bảo hành vẫn là toàn hệ thống/i,
+    );
+    expect(exception).toHaveTextContent(
+      /warranty_case không gắn kho trong ERD/i,
+    );
+  });
+
+  it("does not show the warranty scope exception on a GLOBAL payload", async () => {
+    mockedFetchDashboardKPI.mockResolvedValue(populatedDashboard);
+
+    renderDashboard();
+
+    await screen.findByRole("region", { name: "KPI vận hành" });
+    expect(screen.queryByRole("note")).not.toBeInTheDocument();
+  });
+
   it("counts reconciliation warnings from the total, not from the capped sample", async () => {
     mockedFetchDashboardKPI.mockResolvedValue({
       ...populatedDashboard,

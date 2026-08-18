@@ -1,0 +1,108 @@
+{
+  "task": "WWHN-327",
+  "title": "[FE] Dashboard enhancement",
+  "parent": "WWHN-88",
+  "pairedBackendTask": "WWHN-328",
+  "independentQaTask": "WWHN-329",
+  "branch": "m1",
+  "contract": {
+    "endpoint": "GET /api/v1/reports/dashboard-quick",
+    "reusedNotNew": true,
+    "permission": "report.view",
+    "kpiMatrixVersion": "v1.1",
+    "kpiMatrixSource": "HoaNam_BE/WMS_Warehouse_Hoa_Nam_BE/docs/evidence/WWHN-328/KPI_MATRIX.md",
+    "timezone": "Asia/Ho_Chi_Minh",
+    "defaultPeriodDays": 31
+  },
+  "evidencePolicy": {
+    "failClosed": true,
+    "noSelfSignForIndependentRoles": true,
+    "controlledEvidenceIsNotUat": true,
+    "noFabricatedDataOnApiError": true,
+    "severityIsTechnicalClassification": true
+  },
+  "requiredViewports": ["1440x900", "768x1024", "375x812"],
+  "contractFields": [
+    "period",
+    "data_scope",
+    "scope_warehouse_ids",
+    "available_qty",
+    "receipt_qty",
+    "issue_qty",
+    "component_issue_qty",
+    "reversal_net",
+    "warranty_cases_by_status",
+    "reconciliation_warning_count",
+    "reconciliation_warnings"
+  ],
+  "items": [
+    {
+      "id": "W327-P1-01",
+      "severity": "P1",
+      "owner": "FE",
+      "status": "FIXED",
+      "finding": "Màn hình khai 'Phạm vi dữ liệu: giới hạn N kho' nhưng card Bảo hành theo trạng thái vẫn là số liệu GLOBAL. Người dùng bị giới hạn kho quy nhầm số ca bảo hành về kho của mình.",
+      "rootFix": "Hiện khối role=note khai ngoại lệ GLOBAL của warranty_cases_by_status, chỉ khi data_scope=WAREHOUSE_SCOPED.",
+      "evidence": [
+        "src/modules/dashboard/pages/DashboardPage.tsx",
+        "src/modules/dashboard/pages/DashboardPage.test.tsx",
+        "e2e/wwhn-327-dashboard-kpi.spec.ts"
+      ]
+    },
+    {
+      "id": "W327-P1-02",
+      "severity": "P1",
+      "owner": "FE",
+      "status": "FIXED",
+      "finding": "WWHN-327 không có gate closure exact-SHA riêng, khác với mọi task FE đã đóng (153/181/211/274/292). Thay đổi sau này có thể lặng lẽ bỏ contract dashboard mà CI không đỏ.",
+      "rootFix": "Thêm scripts/verify-wwhn-327-closure.mjs, e2e/wwhn-327-dashboard-kpi.spec.ts và .github/workflows/wwhn-327-fe-closure.yml chạy trên đúng SHA của m1.",
+      "evidence": [
+        "scripts/verify-wwhn-327-closure.mjs",
+        ".github/workflows/wwhn-327-fe-closure.yml"
+      ]
+    },
+    {
+      "id": "W327-P2-01",
+      "severity": "P2",
+      "owner": "FE",
+      "status": "FIXED",
+      "finding": "WMS_PERMISSION_CATALOG.DASHBOARD_VIEW khai 'report.dashboard.view' — mã không tồn tại trong AuthDatabaseSeeder. Bất kỳ gate nào dùng hằng này sẽ fail-closed vĩnh viễn và ẩn Dashboard khỏi cả role hợp lệ.",
+      "rootFix": "Trỏ DASHBOARD_VIEW về 'report.view' là mã BE canonical mà /reports/dashboard-quick đang gate.",
+      "evidence": ["src/shared/constants/wms-permissions.ts"]
+    },
+    {
+      "id": "W327-P1-03",
+      "severity": "P1",
+      "owner": "BA Main + BAS",
+      "status": "OPEN_NEEDS_SIGNOFF",
+      "finding": "KPI matrix v1.1 (data_scope, công thức K0-K10, ngoại lệ warranty GLOBAL) chưa có một verdict ký duy nhất từ business owner.",
+      "rootFix": "BA ký matrix v1.1 với một verdict duy nhất, không để dual verdict/placeholder.",
+      "evidence": []
+    },
+    {
+      "id": "W327-P1-04",
+      "severity": "P1",
+      "owner": "QA2",
+      "status": "OPEN_NEEDS_SIGNOFF",
+      "finding": "Kết quả kiểm thử độc lập của dashboard phải nằm trên WWHN-329, gắn đúng cặp SHA BE/FE candidate.",
+      "rootFix": "QA2 đăng fixed-build report trên WWHN-329 với một verdict duy nhất.",
+      "evidence": []
+    },
+    {
+      "id": "W327-P2-02",
+      "severity": "P2",
+      "owner": "PM/BAS",
+      "status": "OPEN_NEEDS_SIGNOFF",
+      "finding": "WWHN-327 và WWHN-328 chưa có Jira issue link; dependency HN-STR-002-ST01 chưa được map.",
+      "rootFix": "PM/BAS tạo issue link và map dependency.",
+      "evidence": []
+    }
+  ],
+  "truthBoundary": [
+    "Bằng chứng FE ở đây là hành vi render có kiểm soát trên payload mock deterministic.",
+    "Không phải bằng chứng backend thực sự cắt data-scope theo scope_ref.",
+    "Không phải bằng chứng UAT và không thay QA2 độc lập trên WWHN-329.",
+    "Không tái sử dụng ảnh/PASS của một SHA khác làm bằng chứng đóng task.",
+    "FE chỉ ký phần FE-owned; các mục OPEN_NEEDS_SIGNOFF phải do đúng vai trò khác đóng."
+  ]
+}

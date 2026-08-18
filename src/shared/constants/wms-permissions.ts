@@ -1,5 +1,10 @@
 export const WMS_PERMISSION_CATALOG = {
-  DASHBOARD_VIEW: "report.dashboard.view",
+  /**
+   * WWHN-327: dashboard dùng đúng `report.view`. `report.dashboard.view` chưa từng
+   * tồn tại trong AuthDatabaseSeeder nên mọi gate dựa vào nó sẽ fail-closed vĩnh viễn
+   * và ẩn màn Dashboard khỏi cả role hợp lệ. Giữ tên hằng, trỏ về mã BE canonical.
+   */
+  DASHBOARD_VIEW: "report.view",
 
   // IAM / foundation
   IAM_USER_VIEW: "iam.user.view",
