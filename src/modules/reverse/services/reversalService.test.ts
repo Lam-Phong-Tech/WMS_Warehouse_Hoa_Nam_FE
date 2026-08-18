@@ -84,7 +84,9 @@ describe("reversalService — luồng 05 REV-00/REV-01", () => {
 
     const [line] = await fetchReversalLines("rev-1");
 
-    expect(http.getPage).toHaveBeenCalledWith("/reversal-documents/rev-1/lines");
+    expect(http.getPage).toHaveBeenCalledWith(
+      "/reversal-documents/rev-1/lines",
+    );
     expect(line.original_qty).toBe(5);
     expect(line.reversal_qty).toBe(2);
     expect(line.remaining_qty).toBe(3);

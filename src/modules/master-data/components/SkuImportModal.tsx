@@ -19,7 +19,11 @@ import {
   UploadOutlined,
 } from "@ant-design/icons";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { getApiErrorMessage, isNoPermissionError } from "@/shared/api/api-error";
+import {
+  getApiErrorMessage,
+  isNoPermissionError,
+  normalizeError,
+} from "@/shared/api/api-error";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import {
   downloadSkuImportErrorFile,
@@ -40,14 +44,20 @@ interface SkuImportModalProps {
   onImported: () => void;
 }
 
-/** Tách riêng khỏi component body: react-hooks/purity không cho gọi Date.now() trực
- * tiếp trong render của một component. */
-function isPastExpiry(isoTimestamp: string | null): boolean {
-  if (!isoTimestamp) return false;
-  return new Date(isoTimestamp).getTime() < Date.now();
+/** Hiển thị mốc hết hạn cho người dùng — chỉ để đọc, không dùng để quyết định UI. */
+function formatExpiry(isoTimestamp: string | null): string {
+  if (!isoTimestamp) return "";
+  const parsed = new Date(isoTimestamp);
+  return Number.isNaN(parsed.getTime())
+    ? ""
+    : ` (hạn tải: ${parsed.toLocaleString("vi-VN")})`;
 }
 
-function handleBlobDownload(blob: Blob, fallbackFileName: string, fileName: string | null) {
+function handleBlobDownload(
+  blob: Blob,
+  fallbackFileName: string,
+  fileName: string | null,
+) {
   const url = URL.createObjectURL(blob);
   try {
     const anchor = document.createElement("a");
@@ -79,15 +89,30 @@ const ROW_ERROR_COLUMNS: ColumnsType<SkuImportRowError> = [
   },
 ];
 
+const ERROR_FILE_GONE_HINT =
+  "File lỗi CSV không còn tải được: báo cáo này không có dòng lỗi, hoặc file đã quá hạn 24h và bị dọn dẹp định kỳ. Chạy lại Kiểm tra trước (dry-run) để sinh báo cáo lỗi mới; bảng lỗi ở trên vẫn dùng đối soát được.";
+
 /**
- * WWHN-330 P1-01/03: khu vực tải file lỗi CSV theo Import báo cáo. `error_file_path`/
- * `error_file_expires_at` chỉ có giá trị thật sau khi BE hoàn thiện việc gọi
- * ImportErrorFileService::generate() từ ImportController::persistReport() — tại thời
- * điểm review WWHN-331 field này luôn null nên khu vực này chỉ hiện dòng trạng thái,
- * không hiện nút bấm dẫn tới chắc chắn 404. Khi BE bổ sung xong, nút tải sẽ tự sáng
- * lên mà không cần sửa FE lần nữa (chỉ cần field trả về đúng).
+ * WWHN-330 P1-01 / WWHN-331 FE331-P1-03: khu vực tải file lỗi CSV theo Import báo cáo.
+ *
+ * Quyết định "có nút tải hay không" lấy DUY NHẤT từ `error_file_available` do BE tính
+ * (đã sinh file VÀ chưa hết hạn), đúng bằng điều kiện endpoint tải dùng để trả 200 hay
+ * 404 — nên UI không bao giờ hiện một nút chắc chắn 404, và cũng không tự so hạn dùng
+ * bằng đồng hồ máy client (lệch giờ/timezone sẽ cho kết quả sai).
+ *
+ * `availableHint` là giá trị BE đã trả ngay trong response import (cùng field, cùng
+ * cách tính) nên khu vực này hiển thị đúng ngay lần render đầu, không nháy "đang kiểm
+ * tra"; query báo cáo chỉ để làm mới trạng thái (vd. file vừa bị dọn) và lấy mốc hết hạn.
  */
-function SkuImportErrorFilePanel({ reportId }: { reportId: string }) {
+function SkuImportErrorFilePanel({
+  reportId,
+  availableHint,
+  expiresAtHint,
+}: {
+  reportId: string;
+  availableHint: boolean;
+  expiresAtHint: string | null;
+}) {
   const reportQuery = useQuery({
     queryKey: ["sku-import-report", reportId],
     queryFn: () => fetchSkuImportReport(reportId),
@@ -100,21 +125,23 @@ function SkuImportErrorFilePanel({ reportId }: { reportId: string }) {
       handleBlobDownload(blob, `sku-import-errors-${reportId}.csv`, fileName);
       toast.success("Đã tải file lỗi CSV.");
     },
+    onError: (error) => {
+      // File có thể vừa bị dọn/hết hạn ngay giữa lúc người dùng bấm — trạng thái
+      // thật đã đổi, nên lấy lại báo cáo để nút tự tắt thay vì để người dùng bấm lại
+      // vào một hành động chắc chắn thất bại.
+      if (normalizeError(error).status === 404) {
+        void reportQuery.refetch();
+      }
+    },
   });
 
-  if (reportQuery.isLoading) {
-    return (
-      <Typography.Text type="secondary">
-        Đang kiểm tra file lỗi CSV…
-      </Typography.Text>
-    );
+  if (reportQuery.error && isNoPermissionError(reportQuery.error)) {
+    // RBAC: không đủ quyền xem Import báo cáo — ẩn hẳn khu vực tải, không lộ trạng thái.
+    return null;
   }
 
-  if (reportQuery.error) {
-    if (isNoPermissionError(reportQuery.error)) {
-      // RBAC: không đủ quyền xem Import báo cáo — ẩn hẳn khu vực tải, không lộ trạng thái.
-      return null;
-    }
+  // Lỗi khác (mạng/5xx) mà chưa từng có dữ liệu: cho retry tường minh, không chặn màn hình.
+  if (reportQuery.error && !reportQuery.data) {
     return (
       <ApiErrorAlert
         error={reportQuery.error}
@@ -125,46 +152,49 @@ function SkuImportErrorFilePanel({ reportId }: { reportId: string }) {
   }
 
   const report = reportQuery.data;
-  if (!report) return null;
+  const available = report ? report.errorFileAvailable : availableHint;
+  const expiresAt = report ? report.errorFileExpiresAt : expiresAtHint;
 
-  if (!report.errorFilePath) {
-    return (
-      <Typography.Text type="secondary">
-        File lỗi CSV tải về chưa khả dụng (BE đang hoàn thiện WWHN-330 P1-01). Dùng
-        bảng lỗi ở trên để đối soát trong lúc chờ.
-      </Typography.Text>
-    );
-  }
-
-  if (isPastExpiry(report.errorFileExpiresAt)) {
-    const expiresAt = report.errorFileExpiresAt
-      ? new Date(report.errorFileExpiresAt)
-      : null;
+  if (!available) {
     return (
       <Space wrap>
-        <Tag color="default">Hết hạn</Tag>
+        <Tag color="default">Không còn file lỗi</Tag>
         <Typography.Text type="secondary">
-          File lỗi CSV đã hết hạn tải về
-          {expiresAt ? ` lúc ${expiresAt.toLocaleString("vi-VN")}` : ""}. Chạy lại
-          import (dry-run) để sinh báo cáo lỗi mới.
+          {ERROR_FILE_GONE_HINT}
         </Typography.Text>
       </Space>
     );
   }
 
+  const downloadError = downloadMutation.error;
+
   return (
     <Space orientation="vertical" size={6}>
-      <Button
-        icon={<DownloadOutlined />}
-        loading={downloadMutation.isPending}
-        onClick={() => downloadMutation.mutate()}
-      >
-        Tải file lỗi (CSV)
-      </Button>
-      {downloadMutation.error ? (
-        isNoPermissionError(downloadMutation.error) ? null : (
+      <Space wrap align="center">
+        <Button
+          icon={<DownloadOutlined />}
+          loading={downloadMutation.isPending || reportQuery.isFetching}
+          disabled={downloadMutation.isPending}
+          onClick={() => downloadMutation.mutate()}
+        >
+          Tải file lỗi (CSV)
+        </Button>
+        <Typography.Text type="secondary">
+          {`Gồm cột row/field/error_code/message/value cho từng dòng bị từ chối${formatExpiry(expiresAt)}.`}
+        </Typography.Text>
+      </Space>
+      {downloadError ? (
+        isNoPermissionError(downloadError) ? (
+          <Typography.Text type="secondary">
+            Bạn không có quyền tải file lỗi của Import báo cáo này.
+          </Typography.Text>
+        ) : normalizeError(downloadError).status === 404 ? (
+          <Typography.Text type="secondary">
+            {ERROR_FILE_GONE_HINT}
+          </Typography.Text>
+        ) : (
           <ApiErrorAlert
-            error={downloadMutation.error}
+            error={downloadError}
             title="Không tải được file lỗi"
             onRetry={() => downloadMutation.mutate()}
           />
@@ -193,8 +223,12 @@ function ResultSummary({
       </Typography.Text>
       {result.dryRun ? (
         <>
-          <Typography.Text>Sẽ tạo mới: {result.wouldInsertRows}</Typography.Text>
-          <Typography.Text>Sẽ cập nhật: {result.wouldUpdateRows}</Typography.Text>
+          <Typography.Text>
+            Sẽ tạo mới: {result.wouldInsertRows}
+          </Typography.Text>
+          <Typography.Text>
+            Sẽ cập nhật: {result.wouldUpdateRows}
+          </Typography.Text>
         </>
       ) : (
         <>
@@ -250,7 +284,8 @@ export function SkuImportModal({
 
   const previewMutation = useMutation({
     mutationFn: async () => {
-      if (!file) throw new Error("Chọn file Excel (.xlsx/.xls) trước khi kiểm tra.");
+      if (!file)
+        throw new Error("Chọn file Excel (.xlsx/.xls) trước khi kiểm tra.");
       return importSkuExcel(file, { updateExisting, dryRun: true });
     },
     onSuccess: (result) => {
@@ -280,7 +315,8 @@ export function SkuImportModal({
 
   const commitMutation = useMutation({
     mutationFn: async () => {
-      if (!file) throw new Error("Chọn file Excel (.xlsx/.xls) trước khi import.");
+      if (!file)
+        throw new Error("Chọn file Excel (.xlsx/.xls) trước khi import.");
       return importSkuExcel(file, { updateExisting, dryRun: false });
     },
     onSuccess: (result) => {
@@ -384,10 +420,11 @@ export function SkuImportModal({
           </Button>
         </Space>
         <Typography.Text type="secondary">
-          Cột bắt buộc: sku_code, sku_name. Cột tùy chọn: unit, sku_type, brand_code,
-          category_code, model_code, power_or_voltage, package_variant, version_code,
-          published_to_app, is_serial_tracked, status. Bật update_existing để cho phép
-          ghi đè SKU đã tồn tại (mặc định chặn, trả DUPLICATE_CODE).
+          Cột bắt buộc: sku_code, sku_name. Cột tùy chọn: unit, sku_type,
+          brand_code, category_code, model_code, power_or_voltage,
+          package_variant, version_code, published_to_app, is_serial_tracked,
+          status. Bật update_existing để cho phép ghi đè SKU đã tồn tại (mặc
+          định chặn, trả DUPLICATE_CODE).
         </Typography.Text>
 
         <Space wrap>
@@ -414,7 +451,8 @@ export function SkuImportModal({
             </Typography.Text>
           ) : !previewResult && !commitMutation.isPending ? (
             <Typography.Text type="secondary">
-              Phải Kiểm tra trước (dry-run) hết lỗi mới bấm được Import chính thức.
+              Phải Kiểm tra trước (dry-run) hết lỗi mới bấm được Import chính
+              thức.
             </Typography.Text>
           ) : null}
         </Space>
@@ -456,7 +494,11 @@ export function SkuImportModal({
               />
             )}
             {showErrorPanel && activeResult.importReportId ? (
-              <SkuImportErrorFilePanel reportId={activeResult.importReportId} />
+              <SkuImportErrorFilePanel
+                reportId={activeResult.importReportId}
+                availableHint={activeResult.errorFileAvailable}
+                expiresAtHint={activeResult.errorFileExpiresAt}
+              />
             ) : null}
           </Space>
         )}

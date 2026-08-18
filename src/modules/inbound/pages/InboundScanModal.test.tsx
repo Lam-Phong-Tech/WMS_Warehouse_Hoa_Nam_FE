@@ -6,10 +6,16 @@ import { cleanupTestState } from "@/test/setup";
 vi.mock("@/modules/inbound/hooks/use-inbound", () => ({
   useInboundDetail: vi.fn(),
   useInboundScanEntries: vi.fn(),
-  useRegisterInboundBox: vi.fn(() => ({ isPending: false, mutateAsync: vi.fn() })),
+  useRegisterInboundBox: vi.fn(() => ({
+    isPending: false,
+    mutateAsync: vi.fn(),
+  })),
   useScanInbound: vi.fn(() => ({ isPending: false, mutateAsync: vi.fn() })),
   useUnscanInbound: vi.fn(),
-  usePostInboundReceipt: vi.fn(() => ({ isPending: false, mutateAsync: vi.fn() })),
+  usePostInboundReceipt: vi.fn(() => ({
+    isPending: false,
+    mutateAsync: vi.fn(),
+  })),
   useCancelInbound: vi.fn(() => ({ isPending: false, mutateAsync: vi.fn() })),
 }));
 vi.mock("@/modules/master-data/hooks/use-mvp-master", () => ({

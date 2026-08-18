@@ -79,9 +79,8 @@ describe("WMS route access contract", () => {
   });
 
   it("keeps canonical BE permission spelling for sensitive routes", async () => {
-    const { WMS_PERMISSION_CATALOG: P, canonicalizeWmsPermission } = await import(
-      "@/shared/constants/wms-permissions"
-    );
+    const { WMS_PERMISSION_CATALOG: P, canonicalizeWmsPermission } =
+      await import("@/shared/constants/wms-permissions");
 
     expect(P.AUDIT_LOG_VIEW).toBe("audit_log.view");
     expect(canonicalizeWmsPermission("AUDIT_LOG_VIEW")).toBe("audit_log.view");

@@ -90,8 +90,7 @@ export function useConfirmReversal() {
 export function usePostReversal() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (payload: ReversalPostRequest) =>
-      postReversalDocument(payload),
+    mutationFn: (payload: ReversalPostRequest) => postReversalDocument(payload),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: reversalKeys.all }),
   });

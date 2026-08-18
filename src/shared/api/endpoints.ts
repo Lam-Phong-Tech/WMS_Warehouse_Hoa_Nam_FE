@@ -170,12 +170,14 @@ export const API_ENDPOINTS = {
   SKU_IMPORT_EXCEL: "/skus/import-excel",
   SKU_IMPORT_REPORTS: "/skus/import-reports",
   SKU_IMPORT_REPORT: "/skus/import-reports/:id",
-  // WWHN-330 P1-01: path lấy từ mô tả OpenAPI trong ImportController::importExcel
-  // (BE, đang sửa song song). Tại thời điểm thêm constant này, route GET .../{id}/
-  // error-file CHƯA được khai trong routes/import.php và ImportReportController
-  // chưa có action tương ứng — ImportErrorFileService::generate() cũng chưa được
-  // gọi từ đâu cả nên error_file_path luôn null. FE dùng constant này nhưng phải
-  // tự ẩn nút tải khi report chưa có error_file_path (xem SkuImportModal).
+  // WWHN-330 P1-01: route GET .../{id}/error-file ĐÃ được khai thật ở BE
+  // (Modules/Warehouse/routes/import.php → ImportReportController::downloadErrorFile,
+  // permission sku.manage) và trả CSV do ImportErrorFileService sinh ra, lưu tại
+  // storage/app/import-error-files. BE trả 404 THỐNG NHẤT cho cả 3 ca "report không có
+  // file lỗi" / "file đã hết hạn" / "không tìm thấy" (cố ý, tránh lộ existence), nên FE
+  // bật/tắt nút tải theo `error_file_available` — boolean do BE tính ở server, đúng bằng
+  // điều kiện endpoint này dùng để trả 200 hay 404 (xem SkuImportModal). Đường dẫn lưu
+  // trữ nội bộ `error_file_path` không được BE trả ra ngoài.
   SKU_IMPORT_REPORT_ERROR_FILE: "/skus/import-reports/:id/error-file",
   /** @deprecated ERD bảng import_batch (item_instance traceability) — không phải SKU import. */
   IMPORT_BATCHES: "/import-batches",

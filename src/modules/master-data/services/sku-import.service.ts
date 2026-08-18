@@ -88,6 +88,16 @@ export interface SkuImportResult {
   rowErrors: SkuImportRowError[];
   /** Có thể null nếu BE ghi Import báo cáo thất bại (best-effort, xem persistReport()). */
   importReportId: string | null;
+  /**
+   * WWHN-330 P1-01: BE tự trả lời "lần import này có file lỗi CSV tải được hay không"
+   * ngay trong response 422 (ImportController::importExcel gán từ accessor
+   * ImportReport::error_file_available — đã tính cả điều kiện hết hạn ở server).
+   * Nhờ vậy UI biết ngay có nút tải hay không mà không cần gọi thêm GET báo cáo, và
+   * không bao giờ tự so hạn dùng bằng đồng hồ máy client.
+   */
+  errorFileAvailable: boolean;
+  /** Chỉ để hiển thị mốc hết hạn cho người dùng; KHÔNG dùng để tự quyết định availability. */
+  errorFileExpiresAt: string | null;
 }
 
 function normalizeRowError(raw: unknown): SkuImportRowError {
@@ -102,7 +112,9 @@ function normalizeRowError(raw: unknown): SkuImportRowError {
 }
 
 export function normalizeSkuImportResult(payload: RawRecord): SkuImportResult {
-  const rowErrorsRaw = Array.isArray(payload.row_errors) ? payload.row_errors : [];
+  const rowErrorsRaw = Array.isArray(payload.row_errors)
+    ? payload.row_errors
+    : [];
   return {
     templateVersion: text(payload.template_version),
     transactionMode: text(payload.transaction_mode),
@@ -127,6 +139,11 @@ export function normalizeSkuImportResult(payload: RawRecord): SkuImportResult {
     rowErrors: rowErrorsRaw.map(normalizeRowError),
     importReportId:
       payload.import_report_id != null ? text(payload.import_report_id) : null,
+    errorFileAvailable: bool(payload.error_file_available),
+    errorFileExpiresAt:
+      payload.error_file_expires_at != null
+        ? text(payload.error_file_expires_at)
+        : null,
   };
 }
 
@@ -173,7 +190,10 @@ export async function importSkuExcel(
   body.append("dry_run", String(options.dryRun ?? false));
 
   try {
-    const data = await http.post<RawRecord>(API_ENDPOINTS.SKU_IMPORT_EXCEL, body);
+    const data = await http.post<RawRecord>(
+      API_ENDPOINTS.SKU_IMPORT_EXCEL,
+      body,
+    );
     return normalizeSkuImportResult(data);
   } catch (error) {
     const embedded = getResponseDataForImport(error);
@@ -182,8 +202,8 @@ export async function importSkuExcel(
       const message =
         typeof (error as { response?: { data?: { message?: unknown } } })
           .response?.data?.message === "string"
-          ? ((error as { response: { data: { message: string } } }).response
-              .data.message)
+          ? (error as { response: { data: { message: string } } }).response.data
+              .message
           : "Import bị từ chối.";
       throw new SkuImportRejectedError(result, message, error);
     }
@@ -222,18 +242,24 @@ export interface SkuImportReportRecord {
   updatedRows: number;
   rowErrors: SkuImportRowError[];
   /**
-   * WWHN-330 P1-01: chỉ true khi BE thật sự đã sinh file CSV lỗi
-   * (ImportErrorFileService::generate()) VÀ ghi error_file_path vào bản ghi. Tại thời
-   * điểm review WWHN-331, ImportController::persistReport() chưa gọi service này nên
-   * field này luôn null — nút tải file lỗi phải ẩn/disable cho tới khi BE hoàn thiện.
+   * WWHN-330 P1-01: nguồn sự thật DUY NHẤT để bật/tắt nút tải file lỗi.
+   *
+   * BE tính field này ở server (ImportReport::error_file_available = đã sinh file VÀ
+   * chưa quá hạn) đúng bằng điều kiện mà endpoint tải dùng để trả 200 hay 404, nên UI
+   * không bao giờ hiện nút dẫn tới chắc chắn 404. `error_file_path` (đường dẫn lưu trữ
+   * nội bộ) KHÔNG được BE trả ra ngoài nữa và FE cũng không được phụ thuộc vào nó.
    */
-  errorFilePath: string | null;
+  errorFileAvailable: boolean;
+  /** Chỉ để hiển thị mốc hết hạn cho người dùng; KHÔNG dùng để tự tính availability. */
   errorFileExpiresAt: string | null;
   duplicateOfReplay: boolean;
   createdAt: string | null;
 }
 
-function normalizeSkuImportReport(raw: RawRecord): SkuImportReportRecord {
+/** Export để test được mapper thuần này mà không phải dựng HTTP mock. */
+export function normalizeSkuImportReport(
+  raw: RawRecord,
+): SkuImportReportRecord {
   const rowErrorsRaw = Array.isArray(raw.row_errors) ? raw.row_errors : [];
   return {
     id: text(raw.import_report_id ?? raw.id),
@@ -242,16 +268,19 @@ function normalizeSkuImportReport(raw: RawRecord): SkuImportReportRecord {
     status: text(raw.status),
     fileName: raw.file_name != null ? text(raw.file_name) : null,
     fileSha256: text(raw.file_sha256),
-    templateVersion: raw.template_version != null ? text(raw.template_version) : null,
+    templateVersion:
+      raw.template_version != null ? text(raw.template_version) : null,
     totalRows: num(raw.total_rows),
     validRows: num(raw.valid_rows),
     errorRows: num(raw.error_rows),
     insertedRows: num(raw.inserted_rows),
     updatedRows: num(raw.updated_rows),
     rowErrors: rowErrorsRaw.map(normalizeRowError),
-    errorFilePath: raw.error_file_path != null ? text(raw.error_file_path) : null,
+    errorFileAvailable: bool(raw.error_file_available),
     errorFileExpiresAt:
-      raw.error_file_expires_at != null ? text(raw.error_file_expires_at) : null,
+      raw.error_file_expires_at != null
+        ? text(raw.error_file_expires_at)
+        : null,
     duplicateOfReplay: bool(raw.duplicate_of_replay),
     createdAt: raw.created_at != null ? text(raw.created_at) : null,
   };
@@ -267,10 +296,13 @@ export async function fetchSkuImportReport(
 }
 
 /**
- * GET /skus/import-reports/{id}/error-file — path lấy từ mô tả OpenAPI của
- * ImportController::importExcel (BE). CHƯA có route/controller action thật tại thời
- * điểm review (xem ghi chú ở endpoints.ts) nên có thể trả 404 route-not-found cho tới
- * khi BE hoàn thiện WWHN-330 P1-01; UI phải xử lý 404 như một trạng thái hợp lệ.
+ * GET /skus/import-reports/{id}/error-file — route thật tại
+ * Modules/Warehouse/routes/import.php (ImportReportController::downloadErrorFile),
+ * permission `sku.manage`, trả text/csv.
+ *
+ * 404 vẫn là một trạng thái hợp lệ chứ không phải sự cố: báo cáo không có dòng lỗi,
+ * file đã hết hạn (24h), hoặc file đã bị lệnh `import:purge-error-files` dọn. UI phải
+ * hiển thị đúng nghĩa đó thay vì báo lỗi kỹ thuật chung chung.
  */
 export async function downloadSkuImportErrorFile(
   reportId: string,

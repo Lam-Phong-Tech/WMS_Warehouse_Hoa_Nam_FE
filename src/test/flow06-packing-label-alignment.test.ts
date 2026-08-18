@@ -55,7 +55,9 @@ describe("Flow 06 Packing Label alignment", () => {
       '"/outbound-documents/:id/packing-labels/:labelId/reprint"',
     );
     // Annex C: scan = /scans, confirm import = /confirm, RFID = PUT .../rfid.
-    expect(endpoints).toContain('OUTBOUND_SCAN: "/outbound-documents/:id/scans"');
+    expect(endpoints).toContain(
+      'OUTBOUND_SCAN: "/outbound-documents/:id/scans"',
+    );
     expect(endpoints).toContain(
       'OUTBOUND_REQUEST_IMPORT_CONFIRM: "/outbound-request-imports/:id/confirm"',
     );
@@ -81,8 +83,12 @@ describe("Flow 06 Packing Label alignment", () => {
 
   it("keeps outbound documents creatable only through toa confirm (§8.1)", () => {
     const shipping = read("src/modules/shipping/services/shippingService.ts");
-    expect(shipping).not.toContain("export async function createOutboundDocument");
-    expect(shipping).not.toContain("export async function updateOutboundDocument");
+    expect(shipping).not.toContain(
+      "export async function createOutboundDocument",
+    );
+    expect(shipping).not.toContain(
+      "export async function updateOutboundDocument",
+    );
 
     const intake = read(
       "src/modules/outbound/components/OutboundIntakeModal.tsx",

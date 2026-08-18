@@ -70,7 +70,9 @@ function useCanManage(permission: string | string[]) {
   const permissionCodes = useAuthStore((state) => state.permissionCodes);
   const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
   const required = Array.isArray(permission) ? permission : [permission];
-  return isSuperAdmin || required.some((code) => permissionCodes.includes(code));
+  return (
+    isSuperAdmin || required.some((code) => permissionCodes.includes(code))
+  );
 }
 
 /**

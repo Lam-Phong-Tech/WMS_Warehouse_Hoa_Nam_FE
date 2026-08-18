@@ -224,7 +224,11 @@ export function BalanceDetailModal({
           <Descriptions.Item label="Tên hàng">{balance.name}</Descriptions.Item>
           <Descriptions.Item label="Kho">{balance.warehouse}</Descriptions.Item>
           <Descriptions.Item label="Trạng thái tồn">
-            <Tag color={balance.stockStatus === "AVAILABLE" ? "success" : "warning"}>
+            <Tag
+              color={
+                balance.stockStatus === "AVAILABLE" ? "success" : "warning"
+              }
+            >
               {balance.stockStatus}
             </Tag>
           </Descriptions.Item>

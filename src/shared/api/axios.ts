@@ -94,11 +94,7 @@ api.interceptors.request.use((config) => {
   // writes without relying on individual screens to remember an offline guard.
   if (isOfflineMutationBlocked(config.method)) {
     return Promise.reject(
-      new AxiosError(
-        OFFLINE_MUTATION_MESSAGE,
-        OFFLINE_MUTATION_CODE,
-        config,
-      ),
+      new AxiosError(OFFLINE_MUTATION_MESSAGE, OFFLINE_MUTATION_CODE, config),
     );
   }
 

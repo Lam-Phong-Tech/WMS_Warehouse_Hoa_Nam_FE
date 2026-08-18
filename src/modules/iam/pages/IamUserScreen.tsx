@@ -77,7 +77,10 @@ function statusClass(status: IamUserStatus) {
  * SCR-IAM-01 cột "Phạm vi": scope_ref trỏ tới kho (ERD user_roles). Hiển thị tên
  * kho thay vì uuid; không có scope_ref nghĩa là vai trò áp toàn hệ thống.
  */
-function scopeLabel(role: IamRole | undefined, warehouseNames: Map<string, string>) {
+function scopeLabel(
+  role: IamRole | undefined,
+  warehouseNames: Map<string, string>,
+) {
   if (!role) return "Chưa gán";
   const scopeRef = role.pivot?.scope_ref;
   if (scopeRef) return warehouseNames.get(scopeRef) ?? scopeRef;

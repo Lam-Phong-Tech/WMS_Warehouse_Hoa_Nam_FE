@@ -140,7 +140,10 @@
 
 .hn-dashboard-bar-row {
   display: grid;
-  grid-template-columns: minmax(100px, 130px) minmax(120px, 1fr) minmax(70px, auto);
+  grid-template-columns: minmax(100px, 130px) minmax(120px, 1fr) minmax(
+      70px,
+      auto
+    );
   gap: 10px;
   align-items: center;
 }

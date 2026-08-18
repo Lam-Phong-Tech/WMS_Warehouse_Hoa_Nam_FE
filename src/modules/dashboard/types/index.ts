@@ -14,8 +14,18 @@ export interface ReconciliationWarning {
   [key: string]: unknown;
 }
 
+/**
+ * WWHN-328: dashboard chịu đúng warehouse data-scope của người gọi. GLOBAL = không
+ * giới hạn kho; WAREHOUSE_SCOPED = số liệu đã bị BE cắt về scope_warehouse_ids.
+ */
+export type DashboardDataScope = "GLOBAL" | "WAREHOUSE_SCOPED";
+
 export interface DashboardKPI {
   period: DashboardPeriod;
+  /** Phạm vi dữ liệu BE đã áp dụng cho toàn bộ KPI bên dưới. */
+  data_scope: DashboardDataScope;
+  /** null khi GLOBAL; danh sách kho đã áp dụng khi WAREHOUSE_SCOPED. */
+  scope_warehouse_ids: string[] | null;
   /** Snapshot AVAILABLE hiện tại; không lọc theo period. */
   available_qty: number;
   /** Tổng RECEIPT theo stock_movements.occurred_at trong period. */
@@ -28,6 +38,11 @@ export interface DashboardKPI {
   reversal_net: number;
   /** Toàn bộ warranty case theo status; không lọc theo period. */
   warranty_cases_by_status: Record<string, number>;
-  /** Các dòng reconciliation_status=MISMATCH tại thời điểm gọi. */
+  /**
+   * WWHN-328: tổng số dòng MISMATCH trong data-scope. Đây mới là con số để hiển thị —
+   * mảng bên dưới đã bị BE cắt trần (50 dòng) nên .length không còn là tổng.
+   */
+  reconciliation_warning_count: number;
+  /** Mẫu tối đa 50 dòng reconciliation_status=MISMATCH tại thời điểm gọi. */
   reconciliation_warnings: ReconciliationWarning[];
 }

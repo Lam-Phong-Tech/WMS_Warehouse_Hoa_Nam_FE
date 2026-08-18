@@ -40,6 +40,30 @@ Production domain/origin/secret không được hard-code. DEV/UAT/PROD phải i
 | Component issue cancel | `componentIssueService.ts` | POST | `/warranty-component-issues/{id}/cancel` | `/api/v1/warranty-component-issues/{id}/cancel` | `warranty.component_issue` | Reason required. |
 | Component issue post | `componentIssueService.ts` | POST | `/warranty-component-issues/{id}/post` | `/api/v1/warranty-component-issues/{id}/post` | `warranty.component_issue` | Explicit stock-decrease boundary with movement evidence. |
 
+## Bulk SKU import mappings — WWHN-89 / WWHN-330 / WWHN-331 (PL01-04)
+
+Nguồn contract: `Modules/Warehouse/routes/import.php` (BE `m1`) → `ImportController`,
+`ImportReportController`. Cả 5 route dùng chung một permission `sku.manage` — không có
+permission `import.*` riêng, và **không** dùng `/import-batches` (đó là resource
+`ImportBatch`/`item_instance` khác hẳn, permission `import_batch.*`).
+
+| Flow | FE service | Method | Endpoint constant path | Effective runtime path | Permission | Disposition |
+| --- | --- | --- | --- | --- | --- | --- |
+| Tải template Excel | `sku-import.service.ts` | GET | `/skus/import-template` | `/api/v1/skus/import-template` | `sku.manage` | Read-only, `stock_effect=NONE`. |
+| Import Excel (dry-run và commit) | `sku-import.service.ts` | POST | `/skus/import-excel` | `/api/v1/skus/import-excel` | `sku.manage` | Single-shot: `dry_run=true` chỉ kiểm tra, `dry_run=false` commit all-or-nothing. Không có API confirm theo id riêng. Master data, không đổi tồn. |
+| Danh sách Import báo cáo | `sku-import.service.ts` | GET | `/skus/import-reports` | `/api/v1/skus/import-reports` | `sku.manage` | Read-only; trả `error_file_available`, không trả `error_file_path`. |
+| Chi tiết Import báo cáo | `sku-import.service.ts` | GET | `/skus/import-reports/:id` | `/api/v1/skus/import-reports/{id}` | `sku.manage` | Nguồn sự thật cho trạng thái file lỗi. |
+| Tải file lỗi CSV | `sku-import.service.ts` | GET | `/skus/import-reports/:id/error-file` | `/api/v1/skus/import-reports/{id}/error-file` | `sku.manage` | `text/csv`; 404 thống nhất cho không có file lỗi / hết hạn / không tìm thấy. |
+
+Hợp đồng response mà UI phụ thuộc (đã có test cả hai phía):
+
+| Field | Nguồn | Ý nghĩa với UI |
+| --- | --- | --- |
+| `duplicate` / `duplicate_of_import_report_id` | response import | Idempotent replay theo `sha256 + actor` trong 24h — hiển thị "đã import trước đó", không phải lỗi. |
+| `error_file_available` | response import 422 và chi tiết Import báo cáo | Boolean do server tính (đã sinh file **và** chưa hết hạn), đúng bằng điều kiện endpoint tải dùng để trả 200/404 — quyết định bật/tắt nút tải. |
+| `error_file_expires_at` | như trên | Chỉ hiển thị mốc hết hạn cho người dùng; FE không tự so với đồng hồ máy client. |
+| `duplicate_of_replay` | chi tiết Import báo cáo | Marker truy vết: báo cáo này đã từng được trả lại cho một lần gửi trùng file. |
+
 ## Reports disposition — flow 06
 
 | Screen/action | Method | Path | Current disposition |

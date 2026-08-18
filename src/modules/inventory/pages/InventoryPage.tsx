@@ -52,9 +52,7 @@ export default function InventoryPage() {
 
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
-  const [stockStatus, setStockStatus] = useState<
-    InventoryStockStatus | ""
-  >("");
+  const [stockStatus, setStockStatus] = useState<InventoryStockStatus | "">("");
   const [skuType, setSkuType] = useState<"PRODUCT" | "COMPONENT" | "">("");
   const [movementSearch, setMovementSearch] = useState("");
   const [movementType, setMovementType] = useState("");
@@ -406,7 +404,9 @@ export default function InventoryPage() {
                     value={skuType}
                     aria-label="Lọc loại hàng"
                     onChange={(e) => {
-                      setSkuType(e.target.value as "PRODUCT" | "COMPONENT" | "");
+                      setSkuType(
+                        e.target.value as "PRODUCT" | "COMPONENT" | "",
+                      );
                       setBalancePage(1);
                     }}
                   >
@@ -419,7 +419,9 @@ export default function InventoryPage() {
                     value={stockStatus}
                     aria-label="Lọc trạng thái tồn"
                     onChange={(e) => {
-                      setStockStatus(e.target.value as InventoryStockStatus | "");
+                      setStockStatus(
+                        e.target.value as InventoryStockStatus | "",
+                      );
                       setBalancePage(1);
                     }}
                   >

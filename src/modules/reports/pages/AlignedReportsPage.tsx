@@ -995,9 +995,7 @@ export default function AlignedReportsPage() {
       const downloadUrl = text(job.download_url, "");
       const { blob, fileName } = await http.downloadFile(
         downloadUrl ? stripApiPrefix(downloadUrl) : config.exportEndpoint,
-        downloadUrl
-          ? undefined
-          : { params: { ...filters, format } },
+        downloadUrl ? undefined : { params: { ...filters, format } },
       );
       // BR-EXP-03: ưu tiên tên file BE đặt vì chỉ nó mang timestamp phát hành.
       const suffix = config.dateFilter ? `-${from}-${to}` : "";
@@ -1162,7 +1160,9 @@ export default function AlignedReportsPage() {
             style={{ width: 190 }}
             placeholder="Chốt số liệu (as_of)"
             value={asOf}
-            disabledDate={(current) => current && current.isAfter(dayjs(), "day")}
+            disabledDate={(current) =>
+              current && current.isAfter(dayjs(), "day")
+            }
             onChange={(value) => {
               setAsOf(value);
               resetPage();

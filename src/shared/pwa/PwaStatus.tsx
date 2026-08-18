@@ -41,7 +41,9 @@ export function PwaStatus() {
 
   return (
     <div className="wms-pwa-status wms-pwa-status--update" role="status">
-      <span>Có phiên bản ứng dụng mới, cần tải lại để tránh chạy bundle cũ.</span>
+      <span>
+        Có phiên bản ứng dụng mới, cần tải lại để tránh chạy bundle cũ.
+      </span>
       <button type="button" onClick={activateWaitingServiceWorker}>
         Cập nhật ngay
       </button>

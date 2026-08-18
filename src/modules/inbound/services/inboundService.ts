@@ -115,10 +115,7 @@ function normalizeDocument(row: RawRecord): InboundDocument {
     // Annex A / Annex D gọi field này là `source_reference`; BE trả cả alias đó và
     // cột vật lý `source_name`. Không fallback sang `note` nữa: ghi chú là field
     // khác hẳn, đổ vào cột "Nguồn / tham chiếu" là hiển thị sai dữ liệu.
-    source: text(
-      row.source_reference ?? row.source_name ?? row.source,
-      "-",
-    ),
+    source: text(row.source_reference ?? row.source_name ?? row.source, "-"),
     date: text(row.doc_date ?? row.date ?? row.created_at),
     warehouseId: text(row.dst_warehouse_id ?? row.warehouse_id),
     expected,
@@ -132,8 +129,7 @@ function normalizeDocument(row: RawRecord): InboundDocument {
     ),
     updatedAt: text(row.updated_at) || undefined,
     version: num(row.version ?? row.lock_version ?? 1),
-    sourceReference:
-      text(row.source_reference ?? row.source_name) || undefined,
+    sourceReference: text(row.source_reference ?? row.source_name) || undefined,
     note: text(row.note) || undefined,
   };
 }

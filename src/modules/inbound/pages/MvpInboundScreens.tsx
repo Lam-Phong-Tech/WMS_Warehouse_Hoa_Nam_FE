@@ -375,7 +375,9 @@ export function InboundScanModal({
     ? Math.min(100, Math.round((totalScanned / totalExpected) * 100))
     : 0;
   const scanEntries = scanEntriesQuery.data ?? [];
-  const activeEntries = scanEntries.filter((entry) => entry.status === "ACTIVE");
+  const activeEntries = scanEntries.filter(
+    (entry) => entry.status === "ACTIVE",
+  );
   const removedEntryCount = scanEntries.length - activeEntries.length;
   const sessionDuplicateCount = scanLog.filter(
     (row) => !row.success && (row.errorCode ?? "").includes("DUPLICATE"),
@@ -670,7 +672,9 @@ export function InboundScanModal({
       width: 130,
       render: (_, entry) => (
         <Tag>
-          {entry.scanSource === "CAMERA_OR_MANUAL_CODE" ? "CAMERA/MÃ" : "NHẬP TAY"}
+          {entry.scanSource === "CAMERA_OR_MANUAL_CODE"
+            ? "CAMERA/MÃ"
+            : "NHẬP TAY"}
         </Tag>
       ),
     },
@@ -1070,9 +1074,7 @@ export function InboundScanModal({
               style={{ marginTop: 14 }}
               loading={scanEntriesQuery.isLoading}
             >
-              <div
-                style={{ fontSize: 12, color: "#6b7280", marginBottom: 8 }}
-              >
+              <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 8 }}>
                 {`${activeEntries.length} hợp lệ${
                   removedEntryCount ? ` · ${removedEntryCount} đã gỡ` : ""
                 }`}

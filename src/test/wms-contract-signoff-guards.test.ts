@@ -55,7 +55,12 @@ function grant(...permissionCodes: string[]) {
 
 function classification(
   rawCode: string,
-  context: "INBOUND" | "OUTBOUND" | "INVENTORY" | "TRACE" | "WARRANTY_TEMP_ONLY",
+  context:
+    | "INBOUND"
+    | "OUTBOUND"
+    | "INVENTORY"
+    | "TRACE"
+    | "WARRANTY_TEMP_ONLY",
 ) {
   return {
     raw_code: rawCode,
@@ -108,9 +113,7 @@ describe("WWHN-181 exact BE v1.7 guards", () => {
 
   it("keeps scan classify read-only and rejects side effects", async () => {
     grant(P.SCAN_CLASSIFY);
-    vi.mocked(http.post).mockResolvedValue(
-      classification("RAW-01", "TRACE"),
-    );
+    vi.mocked(http.post).mockResolvedValue(classification("RAW-01", "TRACE"));
 
     await expect(
       classifyScanCodes({
@@ -357,9 +360,9 @@ describe("WWHN-181 exact BE v1.7 guards", () => {
     );
     expect(canonicalizeWmsPermission("scan.outbound")).toBe("outbound.scan");
     // putaway.manage không được ngầm nâng thành container.manage.
-    expect(
-      hasAnyWmsPermission(["putaway.manage"], ["container.manage"]),
-    ).toBe(false);
+    expect(hasAnyWmsPermission(["putaway.manage"], ["container.manage"])).toBe(
+      false,
+    );
   });
 
   it("keeps final sign-off fail-closed", () => {

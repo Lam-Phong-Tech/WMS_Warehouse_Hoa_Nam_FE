@@ -724,7 +724,9 @@ export function WarrantyDetailModal({
             <DatePicker
               style={{ width: "100%" }}
               format="DD/MM/YYYY"
-              disabledDate={(current) => current && current > dayjs().endOf("day")}
+              disabledDate={(current) =>
+                current && current > dayjs().endOf("day")
+              }
             />
           </Form.Item>
           <Form.Item
@@ -749,7 +751,10 @@ export function WarrantyDetailModal({
           <Form.Item name="customer_address" label="Địa chỉ khách (PII)">
             <Input maxLength={500} disabled={!canViewPii} />
           </Form.Item>
-          <Form.Item name="reason" label="Lý do hiệu chỉnh (hiện trên timeline)">
+          <Form.Item
+            name="reason"
+            label="Lý do hiệu chỉnh (hiện trên timeline)"
+          >
             <Input.TextArea rows={2} maxLength={2000} showCount />
           </Form.Item>
         </Form>

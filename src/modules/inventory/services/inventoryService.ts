@@ -242,8 +242,14 @@ function normalizeBalance(row: RawRecord): InventoryBalanceRow {
     ledgerTotal: num(row.ledger_total),
     variance: num(row.variance),
     reservedQty: num(row.reserved_qty),
-    incidentId: row.incident_id === undefined || row.incident_id === null ? null : text(row.incident_id),
-    incidentStatus: row.incident_status === undefined || row.incident_status === null ? null : text(row.incident_status),
+    incidentId:
+      row.incident_id === undefined || row.incident_id === null
+        ? null
+        : text(row.incident_id),
+    incidentStatus:
+      row.incident_status === undefined || row.incident_status === null
+        ? null
+        : text(row.incident_status),
     updatedAt: text(row.updated_at ?? row.last_movement_at ?? row.created_at),
     dataAsOf: text(
       row.data_as_of ?? row.snapshot_at ?? row.last_inventory_sync_at,

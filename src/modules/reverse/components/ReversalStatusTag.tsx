@@ -1,8 +1,5 @@
 import { Tag } from "antd";
-import type {
-  ReversalPhysicalReturnStatus,
-  ReversalStatus,
-} from "../types";
+import type { ReversalPhysicalReturnStatus, ReversalStatus } from "../types";
 
 /**
  * SRS §6: Reversal chỉ có DRAFT / POSTED / CANCELLED (ERD bảng 33 CHECK), bước
@@ -32,7 +29,9 @@ export function ReversalStatusTag({
 }) {
   const value = (status ?? "") as ReversalStatus;
   const color = STATUS_COLOR[value] ?? "default";
-  const label = compact ? (status || "-") : (STATUS_LABEL[value] ?? status ?? "-");
+  const label = compact
+    ? status || "-"
+    : (STATUS_LABEL[value] ?? status ?? "-");
 
   return (
     <>

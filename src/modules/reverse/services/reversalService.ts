@@ -64,8 +64,7 @@ function normalizeReversalDocument(row: RawRecord): ReversalDocument {
   return {
     id: text(row.id),
     reversal_code: text(row.reversal_code ?? row.reversal_no ?? row.id),
-    status:
-      (text(row.status) as ReversalDocument["status"]) || "DRAFT",
+    status: (text(row.status) as ReversalDocument["status"]) || "DRAFT",
     physical_return_status: optionalText(
       row.physical_return_status,
     ) as ReversalDocument["physical_return_status"],

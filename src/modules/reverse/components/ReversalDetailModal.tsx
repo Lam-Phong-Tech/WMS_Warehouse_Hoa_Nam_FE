@@ -101,7 +101,9 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
         version: doc.version,
         return_condition: returnCondition,
       });
-      toast.success("Đã xác nhận hàng vật lý quay lại kho; chưa phát sinh tồn.");
+      toast.success(
+        "Đã xác nhận hàng vật lý quay lại kho; chưa phát sinh tồn.",
+      );
     } catch (error) {
       handleFailure(error, "Không thể xác nhận hàng về");
     }
@@ -116,9 +118,9 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
       okButtonProps: { danger: true },
       content: (
         <Typography.Text>
-          Đây là bước duy nhất phát sinh movement đối ứng. Movement gốc giữ nguyên
-          (append-only) và không thể hoàn tác — sửa tiếp phải tạo Reversal mới trong
-          cùng chuỗi.
+          Đây là bước duy nhất phát sinh movement đối ứng. Movement gốc giữ
+          nguyên (append-only) và không thể hoàn tác — sửa tiếp phải tạo
+          Reversal mới trong cùng chuỗi.
         </Typography.Text>
       ),
       onOk: async () => {

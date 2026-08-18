@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  normalizeSkuImportReport,
   normalizeSkuImportResult,
   SkuImportRejectedError,
 } from "./sku-import.service";
@@ -110,17 +111,76 @@ describe("normalizeSkuImportResult", () => {
     expect(result.totalRows).toBe(0);
     expect(result.importReportId).toBeNull();
     expect(result.duplicate).toBe(false);
+    // Không có thông tin thì coi như KHÔNG có file lỗi để tải: thà ẩn nút còn hơn
+    // hiện một nút chắc chắn 404 (WWHN-331 FE331-P1-03).
+    expect(result.errorFileAvailable).toBe(false);
+    expect(result.errorFileExpiresAt).toBeNull();
+  });
+
+  it("maps the error-file availability the BE returns with a rejected import", () => {
+    const result = normalizeSkuImportResult({
+      committed: false,
+      error_rows: 2,
+      row_errors: [
+        { row: 2, code: "X", field: "sku_code", message: "m", value: "v" },
+      ],
+      import_report_id: "report-err",
+      error_file_available: true,
+      error_file_expires_at: "2026-08-19T10:00:00+07:00",
+    });
+
+    expect(result.errorFileAvailable).toBe(true);
+    expect(result.errorFileExpiresAt).toBe("2026-08-19T10:00:00+07:00");
+  });
+});
+
+describe("normalizeSkuImportReport", () => {
+  it("uses the server-computed error_file_available flag", () => {
+    const report = normalizeSkuImportReport({
+      import_report_id: "report-1",
+      import_type: "SKU",
+      mode: "COMMIT",
+      status: "REJECTED",
+      file_sha256: "abc",
+      error_file_available: true,
+      error_file_expires_at: "2026-08-19T10:00:00+07:00",
+      duplicate_of_replay: true,
+      row_errors: [],
+    });
+
+    expect(report.errorFileAvailable).toBe(true);
+    expect(report.errorFileExpiresAt).toBe("2026-08-19T10:00:00+07:00");
+    expect(report.duplicateOfReplay).toBe(true);
+  });
+
+  it("treats a report without the flag as having no downloadable error file", () => {
+    // BE cố tình KHÔNG trả `error_file_path` ra ngoài nữa; nếu payload chỉ còn mốc hết
+    // hạn thì FE vẫn phải coi là không tải được, không được tự suy ra từ timestamp.
+    const report = normalizeSkuImportReport({
+      import_report_id: "report-2",
+      error_file_expires_at: "2099-01-01T00:00:00+07:00",
+      row_errors: [],
+    });
+
+    expect(report.errorFileAvailable).toBe(false);
+    expect(report.duplicateOfReplay).toBe(false);
   });
 });
 
 describe("SkuImportRejectedError", () => {
   it("carries the parsed result alongside the message and original cause", () => {
     const result = normalizeSkuImportResult({
-      row_errors: [{ row: 2, code: "X", field: "sku_code", message: "m", value: "v" }],
+      row_errors: [
+        { row: 2, code: "X", field: "sku_code", message: "m", value: "v" },
+      ],
       import_report_id: "report-x",
     });
     const cause = new Error("network");
-    const rejected = new SkuImportRejectedError(result, "Import bị từ chối.", cause);
+    const rejected = new SkuImportRejectedError(
+      result,
+      "Import bị từ chối.",
+      cause,
+    );
 
     expect(rejected).toBeInstanceOf(Error);
     expect(rejected.name).toBe("SkuImportRejectedError");

@@ -114,9 +114,9 @@ export function OutboundIntakeModal({
   const [preview, setPreview] = useState<OutboundImportResult | null>(null);
   // SCR-REQ-OUT-01 "line mapping" + §8.1: người dùng resolve SKU/số lượng và
   // override người nhận ngay ở màn review, không phải sửa file rồi upload lại.
-  const [resolutions, setResolutions] = useState<Record<number, LineResolution>>(
-    {},
-  );
+  const [resolutions, setResolutions] = useState<
+    Record<number, LineResolution>
+  >({});
   const [recipientOverride, setRecipientOverride] = useState({
     receiver_name: "",
     receiver_address: "",
@@ -649,7 +649,10 @@ export function OutboundIntakeModal({
               />
               {/* §8.1: ConfirmRequest "may override recipient fields"; hiệu lực
                   receiver_name bắt buộc, address/phone optional. */}
-              <Card size="small" title="Override người nhận khi Confirm (tùy chọn)">
+              <Card
+                size="small"
+                title="Override người nhận khi Confirm (tùy chọn)"
+              >
                 <Space wrap>
                   <Input
                     style={{ width: 240 }}
