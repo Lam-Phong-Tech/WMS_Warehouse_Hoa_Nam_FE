@@ -27,11 +27,11 @@ jobs:
     env:
       CI: 'true'
       SOURCE_SHA: ${{ github.sha }}
-      VITE_APP_ENV: ci-controlled
+      VITE_APP_ENV: test
       VITE_APP_VERSION: wwhn-274-${{ github.sha }}
       VITE_API_BASE_URL: http://127.0.0.1:5173/api/v1
       VITE_API_WITH_CREDENTIALS: 'true'
-      VITE_HEALTH_PATH: /health
+      VITE_API_HEALTH_PATH: /health
       WWHN_274_EVIDENCE_DIR: test-results/wwhn-274/${{ github.sha }}
 
     steps:
@@ -101,7 +101,7 @@ jobs:
             environment: process.env.VITE_APP_ENV,
             buildVersion: process.env.VITE_APP_VERSION,
             apiBaseUrl: process.env.VITE_API_BASE_URL,
-            healthPath: process.env.VITE_HEALTH_PATH,
+            healthPath: process.env.VITE_API_HEALTH_PATH,
             generatedAt: new Date().toISOString(),
             truthBoundary: 'FE source-controlled build/config/UI smoke only; independent QA1, backend security and DevOps deploy/backup/rollback evidence remain role-owned.',
           };
@@ -126,5 +126,6 @@ jobs:
           echo '### WWHN-274 FE release sign-off' >> "$GITHUB_STEP_SUMMARY"
           echo "- Exact SHA: \`$GITHUB_SHA\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- API base: \`$VITE_API_BASE_URL\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Backend health: \`$VITE_API_BASE_URL$VITE_API_HEALTH_PATH\`" >> "$GITHUB_STEP_SUMMARY"
           echo '- Coverage: build/config, shared UI states, responsive 1440x900/768x1024/375x812, permission menu + direct URL 403, controlled API 422/retry.' >> "$GITHUB_STEP_SUMMARY"
           echo '- Boundary: this workflow is FE-controlled evidence, not independent QA1/UAT or DevOps deploy/backup/rollback evidence.' >> "$GITHUB_STEP_SUMMARY"
