@@ -69,8 +69,9 @@ for (const id of ["WWHN-180", "WWHN-182", "WWHN-183"]) {
   requirePattern(taskDoc, new RegExp(id, "u"), `WWHN-181 documentation ${id}`);
 }
 
-// Current MVP runtime contract. Stocktake was removed by
-// REQ-SRS-037/DEC-NO-STOCKTAKE-001; correction after Post is reversal-only.
+// Current MVP runtime contract. Stocktake removal is required by REQ-SRS-037 in
+// the adopted SRS/FRD v1.12 baseline (see docs/api-evidence/STOCKTAKE_GOVERNANCE_STATUS.json);
+// correction after Post is reversal-only per DEC-REV-001/WWHN-26.
 for (const [pattern, label] of [
   [/SCAN_BATCHES_CLASSIFY:\s*"\/scan\/classify"/u, "canonical scan classify endpoint"],
   [/INBOUND_SCAN:\s*"\/inbound-documents\/:id\/scans"/u, "canonical inbound scan endpoint"],

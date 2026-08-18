@@ -149,8 +149,92 @@ for (const file of mappingFiles) {
   }
 }
 
-// Current MVP invariant (REQ-SRS-037 / DEC-NO-STOCKTAKE-001): do not let stale
-// historical evidence silently re-introduce stocktake/direct-stock-edit surface.
+// WWHN-296 / FE296-P1-01 — re-derive the authority of the no-Stocktake rule from
+// the baseline documents instead of asserting a Decision ID string. A guard that
+// only knows a slogan keeps enforcing a requirement nobody can trace; this reads
+// the requirement itself, and fails if the register starts claiming an approval
+// the Jira Decision Record has not actually granted.
+const governancePath = join(root, "docs/api-evidence/STOCKTAKE_GOVERNANCE_STATUS.json");
+if (!existsSync(governancePath)) {
+  failures.push("docs/api-evidence/STOCKTAKE_GOVERNANCE_STATUS.json is missing.");
+} else {
+  let governance = null;
+  try {
+    governance = JSON.parse(readFileSync(governancePath, "utf8"));
+  } catch (error) {
+    failures.push(`STOCKTAKE_GOVERNANCE_STATUS.json is invalid JSON: ${error.message}`);
+  }
+
+  if (governance) {
+    const authority = governance.ruleAuthority ?? {};
+    const requirementId = authority.controllingRequirement?.id;
+    if (requirementId !== "REQ-SRS-037") {
+      failures.push("Governance register must name REQ-SRS-037 as the controlling requirement.");
+    }
+
+    const baselinePath = authority.controllingBaseline?.repositoryPath;
+    const baselineFile = baselinePath ? join(root, baselinePath) : null;
+    if (!baselineFile || !existsSync(baselineFile)) {
+      failures.push(`Controlling baseline document is missing: ${baselinePath ?? "(unset)"}`);
+    } else {
+      const baseline = readFileSync(baselineFile, "utf8");
+      if (!baseline.includes("REQ-SRS-037")) {
+        failures.push(`${baselinePath} no longer contains REQ-SRS-037; re-check the rule before enforcing it.`);
+      }
+      if (!baseline.includes("Không expose Stocktake/Variance")) {
+        failures.push(`${baselinePath} no longer states the no-Stocktake requirement; the guard must not outlive it.`);
+      }
+    }
+
+    const erdPath = (authority.corroboratingBaselines ?? []).find(
+      (entry) => typeof entry?.repositoryPath === "string" && entry.repositoryPath.includes("ERD"),
+    )?.repositoryPath;
+    const erdFile = erdPath ? join(root, erdPath) : null;
+    if (!erdFile || !existsSync(erdFile)) {
+      failures.push(`Corroborating ERD baseline is missing: ${erdPath ?? "(unset)"}`);
+    } else if (!/Không tạo Stocktake_Session/u.test(readFileSync(erdFile, "utf8"))) {
+      failures.push(`${erdPath} no longer excludes Stocktake entities from the baseline.`);
+    }
+
+    // Never let the register drift back into claiming approval that WWHN-25 has
+    // not granted; an approved id without an artifact hash is exactly the
+    // unverifiable claim the review rejected.
+    const gate = governance.decisionRecordGate ?? {};
+    if (gate.approvedStandaloneDecisionId && !gate.approvedArtifactHash) {
+      failures.push(
+        "Governance register claims an approved standalone Decision ID without an approved artifact hash.",
+      );
+    }
+    for (const [rel, source] of [
+      ["docs/api-evidence/M1_API_MAPPING.md", readFileSync(join(root, "docs/api-evidence/M1_API_MAPPING.md"), "utf8")],
+      ["docs/api-evidence/M3_DEPENDENCY_LIST.md", readFileSync(join(root, "docs/api-evidence/M3_DEPENDENCY_LIST.md"), "utf8")],
+    ]) {
+      // A negated mention ("must not be cited as an approved Decision ID") is
+      // the wording we want, so only an affirmative claim on the same line is a
+      // finding.
+      const claimsApproval = source
+        .split(/\r?\n/u)
+        .some(
+          (line) =>
+            line.includes("DEC-NO-STOCKTAKE-001") &&
+            /approved\s+(standalone\s+)?Decision\s+ID/iu.test(line) &&
+            !/\b(not|never)\b/iu.test(line),
+        );
+      if (claimsApproval) {
+        failures.push(`${rel} presents DEC-NO-STOCKTAKE-001 as an approved Decision ID.`);
+      }
+      if (!source.includes("REQ-SRS-037")) {
+        failures.push(`${rel} must trace the no-Stocktake boundary to REQ-SRS-037.`);
+      }
+    }
+  }
+}
+
+// Current MVP invariant. Authority is REQ-SRS-037 ("Must") in the adopted
+// SRS/FRD v1.12 baseline, corroborated by ERD section 0.1 — not by the standalone
+// Decision Record WWHN-25/DEC-STK-001, which is still In Progress. The block
+// above re-derives that authority from the baseline files so the rule can never
+// outlive the requirement it claims to enforce (WWHN-296 / FE296-P1-01).
 if (/STOCKTAKE_[A-Z0-9_]*\s*:/u.test(endpointSource)) {
   failures.push("Stocktake endpoint constant detected although current MVP removes Stocktake.");
 }

@@ -424,9 +424,9 @@ yarn test:e2e
 | Variable | Description | Required | Default |
 | --- | --- | --- | --- |
 | `VITE_APP_ENV` | Environment name | Yes | `local` |
-| `VITE_API_BASE_URL` | API base URL | Yes | `http://localhost:8000/api/v1` |
+| `VITE_API_BASE_URL` | API base URL, luôn kết thúc ở `/api/v1` | Yes | `http://localhost:8080/api/v1` |
 | `VITE_API_TIMEOUT_MS` | API timeout in ms | No | `10000` |
-| `VITE_API_WITH_CREDENTIALS` | Send credentials | No | `false` |
+| `VITE_API_WITH_CREDENTIALS` | Gửi HttpOnly refresh cookie. Invariant của phiên đăng nhập: `false` bị bỏ qua và cảnh báo ở runtime | Yes | `true` |
 | `VITE_STORAGE_URL` | Storage URL (optional) | No | - |
 | `VITE_API_HEALTH_PATH` | Health check path | No | `/health` |
 
@@ -455,6 +455,7 @@ Mỗi PR phải vượt qua:
 6. **Health Check**: `yarn health:check` - Verify artifacts
 7. **API Mapping**: `yarn check:api-mapping` - Verify endpoint usage
 8. **E2E Tests**: `yarn test:e2e` - Playwright tests (if UI changes)
+9. **WWHN-296 closure**: `yarn wwhn-296:verify` - Build/runtime config, no-Stocktake authority va exact-identity evidence
 
 ### GitHub Actions
 

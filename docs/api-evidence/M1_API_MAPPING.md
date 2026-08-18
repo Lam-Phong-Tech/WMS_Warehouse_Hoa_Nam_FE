@@ -74,20 +74,28 @@ Hợp đồng response mà UI phụ thuộc (đã có test cả hai phía):
 | Reports hub | GET | `/reports/hub` | BE route present; no longer marked missing. |
 | Warranty defects report | GET | `/reports/warranty-defects` | BE route present; read/export permissions are separate. |
 
-## Removed-from-MVP boundary — Stocktake (formal governance pending)
+## Removed-from-MVP boundary — Stocktake (rule anchored to REQ-SRS-037)
 
-Current runtime intentionally has no Stocktake Session/Snapshot/Count, variance-adjustment endpoint, `stocktake.*` permission, menu or production flow. Corrections after Post use append-only Reversal.
+Current runtime intentionally has no Stocktake Session/Snapshot/Count, variance-adjustment endpoint, `stocktake.*` permission, menu or production flow. Corrections after Post use append-only Reversal (`DEC-REV-001` / WWHN-26).
 
-The controlling Jira source for this implementation disposition is **WWHN-25 / DEC-STK-001**. BA comment `14791` records `NO-GO FOR MVP/BETA / DEFERRED-LATER PHASE`; comment `15251` requests Process Owner/Client + PM/PO formal confirmation. Both make clear that **formal approver/current-hash approval is still pending**.
+### Authority for the rule (FE296-P1-01)
 
-Therefore:
+The guard is anchored to the approved requirement baseline, not to a standalone Decision ID:
 
-- do **not** cite `DEC-NO-STOCKTAKE-001` as an approved Decision ID;
-- this mapping proves current implementation/source consistency only;
-- formal governance closure remains `PENDING_PM_PO_PROCESS_OWNER_APPROVAL` until approver-authored evidence exists;
-- any Stocktake reintroduction requires an approved Later Phase/Change Request/current Decision plus synchronized FE/BE/OpenAPI/RBAC/test updates.
+| Anchor | Artifact | Content |
+| --- | --- | --- |
+| Controlling requirement | `docs/HN_SRS_FRD_v1.12_FULL.md` (HN-SRS-FRD-001 v1.12, SHA-256 `02cd010cdc40036b62ec23a0d3aa645e4cce813497edf8b0e851ba6fcb512ff2`) | `REQ-SRS-037` — **Must** — "Không expose Stocktake/Variance, menu/API/permission/entity/report hoặc action sửa tồn trực tiếp"; AC-SRS-037 / TC-SRS-037 / BR-NOSTK-01..03. |
+| Baseline adoption | `WWHN-334` — status `DONE REDFLAG`, resolution `Done` (observed 18/08/2026) | SRS §0.1 defines the effective date as the WWHN-334 transition to DONE. Open review points OP-01/OP-05/OP-09 do not concern Stocktake. |
+| Data baseline | `docs/HoaNam_ERD_Moi_Nhat.md` (SHA-256 `c81381546d580edf50f4e327fbd859af72f9d3a190814043c00daa27511a06d3`) | §0.1 "Entity/field bị loại khỏi baseline": no `Stocktake_Session`, `Stocktake_Snapshot`, `Stocktake_Count`, `Variance_Line`, `Adjustment` or matching report/permission. |
+| UI baseline | `docs/HN_WMS_Wireframe_MVP_ALIGNED_v3.20_v1.12_20260814.html` (SHA-256 `107a2b4de0f5763e39278ec130758d57e772e004e525416c088018cf9ddba658`) | No Stocktake/Variance screen, menu entry or stock-edit action. |
 
-Machine-readable governance status: `docs/api-evidence/STOCKTAKE_GOVERNANCE_STATUS.json`.
+`DEC-NO-STOCKTAKE-001` appears only as a decision row inside that baseline. The standalone Decision Record `WWHN-25 / DEC-STK-001` is still `In Progress` (BA comments `14791`, `15251`), so:
+
+- it is **not** cited as an approved standalone Decision ID, and no approval date/hash is claimed from FE source;
+- the rule itself stays enforced, because `REQ-SRS-037` in the adopted baseline plus the ERD/wireframe baselines already require it — it is a regression guard against silent reintroduction, not a governance claim;
+- reintroduction requires an approved Later Phase/Change Request or a closed WWHN-25, plus synchronized FE/BE/OpenAPI/RBAC/test updates.
+
+Machine-readable status: `docs/api-evidence/STOCKTAKE_GOVERNANCE_STATUS.json`; machine-enforced by `npm run check:api-mapping` and `npm run wwhn-296:verify`.
 
 ## RBAC mapping
 

@@ -23,19 +23,30 @@ Scope: late-core and high-risk workflow dependencies reconciled against the curr
 | Warranty events | src/modules/warranty/services/warrantyService.ts | Case timeline | GET | `/warranty-cases/{id}/events` | Present in current BE `m1`. |
 | Warranty status | src/modules/warranty/services/warrantyService.ts | Transition/update case status | POST | `/warranty-cases/{id}/status` | Present in current BE `m1`; mutation remains permission guarded. |
 
-## Removed-from-MVP boundary: Stocktake (formal governance pending)
+## Removed-from-MVP boundary: Stocktake (rule anchored to REQ-SRS-037)
 
-Current FE/BE runtime intentionally has no Stocktake Session, Snapshot, Count, Variance Adjustment, `stocktake.*` permission or direct stock-edit route. Historical `/stocktake*` dependency rows are therefore not represented as active runtime dependencies.
+Historical `/stocktake*` dependency rows are not represented as active runtime dependencies.
 
-This implementation disposition is traced to **WWHN-25 / DEC-STK-001**:
+Current runtime intentionally has no Stocktake Session/Snapshot/Count, variance-adjustment endpoint, `stocktake.*` permission, menu or production flow. Corrections after Post use append-only Reversal (`DEC-REV-001` / WWHN-26).
 
-- BA comment `14791`: `NO-GO FOR MVP/BETA / DEFERRED-LATER PHASE`;
-- BA comment `15251`: formal Process Owner/Client + PM/PO confirmation requested;
-- formal approver/current-hash/effective-date evidence remains pending.
+### Authority for the rule (FE296-P1-01)
 
-`DEC-NO-STOCKTAKE-001` must not be cited as an approved Decision ID. Current no-Stocktake behavior is an implementation/source-consistency state, while formal governance remains fail-closed and pending. Machine-readable status is stored at `docs/api-evidence/STOCKTAKE_GOVERNANCE_STATUS.json`.
+The guard is anchored to the approved requirement baseline, not to a standalone Decision ID:
 
-Any reintroduction requires approved Later Phase/Change Request/current Decision and synchronized FE/BE/OpenAPI/permission/test updates.
+| Anchor | Artifact | Content |
+| --- | --- | --- |
+| Controlling requirement | `docs/HN_SRS_FRD_v1.12_FULL.md` (HN-SRS-FRD-001 v1.12, SHA-256 `02cd010cdc40036b62ec23a0d3aa645e4cce813497edf8b0e851ba6fcb512ff2`) | `REQ-SRS-037` — **Must** — "Không expose Stocktake/Variance, menu/API/permission/entity/report hoặc action sửa tồn trực tiếp"; AC-SRS-037 / TC-SRS-037 / BR-NOSTK-01..03. |
+| Baseline adoption | `WWHN-334` — status `DONE REDFLAG`, resolution `Done` (observed 18/08/2026) | SRS §0.1 defines the effective date as the WWHN-334 transition to DONE. Open review points OP-01/OP-05/OP-09 do not concern Stocktake. |
+| Data baseline | `docs/HoaNam_ERD_Moi_Nhat.md` (SHA-256 `c81381546d580edf50f4e327fbd859af72f9d3a190814043c00daa27511a06d3`) | §0.1 "Entity/field bị loại khỏi baseline": no `Stocktake_Session`, `Stocktake_Snapshot`, `Stocktake_Count`, `Variance_Line`, `Adjustment` or matching report/permission. |
+| UI baseline | `docs/HN_WMS_Wireframe_MVP_ALIGNED_v3.20_v1.12_20260814.html` (SHA-256 `107a2b4de0f5763e39278ec130758d57e772e004e525416c088018cf9ddba658`) | No Stocktake/Variance screen, menu entry or stock-edit action. |
+
+`DEC-NO-STOCKTAKE-001` appears only as a decision row inside that baseline. The standalone Decision Record `WWHN-25 / DEC-STK-001` is still `In Progress` (BA comments `14791`, `15251`), so:
+
+- it is **not** cited as an approved standalone Decision ID, and no approval date/hash is claimed from FE source;
+- the rule itself stays enforced, because `REQ-SRS-037` in the adopted baseline plus the ERD/wireframe baselines already require it — it is a regression guard against silent reintroduction, not a governance claim;
+- reintroduction requires an approved Later Phase/Change Request or a closed WWHN-25, plus synchronized FE/BE/OpenAPI/RBAC/test updates.
+
+Machine-readable status: `docs/api-evidence/STOCKTAKE_GOVERNANCE_STATUS.json`; machine-enforced by `npm run check:api-mapping` and `npm run wwhn-296:verify`.
 
 ## High-risk rules retained
 

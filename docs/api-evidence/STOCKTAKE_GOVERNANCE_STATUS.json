@@ -1,25 +1,88 @@
 {
-  "schemaVersion": "1.0.0",
-  "updatedAt": "2026-08-18T17:25:00+07:00",
-  "scope": "Current MVP/Beta Stocktake implementation/governance disposition",
-  "implementationDisposition": "NO_STOCKTAKE_IN_CURRENT_RUNTIME",
-  "implementationSource": {
-    "jiraIssue": "WWHN-25",
+  "schemaVersion": "2.0.0",
+  "updatedAt": "2026-08-18T21:40:00+07:00",
+  "jira": "WWHN-296",
+  "finding": "FE296-P1-01",
+  "scope": "Authority behind the FE/BE no-Stocktake guard in the current MVP runtime",
+  "summary": "The guard is anchored to REQ-SRS-037 in the adopted SRS/FRD v1.12 baseline, not to a standalone approved Decision ID. DEC-NO-STOCKTAKE-001 exists only as a decision row inside that baseline; the independent Decision Record WWHN-25 / DEC-STK-001 is still In Progress, so it is never cited as approved governance.",
+  "ruleAuthority": {
+    "controllingRequirement": {
+      "id": "REQ-SRS-037",
+      "priority": "Must",
+      "statement": "Khong expose Stocktake/Variance, menu/API/permission/entity/report hoac action sua ton truc tiep.",
+      "acceptanceCriteria": "AC-SRS-037",
+      "testCase": "TC-SRS-037",
+      "businessRules": "BR-NOSTK-01..03",
+      "sourceColumn": "SRC-008 / DEC-NO-STOCKTAKE-001"
+    },
+    "controllingBaseline": {
+      "documentId": "HN-SRS-FRD-001",
+      "version": "1.12",
+      "updatedDate": "14/08/2026",
+      "repositoryPath": "docs/HN_SRS_FRD_v1.12_FULL.md",
+      "sha256": "02cd010cdc40036b62ec23a0d3aa645e4cce813497edf8b0e851ba6fcb512ff2",
+      "anchors": {
+        "requirementRow": "REQ-SRS-037 in the requirement register",
+        "decisionRow": "DEC-NO-STOCKTAKE-001 in section 2 Decision Records and Governance",
+        "supersessionRow": "Stocktake va hanh dong sua ton truc tiep -> DEC-NO-STOCKTAKE-001 -> SUPERSEDED 04/08/2026",
+        "traceabilityRow": "SRC-008 / DEC-NO-STOCKTAKE-001 -> REQ-SRS-037 -> BR-NOSTK-01..03 -> AC-SRS-037 -> TC-SRS-037"
+      },
+      "decisionRowFields": {
+        "approver": "PM/PO + Client",
+        "decisionDate": "04/08/2026 confirmation; SRS adoption: WWHN-334; formal Decision: WWHN-25 only.",
+        "evidence": "Customer confirmation 04/08/2026",
+        "affectedArtifacts": "SRS/ERD/API/UI/Test/Reports"
+      }
+    },
+    "adoption": {
+      "issue": "WWHN-334",
+      "title": "[DOC][BA][SRS/FRD] Tai lieu Dac ta Yeu cau Phan mem / Yeu cau Chuc nang",
+      "status": "DONE REDFLAG",
+      "resolution": "Done",
+      "observedAt": "2026-08-18T21:00:00+07:00",
+      "effectiveDateRule": "SRS section 0.1: effective date is the WWHN-334 transition to DONE; no retroactive effective date.",
+      "openConditions": "Latest WWHN-334 review is conditional PASS (80/100) with OP-01/OP-05/OP-09 still open. None of those open points concern Stocktake."
+    },
+    "corroboratingBaselines": [
+      {
+        "artifact": "ERD baseline",
+        "repositoryPath": "docs/HoaNam_ERD_Moi_Nhat.md",
+        "sha256": "c81381546d580edf50f4e327fbd859af72f9d3a190814043c00daa27511a06d3",
+        "anchor": "Section 0.1 Entity/field bi loai khoi baseline: khong tao Stocktake_Session, Stocktake_Snapshot, Stocktake_Count, Variance_Line, Adjustment hoac report/permission tuong ung."
+      },
+      {
+        "artifact": "Wireframe MVP ALIGNED v3.20 / v1.12",
+        "repositoryPath": "docs/HN_WMS_Wireframe_MVP_ALIGNED_v3.20_v1.12_20260814.html",
+        "sha256": "107a2b4de0f5763e39278ec130758d57e772e004e525416c088018cf9ddba658",
+        "anchor": "No Stocktake/Variance screen, menu entry or stock-edit action exists in the aligned wireframe."
+      }
+    ],
+    "correctionAuthority": {
+      "decision": "DEC-REV-001",
+      "issue": "WWHN-26",
+      "status": "In Progress",
+      "rule": "Correction after Post is append-only Reversal only; there is no generic or direct stock-edit movement."
+    }
+  },
+  "decisionRecordGate": {
+    "issue": "WWHN-25",
+    "title": "[DEC-STK-001] Lap Decision Record ve mo hinh kiem ke A",
     "decisionKey": "DEC-STK-001",
+    "status": "In Progress",
+    "resolution": "Unresolved",
+    "observedAt": "2026-08-18T21:00:00+07:00",
     "baBusinessDispositionComment": "14791",
     "baApprovalRequestComment": "15251",
-    "summary": "BA disposition says Physical Stocktake/Variance/Adjustment are deferred for current MVP/Beta and must not control current runtime implementation."
-  },
-  "formalGovernance": {
-    "status": "PENDING_PM_PO_PROCESS_OWNER_APPROVAL",
-    "approvedDecisionId": null,
+    "approvedStandaloneDecisionId": null,
     "approvedArtifactHash": null,
-    "effectiveDate": null,
-    "note": "Do not cite DEC-NO-STOCKTAKE-001 as an approved Decision ID. Formal approver-authored current-hash disposition remains required on WWHN-25."
+    "note": "DEC-NO-STOCKTAKE-001 must not be cited as an approved standalone Decision ID while WWHN-25 is In Progress. That does not weaken the guard: the controlling requirement REQ-SRS-037 already lives in the adopted SRS/FRD v1.12 baseline and is corroborated by the ERD and wireframe baselines.",
+    "owner": "PM/PO + Process Owner/Client",
+    "closureEvidence": "Approver-authored disposition on WWHN-25 naming the exact artifact revision/hash."
   },
   "runtimeRule": {
-    "currentBehavior": "Stocktake UI/API/permission/runtime surface remains absent in the current implementation while formal governance is pending.",
-    "reintroductionGate": "Approved Later Phase/Change Request/current-source Decision plus synchronized FE/BE/OpenAPI/RBAC/test updates."
+    "currentBehavior": "No Stocktake Session/Snapshot/Count/Variance surface, no stocktake.* permission, no route/menu, no direct stock-edit endpoint in FE or BE runtime.",
+    "guardPurpose": "Regression guard: keep FE/BE source consistent with REQ-SRS-037 and the ERD/wireframe baselines so a stale historical artifact cannot silently reintroduce a removed surface. It is not a claim of standalone Decision Record approval.",
+    "reintroductionGate": "Approved Later Phase / Change Request / closed WWHN-25 Decision Record, plus synchronized FE/BE/OpenAPI/RBAC/test updates."
   },
-  "closurePolicy": "Implementation/source consistency may pass independently. Formal governance closure must remain PENDING until approver-authored evidence exists."
+  "closurePolicy": "Source/implementation consistency is machine-verified by npm run check:api-mapping and npm run wwhn-296:verify. Formal Decision Record closure stays external on WWHN-25 and is never marked VERIFIED from FE source."
 }

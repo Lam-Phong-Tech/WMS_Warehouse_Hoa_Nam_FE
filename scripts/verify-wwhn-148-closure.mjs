@@ -188,7 +188,7 @@ requirePatterns("src/test/wwhn-148-critical-response-contract.test.ts", [
   /accepts canonical snake_case success evidence/,
   /rejects undocumented receipt aliases/,
   /rejects undocumented issue aliases/,
-  /DEC-NO-STOCKTAKE-001/,
+  /REQ-SRS-037/,
 ]);
 
 const packageJsonText = readRequired("package.json");
