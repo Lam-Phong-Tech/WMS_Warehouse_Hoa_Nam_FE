@@ -23,7 +23,7 @@ Scope: late-core and high-risk workflow dependencies reconciled against the curr
 | Warranty events | src/modules/warranty/services/warrantyService.ts | Case timeline | GET | `/warranty-cases/{id}/events` | Present in current BE `m1`. |
 | Warranty status | src/modules/warranty/services/warrantyService.ts | Transition/update case status | POST | `/warranty-cases/{id}/status` | Present in current BE `m1`; mutation remains permission guarded. |
 
-## Current implementation boundary: Stocktake (formal governance pending)
+## Removed-from-MVP boundary: Stocktake (formal governance pending)
 
 Current FE/BE runtime intentionally has no Stocktake Session, Snapshot, Count, Variance Adjustment, `stocktake.*` permission or direct stock-edit route. Historical `/stocktake*` dependency rows are therefore not represented as active runtime dependencies.
 
