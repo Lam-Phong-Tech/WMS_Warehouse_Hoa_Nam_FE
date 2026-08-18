@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# TypeScript incremental build cache (never commit: a stale entry pointing at
+# a deleted file makes `tsc -b` fail on every clean checkout)
+*.tsbuildinfo
+
 # Env files (giữ lại .env.example để làm mẫu)
 .env
 .env.*

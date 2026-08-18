@@ -257,11 +257,15 @@ test.describe("WWHN-292 FE-controlled UI/responsive/RBAC closure", () => {
     await expect(page.getByText("Loading", { exact: true })).toBeVisible();
     await expect(page.getByText("Empty", { exact: true })).toBeVisible();
     await expect(page.getByText("Error", { exact: true })).toBeVisible();
-    await expect(page.getByText("No permission", { exact: true })).toBeVisible();
+    await expect(
+      page.getByText("No permission", { exact: true }),
+    ).toBeVisible();
     await expect(
       page.getByText("API error + field errors", { exact: true }),
     ).toBeVisible();
-    await expect(page.getByText("Confirm action", { exact: true })).toBeVisible();
+    await expect(
+      page.getByText("Confirm action", { exact: true }),
+    ).toBeVisible();
     await expect(
       page.getByRole("button", { name: "Disabled until valid" }),
     ).toBeDisabled();
@@ -358,9 +362,7 @@ test.describe("WWHN-292 FE-controlled UI/responsive/RBAC closure", () => {
     await expect(
       page.getByText("Thông tin đăng nhập không hợp lệ"),
     ).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: "Đăng nhập" }),
-    ).toBeEnabled();
+    await expect(page.getByRole("button", { name: "Đăng nhập" })).toBeEnabled();
 
     await captureEvidence(page, testInfo, {
       scenario: "login-api-422-retry-safe",
@@ -371,6 +373,209 @@ test.describe("WWHN-292 FE-controlled UI/responsive/RBAC closure", () => {
         "Login API returns controlled 422",
         "Validation message is visible",
         "Login action remains enabled for retry",
+      ],
+    });
+  });
+
+  /**
+   * NFR-SRS-006 fixes the desktop baseline at >=1280px, and the BA wireframe
+   * (HN_WMS_Wireframe_MVP_ALIGNED_v3.20_v1.12) stacks the 300px aside below
+   * 980px. The authenticated shell — not only /login — must honour both.
+   */
+  const SHELL_VIEWPORTS = [
+    { key: "desktop", width: 1440, height: 900 },
+    { key: "desktop-nfr-006-min", width: 1280, height: 900 },
+    { key: "tablet", width: 768, height: 1024 },
+    { key: "mobile", width: 375, height: 812 },
+  ] as const;
+
+  const WIREFRAME_STACK_BREAKPOINT = 980;
+  const DESKTOP_ASIDE_WIDTH = 300;
+
+  for (const viewport of SHELL_VIEWPORTS) {
+    test(`authenticated shell responsive ${viewport.width}x${viewport.height}`, async ({
+      page,
+    }, testInfo) => {
+      await setupMockApi(page, { refreshSuccess: true, isSuperAdmin: true });
+      await page.setViewportSize({
+        width: viewport.width,
+        height: viewport.height,
+      });
+      await page.goto("/dashboard");
+
+      await expect(page.getByTestId("primary-navigation")).toBeVisible();
+      await expect(
+        page.getByRole("heading", {
+          name: "Bản đồ màn hình & phạm vi",
+          level: 2,
+        }),
+      ).toBeVisible();
+
+      const shell = await page.evaluate(() => {
+        const aside = document.querySelector(".hn-mvp-aside");
+        const main = document.querySelector(".hn-mvp-main");
+        return {
+          hasHorizontalOverflow:
+            document.documentElement.scrollWidth > window.innerWidth + 1,
+          asidePosition: aside ? getComputedStyle(aside).position : null,
+          asideWidth: aside
+            ? Math.round(aside.getBoundingClientRect().width)
+            : null,
+          mainMarginLeft: main ? getComputedStyle(main).marginLeft : null,
+        };
+      });
+
+      expect(shell.hasHorizontalOverflow).toBe(false);
+
+      const isStacked = viewport.width <= WIREFRAME_STACK_BREAKPOINT;
+      if (isStacked) {
+        expect(shell.asidePosition).toBe("static");
+        expect(shell.mainMarginLeft).toBe("0px");
+        expect(shell.asideWidth).toBe(viewport.width);
+      } else {
+        expect(shell.asidePosition).toBe("fixed");
+        expect(shell.asideWidth).toBe(DESKTOP_ASIDE_WIDTH);
+        expect(shell.mainMarginLeft).toBe(`${DESKTOP_ASIDE_WIDTH}px`);
+      }
+
+      await captureEvidence(page, testInfo, {
+        scenario: `responsive-shell-${viewport.key}`,
+        role: "super_admin_controlled",
+        viewport: { width: viewport.width, height: viewport.height },
+        route: "/dashboard",
+        assertions: [
+          `Authenticated shell rendered at ${viewport.width}x${viewport.height}`,
+          "Primary navigation and screen heading are visible",
+          "No horizontal page overflow",
+          isStacked
+            ? `Aside stacks full width at or below ${WIREFRAME_STACK_BREAKPOINT}px (wireframe baseline)`
+            : `Aside stays fixed at ${DESKTOP_ASIDE_WIDTH}px and main is offset (NFR-SRS-006 desktop baseline)`,
+        ],
+      });
+    });
+  }
+
+  /**
+   * Route-level fail-closed must hold for every protected destination, not only
+   * one sample route. The limited role below owns inventory.view exclusively.
+   */
+  const LIMITED_ROLE_PERMISSIONS = ["inventory.view"];
+
+  const PROTECTED_ROUTE_MATRIX = [
+    {
+      screen: "IAM-01",
+      route: "/system/users",
+      menuLabel: "Danh sách người dùng & phân quyền",
+    },
+    {
+      screen: "MST-01",
+      route: "/master-data/skus",
+      menuLabel: "Danh sách SKU / Product Master",
+    },
+    {
+      screen: "MST-CAT-01",
+      route: "/master-data/catalog",
+      menuLabel: "Danh mục Product Master",
+    },
+    {
+      screen: "WH-01",
+      route: "/master-data/warehouse",
+      menuLabel: "Cấu hình kho tổng",
+    },
+    {
+      screen: "AGY-01",
+      route: "/master-data/agencies",
+      menuLabel: "Danh mục đại lý / nơi nhận",
+    },
+    {
+      screen: "DEF-01",
+      route: "/master-data/defects",
+      menuLabel: "Danh mục bệnh / lỗi",
+    },
+    { screen: "IN-01", route: "/inbound", menuLabel: "Danh sách phiếu nhập" },
+    {
+      screen: "PTW-00",
+      route: "/putaway",
+      menuLabel: "Danh sách linh kiện chờ xếp khay",
+    },
+    { screen: "OUT-01", route: "/outbound", menuLabel: "Danh sách phiếu xuất" },
+    { screen: "WAR-01", route: "/warranty", menuLabel: "Danh sách bảo hành" },
+    {
+      screen: "REV-00",
+      route: "/reverse",
+      menuLabel: "Danh sách phiếu Reversal",
+    },
+    { screen: "RPT-01", route: "/reports", menuLabel: "Báo cáo vận hành" },
+    { screen: "AUDIT-01", route: "/audit-logs", menuLabel: null },
+  ] as const;
+
+  for (const target of PROTECTED_ROUTE_MATRIX) {
+    test(`direct URL ${target.route} fails closed for a limited role`, async ({
+      page,
+    }, testInfo) => {
+      const viewport = { width: 1440, height: 900 };
+      await setupMockApi(page, {
+        refreshSuccess: true,
+        permissionCodes: LIMITED_ROLE_PERMISSIONS,
+      });
+      await page.setViewportSize(viewport);
+
+      await page.goto(target.route);
+      await expect(page).toHaveURL(/\/errors\/403$/);
+      await expect(
+        page.getByText("Không có quyền truy cập", { exact: true }),
+      ).toBeVisible();
+
+      if (target.menuLabel) {
+        await expect(
+          page.getByRole("button", { name: target.menuLabel, exact: true }),
+        ).toHaveCount(0);
+      }
+
+      await captureEvidence(page, testInfo, {
+        scenario: `direct-url-403-${target.screen}`,
+        role: "inventory_viewer_controlled",
+        viewport,
+        route: target.route,
+        assertions: [
+          `Direct URL ${target.route} bypass redirects to /errors/403`,
+          "Explicit no-permission state is rendered",
+          target.menuLabel
+            ? `Menu entry "${target.menuLabel}" stays hidden without permission`
+            : "Route has no menu entry in the MVP navigation",
+        ],
+      });
+    });
+  }
+
+  test("permitted route stays reachable for the same limited role", async ({
+    page,
+  }, testInfo) => {
+    const viewport = { width: 1440, height: 900 };
+    await setupMockApi(page, {
+      refreshSuccess: true,
+      permissionCodes: LIMITED_ROLE_PERMISSIONS,
+    });
+    await page.setViewportSize(viewport);
+
+    await page.goto("/inventory");
+    await expect(page).toHaveURL(/\/inventory$/);
+    await expect(
+      page.getByRole("button", {
+        name: "Tra cứu tồn & đối soát",
+        exact: true,
+      }),
+    ).toBeVisible();
+
+    await captureEvidence(page, testInfo, {
+      scenario: "permitted-route-reachable",
+      role: "inventory_viewer_controlled",
+      viewport,
+      route: "/inventory",
+      assertions: [
+        "inventory.view grants entry to /inventory",
+        "Permitted menu entry stays visible",
+        "Fail-closed guard does not over-block granted permissions",
       ],
     });
   });

@@ -55,6 +55,7 @@
     "test:e2e:wwhn-212": "playwright test e2e/wwhn-212-inventory-qa2.spec.ts --project=chromium",
     "wms-evidence:collect": "node scripts/collect-wms-runtime-evidence.mjs",
     "health:check": "node scripts/check-frontend-health.mjs",
+    "contract:sync": "node scripts/sync-be-openapi.mjs",
     "check:api-mapping": "node scripts/check-api-mapping.mjs",
     "wwhn-296:evidence": "node scripts/run-wwhn-296-evidence.mjs",
     "wwhn-296:verify": "node scripts/verify-wwhn-296-closure.mjs",

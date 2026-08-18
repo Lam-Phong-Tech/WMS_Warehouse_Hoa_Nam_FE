@@ -76,8 +76,10 @@ for (const id of [
   "FE292-P1-03",
   "FE292-P1-04",
   "FE292-P1-05",
+  "FE292-P1-06",
   "FE292-P2-01",
   "FE292-P2-02",
+  "FE292-P2-03",
 ]) {
   if (!items.has(id)) {
     fail(`Missing review item ${id}`);
@@ -153,6 +155,76 @@ for (const workflowMarker of [
   "SHA256SUMS",
 ]) {
   requireText(workflow, workflowMarker, workflowPath);
+}
+
+/**
+ * FE292-P1-06 — the responsive claim covers the authenticated shell, not only
+ * /login, and it is pinned to the two documented sources: NFR-SRS-006 fixes the
+ * desktop baseline at 1280px and the BA wireframe stacks the 300px aside at
+ * 980px. Drift in either number must fail the gate rather than silently widen
+ * the claim.
+ */
+const responsive = register.responsiveContract ?? {};
+if (responsive.desktopBaselineMinWidth !== 1280) {
+  fail("responsiveContract.desktopBaselineMinWidth must stay 1280 (NFR-SRS-006)");
+}
+if (responsive.wireframeStackBreakpoint !== 980) {
+  fail("responsiveContract.wireframeStackBreakpoint must stay 980 (BA wireframe)");
+}
+if (responsive.desktopAsideWidth !== 300) {
+  fail("responsiveContract.desktopAsideWidth must stay 300 (BA wireframe)");
+}
+
+for (const shellMarker of [
+  "authenticated shell responsive",
+  "WIREFRAME_STACK_BREAKPOINT",
+  "DESKTOP_ASIDE_WIDTH",
+  ".hn-mvp-aside",
+  ".hn-mvp-main",
+  "hasHorizontalOverflow",
+  "primary-navigation",
+]) {
+  requireText(e2e, shellMarker, e2ePath);
+}
+
+/**
+ * FE292-P2-03 — route fail-closed is a matrix, not a single sample, and it keeps
+ * a positive control so an over-blocking guard cannot pass as a success.
+ */
+const PROTECTED_ROUTES = [
+  "/system/users",
+  "/master-data/skus",
+  "/master-data/catalog",
+  "/master-data/warehouse",
+  "/master-data/agencies",
+  "/master-data/defects",
+  "/inbound",
+  "/putaway",
+  "/outbound",
+  "/warranty",
+  "/reverse",
+  "/reports",
+  "/audit-logs",
+];
+for (const route of PROTECTED_ROUTES) {
+  requireText(e2e, `route: "${route}"`, e2ePath);
+}
+for (const rbacMarker of [
+  "PROTECTED_ROUTE_MATRIX",
+  "LIMITED_ROLE_PERMISSIONS",
+  "fails closed for a limited role",
+  "permitted route stays reachable for the same limited role",
+  "/errors/403",
+]) {
+  requireText(e2e, rbacMarker, e2ePath);
+}
+
+for (const docMarker of [
+  "FE292-P1-06",
+  "FE292-P2-03",
+  "NFR-SRS-006",
+]) {
+  requireText(taskDoc, docMarker, taskDocPath);
 }
 
 console.log(

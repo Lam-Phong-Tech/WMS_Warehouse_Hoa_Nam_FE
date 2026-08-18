@@ -34,17 +34,22 @@ Therefore cross-role acceptance remains fail-closed until those owners publish v
 | FE292-P1-04 | P1 | Evidence is controlled, not real DEV/UAT | Dedicated FE evidence captures immutable metadata but does not claim DEV/UAT. QA2 must attach real DEV/UAT before/after and direct API/backend-deny evidence where applicable. | **Blocked external — QA2/BE/DevOps** |
 | FE292-P1-05 | P1 | Canonical task-specific artifact absent; tooling could fall back to WWHN-156 | Added this document, `docs/evidence/wwhn-292/WWHN-292_CLOSURE_REGISTER.json`, task verifier and dedicated WWHN-292 E2E/workflow. | FE source closed |
 | FE292-P2-01 | P2 | Invalid/stale branch URL or SHA references can recur | Canonical branch is `m1`; workflow artifact writes exact `GITHUB_SHA`, run ID/attempt and SHA256 sums. Jira final comment must use those generated identities only. | FE control implemented |
-| FE292-P2-02 | P2 | Generic controlled suite used tablet 1024x768 while assessment requires 768x1024 | Dedicated WWHN-292 matrix uses exactly `1440x900`, `768x1024`, `375x812`. | FE source closed; successful workflow evidence still required |
+| FE292-P2-02 | P2 | Generic controlled suite used tablet 1024x768 while assessment requires 768x1024 | Dedicated WWHN-292 matrix uses exactly `1440x900`, `768x1024`, `375x812`, plus `1280x900` for the NFR-SRS-006 desktop minimum. | FE source closed; successful workflow evidence still required |
+| FE292-P1-06 | P1 | Responsive evidence was described as shell/login but only `/login` was exercised; the authenticated shell was unproven | Added authenticated-shell responsive tests at `1440x900`, `1280x900`, `768x1024`, `375x812` asserting no horizontal overflow plus the wireframe shell contract (fixed 300px aside above 980px, stacked full-width aside at or below 980px). | FE source closed |
+| FE292-P2-03 | P2 | Route fail-closed was proven on one sample route only | Added a 13-route direct-URL matrix for a role holding only `inventory.view` (403 + no-permission state + hidden menu entry) and a positive control proving `/inventory` stays reachable. | FE source closed |
 
 ## 3. FE-controlled evidence matrix
 
 The dedicated suite `e2e/wwhn-292-ui-responsive-rbac.spec.ts` covers:
 
-1. Responsive shell/login at `1440x900`, `768x1024`, `375x812`, including horizontal-overflow guard.
-2. Shared UI states: loading, empty, error/no-permission, API field errors, confirm and disabled state.
-3. Limited-role menu filtering and direct protected URL -> `/errors/403`.
-4. Controlled login API `422` and retry-safe enabled state.
-5. Evidence metadata: exact source SHA, environment, build version, browser project, role, route, viewport, timestamp and screenshot filename.
+1. Login screen at `1440x900`, `768x1024`, `375x812` with a horizontal-overflow guard.
+2. Authenticated application shell at `1440x900`, `1280x900`, `768x1024` and `375x812`. Each viewport asserts the primary navigation and screen heading render, that the page has no horizontal overflow, and that the shell honours the BA wireframe breakpoint: above `980px` the aside stays `position: fixed` at `300px` with a matching `300px` main offset; at or below `980px` the aside becomes `position: static`, full width, with no main offset. `1280x900` is included specifically as the NFR-SRS-006 desktop minimum.
+3. Shared UI states: loading, empty, error/no-permission, API field errors, confirm and disabled state.
+4. Limited-role menu filtering and direct protected URL -> `/errors/403`.
+5. A 13-route direct-URL fail-closed matrix for a role holding only `inventory.view` (`/system/users`, `/master-data/skus`, `/master-data/catalog`, `/master-data/warehouse`, `/master-data/agencies`, `/master-data/defects`, `/inbound`, `/putaway`, `/outbound`, `/warranty`, `/reverse`, `/reports`, `/audit-logs`). Each route must land on `/errors/403`, render the explicit no-permission state and keep its navigation entry hidden.
+6. A positive control proving the same limited role still reaches `/inventory`, so the guard is not over-blocking granted permissions.
+7. Controlled login API `422` and retry-safe enabled state.
+8. Evidence metadata: exact source SHA, environment, build version, browser project, role, route, viewport, timestamp and screenshot filename.
 
 Controlled mocks validate FE behavior only. They do not prove that a deployed backend returns 403, enforces warehouse/data scope, or that a named UAT account possesses the intended permission set.
 

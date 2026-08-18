@@ -33,16 +33,17 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
+          cache: yarn
+          cache-dependency-path: yarn.lock
 
       - name: Install locked dependencies
-        run: npm ci
+        run: yarn install --frozen-lockfile --non-interactive
 
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
 
       - name: Verify WWHN-274 source contract
-        run: node scripts/verify-wwhn-274-closure.mjs
+        run: npm run wwhn-274:verify
 
       - name: Format gate
         run: npm run format:check
@@ -69,7 +70,7 @@ jobs:
         run: npm run health:check
 
       - name: WWHN-274 controlled responsive/RBAC/UI smoke
-        run: npx playwright test e2e/wwhn-274-release-signoff.spec.ts --project=chromium
+        run: npm run test:e2e:wwhn-274
 
       - name: Write exact-SHA release sign-off manifest
         if: always()

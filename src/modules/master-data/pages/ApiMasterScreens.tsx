@@ -1589,10 +1589,13 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
             </div>
           ) : null}
           <div className="grid-2">
+            {/* WWHN-310: chặn đúng giới hạn Data Dictionary (defect_catalogs.defect_code
+                varchar(80), defect_name varchar(200)) để không gửi lên rồi nhận 422. */}
             <Field label="Mã lỗi *">
               <input
                 className="input"
                 style={{ width: "100%" }}
+                maxLength={80}
                 value={form.defect_code}
                 onChange={(event) =>
                   setForm((current) => ({
@@ -1607,6 +1610,7 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               <input
                 className="input"
                 style={{ width: "100%" }}
+                maxLength={200}
                 value={form.defect_name}
                 onChange={(event) =>
                   setForm((current) => ({
