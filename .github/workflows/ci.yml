@@ -167,6 +167,11 @@ jobs:
         continue-on-error: true
         run: npm run check:api-mapping
 
+      - name: Verify WWHN-296 build/runtime closure
+        id: wwhn_296
+        continue-on-error: true
+        run: npm run wwhn-296:verify
+
       - name: Install Playwright Chromium
         id: playwright_install
         continue-on-error: true
@@ -237,6 +242,7 @@ jobs:
           BUILD_OUTCOME: ${{ steps.build.outcome }}
           HEALTH_OUTCOME: ${{ steps.health.outcome }}
           API_MAPPING_OUTCOME: ${{ steps.api_mapping.outcome }}
+          WWHN_296_OUTCOME: ${{ steps.wwhn_296.outcome }}
           PLAYWRIGHT_INSTALL_OUTCOME: ${{ steps.playwright_install.outcome }}
           RUNTIME_EVIDENCE_OUTCOME: ${{ steps.runtime_evidence.outcome }}
           WWHN_144_E2E_OUTCOME: ${{ steps.wwhn_144_e2e.outcome }}
@@ -296,6 +302,7 @@ jobs:
           BUILD_OUTCOME: ${{ steps.build.outcome }}
           HEALTH_OUTCOME: ${{ steps.health.outcome }}
           API_MAPPING_OUTCOME: ${{ steps.api_mapping.outcome }}
+          WWHN_296_OUTCOME: ${{ steps.wwhn_296.outcome }}
           PLAYWRIGHT_INSTALL_OUTCOME: ${{ steps.playwright_install.outcome }}
           RUNTIME_EVIDENCE_OUTCOME: ${{ steps.runtime_evidence.outcome }}
           WWHN_144_E2E_OUTCOME: ${{ steps.wwhn_144_e2e.outcome }}

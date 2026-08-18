@@ -76,7 +76,7 @@ Hợp đồng response mà UI phụ thuộc (đã có test cả hai phía):
 
 ## Removed-from-MVP boundary — Stocktake (rule anchored to REQ-SRS-037)
 
-Current runtime intentionally has no Stocktake Session/Snapshot/Count, variance-adjustment endpoint, `stocktake.*` permission, menu or production flow. Corrections after Post use append-only Reversal (`DEC-REV-001` / WWHN-26).
+Current runtime intentionally has no Stocktake Session/Snapshot/Count, variance-adjustment endpoint, `stocktake.*` permission, menu or production flow. Corrections after Post use Reversal append-only (`DEC-REV-001` / WWHN-26); there is no direct stock-edit path.
 
 ### Authority for the rule (FE296-P1-01)
 

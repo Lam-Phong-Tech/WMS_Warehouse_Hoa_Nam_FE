@@ -27,7 +27,7 @@ Scope: late-core and high-risk workflow dependencies reconciled against the curr
 
 Historical `/stocktake*` dependency rows are not represented as active runtime dependencies.
 
-Current runtime intentionally has no Stocktake Session/Snapshot/Count, variance-adjustment endpoint, `stocktake.*` permission, menu or production flow. Corrections after Post use append-only Reversal (`DEC-REV-001` / WWHN-26).
+Current runtime intentionally has no Stocktake Session/Snapshot/Count, variance-adjustment endpoint, `stocktake.*` permission, menu or production flow. Corrections after Post use Reversal append-only (`DEC-REV-001` / WWHN-26); there is no direct stock-edit path.
 
 ### Authority for the rule (FE296-P1-01)
 
