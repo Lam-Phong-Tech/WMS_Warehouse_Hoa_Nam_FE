@@ -94,6 +94,47 @@ export type StockMovementRow = {
   status: string;
 };
 
+/**
+ * WWHN-240 · một mắt xích của correction chain (BR-REV-01/08/11).
+ * `role=ORIGINAL` là movement gốc bất biến; các mắt xích còn lại là Reversal append-only.
+ */
+export type CorrectionChainNode = {
+  id: string;
+  movement_no: string | null;
+  movement_type: string;
+  role: "ORIGINAL" | "REVERSAL";
+  depth: number;
+  is_subject: boolean;
+  occurred_at: string | null;
+  warehouse_code: string | null;
+  product_code: string | null;
+  stock_status: string | null;
+  quantity: number | null;
+  qty_delta: number;
+  qty_before: number | null;
+  qty_after: number | null;
+  actor: string | null;
+  original_movement_id: string | null;
+  correction_chain_id: string | null;
+  reversal_document_no: string | null;
+  reversal_status: string | null;
+  reason_code: string | null;
+  reason_text: string | null;
+};
+
+/** WWHN-240 · net effect tính từ ledger authoritative (DEC-INV-001). */
+export type ReversalNetEffect = {
+  basis: string;
+  originalMovementId: string;
+  originalMovementType: string;
+  originalQty: number;
+  reversedQty: number;
+  remainingReversibleQty: number;
+  netQtyDelta: number;
+  fullyReversed: boolean;
+  reversalCount: number;
+};
+
 export type StockMovementTraceSource = {
   movementId: string | number;
   sourceType: string;
@@ -105,6 +146,11 @@ export type StockMovementTraceSource = {
   summary: RawRecord;
   lines: RawRecord[];
   timeline: RawRecord[];
+  /** Rỗng khi BE cũ chưa phát hành correction_chain. */
+  chain: CorrectionChainNode[];
+  rootMovementId: string | null;
+  chainTruncated: boolean;
+  netEffect: ReversalNetEffect | null;
 };
 
 export type PhysicalCodeTraceResult = {
@@ -376,6 +422,47 @@ function normalizeTraceSource(
         | RawRecord[]
         | { data?: RawRecord[] },
     ),
+    ...normalizeCorrectionChain(row),
+  };
+}
+
+/**
+ * WWHN-240 · BR-REV-11 + §13.10 RPT-MOV-01: trace phải hiển thị movement gốc, TOÀN BỘ
+ * reversal chain và net effect. Trước WWHN-240 BE chỉ trả một `reversal_movement` duy
+ * nhất nên FE không có gì để dựng chuỗi; các khoá mới đọc mềm để màn hình vẫn chạy khi
+ * ghép với một backend chưa cập nhật.
+ */
+function normalizeCorrectionChain(row: RawRecord): {
+  chain: CorrectionChainNode[];
+  rootMovementId: string | null;
+  chainTruncated: boolean;
+  netEffect: ReversalNetEffect | null;
+} {
+  const chainRaw = (row.correction_chain ?? {}) as RawRecord;
+  const nodes = Array.isArray(chainRaw.nodes)
+    ? (chainRaw.nodes as CorrectionChainNode[])
+    : [];
+  const effect = row.net_effect as RawRecord | undefined;
+
+  return {
+    chain: nodes,
+    rootMovementId: chainRaw.root_movement_id
+      ? String(chainRaw.root_movement_id)
+      : null,
+    chainTruncated: Boolean(chainRaw.truncated),
+    netEffect: effect
+      ? {
+          basis: text(effect.basis, "LEDGER"),
+          originalMovementId: text(effect.original_movement_id, ""),
+          originalMovementType: text(effect.original_movement_type, "-"),
+          originalQty: Number(effect.original_qty ?? 0),
+          reversedQty: Number(effect.reversed_qty ?? 0),
+          remainingReversibleQty: Number(effect.remaining_reversible_qty ?? 0),
+          netQtyDelta: Number(effect.net_qty_delta ?? 0),
+          fullyReversed: Boolean(effect.fully_reversed),
+          reversalCount: Number(effect.reversal_count ?? 0),
+        }
+      : null,
   };
 }
 

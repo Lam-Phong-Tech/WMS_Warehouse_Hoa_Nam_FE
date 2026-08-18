@@ -602,6 +602,138 @@ export function TraceModal({ movementId, onClose }: Props) {
               </div>
             ) : null}
 
+            {/*
+              WWHN-240 · BR-REV-11 + §13.10 RPT-MOV-01: "Show gross movement + reversal
+              chain + net effect; never hide original". Trước WWHN-240 BE chỉ trả một
+              reversal duy nhất nên màn hình này không thể dựng chuỗi; nay hiển thị đủ
+              movement gốc, mọi lần đảo và tác động ròng còn lại.
+            */}
+            {trace.netEffect ? (
+              <Descriptions
+                bordered
+                column={{ xs: 1, md: 3 }}
+                size="small"
+                title="Net effect (nguồn: ledger authoritative)"
+              >
+                <Descriptions.Item label="Giao dịch gốc">
+                  <Tag>{trace.netEffect.originalMovementType}</Tag>
+                </Descriptions.Item>
+                <Descriptions.Item label="SL gốc">
+                  {trace.netEffect.originalQty.toLocaleString("vi-VN")}
+                </Descriptions.Item>
+                <Descriptions.Item label="Đã đảo">
+                  <Typography.Text
+                    style={{
+                      color:
+                        trace.netEffect.reversedQty > 0 ? "#cf1322" : undefined,
+                      fontWeight: 600,
+                    }}
+                  >
+                    {trace.netEffect.reversedQty.toLocaleString("vi-VN")}
+                  </Typography.Text>
+                </Descriptions.Item>
+                <Descriptions.Item label="Còn đảo được">
+                  {trace.netEffect.remainingReversibleQty.toLocaleString(
+                    "vi-VN",
+                  )}
+                </Descriptions.Item>
+                <Descriptions.Item label="Tác động ròng">
+                  {trace.netEffect.netQtyDelta.toLocaleString("vi-VN")}
+                </Descriptions.Item>
+                <Descriptions.Item label="Trạng thái đảo">
+                  <Tag
+                    color={trace.netEffect.fullyReversed ? "error" : "success"}
+                  >
+                    {trace.netEffect.fullyReversed
+                      ? "Đã đảo toàn bộ"
+                      : `Còn hiệu lực (${trace.netEffect.reversalCount} lần đảo)`}
+                  </Tag>
+                </Descriptions.Item>
+              </Descriptions>
+            ) : null}
+
+            {(trace.chain ?? []).length > 0 ? (
+              <div>
+                <Typography.Text
+                  strong
+                  style={{ display: "block", marginBottom: 8 }}
+                >
+                  Correction chain ({(trace.chain ?? []).length} bút toán)
+                  {trace.chainTruncated ? (
+                    <Typography.Text type="danger" style={{ marginLeft: 8 }}>
+                      · chuỗi quá dài, đã cắt bớt
+                    </Typography.Text>
+                  ) : null}
+                </Typography.Text>
+                <Table
+                  size="small"
+                  dataSource={trace.chain ?? []}
+                  rowKey="id"
+                  pagination={false}
+                  scroll={{ x: 760 }}
+                  columns={[
+                    {
+                      title: "Vai trò",
+                      width: 110,
+                      render: (_, row) => (
+                        <Tag color={row.role === "ORIGINAL" ? "blue" : "red"}>
+                          {row.role === "ORIGINAL" ? "Gốc" : "Đảo"}
+                        </Tag>
+                      ),
+                    },
+                    {
+                      title: "Movement",
+                      width: 170,
+                      render: (_, row) => (
+                        <Typography.Text
+                          code
+                          strong={row.is_subject}
+                          style={{ fontSize: 12 }}
+                        >
+                          {row.movement_no ?? row.id}
+                        </Typography.Text>
+                      ),
+                    },
+                    { title: "Loại", dataIndex: "movement_type", width: 130 },
+                    {
+                      title: "Δ Tồn",
+                      width: 90,
+                      align: "right",
+                      render: (_, row) => (
+                        <Typography.Text
+                          style={{
+                            color: row.qty_delta >= 0 ? "#237804" : "#cf1322",
+                            fontWeight: 600,
+                          }}
+                        >
+                          {Number(row.qty_delta).toLocaleString("vi-VN")}
+                        </Typography.Text>
+                      ),
+                    },
+                    {
+                      title: "Thời điểm",
+                      width: 160,
+                      render: (_, row) => text(row.occurred_at),
+                    },
+                    {
+                      title: "Người thực hiện",
+                      width: 150,
+                      render: (_, row) => text(row.actor),
+                    },
+                    {
+                      title: "Lý do",
+                      render: (_, row) =>
+                        text(
+                          row.reason_text ??
+                            row.reason_code ??
+                            row.reversal_document_no,
+                        ),
+                    },
+                  ]}
+                />
+              </div>
+            ) : null}
+
             <div>
               <Typography.Text
                 strong
