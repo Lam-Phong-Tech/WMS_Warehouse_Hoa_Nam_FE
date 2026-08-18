@@ -21,6 +21,7 @@ import {
   fetchSkuImportConstraints,
   importSkuExcel,
   normalizeSkuImportResult,
+  SkuImportConcurrencyError,
   type SkuImportResult,
 } from "@/modules/master-data/services/sku-import.service";
 import { SkuImportModal } from "./SkuImportModal";
@@ -106,6 +107,9 @@ describe("SkuImportModal — hiệu lực của kết quả dry-run (FE331-P1-01
         errorFileExpiryHours: 24,
         idempotencyWindowHours: 24,
         idempotencyIdentity: ["file_sha256", "actor_id", "update_existing"],
+        maxPhysicalRowsToScan: 20040,
+        errorFileMaxOnDiskHours: 48,
+        concurrentImportPolicy: "FAIL_CLOSED_409",
       },
       dataScope: "GLOBAL",
     });
@@ -216,6 +220,9 @@ describe("SkuImportModal — hiệu lực của kết quả dry-run (FE331-P1-01
         errorFileExpiryHours: 12,
         idempotencyWindowHours: 6,
         idempotencyIdentity: ["file_sha256", "actor_id", "update_existing"],
+        maxPhysicalRowsToScan: 5040,
+        errorFileMaxOnDiskHours: 36,
+        concurrentImportPolicy: "FAIL_CLOSED_409",
       },
       dataScope: "ACTOR_SCOPED",
     });
@@ -228,6 +235,11 @@ describe("SkuImportModal — hiệu lực của kết quả dry-run (FE331-P1-01
     expect(screen.getByText(/file ≤ 5 MB/)).toBeInTheDocument();
     expect(
       screen.getByText(/trong 6h được coi là gửi trùng/),
+    ).toBeInTheDocument();
+    // DEV330-P1-02R3: trần quét dòng bảng tính cũng là hạn mức người dùng chạm phải,
+    // nên phải hiển thị — nếu không, thông báo lỗi máy chủ sẽ trông như mâu thuẫn.
+    expect(
+      screen.getByText(/5.040 dòng bảng tính \(kể cả dòng trống\)/),
     ).toBeInTheDocument();
     expect(screen.queryByText(/1000 dòng/)).not.toBeInTheDocument();
   });
@@ -247,5 +259,68 @@ describe("SkuImportModal — hiệu lực của kết quả dry-run (FE331-P1-01
         ),
       ).toBeInTheDocument(),
     );
+  });
+});
+
+/**
+ * WWHN-330 DEV330-P1-07R3 — BE nay từ chối (409 CONCURRENCY_CONFLICT) thay vì âm thầm
+ * chạy không khoá khi có một lần import trùng định danh đang chạy.
+ *
+ * Điều FE phải làm đúng: đây là lỗi TẠM THỜI của thời điểm gửi, không phải lỗi dữ liệu
+ * trong file. Nếu UI xử lý nó như một lần "Import bị từ chối" thì người dùng thấy bảng
+ * lỗi trống và mất luôn kết quả kiểm tra thử — bị đẩy đi sửa một file vốn đã hợp lệ.
+ */
+describe("SkuImportModal — tranh chấp import đồng thời (DEV330-P1-07R3)", () => {
+  beforeEach(() => {
+    vi.mocked(fetchSkuImportConstraints).mockResolvedValue({
+      constraints: {
+        decisionRef: "DEC-IMP-001",
+        maxRows: 1000,
+        maxFileSizeKb: 10240,
+        maxFileSizeMb: 10,
+        allowedExtensions: ["xlsx", "xls"],
+        errorFileExpiryHours: 24,
+        idempotencyWindowHours: 24,
+        idempotencyIdentity: ["file_sha256", "actor_id", "update_existing"],
+        maxPhysicalRowsToScan: 20040,
+        errorFileMaxOnDiskHours: 48,
+        concurrentImportPolicy: "FAIL_CLOSED_409",
+      },
+      dataScope: "GLOBAL",
+    });
+    vi.mocked(importSkuExcel).mockReset();
+  });
+
+  afterEach(() => {
+    cleanupTestState();
+  });
+
+  it("giữ nguyên kết quả kiểm tra thử và cho thử lại ngay khi BE trả 409", async () => {
+    vi.mocked(importSkuExcel)
+      .mockResolvedValueOnce(cleanDryRun())
+      .mockRejectedValueOnce(
+        new SkuImportConcurrencyError(
+          "Cùng file này đang được import với cùng tùy chọn; vui lòng đợi lần chạy hiện tại kết thúc rồi thử lại.",
+          null,
+        ),
+      );
+
+    renderWithProviders(
+      <SkuImportModal open canImport onClose={() => {}} onImported={() => {}} />,
+    );
+    selectFile();
+    await runDryRun();
+
+    fireEvent.click(commitButton());
+
+    // Nút Import vẫn sáng: payload không đổi, kết quả dry-run vẫn còn hiệu lực, người
+    // dùng chỉ cần bấm lại. Đây là khác biệt quan sát được so với ca 422 (mất hiệu lực).
+    await waitFor(() =>
+      expect(vi.mocked(importSkuExcel)).toHaveBeenCalledTimes(2),
+    );
+    await waitFor(() => expect(commitButton()).toBeEnabled());
+    expect(
+      screen.queryByText(/Import bị từ chối/),
+    ).not.toBeInTheDocument();
   });
 });

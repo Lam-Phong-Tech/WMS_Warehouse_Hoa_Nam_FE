@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  normalizeSkuImportConstraints,
   normalizeSkuImportReport,
   normalizeSkuImportResult,
+  SkuImportConcurrencyError,
   SkuImportRejectedError,
 } from "./sku-import.service";
 
@@ -187,5 +189,68 @@ describe("SkuImportRejectedError", () => {
     expect(rejected.message).toBe("Import bị từ chối.");
     expect(rejected.result.importReportId).toBe("report-x");
     expect(rejected.cause).toBe(cause);
+  });
+});
+
+/**
+ * WWHN-330 DEV330-P1-02R3 / P1-01R3 / P1-07R3 — ba khoá hợp đồng mới mà BE công bố.
+ * FE phải đọc được, và phải chịu được BE cũ chưa có chúng (0 / chuỗi rỗng) vì hai bên
+ * không luôn deploy cùng lúc.
+ */
+describe("normalizeSkuImportConstraints — hợp đồng mở rộng R3", () => {
+  it("đọc trần quét dòng vật lý, retention vật lý và chính sách tương tranh", () => {
+    const constraints = normalizeSkuImportConstraints({
+      decision_ref: "DEC-IMP-001",
+      max_rows: 1000,
+      max_file_size_kb: 10240,
+      max_file_size_mb: 10,
+      allowed_extensions: ["xlsx", "xls"],
+      max_physical_rows_to_scan: 20040,
+      error_file_expiry_hours: 24,
+      error_file_max_on_disk_hours: 48,
+      idempotency_window_hours: 24,
+      idempotency_identity: ["file_sha256", "actor_id", "update_existing"],
+      concurrent_import_policy: "FAIL_CLOSED_409",
+    });
+
+    expect(constraints).toMatchObject({
+      maxPhysicalRowsToScan: 20040,
+      errorFileMaxOnDiskHours: 48,
+      concurrentImportPolicy: "FAIL_CLOSED_409",
+    });
+    // Hạn TẢI ĐƯỢC và thời gian TỒN TẠI TRÊN ĐĨA là hai con số khác nhau — gộp làm một
+    // chính là chỗ review chỉ ra.
+    expect(constraints?.errorFileMaxOnDiskHours).toBeGreaterThan(
+      constraints?.errorFileExpiryHours ?? 0,
+    );
+  });
+
+  it("BE cũ chưa công bố các khoá mới: về giá trị trung tính, không bịa số", () => {
+    const constraints = normalizeSkuImportConstraints({
+      decision_ref: "DEC-IMP-001",
+      max_rows: 1000,
+      max_file_size_kb: 10240,
+    });
+
+    expect(constraints).toMatchObject({
+      maxPhysicalRowsToScan: 0,
+      errorFileMaxOnDiskHours: 0,
+      concurrentImportPolicy: "",
+    });
+  });
+});
+
+describe("SkuImportConcurrencyError (DEV330-P1-07R3)", () => {
+  it("là lớp lỗi riêng, không phải một biến thể của lỗi từ chối dữ liệu", () => {
+    const cause = new Error("409");
+    const conflict = new SkuImportConcurrencyError(
+      "Đang import, thử lại sau.",
+      cause,
+    );
+
+    expect(conflict).toBeInstanceOf(Error);
+    expect(conflict).not.toBeInstanceOf(SkuImportRejectedError);
+    expect(conflict.name).toBe("SkuImportConcurrencyError");
+    expect(conflict.cause).toBe(cause);
   });
 });

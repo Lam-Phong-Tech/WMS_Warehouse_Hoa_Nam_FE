@@ -34,6 +34,44 @@ function getResponseDataForImport(error: unknown): RawRecord | undefined {
     : undefined;
 }
 
+/**
+ * Mã lỗi nghiệp vụ của một response lỗi, đọc được ở CẢ HAI hình dạng envelope đang tồn
+ * tại: `error.code` (ErrorEnvelope theo SRS §8.2) và `error_code` (hình dạng mà tầng
+ * HTTP dùng chung của FE chuẩn hoá). Đọc cả hai là chủ ý — sai khác giữa hai hợp đồng
+ * này đã được ghi nhận ở DEC-IMP-001 §9 và chưa chốt lại, nên FE không được phụ thuộc
+ * vào đúng một trong hai rồi im lặng hỏng khi phía kia đổi.
+ */
+function errorCodeOf(error: unknown): string {
+  let body: RawRecord | undefined;
+  if (isAxiosErrorLike(error)) {
+    body = error.response?.data;
+  } else if (error instanceof ApiEnvelopeError) {
+    body = error.data as unknown as RawRecord;
+  }
+  if (!body) return "";
+
+  const nested = body.error;
+  if (nested && typeof nested === "object" && !Array.isArray(nested)) {
+    const code = (nested as RawRecord).code;
+    if (typeof code === "string" && code !== "") return code;
+  }
+  if (typeof body.error_code === "string") return body.error_code;
+  if (typeof body.code === "string") return body.code;
+  return "";
+}
+
+function messageOf(error: unknown, fallback: string): string {
+  let body: RawRecord | undefined;
+  if (isAxiosErrorLike(error)) {
+    body = error.response?.data;
+  } else if (error instanceof ApiEnvelopeError) {
+    body = error.data as unknown as RawRecord;
+  }
+  return typeof body?.message === "string" && body.message !== ""
+    ? body.message
+    : fallback;
+}
+
 function text(value: unknown, fallback = ""): string {
   return value === undefined || value === null ? fallback : String(value);
 }
@@ -70,6 +108,24 @@ export interface SkuImportConstraints {
   idempotencyWindowHours: number;
   /** Các thành phần tạo nên định danh một lần import (FE331-P1-02R3). */
   idempotencyIdentity: string[];
+  /**
+   * DEV330-P1-02R3: trần số dòng BẢNG TÍNH được quét. Người dùng chạm phải hạn mức này
+   * khi file có nhiều dòng trống xen giữa, và khi đó thông báo lỗi nói về "dòng bảng
+   * tính" chứ không phải "dòng dữ liệu" — nên UI phải nói được cả hai con số, nếu không
+   * người dùng thấy file 300 dòng bị từ chối bởi một hạn mức 1000 dòng.
+   * 0 = BE chưa công bố (BE cũ).
+   */
+  maxPhysicalRowsToScan: number;
+  /**
+   * DEV330-P1-01R3: thời gian tối đa file lỗi còn nằm trên đĩa, khác với hạn TẢI ĐƯỢC.
+   * 0 = BE chưa công bố.
+   */
+  errorFileMaxOnDiskHours: number;
+  /**
+   * DEV330-P1-07R3: `FAIL_CLOSED_409` = hai lần import trùng định danh gửi đồng thời thì
+   * lần thứ hai bị từ chối chứ không chạy song song. "" = BE chưa công bố.
+   */
+  concurrentImportPolicy: string;
 }
 
 export function normalizeSkuImportConstraints(
@@ -98,6 +154,9 @@ export function normalizeSkuImportConstraints(
     idempotencyIdentity: Array.isArray(record.idempotency_identity)
       ? record.idempotency_identity.map((value) => text(value))
       : [],
+    maxPhysicalRowsToScan: num(record.max_physical_rows_to_scan),
+    errorFileMaxOnDiskHours: num(record.error_file_max_on_disk_hours),
+    concurrentImportPolicy: text(record.concurrent_import_policy),
   };
 }
 
@@ -236,6 +295,28 @@ export class SkuImportRejectedError extends Error {
   }
 }
 
+/**
+ * WWHN-330 DEV330-P1-07R3 — BE trả 409 `CONCURRENCY_CONFLICT`: một lần import COMMIT
+ * trùng ĐỦ định danh (cùng file, cùng người, cùng tùy chọn) đang chạy và request này
+ * không giành được khoá tuần tự hoá.
+ *
+ * Vì sao phải là một lớp lỗi riêng, không gộp vào `SkuImportRejectedError`: response
+ * 409 cũng mang khối `data` nên nhánh xử lý 422 sẽ nuốt nó và dựng ra một "kết quả
+ * import" rỗng — người dùng thấy bảng lỗi TRỐNG kèm chữ "Import bị từ chối" và không
+ * hiểu mình phải sửa gì trong file, trong khi thực tế file hoàn toàn hợp lệ và việc
+ * cần làm chỉ là đợi rồi bấm lại. Đây là lỗi tạm thời, khắc phục được, không phải lỗi
+ * dữ liệu — hai thứ đó không được nói bằng cùng một câu.
+ */
+export class SkuImportConcurrencyError extends Error {
+  readonly cause: unknown;
+
+  constructor(message: string, cause: unknown) {
+    super(message);
+    this.name = "SkuImportConcurrencyError";
+    this.cause = cause;
+  }
+}
+
 export interface SkuImportOptions {
   updateExisting?: boolean;
   /** WWHN-224: true = chỉ kiểm tra thử, không ghi SKU/audit nghiệp vụ. */
@@ -263,6 +344,19 @@ export async function importSkuExcel(
     );
     return normalizeSkuImportResult(data);
   } catch (error) {
+    // Phải xét TRƯỚC nhánh 422 bên dưới: 409 cũng mang khối `data` (kèm constraints)
+    // nên nếu để lọt xuống, nó sẽ bị dựng thành một "kết quả import" không có dòng lỗi
+    // nào và hiển thị sai bản chất sự cố.
+    if (errorCodeOf(error) === "CONCURRENCY_CONFLICT") {
+      throw new SkuImportConcurrencyError(
+        messageOf(
+          error,
+          "Cùng file này đang được import với cùng tùy chọn; vui lòng đợi lần chạy hiện tại kết thúc rồi thử lại.",
+        ),
+        error,
+      );
+    }
+
     const embedded = getResponseDataForImport(error);
     if (embedded) {
       const result = normalizeSkuImportResult(embedded);

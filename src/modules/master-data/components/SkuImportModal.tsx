@@ -31,6 +31,7 @@ import {
   fetchSkuImportConstraints,
   fetchSkuImportReport,
   importSkuExcel,
+  SkuImportConcurrencyError,
   SkuImportRejectedError,
   type SkuImportConstraints,
   type SkuImportResult,
@@ -121,6 +122,15 @@ function describeConstraints(constraints: SkuImportConstraints | null): string {
   if (constraints.idempotencyWindowHours > 0) {
     parts.push(
       `nộp lại đúng file này với cùng tùy chọn trong ${constraints.idempotencyWindowHours}h được coi là gửi trùng và không ghi lần hai`,
+    );
+  }
+  if (constraints.maxPhysicalRowsToScan > 0) {
+    // DEV330-P1-02R3: hạn mức thứ hai mà người dùng CÓ THỂ chạm phải mà không hiểu vì
+    // sao — file chỉ vài trăm dòng dữ liệu nhưng có dòng trống rải rác tới tận cuối
+    // bảng tính. Không nói ra thì thông báo lỗi máy chủ ("trải dài quá N dòng bảng
+    // tính") trông như mâu thuẫn với hạn mức 1000 dòng đang hiển thị ngay trên màn hình.
+    parts.push(
+      `dữ liệu không trải quá ${constraints.maxPhysicalRowsToScan.toLocaleString("vi-VN")} dòng bảng tính (kể cả dòng trống)`,
     );
   }
 
@@ -396,6 +406,12 @@ export function SkuImportModal({
     },
     onError: (error, payload) => {
       setCommitResult(null);
+      // Dry-run không lấy khoá nên về nguyên tắc không gặp 409; xử lý ở đây để nếu hợp
+      // đồng đổi thì UI vẫn nói đúng bản chất thay vì vẽ một bảng lỗi trống.
+      if (error instanceof SkuImportConcurrencyError) {
+        toast.warning(error.message);
+        return;
+      }
       if (error instanceof SkuImportRejectedError) {
         setPreviewResult(error.result);
         setPreviewSignature(
@@ -436,6 +452,15 @@ export function SkuImportModal({
       onImported();
     },
     onError: (error) => {
+      // WWHN-330 DEV330-P1-07R3: 409 CONCURRENCY_CONFLICT — file hợp lệ, chỉ là đang có
+      // một lần import trùng định danh chạy dở. Giữ nguyên kết quả kiểm tra thử để người
+      // dùng bấm Import lại ngay được, và KHÔNG gọi setCommitResult(null) vì làm vậy sẽ
+      // xoá màn hình như thể lần chạy đã hỏng dữ liệu — trong khi máy chủ vừa bảo đảm
+      // "không có SKU nào được tạo/cập nhật".
+      if (error instanceof SkuImportConcurrencyError) {
+        toast.warning(error.message);
+        return;
+      }
       if (error instanceof SkuImportRejectedError) {
         setCommitResult(error.result);
         toast.error(error.message);
