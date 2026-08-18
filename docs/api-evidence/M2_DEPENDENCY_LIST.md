@@ -1,41 +1,42 @@
 # M2 Dependency List
 
-Updated: 2026-08-01 ICT  
-Scope: dependency and contract evidence that supports `WWHN-148` beyond the
-M1 happy-path mapping.
+Updated: 2026-08-18 ICT  
+Scope: dependency and contract evidence supporting current `m1` runtime/build verification for `WWHN-296` and `WWHN-148`.
 
 ## Safe Stock
 
 | Screen | FE service/source | UI action | Method | Path | Contract disposition |
 | --- | --- | --- | --- | --- | --- |
-| Inventory | src/modules/inventory/services/inventoryService.ts | Load safe stock alerts | GET | `/safe-stock-alerts` | Blocked until BE registers canonical safe-stock routes (2026-08-13 dev snapshot: route absent). |
-| Inventory | src/modules/inventory/services/inventoryService.ts | Load safe stock history | GET | `/safe-stock-alerts/history` | Blocked until BE registers canonical safe-stock routes (2026-08-13 dev snapshot: route absent). |
+| Inventory | src/modules/inventory/services/inventoryService.ts | Load safe stock alerts | GET | `/safe-stock-alerts` | **Fail-closed pending contract** — current BE `m1` does not register a canonical safe-stock route; do not wire this orphan helper into production UI. |
+| Inventory | src/modules/inventory/services/inventoryService.ts | Load safe stock history | GET | `/safe-stock-alerts/history` | **Fail-closed pending contract** — current BE `m1` does not register this route. |
 
-**WWHN-211 scope note (DEV211-P2-01):** `fetchSafeStockAlerts`, `fetchSafeStockConfigs`,
-`createSafeStockConfig` and the scan-batch helpers (`fetchScanBatches`, `createScanBatch`,
-`fetchScanEvents`) exist in `inventoryService.ts` but are not called by any inventory
-component/page (`InventoryPage.tsx`, `BalanceDetailModal.tsx`, `TraceModal.tsx`). Scan batch
-functionality is otherwise owned by `src/modules/scan/services/scanService.ts` (see "Known
-Mismatch" below), so the `inventoryService.ts` scan helpers duplicate responsibility rather than
-extend it. These functions are orphaned/unused code as of this review and were never in scope for
-WWHN-211's list/detail/trace deliverable. Disposition needed from BA: (a) delete the unused
-functions, or (b) confirm a future ticket that will wire Safe-stock alerts/config UI and retire
-the duplicate scan helpers in favor of `scanService.ts`. Owner: BA + DEV (FE1).
+**WWHN-211/WWHN-296 scope note:** `fetchSafeStockAlerts`, `fetchSafeStockConfigs`,
+`createSafeStockConfig` and duplicate scan-batch helpers in `inventoryService.ts` are not a
+production contract by themselves. Safe-stock calls remain fail-closed until BA/BE publish a
+canonical route/formula/permission contract. Scan batch ownership remains in
+`src/modules/scan/services/scanService.ts`.
 
 ## Audit Logs
 
 | Screen | FE service/source | UI action | Method | Path | Contract disposition |
 | --- | --- | --- | --- | --- | --- |
-| Audit Logs | src/modules/audit-logs/services/audit-logs.service.ts | List audit logs with pagination/filter | GET | `/audit-logs` | Present in local Swagger snapshot and covered by targeted service test. |
+| Audit Logs | src/modules/audit-logs/services/audit-logs.service.ts | List audit logs with pagination/filter | GET | `/audit-logs` | Contract-ready; endpoint remains part of the authenticated API surface and is covered by FE service tests. |
 
-## Known Mismatch / Dependency Items
+## Runtime dependency reconciliation — 2026-08-18
 
-| Area | FE source | Endpoint constant or behavior | Owner | Disposition |
-| --- | --- | --- | --- | --- |
-| Scan classify | src/modules/scan/services/scanService.ts | scan classify endpoint uses `/scan-batches/classify` | BE1/BE2 | Not present in local Swagger snapshot; FE state machine exists but final pass needs duplicate/unknown/invalid samples. |
-| Scan batches | src/modules/scan/services/scanService.ts | scan batches endpoint uses `/scan/batches` | BE1/BE2 | Not present in local Swagger snapshot; route must be locked or FE endpoint adjusted. |
-| Scan events | src/modules/scan/services/scanService.ts | scan events endpoint uses `/scan/events` | BE1/BE2 | Not present in local Swagger snapshot; needed for history/evidence. |
-| Physical codes | src/modules/scan/services/scanService.ts | physical codes endpoint uses legacy `/physical-codes` | BE1/BA | Not present in current local Swagger snapshot; treat as non-production until canonical contract is provided. |
-| Putaway tasks | src/modules/putaway/services/putawayService.ts | putaway tasks endpoint uses `/putaway/tasks` | BE1/BA | Not present in local Swagger snapshot; business rule and permission still conditional. |
-| Putaway history | src/modules/putaway/services/putawayService.ts | putaway history endpoint uses `/putaway/history` | BE1/BA | Not present in local Swagger snapshot; needs sample data and action rule confirmation. |
-| Safe stock config | src/modules/inventory/services/inventoryService.ts | safe stock configs endpoint uses `/safe-stock-configs` | BE1/BA | Not present in local Swagger snapshot; UI must remain conditional if enabled. |
+| Area | FE source | Method | Path | Owner | Current disposition |
+| --- | --- | --- | --- | --- | --- |
+| Scan classify | `src/modules/scan/services/scanService.ts` | POST | `/scan/classify` | FE1 + BE1 | **Canonical.** FE constant and `ScanController` OpenAPI both use `/api/v1/scan/classify`. WWHN-296 restores this authenticated BE runtime alias while retaining `/scan-batches/classify` only for backward compatibility. |
+| Scan batches | `src/modules/scan/services/scanService.ts` | GET | `/scan/batches` | FE1 + BE1 | **Contract-ready.** Current BE `m1` registers the route via `WmsContractController::scanBatches`. |
+| Scan events | `src/modules/scan/services/scanService.ts` | GET | `/scan/events` | FE1 + BE1 | **Contract-ready.** Current BE `m1` registers the route via `WmsContractController::scanEvents`. |
+| Physical codes | `src/shared/api/endpoints.ts` | GET | `/physical-codes` | FE1 + BE1 | **Contract-ready.** Current BE `m1` registers list/detail plus controlled create/update permissions. `fetchPhysicalCodes()` itself remains fail-closed until its response mapping is formally consumed. |
+| Putaway tasks | `src/modules/putaway/services/putawayService.ts` | GET | `/putaway-tasks` | FE1 + BE1 | **Canonical.** Current FE uses `/putaway-tasks`; BE keeps both canonical `/putaway-tasks` and legacy `/putaway/tasks`. |
+| Putaway history | `src/modules/putaway/services/putawayService.ts` | GET | `/putaway/history` | FE1 + BE1 | **Contract-ready.** Current BE route exists and FE asserts stock-neutral response semantics. |
+| Safe stock config | `src/modules/inventory/services/inventoryService.ts` | GET | `/safe-stock-configs` | BA + BE1 + FE1 | **Fail-closed pending contract.** No current BE route; helper must not be activated until route, payload, permission and formula are approved. |
+
+## Boundary
+
+This register records observable FE/BE `m1` contract alignment. It does not replace independent
+DevOps production-domain/CORS/cookie evidence, BE sign-off, QA runtime execution, or BA Go/No-Go.
+Production-only values must be injected by deployment configuration and must not be invented or
+hard-coded into this repository.
