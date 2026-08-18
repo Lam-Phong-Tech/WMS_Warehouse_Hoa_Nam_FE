@@ -6,7 +6,16 @@ import {
   requirePositiveNumber,
   WmsContractError,
 } from "@/shared/api/wms-contract";
-import { WMS_PERMISSION_CATALOG as P } from "@/shared/constants/wms-permissions";
+import {
+  hasAnyWmsPermission,
+  WMS_PERMISSION_CATALOG as P,
+} from "@/shared/constants/wms-permissions";
+import { useAuthStore } from "@/shared/store/auth.store";
+import {
+  maskWarrantyAddress,
+  maskWarrantyName,
+  maskWarrantyPhone,
+} from "../constants";
 import type {
   CreateWarrantyCaseRequest,
   UpdateWarrantyCaseRequest,
@@ -86,6 +95,44 @@ function canonicalStatus(value: unknown): WarrantyCaseStatus {
   }
 }
 
+/**
+ * §13.8 · WWHN-247 — PII bảo hành đi qua đúng MỘT cửa ở FE.
+ *
+ * BE (`WarrantyPiiMasker`) đã mask khi actor thiếu `warranty.pii.view` và trả cờ
+ * `pii_masked`. WWHN-244 đã mask thêm một lớp ở tầng render của WAR-01/WAR-03.
+ * Lớp này đóng phần còn lại: mọi consumer khác của service (React Query cache,
+ * prefill form hiệu chỉnh, deep-link, code mới sau này) cũng chỉ nhận được giá trị
+ * đã mask. Fail-closed theo cả hai nguồn — BE báo đã mask HOẶC actor không có quyền.
+ *
+ * Mask idempotent trên chính output của BE nên áp nhiều lớp không làm sai hiển thị.
+ */
+function resolveWarrantyPii(row: RawRecord): {
+  customer_name: string;
+  customer_phone?: string;
+  customer_address?: string;
+  pii_masked: boolean;
+} {
+  const authState = useAuthStore.getState();
+  const canViewPii = hasAnyWmsPermission(
+    authState.permissionCodes,
+    [P.WARRANTY_PII_VIEW],
+    authState.isSuperAdmin,
+  );
+  const full = canViewPii && row.pii_masked !== true;
+
+  const name = text(row.customer_name ?? row.customer).trim();
+  const phone = text(row.customer_phone).trim();
+  const address = text(row.customer_address).trim();
+
+  return {
+    customer_name: (full ? name : maskWarrantyName(name)) || "-",
+    customer_phone: (full ? phone : maskWarrantyPhone(phone)) || undefined,
+    customer_address:
+      (full ? address : maskWarrantyAddress(address)) || undefined,
+    pii_masked: !full,
+  };
+}
+
 function normalizeWarrantyCase(row: RawRecord): WarrantyCase {
   const temporaryCode =
     text(row.temporary_item_code ?? row.temp_item_code) || undefined;
@@ -100,6 +147,7 @@ function normalizeWarrantyCase(row: RawRecord): WarrantyCase {
       : "IDENTIFIED";
   const status = canonicalStatus(row.status);
   const caseDescription = text(row.description ?? row.notes) || undefined;
+  const pii = resolveWarrantyPii(row);
 
   return {
     id: text(row.warranty_case_id ?? row.id),
@@ -119,9 +167,10 @@ function normalizeWarrantyCase(row: RawRecord): WarrantyCase {
     identification_type: identificationType,
     sales_trace_status: text(row.sales_trace_status) || undefined,
     serial_number: text(row.serial_number ?? row.serial) || undefined,
-    customer_name: text(row.customer_name ?? row.customer, "-"),
-    customer_phone: text(row.customer_phone) || undefined,
-    customer_address: text(row.customer_address) || undefined,
+    customer_name: pii.customer_name,
+    customer_phone: pii.customer_phone,
+    customer_address: pii.customer_address,
+    pii_masked: pii.pii_masked,
     purchase_date: text(row.purchase_date) || undefined,
     masked_customer_name: text(row.masked_customer_name) || undefined,
     masked_customer_phone: text(row.masked_customer_phone) || undefined,

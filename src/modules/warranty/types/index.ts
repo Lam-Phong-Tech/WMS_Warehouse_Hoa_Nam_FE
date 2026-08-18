@@ -35,6 +35,12 @@ export interface WarrantyCase {
   purchase_date?: string;
   masked_customer_name?: string;
   masked_customer_phone?: string;
+  /**
+   * §13.8: true = tên/SĐT/địa chỉ đang ở dạng mask. `resolveWarrantyPii` chốt cờ này
+   * fail-closed (BE báo đã mask HOẶC actor thiếu `warranty.pii.view`), nên UI đọc cờ
+   * này thay vì tự suy từ danh sách quyền phía client.
+   */
+  pii_masked: boolean;
   agency_name?: string;
   defect: string;
   defect_code: string;
