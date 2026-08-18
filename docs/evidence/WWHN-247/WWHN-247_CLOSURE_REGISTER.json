@@ -10,6 +10,8 @@
     "feSha": "59c4b16883d64081c8cf150e0df74f90b1d5a8fc",
     "beSha": "08abf3f95f9e83be3bc9efe1258fd5f3ea5baa9e",
     "branch": "m1",
+    "feDocsSha": "c6bab76ef3abbf0c0c111477a4e6cf7bd2c58dae",
+    "pinInvariant": "feSha là commit chứa toàn bộ thay đổi hành vi của WWHN-247. feDocsSha chỉ thêm docs/ và sửa bộ luật phát hiện mojibake trong scripts/verify-wwhn-247-closure.mjs. Bất biến chống pin rot — phải rỗng: git diff --stat 59c4b16..<HEAD> -- src/modules/warranty src/test/wwhn-247-warranty-closure.test.ts. Nếu không rỗng thì kết quả QA gắn với feSha phải chạy lại, không được dùng lại.",
     "relatedFeSha": "be18bec7d161b0656c460a44e37a7c286099c24c",
     "relatedFeShaNote": "WWHN-244 — đồng bộ ma trận trạng thái + mask PII ở tầng render; WWHN-247 xây tiếp trên đó, không chồng lấn."
   },
