@@ -1,0 +1,124 @@
+{
+  "schemaVersion": "1.0.0",
+  "task": "WWHN-292",
+  "parent": "WWHN-78",
+  "branch": "m1",
+  "remediationStartedFrom": "b26c8ff95de83eaade5ec47b677b05044d4be56d",
+  "finalIdentityPolicy": "Use the exact successful workflow GITHUB_SHA and GITHUB_RUN_ID; never hard-code a historical CI identity as final evidence.",
+  "evidencePolicy": {
+    "failClosed": true,
+    "noSelfSignForIndependentRoles": true,
+    "controlledEvidenceIsNotUat": true,
+    "backendAuthorizationMustBeProvenOutsideFeMocks": true,
+    "runtimeEvidenceMustNameEnvironmentBuildRoleViewportBrowserTimestamp": true
+  },
+  "requiredViewports": [
+    "1440x900",
+    "768x1024",
+    "375x812"
+  ],
+  "requiredDefectFields": [
+    "defectId",
+    "moduleRoute",
+    "accountRole",
+    "viewport",
+    "environment",
+    "build",
+    "expected",
+    "actual",
+    "severity",
+    "beforeEvidence",
+    "fixSha",
+    "fixFiles",
+    "afterEvidence",
+    "retestResult"
+  ],
+  "reviewItems": [
+    {
+      "id": "FE292-P1-01",
+      "severity": "P1",
+      "issue": "Real WWHN-78/HN-UAT-003 defect register is not published in the current Jira chain.",
+      "owners": ["BA", "QA1", "FE1"],
+      "closureState": "BLOCKED_EXTERNAL_NO_REAL_DEFECT_REGISTER",
+      "feDisposition": "FE defines the immutable schema and refuses to fabricate UAT rows. Each real defect must bind before evidence, exact fix SHA/files and after evidence.",
+      "dependencies": ["WWHN-76", "WWHN-286", "WWHN-288"]
+    },
+    {
+      "id": "FE292-P1-02",
+      "severity": "P1",
+      "issue": "Historical assessment used stale exact HEAD and CI #488.",
+      "owners": ["FE1"],
+      "closureState": "FE_CONTROL_IMPLEMENTED_PENDING_SUCCESSFUL_FINAL_WORKFLOW",
+      "feDisposition": "Dedicated WWHN-292 workflow runs format, lint, typecheck, tests, task verifier, build and task-specific Playwright against the exact runtime GITHUB_SHA.",
+      "evidence": [
+        ".github/workflows/wwhn-292-fe-closure.yml",
+        "scripts/verify-wwhn-292-closure.mjs",
+        "e2e/wwhn-292-ui-responsive-rbac.spec.ts"
+      ]
+    },
+    {
+      "id": "FE292-P1-03",
+      "severity": "P1",
+      "issue": "WWHN-293 has no independent QA2 retest.",
+      "owners": ["QA2"],
+      "closureState": "BLOCKED_EXTERNAL_QA2",
+      "feDisposition": "FE publishes task-specific controlled handoff evidence only. QA2 must independently retest the exact deployed FE/BE identity.",
+      "dependencies": ["WWHN-293", "WWHN-287"]
+    },
+    {
+      "id": "FE292-P1-04",
+      "severity": "P1",
+      "issue": "Controlled FE evidence is not named DEV/UAT runtime evidence.",
+      "owners": ["QA2", "BE", "DevOps"],
+      "closureState": "BLOCKED_EXTERNAL_DEV_UAT",
+      "feDisposition": "No DEV/UAT PASS is claimed. Real environment evidence must include account/role, browser, viewport, FE SHA, BE SHA, request ID and direct authorization result where applicable."
+    },
+    {
+      "id": "FE292-P1-05",
+      "severity": "P1",
+      "issue": "Canonical WWHN-292 task artifact was absent from current m1.",
+      "owners": ["FE1"],
+      "closureState": "FE_CONTROL_IMPLEMENTED",
+      "feDisposition": "A task-specific document, structured closure register, verifier, E2E suite and workflow now exist. WWHN-156 is dependency context only and is no longer a substitute artifact.",
+      "evidence": [
+        "docs/Task_docs_Jira/WWHN-292.md",
+        "docs/evidence/wwhn-292/WWHN-292_CLOSURE_REGISTER.json",
+        "scripts/verify-wwhn-292-closure.mjs",
+        "e2e/wwhn-292-ui-responsive-rbac.spec.ts"
+      ]
+    },
+    {
+      "id": "FE292-P2-01",
+      "severity": "P2",
+      "issue": "Stale/invalid branch or SHA links can break immutable traceability.",
+      "owners": ["FE1"],
+      "closureState": "FE_CONTROL_IMPLEMENTED_PENDING_FINAL_RUN_IDENTITY",
+      "feDisposition": "Canonical branch is m1. The workflow writes EXACT_GIT_SHA, GITHUB_RUN_ID, GITHUB_RUN_ATTEMPT and SHA256SUMS only after prior gates pass."
+    },
+    {
+      "id": "FE292-P2-02",
+      "severity": "P2",
+      "issue": "Generic evidence suite used tablet 1024x768 instead of the required 768x1024.",
+      "owners": ["FE1"],
+      "closureState": "FE_CONTROL_IMPLEMENTED",
+      "feDisposition": "Dedicated WWHN-292 E2E uses exactly 1440x900, 768x1024 and 375x812 and writes task-specific metadata/evidence."
+    }
+  ],
+  "externalGateSnapshot": {
+    "WWHN-76": "Blocked/Pending",
+    "WWHN-286": "Blocked/Pending",
+    "WWHN-287": "Blocked/Pending",
+    "WWHN-288": "Blocked/Pending",
+    "WWHN-293": "Blocked/Pending",
+    "WWHN-20": "To Do",
+    "WWHN-28": "DONE REDFLAG",
+    "WWHN-140": "DONE REDFLAG",
+    "WWHN-141": "DONE REDFLAG",
+    "WWHN-142": "DONE REDFLAG"
+  },
+  "overallStatus": {
+    "feOwnedSourceControls": "IMPLEMENTED_PENDING_FINAL_WORKFLOW_RUN",
+    "crossRoleAcceptance": "BLOCKED_EXTERNAL",
+    "truthRule": "Do not claim 100 percent UAT/project acceptance until real defect disposition, independent QA2 retest and backend runtime authorization evidence are attached to the exact deployed build identity."
+  }
+}
