@@ -50,9 +50,20 @@ Production domain/origin/secret không được hard-code. DEV/UAT/PROD phải i
 | Reports hub | GET | `/reports/hub` | BE route present; no longer marked missing. |
 | Warranty defects report | GET | `/reports/warranty-defects` | BE route present; read/export permissions are separate. |
 
-## Removed-from-MVP boundary — Stocktake
+## Current implementation boundary — Stocktake (formal governance pending)
 
-REQ-SRS-037 / `DEC-NO-STOCKTAKE-001` is the current baseline. `m1` must not expose Stocktake Session/Snapshot/Count, variance-adjustment endpoint, direct stock-edit permission, menu or production flow. Historical Stocktake rows are intentionally removed from this current runtime mapping. Corrections after Post use Reversal append-only.
+Current runtime intentionally has no Stocktake Session/Snapshot/Count, variance-adjustment endpoint, `stocktake.*` permission, menu or production flow. Corrections after Post use append-only Reversal.
+
+The controlling Jira source for this implementation disposition is **WWHN-25 / DEC-STK-001**. BA comment `14791` records `NO-GO FOR MVP/BETA / DEFERRED-LATER PHASE`; comment `15251` requests Process Owner/Client + PM/PO formal confirmation. Both make clear that **formal approver/current-hash approval is still pending**.
+
+Therefore:
+
+- do **not** cite `DEC-NO-STOCKTAKE-001` as an approved Decision ID;
+- this mapping proves current implementation/source consistency only;
+- formal governance closure remains `PENDING_PM_PO_PROCESS_OWNER_APPROVAL` until approver-authored evidence exists;
+- any Stocktake reintroduction requires an approved Later Phase/Change Request/current Decision plus synchronized FE/BE/OpenAPI/RBAC/test updates.
+
+Machine-readable governance status: `docs/api-evidence/STOCKTAKE_GOVERNANCE_STATUS.json`.
 
 ## RBAC mapping
 
@@ -92,4 +103,4 @@ npm run check:api-mapping
 npm run test:e2e:evidence
 ```
 
-CI/evidence proves FE-owned checks only. DevOps PROD configuration, BE runtime sign-off, QA1/QA2 execution and BA Go/No-Go remain independent gates and must use the same exact build/environment identity.
+CI/evidence proves FE-owned checks only. DevOps PROD configuration, BE runtime sign-off, QA1/QA2 execution, Stocktake formal governance and BA Go/No-Go remain independent gates and must use the same exact build/environment identity.
