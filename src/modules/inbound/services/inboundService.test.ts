@@ -242,6 +242,31 @@ describe("inbound real API contract", () => {
     ).toBe(false);
   });
 
+  it("cho phép cancel khi actor chỉ có inbound.create (route BE nhận inbound.cancel|inbound.create)", () => {
+    // WAREHOUSE_STAFF được seed inbound.create chứ không phải inbound.cancel; route BE
+    // POST /inbound-documents/{id}/cancel nhận `inbound.cancel|inbound.create` nên FE
+    // không được chỉ nhận inbound.cancel, nếu không staff bị chặn nhầm dù BE cho phép
+    // (DEV184-P1-01R).
+    expect(
+      hasAnyWmsPermission(
+        ["inbound.create"],
+        WMS_ACTION_PERMISSIONS.CANCEL_INBOUND,
+      ),
+    ).toBe(true);
+    expect(
+      hasAnyWmsPermission(
+        ["inbound.cancel"],
+        WMS_ACTION_PERMISSIONS.CANCEL_INBOUND,
+      ),
+    ).toBe(true);
+    expect(
+      hasAnyWmsPermission(
+        ["inbound.view"],
+        WMS_ACTION_PERMISSIONS.CANCEL_INBOUND,
+      ),
+    ).toBe(false);
+  });
+
   it("blocks a code that classifies to a different SKU than the selected line", async () => {
     vi.mocked(http.get).mockResolvedValue({
       id: "DOC-1",

@@ -138,7 +138,15 @@ export const WMS_ACTION_PERMISSIONS = {
   SCAN_OUTBOUND: [WMS_PERMISSION_CATALOG.OUTBOUND_SCAN],
   SCAN_WARRANTY: [WMS_PERMISSION_CATALOG.SCAN_WARRANTY],
   CREATE_INBOUND: [WMS_PERMISSION_CATALOG.INBOUND_CREATE],
-  CANCEL_INBOUND: [WMS_PERMISSION_CATALOG.INBOUND_CANCEL],
+  // Route BE nhận `permission:inbound.cancel|inbound.create` (Annex C khai
+  // inbound.create; baseline seed cấp inbound.cancel riêng cho
+  // WAREHOUSE_APPROVER/KEEPER, không cấp cho WAREHOUSE_STAFF) — FE gate phải
+  // khớp đúng bộ đó, nếu không WAREHOUSE_STAFF (chỉ có inbound.create) bị
+  // chặn nhầm ở cả nút Cancel lẫn assertWmsActionPermission dù BE cho phép.
+  CANCEL_INBOUND: [
+    WMS_PERMISSION_CATALOG.INBOUND_CANCEL,
+    WMS_PERMISSION_CATALOG.INBOUND_CREATE,
+  ],
   POST_RECEIPT: [WMS_PERMISSION_CATALOG.INBOUND_POST],
   // Route BE nhận `putaway.manage|container.manage`; FE gate phải khớp đúng bộ đó.
   PUTAWAY_CONTAINER: [

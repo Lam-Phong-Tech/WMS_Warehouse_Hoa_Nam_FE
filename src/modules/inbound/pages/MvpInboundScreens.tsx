@@ -34,6 +34,7 @@ import {
 } from "@/shared/api/api-error";
 import {
   hasAnyWmsPermission,
+  WMS_ACTION_PERMISSIONS,
   WMS_PERMISSION_CATALOG as P,
 } from "@/shared/constants/wms-permissions";
 import { ScanInput } from "@/shared/components/forms/ScanInput";
@@ -90,10 +91,11 @@ function makeKey(prefix: string) {
   return `${prefix}-${globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`}`;
 }
 
-function useInboundPermission(code: string) {
+function useInboundPermission(code: string | readonly string[]) {
   const permissionCodes = useAuthStore((state) => state.permissionCodes);
   const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
-  return hasAnyWmsPermission(permissionCodes, [code], isSuperAdmin);
+  const codes = Array.isArray(code) ? code : [code];
+  return hasAnyWmsPermission(permissionCodes, codes, isSuperAdmin);
 }
 
 function getBarcodeDetector(): BarcodeDetectorConstructor | null {
@@ -313,7 +315,7 @@ export function InboundScanModal({
   const canEdit = useInboundPermission(P.INBOUND_CREATE);
   const canScan = useInboundPermission(P.INBOUND_SCAN);
   const canPost = useInboundPermission(P.INBOUND_POST);
-  const canCancel = useInboundPermission(P.INBOUND_CANCEL);
+  const canCancel = useInboundPermission(WMS_ACTION_PERMISSIONS.CANCEL_INBOUND);
 
   const detail = detailQuery.data;
   const skuRows = skuQuery.data?.data ?? [];
