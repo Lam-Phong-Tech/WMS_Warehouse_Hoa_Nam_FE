@@ -5,6 +5,7 @@ import {
   normalizeSkuImportResult,
   SkuImportConcurrencyError,
   SkuImportRejectedError,
+  SkuImportUnavailableError,
 } from "./sku-import.service";
 
 describe("normalizeSkuImportResult", () => {
@@ -252,5 +253,24 @@ describe("SkuImportConcurrencyError (DEV330-P1-07R3)", () => {
     expect(conflict).not.toBeInstanceOf(SkuImportRejectedError);
     expect(conflict.name).toBe("SkuImportConcurrencyError");
     expect(conflict.cause).toBe(cause);
+  });
+});
+
+describe("SkuImportUnavailableError (DEV224-P1-05R)", () => {
+  it("là sự cố máy chủ thử lại được, không phải lỗi dữ liệu của người dùng", () => {
+    const cause = new Error("503");
+    const unavailable = new SkuImportUnavailableError(
+      "Không lưu được Import báo cáo; toàn bộ giao dịch đã hoàn tác.",
+      cause,
+    );
+
+    expect(unavailable).toBeInstanceOf(Error);
+    // Then chốt: KHÔNG được là biến thể của lỗi từ chối dữ liệu, vì UI phân nhánh theo
+    // instanceof — gộp chung là hiện bảng lỗi trống cho một file hợp lệ.
+    expect(unavailable).not.toBeInstanceOf(SkuImportRejectedError);
+    expect(unavailable).not.toBeInstanceOf(SkuImportConcurrencyError);
+    expect(unavailable.name).toBe("SkuImportUnavailableError");
+    expect(unavailable.retryable).toBe(true);
+    expect(unavailable.cause).toBe(cause);
   });
 });

@@ -33,6 +33,7 @@ import {
   importSkuExcel,
   SkuImportConcurrencyError,
   SkuImportRejectedError,
+  SkuImportUnavailableError,
   type SkuImportConstraints,
   type SkuImportResult,
   type SkuImportRowError,
@@ -412,6 +413,13 @@ export function SkuImportModal({
         toast.warning(error.message);
         return;
       }
+      // WWHN-224 DEV224-P1-05R: mất Import báo cáo là sự cố phía máy chủ, đã rollback.
+      // Giữ nguyên màn hình để người dùng bấm Kiểm tra thử lại ngay, và KHÔNG xoá kết
+      // quả cũ như thể file vừa hỏng.
+      if (error instanceof SkuImportUnavailableError) {
+        toast.warning(error.message);
+        return;
+      }
       if (error instanceof SkuImportRejectedError) {
         setPreviewResult(error.result);
         setPreviewSignature(
@@ -458,6 +466,14 @@ export function SkuImportModal({
       // xoá màn hình như thể lần chạy đã hỏng dữ liệu — trong khi máy chủ vừa bảo đảm
       // "không có SKU nào được tạo/cập nhật".
       if (error instanceof SkuImportConcurrencyError) {
+        toast.warning(error.message);
+        return;
+      }
+      // WWHN-224 DEV224-P1-05R: 503 SKU_IMPORT_REPORT_PERSISTENCE_FAILED. Máy chủ đã
+      // rollback toàn bộ (không SKU nào được tạo/cập nhật) nên đúng như nhánh 409: giữ
+      // nguyên kết quả kiểm tra thử để bấm Import lại được ngay, không setCommitResult
+      // (null) — xoá màn hình ở đây sẽ ám chỉ dữ liệu vừa bị hỏng dở.
+      if (error instanceof SkuImportUnavailableError) {
         toast.warning(error.message);
         return;
       }

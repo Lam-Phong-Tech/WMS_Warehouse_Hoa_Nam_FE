@@ -171,9 +171,12 @@ export interface SkuImportRowError {
 
 /**
  * Kết quả import SKU — khớp field trong ImportService::result()/duplicateResult()
- * (Modules/Warehouse/app/Services/ImportService.php, BE m1, đọc trực tiếp mã nguồn
- * vì Swagger doc text ghi "product.manage" nhưng route thật là permission
- * `sku.manage`).
+ * (Modules/Warehouse/app/Services/ImportService.php, BE m1).
+ *
+ * WWHN-224 DEV224-P1-04R: trước đây chú thích ở đây phải cảnh báo "Swagger ghi
+ * product.manage nhưng route thật là sku.manage". Drift đó đã được đóng ở BE (annotation
+ * + artifact OpenAPI + Postman đều là `sku.manage`), nên hợp đồng công bố và quyền thực
+ * thi nay là một; không còn phải đọc chéo mã nguồn để biết quyền đúng.
  */
 export interface SkuImportResult {
   templateVersion: string;
@@ -206,7 +209,13 @@ export interface SkuImportResult {
   wouldUpdateRows: number;
   skippedRows: number;
   rowErrors: SkuImportRowError[];
-  /** Có thể null nếu BE ghi Import báo cáo thất bại (best-effort, xem persistReport()). */
+  /**
+   * WWHN-224 DEV224-P1-05R: với MỌI lần chạy được xử lý (200 và cả 422 lỗi dòng), đây
+   * luôn là id thật — BE ghi Import báo cáo trong cùng transaction với phần ghi SKU nên
+   * không còn trạng thái "đã chạy nhưng không có báo cáo"; ghi hỏng thì BE trả 503
+   * (`SkuImportUnavailableError`) chứ không trả 200 thiếu id. Vẫn khai là nullable để
+   * client cũ/BE cũ không vỡ, nhưng UI không được thiết kế quanh giả định null.
+   */
   importReportId: string | null;
   /**
    * WWHN-330 P1-01: BE tự trả lời "lần import này có file lỗi CSV tải được hay không"
@@ -317,6 +326,31 @@ export class SkuImportConcurrencyError extends Error {
   }
 }
 
+/**
+ * WWHN-224 DEV224-P1-05R — BE trả 503 `SKU_IMPORT_REPORT_PERSISTENCE_FAILED`: không
+ * ghi/không đọc được Import báo cáo, vốn là output BẮT BUỘC của luồng này, nên toàn bộ
+ * transaction đã rollback (`committed=false`, `partial_write=false`).
+ *
+ * Vì sao phải là lớp lỗi riêng thay vì để rơi vào nhánh 422: response 503 cũng mang
+ * khối `data` (để client đọc được `partial_write`/`constraints`), nên nhánh 422 sẽ nuốt
+ * nó và dựng ra một "kết quả import" KHÔNG có dòng lỗi nào — người dùng nhìn thấy bảng
+ * lỗi trống kèm chữ "Import bị từ chối" rồi đi sửa một file vốn hoàn toàn hợp lệ. Đây là
+ * sự cố hạ tầng phía máy chủ và thử lại được; gọi nó là lỗi dữ liệu là đẩy nhầm việc
+ * sang người dùng. Đúng lý do đã buộc `SkuImportConcurrencyError` phải tách riêng.
+ */
+export class SkuImportUnavailableError extends Error {
+  readonly cause: unknown;
+
+  /** Máy chủ đã rollback nên bấm lại là an toàn, không sinh bản ghi trùng. */
+  readonly retryable = true;
+
+  constructor(message: string, cause: unknown) {
+    super(message);
+    this.name = "SkuImportUnavailableError";
+    this.cause = cause;
+  }
+}
+
 export interface SkuImportOptions {
   updateExisting?: boolean;
   /** WWHN-224: true = chỉ kiểm tra thử, không ghi SKU/audit nghiệp vụ. */
@@ -352,6 +386,18 @@ export async function importSkuExcel(
         messageOf(
           error,
           "Cùng file này đang được import với cùng tùy chọn; vui lòng đợi lần chạy hiện tại kết thúc rồi thử lại.",
+        ),
+        error,
+      );
+    }
+
+    // WWHN-224 DEV224-P1-05R — cùng lý do với nhánh 409 ngay trên: 503 cũng mang khối
+    // `data`, để lọt xuống nhánh 422 là báo "file có lỗi" cho một file không hề có lỗi.
+    if (errorCodeOf(error) === "SKU_IMPORT_REPORT_PERSISTENCE_FAILED") {
+      throw new SkuImportUnavailableError(
+        messageOf(
+          error,
+          "Không lưu được Import báo cáo; toàn bộ giao dịch đã hoàn tác, không có SKU nào được tạo/cập nhật. Vui lòng thử lại.",
         ),
         error,
       );

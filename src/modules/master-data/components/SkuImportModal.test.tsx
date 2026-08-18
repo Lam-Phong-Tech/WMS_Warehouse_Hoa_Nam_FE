@@ -22,6 +22,7 @@ import {
   importSkuExcel,
   normalizeSkuImportResult,
   SkuImportConcurrencyError,
+  SkuImportUnavailableError,
   type SkuImportResult,
 } from "@/modules/master-data/services/sku-import.service";
 import { SkuImportModal } from "./SkuImportModal";
@@ -306,7 +307,12 @@ describe("SkuImportModal — tranh chấp import đồng thời (DEV330-P1-07R3)
       );
 
     renderWithProviders(
-      <SkuImportModal open canImport onClose={() => {}} onImported={() => {}} />,
+      <SkuImportModal
+        open
+        canImport
+        onClose={() => {}}
+        onImported={() => {}}
+      />,
     );
     selectFile();
     await runDryRun();
@@ -319,8 +325,43 @@ describe("SkuImportModal — tranh chấp import đồng thời (DEV330-P1-07R3)
       expect(vi.mocked(importSkuExcel)).toHaveBeenCalledTimes(2),
     );
     await waitFor(() => expect(commitButton()).toBeEnabled());
-    expect(
-      screen.queryByText(/Import bị từ chối/),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/Import bị từ chối/)).not.toBeInTheDocument();
+  });
+
+  /**
+   * WWHN-224 DEV224-P1-05R — BE nay trả 503 khi không ghi được Import báo cáo, và
+   * response 503 CÓ mang khối `data`. Nếu FE không tách lớp lỗi riêng thì nhánh xử lý
+   * 422 sẽ nuốt nó và dựng ra một "kết quả import" không có dòng lỗi nào: người dùng
+   * thấy bảng lỗi trống kèm chữ "Import bị từ chối" rồi đi sửa một file vốn hợp lệ.
+   * Test khoá đúng hành vi quan sát được: file vẫn hợp lệ, nút Import vẫn sáng để bấm lại.
+   */
+  it("giữ nguyên kết quả kiểm tra thử và cho thử lại khi BE trả 503 mất Import báo cáo", async () => {
+    vi.mocked(importSkuExcel)
+      .mockResolvedValueOnce(cleanDryRun())
+      .mockRejectedValueOnce(
+        new SkuImportUnavailableError(
+          "Không lưu được Import báo cáo; toàn bộ giao dịch đã hoàn tác, không có SKU nào được tạo/cập nhật. Vui lòng thử lại.",
+          null,
+        ),
+      );
+
+    renderWithProviders(
+      <SkuImportModal
+        open
+        canImport
+        onClose={() => {}}
+        onImported={() => {}}
+      />,
+    );
+    selectFile();
+    await runDryRun();
+
+    fireEvent.click(commitButton());
+
+    await waitFor(() =>
+      expect(vi.mocked(importSkuExcel)).toHaveBeenCalledTimes(2),
+    );
+    await waitFor(() => expect(commitButton()).toBeEnabled());
+    expect(screen.queryByText(/Import bị từ chối/)).not.toBeInTheDocument();
   });
 });
