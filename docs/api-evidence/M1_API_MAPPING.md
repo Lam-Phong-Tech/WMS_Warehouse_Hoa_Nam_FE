@@ -50,7 +50,7 @@ Production domain/origin/secret không được hard-code. DEV/UAT/PROD phải i
 | Reports hub | GET | `/reports/hub` | BE route present; no longer marked missing. |
 | Warranty defects report | GET | `/reports/warranty-defects` | BE route present; read/export permissions are separate. |
 
-## Current implementation boundary — Stocktake (formal governance pending)
+## Removed-from-MVP boundary — Stocktake (formal governance pending)
 
 Current runtime intentionally has no Stocktake Session/Snapshot/Count, variance-adjustment endpoint, `stocktake.*` permission, menu or production flow. Corrections after Post use append-only Reversal.
 
