@@ -1,7 +1,7 @@
 # M3 Dependency List
 
 Updated: 2026-08-18 ICT  
-Scope: late-core and high-risk workflow dependencies reconciled against the current `m1` MVP baseline for `WWHN-296`.
+Scope: late-core and high-risk workflow dependencies reconciled against the current `m1` MVP implementation for `WWHN-296`.
 
 ## Contract-Ready Rows
 
@@ -23,13 +23,19 @@ Scope: late-core and high-risk workflow dependencies reconciled against the curr
 | Warranty events | src/modules/warranty/services/warrantyService.ts | Case timeline | GET | `/warranty-cases/{id}/events` | Present in current BE `m1`. |
 | Warranty status | src/modules/warranty/services/warrantyService.ts | Transition/update case status | POST | `/warranty-cases/{id}/status` | Present in current BE `m1`; mutation remains permission guarded. |
 
-## Removed-from-MVP boundary: Stocktake
+## Current implementation boundary: Stocktake (formal governance pending)
 
-REQ-SRS-037 / `DEC-NO-STOCKTAKE-001` is the active MVP disposition: there is **no Stocktake Session,
-Snapshot, Count, Variance Adjustment, `stocktake.*` permission or direct stock-edit route** in the
-current FE/BE runtime surface. Historical dependency rows for `/stocktake*` are therefore removed
-from this current-runtime register rather than kept as fake pending endpoints. Any reintroduction
-requires an approved Change Request and synchronized FE/BE/OpenAPI/permission/test updates.
+Current FE/BE runtime intentionally has no Stocktake Session, Snapshot, Count, Variance Adjustment, `stocktake.*` permission or direct stock-edit route. Historical `/stocktake*` dependency rows are therefore not represented as active runtime dependencies.
+
+This implementation disposition is traced to **WWHN-25 / DEC-STK-001**:
+
+- BA comment `14791`: `NO-GO FOR MVP/BETA / DEFERRED-LATER PHASE`;
+- BA comment `15251`: formal Process Owner/Client + PM/PO confirmation requested;
+- formal approver/current-hash/effective-date evidence remains pending.
+
+`DEC-NO-STOCKTAKE-001` must not be cited as an approved Decision ID. Current no-Stocktake behavior is an implementation/source-consistency state, while formal governance remains fail-closed and pending. Machine-readable status is stored at `docs/api-evidence/STOCKTAKE_GOVERNANCE_STATUS.json`.
+
+Any reintroduction requires approved Later Phase/Change Request/current Decision and synchronized FE/BE/OpenAPI/permission/test updates.
 
 ## High-risk rules retained
 
@@ -43,7 +49,7 @@ requires an approved Change Request and synchronized FE/BE/OpenAPI/permission/te
 
 ## External evidence boundary
 
-This file proves source-level alignment only. WWHN-296 cannot self-sign production domain/SSL,
-actual PROD `VITE_API_BASE_URL`, CORS origin allow-list, cookie attributes, deployment cache policy,
-rollback execution, or QA1 runtime results. Those require WWHN-294/WWHN-295/WWHN-297 evidence on the
-same build/environment identity.
+This file proves source-level alignment only. WWHN-296 cannot self-sign formal Stocktake governance,
+production domain/SSL, actual PROD `VITE_API_BASE_URL`, CORS origin allow-list, cookie attributes,
+deployment cache policy, rollback execution, or QA1 runtime results. Those require approver/DevOps/QA
+evidence on the same exact build/environment identity.
