@@ -724,7 +724,37 @@ vi.mock("antd", () => {
     List: Object.assign(stub, { Item: Object.assign(stub, { Meta: stub }) }),
     Checkbox: Object.assign(createCheckbox, { Group: stub }),
     Radio: Object.assign(stub, { Group: stub, Button: stub }),
-    Switch: createElementWithTag("input"),
+    // WWHN-331 FE331-P1-01R3: stub cũ render <input> trần và đẩy nguyên ChangeEvent vào
+    // `onChange`, trong khi antd thật gọi `onChange(checked: boolean)`. Component xử lý
+    // đúng contract antd sẽ nhận nhầm một event object, và test cũng không bật/tắt được
+    // công tắc (click vào <input> không có type="checkbox" không sinh sự kiện nào) — tức
+    // là đúng hành vi cần khoá lại thì không kiểm chứng được. Stub này bám sát antd:
+    // <button role="switch" aria-checked> và onChange nhận boolean.
+    Switch: ({
+      checked,
+      defaultChecked,
+      disabled,
+      onChange,
+      checkedChildren,
+      unCheckedChildren,
+      className,
+      ...rest
+    }: any) => {
+      const isOn = Boolean(checked ?? defaultChecked);
+      return React.createElement(
+        "button",
+        {
+          type: "button",
+          role: "switch",
+          className: `ant-switch${className ? ` ${className}` : ""}`,
+          "aria-checked": isOn,
+          disabled: disabled ? true : undefined,
+          onClick: () => (disabled ? undefined : onChange?.(!isOn)),
+          ...rest,
+        },
+        (isOn ? checkedChildren : unCheckedChildren) ?? null,
+      );
+    },
     Slider: stub,
     Upload: Object.assign(stub, { Dragger: stub, LIST_IGNORE: "LIST_IGNORE" }),
     Rate: stub,

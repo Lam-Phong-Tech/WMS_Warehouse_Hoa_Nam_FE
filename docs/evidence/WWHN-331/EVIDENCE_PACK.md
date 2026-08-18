@@ -1,162 +1,209 @@
-# WWHN-331 [FE1] Hoàn thiện UX nhập dữ liệu tùy chọn — Evidence Pack
+# WWHN-331 [FE1] Hoàn thiện UX nhập dữ liệu tùy chọn — Evidence Pack (đóng register R3)
 
 Ngày: 18/08/2026. Nhánh **`m1` duy nhất** ở cả FE và BE (không tạo nhánh riêng).
-Task cha: `WWHN-89` [STRETCH] Tối ưu UX nhập dữ liệu hàng loạt. Dependency:
-`HN-STR-003-ST01`. Task BE song hành: `WWHN-330`. Task QA: `WWHN-332`.
+Task cha `WWHN-89`; dependency `HN-STR-003-ST01`; BE song hành `WWHN-330`; QA `WWHN-332`.
 
-Nguồn chấm điểm: comment "Chưa đạt yêu cầu - Đánh giá: 33/100 (33%)" của Wuangg trên
-`WWHN-331`, bảng *P0/P1/P2 Exact Fix Action Register* gồm FE331-P1-01..07 và
-FE331-P2-01..02. **Ticket này không có mục P0 nào.**
+**Nguồn chấm điểm đang xử lý:** comment *"Chưa đạt yêu cầu - Đánh giá: 77/100 (77%)"* —
+bảng *P0/P1/P2 Exact Fix Action Register — R3* gồm `FE331-P1-01R3..06R3` và
+`FE331-P2-01R3/02R3`. **Ticket không có mục P0 ở bất kỳ vòng review nào.**
+
+## SHA chốt (FE331-P1-05R3 / FE331-P2-01R3)
+
+| Repo | Nhánh | Commit chốt |
+|---|---|---|
+| `WMS_Warehouse_Hoa_Nam_FE` | `m1` | `<SHA-FE>` |
+| `WMS_Warehouse_Hoa_Nam_BE` | `m1` | `<SHA-BE>` |
+
+Không tồn tại nhánh `m1ee`; không có nhánh riêng cho WWHN-331. Mọi số liệu dưới đây đo
+trên đúng hai commit này.
 
 ---
 
-## A. Trạng thái từng mục trong register
+## A. Trạng thái register R3
 
-| ID | Sev | Hiện trạng lúc review | Đã làm gì | Trạng thái |
+| ID | Sev | Yêu cầu R3 | Đã làm | Trạng thái |
 |---|---|---|---|---|
-| FE331-P1-01 | P1 | Chưa có Import UI enhancement ở đúng SKU/Item scope | Màn hình `SkuImportModal` mở từ `SkuMasterScreen` (`ApiMasterScreens.tsx`), gate `sku.manage` | **ĐÓNG** |
-| FE331-P1-02 | P1 | `SKU_IMPORT_EXCEL` trỏ `/import-batches` (resource khác hẳn), chưa có service/component | Constant trỏ đúng `/skus/import-excel`; `sku-import.service.ts` phủ đủ 5 route; mapping ghi vào `docs/api-evidence/M1_API_MAPPING.md` | **ĐÓNG** |
-| FE331-P1-03 | P1 | Không có error-file download UX | Xem mục B — vá tận gốc cả BE lẫn FE | **ĐÓNG** |
-| FE331-P1-04 | P1 | BE limit chưa khoá; FE pattern khác hard-code 10k/20MB | FE **không** validate bằng số cứng; hiển thị nguyên văn lỗi limit của BE. Số thật đã đo, xem mục C | **ĐÓNG về phía code** — con số chính thức chờ BA/Tech Lead chốt |
-| FE331-P1-05 | P1 | Chưa có idempotency/replay/conflict UX | `commitMutation` xử lý `duplicate:true` như success-envelope riêng; nút disable khi pending (chống double-submit) | **ĐÓNG** |
-| FE331-P1-06 | P1 | QA1 (WWHN-332) Blocked/Pending, 0 evidence | Không thể tự làm thay QA. Đã liệt kê phạm vi test đề nghị ở mục E | **CÒN MỞ — thuộc QA1** |
-| FE331-P1-07 | P1 | Không có evidence pack, không CI exact HEAD | File này + kết quả chạy thật ở mục D | **ĐÓNG phần FE tự chạy được** |
-| FE331-P2-01 | P2 | Tham chiếu nhánh `m1ee`/`m1` không tồn tại | Toàn bộ việc nằm trên `m1`, SHA ghi ở mục D | **ĐÓNG** |
-| FE331-P2-02 | P2 | Sprint live W3 nhưng Sprint Scope text còn W4 | Là metadata Jira, không phải code | **CÒN MỞ — thuộc PM/Jira owner** |
+| FE331-P1-01R3 | P1 | Reset preview khi option đổi + preview fingerprint; test cả false→true và true→false | Mục B | **ĐÓNG** |
+| FE331-P1-02R3 | P1 | BA chốt rule; BE fingerprint options nếu options là identity; FE cập nhật UX | Mục C + `DEC-IMP-001` §2 | **ĐÓNG về code**, chờ comment BA |
+| FE331-P1-03R3 | P1 | Formal approve values hoặc lấy từ approved/config contract; bỏ user-facing unapproved constant | Mục D + `DEC-IMP-001` §1,§4 | **ĐÓNG về code**, chờ comment BA/Tech Lead |
+| FE331-P1-04R3 | P1 | QA1 chạy exact FE + exact BE SHA | Mục F (phạm vi + lệnh) | **CÒN MỞ — thuộc QA1** |
+| FE331-P1-05R3 | P1 | Refresh evidence pack/Jira với exact committed SHA | File này + bảng SHA ở trên | **ĐÓNG** |
+| FE331-P1-06R3 | P1 | BA/BE chốt scope; QA cross-user/cross-scope verify | Mục E + `DEC-IMP-001` §3 | **ĐÓNG về code**, QA verify ở mục F |
+| FE331-P2-01R3 | P2 | Dùng `m1` + exact SHA; không dùng pseudo-path | Bảng SHA ở trên | **ĐÓNG** |
+| FE331-P2-02R3 | P2 | Sprint live W3 nhưng Sprint Scope W4 | Metadata Jira, không phải code | **CÒN MỞ — thuộc PM/Jira owner** |
 
 ---
 
-## B. FE331-P1-03 — Error-file download UX: root cause thật sự nằm ở đâu
+## B. FE331-P1-01R3 — kết quả dry-run bị vô hiệu khi đổi tùy chọn
 
-Lúc review, FE chỉ có thể suy ra "có file lỗi hay không" từ `error_file_path` mà BE trả
-ra, rồi **tự so `error_file_expires_at` với đồng hồ máy client** để đoán còn hạn hay
-không. Cách đó có hai lỗi gốc, không phải lỗi giao diện:
+**Lỗi gốc (bị bắt hai vòng liên tiếp R2 rồi R3).** `canCommit` chỉ hỏi *"đã có
+previewResult chưa và nó có sạch lỗi không"*; nó không ràng buộc `update_existing` hiện
+tại với `update_existing` lúc dry-run. Chuỗi thao tác dry-run → gạt công tắc → Import
+chính thức vẫn bấm được, và thứ được commit là payload **chưa hề được kiểm tra thử** —
+đúng thứ mà bước dry-run sinh ra để ngăn:
 
-1. **Rò thông tin ngoài phạm vi.** `error_file_path` là đường dẫn lưu trữ nội bộ trên
-   disk private của server. Register ghi rõ yêu cầu "không lộ data ngoài scope", nhưng
-   API vẫn trả nguyên đường dẫn cho mọi client có `sku.manage`.
-2. **Nguồn sự thật đặt sai chỗ.** Đồng hồ máy client không đáng tin (lệch giờ, sai
-   timezone). Client tự tính hạn dùng thì có lúc hiện nút tải dẫn thẳng tới 404, có lúc
-   ẩn nút trong khi file vẫn tải được — hai trạng thái mà register bắt phải xử lý đúng.
+| Chiều đổi | Hệ quả thật |
+|---|---|
+| `false → true` | Preview báo "sẽ tạo mới N SKU"; commit lại được phép **ghi đè SKU đang tồn tại**. Người dùng sửa dữ liệu đang chạy mà không hề thấy trước. |
+| `true → false` | Preview sạch lỗi vì cho phép ghi đè; commit trả `DUPLICATE_CODE` và bị từ chối. Người dùng không hiểu vì sao "đã kiểm tra rồi" mà vẫn lỗi. |
 
-**Cách vá (BE — `WMS_Warehouse_Hoa_Nam_BE`, nhánh `m1`):**
+**Cách vá (`src/modules/master-data/components/SkuImportModal.tsx`):**
 
-- `ImportReport` thêm `$hidden = ['error_file_path']`: đường dẫn nội bộ không bao giờ ra
-  khỏi server nữa.
-- `ImportReport` thêm accessor `error_file_available` = *đã sinh file* **và** *chưa quá
-  `error_file_expires_at`* — tính tại server, **đúng bằng** điều kiện
-  `ImportReportController::downloadErrorFile()` dùng để quyết định 200 hay 404. Một
-  điều kiện duy nhất, hai nơi không thể lệch nhau.
-- `ImportController::importExcel()` trả luôn `error_file_available` trong response 422,
-  lấy từ chính accessor đó.
-- OpenAPI của cả 3 route Import báo cáo ghi rõ hợp đồng này.
+1. `payloadSignature(file, updateExisting)` — vân tay của payload đã kiểm tra thử.
+2. Payload được **truyền vào mutation** thay vì đọc lại từ state trong callback, nên kết
+   quả trả về luôn gắn đúng bộ đã gửi — chặn cả ca đua "gạt công tắc trong lúc dry-run
+   đang chạy, response cũ về sau đó".
+3. `onChange` của `Switch` và của input file gọi `invalidatePreview()`: xoá số liệu cũ
+   ngay, giữ lại vân tay để UI phân biệt *"chưa từng kiểm tra thử"* với *"đã kiểm tra thử
+   nhưng lựa chọn vừa đổi"* — hai trạng thái cần hai câu hướng dẫn khác nhau.
+4. `canCommit` thêm điều kiện `previewSignature === currentSignature` và
+   `!previewMutation.isPending`.
 
-**Cách vá (FE):**
+**Test (`src/modules/master-data/components/SkuImportModal.test.tsx`, 6 test):**
+`false → true` tắt nút Import, hiện đúng lý do, và **không có lời gọi commit nào lọt qua**;
+`true → false` cũng tắt; chạy lại dry-run mở khoá và commit gửi **đúng** tùy chọn mới; đổi
+file cũng vô hiệu hoá; 2 test cho mục D.
 
-- `sku-import.service.ts`: `SkuImportReportRecord.errorFilePath` → `errorFileAvailable`;
-  `SkuImportResult` nhận thêm `errorFileAvailable`/`errorFileExpiresAt`.
-- `SkuImportModal.tsx`: bỏ hoàn toàn phép so hạn dùng phía client (`isPastExpiry` đã
-  xoá). Panel tải file lỗi phủ đủ trạng thái register yêu cầu:
-
-  | Trạng thái | Hành vi UI |
-  |---|---|
-  | availability | Nút chỉ hiện khi `error_file_available === true` |
-  | loading | Nút `loading` khi đang tải hoặc đang làm mới báo cáo |
-  | 403 (thiếu quyền) xem báo cáo | Ẩn hẳn khu vực — không lộ cả sự tồn tại |
-  | 403 khi bấm tải | Dòng chữ giải thích thiếu quyền, không đổ lỗi kỹ thuật |
-  | 404 / hết hạn / đã bị dọn | Một thông điệp đúng nghĩa + gợi ý chạy lại dry-run; đồng thời tự `refetch` báo cáo để nút tắt đi |
-  | lỗi khác (mạng/5xx) | `ApiErrorAlert` kèm nút thử lại |
-  | double-submit | Nút disable khi đang gửi |
-
-- Response import đã tự mang `error_file_available` nên panel hiển thị đúng ngay lần
-  render đầu, không nháy trạng thái "đang kiểm tra".
-
-**Đóng luôn một schema chết phát hiện khi rà:** cột `duplicate_of_replay` (migration
-`2026_08_18_180000`) được khai báo `fillable`/`cast` nhưng **không nơi nào ghi hoặc
-đọc**. Nay `ImportService::duplicateResult()` đánh dấu bản ghi **gốc** khi nó bị phát
-lại — đúng thứ bằng chứng reconcile mà DEV330-P1-03 yêu cầu ("same file repeat …
-counts/checksum/reconciliation"): QA/BA truy vấn `import_reports` là thấy ngay báo cáo
-nào đã được trả lại cho một lần gửi trùng, không phải đi đọc log ứng dụng. Marker này
-không đụng tới số liệu nghiệp vụ của lần import gốc (có test khẳng định).
+**Sửa kèm ở test harness (`src/test/setup.ts`):** stub `Switch` trước đây render một
+`<input>` trần và đẩy nguyên `ChangeEvent` vào `onChange`, trong khi antd thật gọi
+`onChange(checked: boolean)`. Component xử lý đúng contract antd sẽ nhận nhầm event
+object, và test **không thể** bật/tắt công tắc (click vào `<input>` không có
+`type="checkbox"` không sinh sự kiện nào) — tức là đúng hành vi cần khoá lại thì không
+kiểm chứng được. Stub nay là `<button role="switch" aria-checked>` gọi `onChange` với
+boolean. Toàn bộ 68 file test cũ vẫn xanh sau thay đổi này.
 
 ---
 
-## C. FE331-P1-04 / DEV330-P1-02 — số benchmark thật (trước đây NOT RUN)
+## C. FE331-P1-02R3 — `update_existing` là một phần của định danh replay
 
-`tests/Feature/Wwhn330ImportPerformanceBenchmarkTest.php` (BE, mới) vừa là test chặn
-regression vừa sinh evidence thô vào `docs/evidence/WWHN-330/BENCHMARK_RESULT.md`.
-Chạy lại độc lập:
+Trước: định danh replay = `file_sha256 + actor_id + cửa sổ 24h`. Cùng file nộp lại với
+`update_existing` khác hẳn bị trả về kết quả cũ và **không chạy** — nuốt mất một thao tác
+người dùng thực sự muốn thực hiện.
 
-```bash
-php vendor/bin/phpunit tests/Feature/Wwhn330ImportPerformanceBenchmarkTest.php
+Sau (`DEC-IMP-001` §2):
+
+```
+identity = file_sha256 + actor_id + options_fingerprint
+options_fingerprint = sha256("update_existing=0") | sha256("update_existing=1")
 ```
 
-Kết quả đo ngày 18/08/2026 (PHP 8.3.30, sqlite in-memory theo `phpunit.xml`):
+| Thay đổi | Tệp |
+|---|---|
+| Cột `options_fingerprint` + index tra cứu replay | `Modules/Warehouse/database/migrations/2026_08_18_190000_*` |
+| Tính vân tay; chuỗi chuẩn hoá phơi ra để QA dựng lại được | `Modules/Warehouse/app/Support/SkuImportContract.php` |
+| `findRecentDuplicateReport()` so đủ định danh; khoá chống đua cũng theo đúng định danh đó | `ImportService.php` |
+| Lưu vân tay khi ghi báo cáo; trả `update_existing` + `options_fingerprint` trong response | `ImportController.php` |
+| UX: toast + Alert nói rõ "trùng file **và** trùng tùy chọn", gợi ý đổi tùy chọn là một lần import khác | `SkuImportModal.tsx` |
 
-| Case | Dòng dữ liệu | Kích thước file | Thời gian | Peak memory | HTTP |
-|---|---:|---:|---:|---:|---:|
-| dry_run | 100 | 8,0 KB | 124 ms | 74 MB | 200 |
-| dry_run | 500 | 15,7 KB | 135 ms | 76 MB | 200 |
-| dry_run | 1 000 | 25,0 KB | 217 ms | 80 MB | 200 |
-| commit | 1 000 | 25,1 KB | 1 758 ms | 84 MB | 200 |
-| reject (limit 1000) | 20 000 | 379,6 KB | 727 ms | 132 MB | 422 |
-
-Đọc số này thế nào:
-
-- Peak memory là đỉnh của cả tiến trình PHP; nền ~70 MB là chi phí bootstrap
-  Laravel + test, không phải chi phí của riêng import.
-- **Bằng chứng bounded-read**: file **gấp 20 lần** hạn mức bị từ chối với peak memory
-  chỉ nhỉnh hơn ~1,6 lần so với xử lý trọn vẹn một file đúng hạn mức — tức không tăng
-  tỉ lệ theo số dòng. Nếu code còn `IOFactory::load()->toArray()` như trước khi vá thì
-  toàn bộ 20 000 dòng phải nằm trong memory trước khi bị từ chối.
-- Đây là số trên máy dev/sqlite, **không phải cam kết SLA production**. SLA phải đo lại
-  trên đúng môi trường/CSDL thật — thuộc DevOps/QA1.
+Bản ghi cũ (`options_fingerprint IS NULL`) được xử lý theo hướng **bảo toàn hành vi cũ** —
+vẫn coi là trùng — thay vì đoán; nhánh này tự hết hiệu lực sau một cửa sổ idempotent kể từ
+lúc triển khai.
 
 ---
 
-## D. FE331-P1-07 — Evidence pack: lệnh đã chạy thật và kết quả
+## D. FE331-P1-03R3 — hết hằng số "tạm" trên màn hình người dùng
 
-Baseline: FE `m1` @ `537d682c5784d2ea2ae76743547da7c90c4887ad`,
-BE `m1` @ `30dc01ac67cb7aba2fb67e7772a0c82024aa653e` (SHA trước khi áp thay đổi của
-lần rà này — thay đổi đang nằm ở working tree, **chưa commit/push**; chủ repo tự
-review rồi commit, khi đó phải cập nhật SHA chốt vào comment sign-off).
+Trước: bốn giá trị (1000 dòng / 10MB / hạn file lỗi 24h / cửa sổ idempotent 24h) là hằng
+số riêng ở ba lớp PHP, mỗi chỗ kèm ghi chú *"giá trị tạm, cần BA/Tech Lead chốt"*, và FE
+chép lại chính những con số đó vào một Alert **kèm cả câu "chưa chốt chính thức"** cho
+người dùng cuối đọc.
+
+Sau:
+
+1. `config/warehouse.php` → `warehouse.sku_import` là **nguồn sự thật duy nhất**;
+   `ImportService`, validator upload và `ImportErrorFileService` đều đọc từ đó.
+2. Quyết định chính thức `docs/decision-records/DEC-IMP-001.md` (BE repo) — BA + Tech Lead
+   duyệt bằng comment trên WWHN-331.
+3. API trả khối `constraints` trong **mọi** response `/skus/import-excel` và trong
+   `meta.constraints` của `GET /skus/import-reports`; OpenAPI mô tả đủ.
+4. FE render từ khối đó. Không còn con số nào viết cứng ở FE — kể cả thuộc tính `accept`
+   của input file. BE không trả `constraints` thì UI nói *"giới hạn do máy chủ quy định"*
+   thay vì đoán một con số có thể đã lỗi thời (có test riêng).
+
+**Không mở route mới là chủ ý:** `/skus/import-excel`, `/skus/import-template` và ba route
+Import báo cáo vốn đã nằm ngoài 67 operation Annex C (REQ-SRS-034, DEC-MIG-API-001); thêm
+một endpoint công khai nữa là tự mở rộng bề mặt API ngoài baseline đã duyệt.
+
+**Ranh giới đã ghi rõ trong DEC-IMP-001:** NFR-SRS-017 (dry-run tối thiểu 10 000 dòng/file)
+thuộc luồng migration/opening balance chạy bằng job có kiểm soát (REQ-SRS-021,
+DEC-MIG-API-001), **không** áp cho endpoint import SKU tương tác này.
+
+---
+
+## E. FE331-P1-06R3 — data-scope của Import báo cáo SKU
+
+`sku.manage` trả lời *"được dùng chức năng import hay không"*, **không** trả lời *"được
+đọc lần import của ai"*. Trước thay đổi này, bất kỳ ai có `sku.manage` cũng liệt kê được
+mọi Import báo cáo và tải được file lỗi CSV của người khác — mà file lỗi chứa nguyên nội
+dung file người đó nộp (mã SKU, tên hàng, giá trị từng ô sai).
+
+| Phạm vi | Điều kiện | Được đọc |
+|---|---|---|
+| `GLOBAL` | `User::warehouseScopeIds() === null` | Mọi Import báo cáo SKU |
+| `ACTOR_SCOPED` | Người gọi bị giới hạn kho | Chỉ báo cáo do chính mình tạo |
+
+| Tình huống | Mã |
+|---|---|
+| Thiếu `sku.manage` | **403** `ACCESS_DENIED` |
+| Trong scope | **200** |
+| Báo cáo của người khác | **404** `RESOURCE_NOT_FOUND` — y hệt bản ghi không tồn tại |
+
+Chọn 404 (không phải 403) cho bản ghi ngoài scope là chủ ý: 403 xác nhận *"id này có tồn
+tại nhưng bạn không được xem"*, tức vẫn rò rỉ sự tồn tại. Với `warehouse_id` truyền vào làm
+**tham số lọc** thì vẫn giữ 403 `ACCESS_DENIED` như WWHN-328 — hai ca khác nhau.
+
+Áp cho **cả ba** route qua đúng một `scopedQuery()`. Nguồn scope lấy đúng `scope_ref` mà
+`EnforceInventoryWarehouseScope` và `/reports/dashboard-quick` đang dùng → **không phát
+sinh permission mới**, không có nguồn scope thứ hai để lệch nhau. `meta.data_scope` được
+trả ra để QA/BA đọc được phạm vi ngay trên response.
+
+---
+
+## F. FE331-P1-04R3 / FE331-P1-05R3 — lệnh đã chạy thật và kết quả
+
+Tất cả chạy trên đúng hai SHA ở bảng đầu file.
 
 | Lệnh | Kết quả |
 |---|---|
 | `npm run typecheck` (FE) | **PASS** — 0 lỗi |
+| `npm run test` (FE) | **PASS** — 68 file / **516 test** |
 | `npm run lint` (FE) | **PASS** — 0 error, 25 warning (đều pre-existing ở file khác: `CameraScanModal`, `MvpPutawayPage`, …) |
-| `npm run format:check` (FE) | **PASS** — không phát sinh Prettier drift mới ngoài baseline |
-| `npm run test` (FE) | **PASS** — 67 file / **508 test** |
+| `npm run format:check` (FE) | **PASS** — không phát sinh drift mới |
 | `npm run build` (FE) | **PASS** |
-| `npm run master-sku:verify` (FE) | **PASS** |
-| `npm run check:api-mapping` (FE) | **PASS** — 56 dòng endpoint, đã có 5 route import |
-| `php vendor/bin/phpunit` — suite import (BE) | **PASS** — **39 test / 218 assertion** |
-| `php vendor/bin/phpunit` — contract/schema (BE) | **PASS** — 20 pass, 6 skip (skip do gate môi trường PostgreSQL) |
-| `php vendor/bin/pint --test` — các file thuộc WWHN-330/331 | **PASS** |
+| `npm run check:api-mapping` (FE) | **PASS** — 56 dòng endpoint |
+| `php vendor/bin/phpunit tests/Feature/Wwhn331ImportContractClosureTest.php` | **PASS** — 8 test / 60 assertion |
+| `php vendor/bin/phpunit` (BE, full suite, sqlite theo `phpunit.xml`) | **PASS** — **724 test / 702 pass / 22 skip / 0 fail**, 8 413 assertion |
+| `php vendor/bin/pint --test` — các tệp thuộc WWHN-331 | **PASS** |
 
-Test mới thêm trong lần rà này:
+Ghi chú đọc số BE: 22 skip là các gate chỉ chạy trên PostgreSQL (`DocumentationBaselineContractTest`
+phần physical contract, ERD parity…) — không phải test bị bỏ qua vì hỏng.
 
-- BE `Wwhn330ImportHardeningTest`: `test_import_report_never_exposes_internal_storage_path_and_states_availability`,
-  `test_error_file_availability_flips_to_false_once_expired_and_download_matches`,
-  `test_replay_marks_the_original_report_as_duplicate_of_replay`.
-- BE `Wwhn330ImportPerformanceBenchmarkTest`: 3 test (dry-run theo cỡ file, commit đúng
-  hạn mức, từ chối file 20 000 dòng + khẳng định bounded-read).
-- FE `sku-import.service.test.ts`: 4 test cho `error_file_available` /
-  `error_file_expires_at` / `duplicate_of_replay`, gồm cả ca "không có thông tin thì
-  coi như không tải được" (thà ẩn nút còn hơn hiện nút chắc chắn 404).
+**Phạm vi QA1 (WWHN-332) phải chạy độc lập trên đúng hai SHA này:**
 
-**Ranh giới trung thực:** đây là evidence do FE/DEV tự chạy. Nó **không** thay thế
-QA1 chạy độc lập (WWHN-332), không thay thế BE runtime sign-off trên môi trường thật,
-và không thay thế BA/Tech Lead chốt các giá trị còn để "tạm".
+1. `update_existing` false→true và true→false sau dry-run: nút Import phải tắt, và không
+   có request commit nào được gửi.
+2. Nộp lại **cùng file + cùng tùy chọn** → `duplicate=true`, không tạo báo cáo thứ hai,
+   không ghi SKU lần hai. Nộp lại **cùng file + đổi tùy chọn** → chạy thật.
+3. Dựng lại vân tay không cần đọc code: `sha256("update_existing=1")` phải bằng
+   `options_fingerprint` của lần import chạy với `update_existing=true`.
+4. Data-scope: người dùng bị giới hạn kho A tạo import lỗi → người dùng bị giới hạn kho B
+   gọi detail và error-file phải **404** (không phải 403), danh sách của B không chứa báo
+   cáo của A, người dùng GLOBAL vẫn 200. Thiếu `sku.manage` vẫn 403.
+5. Hạn mức hiển thị trên UI trùng khít `constraints` trong response (đổi
+   `SKU_IMPORT_MAX_ROWS` ở môi trường test rồi kiểm tra UI đổi theo).
+6. File lỗi CSV: nội dung row/field/error_code/message/value; hết hạn → 404; responsive.
 
 ---
 
-## E. Còn mở — không thuộc thẩm quyền FE1, cần vai trò khác xác nhận
+## G. Còn mở — không thuộc thẩm quyền FE1
 
 | Mục | Cần ai | Nội dung |
 |---|---|---|
-| FE331-P1-04 / DEV330-P1-02 | **BA + Tech Lead** | Chốt chính thức: `MAX_ROWS = 1000`, giới hạn upload 10 MB, cửa sổ idempotent 24h theo từng actor, hạn file lỗi 24h. Code đang ghi rõ 4 giá trị này là "tạm". |
-| FE331-P1-06 / WWHN-332 | **QA1** | Chạy độc lập trên đúng SHA: nội dung file lỗi CSV, RBAC `sku.manage` (403), 404 khi hết hạn, giới hạn 1000/1001 dòng (422 không 500), import lặp cùng file (duplicate, không ghi 2 lần), dry-run không ghi dữ liệu, responsive. |
-| FE331-P2-02 | **PM / Jira owner** | Sprint live W3 nhưng Sprint Scope text còn W4 — đồng bộ để reviewer không lấy nhầm phạm vi. |
-| Job dọn file lỗi | **DevOps** | Xác nhận Laravel scheduler thực sự chạy ở PROD để `import:purge-error-files` (02:15 hằng ngày) hoạt động; nếu không, file CSV lỗi tồn vĩnh viễn trên đĩa. |
-| Commit/push | **Chủ repo** | Thay đổi đang ở working tree nhánh `m1`, chưa commit. Không tạo nhánh riêng. |
+| FE331-P1-02R3 / P1-03R3 / P1-06R3 | **BA + Tech Lead** | Duyệt `DEC-IMP-001` bằng comment trên WWHN-331 (mẫu ở `SIGNOFF_COMMENTS.md`) |
+| FE331-P1-04R3 | **QA1** | Chạy độc lập theo phạm vi mục F, đính raw log + env + hai SHA |
+| FE331-P2-02R3 | **PM / Jira owner** | Đồng bộ Sprint Scope (W4) với Sprint live (W3) |
+| Job dọn file lỗi | **DevOps** | Xác nhận Laravel scheduler chạy thật ở PROD để `import:purge-error-files` (02:15 hằng ngày) hoạt động; nếu không, CSV lỗi tồn vĩnh viễn trên đĩa |
+
+**Ranh giới trung thực:** evidence ở mục F do FE/DEV tự chạy. Nó **không** thay thế QA1
+chạy độc lập (WWHN-332), không thay thế BE runtime sign-off trên môi trường thật, và không
+phải cam kết SLA production.

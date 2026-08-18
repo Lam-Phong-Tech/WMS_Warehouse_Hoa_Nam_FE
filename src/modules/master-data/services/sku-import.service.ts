@@ -51,6 +51,56 @@ function endpointId(template: string, id: string): string {
   return template.replace(":id", encodeURIComponent(id));
 }
 
+/**
+ * WWHN-331 FE331-P1-03R3 — hạn mức import do BE công bố.
+ *
+ * Trước đây FE viết thẳng "tối đa 1000 dòng, file ≤ 10MB, hạn tải 24h" vào một Alert
+ * kèm chú thích nội bộ "giá trị tạm, chưa chốt chính thức". Hai cái sai: người dùng
+ * cuối phải đọc ghi chú quy trình của dev, và con số trên màn hình có thể lệch con số
+ * máy chủ thực sự đang chặn. Nay BE trả nguyên khối này (đọc từ hợp đồng đã duyệt
+ * `warehouse.sku_import`, DEC-IMP-001) và FE chỉ hiển thị lại.
+ */
+export interface SkuImportConstraints {
+  decisionRef: string;
+  maxRows: number;
+  maxFileSizeKb: number;
+  maxFileSizeMb: number;
+  allowedExtensions: string[];
+  errorFileExpiryHours: number;
+  idempotencyWindowHours: number;
+  /** Các thành phần tạo nên định danh một lần import (FE331-P1-02R3). */
+  idempotencyIdentity: string[];
+}
+
+export function normalizeSkuImportConstraints(
+  raw: unknown,
+): SkuImportConstraints | null {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const record = raw as RawRecord;
+  const maxRows = num(record.max_rows);
+  const maxFileSizeKb = num(record.max_file_size_kb);
+  // Thiếu hai số chặn chính thì coi như BE không công bố hợp đồng: thà không hiển thị
+  // hạn mức nào còn hơn hiển thị "tối đa 0 dòng".
+  if (maxRows <= 0 || maxFileSizeKb <= 0) return null;
+
+  return {
+    decisionRef: text(record.decision_ref),
+    maxRows,
+    maxFileSizeKb,
+    maxFileSizeMb:
+      num(record.max_file_size_mb) ||
+      Math.round((maxFileSizeKb / 1024) * 100) / 100,
+    allowedExtensions: Array.isArray(record.allowed_extensions)
+      ? record.allowed_extensions.map((value) => text(value))
+      : [],
+    errorFileExpiryHours: num(record.error_file_expiry_hours),
+    idempotencyWindowHours: num(record.idempotency_window_hours),
+    idempotencyIdentity: Array.isArray(record.idempotency_identity)
+      ? record.idempotency_identity.map((value) => text(value))
+      : [],
+  };
+}
+
 /** Annex tương ứng WWHN-172/224/330 — 1 dòng lỗi trả về từ ImportService::error(). */
 export interface SkuImportRowError {
   row: number;
@@ -72,9 +122,20 @@ export interface SkuImportResult {
   dryRun: boolean;
   committed: boolean;
   partialWrite: boolean;
-  /** WWHN-330 P1-03: file trùng sha256 với 1 lần COMMIT gần đây (24h) của cùng actor. */
+  /**
+   * WWHN-330 P1-03 + WWHN-331 FE331-P1-02R3: lần gửi này trùng ĐỦ định danh
+   * (`file_sha256` + `actor_id` + `options_fingerprint`) với một lần COMMIT gần đây
+   * nên BE trả lại kết quả cũ. Đổi `update_existing` là một thao tác khác nên KHÔNG
+   * còn bị coi là trùng.
+   */
   duplicate: boolean;
   duplicateOfImportReportId: string | null;
+  /** Tùy chọn của chính lần gửi này, do BE phản hồi lại (không phải state của UI). */
+  updateExisting: boolean;
+  /** Vân tay tùy chọn tham gia định danh replay; null với bản ghi cũ trước khi có cột. */
+  optionsFingerprint: string | null;
+  /** Hạn mức máy chủ đang áp dụng — null nếu BE chưa công bố (client cũ/BE cũ). */
+  constraints: SkuImportConstraints | null;
   fileSha256: string;
   headerMap: Record<string, number>;
   totalRows: number;
@@ -126,6 +187,12 @@ export function normalizeSkuImportResult(payload: RawRecord): SkuImportResult {
       payload.duplicate_of_import_report_id != null
         ? text(payload.duplicate_of_import_report_id)
         : null,
+    updateExisting: bool(payload.update_existing),
+    optionsFingerprint:
+      payload.options_fingerprint != null
+        ? text(payload.options_fingerprint)
+        : null,
+    constraints: normalizeSkuImportConstraints(payload.constraints),
     fileSha256: text(payload.file_sha256),
     headerMap: (payload.header_map ?? {}) as Record<string, number>,
     totalRows: num(payload.total_rows),
@@ -253,6 +320,8 @@ export interface SkuImportReportRecord {
   /** Chỉ để hiển thị mốc hết hạn cho người dùng; KHÔNG dùng để tự tính availability. */
   errorFileExpiresAt: string | null;
   duplicateOfReplay: boolean;
+  /** WWHN-331 FE331-P1-02R3: vân tay tùy chọn của lần import đã tạo báo cáo này. */
+  optionsFingerprint: string | null;
   createdAt: string | null;
 }
 
@@ -282,7 +351,39 @@ export function normalizeSkuImportReport(
         ? text(raw.error_file_expires_at)
         : null,
     duplicateOfReplay: bool(raw.duplicate_of_replay),
+    optionsFingerprint:
+      raw.options_fingerprint != null ? text(raw.options_fingerprint) : null,
     createdAt: raw.created_at != null ? text(raw.created_at) : null,
+  };
+}
+
+/**
+ * WWHN-331 FE331-P1-03R3 — đọc hạn mức import máy chủ đang áp dụng.
+ *
+ * Không có (và cố ý không thêm) route riêng cho việc này: `/skus/import-excel` +
+ * `/skus/import-template` + 3 route Import báo cáo vốn đã nằm NGOÀI 67 operation Annex C
+ * (REQ-SRS-034 / DEC-MIG-API-001), nên mở thêm một endpoint công khai nữa là tự mở rộng
+ * bề mặt API ngoài baseline. BE gắn hợp đồng vào `meta.constraints` của chính endpoint
+ * danh sách báo cáo — endpoint đọc duy nhất mà màn hình import gọi được TRƯỚC khi người
+ * dùng chọn file. `per_page=1` vì ở đây chỉ cần phần meta.
+ *
+ * `meta.data_scope` (GLOBAL | ACTOR_SCOPED) trả kèm là phạm vi dữ liệu đang áp dụng cho
+ * người đăng nhập (FE331-P1-06R3).
+ */
+export async function fetchSkuImportConstraints(): Promise<{
+  constraints: SkuImportConstraints | null;
+  dataScope: string | null;
+}> {
+  const { meta } = await http.getPage<unknown>(
+    API_ENDPOINTS.SKU_IMPORT_REPORTS,
+    {
+      params: { per_page: 1 },
+    },
+  );
+  const raw = meta as RawRecord;
+  return {
+    constraints: normalizeSkuImportConstraints(raw?.constraints),
+    dataScope: raw?.data_scope != null ? text(raw.data_scope) : null,
   };
 }
 
@@ -301,7 +402,8 @@ export async function fetchSkuImportReport(
  * permission `sku.manage`, trả text/csv.
  *
  * 404 vẫn là một trạng thái hợp lệ chứ không phải sự cố: báo cáo không có dòng lỗi,
- * file đã hết hạn (24h), hoặc file đã bị lệnh `import:purge-error-files` dọn. UI phải
+ * file đã hết hạn (theo `constraints.error_file_expiry_hours` do BE công bố), hoặc file
+ * đã bị lệnh `import:purge-error-files` dọn. UI phải
  * hiển thị đúng nghĩa đó thay vì báo lỗi kỹ thuật chung chung.
  */
 export async function downloadSkuImportErrorFile(

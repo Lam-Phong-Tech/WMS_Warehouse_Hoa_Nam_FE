@@ -28,9 +28,11 @@ import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import {
   downloadSkuImportErrorFile,
   downloadSkuImportTemplate,
+  fetchSkuImportConstraints,
   fetchSkuImportReport,
   importSkuExcel,
   SkuImportRejectedError,
+  type SkuImportConstraints,
   type SkuImportResult,
   type SkuImportRowError,
 } from "@/modules/master-data/services/sku-import.service";
@@ -90,7 +92,76 @@ const ROW_ERROR_COLUMNS: ColumnsType<SkuImportRowError> = [
 ];
 
 const ERROR_FILE_GONE_HINT =
-  "File lỗi CSV không còn tải được: báo cáo này không có dòng lỗi, hoặc file đã quá hạn 24h và bị dọn dẹp định kỳ. Chạy lại Kiểm tra trước (dry-run) để sinh báo cáo lỗi mới; bảng lỗi ở trên vẫn dùng đối soát được.";
+  "File lỗi CSV không còn tải được: báo cáo này không có dòng lỗi, hoặc file đã quá hạn và bị dọn dẹp định kỳ. Chạy lại Kiểm tra trước (dry-run) để sinh báo cáo lỗi mới; bảng lỗi ở trên vẫn dùng đối soát được.";
+
+/**
+ * WWHN-331 FE331-P1-03R3 — câu mô tả hạn mức dựng từ hợp đồng BE trả về.
+ *
+ * Không còn con số nào được viết cứng ở FE: nếu BE chưa công bố `constraints` thì UI nói
+ * đúng điều đó (máy chủ vẫn là nơi chặn) thay vì đoán một con số có thể đã lỗi thời.
+ */
+function describeConstraints(constraints: SkuImportConstraints | null): string {
+  if (!constraints) {
+    return "Giới hạn số dòng và kích thước file do máy chủ quy định; nếu vượt, hệ thống hiển thị đúng thông báo lỗi máy chủ trả về.";
+  }
+
+  const parts = [
+    `Giới hạn đang áp dụng: tối đa ${constraints.maxRows.toLocaleString("vi-VN")} dòng dữ liệu mỗi lần import, file ≤ ${constraints.maxFileSizeMb} MB`,
+  ];
+  if (constraints.allowedExtensions.length > 0) {
+    parts.push(
+      `định dạng ${constraints.allowedExtensions.map((extension) => `.${extension}`).join("/")}`,
+    );
+  }
+  if (constraints.errorFileExpiryHours > 0) {
+    parts.push(
+      `file lỗi CSV tải được trong ${constraints.errorFileExpiryHours}h`,
+    );
+  }
+  if (constraints.idempotencyWindowHours > 0) {
+    parts.push(
+      `nộp lại đúng file này với cùng tùy chọn trong ${constraints.idempotencyWindowHours}h được coi là gửi trùng và không ghi lần hai`,
+    );
+  }
+
+  return `${parts.join("; ")}.`;
+}
+
+/** Thuộc tính accept của input file — cũng lấy từ hợp đồng, không viết cứng. */
+function acceptAttribute(constraints: SkuImportConstraints | null): string {
+  const extensions =
+    constraints && constraints.allowedExtensions.length > 0
+      ? constraints.allowedExtensions
+      : ["xlsx", "xls"];
+  return extensions.map((extension) => `.${extension}`).join(",");
+}
+
+/**
+ * WWHN-331 FE331-P1-01R3 — "vân tay" của payload đã được kiểm tra thử.
+ *
+ * Kết quả dry-run chỉ đúng cho ĐÚNG bộ (file, update_existing) đã gửi đi. Trước đây
+ * `canCommit` chỉ hỏi "đã có previewResult và previewResult sạch lỗi chưa", nên chuỗi
+ * thao tác dry-run (update_existing=false) → gạt công tắc → Import chính thức vẫn bấm
+ * được, và thứ được commit là một payload CHƯA HỀ được kiểm tra thử:
+ *
+ * - false → true: preview báo "sẽ tạo mới N SKU"; commit thật lại được phép GHI ĐÈ SKU
+ *   đang tồn tại — người dùng sửa dữ liệu đang chạy mà không hề thấy trước.
+ * - true → false: preview sạch lỗi vì cho phép ghi đè; commit thật lại trả DUPLICATE_CODE
+ *   và bị từ chối, người dùng không hiểu vì sao "đã kiểm tra rồi" mà vẫn lỗi.
+ *
+ * Vân tay gắn vào kết quả preview giải quyết cả hai chiều, và cũng chặn được ca đua:
+ * người dùng gạt công tắc trong lúc dry-run đang chạy, response cũ về sau đó thì kết quả
+ * đó thuộc payload cũ, không được phép mở khoá nút Import cho payload mới.
+ */
+function payloadSignature(file: File | null, updateExisting: boolean): string {
+  if (!file) return "";
+  return [
+    file.name,
+    file.size,
+    file.lastModified,
+    updateExisting ? "update_existing=1" : "update_existing=0",
+  ].join("|");
+}
 
 /**
  * WWHN-330 P1-01 / WWHN-331 FE331-P1-03: khu vực tải file lỗi CSV theo Import báo cáo.
@@ -260,13 +331,26 @@ export function SkuImportModal({
   const [previewResult, setPreviewResult] = useState<SkuImportResult | null>(
     null,
   );
+  /** Payload đã sinh ra `previewResult` — xem payloadSignature(). */
+  const [previewSignature, setPreviewSignature] = useState("");
   const [commitResult, setCommitResult] = useState<SkuImportResult | null>(
     null,
   );
 
-  const resetResults = () => {
+  /**
+   * Đổi file hoặc đổi tùy chọn → kết quả cũ hết hiệu lực ngay: xoá số liệu để màn hình
+   * không còn con số thuộc payload khác. Vân tay của lần kiểm tra thử gần nhất được GIỮ
+   * lại (không xoá) để UI phân biệt được "chưa từng kiểm tra thử" với "đã kiểm tra thử
+   * nhưng lựa chọn vừa thay đổi" — hai trạng thái cần hai câu hướng dẫn khác nhau.
+   */
+  const invalidatePreview = () => {
     setPreviewResult(null);
     setCommitResult(null);
+  };
+
+  const resetResults = () => {
+    invalidatePreview();
+    setPreviewSignature("");
   };
 
   const resetAll = () => {
@@ -282,15 +366,24 @@ export function SkuImportModal({
     onClose();
   };
 
+  // Payload được truyền vào mutation thay vì đọc lại từ state trong callback: kết quả
+  // trả về luôn gắn đúng bộ (file, update_existing) đã gửi đi, kể cả khi người dùng đổi
+  // lựa chọn trong lúc request còn đang chạy.
   const previewMutation = useMutation({
-    mutationFn: async () => {
-      if (!file)
-        throw new Error("Chọn file Excel (.xlsx/.xls) trước khi kiểm tra.");
-      return importSkuExcel(file, { updateExisting, dryRun: true });
+    mutationFn: async (payload: { file: File; updateExisting: boolean }) => {
+      const result = await importSkuExcel(payload.file, {
+        updateExisting: payload.updateExisting,
+        dryRun: true,
+      });
+      return {
+        result,
+        signature: payloadSignature(payload.file, payload.updateExisting),
+      };
     },
-    onSuccess: (result) => {
+    onSuccess: ({ result, signature }) => {
       setCommitResult(null);
       setPreviewResult(result);
+      setPreviewSignature(signature);
       if (result.errorRows === 0) {
         toast.success(
           `Kiểm tra thử hợp lệ — sẽ tạo mới ${result.wouldInsertRows}, cập nhật ${result.wouldUpdateRows} SKU.`,
@@ -301,32 +394,39 @@ export function SkuImportModal({
         );
       }
     },
-    onError: (error) => {
+    onError: (error, payload) => {
       setCommitResult(null);
       if (error instanceof SkuImportRejectedError) {
         setPreviewResult(error.result);
+        setPreviewSignature(
+          payloadSignature(payload.file, payload.updateExisting),
+        );
         toast.warning(error.message);
         return;
       }
       setPreviewResult(null);
+      setPreviewSignature("");
       toast.error(getApiErrorMessage(error, "Kiểm tra thử import thất bại."));
     },
   });
 
   const commitMutation = useMutation({
-    mutationFn: async () => {
-      if (!file)
-        throw new Error("Chọn file Excel (.xlsx/.xls) trước khi import.");
-      return importSkuExcel(file, { updateExisting, dryRun: false });
+    mutationFn: async (payload: { file: File; updateExisting: boolean }) => {
+      return importSkuExcel(payload.file, {
+        updateExisting: payload.updateExisting,
+        dryRun: false,
+      });
     },
     onSuccess: (result) => {
       setCommitResult(result);
       if (result.duplicate) {
-        // WWHN-330 P1-03: file đã được import (commit) trước đó trong 24h bởi cùng
-        // actor — BE không ghi lại, không tạo SKU lần 2. Đây KHÔNG phải lỗi chung
-        // chung; phải nói rõ đây là bản ghi cũ.
+        // WWHN-330 P1-03 + WWHN-331 FE331-P1-02R3: file này đã được import (commit)
+        // trước đó bởi cùng người dùng VÀ cùng tùy chọn update_existing — BE không ghi
+        // lại, không tạo SKU lần 2. Đây KHÔNG phải lỗi chung chung; phải nói rõ đây là
+        // bản ghi cũ, và nói rõ tùy chọn cũng nằm trong điều kiện trùng để người dùng
+        // biết đổi tùy chọn thì lần chạy sau vẫn thực thi.
         toast.info(
-          `File này đã được import trước đó (Import báo cáo #${result.duplicateOfImportReportId ?? "-"}). Không có SKU nào được tạo/cập nhật lần nữa.`,
+          `File này đã được import trước đó với cùng tùy chọn (Import báo cáo #${result.duplicateOfImportReportId ?? "-"}). Không có SKU nào được tạo/cập nhật lần nữa.`,
         );
         return;
       }
@@ -346,6 +446,25 @@ export function SkuImportModal({
     },
   });
 
+  /**
+   * WWHN-331 FE331-P1-03R3: đọc hạn mức máy chủ đang áp dụng ngay khi mở modal, để câu
+   * mô tả cho người dùng là hợp đồng thật chứ không phải hằng số FE tự viết. Chỉ gọi khi
+   * modal mở và người dùng có quyền — endpoint này gate `sku.manage`. Lỗi ở đây không
+   * chặn luồng import: thiếu hợp đồng thì UI mô tả chung, máy chủ vẫn là nơi chặn thật.
+   */
+  const constraintsQuery = useQuery({
+    queryKey: ["sku-import-constraints"],
+    queryFn: fetchSkuImportConstraints,
+    enabled: open && canImport,
+    retry: false,
+    staleTime: 5 * 60 * 1000,
+  });
+  const constraints =
+    constraintsQuery.data?.constraints ??
+    commitResult?.constraints ??
+    previewResult?.constraints ??
+    null;
+
   const templateMutation = useMutation({
     mutationFn: downloadSkuImportTemplate,
     onSuccess: ({ blob, fileName }) => {
@@ -356,13 +475,23 @@ export function SkuImportModal({
     },
   });
 
-  // Chỉ cho Import chính thức khi đã dry-run và không còn lỗi — tránh gửi file chắc
-  // chắn bị 422 và tránh double-submit (nút bị disable + loading trong lúc gửi).
+  const currentSignature = payloadSignature(file, updateExisting);
+  /**
+   * WWHN-331 FE331-P1-01R3: preview chỉ còn hiệu lực khi payload hiện tại y hệt payload
+   * đã kiểm tra thử. Đổi file HOẶC đổi update_existing đều làm preview cũ hết hiệu lực.
+   */
+  const previewMatchesCurrentPayload =
+    previewSignature !== "" && previewSignature === currentSignature;
+
+  // Chỉ cho Import chính thức khi ĐÚNG payload này đã dry-run và không còn lỗi — tránh
+  // commit một payload chưa từng được kiểm tra thử, tránh gửi file chắc chắn bị 422, và
+  // tránh double-submit (nút bị disable + loading trong lúc gửi).
   const canCommit =
     canImport &&
     Boolean(file) &&
-    Boolean(previewResult) &&
+    previewMatchesCurrentPayload &&
     previewResult?.errorRows === 0 &&
+    !previewMutation.isPending &&
     !commitMutation.isPending;
 
   const activeResult = commitResult ?? previewResult;
@@ -391,23 +520,30 @@ export function SkuImportModal({
           type="info"
           showIcon
           title="Luồng chuẩn: chọn file → Kiểm tra trước (dry-run) → sửa lỗi nếu có → Import chính thức"
-          description="Import chính thức ghi nguyên tử: nếu còn dù chỉ 1 dòng lỗi thì không SKU nào được tạo/cập nhật (all-or-nothing). Giới hạn hiện tại theo mã nguồn BE (Modules/Warehouse/app/Services/ImportService.php): tối đa 1000 dòng dữ liệu, file ≤ 10MB — đây là giá trị BE đang áp dụng thật nhưng ghi chú là tạm/chưa chốt chính thức, nên FE không tự chặn theo số này; nếu vượt, hệ thống sẽ hiển thị đúng thông báo lỗi do máy chủ trả về."
+          description={`Import chính thức ghi nguyên tử: nếu còn dù chỉ 1 dòng lỗi thì không SKU nào được tạo/cập nhật (all-or-nothing). ${describeConstraints(constraints)}`}
         />
 
         <Space wrap align="center">
           <input
             key={fileInputKey}
             type="file"
-            accept=".xlsx,.xls"
+            accept={acceptAttribute(constraints)}
             aria-label="Chọn file Excel import SKU"
             onChange={(event) => {
               setFile(event.target.files?.[0] ?? null);
-              resetResults();
+              invalidatePreview();
             }}
           />
           <Switch
             checked={updateExisting}
-            onChange={setUpdateExisting}
+            // WWHN-331 FE331-P1-01R3: đổi tùy chọn = đổi payload sẽ gửi đi, nên kết quả
+            // kiểm tra thử cũ hết hiệu lực ngay tại đây. Không reset thì nút Import vẫn
+            // sáng và commit một payload chưa từng được dry-run.
+            onChange={(checked) => {
+              setUpdateExisting(checked);
+              invalidatePreview();
+            }}
+            aria-label="Cho phép ghi đè SKU đã tồn tại (update_existing)"
             checkedChildren="update_existing: true"
             unCheckedChildren="update_existing: false"
           />
@@ -432,7 +568,9 @@ export function SkuImportModal({
             icon={<EyeOutlined />}
             loading={previewMutation.isPending}
             disabled={!canImport || !file || commitMutation.isPending}
-            onClick={() => previewMutation.mutate()}
+            onClick={() =>
+              file && previewMutation.mutate({ file, updateExisting })
+            }
           >
             Kiểm tra trước (dry-run)
           </Button>
@@ -441,7 +579,9 @@ export function SkuImportModal({
             icon={<UploadOutlined />}
             loading={commitMutation.isPending}
             disabled={!canCommit}
-            onClick={() => commitMutation.mutate()}
+            onClick={() =>
+              file && commitMutation.mutate({ file, updateExisting })
+            }
           >
             Import chính thức
           </Button>
@@ -449,7 +589,17 @@ export function SkuImportModal({
             <Typography.Text type="secondary">
               Bạn không có quyền sku.manage.
             </Typography.Text>
-          ) : !previewResult && !commitMutation.isPending ? (
+          ) : commitMutation.isPending ||
+            previewMutation.isPending ? null : previewSignature !== "" &&
+            !previewMatchesCurrentPayload ? (
+            // FE331-P1-01R3: nói rõ vì sao nút Import tắt đi sau khi người dùng đổi
+            // lựa chọn — nếu không, trạng thái này trông như một lỗi giao diện.
+            <Typography.Text type="secondary">
+              Tùy chọn hoặc file đã thay đổi sau lần kiểm tra thử. Chạy lại Kiểm
+              tra trước (dry-run) cho đúng lựa chọn hiện tại rồi mới Import
+              được.
+            </Typography.Text>
+          ) : !previewResult ? (
             <Typography.Text type="secondary">
               Phải Kiểm tra trước (dry-run) hết lỗi mới bấm được Import chính
               thức.
@@ -476,7 +626,11 @@ export function SkuImportModal({
                 type="warning"
                 showIcon
                 title="File đã được import trước đó"
-                description={`Trùng nội dung file (sha256) với Import báo cáo #${commitResult.duplicateOfImportReportId ?? "-"} trong vòng 24h gần đây của bạn. Hệ thống không tạo/cập nhật SKU lần nữa để tránh ghi trùng.`}
+                description={`Trùng nội dung file (sha256) VÀ trùng tùy chọn update_existing với Import báo cáo #${commitResult.duplicateOfImportReportId ?? "-"} của bạn${
+                  constraints?.idempotencyWindowHours
+                    ? ` trong ${constraints.idempotencyWindowHours}h gần đây`
+                    : " gần đây"
+                }. Hệ thống không tạo/cập nhật SKU lần nữa để tránh ghi trùng. Nếu bạn thực sự muốn chạy với tùy chọn khác, đổi update_existing rồi kiểm tra thử lại — đó là một lần import khác.`}
               />
             ) : null}
             {activeResult.rowErrors.length > 0 && (
