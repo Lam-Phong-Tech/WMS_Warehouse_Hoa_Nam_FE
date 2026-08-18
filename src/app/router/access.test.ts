@@ -32,23 +32,30 @@ describe("WMS route access contract", () => {
       [ROUTES.MASTER_DATA]: ["sku.view", "sku.manage"],
       [ROUTES.AGENCIES]: ["agency.view", "agency.manage"],
       [ROUTES.DEFECTS]: ["defect.view", "defect.manage"],
-      [ROUTES.SCAN]: ["inventory.trace", "scan.classify"],
+      [ROUTES.SCAN]: ["inventory.trace", "scan.execute", "scan.classify"],
       [ROUTES.INBOUND]: [
         "inbound.view",
         "inbound.create",
         "inbound.scan",
         "inbound.post",
       ],
-      [ROUTES.PUTAWAY]: ["container.view", "container.manage"],
+      [ROUTES.PUTAWAY]: [
+        "putaway.view",
+        "putaway.manage",
+        "container.view",
+        "container.manage",
+      ],
       [ROUTES.OUTBOUND]: [
         "outbound.view",
         "outbound.create",
         "outbound.scan",
         "outbound.post",
         "outbound.import",
+        "outbound.request.import",
+        "outbound.request.confirm",
+        "outbound.request.manual_create",
       ],
       [ROUTES.INVENTORY]: ["inventory.view"],
-      // Annex C listWarrantyCases = warranty.view.
       [ROUTES.WARRANTY]: [
         "warranty.view",
         "warranty.manage",
@@ -56,7 +63,7 @@ describe("WMS route access contract", () => {
       ],
       [ROUTES.REVERSE]: ["inventory.reversal.post"],
       [ROUTES.REPORTS]: ["report.view"],
-      [ROUTES.AUDIT_LOGS]: "AUDIT_LOG_VIEW",
+      [ROUTES.AUDIT_LOGS]: "audit_log.view",
       [ROUTES.PROFILE]: undefined,
     });
 
@@ -69,5 +76,19 @@ describe("WMS route access contract", () => {
       ),
     ).toEqual([]);
     expect(ROUTE_PERMISSIONS[ROUTES.REPORTS]).not.toContain("report.export");
+  });
+
+  it("keeps canonical BE permission spelling for sensitive routes", async () => {
+    const { WMS_PERMISSION_CATALOG: P, canonicalizeWmsPermission } = await import(
+      "@/shared/constants/wms-permissions"
+    );
+
+    expect(P.AUDIT_LOG_VIEW).toBe("audit_log.view");
+    expect(canonicalizeWmsPermission("AUDIT_LOG_VIEW")).toBe("audit_log.view");
+    expect(P.SCAN_EXECUTE).toBe("scan.execute");
+    expect(P.PUTAWAY_VIEW).toBe("putaway.view");
+    expect(P.PUTAWAY_MANAGE).toBe("putaway.manage");
+    expect(P.PACKING_LABEL_PREVIEW).toBe("packing_label.preview");
+    expect(P.OUTBOUND_REQUEST_CONFIRM).toBe("outbound.request.confirm");
   });
 });

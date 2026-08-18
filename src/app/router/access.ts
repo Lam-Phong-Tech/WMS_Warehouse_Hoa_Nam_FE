@@ -21,7 +21,8 @@ export const ROUTE_PERMISSIONS: Record<string, string | string[] | undefined> =
     [ROUTES.AGENCY_CREATE]: [P.AGENCY_MANAGE],
     [ROUTES.DEFECTS]: [P.DEFECT_VIEW, P.DEFECT_MANAGE],
     [ROUTES.DEFECT_CREATE]: [P.DEFECT_MANAGE],
-    [ROUTES.SCAN]: [P.INVENTORY_TRACE, P.SCAN_CLASSIFY],
+    // BE cấp scan.execute cho WAREHOUSE_STAFF và chấp nhận scan.execute|scan.classify.
+    [ROUTES.SCAN]: [P.INVENTORY_TRACE, P.SCAN_EXECUTE, P.SCAN_CLASSIFY],
 
     [ROUTES.INBOUND]: [
       P.INBOUND_VIEW,
@@ -29,7 +30,14 @@ export const ROUTE_PERMISSIONS: Record<string, string | string[] | undefined> =
       P.INBOUND_SCAN,
       P.INBOUND_POST,
     ],
-    [ROUTES.PUTAWAY]: [P.CONTAINER_VIEW, P.CONTAINER_MANAGE],
+    // Canonical SRS/BE permission là putaway.view/manage. container.* chỉ giữ
+    // compatibility cho route/backend cũ, không thay thế semantic permission putaway.
+    [ROUTES.PUTAWAY]: [
+      P.PUTAWAY_VIEW,
+      P.PUTAWAY_MANAGE,
+      P.CONTAINER_VIEW,
+      P.CONTAINER_MANAGE,
+    ],
 
     [ROUTES.OUTBOUND]: [
       P.OUTBOUND_VIEW,
@@ -37,6 +45,9 @@ export const ROUTE_PERMISSIONS: Record<string, string | string[] | undefined> =
       P.OUTBOUND_SCAN,
       P.OUTBOUND_POST,
       P.OUTBOUND_IMPORT,
+      P.OUTBOUND_REQUEST_IMPORT,
+      P.OUTBOUND_REQUEST_CONFIRM,
+      P.OUTBOUND_REQUEST_MANUAL_CREATE,
     ],
     [ROUTES.INVENTORY]: [P.INVENTORY_VIEW],
     // Annex C listWarrantyCases dùng warranty.view: LEADERSHIP/WAREHOUSE_APPROVER chỉ

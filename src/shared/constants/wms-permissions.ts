@@ -20,6 +20,7 @@ export const WMS_PERMISSION_CATALOG = {
   DEFECT_MANAGE: "defect.manage",
   /** SRS §3: publish App PV tách khỏi sku.manage (REQ-SRS-020). */
   PV_PUBLISH: "pv.publish",
+  PV_MASTER_MANAGE: "pv.master.manage",
   ITEM_INSTANCE_VIEW: "item_instance.view",
   ITEM_INSTANCE_MANAGE: "item_instance.manage",
 
@@ -27,10 +28,10 @@ export const WMS_PERMISSION_CATALOG = {
   /**
    * Annex C alias của scan.classify; route BE /scan-batches/classify nhận
    * `scan.execute|scan.classify`. WAREHOUSE_STAFF được seed scan.execute (không có
-   * scan.classify) nên FE bắt buộc phải nhận cả hai, nếu không nhân viên kho bị
-   * chặn ngay ở bước classify của mọi lần quét.
+   * scan.classify) nên FE bắt buộc phải nhận cả hai.
    */
   SCAN_EXECUTE: "scan.execute",
+  // Legacy compatibility values retained for older evidence/service shims.
   SCAN_INBOUND: "scan.inbound",
   SCAN_OUTBOUND: "outbound.scan",
   SCAN_WARRANTY: "scan.warranty",
@@ -43,12 +44,7 @@ export const WMS_PERMISSION_CATALOG = {
   INBOUND_CANCEL: "inbound.cancel",
   CONTAINER_VIEW: "container.view",
   CONTAINER_MANAGE: "container.manage",
-  /**
-   * SRS §3 dòng "Putaway task list/create/confirm/cancel" đặt permission key là
-   * putaway.view / putaway.manage (NV kho = A*), và BE seed đúng hai code này
-   * (AuthDatabaseSeeder). Không được coi chúng là alias của container.manage:
-   * container.manage là quyền CRUD container rộng hơn hẳn nên gộp lại là leo quyền.
-   */
+  /** SRS v1.12 / BE canonical putaway permissions. */
   PUTAWAY_VIEW: "putaway.view",
   PUTAWAY_MANAGE: "putaway.manage",
   OUTBOUND_VIEW: "outbound.view",
@@ -57,8 +53,15 @@ export const WMS_PERMISSION_CATALOG = {
   OUTBOUND_POST: "outbound.post",
   OUTBOUND_CANCEL: "outbound.cancel",
   OUTBOUND_IMPORT: "outbound.import",
+  OUTBOUND_REQUEST_IMPORT: "outbound.request.import",
+  OUTBOUND_REQUEST_CONFIRM: "outbound.request.confirm",
+  OUTBOUND_REQUEST_MANUAL_CREATE: "outbound.request.manual_create",
   LABEL_PRINT: "label.print",
   LABEL_REPRINT: "label.reprint",
+  PACKING_LABEL_PREVIEW: "packing_label.preview",
+  PACKING_LABEL_READY: "packing_label.ready",
+  PACKING_LABEL_PRINT: "packing_label.print",
+  PACKING_LABEL_REPRINT: "packing_label.reprint",
   PHYSICAL_CODE_ASSIGN_RFID: "physical_code.assign_rfid",
   // REQ-SRS-037 / DEC-NO-STOCKTAKE-001: MVP không có permission kiểm kê hay sửa tồn
   // trực tiếp. Sửa sai sau Post chỉ đi qua REVERSAL_POST bên dưới.
@@ -73,7 +76,8 @@ export const WMS_PERMISSION_CATALOG = {
   REVERSAL_POST: "inventory.reversal.post",
   REPORT_VIEW: "report.view",
   REPORT_EXPORT: "report.export",
-  AUDIT_LOG_VIEW: "AUDIT_LOG_VIEW",
+  /** BE canonical seed dùng lowercase `audit_log.view`. */
+  AUDIT_LOG_VIEW: "audit_log.view",
 } as const;
 
 /** Compatibility is read-only. New code must use canonical BE permission codes above. */
@@ -86,10 +90,8 @@ export const WMS_PERMISSION_ALIASES: Readonly<Record<string, string>> = {
   REPORT_EXPORT: WMS_PERMISSION_CATALOG.REPORT_EXPORT,
   WARRANTY_MANAGE: WMS_PERMISSION_CATALOG.WARRANTY_MANAGE,
   WARRANTY_TEMP_ONLY: WMS_PERMISSION_CATALOG.WARRANTY_TEMP_ONLY,
-  // Trước đây có alias "putaway.manage" -> container.manage với ghi chú sai rằng
-  // putaway.manage "không tồn tại ở BE". BE seed đúng putaway.view/putaway.manage và
-  // SRS §3 dùng chính key đó, nên alias đã bị gỡ: giữ lại sẽ khiến người chỉ có
-  // putaway.manage bị hiểu là có container.manage (leo quyền phía UI).
+  // Backward compatibility for older FE fixture/doc spelling only.
+  AUDIT_LOG_VIEW: WMS_PERMISSION_CATALOG.AUDIT_LOG_VIEW,
 } as const;
 
 export const WMS_CANONICAL_PERMISSION_CODES = Object.freeze(
@@ -138,11 +140,7 @@ export const WMS_ACTION_PERMISSIONS = {
   SCAN_OUTBOUND: [WMS_PERMISSION_CATALOG.OUTBOUND_SCAN],
   SCAN_WARRANTY: [WMS_PERMISSION_CATALOG.SCAN_WARRANTY],
   CREATE_INBOUND: [WMS_PERMISSION_CATALOG.INBOUND_CREATE],
-  // Route BE nhận `permission:inbound.cancel|inbound.create` (Annex C khai
-  // inbound.create; baseline seed cấp inbound.cancel riêng cho
-  // WAREHOUSE_APPROVER/KEEPER, không cấp cho WAREHOUSE_STAFF) — FE gate phải
-  // khớp đúng bộ đó, nếu không WAREHOUSE_STAFF (chỉ có inbound.create) bị
-  // chặn nhầm ở cả nút Cancel lẫn assertWmsActionPermission dù BE cho phép.
+  // Route BE nhận `permission:inbound.cancel|inbound.create`.
   CANCEL_INBOUND: [
     WMS_PERMISSION_CATALOG.INBOUND_CANCEL,
     WMS_PERMISSION_CATALOG.INBOUND_CREATE,
@@ -157,6 +155,24 @@ export const WMS_ACTION_PERMISSIONS = {
     WMS_PERMISSION_CATALOG.PUTAWAY_VIEW,
     WMS_PERMISSION_CATALOG.PUTAWAY_MANAGE,
     WMS_PERMISSION_CATALOG.CONTAINER_VIEW,
+  ],
+  OUTBOUND_REQUEST_IMPORT: [
+    WMS_PERMISSION_CATALOG.OUTBOUND_REQUEST_IMPORT,
+    WMS_PERMISSION_CATALOG.OUTBOUND_IMPORT,
+  ],
+  OUTBOUND_REQUEST_CONFIRM: [WMS_PERMISSION_CATALOG.OUTBOUND_REQUEST_CONFIRM],
+  OUTBOUND_REQUEST_MANUAL_CREATE: [
+    WMS_PERMISSION_CATALOG.OUTBOUND_REQUEST_MANUAL_CREATE,
+  ],
+  PACKING_LABEL_PREVIEW: [WMS_PERMISSION_CATALOG.PACKING_LABEL_PREVIEW],
+  PACKING_LABEL_READY: [WMS_PERMISSION_CATALOG.PACKING_LABEL_READY],
+  PACKING_LABEL_PRINT: [
+    WMS_PERMISSION_CATALOG.PACKING_LABEL_PRINT,
+    WMS_PERMISSION_CATALOG.LABEL_PRINT,
+  ],
+  PACKING_LABEL_REPRINT: [
+    WMS_PERMISSION_CATALOG.PACKING_LABEL_REPRINT,
+    WMS_PERMISSION_CATALOG.LABEL_REPRINT,
   ],
   POST_ISSUE: [WMS_PERMISSION_CATALOG.OUTBOUND_POST],
   VIEW_INVENTORY: [WMS_PERMISSION_CATALOG.INVENTORY_VIEW],
