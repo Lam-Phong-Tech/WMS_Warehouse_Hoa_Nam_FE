@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   Button,
@@ -27,6 +27,10 @@ import type { ColumnsType } from "antd/es/table";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { getApiErrorMessage, normalizeError } from "@/shared/api/api-error";
+import {
+  classifyPostIssueError,
+  shouldReuseIdempotencyKey,
+} from "@/shared/api/post-issue-contract";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { CameraScanModal } from "@/shared/components/forms/CameraScanModal";
 import { useHasPermission } from "@/shared/components/permission";
@@ -104,6 +108,13 @@ export function AlignedOutboundDetailModal({
   const [rfidCode, setRfidCode] = useState("");
   const [rfidHardwareUid, setRfidHardwareUid] = useState("");
   const [evidence, setEvidence] = useState<IssueEvidence | null>(null);
+  /**
+   * WWHN-201: Idempotency-Key dính của Post Issue. Giữ nguyên qua các lần thử lại
+   * an toàn (412/409 CONCURRENCY/lỗi mạng) để lần gửi lại là REPLAY, không phải lần
+   * Post thứ hai. Chỉ nhả khi thao tác đã có kết quả cuối cùng hoặc khi §8.2 yêu cầu
+   * key mới.
+   */
+  const postKeyRef = useRef<string | null>(null);
   // OUT-02: đếm lỗi scan trong phiên (sai SKU / trùng / unknown) — chỉ hiển thị, không phải state nghiệp vụ.
   const [scanRejects, setScanRejects] = useState({
     wrongSku: 0,
@@ -175,6 +186,12 @@ export function AlignedOutboundDetailModal({
       );
     }
   }, [detail, lineId]);
+
+  // Đổi phiếu thì thao tác Post cũ không còn ý nghĩa: nhả key để không mang key của
+  // phiếu này sang phiếu khác.
+  useEffect(() => {
+    postKeyRef.current = null;
+  }, [documentId]);
 
   useEffect(() => {
     if (packingLabel?.customerPhone && !customerPhone)
@@ -406,21 +423,47 @@ export function AlignedOutboundDetailModal({
     mutationFn: async () => {
       if (!detail || !postReady)
         throw new Error(postBlockReason || "Phiếu chưa sẵn sàng.");
+      // WWHN-201 / DEV201-P1-01R (kịch bản "stale If-Match" và "forced rollback"):
+      // Idempotency-Key phải DÍNH theo phiếu qua các lần thử lại. Sinh key mới ở mỗi
+      // lần bấm biến một retry sau 412/timeout thành một lệnh Post THẬT thứ hai —
+      // đúng nghĩa double-post. Đây là cùng pattern postKeyRef của luồng nhập
+      // (MvpInboundScreens) nay áp cho luồng xuất.
+      const idempotencyKey =
+        postKeyRef.current ?? makeKey(`post-issue-${documentId}`);
+      postKeyRef.current = idempotencyKey;
       return postOutboundIssue({
         documentId,
         ifMatch: version ?? detail.document.version,
-        idempotencyKey: makeKey(`post-issue-${documentId}`),
+        idempotencyKey,
       });
     },
     onSuccess: async (result) => {
+      // Thao tác đã có kết quả nghiệp vụ cuối cùng → nhả key, lần Post sau (nếu có)
+      // là một thao tác mới thật sự.
+      postKeyRef.current = null;
       setEvidence(result);
       toast.success(
-        "Hoàn tất xuất thành công. Tồn kho được trừ tại Post Issue.",
+        result.replayed
+          ? "Phiếu đã được Post trước đó. Hệ thống trả lại kết quả cũ (replay); tồn kho KHÔNG bị trừ thêm lần nữa."
+          : "Hoàn tất xuất thành công. Tồn kho được trừ tại Post Issue.",
       );
       await refresh();
     },
-    onError: (error) =>
-      toast.error(getApiErrorMessage(error, "Hoàn tất xuất thất bại.")),
+    onError: async (error) => {
+      // §8.2: chỉ giữ key khi lần gửi lại phải là REPLAY của đúng thao tác cũ
+      // (412 STALE_VERSION, 409 CONCURRENCY_CONFLICT, lỗi mạng/5xx không rõ kết quả).
+      // 409 IDEMPOTENCY_CONFLICT / STATE_CONFLICT và 422 thiếu tồn phải bắt đầu lại
+      // bằng key mới.
+      if (!shouldReuseIdempotencyKey(error)) postKeyRef.current = null;
+      const outcome = classifyPostIssueError(error);
+      toast.error(
+        outcome?.message ??
+          getApiErrorMessage(error, "Hoàn tất xuất thất bại."),
+      );
+      // Sau mọi xung đột, trạng thái/version dưới chân người dùng đã đổi: nạp lại để
+      // If-Match của lần sau là bản mới nhất.
+      if (outcome !== null) await refresh();
+    },
   });
 
   const cancelMutation = useMutation({

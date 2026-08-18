@@ -590,6 +590,10 @@ function normalizeIssueEvidence(row: RawRecord, meta: ApiMeta): IssueEvidence {
     movementRefs,
     requestId: text(meta.request_id ?? row.request_id),
     version: num(row.version),
+    // AC-GWT-IN-001 (đối xứng cho outbound, WWHN-201/DEV201-P1-01R): BE đặt
+    // `data.replayed` khi retry cùng Idempotency-Key trả lại snapshot cũ. Bỏ qua cờ
+    // này khiến người dùng thấy "Post thành công" hai lần và tưởng tồn bị trừ hai lần.
+    replayed: row.replayed === true,
   };
 }
 
