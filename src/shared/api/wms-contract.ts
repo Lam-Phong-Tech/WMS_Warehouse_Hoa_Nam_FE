@@ -110,9 +110,11 @@ export function requireIdempotencyKeyHeader(
 
 /**
  * Compatibility helper for contracts that genuinely require both headers.
- * WWHN-180 post-receipt/post-issue/apply-adjustment must use
- * requireIdempotencyKeyHeader instead; their exact BE v1.7 CAS contract does
- * not use If-Match.
+ * post-receipt/post-issue/apply-adjustment DO require If-Match (BE:
+ * CurrentBaselineStockFlowController::expectedVersion aborts 428
+ * PRECONDITION_REQUIRED when missing, 412 STALE_VERSION on mismatch); their
+ * services (shippingService.mutationHeaders, mvpOutboundService.headers) send
+ * it directly rather than through this helper.
  */
 export function requireIdempotencyHeaders(input: {
   idempotencyKey?: string;
