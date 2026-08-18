@@ -110,7 +110,13 @@ export function requireIdempotencyKeyHeader(
 
 /**
  * Compatibility helper for contracts that genuinely require both headers.
- * post-receipt/post-issue/apply-adjustment DO require If-Match (BE:
+ *
+ * WWHN-231: bề mặt đổi tồn chỉ gồm post-receipt / post-issue / reverse. Trước đây dòng
+ * dưới còn kể `apply-adjustment`, nhưng REQ-SRS-037 cấm mọi action sửa tồn trực tiếp và
+ * BR-REV-01 đưa mọi sửa sai sau Post về Reversal append-only — nêu tên nó ở đây là mô tả
+ * một bề mặt không tồn tại. Xem docs/decision-records/DISP-STK-231-ledger-rescope.md (BE).
+ *
+ * post-receipt/post-issue/reverse DO require If-Match (BE:
  * CurrentBaselineStockFlowController::expectedVersion aborts 428
  * PRECONDITION_REQUIRED when missing, 412 STALE_VERSION on mismatch); their
  * services (shippingService.mutationHeaders, mvpOutboundService.headers) send
