@@ -11,6 +11,7 @@ const { values } = parseArgs({
     "fe-base-url": { type: "string" },
     "api-base-url": { type: "string" },
     "health-path": { type: "string" },
+    "expected-backend-sha": { type: "string" },
     output: { type: "string" },
   },
 });
@@ -22,7 +23,16 @@ const feBaseUrl = values["fe-base-url"] ?? process.env.FE_BASE_URL;
 const apiBaseUrl = values["api-base-url"] ?? process.env.API_BASE_URL ?? process.env.VITE_API_BASE_URL;
 const healthPath = values["health-path"] ?? process.env.VITE_API_HEALTH_PATH ?? "/health";
 const timeoutMs = Number(process.env.QA_SMOKE_TIMEOUT_MS ?? 15000);
-const backendSuccessRequiredFields = ["status", "version", "environment", "server_time", "request_id"];
+// WWHN-295/DEV295-P1-02: `build` là danh tính artifact backend đang chạy
+// (`data.build.{sha,ref,built_at}`, xem components.schemas.HealthPayload). Thiếu nó
+// trong danh sách bắt buộc thì smoke vẫn xanh trên một backend không khai được commit
+// nào đang chạy — và mọi gate exact-SHA phía sau lại quay về tin lời khai.
+const backendSuccessRequiredFields = ["status", "version", "build", "environment", "server_time", "request_id"];
+// DEV295-P1-04/P1-05: buộc bằng chứng QA vào đúng candidate đã pin. Không khai thì chỉ
+// cảnh báo (smoke vẫn dùng được lúc dev), khai rồi mà lệch là FAIL.
+const expectedBackendSha = (values["expected-backend-sha"] ?? process.env.EXPECTED_BACKEND_SHA ?? "")
+  .trim()
+  .toLowerCase();
 const masterPaths = ["/products", "/product-categories", "/uoms", "/suppliers"];
 
 function normalizeBase(value, label) {
@@ -99,6 +109,7 @@ const plan = {
     frontendHealthPath: "/health.json",
     backendHealthPath,
     backendSuccessRequiredFields,
+    expectedBackendSha: expectedBackendSha === "" ? null : expectedBackendSha,
     loginPath: "/auth/login",
     masterPaths,
   },
@@ -132,9 +143,15 @@ if (!contractOnly) {
   });
 
   const backendHealth = await requestJson("GET", backendHealthUrl);
+  // 200 đặt payload readiness ở `data`; 503 dùng respondError nên payload nằm ở
+  // `errors`/`error.details`. Đọc cả hai để báo cáo nói đúng cái backend thực trả.
+  const healthPayload =
+    backendHealth.body?.data ?? backendHealth.body?.errors ?? backendHealth.body?.error?.details ?? backendHealth.body;
   const missingHealthFields = backendSuccessRequiredFields.filter(
-    (field) => backendHealth.body?.[field] === undefined && backendHealth.body?.data?.[field] === undefined,
+    (field) => backendHealth.body?.[field] === undefined && healthPayload?.[field] === undefined,
   );
+  const observedBackendSha = String(healthPayload?.build?.sha ?? "").toLowerCase();
+  const shaMatchesCandidate = expectedBackendSha === "" ? null : observedBackendSha.startsWith(expectedBackendSha);
   addResult("backend-health", {
     method: "GET",
     url: sanitizeUrl(backendHealthUrl),
@@ -142,8 +159,16 @@ if (!contractOnly) {
     durationMs: backendHealth.durationMs,
     requestId: requestIdFrom(backendHealth.response, backendHealth.body),
     missingRequiredFields: missingHealthFields,
-    pass: backendHealth.response.ok && missingHealthFields.length === 0,
+    backendBuild: healthPayload?.build ?? null,
+    expectedBackendSha: expectedBackendSha === "" ? null : expectedBackendSha,
+    shaMatchesCandidate,
+    pass: backendHealth.response.ok && missingHealthFields.length === 0 && shaMatchesCandidate !== false,
   });
+  if (shaMatchesCandidate === null) {
+    console.warn(
+      "[wwhn-156-smoke] WARN: chưa khai --expected-backend-sha/EXPECTED_BACKEND_SHA — bằng chứng không buộc được vào candidate backend nào.",
+    );
+  }
 
   const loginUrl = resolveUrl(normalizedApiBase, "/auth/login");
   const login = await requestJson("POST", loginUrl, {
