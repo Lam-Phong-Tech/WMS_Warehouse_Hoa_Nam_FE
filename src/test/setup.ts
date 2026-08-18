@@ -455,8 +455,14 @@ vi.mock("antd", () => {
     Tooltip: ({ children }: any) =>
       React.createElement(React.Fragment, null, children ?? null),
     Table: Object.assign(
-      ({ columns, dataSource, rowSelection, locale, ...rest }: any) => {
+      ({ columns, dataSource, rowSelection, locale, onRow, ...rest }: any) => {
         const rows = Array.isArray(dataSource) ? dataSource : [];
+        // WWHN-242: mock cũ nuốt luôn `onRow`, nên mọi màn chọn-dòng-bằng-click
+        // (REV-01 lookup movement, REV-00 mở chi tiết bằng double click...) không thể
+        // kiểm thử ở tầng unit — bug tương tác lọt qua mà suite vẫn xanh. Áp đúng props
+        // mà component khai báo, không thêm hành vi nào khác.
+        const rowProps = (record: any, rowIndex: number) =>
+          typeof onRow === "function" ? (onRow(record, rowIndex) ?? {}) : {};
         const getValue = (record: any, dataIndex?: string) => {
           if (!dataIndex) return undefined;
           if (typeof dataIndex === "string") {
@@ -486,7 +492,7 @@ vi.mock("antd", () => {
                 const rowKey = record?.id ?? rowIndex;
                 return React.createElement(
                   "div",
-                  { key: rowKey, role: "row" },
+                  { key: rowKey, role: "row", ...rowProps(record, rowIndex) },
                   rowSelection
                     ? React.createElement("div", { key: "selection" }, "✓")
                     : null,
@@ -1063,6 +1069,9 @@ vi.mock("@/app/router/access", () => ({
     "/warranty": ["warranty.manage", "warranty.component_issue"],
     "/reverse": ["inventory.reversal.post"],
     "/reports": ["report.view"],
+    // WWHN-252 · SCR-PV-ADM-01 (route NỘI BỘ). SCR-PV-01/02 là route công khai
+    // nên KHÔNG có mặt ở bảng này — chúng không đi qua RequirePermission.
+    "/pv-admin": ["pv.master.manage", "pv.publish"],
     "/component-catalog": undefined,
     "/profile": undefined,
     "/org-units": "ORG_VIEW",

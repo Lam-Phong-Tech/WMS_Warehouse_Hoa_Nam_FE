@@ -39,6 +39,14 @@ export const ROUTES = {
   EMPLOYEE_ASSIGNMENTS: "/employee-assignments",
   USER_ROLE_SCOPES: "/user-role-scopes",
 
+  // 07 · App PV (SRS §3: "Người xem App PV" là actor ẩn danh, read-only)
+  // SCR-PV-01/02 nằm NGOÀI ProtectedRoute — xem app/router/index.tsx. Không đặt
+  // dưới prefix nội bộ nào để link chia sẻ ra ngoài ngắn và ổn định.
+  PV_CATALOG: "/pv",
+  PV_PRODUCT_DETAIL: "/pv/products/:skuId",
+  /** SCR-PV-ADM-01 — màn NỘI BỘ, gate pv.master.manage hoặc pv.publish. */
+  PV_ADMIN: "/pv-admin",
+
   // Shared
   AUDIT_LOGS: "/audit-logs",
   NO_PERMISSION: "/errors/403",

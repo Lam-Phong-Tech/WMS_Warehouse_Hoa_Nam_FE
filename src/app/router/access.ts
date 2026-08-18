@@ -57,8 +57,21 @@ export const ROUTE_PERMISSIONS: Record<string, string | string[] | undefined> =
       P.WARRANTY_MANAGE,
       P.WARRANTY_COMPONENT_ISSUE,
     ],
-    [ROUTES.REVERSE]: [P.REVERSAL_POST],
+    // WWHN-242 · REV-00 là màn ĐỌC. SRS §RACI "Inventory query/trace/reversal" cấp
+    // V cho WAREHOUSE_APPROVER/LEADERSHIP/VIEWER/WARRANTY_STAFF/WAREHOUSE_STAFF, và BE
+    // mở GET /reversal-documents{,/:id,/:id/lines} bằng `inventory.view`; chỉ
+    // store/confirm/post/cancel mới đòi `inventory.reversal.post`. Gate route chỉ bằng
+    // REVERSAL_POST là fail-closed sai — khoá luôn màn danh sách của các vai chỉ đọc.
+    // Hành vi ghi vẫn ẩn theo REVERSAL_POST bên trong REV-00/REV-01.
+    [ROUTES.REVERSE]: [P.INVENTORY_VIEW, P.REVERSAL_POST],
     [ROUTES.REPORTS]: [P.REPORT_VIEW],
+    // WWHN-252 · SCR-PV-ADM-01: hai quyền TÁCH BIỆT cùng mở được màn quản trị
+    // App PV — pv.master.manage (ngành nghề/tag/rule/hồ sơ hiển thị) và
+    // pv.publish (bật/tắt hiển thị công khai). Vào được màn không có nghĩa là
+    // làm được cả hai: từng hành động vẫn gate riêng trong PvAdminPage, và BE
+    // mới là nơi cưỡng chế. SCR-PV-01/02 KHÔNG có mặt ở bảng này vì chúng là
+    // route công khai, không đi qua RequirePermission.
+    [ROUTES.PV_ADMIN]: [P.PV_MASTER_MANAGE, P.PV_PUBLISH],
     [ROUTES.AUDIT_LOGS]: P.AUDIT_LOG_VIEW,
     [ROUTES.COMPONENT_CATALOG]: undefined,
     [ROUTES.PROFILE]: undefined,

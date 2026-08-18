@@ -116,6 +116,24 @@ const ProfilePage = lazy(() =>
     default: m.ProfilePage,
   })),
 );
+// WWHN-252 · App PV. SCR-PV-01/02 là route CÔNG KHAI (SRS §3: "Người xem App
+// PV" là actor ẩn danh) nên khai NGOÀI ProtectedRoute; SCR-PV-ADM-01 là màn nội
+// bộ nên nằm trong ProtectedRoute + RequirePermission như mọi màn WMS khác.
+const PvCatalogPage = lazy(() =>
+  import("@/modules/pv/pages/PvCatalogPage").then((m) => ({
+    default: m.default,
+  })),
+);
+const PvProductDetailPage = lazy(() =>
+  import("@/modules/pv/pages/PvProductDetailPage").then((m) => ({
+    default: m.default,
+  })),
+);
+const PvAdminPage = lazy(() =>
+  import("@/modules/pv/pages/PvAdminPage").then((m) => ({
+    default: m.default,
+  })),
+);
 
 function withPageLoader(node: ReactNode) {
   return <Suspense fallback={<PageSkeleton />}>{node}</Suspense>;
@@ -130,6 +148,14 @@ function routeEl(path: string, node: ReactNode) {
 
 export const router = createBrowserRouter([
   { path: ROUTES.LOGIN, element: <LoginPage /> },
+  // App PV công khai: KHÔNG bọc ProtectedRoute/RequirePermission. Nếu đặt vào
+  // trong, khách vãng lai sẽ bị đá sang /login và toàn bộ REQ-SRS-017/018 (mặt
+  // đọc ẩn danh) không tồn tại trên FE.
+  { path: ROUTES.PV_CATALOG, element: withPageLoader(<PvCatalogPage />) },
+  {
+    path: ROUTES.PV_PRODUCT_DETAIL,
+    element: withPageLoader(<PvProductDetailPage />),
+  },
   {
     path: ROUTES.CHANGE_PASSWORD,
     element: withPageLoader(<ChangePasswordPage />),
@@ -249,6 +275,10 @@ export const router = createBrowserRouter([
               ROUTES.COMPONENT_CATALOG,
               <ComponentCatalogPage />,
             ),
+          },
+          {
+            path: ROUTES.PV_ADMIN,
+            element: routeEl(ROUTES.PV_ADMIN, <PvAdminPage />),
           },
           {
             path: ROUTES.PROFILE,

@@ -55,6 +55,7 @@ import {
   MvpPaginationFooter,
 } from "@/shared/components/mvp/MvpListPagination";
 import { resolveApiPagination } from "@/shared/components/mvp/mvp-pagination";
+import { WMS_PERMISSION_CATALOG } from "@/shared/constants/wms-permissions";
 import { useAuthStore } from "@/shared/store/auth.store";
 
 const STATUS_OPTIONS: Array<{ value: MasterStatus; label: string }> = [
@@ -272,8 +273,15 @@ const EMPTY_CATALOGS: ProductCatalogRefs = {
 
 export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   const canManage = useCanManage("sku.manage");
-  // SRS §3: publish App PV là quyền riêng `pv.publish`, không đi kèm sku.manage.
-  const canPublish = useCanManage(["pv.publish", "sku.manage"]);
+  /**
+   * WWHN-252 (FE252-P1-03): SRS §3 xếp "Publish/unpublish sản phẩm lên App PV"
+   * vào cột App PV với permission key RIÊNG `pv.publish`. Bản cũ nhận
+   * ["pv.publish", "sku.manage"] — nghĩa là OR — nên bất kỳ ai sửa được SKU đều
+   * bật được sản phẩm lên mặt công khai, đúng thứ mà việc tách quyền sinh ra để
+   * ngăn. BE cũng đã bỏ alternative `|sku.manage` ở route publish, nên giữ
+   * sku.manage ở đây chỉ tạo ra nút bấm chắc chắn nhận 403.
+   */
+  const canPublish = useCanManage(WMS_PERMISSION_CATALOG.PV_PUBLISH);
   const [keyword, setKeyword] = useState("");
   const [status, setStatus] = useState<MasterStatus | "">("");
   const [type, setType] = useState<SkuType | "">("");
