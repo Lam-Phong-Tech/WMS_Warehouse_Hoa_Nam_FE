@@ -134,3 +134,25 @@ if [ "$HAS_CREDENTIAL" = true ]; then
 fi
 
 echo "✅ No credentials detected. Proceeding with commit."
+
+# --- Typecheck tại commit (bổ sung sau sự cố WWHN-236 / TS2677) ---
+#
+# Lỗi gốc: `tsc -b` chỉ chạy ở .husky/pre-push, còn pre-commit chỉ quét secret. Một file
+# test có type predicate nới rộng kiểu (TS2677) vì thế được commit trót lọt, rồi chặn
+# `git push` của CẢ nhánh — người bị chặn không phải người gây lỗi, và ai push cũng thấy
+# cùng một thông báo nên rất dễ tưởng là lỗi của mình.
+#
+# Chạy đúng gate `npm run typecheck` (cùng lệnh với pre-push và CI) ngay tại commit, và
+# CHỈ khi staged files có .ts/.tsx — commit tài liệu/evidence không bị chậm. `tsc -b` là
+# incremental nên lần chạy lặp lại rất nhanh.
+if git diff --cached --name-only --diff-filter=ACM | grep -q -E '\.(ts|tsx)$'; then
+  echo "🔍 Typecheck (tsc -b) vì commit có đụng TypeScript..."
+  npm run typecheck || {
+    echo ""
+    echo "⛔ COMMIT REJECTED: TypeScript compile lỗi trong nhánh."
+    echo "   Sửa lỗi ở trên rồi commit lại. Chạy lại thủ công: npm run typecheck"
+    echo "   Đây là cùng gate với .husky/pre-push và CI — chặn ở commit để không chặn push của người khác."
+    exit 1
+  }
+  echo "✅ Typecheck pass."
+fi

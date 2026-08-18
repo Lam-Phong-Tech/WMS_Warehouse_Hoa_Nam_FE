@@ -22,6 +22,28 @@ import { WMS_PERMISSION_CATALOG } from "@/shared/constants/wms-permissions";
  * Nhánh count/recount (`recount`, `cycle-count`, `physical-count`) thuộc WWHN-233 và
  * cố ý không nằm ở đây (DISP-STK-236 §4).
  */
+
+/**
+ * `ROUTES`, `API_ENDPOINTS` và `WMS_PERMISSION_CATALOG` đều khai `as const`, nên
+ * `Object.values(...)` trả về **union literal hẹp** chứ không phải `string[]`. Viết
+ * `.filter((value): value is string => …)` trực tiếp trên đó là **nới rộng** kiểu, và
+ * `tsc -b` chặn bằng TS2677 ("A type predicate's type must be assignable to its
+ * parameter's type") — đúng lỗi đã làm hook pre-push từ chối push.
+ *
+ * Helper này đi qua `Record<string, unknown>` để phần tử là `unknown`, nhờ đó predicate
+ * trở lại là **thu hẹp** và hợp kiểu. Nó giữ nguyên ý runtime ban đầu (bỏ giá trị không
+ * phải chuỗi nếu catalog sau này lồng object/array) và không phụ thuộc hình dạng hiện
+ * tại của catalog, nên guard không vỡ khi ba nguồn trên đổi cấu trúc.
+ *
+ * Không dùng `Object.values(x) as string[]`: cách đó im lặng nuốt cả giá trị lồng và
+ * làm guard REQ-SRS-037 báo xanh sai khi catalog chuyển sang dạng nhóm.
+ */
+function stringValues(source: Record<string, unknown>): string[] {
+  return Object.values(source).filter(
+    (value): value is string => typeof value === "string",
+  );
+}
+
 describe("WWHN-236 · DISP-STK-236 — Apply Adjustment DEFERRED (FE surface)", () => {
   const FORBIDDEN = /stocktake|adjustment|variance/i;
 
@@ -31,16 +53,14 @@ describe("WWHN-236 · DISP-STK-236 — Apply Adjustment DEFERRED (FE surface)", 
     );
     expect(offendingKeys).toEqual([]);
 
-    const offendingPaths = Object.values(ROUTES).filter(
-      (path) => typeof path === "string" && FORBIDDEN.test(path),
+    const offendingPaths = stringValues(ROUTES).filter((path) =>
+      FORBIDDEN.test(path),
     );
     expect(offendingPaths).toEqual([]);
   });
 
   it("permission catalog không cấp quyền kiểm kê, adjustment hay variance", () => {
-    const codes = Object.values(WMS_PERMISSION_CATALOG).filter(
-      (value): value is string => typeof value === "string",
-    );
+    const codes = stringValues(WMS_PERMISSION_CATALOG);
 
     expect(codes.filter((code) => FORBIDDEN.test(code))).toEqual([]);
 
@@ -57,9 +77,7 @@ describe("WWHN-236 · DISP-STK-236 — Apply Adjustment DEFERRED (FE surface)", 
   });
 
   it("API client không khai endpoint apply-adjustment", () => {
-    const paths = Object.values(API_ENDPOINTS).filter(
-      (value): value is string => typeof value === "string",
-    );
+    const paths = stringValues(API_ENDPOINTS);
 
     expect(paths.filter((path) => FORBIDDEN.test(path))).toEqual([]);
     expect(paths.some((path) => path.includes("apply-adjustment"))).toBe(false);
@@ -68,14 +86,25 @@ describe("WWHN-236 · DISP-STK-236 — Apply Adjustment DEFERRED (FE surface)", 
   it("giữ nguyên đường sửa sai hợp lệ — Reversal append-only", () => {
     // Chiều ngược lại của cùng một quyết định: vì Apply Adjustment bị loại, Reversal là
     // correction path duy nhất (BR-REV-01/02). Gỡ nó đi là gỡ luôn cách sửa sai hợp lệ.
-    const paths = Object.values(API_ENDPOINTS).filter(
-      (value): value is string => typeof value === "string",
-    );
+    const paths = stringValues(API_ENDPOINTS);
 
     expect(paths).toContain("/reversal-documents");
-    expect(Object.values(WMS_PERMISSION_CATALOG)).toContain(
+    expect(stringValues(WMS_PERMISSION_CATALOG)).toContain(
       "inventory.reversal.post",
     );
     expect(ROUTES.REVERSE).toBe("/reverse");
+  });
+
+  it("ba nguồn guard vẫn phẳng nên bốn test trên đọc được toàn bộ bề mặt", () => {
+    // Guard tự bảo vệ chính nó: nếu một catalog chuyển sang dạng lồng, `stringValues()`
+    // sẽ bỏ qua phần lồng và bốn test trên có thể báo xanh sai. Chốt "số giá trị chuỗi =
+    // số key" để trường hợp đó lộ ra ngay tại đây thay vì lộ ở deployment.
+    expect(stringValues(ROUTES).length).toBe(Object.keys(ROUTES).length);
+    expect(stringValues(API_ENDPOINTS).length).toBe(
+      Object.keys(API_ENDPOINTS).length,
+    );
+    expect(stringValues(WMS_PERMISSION_CATALOG).length).toBe(
+      Object.keys(WMS_PERMISSION_CATALOG).length,
+    );
   });
 });
