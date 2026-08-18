@@ -41,9 +41,6 @@ const canonicalDoc = requirePatterns("docs/Task_docs_Jira/WWHN-148.md", [
   /SHA256/,
 ]);
 
-// The reuse-review doc was folded into the canonical task docs. What must hold
-// is that some published doc still points back at the WWHN-148 canonical file,
-// so search the docs tree instead of pinning one historical filename.
 const backReferenceFiles = globSync("docs/**/*.md", { cwd: root }).filter(
   (file) =>
     file.replace(/\\/g, "/") !== "docs/Task_docs_Jira/WWHN-148.md" &&
@@ -57,12 +54,15 @@ if (!backReferenceFiles.length) {
   );
 }
 
+// WWHN-296 refreshed the active M1 mapping to the current MVP baseline. Keep
+// critical posting paths and explicitly prove that historical Stocktake was removed.
 requirePatterns("docs/api-evidence/M1_API_MAPPING.md", [
   /POST\s+\|\s+`\/scan\/classify`/,
   /POST\s+\|\s+`\/inbound-documents\/\{id\}\/post-receipt`/,
   /POST\s+\|\s+`\/outbound-documents\/\{id\}\/post-issue`/,
-  /POST\s+\|\s+`\/stocktake\/sessions\/\{sessionId\}\/apply-adjustment`/,
-  /final sign-off[\s\S]{0,200}fail-closed/i,
+  /Removed-from-MVP boundary — Stocktake/,
+  /Reversal append-only/i,
+  /independent gates/i,
 ]);
 
 const manifestPath = "docs/evidence/wwhn-148/WWHN-148_CLOSURE_MANIFEST.json";
@@ -70,14 +70,31 @@ const manifestText = readRequired(manifestPath);
 if (manifestText) {
   try {
     const manifest = JSON.parse(manifestText);
-    if (manifest.schemaVersion !== "2.0.0") fail(`${manifestPath} schemaVersion must be 2.0.0.`);
-    if (manifest.task !== "WWHN-148" || manifest.branch !== "m1") fail(`${manifestPath} task/branch mismatch.`);
-    for (const key of ["WWHN-146", "WWHN-147", "WWHN-149", "WWHN-180", "WWHN-182", "WWHN-183"]) {
+    if (manifest.schemaVersion !== "2.0.0") {
+      fail(`${manifestPath} schemaVersion must be 2.0.0.`);
+    }
+    if (manifest.task !== "WWHN-148" || manifest.branch !== "m1") {
+      fail(`${manifestPath} task/branch mismatch.`);
+    }
+    for (const key of [
+      "WWHN-146",
+      "WWHN-147",
+      "WWHN-149",
+      "WWHN-180",
+      "WWHN-182",
+      "WWHN-183",
+    ]) {
       if (!manifest.gates?.[key]) fail(`${manifestPath} is missing gate ${key}.`);
     }
-    if (manifest.finalPolicy?.failClosed !== true) fail(`${manifestPath} must be fail-closed.`);
-    if (manifest.finalPolicy?.controlledMocksMayOpenFinal !== false) fail(`${manifestPath} must reject controlled mocks for final.`);
-    if (manifest.finalPolicy?.blobImageCommentsAccepted !== false) fail(`${manifestPath} must reject blob-image comments.`);
+    if (manifest.finalPolicy?.failClosed !== true) {
+      fail(`${manifestPath} must be fail-closed.`);
+    }
+    if (manifest.finalPolicy?.controlledMocksMayOpenFinal !== false) {
+      fail(`${manifestPath} must reject controlled mocks for final.`);
+    }
+    if (manifest.finalPolicy?.blobImageCommentsAccepted !== false) {
+      fail(`${manifestPath} must reject blob-image comments.`);
+    }
     const scenarios = new Set(manifest.qa2RuntimeScenarios ?? []);
     for (const scenario of [
       "RESPONSIVE_DESKTOP_TABLET_MOBILE",
@@ -91,7 +108,9 @@ if (manifestText) {
       "NO_STACK_TRACE_OR_SECRET",
       "REQUEST_ID_TRACEABILITY",
     ]) {
-      if (!scenarios.has(scenario)) fail(`${manifestPath} is missing runtime scenario ${scenario}.`);
+      if (!scenarios.has(scenario)) {
+        fail(`${manifestPath} is missing runtime scenario ${scenario}.`);
+      }
     }
   } catch (error) {
     fail(`${manifestPath} is invalid JSON: ${error.message}`);
@@ -116,14 +135,20 @@ const normalizationText = readRequired(normalizationPath);
 if (normalizationText) {
   try {
     const normalization = JSON.parse(normalizationText);
-    if (normalization.task !== "WWHN-148") fail(`${normalizationPath} task mismatch.`);
-    if (!Array.isArray(normalization.criticalFlows)) fail(`${normalizationPath} must define criticalFlows.`);
+    if (normalization.task !== "WWHN-148") {
+      fail(`${normalizationPath} task mismatch.`);
+    }
+    if (!Array.isArray(normalization.criticalFlows)) {
+      fail(`${normalizationPath} must define criticalFlows.`);
+    }
     for (const flow of normalization.criticalFlows ?? []) {
       if (!flow.id || !flow.service || !Array.isArray(flow.requiredCanonicalFields)) {
         fail(`${normalizationPath} has an invalid critical flow entry.`);
       }
       if (flow.legacySuccessAliasesAllowed !== true) {
-        fail(`${flow.id} must explicitly preserve current temporary alias policy until BE contract lock.`);
+        fail(
+          `${flow.id} must explicitly preserve current temporary alias policy until BE contract lock.`,
+        );
       }
     }
   } catch (error) {
@@ -132,10 +157,22 @@ if (normalizationText) {
 }
 
 const viteConfig = readRequired("vite.config.ts");
-for (const forbidden of [/vitest\/config/, /\b__dirname\b/, /\b__filename\b/, /\brequire\s*\(/]) {
-  if (forbidden.test(viteConfig)) fail(`vite.config.ts contains forbidden pattern ${forbidden}`);
+for (const forbidden of [
+  /vitest\/config/,
+  /\b__dirname\b/,
+  /\b__filename\b/,
+  /\brequire\s*\(/,
+]) {
+  if (forbidden.test(viteConfig)) {
+    fail(`vite.config.ts contains forbidden pattern ${forbidden}`);
+  }
 }
-for (const required of [/from "vite"/, /from "node:path"/, /from "node:url"/, /fileURLToPath\(import\.meta\.url\)/]) {
+for (const required of [
+  /from "vite"/,
+  /from "node:path"/,
+  /from "node:url"/,
+  /fileURLToPath\(import\.meta\.url\)/,
+]) {
   if (!required.test(viteConfig)) fail(`vite.config.ts is missing ${required}`);
 }
 
@@ -151,14 +188,17 @@ requirePatterns("src/test/wwhn-148-critical-response-contract.test.ts", [
   /accepts canonical snake_case success evidence/,
   /rejects undocumented receipt aliases/,
   /rejects undocumented issue aliases/,
-  /rejects undocumented adjustment aliases/,
+  /DEC-NO-STOCKTAKE-001/,
 ]);
 
 const packageJsonText = readRequired("package.json");
 if (packageJsonText) {
   try {
     const packageJson = JSON.parse(packageJsonText);
-    if (packageJson.scripts?.["wwhn-148:verify"] !== "node scripts/verify-wwhn-148-closure.mjs") {
+    if (
+      packageJson.scripts?.["wwhn-148:verify"] !==
+      "node scripts/verify-wwhn-148-closure.mjs"
+    ) {
       fail("package.json must expose the exact wwhn-148:verify script.");
     }
   } catch (error) {
@@ -166,9 +206,16 @@ if (packageJsonText) {
   }
 }
 
-requirePatterns(".github/workflows/ci.yml", [/Verify WWHN-148 FE closure/, /npm run wwhn-148:verify/]);
+requirePatterns(".github/workflows/ci.yml", [
+  /Verify WWHN-148 FE closure/,
+  /npm run wwhn-148:verify/,
+]);
 
-if (!/FE-owned remediation complete; final acceptance pending independent evidence/i.test(canonicalDoc)) {
+if (
+  !/FE-owned remediation complete; final acceptance pending independent evidence/i.test(
+    canonicalDoc,
+  )
+) {
   fail("WWHN-148 must state the independent-evidence boundary truthfully.");
 }
 
@@ -177,4 +224,6 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log("[wwhn-148] PASS: FE closure, runtime handoff, cross-role manifest, traceability and fail-closed final policy are complete.");
+console.log(
+  "[wwhn-148] PASS: current MVP FE closure, runtime handoff, traceability and fail-closed independent-evidence boundary are consistent.",
+);
