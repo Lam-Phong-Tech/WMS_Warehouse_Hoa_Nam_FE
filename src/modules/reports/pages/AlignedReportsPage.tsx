@@ -28,6 +28,10 @@ import {
 } from "@/shared/constants/wms-permissions";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { MvpPageSizeSelector } from "@/shared/components/mvp/MvpListPagination";
+import {
+  TableLoadingBanner,
+  tableEmptyText,
+} from "@/shared/components/feedback/BusinessState";
 import { ActionButton } from "@/shared/components/permission/ActionButton";
 import { useHasPermission } from "@/shared/components/permission";
 import { fetchWarehouses } from "@/modules/master-data/services/warehouse.service";
@@ -364,16 +368,85 @@ function columnsFor(report: ReportKey): TableColumnsType<Raw> {
         { title: "Tên SKU", dataIndex: "product_name", width: 210 },
         { title: "Tồn", dataIndex: "stock_status", width: 120 },
         { title: "Đầu kỳ", dataIndex: "opening", align: "right", render: fmt },
-        { title: "Nhập", dataIndex: "receipt", align: "right", render: fmt },
-        { title: "Xuất", dataIndex: "issue", align: "right", render: fmt },
+        // WWHN-240 / BR-RPT-01..07 "hiển thị gross/net" + BR-REV-11 "report hiển thị
+        // movement gốc, toàn bộ Reversal chain và net effect". Một cột "Reversal" gộp
+        // hai chiều thì người đọc không biết Nhập/Xuất thực của kỳ là bao nhiêu, nên
+        // mỗi chiều tách thành ba cột gross / đã đảo / thuần.
         {
-          title: "Xuất LK",
-          dataIndex: "component_issue",
-          align: "right",
-          render: fmt,
+          title: "Nhập",
+          children: [
+            {
+              title: "Gross",
+              dataIndex: "receipt_gross",
+              align: "right",
+              render: (_: unknown, row: Raw) =>
+                fmt(row.receipt_gross ?? row.receipt),
+            },
+            {
+              title: "Đã đảo",
+              dataIndex: "receipt_reversal",
+              align: "right",
+              render: fmt,
+            },
+            {
+              title: "Thuần",
+              dataIndex: "receipt_net",
+              align: "right",
+              render: (_: unknown, row: Raw) =>
+                fmt(row.receipt_net ?? row.receipt),
+            },
+          ],
         },
         {
-          title: "Reversal",
+          title: "Xuất",
+          children: [
+            {
+              title: "Gross",
+              dataIndex: "issue_gross",
+              align: "right",
+              render: (_: unknown, row: Raw) => fmt(row.issue_gross ?? row.issue),
+            },
+            {
+              title: "Đã đảo",
+              dataIndex: "issue_reversal",
+              align: "right",
+              render: fmt,
+            },
+            {
+              title: "Thuần",
+              dataIndex: "issue_net",
+              align: "right",
+              render: (_: unknown, row: Raw) => fmt(row.issue_net ?? row.issue),
+            },
+          ],
+        },
+        {
+          title: "Xuất LK",
+          children: [
+            {
+              title: "Gross",
+              dataIndex: "component_issue_gross",
+              align: "right",
+              render: (_: unknown, row: Raw) =>
+                fmt(row.component_issue_gross ?? row.component_issue),
+            },
+            {
+              title: "Đã đảo",
+              dataIndex: "component_issue_reversal",
+              align: "right",
+              render: fmt,
+            },
+            {
+              title: "Thuần",
+              dataIndex: "component_issue_net",
+              align: "right",
+              render: (_: unknown, row: Raw) =>
+                fmt(row.component_issue_net ?? row.component_issue),
+            },
+          ],
+        },
+        {
+          title: "Reversal net",
           dataIndex: "reversal_net",
           align: "right",
           render: fmt,
@@ -1383,6 +1456,19 @@ export default function AlignedReportsPage() {
           title="Khách hàng/SĐT/địa chỉ luôn hiển thị ở dạng đã mask. File export chỉ chứa PII thô khi BE xác nhận warranty.pii.export và bạn nhập lý do; mọi lần export đều được audit kèm lý do."
         />
       ) : null}
+      {/* WWHN-254 DEV254-P1-03/P1-04: BE nay cắt mọi báo cáo theo warehouse data-scope
+          của người gọi. Người dùng bị giới hạn kho phải nhìn thấy điều đó, nếu không họ
+          sẽ đọc một tổng cục bộ như tổng toàn hệ thống. */}
+      {query.data?.data_scope === "WAREHOUSE_SCOPED" ? (
+        <Alert
+          type="info"
+          showIcon
+          style={{ marginBottom: 12 }}
+          title={`Số liệu đã giới hạn theo phạm vi kho của tài khoản (${
+            query.data.scope_warehouse_ids?.length ?? 0
+          } kho). Đây không phải tổng toàn hệ thống; file export dùng đúng phạm vi này.`}
+        />
+      ) : null}
       {report === "inventory-balance" && query.data?.as_of_snapshot ? (
         <Alert
           type="warning"
@@ -1435,6 +1521,7 @@ export default function AlignedReportsPage() {
         }}
       />
 
+      <TableLoadingBanner loading={query.isLoading || query.isFetching} />
       <Table<Raw>
         rowKey="__rowKey"
         dataSource={rows}
@@ -1461,9 +1548,10 @@ export default function AlignedReportsPage() {
           onChange: (next) => setPage(next),
         }}
         locale={{
-          emptyText: query.isError
-            ? "Không tải được dữ liệu"
-            : "Không có dữ liệu theo bộ lọc",
+          emptyText: tableEmptyText(
+            query.isError ? query.error : null,
+            "Không có dữ liệu theo bộ lọc",
+          ),
         }}
       />
 
