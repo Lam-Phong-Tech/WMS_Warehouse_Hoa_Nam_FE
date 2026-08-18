@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "1.0.0",
+  "updatedAt": "2026-08-18T17:25:00+07:00",
+  "scope": "Current MVP/Beta Stocktake implementation/governance disposition",
+  "implementationDisposition": "NO_STOCKTAKE_IN_CURRENT_RUNTIME",
+  "implementationSource": {
+    "jiraIssue": "WWHN-25",
+    "decisionKey": "DEC-STK-001",
+    "baBusinessDispositionComment": "14791",
+    "baApprovalRequestComment": "15251",
+    "summary": "BA disposition says Physical Stocktake/Variance/Adjustment are deferred for current MVP/Beta and must not control current runtime implementation."
+  },
+  "formalGovernance": {
+    "status": "PENDING_PM_PO_PROCESS_OWNER_APPROVAL",
+    "approvedDecisionId": null,
+    "approvedArtifactHash": null,
+    "effectiveDate": null,
+    "note": "Do not cite DEC-NO-STOCKTAKE-001 as an approved Decision ID. Formal approver-authored current-hash disposition remains required on WWHN-25."
+  },
+  "runtimeRule": {
+    "currentBehavior": "Stocktake UI/API/permission/runtime surface remains absent in the current implementation while formal governance is pending.",
+    "reintroductionGate": "Approved Later Phase/Change Request/current-source Decision plus synchronized FE/BE/OpenAPI/RBAC/test updates."
+  },
+  "closurePolicy": "Implementation/source consistency may pass independently. Formal governance closure must remain PENDING until approver-authored evidence exists."
+}
