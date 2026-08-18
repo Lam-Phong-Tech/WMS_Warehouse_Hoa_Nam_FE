@@ -172,6 +172,19 @@ jobs:
         continue-on-error: true
         run: npm run wwhn-296:verify
 
+      - name: Verify WWHN-230 Stocktake scope disposition
+        id: wwhn_230
+        continue-on-error: true
+        run: npm run wwhn-230:verify
+
+      # DISP-STK-237 — nửa FE. Bắt được thứ guard route/permission bỏ lọt, vì bề mặt
+      # nằm trong docs/api-evidence/WMS_FE_CONTRACT_BASELINE.json chứ không trong
+      # source runtime: criticalFlow APPLY_ADJUSTMENT và enum scan context STOCKTAKE.
+      - name: Verify WWHN-237 variance query/report disposition
+        id: wwhn_237
+        continue-on-error: true
+        run: npm run wwhn-237:verify
+
       - name: Install Playwright Chromium
         id: playwright_install
         continue-on-error: true
@@ -309,6 +322,8 @@ jobs:
           WWHN_175_E2E_OUTCOME: ${{ steps.wwhn_175_e2e.outcome }}
           WWHN_178_E2E_OUTCOME: ${{ steps.wwhn_178_e2e.outcome }}
           WWHN_177_HANDOFF_OUTCOME: ${{ steps.wwhn_177_handoff.outcome }}
+          WWHN_230_OUTCOME: ${{ steps.wwhn_230.outcome }}
+          WWHN_237_OUTCOME: ${{ steps.wwhn_237.outcome }}
         run: node scripts/assert-ci-gates.mjs
 
   dev-delivery:

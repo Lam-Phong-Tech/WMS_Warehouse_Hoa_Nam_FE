@@ -49,10 +49,10 @@ export function usePermission(context: PermissionContext): {
 }
 
 /**
- * `stocktake.manage` is a legacy page-management permission. When a caller
- * explicitly asks for `stocktake.adjust`, the broader legacy code must not
- * become an OR fallback for the stock-changing action. Other mixed permission
- * groups preserve their existing behavior to avoid unrelated RBAC regressions.
+ * REQ-SRS-037 / WWHN-237: MVP không có permission kiểm kê hay sửa tồn trực tiếp,
+ * nên không tồn tại nhóm quyền nào cần chặn OR-fallback về một mã `stocktake.*`.
+ * Hàm chỉ canonicalize rồi OR các mã trong nhóm; mọi nhóm quyền hiện hành giữ
+ * nguyên hành vi để không gây regression RBAC ngoài phạm vi.
  */
 export function useCanAny(codes: string[]): boolean {
   const state = usePermissionState();

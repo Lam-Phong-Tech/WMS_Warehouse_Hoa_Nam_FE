@@ -15,7 +15,6 @@
 .hn-mvp-screen > .inbound-page,
 .hn-mvp-screen > .putaway-page,
 .hn-mvp-screen > .inventory-page,
-.hn-mvp-screen > .stocktake-page,
 .hn-mvp-screen > .warranty-page,
 .hn-mvp-screen > .reports-page {
   padding: 0 !important;
@@ -205,7 +204,7 @@
   margin-top: 14px;
 }
 
-/* Statistics in scanning/stocktake pages follow the four-column HTML cards. */
+/* Statistics in scanning pages follow the four-column HTML cards. */
 .hn-mvp-screen .ant-statistic {
   border: 1px solid var(--line);
   border-radius: 14px;

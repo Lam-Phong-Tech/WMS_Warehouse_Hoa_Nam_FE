@@ -38,10 +38,21 @@
       "relativePath": "/scan/classify",
       "runtimePath": "/api/v1/scan/classify",
       "permission": "scan.classify",
-      "requiredRequest": ["raw_code", "context", "warehouse_id"],
+      "requiredRequest": [
+        "raw_code",
+        "context",
+        "warehouse_id"
+      ],
       "requestConstraints": {
         "raw_code": "non-empty string, maxLength=150",
-        "context": ["INBOUND", "OUTBOUND", "STOCKTAKE", "WARRANTY_TEMP_ONLY"],
+        "context": [
+          "INBOUND",
+          "OUTBOUND",
+          "INVENTORY",
+          "TRACE",
+          "WARRANTY_RECEIVE",
+          "WARRANTY_TEMP_ONLY"
+        ],
         "warehouse_id": "UUID"
       },
       "requiredSuccess": [
@@ -63,8 +74,16 @@
         "posting_event_created": false,
         "idempotency_cache_written": false
       },
-      "acceptedHttp": [200],
-      "expectedErrors": [401, 403, 404, 409, 422],
+      "acceptedHttp": [
+        200
+      ],
+      "expectedErrors": [
+        401,
+        403,
+        404,
+        409,
+        422
+      ],
       "feDisposition": "IMPLEMENTED_EXACT_RUNTIME_FAIL_CLOSED",
       "officialSignoff": "PENDING_WWHN_180"
     },
@@ -74,9 +93,17 @@
       "relativePath": "/inbound-documents/:id/scan",
       "permission": "scan.inbound",
       "preflight": "POST /scan/classify context=INBOUND then resolve exactly one remaining product line",
-      "requiredRequest": ["line_id", "qty"],
-      "forbiddenRequest": ["codes"],
-      "requiredSuccess": ["stock_effect=NONE", "movement_created=false"],
+      "requiredRequest": [
+        "line_id",
+        "qty"
+      ],
+      "forbiddenRequest": [
+        "codes"
+      ],
+      "requiredSuccess": [
+        "stock_effect=NONE",
+        "movement_created=false"
+      ],
       "feDisposition": "IMPLEMENTED_CANONICAL_LINE_SCAN"
     },
     {
@@ -85,9 +112,17 @@
       "relativePath": "/outbound-documents/:id/scan",
       "permission": "scan.outbound",
       "preflight": "POST /scan/classify context=OUTBOUND then resolve exactly one remaining product line",
-      "requiredRequest": ["line_id", "qty"],
-      "forbiddenRequest": ["codes"],
-      "requiredSuccess": ["stock_effect=NONE", "movement_created=false"],
+      "requiredRequest": [
+        "line_id",
+        "qty"
+      ],
+      "forbiddenRequest": [
+        "codes"
+      ],
+      "requiredSuccess": [
+        "stock_effect=NONE",
+        "movement_created=false"
+      ],
       "feDisposition": "IMPLEMENTED_CANONICAL_LINE_SCAN"
     },
     {
@@ -95,13 +130,28 @@
       "method": "POST",
       "relativePath": "/inbound-documents/:id/post-receipt",
       "permission": "inbound.post",
-      "requiredHeaders": ["Idempotency-Key"],
-      "forbiddenHeaders": ["If-Match"],
+      "requiredHeaders": [
+        "Idempotency-Key"
+      ],
+      "forbiddenHeaders": [
+        "If-Match"
+      ],
       "requestBody": "NONE",
       "preflight": "All planned lines must be fully scanned because exact BE posts the whole document atomically",
-      "requiredSuccess": ["data.id", "data.movements[].id", "meta.request_id"],
-      "acceptedHttp": [200],
-      "expectedErrors": [403, 409, 422, 428],
+      "requiredSuccess": [
+        "data.id",
+        "data.movements[].id",
+        "meta.request_id"
+      ],
+      "acceptedHttp": [
+        200
+      ],
+      "expectedErrors": [
+        403,
+        409,
+        422,
+        428
+      ],
       "feDisposition": "IMPLEMENTED_EXACT_V1_7_ATOMIC_POST",
       "officialSignoff": "PENDING_WWHN_180_WWHN_182"
     },
@@ -110,29 +160,29 @@
       "method": "POST",
       "relativePath": "/outbound-documents/:id/post-issue",
       "permission": "outbound.post",
-      "requiredHeaders": ["Idempotency-Key"],
-      "forbiddenHeaders": ["If-Match"],
+      "requiredHeaders": [
+        "Idempotency-Key"
+      ],
+      "forbiddenHeaders": [
+        "If-Match"
+      ],
       "requestBody": "NONE",
       "preflight": "All planned lines must be fully scanned because exact BE posts the whole document atomically",
-      "requiredSuccess": ["data.id", "data.movements[].id", "meta.request_id"],
-      "acceptedHttp": [200],
-      "expectedErrors": [403, 409, 422, 428],
+      "requiredSuccess": [
+        "data.id",
+        "data.movements[].id",
+        "meta.request_id"
+      ],
+      "acceptedHttp": [
+        200
+      ],
+      "expectedErrors": [
+        403,
+        409,
+        422,
+        428
+      ],
       "feDisposition": "IMPLEMENTED_EXACT_V1_7_ATOMIC_POST",
-      "officialSignoff": "PENDING_WWHN_180_WWHN_182"
-    },
-    {
-      "id": "APPLY_ADJUSTMENT",
-      "method": "POST",
-      "relativePath": "/stocktake-sessions/:sessionId/apply-adjustment",
-      "permission": "stocktake.adjust",
-      "requiredHeaders": ["Idempotency-Key"],
-      "forbiddenHeaders": ["If-Match"],
-      "requiredRequest": ["session_version", "variance_ids[]", "reason"],
-      "preflight": "Re-read and send the complete APPROVED variance set immediately before apply",
-      "requiredSuccess": ["data.session_id", "data.status=APPLIED", "data.session_version", "data.variance_count", "data.movement_ids", "meta.request_id"],
-      "acceptedHttp": [200],
-      "expectedErrors": [403, 409, 422, 428],
-      "feDisposition": "IMPLEMENTED_EXACT_V1_7_SESSION_VERSION_CAS",
       "officialSignoff": "PENDING_WWHN_180_WWHN_182"
     },
     {
@@ -140,17 +190,31 @@
       "method": "GET",
       "relativePath": "/warranty-cases",
       "permission": "warranty.manage",
-      "requiredSuccess": ["data", "meta"],
+      "requiredSuccess": [
+        "data",
+        "meta"
+      ],
       "feDisposition": "IMPLEMENTED_WAR_01_HUB"
     },
     {
       "id": "WARRANTY_INTAKE",
       "method": "POST",
       "relativePath": "/warranty-cases",
-      "permissionsAny": ["warranty.manage", "warranty.temp_only"],
-      "requiredHeaders": ["Idempotency-Key"],
-      "requiredSuccess": ["data.id", "data.case_code"],
-      "readOnlyAssertions": { "stock_effect": "NONE", "movement_created": false },
+      "permissionsAny": [
+        "warranty.manage",
+        "warranty.temp_only"
+      ],
+      "requiredHeaders": [
+        "Idempotency-Key"
+      ],
+      "requiredSuccess": [
+        "data.id",
+        "data.case_code"
+      ],
+      "readOnlyAssertions": {
+        "stock_effect": "NONE",
+        "movement_created": false
+      },
       "feDisposition": "IMPLEMENTED_WAR_02_IDENTIFIED_AND_TEMP_ONLY"
     },
     {
@@ -158,7 +222,10 @@
       "method": "GET",
       "relativePath": "/warranty-cases/:id",
       "permission": "warranty.manage",
-      "requiredSuccess": ["data.id", "data.version"],
+      "requiredSuccess": [
+        "data.id",
+        "data.version"
+      ],
       "feDisposition": "IMPLEMENTED_WAR_03_DETAIL"
     },
     {
@@ -166,7 +233,10 @@
       "method": "PATCH",
       "relativePath": "/warranty-cases/:id",
       "permission": "warranty.manage",
-      "requiredHeaders": ["If-Match", "Idempotency-Key"],
+      "requiredHeaders": [
+        "If-Match",
+        "Idempotency-Key"
+      ],
       "requiredRequest": [],
       "persistedFields": [
         "status",
@@ -175,7 +245,10 @@
         "accessories_received",
         "cancel_reason"
       ],
-      "readOnlyAssertions": { "stock_effect": "NONE", "movement_created": false },
+      "readOnlyAssertions": {
+        "stock_effect": "NONE",
+        "movement_created": false
+      },
       "feDisposition": "IMPLEMENTED_WAR_P1_02_FULL_FIELD_PERSISTENCE"
     },
     {
@@ -197,7 +270,9 @@
       "method": "POST",
       "relativePath": "/warranty-cases/:caseId/attachments",
       "permission": "warranty.manage",
-      "readOnlyAssertions": { "stock_effect": "NONE" },
+      "readOnlyAssertions": {
+        "stock_effect": "NONE"
+      },
       "feDisposition": "IMPLEMENTED_WAR_P1_01"
     },
     {
@@ -226,9 +301,21 @@
       "method": "POST",
       "relativePath": "/warranty-component-issues",
       "permission": "warranty.component_issue",
-      "requiredRequest": ["warehouse_id", "warranty_case_id", "purpose", "lines"],
-      "requestConstraints": { "purpose": ["WARRANTY"] },
-      "readOnlyAssertions": { "stock_effect": "NONE", "movement_created": false },
+      "requiredRequest": [
+        "warehouse_id",
+        "warranty_case_id",
+        "purpose",
+        "lines"
+      ],
+      "requestConstraints": {
+        "purpose": [
+          "WARRANTY"
+        ]
+      },
+      "readOnlyAssertions": {
+        "stock_effect": "NONE",
+        "movement_created": false
+      },
       "feDisposition": "IMPLEMENTED_COMP_01_DRAFT_STOCK_NEUTRAL"
     },
     {
@@ -236,7 +323,10 @@
       "method": "GET",
       "relativePath": "/warranty-component-issues/:id",
       "permission": "warranty.component_issue",
-      "requiredSuccess": ["data.document.id", "data.lines"],
+      "requiredSuccess": [
+        "data.document.id",
+        "data.lines"
+      ],
       "feDisposition": "IMPLEMENTED_WAR_P0_01_DETAIL_ROUTE"
     },
     {
@@ -244,9 +334,18 @@
       "method": "POST",
       "relativePath": "/warranty-component-issues/:id/scans",
       "permission": "warranty.component_issue",
-      "requiredHeaders": ["If-Match"],
-      "requiredRequest": ["line_id", "code_value", "quantity"],
-      "readOnlyAssertions": { "stock_effect": "NONE", "movement_created": false },
+      "requiredHeaders": [
+        "If-Match"
+      ],
+      "requiredRequest": [
+        "line_id",
+        "code_value",
+        "quantity"
+      ],
+      "readOnlyAssertions": {
+        "stock_effect": "NONE",
+        "movement_created": false
+      },
       "feDisposition": "IMPLEMENTED_COMP_01_SCAN_STOCK_NEUTRAL"
     },
     {
@@ -254,8 +353,12 @@
       "method": "POST",
       "relativePath": "/warranty-component-issues/:id/cancel",
       "permission": "warranty.component_issue",
-      "requiredHeaders": ["If-Match"],
-      "requiredRequest": ["reason"],
+      "requiredHeaders": [
+        "If-Match"
+      ],
+      "requiredRequest": [
+        "reason"
+      ],
       "feDisposition": "IMPLEMENTED_COMP_01_CANCEL_WITH_REASON"
     },
     {
@@ -263,9 +366,18 @@
       "method": "POST",
       "relativePath": "/warranty-component-issues/:id/post",
       "permission": "warranty.component_issue",
-      "requiredHeaders": ["If-Match", "Idempotency-Key"],
-      "requiredSuccess": ["version", "status", "movement_ids"],
-      "readOnlyAssertions": { "stock_effect": "DECREASE" },
+      "requiredHeaders": [
+        "If-Match",
+        "Idempotency-Key"
+      ],
+      "requiredSuccess": [
+        "version",
+        "status",
+        "movement_ids"
+      ],
+      "readOnlyAssertions": {
+        "stock_effect": "DECREASE"
+      },
       "feDisposition": "IMPLEMENTED_COMP_01_FULL_POST_DECREASE"
     },
     {
@@ -273,7 +385,11 @@
       "method": "GET",
       "relativePath": "/reports/warranty-defects",
       "permission": "report.view",
-      "requiredSuccess": ["data.summary", "data.rows", "data.pii_included"],
+      "requiredSuccess": [
+        "data.summary",
+        "data.rows",
+        "data.pii_included"
+      ],
       "feDisposition": "IMPLEMENTED_PII_MASKED_REPORT"
     }
   ],
@@ -324,6 +440,29 @@
   "finalPolicy": {
     "finalAllowed": false,
     "evaluator": "scripts/verify-wwhn-181-final-gates.mjs",
-    "requiredIndependentIssues": ["WWHN-180", "WWHN-182", "WWHN-183"]
+    "requiredIndependentIssues": [
+      "WWHN-180",
+      "WWHN-182",
+      "WWHN-183"
+    ]
+  },
+  "removedFromMvp": {
+    "requirement": "REQ-SRS-037",
+    "task": "WWHN-237",
+    "baseline": "HN-SRS-FRD-001 v1.12 (adopt tại WWHN-334)",
+    "removedFlows": [
+      "APPLY_ADJUSTMENT"
+    ],
+    "removedPermissions": [
+      "stocktake.adjust",
+      "stocktake.count",
+      "stocktake.manage"
+    ],
+    "removedScanContexts": [
+      "STOCKTAKE"
+    ],
+    "correctionAuthority": "Reversal append-only — WWHN-26 / DEC-REV-001",
+    "governanceRegister": "docs/api-evidence/STOCKTAKE_GOVERNANCE_STATUS.json",
+    "note": "FE không được suy diễn lại contract Stocktake từ artifact lịch sử; cổng tái mở là CR/Later Phase được duyệt hoặc WWHN-25 đóng."
   }
 }

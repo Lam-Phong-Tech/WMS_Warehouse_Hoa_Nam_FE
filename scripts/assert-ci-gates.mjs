@@ -28,6 +28,8 @@ const gateNames = [
   "WWHN_175_E2E_OUTCOME",
   "WWHN_178_E2E_OUTCOME",
   "WWHN_177_HANDOFF_OUTCOME",
+  "WWHN_230_OUTCOME",
+  "WWHN_237_OUTCOME",
 ];
 
 const failures = gateNames
