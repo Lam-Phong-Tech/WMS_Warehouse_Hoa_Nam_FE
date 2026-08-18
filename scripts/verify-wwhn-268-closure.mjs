@@ -39,14 +39,31 @@ function readRequired(relativePath) {
  * Đường dẫn trong register có thể trỏ sang repo BE (tiền tố `HoaNam_BE/`).
  * Cả hai repo nằm cạnh nhau dưới C:\LAM_PHONG_TECH, nên resolve theo repoRoot.
  */
+const beRoot = join(repoRoot, "HoaNam_BE", "WMS_Warehouse_Hoa_Nam_BE");
+
+// Register có tham chiếu chéo sang repo BE. Chạy tại chỗ thì hai repo nằm cạnh
+// nhau nên kiểm được thật; trong CI chỉ FE được checkout nên tham chiếu chéo
+// được ghi NOTE thay vì FAIL, và cổng WWHN-268 BE regression closure ở repo BE
+// chịu trách nhiệm kiểm phần đó. Ranh giới rõ ràng, không bỏ qua âm thầm.
+const beRepoAvailable = existsSync(beRoot);
+const skippedCrossRepo = [];
+
+function isCrossRepo(value) {
+  return value.startsWith("HoaNam_BE/");
+}
+
+/** true nếu đường dẫn cần được kiểm ở lượt chạy hiện tại. */
+function shouldCheckPath(value) {
+  if (isCrossRepo(value) && !beRepoAvailable) {
+    skippedCrossRepo.push(value);
+    return false;
+  }
+  return true;
+}
+
 function resolveEvidencePath(value) {
-  if (value.startsWith("HoaNam_BE/")) {
-    return join(
-      repoRoot,
-      "HoaNam_BE",
-      "WMS_Warehouse_Hoa_Nam_BE",
-      value.slice("HoaNam_BE/".length),
-    );
+  if (isCrossRepo(value)) {
+    return join(beRoot, value.slice("HoaNam_BE/".length));
   }
   return join(feRoot, value);
 }
@@ -167,6 +184,7 @@ for (const defect of defects) {
       fail(`${id} khai FIXED nhưng không liệt kê file nào đã sửa`);
     }
     for (const file of fixFiles) {
+      if (!shouldCheckPath(file)) continue;
       if (!existsSync(resolveEvidencePath(file))) {
         fail(`${id}.fix.files trỏ tới file không tồn tại: ${file}`);
       }
@@ -180,6 +198,7 @@ for (const defect of defects) {
       continue;
     }
     for (const file of list) {
+      if (!shouldCheckPath(file)) continue;
       if (!existsSync(resolveEvidencePath(file))) {
         fail(`${id}.${key} trỏ tới bằng chứng không tồn tại: ${file}`);
       }
@@ -270,12 +289,14 @@ for (const state of REQUIRED_UI_STATES) {
 
 // Phạm vi regression backend phải tồn tại và đủ 5 vùng.
 const scopePath = join(
-  repoRoot,
-  "HoaNam_BE",
-  "WMS_Warehouse_Hoa_Nam_BE",
+  beRoot,
   "docs/evidence/WWHN-268/BE_REGRESSION_SCOPE.json",
 );
-if (!existsSync(scopePath)) {
+if (!beRepoAvailable) {
+  skippedCrossRepo.push(
+    "HoaNam_BE/docs/evidence/WWHN-268/BE_REGRESSION_SCOPE.json",
+  );
+} else if (!existsSync(scopePath)) {
   fail(
     "thiếu BE_REGRESSION_SCOPE.json — phạm vi regression backend không kiểm chứng được",
   );
@@ -290,6 +311,12 @@ if (!existsSync(scopePath)) {
   } catch (error) {
     fail(`BE_REGRESSION_SCOPE.json không hợp lệ: ${error.message}`);
   }
+}
+
+if (skippedCrossRepo.length > 0) {
+  console.log(
+    `[WWHN-268] NOTE: repo BE không có mặt ở lượt chạy này nên ${new Set(skippedCrossRepo).size} tham chiếu chéo chưa kiểm tại đây; cổng WWHN-268 BE regression closure chịu trách nhiệm phần đó.`,
+  );
 }
 
 if (failures > 0) {

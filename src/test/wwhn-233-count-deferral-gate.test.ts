@@ -80,7 +80,7 @@ describe("WWHN-233 — count/recount stays out of the FE runtime surface", () =>
     const endpoints = await import("@/shared/api/endpoints");
 
     const routeValues = Object.values(ROUTES).filter(
-      (value): value is string => typeof value === "string",
+      (value) => typeof value === "string",
     );
     for (const fragment of ALL_FORBIDDEN) {
       expect(

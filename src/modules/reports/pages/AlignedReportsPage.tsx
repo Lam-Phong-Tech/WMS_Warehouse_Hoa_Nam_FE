@@ -404,7 +404,8 @@ function columnsFor(report: ReportKey): TableColumnsType<Raw> {
               title: "Gross",
               dataIndex: "issue_gross",
               align: "right",
-              render: (_: unknown, row: Raw) => fmt(row.issue_gross ?? row.issue),
+              render: (_: unknown, row: Raw) =>
+                fmt(row.issue_gross ?? row.issue),
             },
             {
               title: "Đã đảo",
@@ -1465,7 +1466,9 @@ export default function AlignedReportsPage() {
           showIcon
           style={{ marginBottom: 12 }}
           title={`Số liệu đã giới hạn theo phạm vi kho của tài khoản (${
-            query.data.scope_warehouse_ids?.length ?? 0
+            Array.isArray(query.data.scope_warehouse_ids)
+              ? query.data.scope_warehouse_ids.length
+              : 0
           } kho). Đây không phải tổng toàn hệ thống; file export dùng đúng phạm vi này.`}
         />
       ) : null}
