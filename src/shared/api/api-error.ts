@@ -198,11 +198,49 @@ export function isNoPermissionError(error: unknown): boolean {
       (code === "FORBIDDEN" ||
         code === "PERMISSION_DENIED" ||
         code === "NO_PERMISSION" ||
-        code === "ACCESS_DENIED")
+        code === "ACCESS_DENIED" ||
+        // WWHN-289: §8.2 xếp DATA_SCOPE_DENIED cùng hạng 403 với
+        // PERMISSION_DENIED. Nhánh axios đã bắt theo status===403, nhưng nhánh
+        // ApiEnvelopeError (BE trả lỗi nghiệp vụ kèm HTTP 2xx) thiếu mã này nên
+        // thao tác ngoài data scope hiện ra như lỗi hệ thống chung chung.
+        code === "DATA_SCOPE_DENIED")
     );
   }
 
   return false;
+}
+
+/**
+ * WWHN-289: lỗi 429 RATE_LIMIT_EXCEEDED (khoá brute-force `/auth/login`, nhóm
+ * PV ẩn danh). Dùng để UI hiển thị đúng thông điệp chờ và để query layer KHÔNG
+ * retry trong cửa sổ khoá — mỗi lần gọi lại đều bị đếm và đẩy Retry-After xa thêm.
+ */
+export function isRateLimitedError(error: unknown): boolean {
+  if (isAxiosError(error)) {
+    const err = error as Record<string, unknown>;
+    const response = err.response as Record<string, unknown> | undefined;
+    return err._isRateLimited === true || Number(response?.status) === 429;
+  }
+
+  if (error instanceof ApiEnvelopeError) {
+    return getErrorCode(error.data) === "RATE_LIMIT_EXCEEDED";
+  }
+
+  return false;
+}
+
+/** Số giây phải chờ trước khi thử lại (header `Retry-After`), nếu BE có gửi. */
+export function getRetryAfterSeconds(error: unknown): number | undefined {
+  if (!isAxiosError(error)) return undefined;
+
+  const err = error as Record<string, unknown>;
+  if (typeof err._retryAfterSeconds === "number") return err._retryAfterSeconds;
+
+  const response = err.response as Record<string, unknown> | undefined;
+  const headers = response?.headers as Record<string, unknown> | undefined;
+  const retryAfter = Number(headers?.["retry-after"]);
+
+  return Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter : undefined;
 }
 
 /**

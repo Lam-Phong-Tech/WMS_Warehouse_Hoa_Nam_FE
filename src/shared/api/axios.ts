@@ -20,6 +20,14 @@ declare module "axios" {
     _isNoPermission?: boolean;
     _isValidationError?: boolean;
     _isConflictError?: boolean;
+    /**
+     * WWHN-289: BE nay có rate limit thật (khoá brute-force /auth/login và nhóm
+     * PV ẩn danh — SRS §8.1 bảng Security + Annex C error set 400,404,429,500).
+     * 429 phải được nhận diện riêng để UI/query lùi theo Retry-After thay vì
+     * retry ngay và tự kéo dài cửa sổ khoá.
+     */
+    _isRateLimited?: boolean;
+    _retryAfterSeconds?: number;
   }
   interface InternalAxiosRequestConfig {
     _isRetryAfterRefresh?: boolean;
@@ -171,6 +179,17 @@ api.interceptors.response.use(
 
     if (status === 409) {
       error._isConflictError = true;
+      return Promise.reject(error);
+    }
+
+    // WWHN-289: 429 RATE_LIMIT_EXCEEDED. Không tự retry ở tầng axios — mỗi lần
+    // gọi lại trong cửa sổ khoá đều bị tính và đẩy Retry-After xa thêm.
+    if (status === 429) {
+      error._isRateLimited = true;
+      const retryAfter = Number(error.response?.headers?.["retry-after"]);
+      if (Number.isFinite(retryAfter) && retryAfter > 0) {
+        error._retryAfterSeconds = retryAfter;
+      }
       return Promise.reject(error);
     }
 
