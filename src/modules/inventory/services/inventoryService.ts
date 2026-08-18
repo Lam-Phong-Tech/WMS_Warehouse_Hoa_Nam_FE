@@ -59,6 +59,18 @@ export type InventoryBalanceRow = {
   location: string;
   reconcile: "MATCH" | "MISMATCH" | string;
   reconcileNote: string;
+  /**
+   * WWHN-191: ledger-authoritative total (sum of stock_movements.qty_delta) and the
+   * signed diff against on_hand_qty — the actual "đối soát" evidence behind `reconcile`.
+   * Kept as raw pass-through fields (not yet rendered in InventoryPage's table) so callers
+   * needing the numbers don't have to re-derive them; whether/where to surface them in the
+   * UI is an FE/UX decision pending FE lead confirmation (see WWHN-191 evidence).
+   */
+  ledgerTotal: number;
+  variance: number;
+  reservedQty: number;
+  incidentId: string | null;
+  incidentStatus: string | null;
   updatedAt: string;
   dataAsOf: string;
   lastMovementId: string;
@@ -99,6 +111,8 @@ export type PhysicalCodeTraceResult = {
   physical_code: RawRecord | null;
   resolved_type: string;
   resolved_id: string;
+  /** WWHN-191: BE returns this ("PHYSICAL_CODE" | "ITEM_CODE" | fallback resolver key); was missing from the FE type entirely. */
+  resolved_by: string | null;
   resolved_object: RawRecord | null;
   movements: RawRecord[];
   container_items: RawRecord[];
@@ -225,6 +239,11 @@ function normalizeBalance(row: RawRecord): InventoryBalanceRow {
     location: text(row.location_hint, ""),
     reconcile,
     reconcileNote: mismatchReason,
+    ledgerTotal: num(row.ledger_total),
+    variance: num(row.variance),
+    reservedQty: num(row.reserved_qty),
+    incidentId: row.incident_id === undefined || row.incident_id === null ? null : text(row.incident_id),
+    incidentStatus: row.incident_status === undefined || row.incident_status === null ? null : text(row.incident_status),
     updatedAt: text(row.updated_at ?? row.last_movement_at ?? row.created_at),
     dataAsOf: text(
       row.data_as_of ?? row.snapshot_at ?? row.last_inventory_sync_at,
