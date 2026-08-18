@@ -63,8 +63,15 @@
     "check:api-mapping": "node scripts/check-api-mapping.mjs",
     "wwhn-296:evidence": "node scripts/run-wwhn-296-evidence.mjs",
     "wwhn-296:verify": "node scripts/verify-wwhn-296-closure.mjs",
+    "wwhn-236:verify": "node scripts/verify-wwhn-236-closure.mjs",
+    "wwhn-230:verify": "node scripts/verify-wwhn-230-closure.mjs",
+    "wwhn-233:verify": "node scripts/verify-wwhn-233-closure.mjs",
     "prepare": "husky",
-    "postinstall": "patch-package"
+    "postinstall": "patch-package",
+    "verify:wwhn-242": "node scripts/verify-wwhn-242-closure.mjs",
+    "wwhn-242:evidence": "node scripts/run-wwhn-242-evidence.mjs",
+    "test:e2e:wwhn-242": "playwright test e2e/wwhn-242-reversal-qa2.spec.ts --project=chromium",
+    "wwhn-237:verify": "node scripts/verify-wwhn-237-closure.mjs"
   },
   "resolutions": {
     "nanoid": "^3.3.18",

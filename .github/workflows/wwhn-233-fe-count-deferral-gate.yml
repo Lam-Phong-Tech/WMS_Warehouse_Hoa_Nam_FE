@@ -1,0 +1,55 @@
+name: WWHN-233 FE count/recount deferral gate
+
+# Nửa FE của DISP-STK-233. Nửa BE là .github/workflows/wwhn-233-count-deferral-gate.yml
+# trong repo backend.
+#
+# Ba thứ gate này khoá mà check:api-mapping và wwhn-296:verify không khoá:
+#   1. ANTI-DANGLING — mọi gate FE mà disposition cam kết phải là file có thật.
+#   2. PIN ROT — digest ghi trong governance register phải khớp file trên đĩa.
+#      wwhn-296:verify cố ý hạ corroborating drift xuống note, nên digest ERD đã stale
+#      không ai biết (DEV233-P1-03).
+#   3. Bề mặt count/recount/partial/stale ở FE bằng zero.
+
+on:
+  push:
+    branches: [m1]
+  pull_request:
+    branches: [m1]
+  workflow_dispatch:
+
+jobs:
+  fe-count-deferral-gate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Disposition + pin-rot + FE surface gate
+        run: npm run wwhn-233:verify
+
+      - name: Guard test
+        run: npx vitest run src/test/wwhn-233-count-deferral-gate.test.ts
+
+      - name: Record exact FE identity
+        if: always()
+        run: |
+          mkdir -p docs/evidence/WWHN-233
+          printf '{\n  "fe_commit_sha": "%s",\n  "workflow_run_id": "%s",\n  "verified_at": "%s"\n}\n' \
+            "${GITHUB_SHA}" "${GITHUB_RUN_ID}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            > docs/evidence/WWHN-233/FE_IDENTITY_PIN.json
+          cat docs/evidence/WWHN-233/FE_IDENTITY_PIN.json
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: wwhn-233-fe-evidence-${{ github.sha }}
+          path: docs/evidence/WWHN-233
+          if-no-files-found: error
