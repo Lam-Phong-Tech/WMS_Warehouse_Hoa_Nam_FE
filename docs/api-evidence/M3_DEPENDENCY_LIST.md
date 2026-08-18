@@ -1,33 +1,49 @@
 # M3 Dependency List
 
-Updated: 2026-08-01 ICT  
-Scope: late-core and high-risk workflow dependencies for `WWHN-148`.
+Updated: 2026-08-18 ICT  
+Scope: late-core and high-risk workflow dependencies reconciled against the current `m1` MVP baseline for `WWHN-296`.
 
 ## Contract-Ready Rows
 
 | Screen | FE service/source | UI action | Method | Path | Contract disposition |
 | --- | --- | --- | --- | --- | --- |
-| Inventory (WWHN-211) | src/modules/inventory/services/inventoryService.ts | List inventory balances | GET | `/inventory/balances` | Present in local Swagger snapshot (tag "07. Inventory"); FE `fetchInventoryBalances`, covered by `inventoryService.test.ts`. |
-| Inventory (WWHN-211) | src/modules/inventory/services/inventoryService.ts | Load balance item/container subledger | GET | `/inventory/balances/{id}/subledger` | Present in local Swagger snapshot; FE `fetchBalanceSubledger`, covered by `inventoryService.test.ts` and `BalanceDetailModal.test.tsx`. |
-| Stock movements | src/modules/inventory/services/inventoryService.ts | List stock movements | GET | `/stock-movements` | Present in local Swagger snapshot; FE `fetchStockMovements`, covered by `inventoryService.test.ts`. |
-| Stock movements | src/modules/inventory/services/inventoryService.ts | Load movement detail | GET | `/stock-movements/{id}` | Present in local Swagger snapshot. |
-| Stock movements | src/modules/inventory/services/inventoryService.ts | Trace source document | GET | `/stock-movements/{id}/trace-source` | Present in local Swagger snapshot. |
-| Inventory trace (WWHN-211) | src/modules/inventory/services/inventoryService.ts | Trace by physical code (item/container/SKU) | GET | `/stock-movements/trace-by-code` | Present in local Swagger snapshot (tag "07. Inventory", permission `inventory.trace`); resolves `resolved_type` ITEM/CONTAINER/SKU per BE `StockMovementController::traceByPhysicalCode` — not a SKU-only approximation. FE `traceByPhysicalCode`, covered by `inventoryService.test.ts` and `TraceModal.test.tsx`. |
-| Reports | src/shared/api/endpoints.ts (`REPORTS_XNT`) | Load inventory XNT | GET | `/reports/inventory-xnt` | Present in local Swagger snapshot. Hằng số vẫn giữ; màn hình báo cáo đang chạy (`AlignedReportsPage.tsx`) dùng biến thể `/reports/inventory-xnt-enhanced` theo §13.10. |
-| Reports | src/shared/api/endpoints.ts (`REPORTS_XNT_EXPORT_EXCEL`) | Export inventory XNT | GET | `/reports/inventory-xnt/export-excel` | Present in local Swagger snapshot. Tương tự trên: đường export đang dùng là `/reports/inventory-xnt-enhanced/export-excel`. |
+| Inventory (WWHN-211) | src/modules/inventory/services/inventoryService.ts | List inventory balances | GET | `/inventory/balances` | Present in current BE `m1`; protected by `inventory.view` + warehouse data scope. |
+| Inventory (WWHN-211) | src/modules/inventory/services/inventoryService.ts | Load balance item/container subledger | GET | `/inventory/balances/{id}/subledger` | Present in current BE `m1`; same permission/data-scope boundary. |
+| Stock movements | src/modules/inventory/services/inventoryService.ts | List stock movements | GET | `/stock-movements` | Present in current BE `m1`. |
+| Stock movements | src/modules/inventory/services/inventoryService.ts | Load movement detail | GET | `/stock-movements/{id}` | Present in current BE `m1`. |
+| Stock movements | src/modules/inventory/services/inventoryService.ts | Trace source document | GET | `/stock-movements/{id}/trace-source` | Present in current BE `m1`; protected by `inventory.trace` + warehouse scope. |
+| Inventory trace (WWHN-211) | src/modules/inventory/services/inventoryService.ts | Trace by physical code (item/container/SKU) | GET | `/stock-movements/trace-by-code` | Present in current BE `m1`; resolves ITEM/CONTAINER/SKU and enforces `inventory.trace`. |
+| Reports | src/shared/api/endpoints.ts (`REPORTS_XNT`) | Load inventory XNT | GET | `/reports/inventory-xnt` | Present in current BE `m1`; active enhanced screen may use `/reports/inventory-xnt-enhanced`. |
+| Reports | src/shared/api/endpoints.ts (`REPORTS_XNT_EXPORT_EXCEL`) | Export inventory XNT | GET | `/reports/inventory-xnt/export-excel` | Present in current BE `m1`; export requires `report.export`. |
+| Reports hub | src/shared/api/endpoints.ts (`REPORTS_HUB`) | Load report hub | GET | `/reports/hub` | Present in current BE `m1`; no longer a missing-contract item. |
+| Warranty defects report | src/modules/reports/pages/AlignedReportsPage.tsx | Warranty defect report | GET | `/reports/warranty-defects` | Present in current BE `m1`; read uses `report.view`, export uses `report.export`. |
+| Reversal documents | src/modules/reverse/services/reversalService.ts | List/create reversal | GET | `/reversal-documents` | Present in current BE `m1`; correction after Post is append-only reversal, not direct stock edit. |
+| Reversal lines | src/modules/reverse/services/reversalService.ts | Read reversal lines | GET | `/reversal-documents/{id}/lines` | Present in current BE `m1`. |
+| Warranty cases | src/modules/warranty/services/warrantyService.ts | List warranty cases | GET | `/warranty-cases` | Present in current BE `m1`; canonical path is `/warranty-cases`, not legacy `/warranty/cases`. |
+| Warranty events | src/modules/warranty/services/warrantyService.ts | Case timeline | GET | `/warranty-cases/{id}/events` | Present in current BE `m1`. |
+| Warranty status | src/modules/warranty/services/warrantyService.ts | Transition/update case status | POST | `/warranty-cases/{id}/status` | Present in current BE `m1`; mutation remains permission guarded. |
 
-## Known Mismatch / High-Risk Workflow Dependencies
+## Removed-from-MVP boundary: Stocktake
 
-| Area | FE source | Endpoint constant or behavior | Owner | Disposition |
-| --- | --- | --- | --- | --- |
-| Stocktake sessions | src/modules/stocktake/services/stocktakeService.ts | stocktake sessions endpoint uses `/stocktake/sessions` | BE1/BA | Not present in local Swagger snapshot; FE list/state exists but final pass needs contract. |
-| Stocktake count | src/modules/stocktake/services/stocktakeService.ts | stocktake count endpoint uses `/stocktake/sessions/:sessionId/count` | BE1/BA | Not present in local Swagger snapshot; payload, validation, and sample 422 required. |
-| Stocktake apply adjustment | src/modules/stocktake/services/stocktakeService.ts | stocktake apply adjustment endpoint uses `/stocktake/sessions/:sessionId/apply-adjustment` | BE1/BA | Not present in local Swagger snapshot; risky mutation requires confirm, idempotency, 409/422 samples. |
-| Stocktake variance | src/modules/stocktake/services/stocktakeService.ts | Uses `/stocktake/sessions/{sessionId}/variance` inline | BE1/BA | Not present in local Swagger snapshot; should become a shared endpoint constant when contract is locked. |
-| Warranty cases | src/modules/warranty/services/warrantyService.ts | warranty cases endpoint uses `/warranty/cases` | BE1/BA | Not present in local Swagger snapshot; status enum and PII/export rules remain conditional. |
-| Warranty events | src/modules/warranty/services/warrantyService.ts | warranty case events endpoint uses `/warranty/cases/:caseId/events` | BE1/BA | Not present in local Swagger snapshot; needs sample timeline response. |
-| Warranty status | src/modules/warranty/services/warrantyService.ts | warranty update status endpoint uses `/warranty/cases/:id/status` | BE1/BA | Not present in local Swagger snapshot; risky status transition needs final status catalog. |
-| Reversal documents | src/modules/reverse/services/reversalService.ts | reversal documents endpoint uses `/reversal-documents` | BE1/BA | Not present in local Swagger snapshot; reversible quantity/conflict/audit response needed. |
-| Reversal lines | src/modules/reverse/services/reversalService.ts | Uses `/reversal-documents/{id}/lines` inline | BE1/BA | Not present in local Swagger snapshot; should become a shared endpoint constant when contract is locked. |
-| Reports hub | src/shared/api/endpoints.ts (`REPORTS_HUB`) | reports hub endpoint uses `/reports/hub` | BE1/BA | Hằng số còn khai báo nhưng chưa màn hình nào tiêu thụ sau khi gộp về `AlignedReportsPage.tsx`; route BE `GET reports/hub` (permission `report.view`) đã có. |
-| Warranty defects report | src/modules/reports/pages/AlignedReportsPage.tsx | warranty defects report endpoint uses `/reports/warranty-defects` | BE1/BA | Đã nối: trang báo cáo gọi `REPORTS_WARRANTY_DEFECTS` + bản export, guard `EXPORT_REPORT` phía FE và `report.export` phía BE. |
+REQ-SRS-037 / `DEC-NO-STOCKTAKE-001` is the active MVP disposition: there is **no Stocktake Session,
+Snapshot, Count, Variance Adjustment, `stocktake.*` permission or direct stock-edit route** in the
+current FE/BE runtime surface. Historical dependency rows for `/stocktake*` are therefore removed
+from this current-runtime register rather than kept as fake pending endpoints. Any reintroduction
+requires an approved Change Request and synchronized FE/BE/OpenAPI/permission/test updates.
+
+## High-risk rules retained
+
+- Inbound/Outbound posting is full-document only; no partial posting.
+- Stock changes occur only at approved posting/reversal boundaries.
+- Reversal is append-only correction; no generic inventory UPDATE/DELETE path.
+- Warranty intake/updates and component issue remain permission-guarded and stock-neutral until the
+  explicit component Post operation.
+- Report export remains a separate permission from report view.
+- FE route/action guards are defense-in-depth; direct API 403/data-scope authority remains BE-owned.
+
+## External evidence boundary
+
+This file proves source-level alignment only. WWHN-296 cannot self-sign production domain/SSL,
+actual PROD `VITE_API_BASE_URL`, CORS origin allow-list, cookie attributes, deployment cache policy,
+rollback execution, or QA1 runtime results. Those require WWHN-294/WWHN-295/WWHN-297 evidence on the
+same build/environment identity.
