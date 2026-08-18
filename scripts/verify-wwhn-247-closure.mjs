@@ -236,15 +236,33 @@ requireText(src.detail, "loading={eventsQuery.isLoading}", feFiles.detail);
 // ─────────────────────────────────────────────────────────────
 // 5. Mojibake · nguồn tiếng Việt phải còn nguyên UTF-8
 // ─────────────────────────────────────────────────────────────
-const MOJIBAKE = ["�", "Ã¡", "Ã ", "áº", "Ä‘", "â€", "Æ°", "Ãª", "Ã´"];
+/**
+ * Mojibake = byte UTF-8 bị đọc như Latin-1/CP1252.
+ *
+ * KHÔNG được quét bằng danh sách chuỗi thô. Hai cái bẫy đã gặp:
+ *  - "Ã " là tiếng Việt viết hoa hợp lệ ("ĐÃ được") — marker thô báo đỏ nhầm.
+ *  - "á»" xuất hiện hợp lệ trong "«giá»" — nên nhánh chữ có dấu phải đòi ĐỦ 3 ký tự
+ *    (mojibake của một chữ Việt luôn là 3 byte), thay vì 2.
+ * Báo đỏ nhầm nguy hiểm hơn bỏ sót: người sửa sẽ gỡ luôn assertion.
+ */
+const MOJIBAKE_PATTERN = new RegExp(
+  [
+    "\\uFFFD", // ký tự thay thế — luôn sai
+    "\\u00E2\\u20AC", // "â€" mở đầu mọi mojibake dấu nháy/gạch ngang
+    "\\u00C4\\u2018", // "Ä‘"  = đ
+    "\\u00C6[\\u00A1\\u00B0]", // "Æ¡" / "Æ°" = ơ / ư
+    "[\\u00C3\\u00C2][\\u0080-\\u00BF]", // "Ã?" / "Â?"
+    "\\u00E1[\\u0080-\\u00BF]{2}", // "áº¡" / "á»‹" ...
+  ].join("|"),
+);
 for (const [key, path] of Object.entries(feFiles)) {
-  if (path.endsWith(".json") || path === feFiles.packageJson) continue;
-  for (const marker of MOJIBAKE) {
-    refuseText(
-      src[key],
-      marker,
-      path,
-      "mojibake — file phải được lưu UTF-8 không BOM",
+  if (path === feFiles.packageJson) continue;
+  const hit = src[key].match(MOJIBAKE_PATTERN);
+  if (hit) {
+    const at = src[key].slice(Math.max(0, hit.index - 40), hit.index + 40);
+    fail(
+      `${path}: mojibake tại vị trí ${hit.index} (${JSON.stringify(hit[0])}) — ` +
+        `file phải được lưu UTF-8 không BOM. Ngữ cảnh: ${JSON.stringify(at)}`,
     );
   }
 }
