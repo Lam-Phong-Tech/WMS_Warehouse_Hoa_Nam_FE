@@ -66,6 +66,7 @@ const CASES = [
     created_by: "thukho",
     case_age_days: 3,
     version: 1,
+    pii_masked: false,
   },
   {
     id: "wc-2",
@@ -85,6 +86,7 @@ const CASES = [
     created_by: "thukho",
     case_age_days: 1,
     version: 2,
+    pii_masked: false,
   },
 ];
 

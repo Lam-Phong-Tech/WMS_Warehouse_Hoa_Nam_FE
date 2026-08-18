@@ -41,7 +41,10 @@ import { useCanAny } from "@/shared/components/permission";
 import { useMvpDefects } from "@/modules/master-data/hooks/use-mvp-master";
 import {
   WARRANTY_ATTACHMENT_TYPE_LABELS,
+  WARRANTY_DIAGNOSIS_REQUIRED_TARGETS,
   WARRANTY_NEXT_STATUS,
+  WARRANTY_NOTE_REQUIRED_LABELS,
+  warrantyPiiText,
   WARRANTY_STATUS_COLORS,
   WARRANTY_STATUS_LABELS,
   WARRANTY_TERMINAL_STATUSES,
@@ -156,6 +159,17 @@ export function WarrantyDetailModal({
     ? (WARRANTY_NEXT_STATUS[detail.status] ?? [])
     : [];
   const caseActive = detail ? !isTerminal : false;
+  // DEC-WAR-STATE-001: chan tai form thay vi de BE tra 422 sau moi lan submit.
+  const diagnosisRequired = Boolean(
+    detail &&
+    detail.status === "CHECKING" &&
+    statusValue &&
+    WARRANTY_DIAGNOSIS_REQUIRED_TARGETS.includes(statusValue) &&
+    !detail.confirmed_defect?.trim(),
+  );
+  const noteRequiredLabel = statusValue
+    ? WARRANTY_NOTE_REQUIRED_LABELS[statusValue]
+    : undefined;
 
   const submitStatus = async () => {
     if (!detail) return;
@@ -509,14 +523,20 @@ export function WarrantyDetailModal({
             size="small"
             column={{ xs: 1, md: 2 }}
           >
+            {/* §13.8: mask lại ở tầng render — không tin payload đã mask sẵn. */}
             <Descriptions.Item label="Khách gửi">
-              {detail.customer_name}
+              {warrantyPiiText(detail.customer_name, canViewPii, "name") || "—"}
             </Descriptions.Item>
             <Descriptions.Item label="SĐT">
-              {detail.customer_phone ?? "—"}
+              {warrantyPiiText(detail.customer_phone, canViewPii, "phone") ||
+                "—"}
             </Descriptions.Item>
             <Descriptions.Item label="Địa chỉ">
-              {detail.customer_address ?? "—"}
+              {warrantyPiiText(
+                detail.customer_address,
+                canViewPii,
+                "address",
+              ) || "—"}
             </Descriptions.Item>
             <Descriptions.Item label="Ngày mua">
               {detail.purchase_date ?? "—"}
@@ -799,7 +819,22 @@ export function WarrantyDetailModal({
           </Form.Item>
           <Form.Item
             name="confirmed_defect"
-            label="Kết quả kiểm tra / bệnh xác nhận"
+            label={
+              diagnosisRequired
+                ? "Kết quả kiểm tra / bệnh xác nhận (bắt buộc)"
+                : "Kết quả kiểm tra / bệnh xác nhận"
+            }
+            rules={
+              diagnosisRequired
+                ? [
+                    {
+                      required: true,
+                      message:
+                        "Phải ghi kết quả kiểm tra trước khi rời trạng thái CHECKING.",
+                    },
+                  ]
+                : undefined
+            }
           >
             <Input.TextArea rows={2} maxLength={2000} showCount />
           </Form.Item>
@@ -814,7 +849,15 @@ export function WarrantyDetailModal({
               <Input.TextArea rows={2} maxLength={1000} showCount />
             </Form.Item>
           ) : null}
-          <Form.Item name="reason" label="Ghi chú xử lý (hiện trên timeline)">
+          <Form.Item
+            name="reason"
+            label={noteRequiredLabel ?? "Ghi chú xử lý (hiện trên timeline)"}
+            rules={
+              noteRequiredLabel
+                ? [{ required: true, message: noteRequiredLabel }]
+                : undefined
+            }
+          >
             <Input.TextArea rows={2} maxLength={2000} showCount />
           </Form.Item>
         </Form>

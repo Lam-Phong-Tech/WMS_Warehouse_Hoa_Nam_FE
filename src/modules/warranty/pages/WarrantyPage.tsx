@@ -11,6 +11,10 @@ import {
 } from "@ant-design/icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
+import {
+  TableLoadingBanner,
+  tableEmptyText,
+} from "@/shared/components/feedback/BusinessState";
 import { CameraScanModal } from "@/shared/components/forms/CameraScanModal";
 import { MvpPageSizeSelector } from "@/shared/components/mvp/MvpListPagination";
 import { resolveApiPagination } from "@/shared/components/mvp/mvp-pagination";
@@ -21,6 +25,7 @@ import {
   WARRANTY_STATUS_COLORS,
   WARRANTY_STATUS_LABELS,
   formatWarrantyDateTime,
+  warrantyPiiText,
 } from "@/modules/warranty/constants";
 import {
   useWarrantyCases,
@@ -181,9 +186,12 @@ export default function WarrantyPage() {
       width: 190,
       render: (_, row) => (
         <Space orientation="vertical" size={0}>
-          <Typography.Text>{row.customer_name}</Typography.Text>
+          {/* §13.8: mask lại ở tầng render — không tin payload đã mask sẵn. */}
+          <Typography.Text>
+            {warrantyPiiText(row.customer_name, canViewPii, "name") || "—"}
+          </Typography.Text>
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            {row.customer_phone ?? "—"}
+            {warrantyPiiText(row.customer_phone, canViewPii, "phone") || "—"}
           </Typography.Text>
         </Space>
       ),
@@ -382,6 +390,9 @@ export default function WarrantyPage() {
         }}
       />
 
+      <TableLoadingBanner
+        loading={listQuery.isLoading || listQuery.isFetching}
+      />
       <Table<WarrantyCase>
         rowKey="id"
         columns={columns}
@@ -396,9 +407,10 @@ export default function WarrantyPage() {
           showTotal: (count) => `Tổng ${count} case bảo hành`,
         }}
         locale={{
-          emptyText: listQuery.isError
-            ? "Không tải được dữ liệu"
-            : "Không có case bảo hành theo bộ lọc hiện tại",
+          emptyText: tableEmptyText(
+            listQuery.isError ? listQuery.error : null,
+            "Không có case bảo hành theo bộ lọc hiện tại",
+          ),
         }}
         onRow={(row) => ({ onDoubleClick: () => setDetailId(row.id) })}
         scroll={{ x: 1350 }}
