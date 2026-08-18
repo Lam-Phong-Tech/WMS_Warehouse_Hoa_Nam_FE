@@ -1,0 +1,130 @@
+name: WWHN-274 FE Release Sign-off
+
+on:
+  push:
+    branches: [m1]
+    paths:
+      - 'src/**'
+      - 'e2e/**'
+      - 'scripts/**'
+      - 'docs/**'
+      - '.env.example'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'vite.config.*'
+      - 'playwright.config.*'
+      - '.github/workflows/wwhn-274-fe-release-signoff.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fe-release-signoff:
+    name: Exact-SHA build/config/UI smoke
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      CI: 'true'
+      SOURCE_SHA: ${{ github.sha }}
+      VITE_APP_ENV: ci-controlled
+      VITE_APP_VERSION: wwhn-274-${{ github.sha }}
+      VITE_API_BASE_URL: http://127.0.0.1:5173/api/v1
+      VITE_API_WITH_CREDENTIALS: 'true'
+      VITE_HEALTH_PATH: /health
+      WWHN_274_EVIDENCE_DIR: test-results/wwhn-274/${{ github.sha }}
+
+    steps:
+      - name: Checkout exact m1 SHA
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Verify WWHN-274 source contract
+        run: node scripts/verify-wwhn-274-closure.mjs
+
+      - name: Format gate
+        run: npm run format:check
+
+      - name: Lint gate
+        run: npm run lint
+
+      - name: Typecheck gate
+        run: npm run typecheck
+
+      - name: Unit test gate
+        run: npm run test
+
+      - name: Environment contract gate
+        run: npm run env:verify
+
+      - name: API mapping gate
+        run: npm run check:api-mapping
+
+      - name: Production build
+        run: npm run build
+
+      - name: Built frontend health contract
+        run: npm run health:check
+
+      - name: WWHN-274 controlled responsive/RBAC/UI smoke
+        run: npx playwright test e2e/wwhn-274-release-signoff.spec.ts --project=chromium
+
+      - name: Write exact-SHA release sign-off manifest
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p "$WWHN_274_EVIDENCE_DIR"
+          node <<'NODE'
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const root = process.env.WWHN_274_EVIDENCE_DIR;
+          const payload = {
+            ticket: 'WWHN-274',
+            parent: 'WWHN-72',
+            parentTempKey: 'HN-DEVOPS-003',
+            evidenceClass: 'FE_CONTROLLED_NOT_QA_UAT',
+            sourceSha: process.env.GITHUB_SHA,
+            ref: process.env.GITHUB_REF,
+            environment: process.env.VITE_APP_ENV,
+            buildVersion: process.env.VITE_APP_VERSION,
+            apiBaseUrl: process.env.VITE_API_BASE_URL,
+            healthPath: process.env.VITE_HEALTH_PATH,
+            generatedAt: new Date().toISOString(),
+            truthBoundary: 'FE source-controlled build/config/UI smoke only; independent QA1, backend security and DevOps deploy/backup/rollback evidence remain role-owned.',
+          };
+          fs.writeFileSync(path.join(root, 'release-signoff.json'), `${JSON.stringify(payload, null, 2)}\n`);
+          NODE
+
+      - name: Upload WWHN-274 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wwhn-274-fe-release-signoff-${{ github.sha }}
+          path: |
+            test-results/wwhn-274/${{ github.sha }}/
+            playwright-report/
+            dist/build-manifest.json
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Release truth-boundary summary
+        if: always()
+        run: |
+          echo '### WWHN-274 FE release sign-off' >> "$GITHUB_STEP_SUMMARY"
+          echo "- Exact SHA: \`$GITHUB_SHA\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- API base: \`$VITE_API_BASE_URL\`" >> "$GITHUB_STEP_SUMMARY"
+          echo '- Coverage: build/config, shared UI states, responsive 1440x900/768x1024/375x812, permission menu + direct URL 403, controlled API 422/retry.' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Boundary: this workflow is FE-controlled evidence, not independent QA1/UAT or DevOps deploy/backup/rollback evidence.' >> "$GITHUB_STEP_SUMMARY"
