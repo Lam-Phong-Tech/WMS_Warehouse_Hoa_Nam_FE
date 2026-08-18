@@ -19,12 +19,16 @@ const PINNED = Object.freeze({
     "0f4dcd23ceb84e39799fae5cb3f112932e6260a34ccff63b1ab7c623c839cb36",
 });
 
+// This list represents current FE evidence sources. Historical Stocktake sources
+// are intentionally absent after REQ-SRS-037 / DEC-NO-STOCKTAKE-001 removed that
+// capability from MVP; correction evidence now comes from append-only Reversal.
 const sourceFiles = [
   ".github/workflows/ci.yml",
   ".github/workflows/wwhn-181-signoff.yml",
   "package.json",
   "docs/Task_docs_Jira/WWHN-181.md",
   "docs/api-evidence/WMS_FE_CONTRACT_BASELINE.json",
+  "docs/api-evidence/M1_API_MAPPING.md",
   "docs/evidence/WWHN-181/FINAL_GATE_EVIDENCE.template.json",
   "docs/evidence/WWHN-181/RUNTIME_EVIDENCE_CHECKLIST.md",
   "scripts/run-wwhn-153-runtime-evidence.mjs",
@@ -36,8 +40,7 @@ const sourceFiles = [
   "src/modules/receiving/types/index.ts",
   "src/modules/shipping/services/shippingService.ts",
   "src/modules/shipping/types/index.ts",
-  "src/modules/stocktake/services/stocktakeService.ts",
-  "src/modules/stocktake/types/index.ts",
+  "src/modules/reverse/services/reversalService.ts",
   "src/modules/warranty/services/warrantyService.ts",
   "src/shared/api/endpoints.ts",
   "src/shared/api/http.ts",
@@ -53,7 +56,9 @@ function sha256(buffer) {
 
 function exactSha(value, label) {
   if (!/^[a-f0-9]{40}$/.test(value ?? "")) {
-    throw new Error(`${label} must be an exact 40-hex commit SHA, received: ${value}`);
+    throw new Error(
+      `${label} must be an exact 40-hex commit SHA, received: ${value}`,
+    );
   }
   return value;
 }
@@ -114,7 +119,7 @@ const runUrl =
 const artifactName = `wwhn-181-exact-sha-evidence-${feSha}`;
 
 const manifestCore = {
-  schema_version: "2.1.0",
+  schema_version: "2.2.0",
   task: PINNED.task,
   disposition: "BLOCKED_FAIL_CLOSED",
   identity: {
@@ -166,9 +171,9 @@ const manifestCore = {
     outbound_scan_canonical_line_payload: true,
     inbound_atomic_post_body_removed: true,
     outbound_atomic_post_body_removed: true,
-    posting_if_match_removed: true,
-    stocktake_full_approved_variance_set: true,
-    stocktake_session_version_body_cas: true,
+    posting_if_match_policy_preserved: true,
+    stocktake_removed_from_mvp: true,
+    reversal_only_correction_model: true,
     warranty_legacy_mutations_fail_closed: true,
     backend_authority_preserved: true,
   },
