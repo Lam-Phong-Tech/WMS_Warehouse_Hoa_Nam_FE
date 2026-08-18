@@ -3,17 +3,6 @@ name: WWHN-274 FE Release Sign-off
 on:
   push:
     branches: [m1]
-    paths:
-      - 'src/**'
-      - 'e2e/**'
-      - 'scripts/**'
-      - 'docs/**'
-      - '.env.example'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'vite.config.*'
-      - 'playwright.config.*'
-      - '.github/workflows/wwhn-274-fe-release-signoff.yml'
   workflow_dispatch:
 
 permissions:
