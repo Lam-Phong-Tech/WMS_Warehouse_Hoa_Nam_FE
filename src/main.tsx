@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import App from "./App";
 import { AppProviders } from "./app/providers/AppProviders";
 import { bootstrapAuth } from "./app/bootstrap-auth";
+import { registerPwa } from "./shared/pwa/register-pwa";
 import "./index.css";
 import "./styles/hoa-nam-wireframe.css";
 import "./styles/hoa-nam-ant-overrides.css";
@@ -17,6 +18,7 @@ import "./styles/hn-wms-source-screen.css";
 // `isBootstrapped` chỉ bật sau khi rehydrate + thử refresh xong (kể cả lỗi) —
 // ProtectedRoute chờ cờ này trước khi quyết định redirect /login.
 void bootstrapAuth();
+void registerPwa();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

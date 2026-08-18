@@ -1,5 +1,5 @@
-import axios from "axios";
-import type { AxiosError, InternalAxiosRequestConfig } from "axios";
+import axios, { AxiosError } from "axios";
+import type { InternalAxiosRequestConfig } from "axios";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { memoryStorage } from "@/shared/lib/memory-storage";
 import { ROUTES } from "@/shared/constants/routes";
@@ -9,6 +9,11 @@ import {
 } from "@/shared/types/api-response";
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { runtimeConfig } from "@/shared/config/env";
+import {
+  isOfflineMutationBlocked,
+  OFFLINE_MUTATION_CODE,
+  OFFLINE_MUTATION_MESSAGE,
+} from "@/shared/pwa/offline-policy";
 
 declare module "axios" {
   interface AxiosError {
@@ -84,6 +89,19 @@ function redirectToLogin() {
 }
 
 api.interceptors.request.use((config) => {
+  // WWHN-325 fail-safe: never queue or optimistically execute mutations while
+  // the browser is offline. This covers stock-changing and other private API
+  // writes without relying on individual screens to remember an offline guard.
+  if (isOfflineMutationBlocked(config.method)) {
+    return Promise.reject(
+      new AxiosError(
+        OFFLINE_MUTATION_MESSAGE,
+        OFFLINE_MUTATION_CODE,
+        config,
+      ),
+    );
+  }
+
   const token = memoryStorage.getToken();
   if (token) config.headers.Authorization = `Bearer ${token}`;
 

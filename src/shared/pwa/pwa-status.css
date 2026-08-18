@@ -1,0 +1,54 @@
+.wms-pwa-status {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 2200;
+  display: flex;
+  max-width: min(560px, calc(100vw - 32px));
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  border-radius: 8px;
+  background: #ffffff;
+  color: #1f1f1f;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.16);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.wms-pwa-status--offline {
+  border-color: #d48806;
+}
+
+.wms-pwa-status--update {
+  border-color: #1f6f43;
+}
+
+.wms-pwa-status button {
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 6px;
+  padding: 6px 10px;
+  background: #1f6f43;
+  color: #ffffff;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+}
+
+.wms-pwa-status button:focus-visible {
+  outline: 2px solid #1677ff;
+  outline-offset: 2px;
+}
+
+@media (max-width: 575px) {
+  .wms-pwa-status {
+    right: 10px;
+    bottom: 10px;
+    left: 10px;
+    max-width: none;
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
