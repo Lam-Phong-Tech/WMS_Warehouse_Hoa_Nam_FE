@@ -113,6 +113,6 @@
       "branch": "m1",
       "commit": "2e0515f26b622a5844f4973a3a8233bc7076541a"
     },
-    "note": "Commit ung vien cua WWHN-268 tren m1. Cay lam viec dung chung voi mot phien khac dang sua do, nen commit nay duoc dung stage chon loc: no chi chua noi dung cua WWHN-268. Chay lai cong CI tren dung hai SHA nay de sinh bang chung exact-SHA."
+    "note": "Phan MA cua WWHN-268 chot tai commit FE nay (typecheck PASS tren checkout sach). Phan tai lieu/workflow cua WWHN-268 nam o cac commit ngay sau tren m1 co tieu de chua WWHN-268; SHA cong bo ra ngoai phai doc tu lan chay CI xanh cua workflow WWHN-268 FE defect closure chu khong hard-code lai o day. Cay lam viec dung chung voi mot phien khac, nen cac commit nay duoc dung stage chon loc: chung chi chua noi dung cua WWHN-268."
   }
 }
