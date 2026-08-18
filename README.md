@@ -40,13 +40,13 @@ cp .env.example .env
 | Biến | Mô tả | Mặc định/tham chiếu |
 | --- | --- | --- |
 | `VITE_APP_ENV` | Môi trường (`local`, `dev`, `uat`, `prod`, `test`) | `local` |
-| `VITE_API_BASE_URL` | URL cơ sở API | `http://localhost:8000/api/v1` |
+| `VITE_API_BASE_URL` | URL cơ sở API | `http://localhost:8080/api/v1` |
 | `VITE_API_TIMEOUT_MS` | Timeout API (ms) | `10000` |
-| `VITE_API_WITH_CREDENTIALS` | Gửi credentials với request | `false` |
+| `VITE_API_WITH_CREDENTIALS` | Gửi credential/cookie cho refresh-session | `true` (bắt buộc; runtime luôn enforce) |
 | `VITE_STORAGE_URL` | URL storage (tùy chọn) | - |
-| `VITE_API_HEALTH_PATH` | Health path | `/health` |
+| `VITE_API_HEALTH_PATH` | Health path tương đối so với `/api/v1` | `/health` → `/api/v1/health` |
 
-Không commit secret/credential vào repository hoặc tài liệu handover.
+Không commit secret/credential vào repository hoặc tài liệu handover. DEV/UAT/PROD phải inject `VITE_API_BASE_URL` và các origin/cookie policy tương ứng qua pipeline/deployment; không hard-code domain production trong source FE.
 
 ### Chạy phát triển
 
