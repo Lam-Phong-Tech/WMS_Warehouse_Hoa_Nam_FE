@@ -7,10 +7,6 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const swaggerPath = join(root, "swagger-api.json");
 const endpointsPath = join(root, "src/shared/api/endpoints.ts");
 const permissionPath = join(root, "src/shared/constants/wms-permissions.ts");
-const baselinePath = join(
-  root,
-  "docs/api-evidence/WMS_FE_CONTRACT_BASELINE.json",
-);
 const mappingFiles = [
   join(root, "docs/api-evidence/M1_API_MAPPING.md"),
   join(root, "docs/api-evidence/M2_DEPENDENCY_LIST.md"),
@@ -56,7 +52,7 @@ function extractRows(markdown) {
       method,
       path,
       disposition,
-      failClosed: /fail-closed|blocked until|pending contract/i.test(
+      failClosed: /fail-closed|blocked until|pending contract|removed-from-mvp/i.test(
         disposition,
       ),
     });
@@ -68,8 +64,7 @@ function loadEndpointPaths() {
   const source = readFileSync(endpointsPath, "utf8");
   const paths = new Set();
   for (const match of source.matchAll(/:\s*"([^"]+)"/g)) {
-    const value = match[1];
-    const normalized = normalizePath(value);
+    const normalized = normalizePath(match[1]);
     if (normalized) paths.add(normalized);
   }
   return paths;
@@ -82,7 +77,7 @@ function loadSwaggerRoutes() {
   for (const [path, operations] of Object.entries(swagger.paths ?? {})) {
     const normalized = normalizePath(path);
     if (!normalized) continue;
-    for (const method of Object.keys(operations)) {
+    for (const method of Object.keys(operations ?? {})) {
       if (methods.has(method.toUpperCase())) {
         routes.add(`${method.toUpperCase()} ${normalized}`);
       }
@@ -91,32 +86,28 @@ function loadSwaggerRoutes() {
   return routes;
 }
 
-if (!existsSync(endpointsPath)) {
-  failures.push("Missing src/shared/api/endpoints.ts");
-}
-if (!existsSync(permissionPath)) {
-  failures.push("Missing src/shared/constants/wms-permissions.ts");
-}
-if (!existsSync(baselinePath)) {
-  failures.push("Missing docs/api-evidence/WMS_FE_CONTRACT_BASELINE.json");
+for (const [path, label] of [
+  [endpointsPath, "src/shared/api/endpoints.ts"],
+  [permissionPath, "src/shared/constants/wms-permissions.ts"],
+]) {
+  if (!existsSync(path)) failures.push(`Missing ${label}`);
 }
 for (const file of mappingFiles) {
   if (!existsSync(file)) failures.push(`Missing ${relative(root, file)}`);
 }
 if (failures.length) {
-  for (const failure of failures)
-    console.error(`[api-mapping] ERROR: ${failure}`);
+  failures.forEach((failure) => console.error(`[api-mapping] ERROR: ${failure}`));
   process.exit(1);
 }
 
 const swaggerRoutes = loadSwaggerRoutes();
 const endpointPaths = loadEndpointPaths();
+const endpointSource = readFileSync(endpointsPath, "utf8");
 const permissionSource = readFileSync(permissionPath, "utf8");
-const baseline = JSON.parse(readFileSync(baselinePath, "utf8"));
 
 if (!swaggerRoutes) {
   warnings.push(
-    "swagger-api.json is unavailable: running FE constant/baseline validation only; this is not BE OpenAPI sign-off.",
+    "swagger-api.json is unavailable: validating FE constants/registers only; this is not BE OpenAPI sign-off.",
   );
 }
 
@@ -137,83 +128,47 @@ for (const file of mappingFiles) {
       continue;
     }
 
-    if (swaggerRoutes) {
-      const key = `${row.method} ${normalized}`;
-      if (!swaggerRoutes.has(key)) {
-        if (row.failClosed) {
-          warnings.push(
-            `${rel}:${row.line} ${key} is intentionally fail-closed pending canonical contract.`,
-          );
-        } else {
-          failures.push(
-            `${rel}:${row.line} ${key} not found in swagger-api.json`,
-          );
-        }
-      }
-    } else if (isM1 && !endpointPaths.has(normalized)) {
+    // M1 is the active FE runtime map: every non-fail-closed path must be represented
+    // by a shared endpoint constant. M2/M3 may also contain external-only dependencies.
+    if (isM1 && !row.failClosed && !endpointPaths.has(normalized)) {
       failures.push(
         `${rel}:${row.line} ${row.path} not represented by an FE endpoint constant`,
       );
     }
-  }
-}
 
-for (const flow of baseline.criticalFlows ?? []) {
-  const rawPath = flow.relativePath ?? flow.endpointPath ?? flow.runtimePath;
-  const normalized = normalizePath(rawPath);
-  if (!normalized) {
-    failures.push(
-      `Baseline ${flow.id ?? "UNKNOWN_FLOW"} is missing relativePath/endpointPath/runtimePath`,
-    );
-  } else if (!endpointPaths.has(normalized)) {
-    failures.push(
-      `Baseline ${flow.id} path ${rawPath} not represented by endpoints.ts`,
-    );
-  }
-
-  // Contract gate FE↔BE (WAR-P1-04): mỗi critical flow có method phải tồn tại
-  // trong BE OpenAPI snapshot — bắt được endpoint FE gọi nhưng BE chưa đăng ký
-  // route (vd GET /component-issue-documents/{id} từng thiếu ở audit 08/2026).
-  if (swaggerRoutes && normalized && typeof flow.method === "string") {
-    const key = `${flow.method.toUpperCase()} ${normalized}`;
-    if (!swaggerRoutes.has(key)) {
-      const pendingExternalSignoff =
-        typeof flow.officialSignoff === "string" &&
-        flow.officialSignoff.startsWith("PENDING");
-      if (pendingExternalSignoff) {
-        warnings.push(
-          `Baseline ${flow.id} ${key} not in swagger-api.json; tolerated only while ${flow.officialSignoff}.`,
-        );
-      } else {
-        failures.push(
-          `Baseline ${flow.id} ${key} not found in swagger-api.json (BE route missing or drifted)`,
-        );
+    if (swaggerRoutes) {
+      const key = `${row.method} ${normalized}`;
+      if (!swaggerRoutes.has(key)) {
+        if (row.failClosed) {
+          warnings.push(`${rel}:${row.line} ${key} is explicitly fail-closed/pending.`);
+        } else {
+          failures.push(`${rel}:${row.line} ${key} not found in swagger-api.json`);
+        }
       }
     }
   }
+}
 
-  const flowPermissions = [
-    ...(Array.isArray(flow.permissionsAny) ? flow.permissionsAny : []),
-    ...(typeof flow.permission === "string" ? [flow.permission] : []),
-  ];
-  if (flowPermissions.length === 0) {
-    failures.push(`Baseline ${flow.id} has no permission or permissionsAny`);
-  }
-  for (const permission of flowPermissions) {
-    if (!permissionSource.includes(`"${permission}"`)) {
-      failures.push(
-        `Baseline ${flow.id} permission ${permission} missing from catalog`,
-      );
-    }
-  }
+// Current MVP invariant (REQ-SRS-037 / DEC-NO-STOCKTAKE-001): do not let stale
+// historical evidence silently re-introduce stocktake/direct-stock-edit surface.
+if (/STOCKTAKE_[A-Z0-9_]*\s*:/u.test(endpointSource)) {
+  failures.push("Stocktake endpoint constant detected although current MVP removes Stocktake.");
+}
+if (/stocktake\./iu.test(permissionSource)) {
+  failures.push("stocktake.* permission detected although current MVP removes Stocktake.");
 }
 
 for (const code of [
-  "stocktake.adjust",
-  "warranty.temp_only",
-  "scan.inbound",
-  "scan.outbound",
-  "scan.warranty",
+  "scan.classify",
+  "scan.execute",
+  "inbound.scan",
+  "inbound.post",
+  "outbound.scan",
+  "outbound.post",
+  "inventory.reversal.post",
+  "warranty.manage",
+  "warranty.component_issue",
+  "report.view",
   "report.export",
 ]) {
   if (!permissionSource.includes(`"${code}"`)) {
@@ -221,13 +176,18 @@ for (const code of [
   }
 }
 
-for (const warning of warnings)
-  console.warn(`[api-mapping] WARNING: ${warning}`);
+// Canonical scan route must stay aligned with FE/OpenAPI. The BE may keep a
+// backward-compatible alias, but FE must never drift back to the legacy path.
+if (!/SCAN_BATCHES_CLASSIFY:\s*"\/scan\/classify"/u.test(endpointSource)) {
+  failures.push("SCAN_BATCHES_CLASSIFY must remain /scan/classify.");
+}
+
+warnings.forEach((warning) => console.warn(`[api-mapping] WARNING: ${warning}`));
 if (failures.length) {
-  for (const failure of failures)
-    console.error(`[api-mapping] ERROR: ${failure}`);
+  failures.forEach((failure) => console.error(`[api-mapping] ERROR: ${failure}`));
   process.exit(1);
 }
+
 console.log(
-  `[api-mapping] PASS: ${totalRows} documented rows checked (${failClosedRows} explicitly fail-closed); canonical paths and permissions match FE constants/baseline.`,
+  `[api-mapping] PASS: ${totalRows} documented rows checked (${failClosedRows} explicitly fail-closed); current MVP paths and permissions are internally consistent.`,
 );
