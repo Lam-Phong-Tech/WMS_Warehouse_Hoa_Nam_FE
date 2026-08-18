@@ -9,6 +9,16 @@ trị của lần chạy xanh cuối trên `m1` của hai workflow
 `WWHN-268 FE defect closure` và `WWHN-268 BE regression closure`. Không dán số
 run của task khác.
 
+SHA ứng viên đã chốt trên `m1` (dùng cho `<EXACT_GIT_SHA>`):
+
+| Repo | Commit |
+|------|--------|
+| `WMS_Warehouse_Hoa_Nam_FE` | `3bad47deb266b2cc276fa9844b1cf00e9b50348c` |
+| `WMS_Warehouse_Hoa_Nam_BE` | `2e0515f26b622a5844f4973a3a8233bc7076541a` |
+
+`<FE_RUN_ID>` / `<BE_RUN_ID>` chỉ có sau khi hai workflow chạy trên đúng hai SHA
+trên; **không** dán số run của lượt chạy tại chỗ.
+
 ---
 
 ## 1. Các comment chỉ cần xác nhận (đọc + duyệt)
@@ -22,7 +32,8 @@ run của task khác.
 > - **P2 · closure matrix**: bảng 1-1 root cause → fix → evidence → retest → confirmer tại `docs/Task_docs_Jira/WWHN-268.md` §3.
 > - Hai defect thật đã sửa tận gốc: **FE268-D01** (toàn FE chỉ có 5 test hook, không hook nào là trạng thái → thêm hợp đồng `UI_STATE`), **FE268-D02** (6 màn trong phạm vi tự viết `emptyText` nên empty ≡ error; `/inbound` có `ApiErrorAlert` cục bộ che component dùng chung nên 403 không ra `NoPermissionState`).
 >
-> Kết quả cổng FE: `wwhn-268:verify` PASS · unit 70 file/534 test PASS · `test:e2e:wwhn-268` 21/21 PASS tại `<EXACT_GIT_SHA>` / run `<FE_RUN_ID>`.
+> Kết quả cổng FE tại SHA ứng viên: `yarn typecheck` PASS · `wwhn-268:verify` PASS · `ui-state.test.tsx` 8/8 PASS · `test:e2e:wwhn-268` **21/21 PASS** với 33 capture. Lượt chạy công bố lấy từ `<EXACT_GIT_SHA>` / run `<FE_RUN_ID>`.
+> Lưu ý phụ thuộc nhánh: `yarn lint` / `yarn format:check` / `yarn test` toàn repo còn đỏ ở các tệp của workstream song song (WWHN-233/247/260/331) đã commit lên `m1`; **không** tệp nào thuộc WWHN-268 — xem `docs/evidence/WWHN-268/RUN_MANIFEST.json`.
 > Tôi **không** xác nhận đây là UAT: bằng chứng FE là controlled/mock, không thay lượt chạy độc lập của QA2 và không chứng minh phân quyền backend.
 
 ### 1.2. BE1 / BE2 — WWHN-266 / WWHN-267

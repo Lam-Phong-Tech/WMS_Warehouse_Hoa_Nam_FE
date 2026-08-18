@@ -72,6 +72,20 @@
       "skipped": 27,
       "failed": 0,
       "assertions": 8586
+    },
+    {
+      "id": "FE-GATE-AT-CANDIDATE-SHA",
+      "command": "git worktree add --detach <tmp> 3bad47d && (tsc -b; verify-wwhn-268-closure.mjs; eslint src/; verify-format-baseline.mjs; vitest run)",
+      "runner": "checkout sạch tại SHA ứng viên, không lẫn công việc đang dở của phiên khác",
+      "result": "PARTIAL",
+      "detail": {
+        "typecheck": "PASS",
+        "wwhn-268:verify": "PASS (ghi NOTE cho 3 tham chiếu chéo sang repo BE vì chỉ FE được checkout)",
+        "lint": "2 error — cả hai ở src/test/wwhn-247-warranty-closure.test.ts (no-useless-escape)",
+        "format:check": "3 file drift — wwhn240-trace-net-effect.test.ts, SkuImportModal.test.tsx, wwhn-260-migration-operational-only.test.ts",
+        "unit": "76 file / 578 test, 2 file đỏ: wwhn-233-count-deferral-gate (digest wireframe drift) và wwhn-260-migration-operational-only (hợp đồng OpenAPI)"
+      },
+      "note": "Toàn bộ mục đỏ nằm trong tệp của workstream song song (WWHN-233/247/260/331) đã commit lên m1, KHÔNG có tệp nào thuộc WWHN-268. Theo đúng tiền lệ wwhn-274/wwhn-292, cổng closure của một task chạy cả lint/format/test toàn repo, nên cổng WWHN-268 chỉ xanh sau khi workstream đó chốt phần của họ. Đây là phụ thuộc nhánh dùng chung, không phải khiếm khuyết của WWHN-268."
     }
   ],
   "knownEnvironmentNoise": [
@@ -83,8 +97,8 @@
     },
     {
       "symptom": "yarn typecheck / yarn lint / yarn format:check đỏ trên cây làm việc.",
-      "cause": "Lỗi nằm hoàn toàn trong tệp đang được một phiên khác sửa dở (src/modules/pv/**, src/test/wwhn-247-*, src/modules/master-data/components/SkuImportModal.test.tsx, khối data_scope mới trong AlignedReportsPage.tsx). Không tệp nào thuộc WWHN-268.",
-      "resolution": "Không sửa chéo sang công việc đang dở của phiên khác. Commit của WWHN-268 chỉ chứa nội dung của WWHN-268; cổng CI chạy trên commit đó.",
+      "cause": "Tại SHA ứng viên, phần đỏ còn lại nằm hoàn toàn trong tệp của workstream song song đã commit lên m1: src/test/wwhn-247-warranty-closure.test.ts (lint), src/modules/inventory/services/wwhn240-trace-net-effect.test.ts + src/modules/master-data/components/SkuImportModal.test.tsx + src/test/wwhn-260-migration-operational-only.test.ts (format), wwhn-233-count-deferral-gate + wwhn-260-migration-operational-only (unit). Không tệp nào thuộc WWHN-268.",
+      "resolution": "WWHN-268 đã tự sửa hai lỗi typecheck chặn toàn nhánh (AlignedReportsPage, wwhn-233 type predicate) vì chúng chặn mọi cổng FE. Các mục còn lại thuộc governance register và bộ test của workstream song song nên KHÔNG sửa chéo: cập nhật digest đã pin hộ người khác sẽ che mất drift thật của tài liệu.",
       "isProductDefect": false
     }
   ],

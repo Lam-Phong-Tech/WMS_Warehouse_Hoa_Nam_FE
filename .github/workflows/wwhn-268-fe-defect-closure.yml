@@ -54,8 +54,14 @@ jobs:
       - name: Verifier register defect (fail-closed)
         run: yarn wwhn-268:verify
 
+      - name: Format baseline
+        run: yarn format:check
+
       - name: Lint
         run: yarn lint
+
+      - name: Kiem tra anh xa endpoint
+        run: yarn check:api-mapping
 
       - name: Typecheck
         run: yarn typecheck
