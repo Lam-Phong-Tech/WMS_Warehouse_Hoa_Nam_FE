@@ -18,6 +18,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: wwhn-292-fe-closure-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   VITE_APP_ENV: controlled-ci
   VITE_APP_VERSION: wwhn-292-ci.${{ github.run_number }}.${{ github.run_attempt }}
@@ -59,6 +63,9 @@ jobs:
 
       - name: Type check
         run: npm run typecheck
+
+      - name: Verify API mapping
+        run: npm run check:api-mapping
 
       - name: Run unit and integration tests
         run: npm run test
