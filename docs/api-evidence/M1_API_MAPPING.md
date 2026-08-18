@@ -1,76 +1,78 @@
-# M1 API Mapping Evidence — WWHN-148
+# M1 API Mapping Evidence — current `m1`
 
-Cập nhật: 2026-08-04 ICT  
-Phạm vi: `WWHN-148` / `HN-UX-002` — evidence ánh xạ FE cho khả năng triển khai, tái sử dụng, RBAC và API error.
+Cập nhật: 2026-08-18 ICT  
+Phạm vi: FE runtime/API mapping evidence phục vụ `WWHN-296`, đồng thời duy trì traceability cho `WWHN-148`.
 
 ## Ranh giới thẩm quyền
 
-Tài liệu này là evidence do FE sở hữu, không thay thế phê duyệt contract độc lập từ BE1/BE2, BA/BAS hoặc QA2. Endpoint constants là đường dẫn tương đối so với `VITE_API_BASE_URL`. Vì base URL chuẩn kết thúc bằng `/api/v1`, `SCAN_BATCHES_CLASSIFY = "/scan/classify"` tạo runtime URL đúng là `POST /api/v1/scan/classify`; thêm `/api/v1` vào constant sẽ gây double prefix.
+Tài liệu này là evidence do FE sở hữu, không thay thế phê duyệt độc lập từ BE/BA/QA/DevOps. Endpoint constants là đường dẫn tương đối so với `VITE_API_BASE_URL`. Base URL canonical kết thúc bằng `/api/v1`; vì vậy constant `/scan/classify` tạo runtime URL `POST /api/v1/scan/classify`.
 
-Final sign-off của `WWHN-148` vẫn fail-closed cho đến khi `WWHN-146`, `WWHN-147`, `WWHN-149` và bộ contract/permission/sample data của BE có evidence độc lập.
+Production domain/origin/secret không được hard-code. DEV/UAT/PROD phải inject các giá trị deploy thực tế qua pipeline/environment.
 
 ## Critical flow mappings
 
 | Flow | FE service | Method | Endpoint constant path | Effective runtime path | Permission | Disposition |
 | --- | --- | --- | --- | --- | --- | --- |
-| Scan classify | `scanService.ts` | POST | `/scan/classify` | `/api/v1/scan/classify` | `scan.classify` | FE implemented; BE1 + BA + QA2 sign-off pending. |
-| Post receipt | `receivingService.ts` | POST | `/inbound-documents/{id}/post-receipt` | `/api/v1/inbound-documents/{id}/post-receipt` | `inbound.post` | FE enforces `Idempotency-Key`, `If-Match` and success evidence; BE sign-off pending. |
-| Post issue | `shippingService.ts` | POST | `/outbound-documents/{id}/post-issue` | `/api/v1/outbound-documents/{id}/post-issue` | `outbound.post` | FE enforces `Idempotency-Key`, `If-Match` and success evidence; BE sign-off pending. |
-| Apply adjustment | `stocktakeService.ts` | POST | `/stocktake/sessions/{sessionId}/apply-adjustment` | `/api/v1/stocktake/sessions/{sessionId}/apply-adjustment` | `stocktake.adjust` | Action-level permission; blocked until BE registers canonical stocktake session routes (2026-08-13 dev snapshot: route absent). |
+| Scan classify | `scanService.ts` | POST | `/scan/classify` | `/api/v1/scan/classify` | `scan.execute` OR `scan.classify` | Canonical FE/OpenAPI path; WWHN-296 restores matching authenticated BE runtime alias. Read-only, `stock_effect=NONE`. |
+| Inbound scan | `inboundService.ts` | POST | `/inbound-documents/{id}/scans` | `/api/v1/inbound-documents/{id}/scans` | `inbound.scan` | Canonical Annex C alias; stock-neutral before Post Receipt. |
+| Post receipt | `inboundService.ts` | POST | `/inbound-documents/{id}/post-receipt` | `/api/v1/inbound-documents/{id}/post-receipt` | `inbound.post` | Full-document Post; idempotency/concurrency guards retained. |
+| Outbound scan | `shippingService.ts` | POST | `/outbound-documents/{id}/scans` | `/api/v1/outbound-documents/{id}/scans` | `outbound.scan` | Canonical Annex C alias; stock-neutral before Post Issue. |
+| Post issue | `shippingService.ts` | POST | `/outbound-documents/{id}/post-issue` | `/api/v1/outbound-documents/{id}/post-issue` | `outbound.post` | Full-document Post; only successful Post decreases stock. |
+| Reversal | `reversalService.ts` | POST | `/reversal-documents/{id}/post` | `/api/v1/reversal-documents/{id}/post` | `inventory.reversal.post` | Append-only correction after posting; no direct stock edit. |
 
-## Warranty & Component Issue mappings (luồng 04)
+## Warranty & Component Issue mappings — flow 04
 
 | Flow | FE service | Method | Endpoint constant path | Effective runtime path | Permission | Disposition |
 | --- | --- | --- | --- | --- | --- | --- |
-| Warranty list (WAR-01) | `warrantyService.ts` | GET | `/warranty-cases` | `/api/v1/warranty-cases` | `warranty.manage` | Implemented; BE route present in dev Swagger snapshot 2026-08-13. |
-| Warranty intake (WAR-02) | `warrantyService.ts` | POST | `/warranty-cases` | `/api/v1/warranty-cases` | `warranty.manage` (+`warranty.temp_only` for TEMP_ONLY) | FE enforces `Idempotency-Key` and `stock_effect=NONE`. |
-| Warranty detail (WAR-03) | `warrantyService.ts` | GET | `/warranty-cases/{id}` | `/api/v1/warranty-cases/{id}` | `warranty.manage` | Implemented; ETag/version surfaced for CAS. |
-| Warranty update (WAR-03) | `warrantyService.ts` | PATCH | `/warranty-cases/{id}` | `/api/v1/warranty-cases/{id}` | `warranty.manage` | FE sends `If-Match` + persists confirmed_defect / received_condition / accessories_received / cancel_reason. |
-| Warranty events | `warrantyService.ts` | GET | `/warranty-cases/{id}/events` | `/api/v1/warranty-cases/{id}/events` | `warranty.manage` | Implemented; ERD event taxonomy. |
-| Attachments list | `warrantyService.ts` | GET | `/warranty-cases/{id}/attachments` | `/api/v1/warranty-cases/{id}/attachments` | `warranty.manage` | Implemented (WAR-P1-01 closed at BE dev SHA). |
-| Attachments upload | `warrantyService.ts` | POST | `/warranty-cases/{id}/attachments` | `/api/v1/warranty-cases/{id}/attachments` | `warranty.manage` | Multipart upload, `stock_effect=NONE`. |
-| Attachment download | `warrantyService.ts` | GET | `/warranty-attachments/{id}/download` | `/api/v1/warranty-attachments/{id}/download` | `warranty.manage` | Implemented. |
-| Attachment delete | `warrantyService.ts` | DELETE | `/warranty-attachments/{id}` | `/api/v1/warranty-attachments/{id}` | `warranty.manage` | Logical delete. |
-| Component issues list | `componentIssueService.ts` | GET | `/warranty-component-issues` | `/api/v1/warranty-component-issues` | `warranty.component_issue` | Supports `warranty_case_id` filter. |
-| Component issue create | `componentIssueService.ts` | POST | `/warranty-component-issues` | `/api/v1/warranty-component-issues` | `warranty.component_issue` | FE forces `purpose=WARRANTY`; DRAFT stock-neutral. |
-| Component issue detail | `componentIssueService.ts` | GET | `/warranty-component-issues/{id}` | `/api/v1/warranty-component-issues/{id}` | `warranty.component_issue` | WAR-P0-01 closed: BE GET detail route present at dev SHA. |
-| Component issue scan | `componentIssueService.ts` | POST | `/warranty-component-issues/{id}/scans` | `/api/v1/warranty-component-issues/{id}/scans` | `warranty.component_issue` | `If-Match` CAS; scan stock-neutral. |
+| Warranty list | `warrantyService.ts` | GET | `/warranty-cases` | `/api/v1/warranty-cases` | `warranty.view` / `warranty.manage` | Current BE route present. |
+| Warranty intake | `warrantyService.ts` | POST | `/warranty-cases` | `/api/v1/warranty-cases` | `warranty.manage` (+ TEMP_ONLY guard) | Stock-neutral intake; idempotency enforced where required. |
+| Warranty detail | `warrantyService.ts` | GET | `/warranty-cases/{id}` | `/api/v1/warranty-cases/{id}` | `warranty.view` / `warranty.manage` | Current BE route present. |
+| Warranty update | `warrantyService.ts` | PATCH | `/warranty-cases/{id}` | `/api/v1/warranty-cases/{id}` | `warranty.manage` | Mutation permission + concurrency safeguards retained. |
+| Warranty events | `warrantyService.ts` | GET | `/warranty-cases/{id}/events` | `/api/v1/warranty-cases/{id}/events` | `warranty.view` / `warranty.manage` | Current BE route present. |
+| Attachments list | `warrantyService.ts` | GET | `/warranty-cases/{id}/attachments` | `/api/v1/warranty-cases/{id}/attachments` | `warranty.view` / `warranty.manage` | Current BE route present. |
+| Attachments upload | `warrantyService.ts` | POST | `/warranty-cases/{id}/attachments` | `/api/v1/warranty-cases/{id}/attachments` | `warranty.manage` | Multipart, stock-neutral. |
+| Attachment download | `warrantyService.ts` | GET | `/warranty-attachments/{id}/download` | `/api/v1/warranty-attachments/{id}/download` | `warranty.view` / `warranty.manage` | Current BE route present. |
+| Attachment delete | `warrantyService.ts` | DELETE | `/warranty-attachments/{id}` | `/api/v1/warranty-attachments/{id}` | `warranty.manage` | Logical delete semantics. |
+| Component issues list | `componentIssueService.ts` | GET | `/warranty-component-issues` | `/api/v1/warranty-component-issues` | `warranty.component_issue` | Current BE route present. |
+| Component issue create | `componentIssueService.ts` | POST | `/warranty-component-issues` | `/api/v1/warranty-component-issues` | `warranty.component_issue` | DRAFT is stock-neutral. |
+| Component issue detail | `componentIssueService.ts` | GET | `/warranty-component-issues/{id}` | `/api/v1/warranty-component-issues/{id}` | `warranty.component_issue` | Current BE route present. |
+| Component issue scan | `componentIssueService.ts` | POST | `/warranty-component-issues/{id}/scans` | `/api/v1/warranty-component-issues/{id}/scans` | `warranty.component_issue` | Scan is stock-neutral. |
 | Component issue cancel | `componentIssueService.ts` | POST | `/warranty-component-issues/{id}/cancel` | `/api/v1/warranty-component-issues/{id}/cancel` | `warranty.component_issue` | Reason required. |
-| Component issue post | `componentIssueService.ts` | POST | `/warranty-component-issues/{id}/post` | `/api/v1/warranty-component-issues/{id}/post` | `warranty.component_issue` | Full-post; `Idempotency-Key`; FE asserts `stock_effect=DECREASE` + `movement_ids`. |
+| Component issue post | `componentIssueService.ts` | POST | `/warranty-component-issues/{id}/post` | `/api/v1/warranty-component-issues/{id}/post` | `warranty.component_issue` | Explicit stock-decrease boundary with movement evidence. |
 
-## Dashboard and reports disposition
+## Reports disposition — flow 06
 
-| Screen/action | Method | Path | FE runtime behavior | Canonical disposition |
-| --- | --- | --- | --- | --- |
-| Dashboard quick KPI | GET | `/reports/dashboard-quick` | Not wired to any page (`dashboardService.ts`/`DashboardKPI` unreferenced by `DashboardPage.tsx`) | WWHN-328: field set corrected 2026-08-18 to match BE `OperationalReportController::dashboardQuick` exactly (`period/available_qty/receipt_qty/issue_qty/component_issue_qty/reversal_net/warranty_cases_by_status/reconciliation_warnings`); OpenAPI locked same SHA. Independent BA/QA2/Tech Lead sign-off still pending — see WWHN-328 comment thread. |
-| Inventory XNT | GET | `/reports/inventory-xnt` | Active | Mapping implemented; independent BE approval pending. |
-| Export XNT | GET | `/reports/inventory-xnt/export-excel` | Active and action-gated by `report.export` | Mapping implemented; independent BE approval pending. |
-| Reports hub | GET | `/reports/hub` | Fail-closed before network | Blocked until BE1/BE2 + BA publish canonical contract disposition. |
-| Warranty defects report | GET | `/reports/warranty-defects` | Active | Mapping implemented; BE route + PII-mask + export audit present at dev SHA (Swagger snapshot 2026-08-13). |
+| Screen/action | Method | Path | Current disposition |
+| --- | --- | --- | --- |
+| Dashboard quick KPI | GET | `/reports/dashboard-quick` | BE route present; active UI wiring remains task-specific. |
+| Inventory XNT | GET | `/reports/inventory-xnt` | BE route present, `report.view`. |
+| Export XNT | GET | `/reports/inventory-xnt/export-excel` | BE route present, `report.export`. |
+| Reports hub | GET | `/reports/hub` | BE route present; no longer marked missing. |
+| Warranty defects report | GET | `/reports/warranty-defects` | BE route present; read/export permissions are separate. |
 
-WWHN-328 scan finding (out of this ticket's BE scope, flagged for BA/PM/FE1 disposition — not fixed here): `dashboardService.ts` also defines `fetchRecentDocuments()` / `fetchReconcileHealth()` / `fetchAlerts()` against `DASHBOARD_RECONCILE_HEALTH = "/inventory-snapshots"` and `DASHBOARD_ALERTS = "/safe-stock-alerts"`. Neither route exists anywhere in `WMS_Warehouse_Hoa_Nam_BE` (`Modules/Warehouse/routes/api.php`); both would 404 if ever called. All three functions are currently unreferenced dead code, so this does not fail any runtime path today. Building those two endpoints requires BA-approved formulas/thresholds first (same class of decision as DEV328-P1-01) — no code change made against them in this pass.
+## Removed-from-MVP boundary — Stocktake
+
+REQ-SRS-037 / `DEC-NO-STOCKTAKE-001` is the current baseline. `m1` must not expose Stocktake Session/Snapshot/Count, variance-adjustment endpoint, direct stock-edit permission, menu or production flow. Historical Stocktake rows are intentionally removed from this current runtime mapping. Corrections after Post use Reversal append-only.
 
 ## RBAC mapping
 
-Route permission is a page-entry UX gate only. Backend authorization remains the authority for HTTP 403 and data scope.
+Route permission is a page-entry/action UX gate only. Backend authorization remains authoritative for HTTP 403 and data scope.
 
-| Area | Route-entry permission | Sensitive action permission |
+| Area | Route/read permission | Sensitive action permission |
 | --- | --- | --- |
-| Scan | `inventory.trace` OR `scan.classify` | `scan.inbound`, `scan.outbound`, or `scan.warranty` by context |
-| Stocktake | `stocktake.count` | `stocktake.adjust` for apply adjustment |
-| Warranty | `warranty.manage` | `warranty.temp_only` for TEMP_ONLY creation |
-| Reports | `report.view` | `report.export` for export |
+| Scan | `inventory.trace` or scan permission by context | `scan.execute`/`scan.classify`, `inbound.scan`, `outbound.scan`, `scan.warranty` |
+| Warranty | `warranty.view` / `warranty.manage` | `warranty.manage`, `warranty.component_issue` |
+| Reversal | inventory read as applicable | `inventory.reversal.post` |
+| Reports | `report.view` | `report.export` |
 
-Legacy permission names are normalized only through the explicit alias catalog. Broad permissions such as `stocktake.manage` are not silently promoted to `stocktake.adjust`.
+## Error/idempotency evidence boundary
 
-## Error and idempotency evidence boundary
-
-| Scenario | FE guard/evidence | Independent evidence still required |
+| Scenario | FE-owned control | Independent evidence still required |
 | --- | --- | --- |
-| 403 | Route/action guards, backend-error rendering and controlled browser role scenario | Direct backend 403 sample by BE/RBAC + QA2 |
-| 409 | Shared API error parser and conflict-safe UI contract | Canonical module-specific 409 payload/sample from BE1/BE2 |
-| 422 | Field-error extraction plus controlled browser 422 retry-safe state | Canonical field pointers/copy from BE + BA |
-| Idempotency | Critical mutations require `Idempotency-Key`; tests assert headers and complete success evidence | Replay/conflict sample against named backend build |
+| 401/403 | Route/action guard + controlled API error rendering | Direct BE auth/data-scope deny on named runtime build |
+| 409 | Shared error parser + conflict-safe UI state | Module-specific live conflict sample |
+| 422 | Field-error extraction + retry-safe UI | Canonical live payload/field pointer sample |
+| Idempotency | Posting mutations send required key and preserve response metadata | Live replay/conflict evidence on named build |
 
 ## Evidence commands
 
@@ -90,4 +92,4 @@ npm run check:api-mapping
 npm run test:e2e:evidence
 ```
 
-CI packages source SHA, execution SHA, build/env metadata, screenshots, video and traces into the WMS closure artifact. That artifact proves FE-owned checks only; it does not self-sign BAS/BA/BE/QA evidence.
+CI/evidence proves FE-owned checks only. DevOps PROD configuration, BE runtime sign-off, QA1/QA2 execution and BA Go/No-Go remain independent gates and must use the same exact build/environment identity.
