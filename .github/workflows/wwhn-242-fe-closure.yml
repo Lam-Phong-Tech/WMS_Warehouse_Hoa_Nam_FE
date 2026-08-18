@@ -1,0 +1,145 @@
+name: WWHN-242 FE Closure
+
+# FE242-P1-02: review từ chối "danh sách lệnh trong task doc" làm bằng chứng. Workflow này
+# chạy thật từng cổng trên đúng SHA được review và ghim manifest bất biến; FE242-P2-02 được
+# đóng bằng việc ghi rõ nhánh canonical `m1` và exact SHA vào artifact.
+
+on:
+  push:
+    branches:
+      - m1
+    paths:
+      - "src/modules/reverse/**"
+      - "src/app/router/access.ts"
+      - "src/test/setup.ts"
+      - "e2e/wwhn-242-reversal-qa2.spec.ts"
+      - "scripts/verify-wwhn-242-closure.mjs"
+      - "scripts/run-wwhn-242-evidence.mjs"
+      - "docs/Task_docs_Jira/WWHN-242.md"
+      - "docs/Task_docs_Jira/WWHN-242_SCOPE_DISPOSITION.md"
+      - "docs/evidence/WWHN-242/**"
+      - "package.json"
+      - "yarn.lock"
+      - ".github/workflows/wwhn-242-fe-closure.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: wwhn-242-fe-closure-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  VITE_APP_ENV: controlled-ci
+  VITE_APP_VERSION: wwhn-242-ci.${{ github.run_number }}.${{ github.run_attempt }}
+  VITE_API_BASE_URL: http://127.0.0.1:5173/api/v1
+  VITE_API_HEALTH_PATH: /health
+  VITE_API_TIMEOUT_MS: "10000"
+  VITE_API_WITH_CREDENTIALS: "true"
+  VITE_STORAGE_URL: ""
+  VITE_ENABLE_ANALYTICS: "false"
+  VITE_ENABLE_DEBUG: "false"
+  VITE_ENABLE_PERF_MONITOR: "false"
+  SOURCE_SHA: ${{ github.sha }}
+
+jobs:
+  fe-closure:
+    name: Exact-SHA reversal (REV-00/REV-01) closure
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout exact SHA
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: yarn
+          cache-dependency-path: yarn.lock
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile --non-interactive
+
+      - name: Verify formatting without mutating source
+        run: npm run format:check
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Verify API mapping (REQ-SRS-037 no-stocktake guard)
+        run: npm run check:api-mapping
+
+      - name: Run unit and integration tests
+        run: npm run test
+
+      # Cổng governance + RBAC + stale + If-Match + ma trận bằng chứng.
+      # Chạy KHÔNG kèm --repin: trong CI, baseline trôi phải là ĐỎ để người ta đọc diff,
+      # không được tự vá hash rồi báo xanh.
+      - name: Verify WWHN-242 task-specific source controls
+        run: npm run verify:wwhn-242
+
+      - name: Build production bundle
+        run: npm run build
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run task-specific controlled REV-00/REV-01 evidence
+        run: npm run test:e2e:wwhn-242
+
+      - name: Capture immutable exact-SHA evidence manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          evidence_dir="evidence/wwhn-242"
+          mkdir -p "$evidence_dir"
+
+          sha256sum \
+            docs/Task_docs_Jira/WWHN-242.md \
+            docs/Task_docs_Jira/WWHN-242_SCOPE_DISPOSITION.md \
+            docs/Task_docs_Jira/WWHN-242_SIGNOFF_COMMENTS.md \
+            scripts/verify-wwhn-242-closure.mjs \
+            scripts/run-wwhn-242-evidence.mjs \
+            e2e/wwhn-242-reversal-qa2.spec.ts \
+            src/app/router/access.ts \
+            src/modules/reverse/components/ReversalDetailModal.tsx \
+            src/modules/reverse/components/ReversalCreateModal.tsx \
+            src/modules/reverse/pages/ReversalPage.tsx \
+            src/modules/reverse/wwhn-242-reversal-contract.test.tsx \
+            docs/HN_SRS_FRD_v1.12_FULL.md \
+            docs/HoaNam_ERD_Moi_Nhat.md \
+            docs/HN_WMS_Wireframe_MVP_ALIGNED_v3.20_v1.12_20260814.html \
+            docs/WMS_Hoa_Nam_Techstack_Architecture_Dev_Guide.md \
+            package.json \
+            > "$evidence_dir/SHA256SUMS"
+
+          printf '%s\n' "$GITHUB_SHA" > "$evidence_dir/EXACT_GIT_SHA"
+          printf '%s\n' "$GITHUB_RUN_ID" > "$evidence_dir/GITHUB_RUN_ID"
+          printf '%s\n' "$GITHUB_RUN_ATTEMPT" > "$evidence_dir/GITHUB_RUN_ATTEMPT"
+          # FE242-P2-02: nguồn canonical duy nhất. Không có nhánh "m1ee".
+          printf '%s\n' "m1" > "$evidence_dir/CANONICAL_BRANCH"
+          printf '%s\n' "FE_CONTROLLED_NOT_UAT" > "$evidence_dir/EVIDENCE_CLASS"
+          printf '%s\n' "REVERSAL_ONLY_PER_REQ-SRS-037" > "$evidence_dir/SCOPE_DISPOSITION"
+          printf '%s\n' "Wwhn242ReversalScopeAndProjectionTest (backend repo)" > "$evidence_dir/PAIRED_BACKEND_PROOF"
+          printf '%s\n' "created only after all prior source and controlled-runtime gates pass" > "$evidence_dir/GATE_SEMANTICS"
+
+      - name: Upload immutable WWHN-242 FE evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: wwhn-242-fe-${{ github.sha }}
+          if-no-files-found: error
+          retention-days: 30
+          path: |
+            evidence/wwhn-242/**
+            docs/Task_docs_Jira/WWHN-242.md
+            docs/Task_docs_Jira/WWHN-242_SCOPE_DISPOSITION.md
+            docs/evidence/WWHN-242/**
+            test-results/wwhn-242/**
+            playwright-report/**
+            dist/build-manifest.json

@@ -122,8 +122,15 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
       : 0
     : -1;
   const availableDelta = stockEffectSign * totalQty;
+  // WWHN-242 · BR-REV-02: POST /reversal-documents bắt buộc If-Match theo version
+  // chứng từ gốc, và FE không được tự suy version. Nếu lookup không trả version thì
+  // request chắc chắn bị 428 PRECONDITION_REQUIRED — chặn ngay ở UI kèm lý do thay vì
+  // để người dùng bấm rồi nhận lỗi kỹ thuật.
+  const missingReferenceVersion =
+    Boolean(selectedMovement) && !selectedMovement?.version;
   const canSubmit =
     Boolean(selectedMovement?.can_reverse) &&
+    !missingReferenceVersion &&
     selectedLines.length > 0 &&
     totalQty > 0 &&
     reason.trim().length >= 5 &&
@@ -537,6 +544,17 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
                 type="error"
                 showIcon
                 title={`SL đảo của ${invalidLine.sku} vượt số còn reversible`}
+                style={{ marginTop: 12 }}
+              />
+            ) : null}
+
+            {missingReferenceVersion ? (
+              <Alert
+                type="error"
+                showIcon
+                data-testid="reversal-missing-version"
+                title="Thiếu version chứng từ gốc — không gửi được If-Match"
+                description="BR-REV-02 bắt buộc header If-Match theo version chứng từ gốc. Lookup không trả về version nên yêu cầu sẽ bị 428 PRECONDITION_REQUIRED. Làm mới lookup rồi chọn lại movement."
                 style={{ marginTop: 12 }}
               />
             ) : null}

@@ -1,0 +1,149 @@
+{
+  "schemaVersion": "1.0.0",
+  "jira": "WWHN-230",
+  "disposition": "DISP-STK-230",
+  "side": "frontend",
+  "backlogItems": [
+    "DEV230-P1-01",
+    "DEV230-P1-02",
+    "DEV230-P1-03",
+    "DEV230-P1-04"
+  ],
+  "mode": "pre-signoff",
+  "identity": {
+    "frontend": {
+      "repository": "Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_FE",
+      "branch": "m1",
+      "commitSha": "cc76a4e36069d3b6f299b0e0b4d371cf65a5e996",
+      "workingTreeClean": false
+    },
+    "backend": {
+      "repository": "Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_BE",
+      "branch": "m1",
+      "commitSha": "b90d5ef67c6577db166fdac00f1323741ccfd888",
+      "workingTreeClean": false
+    }
+  },
+  "baselineDigests": {
+    "docs/HN_SRS_FRD_v1.12_FULL.md": "02cd010cdc40036b62ec23a0d3aa645e4cce813497edf8b0e851ba6fcb512ff2",
+    "docs/HoaNam_ERD_Moi_Nhat.md": "30badd145e3eba41d080492b07e995d92dacbc370d304c60c015adeddfa8c33b",
+    "docs/HN_WMS_Wireframe_MVP_ALIGNED_v3.20_v1.12_20260814.html": "107a2b4de0f5763e39278ec130758d57e772e004e525416c088018cf9ddba658",
+    "docs/api-evidence/STOCKTAKE_GOVERNANCE_STATUS.json": "ced858a58009cb765b90dee74184067ce5577d51779316dbd9f5eb3d8f2f1367",
+    "docs/api-evidence/WWHN-230_SCOPE_DISPOSITION.json": "a9719c12cc4699f4c3700c76c0e6b11f74bb68c5c7230f636c561bf2041d1acf"
+  },
+  "checks": [
+    {
+      "id": "GOV-DISPOSITION",
+      "status": "PASS",
+      "detail": "docs/api-evidence/WWHN-230_SCOPE_DISPOSITION.json must exist."
+    },
+    {
+      "id": "GOV-DISP-ID",
+      "status": "PASS",
+      "detail": "disposition.id must be DISP-STK-230."
+    },
+    {
+      "id": "GOV-DISP-OPTION",
+      "status": "PASS",
+      "detail": "disposition.optionChosen must be \"B\"."
+    },
+    {
+      "id": "GOV-DISP-REQUIREMENT",
+      "status": "PASS",
+      "detail": "disposition.controllingRequirement must be REQ-SRS-037."
+    },
+    {
+      "id": "GOV-DISP-SCOPE",
+      "status": "PASS",
+      "detail": "disposition.impactedIssues must cover WWHN-230, WWHN-58 and WWHN-232."
+    },
+    {
+      "id": "GOV-DISP-NOT-SELF-CLOSED",
+      "status": "PASS",
+      "detail": "A disposition may not carry an effective date before it is approved, nor claim APPROVED without one."
+    },
+    {
+      "id": "GOV-EXISTS",
+      "status": "PASS",
+      "detail": "docs/api-evidence/STOCKTAKE_GOVERNANCE_STATUS.json must exist."
+    },
+    {
+      "id": "GOV-NO-FALSE-DECISION",
+      "status": "PASS",
+      "detail": "The register claims an approved standalone Decision ID without an artifact hash."
+    },
+    {
+      "id": "GOV-REQUIREMENT",
+      "status": "PASS",
+      "detail": "The controlling requirement must stay REQ-SRS-037."
+    },
+    {
+      "id": "BASELINE-SRS",
+      "status": "PASS",
+      "detail": "SRS baseline must still contain REQ-SRS-037."
+    },
+    {
+      "id": "BASELINE-SRS-TEXT",
+      "status": "PASS",
+      "detail": "SRS no longer states the no-Stocktake requirement; re-review before enforcing it."
+    },
+    {
+      "id": "BASELINE-ERD",
+      "status": "PASS",
+      "detail": "ERD section 0.1 no longer excludes Stocktake entities."
+    },
+    {
+      "id": "BASELINE-WIREFRAME-PRESENT",
+      "status": "PASS",
+      "detail": "Aligned wireframe baseline is missing."
+    },
+    {
+      "id": "BASELINE-WIREFRAME-CLEAN",
+      "status": "PASS",
+      "detail": "Wireframe now shows a Stocktake surface: "
+    },
+    {
+      "id": "SURFACE-ROUTES",
+      "status": "PASS",
+      "detail": "src/shared/constants/routes.ts declares a forbidden surface: "
+    },
+    {
+      "id": "SURFACE-PERMISSIONS",
+      "status": "PASS",
+      "detail": "src/shared/constants/wms-permissions.ts declares a forbidden surface: "
+    },
+    {
+      "id": "SURFACE-ENDPOINTS",
+      "status": "PASS",
+      "detail": "src/shared/api/endpoints.ts declares a forbidden surface: "
+    },
+    {
+      "id": "SURFACE-MODULES",
+      "status": "PASS",
+      "detail": "Stocktake source files found: "
+    },
+    {
+      "id": "BE-RECORD",
+      "status": "PASS",
+      "detail": "BE disposition record DISP-STK-230 is missing."
+    },
+    {
+      "id": "BE-APPROVAL",
+      "status": "PASS",
+      "detail": "BE approval record DISP-STK-230-APPROVAL.json is missing."
+    },
+    {
+      "id": "BE-APPROVAL-CONSISTENT",
+      "status": "PASS",
+      "detail": "FE disposition file and BE approval record disagree on the chosen option."
+    },
+    {
+      "id": "SIGNOFF",
+      "status": "PENDING",
+      "detail": "Sign-off still open for: baMain, pmApprover, techLead, qa1, bas (run with --require-signoff to enforce)."
+    }
+  ],
+  "testResult": null,
+  "result": "PASS",
+  "failures": []
+}

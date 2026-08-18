@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "1.0.0",
+  "id": "DISP-STK-230",
+  "version": "1.0.0",
+  "jira": "WWHN-230",
+  "backlogItems": ["DEV230-P1-01", "DEV230-P1-02", "DEV230-P1-03", "DEV230-P1-04"],
+  "scope": "FE half of the WWHN-230 scope disposition. Ghi rieng file thay vi chen vao STOCKTAKE_GOVERNANCE_STATUS.json de nhanh WWHN-230 va nhanh WWHN-237 khong ghi de len nhau tren cung mot khoa.",
+  "optionChosen": "B",
+  "optionStatement": "Park/de-scope WWHN-230 + WWHN-58 khoi Beta implementation; WWHN-232 chuyen tu 'test chuc nang kiem ke' thanh absence & substitution test.",
+  "impactedIssues": ["WWHN-230", "WWHN-58", "WWHN-232"],
+  "status": "PROPOSED",
+  "effectiveDate": null,
+  "controllingRequirement": "REQ-SRS-037",
+  "authorityNote": "Hieu luc den tu adoption cua SRS/FRD v1.12 tai WWHN-334 (Done), khong den tu mot Decision ID doc lap. WWHN-25 / DEC-STK-001 van In Progress nen khong duoc trich nhu approved governance. Chi tiet authority: docs/api-evidence/STOCKTAKE_GOVERNANCE_STATUS.json (ruleAuthority, decisionRecordGate).",
+  "records": {
+    "dispositionPath": "../../HoaNam_BE/WMS_Warehouse_Hoa_Nam_BE/docs/decision-records/DISP-STK-230-scope-disposition.md",
+    "approvalPath": "../../HoaNam_BE/WMS_Warehouse_Hoa_Nam_BE/docs/decision-records/DISP-STK-230-APPROVAL.json"
+  },
+  "whyNotOptionA": "Option A (formal CR dua Stocktake vao current scope roi implement) doi hoi sua REQ-SRS-037 tu Must sang trang thai khac tren chinh baseline SRS va phat hanh version moi. Khong co CR nao nhu vay ton tai tinh den 2026-08-18, va DEC-STK-001 (WWHN-25) van In Progress voi effective date NULL. Implement truoc khi co CR se tao P0 governance breach va lam do cac gate dang xanh.",
+  "substitutionPath": {
+    "detectDivergence": "Reconciliation chi tao incident, khong sua ton.",
+    "correctAfterPost": "Append-only Reversal theo DISP-ADJ-001 / BR-REV-01/02.",
+    "authority": "Movement ledger + balance projection."
+  },
+  "siblingDispositions": {
+    "DISP-ADJ-001": "apply-adjustment la ten hanh dong nghiep vu, khong phai endpoint (WWHN-219).",
+    "DISP-STK-233": "Count/Recount/Partial/Stale deferred (WWHN-59/233/235).",
+    "DISP-STK-236": "Apply Adjustment deferred (WWHN-236).",
+    "note": "Cac disposition nay cung mot huong: khong hien thuc hoa Stocktake khi REQ-SRS-037 con la Must. WWHN-230 la nhanh 'core' cua cung cay do."
+  },
+  "gates": {
+    "frontend": ["npm run wwhn-230:verify", "npm run check:api-mapping", "npx vitest run src/test/wwhn-230-stocktake-scope-guard.test.ts"],
+    "backend": [
+      "node scripts/verify-wwhn-230-closure.mjs",
+      "php vendor/bin/phpunit --filter Wwhn230StocktakeScopeDisposition"
+    ]
+  },
+  "note": "Day la disposition ve pham vi, khong phai approval cho mo hinh kiem ke A. No khong thay WWHN-25 / DEC-STK-001."
+}

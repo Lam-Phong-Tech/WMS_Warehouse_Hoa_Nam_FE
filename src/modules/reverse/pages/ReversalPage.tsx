@@ -187,6 +187,25 @@ export default function ReversalPage() {
         </span>
       </div>
 
+      {/*
+        WWHN-242 · REV-00 mở cho cả vai chỉ đọc (BE cấp GET reversal-documents bằng
+        `inventory.view`). Nói rõ vì sao không thấy hành động ghi, thay vì để màn hình
+        trông như bị lỗi thiếu nút.
+      */}
+      {!canPost ? (
+        <div
+          className="footer-note"
+          role="note"
+          data-testid="reversal-readonly-note"
+          style={{ marginBottom: 12 }}
+        >
+          Chế độ chỉ đọc: tài khoản không có quyền{" "}
+          <b>inventory.reversal.post</b> nên không tạo/xác nhận/Post/huỷ được
+          phiếu hoàn đảo. Danh sách và chi tiết vẫn xem được theo quyền{" "}
+          <b>inventory.view</b>.
+        </div>
+      ) : null}
+
       <div className="toolbar">
         <input
           className="input search"

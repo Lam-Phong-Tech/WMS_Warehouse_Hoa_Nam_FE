@@ -6,8 +6,8 @@ vai trò khác. Các mục còn phải **làm việc thật** (chạy test, đ�
 
 Candidate đang xác nhận:
 
-- BE `WMS_Warehouse_Hoa_Nam_BE` `m1` — `__BE_SHA__`
-- FE `WMS_Warehouse_Hoa_Nam_FE` `m1` — không thay đổi mã trong phạm vi WWHN-239 (xem §1.5)
+- BE `WMS_Warehouse_Hoa_Nam_BE` `m1` — `c85eca4d9f9ea932bdb57cba0b4711aa1a3aa2b6`
+- FE `WMS_Warehouse_Hoa_Nam_FE` `m1` — `3d58bdd1c500acb60c4cc5f93202a79a4fd166df` (chỉ tài liệu; không thay đổi mã, xem §1.5)
 
 Nguồn tài liệu để đọc trước khi ký:
 
@@ -50,7 +50,7 @@ Nguồn tài liệu để đọc trước khi ký:
 > **[Tech Lead] Xác nhận candidate, file set và cách đóng defect của WWHN-239.**
 > Tôi đã đọc và duyệt:
 >
-> - **Nhánh canonical là `m1`**; không có nhánh riêng cho task này. **PR = N/A** và đã ghi lý do trong evidence matrix: `m1` là nhánh làm việc chung, tại thời điểm này có nhiều phiên sửa song song trên cùng working tree, nên review được thực hiện trực tiếp trên candidate SHA `__BE_SHA__` thay vì trên PR.
+> - **Nhánh canonical là `m1`**; không có nhánh riêng cho task này. **PR = N/A** và đã ghi lý do trong evidence matrix: `m1` là nhánh làm việc chung, tại thời điểm này có nhiều phiên sửa song song trên cùng working tree, nên review được thực hiện trực tiếp trên candidate SHA `c85eca4d9f9ea932bdb57cba0b4711aa1a3aa2b6` thay vì trên PR.
 > - **Defect P0 `D-239-01` là thật và cách đóng là đúng tầng**: guard `reversible_qty` tính theo tổng quantity, trong khi một `stock_document_line` serial gồm N item chỉ sinh **một** movement `quantity=N`, nên cùng một `item_id` đảo được N lần. Đóng bằng ba lớp — guard lúc tạo DRAFT, re-check dưới `lockForUpdate` lúc Post, và **partial unique index** `ux_reversal_line_posted_item_per_movement` ở tầng DB. Lớp thứ ba là lớp duy nhất đúng cho ca "true competing reversal".
 > - **Phân lớp mã 409 đúng WWHN-234**: thua race trả `CONCURRENCY_CONFLICT` (client reload + retry **giữ nguyên** Idempotency-Key); trạng thái không cho phép trả mã miền `REVERSAL_ITEM_ALREADY_REVERSED` như biến thể của `STATE_CONFLICT`.
 > - **Bỏ `ADJUSTED_OUT` khỏi whitelist receipt không mất năng lực nghiệp vụ**: item `ADJUSTED_OUT` vẫn nhận lại được (`assertItemAvailableForReceipt`) và sau Post Receipt trở về `IN_STOCK` nên vẫn đảo được.

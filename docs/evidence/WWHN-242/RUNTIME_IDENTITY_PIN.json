@@ -1,0 +1,72 @@
+{
+  "ticket": "WWHN-242",
+  "screen": "REV-00 / REV-01",
+  "generatedAt": "2026-08-18T15:59:00.514Z",
+  "frontend": {
+    "available": true,
+    "label": "frontend",
+    "path": "C:\\LAM_PHONG_TECH\\HoaNam_FE\\WMS_Warehouse_Hoa_Nam_FE",
+    "branch": "m1",
+    "sha": "48f7ff096ee6c570ff3a27c93f1d47b4e3b8595e",
+    "workingTreeClean": false,
+    "dirtyFileCount": 66
+  },
+  "backend": {
+    "available": true,
+    "label": "backend",
+    "path": "C:\\LAM_PHONG_TECH\\HoaNam_BE\\WMS_Warehouse_Hoa_Nam_BE",
+    "branch": "m1",
+    "sha": "696868ce44ccccca51884c3c1ac7e9f41fd405b8",
+    "workingTreeClean": false,
+    "dirtyFileCount": 76
+  },
+  "node": "v22.17.1",
+  "npm": "10.9.2",
+  "platform": "win32 x64",
+  "gates": [
+    {
+      "gate": "lint",
+      "command": "npm run lint",
+      "exitCode": 1,
+      "status": "FAIL",
+      "durationMs": 41376,
+      "startedAt": "2026-08-18T15:57:04.143Z",
+      "logFile": "logs/lint.log"
+    },
+    {
+      "gate": "typecheck",
+      "status": "SKIPPED",
+      "reason": "requested via --skip"
+    },
+    {
+      "gate": "test",
+      "command": "npm run test",
+      "exitCode": 0,
+      "status": "PASS",
+      "durationMs": 73287,
+      "startedAt": "2026-08-18T15:57:45.522Z",
+      "logFile": "logs/test.log"
+    },
+    {
+      "gate": "build",
+      "status": "SKIPPED",
+      "reason": "requested via --skip"
+    },
+    {
+      "gate": "verify:wwhn-242",
+      "command": "npm run verify:wwhn-242",
+      "exitCode": 1,
+      "status": "FAIL",
+      "durationMs": 1702,
+      "startedAt": "2026-08-18T15:58:58.811Z",
+      "logFile": "logs/verify-wwhn-242.log"
+    }
+  ],
+  "summary": {
+    "total": 5,
+    "passed": 1,
+    "failed": 2,
+    "skipped": 2
+  },
+  "truthBoundary": "Exit codes observed on this machine at generatedAt. Nếu workingTreeClean=false thì SHA KHÔNG mô tả đúng cây đã chạy; phải commit rồi chạy lại trước khi dùng làm exact-SHA evidence."
+}

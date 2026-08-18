@@ -61,7 +61,8 @@ describe("WMS route access contract", () => {
         "warranty.manage",
         "warranty.component_issue",
       ],
-      [ROUTES.REVERSE]: ["inventory.reversal.post"],
+      // WWHN-242: REV-00 là màn đọc, BE cấp GET reversal-documents bằng inventory.view.
+      [ROUTES.REVERSE]: ["inventory.view", "inventory.reversal.post"],
       [ROUTES.REPORTS]: ["report.view"],
       [ROUTES.AUDIT_LOGS]: "audit_log.view",
       [ROUTES.PROFILE]: undefined,

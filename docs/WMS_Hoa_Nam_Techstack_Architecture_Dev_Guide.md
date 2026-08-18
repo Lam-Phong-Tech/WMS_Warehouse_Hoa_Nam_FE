@@ -456,6 +456,7 @@ Mỗi PR phải vượt qua:
 7. **API Mapping**: `yarn check:api-mapping` - Verify endpoint usage
 8. **E2E Tests**: `yarn test:e2e` - Playwright tests (if UI changes)
 9. **WWHN-296 closure**: `yarn wwhn-296:verify` - Build/runtime config, no-Stocktake authority va exact-identity evidence
+10. **WWHN-236 closure**: `yarn wwhn-236:verify` - Apply Adjustment DEFERRED (DISP-STK-236): route/permission/endpoint/screen khong duoc mang nghia stocktake-adjustment-variance
 
 ### GitHub Actions
 

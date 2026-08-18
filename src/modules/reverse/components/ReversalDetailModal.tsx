@@ -72,6 +72,7 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
     useState<ReversalReturnCondition>("SELLABLE");
   const [cancelReason, setCancelReason] = useState("");
   const [actionError, setActionError] = useState<unknown>(null);
+  const [staleRecovered, setStaleRecovered] = useState(false);
 
   const isDraft = doc?.status === "DRAFT";
   const pendingReturn = doc?.physical_return_status === "PENDING_RETURN";
@@ -80,21 +81,41 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
     postMutation.isPending ||
     cancelMutation.isPending;
 
+  /**
+   * WWHN-242 · phục hồi optimistic-lock.
+   *
+   * BR-REV-02 bắt buộc If-Match theo `version` hiện hành, nên 409/412/428 luôn có
+   * nghĩa là bản chụp phiếu trong cache đã cũ. Trước đây FE chỉ nhắc "tải lại phiếu"
+   * rồi giữ nguyên cache — bấm lại vẫn gửi đúng version cũ và thất bại vô hạn.
+   * Nay tự nạp lại header + line ngay khi gặp ba mã đó để lần thử kế tiếp mang
+   * version mới; người dùng vẫn thấy nguyên nhân qua alert + toast.
+   */
   function handleFailure(error: unknown, fallback: string) {
     setActionError(error);
     const normalized = normalizeError(error);
-    toast.error(
+    const isStaleVersion =
       normalized.status === 409 ||
-        normalized.status === 412 ||
-        normalized.status === 428
-        ? `${normalized.message}. Tải lại phiếu để lấy version mới rồi thử lại.`
-        : getApiErrorMessage(error, fallback),
-    );
+      normalized.status === 412 ||
+      normalized.status === 428;
+
+    if (isStaleVersion) {
+      setStaleRecovered(true);
+      void docQuery.refetch();
+      void linesQuery.refetch();
+      toast.error(
+        `${normalized.message}. Đã tự nạp lại phiên bản phiếu — kiểm tra trạng thái rồi thử lại.`,
+      );
+      return;
+    }
+
+    setStaleRecovered(false);
+    toast.error(getApiErrorMessage(error, fallback));
   }
 
   async function handleConfirm() {
     if (!doc) return;
     setActionError(null);
+    setStaleRecovered(false);
     try {
       await confirmMutation.mutateAsync({
         id: doc.id,
@@ -125,6 +146,7 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
       ),
       onOk: async () => {
         setActionError(null);
+        setStaleRecovered(false);
         try {
           await postMutation.mutateAsync({
             id: doc.id,
@@ -142,6 +164,7 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
   async function handleCancel() {
     if (!doc) return;
     setActionError(null);
+    setStaleRecovered(false);
     try {
       await cancelMutation.mutateAsync({
         id: doc.id,
@@ -181,8 +204,23 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
             title="Thao tác lifecycle không thành công"
             onRetry={() => {
               setActionError(null);
+              setStaleRecovered(false);
               void docQuery.refetch();
+              void linesQuery.refetch();
             }}
+          />
+        ) : null}
+
+        {staleRecovered ? (
+          <Alert
+            type="warning"
+            showIcon
+            role="status"
+            data-testid="reversal-stale-version-notice"
+            title="Phiên bản phiếu đã thay đổi"
+            description={`Yêu cầu trước bị từ chối vì If-Match không khớp version hiện hành (BR-REV-02). Hệ thống đã tự nạp lại phiếu — version mới là ${
+              doc?.version ?? "-"
+            }, trạng thái ${doc?.status ?? "-"}. Kiểm tra lại rồi thao tác tiếp; không có stock effect nào được ghi.`}
           />
         ) : null}
 
