@@ -1,5 +1,6 @@
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { assertWmsActionPermission } from "@/shared/api/wms-action-permission";
+import { withConcurrencyContract } from "@/shared/api/concurrency-contract";
 import { http } from "@/shared/api/http";
 import {
   requireIdempotencyKeyHeader,
@@ -537,10 +538,16 @@ export async function postInboundReceipt(
       `Inbound version changed from ${request.ifMatch} to ${detail.document.version}`,
     );
   }
-  const result = await http.postWithMeta<RawRecord>(
-    endpoint(API_ENDPOINTS.INBOUND_POST_RECEIPT, documentId),
-    undefined,
-    mutationHeaders(request.ifMatch, idempotencyKey),
+  // WWHN-234 DEV234-P1-02: pre-flight ở trên chỉ đóng được cửa sổ *trước* khi gửi.
+  // Race thật nằm giữa lần đọc detail và lúc BE lấy lockForUpdate, nên 412
+  // STALE_VERSION / 409 CONCURRENCY_CONFLICT phải được phân loại thành hành động
+  // "tải lại rồi thử lại bằng đúng Idempotency-Key cũ" theo AC-GWT-CONC-001.
+  const result = await withConcurrencyContract(() =>
+    http.postWithMeta<RawRecord>(
+      endpoint(API_ENDPOINTS.INBOUND_POST_RECEIPT, documentId),
+      undefined,
+      mutationHeaders(request.ifMatch, idempotencyKey),
+    ),
   );
   return normalizeReceiptEvidence(result.data, result.meta);
 }

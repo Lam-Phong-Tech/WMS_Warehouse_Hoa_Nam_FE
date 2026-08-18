@@ -1,5 +1,6 @@
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { assertWmsActionPermission } from "@/shared/api/wms-action-permission";
+import { withConcurrencyContract } from "@/shared/api/concurrency-contract";
 import { http } from "@/shared/api/http";
 import {
   requireIdempotencyKeyHeader,
@@ -411,10 +412,15 @@ export async function postOutboundIssue(
       `Outbound version changed from ${ifMatch} to ${currentVersion}`,
     );
   }
-  const result = await http.postWithMeta<RawRecord>(
-    endpoint(API_ENDPOINTS.OUTBOUND_POST_ISSUE, documentId),
-    undefined,
-    mutationHeaders(ifMatch, idempotencyKey),
+  // WWHN-234 DEV234-P1-02: Post Issue là final stock-commit action. Request thua race
+  // phải nhận hướng dẫn "tải lại rồi thử lại bằng đúng key cũ" (AC-GWT-CONC-001), thay
+  // vì một message đỏ chung khiến người dùng bấm Post lần hai với key mới.
+  const result = await withConcurrencyContract(() =>
+    http.postWithMeta<RawRecord>(
+      endpoint(API_ENDPOINTS.OUTBOUND_POST_ISSUE, documentId),
+      undefined,
+      mutationHeaders(ifMatch, idempotencyKey),
+    ),
   );
   return normalizeIssueEvidence(result.data, result.meta);
 }
