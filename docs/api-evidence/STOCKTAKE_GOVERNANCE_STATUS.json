@@ -1,6 +1,6 @@
 {
   "schemaVersion": "2.0.0",
-  "updatedAt": "2026-08-18T21:40:00+07:00",
+  "updatedAt": "2026-08-18T13:39:59.350Z",
   "jira": "WWHN-296",
   "finding": "FE296-P1-01",
   "scope": "Authority behind the FE/BE no-Stocktake guard in the current MVP runtime",
@@ -47,7 +47,7 @@
       {
         "artifact": "ERD baseline",
         "repositoryPath": "docs/HoaNam_ERD_Moi_Nhat.md",
-        "sha256": "c81381546d580edf50f4e327fbd859af72f9d3a190814043c00daa27511a06d3",
+        "sha256": "c40ce8d6e33b982a30d3cbf92036408068e2d3e286e68da6e46ef6f86223e74b",
         "anchor": "Section 0.1 Entity/field bi loai khoi baseline: khong tao Stocktake_Session, Stocktake_Snapshot, Stocktake_Count, Variance_Line, Adjustment hoac report/permission tuong ung."
       },
       {

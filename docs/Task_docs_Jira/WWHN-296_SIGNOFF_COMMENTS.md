@@ -3,8 +3,8 @@
 Mỗi vai trò **một comment duy nhất**, phạm vi chỉ là *đọc + duyệt*, không phát sinh việc mới.
 Định danh dùng chung cho mọi comment:
 
-- FE source SHA đã chạy kiểm chứng: `bf7962afcf8503f80e4ffc185dc991da6a2b43cd` (branch `m1`)
-- BE SHA cặp đôi: `9aa2231acecb24e3a6be426e7d872b9c87ba5683` (branch `m1`)
+- FE source SHA đã chạy kiểm chứng: `66a8a4f7e26ce78a584757d54cf12518b1d79302` (branch `m1`)
+- BE SHA cặp đôi: `1655d0b78fa3cd082632e9b2d8510907abce0874` (branch `m1`)
 - Evidence: `docs/evidence/WWHN-296/RUNTIME_IDENTITY_PIN.json`, `docs/evidence/WWHN-296/SHA256SUMS`,
   log từng lệnh tại `docs/evidence/WWHN-296/logs/`
 - Task doc: `docs/Task_docs_Jira/WWHN-296.md`
@@ -16,7 +16,7 @@ Mỗi vai trò **một comment duy nhất**, phạm vi chỉ là *đọc + duy�
 > **FE1 CLOSURE — WWHN-296**
 >
 > Tôi xác nhận đã khắc phục tại source theo review 76/100, trên nhánh `m1`, FE SHA
-> `bf7962afcf8503f80e4ffc185dc991da6a2b43cd` / BE SHA `9aa2231acecb24e3a6be426e7d872b9c87ba5683`:
+> `66a8a4f7e26ce78a584757d54cf12518b1d79302` / BE SHA `1655d0b78fa3cd082632e9b2d8510907abce0874`:
 >
 > - FE296-P1-01: rule "Stocktake removed" nay neo vào `REQ-SRS-037` (Must) của SRS/FRD v1.12 đã adopt tại
 >   WWHN-334, có ERD §0.1 và wireframe xác nhận chéo. `check-api-mapping` đọc lại chính baseline thay vì so
@@ -69,7 +69,7 @@ Mỗi vai trò **một comment duy nhất**, phạm vi chỉ là *đọc + duy�
 > - Thay đổi verifier (`check-api-mapping`, `wms-contract:verify`, `wwhn-148:verify`, `wwhn-296:verify`): rule
 >   vẫn fail-closed, nhưng căn cứ được đọc lại từ baseline nên không còn treo trên một Decision ID chưa duyệt.
 > - Nhánh canonical là `m1`, không có nhánh phụ; `ATT-11432` là historical, current artifact là exact SHA
->   `bf7962afcf8503f80e4ffc185dc991da6a2b43cd`.
+>   `66a8a4f7e26ce78a584757d54cf12518b1d79302`.
 > - Không còn P0 thuộc FE trong phạm vi WWHN-296.
 
 ---
@@ -109,7 +109,7 @@ Mỗi vai trò **một comment duy nhất**, phạm vi chỉ là *đọc + duy�
 
 > **BE1 SIGN-OFF — WWHN-296 (FE296-P1-04)**
 >
-> Tôi xác nhận đã review phần BE mà FE phụ thuộc, trên BE SHA `9aa2231acecb24e3a6be426e7d872b9c87ba5683`:
+> Tôi xác nhận đã review phần BE mà FE phụ thuộc, trên BE SHA `1655d0b78fa3cd082632e9b2d8510907abce0874`:
 > `GET /api/v1/health` (200/503 theo readiness), `POST /api/v1/scan/classify` (auth + `scan.execute|scan.classify`
 > + data scope kho), 401/403 do backend quyết định, và check mới `security.browser_runtime_contract` trong
 > `wms:golive-check`.

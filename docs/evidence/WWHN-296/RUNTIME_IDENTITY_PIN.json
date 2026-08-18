@@ -1,0 +1,205 @@
+{
+  "schemaVersion": "1.0.0",
+  "jira": "WWHN-296",
+  "finding": "FE296-P1-02",
+  "canonicalBranch": "m1",
+  "generatedAt": "2026-08-18T13:39:33.261Z",
+  "generator": "npm run wwhn-296:evidence",
+  "frontend": {
+    "repository": "https://github.com/Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_FE",
+    "available": true,
+    "branch": "m1",
+    "sha": "66a8a4f7e26ce78a584757d54cf12518b1d79302",
+    "workingTreeClean": false,
+    "uncommittedFiles": 20,
+    "commitTimestamp": "2026-08-18T20:38:10+07:00",
+    "nodeVersion": "v22.17.1",
+    "buildId": "1.0.0+local-uncommitted",
+    "buildManifest": {
+      "schemaVersion": "1.0.0",
+      "service": "wms-hoa-nam-frontend",
+      "task": "WWHN-156",
+      "sourceSha": "local-uncommitted",
+      "executionSha": "local-uncommitted",
+      "artifactVersion": "1.0.0",
+      "environment": "local",
+      "generatedAt": "2026-08-18T13:39:32.316Z",
+      "healthContract": {
+        "contractVersion": "WWHN-156-health-v1",
+        "frontendStaticPath": "/health.json",
+        "backendResolvedUrl": "http://localhost:8080/api/v1/health",
+        "backendResolvedPath": "/api/v1/health"
+      }
+    }
+  },
+  "backend": {
+    "repository": "https://github.com/Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_BE",
+    "available": true,
+    "branch": "m1",
+    "sha": "1655d0b78fa3cd082632e9b2d8510907abce0874",
+    "workingTreeClean": false,
+    "uncommittedFiles": 52,
+    "commitTimestamp": "2026-08-18T20:38:41+07:00"
+  },
+  "environments": {
+    "source": {
+      "status": "SOURCE_VERIFIED",
+      "apiBaseUrl": "http://localhost:8080/api/v1",
+      "healthUrl": "http://localhost:8080/api/v1/health",
+      "withCredentials": "true",
+      "note": "Local/sample contract from .env.example. Deployed values are injected outside source."
+    },
+    "uat": {
+      "status": "PENDING",
+      "owner": "DevOps",
+      "jira": "WWHN-294",
+      "requires": [
+        "VITE_API_BASE_URL",
+        "FE origin",
+        "CORS allow-list",
+        "refresh cookie Secure/SameSite",
+        "TLS",
+        "static cache policy",
+        "rollback evidence",
+        "deployed /api/v1/health result"
+      ]
+    },
+    "prod": {
+      "status": "PENDING",
+      "owner": "DevOps",
+      "jira": "WWHN-294",
+      "requires": [
+        "VITE_API_BASE_URL",
+        "FE origin",
+        "CORS allow-list",
+        "refresh cookie Secure/SameSite",
+        "TLS",
+        "static cache policy",
+        "rollback evidence",
+        "deployed /api/v1/health result"
+      ]
+    }
+  },
+  "commandRuns": [
+    {
+      "command": "npm run format:check",
+      "status": "PASS",
+      "exitCode": 0,
+      "startedAt": "2026-08-18T13:38:19.206Z",
+      "durationMs": 6176,
+      "log": "docs/evidence/WWHN-296/logs/format-check.log"
+    },
+    {
+      "command": "npm run lint",
+      "status": "PASS",
+      "exitCode": 0,
+      "startedAt": "2026-08-18T13:38:25.385Z",
+      "durationMs": 14617,
+      "log": "docs/evidence/WWHN-296/logs/lint.log"
+    },
+    {
+      "command": "npm run typecheck",
+      "status": "PASS",
+      "exitCode": 0,
+      "startedAt": "2026-08-18T13:38:40.002Z",
+      "durationMs": 10726,
+      "log": "docs/evidence/WWHN-296/logs/typecheck.log"
+    },
+    {
+      "command": "npm run test",
+      "status": "PASS",
+      "exitCode": 0,
+      "startedAt": "2026-08-18T13:38:50.728Z",
+      "durationMs": 28708,
+      "log": "docs/evidence/WWHN-296/logs/test.log"
+    },
+    {
+      "command": "npm run env:verify",
+      "status": "PASS",
+      "exitCode": 0,
+      "startedAt": "2026-08-18T13:39:19.436Z",
+      "durationMs": 404,
+      "log": "docs/evidence/WWHN-296/logs/env-verify.log"
+    },
+    {
+      "command": "npm run uat:p0p1:verify",
+      "status": "PASS",
+      "exitCode": 0,
+      "startedAt": "2026-08-18T13:39:19.840Z",
+      "durationMs": 393,
+      "log": "docs/evidence/WWHN-296/logs/uat-p0p1-verify.log"
+    },
+    {
+      "command": "npm run wms-contract:verify",
+      "status": "PASS",
+      "exitCode": 0,
+      "startedAt": "2026-08-18T13:39:20.233Z",
+      "durationMs": 397,
+      "log": "docs/evidence/WWHN-296/logs/wms-contract-verify.log"
+    },
+    {
+      "command": "npm run wwhn-148:verify",
+      "status": "PASS",
+      "exitCode": 0,
+      "startedAt": "2026-08-18T13:39:20.630Z",
+      "durationMs": 437,
+      "log": "docs/evidence/WWHN-296/logs/wwhn-148-verify.log"
+    },
+    {
+      "command": "npm run build",
+      "status": "PASS",
+      "exitCode": 0,
+      "startedAt": "2026-08-18T13:39:21.067Z",
+      "durationMs": 11290,
+      "log": "docs/evidence/WWHN-296/logs/build.log"
+    },
+    {
+      "command": "npm run health:check",
+      "status": "PASS",
+      "exitCode": 0,
+      "startedAt": "2026-08-18T13:39:32.358Z",
+      "durationMs": 427,
+      "log": "docs/evidence/WWHN-296/logs/health-check.log"
+    },
+    {
+      "command": "npm run check:api-mapping",
+      "status": "PASS",
+      "exitCode": 0,
+      "startedAt": "2026-08-18T13:39:32.785Z",
+      "durationMs": 475,
+      "log": "docs/evidence/WWHN-296/logs/check-api-mapping.log"
+    }
+  ],
+  "externalGates": [
+    {
+      "jira": "WWHN-294",
+      "role": "DevOps",
+      "scope": "prod provisioning/hardening, environment matrix, rollback",
+      "status": "Blocked/Pending"
+    },
+    {
+      "jira": "WWHN-295",
+      "role": "BE1",
+      "scope": "backend runtime/config/health on the deployed build",
+      "status": "In Progress"
+    },
+    {
+      "jira": "WWHN-297",
+      "role": "QA1",
+      "scope": "security/health readiness evidence on the deployed build",
+      "status": "Blocked/Pending"
+    },
+    {
+      "jira": "WWHN-79",
+      "role": "PM + DevOps + BA/QA",
+      "scope": "parent Go/No-Go",
+      "status": "Blocked/Pending"
+    },
+    {
+      "jira": "WWHN-25",
+      "role": "PM/PO + Process Owner",
+      "scope": "DEC-STK-001 Decision Record",
+      "status": "In Progress"
+    }
+  ]
+}
