@@ -5,11 +5,13 @@ mục thuộc thẩm quyền của vai trò đó — tránh comment nhiều lầ
 
 Các comment này là **đọc + duyệt**, không giao việc mới.
 
-> **Trước khi đăng:** thay `<SHA-FE>` / `<SHA-BE>` bằng SHA thật ở bảng đầu
-> `EVIDENCE_PACK.md`. Không đăng khi chưa có SHA thật.
+> **SHA đã điền sẵn** theo commit thật trên `m1`: FE `4dc3c57`, BE `93b1e71` (nội dung BE
+> nằm trong commit dùng chung của nhánh; manifest + digest từng tệp ở
+> `docs/evidence/WWHN-331/BE_CHANGE_MANIFEST.md` phía BE, commit `3a826ff`).
 >
 > **Riêng comment QA1:** chỉ đăng **sau khi đã thực sự chạy** phạm vi test ở mục F của
-> evidence pack. Đây là mẫu để ghi lại kết quả, không phải lời xác nhận thay QA.
+> evidence pack, và điền `<env>` / `<link>` / `<PASS/FAIL>`. Đây là mẫu để ghi lại kết
+> quả, không phải lời xác nhận thay QA.
 
 ---
 
@@ -17,8 +19,8 @@ Các comment này là **đọc + duyệt**, không giao việc mới.
 
 **[BA] Xác nhận nghiệp vụ WWHN-331 — đóng FE331-P1-02R3 / P1-03R3 / P1-06R3 (phần BA)**
 
-Tôi đã đọc `docs/decision-records/DEC-IMP-001.md` (BE, nhánh `m1` @ `<SHA-BE>`) và
-evidence pack `docs/evidence/WWHN-331/EVIDENCE_PACK.md` (FE @ `<SHA-FE>`). Tôi xác nhận
+Tôi đã đọc `docs/decision-records/DEC-IMP-001.md` (BE, nhánh `m1` @ `93b1e71f0e01c8a7c77670e0c8f0af38d2e68470`) và
+evidence pack `docs/evidence/WWHN-331/EVIDENCE_PACK.md` (FE @ `4dc3c570d92baddf3c9ebe47cddf9bc5b989c979`). Tôi xác nhận
 bốn điểm sau, không yêu cầu thay đổi thêm:
 
 1. **Chốt chính thức hạn mức import SKU** (đóng phần BA của FE331-P1-03R3): tối đa
@@ -53,7 +55,7 @@ bằng job có kiểm soát, hai luồng có hạn mức riêng là chủ ý.
 Tôi đã đọc code và evidence pack, xác nhận:
 
 1. **Baseline** (đóng FE331-P2-01R3): nguồn review là `WMS_Warehouse_Hoa_Nam_FE` @
-   `<SHA-FE>` và `WMS_Warehouse_Hoa_Nam_BE` @ `<SHA-BE>`, **cùng nhánh `m1`**. Không tồn
+   `4dc3c570d92baddf3c9ebe47cddf9bc5b989c979` và `WMS_Warehouse_Hoa_Nam_BE` @ `93b1e71f0e01c8a7c77670e0c8f0af38d2e68470`, **cùng nhánh `m1`**. Không tồn
    tại nhánh `m1ee`, không có nhánh riêng cho WWHN-331.
 2. **Duyệt cách công bố hạn mức**: một nguồn sự thật `config/warehouse.php →
    warehouse.sku_import`, gắn với DEC-IMP-001; API trả khối `constraints` kèm các
@@ -79,7 +81,7 @@ Không phát sinh việc mới từ phía Tech Lead.
 
 **[BE] Xác nhận BE đã hiện thực đúng hợp đồng WWHN-331 / WWHN-330**
 
-Trên `WMS_Warehouse_Hoa_Nam_BE` nhánh `m1` @ `<SHA-BE>`, tôi xác nhận đã hiện thực và tự
+Trên `WMS_Warehouse_Hoa_Nam_BE` nhánh `m1` @ `93b1e71f0e01c8a7c77670e0c8f0af38d2e68470`, tôi xác nhận đã hiện thực và tự
 kiểm chứng:
 
 1. **Định danh idempotent** gồm `file_sha256 + actor_id + options_fingerprint`
@@ -104,7 +106,7 @@ permission mới.
 
 **[QA1] Xác nhận kiểm thử độc lập WWHN-331 / WWHN-332 — đóng FE331-P1-04R3**
 
-Tôi đã kiểm thử độc lập trên đúng build: FE `m1` @ `<SHA-FE>`, BE `m1` @ `<SHA-BE>`
+Tôi đã kiểm thử độc lập trên đúng build: FE `m1` @ `4dc3c570d92baddf3c9ebe47cddf9bc5b989c979`, BE `m1` @ `93b1e71f0e01c8a7c77670e0c8f0af38d2e68470`
 (môi trường: `<env>`; raw log/screenshot đính kèm tại `<link>`).
 
 Kết quả theo mục F của evidence pack:
@@ -132,7 +134,7 @@ Defect phát hiện: `<không có / danh sách>`.
    đánh giá WWHN-331 tính theo W3.
 2. **Phạm vi ticket** giữ nguyên theo task cha WWHN-89 (STRETCH) và output "Import UI
    enhancement" — không mở rộng thêm.
-3. **Nguồn review chính thức**: FE `m1` @ `<SHA-FE>`, BE `m1` @ `<SHA-BE>`; evidence tại
+3. **Nguồn review chính thức**: FE `m1` @ `4dc3c570d92baddf3c9ebe47cddf9bc5b989c979`, BE `m1` @ `93b1e71f0e01c8a7c77670e0c8f0af38d2e68470`; evidence tại
    `docs/evidence/WWHN-331/EVIDENCE_PACK.md`.
 
 ---
@@ -141,7 +143,7 @@ Defect phát hiện: `<không có / danh sách>`.
 
 **[FE1] Bàn giao WWHN-331 sau register R3 — đóng FE331-P1-01R3 / P1-05R3 / P2-01R3**
 
-Đã xử lý trên nhánh `m1` (không tạo nhánh riêng): FE `<SHA-FE>`, BE `<SHA-BE>`.
+Đã xử lý trên nhánh `m1` (không tạo nhánh riêng): FE `4dc3c570d92baddf3c9ebe47cddf9bc5b989c979`, BE `93b1e71f0e01c8a7c77670e0c8f0af38d2e68470`.
 
 1. **FE331-P1-01R3 (đóng)**: kết quả dry-run nay gắn vân tay payload
    `(file, update_existing)`. Đổi tùy chọn hoặc đổi file làm kết quả cũ hết hiệu lực ngay,

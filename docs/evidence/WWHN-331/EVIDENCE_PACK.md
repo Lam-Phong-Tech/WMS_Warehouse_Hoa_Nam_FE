@@ -11,11 +11,17 @@ bảng *P0/P1/P2 Exact Fix Action Register — R3* gồm `FE331-P1-01R3..06R3` v
 
 | Repo | Nhánh | Commit chốt |
 |---|---|---|
-| `WMS_Warehouse_Hoa_Nam_FE` | `m1` | `<SHA-FE>` |
-| `WMS_Warehouse_Hoa_Nam_BE` | `m1` | `<SHA-BE>` |
+| `WMS_Warehouse_Hoa_Nam_FE` | `m1` | `4dc3c570d92baddf3c9ebe47cddf9bc5b989c979` |
+| `WMS_Warehouse_Hoa_Nam_BE` | `m1` | `93b1e71f0e01c8a7c77670e0c8f0af38d2e68470` |
 
 Không tồn tại nhánh `m1ee`; không có nhánh riêng cho WWHN-331. Mọi số liệu dưới đây đo
 trên đúng hai commit này.
+
+**Ghi chú trung thực về commit BE:** nhánh `m1` được nhiều luồng công việc dùng chung, và
+`93b1e71` mang tiêu đề của một task khác (`docs(WWHN-273)`) vì nó gộp cả thay đổi WWHN-331
+vào cùng lượt commit. Nội dung WWHN-331 nằm đủ và đúng trong commit đó; danh sách 11 tệp
+kèm **sha256 từng tệp** để reviewer kiểm chứng mà không cần tin vào tiêu đề commit nằm ở
+`docs/evidence/WWHN-331/BE_CHANGE_MANIFEST.md` (repo BE, commit `3a826ff`).
 
 ---
 
