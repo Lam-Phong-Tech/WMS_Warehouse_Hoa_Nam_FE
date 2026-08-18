@@ -161,7 +161,24 @@ export const API_ENDPOINTS = {
   // Compatibility names point to canonical routes; never issue /skus or /items.
   SKUS: "/products",
   SKU: "/products/:id",
-  SKU_IMPORT_EXCEL: "/import-batches",
+  // WWHN-331/WWHN-224/WWHN-330: bulk SKU import qua Excel — path thật theo
+  // Modules/Warehouse/routes/import.php + ImportController/ImportReportController
+  // (BE), KHÔNG phải /import-batches (đó là resource ImportBatch/ERD item_instance
+  // hoàn toàn khác, dùng permission import_batch.view/manage riêng). Giá trị cũ ở
+  // đây trỏ sai path nhưng không có nơi nào trong FE dùng nó nên sửa an toàn.
+  SKU_IMPORT_TEMPLATE: "/skus/import-template",
+  SKU_IMPORT_EXCEL: "/skus/import-excel",
+  SKU_IMPORT_REPORTS: "/skus/import-reports",
+  SKU_IMPORT_REPORT: "/skus/import-reports/:id",
+  // WWHN-330 P1-01: path lấy từ mô tả OpenAPI trong ImportController::importExcel
+  // (BE, đang sửa song song). Tại thời điểm thêm constant này, route GET .../{id}/
+  // error-file CHƯA được khai trong routes/import.php và ImportReportController
+  // chưa có action tương ứng — ImportErrorFileService::generate() cũng chưa được
+  // gọi từ đâu cả nên error_file_path luôn null. FE dùng constant này nhưng phải
+  // tự ẩn nút tải khi report chưa có error_file_path (xem SkuImportModal).
+  SKU_IMPORT_REPORT_ERROR_FILE: "/skus/import-reports/:id/error-file",
+  /** @deprecated ERD bảng import_batch (item_instance traceability) — không phải SKU import. */
+  IMPORT_BATCHES: "/import-batches",
 
   SCAN_BATCHES: "/scan/batches",
   SCAN_BATCHES_CLASSIFY: "/scan/classify",

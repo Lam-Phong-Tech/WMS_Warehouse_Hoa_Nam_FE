@@ -1,11 +1,14 @@
+// WWHN-328: field set khoá theo GET /reports/dashboard-quick thực tế (BE
+// OperationalReportController::dashboardQuick) — không phải KPI set suy đoán.
 export interface DashboardKPI {
-  activeSku: number;
-  productCount: number;
-  componentCount: number;
-  availableStock: number;
-  pendingPutaway: number;
-  warrantyActive: number;
-  warrantyTempOnly: number;
+  period: { from_date: string; to_date: string };
+  available_qty: number;
+  receipt_qty: number;
+  issue_qty: number;
+  component_issue_qty: number;
+  reversal_net: number;
+  warranty_cases_by_status: Record<string, number>;
+  reconciliation_warnings: Array<Record<string, unknown>>;
 }
 
 export interface RecentDocument {

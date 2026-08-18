@@ -42,11 +42,13 @@ Final sign-off của `WWHN-148` vẫn fail-closed cho đến khi `WWHN-146`, `WW
 
 | Screen/action | Method | Path | FE runtime behavior | Canonical disposition |
 | --- | --- | --- | --- | --- |
-| Dashboard quick KPI | GET | `/reports/dashboard-quick` | Active | Mapping implemented; independent BE approval and runtime sample pending. |
+| Dashboard quick KPI | GET | `/reports/dashboard-quick` | Not wired to any page (`dashboardService.ts`/`DashboardKPI` unreferenced by `DashboardPage.tsx`) | WWHN-328: field set corrected 2026-08-18 to match BE `OperationalReportController::dashboardQuick` exactly (`period/available_qty/receipt_qty/issue_qty/component_issue_qty/reversal_net/warranty_cases_by_status/reconciliation_warnings`); OpenAPI locked same SHA. Independent BA/QA2/Tech Lead sign-off still pending — see WWHN-328 comment thread. |
 | Inventory XNT | GET | `/reports/inventory-xnt` | Active | Mapping implemented; independent BE approval pending. |
 | Export XNT | GET | `/reports/inventory-xnt/export-excel` | Active and action-gated by `report.export` | Mapping implemented; independent BE approval pending. |
 | Reports hub | GET | `/reports/hub` | Fail-closed before network | Blocked until BE1/BE2 + BA publish canonical contract disposition. |
 | Warranty defects report | GET | `/reports/warranty-defects` | Active | Mapping implemented; BE route + PII-mask + export audit present at dev SHA (Swagger snapshot 2026-08-13). |
+
+WWHN-328 scan finding (out of this ticket's BE scope, flagged for BA/PM/FE1 disposition — not fixed here): `dashboardService.ts` also defines `fetchRecentDocuments()` / `fetchReconcileHealth()` / `fetchAlerts()` against `DASHBOARD_RECONCILE_HEALTH = "/inventory-snapshots"` and `DASHBOARD_ALERTS = "/safe-stock-alerts"`. Neither route exists anywhere in `WMS_Warehouse_Hoa_Nam_BE` (`Modules/Warehouse/routes/api.php`); both would 404 if ever called. All three functions are currently unreferenced dead code, so this does not fail any runtime path today. Building those two endpoints requires BA-approved formulas/thresholds first (same class of decision as DEV328-P1-01) — no code change made against them in this pass.
 
 ## RBAC mapping
 

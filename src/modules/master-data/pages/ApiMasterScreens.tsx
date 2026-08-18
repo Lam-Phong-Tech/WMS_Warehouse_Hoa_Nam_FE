@@ -12,11 +12,13 @@ import {
   CloudDownloadOutlined,
   CloudUploadOutlined,
   EditOutlined,
+  ImportOutlined,
   PlusOutlined,
   ReloadOutlined,
   SaveOutlined,
 } from "@ant-design/icons";
 import { toast } from "sonner";
+import { SkuImportModal } from "@/modules/master-data/components/SkuImportModal";
 import {
   useCreateMvpAgency,
   useCreateMvpDefect,
@@ -280,6 +282,8 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   const [editing, setEditing] = useState<SkuRecord | null>(null);
   const [form, setForm] = useState<SkuFormState>(EMPTY_SKU_FORM);
   const [formError, setFormError] = useState("");
+  // WWHN-331 [FE1]: bulk import Excel — cùng quyền sku.manage với CRUD SKU.
+  const [importModalOpen, setImportModalOpen] = useState(false);
 
   const query = useMvpSkus({
     keyword: keyword.trim(),
@@ -553,6 +557,15 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
         </select>
         <div className="spacer" />
         {canManage ? (
+          <button
+            className="btn"
+            type="button"
+            onClick={() => setImportModalOpen(true)}
+          >
+            <ImportOutlined /> Import Excel
+          </button>
+        ) : null}
+        {canManage ? (
           <button className="btn primary" type="button" onClick={openCreate}>
             <PlusOutlined /> Thêm SKU
           </button>
@@ -564,6 +577,15 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
         fallback="Không tải được danh sách SKU."
         onRetry={() => void query.refetch()}
       />
+
+      {importModalOpen ? (
+        <SkuImportModal
+          open={importModalOpen}
+          canImport={canManage}
+          onClose={() => setImportModalOpen(false)}
+          onImported={() => void query.refetch()}
+        />
+      ) : null}
       {publishError ? (
         <div className="alert" role="alert" style={{ marginBottom: 14 }}>
           {getApiErrorMessage(
