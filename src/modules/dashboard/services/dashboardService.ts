@@ -1,24 +1,18 @@
 import { http } from "@/shared/api/http";
-import type {
-  DashboardKPI,
-  RecentDocument,
-  ReconcileHealth,
-  AlertItem,
-} from "../types";
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
+import type { DashboardKPI, DashboardQuery } from "../types";
 
-export async function fetchDashboardKPI(): Promise<DashboardKPI> {
-  return http.get<DashboardKPI>(API_ENDPOINTS.DASHBOARD_KPI);
-}
-
-export async function fetchRecentDocuments(): Promise<RecentDocument[]> {
-  return http.get<RecentDocument[]>(API_ENDPOINTS.DASHBOARD_RECENT_DOCUMENTS);
-}
-
-export async function fetchReconcileHealth(): Promise<ReconcileHealth> {
-  return http.get<ReconcileHealth>(API_ENDPOINTS.DASHBOARD_RECONCILE_HEALTH);
-}
-
-export async function fetchAlerts(): Promise<AlertItem[]> {
-  return http.get<AlertItem[]>(API_ENDPOINTS.DASHBOARD_ALERTS);
+/**
+ * WWHN-327/WWHN-328: dashboard chỉ dùng aggregate contract chính thức.
+ * Filter là date-only; timezone/cutoff do BE xử lý theo APP_TIMEZONE.
+ */
+export async function fetchDashboardKPI(
+  query: DashboardQuery = {},
+): Promise<DashboardKPI> {
+  return http.get<DashboardKPI>(API_ENDPOINTS.DASHBOARD_KPI, {
+    params: {
+      ...(query.from_date ? { from_date: query.from_date } : {}),
+      ...(query.to_date ? { to_date: query.to_date } : {}),
+    },
+  });
 }
