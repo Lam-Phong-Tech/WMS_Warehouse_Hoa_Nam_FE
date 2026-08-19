@@ -20,12 +20,16 @@ import dayjs, { type Dayjs } from "dayjs";
 import { toast } from "sonner";
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { http } from "@/shared/api/http";
-import { getApiErrorMessage } from "@/shared/api/api-error";
+import {
+  getApiErrorMessage,
+  isNoPermissionError,
+} from "@/shared/api/api-error";
 import { assertWmsActionPermission } from "@/shared/api/wms-action-permission";
 import {
   WMS_ACTION_PERMISSIONS,
   WMS_PERMISSION_CATALOG,
 } from "@/shared/constants/wms-permissions";
+import { UI_STATE, uiStateProps } from "@/shared/constants/ui-state";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { MvpPageSizeSelector } from "@/shared/components/mvp/MvpListPagination";
 import {
@@ -34,6 +38,7 @@ import {
 } from "@/shared/components/feedback/BusinessState";
 import { ActionButton } from "@/shared/components/permission/ActionButton";
 import { useHasPermission } from "@/shared/components/permission";
+import { warrantyPiiText } from "@/modules/warranty/constants";
 import { fetchWarehouses } from "@/modules/master-data/services/warehouse.service";
 import {
   useMvpAgencies,
@@ -53,6 +58,22 @@ type ReportKey =
   | "outbound-by-agency";
 
 type SelectOption = { value: string; label: string };
+
+/**
+ * §13.8 Privacy Contract: "PII export requires warranty.pii.export + reason".
+ * BE `AlignedWarrantyReportController::PII_REASON_MIN_LENGTH` từ chối reason ngắn
+ * hơn 5 ký tự bằng 422 `PII_EXPORT_REASON_INVALID`; giữ cùng ngưỡng ở client để
+ * người dùng không phải bấm export mới biết mình gõ thiếu.
+ */
+const PII_REASON_MIN_LENGTH = 5;
+
+/**
+ * BE chặn mọi file export quá 10.000 dòng bằng 422
+ * `REPORT_EXPORT_ROW_LIMIT_EXCEEDED`. Màn hình biết `pagination.total` trước khi
+ * bấm export nên phải cảnh báo trước, thay vì để người dùng chờ hết vòng tạo job
+ * rồi mới nhận lỗi.
+ */
+const EXPORT_ROW_LIMIT = 10000;
 
 type ReportConfig = {
   label: string;
@@ -284,7 +305,10 @@ function useCategoryOptions(): { options: SelectOption[]; loading: boolean } {
   };
 }
 
-function columnsFor(report: ReportKey): TableColumnsType<Raw> {
+function columnsFor(
+  report: ReportKey,
+  canViewPii: boolean,
+): TableColumnsType<Raw> {
   switch (report) {
     case "inventory-balance":
       return [
@@ -729,13 +753,33 @@ function columnsFor(report: ReportKey): TableColumnsType<Raw> {
         },
         // §13.8 + §13.10: cột khách hàng luôn hiển thị nhưng ở dạng đã mask
         // (N*** H*** / ******922 / "***, <địa giới cuối>"), không bao giờ PII thô.
-        { title: "Khách hàng", dataIndex: "customer_name", width: 150 },
-        { title: "SĐT", dataIndex: "customer_phone", width: 130 },
+        //
+        // WWHN-258 · FE258-P1-04: trước đây ba cột này là `dataIndex` trần, tức là
+        // đổ thẳng payload BE ra bảng. Mask khi đó chỉ là lời hứa của BE — hỏng
+        // lớp đó (hoặc gọi qua một route chưa mask) là PII thô hiển thị ngay.
+        // `warrantyPiiText` idempotent trên chuỗi BE đã mask nên gọi vô điều kiện
+        // được, và fail-closed theo `warranty.pii.view` của chính actor.
+        {
+          title: "Khách hàng",
+          dataIndex: "customer_name",
+          width: 150,
+          render: (value: unknown) =>
+            warrantyPiiText(text(value, ""), canViewPii, "name") || "—",
+        },
+        {
+          title: "SĐT",
+          dataIndex: "customer_phone",
+          width: 130,
+          render: (value: unknown) =>
+            warrantyPiiText(text(value, ""), canViewPii, "phone") || "—",
+        },
         {
           title: "Địa chỉ",
           dataIndex: "customer_address",
           width: 200,
           ellipsis: true,
+          render: (value: unknown) =>
+            warrantyPiiText(text(value, ""), canViewPii, "address") || "—",
         },
         { title: "Cập nhật", dataIndex: "updated_at", width: 170 },
       ];
@@ -919,6 +963,13 @@ export default function AlignedReportsPage() {
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(15);
   const [exporting, setExporting] = useState<"xlsx" | "pdf" | null>(null);
+  /**
+   * WWHN-258 · FE258-P1-04: 403 của export trước đây bị gom vào một `toast.error`
+   * chung với lỗi mạng, nên bằng chứng QA2 không phân biệt được "bị từ chối
+   * quyền" và "API hỏng". Surface riêng này phát `data-ui-state=permission-denied`
+   * theo hợp đồng UI_STATE.
+   */
+  const [exportDenied, setExportDenied] = useState<string | null>(null);
 
   const [piiReason, setPiiReason] = useState("");
 
@@ -930,6 +981,12 @@ export default function AlignedReportsPage() {
   const actors = useActorOptions(
     report === "label-log" &&
       hasPermission(WMS_PERMISSION_CATALOG.IAM_USER_VIEW),
+  );
+  // §13.8 / NFR-SRS-015: xem PII và xuất PII là HAI quyền tách rời. Trang báo cáo
+  // phải hành xử khác nhau theo từng quyền, không gộp chung vào report.view.
+  const canViewPii = hasPermission(WMS_PERMISSION_CATALOG.WARRANTY_PII_VIEW);
+  const canExportPii = hasPermission(
+    WMS_PERMISSION_CATALOG.WARRANTY_PII_EXPORT,
   );
   const categories = useCategoryOptions();
   const agencies = useMvpAgencies({ status: "ACTIVE", per_page: 100 });
@@ -1041,9 +1098,19 @@ export default function AlignedReportsPage() {
   const pagination = objectOf(query.data?.pagination);
   const total = n(pagination.total, rows.length);
 
+  const piiReasonTrimmed = piiReason.trim();
+  const piiReasonInvalid =
+    report === "warranty" &&
+    canExportPii &&
+    piiReasonTrimmed.length > 0 &&
+    piiReasonTrimmed.length < PII_REASON_MIN_LENGTH;
+  const exceedsExportRowLimit = total > EXPORT_ROW_LIMIT;
+
   const exportReport = async (format: "xlsx" | "pdf") => {
     if (config.dateFilter && invalidPeriod) return;
+    if (piiReasonInvalid || exceedsExportRowLimit) return;
     setExporting(format);
+    setExportDenied(null);
     try {
       // BR-EXP-01..05: export là hành động riêng, phải chặn tại client trước khi
       // gọi mạng (BE vẫn là lớp enforce authoritative bằng permission report.export).
@@ -1052,10 +1119,19 @@ export default function AlignedReportsPage() {
         "report export",
       );
       const { page: _page, per_page: _perPage, ...filters } = params;
-      if (report === "warranty" && piiReason.trim()) {
-        // §13.8: PII chỉ ra khỏi hệ thống khi có warranty.pii.export VÀ lý do;
-        // BE là lớp enforce, client chỉ chuyển tiếp lý do đã nhập.
-        filters.reason = piiReason.trim();
+      // §13.8: PII chỉ ra khỏi hệ thống khi có warranty.pii.export VÀ lý do.
+      //
+      // WWHN-258 · FE258-P1-04: fail-closed tại client. `reason` gửi kèm khi
+      // actor KHÔNG có warranty.pii.export bị BE trả 403 PERMISSION_DENIED — tức
+      // là lần export đó chắc chắn hỏng, sau khi đã kịp tạo job và ghi một bản
+      // audit REPORT_EXPORT_REQUESTED vô nghĩa. Không có quyền thì không bao giờ
+      // đính `reason`; file vẫn xuất được nhưng ở dạng đã mask.
+      if (
+        report === "warranty" &&
+        canExportPii &&
+        piiReasonTrimmed.length >= PII_REASON_MIN_LENGTH
+      ) {
+        filters.reason = piiReasonTrimmed;
       }
 
       // Annex D SCR-RPT-01 + Annex C createReportExport: hành động export đi qua
@@ -1081,7 +1157,9 @@ export default function AlignedReportsPage() {
         `Đã xuất ${format.toUpperCase()} theo đúng bộ lọc hiện tại (${fmt(job.row_count)} dòng).`,
       );
     } catch (error) {
-      toast.error(getApiErrorMessage(error, "Xuất báo cáo thất bại."));
+      const message = getApiErrorMessage(error, "Xuất báo cáo thất bại.");
+      if (isNoPermissionError(error)) setExportDenied(message);
+      toast.error(message);
     } finally {
       setExporting(null);
     }
@@ -1118,7 +1196,15 @@ export default function AlignedReportsPage() {
               : [];
 
   return (
-    <div className="reversal-page">
+    // WWHN-258 · FE258-P2-02: CSS của `.toolbar`/`.spacer` scoped dưới
+    // `.hn-mvp-source-screen` (src/styles/hn-wms-source-screen.css). Class cũ
+    // `reversal-page` không có định nghĩa nào, nên vào bằng route /reports
+    // toolbar mất flex/gap/wrap — vỡ responsive 390px dù code "có vẻ" đã wrap.
+    <div
+      className="hn-mvp-source-screen"
+      data-mvp-screen="RPT-01"
+      data-testid="wwhn-258-report-screen"
+    >
       <Alert
         showIcon
         type="info"
@@ -1145,6 +1231,7 @@ export default function AlignedReportsPage() {
           setSkuCode("");
           setAsOf(null);
           setPiiReason("");
+          setExportDenied(null);
           setPage(1);
         }}
         items={(Object.keys(CONFIG) as ReportKey[]).map((key) => ({
@@ -1393,11 +1480,17 @@ export default function AlignedReportsPage() {
           />
         ) : null}
 
-        {report === "warranty" ? (
+        {/* §13.8: ô lý do chỉ có nghĩa với actor thực sự được xuất PII. Hiện nó cho
+            người thiếu `warranty.pii.export` là mời họ vào một hành động BE chắc
+            chắn trả 403 — xem FE258-P1-04. */}
+        {report === "warranty" && canExportPii ? (
           <Input
             allowClear
+            data-testid="report-pii-reason"
             style={{ width: 240 }}
-            placeholder="Lý do xuất PII (bỏ trống = mask)"
+            maxLength={500}
+            status={piiReasonInvalid ? "error" : undefined}
+            placeholder={`Lý do xuất PII (≥ ${PII_REASON_MIN_LENGTH} ký tự; bỏ trống = mask)`}
             value={piiReason}
             onChange={(event) => setPiiReason(event.target.value)}
           />
@@ -1414,7 +1507,9 @@ export default function AlignedReportsPage() {
           disabled={
             Boolean(exporting) ||
             query.isLoading ||
-            (config.dateFilter && invalidPeriod)
+            (config.dateFilter && invalidPeriod) ||
+            piiReasonInvalid ||
+            exceedsExportRowLimit
           }
           onClick={() => exportReport("xlsx")}
           disabledTooltip="Cần report.export và bộ lọc hợp lệ"
@@ -1432,7 +1527,9 @@ export default function AlignedReportsPage() {
           disabled={
             Boolean(exporting) ||
             query.isLoading ||
-            (config.dateFilter && invalidPeriod)
+            (config.dateFilter && invalidPeriod) ||
+            piiReasonInvalid ||
+            exceedsExportRowLimit
           }
           onClick={() => exportReport("pdf")}
           disabledTooltip="Cần report.export và bộ lọc hợp lệ"
@@ -1454,8 +1551,51 @@ export default function AlignedReportsPage() {
           type="info"
           showIcon
           style={{ marginBottom: 12 }}
-          title="Khách hàng/SĐT/địa chỉ luôn hiển thị ở dạng đã mask. File export chỉ chứa PII thô khi BE xác nhận warranty.pii.export và bạn nhập lý do; mọi lần export đều được audit kèm lý do."
+          title={
+            canExportPii
+              ? `Khách hàng/SĐT/địa chỉ hiển thị ở dạng đã mask. File export chỉ chứa PII thô khi bạn nhập lý do (≥ ${PII_REASON_MIN_LENGTH} ký tự); mọi lần export đều được audit kèm lý do.`
+              : "Khách hàng/SĐT/địa chỉ hiển thị ở dạng đã mask. Tài khoản của bạn không có warranty.pii.export nên file export luôn ở dạng mask; cần PII thô hãy liên hệ quản trị để được cấp quyền."
+          }
         />
+      ) : null}
+      {piiReasonInvalid ? (
+        <Alert
+          type="warning"
+          showIcon
+          style={{ marginBottom: 12 }}
+          title={`Lý do xuất PII phải có ít nhất ${PII_REASON_MIN_LENGTH} ký tự (BE trả 422 PII_EXPORT_REASON_INVALID nếu ngắn hơn). Bỏ trống nếu chỉ cần file đã mask.`}
+        />
+      ) : null}
+      {/* Thuộc tính trạng thái đặt trên `div` bao ngoài: antd v6 không chuyển tiếp
+          prop lạ xuống DOM, nên `data-ui-state` gắn thẳng lên Alert sẽ biến mất. */}
+      {exceedsExportRowLimit ? (
+        <div {...uiStateProps(UI_STATE.DISABLED, "report-export-row-limit")}>
+          <Alert
+            type="warning"
+            showIcon
+            style={{ marginBottom: 12 }}
+            title={`Bộ lọc hiện tại có ${fmt(total)} dòng — vượt trần ${fmt(EXPORT_ROW_LIMIT)} dòng/file của BE (422 REPORT_EXPORT_ROW_LIMIT_EXCEEDED). Thu hẹp khoảng ngày hoặc bộ lọc trước khi xuất.`}
+          />
+        </div>
+      ) : null}
+      {exportDenied ? (
+        <div
+          {...uiStateProps(
+            UI_STATE.PERMISSION_DENIED,
+            "report-export-permission-denied",
+          )}
+          role="alert"
+        >
+          <Alert
+            type="error"
+            showIcon
+            closable
+            onClose={() => setExportDenied(null)}
+            style={{ marginBottom: 12 }}
+            title="Export bị từ chối quyền (403)."
+            description={exportDenied}
+          />
+        </div>
       ) : null}
       {/* WWHN-254 DEV254-P1-03/P1-04: BE nay cắt mọi báo cáo theo warehouse data-scope
           của người gọi. Người dùng bị giới hạn kho phải nhìn thấy điều đó, nếu không họ
@@ -1528,7 +1668,7 @@ export default function AlignedReportsPage() {
       <Table<Raw>
         rowKey="__rowKey"
         dataSource={rows}
-        columns={columnsFor(report)}
+        columns={columnsFor(report, canViewPii)}
         loading={query.isLoading || query.isFetching}
         scroll={{ x: "max-content" }}
         expandable={
@@ -1563,6 +1703,9 @@ export default function AlignedReportsPage() {
           style={{ marginTop: 16 }}
           size="small"
           pagination={false}
+          // Annex D SCR-RPT-01: "360/768/1280+, no horizontal loss of critical
+          // action". Bảng tổng hợp thiếu scroll sẽ đẩy ngang cả trang ở 390px.
+          scroll={{ x: "max-content" }}
           rowKey={(row) => text(row.defect)}
           dataSource={query.data.by_defect as Raw[]}
           columns={[
@@ -1602,6 +1745,7 @@ export default function AlignedReportsPage() {
           style={{ marginTop: 16 }}
           size="small"
           pagination={false}
+          scroll={{ x: "max-content" }}
           rowKey={(row) => text(row.agency_code)}
           dataSource={query.data.by_agency as Raw[]}
           columns={[

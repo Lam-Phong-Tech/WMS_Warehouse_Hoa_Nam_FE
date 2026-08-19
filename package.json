@@ -79,7 +79,10 @@
     "wwhn-242:evidence": "node scripts/run-wwhn-242-evidence.mjs",
     "wwhn-242:publish": "node scripts/publish-wwhn-242-qa2-evidence.mjs",
     "test:e2e:wwhn-242": "playwright test e2e/wwhn-242-reversal-qa2.spec.ts --project=chromium",
-    "wwhn-237:verify": "node scripts/verify-wwhn-237-closure.mjs"
+    "wwhn-237:verify": "node scripts/verify-wwhn-237-closure.mjs",
+    "wwhn-258:exact-sha": "node scripts/run-wwhn-258-flow06-exact-sha.mjs",
+    "wwhn-258:verify": "node scripts/verify-wwhn-258-closure.mjs",
+    "test:e2e:wwhn-258": "playwright test e2e/wwhn-258-report-qa2.spec.ts --project=chromium"
   },
   "resolutions": {
     "nanoid": "^3.3.18",

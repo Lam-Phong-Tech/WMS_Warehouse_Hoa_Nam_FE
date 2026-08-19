@@ -81,7 +81,16 @@ describe("Flow 06 report pagination/export alignment", () => {
     expect(source).toContain("result.agency_id = agencyId");
     // RPT-WAR-01: cột khách hàng đã mask + lý do xuất PII
     expect(source).toContain('dataIndex: "customer_name"');
-    expect(source).toContain("filters.reason = piiReason.trim()");
+    // WWHN-258 · FE258-P1-04: `reason` chỉ được đính khi actor có
+    // `warranty.pii.export` VÀ lý do đủ dài. Assertion cũ chỉ pin
+    // `filters.reason = piiReason.trim()`, tức là chấp nhận cả trường hợp gửi
+    // reason khi thiếu quyền — thứ mà BE trả 403.
+    expect(source).toContain("filters.reason = piiReasonTrimmed");
+    // Khớp bằng regex bỏ qua khoảng trắng: điều kiện trải nhiều dòng và Prettier
+    // có quyền xuống dòng lại bất cứ lúc nào.
+    expect(source.replace(/\s+/gu, " ")).toContain(
+      'report === "warranty" && canExportPii && piiReasonTrimmed.length >= PII_REASON_MIN_LENGTH',
+    );
   });
 
   it("keeps all eight baseline report groups", () => {

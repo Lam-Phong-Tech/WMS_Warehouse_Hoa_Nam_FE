@@ -236,7 +236,11 @@ describe("WWHN-233 — count/recount stays out of the FE runtime surface", () =>
           fingerprintSha256: string | null;
         };
         dormantSurface: {
-          registeredHistoricalLabels: { path: string; token: string; kind: string }[];
+          registeredHistoricalLabels: {
+            path: string;
+            token: string;
+            kind: string;
+          }[];
           commentOnlyGuards: string[];
         };
       };
@@ -285,11 +289,19 @@ describe("WWHN-233 — count/recount stays out of the FE runtime surface", () =>
       );
 
       for (const rel of pin.sourcePaths) {
-        expect(existsSync(join(process.cwd(), rel)), `${rel} is pinned but missing`).toBe(true);
+        expect(
+          existsSync(join(process.cwd(), rel)),
+          `${rel} is pinned but missing`,
+        ).toBe(true);
       }
 
       const expected = createHash("sha256")
-        .update([...pin.sourcePaths].map((rel) => `${rel}:${sha256(rel)}`).sort().join("\n"))
+        .update(
+          [...pin.sourcePaths]
+            .map((rel) => `${rel}:${sha256(rel)}`)
+            .sort()
+            .join("\n"),
+        )
         .digest("hex");
 
       expect(
@@ -334,7 +346,11 @@ describe("WWHN-233 — count/recount stays out of the FE runtime surface", () =>
       expect(source).toContain(label!.token);
 
       const stripped = source.split(label!.token).join("");
-      expect(/(?<![a-z])(stocktake|recount|cycle-count|physical-count|apply-adjustment)/i.test(stripped)).toBe(false);
+      expect(
+        /(?<![a-z])(stocktake|recount|cycle-count|physical-count|apply-adjustment)/i.test(
+          stripped,
+        ),
+      ).toBe(false);
 
       for (const rel of dormant.commentOnlyGuards) {
         const executable = read(rel)
@@ -343,7 +359,9 @@ describe("WWHN-233 — count/recount stays out of the FE runtime surface", () =>
           .join("\n");
 
         expect(
-          /(?<![a-z])(stocktake|recount|cycle-count|physical-count|apply-adjustment)/i.test(executable),
+          /(?<![a-z])(stocktake|recount|cycle-count|physical-count|apply-adjustment)/i.test(
+            executable,
+          ),
           `${rel} is registered as comment-only but the surface reached executable code`,
         ).toBe(false);
       }

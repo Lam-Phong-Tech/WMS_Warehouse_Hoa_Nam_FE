@@ -221,7 +221,11 @@ describe("WWHN-237 — cặp SHA đóng băng (DEV237-P1-02R2)", () => {
   });
 
   it("bản sao BE byte-identical — reviewer diff hai repo là ra ngay", () => {
-    const beCopy = join(process.cwd(), "../../HoaNam_BE/WMS_Warehouse_Hoa_Nam_BE", PAIR_PATH);
+    const beCopy = join(
+      process.cwd(),
+      "../../HoaNam_BE/WMS_Warehouse_Hoa_Nam_BE",
+      PAIR_PATH,
+    );
     if (!existsSync(beCopy)) return;
     expect(readFileSync(beCopy, "utf8")).toBe(readText(PAIR_PATH));
   });

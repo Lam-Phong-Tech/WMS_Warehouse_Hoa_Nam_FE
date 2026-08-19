@@ -1,0 +1,99 @@
+{
+  "schemaVersion": "1.0.0",
+  "task": "WWHN-258",
+  "title": "Flow 06 · Báo cáo vận hành (SCR-RPT-01) — register nguồn canonical",
+  "note": "FE258-P2-01: URL nguồn từng ghi nhánh 'm1ee' vốn không tồn tại trên GitHub. Đây là bản khai canonical duy nhất; verify bằng `npm run wwhn-258:verify`.",
+  "canonicalSource": {
+    "repo": "WMS_Warehouse_Hoa_Nam_FE",
+    "owner": "Lam-Phong-Tech",
+    "branch": "m1",
+    "invalidBranchAliases": ["m1ee", "m1ee/m1", "tree/m1ee/m1"],
+    "screen": "SCR-RPT-01",
+    "flow": "06"
+  },
+  "supersedes": {
+    "previousPinnedSha": "83c94c3",
+    "reason": "Pin cũ thuộc lần đóng technical trước; nhánh đã tiến rất xa và trang báo cáo thay đổi lớn (FE258-P1-02). Pin theo bất biến mức đối tượng thay vì theo hash cả tệp."
+  },
+  "guardedObjects": [
+    {
+      "id": "report-pii-reason-gated",
+      "file": "src/modules/reports/pages/AlignedReportsPage.tsx",
+      "mustContain": [
+        "WMS_PERMISSION_CATALOG.WARRANTY_PII_EXPORT",
+        "report === \"warranty\" && canExportPii",
+        "piiReasonTrimmed.length >= PII_REASON_MIN_LENGTH"
+      ],
+      "rationale": "§13.8 — ô lý do và việc gửi `reason` chỉ tồn tại với actor có warranty.pii.export; thiếu quyền mà gửi reason thì BE trả 403."
+    },
+    {
+      "id": "report-pii-render-mask",
+      "file": "src/modules/reports/pages/AlignedReportsPage.tsx",
+      "mustContain": [
+        "warrantyPiiText(text(value, \"\"), canViewPii, \"name\")",
+        "warrantyPiiText(text(value, \"\"), canViewPii, \"phone\")",
+        "warrantyPiiText(text(value, \"\"), canViewPii, \"address\")"
+      ],
+      "rationale": "Fail-closed tầng render: ba cột PII không được là `dataIndex` trần đổ thẳng payload BE."
+    },
+    {
+      "id": "report-export-row-limit",
+      "file": "src/modules/reports/pages/AlignedReportsPage.tsx",
+      "mustContain": ["EXPORT_ROW_LIMIT = 10000", "exceedsExportRowLimit"],
+      "rationale": "BE chặn export > 10.000 dòng bằng 422 REPORT_EXPORT_ROW_LIMIT_EXCEEDED; màn hình phải cảnh báo trước."
+    },
+    {
+      "id": "report-export-permission-denied-state",
+      "file": "src/modules/reports/pages/AlignedReportsPage.tsx",
+      "mustContain": [
+        "UI_STATE.PERMISSION_DENIED",
+        "report-export-permission-denied"
+      ],
+      "rationale": "Annex D/§8.2 — 403 của export phải có surface riêng, không lẫn vào toast lỗi chung."
+    },
+    {
+      "id": "report-screen-scope-class",
+      "file": "src/modules/reports/pages/AlignedReportsPage.tsx",
+      "mustContain": ["hn-mvp-source-screen", "data-mvp-screen=\"RPT-01\""],
+      "rationale": "FE258-P2-02 — CSS `.toolbar`/`.spacer` chỉ áp dưới `.hn-mvp-source-screen`; class cũ làm toolbar mất flex/wrap ở 390px."
+    },
+    {
+      "id": "flow06-gate-doc-anchor",
+      "file": "docs/HoaNam_Tai_lieu_tong_hop_Moi_Nhat.md",
+      "mustContain": ["đúng 01 Packing Label cho phiếu/lô"],
+      "mustNotContain": [
+        "01 nhãn/item",
+        "PRODUCT bắt buộc active RFID trước Post Issue"
+      ],
+      "rationale": "Bước 'Current-baseline documentation semantics' của flow06-fe-exact-sha.yml grep đúng đường dẫn này; tệp bị xoá ở f9f7206 làm cổng đỏ vĩnh viễn từ 16/08/2026."
+    },
+    {
+      "id": "be-export-job-pii-gate",
+      "file": "../../HoaNam_BE/WMS_Warehouse_Hoa_Nam_BE/Modules/Warehouse/app/Http/Controllers/OperationalReportController.php",
+      "optional": true,
+      "mustContain": [
+        "assertPiiExportAllowed",
+        "AlignedWarrantyReportController::PII_REASON_MIN_LENGTH"
+      ],
+      "rationale": "POST /reports/export phải từ chối sớm cùng hợp đồng với bước tải file, để không sinh ExportJob và audit cho lần export chắc chắn 403."
+    }
+  ],
+  "requiredTests": [
+    "src/test/wwhn-258-report-pii-rbac.test.tsx",
+    "e2e/wwhn-258-report-qa2.spec.ts"
+  ],
+  "qa2EvidenceShots": [
+    "role-01-report-view-only.png",
+    "role-02-export-without-pii.png",
+    "role-03-pii-export-allowed.png",
+    "pii-01-masked-columns.png",
+    "pii-02-reason-too-short.png",
+    "state-01-empty.png",
+    "state-02-error.png",
+    "state-03-permission-denied.png",
+    "state-04-large-data.png",
+    "responsive-mobile-390x844.png",
+    "responsive-tablet-768x1024.png",
+    "responsive-desktop-1366x900.png"
+  ]
+}

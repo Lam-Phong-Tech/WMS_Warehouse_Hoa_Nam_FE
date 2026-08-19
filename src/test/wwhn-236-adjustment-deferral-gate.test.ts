@@ -124,9 +124,18 @@ describe("WWHN-236 · DISP-STK-236 — Apply Adjustment DEFERRED (FE surface)", 
  */
 describe("WWHN-236 · R3 governance (DISP-STK-236)", () => {
   const FE_ROOT = join(__dirname, "..", "..");
-  const BE_ROOT = join(FE_ROOT, "..", "..", "HoaNam_BE", "WMS_Warehouse_Hoa_Nam_BE");
+  const BE_ROOT = join(
+    FE_ROOT,
+    "..",
+    "..",
+    "HoaNam_BE",
+    "WMS_Warehouse_Hoa_Nam_BE",
+  );
 
-  const readJson = (root: string, rel: string): Record<string, unknown> | null => {
+  const readJson = (
+    root: string,
+    rel: string,
+  ): Record<string, unknown> | null => {
     const abs = join(root, rel);
     if (!existsSync(abs)) return null;
     return JSON.parse(readFileSync(abs, "utf8")) as Record<string, unknown>;
@@ -152,7 +161,10 @@ describe("WWHN-236 · R3 governance (DISP-STK-236)", () => {
     // Chặn đúng thứ nguy hiểm nhất: APPROVED mà chưa đủ chữ ký hoặc chưa có ngày hiệu lực.
     if (approval.status === "APPROVED") {
       expect(approval.effectiveDate).not.toBeNull();
-      const signOff = approval.signOff as Record<string, { decision: string | null }>;
+      const signOff = approval.signOff as Record<
+        string,
+        { decision: string | null }
+      >;
       for (const [role, signature] of Object.entries(signOff)) {
         expect(signature.decision, `vai trò ${role} chưa ký`).not.toBeNull();
       }
@@ -160,7 +172,10 @@ describe("WWHN-236 · R3 governance (DISP-STK-236)", () => {
   });
 
   it("không ticket nào trong chuỗi bị để Blocked/Pending", () => {
-    const chain = readJson(BE_ROOT, "docs/evidence/WWHN-236/CHAIN_DISPOSITION.json");
+    const chain = readJson(
+      BE_ROOT,
+      "docs/evidence/WWHN-236/CHAIN_DISPOSITION.json",
+    );
     if (chain === null) {
       expect(existsSync(BE_ROOT)).toBe(false);
       return;
@@ -174,8 +189,14 @@ describe("WWHN-236 · R3 governance (DISP-STK-236)", () => {
     expect(tickets.length).toBeGreaterThan(0);
 
     for (const ticket of tickets) {
-      expect(ticket.targetStatus.toLowerCase(), `${ticket.ticket}`).not.toContain("blocked");
-      expect(ticket.targetStatus.toLowerCase(), `${ticket.ticket}`).not.toContain("pending");
+      expect(
+        ticket.targetStatus.toLowerCase(),
+        `${ticket.ticket}`,
+      ).not.toContain("blocked");
+      expect(
+        ticket.targetStatus.toLowerCase(),
+        `${ticket.ticket}`,
+      ).not.toContain("pending");
       expect(ticket.disposition).toContain("DEFERRED");
     }
 
@@ -187,7 +208,10 @@ describe("WWHN-236 · R3 governance (DISP-STK-236)", () => {
   });
 
   it("identity của nửa FE pin candidate chứ không pin HEAD", () => {
-    const identity = readJson(FE_ROOT, "docs/evidence/WWHN-236/FE_CLOSURE_IDENTITY.json");
+    const identity = readJson(
+      FE_ROOT,
+      "docs/evidence/WWHN-236/FE_CLOSURE_IDENTITY.json",
+    );
     expect(
       identity,
       "Thiếu FE_CLOSURE_IDENTITY.json — chạy `npm run wwhn-236:verify -- --emit-identity`",
@@ -197,10 +221,14 @@ describe("WWHN-236 · R3 governance (DISP-STK-236)", () => {
     expect(identity?.governed_working_tree).toBe("CLEAN");
     expect(identity?.pull_request).toBe("N/A — direct-to-m1");
 
-    const files = (identity?.governed_files as Array<{ path: string; present: boolean }>) ?? [];
+    const files =
+      (identity?.governed_files as Array<{ path: string; present: boolean }>) ??
+      [];
     expect(files.length).toBeGreaterThan(0);
     for (const file of files) {
-      expect(existsSync(join(FE_ROOT, file.path)), `thiếu ${file.path}`).toBe(true);
+      expect(existsSync(join(FE_ROOT, file.path)), `thiếu ${file.path}`).toBe(
+        true,
+      );
     }
   });
 });

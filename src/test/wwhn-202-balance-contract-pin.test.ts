@@ -59,11 +59,9 @@ describe("WWHN-202 — pin hợp đồng bề mặt đọc Balance hỗ trợ", 
   it.each(WWHN_202_READ_SURFACES)(
     "$surface: có hàm service $serviceExport và hàm đó gọi đúng hằng endpoint",
     ({ endpointKey, serviceExport, serviceModule }) => {
-      const moduleExports = (
-        serviceModule.includes("reversalService")
-          ? reversalService
-          : inventoryService
-      ) as unknown as Record<string, unknown>;
+      const moduleExports = (serviceModule.includes("reversalService")
+        ? reversalService
+        : inventoryService) as unknown as Record<string, unknown>;
 
       expect(
         typeof moduleExports[serviceExport],
@@ -89,9 +87,10 @@ describe("WWHN-202 — pin hợp đồng bề mặt đọc Balance hỗ trợ", 
     const orphans = pinnedKeys.filter(
       (key) => !serviceSources.includes(`API_ENDPOINTS.${key}`),
     );
-    expect(orphans, `Endpoint đã pin nhưng không service nào gọi: ${orphans.join(", ")}`).toEqual(
-      [],
-    );
+    expect(
+      orphans,
+      `Endpoint đã pin nhưng không service nào gọi: ${orphans.join(", ")}`,
+    ).toEqual([]);
   });
 
   it("normalizer balance giữ nguyên 3 trường đối soát của RPT-INV-01", () => {
