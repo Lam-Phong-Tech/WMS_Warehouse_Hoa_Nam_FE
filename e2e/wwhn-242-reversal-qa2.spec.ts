@@ -461,10 +461,15 @@ test.describe("WWHN-242 · REV-00/REV-01 evidence matrix", () => {
 
       // Annex D SCR-REV-01: "confirmation shows stock effect" — hộp xác nhận phải nói
       // rõ đây là bước duy nhất sinh movement và không hoàn tác được.
-      // antd v6 vẽ tiêu đề Modal.confirm ở hai nút DOM lồng nhau
-      // (`ant-modal-title` + `ant-modal-confirm-title`) nên phải lấy phần tử đầu,
-      // không thì strict mode báo "resolved to 2 elements".
-      await expect(page.getByText("Post reversal?").first()).toBeVisible();
+      // antd v6 vẽ tiêu đề Modal.confirm ở HAI nút DOM: một `ant-modal-title` ẩn
+      // (chỉ để aria-labelledby) và một `ant-modal-confirm-title` hiện. Bám theo chuỗi
+      // tiêu đề trần sẽ hoặc vi phạm strict mode, hoặc trúng đúng nút ẩn — nên định vị
+      // theo hộp thoại chứa nội dung cảnh báo rồi mới soi tiêu đề bên trong nó.
+      const confirmDialog = page
+        .getByRole("dialog")
+        .filter({ hasText: "Đây là bước duy nhất phát sinh movement đối ứng" });
+      await expect(confirmDialog).toBeVisible();
+      await expect(confirmDialog).toContainText("Post reversal?");
       await expect(
         page.getByText(/Đây là bước duy nhất phát sinh movement đối ứng/),
       ).toBeVisible();
