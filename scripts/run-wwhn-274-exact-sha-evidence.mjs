@@ -110,7 +110,23 @@ const branch = git("rev-parse", "--abbrev-ref", "HEAD");
 const committedAt = git("log", "-1", "--format=%cI");
 const commitSubject = git("log", "-1", "--format=%s");
 const porcelain = git("status", "--porcelain");
-const treeState = porcelain === "" ? "clean" : "dirty";
+const dirtyEntries = porcelain === "" ? [] : porcelain.split(/\r?\n/u);
+
+// "Clean" o day co nghia la MA NGUON dung bang SHA dang xet. Chinh lan chay nay ghi
+// ra evidence/report/test-results, nen neu tinh ca chung thi manifest se luon la
+// INVALID_FOR_CLOSURE_DIRTY_TREE ngay ca tren mot checkout hoan toan sach — bang
+// chung khi do khong bao gio dung de dong task duoc.
+const GENERATED_PATHS = [
+  /^playwright-report\//u,
+  /^test-results[/.]/u,
+  /^docs\/evidence\/WWHN-274\//u,
+  /^dist\//u,
+];
+const sourceDirtyEntries = dirtyEntries.filter((entry) => {
+  const path = entry.slice(3).replace(/\\/gu, "/").replace(/^"|"$/gu, "");
+  return !GENERATED_PATHS.some((pattern) => pattern.test(path));
+});
+const treeState = sourceDirtyEntries.length === 0 ? "clean" : "dirty";
 
 if (!sourceSha) {
   console.error("WWHN-274 exact-SHA runner: khong doc duoc git HEAD.");
@@ -245,7 +261,10 @@ const manifest = {
   commitSubject,
   committedAt,
   treeState,
-  dirtyEntries: porcelain === "" ? [] : porcelain.split(/\r?\n/u),
+  dirtyEntries,
+  // Chi nhung thay doi NGUON moi lam bang chung mat gia tri; artifact do chinh lan
+  // chay nay sinh ra thi khong.
+  sourceDirtyEntries,
   runner: "scripts/run-wwhn-274-exact-sha-evidence.mjs",
   runnerMode: withRealEnv ? "gates+real-env" : "gates",
   // Ghi ro E2E do vao dau: neu day khong phai build cua chinh sourceSha thi manifest

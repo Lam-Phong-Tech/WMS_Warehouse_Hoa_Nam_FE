@@ -137,6 +137,38 @@ async function writeRealEvidence(
   });
 }
 
+/**
+ * Đọc envelope JSON của backend thật, và khi backend KHÔNG trả JSON thì báo đúng
+ * nguyên nhân.
+ *
+ * `response.json()` trên một trang lỗi PHP/nginx chỉ ném `SyntaxError: Unexpected
+ * token '<'`, khiến người đọc kết quả tưởng hợp đồng API sai trong khi thực tế là
+ * backend đang hỏng (thiếu vendor, 502 của proxy, trang lỗi của WAF...). Với một bộ
+ * kiểm dùng để sign-off release, thông báo phải chỉ thẳng vào backend.
+ */
+async function readJsonEnvelope(
+  response: APIResponse,
+  label: string,
+): Promise<unknown> {
+  const contentType = response.headers()["content-type"] ?? "";
+  const raw = await response.text();
+  if (!contentType.includes("json")) {
+    throw new Error(
+      `${label} tra content-type "${contentType || "(khong co)"}" thay vi JSON ` +
+        `(HTTP ${response.status()}). Backend that dang khong phuc vu envelope API. ` +
+        `Doan dau body: ${raw.slice(0, 300)}`,
+    );
+  }
+  try {
+    return JSON.parse(raw) as unknown;
+  } catch (error) {
+    throw new Error(
+      `${label} khai bao JSON nhung parse that bai: ${(error as Error).message}. ` +
+        `Doan dau body: ${raw.slice(0, 300)}`,
+    );
+  }
+}
+
 /** Ghi lại mọi lưu lượng thật FE tới API để chứng minh không có mock nào chen vào. */
 function recordApiTraffic(page: Page): ApiTrafficEntry[] {
   const traffic: ApiTrafficEntry[] = [];
@@ -162,7 +194,10 @@ test.describe("WWHN-274 real-environment FE-BE smoke", () => {
 
     const health: APIResponse = await request.get(`${REAL_API_BASE_URL}/health`);
     expect([200, 503]).toContain(health.status());
-    const body = (await health.json()) as Record<string, unknown>;
+    const body = (await readJsonEnvelope(health, "GET {api}/health")) as Record<
+      string,
+      unknown
+    >;
     expect(body).toHaveProperty("success");
 
     // Envelope chuẩn: payload health nằm ở data (200) hoặc errors (503 degraded).
@@ -209,7 +244,10 @@ test.describe("WWHN-274 real-environment FE-BE smoke", () => {
       headers: { Accept: "application/json" },
     });
     expect(protectedRead.status()).toBe(401);
-    const body = (await protectedRead.json()) as Record<string, unknown>;
+    const body = (await readJsonEnvelope(
+      protectedRead,
+      "GET {api}/skus (khong phien)",
+    )) as Record<string, unknown>;
     expect(body.success).toBe(false);
 
     await writeRealEvidence(testInfo, {
