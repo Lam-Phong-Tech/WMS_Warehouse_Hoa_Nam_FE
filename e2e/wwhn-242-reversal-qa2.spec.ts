@@ -374,6 +374,22 @@ async function openDetail(page: Page): Promise<void> {
 
 test.use({ video: "on", trace: "on", screenshot: "on" });
 
+const BASE_URL = process.env.E2E_BASE_URL ?? "http://127.0.0.1:5173";
+
+test.beforeAll(async ({ browser }) => {
+  // Lần điều hướng đầu tiên phải chờ Vite dev server biên dịch cả cây module. Nếu để
+  // test đầu tiên của ma trận gánh việc đó, nó đỏ vì timeout điều hướng chứ không phải
+  // vì màn hình sai — đúng ca đã xảy ra ở lượt chạy 19/08. Hâm nóng trước, ngoài phạm
+  // vi mọi phép đo, để QA2 chạy lại cho kết quả ổn định.
+  const page = await browser.newPage();
+  try {
+    await page.goto(BASE_URL, { waitUntil: "commit", timeout: 120_000 });
+    await page.waitForLoadState("load", { timeout: 120_000 });
+  } finally {
+    await page.close();
+  }
+});
+
 test.beforeEach(async ({ context }) => {
   await context.clearCookies();
 });
@@ -445,7 +461,10 @@ test.describe("WWHN-242 · REV-00/REV-01 evidence matrix", () => {
 
       // Annex D SCR-REV-01: "confirmation shows stock effect" — hộp xác nhận phải nói
       // rõ đây là bước duy nhất sinh movement và không hoàn tác được.
-      await expect(page.getByText("Post reversal?")).toBeVisible();
+      // antd v6 vẽ tiêu đề Modal.confirm ở hai nút DOM lồng nhau
+      // (`ant-modal-title` + `ant-modal-confirm-title`) nên phải lấy phần tử đầu,
+      // không thì strict mode báo "resolved to 2 elements".
+      await expect(page.getByText("Post reversal?").first()).toBeVisible();
       await expect(
         page.getByText(/Đây là bước duy nhất phát sinh movement đối ứng/),
       ).toBeVisible();

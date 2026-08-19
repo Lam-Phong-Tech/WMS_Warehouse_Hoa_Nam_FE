@@ -497,6 +497,21 @@ if (!existsSync(backendRoot)) {
     "phải có test chứng minh từ chối theo data scope là no-write",
     backendRoot,
   );
+
+  // FE242-P2-03 áp cho cả BE: cùng một lớp lỗi trích dẫn nằm trong mã production của
+  // BE (WmsContractController), nên khoá luôn để hai repo không lệch chuẩn.
+  const beCitation = read(
+    "Modules/Warehouse/app/Http/Controllers/WmsContractController.php",
+    backendRoot,
+  );
+  if (
+    beCitation !== null &&
+    /REQ-SRS-037\s*\/\s*`?DEC-NO-STOCKTAKE-001/u.test(beCitation)
+  ) {
+    failures.push(
+      "BE WmsContractController.php: trích 'REQ-SRS-037 / DEC-NO-STOCKTAKE-001' đặt ngang hàng hai mã — WWHN-25 còn pending nên DEC-NO-STOCKTAKE-001 không phải Decision ID đã duyệt (FE242-P2-03).",
+    );
+  }
 }
 
 // ───────────────────────── Kết quả ─────────────────────────
