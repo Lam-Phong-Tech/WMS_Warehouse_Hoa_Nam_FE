@@ -1,10 +1,11 @@
 # WWHN-296 — [FE1] Kiểm tra build/cấu hình runtime
 
-Date: 2026-08-18 (ICT)
+Date: 2026-08-18, cập nhật 2026-08-19 (ICT)
 Branch: `m1` (canonical, không mở nhánh phụ)
 Repository: <https://github.com/Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_FE>
-Latest reviewed Jira assessment at start of this remediation: **76/100 — CHANGES REQUIRED**
-(register `FE296-P1-01..07`, `FE296-P2-01`)
+Review đầu vòng 1: **76/100 — CHANGES REQUIRED** (register `FE296-P1-01..07`, `FE296-P2-01`).
+Review vòng 2 (comment 15653, 18/08): **PASS có điều kiện 80/100** (register `FE296-P1-08`,
+`FE296-P1-02R`, `FE296-P1-03..06`, `FE296-P1-01G`) — phần FE-owned đã khắc phục ở §2b.
 
 ## 1. Phạm vi và ranh giới sự thật
 
@@ -38,6 +39,23 @@ Vì vậy disposition đúng vẫn là **FE SOURCE REMEDIATED / EXTERNAL PROD+QA
 | FE296-P2-01 | P2 | Có reference nhánh `m1ee`/`tree/m1ee` không tồn tại. | Toàn bộ việc nằm trên `m1`; `wwhn-296:verify` cấm chuỗi `m1ee` trong task doc và DevOps register. | Đóng |
 
 Không phát hiện P0 thuộc FE trong review hiện tại. Các gate P1 external cố ý **không** được FE đánh dấu PASS.
+
+## 2b. Register khắc phục theo review 80/100 (comment 15653, 18/08/2026)
+
+| ID | Sev | Nguyên nhân gốc | Khắc phục đã áp dụng | Trạng thái |
+| --- | --- | --- | --- | --- |
+| FE296-P1-08 | P1 | `wwhn-296:verify` chỉ ghi *note* khi `workingTreeClean=false`; pin cũ mang `buildId 1.0.0+local-uncommitted`, `sourceSha/executionSha=local-uncommitted` — evidence mô tả một trạng thái không ai checkout lại được. Thêm nữa, rule `.gitignore` `logs` nuốt cả thư mục `docs/evidence/**/logs/` (negation `*.log` vô hiệu vì thư mục cha bị exclude) nên **log evidence chưa từng được commit**. | Verifier **hard-FAIL** khi: `workingTreeClean != true` (cả FE lẫn BE), bất kỳ trường identity nào chứa `local-uncommitted`, `buildManifest.sourceSha != executionSha != pinned FE SHA`, `generatedAt` sớm hơn commit của candidate, thiếu block `integrity`, hoặc evidence pack lệch `SHA256SUMS` (từng entry được băm lại; log nào được trích dẫn phải có mặt trong SUMS). `.gitignore` mở lại `!docs/evidence/**/logs/`. Positive control: verifier mới chạy trên pin cũ FAIL đúng 8 lỗi — log `logs/verify-closure-positive-control-old-pin.log`. | Đóng tại source |
+| FE296-P1-02R | P1 | Evidence sinh từ tree bẩn, trước khi commit source. | Generator **fail-closed trước khi chạy**: từ chối nếu FE/BE tree không sạch hoặc không trên `m1` (chấp nhận detached checkout đúng exact SHA thuộc `m1` — cách vật chất hoá clean checkout khi `m1` là tree dùng chung); inject `SOURCE_SHA/EXECUTION_SHA` thật vào `build-manifest`; tự vật chất hoá `swagger-api.json` qua `contract:sync --from` BE checkout đã pin (WWHN-309) vì clean checkout không có artifact synced; kiểm tra **integrity hậu-run** (HEAD không đổi, source không bị phiên song song sửa giữa chừng — vi phạm là VOID RUN). Evidence hiện hành sinh từ **clean checkout exact SHA** `821ac834bb70f1ee076acb7da659777be43742c6` (FE) / BE `7da26cb1cc13df58537c5ff8556070ad8529ed4d`, 12/12 lệnh PASS, `buildId 1.0.0+821ac834...`. | Đóng — evidence current |
+| FE296-P1-03 | P1 | UAT/PROD deploy/runtime checks thuộc DevOps. | Không đổi từ vòng 1: công cụ đã bàn giao, DevOps chạy và attach trên `WWHN-294`. | External — `WWHN-294` |
+| FE296-P1-04 | P1 | BE runtime acceptance phải nằm trên task BE. | Evidence BE nằm trên chính `WWHN-295` (đã có review riêng + FE consumer confirmation trên đó). WWHN-296 không self/cross-sign thay. | External — `WWHN-295` |
+| FE296-P1-05 | P1 | Prod QA evidence phải nằm trên task QA. | QA1 chạy/attach trên chính `WWHN-297`. | External — `WWHN-297` |
+| FE296-P1-06 | P1 | Parent thiếu production checklist + Go/No-Go. | FE cung cấp identity pin/build-runtime config cho checklist parent; disposition thuộc `WWHN-79`. | External — `WWHN-79` |
+| FE296-P1-01G | P1 gov | Không được nâng `DEC-NO-STOCKTAKE-001` thành approved standalone Decision. | Giữ nguyên **Pending** trong `STOCKTAKE_GOVERNANCE_STATUS.json` (`approvedStandaloneDecisionId: null`, gate `WWHN-25 / DEC-STK-001`); verifier tiếp tục chặn mọi claim approval. BA đã xác nhận thẩm quyền REQ-SRS-037 (comment 15657). | Pending — `WWHN-25` |
+
+Sửa kèm trong vòng này (root cause lộ ra khi chạy trên clean checkout): digest wireframe trong
+governance register được tính từ bản working-copy CRLF thay vì bytes LF canonical (`.gitattributes eol=lf`)
+— refresh về `22c69d4b...` (nội dung file không đổi, `git diff` rỗng); re-pin BE contract sang exact SHA
+`7da26cb` theo flow WWHN-309 vì BE đổi contract có chủ đích ở WWHN-295.
 
 ## 3. Định danh chính xác
 

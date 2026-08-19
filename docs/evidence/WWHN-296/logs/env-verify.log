@@ -1,0 +1,6 @@
+$ npm run env:verify
+
+[env-contract] PASS: FE /health.json and versioned backend /api/v1/health contracts are locked; /api/health is rejected.
+
+
+exit code: 0

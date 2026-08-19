@@ -1,29 +1,43 @@
 {
-  "schemaVersion": "1.0.0",
+  "schemaVersion": "1.1.0",
   "jira": "WWHN-296",
-  "finding": "FE296-P1-02",
+  "finding": "FE296-P1-02R / FE296-P1-08",
   "canonicalBranch": "m1",
-  "generatedAt": "2026-08-18T13:39:33.261Z",
+  "generatedAt": "2026-08-19T13:22:20.515Z",
   "generator": "npm run wwhn-296:evidence",
+  "integrity": {
+    "identityCapturedAt": "2026-08-19T13:20:18.869Z",
+    "checkedAt": "2026-08-19T13:22:20.514Z",
+    "headShaAfterRun": "821ac834bb70f1ee076acb7da659777be43742c6",
+    "headUnchanged": true,
+    "sourceTreeCleanAfterRunExcludingEvidence": true,
+    "dirtyCheckExcludes": [
+      "docs/evidence/WWHN-296"
+    ]
+  },
   "frontend": {
     "repository": "https://github.com/Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_FE",
     "available": true,
     "branch": "m1",
-    "sha": "66a8a4f7e26ce78a584757d54cf12518b1d79302",
-    "workingTreeClean": false,
-    "uncommittedFiles": 20,
-    "commitTimestamp": "2026-08-18T20:38:10+07:00",
+    "checkoutMode": "detached-exact-sha-on-m1",
+    "sha": "821ac834bb70f1ee076acb7da659777be43742c6",
+    "workingTreeClean": true,
+    "uncommittedFiles": 0,
+    "dirtyCheckExcludes": [
+      "docs/evidence/WWHN-296"
+    ],
+    "commitTimestamp": "2026-08-19T20:19:58+07:00",
     "nodeVersion": "v22.17.1",
-    "buildId": "1.0.0+local-uncommitted",
+    "buildId": "1.0.0+821ac834bb70f1ee076acb7da659777be43742c6",
     "buildManifest": {
       "schemaVersion": "1.0.0",
       "service": "wms-hoa-nam-frontend",
       "task": "WWHN-156",
-      "sourceSha": "local-uncommitted",
-      "executionSha": "local-uncommitted",
+      "sourceSha": "821ac834bb70f1ee076acb7da659777be43742c6",
+      "executionSha": "821ac834bb70f1ee076acb7da659777be43742c6",
       "artifactVersion": "1.0.0",
       "environment": "local",
-      "generatedAt": "2026-08-18T13:39:32.316Z",
+      "generatedAt": "2026-08-19T13:22:19.613Z",
       "healthContract": {
         "contractVersion": "WWHN-156-health-v1",
         "frontendStaticPath": "/health.json",
@@ -36,10 +50,12 @@
     "repository": "https://github.com/Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_BE",
     "available": true,
     "branch": "m1",
-    "sha": "1655d0b78fa3cd082632e9b2d8510907abce0874",
-    "workingTreeClean": false,
-    "uncommittedFiles": 52,
-    "commitTimestamp": "2026-08-18T20:38:41+07:00"
+    "checkoutMode": "attached-branch",
+    "sha": "7da26cb1cc13df58537c5ff8556070ad8529ed4d",
+    "workingTreeClean": true,
+    "uncommittedFiles": 0,
+    "dirtyCheckExcludes": [],
+    "commitTimestamp": "2026-08-19T19:03:19+07:00"
   },
   "environments": {
     "source": {
@@ -82,91 +98,99 @@
   },
   "commandRuns": [
     {
+      "command": "npm run contract:sync -- --from <pinned BE checkout>",
+      "status": "PASS",
+      "exitCode": 0,
+      "startedAt": "2026-08-19T13:20:22.107Z",
+      "durationMs": 260,
+      "log": "docs/evidence/WWHN-296/logs/contract-sync.log"
+    },
+    {
       "command": "npm run format:check",
       "status": "PASS",
       "exitCode": 0,
-      "startedAt": "2026-08-18T13:38:19.206Z",
-      "durationMs": 6176,
+      "startedAt": "2026-08-19T13:20:22.369Z",
+      "durationMs": 9956,
       "log": "docs/evidence/WWHN-296/logs/format-check.log"
     },
     {
       "command": "npm run lint",
       "status": "PASS",
       "exitCode": 0,
-      "startedAt": "2026-08-18T13:38:25.385Z",
-      "durationMs": 14617,
+      "startedAt": "2026-08-19T13:20:32.325Z",
+      "durationMs": 46391,
       "log": "docs/evidence/WWHN-296/logs/lint.log"
     },
     {
       "command": "npm run typecheck",
       "status": "PASS",
       "exitCode": 0,
-      "startedAt": "2026-08-18T13:38:40.002Z",
-      "durationMs": 10726,
+      "startedAt": "2026-08-19T13:21:18.716Z",
+      "durationMs": 11808,
       "log": "docs/evidence/WWHN-296/logs/typecheck.log"
     },
     {
       "command": "npm run test",
       "status": "PASS",
       "exitCode": 0,
-      "startedAt": "2026-08-18T13:38:50.728Z",
-      "durationMs": 28708,
+      "startedAt": "2026-08-19T13:21:30.524Z",
+      "durationMs": 34940,
       "log": "docs/evidence/WWHN-296/logs/test.log"
     },
     {
       "command": "npm run env:verify",
       "status": "PASS",
       "exitCode": 0,
-      "startedAt": "2026-08-18T13:39:19.436Z",
-      "durationMs": 404,
+      "startedAt": "2026-08-19T13:22:05.465Z",
+      "durationMs": 466,
       "log": "docs/evidence/WWHN-296/logs/env-verify.log"
     },
     {
       "command": "npm run uat:p0p1:verify",
       "status": "PASS",
       "exitCode": 0,
-      "startedAt": "2026-08-18T13:39:19.840Z",
-      "durationMs": 393,
+      "startedAt": "2026-08-19T13:22:05.932Z",
+      "durationMs": 450,
       "log": "docs/evidence/WWHN-296/logs/uat-p0p1-verify.log"
     },
     {
       "command": "npm run wms-contract:verify",
       "status": "PASS",
       "exitCode": 0,
-      "startedAt": "2026-08-18T13:39:20.233Z",
-      "durationMs": 397,
+      "startedAt": "2026-08-19T13:22:06.382Z",
+      "durationMs": 422,
       "log": "docs/evidence/WWHN-296/logs/wms-contract-verify.log"
     },
     {
       "command": "npm run wwhn-148:verify",
       "status": "PASS",
       "exitCode": 0,
-      "startedAt": "2026-08-18T13:39:20.630Z",
-      "durationMs": 437,
+      "startedAt": "2026-08-19T13:22:06.804Z",
+      "durationMs": 530,
       "log": "docs/evidence/WWHN-296/logs/wwhn-148-verify.log"
     },
     {
       "command": "npm run build",
       "status": "PASS",
       "exitCode": 0,
-      "startedAt": "2026-08-18T13:39:21.067Z",
-      "durationMs": 11290,
+      "startedAt": "2026-08-19T13:22:07.335Z",
+      "durationMs": 12307,
       "log": "docs/evidence/WWHN-296/logs/build.log"
     },
     {
       "command": "npm run health:check",
       "status": "PASS",
       "exitCode": 0,
-      "startedAt": "2026-08-18T13:39:32.358Z",
-      "durationMs": 427,
+      "startedAt": "2026-08-19T13:22:19.643Z",
+      "durationMs": 428,
       "log": "docs/evidence/WWHN-296/logs/health-check.log"
     },
     {
       "command": "npm run check:api-mapping",
       "status": "PASS",
       "exitCode": 0,
-      "startedAt": "2026-08-18T13:39:32.785Z",
-      "durationMs": 475,
+      "startedAt": "2026-08-19T13:22:20.071Z",
+      "durationMs": 357,
       "log": "docs/evidence/WWHN-296/logs/check-api-mapping.log"
     }
   ],

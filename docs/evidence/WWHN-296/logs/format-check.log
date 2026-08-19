@@ -1,0 +1,6 @@
+$ npm run format:check
+
+[format-baseline] PASS: no new formatting drift; 0 unchanged baseline-debt file(s) remain, 0 were cleaned.
+
+
+exit code: 0

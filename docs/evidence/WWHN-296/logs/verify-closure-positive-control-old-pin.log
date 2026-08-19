@@ -1,0 +1,9 @@
+[wwhn-296] NOTE: WWHN-25 / DEC-STK-001 remains In Progress — no standalone approval is claimed.
+[wwhn-296] ERROR: Evidence was generated from a dirty FE working tree (workingTreeClean must be true).
+[wwhn-296] ERROR: Evidence quotes a BE SHA from a dirty BE working tree (workingTreeClean must be true).
+[wwhn-296] ERROR: frontend.buildId carries the 'local-uncommitted' sentinel; rebuild from a clean committed SHA.
+[wwhn-296] ERROR: buildManifest.sourceSha carries the 'local-uncommitted' sentinel; rebuild from a clean committed SHA.
+[wwhn-296] ERROR: buildManifest.executionSha carries the 'local-uncommitted' sentinel; rebuild from a clean committed SHA.
+[wwhn-296] ERROR: buildManifest.sourceSha (local-uncommitted) must equal the pinned FE SHA (66a8a4f7e26ce78a584757d54cf12518b1d79302).
+[wwhn-296] ERROR: Evidence run integrity: HEAD changed while the gates were executing (or integrity block missing).
+[wwhn-296] ERROR: Evidence run integrity: source tree was modified mid-run (or integrity block missing).
