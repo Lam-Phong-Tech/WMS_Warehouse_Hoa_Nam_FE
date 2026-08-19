@@ -50,7 +50,9 @@ function readJson(relativePath) {
 // ---------------------------------------------------------------------------
 // FE296-P1-01 — the no-Stocktake guard must cite an authority that still exists.
 // ---------------------------------------------------------------------------
-const governance = readJson("docs/api-evidence/STOCKTAKE_GOVERNANCE_STATUS.json");
+const governance = readJson(
+  "docs/api-evidence/STOCKTAKE_GOVERNANCE_STATUS.json",
+);
 if (governance) {
   const authority = governance.ruleAuthority ?? {};
   const baseline = authority.controllingBaseline ?? {};
@@ -67,7 +69,9 @@ if (governance) {
   // has to be re-read before the guard keeps enforcing anything.
   const controllingHash = sha256(baseline.repositoryPath ?? "");
   if (controllingHash === null) {
-    fail(`Pinned controlling baseline is missing: ${baseline.repositoryPath ?? "(unset)"}`);
+    fail(
+      `Pinned controlling baseline is missing: ${baseline.repositoryPath ?? "(unset)"}`,
+    );
   } else if (controllingHash !== baseline.sha256) {
     fail(
       `${baseline.repositoryPath} changed (sha256 ${controllingHash}); re-read REQ-SRS-037 and update ` +
@@ -85,19 +89,29 @@ if (governance) {
     if (actual === null) {
       fail(`Corroborating baseline artifact is missing: ${path}`);
     } else if (actual !== artifact.sha256) {
-      notes.push(`${path} changed (sha256 ${actual}); refresh its hash in the governance register.`);
+      notes.push(
+        `${path} changed (sha256 ${actual}); refresh its hash in the governance register.`,
+      );
     }
   }
 
   const erd = read("docs/HoaNam_ERD_Moi_Nhat.md");
   if (erd && !erd.includes("Không tạo Stocktake_Session")) {
-    fail("ERD baseline no longer excludes Stocktake entities; the guard must not outlive its authority.");
+    fail(
+      "ERD baseline no longer excludes Stocktake entities; the guard must not outlive its authority.",
+    );
   }
 
   const srs = read(baseline.repositoryPath ?? "docs/HN_SRS_FRD_v1.12_FULL.md");
   if (srs) {
-    for (const anchor of ["REQ-SRS-037", "DEC-NO-STOCKTAKE-001", "AC-SRS-037", "BR-NOSTK-01..03"]) {
-      if (!srs.includes(anchor)) fail(`Baseline SRS no longer contains ${anchor}.`);
+    for (const anchor of [
+      "REQ-SRS-037",
+      "DEC-NO-STOCKTAKE-001",
+      "AC-SRS-037",
+      "BR-NOSTK-01..03",
+    ]) {
+      if (!srs.includes(anchor))
+        fail(`Baseline SRS no longer contains ${anchor}.`);
     }
   }
 
@@ -109,14 +123,21 @@ if (governance) {
   if (gate.issue !== "WWHN-25" || gate.decisionKey !== "DEC-STK-001") {
     fail("Decision Record gate must stay pinned to WWHN-25 / DEC-STK-001.");
   }
-  if (gate.approvedStandaloneDecisionId !== null && !gate.approvedArtifactHash) {
-    fail("An approved standalone Decision ID requires the approved artifact hash.");
+  if (
+    gate.approvedStandaloneDecisionId !== null &&
+    !gate.approvedArtifactHash
+  ) {
+    fail(
+      "An approved standalone Decision ID requires the approved artifact hash.",
+    );
   }
   if (!gate.owner) {
     fail("Decision Record gate must name an owner.");
   }
   if (gate.approvedStandaloneDecisionId === null) {
-    notes.push("WWHN-25 / DEC-STK-001 remains In Progress — no standalone approval is claimed.");
+    notes.push(
+      "WWHN-25 / DEC-STK-001 remains In Progress — no standalone approval is claimed.",
+    );
   }
 }
 
@@ -132,22 +153,138 @@ if (pin) {
   if (!sha40.test(String(pin.backend?.sha ?? ""))) {
     fail("Identity pin is missing a 40-hex backend SHA.");
   }
-  if (pin.frontend?.branch !== "m1") fail("Identity pin frontend branch must be m1.");
-  if (pin.backend?.branch !== "m1") fail("Identity pin backend branch must be m1.");
-  if (!pin.frontend?.buildId) fail("Identity pin is missing the FE build id (run npm run build first).");
+  if (pin.frontend?.branch !== "m1")
+    fail("Identity pin frontend branch must be m1.");
+  if (pin.backend?.branch !== "m1")
+    fail("Identity pin backend branch must be m1.");
+  if (!pin.frontend?.buildId)
+    fail("Identity pin is missing the FE build id (run npm run build first).");
   if (!pin.generatedAt) fail("Identity pin is missing generatedAt.");
 
   const runs = Array.isArray(pin.commandRuns) ? pin.commandRuns : [];
-  for (const required of ["lint", "typecheck", "test", "build", "env:verify", "check:api-mapping"]) {
+  for (const required of [
+    "lint",
+    "typecheck",
+    "test",
+    "build",
+    "env:verify",
+    "check:api-mapping",
+  ]) {
     const run = runs.find((entry) => entry.command === `npm run ${required}`);
     if (!run) {
       fail(`Identity pin has no record for npm run ${required}.`);
     } else if (run.status === "FAIL") {
-      fail(`npm run ${required} failed at the pinned identity (exit ${run.exitCode}).`);
+      fail(
+        `npm run ${required} failed at the pinned identity (exit ${run.exitCode}).`,
+      );
     } else if (run.status === "PASS" && run.exitCode !== 0) {
       fail(`npm run ${required} is marked PASS with a non-zero exit code.`);
     } else if (run.status === "NOT_RUN") {
-      fail(`npm run ${required} was skipped; it is a required gate for this closure.`);
+      fail(
+        `npm run ${required} was skipped; it is a required gate for this closure.`,
+      );
+    }
+  }
+
+  // ------------------------------------------------------------------------
+  // FE296-P1-08 — evidence must come from a clean checkout of the exact SHA.
+  // These are hard failures, not notes: a dirty-tree pin or a sentinel build id
+  // describes a state nobody can ever check out again, so nothing downstream
+  // (QA, deploy, review) can be anchored to it.
+  // ------------------------------------------------------------------------
+  if (pin.frontend?.workingTreeClean !== true) {
+    fail(
+      "Evidence was generated from a dirty FE working tree (workingTreeClean must be true).",
+    );
+  }
+  if (pin.backend?.workingTreeClean !== true) {
+    fail(
+      "Evidence quotes a BE SHA from a dirty BE working tree (workingTreeClean must be true).",
+    );
+  }
+  const manifest = pin.frontend?.buildManifest ?? null;
+  const identityFields = {
+    "frontend.buildId": pin.frontend?.buildId,
+    "buildManifest.sourceSha": manifest?.sourceSha,
+    "buildManifest.executionSha": manifest?.executionSha,
+  };
+  for (const [name, value] of Object.entries(identityFields)) {
+    if (String(value ?? "").includes("local-uncommitted")) {
+      fail(
+        `${name} carries the 'local-uncommitted' sentinel; rebuild from a clean committed SHA.`,
+      );
+    }
+  }
+  if (!manifest) {
+    fail("Identity pin has no captured build manifest.");
+  } else {
+    if (manifest.sourceSha !== pin.frontend?.sha) {
+      fail(
+        `buildManifest.sourceSha (${manifest.sourceSha}) must equal the pinned FE SHA (${pin.frontend?.sha}).`,
+      );
+    }
+    if (manifest.executionSha !== manifest.sourceSha) {
+      fail(
+        `buildManifest.executionSha (${manifest.executionSha}) must equal buildManifest.sourceSha (${manifest.sourceSha}).`,
+      );
+    }
+    if (
+      pin.frontend?.buildId &&
+      manifest.sourceSha &&
+      !String(pin.frontend.buildId).endsWith(`+${manifest.sourceSha}`)
+    ) {
+      fail(
+        "frontend.buildId must be derived from buildManifest.sourceSha (version+sha).",
+      );
+    }
+  }
+  if (pin.integrity?.headUnchanged !== true) {
+    fail(
+      "Evidence run integrity: HEAD changed while the gates were executing (or integrity block missing).",
+    );
+  }
+  if (pin.integrity?.sourceTreeCleanAfterRunExcludingEvidence !== true) {
+    fail(
+      "Evidence run integrity: source tree was modified mid-run (or integrity block missing).",
+    );
+  }
+  if (
+    pin.generatedAt &&
+    pin.frontend?.commitTimestamp &&
+    Date.parse(pin.generatedAt) < Date.parse(pin.frontend.commitTimestamp)
+  ) {
+    fail(
+      "Evidence predates the pinned FE commit; re-run the evidence after committing (FE296-P1-02R).",
+    );
+  }
+
+  // Every quoted artifact must be present on disk and byte-identical to the
+  // refreshed SHA256SUMS manifest — in a clean checkout this doubles as the
+  // proof that the logs were actually committed, not silently .gitignore'd.
+  const sumsText = read("docs/evidence/WWHN-296/SHA256SUMS");
+  if (sumsText) {
+    const listed = new Map();
+    for (const line of sumsText.split(/\r?\n/u)) {
+      const match = line.match(/^([0-9a-f]{64})\s+(.+)$/u);
+      if (match) listed.set(match[2].trim(), match[1]);
+    }
+    for (const [rel, expected] of listed) {
+      const actual = sha256(`docs/evidence/WWHN-296/${rel}`);
+      if (actual === null) {
+        fail(
+          `SHA256SUMS lists ${rel} but the file is missing (evidence not retrievable).`,
+        );
+      } else if (actual !== expected) {
+        fail(
+          `${rel} does not match its SHA256SUMS entry (evidence pack drifted).`,
+        );
+      }
+    }
+    for (const run of runs) {
+      const rel = String(run.log ?? "").replace("docs/evidence/WWHN-296/", "");
+      if (rel && !listed.has(rel)) {
+        fail(`Command log ${rel} is not covered by SHA256SUMS.`);
+      }
     }
   }
 
@@ -163,16 +300,15 @@ if (pin) {
       if (!environment.owner || !environment.jira) {
         fail(`Pending ${name} environment must name an owner and a Jira key.`);
       }
-    } else if (!environment.apiBaseUrl || !environment.healthUrl || !environment.verifiedAt) {
-      fail(`${name} environment claims a non-pending status without apiBaseUrl/healthUrl/verifiedAt.`);
+    } else if (
+      !environment.apiBaseUrl ||
+      !environment.healthUrl ||
+      !environment.verifiedAt
+    ) {
+      fail(
+        `${name} environment claims a non-pending status without apiBaseUrl/healthUrl/verifiedAt.`,
+      );
     }
-  }
-
-  if (pin.frontend?.workingTreeClean === false) {
-    notes.push(
-      `FE working tree had ${pin.frontend.uncommittedFiles} uncommitted file(s) when evidence was generated; ` +
-        "re-run npm run wwhn-296:evidence after committing before quoting the SHA externally.",
-    );
   }
 }
 
@@ -182,7 +318,8 @@ if (pin) {
 const taskDoc = read("docs/Task_docs_Jira/WWHN-296.md");
 if (taskDoc) {
   for (const gate of ["WWHN-294", "WWHN-295", "WWHN-297", "WWHN-79"]) {
-    if (!taskDoc.includes(gate)) fail(`WWHN-296.md must keep external gate ${gate} visible.`);
+    if (!taskDoc.includes(gate))
+      fail(`WWHN-296.md must keep external gate ${gate} visible.`);
   }
   if (!/FE SOURCE (REMEDIATED|EVIDENCE CURRENT)/u.test(taskDoc)) {
     fail("WWHN-296.md must state the truthful FE-source-only disposition.");
@@ -195,19 +332,26 @@ if (taskDoc) {
   }
   // Prose may name the bad reference; only an actual branch/tree path is a defect.
   if (taskDoc.includes("m1ee/m1") || taskDoc.includes("/tree/m1ee")) {
-    fail("Invalid historical m1ee branch reference is forbidden (FE296-P2-01).");
+    fail(
+      "Invalid historical m1ee branch reference is forbidden (FE296-P2-01).",
+    );
   }
   if (!/Branch:\s*`m1`/u.test(taskDoc)) {
     fail("WWHN-296.md must pin canonical branch `m1` (FE296-P2-01).");
   }
 }
 
-const devopsRegister = read("docs/evidence/devops/DEVOPS_EXACT_EVIDENCE_REGISTER.md");
+const devopsRegister = read(
+  "docs/evidence/devops/DEVOPS_EXACT_EVIDENCE_REGISTER.md",
+);
 if (devopsRegister) {
   if (!devopsRegister.includes("ATT-11432")) {
     fail("DevOps register must record the ATT-11432 supersession.");
   }
-  if (devopsRegister.includes("m1ee/m1") || devopsRegister.includes("/tree/m1ee")) {
+  if (
+    devopsRegister.includes("m1ee/m1") ||
+    devopsRegister.includes("/tree/m1ee")
+  ) {
     fail("DevOps register must not reference the non-existent m1ee branch.");
   }
   if (!devopsRegister.includes("REQ-SRS-037")) {
@@ -220,14 +364,22 @@ if (devopsRegister) {
 // ---------------------------------------------------------------------------
 const envExample = read(".env.example");
 if (envExample) {
-  if (!envExample.includes('VITE_API_BASE_URL="http://localhost:8080/api/v1"')) {
-    fail(".env.example must keep the canonical local API base http://localhost:8080/api/v1.");
+  if (
+    !envExample.includes('VITE_API_BASE_URL="http://localhost:8080/api/v1"')
+  ) {
+    fail(
+      ".env.example must keep the canonical local API base http://localhost:8080/api/v1.",
+    );
   }
   if (!envExample.includes("VITE_API_WITH_CREDENTIALS=true")) {
     fail(".env.example must keep credentialed browser requests enabled.");
   }
-  if (/VITE_API_BASE_URL="https?:\/\/(?!localhost|127\.0\.0\.1)/u.test(envExample)) {
-    fail(".env.example must not hard-code a deployed domain; UAT/PROD values are injected by the pipeline.");
+  if (
+    /VITE_API_BASE_URL="https?:\/\/(?!localhost|127\.0\.0\.1)/u.test(envExample)
+  ) {
+    fail(
+      ".env.example must not hard-code a deployed domain; UAT/PROD values are injected by the pipeline.",
+    );
   }
 }
 
@@ -237,13 +389,17 @@ if (envExample) {
 const devGuide = read("docs/WMS_Hoa_Nam_Techstack_Architecture_Dev_Guide.md");
 if (devGuide && envExample) {
   if (!devGuide.includes("http://localhost:8080/api/v1")) {
-    fail("Dev guide VITE_API_BASE_URL default must match .env.example (http://localhost:8080/api/v1).");
+    fail(
+      "Dev guide VITE_API_BASE_URL default must match .env.example (http://localhost:8080/api/v1).",
+    );
   }
   const credentialsRow = devGuide
     .split(/\r?\n/u)
     .find((line) => line.includes("VITE_API_WITH_CREDENTIALS"));
   if (!credentialsRow || !/\btrue\b/u.test(credentialsRow)) {
-    fail("Dev guide must document VITE_API_WITH_CREDENTIALS=true as the runtime invariant.");
+    fail(
+      "Dev guide must document VITE_API_WITH_CREDENTIALS=true as the runtime invariant.",
+    );
   }
 }
 
@@ -255,5 +411,7 @@ if (failures.length) {
 }
 
 console.log(
-  "[wwhn-296] PASS: no-Stocktake authority re-derived from the pinned baselines, exact FE/BE identity recorded with real exit codes, external prod/QA gates stay fail-closed.",
+  "[wwhn-296] PASS: no-Stocktake authority re-derived from the pinned baselines; identity pinned to a clean " +
+    "checkout of the exact FE/BE SHA (manifest sourceSha == executionSha == pinned SHA, no local-uncommitted); " +
+    "evidence pack matches SHA256SUMS; external prod/QA gates stay fail-closed.",
 );

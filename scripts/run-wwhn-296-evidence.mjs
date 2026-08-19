@@ -13,7 +13,13 @@
  */
 import { execSync, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  writeFileSync,
+} from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -21,10 +27,15 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const evidenceDir = join(root, "docs/evidence/WWHN-296");
 const logDir = join(evidenceDir, "logs");
 const backendRoot =
-  process.env.WMS_BACKEND_ROOT ?? join(root, "../../HoaNam_BE/WMS_Warehouse_Hoa_Nam_BE");
+  process.env.WMS_BACKEND_ROOT ??
+  join(root, "../../HoaNam_BE/WMS_Warehouse_Hoa_Nam_BE");
 
 const skip = new Set(
-  (process.argv.find((arg) => arg.startsWith("--skip="))?.slice("--skip=".length) ?? "")
+  (
+    process.argv
+      .find((arg) => arg.startsWith("--skip="))
+      ?.slice("--skip=".length) ?? ""
+  )
     .split(",")
     .map((value) => value.trim())
     .filter(Boolean),
@@ -58,7 +69,10 @@ function git(cwd, args) {
 
 function repoIdentity(cwd, label) {
   if (!existsSync(cwd)) {
-    return { available: false, reason: `${label} repository not found at ${cwd}` };
+    return {
+      available: false,
+      reason: `${label} repository not found at ${cwd}`,
+    };
   }
   const sha = git(cwd, "rev-parse HEAD");
   const status = git(cwd, "status --porcelain");
@@ -86,6 +100,56 @@ function parseEnvExample() {
 function toPosix(path) {
   return path.split("\\").join("/");
 }
+
+// ---------------------------------------------------------------------------
+// FE296-P1-02R / FE296-P1-08 — identity is captured BEFORE anything runs, and
+// generation refuses to start at all unless both trees are clean checkouts of
+// m1. Evidence generated from a dirty tree describes no commit anyone can ever
+// check out again, so it is not evidence; failing here is the fix, not a
+// convenience check. The identity below is therefore exactly the state every
+// command in this run executed against.
+// ---------------------------------------------------------------------------
+const identityCapturedAt = new Date().toISOString();
+const frontendIdentity = repoIdentity(root, "frontend");
+const backendIdentity = repoIdentity(backendRoot, "backend");
+
+const preRunErrors = [];
+for (const [label, identity] of [
+  ["frontend", frontendIdentity],
+  ["backend", backendIdentity],
+]) {
+  if (!identity.available) {
+    preRunErrors.push(
+      `${label} repository unavailable: ${identity.reason ?? "no HEAD"}`,
+    );
+    continue;
+  }
+  if (identity.branch !== "m1") {
+    preRunErrors.push(
+      `${label} must be on canonical branch m1 (found ${identity.branch}).`,
+    );
+  }
+  if (identity.workingTreeClean !== true) {
+    preRunErrors.push(
+      `${label} working tree has ${identity.uncommittedFiles} uncommitted file(s); ` +
+        "commit everything first — evidence must be generated from a clean checkout of the exact SHA.",
+    );
+  }
+}
+if (preRunErrors.length) {
+  preRunErrors.forEach((message) =>
+    console.error(`[wwhn-296] REFUSED: ${message}`),
+  );
+  process.exit(1);
+}
+
+// The build manifest resolves its SHAs from the environment and would otherwise
+// fall back to the "local-uncommitted" sentinel the closure gate rejects. The
+// tree was just proven clean, so HEAD is exactly what the build compiles.
+process.env.SOURCE_SHA = frontendIdentity.sha;
+process.env.WMS_SOURCE_SHA = frontendIdentity.sha;
+process.env.EXECUTION_SHA = frontendIdentity.sha;
+process.env.WMS_EXECUTION_SHA = frontendIdentity.sha;
 
 mkdirSync(logDir, { recursive: true });
 
@@ -128,7 +192,41 @@ for (const script of GATE_COMMANDS) {
     durationMs: Date.now() - started,
     log: toPosix(relative(root, logFile)),
   });
-  console.log(`[wwhn-296] ${exitCode === 0 ? "PASS" : "FAIL"} npm run ${script} (exit ${exitCode})`);
+  console.log(
+    `[wwhn-296] ${exitCode === 0 ? "PASS" : "FAIL"} npm run ${script} (exit ${exitCode})`,
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Post-run integrity: m1 is a shared working tree, so a parallel session can
+// commit or edit source mid-run. If that happened, the identity captured above
+// no longer describes what actually executed — the run is void, fail-closed.
+// The generator's own outputs under docs/evidence/WWHN-296 are the only writes
+// this run is allowed to have produced.
+// ---------------------------------------------------------------------------
+const headShaAfterRun = git(root, "rev-parse HEAD");
+const dirtyOutsideEvidence = git(
+  root,
+  'status --porcelain -- . ":(exclude)docs/evidence/WWHN-296"',
+);
+const integrity = {
+  identityCapturedAt,
+  checkedAt: new Date().toISOString(),
+  headShaAfterRun,
+  headUnchanged: headShaAfterRun === frontendIdentity.sha,
+  sourceTreeCleanAfterRunExcludingEvidence: dirtyOutsideEvidence === "",
+  dirtyCheckExcludes: ["docs/evidence/WWHN-296"],
+};
+if (
+  !integrity.headUnchanged ||
+  !integrity.sourceTreeCleanAfterRunExcludingEvidence
+) {
+  console.error(
+    `[wwhn-296] VOID RUN: source tree changed while the gates were executing ` +
+      `(HEAD ${frontendIdentity.sha} -> ${headShaAfterRun}; dirty: ${dirtyOutsideEvidence || "none"}). ` +
+      "No pin was written. Re-run when the tree is stable.",
+  );
+  process.exit(1);
 }
 
 const env = parseEnvExample();
@@ -149,22 +247,25 @@ const deployedRequirements = [
 ];
 
 const pin = {
-  schemaVersion: "1.0.0",
+  schemaVersion: "1.1.0",
   jira: "WWHN-296",
-  finding: "FE296-P1-02",
+  finding: "FE296-P1-02R / FE296-P1-08",
   canonicalBranch: "m1",
   generatedAt: new Date().toISOString(),
   generator: "npm run wwhn-296:evidence",
+  integrity,
   frontend: {
     repository: "https://github.com/Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_FE",
-    ...repoIdentity(root, "frontend"),
+    ...frontendIdentity,
     nodeVersion: process.version,
-    buildId: buildManifest ? `${buildManifest.artifactVersion}+${buildManifest.sourceSha}` : null,
+    buildId: buildManifest
+      ? `${buildManifest.artifactVersion}+${buildManifest.sourceSha}`
+      : null,
     buildManifest,
   },
   backend: {
     repository: "https://github.com/Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_BE",
-    ...repoIdentity(backendRoot, "backend"),
+    ...backendIdentity,
   },
   environments: {
     source: {
@@ -177,8 +278,18 @@ const pin = {
       withCredentials: env.VITE_API_WITH_CREDENTIALS ?? null,
       note: "Local/sample contract from .env.example. Deployed values are injected outside source.",
     },
-    uat: { status: "PENDING", owner: "DevOps", jira: "WWHN-294", requires: deployedRequirements },
-    prod: { status: "PENDING", owner: "DevOps", jira: "WWHN-294", requires: deployedRequirements },
+    uat: {
+      status: "PENDING",
+      owner: "DevOps",
+      jira: "WWHN-294",
+      requires: deployedRequirements,
+    },
+    prod: {
+      status: "PENDING",
+      owner: "DevOps",
+      jira: "WWHN-294",
+      requires: deployedRequirements,
+    },
   },
   commandRuns: runs,
   externalGates: [
@@ -200,7 +311,12 @@ const pin = {
       scope: "security/health readiness evidence on the deployed build",
       status: "Blocked/Pending",
     },
-    { jira: "WWHN-79", role: "PM + DevOps + BA/QA", scope: "parent Go/No-Go", status: "Blocked/Pending" },
+    {
+      jira: "WWHN-79",
+      role: "PM + DevOps + BA/QA",
+      scope: "parent Go/No-Go",
+      status: "Blocked/Pending",
+    },
     {
       jira: "WWHN-25",
       role: "PM/PO + Process Owner",
@@ -210,19 +326,32 @@ const pin = {
   ],
 };
 
-writeFileSync(join(evidenceDir, "RUNTIME_IDENTITY_PIN.json"), `${JSON.stringify(pin, null, 2)}\n`);
+writeFileSync(
+  join(evidenceDir, "RUNTIME_IDENTITY_PIN.json"),
+  `${JSON.stringify(pin, null, 2)}\n`,
+);
 
-const hashedFiles = [
-  "RUNTIME_IDENTITY_PIN.json",
-  ...runs.map((run) => run.log).filter(Boolean).map((log) => log.replace("docs/evidence/WWHN-296/", "")),
-];
+// SHA256SUMS covers EVERY file in the evidence pack (WWHN-231 lesson: a quoted
+// artifact missing from the refreshed manifest reads as "not retrievable"), not
+// just the files this particular run happened to list.
+const hashedFiles = [];
+const walk = (dir) => {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const absolute = join(dir, entry.name);
+    if (entry.isDirectory()) walk(absolute);
+    else if (entry.name !== "SHA256SUMS")
+      hashedFiles.push(toPosix(relative(evidenceDir, absolute)));
+  }
+};
+walk(evidenceDir);
 const sums = hashedFiles
-  .map((rel) => {
-    const absolute = join(evidenceDir, rel);
-    if (!existsSync(absolute)) return null;
-    return `${createHash("sha256").update(readFileSync(absolute)).digest("hex")}  ${rel}`;
-  })
-  .filter(Boolean)
+  .sort()
+  .map(
+    (rel) =>
+      `${createHash("sha256")
+        .update(readFileSync(join(evidenceDir, rel)))
+        .digest("hex")}  ${rel}`,
+  )
   .join("\n");
 writeFileSync(join(evidenceDir, "SHA256SUMS"), `${sums}\n`);
 
@@ -232,6 +361,8 @@ console.log(
     `${runs.filter((run) => run.status === "PASS").length}/${runs.length} commands passed.`,
 );
 if (failed.length) {
-  console.error(`[wwhn-296] FAILED: ${failed.map((run) => run.command).join(", ")}`);
+  console.error(
+    `[wwhn-296] FAILED: ${failed.map((run) => run.command).join(", ")}`,
+  );
   process.exit(1);
 }

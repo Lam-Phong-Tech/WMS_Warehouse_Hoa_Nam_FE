@@ -11,6 +11,11 @@ lerna-debug.log*
 # "raw logs hoac CI run gan 40-char SHA"). Quy tac `*.log` o tren nuot chung im lang, nen
 # ai clone lai repo se thay manifest tro toi file khong ton tai. Chi mo lai dung pham vi
 # docs/evidence — log rac cua runtime van bi loai nhu cu.
+# WWHN-296 (FE296-P1-08): rieng dong `!...*.log` la CHUA DU — quy tac thu muc `logs` o tren
+# loai ca thu muc cha, ma git khong the re-include file khi thu muc cha da bi exclude,
+# nen log evidence van bi nuot im lang va khong bao gio duoc commit. Phai mo lai
+# chinh thu muc logs/ trong docs/evidence truoc, roi dong *.log ben duoi moi co tac dung.
+!docs/evidence/**/logs/
 !docs/evidence/**/*.log
 
 node_modules
