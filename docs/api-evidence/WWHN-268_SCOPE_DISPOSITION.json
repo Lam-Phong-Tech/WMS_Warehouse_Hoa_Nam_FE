@@ -1,0 +1,38 @@
+{
+  "schemaVersion": "1.0.0",
+  "id": "DISP-STK-268",
+  "version": "1.0.0",
+  "jira": "WWHN-268",
+  "parent": "WWHN-70",
+  "reviewFinding": "FE268-R2-P1-01",
+  "scope": "FE half of the WWHN-70/268 Stocktake-scope inheritance pointer. File rieng, khong ghi vao STOCKTAKE_GOVERNANCE_STATUS.json de khong ghi de khoa scopeDisposition dang giu noi dung cua WWHN-237.",
+  "statement": "WWHN-70 (parent epic cua vong sua loi QA HN-QA-005-ST01) mang mot finding kiem ke ke thua tu dot UAT goc. WWHN-268 (FE closure) khong tao be mat kiem ke nao — day la he qua bat buoc cua REQ-SRS-037, khong phai mot lua chon cuc bo.",
+  "isNewDispute": false,
+  "inheritsFrom": [
+    { "dispositionId": "DISP-STK-230", "jira": "WWHN-230 / 58 / 232", "scope": "core: session/snapshot/cutoff/variance", "status": "PROPOSED" },
+    { "dispositionId": "DISP-STK-233", "jira": "WWHN-59 / 233 / 235", "scope": "count/recount/partial/stale", "status": "DEFERRED" },
+    { "dispositionId": "DISP-STK-236", "jira": "WWHN-236", "scope": "apply-adjustment", "status": "DEFERRED" },
+    { "dispositionId": "DISP-STK-237", "jira": "WWHN-237 / 238 / 60", "scope": "variance report", "status": "DEFERRED" }
+  ],
+  "controllingRequirement": "REQ-SRS-037",
+  "authorityNote": "Cung authority chain voi DISP-STK-230 (adoption WWHN-334 Done). Khong lap lai lap luan, chi tro toi.",
+  "records": {
+    "backendPointer": "../../HoaNam_BE/WMS_Warehouse_Hoa_Nam_BE/docs/decision-records/DISP-STK-268-scope-inheritance.md",
+    "coreDispositionPath": "../../HoaNam_BE/WMS_Warehouse_Hoa_Nam_BE/docs/decision-records/DISP-STK-230-scope-disposition.md"
+  },
+  "conclusion": {
+    "wwhn268": "Dung khi khong tao route/permission/screen kiem ke.",
+    "wwhn266_267": "Dung khi khong tao endpoint kiem ke.",
+    "futureFindingRule": "Neu WWHN-264/265 retest tim thay mot finding kiem ke KHONG nam trong 4 nhanh inheritsFrom[], phai dinh tuyen vao nhanh tuong ung hoac tao nhanh DISP-STK-* moi — khong duoc tu dong trong WWHN-268."
+  },
+  "status": "PROPOSED",
+  "effectiveDate": null,
+  "signOff": {
+    "baMain": { "role": "BA Main", "decision": null, "date": null, "commentUrl": null },
+    "pmApprover": { "role": "PM/Approver", "decision": null, "date": null, "commentUrl": null },
+    "qa": { "role": "QA1 + QA2 (WWHN-264/265)", "decision": null, "date": null, "commentUrl": null }
+  },
+  "gates": {
+    "note": "Khong them machine gate rieng — ke thua gate cua DISP-STK-230/233/236/237. File nay la tai lieu, khong phai disposition ky thuat moi."
+  }
+}
