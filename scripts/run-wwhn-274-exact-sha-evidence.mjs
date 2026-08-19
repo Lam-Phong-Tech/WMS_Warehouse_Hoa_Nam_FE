@@ -123,7 +123,14 @@ const GENERATED_PATHS = [
   /^dist\//u,
 ];
 const sourceDirtyEntries = dirtyEntries.filter((entry) => {
-  const path = entry.slice(3).replace(/\\/gu, "/").replace(/^"|"$/gu, "");
+  // Cot trang thai cua `git status --porcelain` rong 1-2 ky tu tuy loai thay doi,
+  // nen cat cung 3 ky tu se lam lech duong dan (vi du " D test-results/..." thanh
+  // "est-results/...") va bo loc ben duoi truot.
+  const path = entry
+    .trim()
+    .replace(/^\S{1,2}\s+/u, "")
+    .replace(/\\/gu, "/")
+    .replace(/^"|"$/gu, "");
   return !GENERATED_PATHS.some((pattern) => pattern.test(path));
 });
 const treeState = sourceDirtyEntries.length === 0 ? "clean" : "dirty";

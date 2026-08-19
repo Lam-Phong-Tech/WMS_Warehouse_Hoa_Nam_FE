@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import type {
   Control,
   ControllerRenderProps,
@@ -57,6 +57,10 @@ function sanitize(
 interface InnerProps {
   field: ControllerRenderProps<FieldValues, string>;
   InputComp: typeof Input | typeof Input.Password;
+  /** Id thật của thẻ input để `<label for>` của Form.Item trỏ đúng (a11y). */
+  id: string;
+  /** Có lỗi validation hay không — phát ra aria-invalid cho trình đọc màn hình. */
+  invalid: boolean;
   placeholder?: string;
   prefix?: ReactNode;
   type?: React.HTMLInputTypeAttribute;
@@ -72,6 +76,8 @@ interface InnerProps {
 function FormInputInner({
   field,
   InputComp,
+  id,
+  invalid,
   placeholder,
   prefix,
   type,
@@ -109,6 +115,8 @@ function FormInputInner({
       value={localValue}
       onBlur={field.onBlur}
       /* eslint-enable react-hooks/refs */
+      id={id}
+      aria-invalid={invalid || undefined}
       placeholder={placeholder}
       prefix={prefix}
       type={type}
@@ -202,13 +210,25 @@ export function FormInput<T extends FieldValues>({
   maxLength,
 }: FormInputProps<T>) {
   const InputComp = password ? Input.Password : Input;
+  // Id duy nhất theo instance: hai form cùng trang dùng chung tên field vẫn không
+  // đụng id, nên `<label for>` luôn trỏ đúng ô của chính nó.
+  const generatedId = useId();
+  const fieldId = `${generatedId}${String(name)}`;
 
   return (
-    <FormField control={control} name={name} label={label} required={required}>
-      {(field) => (
+    <FormField
+      control={control}
+      name={name}
+      label={label}
+      required={required}
+      htmlFor={fieldId}
+    >
+      {(field, fieldState) => (
         <FormInputInner
           field={field as unknown as ControllerRenderProps<FieldValues, string>}
           InputComp={InputComp}
+          id={fieldId}
+          invalid={fieldState.invalid}
           placeholder={placeholder}
           prefix={prefix}
           type={password ? undefined : type}

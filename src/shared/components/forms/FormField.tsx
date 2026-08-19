@@ -15,8 +15,17 @@ export interface FormFieldProps<T extends FieldValues> {
   help?: ReactNode;
   tooltip?: ReactNode;
   required?: boolean;
-  /** Render input bên trong, nhận `field` của react-hook-form. */
-  children: (field: ControllerRenderProps<T, Path<T>>) => ReactNode;
+  /**
+   * Id của control bên trong để `<label for>` trỏ đúng ô nhập.
+   * Chỉ truyền khi control thực sự render đúng id đó; nếu không, label sẽ trỏ hụt
+   * và trình đọc màn hình đọc sai (a11y — WWHN-274 / FE274-P2-03).
+   */
+  htmlFor?: string;
+  /** Render input bên trong, nhận `field` và trạng thái lỗi của react-hook-form. */
+  children: (
+    field: ControllerRenderProps<T, Path<T>>,
+    fieldState: { invalid: boolean },
+  ) => ReactNode;
 }
 
 /**
@@ -34,6 +43,7 @@ export function FormField<T extends FieldValues>({
   help,
   tooltip,
   required,
+  htmlFor,
   children,
 }: FormFieldProps<T>) {
   return (
@@ -45,10 +55,11 @@ export function FormField<T extends FieldValues>({
           label={label}
           required={required}
           tooltip={tooltip}
+          htmlFor={htmlFor}
           validateStatus={fieldState.error ? "error" : ""}
           help={fieldState.error?.message ?? help}
         >
-          {children(field)}
+          {children(field, { invalid: Boolean(fieldState.error) })}
         </Form.Item>
       )}
     />
