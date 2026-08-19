@@ -68,8 +68,9 @@ describe("WMS route access contract", () => {
       [ROUTES.PROFILE]: undefined,
     });
 
-    // REQ-SRS-037 / DEC-NO-STOCKTAKE-001: không có route, hằng số route hay
-    // permission kiểm kê nào được phép tồn tại trên baseline MVP.
+    // REQ-SRS-037 (Must; nhãn `DEC-NO-STOCKTAKE-001` CHƯA có formal approval — xem
+    // ghi chú thẩm quyền ở src/shared/constants/routes.ts): không có route, hằng số
+    // route hay permission kiểm kê nào được phép tồn tại trên baseline MVP.
     expect(Object.keys(ROUTES)).not.toContain("STOCKTAKE");
     expect(
       Object.keys(ROUTE_PERMISSIONS).filter((path) =>

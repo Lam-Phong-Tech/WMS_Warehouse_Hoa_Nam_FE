@@ -68,8 +68,9 @@ export const WMS_PERMISSION_CATALOG = {
   PACKING_LABEL_PRINT: "packing_label.print",
   PACKING_LABEL_REPRINT: "packing_label.reprint",
   PHYSICAL_CODE_ASSIGN_RFID: "physical_code.assign_rfid",
-  // REQ-SRS-037 / DEC-NO-STOCKTAKE-001: MVP không có permission kiểm kê hay sửa tồn
-  // trực tiếp. Sửa sai sau Post chỉ đi qua REVERSAL_POST bên dưới.
+  // REQ-SRS-037 (Must; nhãn `DEC-NO-STOCKTAKE-001` CHƯA có formal approval — xem
+  // ghi chú thẩm quyền ở src/shared/constants/routes.ts): MVP không có permission
+  // kiểm kê hay sửa tồn trực tiếp. Sửa sai sau Post chỉ đi qua REVERSAL_POST bên dưới.
   /** Annex C listWarrantyCases — quyền đọc SCR-WAR-01, tách khỏi warranty.manage. */
   WARRANTY_VIEW: "warranty.view",
   WARRANTY_MANAGE: "warranty.manage",

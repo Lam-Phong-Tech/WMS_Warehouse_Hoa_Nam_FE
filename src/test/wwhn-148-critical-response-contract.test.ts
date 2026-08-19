@@ -196,6 +196,7 @@ describe("WWHN-148 critical response normalization boundary", () => {
     ).rejects.toMatchObject({ code: "WMS_FE_MISSING_ISSUE_EVIDENCE" });
   });
 
-  // REQ-SRS-037 / DEC-NO-STOCKTAKE-001: không còn adjustment surface để chuẩn hoá
-  // response; sửa sai sau Post đi qua Reversal (xem reverse-service.test.ts).
+  // REQ-SRS-037 (Must; nhãn `DEC-NO-STOCKTAKE-001` CHƯA có formal approval — xem
+  // ghi chú thẩm quyền ở src/shared/constants/routes.ts): không còn adjustment surface
+  // để chuẩn hoá response; sửa sai sau Post đi qua Reversal (xem reverse-service.test.ts).
 });

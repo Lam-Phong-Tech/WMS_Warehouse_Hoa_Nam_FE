@@ -28,7 +28,17 @@ export const ROUTES = {
   // Remaining WMS modules
   OUTBOUND: "/outbound",
   INVENTORY: "/inventory",
-  // REQ-SRS-037 / DEC-NO-STOCKTAKE-001: không có route kiểm kê trong MVP.
+  // Không có route kiểm kê trong MVP.
+  //
+  // THẨM QUYỀN (đọc kỹ trước khi trích lại ở nơi khác — WWHN-242/FE242-P2-03):
+  // rule này được enforce bởi **REQ-SRS-037 ("Must")** trong SRS/FRD v1.12 đã được
+  // adopt tại WWHN-334, kèm AC-SRS-037 + BR-NOSTK-01..03, và được ERD §0.1 xác nhận
+  // ("không tạo Stocktake_Session/Snapshot/Count/Variance_Line/Adjustment").
+  // `DEC-NO-STOCKTAKE-001` chỉ là **nhãn decision-source** trong bảng Decision Records
+  // (SRS §2): Decision Record formal của nó là WWHN-25, và WWHN-25 vẫn FORMAL APPROVAL
+  // PENDING. Vì vậy KHÔNG được trích `DEC-NO-STOCKTAKE-001` như một Decision ID
+  // standalone đã được duyệt — trích như vậy là nói quá thẩm quyền. Guard chống hồi quy:
+  // scripts/verify-wwhn-242-closure.mjs (check "no-stocktake citation").
   WARRANTY: "/warranty",
   REVERSE: "/reverse",
   REPORTS: "/reports",

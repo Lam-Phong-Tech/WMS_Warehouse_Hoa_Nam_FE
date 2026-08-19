@@ -427,6 +427,85 @@ test.describe("WWHN-242 · REV-00/REV-01 evidence matrix", () => {
         ],
       });
     });
+
+    test(`REV-01 hộp xác nhận Post hiển thị cảnh báo append-only và huỷ không ghi tại ${viewport.width}x${viewport.height}`, async ({
+      page,
+    }, testInfo) => {
+      // BR-REV-06 đã thoả (hàng vật lý đã về) nên Post mở khoá; đây là màn "xác nhận"
+      // mà FE242-P2-01 đòi chụp — trước đây chỉ tồn tại ở 1440×900.
+      await setupMockApi(page, { physicalReturnStatus: "CONFIRMED" });
+      await page.setViewportSize(viewport);
+      await page.goto("/reverse");
+      await openDetail(page);
+
+      await page
+        .getByRole("button", { name: /Post reversal/ })
+        .first()
+        .click();
+
+      // Annex D SCR-REV-01: "confirmation shows stock effect" — hộp xác nhận phải nói
+      // rõ đây là bước duy nhất sinh movement và không hoàn tác được.
+      await expect(page.getByText("Post reversal?")).toBeVisible();
+      await expect(
+        page.getByText(/Đây là bước duy nhất phát sinh movement đối ứng/),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: /Post reversal/ }),
+      ).toHaveCount(2);
+      expect(await hasHorizontalOverflow(page)).toBe(false);
+
+      await captureEvidence(page, testInfo, {
+        scenario: "rev01-confirm",
+        role: `${PERM_VIEW}+${PERM_POST}`,
+        viewport,
+        route: "/reverse (detail modal → Modal.confirm)",
+        assertions: [
+          "confirm dialog states the append-only/no-undo stock effect (SCR-REV-01)",
+          "no horizontal overflow while the confirm dialog is open",
+        ],
+      });
+
+      // Huỷ ở hộp xác nhận là no-write: phiếu vẫn không POSTED.
+      await page.getByRole("button", { name: "Kiểm tra lại" }).click();
+      await expect(
+        page.getByText(/Reversal đã POSTED — append-only/),
+      ).toHaveCount(0);
+    });
+
+    test(`REV-00 lỗi 403 DATA_SCOPE_DENIED hiện đúng trạng thái quyền tại ${viewport.width}x${viewport.height}`, async ({
+      page,
+    }, testInfo) => {
+      await setupMockApi(page, {
+        listStatus: 403,
+        listErrorCode: "DATA_SCOPE_DENIED",
+      });
+      await page.setViewportSize(viewport);
+      await page.goto("/reverse");
+
+      // `ApiErrorAlert` cố ý quy MỌI 403 (gồm DATA_SCOPE_DENIED, xem §8.2) về
+      // `NoPermissionState` để 403 hiển thị nhất quán toàn hệ thống, thay vì Alert đỏ
+      // mang tiêu đề riêng của từng màn. Có hai lớp lồng nhau cùng mang `data-ui-state`
+      // (khối bọc của ApiErrorAlert và NoPermissionState bên trong) nên lấy phần tử
+      // ngoài cùng.
+      await expect(
+        page.locator(UI_STATE_SELECTOR_PERMISSION_DENIED).first(),
+      ).toBeVisible();
+      await expect(
+        page.getByText(/Không có quyền truy cập/).first(),
+      ).toBeVisible();
+      expect(await hasHorizontalOverflow(page)).toBe(false);
+
+      await captureEvidence(page, testInfo, {
+        scenario: "list-error-403",
+        role: `${PERM_VIEW}+${PERM_POST}`,
+        viewport,
+        route: "/reverse",
+        assertions: [
+          "list 403 DATA_SCOPE_DENIED renders the canonical NoPermissionState instead of a blank table",
+          "no horizontal overflow in the error state at this viewport",
+        ],
+      });
+    });
   }
 
   // ─────────── Role matrix (P1-01) ───────────
@@ -647,39 +726,4 @@ test.describe("WWHN-242 · REV-00/REV-01 evidence matrix", () => {
       });
     });
   }
-
-  test("danh sách lỗi 403 DATA_SCOPE_DENIED: hiện alert lỗi kèm retry, không crash màn hình", async ({
-    page,
-  }, testInfo) => {
-    await setupMockApi(page, {
-      listStatus: 403,
-      listErrorCode: "DATA_SCOPE_DENIED",
-    });
-    await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto("/reverse");
-
-    // `ApiErrorAlert` cố ý quy mọi 403 (gồm DATA_SCOPE_DENIED, xem §8.2) về
-    // `NoPermissionState` để 403 hiển thị nhất quán toàn hệ thống, thay vì Alert đỏ
-    // mang tiêu đề riêng của từng màn.
-    // Có hai lớp lồng nhau cùng mang `data-ui-state` (khối bọc của ApiErrorAlert và
-    // NoPermissionState bên trong) nên phải lấy phần tử ngoài cùng.
-    await expect(
-      page.locator(UI_STATE_SELECTOR_PERMISSION_DENIED).first(),
-    ).toBeVisible();
-    await expect(
-      page.getByText(/Không có quyền truy cập/).first(),
-    ).toBeVisible();
-    expect(await hasHorizontalOverflow(page)).toBe(false);
-
-    await captureEvidence(page, testInfo, {
-      scenario: "list-error-403",
-      role: `${PERM_VIEW}+${PERM_POST}`,
-      viewport: { width: 1440, height: 900 },
-      route: "/reverse",
-      assertions: [
-        "list 403 DATA_SCOPE_DENIED renders the canonical NoPermissionState instead of a blank table",
-        "no horizontal overflow in the error state",
-      ],
-    });
-  });
 });

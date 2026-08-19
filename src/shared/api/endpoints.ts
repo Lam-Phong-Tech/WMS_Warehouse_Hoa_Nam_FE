@@ -187,9 +187,10 @@ export const API_ENDPOINTS = {
   SCAN_EVENTS: "/scan/events",
   DOCUMENT_STATUS_HISTORY: "/document-status-history",
 
-  // REQ-SRS-037 / DEC-NO-STOCKTAKE-001: MVP không có Stocktake/Variance/Snapshot ở
-  // bất kỳ lớp nào (entity, API, permission, menu, report). Mọi sửa sai sau Post
-  // dùng Reversal append-only bên dưới.
+  // REQ-SRS-037 (Must; nhãn `DEC-NO-STOCKTAKE-001` CHƯA có formal approval — xem
+  // ghi chú thẩm quyền ở src/shared/constants/routes.ts): MVP không có
+  // Stocktake/Variance/Snapshot ở bất kỳ lớp nào (entity, API, permission, menu,
+  // report). Mọi sửa sai sau Post dùng Reversal append-only bên dưới.
   REVERSAL_DOCUMENTS: "/reversal-documents",
   REVERSAL_DOCUMENT: "/reversal-documents/:id",
   REVERSAL_DOCUMENT_LINES: "/reversal-documents/:id/lines",

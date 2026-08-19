@@ -77,6 +77,7 @@
     "postinstall": "patch-package",
     "verify:wwhn-242": "node scripts/verify-wwhn-242-closure.mjs",
     "wwhn-242:evidence": "node scripts/run-wwhn-242-evidence.mjs",
+    "wwhn-242:publish": "node scripts/publish-wwhn-242-qa2-evidence.mjs",
     "test:e2e:wwhn-242": "playwright test e2e/wwhn-242-reversal-qa2.spec.ts --project=chromium",
     "wwhn-237:verify": "node scripts/verify-wwhn-237-closure.mjs"
   },

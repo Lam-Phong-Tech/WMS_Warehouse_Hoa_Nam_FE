@@ -356,8 +356,10 @@ describe("WWHN-181 exact BE v1.7 guards", () => {
     expect(http.postWithMeta).not.toHaveBeenCalled();
   });
 
-  // REQ-SRS-037 / DEC-NO-STOCKTAKE-001: "apply variance/adjustment" đã bị gỡ khỏi
-  // baseline MVP nên không còn hành vi nào để test; thay bằng guard chống hồi quy.
+  // REQ-SRS-037 (Must; nhãn `DEC-NO-STOCKTAKE-001` CHƯA có formal approval — xem
+  // ghi chú thẩm quyền ở src/shared/constants/routes.ts): "apply variance/adjustment"
+  // đã bị gỡ khỏi baseline MVP nên không còn hành vi nào để test; thay bằng guard
+  // chống hồi quy.
   it("keeps every stocktake capability out of the FE permission surface", () => {
     const codes: string[] = [
       ...Object.keys(P),
