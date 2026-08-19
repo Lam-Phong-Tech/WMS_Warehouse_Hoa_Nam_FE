@@ -1,0 +1,26 @@
+{
+  "ticket": "WWHN-292",
+  "parent": "WWHN-78",
+  "dependency": "HN-UAT-003",
+  "evidenceClass": "FE_CONTROLLED_NOT_UAT",
+  "result": "PASS",
+  "sourceSha": "9d87628ba717b835b2b211cfba2349e9aa221d07",
+  "environment": "local-controlled",
+  "buildVersion": "local-dev",
+  "browserProject": "chromium",
+  "role": "anonymous",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "route": "/login",
+  "finalUrl": "http://localhost:5292/login",
+  "timestamp": "2026-08-19T11:50:24.477Z",
+  "screenshotFilename": "WWHN-292__login-api-422-retry-safe__anonymous__1440x900.png",
+  "assertions": [
+    "Login API returns controlled 422",
+    "Validation message is visible",
+    "Login action remains enabled for retry"
+  ],
+  "truthBoundary": "Controlled FE behavior evidence only; not QA2 independent UAT evidence and not proof of backend authorization/data-scope enforcement."
+}

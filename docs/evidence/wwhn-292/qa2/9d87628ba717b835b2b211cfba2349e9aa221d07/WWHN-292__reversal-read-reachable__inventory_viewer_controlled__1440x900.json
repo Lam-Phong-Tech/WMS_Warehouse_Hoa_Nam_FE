@@ -1,0 +1,26 @@
+{
+  "ticket": "WWHN-292",
+  "parent": "WWHN-78",
+  "dependency": "HN-UAT-003",
+  "evidenceClass": "FE_CONTROLLED_NOT_UAT",
+  "result": "PASS",
+  "sourceSha": "9d87628ba717b835b2b211cfba2349e9aa221d07",
+  "environment": "local-controlled",
+  "buildVersion": "local-dev",
+  "browserProject": "chromium",
+  "role": "inventory_viewer_controlled",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "route": "/reverse",
+  "finalUrl": "http://localhost:5292/reverse",
+  "timestamp": "2026-08-19T11:51:10.329Z",
+  "screenshotFilename": "WWHN-292__reversal-read-reachable__inventory_viewer_controlled__1440x900.png",
+  "assertions": [
+    "inventory.view grants read entry to /reverse (REV-00 read semantic, WWHN-242)",
+    "No redirect to /errors/403 for the read-only reversal list",
+    "Write actions remain gated by inventory.reversal.post inside the screen"
+  ],
+  "truthBoundary": "Controlled FE behavior evidence only; not QA2 independent UAT evidence and not proof of backend authorization/data-scope enforcement."
+}
