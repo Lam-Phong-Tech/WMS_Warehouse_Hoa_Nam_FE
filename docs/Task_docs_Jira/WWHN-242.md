@@ -1,11 +1,112 @@
 # WWHN-242 — HN-FE-006 · REV-00 / REV-01 (Hoàn đảo) · Exact Fix Register
 
-Đóng register 61/100 → review lại 72/100 (19/08/2026) → cập nhật bằng chứng bên dưới. Mỗi
-mục ghi **lỗi thật đã sửa ở đâu** và **bằng chứng chạy được**, không có mục nào đóng bằng
-lời hứa.
+Đóng register 61/100 → review lại 72/100 → review 80/100 (19/08/2026) → cập nhật bằng chứng
+bên dưới. Mỗi mục ghi **lỗi thật đã sửa ở đâu** và **bằng chứng chạy được**, không có mục nào
+đóng bằng lời hứa.
 
 Nguồn thẩm quyền và định đoạt phạm vi: [`WWHN-242_SCOPE_DISPOSITION.md`](./WWHN-242_SCOPE_DISPOSITION.md).
 Comment ký theo vai: [`WWHN-242_SIGNOFF_COMMENTS.md`](./WWHN-242_SIGNOFF_COMMENTS.md).
+Bộ bằng chứng QA2 retrievable: [`docs/evidence/WWHN-242/qa2/INDEX.md`](../../evidence/WWHN-242/qa2/INDEX.md).
+
+---
+
+## 0-bis. Vòng review 80/100 (19/08/2026) — hai lỗi gốc còn lại
+
+Vòng này chỉ còn hai việc thuộc quyền FE, và cả hai đều là **lỗi gốc thật**, không phải
+thiếu giấy tờ.
+
+### 0-bis.1. `FE242-P2-03` — trích dẫn nói quá thẩm quyền (P2, OPEN mới)
+
+Review đúng: chú thích `// REQ-SRS-037 / DEC-NO-STOCKTAKE-001: ...` đặt hai mã ngang hàng
+bằng dấu `/`, đọc như thể cả hai đều là căn cứ đã duyệt. Đối chiếu baseline:
+
+- `REQ-SRS-037` là requirement **"Must"** trong SRS/FRD v1.12 (§3 bảng requirement, dòng
+  `SRC-008 / DEC-NO-STOCKTAKE-001 → REQ-SRS-037`), adopt qua `WWHN-334`, kèm `AC-SRS-037` +
+  `BR-NOSTK-01..03`, và được ERD §0.1 xác nhận. Đây là thứ **enforce được**.
+- `DEC-NO-STOCKTAKE-001` nằm trong bảng Decision Records (SRS §2) với cột trạng thái ghi
+  *"04/08/2026 confirmation; SRS adoption: WWHN-334; formal Decision: **WWHN-25 only**"* —
+  tức Decision Record formal là `WWHN-25`, và `WWHN-25` vẫn **FORMAL APPROVAL PENDING**. Nó
+  còn xuất hiện ở §1.6 Supersession Register với trạng thái `SUPERSEDED 04/08/2026` của mệnh
+  đề cũ, nên trích nhầm cột là cách nhanh nhất để người đọc kết luận ngược.
+
+Đã sửa **6 điểm trong `src/**`** (`shared/constants/routes.ts` — đúng chỗ review nêu,
+`shared/api/endpoints.ts`, `shared/constants/wms-permissions.ts`, `app/router/access.test.ts`,
+`test/wms-contract-signoff-guards.test.ts`, `test/wwhn-148-critical-response-contract.test.ts`)
+và **2 điểm trong repo BE** (`Modules/Warehouse/app/Http/Controllers/WmsContractController.php`
+— mã production, `tests/Feature/Flow05InventoryControlAlignmentTest.php`). `routes.ts` giữ bản
+giải thích đầy đủ, các chỗ còn lại trích ngắn và trỏ về đó.
+
+Chống hồi quy (đây mới là phần "tận gốc"): `scripts/verify-wwhn-242-closure.mjs` mục **6b**
+quét mọi `.ts/.tsx` trong `src/**` — cấm dạng `REQ-SRS-037 / DEC-NO-STOCKTAKE-001`, và bắt
+mọi chỗ nhắc `DEC-NO-STOCKTAKE-001` phải mang ranh giới "chưa có formal approval" trong cùng
+khối chú thích. Mục 7 khoá thêm bản BE. Viết lại kiểu cũ là cổng đỏ ngay.
+
+**Còn sót có chủ ý, đã tách việc riêng:** `scripts/build-wwhn190-posting-contract.mjs:431`
+(BE) vẫn viết *"REQ-SRS-037 + DEC-NO-STOCKTAKE-001 cấm ..."*. Không sửa ở đây vì chuỗi đó đi
+vào artifact sinh tự động của **WWHN-190**, mà script có chế độ `--check` fail-closed theo
+digest — sửa chữ sẽ làm trôi pin của một gói đã đóng. Việc này thuộc chủ WWHN-190.
+
+### 0-bis.2. `FE242-P1-03` / `FE242-P2-01` — bằng chứng không retrievable (P1/P2, PARTIAL+)
+
+Review nói "cần QA2 evidence **retrievable** và **exact frozen SHA**". Truy nguyên: mọi vòng
+trước đều ghi bằng chứng vào `test-results/wwhn-242/<sha>/`, mà `.gitignore` dòng 52 loại
+nguyên `test-results/`. Nghĩa là **ai clone lại repo tại đúng SHA đó cũng không lấy được một
+tấm ảnh nào** — bằng chứng chỉ tồn tại trên máy người chạy, nên về hồ sơ là không tồn tại.
+Đây là lỗi gốc, không phải chuyện "chưa đính kèm".
+
+Đã sửa:
+
+1. `scripts/publish-wwhn-242-qa2-evidence.mjs` (mới) publish sang
+   **`docs/evidence/WWHN-242/qa2/`** — thư mục được commit. Kèm `MANIFEST.json`
+   (SHA-256 từng tệp), `SHA256SUMS`, và `INDEX.md` là **ma trận QA2 13 ca** với neo tài liệu
+   từng ca (SRS §5.5/§6/§8.1-8.2, BR-REV-*, Annex D SCR-REV-01, NFR-SRS-006).
+2. Script **fail-closed** ba chỗ: SHA phải là 40 ký tự thật (không nhận `local-uncommitted`);
+   **các tệp thuộc phạm vi hoàn đảo phải đã commit** tại SHA đó; ma trận phải phủ đủ trước khi
+   chép. Không đạt thì không publish, thay vì publish ra một bộ nửa vời.
+3. Cổng `verify:wwhn-242` mục **8** băm lại từng tệp trên đĩa, đối chiếu manifest, kiểm phủ
+   ma trận × 4 khổ, và kiểm **bất biến dải commit**: giữa `evidenceSourceSha` và `HEAD` không
+   tệp nào trong phạm vi hoàn đảo được đổi. Cố ý chỉ soi *phạm vi* chứ không soi cả cây — `m1`
+   luôn có phiên khác commit song song, soi cả cây thì cổng đỏ vì việc của người khác.
+
+Bổ sung cho `FE242-P2-01`: hai màn review đòi mà trước đây chỉ có ở 1440×900 — **hộp xác nhận
+trước khi Post** và **màn lỗi 403 DATA_SCOPE_DENIED** — nay chạy ở đủ bốn khổ. Spec đi từ
+**18 → 25 test**.
+
+**Đo được tại `2d9ca77bff67d27d4bc235ebf4542edb1d42f888`:**
+
+| Hạng mục | Kết quả |
+| --- | --- |
+| `test:e2e:wwhn-242` | **25/25 PASS** |
+| Bằng chứng publish | 50 tệp (25 ảnh + 25 JSON) + `MANIFEST.json` + `SHA256SUMS` + `INDEX.md`, 2,7 MB |
+| Ma trận QA2 | 13 ca; 4 ca responsive × 4 khổ (1440×900, 1366×768, 768×1024, 390×844) |
+| `verify:wwhn-242` | **PASS** (gồm mục 6b và mục 8 mới) |
+| BE `Wwhn242ReversalScopeAndProjectionTest` + `Flow05InventoryControlAlignmentTest` | **17/17 PASS, 613 assertion** |
+| FE unit (`npm run test`) | 90/91 file PASS, 709/710 test — 1 đỏ ở `src/test/flow06-report-pagination-export.test.ts`, thuộc luồng báo cáo của phiên khác |
+| `npm run lint` | **PASS** — 0 error / 26 warning nền (không warning nào thuộc tệp của WWHN-242) |
+| `npm run typecheck` / `npm run build` | 2 lỗi TS, cả hai ở `src/test/wwhn-258-report-pii-rbac.test.tsx` — tệp **untracked** của phiên WWHN-258 đang làm dở; `build` dừng ở chính hai lỗi đó |
+
+Hai mục đỏ cuối **không có tệp nào thuộc phạm vi hoàn đảo**; ghi nguyên trạng thay vì làm
+tròn thành xanh hoặc sửa hộ task khác.
+
+Hai lỗi phép đo tự gặp và tự sửa trong lượt chạy đầu (ghi lại để QA2 khỏi mất thời gian
+chẩn đoán lại): antd v6 vẽ tiêu đề `Modal.confirm` ở **hai** nút DOM — một `ant-modal-title`
+**ẩn** (chỉ để `aria-labelledby`) và một `ant-modal-confirm-title` hiện, nên bám chuỗi tiêu đề
+trần thì hoặc vi phạm strict mode hoặc trúng đúng nút ẩn; và lần điều hướng đầu tiên phải chờ
+Vite dev server biên dịch cả cây module nên test đầu ma trận đỏ vì timeout `page.goto` chứ
+không phải vì màn hình sai — đã thêm bước hâm nóng ngoài phạm vi mọi phép đo.
+
+### 0-bis.3. Register 80/100 sau phiên này
+
+| ID | Sev | Trạng thái sau phiên | Đã làm gì / còn ai phải làm |
+| --- | --- | --- | --- |
+| `FE242-P0-01` | P0 | **OPEN — chỉ còn thao tác Jira** | Text Description/AC/dependency đã soạn sẵn ở `WWHN-242_SCOPE_DISPOSITION.md` §4. FE không có quyền sửa `WWHN-62`/`WWHN-242` trên Jira ⇒ BA Main + PM/PO dán và comment approval. |
+| `FE242-P1-01` | P1 | **OPEN — việc thật của QA2** | Đã giao đủ đầu vào: ma trận 13 ca có neo tài liệu + 25 ảnh + lệnh chạy lại ở `docs/evidence/WWHN-242/qa2/INDEX.md`, gắn exact SHA. Lượt chạy độc lập + verdict vẫn là việc của QA2 trên `WWHN-243`; FE không tự đóng thay. |
+| `FE242-P1-02` | P1 | **DEFERRED / OUT OF SCORE** | Theo review, chuyển final project gate. Phiên này **không** đụng gì tới GitHub Actions. |
+| `FE242-P1-03` | P1 | **CLOSED** | Bằng chứng chuyển sang nơi retrievable + băm + exact SHA `2d9ca77`. Xem §0-bis.2. |
+| `FE242-P1-04` | P1 | **TECHNICAL CLOSED / FORMAL OPEN** | Nội dung §2 hồ sơ định đoạt không đổi và vẫn đúng; còn thiếu chữ ký formal của BA/BAS + PM/PO trực tiếp trên Jira. |
+| `FE242-P2-01` | P2 | **CLOSED** | 4 ca responsive × 4 khổ (REV-00, REV-01 chi tiết, hộp xác nhận, màn lỗi) đã có ảnh thật, retrievable, gắn SHA. |
+| `FE242-P2-02` | P2 | **CLOSED** | Canonical là `m1`; không tồn tại `m1ee`. Không đổi. |
+| `FE242-P2-03` | P2 | **CLOSED** | 6 điểm FE + 2 điểm BE đã chuẩn hoá; cổng 6b/7 chặn hồi quy. Một chỗ còn sót có chủ ý ở gói WWHN-190, xem §0-bis.1. |
 
 ---
 
