@@ -1,0 +1,189 @@
+{
+  "schemaVersion": "1.0.0",
+  "task": "WWHN-292",
+  "parent": "WWHN-78",
+  "branch": "m1",
+  "registerClass": "REAL_DEFECT_REGISTER",
+  "closesReviewItem": "FE292-P1-01",
+  "controllingBaseline": {
+    "statement": "Controlling sources are the CURRENT baseline pair. BRD v3.9 is HISTORICAL / SUPERSEDED and must never be cited as controlling.",
+    "controlling": [
+      {
+        "artifact": "docs/HN_SRS_FRD_v1.12_FULL.md",
+        "version": "SRS/FRD v1.12",
+        "supersessionPin": "SRS L225: '| BRD v3.9 | BRD v3.20 | HISTORICAL / SUPERSEDED |'; SRS L122 + L188: BRD v3.20 = controlling business source"
+      },
+      {
+        "artifact": "docs/HN_WMS_Wireframe_MVP_ALIGNED_v3.20_v1.12_20260814.html",
+        "version": "Wireframe aligned BRD v3.20 / SRS-FRD v1.12 / BPD v1.12",
+        "supersessionPin": "Wireframe L76 + L156 in-page declaration 'Bám BRD v3.20 / SRS-FRD v1.12 / BPD v1.12 · DEC-HN-20260814-01'"
+      },
+      {
+        "artifact": "docs/HoaNam_ERD_Moi_Nhat.md",
+        "version": "ERD current (ERD-AMD series)",
+        "supersessionPin": "ERD L404 role seed; ERD L456 user_roles.scope_ref (ERD-AMD-004, L61)"
+      }
+    ],
+    "historicalOnly": [
+      "BRD v3.9 (SRS L225 HISTORICAL / SUPERSEDED)",
+      "FE SHA 99fae... / CI run #488 (stale identity, see DEF-292-04)",
+      "branch reference m1ee/m1 (invalid; canonical branch is m1)"
+    ]
+  },
+  "uatRuntimeDisposition": {
+    "statement": "As of this register, the HN-UAT-003 / WWHN-78 UAT chain (WWHN-76, WWHN-286, WWHN-288) has published ZERO runtime defect rows in Jira. HN-UAT-003 is not defined inside the 4 controlling docs (verified by full-text search); UAT evidence is downstream Jira per SRS L142 (SRS chỉ chứa BA-level AC/TC design) and SRS L152 (DS-EVD-001 downstream). This register therefore enumerates every REAL defect identified by the WWHN-292 review chain itself, each with before -> fix SHA/files -> after -> retest. A zero-UAT-runtime-defect disposition for the parent chain requires the BA/QA sign-off comment recorded on WWHN-292; it is approved by that comment, not fabricated here.",
+    "uatProcessPins": [
+      "SRS L1094: UAT ticket = business scenarios, users/data/environment, actual result, defects, business sign-off/waiver",
+      "SRS L1093: QA/Beta execution ticket blocks Ready for Beta/Release",
+      "SRS L323 (REQ-SRS-022): UAT package = script, actual, evidence, defect, waiver, Go/No-Go"
+    ]
+  },
+  "requiredDefectFields": [
+    "defectId",
+    "moduleRoute",
+    "accountRole",
+    "viewport",
+    "environment",
+    "build",
+    "expected",
+    "actual",
+    "severity",
+    "beforeEvidence",
+    "fixSha",
+    "fixFiles",
+    "afterEvidence",
+    "retestResult"
+  ],
+  "defects": [
+    {
+      "defectId": "DEF-292-01",
+      "reviewItemId": "FE292-P2-02",
+      "moduleRoute": "evidence suite - login + shell responsive matrix (all screens per SRS Annex D)",
+      "accountRole": "anonymous + super_admin_controlled",
+      "viewport": "768x1024 (required tablet portrait)",
+      "environment": "FE controlled local, chromium (Windows 11, Node 22)",
+      "build": "vite dev @ candidate SHA (see final/EXACT_GIT_SHA)",
+      "expected": "Tablet evidence at 768x1024 portrait per review requirement and NFR-SRS-006 tablet >=768px (SRS L593; Annex D L1466-1480 '360/768/1280+').",
+      "actual": "Generic evidence suite captured tablet at 1024x768 landscape - the required 768x1024 tier was never proven.",
+      "severity": "P2",
+      "controllingSource": "SRS L593 (NFR-SRS-006) + SRS L1466-1480 (Annex D per-screen responsive acceptance)",
+      "beforeEvidence": "Historical assessment row FE292-P2-02 (review 80/100); generic suite predating commit 05306ac had no 768x1024 coverage.",
+      "fixSha": "05306ac",
+      "fixFiles": ["e2e/wwhn-292-ui-responsive-rbac.spec.ts"],
+      "afterEvidence": "Dedicated suite REQUIRED_VIEWPORTS pins exactly 1440x900 / 768x1024 / 375x812 (+1280x900 desktop minimum); screenshots per viewport in docs/evidence/wwhn-292/qa2/<candidate-sha>/",
+      "retestResult": "PASS - e2e 24/24 at candidate SHA (QA2_RETEST_MATRIX.md)"
+    },
+    {
+      "defectId": "DEF-292-02",
+      "reviewItemId": "FE292-P1-06",
+      "moduleRoute": "authenticated application shell (aside/header/content) - all module screens",
+      "accountRole": "super_admin_controlled",
+      "viewport": "1440x900 / 1280x900 / 768x1024 / 375x812",
+      "environment": "FE controlled local, chromium (Windows 11, Node 22)",
+      "build": "vite dev @ candidate SHA (see final/EXACT_GIT_SHA)",
+      "expected": "Responsive claim 'shell/login' must be proven on the authenticated shell: no horizontal overflow at every required viewport; wireframe shell contract - fixed 300px aside with 300px main offset above 980px, static full-width aside at <=980px (Wireframe L13 grid 300px, L51 @media max-width:980px; desktop minimum 1280px per NFR-SRS-006 SRS L593).",
+      "actual": "Only /login was exercised; the authenticated shell was unproven at every required viewport.",
+      "severity": "P1",
+      "controllingSource": "SRS L593 (NFR-SRS-006) + Wireframe L13/L51 (300px aside, 980px stack breakpoint) + Wireframe L76/L156 (version authority)",
+      "beforeEvidence": "Historical evidence set: no shell-level responsive test existed before commit 4d11989 (suite at 05306ac covered /login only).",
+      "fixSha": "4d11989",
+      "fixFiles": [
+        "e2e/wwhn-292-ui-responsive-rbac.spec.ts",
+        "scripts/verify-wwhn-292-closure.mjs",
+        "docs/evidence/wwhn-292/WWHN-292_CLOSURE_REGISTER.json"
+      ],
+      "afterEvidence": "4 authenticated-shell tests (one per viewport) asserting hasHorizontalOverflow=false + aside position/width/offset contract; constants 1280/980/300 locked by verifier so drift fails the gate.",
+      "retestResult": "PASS - e2e 24/24 at candidate SHA (QA2_RETEST_MATRIX.md)"
+    },
+    {
+      "defectId": "DEF-292-03",
+      "reviewItemId": "FE292-P2-03",
+      "moduleRoute": "/system/users, /master-data/skus, /master-data/catalog, /master-data/warehouse, /master-data/agencies, /master-data/defects, /inbound, /putaway, /outbound, /warranty, /reverse, /reports, /audit-logs (+ positive control /inventory)",
+      "accountRole": "inventory_viewer_controlled (permission set = [inventory.view] only)",
+      "viewport": "1440x900",
+      "environment": "FE controlled local, chromium (Windows 11, Node 22)",
+      "build": "vite dev @ candidate SHA (see final/EXACT_GIT_SHA)",
+      "expected": "Route-level fail-closed must hold on EVERY protected route (default deny, SRS L532 enforcement standard; UI hiding is not authorization, SRS L296/L582; FE = UX gate, Techstack L494): direct URL -> /errors/403 + explicit no-permission state + hidden menu entry; plus a positive control proving the guard does not over-block granted permissions.",
+      "actual": "Fail-closed was proven on a single sample route only; a regression on any of the other 12 protected routes would not have been caught, and over-blocking would have passed unnoticed.",
+      "severity": "P2",
+      "controllingSource": "SRS L532 (default deny) + SRS L296 + SRS L582 + SRS L1390-1458 (Annex C route->permission) + Techstack L489-494 (RequirePermission; FE la UX gate)",
+      "beforeEvidence": "Suite state at 05306ac: one sample protected route only (historical assessment row FE292-P2-03).",
+      "fixSha": "4d11989",
+      "fixFiles": [
+        "e2e/wwhn-292-ui-responsive-rbac.spec.ts",
+        "scripts/verify-wwhn-292-closure.mjs"
+      ],
+      "afterEvidence": "13-route direct-URL matrix (each: /errors/403 + no-permission state + hidden nav entry) + positive control test 'permitted route stays reachable for the same limited role' (/inventory reachable with inventory.view).",
+      "retestResult": "PASS - e2e 24/24 at candidate SHA (QA2_RETEST_MATRIX.md)"
+    },
+    {
+      "defectId": "DEF-292-04",
+      "reviewItemId": "FE292-P1-02 / FE292-P2-01",
+      "moduleRoute": "evidence identity governance (Jira final comment + closure artifacts)",
+      "accountRole": "n/a (governance)",
+      "viewport": "n/a",
+      "environment": "governance - branch m1",
+      "build": "candidate identity files under docs/evidence/wwhn-292/final/",
+      "expected": "Final evidence binds to the exact immutable candidate SHA with SHA-256 sums (SRS L580/L639: final SHA-256 recorded in the Jira Release Register); canonical branch m1 only; no reuse of a historical CI identity.",
+      "actual": "Historical assessment reused stale identity: FE SHA 99fae... / CI run #488 after HEAD had moved, and m1ee/m1 branch references; sign-off template still carried <EXACT_GIT_SHA>/<GITHUB_RUN_ID> placeholders.",
+      "severity": "P1",
+      "controllingSource": "SRS L580 + SRS L639 (SHA-256 release discipline); canonical branch policy (closure register); Techstack L446-459 (required checks)",
+      "beforeEvidence": "Review 80/100 row FE292-P1-02: 'Jira van pin 6ff...; sign-off file con <EXACT_GIT_SHA>/<GITHUB_RUN_ID>'.",
+      "fixSha": "afe4cd9 + 6ffab3a (exact-SHA workflow) + candidate SHA of this closure (final/EXACT_GIT_SHA)",
+      "fixFiles": [
+        ".github/workflows/wwhn-292-fe-closure.yml",
+        "docs/Task_docs_Jira/WWHN-292_SIGNOFF_COMMENTS.md",
+        "docs/evidence/wwhn-292/final/EXACT_GIT_SHA",
+        "docs/evidence/wwhn-292/final/SHA256SUMS"
+      ],
+      "afterEvidence": "final/ identity pack: EXACT_GIT_SHA + LOCAL_RUN_ID + SHA256SUMS + RC_PIN.json (object hashes at candidate); sign-off file carries no placeholder tokens; CI run identity explicitly DEFERRED (see final/CI_RUN_DISPOSITION.md - GitHub Actions quota 3000/3000 exhausted, local execution identity substitutes with the same fail-fast gate order, no CI run id is claimed).",
+      "retestResult": "PASS - node scripts/verify-wwhn-292-closure.mjs validates identity pack + placeholder ban at candidate SHA"
+    },
+    {
+      "defectId": "DEF-292-05",
+      "reviewItemId": "FE292-P1-05",
+      "moduleRoute": "task governance - canonical WWHN-292 artifact set",
+      "accountRole": "n/a (governance)",
+      "viewport": "n/a",
+      "environment": "governance - branch m1",
+      "build": "docs/Task_docs_Jira/WWHN-292.md + docs/evidence/wwhn-292/*",
+      "expected": "A task-specific canonical artifact set exists (doc, structured register, verifier, dedicated E2E) so tooling and reviewers never fall back to WWHN-156 artifacts.",
+      "actual": "Canonical WWHN-292 task artifact was absent from current m1; WWHN-156 was being used as a substitute.",
+      "severity": "P1",
+      "controllingSource": "Techstack L546 (docs/evidence/ = implementation evidence convention); SRS L142 (evidence thuoc downstream tickets)",
+      "beforeEvidence": "Review row FE292-P1-05: task-specific artifact missing at assessment time.",
+      "fixSha": "030b5ce + ee0984e + 05306ac + 6c4a3fa + db9cd2c",
+      "fixFiles": [
+        "docs/Task_docs_Jira/WWHN-292.md",
+        "docs/evidence/wwhn-292/WWHN-292_CLOSURE_REGISTER.json",
+        "e2e/wwhn-292-ui-responsive-rbac.spec.ts",
+        "scripts/verify-wwhn-292-closure.mjs",
+        "package.json"
+      ],
+      "afterEvidence": "All artifacts present on m1; verifier fails closed if any is missing.",
+      "retestResult": "PASS - node scripts/verify-wwhn-292-closure.mjs (CLOSED in review 80/100; kept closed, source not deleted)"
+    },
+    {
+      "defectId": "DEF-292-06",
+      "reviewItemId": "FE292-P1-01",
+      "moduleRoute": "defect-register governance - parent chain WWHN-78 / HN-UAT-003",
+      "accountRole": "n/a (governance)",
+      "viewport": "n/a",
+      "environment": "governance - branch m1",
+      "build": "this register (docs/evidence/wwhn-292/WWHN-292_DEFECT_REGISTER.json)",
+      "expected": "A real line-by-line defect matrix exists, each row pinned to the CURRENT controlling source/REQ/version (BRD v3.20 + SRS/FRD v1.12 + wireframe aligned v3.20/v1.12), with before -> actual fix SHA/files -> after -> retest.",
+      "actual": "No real defect register existed; the parent chain still pointed at BRD v3.9, which SRS L225 marks HISTORICAL / SUPERSEDED.",
+      "severity": "P1",
+      "controllingSource": "SRS L225 (supersession register) + SRS L122/L188 (controlling = BRD v3.20) + SRS L1093-1094 (defect/UAT ticket content)",
+      "beforeEvidence": "Review 80/100 row FE292-P1-01: 'Khong co real defect register; parent van tro BRD v3.9 historical'.",
+      "fixSha": "candidate SHA of this closure (the commit introducing this register; resolved in final/EXACT_GIT_SHA)",
+      "fixFiles": [
+        "docs/evidence/wwhn-292/WWHN-292_DEFECT_REGISTER.json",
+        "docs/evidence/wwhn-292/WWHN-292_CLOSURE_REGISTER.json",
+        "scripts/verify-wwhn-292-closure.mjs"
+      ],
+      "afterEvidence": "This register: 6 real review-derived defects, all 14 required fields per row, controlling-source pins with file+line, BRD v3.9 quarantined as historical; verifier enforces completeness fail-closed.",
+      "retestResult": "PASS - node scripts/verify-wwhn-292-closure.mjs validates every row against requiredDefectFields"
+    }
+  ]
+}

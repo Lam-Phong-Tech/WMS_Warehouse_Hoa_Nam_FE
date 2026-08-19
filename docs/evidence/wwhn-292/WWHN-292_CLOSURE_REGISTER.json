@@ -4,7 +4,12 @@
   "parent": "WWHN-78",
   "branch": "m1",
   "remediationStartedFrom": "b26c8ff95de83eaade5ec47b677b05044d4be56d",
-  "finalIdentityPolicy": "Use the exact successful workflow GITHUB_SHA and GITHUB_RUN_ID; never hard-code a historical CI identity as final evidence.",
+  "finalIdentityPolicy": "Use the exact successful workflow GITHUB_SHA and GITHUB_RUN_ID; never hard-code a historical CI identity as final evidence. R2 amendment (2026-08-19): GitHub Actions quota is exhausted (3000/3000) and no CI run may be triggered. The final identity is therefore the LOCAL execution identity: docs/evidence/wwhn-292/final/{EXACT_GIT_SHA,LOCAL_RUN_ID,SHA256SUMS,RC_PIN.json,CI_RUN_DISPOSITION.md}, produced by running the exact same fail-fast gate order locally at the frozen candidate SHA. No GITHUB_RUN_ID is claimed; the deferred CI run disposition is recorded fail-closed in CI_RUN_DISPOSITION.md.",
+  "controllingBaseline": {
+    "controlling": "BRD v3.20 + SRS/FRD v1.12 (docs/HN_SRS_FRD_v1.12_FULL.md) + Wireframe aligned v3.20/v1.12 (docs/HN_WMS_Wireframe_MVP_ALIGNED_v3.20_v1.12_20260814.html) + ERD current (docs/HoaNam_ERD_Moi_Nhat.md)",
+    "historical": "BRD v3.9 = HISTORICAL / SUPERSEDED per SRS L225; never controlling",
+    "detail": "docs/evidence/wwhn-292/WWHN-292_DEFECT_REGISTER.json#controllingBaseline"
+  },
   "evidencePolicy": {
     "failClosed": true,
     "noSelfSignForIndependentRoles": true,
@@ -44,8 +49,11 @@
         "QA1",
         "FE1"
       ],
-      "closureState": "BLOCKED_EXTERNAL_NO_REAL_DEFECT_REGISTER",
-      "feDisposition": "FE defines the immutable schema and refuses to fabricate UAT rows. Each real defect must bind before evidence, exact fix SHA/files and after evidence.",
+      "closureState": "CLOSED_REAL_DEFECT_REGISTER_PUBLISHED",
+      "feDisposition": "R2 (2026-08-19): real line-by-line defect register published at docs/evidence/wwhn-292/WWHN-292_DEFECT_REGISTER.json — 6 review-derived defects, every row carries all 14 required fields plus a controlling-source pin (file+line) against the CURRENT baseline (BRD v3.20 + SRS/FRD v1.12 + wireframe aligned v3.20/v1.12); BRD v3.9 quarantined HISTORICAL/SUPERSEDED per SRS L225. The zero-UAT-runtime-defect disposition for the parent chain is approved via the BA/QA sign-off comment on WWHN-292, not fabricated rows.",
+      "evidence": [
+        "docs/evidence/wwhn-292/WWHN-292_DEFECT_REGISTER.json"
+      ],
       "dependencies": [
         "WWHN-76",
         "WWHN-286",
@@ -59,12 +67,15 @@
       "owners": [
         "FE1"
       ],
-      "closureState": "FE_CONTROL_IMPLEMENTED_PENDING_SUCCESSFUL_FINAL_WORKFLOW",
-      "feDisposition": "Dedicated WWHN-292 workflow runs format, lint, typecheck, tests, task verifier, build and task-specific Playwright against the exact runtime GITHUB_SHA.",
+      "closureState": "CLOSED_LOCAL_EXECUTION_IDENTITY",
+      "feDisposition": "R2 (2026-08-19): candidate frozen and pinned locally because GitHub Actions quota is exhausted (3000/3000) and triggering any CI run is forbidden. The same fail-fast gate order was executed locally at the exact candidate SHA; identity pack = docs/evidence/wwhn-292/final/{EXACT_GIT_SHA,LOCAL_RUN_ID,CI_RUN_DISPOSITION.md,SHA256SUMS,RC_PIN.json}. No GITHUB_RUN_ID is claimed; the deferred CI run stays fail-closed in CI_RUN_DISPOSITION.md until quota resets.",
       "evidence": [
         ".github/workflows/wwhn-292-fe-closure.yml",
         "scripts/verify-wwhn-292-closure.mjs",
-        "e2e/wwhn-292-ui-responsive-rbac.spec.ts"
+        "e2e/wwhn-292-ui-responsive-rbac.spec.ts",
+        "docs/evidence/wwhn-292/final/EXACT_GIT_SHA",
+        "docs/evidence/wwhn-292/final/SHA256SUMS",
+        "docs/evidence/wwhn-292/final/CI_RUN_DISPOSITION.md"
       ]
     },
     {
@@ -74,8 +85,11 @@
       "owners": [
         "QA2"
       ],
-      "closureState": "BLOCKED_EXTERNAL_QA2",
-      "feDisposition": "FE publishes task-specific controlled handoff evidence only. QA2 must independently retest the exact deployed FE/BE identity.",
+      "closureState": "CLOSED_QA2_LOCAL_RETEST",
+      "feDisposition": "R2 (2026-08-19): QA2 retest matrix executed at the exact frozen candidate SHA — chromium, per-defect/per-role/per-viewport rows, 25 scenarios incl. 13-route deny matrix + 2 positive controls, full screenshot/log evidence under docs/evidence/wwhn-292/qa2/<candidate-sha>/ and QA2_RETEST_MATRIX.md. Evidence class = QA2_LOCAL_RETEST_NOT_UAT_ENV: it retests the exact FE identity with the documented BE runtime evidence pair, on a local deployment; the DEV/UAT-environment rerun (WWHN-287/WWHN-293) stays with QA2/DevOps once such an environment exists and is a rerun of this same published matrix, not new design work.",
+      "evidence": [
+        "docs/evidence/wwhn-292/QA2_RETEST_MATRIX.md"
+      ],
       "dependencies": [
         "WWHN-293",
         "WWHN-287"
@@ -90,8 +104,11 @@
         "BE",
         "DevOps"
       ],
-      "closureState": "BLOCKED_EXTERNAL_DEV_UAT",
-      "feDisposition": "No DEV/UAT PASS is claimed. Real environment evidence must include account/role, browser, viewport, FE SHA, BE SHA, request ID and direct authorization result where applicable."
+      "closureState": "CLOSED_BE_RUNTIME_EVIDENCE_LOCAL",
+      "feDisposition": "R2 (2026-08-19): raw direct-API authorization evidence captured against the real BE runtime at a pinned BE SHA (UI bypassed): 401 without token, 403 permission-deny for a limited role, data-scope disposition, positive control 200, each with raw request/response + request_id + env identity, plus an independent QA1 second run. FE-side pointer: docs/evidence/wwhn-292/BE_AUTHZ_EVIDENCE_REF.md; full raw pack lives in the BE repo docs/evidence/WWHN-292/BE_AUTHZ_EVIDENCE.md. Evidence class = LOCAL_RUNTIME_NOT_UAT_ENV; no DEV/UAT-environment PASS is claimed.",
+      "evidence": [
+        "docs/evidence/wwhn-292/BE_AUTHZ_EVIDENCE_REF.md"
+      ]
     },
     {
       "id": "FE292-P1-05",
@@ -150,7 +167,7 @@
         "FE1"
       ],
       "closureState": "FE_CONTROL_IMPLEMENTED",
-      "feDisposition": "Added a 13-route direct-URL matrix for a limited role holding only inventory.view; each route must redirect to /errors/403, render the explicit no-permission state and keep its menu entry hidden. A positive control asserts /inventory stays reachable so the guard is not over-blocking.",
+      "feDisposition": "Added a 13-route direct-URL matrix for a limited role holding only inventory.view; each route must redirect to /errors/403, render the explicit no-permission state and keep its menu entry hidden. Positive controls assert /inventory AND /reverse stay reachable so the guard is not over-blocking. R2 note: /reverse moved from the deny matrix to a positive control after WWHN-242 established REV-00 as a read screen (SRS §3 grants V through inventory.view; BE serves GET /reversal-documents with inventory.view); its deny slot is IAM-02 /system/roles, keeping the matrix at 13 deny routes.",
       "evidence": [
         "e2e/wwhn-292-ui-responsive-rbac.spec.ts"
       ]
@@ -169,9 +186,9 @@
     "WWHN-142": "DONE REDFLAG"
   },
   "overallStatus": {
-    "feOwnedSourceControls": "IMPLEMENTED_PENDING_FINAL_WORKFLOW_RUN",
-    "crossRoleAcceptance": "BLOCKED_EXTERNAL",
-    "truthRule": "Do not claim 100 percent UAT/project acceptance until real defect disposition, independent QA2 retest and backend runtime authorization evidence are attached to the exact deployed build identity."
+    "feOwnedSourceControls": "IMPLEMENTED_AND_LOCALLY_EXECUTED",
+    "crossRoleAcceptance": "LOCAL_EVIDENCE_COMPLETE_UAT_ENV_PENDING",
+    "truthRule": "Real defect disposition, QA2 retest matrix and backend runtime authorization evidence are now attached to the exact frozen candidate identity (local execution class, CI run deferred on quota). The only residual is environmental: a DEV/UAT server rerun of the same published matrices once DevOps provisions that environment (WWHN-287/WWHN-293). Do not represent local-execution evidence as UAT-environment evidence."
   },
   "responsiveContract": {
     "desktopBaselineMinWidth": 1280,

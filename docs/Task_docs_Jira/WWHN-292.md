@@ -92,3 +92,25 @@ Final WWHN-292 acceptance must remain **FE SOURCE REMEDIATED / EXTERNAL UAT GATE
 - disposition of remaining P0/P1 defects and parent/dependency gates.
 
 Do not claim 100% project/UAT acceptance from FE-controlled evidence alone.
+
+## 7. R2 closure (2026-08-19) — đối chiếu review 80/100
+
+Review R2 chấm 80/100 với 4 mục OPEN (FE292-P1-01..04). Trạng thái lịch sử ở các mục trên
+("FE SOURCE REMEDIATED / EXTERNAL UAT GATES PENDING") được giữ nguyên làm trace; trạng thái
+hiện hành sau R2 nằm trong `WWHN-292_CLOSURE_REGISTER.json` và các evidence dưới đây.
+
+| ID | Đóng bằng | Evidence |
+| --- | --- | --- |
+| FE292-P1-01 | Real defect register từng dòng, pin controlling source hiện hành (BRD v3.20 + SRS/FRD v1.12 + wireframe aligned v3.20/v1.12; BRD v3.9 = HISTORICAL/SUPERSEDED theo SRS L225), đủ 14 trường before → fix SHA/files → after → retest cho 6 defect thật của chuỗi review | `docs/evidence/wwhn-292/WWHN-292_DEFECT_REGISTER.json` |
+| FE292-P1-02 | Candidate đóng băng + chạy đủ chuỗi gate fail-fast tại exact SHA ở LOCAL (GitHub Actions quota 3000/3000 đã cạn — cấm trigger CI); identity pack EXACT_GIT_SHA + LOCAL_RUN_ID + SHA256SUMS + RC_PIN; disposition CI ghi fail-closed, không claim GITHUB_RUN_ID nào | `docs/evidence/wwhn-292/final/` |
+| FE292-P1-03 | QA2 retest matrix chạy thật tại exact candidate SHA: chromium, theo defect/role/viewport, 13-route deny + 2 positive control, screenshot/log đầy đủ; evidence class QA2_LOCAL_RETEST_NOT_UAT_ENV | `docs/evidence/wwhn-292/QA2_RETEST_MATRIX.md`, `docs/evidence/wwhn-292/qa2/<sha>/` |
+| FE292-P1-04 | Raw direct-API bỏ qua UI trên BE runtime thật (BE SHA pin): 401 no-token, 403 permission-deny, data-scope disposition, positive control 200 — mỗi probe kèm raw request/response + request_id + env identity; QA1 chạy độc lập lượt 2 | `docs/evidence/wwhn-292/BE_AUTHZ_EVIDENCE_REF.md` → BE repo `docs/evidence/WWHN-292/BE_AUTHZ_EVIDENCE.md` |
+
+Điều chỉnh ma trận RBAC trong R2: WWHN-242 xác lập REV-00 là màn ĐỌC (SRS §3 cấp V qua
+`inventory.view`; BE mở `GET /reversal-documents` bằng `inventory.view`), nên `/reverse`
+chuyển từ deny matrix sang positive control thứ 2; suất deny thay bằng IAM-02
+`/system/roles`, ma trận giữ nguyên 13 route deny.
+
+Residual duy nhất sau R2 là ENVIRONMENTAL: rerun đúng các matrix đã publish trên môi trường
+DEV/UAT do DevOps dựng (WWHN-287/WWHN-293) — không còn hạng mục thiết kế/bằng chứng mới nào
+thuộc FE. Không được trình bày local-execution evidence như UAT-environment evidence.

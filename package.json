@@ -58,6 +58,7 @@
     "wwhn-211:rbac:contract": "node scripts/run-wwhn-211-direct-api-rbac.mjs --contract-only",
     "wwhn-211:rbac:live": "node scripts/run-wwhn-211-direct-api-rbac.mjs",
     "wwhn-292:verify": "node scripts/verify-wwhn-292-closure.mjs",
+    "wwhn-292:verify:final": "node scripts/verify-wwhn-292-closure.mjs --require-final",
     "wwhn-274:verify": "node scripts/verify-wwhn-274-closure.mjs",
     "verify:wwhn-327": "node scripts/verify-wwhn-327-closure.mjs",
     "verify:wwhn-247": "node scripts/verify-wwhn-247-closure.mjs",

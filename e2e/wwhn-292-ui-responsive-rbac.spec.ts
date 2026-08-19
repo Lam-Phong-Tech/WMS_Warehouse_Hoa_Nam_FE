@@ -500,10 +500,14 @@ test.describe("WWHN-292 FE-controlled UI/responsive/RBAC closure", () => {
     },
     { screen: "OUT-01", route: "/outbound", menuLabel: "Danh sách phiếu xuất" },
     { screen: "WAR-01", route: "/warranty", menuLabel: "Danh sách bảo hành" },
+    // REV-00 (/reverse) đã chuyển sang positive control bên dưới: WWHN-242 xác lập
+    // REV-00 là màn ĐỌC — SRS §3 "Inventory query/trace/reversal" cấp V qua
+    // inventory.view và BE mở GET /reversal-documents bằng inventory.view, nên
+    // inventory_viewer PHẢI vào được. Suất deny thay bằng IAM-02 (/system/roles).
     {
-      screen: "REV-00",
-      route: "/reverse",
-      menuLabel: "Danh sách phiếu Reversal",
+      screen: "IAM-02",
+      route: "/system/roles",
+      menuLabel: "Vai trò & phân quyền",
     },
     { screen: "RPT-01", route: "/reports", menuLabel: "Báo cáo vận hành" },
     { screen: "AUDIT-01", route: "/audit-logs", menuLabel: null },
@@ -576,6 +580,45 @@ test.describe("WWHN-292 FE-controlled UI/responsive/RBAC closure", () => {
         "inventory.view grants entry to /inventory",
         "Permitted menu entry stays visible",
         "Fail-closed guard does not over-block granted permissions",
+      ],
+    });
+  });
+
+  /**
+   * Positive control #2 — REV-00 read semantic (WWHN-242). SRS §3 "Inventory
+   * query/trace/reversal" grants V through inventory.view and BE serves
+   * GET /reversal-documents with inventory.view, so the read-only reversal list
+   * must stay reachable for the same limited role; only store/confirm/post/
+   * cancel require inventory.reversal.post and stay hidden inside the screen.
+   */
+  test("reversal read screen stays reachable for inventory.view (WWHN-242 read semantic)", async ({
+    page,
+  }, testInfo) => {
+    const viewport = { width: 1440, height: 900 };
+    await setupMockApi(page, {
+      refreshSuccess: true,
+      permissionCodes: LIMITED_ROLE_PERMISSIONS,
+    });
+    await page.setViewportSize(viewport);
+
+    await page.goto("/reverse");
+    await expect(page).toHaveURL(/\/reverse$/);
+    await expect(
+      page.getByRole("button", {
+        name: "Danh sách phiếu Reversal",
+        exact: true,
+      }),
+    ).toBeVisible();
+
+    await captureEvidence(page, testInfo, {
+      scenario: "reversal-read-reachable",
+      role: "inventory_viewer_controlled",
+      viewport,
+      route: "/reverse",
+      assertions: [
+        "inventory.view grants read entry to /reverse (REV-00 read semantic, WWHN-242)",
+        "No redirect to /errors/403 for the read-only reversal list",
+        "Write actions remain gated by inventory.reversal.post inside the screen",
       ],
     });
   });
