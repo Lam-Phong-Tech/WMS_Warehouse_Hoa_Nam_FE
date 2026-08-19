@@ -204,6 +204,8 @@ const FORBIDDEN = ["stocktake", "apply-adjustment", "applyadjustment"];
       "scripts/verify-wwhn-236-closure.mjs",
       "src/test/wwhn-236-adjustment-deferral-gate.test.ts",
       "src/test/wwhn-233-count-deferral-gate.test.ts",
+      "docs/Task_docs_Jira/WWHN-236_SIGNOFF_COMMENTS.md",
+      "docs/evidence/WWHN-236/FE_CLOSURE_IDENTITY.json",
     ]);
 
     const promised = new Set(
@@ -285,6 +287,204 @@ const FORBIDDEN = ["stocktake", "apply-adjustment", "applyadjustment"];
         "deferralDispositions: DISP-STK-236 = DEFERRED_NO_CODE, khớp disposition",
       );
     }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// R3 — check 8..9: governance parity với nửa BE.
+// Vòng R2 sạch về bề mặt nhưng nửa FE không có identity riêng, nên không ai
+// chứng minh được "FE đã chạy tại đúng bản nào". Hai check dưới đây bịt chỗ đó.
+// ═══════════════════════════════════════════════════════════════════════════
+const { execFileSync: _exec } = await import("node:child_process");
+const { createHash } = await import("node:crypto");
+const { mkdirSync, writeFileSync } = await import("node:fs");
+const EMIT_IDENTITY = process.argv.includes("--emit-identity");
+
+const gitFE = (args, cwd = FE_ROOT) => {
+  try {
+    return _exec("git", args, { cwd, encoding: "utf8" }).trim();
+  } catch {
+    return null;
+  }
+};
+const gitOkFE = (args, cwd = FE_ROOT) => {
+  try {
+    _exec("git", args, { cwd, stdio: "ignore" });
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+/** Artifact FE do WWHN-236 sở hữu. `pin_carrier` = file tự chứa hash của đợt pin. */
+const FE_GOVERNED = [
+  { path: "scripts/verify-wwhn-236-closure.mjs", role: "gate" },
+  { path: "src/test/wwhn-236-adjustment-deferral-gate.test.ts", role: "gate-test" },
+  { path: "docs/Task_docs_Jira/WWHN-236.md", role: "task-doc" },
+  { path: "docs/Task_docs_Jira/WWHN-236_SIGNOFF_COMMENTS.md", role: "task-doc" },
+  { path: "docs/evidence/WWHN-236/FE_CLOSURE_IDENTITY.json", role: "evidence", pin_carrier: true },
+  { path: "docs/evidence/WWHN-236/SHA256SUMS", role: "evidence", pin_carrier: true },
+];
+
+const IDENTITY_REL = "docs/evidence/WWHN-236/FE_CLOSURE_IDENTITY.json";
+
+// ── Check 8: bản ghi phê duyệt + chuỗi ticket bên BE phải tồn tại và đồng bộ ──
+{
+  const approvalRel = "docs/decision-records/DISP-STK-236-APPROVAL.json";
+  const chainRel = "docs/evidence/WWHN-236/CHAIN_DISPOSITION.json";
+  const approvalRaw = read(BE_ROOT, approvalRel);
+  const chainRaw = read(BE_ROOT, chainRel);
+
+  if (approvalRaw === null || chainRaw === null) {
+    // Hai repo có thể checkout lệch nhau; không biến điều đó thành lỗi FE.
+    note(
+      "GOVERNANCE-R3",
+      `Không đọc được ${approvalRaw === null ? approvalRel : chainRel} ở repo BE — bỏ qua bước đối chiếu governance.`,
+    );
+  } else {
+    const problems = [];
+    let approval;
+    let chain;
+    try {
+      approval = JSON.parse(approvalRaw);
+      chain = JSON.parse(chainRaw);
+    } catch (e) {
+      problems.push(`JSON không parse được: ${e}`);
+    }
+
+    if (approval) {
+      if (approval.decision !== "DEFERRED_NO_CODE")
+        problems.push(`approval.decision=[${approval.decision}] != DEFERRED_NO_CODE`);
+      if (approval.controllingRequirement !== "REQ-SRS-037")
+        problems.push(`approval.controllingRequirement=[${approval.controllingRequirement}] != REQ-SRS-037`);
+      if (approval.limitationAccepted?.id !== "LIM-STK-236-01")
+        problems.push("approval thiếu limitationAccepted LIM-STK-236-01 (giới hạn PM/PO phải chấp nhận)");
+      if (approval.status === "APPROVED" && !approval.effectiveDate)
+        problems.push("approval.status=APPROVED nhưng effectiveDate=null");
+    }
+
+    if (chain) {
+      const blocked = (chain.tickets ?? []).filter((t) => /blocked|pending/i.test(String(t.targetStatus)));
+      if (blocked.length > 0)
+        problems.push(`chuỗi ticket còn Blocked/Pending: ${blocked.map((t) => t.ticket).join(", ")}`);
+      for (const qa of chain.qaTasksMustNotBeBlocked ?? []) {
+        const t = (chain.tickets ?? []).find((x) => x.ticket === qa);
+        if (!t || !/DEFERRED|N\/A/i.test(String(t.targetStatus)))
+          problems.push(`QA task ${qa} không ở DEFERRED / N/A`);
+      }
+    }
+
+    if (problems.length > 0) {
+      fail("GOVERNANCE-R3", `Governance BE ↔ FE lệch:\n    ${problems.join("\n    ")}`);
+    } else {
+      pass(
+        "GOVERNANCE-R3",
+        `approval record (${approval?.status}) + chain ${chain?.tickets?.length ?? 0} ticket: DEFERRED, zero Blocked/Pending`,
+      );
+      if (approval?.status !== "APPROVED") {
+        const unsigned = Object.entries(approval?.signOff ?? {})
+          .filter(([, s]) => !s.decision)
+          .map(([k]) => k);
+        if (unsigned.length > 0)
+          note("GOVERNANCE-R3", `còn ${unsigned.length} vai trò chưa ký: ${unsigned.join(", ")}.`);
+      }
+    }
+  }
+}
+
+// ── Check 9: identity của nửa FE — chạy tại đúng bản nào ─────────────────────
+{
+  const files = FE_GOVERNED.map((e) => {
+    const abs = join(FE_ROOT, e.path);
+    const present = existsSync(abs);
+    const committed = gitFE(["rev-parse", `HEAD:${e.path}`]);
+    const disk = present ? gitFE(["hash-object", e.path]) : null;
+    const [last_commit = null, last_commit_date = null] = (gitFE(["log", "-1", "--format=%H|%cI", "--", e.path]) ?? "")
+      .split("|");
+    return {
+      path: e.path,
+      role: e.role,
+      pin_carrier: e.pin_carrier === true,
+      present,
+      tracked: committed !== null,
+      blob_sha: committed,
+      worktree_blob_sha: disk,
+      uncommitted: committed !== null && disk !== null && committed !== disk,
+      sha256: present ? createHash("sha256").update(readFileSync(abs)).digest("hex") : null,
+      last_commit: last_commit || null,
+      last_commit_date: last_commit_date || null,
+    };
+  });
+
+  const pinnable = files.filter((f) => !f.pin_carrier && f.tracked).map((f) => f.path);
+  const candLine = pinnable.length > 0 ? gitFE(["log", "-1", "--format=%H|%cI|%s", "--", ...pinnable]) : null;
+  const [candSha = null, candDate = null, candSubject = null] = (candLine ?? "").split("|");
+
+  if (EMIT_IDENTITY) {
+    const status = gitFE(["status", "--porcelain"]) ?? "";
+    const dirty = status.split("\n").filter(Boolean).map((l) => l.slice(3).trim().replace(/^"|"$/g, ""));
+    const governedPaths = new Set(files.map((f) => f.path));
+    const governedDirty = files.filter((f) => f.uncommitted || (f.present && !f.tracked)).map((f) => f.path);
+    const payload = {
+      document: "FE_CLOSURE_IDENTITY",
+      task: "WWHN-236",
+      register_item: "DEV236-P1-04R3",
+      disposition: "DISP-STK-236",
+      repo: "FE",
+      branch: gitFE(["rev-parse", "--abbrev-ref", "HEAD"]),
+      head_sha: gitFE(["rev-parse", "HEAD"]),
+      candidate_sha: candSha || null,
+      candidate_date: candDate || null,
+      candidate_subject: candSubject || null,
+      candidate_rule:
+        "Commit cuối cùng chạm artifact FE do WWHN-236 sở hữu (bỏ pin carrier). Không pin HEAD: m1 có nhiều phiên song song.",
+      pull_request: "N/A — direct-to-m1",
+      governed_working_tree: governedDirty.length === 0 ? "CLEAN" : "DIRTY",
+      governed_dirty_files: governedDirty,
+      foreign_dirty_files: dirty.filter((p) => !governedPaths.has(p)),
+      governed_files: files,
+    };
+    mkdirSync(join(FE_ROOT, "docs/evidence/WWHN-236"), { recursive: true });
+    writeFileSync(join(FE_ROOT, IDENTITY_REL), `${JSON.stringify(payload, null, 2)}\n`);
+    console.log(`  → ghi ${IDENTITY_REL}`);
+  }
+
+  const raw = read(FE_ROOT, IDENTITY_REL);
+  if (raw === null) {
+    fail(
+      "FE-IDENTITY",
+      `${IDENTITY_REL} không tồn tại. Chạy \`npm run wwhn-236:verify -- --emit-identity\`. ` +
+        "Không có identity thì không ai chứng minh được nửa FE đã chạy tại đúng bản nào.",
+    );
+  } else {
+    const identity = JSON.parse(raw);
+    const problems = [];
+    if (!identity.candidate_sha) problems.push("candidate_sha=null — sinh identity khi artifact chưa commit");
+    if (identity.governed_working_tree !== "CLEAN")
+      problems.push(`governed_working_tree=${identity.governed_working_tree} — [${(identity.governed_dirty_files ?? []).join(", ")}]`);
+    if (identity.pull_request !== "N/A — direct-to-m1") problems.push("pull_request phải ghi N/A — direct-to-m1");
+    if (identity.candidate_sha && !gitOkFE(["merge-base", "--is-ancestor", identity.candidate_sha, "HEAD"]))
+      problems.push(`candidate ${identity.candidate_sha.slice(0, 7)} không phải ancestor của HEAD — pin đã mục`);
+
+    for (const f of identity.governed_files ?? []) {
+      if (!f.present) {
+        problems.push(`governed file thiếu: ${f.path}`);
+        continue;
+      }
+      if (f.pin_carrier || !f.tracked) continue;
+      const now = gitFE(["rev-parse", `HEAD:${f.path}`]);
+      if (now !== f.blob_sha)
+        problems.push(`${f.path} đổi blob sau khi pin (${String(f.blob_sha).slice(0, 7)} → ${String(now).slice(0, 7)})`);
+      const disk = gitFE(["hash-object", f.path]);
+      if (disk !== now) problems.push(`${f.path} trên đĩa khác bản đã commit`);
+    }
+
+    if (problems.length > 0) fail("FE-IDENTITY", `${IDENTITY_REL}:\n    ${problems.join("\n    ")}`);
+    else
+      pass(
+        "FE-IDENTITY",
+        `candidate ${String(identity.candidate_sha).slice(0, 7)} · ${(identity.governed_files ?? []).filter((f) => !f.pin_carrier).length} governed file khớp blob · PR=N/A direct-to-m1`,
+      );
   }
 }
 

@@ -1,3 +1,5 @@
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
@@ -106,5 +108,99 @@ describe("WWHN-236 · DISP-STK-236 — Apply Adjustment DEFERRED (FE surface)", 
     expect(stringValues(WMS_PERMISSION_CATALOG).length).toBe(
       Object.keys(WMS_PERMISSION_CATALOG).length,
     );
+  });
+});
+
+/**
+ * WWHN-236 R3 — governance parity giữa hai repo (DEV236-P1-01R3 / P1-03R3 / P1-04R3).
+ *
+ * Bốn test trên khoá *bề mặt*. Ba test dưới khoá *cách task được đóng*: nếu bản ghi
+ * phê duyệt biến mất, nếu một ticket trong chuỗi quay lại `Blocked`, hoặc nếu identity
+ * của nửa FE không còn trỏ tới commit nào, thì suite này đỏ — không phải chờ tới vòng
+ * rà soát sau mới phát hiện.
+ *
+ * Hai repo có thể được checkout lệch nhau nên phần đọc sang BE tự bỏ qua khi không
+ * thấy file, đúng như verifier FE đang làm; điều đó không được biến thành lỗi FE.
+ */
+describe("WWHN-236 · R3 governance (DISP-STK-236)", () => {
+  const FE_ROOT = join(__dirname, "..", "..");
+  const BE_ROOT = join(FE_ROOT, "..", "..", "HoaNam_BE", "WMS_Warehouse_Hoa_Nam_BE");
+
+  const readJson = (root: string, rel: string): Record<string, unknown> | null => {
+    const abs = join(root, rel);
+    if (!existsSync(abs)) return null;
+    return JSON.parse(readFileSync(abs, "utf8")) as Record<string, unknown>;
+  };
+
+  it("bản ghi phê duyệt giữ decision/limitation và không tự tuyên bố APPROVED", () => {
+    const approval = readJson(
+      BE_ROOT,
+      "docs/decision-records/DISP-STK-236-APPROVAL.json",
+    );
+    if (approval === null) {
+      expect(existsSync(BE_ROOT)).toBe(false); // repo BE không có mặt ở checkout này
+      return;
+    }
+
+    expect(approval.decision).toBe("DEFERRED_NO_CODE");
+    expect(approval.controllingRequirement).toBe("REQ-SRS-037");
+
+    const limitation = approval.limitationAccepted as Record<string, unknown>;
+    expect(limitation?.id).toBe("LIM-STK-236-01");
+    expect(JSON.stringify(limitation)).toContain("reconciliation_incidents");
+
+    // Chặn đúng thứ nguy hiểm nhất: APPROVED mà chưa đủ chữ ký hoặc chưa có ngày hiệu lực.
+    if (approval.status === "APPROVED") {
+      expect(approval.effectiveDate).not.toBeNull();
+      const signOff = approval.signOff as Record<string, { decision: string | null }>;
+      for (const [role, signature] of Object.entries(signOff)) {
+        expect(signature.decision, `vai trò ${role} chưa ký`).not.toBeNull();
+      }
+    }
+  });
+
+  it("không ticket nào trong chuỗi bị để Blocked/Pending", () => {
+    const chain = readJson(BE_ROOT, "docs/evidence/WWHN-236/CHAIN_DISPOSITION.json");
+    if (chain === null) {
+      expect(existsSync(BE_ROOT)).toBe(false);
+      return;
+    }
+
+    const tickets = chain.tickets as Array<{
+      ticket: string;
+      targetStatus: string;
+      disposition: string;
+    }>;
+    expect(tickets.length).toBeGreaterThan(0);
+
+    for (const ticket of tickets) {
+      expect(ticket.targetStatus.toLowerCase(), `${ticket.ticket}`).not.toContain("blocked");
+      expect(ticket.targetStatus.toLowerCase(), `${ticket.ticket}`).not.toContain("pending");
+      expect(ticket.disposition).toContain("DEFERRED");
+    }
+
+    for (const qa of (chain.qaTasksMustNotBeBlocked as string[]) ?? []) {
+      const entry = tickets.find((t) => t.ticket === qa);
+      expect(entry, `QA task ${qa} không có trong chuỗi`).toBeDefined();
+      expect(entry?.targetStatus).toMatch(/DEFERRED|N\/A/i);
+    }
+  });
+
+  it("identity của nửa FE pin candidate chứ không pin HEAD", () => {
+    const identity = readJson(FE_ROOT, "docs/evidence/WWHN-236/FE_CLOSURE_IDENTITY.json");
+    expect(
+      identity,
+      "Thiếu FE_CLOSURE_IDENTITY.json — chạy `npm run wwhn-236:verify -- --emit-identity`",
+    ).not.toBeNull();
+
+    expect(identity?.candidate_sha).toBeTruthy();
+    expect(identity?.governed_working_tree).toBe("CLEAN");
+    expect(identity?.pull_request).toBe("N/A — direct-to-m1");
+
+    const files = (identity?.governed_files as Array<{ path: string; present: boolean }>) ?? [];
+    expect(files.length).toBeGreaterThan(0);
+    for (const file of files) {
+      expect(existsSync(join(FE_ROOT, file.path)), `thiếu ${file.path}`).toBe(true);
+    }
   });
 });
