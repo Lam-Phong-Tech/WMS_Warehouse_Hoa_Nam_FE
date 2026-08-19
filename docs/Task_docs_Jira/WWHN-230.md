@@ -48,6 +48,15 @@ quyết định phạm vi từ file riêng.
 ## Kết quả tại phiên này
 
 - `wwhn-230-stocktake-scope-guard`: **4/4 pass**.
+
+## Vòng 2 — review 67/100 (`DEV230-P1-02R`)
+
+`FE_CLOSURE_EVIDENCE.json` cũ bị stale (SHA không khớp HEAD, `workingTreeClean=false`,
+`testResult=null`). Đã regenerate trên clean `git worktree` (đối xứng với worktree BE để
+`identity.backend` trong file FE cũng đọc đúng trạng thái sạch) — không đụng working tree
+chung đang có phiên khác sửa. Commit `52969fb` (candidate `f9f2e65`, 4/4 vitest pass,
+`workingTreeClean=true` cả hai phía). Chi tiết đầy đủ + cách chạy lại: xem §6 bản BE
+(`../../HoaNam_BE/WMS_Warehouse_Hoa_Nam_BE/docs/docs_task_jira/WWHN-230.md`).
 - `npm run wwhn-230:verify`: **PASS** (1 PENDING là sign-off, đúng thiết kế).
 - `npm run check:api-mapping`: **PASS** (56 dòng, 4 fail-closed có chủ đích).
 - Full vitest: **575 test**, không có regression do task này.
