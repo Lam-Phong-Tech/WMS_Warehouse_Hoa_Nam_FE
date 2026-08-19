@@ -454,7 +454,7 @@ export default function DashboardPage() {
                 <div className="hn-dashboard-muted">
                   Toàn bộ warranty case, không áp dụng bộ lọc kỳ.
                 </div>
-                {/* WWHN-328 KPI matrix v1.1 §1: warranty_cases_by_status là ngoại lệ
+                {/* WWHN-328 KPI matrix v1.2 §1: warranty_cases_by_status là ngoại lệ
                     GLOBAL có chủ đích (ERD warranty_case không có warehouse_id). Không
                     nói ra thì người dùng bị giới hạn kho đọc "Phạm vi dữ liệu: giới hạn
                     N kho" ở trên rồi quy nhầm số ca bảo hành này về kho của mình. */}

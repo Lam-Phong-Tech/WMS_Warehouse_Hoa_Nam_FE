@@ -1,0 +1,66 @@
+name: WWHN-328 FE Consumer Pin
+
+# Cổng phía FE của register R4 WWHN-328 (DEV328-P1-05R4).
+#
+# Bản 327 bảo vệ cách màn hình hiển thị. Cổng này bảo vệ quan hệ FE ↔ BE: pin BE
+# SHA đủ 40 ký tự, fingerprint hợp đồng, và field set FE tiêu thụ phải bằng đúng
+# hợp đồng đã ký. Dependency giữa hai repo trước đây chỉ tồn tại trong lời văn của
+# comment Jira nên nó đứt mà không ai biết.
+
+on:
+  push:
+    branches: [m1]
+    paths:
+      - "src/modules/dashboard/**"
+      - "docs/evidence/WWHN-327/**"
+      - "docs/evidence/WWHN-327/**"
+      - "docs/Task_docs_Jira/WWHN-327.md"
+      - "scripts/verify-wwhn-328-fe-consumer.mjs"
+      - ".github/workflows/wwhn-328-fe-consumer-pin.yml"
+  pull_request:
+    branches: [m1]
+    paths:
+      - "src/modules/dashboard/**"
+      - "docs/evidence/WWHN-327/**"
+      - "scripts/verify-wwhn-328-fe-consumer.mjs"
+      - ".github/workflows/wwhn-328-fe-consumer-pin.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fe-consumer-gate:
+    name: FE consumer pin + dashboard contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Dashboard unit tests
+        run: npx vitest run src/modules/dashboard
+
+      - name: WWHN-327 display contract still holds
+        run: node scripts/verify-wwhn-327-closure.mjs
+
+      - name: WWHN-328 consumer pin gate
+        run: node scripts/verify-wwhn-328-fe-consumer.mjs
+
+      - name: Upload WWHN-328 consumer evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wwhn-328-consumer-evidence-${{ github.sha }}
+          path: docs/evidence/WWHN-327/
+          retention-days: 90

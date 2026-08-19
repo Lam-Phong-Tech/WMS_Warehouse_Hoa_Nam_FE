@@ -256,7 +256,7 @@
   }
 }
 
-/* WWHN-328 KPI matrix v1.1 §1: ngoại lệ GLOBAL của warranty phải nổi hơn dòng
+/* WWHN-328 KPI matrix v1.2 §1: ngoại lệ GLOBAL của warranty phải nổi hơn dòng
    ghi chú thường, vì nó phủ định phạm vi kho vừa hiển thị ngay phía trên. */
 .hn-dashboard-scope-exception {
   margin-top: 10px;

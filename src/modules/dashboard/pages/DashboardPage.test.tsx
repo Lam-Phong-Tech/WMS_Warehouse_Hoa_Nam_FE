@@ -152,7 +152,7 @@ describe("DashboardPage / WWHN-327", () => {
     ).toBeInTheDocument();
   });
 
-  // WWHN-327: KPI matrix v1.1 §1 khai warranty là ngoại lệ GLOBAL có chủ đích. Người
+  // WWHN-327: KPI matrix v1.2 §1 khai warranty là ngoại lệ GLOBAL có chủ đích. Người
   // dùng bị giới hạn kho vừa đọc "Giới hạn N kho" ở KPI sẽ quy nhầm số ca bảo hành về
   // kho của mình nếu màn hình không nói ngoại lệ đó ra.
   it("declares the warranty GLOBAL exception when the payload is warehouse-scoped", async () => {
