@@ -6,18 +6,29 @@ Architecture_Dev_Guide**.
 
 ## Định danh candidate
 
+**Round 2 (19/08/2026):** review 64/100 bắt đúng việc candidate Round 1 đã drift 125 commit
+(BE) / 48 commit (FE) kể từ 18/08 (DEV254-P1-02R). Đã soát lại toàn bộ report-scope hai repo
+không lệch thêm, tìm và sửa 1 regression thật (guard REQ-SRS-037 báo nhầm do WWHN-190) và
+re-pin sang SHA dưới đây. Chi tiết đầy đủ + 2 lỗi hạ tầng tìm thấy trong chính gate CI
+(chưa sửa, ngoài phạm vi cho phép vì ngân sách CI-minutes) nằm ở
+`docs/evidence/WWHN-254/README.md` mục 6 (repo BE).
+
 | | |
 | --- | --- |
 | Nhánh | `m1` (không tạo nhánh riêng) |
-| BE candidate SHA | `c855851b37920237d110f7dffe5dbbad509aebce` |
-| FE candidate SHA | `a2da7ab41b407850c1273cdfd83a72611130caf8` |
+| BE candidate SHA (Round 2) | `e02903f1fc6b7635c2deac84a0284f49ddfb0fdd` |
+| FE candidate SHA (Round 2) | `f9f2e65e687669f033d259a693635546876f05a8` |
+| BE candidate SHA (Round 1, superseded) | `c855851b37920237d110f7dffe5dbbad509aebce` |
+| FE candidate SHA (Round 1, superseded) | `a2da7ab41b407850c1273cdfd83a72611130caf8` |
 | BE evidence pack | `docs/evidence/WWHN-254/README.md` (repo BE) |
-| Gate exact-SHA | `.github/workflows/flow06-exact-sha.yml` (repo BE) |
+| Gate exact-SHA | `.github/workflows/flow06-exact-sha.yml` (repo BE) — **chưa chạy lại qua GitHub Actions ở Round 2**, xem lý do ở evidence pack mục 6 |
 
-Chạy lại gate tại đúng candidate:
+Chạy lại gate tại đúng candidate (**để dành cho lúc có ngân sách CI-minutes trở lại**, sau
+khi Tech Lead áp 2 bản vá nêu ở evidence pack mục 6.2 — nếu chạy nguyên trạng bây giờ gate
+sẽ tự fail ở bước doc-semantics và bước tính hash Postman, không phải do code báo cáo):
 
 ```bash
-gh workflow run flow06-exact-sha.yml --ref m1 -f candidate_sha=c855851b37920237d110f7dffe5dbbad509aebce
+gh workflow run flow06-exact-sha.yml --ref m1 -f candidate_sha=e02903f1fc6b7635c2deac84a0284f49ddfb0fdd
 ```
 
 ## Trạng thái từng mục register
