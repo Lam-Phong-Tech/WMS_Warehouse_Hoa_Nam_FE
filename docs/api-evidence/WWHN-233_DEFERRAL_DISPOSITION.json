@@ -80,7 +80,7 @@
       ],
       "fingerprintSha256": "14d15bfc647323dc0d017c250c17c9ae8850b866bc7221722ac0c8d8f85823cd",
       "fingerprintNote": "Verifier FE tinh lai moi lan chay va ghi lai khi chay `npm run wwhn-233:verify -- --emit`. Null nghia la chua phat hanh lan nao.",
-      "feCommitSha": "3bad47deb266b2cc276fa9844b1cf00e9b50348c",
+      "feCommitSha": "2d87fb5b69e5e838bf298245f422546a883c8fc0",
       "beCandidateRef": "BE docs/evidence/WWHN-233/IMMUTABLE_CANDIDATE_PIN.json -> candidate.be_commit_sha"
     },
     "dormantSurface": {
