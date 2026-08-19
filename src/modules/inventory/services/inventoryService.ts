@@ -68,6 +68,17 @@ export type InventoryBalanceRow = {
    */
   ledgerTotal: number;
   variance: number;
+  /**
+   * WWHN-198 / DEC-INV-RESERVED-001: `reserved_qty` là COMPATIBILITY FIELD, backend
+   * ghim hằng 0 và nó KHÔNG phải nguồn sự thật của khả dụng. Giữ chỗ trong hệ thống
+   * là identity-level — một item cụ thể bị chiếm khi có `outbound_item_matches` ở
+   * trạng thái ACTIVE — chứ không phải một con số quantity-level.
+   *
+   * Vì vậy: KHÔNG hiển thị field này như "Đang giữ chỗ", và KHÔNG tính
+   * `khả dụng = onHand - reservedQty`. Cột khả dụng phải đọc `available` (map từ
+   * `available_qty`, Annex D SCR-OUT-01). Giữ lại ở đây chỉ để pass-through cho
+   * caller nào cần raw value, giống ledgerTotal/variance ở trên.
+   */
   reservedQty: number;
   incidentId: string | null;
   incidentStatus: string | null;
@@ -529,5 +540,51 @@ export async function traceByPhysicalCode(
   return http.get<PhysicalCodeTraceResult>(
     API_ENDPOINTS.STOCK_MOVEMENT_TRACE_BY_CODE,
     { params: { code } },
+  );
+}
+
+export type InventoryReconciliationFilters = {
+  warehouse_id?: string;
+  product_id?: string;
+  stock_status?: InventoryStockStatus;
+  only_mismatch?: boolean;
+};
+
+/** Shape do `OperationalReportController::inventoryReconciliation()` trả về. */
+export type InventoryReconciliationResult = {
+  formula: string;
+  dimension: string[];
+  checks: string[];
+  summary: {
+    rows_checked: number;
+    mismatch_count: number;
+    serial_subledger_mismatch_count: number;
+    quantity_subledger_mismatch_count: number;
+    container_integrity_mismatch_count: number;
+    status: "PASS" | "FAIL";
+    overall_status: "PASS" | "FAIL";
+  };
+  rows: RawRecord[];
+  mismatches: RawRecord[];
+};
+
+/**
+ * WWHN-202 (DEV202-P1-05R2) — báo cáo đối soát on-demand, §7.5 bốn check
+ * (ledger_to_balance / serial_subledger / quantity_subledger / container_integrity).
+ *
+ * `API_ENDPOINTS.INVENTORY_RECONCILIATION` trước đây được khai nhưng không hàm nào gọi,
+ * nên FE không thể xác nhận bề mặt "reconcile" là dùng được. Màn hình SCR-INV-01 hiện đọc
+ * `reconciliation_status`/`variance`/`incident_id` theo từng dòng balance (RPT-INV-01),
+ * còn endpoint này là bản tổng hợp có `summary.overall_status` — đúng cổng
+ * "Ledger=Balance=subledger; FAIL warning/block sign-off" của §13.10.
+ *
+ * Permission BE: `report.view` (khác `inventory.view` của nhóm balance/movement).
+ */
+export async function fetchInventoryReconciliation(
+  params: InventoryReconciliationFilters = {},
+): Promise<InventoryReconciliationResult> {
+  return http.get<InventoryReconciliationResult>(
+    API_ENDPOINTS.INVENTORY_RECONCILIATION,
+    { params: clean(params as Record<string, unknown>) },
   );
 }

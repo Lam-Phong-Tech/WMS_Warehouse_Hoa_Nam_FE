@@ -251,3 +251,62 @@ describe("inventoryService — WWHN-211 exact six endpoint contract", () => {
     expect(itemResult.movements).toHaveLength(1);
   });
 });
+
+describe("inventoryService — WWHN-198 / DEC-INV-RESERVED-001 reserved_qty", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("khả dụng đọc available_qty, KHÔNG suy ra từ on_hand - reserved_qty", async () => {
+    // Backend ghim reserved_qty = 0 (compatibility field). Nếu FE tự tính
+    // khả dụng = onHand - reservedQty thì ngày nào đó backend đổi cách ghi field
+    // này, UI sẽ lệch số một cách im lặng. Test khoá chiều đọc đúng.
+    vi.mocked(http.getPage).mockResolvedValue({
+      data: [
+        {
+          id: "bal-resv",
+          sku_code: "SKU-RESV",
+          warehouse_name: "Kho A",
+          stock_status: "AVAILABLE",
+          available_qty: 7,
+          on_hand_qty: 7,
+          reserved_qty: 0,
+          updated_at: "2026-08-19T00:00:00Z",
+        },
+      ],
+      meta: { total: 1, page: 1, per_page: 20 },
+    });
+
+    const result = await fetchInventoryBalances({ page: 1 });
+
+    expect(result.rows[0].available).toBe(7);
+    expect(result.rows[0].onHand).toBe(7);
+    expect(result.rows[0].reservedQty).toBe(0);
+  });
+
+  it("reserved_qty chỉ là pass-through: giá trị lạ không được ảnh hưởng cột khả dụng", async () => {
+    vi.mocked(http.getPage).mockResolvedValue({
+      data: [
+        {
+          id: "bal-resv-2",
+          sku_code: "SKU-RESV-2",
+          warehouse_name: "Kho A",
+          stock_status: "AVAILABLE",
+          available_qty: 5,
+          on_hand_qty: 9,
+          // Giá trị này vi phạm DEC-INV-RESERVED-001 nếu backend gửi thật, nhưng FE
+          // vẫn không được dùng nó để tính lại khả dụng.
+          reserved_qty: 4,
+          updated_at: "2026-08-19T00:00:00Z",
+        },
+      ],
+      meta: { total: 1, page: 1, per_page: 20 },
+    });
+
+    const result = await fetchInventoryBalances({ page: 1 });
+
+    expect(result.rows[0].available).toBe(5);
+    expect(result.rows[0].onHand).toBe(9);
+    expect(result.rows[0].reservedQty).toBe(4);
+  });
+});
