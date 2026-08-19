@@ -9,7 +9,7 @@
     "endpoint": "GET /api/v1/reports/dashboard-quick",
     "reusedNotNew": true,
     "permission": "report.view",
-    "kpiMatrixVersion": "v1.1",
+    "kpiMatrixVersion": "v1.2",
     "kpiMatrixSource": "HoaNam_BE/WMS_Warehouse_Hoa_Nam_BE/docs/evidence/WWHN-328/KPI_MATRIX.md",
     "timezone": "Asia/Ho_Chi_Minh",
     "defaultPeriodDays": 31
