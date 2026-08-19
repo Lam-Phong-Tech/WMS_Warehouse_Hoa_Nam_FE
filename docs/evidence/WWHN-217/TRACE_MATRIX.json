@@ -1,0 +1,65 @@
+{
+  "document": "WWHN-217 defect trace matrix (zero-orphan)",
+  "ticket": "WWHN-217",
+  "registerItem": "FE217-P1-04",
+  "rule": "Moi blocker phai co du chuoi QA finding -> fix commit -> changed file -> retest case -> result. Khong dong nao duoc thieu mat xich, va khong dong nao duoc tro sang evidence cua WWHN-292 / WWHN-144 / WWHN-211.",
+  "gate": "npm run wwhn-217:verify (scripts/verify-wwhn-217-closure.mjs)",
+  "links": [
+    {
+      "defectId": "D-217-01",
+      "qaFinding": "QA2 retest WWHN-217, nhom back: tren /inbound o 375x812, mo overlay roi bam Back thi roi han khoi man nhap kho thay vi dong overlay.",
+      "fixCommit": "2cf102d0a32a3c09fe25594caee97f28f066016b",
+      "changedFiles": [
+        "src/shared/hooks/useOverlayBackDismiss.ts",
+        "src/modules/inbound/pages/InboundPage.tsx"
+      ],
+      "retestCase": "TC-217-BACK-IN",
+      "retestFile": "e2e/wwhn-217-ui-blocker-retest.spec.ts",
+      "result": "PASS",
+      "evidence": "test-results/wwhn-217/<candidateSha>/TC-217-BACK-IN__scr-in-01__375x812.{png,json}"
+    },
+    {
+      "defectId": "D-217-02",
+      "qaFinding": "QA2 retest WWHN-217, nhom back: tren /outbound, Back trong luc mo overlay chi tiet cat ngang chuoi scan -> Packing Label -> Post Issue.",
+      "fixCommit": "2cf102d0a32a3c09fe25594caee97f28f066016b",
+      "changedFiles": [
+        "src/shared/hooks/useOverlayBackDismiss.ts",
+        "src/modules/outbound/pages/AlignedMvpOutboundPage.tsx"
+      ],
+      "retestCase": "Back đóng overlay và giữ nguyên URL màn hình đang thao tác",
+      "retestFile": "src/shared/hooks/useOverlayBackDismiss.test.tsx",
+      "result": "PASS",
+      "evidenceNote": "OUT-01 dung chung dung mot hook voi IN-01/INV-01; hop dong Back duoc khoa o tang hook (4 test) va duoc chay lai o tang man hinh boi TC-217-BACK-IN / TC-217-BACK-INV. Bo loc va fixture cua man OUT-01 can chuoi Packing Label day du nen chua duoc lai o e2e — ghi ro de khong ai doc nham la da co bang chung UI rieng cho OUT-01."
+    },
+    {
+      "defectId": "D-217-03",
+      "qaFinding": "QA2 retest WWHN-217, nhom back: tren /inventory, Back trong luc mo modal chi tiet ton roi han khoi man va mat bo loc.",
+      "fixCommit": "2cf102d0a32a3c09fe25594caee97f28f066016b",
+      "changedFiles": [
+        "src/shared/hooks/useOverlayBackDismiss.ts",
+        "src/modules/inventory/pages/InventoryPage.tsx"
+      ],
+      "retestCase": "TC-217-BACK-INV",
+      "retestFile": "e2e/wwhn-217-ui-blocker-retest.spec.ts",
+      "result": "PASS",
+      "evidence": "test-results/wwhn-217/<candidateSha>/TC-217-BACK-INV__scr-inv-01__375x812.{png,json}"
+    },
+    {
+      "defectId": "D-217-04",
+      "qaFinding": "QA2 xac nhan runtime API (FE217-P1-05): 409 cho cung Idempotency-Key khac payload tra IDEMPOTENCY_CONFLICT, nhung ma do khong co trong catalog hop dong HN-BE-API-002 ma FE dung de map loi.",
+      "fixCommit": "a6eca35639b58ce86f1ce5885bf4745b59cce818",
+      "changedFiles": [
+        "docs/evidence/WWHN-217/runtime-error-contract.json"
+      ],
+      "changedFilesInBackendRepo": [
+        "scripts/generate-error-code-catalog.mjs",
+        "docs/api-contract/HN-BE-API-002_ERROR_CODE_CATALOG.json",
+        "docs/api-contract/HN-BE-API-002_ERROR_CODE_CATALOG.md"
+      ],
+      "retestCase": "TC-217-API-409-IDEMPOTENCY",
+      "retestFile": "docs/evidence/WWHN-217/runtime-error-contract.json",
+      "result": "PASS",
+      "evidence": "docs/evidence/WWHN-217/runtime-error-contract.json (sinh boi tests/Feature/Wwhn217RuntimeErrorContractTest.php tren HTTP that)"
+    }
+  ]
+}

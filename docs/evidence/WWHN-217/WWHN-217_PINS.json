@@ -1,0 +1,28 @@
+{
+  "document": "WWHN-217 candidate pin",
+  "ticket": "WWHN-217",
+  "registerItems": ["FE217-P1-03", "FE217-P2-01"],
+  "branch": "m1",
+  "branchNote": "Nhanh canonical la `m1`. `m1ee` trong source register cu la sai chinh ta, khong phai mot nhanh ton tai (FE217-P2-01).",
+  "candidateSha": "2cf102d0a32a3c09fe25594caee97f28f066016b",
+  "candidateShaRule": "candidateSha PHAI la commit cuoi cung cham vao `runtimeArtifacts`. Cong wwhn-217:verify tinh lai bang `git log -1 -- <runtimeArtifacts>` va do do — sua code ma quen chay lai gate thi cong do ngay (chong pin rot), thay vi de mot pin cu trong con hop le.",
+  "runtimeArtifacts": [
+    "src/shared/hooks/useOverlayBackDismiss.ts",
+    "src/shared/hooks/useOverlayBackDismiss.test.tsx",
+    "src/modules/inbound/pages/InboundPage.tsx",
+    "src/modules/outbound/pages/AlignedMvpOutboundPage.tsx",
+    "src/modules/inventory/pages/InventoryPage.tsx",
+    "e2e/wwhn-217-ui-blocker-retest.spec.ts"
+  ],
+  "gateEvidenceDir": "docs/evidence/WWHN-217/2cf102d0a32a3c09fe25594caee97f28f066016b",
+  "backend": {
+    "repository": "HoaNam_BE/WMS_Warehouse_Hoa_Nam_BE",
+    "branch": "m1",
+    "fixSha": "a6eca35639b58ce86f1ce5885bf4745b59cce818",
+    "runtimeEvidence": "docs/evidence/WWHN-217/runtime-error-contract.json",
+    "generator": "tests/Feature/Wwhn217RuntimeErrorContractTest.php"
+  },
+  "temporaryKeyMapping": {
+    "HN-QA-004-ST01": "WWHN-216"
+  }
+}
