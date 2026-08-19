@@ -1,19 +1,19 @@
 # WWHN-253 — Báo cáo QA2 App PV (FE252-P1-05R2)
 
-> **Tệp sinh tự động — không sửa tay.** Nguồn: `test-results/wwhn-253/ce179400c1117cf000b670107fcca2817fd1a38e`.
+> **Tệp sinh tự động — không sửa tay.** Nguồn: `test-results/wwhn-253/ebdb061098bea9426c2949e5c50b53ba8a09289f`.
 > Sinh lại: `SOURCE_SHA=<sha> node scripts/generate-wwhn-253-qa2-report.mjs`.
 
 | Trường | Giá trị |
 |---|---|
 | Register item | FE252-P1-05R2 (WWHN-253) |
 | Ticket cha | WWHN-252 |
-| Exact review SHA | `ce179400c1117cf000b670107fcca2817fd1a38e` |
+| Exact review SHA | `ebdb061098bea9426c2949e5c50b53ba8a09289f` |
 | Build version | `local-dev` |
 | Môi trường | `local-controlled` |
 | Trình duyệt | `chromium` (Chromium engine) |
 | Số ô bằng chứng | 32 (8 trạng thái × 4 khung nhìn) |
 | Kết quả | **PASS toàn bộ ma trận** |
-| Sinh lúc | 2026-08-19T02:01:48.067Z |
+| Sinh lúc | 2026-08-19T11:25:25.270Z |
 
 ## 1. Ma trận khung nhìn × trạng thái
 
@@ -73,38 +73,38 @@ khung nhìn. Nó KHÔNG thay thế:
 
 ## 4. Tệp bằng chứng (ảnh)
 
-- `test-results/wwhn-253/ce179400c1117cf000b670107fcca2817fd1a38e/WWHN-253__error-404__desktop-1366x768.png`
-- `test-results/wwhn-253/ce179400c1117cf000b670107fcca2817fd1a38e/WWHN-253__error-404__desktop-1440x900.png`
-- `test-results/wwhn-253/ce179400c1117cf000b670107fcca2817fd1a38e/WWHN-253__error-404__mobile-390x844.png`
-- `test-results/wwhn-253/ce179400c1117cf000b670107fcca2817fd1a38e/WWHN-253__error-404__tablet-768x1024.png`
-- `test-results/wwhn-253/ce179400c1117cf000b670107fcca2817fd1a38e/WWHN-253__error-429__desktop-1366x768.png`
-- `test-results/wwhn-253/ce179400c1117cf000b670107fcca2817fd1a38e/WWHN-253__error-429__desktop-1440x900.png`
-- `test-results/wwhn-253/ce179400c1117cf000b670107fcca2817fd1a38e/WWHN-253__error-429__mobile-390x844.png`
-- `test-results/wwhn-253/ce179400c1117cf000b670107fcca2817fd1a38e/WWHN-253__error-429__tablet-768x1024.png`
-- `test-results/wwhn-253/ce179400c1117cf000b670107fcca2817fd1a38e/WWHN-253__error-500__desktop-1366x768.png`
-- `test-results/wwhn-253/ce179400c1117cf000b670107fcca2817fd1a38e/WWHN-253__error-500__desktop-1440x900.png`
-- `test-results/wwhn-253/ce179400c1117cf000b670107fcca2817fd1a38e/WWHN-253__error-500__mobile-390x844.png`
-- `test-results/wwhn-253/ce179400c1117cf000b670107fcca2817fd1a38e/WWHN-253__error-500__tablet-768x1024.png`
-- `test-results/wwhn-253/ce179400c1117cf000b670107fcca2817fd1a38e/WWHN-253__freshness-degraded__desktop-1366x768.png`
-- `test-results/wwhn-253/ce179400c1117cf000b670107fcca2817fd1a38e/WWHN-253__freshness-degraded__desktop-1440x900.png`
-- `test-results/wwhn-253/ce179400c1117cf000b670107fcca2817fd1a38e/WWHN-253__freshness-degraded__mobile-390x844.png`
-- `test-results/wwhn-253/ce179400c1117cf000b670107fcca2817fd1a38e/WWHN-253__freshness-degraded__tablet-768x1024.png`
-- `test-results/wwhn-253/ce179400c1117cf000b670107fcca2817fd1a38e/WWHN-253__offline__desktop-1366x768.png`
-- `test-results/wwhn-253/ce179400c1117cf000b670107fcca2817fd1a38e/WWHN-253__offline__desktop-1440x900.png`
-- `test-results/wwhn-253/ce179400c1117cf000b670107fcca2817fd1a38e/WWHN-253__offline__mobile-390x844.png`
-- `test-results/wwhn-253/ce179400c1117cf000b670107fcca2817fd1a38e/WWHN-253__offline__tablet-768x1024.png`
-- `test-results/wwhn-253/ce179400c1117cf000b670107fcca2817fd1a38e/WWHN-253__public-catalog__desktop-1366x768.png`
-- `test-results/wwhn-253/ce179400c1117cf000b670107fcca2817fd1a38e/WWHN-253__public-catalog__desktop-1440x900.png`
-- `test-results/wwhn-253/ce179400c1117cf000b670107fcca2817fd1a38e/WWHN-253__public-catalog__mobile-390x844.png`
-- `test-results/wwhn-253/ce179400c1117cf000b670107fcca2817fd1a38e/WWHN-253__public-catalog__tablet-768x1024.png`
-- `test-results/wwhn-253/ce179400c1117cf000b670107fcca2817fd1a38e/WWHN-253__rbac-publish-allowed__desktop-1366x768.png`
-- `test-results/wwhn-253/ce179400c1117cf000b670107fcca2817fd1a38e/WWHN-253__rbac-publish-allowed__desktop-1440x900.png`
-- `test-results/wwhn-253/ce179400c1117cf000b670107fcca2817fd1a38e/WWHN-253__rbac-publish-allowed__mobile-390x844.png`
-- `test-results/wwhn-253/ce179400c1117cf000b670107fcca2817fd1a38e/WWHN-253__rbac-publish-allowed__tablet-768x1024.png`
-- `test-results/wwhn-253/ce179400c1117cf000b670107fcca2817fd1a38e/WWHN-253__rbac-publish-denied__desktop-1366x768.png`
-- `test-results/wwhn-253/ce179400c1117cf000b670107fcca2817fd1a38e/WWHN-253__rbac-publish-denied__desktop-1440x900.png`
-- `test-results/wwhn-253/ce179400c1117cf000b670107fcca2817fd1a38e/WWHN-253__rbac-publish-denied__mobile-390x844.png`
-- `test-results/wwhn-253/ce179400c1117cf000b670107fcca2817fd1a38e/WWHN-253__rbac-publish-denied__tablet-768x1024.png`
+- `test-results/wwhn-253/ebdb061098bea9426c2949e5c50b53ba8a09289f/WWHN-253__error-404__desktop-1366x768.png`
+- `test-results/wwhn-253/ebdb061098bea9426c2949e5c50b53ba8a09289f/WWHN-253__error-404__desktop-1440x900.png`
+- `test-results/wwhn-253/ebdb061098bea9426c2949e5c50b53ba8a09289f/WWHN-253__error-404__mobile-390x844.png`
+- `test-results/wwhn-253/ebdb061098bea9426c2949e5c50b53ba8a09289f/WWHN-253__error-404__tablet-768x1024.png`
+- `test-results/wwhn-253/ebdb061098bea9426c2949e5c50b53ba8a09289f/WWHN-253__error-429__desktop-1366x768.png`
+- `test-results/wwhn-253/ebdb061098bea9426c2949e5c50b53ba8a09289f/WWHN-253__error-429__desktop-1440x900.png`
+- `test-results/wwhn-253/ebdb061098bea9426c2949e5c50b53ba8a09289f/WWHN-253__error-429__mobile-390x844.png`
+- `test-results/wwhn-253/ebdb061098bea9426c2949e5c50b53ba8a09289f/WWHN-253__error-429__tablet-768x1024.png`
+- `test-results/wwhn-253/ebdb061098bea9426c2949e5c50b53ba8a09289f/WWHN-253__error-500__desktop-1366x768.png`
+- `test-results/wwhn-253/ebdb061098bea9426c2949e5c50b53ba8a09289f/WWHN-253__error-500__desktop-1440x900.png`
+- `test-results/wwhn-253/ebdb061098bea9426c2949e5c50b53ba8a09289f/WWHN-253__error-500__mobile-390x844.png`
+- `test-results/wwhn-253/ebdb061098bea9426c2949e5c50b53ba8a09289f/WWHN-253__error-500__tablet-768x1024.png`
+- `test-results/wwhn-253/ebdb061098bea9426c2949e5c50b53ba8a09289f/WWHN-253__freshness-degraded__desktop-1366x768.png`
+- `test-results/wwhn-253/ebdb061098bea9426c2949e5c50b53ba8a09289f/WWHN-253__freshness-degraded__desktop-1440x900.png`
+- `test-results/wwhn-253/ebdb061098bea9426c2949e5c50b53ba8a09289f/WWHN-253__freshness-degraded__mobile-390x844.png`
+- `test-results/wwhn-253/ebdb061098bea9426c2949e5c50b53ba8a09289f/WWHN-253__freshness-degraded__tablet-768x1024.png`
+- `test-results/wwhn-253/ebdb061098bea9426c2949e5c50b53ba8a09289f/WWHN-253__offline__desktop-1366x768.png`
+- `test-results/wwhn-253/ebdb061098bea9426c2949e5c50b53ba8a09289f/WWHN-253__offline__desktop-1440x900.png`
+- `test-results/wwhn-253/ebdb061098bea9426c2949e5c50b53ba8a09289f/WWHN-253__offline__mobile-390x844.png`
+- `test-results/wwhn-253/ebdb061098bea9426c2949e5c50b53ba8a09289f/WWHN-253__offline__tablet-768x1024.png`
+- `test-results/wwhn-253/ebdb061098bea9426c2949e5c50b53ba8a09289f/WWHN-253__public-catalog__desktop-1366x768.png`
+- `test-results/wwhn-253/ebdb061098bea9426c2949e5c50b53ba8a09289f/WWHN-253__public-catalog__desktop-1440x900.png`
+- `test-results/wwhn-253/ebdb061098bea9426c2949e5c50b53ba8a09289f/WWHN-253__public-catalog__mobile-390x844.png`
+- `test-results/wwhn-253/ebdb061098bea9426c2949e5c50b53ba8a09289f/WWHN-253__public-catalog__tablet-768x1024.png`
+- `test-results/wwhn-253/ebdb061098bea9426c2949e5c50b53ba8a09289f/WWHN-253__rbac-publish-allowed__desktop-1366x768.png`
+- `test-results/wwhn-253/ebdb061098bea9426c2949e5c50b53ba8a09289f/WWHN-253__rbac-publish-allowed__desktop-1440x900.png`
+- `test-results/wwhn-253/ebdb061098bea9426c2949e5c50b53ba8a09289f/WWHN-253__rbac-publish-allowed__mobile-390x844.png`
+- `test-results/wwhn-253/ebdb061098bea9426c2949e5c50b53ba8a09289f/WWHN-253__rbac-publish-allowed__tablet-768x1024.png`
+- `test-results/wwhn-253/ebdb061098bea9426c2949e5c50b53ba8a09289f/WWHN-253__rbac-publish-denied__desktop-1366x768.png`
+- `test-results/wwhn-253/ebdb061098bea9426c2949e5c50b53ba8a09289f/WWHN-253__rbac-publish-denied__desktop-1440x900.png`
+- `test-results/wwhn-253/ebdb061098bea9426c2949e5c50b53ba8a09289f/WWHN-253__rbac-publish-denied__mobile-390x844.png`
+- `test-results/wwhn-253/ebdb061098bea9426c2949e5c50b53ba8a09289f/WWHN-253__rbac-publish-denied__tablet-768x1024.png`
 
 Mỗi ảnh đi kèm một tệp `.json` cùng tên chứa SHA, khung nhìn, route, vai trò và
 danh sách khẳng định. Video/trace của phiên chạy nằm trong `test-results/`.

@@ -1,0 +1,61 @@
+=== WWHN-252 FE FULL GATE @ ebdb061098bea9426c2949e5c50b53ba8a09289f ===
+=== date: 2026-08-19T11:25:59Z ===
+=== npm run lint ===
+> 56 |     setCameraError(null);
+     |     ^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  57 |     setCameraReady(false);
+  58 |
+  59 |     const stop = () => {  react-hooks/set-state-in-effect
+
+✖ 26 problems (0 errors, 26 warnings)
+
+lint exit: 0
+=== npm run typecheck ===
+
+> wms-hoa-nam-frontend@0.0.0 typecheck
+> tsc -b --pretty false
+
+typecheck exit: 0
+=== npx vitest run ===
+Error: ENOENT: no such file or directory, open 'C:\Users\ACER\AppData\Local\Temp\claude\wwhn252-wt\swagger-api.json'
+ ❯ readRepoFile src/test/wwhn-260-migration-operational-only.test.ts:25:10
+     23|
+     24| function readRepoFile(relativePath: string): string {
+     25|   return readFileSync(path.join(repoRoot, relativePath), "utf8");
+       |          ^
+     26| }
+     27|
+ ❯ src/test/wwhn-260-migration-operational-only.test.ts:54:32
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+
+
+ Test Files  2 failed | 91 passed (93)
+      Tests  3 failed | 755 passed (758)
+   Start at  18:27:58
+   Duration  47.95s (transform 22.68s, setup 133.77s, import 39.16s, tests 53.44s, environment 354.63s)
+
+JSON report written to C:/Users/ACER/AppData/Local/Temp/claude/wwhn252-wt/test-results/vitest-results.json
+JUNIT report written to C:/Users/ACER/AppData/Local/Temp/claude/wwhn252-wt/test-results/vitest-junit.xml
+vitest exit: 0
+=== npx vite build ===
+dist/assets/constants-CpzsiJpX.js                171.94 kB │ gzip: 38.18 kB
+dist/assets/vendor-react-Bg3lly1P.js             181.71 kB │ gzip: 57.16 kB
+dist/assets/ContextIsolator-DUXzh-Lg.js          192.95 kB │ gzip: 68.00 kB
+dist/assets/table-BOkNQftH.js                    197.46 kB │ gzip: 60.75 kB
+
+[32m✓ built in 865ms[39m
+build exit: 0
+
+=== ANNOTATION: root cause 3 vitest fails (755/758 pass) ===
+1) wwhn-233-count-deferral-gate "pins the FE guard by content, and never pins its own carrier"
+   - PRE-EXISTING tai HEAD ebdb061: tai hien ca trong main working tree (khong phai do worktree).
+   - Thuoc pham vi WWHN-233 (thong bao loi tu huong dan chu ticket: `npm run wwhn-233:verify -- --emit`).
+   - Khong sua trong pham vi WWHN-252 de tranh dung work dang do cua phien WWHN-233.
+2) wwhn-233-count-deferral-gate "keeps the governance register digests in step (PIN ROT)"
+   - Chi do o CHECKOUT MOI (EOL CRLF/LF khi hash byte tho docs/HN_WMS_Wireframe_...html).
+   - PASS o main working tree cung HEAD => khong phai drift noi dung; da ghi nhan tu vong WWHN-233.
+3) wwhn-260-migration-operational-only "hop dong OpenAPI ma FE dung khong co operation migration"
+   - Thieu artifact sinh `swagger-api.json` (gitignore) trong checkout sach.
+   - Sau khi dat artifact (copy tu main tree, sinh boi `npm run contract:sync`): re-run 4/4 PASS ngay trong worktree.
+=> Khong fail nao thuoc pham vi/code WWHN-252. Toan bo test PV + QA2 lien quan: PASS.
