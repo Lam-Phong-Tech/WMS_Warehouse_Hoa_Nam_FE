@@ -1,0 +1,27 @@
+{
+  "ticket": "WWHN-242",
+  "screen": "REV-00 / REV-01",
+  "contract": "GET|POST /api/v1/reversal-documents{,/:id,/:id/lines,/:id/confirm,/:id/post,/:id/cancel} + GET /api/v1/stock-movements/reversible",
+  "baselineClause": "SRS/FRD v1.12 REQ-SRS-013, BR-REV-01..12, §6, Annex D SCR-REV-01",
+  "evidenceClass": "FE_CONTROLLED_NOT_UAT",
+  "result": "PASS",
+  "sourceSha": "2d9ca77bff67d27d4bc235ebf4542edb1d42f888",
+  "environment": "local-controlled",
+  "buildVersion": "local-dev",
+  "browserProject": "chromium",
+  "role": "inventory.view+inventory.reversal.post",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "route": "/reverse (detail modal)",
+  "finalUrl": "http://127.0.0.1:5173/reverse",
+  "timestamp": "2026-08-19T09:22:18.068Z",
+  "screenshotFilename": "WWHN-242__post-error-422__inventory-view-inventory-reversal-post__1440x900.png",
+  "assertions": [
+    "POST post returns 422 REVERSAL_QTY_EXCEEDS_REVERSIBLE",
+    "no stale-version notice for a non optimistic-lock failure",
+    "document stays DRAFT on the UI (no write)"
+  ],
+  "truthBoundary": "Controlled FE rendering evidence only; backend data-scope enforcement is proved separately by Wwhn242ReversalScopeAndProjectionTest. Not QA-independent evidence, not UAT."
+}
