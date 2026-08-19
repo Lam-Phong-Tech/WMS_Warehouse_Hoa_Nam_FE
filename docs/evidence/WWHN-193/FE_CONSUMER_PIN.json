@@ -1,0 +1,48 @@
+{
+  "jira": "WWHN-193",
+  "role": "CONSUMER_ADAPTATION_FOR_THIS_TICKET",
+  "repo_branch": "m1",
+  "pinned_at": "2026-08-19",
+  "contract": "DEC-PTW-RETRY-001",
+
+  "scope": [
+    "putawayService.confirmPutawayTask / cancelPutawayTask gửi Idempotency-Key suy diễn `ptw-{operation}-{id}-v{version}` (không random) để retry sau mất response được BE replay.",
+    "Bắt 409 STATE_CONFLICT và đọc error.details.recovery: safe_to_treat_as_success → coi như thành công đã-đánh-dấu rồi tải lại (next_action = RELOAD_AND_CONTINUE).",
+    "FINALIZED_DIFFERENT_OUTCOME và mọi mã lỗi khác (403/412/500…) vẫn ném ra như cũ."
+  ],
+
+  "landed_in": {
+    "commit": "824dc9e19b627cbdf00b53e3c5a8df95da27f4a2",
+    "commit_subject": "docs(WWHN-327): pin FE candidate 5a0cfda cho cap dong bang WWHN-328",
+    "attribution_note": "Nội dung WWHN-193 nằm trong commit mang tiêu đề của ticket khác: m1 là nhánh dùng chung và một phiên song song đã `git add -A` cuốn theo thay đổi đang dở của phiên này. KHÔNG viết lại lịch sử chung để sửa tiêu đề; thay vào đó pin theo NỘI DUNG bên dưới để reviewer vẫn đối chiếu được chính xác.",
+    "measurement": "git log -S putawayIdempotencyKey --oneline -- src/modules/putaway/services/putawayService.ts"
+  },
+
+  "content_pin": {
+    "file": "src/modules/putaway/services/putawayService.ts",
+    "sha256_at_pin": "5c4074dbe4b46482da664cba5e2680a36c205a7db0c371a82809425e14d429b6",
+    "observed_at_commit": "082d23327bb2a0d711e31fa7d66aa0815188740f",
+    "markers": [
+      "putawayIdempotencyKey",
+      "recoverPutawayConflict",
+      "DEC-PTW-RETRY-001",
+      "safe_to_treat_as_success"
+    ]
+  },
+
+  "tests": {
+    "files": [
+      "src/modules/putaway/services/putawayService.test.ts",
+      "src/modules/putaway/pages/MvpPutawayPage.test.tsx"
+    ],
+    "result_at_pin": "17 test / 17 pass (2 file)",
+    "typecheck": "tsc --noEmit sạch"
+  },
+
+  "known_red_not_owned_by_this_ticket": {
+    "file": "src/test/wms-contract-signoff-guards.test.ts",
+    "test": "WWHN-181 exact BE v1.7 guards > resolves inbound raw code to canonical line_id + qty with If-Match",
+    "cause": "Một phiên song song thêm `Idempotency-Key: fe:inbound-scan:{uuid}:0` vào src/modules/inbound/services/inboundService.ts nhưng chưa cập nhật guard test này. Không liên quan luồng putaway; WWHN-193 không sửa file của phiên khác.",
+    "full_suite_at_pin": "696 test / 695 pass / 1 fail (đúng bài trên)"
+  }
+}
