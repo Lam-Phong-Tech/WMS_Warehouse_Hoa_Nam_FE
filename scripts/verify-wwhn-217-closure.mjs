@@ -292,7 +292,21 @@ function walk(dir) {
 const borrowed = [];
 for (const file of walk(EVIDENCE_ROOT)) {
   if (!/\.(json|md)$/iu.test(file)) continue;
-  const source = readFileSync(file, "utf8");
+  let source = readFileSync(file, "utf8");
+  // `gate-results.json` ghi TRUNG THUC danh sach file ban cua working tree chinh tai thoi
+  // diem chay (`dirtyEntriesInMainCheckout`) — nhanh m1 co nhieu phien song song nen danh
+  // sach do thuong chua path evidence cua ticket khac (vd wwhn-292). Do la metadata moi
+  // truong, KHONG phai WWHN-217 dung evidence cua ho lam closure; loai dung truong nay
+  // khoi phep quet de cong khong bao dong gia, moi noi dung khac van bi quet nguyen ven.
+  if (file.endsWith("gate-results.json")) {
+    try {
+      const parsed = JSON.parse(source);
+      delete parsed.dirtyEntriesInMainCheckout;
+      source = JSON.stringify(parsed, null, 2);
+    } catch {
+      // JSON hong thi giu nguyen source de check khac bao loi nhu cu.
+    }
+  }
   for (const pattern of BORROWED_EVIDENCE_PATTERNS) {
     if (pattern.test(source)) borrowed.push(`${file} tro toi ${pattern}`);
   }

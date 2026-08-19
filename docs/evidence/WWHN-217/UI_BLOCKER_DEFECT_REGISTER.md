@@ -17,7 +17,7 @@
 | ID | Màn | Vai | Viewport | Severity | Fix (repo · commit · file) | Retest | Trạng thái |
 |---|---|---|---|---|---|---|---|
 | **D-217-01** | SCR-IN-01 (IN-01 + overlay IN-02/IN-03) | Nhân viên kho | 375×812 (tái hiện cả 768/1280) | P1 · Major | FE · `2cf102d0` · `useOverlayBackDismiss.ts`, `InboundPage.tsx` | `TC-217-BACK-IN` | FIXED — RETESTED PASS |
-| **D-217-02** | SCR-OUT-01 (OUT-01 + overlay OUT-REQ-01/OUT-03) | Nhân viên kho | 375×812 (tái hiện cả 768/1280) | P1 · Major | FE · `2cf102d0` · `useOverlayBackDismiss.ts`, `AlignedMvpOutboundPage.tsx` | Hợp đồng hook (`useOverlayBackDismiss.test.tsx`) | FIXED — RETESTED PASS |
+| **D-217-02** | SCR-OUT-01 (OUT-01 + overlay OUT-REQ-01/OUT-03) | Nhân viên kho | 375×812 (tái hiện cả 768/1280) | P1 · Major | FE · `2cf102d0` · `useOverlayBackDismiss.ts`, `AlignedMvpOutboundPage.tsx` | `TC-217-BACK-OUT` (e2e mức màn hình, thêm ở `dc0e4b5e` theo review 80/100) + hợp đồng hook (`useOverlayBackDismiss.test.tsx`) | FIXED — RETESTED PASS |
 | **D-217-03** | SCR-INV-01 (INV-01 + overlay INV-02/TRACE-01) | NV kho / QL kho | 375×812 (tái hiện cả 768/1280) | P1 · Major | FE · `2cf102d0` · `useOverlayBackDismiss.ts`, `InventoryPage.tsx` | `TC-217-BACK-INV` | FIXED — RETESTED PASS |
 | **D-217-04** | Hợp đồng API dùng chung cho cả ba màn | Mọi vai gọi endpoint có stock effect | Không phụ thuộc viewport | P1 · Major | BE · `a6eca356` · `generate-error-code-catalog.mjs`, `HN-BE-API-002_ERROR_CODE_CATALOG.{json,md}` | `TC-217-API-409-IDEMPOTENCY` | FIXED — RETESTED PASS |
 
@@ -80,28 +80,47 @@ Ghi lại tường minh để không ai đọc nhầm "không có dòng trong re
 | Bấm lặp; thao tác ghi khi ngoại tuyến | `TC-217-DUP-READ`, `TC-217-NET-WRITE-OFFLINE` | PASS — không bão request, không hàng đợi ghi bắn lại |
 | Mã lỗi/RBAC runtime của backend | `TC-217-API-401/403/409/422-*` | PASS — xem [`runtime-error-contract.json`](./runtime-error-contract.json) |
 
-## 3. Gate tại candidate SHA `2cf102d0a32a3c09fe25594caee97f28f066016b`
+## 3. Gate tại candidate SHA `dc0e4b5e79d706bceba4db4e7a5adb44ef4490fc` (vòng 2)
+
+> Candidate vòng 1 `2cf102d0` (chứa toàn bộ fix) được siêu thế bởi `dc0e4b5e` — commit này
+> **chỉ thêm** e2e mức màn hình `TC-217-BACK-OUT` cho D-217-02 theo review 80/100
+> (FE217-P1-04), không đổi runtime fix nào. Xem `supersededCandidates` trong PINS.
 
 | Gate | Kết quả | Ghi chú |
 |---|---|---|
 | `lint` | PASS | |
 | `typecheck` | PASS | |
-| `unit` | **FAIL — đỏ có trước, không do WWHN-217** | 673/675 pass. Hai test đỏ **đỏ y nguyên tại commit cha** `4a17bffa4741` (669/671) — xem `parent-gate-unit.log` |
+| `unit` | **FAIL — đỏ có trước, không do WWHN-217** | 755/758 pass. Ba test đỏ **đỏ y nguyên tại commit cha** `ebdb061098be` — xem `parent-gate-unit.log` |
 | `build` | PASS | |
-| `e2e-wwhn-217` | PASS | 19/19 TC |
+| `e2e-wwhn-217` | PASS | 20/20 TC (19 TC vòng 1 + `TC-217-BACK-OUT`) |
 
-Hai test đỏ có trước, **chủ sở hữu không phải WWHN-217**:
+Ba test đỏ có trước, **chủ sở hữu không phải WWHN-217**:
 
 | Test | Ticket sở hữu | Nguyên nhân |
 |---|---|---|
-| `wwhn-233-count-deferral-gate.test.ts` (PIN ROT) | WWHN-233 / nhóm WWHN-31x | `docs/HoaNam_ERD_Moi_Nhat.md` đổi nội dung nhưng digest trong governance register chưa cập nhật |
+| `wwhn-233-count-deferral-gate.test.ts` › digests in step (PIN ROT) | WWHN-233 / nhóm WWHN-31x | `docs/HoaNam_ERD_Moi_Nhat.md` đổi nội dung nhưng digest trong governance register chưa cập nhật |
+| `wwhn-233-count-deferral-gate.test.ts` › round R2 pins the FE guard by content | WWHN-233 / nhóm WWHN-31x | Pin nội dung vòng R2 của WWHN-233 lệch file trên đĩa sau các commit song song — thuộc chu kỳ re-pin của WWHN-233 |
 | `wwhn-260-migration-operational-only.test.ts` | WWHN-260 | Hợp đồng OpenAPI FE đang dùng vừa đổi; test pin của WWHN-260 chưa chạy lại |
 
 Runner **không bỏ qua** hai lỗi này: nó chạy lại đúng gate `unit` tại commit cha trong một
 worktree thứ hai và lưu log đối chứng. `overallResult` vẫn ghi `FAIL` (đúng sự thật của
 nhánh); chỉ `wwhn217Verdict` mới là kết luận "WWHN-217 có làm vỡ gì không" — và nó là `PASS`.
 
-## 4. Ranh giới sự thật
+## 4. Sign-off (FE217-P1-01 — review 80/100 yêu cầu xác nhận độc lập)
+
+Register/retest do FE1 lập; xác nhận độc lập của từng vai được thực hiện bằng **Jira
+comment** (không phải file trong repo, để chữ ký gắn với account thật của từng vai):
+
+| Vai | Xác nhận cái gì | Nơi ký |
+|---|---|---|
+| QA2 | Đã đối chiếu register 4 defect + chạy/duyệt bộ retest TC-217-* tại exact candidate; xác nhận D-217-02 đã có e2e mức màn hình (`TC-217-BACK-OUT`) | Jira comment trên WWHN-216 (chu kỳ retest) |
+| QA Lead | Duyệt phạm vi + chất lượng evidence của register (không làm việc mới) | Jira comment trên WWHN-217 |
+| PM | Duyệt closure + chuẩn hoá Description (FE217-P2-02) | Jira comment trên WWHN-217 |
+
+Ranh giới: sign-off là "đọc + duyệt" trên evidence có sẵn trong repo tại candidate SHA;
+không ai ký thay phần UAT thiết bị vật lý (vẫn thuộc phạm vi WWHN-216 khi QA2 thực thi).
+
+## 5. Ranh giới sự thật
 
 - Suite e2e là bằng chứng **hành vi FE trên API mock có kiểm soát**: nó chứng minh FE gọi
   bao nhiêu lần, gửi header gì, hiển thị trạng thái gì. Nó **không** chứng minh backend

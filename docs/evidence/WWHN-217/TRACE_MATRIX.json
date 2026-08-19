@@ -26,10 +26,11 @@
         "src/shared/hooks/useOverlayBackDismiss.ts",
         "src/modules/outbound/pages/AlignedMvpOutboundPage.tsx"
       ],
-      "retestCase": "Back đóng overlay và giữ nguyên URL màn hình đang thao tác",
-      "retestFile": "src/shared/hooks/useOverlayBackDismiss.test.tsx",
+      "retestCase": "TC-217-BACK-OUT",
+      "retestFile": "e2e/wwhn-217-ui-blocker-retest.spec.ts",
       "result": "PASS",
-      "evidenceNote": "OUT-01 dung chung dung mot hook voi IN-01/INV-01; hop dong Back duoc khoa o tang hook (4 test) va duoc chay lai o tang man hinh boi TC-217-BACK-IN / TC-217-BACK-INV. Bo loc va fixture cua man OUT-01 can chuoi Packing Label day du nen chua duoc lai o e2e — ghi ro de khong ai doc nham la da co bang chung UI rieng cho OUT-01."
+      "evidence": "test-results/wwhn-217/<candidateSha>/TC-217-BACK-OUT__scr-out-01__375x812.{png,json}",
+      "evidenceNote": "Vong truoc chi co hop dong hook (useOverlayBackDismiss.test.tsx, 4 test) — review 80/100 danh dau D-217-02 thieu e2e muc man hinh. Da dong bang TC-217-BACK-OUT (commit dc0e4b5e): mo overlay chi tiet OUT tren /outbound o 375x812, Back dong overlay va giu nguyen /outbound. Hop dong hook van giu vai tro bang chung tang don vi."
     },
     {
       "defectId": "D-217-03",

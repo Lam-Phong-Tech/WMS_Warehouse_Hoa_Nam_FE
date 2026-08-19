@@ -56,7 +56,7 @@
         "src/shared/hooks/useOverlayBackDismiss.ts",
         "src/modules/outbound/pages/AlignedMvpOutboundPage.tsx"
       ],
-      "retestCase": "TC-217-BACK-IN + hop dong hook (useOverlayBackDismiss.test.tsx)",
+      "retestCase": "TC-217-BACK-OUT (e2e muc man hinh, them o commit dc0e4b5e) + hop dong hook (useOverlayBackDismiss.test.tsx)",
       "status": "FIXED - RETESTED PASS"
     },
     {
@@ -99,12 +99,17 @@
     }
   ],
   "preExistingFailuresNotOwnedByWwhn217": {
-    "note": "Gate `unit` tai candidate SHA do 2 test. Ca hai do Y NGUYEN tai commit cha (4a17bffa4741) — tuc khong phai do WWHN-217. Runner chay lai gate do tai commit cha va luu log doi chung `parent-gate-unit.log` de nguoi ky khong phai tin mot dong ghi chu suong. Con so: candidate 673/675 pass (them 4 test moi cua WWHN-217, tat ca xanh); parent 669/671 pass.",
+    "note": "Vong 2 (candidate dc0e4b5e, parent ebdb061098be): gate `unit` do 3 test — 2 cua WWHN-233 (them 'pins the FE guard by content' cua chu ky R2 WWHN-233), 1 cua WWHN-260 — TAT CA do y nguyen tai commit cha, candidate 755/758 pass. Lich su vong 1: gate `unit` tai candidate 2cf102d0 do 2 test. Ca hai do Y NGUYEN tai commit cha (4a17bffa4741) — tuc khong phai do WWHN-217. Runner chay lai gate do tai commit cha va luu log doi chung `parent-gate-unit.log` de nguoi ky khong phai tin mot dong ghi chu suong. Con so: candidate 673/675 pass (them 4 test moi cua WWHN-217, tat ca xanh); parent 669/671 pass.",
     "items": [
       {
         "test": "src/test/wwhn-233-count-deferral-gate.test.ts > keeps the governance register digests in step with the files on disk (PIN ROT)",
         "owner": "WWHN-233 / nhom WWHN-31x",
         "cause": "docs/HoaNam_ERD_Moi_Nhat.md doi noi dung nhung digest trong governance register chua duoc cap nhat."
+      },
+      {
+        "test": "src/test/wwhn-233-count-deferral-gate.test.ts > round R2 > pins the FE guard by content, and never pins its own carrier",
+        "owner": "WWHN-233 / nhom WWHN-31x",
+        "cause": "Pin noi dung vong R2 cua WWHN-233 lech voi file tren dia sau cac commit song song — thuoc chu ky re-pin cua WWHN-233, khong lien quan WWHN-217."
       },
       {
         "test": "src/test/wwhn-260-migration-operational-only.test.ts > hop dong OpenAPI ma FE dung khong co operation migration",
