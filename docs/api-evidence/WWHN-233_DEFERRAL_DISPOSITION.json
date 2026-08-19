@@ -1,20 +1,25 @@
 {
   "id": "DISP-STK-233",
-  "schemaVersion": "1.0.0",
+  "schemaVersion": "1.1.0",
   "task": "WWHN-233",
   "parent": "WWHN-59",
   "qaGate": "WWHN-235",
   "decisionGate": "WWHN-25",
-  "register": "DEV233-P1-01..P1-06 + DEV233-P2-01",
+  "register": "R1: DEV233-P1-01..P1-06 + DEV233-P2-01 | R2: DEV233-P1-01R2, P1-02R2, P1-03R2, P1-06R2, P2-01R2, P2-02R2, P2-03R2",
   "controllingRequirement": "REQ-SRS-037",
   "status": "PROPOSED",
   "effectiveDate": null,
   "optionChosen": "DEFERRED_NO_CODE",
   "conflict": "AC count / recount / partial / stale cua WWHN-59 va WWHN-233 mau thuan REQ-SRS-037 (Must) dang hieu luc trong SRS/FRD v1.12 (adopt tai WWHN-334). Task khong the vua PASS AC vua PASS REQ-SRS-037.",
   "resolution": "WWHN-59 va WWHN-233 DEFERRED - NO CODE. Khong implement count, recount, partial count, stale/CAS baseline cua phien kiem ke, count history hay bat ky route/controller/service/permission/bang/man hinh/report nao mang ngu nghia stocktake, count, variance hoac adjustment.",
-  "impactedIssues": ["WWHN-59", "WWHN-233", "WWHN-235", "WWHN-25"],
-  "qaGateDisposition": "WWHN-235 = DEFERRED / N/A cho MVP v1.12 - khong phai Blocked, khong phai Pending. Pham vi QA la negative gate 7 muc (BE docs/evidence/WWHN-233/QA_DISPOSITION_WWHN-235.md).",
-  "ownerNarrative": "Description Jira con ghi Duy Khanh la historical placeholder; responsibility hien hanh tro current DEV owner (live assignee). Dong DEV233-P2-01.",
+  "impactedIssues": [
+    "WWHN-59",
+    "WWHN-233",
+    "WWHN-235",
+    "WWHN-25"
+  ],
+  "qaGateDisposition": "WWHN-235 = DEFERRED / N/A cho MVP v1.12 - khong phai Blocked, khong phai Pending. Pham vi QA la negative gate; ket qua chay that nam o BE docs/evidence/WWHN-233/QA_INDEPENDENT_VERIFICATION_WWHN-235.md.",
+  "ownerNarrative": "Description Jira con ghi Duy Khanh la historical placeholder; responsibility hien hanh tro current DEV owner (live assignee). Dong DEV233-P2-01 va DEV233-P2-01R2.",
   "decisionRecord": "BE docs/decision-records/DISP-STK-233-COUNT-RECOUNT-DEFERRED.md",
   "evidence": "BE docs/evidence/WWHN-233/SHA256SUMS",
   "gates": [
@@ -45,5 +50,64 @@
   },
   "approvalOwner": "BA Main + PM/PO (P1-01); DEV -> TL/QA (P1-02); BAS + BA (P1-03); DEV + TL -> BA/FE/QA (P1-04); DEV -> QA1/TL/DBA (P1-05); QA1 -> BA/TL (P1-06); PM/BAS (P2-01). DEV khong tu duyet pham vi.",
   "reintroductionGate": "4 dieu kien tai DISP-STK-233 §2, dung chung voi nhanh WWHN-60/236: (1) approved Change Request, (2) WWHN-25 ghi GO/CONDITIONAL GO co effective date, (3) SRS rebaseline sua/go REQ-SRS-037 o version moi, (4) chi khi du 1-3 moi mo DEV.",
-  "branchBoundary": "WWHN-233 chi doc, khong sua artifact cua nhanh WWHN-230/236/237. Xem DISP-STK-233 §12."
+  "branchBoundary": "WWHN-233 chi doc, khong sua artifact cua nhanh WWHN-230/236/237. Xem DISP-STK-233 §12.",
+  "r2Closure": {
+    "reviewScore": "71/100 (vong R2)",
+    "finding": "Vong R2 khong doi them capability. No doi bon thu: tham quyen pham vi phai final, candidate phai pin duoc, parent WWHN-59 phai rebaseline, va phan source stocktake con nam lai trong repo phai co disposition.",
+    "beArtifacts": {
+      "approvalRecord": "docs/evidence/WWHN-233/APPROVAL_RECORD.json",
+      "candidatePin": "docs/evidence/WWHN-233/IMMUTABLE_CANDIDATE_PIN.json",
+      "parentRebaseline": "docs/evidence/WWHN-233/WWHN-59_AC_REBASELINE.json",
+      "dormantSource": "docs/evidence/WWHN-233/DORMANT_SOURCE_DISPOSITION.json",
+      "qaIndependentVerification": "docs/evidence/WWHN-233/QA_INDEPENDENT_VERIFICATION_WWHN-235.md",
+      "rawEvidenceDir": "docs/evidence/WWHN-233/raw/"
+    },
+    "approval": {
+      "registerItem": "DEV233-P1-01R2",
+      "status": "PROPOSED",
+      "effectiveDate": null,
+      "rule": "status=PROPOSED thi effectiveDate BAT BUOC null; status khac PROPOSED thi effectiveDate phai ISO-8601 VA moi approver phai du result/actor/date. Khong ton tai trang thai nua voi.",
+      "decisionTicket": "WWHN-25",
+      "attachmentRef": "ATT-11898",
+      "devSelfApprovalForbidden": true
+    },
+    "candidatePin": {
+      "registerItem": "DEV233-P1-02R2",
+      "identityRule": "Fingerprint muc doi tuong (sha256 cua tap 'path:sha256' da sap xep) cua cac artifact NGUON phia FE. File disposition nay KHONG nam trong tap nguon vi no la vat mang pin - neu nam trong thi pin tu tham chieu va stale ngay khi vua ghi.",
+      "sourcePaths": [
+        "scripts/verify-wwhn-233-closure.mjs",
+        "src/test/wwhn-233-count-deferral-gate.test.ts"
+      ],
+      "fingerprintSha256": "14d15bfc647323dc0d017c250c17c9ae8850b866bc7221722ac0c8d8f85823cd",
+      "fingerprintNote": "Verifier FE tinh lai moi lan chay va ghi lai khi chay `npm run wwhn-233:verify -- --emit`. Null nghia la chua phat hanh lan nao.",
+      "feCommitSha": "3bad47deb266b2cc276fa9844b1cf00e9b50348c",
+      "beCandidateRef": "BE docs/evidence/WWHN-233/IMMUTABLE_CANDIDATE_PIN.json -> candidate.be_commit_sha"
+    },
+    "dormantSurface": {
+      "registerItem": "DEV233-P2-03R2",
+      "conclusion": "Khong co route, man hinh, menu, permission hay service kiem ke nao o trang thai ngu trong FE.",
+      "registeredHistoricalLabels": [
+        {
+          "path": "src/shared/api/wms-contract-signoff.ts",
+          "token": "stocktake-apply-adjustment",
+          "kind": "REVIEW-SCOPE-LABEL",
+          "why": "La nhan PHAM VI RA SOAT lich su cua WWHN-181, khong phai endpoint/route/permission. Giu de trace.",
+          "guard": "Verifier FE check FE-DORMANT chi cho phep token nay o dung file nay; bat ky xuat hien moi nao deu lam gate do."
+        }
+      ],
+      "commentOnlyGuards": [
+        "src/shared/api/endpoints.ts",
+        "src/shared/constants/routes.ts",
+        "src/shared/constants/wms-permissions.ts",
+        "src/shared/hooks/usePermission.ts",
+        "src/shared/api/wms-contract.ts"
+      ],
+      "falsePositiveNote": "Chuoi nhu `failureCount` chua substring `recount`. Verifier dung bien gioi tu (?<![a-z]) nen khong bat nham; grep tran se bao dong gia - da gap that khi ra soat."
+    },
+    "governance": {
+      "ownerNarrative": "DEV233-P2-01R2 - historical role Duy Khanh + current DEV owner, dong bo tren Jira.",
+      "sprintMetadata": "DEV233-P2-02R2 - actual Sprint 93 W3 nhung Sprint Scope con W4; PM/Jira owner dong bo hoac ghi ro truong nao la authoritative.",
+      "repoIsNotSourceOfTruth": "Repo khong luu assignee hay sprint; hai muc tren co slot rieng trong BE APPROVAL_RECORD.json de trang thai dong bo khong bi mat dau."
+    }
+  }
 }

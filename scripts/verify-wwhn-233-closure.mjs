@@ -21,11 +21,15 @@
  *   node scripts/verify-wwhn-233-closure.mjs
  */
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+
+/** `--emit` ghi lại fingerprint + FE commit SHA vào disposition (vòng R2 / DEV233-P1-02R2). */
+const EMIT = process.argv.includes("--emit");
 
 const failures = [];
 const checks = [];
@@ -414,6 +418,194 @@ let disposition = null;
       "FE-SCREEN",
       "Zero selector, route constant hoặc permission màn hình kiểm kê trong src/.",
     );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// VÒNG R2 — nửa FE
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Tập artifact **nguồn** phía FE. File disposition cố ý đứng ngoài: nó là *vật mang*
+ * pin, nên nếu tự đưa mình vào tập được pin thì mỗi lần ghi pin lại làm chính pin đó
+ * stale. Cùng nguyên tắc với nửa BE.
+ */
+const FE_SOURCE_PATHS = [
+  "scripts/verify-wwhn-233-closure.mjs",
+  "src/test/wwhn-233-count-deferral-gate.test.ts",
+];
+
+const feFingerprint = () => {
+  const entries = FE_SOURCE_PATHS.map((rel) => `${rel}:${sha256(rel) ?? "MISSING"}`).sort();
+  return { entries, digest: createHash("sha256").update(entries.join("\n")).digest("hex") };
+};
+
+const gitOut = (args) => {
+  try {
+    return execFileSync("git", args, { cwd: ROOT, stdio: "pipe" }).toString().trim() || null;
+  } catch {
+    return null;
+  }
+};
+
+// ── Check 8: R2-CLOSURE — disposition mang đủ bản ghi của vòng R2 ─────────────
+{
+  const raw = readIfExists(DISPOSITION);
+  let disposition = null;
+  try {
+    disposition = raw === null ? null : JSON.parse(raw);
+  } catch (error) {
+    fail("R2-CLOSURE", `${DISPOSITION} không parse được: ${error.message}`);
+  }
+
+  if (disposition) {
+    const problems = [];
+    const r2 = disposition.r2Closure ?? null;
+
+    if (disposition.schemaVersion !== "1.1.0") problems.push(`schemaVersion phải là 1.1.0 (đang ${disposition.schemaVersion})`);
+    if (!r2) problems.push("thiếu khối r2Closure");
+
+    if (r2) {
+      for (const key of ["approvalRecord", "candidatePin", "parentRebaseline", "dormantSource", "qaIndependentVerification"]) {
+        if (!r2.beArtifacts?.[key]) problems.push(`r2Closure.beArtifacts thiếu ${key}`);
+      }
+
+      // Bất biến effective date phải song song hai repo, nếu không hai bên lệch pha.
+      if (r2.approval?.status === "PROPOSED" && r2.approval?.effectiveDate !== null) {
+        problems.push("approval.status=PROPOSED nhưng effectiveDate khác null");
+      }
+      if (disposition.status !== r2.approval?.status) problems.push("status ở gốc và trong r2Closure.approval không khớp");
+      if (disposition.effectiveDate !== r2.approval?.effectiveDate) problems.push("effectiveDate ở gốc và trong r2Closure.approval không khớp");
+      if (r2.approval?.decisionTicket !== "WWHN-25") problems.push("approval.decisionTicket phải là WWHN-25");
+      if (r2.approval?.attachmentRef !== "ATT-11898") problems.push("approval.attachmentRef phải là ATT-11898");
+      if (r2.approval?.devSelfApprovalForbidden !== true) problems.push("approval.devSelfApprovalForbidden phải là true");
+
+      const declaredPaths = [...(r2.candidatePin?.sourcePaths ?? [])].sort();
+      if (JSON.stringify(declaredPaths) !== JSON.stringify([...FE_SOURCE_PATHS].sort())) {
+        problems.push(`candidatePin.sourcePaths không khớp tập nguồn thật (${FE_SOURCE_PATHS.join(", ")})`);
+      }
+      if (declaredPaths.includes(DISPOSITION)) {
+        problems.push("candidatePin.sourcePaths không được chứa chính file disposition (pin tự tham chiếu)");
+      }
+    }
+
+    if (problems.length > 0) {
+      fail("R2-CLOSURE", `${DISPOSITION}: ${problems.join("; ")}`);
+    } else {
+      pass("R2-CLOSURE", `Disposition v${disposition.schemaVersion} mang đủ bản ghi R2, effective date đồng bộ hai nơi.`);
+    }
+  }
+}
+
+// ── Check 9: FE-CANDIDATE-PIN ────────────────────────────────────────────────
+{
+  const raw = readIfExists(DISPOSITION);
+  const disposition = raw === null ? null : JSON.parse(raw);
+  const pin = disposition?.r2Closure?.candidatePin ?? null;
+
+  if (pin) {
+    const actual = feFingerprint();
+    if (pin.fingerprintSha256 === null) {
+      if (EMIT) {
+        // Ghi ở cuối, sau khi mọi check đã chạy.
+      } else {
+        fail(
+          "FE-CANDIDATE-PIN",
+          "fingerprintSha256 = null — chưa phát hành pin. Chạy `npm run wwhn-233:verify -- --emit`.",
+        );
+      }
+    } else if (pin.fingerprintSha256 !== actual.digest) {
+      fail(
+        "FE-CANDIDATE-PIN",
+        `Fingerprint FE đổi: pin=${pin.fingerprintSha256} thực tế=${actual.digest}. ` +
+          "Nguồn FE bị sửa mà pin chưa refresh, hoặc pin bị chép tay.",
+      );
+    } else {
+      pass("FE-CANDIDATE-PIN", `Fingerprint FE khớp (${actual.digest.slice(0, 16)}…), ${FE_SOURCE_PATHS.length} file nguồn.`);
+    }
+  }
+}
+
+// ── Check 10: FE-DORMANT — DEV233-P2-03R2 ────────────────────────────────────
+//
+// Quét `src/` (bỏ test guard) tìm bề mặt kiểm kê trong **mã thực thi**. Chỉ những token
+// đã đăng ký trong disposition mới được phép, và phải nằm đúng file đã đăng ký.
+//
+// Ranh giới từ có ý nghĩa: `failureCount` chứa substring `recount`. Dùng grep trần sẽ
+// báo động giả trên bốn file query/retry hoàn toàn vô can — đã gặp thật khi rà soát.
+{
+  const raw = readIfExists(DISPOSITION);
+  const disposition = raw === null ? null : JSON.parse(raw);
+  const registered = new Map(
+    (disposition?.r2Closure?.dormantSurface?.registeredHistoricalLabels ?? []).map((entry) => [entry.path, entry.token]),
+  );
+  const commentOnly = new Set(disposition?.r2Closure?.dormantSurface?.commentOnlyGuards ?? []);
+
+  const SURFACE_RE = /(?<![a-z])(stocktake|recount|cycle-count|physical-count|apply-adjustment)/iu;
+
+  const walk = (base) => {
+    const abs = join(ROOT, base);
+    if (!existsSync(abs)) return [];
+    return readdirSync(abs).flatMap((entry) => {
+      const child = join(abs, entry);
+      return statSync(child).isDirectory() ? walk(relative(ROOT, child)) : [relative(ROOT, child)];
+    });
+  };
+
+  const offenders = [];
+  const seen = [];
+
+  for (const raw2 of walk("src")) {
+    const rel = raw2.replace(/\\/gu, "/");
+    if (!/\.(ts|tsx)$/u.test(rel)) continue;
+    if (/\.test\.(ts|tsx)$/u.test(rel) || rel.startsWith("src/test/")) continue;
+
+    const source = readIfExists(rel) ?? "";
+    const executable = source
+      .split("\n")
+      .filter((line) => !/^\s*(\/\/|\*|\/\*)/u.test(line))
+      .join("\n");
+
+    if (!SURFACE_RE.test(executable)) continue;
+    seen.push(rel);
+
+    if (registered.has(rel)) {
+      const token = registered.get(rel);
+      const stripped = executable.split(token).join("");
+      if (SURFACE_RE.test(stripped)) {
+        offenders.push(`${rel} (có bề mặt kiểm kê ngoài token đã đăng ký "${token}")`);
+      }
+      continue;
+    }
+
+    if (commentOnly.has(rel)) {
+      offenders.push(`${rel} (đăng ký là comment-only nhưng bề mặt xuất hiện trong mã thực thi)`);
+      continue;
+    }
+
+    offenders.push(`${rel} (chưa đăng ký trong dormantSurface)`);
+  }
+
+  if (offenders.length > 0) {
+    fail("FE-DORMANT", `Bề mặt kiểm kê trong mã thực thi FE: ${offenders.join(", ")}`);
+  } else {
+    pass("FE-DORMANT", `Quét src/: ${seen.length} file mang token kiểm kê, tất cả đều là nhãn lịch sử đã đăng ký.`);
+  }
+}
+
+// ── Emit (R2) ────────────────────────────────────────────────────────────────
+if (EMIT) {
+  const raw = readIfExists(DISPOSITION);
+  if (raw !== null) {
+    const disposition = JSON.parse(raw);
+    if (disposition.r2Closure?.candidatePin) {
+      disposition.r2Closure.candidatePin.fingerprintSha256 = feFingerprint().digest;
+      // Commit cuối cùng chạm TẬP NGUỒN FE — không phải HEAD, và không dịch chuyển khi
+      // file disposition được ghi lại (nó đứng ngoài tập nguồn).
+      disposition.r2Closure.candidatePin.feCommitSha = gitOut(["log", "-1", "--format=%H", "--", ...FE_SOURCE_PATHS]);
+    }
+    writeFileSync(join(ROOT, DISPOSITION), `${JSON.stringify(disposition, null, 2)}\n`, "utf8");
+    console.log(`[wwhn-233] pin FE đã phát hành vào ${DISPOSITION}`);
   }
 }
 

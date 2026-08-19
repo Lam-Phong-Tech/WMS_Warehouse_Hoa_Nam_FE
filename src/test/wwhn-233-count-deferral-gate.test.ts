@@ -212,4 +212,141 @@ describe("WWHN-233 — count/recount stays out of the FE runtime surface", () =>
     expect(wireframe.toLowerCase().includes("stocktake")).toBe(false);
     expect(wireframe.toLowerCase().includes("kiểm kê")).toBe(false);
   });
+
+  /**
+   * Round R2 (71/100) — the review kept seven items, none of which asks for capability.
+   * What follows locks the four things it does ask for on the FE side.
+   */
+  describe("round R2", () => {
+    type R2Disposition = {
+      schemaVersion: string;
+      status: string;
+      effectiveDate: string | null;
+      r2Closure: {
+        beArtifacts: Record<string, string>;
+        approval: {
+          status: string;
+          effectiveDate: string | null;
+          decisionTicket: string;
+          attachmentRef: string;
+          devSelfApprovalForbidden: boolean;
+        };
+        candidatePin: {
+          sourcePaths: string[];
+          fingerprintSha256: string | null;
+        };
+        dormantSurface: {
+          registeredHistoricalLabels: { path: string; token: string; kind: string }[];
+          commentOnlyGuards: string[];
+        };
+      };
+    };
+
+    const r2 = () => readJson<R2Disposition>(DISPOSITION_PATH);
+
+    /**
+     * DEV233-P1-01R2. The finding was precise: the candidate exists but approval and
+     * effective date are not final. A half-approved state must not be representable —
+     * either it is PROPOSED with no date, or it is decided with every slot filled.
+     */
+    it("cannot record an approval without an effective date, or the reverse", () => {
+      const doc = r2();
+
+      expect(doc.schemaVersion).toBe("1.1.0");
+      expect(doc.status).toBe(doc.r2Closure.approval.status);
+      expect(doc.effectiveDate).toBe(doc.r2Closure.approval.effectiveDate);
+
+      if (doc.r2Closure.approval.status === "PROPOSED") {
+        expect(doc.effectiveDate).toBeNull();
+      } else {
+        expect(doc.effectiveDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      }
+
+      expect(doc.r2Closure.approval.decisionTicket).toBe("WWHN-25");
+      expect(doc.r2Closure.approval.attachmentRef).toBe("ATT-11898");
+      expect(doc.r2Closure.approval.devSelfApprovalForbidden).toBe(true);
+    });
+
+    /**
+     * DEV233-P1-02R2. The pin is content-addressed, so it survives the shared `m1`
+     * branch moving ahead under commits from other tasks. The disposition file itself
+     * must stay out of the pinned set: a pin that includes its own carrier goes stale
+     * the moment it is written.
+     */
+    it("pins the FE guard by content, and never pins its own carrier", () => {
+      const pin = r2().r2Closure.candidatePin;
+
+      expect(pin.sourcePaths).not.toContain(DISPOSITION_PATH);
+      expect([...pin.sourcePaths].sort()).toEqual(
+        [
+          "scripts/verify-wwhn-233-closure.mjs",
+          "src/test/wwhn-233-count-deferral-gate.test.ts",
+        ].sort(),
+      );
+
+      for (const rel of pin.sourcePaths) {
+        expect(existsSync(join(process.cwd(), rel)), `${rel} is pinned but missing`).toBe(true);
+      }
+
+      const expected = createHash("sha256")
+        .update([...pin.sourcePaths].map((rel) => `${rel}:${sha256(rel)}`).sort().join("\n"))
+        .digest("hex");
+
+      expect(
+        pin.fingerprintSha256,
+        "FE pin drifted from the working tree — re-run `npm run wwhn-233:verify -- --emit`",
+      ).toBe(expected);
+    });
+
+    /** DEV233-P1-06R2 / anti-dangling applied to the R2 evidence itself. */
+    it("names every BE artifact the QA hard gate is closed with", () => {
+      const artifacts = r2().r2Closure.beArtifacts;
+
+      for (const key of [
+        "approvalRecord",
+        "candidatePin",
+        "parentRebaseline",
+        "dormantSource",
+        "qaIndependentVerification",
+      ]) {
+        expect(artifacts[key], `beArtifacts.${key} missing`).toBeTruthy();
+      }
+    });
+
+    /**
+     * DEV233-P2-03R2. The one remaining stocktake token in FE source is a historical
+     * *review scope* label from WWHN-181 — not a route, endpoint or permission. It is
+     * registered so a later audit neither removes it blindly nor lets a new one in.
+     *
+     * The word boundary matters: `failureCount` contains the substring `recount`, and a
+     * plain search flags four unrelated query/retry files.
+     */
+    it("allows only the registered historical label to mention the surface", () => {
+      const dormant = r2().r2Closure.dormantSurface;
+      const label = dormant.registeredHistoricalLabels.find(
+        (entry) => entry.path === "src/shared/api/wms-contract-signoff.ts",
+      );
+
+      expect(label?.kind).toBe("REVIEW-SCOPE-LABEL");
+      expect(label?.token).toBe("stocktake-apply-adjustment");
+
+      const source = read(label!.path);
+      expect(source).toContain(label!.token);
+
+      const stripped = source.split(label!.token).join("");
+      expect(/(?<![a-z])(stocktake|recount|cycle-count|physical-count|apply-adjustment)/i.test(stripped)).toBe(false);
+
+      for (const rel of dormant.commentOnlyGuards) {
+        const executable = read(rel)
+          .split("\n")
+          .filter((line) => !/^\s*(\/\/|\*|\/\*)/.test(line))
+          .join("\n");
+
+        expect(
+          /(?<![a-z])(stocktake|recount|cycle-count|physical-count|apply-adjustment)/i.test(executable),
+          `${rel} is registered as comment-only but the surface reached executable code`,
+        ).toBe(false);
+      }
+    });
+  });
 });
