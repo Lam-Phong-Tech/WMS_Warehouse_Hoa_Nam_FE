@@ -18,6 +18,7 @@ import {
 import { MvpPageSizeSelector } from "@/shared/components/mvp/MvpListPagination";
 import { resolveApiPagination } from "@/shared/components/mvp/mvp-pagination";
 import { useCanAny } from "@/shared/components/permission";
+import { useOverlayBackDismiss } from "@/shared/hooks/useOverlayBackDismiss";
 import { WMS_PERMISSION_CATALOG as P } from "@/shared/constants/wms-permissions";
 import {
   useInventoryBalances,
@@ -136,6 +137,16 @@ export default function InventoryPage() {
     setBalanceDetailRow(null);
     setTraceMovementId(movementId);
   };
+
+  // WWHN-217 · D-217-03: Back của trình duyệt phải đóng modal chi tiết/truy vết và giữ
+  // người dùng ở INV-01 kèm bộ lọc đang dùng, thay vì rời hẳn màn tồn kho. Gộp cả hai
+  // overlay vào một cờ để bước INV-02 -> TRACE-01 không sinh cặp push/pop chồng nhau.
+  const overlayOpen = balanceDetailRow !== null || traceMovementId !== null;
+  const closeOverlays = () => {
+    setBalanceDetailRow(null);
+    setTraceMovementId(null);
+  };
+  useOverlayBackDismiss(overlayOpen, closeOverlays, "INV-01-overlay");
 
   const balanceColumns: ColumnsType<InventoryBalanceRow> = [
     {

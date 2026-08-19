@@ -26,6 +26,7 @@ import {
   hasAnyWmsPermission,
   WMS_PERMISSION_CATALOG as P,
 } from "@/shared/constants/wms-permissions";
+import { useOverlayBackDismiss } from "@/shared/hooks/useOverlayBackDismiss";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { InboundDraftModal } from "@/modules/inbound/components/InboundDraftModal";
 import { useInboundDocuments } from "@/modules/inbound/hooks/use-inbound";
@@ -134,6 +135,19 @@ function InboundListScreen() {
     setScanDocumentId(null);
     openEditModal(documentId);
   };
+
+  // WWHN-217 · D-217-01: Back của trình duyệt (và nút Back cứng/cử chỉ vuốt trên
+  // Chrome Android — thiết bị bắt buộc theo NFR-SRS-006) phải đóng overlay IN-02/IN-03
+  // và giữ người dùng ở IN-01, thay vì rời hẳn màn nhập kho giữa lúc đang quét dở.
+  // Gộp mọi overlay của màn vào MỘT cờ để bước chuyển IN-02 -> IN-03 (lưu nháp rồi
+  // sang scan) không sinh cặp push/pop chồng nhau trong cùng một commit.
+  const overlayOpen = draftOpen || scanDocumentId !== null;
+  const closeOverlays = () => {
+    setDraftOpen(false);
+    setDraftDocumentId(null);
+    setScanDocumentId(null);
+  };
+  useOverlayBackDismiss(overlayOpen, closeOverlays, "IN-01-overlay");
 
   const columns: ColumnsType<InboundDocument> = [
     {

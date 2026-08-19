@@ -13,6 +13,7 @@ import {
 import { MvpPageSizeSelector } from "@/shared/components/mvp/MvpListPagination";
 import { resolveApiPagination } from "@/shared/components/mvp/mvp-pagination";
 import { useHasPermission } from "@/shared/components/permission";
+import { useOverlayBackDismiss } from "@/shared/hooks/useOverlayBackDismiss";
 import { AlignedOutboundDetailModal } from "@/modules/outbound/components/AlignedOutboundDetailModal";
 import { OutboundIntakeModal } from "@/modules/outbound/components/OutboundIntakeModal";
 import {
@@ -105,6 +106,16 @@ export default function AlignedMvpOutboundPage() {
     next.delete("id");
     setSearchParams(next, { replace: true });
   }, [searchParams, setSearchParams]);
+
+  // WWHN-217 · D-217-02: Back của trình duyệt phải đóng overlay OUT-REQ-01/OUT-03 và
+  // giữ người dùng ở OUT-01. Trước đây overlay chỉ là state React nên Back rời hẳn màn
+  // xuất kho ngay giữa chuỗi scan -> Packing Label -> Post Issue.
+  const overlayOpen = intakeOpen || detailId !== null;
+  const closeOverlays = () => {
+    setIntakeOpen(false);
+    setDetailId(null);
+  };
+  useOverlayBackDismiss(overlayOpen, closeOverlays, "OUT-01-overlay");
 
   const columns: ColumnsType<OutboundDocumentRecord> = [
     {
