@@ -5,6 +5,36 @@
   "branch": "m1",
   "runClass": "LOCAL_CONTROLLED",
   "truthBoundary": "Lượt chạy tại chỗ trên Windows. KHÔNG đủ cho Beta sign-off và KHÔNG được trích dẫn như bằng chứng exact-SHA. Bằng chứng công bố ra ngoài phải lấy từ workflow WWHN-268 FE defect closure / WWHN-268 BE regression closure chạy trên GITHUB_SHA.",
+  "evidenceRefreshRounds": [
+    {
+      "round": "WWHN-268 round 2 (76/100) — FE268-R2-P1-02/03/04",
+      "date": "2026-08-19",
+      "reason": "Review round 2 nêu bằng chứng ở candidateSha cũ (FE 3bad47d / BE 2e0515f) đã trôi xa so với m1 hiện tại (nhiều commit song song từ WWHN-233/247/260/331/195/249/266/267 xen giữa). Refresh để chứng minh fix WWHN-268 không bị regressed bởi các commit đó, KHÔNG thay thế yêu cầu QA1/QA2 chạy độc lập trên build deploy/CI — mục đó vẫn PENDING, xem §6 dưới.",
+      "runClass": "LOCAL_CONTROLLED",
+      "feHeadAtRefresh": "a4b37ebf242ab6cc142bcbbe9d25ba0b5a75920a",
+      "beHeadValidatedAgainst": "682b94326d4f4bce1674248049a0120f6eae88ae",
+      "beHeadNote": "BE m1 tiến thêm 1 commit (59e82b7, WWHN-260, chỉ sửa docs/evidence/WWHN-260/*) sau khi validate — không chạm rangeInvariantPaths của WWHN-266/267/268 nên kết quả dưới đây vẫn còn hiệu lực.",
+      "ciOrDeployStatus": "N/A — KHÔNG kích hoạt workflow GitHub Actions cho lượt refresh này theo chỉ đạo tường minh của người dùng (ngân sách Actions đã dùng hết 3000/3000 phút; cấm phát sinh phí thêm). Formal disposition: CI run giữ nguyên PENDING cho tới khi ngân sách được cấp lại; không suy diễn PASS/FAIL từ lượt local này cho CI.",
+      "results": [
+        { "id": "FE-VERIFY-268", "command": "yarn wwhn-268:verify", "result": "PASS" },
+        { "id": "FE-UNIT-UI-STATE", "command": "yarn vitest run src/shared/constants/ui-state.test.tsx", "result": "PASS", "tests": 8, "failed": 0 },
+        { "id": "FE-TYPECHECK", "command": "yarn typecheck", "result": "PASS", "note": "0 lỗi — sạch hơn lượt trước (RUN chính ở trên ghi PARTIAL do drift của workstream song song, nay đã hết)." },
+        { "id": "FE-E2E-268", "command": "yarn test:e2e:wwhn-268", "result": "PASS", "tests": 21, "failed": 0, "durationSeconds": 115 },
+        { "id": "BE-CONTRACT-267", "command": "php vendor/bin/phpunit --filter Wwhn267ContractClosureTest", "result": "PASS", "tests": 8, "assertions": 120, "note": "1/8 fail trước khi refresh do ROLE_BASELINE_PIN lệch (xem finding dưới); đã sửa pin, không sửa seeder." },
+        { "id": "BE-CONTRACT-268", "command": "php artisan test --filter=Wwhn268RegressionContractTest", "result": "PASS", "tests": 4, "assertions": 70 },
+        { "id": "BE-CONTRACT-266", "command": "php vendor/bin/phpunit --filter \"Wwhn266ComponentIssueCoreTransactionTest|Wwhn266IfMatchContractTruthTest\"", "result": "PASS", "tests": 13, "assertions": 177 },
+        { "id": "BE-VERIFY-267", "command": "node scripts/verify-wwhn-267-closure.mjs", "result": "PASS" },
+        { "id": "BE-VERIFY-266", "command": "node scripts/verify-wwhn-266-closure.mjs", "result": "PASS" }
+      ],
+      "realDefectFoundByThisRefresh": {
+        "id": "REGRESSION-267-ROLE-PIN-DRIFT",
+        "summary": "WWHN-249 D-04 đã commit thêm quyền pv.master.manage cho WAREHOUSE_MANAGER (đúng SRS §3, đã được WWHN-267 báo trước là 'knownPendingChange'). ROLE_BASELINE_PIN.json (WWHN-267) chưa cập nhật nên Wwhn267ContractClosureTest đỏ 1/8. Đã sửa: permissionCount 68→69 + sha256 mới, theo đúng quy trình howToUpdate đã ghi sẵn trong chính file pin. Không sửa seeder, không đổi disposition DELTA-01.",
+        "fixCommit": "70278a0 (BE)",
+        "secondFinding": "CANDIDATE_PIN.json (WWHN-266) cũng lệch do commit 6cfb642 chạm build/evidence/wwhn-266/*.json (driver pgsql→sqlite). Re-pin theo đúng pinRule đã mô tả sẵn (commit-cuối-chạm-artifact).",
+        "secondFixCommit": "682b943 (BE)"
+      }
+    }
+  ],
   "runs": [
     {
       "id": "FE-UNIT",
