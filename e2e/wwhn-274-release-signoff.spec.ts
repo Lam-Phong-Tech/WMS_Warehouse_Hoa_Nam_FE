@@ -6,7 +6,13 @@ import { MOCK_ACCESS_TOKEN, MOCK_REFRESH_TOKEN } from "./support/mock-tokens";
 const SOURCE_SHA = process.env.SOURCE_SHA ?? process.env.GITHUB_SHA ?? "local-uncommitted";
 const APP_ENV = process.env.VITE_APP_ENV ?? "local-controlled";
 const BUILD_VERSION = process.env.VITE_APP_VERSION ?? "local-dev";
-const EVIDENCE_ROOT = process.env.WWHN_274_EVIDENCE_DIR ?? join("test-results", "wwhn-274", SOURCE_SHA);
+// Evidence KHÔNG được nằm trong `outputDir` (test-results/): Playwright dọn sạch thư mục
+// đó ở đầu mỗi lần chạy, nên bước E2E kế tiếp của cùng một job sẽ xoá bằng chứng của bước
+// trước và artifact chỉ còn lại lần chạy cuối. `test-results/` cũng nằm trong .gitignore
+// nên không pin được theo SHA. Chuẩn của repo là docs/evidence/<ticket>/generated/<sha>/.
+const EVIDENCE_ROOT =
+  process.env.WWHN_274_EVIDENCE_DIR ??
+  join("docs", "evidence", "WWHN-274", "generated", SOURCE_SHA, "controlled");
 
 const REQUIRED_VIEWPORTS = [
   { key: "desktop", width: 1440, height: 900 },

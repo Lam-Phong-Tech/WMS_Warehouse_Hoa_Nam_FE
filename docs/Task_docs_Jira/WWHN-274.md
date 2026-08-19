@@ -94,3 +94,81 @@ exact-SHA evidence.
 - [ ] API 422/retry-safe evidence exists.
 - [ ] No endpoint/payload hard-code conflicts with the approved `/api/v1` contract.
 - [ ] External WWHN-272/WWHN-275 evidence is not falsely claimed as FE-owned evidence.
+
+---
+
+# Vòng 2 — register FE274-\* (đánh giá 76/100, 2026-08-19)
+
+Vòng 1 chỉ chứng minh **gate tồn tại**. Reviewer bác bỏ vì ba lý do có thật:
+không truy xuất được run/artifact theo đúng candidate SHA; toàn bộ E2E chạy trên
+API mock nên không chứng minh được FE↔BE thật; và không có bằng chứng bàn
+phím/a11y/ma trận trình duyệt. Phần dưới đây đóng đúng từng nguyên nhân đó.
+
+## Nguồn review canonical (FE274-P2-01)
+
+| Mục            | Giá trị                                                                                             |
+| -------------- | --------------------------------------------------------------------------------------------------- |
+| Repository     | `https://github.com/Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_FE`                                          |
+| Nhánh          | `m1` (task này không mở nhánh riêng)                                                                  |
+| Candidate SHA  | commit cuối chạm artifact WWHN-274 — pin ở mục “Bằng chứng tại exact SHA” bên dưới                     |
+| Workflow       | `.github/workflows/wwhn-274-fe-release-signoff.yml`, chạy lại được bằng `workflow_dispatch.source_sha` |
+| Runner cục bộ  | `npm run wwhn-274:exact-sha` → `docs/evidence/WWHN-274/generated/<sha>/gate-results.json`              |
+
+Mọi URL review phải trỏ đúng repo/nhánh trên. Nhánh `m1ee` trong link review cũ
+không tồn tại; verifier từ chối mọi URL của repo này trỏ về nhánh đó.
+
+## Register FE274-\*
+
+| ID           | Sev | Khoảng trống chính xác                                                                                            | Cách đóng tận gốc                                                                                                                                                                                          | Trạng thái                                                                    |
+| ------------ | --- | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
+| FE274-P1-01  | P1  | Không có run/artifact PASS truy xuất được theo đúng candidate SHA; bảng PASS gõ tay không gắn với commit nào.       | Workflow nhận `inputs.source_sha` và **fail** nếu checkout khác SHA yêu cầu; thêm `scripts/run-wwhn-274-exact-sha-evidence.mjs` chạy đúng chuỗi gate của workflow rồi ghi manifest gắn SHA + trạng thái cây.   | FE-owned — ĐÓNG (evidence bên dưới)                                            |
+| FE274-P1-02  | P1  | Jira WWHN-274 chưa có handoff comment nêu SHA/workflow/evidence/known gaps.                                        | Comment handoff theo vai trò FE1, nêu SHA, workflow, đường dẫn evidence và phần còn mở thuộc vai trò khác.                                                                                                    | Cần **comment xác nhận** (không phát sinh code)                                |
+| FE274-P1-03  | P1  | WWHN-275 (QA1 release smoke độc lập) vẫn Blocked/Pending.                                                          | Không FE-owned. FE chỉ chịu trách nhiệm không tuyên bố artifact của mình là bằng chứng QA; ranh giới này được khoá bằng verifier + manifest.                                                                  | Ngoài phạm vi FE1 — chờ QA1 xác nhận                                           |
+| FE274-P1-04  | P1  | HN-DEVOPS-003-ST01 / WWHN-272 chưa có bằng chứng build/env đã deploy.                                              | Không FE-owned. Workflow nhận `vars.WWHN_274_REAL_BASE_URL` + `vars.WWHN_274_REAL_API_BASE_URL` để chạy smoke ngay trên build DevOps đã deploy khi env sẵn sàng.                                              | Ngoài phạm vi FE1 — chờ DevOps xác nhận                                        |
+| FE274-P1-05  | P1  | Parent WWHN-72 còn yêu cầu smoke Stocktake trong khi baseline hiện hành loại trừ.                                   | Neo vào **REQ-SRS-037 / DEC-NO-STOCKTAKE-001** (SRS v1.12) và wireframe v3.20 (không có màn kiểm kê): FE fail-closed, không tự tạo màn/API ngoài phạm vi.                                                     | Ngoài phạm vi FE1 — chờ PM/PO chốt wording parent                              |
+| FE274-P1-06  | P1  | E2E chỉ chạy trên API mock ⇒ chưa chứng minh FE↔BE thật.                                                          | Thêm `e2e/wwhn-274-real-env-smoke.spec.ts` **cấm mock**: health canonical, `/api/health` legacy = 404, 401 fail-closed khi không phiên, bootstrap `/auth/refresh` thật, đăng nhập sai thật, phiên sống qua F5. | FE-owned — ĐÓNG về mặt bộ kiểm; **chạy trên Beta cần env của WWHN-272**        |
+| FE274-P2-01  | P2  | URL review trỏ nhánh sai canonical.                                                                                | Pin repo + `m1` + candidate SHA ở bảng trên; verifier chặn URL `m1ee` quay lại tài liệu.                                                                                                                      | ĐÓNG                                                                            |
+| FE274-P2-02  | P2  | Không có commit/PR trace gắn WWHN-274; commit gần nhất chỉ là “gỡ cờ”.                                              | Mục “Commit trace” bên dưới ghi rõ commit nào chạm artifact nào; manifest exact-SHA ghi luôn `commitSubject` + `committedAt`.                                                                                 | ĐÓNG                                                                            |
+| FE274-P2-03  | P2  | Bằng chứng bàn phím/a11y/ma trận trình duyệt còn hạn chế.                                                          | Thêm `e2e/wwhn-274-a11y-browser-matrix.spec.ts` chạy trên 3 engine + 3 breakpoint biên của **NFR-SRS-006**; kiểm landmark/heading/label, focus nhìn thấy được, Enter submit, không tràn ngang.                | ĐÓNG (mức emulation, xem ranh giới)                                            |
+
+## Ma trận trình duyệt/thiết bị theo NFR-SRS-006
+
+| Project Playwright          | Đại diện cho                          | Breakpoint kiểm                                  |
+| --------------------------- | ------------------------------------- | ------------------------------------------------ |
+| `wwhn-274-desktop-chromium` | Chrome/Edge desktop (Blink)           | 1280×800 (biên desktop), 768×1024, 360×640        |
+| `wwhn-274-chrome-android`   | Chrome Android (Chromium mobile)      | 1280×800, 768×1024, 360×640 (biên mobile)         |
+| `wwhn-274-safari-ios`       | Safari iOS (WebKit)                   | 1280×800, 768×1024, 360×640                       |
+
+Ranh giới: đây là bằng chứng **engine-level bằng emulation**, không phải ma trận
+thiết bị thật. Ma trận thiết bị thật thuộc QA1 (WWHN-275).
+
+## Ranh giới của real-env smoke (FE274-P1-06)
+
+- `e2e/wwhn-274-real-env-smoke.spec.ts` **không được** chứa `page.route(` /
+  `route.fulfill(`; verifier chặn ở tầng nguồn để bộ kiểm này không âm thầm biến
+  thành mock.
+- Thiếu `WWHN_274_REAL_BASE_URL` / `WWHN_274_REAL_API_BASE_URL` khi
+  `WWHN_274_REQUIRE_REAL_ENV=1` là **FAIL**, không phải skip: một lần skip im lặng
+  là một lần PASS giả cho release sign-off.
+- Luồng đã đăng nhập chỉ chạy khi có `WWHN_274_REAL_USER` / `WWHN_274_REAL_PASSWORD`
+  (secrets). Không có credential thì manifest ghi `NOT_EXECUTED`, và bằng chứng
+  mock **không được** dùng thay.
+
+## Nơi lưu evidence
+
+Evidence ghi vào `docs/evidence/WWHN-274/generated/<sha>/{controlled,a11y,real-env}`.
+Trước vòng này evidence ghi vào `test-results/`, nhưng Playwright **dọn sạch
+`outputDir` ở đầu mỗi lệnh `playwright test`**, nên bước E2E sau xoá bằng chứng của
+bước trước — artifact “exact-SHA” chỉ còn lần chạy cuối cùng; `test-results/` cũng
+nằm trong `.gitignore` nên không pin theo SHA được.
+
+## Bằng chứng tại exact SHA
+
+<!-- WWHN-274-EXACT-SHA-EVIDENCE -->
+
+Bảng này được điền bằng `npm run wwhn-274:exact-sha` chạy trên cây **sạch**; nếu cây
+bẩn, manifest ghi `INVALID_FOR_CLOSURE_DIRTY_TREE` và không được dùng để đóng task.
+
+## Commit trace (FE274-P2-02)
+
+<!-- WWHN-274-COMMIT-TRACE -->

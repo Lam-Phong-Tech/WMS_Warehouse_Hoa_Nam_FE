@@ -33,8 +33,32 @@ export default defineConfig({
   projects: [
     {
       name: "chromium",
-      testIgnore: "**/auth-role-navigation-qa2.spec.ts",
+      testIgnore: [
+        "**/auth-role-navigation-qa2.spec.ts",
+        "**/wwhn-274-a11y-browser-matrix.spec.ts",
+      ],
       use: { ...devices["Desktop Chrome"] },
+    },
+    // WWHN-274 / FE274-P2-03 — ma tran trinh duyet + thiet bi theo NFR-SRS-006
+    // (Chrome/Edge desktop >=1280, Chrome Android >=360, Safari iOS). Day la bang chung
+    // emulation engine-level; ma tran thiet bi that van thuoc QA1 (WWHN-275).
+    {
+      name: "wwhn-274-desktop-chromium",
+      testMatch: "**/wwhn-274-a11y-browser-matrix.spec.ts",
+      use: {
+        ...devices["Desktop Chrome"],
+        viewport: { width: 1440, height: 900 },
+      },
+    },
+    {
+      name: "wwhn-274-chrome-android",
+      testMatch: "**/wwhn-274-a11y-browser-matrix.spec.ts",
+      use: { ...devices["Pixel 5"] },
+    },
+    {
+      name: "wwhn-274-safari-ios",
+      testMatch: "**/wwhn-274-a11y-browser-matrix.spec.ts",
+      use: { ...devices["iPhone 13"] },
     },
     {
       name: "wwhn-144-chromium",

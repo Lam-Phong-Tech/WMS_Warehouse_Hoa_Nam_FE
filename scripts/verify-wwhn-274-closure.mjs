@@ -194,6 +194,9 @@ try {
 for (const [scriptName, mustContain] of [
   ["wwhn-274:verify", "scripts/verify-wwhn-274-closure.mjs"],
   ["test:e2e:wwhn-274", "e2e/wwhn-274-release-signoff.spec.ts"],
+  ["test:e2e:wwhn-274:a11y", "e2e/wwhn-274-a11y-browser-matrix.spec.ts"],
+  ["test:e2e:wwhn-274:real-env", "e2e/wwhn-274-real-env-smoke.spec.ts"],
+  ["wwhn-274:exact-sha", "scripts/run-wwhn-274-exact-sha-evidence.mjs"],
 ]) {
   const command = pkgScripts[scriptName];
   if (!command) {
@@ -220,6 +223,168 @@ for (const boundary of [
 ]) {
   requireText(taskDoc, boundary, `task traceability boundary ${boundary}`);
 }
+
+// ---------------------------------------------------------------------------
+// Vòng 2 — register FE274-*. Vòng 1 chỉ chứng minh "gate tồn tại"; reviewer bác
+// bỏ vì (a) không truy xuất được run/artifact theo đúng candidate SHA, (b) toàn
+// bộ E2E chạy trên API mock nên không chứng minh được FE↔BE thật, (c) không có
+// bằng chứng bàn phím/a11y/ma trận trình duyệt. Ba nhóm assert dưới đây khoá
+// từng nguyên nhân đó lại để một lần sửa sau này không âm thầm tụt về mức cũ.
+// ---------------------------------------------------------------------------
+const realEnvSpec = requireFile("e2e/wwhn-274-real-env-smoke.spec.ts");
+const a11ySpec = requireFile("e2e/wwhn-274-a11y-browser-matrix.spec.ts");
+const exactShaRunner = requireFile(
+  "scripts/run-wwhn-274-exact-sha-evidence.mjs",
+);
+const playwrightConfig = requireFile("playwright.config.ts");
+
+/** Bỏ comment trước khi kiểm cấm-dùng: docstring được phép *nhắc tên* API bị cấm. */
+function stripComments(content) {
+  return content
+    .replace(/\/\*[\s\S]*?\*\//gu, "")
+    .replace(/^[^\n]*?\/\/.*$/gmu, "");
+}
+
+// FE274-P1-06 — bằng chứng tích hợp thật. Một dòng `page.route(` ở đây là đủ để
+// biến "real integration" trở lại thành mock, tức là đúng lỗi mà reviewer đã chỉ.
+const realEnvCode = stripComments(realEnvSpec);
+rejectText(realEnvCode, "page.route(", "mock route trong real-env smoke");
+rejectText(realEnvCode, "route.fulfill(", "mock response trong real-env smoke");
+for (const needle of [
+  "WWHN_274_REQUIRE_REAL_ENV",
+  "WWHN_274_REAL_BASE_URL",
+  "WWHN_274_REAL_API_BASE_URL",
+  "/auth/refresh",
+  "/auth/login",
+  "/auth/me",
+  "/health",
+  "FE_BE_REAL_INTEGRATION",
+]) {
+  requireText(realEnvSpec, needle, `real-env smoke contract ${needle}`);
+}
+
+// FE274-P2-03 — a11y + ma trận trình duyệt/thiết bị neo vào NFR-SRS-006
+// (desktop >=1280, tablet >=768, mobile >=360; Chrome/Edge, Chrome Android, Safari iOS).
+for (const needle of [
+  "NFR-SRS-006",
+  "1280",
+  "768",
+  "360",
+  "getByLabel",
+  "toBeFocused",
+  // Phép đo focus phải đọc trên wrapper của AntD. Đo thẳng trên <input> trả
+  // "none|3px|none" ở CẢ hai trạng thái, làm bài test vô nghĩa và báo đỏ giả.
+  "ant-input-affix-wrapper",
+]) {
+  requireText(a11ySpec, needle, `a11y/browser matrix contract ${needle}`);
+}
+for (const project of [
+  "wwhn-274-desktop-chromium",
+  "wwhn-274-chrome-android",
+  "wwhn-274-safari-ios",
+]) {
+  requireText(playwrightConfig, project, `browser matrix project ${project}`);
+  requireText(workflow, project, `workflow browser matrix project ${project}`);
+}
+requireText(
+  playwrightConfig,
+  "iPhone",
+  "WebKit/Safari iOS device profile (NFR-SRS-006)",
+);
+requireText(
+  workflow,
+  "playwright install --with-deps chromium webkit",
+  "cài đủ engine cho ma trận Chromium + WebKit",
+);
+
+// Evidence phải nằm NGOÀI `outputDir` của Playwright. `test-results/` bị dọn sạch ở
+// đầu mỗi lệnh `playwright test`, nên bước E2E sau xoá bằng chứng của bước trước —
+// artifact "exact-SHA" khi đó chỉ còn lần chạy cuối; thư mục này cũng nằm trong
+// .gitignore nên không pin theo SHA được.
+for (const [spec, label] of [
+  [e2e, "controlled evidence"],
+  [a11ySpec, "a11y evidence"],
+  [realEnvSpec, "real-env evidence"],
+]) {
+  requireText(spec, '"evidence"', `${label} ghi dưới docs/evidence`);
+  requireText(spec, '"generated"', `${label} ghi dưới generated/<sha>`);
+  rejectText(
+    stripComments(spec),
+    '"test-results"',
+    `${label} ghi vào outputDir bị Playwright dọn giữa các lần chạy`,
+  );
+}
+rejectText(
+  workflow,
+  "test-results/wwhn-274",
+  "artifact trỏ vào thư mục bị dọn giữa các lần chạy",
+);
+
+// FE274-P1-01 — mọi tuyên bố PASS phải gắn với một commit truy xuất được.
+for (const needle of [
+  "rev-parse",
+  "--allow-dirty",
+  "evidenceValidity",
+  "INVALID_FOR_CLOSURE",
+  "gate-results.json",
+]) {
+  requireText(exactShaRunner, needle, `exact-SHA runner contract ${needle}`);
+}
+requireText(
+  workflow,
+  "inputs.source_sha",
+  "workflow_dispatch chạy lại được trên đúng candidate SHA",
+);
+requireText(
+  workflow,
+  "npm run test:e2e:wwhn-274:a11y",
+  "workflow gate a11y/browser matrix",
+);
+requireText(
+  workflow,
+  "npm run test:e2e:wwhn-274:real-env",
+  "workflow gate real-env FE<->BE smoke",
+);
+requireText(
+  workflow,
+  "WWHN_274_REQUIRE_REAL_ENV",
+  "real-env gate fail-closed (không skip im lặng)",
+);
+
+// FE274-P2-01/P2-02 — nguồn review phải là m1 của repo canonical, và register
+// vòng 2 phải nêu đủ ID để reviewer đối chiếu 1-1 với comment trên Jira.
+requireText(
+  taskDoc,
+  "https://github.com/Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_FE",
+  "canonical FE repository URL",
+);
+// Chỉ chặn URL review thật trỏ nhánh không tồn tại; tài liệu vẫn được phép *nói về*
+// nhánh sai đó khi mô tả FE274-P2-01.
+rejectText(
+  taskDoc,
+  "Hoa_Nam_FE/tree/m1ee",
+  "non-canonical review branch URL",
+);
+rejectText(
+  taskDoc,
+  "Hoa_Nam_FE/blob/m1ee",
+  "non-canonical review branch URL",
+);
+for (const id of [
+  "FE274-P1-01",
+  "FE274-P1-02",
+  "FE274-P1-03",
+  "FE274-P1-04",
+  "FE274-P1-05",
+  "FE274-P1-06",
+  "FE274-P2-01",
+  "FE274-P2-02",
+  "FE274-P2-03",
+]) {
+  requireText(taskDoc, id, `round-2 register entry ${id}`);
+}
+requireText(taskDoc, "NFR-SRS-006", "browser/device matrix requirement anchor");
+requireText(taskDoc, "REQ-SRS-037", "no-Stocktake requirement anchor");
 
 if (failures.length > 0) {
   console.error("WWHN-274 closure verification FAILED:");
