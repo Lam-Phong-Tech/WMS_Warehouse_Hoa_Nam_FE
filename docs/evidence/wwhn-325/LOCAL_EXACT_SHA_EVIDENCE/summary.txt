@@ -1,0 +1,12 @@
+
+gate=01-format-check exit=1
+gate=02-lint exit=0
+gate=03-typecheck exit=0
+gate=04-unit exit=1
+gate=05-build exit=0
+devserver_ready=False
+gate=07-e2e-pwa exit=1
+devserver_ready_rerun=True port=5217
+gate=07-e2e-pwa-rerun exit=1
+devserver_ready_rerun=True port=5217
+gate=07-e2e-pwa-rerun exit=0

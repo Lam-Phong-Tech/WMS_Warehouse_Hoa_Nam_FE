@@ -1,0 +1,37 @@
+yarn run v1.22.22
+$ node scripts/verify-format-baseline.mjs
+cmd.exe : [format-baseline] New Prettier drift is not allowed:
+At line:1 char:603
++ ... cation $wt; & cmd /c "yarn format:check" > "$ev\01b-format-baseline-c ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([format-baselin...is not allowed::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+- src/modules/dashboard/pages/DashboardPage.css
+- src/modules/dashboard/pages/DashboardPage.test.tsx
+- src/modules/dashboard/pages/DashboardPage.tsx
+- src/modules/iam/pages/IamUserScreen.tsx
+- src/modules/inbound/pages/InboundScanModal.test.tsx
+- src/modules/inbound/pages/MvpInboundScreens.tsx
+- src/modules/inbound/services/inboundService.ts
+- src/modules/inventory/components/BalanceDetailModal.tsx
+- src/modules/inventory/pages/InventoryPage.tsx
+- src/modules/inventory/services/inventoryService.ts
+- src/modules/master-data/components/SkuImportModal.tsx
+- src/modules/master-data/pages/ApiMasterScreens.tsx
+- src/modules/master-data/services/sku-import.service.test.ts
+- src/modules/master-data/services/sku-import.service.ts
+- src/modules/outbound/components/OutboundIntakeModal.tsx
+- src/modules/reports/pages/AlignedReportsPage.tsx
+- src/modules/reverse/components/ReversalDetailModal.tsx
+- src/modules/reverse/components/ReversalStatusTag.tsx
+- src/modules/reverse/hooks/use-reversal.ts
+- src/modules/reverse/services/reversalService.test.ts
+- src/modules/reverse/services/reversalService.ts
+- src/modules/warranty/components/WarrantyDetailModal.tsx
+- src/shared/api/axios.ts
+- src/shared/pwa/PwaStatus.tsx
+- src/test/flow06-packing-label-alignment.test.ts
+- src/test/wms-contract-signoff-guards.test.ts
+error Command failed with exit code 1.
+info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command.

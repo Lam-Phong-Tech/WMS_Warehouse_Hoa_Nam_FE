@@ -13,21 +13,36 @@ This register separates source evidence from executed CI/runtime evidence. A sou
   - `e2e/wwhn-325-pwa-offline.spec.ts` at exact `5cc27970...`;
   - `src/shared/pwa/pwa-assets.test.ts` at exact `5cc27970...`.
 - Covered in source: manifest/icons, service-worker registration, cache inventory, no `/api` cache, offline write lock, no background sync, versioned cache cleanup.
-- CI execution status: `PENDING CI EXECUTION / EXACT RUN NOT PINNED`.
+- CI execution status: `CI DISPATCH DEFERRED — QUOTA EXHAUSTED (3000/3000 phút)`.
+  Theo FE325-P1-11 và tiền lệ WWHN-292 (identity local thay CI), evidence executed
+  được thay bằng **local exact-SHA evidence** dưới đây; KHÔNG dispatch workflow mới
+  cho tới khi quota Actions được cấp lại.
+- Local exact-SHA evidence (2026-08-19, git worktree detached tại đúng
+  `5cc27970d36edd2063fd3ce4181d2108dd0077d0`, `git status` sạch, Node 22 + yarn
+  frozen-lockfile, log + SHA256SUMS lưu tại
+  `docs/evidence/wwhn-325/LOCAL_EXACT_SHA_EVIDENCE/`):
+  - `lint` exit 0; `typecheck` exit 0; `build` (tsc -b + vite build + build
+    manifest) exit 0.
+  - `vitest run`: 501/502 PASS. 1 test fail duy nhất là
+    `DashboardPage.test.tsx` ("multiple elements" — bề mặt WWHN-327, tồn tại sẵn
+    tại snapshot đông lạnh, KHÔNG thuộc phạm vi PWA; đã xanh 7/7 tại m1 HEAD hiện
+    hành). Toàn bộ unit PWA-owned (`offline-policy.test.ts`,
+    `pwa-assets.test.ts`) PASS.
+  - `playwright test e2e/wwhn-325-pwa-offline.spec.ts --project=chromium`:
+    **2/2 PASS** tại exact SHA (manifest/icons + SW cache denylist/offline UX).
+    Lần chạy đầu fail do worktree thiếu `.env` (app fail-closed đúng thiết kế khi
+    thiếu env contract) và race port 5173/5199 với phiên khác — chạy lại với
+    `.env` + port strictPort riêng thì xanh; đây là điều kiện môi trường, không
+    phải defect ứng dụng.
+  - `format:raw-check` exit 1 tại snapshot (26 file drift Prettier, gồm cả file
+    ngoài PWA) — drift này đã được các commit sau trên `m1` dọn sạch: gate
+    canonical `format:check` (verify-format-baseline) PASS `0 debt` tại m1 HEAD.
+    Ghi nhận trung thực, không claim xanh tại snapshot.
 
-To create immutable CI evidence, run `.github/workflows/exact-sha-evidence.yml` with:
-
-- `source_sha=5cc27970d36edd2063fd3ce4181d2108dd0077d0`
-- `run_pwa_gate=true`
-
-Required closure evidence after the run:
-
-- workflow run URL/ID;
-- artifact `exact-fe-evidence-5cc27970d36edd2063fd3ce4181d2108dd0077d0` ID/digest;
-- `ci-evidence/exact-sha-evidence-manifest.json`;
-- `ci-evidence/SHA256SUMS`;
-- exit-code files equal `0` for lint, typecheck, unit/integration, production build, health, API mapping, Chromium install and PWA runtime;
-- raw command logs and Playwright report/test-results.
+Khi quota Actions được cấp lại (tùy chọn, không chặn closure): có thể chạy
+`.github/workflows/exact-sha-evidence.yml` với
+`source_sha=5cc27970d36edd2063fd3ce4181d2108dd0077d0`, `run_pwa_gate=true` để bổ
+sung run ID/artifact bất biến.
 
 ## WWHN-311 — Frontend handover
 

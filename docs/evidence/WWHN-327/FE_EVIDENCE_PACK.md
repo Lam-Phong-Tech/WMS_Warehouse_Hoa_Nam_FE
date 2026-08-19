@@ -1,5 +1,12 @@
 # WWHN-327 — FE Evidence Pack (candidate 2026-08-18)
 
+> **SUPERSEDED (R4, 2026-08-19).** Candidate hiện hành là cặp
+> FE `5a0cfda4ccdacfa4aac324ed7c16bda513c3c8f3` /
+> BE `b610b1ff191f8c1f2cce3c24571de850f946d690`, KPI matrix **v1.2** — nguồn
+> authority: `docs/evidence/WWHN-327/WWHN-328_CONSUMER_PIN.json`. Nội dung bên
+> dưới là hồ sơ lịch sử của vòng pin `99dff42`/`6db0965` (matrix v1.1), giữ
+> nguyên để đối chiếu, không dùng để ký closure nữa.
+
 Bằng chứng FE-owned cho `[FE] Dashboard enhancement`. Cặp backend là WWHN-328
 (`GET /api/v1/reports/dashboard-quick`, KPI matrix v1.1); QA độc lập là WWHN-329.
 

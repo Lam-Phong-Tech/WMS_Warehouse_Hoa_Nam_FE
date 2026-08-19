@@ -1,0 +1,252 @@
+
+ RUN  v4.1.10 C:/Users/ACER/AppData/Local/Temp/claude/C--Users-ACER-Downloads-New-folder/9459ffd9-16c0-4b4b-861c-8c3bd0d160c7/scratchpad/wt325
+
+ â¯ src/modules/dashboard/pages/DashboardPage.test.tsx (3 tests | 1 failed) 463ms
+     Ã— renders KPI and optional chart from the real aggregate response 311ms
+     âœ“ renders an explicit empty state instead of fabricated chart data 97ms
+     âœ“ does not call report API when the loaded profile lacks report.view 48ms
+cmd.exe : 
+At line:1 char:737
++ ... cation $wt; & cmd /c "npx vitest run src/modules/dashboard/pages/Dash ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+âŽ¯âŽ¯âŽ¯âŽ¯âŽ¯âŽ¯âŽ¯ Failed Tests 1 âŽ¯âŽ¯âŽ¯âŽ¯âŽ¯âŽ¯âŽ¯
+
+ FAIL  src/modules/dashboard/pages/DashboardPage.test.tsx > DashboardPage / WWHN-327 > renders KPI and optional chart 
+from the real aggregate response
+TestingLibraryElementError: Found multiple elements with the text: 300
+
+Here are the matching elements:
+
+Ignored nodes: comments, script, style
+[36m<strong[39m
+  [33mclass[39m=[32m"hn-dashboard-metric-value"[39m
+[36m>[39m
+  [0m300[0m
+[36m</strong>[39m
+
+Ignored nodes: comments, script, style
+[36m<strong>[39m
+  [0m300[0m
+[36m</strong>[39m
+
+(If this is intentional, then use the `*AllBy*` variant of the query (like `queryAllByText`, `getAllByText`, or 
+`findAllByText`)).
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"hn-dashboard-page"[39m
+    [36m>[39m
+      [36m<section[39m
+        [33maria-labelledby[39m=[32m"dashboard-title"[39m
+        [33mclass[39m=[32m"hn-card hn-dashboard-header"[39m
+      [36m>[39m
+        [36m<div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"tag"[39m
+          [36m>[39m
+            [0mWWHN-327 Â· Dashboard enhancement[0m
+          [36m</div>[39m
+          [36m<h1[39m
+            [33mclass[39m=[32m"hn-dashboard-title"[39m
+            [33mid[39m=[32m"dashboard-title"[39m
+          [36m>[39m
+            [0mTá»•ng quan dashboard[0m
+          [36m</h1>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"hn-dashboard-muted"[39m
+          [36m>[39m
+            [0mSá»‘ liá»‡u láº¥y trá»±c tiáº¿p tá»« GET /reports/dashboard-quick. CÃ¡c luá»“ng nháº­p/xuáº¥t dÃ¹ng occurred_at trong ká»³; 
+tá»“n kháº£ dá»¥ng, báº£o hÃ nh vÃ  Ä‘á»‘i soÃ¡t lÃ  sá»‘ liá»‡u snapshot/toÃ n bá»™ theo contract backend.[0m
+          [36m</p>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33maria-label[39m=[32m"Bá»™ lá»c ká»³ dashboard"[39m
+          [33mclass[39m=[32m"hn-dashboard-filter"[39m
+        [36m>[39m
+          [36m<label>[39m
+            [36m<span>[39m
+              [0mTá»« ngÃ y[0m
+            [36m</span>[39m
+            [36m<input[39m
+              [33mtype[39m=[32m"date"[39m
+              [33mvalue[39m=[32m"2026-07-19"[39m
+            [36m/>[39m
+          [36m</label>[39m
+          [36m<label>[39m
+            [36m<span>[39m
+              [0mÄáº¿n ngÃ y[0m
+            [36m</span>[39m
+            [36m<input[39m
+              [33mtype[39m=[32m"date"[39m
+              [33mvalue[39m=[32m"2026-08-18"[39m
+            [36m/>[39m
+          [36m</label>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"hn-dashboard-filter-actions"[39m
+          [36m>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"hn-node"[39m
+              [33mtype[39m=[32m"button"[39m
+            [36m>[39m
+              [0mÃp dá»¥ng[0m
+            [36m</button>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"hn-node hn-dashboard-secondary-button"[39m
+              [33mtype[39m=[32m"button"[39m
+            [36m>[39m
+              [0mMáº·c Ä‘á»‹nh BE[0m
+            [36m</button>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"hn-dashboard-muted hn-dashboard-timezone"[39m
+        [36m>[39m
+          [0mCutoff ngÃ y theo timezone backend: Asia/Ho_Chi_Minh. Khi khÃ´ng gá»­i bá»™ lá»c, backend dÃ¹ng ká»³ máº·c Ä‘á»‹nh 30 
+ngÃ y gáº§n nháº¥t.[0m
+        [36m</div>[39m
+      [36m</section>[39m
+      [36m<section[39m
+        [33maria-labelledby[39m=[32m"dashboard-kpi-title"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"hn-dashboard-section-heading"[39m
+        [36m>[39m
+          [36m<div>[39m
+            [36m<h2[39m
+              [33mclass[39m=[32m"hn-section-title"[39m
+              [33mid[39m=[32m"dashboard-kpi-title"[39m
+            [36m>[39m
+              [0mKPI váº­n hÃ nh[0m
+            [36m</h2>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"hn-dashboard-muted"[39m
+            [36m>[39m
+              [0mKá»³ BE tráº£ vá»: [0m
+              [0m2026-07-19[0m
+              [0m â†’ [0m
+              [0m2026-08-18[0m
+            [36m</div>[39m
+          [36m</div>[39m
+          [36m<span[39m
+            [33mclass[39m=[32m"tag"[39m
+          [36m>[39m
+            [0mNguá»“n: backend authoritative[0m
+          [36m</span>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"hn-dashboard-kpi-grid"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"hn-card hn-dashboard-metric"[39m
+          [36m>[39m
+            [36m<div[39m
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 2 passed (3)
+   Start at  20:06:43
+   Duration  3.59s (transform 259ms, setup 762ms, import 525ms, tests 463ms, environment 1.60s)
+
+              [33mclass[39m=[32m"hn-dashboard-metric-label"[39m
+            [36m>[39m
+              [0mTá»“n kháº£ dá»¥ng[0m
+            [36m</div>[39m
+            [36m<strong[39m
+              [33mclass[39m=[32m"hn-dashboard-metric-value"[39m
+            [36m>[39m
+              [0m1.234[0m
+            [36m</strong>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"hn-dashboard-muted"[39m
+            [36m>[39m
+              [0mSnapshot AVAILABLE hiá»‡n táº¡i[0m
+            [36m</div>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"hn-card hn-dashboard-metric"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"hn-dashboard-metric-label"[39m
+            [36m>[39m
+              [0mNháº­p kho[0m
+            [36m</div>[39m
+            [36m<strong[39m
+              [33mclass[39m=[32m"hn-dashboard-metric-value"[39m
+            [36m>[39m
+              [0m300[0m
+            [36m</strong>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"hn-dashboard-muted"[39m
+            [36m>[39m
+              [0mRECEIPT theo occurred_at trong ká»³[0m
+            [36m</div>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"hn-card hn-dashboard-metric"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"hn-dashboard-metric-label"[39m
+            [36m>[39m
+              [0mXuáº¥t kho[0m
+            [36m</div>[39m
+            [36m<strong[39m
+              [33mclass[39m=[32m"hn-dashboard-metric-value"[39m
+            [36m>[39m
+              [0m120[0m
+            [36m</strong>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"hn-dashboard-muted"[39m
+            [36m>[39m
+              [0mISSUE theo occurred_at trong ká»³[0m
+            [36m</div>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"hn-card hn-dashboard-metric"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"hn-dashboard-metric-label"[39m
+            [36m>[39m
+              [0mXuáº¥t linh kiá»‡n[0m
+            [36m</div>[39m
+            [36m<strong[39m
+              [33mclass[39m=[32m"hn-dashboard-metric-value"[39m
+            [36m>[39m
+              [0m25[0m
+            [36m</strong>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"hn-dashboard-muted"[39m
+            [36m>[39m
+              [0mCOMPONENT_ISSUE trong ká»³[0m
+            [36m</div>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"hn-card hn-dashboard-metric"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"hn-dashboard-metric-label"[39m
+            [36m>[39m
+              [0mReversal net[0m
+            [36m</div>[39m
+            [36m<strong[39m
+              [33mclass[39m=[32m"hn-das...
+ â¯ Object.getElementError node_modules/@testing-library/dom/dist/config.js:37:19
+ â¯ getElementError node_modules/@testing-library/dom/dist/query-helpers.js:20:35
+ â¯ getMultipleElementsFoundError node_modules/@testing-library/dom/dist/query-helpers.js:23:10
+ â¯ node_modules/@testing-library/dom/dist/query-helpers.js:55:13
+ â¯ node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+ â¯ src/modules/dashboard/pages/DashboardPage.test.tsx:71:19
+     69|
+     70|     expect(await screen.findByText("1.234")).toBeInTheDocument();
+     71|     expect(screen.getByText("300")).toBeInTheDocument();
+       |                   ^
+     72|     expect(screen.getByText("-5")).toBeInTheDocument();
+     73|     expect(
+
+âŽ¯âŽ¯âŽ¯âŽ¯âŽ¯âŽ¯âŽ¯âŽ¯âŽ¯âŽ¯âŽ¯âŽ¯âŽ¯âŽ¯âŽ¯âŽ¯âŽ¯âŽ¯âŽ¯âŽ¯âŽ¯âŽ¯âŽ¯âŽ¯[1/1]âŽ¯
+
+JSON report written to C:/Users/ACER/AppData/Local/Temp/claude/C--Users-ACER-Downloads-New-folder/9459ffd9-16c0-4b4b-861c-8c3bd0d160c7/scratchpad/wt325/test-results/vitest-results.json
+JUNIT report written to C:/Users/ACER/AppData/Local/Temp/claude/C--Users-ACER-Downloads-New-folder/9459ffd9-16c0-4b4b-861c-8c3bd0d160c7/scratchpad/wt325/test-results/vitest-junit.xml

@@ -36,6 +36,13 @@ export const queryClient = new QueryClient({
     },
     mutations: {
       retry: 0,
+      // WWHN-325: networkMode mặc định "online" sẽ PAUSE mutation khi
+      // navigator.onLine=false (mutationFn không chạy, guard offline ở axios
+      // không kịp chặn) rồi TỰ RESUME và bắn request khi có mạng lại — đúng
+      // hành vi queue+replay mà chính sách offline fail-closed cấm. "always"
+      // buộc mutationFn chạy ngay để guard reject tức thì với
+      // OFFLINE_MUTATION_BLOCKED, không giữ hàng đợi nào.
+      networkMode: "always",
     },
   },
 });

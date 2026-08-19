@@ -1,0 +1,122 @@
+=== GATE 05-build : yarn build ===
+yarn run v1.22.22
+$ tsc -b && vite build && node scripts/write-build-manifest.mjs
+vite v8.2.0 building client environment for production...
+[2K
+transforming...' 3405 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                    3.34 kB % gzip:  0.92 kB
+dist/assets/DashboardPage-mG5ih7an.css             3.67 kB % gzip:  1.12 kB
+dist/assets/index-DwPP4NDP.css                    43.09 kB % gzip:  8.12 kB
+dist/assets/row-CGPJgnzL.js                        0.07 kB % gzip:  0.08 kB
+dist/assets/permission-Cx4pMqAb.js                 0.16 kB % gzip:  0.15 kB
+dist/assets/wms-action-permission-C76-uwNO.js      0.30 kB % gzip:  0.25 kB
+dist/assets/ActionButton-BfdvRbVj.js               0.77 kB % gzip:  0.51 kB
+dist/assets/PlusOutlined-CBOkhsiS.js               0.83 kB % gzip:  0.54 kB
+dist/assets/ActionDropdown-CnWcMI4C.js             0.85 kB % gzip:  0.52 kB
+dist/assets/warehouse.service-BHbCs8c7.js          0.97 kB % gzip:  0.52 kB
+dist/assets/wms-contract-C0SvsSeC.js               0.98 kB % gzip:  0.53 kB
+dist/assets/UploadOutlined-C1mxaNP6.js             0.98 kB % gzip:  0.65 kB
+dist/assets/DownloadOutlined-cTPPl_Bl.js           0.99 kB % gzip:  0.63 kB
+dist/assets/SwapOutlined-uEpuK_M1.js               1.00 kB % gzip:  0.68 kB
+dist/assets/LockOutlined-C1pqK0uC.js               1.03 kB % gzip:  0.68 kB
+dist/assets/DeleteOutlined-Yj2Tfb2P.js             1.03 kB % gzip:  0.68 kB
+dist/assets/HomeOutlined-DEc8qvAO.js               1.05 kB % gzip:  0.70 kB
+dist/assets/CheckCircleOutlined-D0u8Pvxl.js        1.08 kB % gzip:  0.69 kB
+dist/assets/SaveOutlined-C8J5FHyb.js               1.12 kB % gzip:  0.70 kB
+dist/assets/MvpListPagination-C2bRp1VE.js          1.16 kB % gzip:  0.60 kB
+dist/assets/CameraOutlined-B-9r5pT5.js             1.17 kB % gzip:  0.73 kB
+dist/assets/ProfileOutlined-Bl_umAwj.js            1.20 kB % gzip:  0.65 kB
+dist/assets/ScanOutlined-2NVQRpe7.js               1.25 kB % gzip:  0.66 kB
+dist/assets/useClosable-BOaGmfMF.js                1.26 kB % gzip:  0.67 kB
+dist/assets/ReloadOutlined-Dtlaa2Z4.js             1.38 kB % gzip:  0.85 kB
+dist/assets/modal-B8n5PpUt.js                      1.41 kB % gzip:  0.76 kB
+dist/assets/NoPermissionPage-ByvSU6mD.js           1.44 kB % gzip:  0.81 kB
+dist/assets/http-CtkGZ5ea.js                       1.47 kB % gzip:  0.66 kB
+dist/assets/CloseCircleOutlined-HnANAypJ.js        1.51 kB % gzip:  0.83 kB
+dist/assets/routes-DbBU6k21.js                     1.56 kB % gzip:  0.90 kB
+dist/assets/BarcodeOutlined-BsE2IANW.js            1.56 kB % gzip:  0.66 kB
+dist/assets/ProfilePage-BYQaKRmk.js                1.63 kB % gzip:  0.78 kB
+dist/assets/style-BbkCSec6.js                      1.97 kB % gzip:  0.83 kB
+dist/assets/SearchOutlined-Cclzg0ha.js             1.99 kB % gzip:  0.94 kB
+dist/assets/CameraScanModal-BxLDrERX.js            2.74 kB % gzip:  1.46 kB
+dist/assets/use-iam-Czv_U1TC.js                    3.33 kB % gzip:  1.14 kB
+dist/assets/use-mvp-master-XIiNSI-2.js             3.85 kB % gzip:  1.56 kB
+dist/assets/permission.scope-BTKHIUWj.js           4.00 kB % gzip:  1.12 kB
+dist/assets/ComponentCatalogPage-DfpHe79c.js       4.12 kB % gzip:  1.80 kB
+dist/assets/statistic-C8bhaj4h.js                  4.15 kB % gzip:  1.92 kB
+dist/assets/auth.service-s-NvZCRa.js               4.36 kB % gzip:  1.79 kB
+dist/assets/avatar-C8h2CpGM.js                     4.69 kB % gzip:  2.23 kB
+dist/assets/ChangePasswordPage-BeXYzxqM.js         4.97 kB % gzip:  2.00 kB
+dist/assets/scanService-BfJMnszo.js                5.04 kB % gzip:  1.80 kB
+dist/assets/config-provider-BTI6rQZe.js            6.49 kB % gzip:  2.64 kB
+dist/assets/WarehouseConfigScreen-BGxMvvTg.js      7.35 kB % gzip:  3.06 kB
+dist/assets/spin-CrO_CaCs.js                       7.41 kB % gzip:  3.06 kB
+dist/assets/mvpOutboundService-Czyjq8L2.js         7.54 kB % gzip:  2.61 kB
+dist/assets/descriptions-B6y6x_H9.js               7.61 kB % gzip:  2.69 kB
+dist/assets/popconfirm-CiaLxv7V.js                 7.66 kB % gzip:  3.00 kB
+dist/assets/PhysicalCodesPage-DLkJRHc1.js          7.99 kB % gzip:  2.95 kB
+dist/assets/tag-Bw4zO-6g.js                        8.45 kB % gzip:  3.31 kB
+dist/assets/card-whwEESj0.js                       9.06 kB % gzip:  3.19 kB
+dist/assets/input-C_rtlUSo.js                     10.02 kB % gzip:  4.70 kB
+dist/assets/skeleton-DdM0XzLq.js                  10.15 kB % gzip:  3.57 kB
+dist/assets/IamRolePermissionScreen-zi_o7i-h.js   10.40 kB % gzip:  4.47 kB
+dist/assets/AuditLogsPage-DTfRUmrF.js             10.83 kB % gzip:  4.06 kB
+dist/assets/CatalogMasterScreen-_GBg_hCa.js       11.26 kB % gzip:  4.41 kB
+dist/assets/DashboardPage-CG_gIwqR.js             11.27 kB % gzip:  3.73 kB
+dist/assets/axios-D_9h5vTC.js                     12.41 kB % gzip:  4.53 kB
+dist/assets/IamUserScreen-DQwwUpZe.js             13.72 kB % gzip:  4.79 kB
+dist/assets/auth.store-B_hzqwre.js                14.55 kB % gzip:  5.46 kB
+dist/assets/EyeOutlined-CNgOBcFE.js               14.71 kB % gzip:  6.21 kB
+dist/assets/progress-BYlXBOIr.js                  14.83 kB % gzip:  5.72 kB
+dist/assets/vendor-dayjs-HUOMFI9S.js              15.62 kB % gzip:  5.66 kB
+dist/assets/PutawayPage-_8y7HqAD.js               15.85 kB % gzip:  5.96 kB
+dist/assets/MainLayout-nSRjGVmb.js                21.00 kB % gzip:  7.41 kB
+dist/assets/input-number-DFQWFacb.js              21.02 kB % gzip:  7.62 kB
+dist/assets/EllipsisOutlined-DAe85ppJ.js          23.27 kB % gzip:  8.40 kB
+dist/assets/form-D5LQ1Nzm.js                      23.86 kB % gzip:  9.37 kB
+dist/assets/components-CVwJ9D8U.js                23.87 kB % gzip:  9.21 kB
+dist/assets/pagination-FigEPRio.js                25.09 kB % gzip:  7.32 kB
+dist/assets/useModal-B3AreAQ1.js                  25.19 kB % gzip:  8.67 kB
+dist/assets/ReportsPage-Bc7sxtPq.js               26.97 kB % gzip:  9.01 kB
+dist/assets/ReversalPage-BJmgxU5e.js              29.65 kB % gzip:  9.12 kB
+dist/assets/InventoryPage-BQFuXDVH.js             31.51 kB % gzip:  8.81 kB
+dist/assets/dist-DdPftTOK.js                      32.60 kB % gzip:  9.13 kB
+dist/assets/tabs-DM5KrHjz.js                      34.68 kB % gzip: 10.79 kB
+dist/assets/timeline-DMfqmUEm.js                  34.71 kB % gzip:  9.60 kB
+dist/assets/NoPermissionState-Dv741jcP.js         36.39 kB % gzip: 11.92 kB
+dist/assets/MvpSourceScreen-BbwWKxsv.js           39.71 kB % gzip:  9.32 kB
+dist/assets/OutboundPage-DjTcsMFU.js              44.14 kB % gzip: 14.00 kB
+dist/assets/InboundPage-CCgKIWh4.js               44.50 kB % gzip: 14.07 kB
+dist/assets/MvpMasterScreens-CIFZg5Db.js          48.08 kB % gzip: 13.31 kB
+dist/assets/typography-BtkzRUYh.js                55.02 kB % gzip: 19.02 kB
+dist/assets/index-Co5d4rv6.js                     66.39 kB % gzip: 23.60 kB
+dist/assets/select-BLf0Z3VN.js                    78.32 kB % gzip: 26.84 kB
+dist/assets/vendor-data-v37R5GVm.js               81.45 kB % gzip: 28.21 kB
+dist/assets/WarrantyPage-DyCP8XPY.js              87.91 kB % gzip: 27.52 kB
+dist/assets/chunk-4ZMWKKQ3-CJU6nbAT.js            91.74 kB % gzip: 30.46 kB
+dist/assets/vendor-form-CDOXGG-A.js               97.35 kB % gzip: 28.65 kB
+dist/assets/date-picker-Bcu8RlHR.js              169.99 kB % gzip: 37.24 kB
+dist/assets/vendor-react-CFfr8aqR.js             181.71 kB % gzip: 57.16 kB
+dist/assets/table-BgDDi7ri.js                    197.29 kB % gzip: 60.69 kB
+dist/assets/EditOutlined-C9heZCL5.js             217.68 kB % gzip: 75.03 kB
+
+cmd.exe : [33m[PLUGIN_TIMINGS] [0mYour build spent significant time in plugins. Here is a breakdown:
+At C:\Users\ACER\AppData\Local\Temp\claude\C--Users-ACER-Downloads-New-folder\9459ffd9-16c0-4b4b-861c-8c3bd0d160c7\scra
+tchpad\run-evidence-325.ps1:13 char:3
++   & cmd /c "$cmd" >> "$ev\$name.log" 2>&1
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([33m[PLUGIN_TI...is a breakdown::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  - vite:css-post (33%)
+  - vite:asset (14%)
+  - vite:worker (13%)
+  - vite:build-import-analysis (11%)
+  - rolldown:vite-resolve (10%)
+See https://rolldown.rs/reference/InputOptions.checks#plugintimings for more details.
+
+' built in 28.98s
+[build-manifest] Wrote dist/build-manifest.json for local-uncommitted (1.0.0).
+Done in 47.23s.

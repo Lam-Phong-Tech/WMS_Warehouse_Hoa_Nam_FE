@@ -10,6 +10,7 @@ import {
   type LoginFormValues,
 } from "@/modules/auth/schemas/login.schema";
 import { FormInput } from "@/shared/components/forms";
+import { OFFLINE_MUTATION_CODE } from "@/shared/pwa/offline-policy";
 
 function getLoginErrorMessage(error: unknown): string {
   if (isAxiosError(error)) {
@@ -25,6 +26,12 @@ function getLoginErrorMessage(error: unknown): string {
     }
 
     if (!error.response) {
+      // WWHN-325: guard offline chặn mutation ngay tại axios (không có
+      // response); phải hiển thị đúng thông điệp khóa ghi ngoại tuyến thay vì
+      // báo lỗi kết nối chung chung khiến người dùng tưởng BE hỏng.
+      if (error.code === OFFLINE_MUTATION_CODE) {
+        return error.message;
+      }
       if (error.code === "ECONNABORTED") {
         return "Máy chủ xác thực phản hồi quá thời gian. Vui lòng thử lại.";
       }

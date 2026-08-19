@@ -4,14 +4,21 @@ Nguyên tắc: **mỗi vai trò chỉ comment 1 lần**, nói rõ mình xác nh�
 vai trò khác. Các mục còn phải **làm việc thật** (không phải đọc + duyệt) nằm ở §2 và
 **không được ký** ở đây.
 
-Candidate đang xác nhận:
+Candidate đang xác nhận (**R4 — supersede cặp cũ theo
+`docs/evidence/WWHN-327/WWHN-328_CONSUMER_PIN.json`**):
 
-- FE `WMS_Warehouse_Hoa_Nam_FE` `m1` — `99dff42fb4272ed8930e8fb9bf4da6368f4cfd96`
-- BE `WMS_Warehouse_Hoa_Nam_BE` `m1` — `6db0965940a6ae8b22a591d50705f258326b172d`
+- FE `WMS_Warehouse_Hoa_Nam_FE` `m1` — `5a0cfda4ccdacfa4aac324ed7c16bda513c3c8f3`
+- BE `WMS_Warehouse_Hoa_Nam_BE` `m1` — `b610b1ff191f8c1f2cce3c24571de850f946d690`
+- KPI matrix **v1.2** (nguồn: BE `docs/evidence/WWHN-328/KPI_MATRIX.md`)
 
-Trước khi dán: thay `<GITHUB_RUN_ID>` bằng run id của lần chạy xanh workflow
-`WWHN-327 FE Closure` (artifact `evidence/wwhn-327/GITHUB_RUN_ID`). Không dán khi
-workflow chưa xanh, và không dùng lại SHA/run của task khác.
+Cặp cũ `99dff42`/`6db0965` (matrix v1.1) và BE trung gian `127c573` đã bị supersede;
+mọi template bên dưới khi dán phải thay bằng cặp R4 ở trên. `127c573` là commit gộp
+"gỡ cờ 13" của phiên song song, KHÔNG phải commit cuối chạm bề mặt WWHN-328.
+
+Về run CI: quota GitHub Actions đã cạn (3.000/3.000 phút). Không dispatch workflow
+mới; evidence closure dùng kết quả gate chạy local tại exact SHA (ghi trong
+`docs/evidence/WWHN-327/` và `docs/evidence/WWHN-328/` phía BE) với disposition
+nêu rõ trong comment.
 
 ---
 
