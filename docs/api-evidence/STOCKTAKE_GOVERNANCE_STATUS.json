@@ -1,6 +1,6 @@
 {
   "schemaVersion": "2.1.0",
-  "updatedAt": "2026-08-18T13:39:59.350Z",
+  "updatedAt": "2026-08-19T06:50:00.000Z",
   "jira": "WWHN-237",
   "finding": "DEV237-P1-01..05",
   "scope": "Authority behind the FE/BE no-Stocktake guard in the current MVP runtime",
@@ -20,7 +20,8 @@
       "version": "1.12",
       "updatedDate": "14/08/2026",
       "repositoryPath": "docs/HN_SRS_FRD_v1.12_FULL.md",
-      "sha256": "02cd010cdc40036b62ec23a0d3aa645e4cce813497edf8b0e851ba6fcb512ff2",
+      "sha256": "5ab1dd6c468e93f57a932741e823855806a9d37ac5dde9b118335ff8f84de086",
+      "sha256Note": "Refresh 19/08/2026 (WWHN-184): SRS nhan erratum DISP-IN-184 — §6 STATE MODEL them dong Inbound/Outbound Document + Controlled Amendment §15 muc 19/08/2026. Khong dong nao lien quan REQ-SRS-037/Stocktake thay doi; moi anchor cua register van nguyen ven. Digest cu 02cd010c... chi con dung cho cac evidence pack point-in-time cua WWHN-230/233/236/237 (khong refresh cac pack do).",
       "anchors": {
         "requirementRow": "REQ-SRS-037 in the requirement register",
         "decisionRow": "DEC-NO-STOCKTAKE-001 in section 2 Decision Records and Governance",

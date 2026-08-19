@@ -5,15 +5,15 @@
   "controlling_requirement": "REQ-SRS-037",
   "fe": {
     "branch": "m1",
-    "commit_sha": "47ee524b8f9a544b69aa23a349de45ef6f4be099",
+    "commit_sha": "cf0fe8d0a948b650492d5a96ad3509bf1180d23b",
     "working_tree_clean": false
   },
   "be": {
     "branch": "m1",
-    "commit_sha": "5c002efa683ba82ae1ce91e088b01c213ede45dd"
+    "commit_sha": "22564b46898f616c0df2880f797fcc0f1fcf9507"
   },
   "baselines": {
-    "docs/HN_SRS_FRD_v1.12_FULL.md": "02cd010cdc40036b62ec23a0d3aa645e4cce813497edf8b0e851ba6fcb512ff2",
+    "docs/HN_SRS_FRD_v1.12_FULL.md": "5ab1dd6c468e93f57a932741e823855806a9d37ac5dde9b118335ff8f84de086",
     "docs/HoaNam_ERD_Moi_Nhat.md": "5209358cb0e9d91ced71b3b2ebaeb6e50d7f4304c03618a81a6a6a0adabf12e2",
     "docs/HN_WMS_Wireframe_MVP_ALIGNED_v3.20_v1.12_20260814.html": "107a2b4de0f5763e39278ec130758d57e772e004e525416c088018cf9ddba658",
     "docs/api-evidence/WMS_FE_CONTRACT_BASELINE.json": "fa3128b0840b979a924b1a113fa1c9cdc6271fa714e2e831a9c11341286a14f9"
