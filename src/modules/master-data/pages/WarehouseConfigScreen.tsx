@@ -23,7 +23,11 @@ import {
   updateWarehouse,
 } from "@/modules/master-data/services/warehouse.service";
 import type { MasterStatus } from "@/modules/master-data/types/mvp-master.types";
-import { getApiErrorMessage, normalizeError } from "@/shared/api/api-error";
+import {
+  getApiErrorMessage,
+  isForbiddenErrorCode,
+  normalizeError,
+} from "@/shared/api/api-error";
 import { useCan } from "@/shared/components/permission";
 import { WMS_PERMISSION_CATALOG as P } from "@/shared/constants/wms-permissions";
 
@@ -73,7 +77,14 @@ function saveErrorMessage(error: unknown): string {
   if (normalized.code === "STATE_CONFLICT") {
     return "Hệ thống chỉ cho phép đúng một kho ở trạng thái Đang hoạt động (REQ-SRS-001). Hãy chuyển kho đang hoạt động sang Ngừng hoạt động trước khi kích hoạt kho này.";
   }
-  if (normalized.code === "ACCESS_DENIED") {
+  // WWHN-267 (FE267-D06): backend phát nhiều mã khác nhau trong cùng hạng 403
+  // (ACCESS_DENIED mặc định, PERMISSION_DENIED, DATA_SCOPE_DENIED,
+  // WAREHOUSE_SCOPE_DENIED) và danh mục này còn chờ disposition của BA (DIV-403-01).
+  // Chỉ so đúng một chuỗi "ACCESS_DENIED" thì mọi mã 403 khác rơi về thông điệp chung
+  // "Không lưu được cấu hình kho." — người dùng mất hẳn manh mối là do phạm vi dữ
+  // liệu. Nhận diện theo HTTP 403 trước; danh mục mã chỉ là đường lui khi lỗi không
+  // mang status (envelope nghiệp vụ gói trong 2xx).
+  if (normalized.status === 403 || isForbiddenErrorCode(normalized.code)) {
     return "Kho này nằm ngoài phạm vi dữ liệu của tài khoản. Liên hệ quản trị viên để được cấp scope.";
   }
   return getApiErrorMessage(error, "Không lưu được cấu hình kho.");

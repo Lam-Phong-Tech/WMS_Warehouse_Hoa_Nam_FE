@@ -173,6 +173,36 @@ export interface NormalizedError {
 }
 
 /**
+ * WWHN-267 (FE267-D06) — danh mục mã lỗi 403 mà backend thực sự phát ra.
+ *
+ * SRS §8.2 liệt kê `PERMISSION_DENIED` / `DATA_SCOPE_DENIED` ở cột *ví dụ*, còn cài
+ * đặt dùng `ACCESS_DENIED` làm mã mặc định và thêm `WAREHOUSE_SCOPE_DENIED` cho
+ * denial theo phạm vi kho. Khác biệt tên gọi đang chờ disposition của BA + Tech Lead
+ * (xem `docs/evidence/WWHN-267/HTTP_ERROR_CODE_PAIRING.json` → DIV-403-01), nên FE
+ * không được đoán *một* tên: mỗi nơi tự viết `code === "ACCESS_DENIED"` là một chỗ sẽ
+ * âm thầm mất thông điệp riêng ngay khi backend trả tên khác trong cùng hạng 403.
+ *
+ * Quy tắc: ưu tiên nhận diện theo HTTP 403; chỉ dùng danh mục này cho nhánh không có
+ * status (lỗi nghiệp vụ gói trong envelope 2xx) hoặc khi cần phân biệt thông điệp.
+ */
+export const FORBIDDEN_ERROR_CODES = [
+  "FORBIDDEN",
+  "NO_PERMISSION",
+  "ACCESS_DENIED",
+  "PERMISSION_DENIED",
+  "DATA_SCOPE_DENIED",
+  "WAREHOUSE_SCOPE_DENIED",
+] as const;
+
+/** True nếu `code` thuộc danh mục 403 đã chốt của backend. */
+export function isForbiddenErrorCode(code: string | undefined): boolean {
+  return (
+    code !== undefined &&
+    (FORBIDDEN_ERROR_CODES as readonly string[]).includes(code)
+  );
+}
+
+/**
  * Kiểm tra lỗi có phải là "no-permission" (403) không.
  * Được đánh dấu bởi interceptor trong axios.ts.
  */
@@ -192,18 +222,17 @@ export function isNoPermissionError(error: unknown): boolean {
 
   if (error instanceof ApiEnvelopeError) {
     const code = getErrorCode(error.data);
+    // WWHN-289: §8.2 xếp DATA_SCOPE_DENIED cùng hạng 403 với PERMISSION_DENIED.
+    // Nhánh axios đã bắt theo status===403, nhưng nhánh ApiEnvelopeError (BE trả lỗi
+    // nghiệp vụ kèm HTTP 2xx) không có status để dựa vào nên phải so theo danh mục.
+    // WWHN-267: danh mục đó chuyển sang FORBIDDEN_ERROR_CODES — trước đây thiếu
+    // WAREHOUSE_SCOPE_DENIED (ScanController phát mã này ở hạng 403) nên denial theo
+    // phạm vi kho hiện ra như lỗi hệ thống chung chung, đúng lỗi mà WWHN-289 đã sửa
+    // một lần cho DATA_SCOPE_DENIED.
     return (
       error.data.status === "error" &&
       code !== "PASSWORD_CHANGE_REQUIRED" &&
-      (code === "FORBIDDEN" ||
-        code === "PERMISSION_DENIED" ||
-        code === "NO_PERMISSION" ||
-        code === "ACCESS_DENIED" ||
-        // WWHN-289: §8.2 xếp DATA_SCOPE_DENIED cùng hạng 403 với
-        // PERMISSION_DENIED. Nhánh axios đã bắt theo status===403, nhưng nhánh
-        // ApiEnvelopeError (BE trả lỗi nghiệp vụ kèm HTTP 2xx) thiếu mã này nên
-        // thao tác ngoài data scope hiện ra như lỗi hệ thống chung chung.
-        code === "DATA_SCOPE_DENIED")
+      isForbiddenErrorCode(code)
     );
   }
 
