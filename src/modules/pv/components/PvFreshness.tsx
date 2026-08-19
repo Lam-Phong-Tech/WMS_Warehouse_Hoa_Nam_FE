@@ -1,5 +1,8 @@
 import { Tag, Tooltip } from "antd";
-import { computeFreshness, formatDataAsOf } from "@/modules/pv/lib/pv-freshness";
+import {
+  computeFreshness,
+  formatDataAsOf,
+} from "@/modules/pv/lib/pv-freshness";
 import type { PvFreshness } from "@/modules/pv/types/pv.types";
 
 /**

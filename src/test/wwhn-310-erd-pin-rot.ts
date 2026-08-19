@@ -16,7 +16,8 @@ import path from "node:path";
  */
 const DOCUMENT_NAME = "HoaNam_ERD_Moi_Nhat.md";
 const HEX64 = /\b([0-9a-f]{64})\b/g;
-const PATH_KEYS = /^(path|file|filepath|repositoryPath|repository_path|document|artifact)$/i;
+const PATH_KEYS =
+  /^(path|file|filepath|repositoryPath|repository_path|document|artifact)$/i;
 const DIGEST_KEYS = /(sha256|sha_256|digest|checksum)/i;
 
 export interface StaleDigest {
@@ -36,7 +37,11 @@ function listDocs(dir: string, acc: string[] = []): string[] {
   return acc;
 }
 
-function collectFromJson(node: unknown, expected: string, found: string[]): void {
+function collectFromJson(
+  node: unknown,
+  expected: string,
+  found: string[],
+): void {
   if (Array.isArray(node)) {
     for (const child of node) collectFromJson(child, expected, found);
     return;
@@ -48,27 +53,43 @@ function collectFromJson(node: unknown, expected: string, found: string[]): void
 
   // Dạng map: { "docs/HoaNam_ERD_Moi_Nhat.md": "<digest>" }
   for (const [key, value] of entries) {
-    if (key.endsWith(DOCUMENT_NAME) && typeof value === "string" && /^[0-9a-f]{64}$/.test(value)) {
+    if (
+      key.endsWith(DOCUMENT_NAME) &&
+      typeof value === "string" &&
+      /^[0-9a-f]{64}$/.test(value)
+    ) {
       if (value !== expected) found.push(value);
     }
   }
 
   // Dạng object: { path: "...", sha256: "..." }
   const pointsAtErd = entries.some(
-    ([key, value]) => PATH_KEYS.test(key) && typeof value === "string" && value.endsWith(DOCUMENT_NAME),
+    ([key, value]) =>
+      PATH_KEYS.test(key) &&
+      typeof value === "string" &&
+      value.endsWith(DOCUMENT_NAME),
   );
   if (pointsAtErd) {
     for (const [key, value] of entries) {
-      if (DIGEST_KEYS.test(key) && typeof value === "string" && /^[0-9a-f]{64}$/.test(value) && value !== expected) {
+      if (
+        DIGEST_KEYS.test(key) &&
+        typeof value === "string" &&
+        /^[0-9a-f]{64}$/.test(value) &&
+        value !== expected
+      ) {
         found.push(value);
       }
     }
   }
 
-  for (const value of Object.values(record)) collectFromJson(value, expected, found);
+  for (const value of Object.values(record))
+    collectFromJson(value, expected, found);
 }
 
-export function findStaleErdDigests(repoRoot: string, expected: string): StaleDigest[] {
+export function findStaleErdDigests(
+  repoRoot: string,
+  expected: string,
+): StaleDigest[] {
   const stale: StaleDigest[] = [];
 
   for (const file of listDocs(path.join(repoRoot, "docs"))) {

@@ -382,7 +382,8 @@ function normalizeDetail(row: RawRecord): OutboundDetail {
   ).map(normalizeMovement);
   const statusHistory = rowsOf(
     (row.status_history ?? row.statusHistory ?? []) as
-      RawRecord[] | { data?: RawRecord[] },
+      | RawRecord[]
+      | { data?: RawRecord[] },
   ).map(normalizeStatusHistory);
   const itemMatches = rowsOf(
     (row.item_matches ?? []) as RawRecord[] | { data?: RawRecord[] },
@@ -527,7 +528,9 @@ export async function scanOutboundItem(input: {
     printError: text(row.print_error) || null,
     scanSource: (text(row.scan_source) || null) as OutboundScanSource | null,
     scanSourceOrigin: (text(row.scan_source_origin) || null) as
-      "EXPLICIT" | "INFERRED" | null,
+      | "EXPLICIT"
+      | "INFERRED"
+      | null,
   };
 }
 
@@ -604,13 +607,15 @@ function normalizeImport(payload: RawRecord): OutboundImportResult {
   const importRow = (payload.import ?? {}) as RawRecord;
   const rows = rowsOf(
     (payload.rows ?? []) as RawRecord[] | { data?: RawRecord[] },
-  ).map((row): OutboundImportRow => ({
-    id: text(row.id),
-    rowNo: num(row.row_no),
-    status: text(row.validation_status),
-    normalized: parseJsonObject(row.normalized_payload),
-    errors: parseJsonArray(row.validation_errors ?? row.errors),
-  }));
+  ).map(
+    (row): OutboundImportRow => ({
+      id: text(row.id),
+      rowNo: num(row.row_no),
+      status: text(row.validation_status),
+      normalized: parseJsonObject(row.normalized_payload),
+      errors: parseJsonArray(row.validation_errors ?? row.errors),
+    }),
+  );
   return {
     id: text(importRow.id),
     importNo: text(importRow.import_no),

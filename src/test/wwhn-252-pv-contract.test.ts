@@ -120,7 +120,11 @@ describe("WWHN-252 · App PV FE contract", () => {
   it("nhận diện 429 kèm Retry-After để UI không tự retry", async () => {
     mock
       .onGet("/pv/recommendations")
-      .reply(429, { error: { code: "RATE_LIMIT_EXCEEDED" } }, { "retry-after": "45" });
+      .reply(
+        429,
+        { error: { code: "RATE_LIMIT_EXCEEDED" } },
+        { "retry-after": "45" },
+      );
 
     await expect(getPvRecommendations("industry-1")).rejects.toMatchObject({
       status: 429,
@@ -136,7 +140,9 @@ describe("WWHN-252 · App PV FE contract", () => {
   });
 
   it("trả về mảng rỗng an toàn khi BE trả data null", async () => {
-    mock.onGet("/pv/products").reply(200, { success: true, data: null, meta: {} });
+    mock
+      .onGet("/pv/products")
+      .reply(200, { success: true, data: null, meta: {} });
 
     await expect(getPvProducts({})).resolves.toMatchObject({ data: [] });
   });

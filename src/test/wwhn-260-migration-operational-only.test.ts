@@ -16,7 +16,10 @@ import { ROUTES } from "@/shared/constants/routes";
  * tồn đầu" vào FE là mở một đường ghi tồn thứ hai không có checksum, không có
  * đối soát và không có rollback.
  */
-const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const repoRoot = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../..",
+);
 
 function readRepoFile(relativePath: string): string {
   return readFileSync(path.join(repoRoot, relativePath), "utf8");

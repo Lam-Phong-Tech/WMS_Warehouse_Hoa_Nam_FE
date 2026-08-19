@@ -90,7 +90,9 @@ export function PvPublicLayout({
               >
                 Hòa Nam · Danh mục sản phẩm
               </span>
-              <span style={{ display: "block", fontSize: 12, color: "#7a766c" }}>
+              <span
+                style={{ display: "block", fontSize: 12, color: "#7a766c" }}
+              >
                 Trang công khai · chỉ xem
               </span>
             </span>

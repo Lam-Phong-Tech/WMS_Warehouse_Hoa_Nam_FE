@@ -1,5 +1,16 @@
 import { useMemo, useState } from "react";
-import { Button, Form, Input, InputNumber, Modal, Select, Switch, Table, Tabs, Tag } from "antd";
+import {
+  Button,
+  Form,
+  Input,
+  InputNumber,
+  Modal,
+  Select,
+  Switch,
+  Table,
+  Tabs,
+  Tag,
+} from "antd";
 import { toast } from "sonner";
 import { PvErrorState } from "@/modules/pv/components/PvErrorState";
 import {
@@ -18,7 +29,10 @@ import type {
   PvAdminRule,
   PvAdminSimpleMaster,
 } from "@/modules/pv/types/pv.types";
-import { getMutationErrorMessage, normalizeError } from "@/shared/api/api-error";
+import {
+  getMutationErrorMessage,
+  normalizeError,
+} from "@/shared/api/api-error";
 import { LoadingState } from "@/shared/components/data-display/LoadingState";
 import { WMS_PERMISSION_CATALOG as P } from "@/shared/constants/wms-permissions";
 import { UI_STATE, uiStateProps } from "@/shared/constants/ui-state";
@@ -105,7 +119,8 @@ function SimpleMasterTab({
     }
   }
 
-  if (isPending) return <LoadingState tip="Đang tải…" testId={`${testId}-loading`} />;
+  if (isPending)
+    return <LoadingState tip="Đang tải…" testId={`${testId}-loading`} />;
   if (isError) return <PvErrorState error={error} onRetry={onRetry} />;
 
   return (
@@ -115,7 +130,9 @@ function SimpleMasterTab({
           type="primary"
           disabled={!canManage}
           data-testid={`${testId}-create`}
-          {...(canManage ? {} : uiStateProps(UI_STATE.DISABLED, `${testId}-create-disabled`))}
+          {...(canManage
+            ? {}
+            : uiStateProps(UI_STATE.DISABLED, `${testId}-create-disabled`))}
           onClick={() => openForm()}
         >
           Thêm {title}
@@ -136,7 +153,9 @@ function SimpleMasterTab({
             title: "Trạng thái",
             dataIndex: "status",
             render: (status: string) => (
-              <Tag color={status === "ACTIVE" ? "green" : "default"}>{status}</Tag>
+              <Tag color={status === "ACTIVE" ? "green" : "default"}>
+                {status}
+              </Tag>
             ),
           },
           { title: "Thứ tự", dataIndex: "sort_order" },
@@ -223,7 +242,10 @@ export default function PvAdminPage() {
   );
   const tagOptions = useMemo(
     () =>
-      (tags.data?.data ?? []).map((tag) => ({ value: tag.id, label: tag.name })),
+      (tags.data?.data ?? []).map((tag) => ({
+        value: tag.id,
+        label: tag.name,
+      })),
     [tags.data],
   );
 
@@ -308,7 +330,9 @@ export default function PvAdminPage() {
       </h1>
       <p style={{ color: "#7a766c", fontSize: 13, marginTop: 0 }}>
         Ngành nghề, tag, rule gợi ý và hồ sơ hiển thị của trang công khai.
-        {canPublish ? "" : " Bạn không có quyền pv.publish nên không bật/tắt được publish."}
+        {canPublish
+          ? ""
+          : " Bạn không có quyền pv.publish nên không bật/tắt được publish."}
       </p>
 
       <Tabs
@@ -318,7 +342,10 @@ export default function PvAdminPage() {
             key: "profiles",
             label: "Hồ sơ sản phẩm",
             children: profiles.isPending ? (
-              <LoadingState tip="Đang tải…" testId="pv-admin-profiles-loading" />
+              <LoadingState
+                tip="Đang tải…"
+                testId="pv-admin-profiles-loading"
+              />
             ) : profiles.isError ? (
               <PvErrorState
                 error={profiles.error}
@@ -416,7 +443,10 @@ export default function PvAdminPage() {
             children: rules.isPending ? (
               <LoadingState tip="Đang tải…" testId="pv-admin-rules-loading" />
             ) : rules.isError ? (
-              <PvErrorState error={rules.error} onRetry={() => rules.refetch()} />
+              <PvErrorState
+                error={rules.error}
+                onRetry={() => rules.refetch()}
+              />
             ) : (
               <PvRuleTab
                 rows={rules.data?.data ?? []}
@@ -569,7 +599,9 @@ function PvRuleTab({
             title: "Trạng thái",
             dataIndex: "status",
             render: (status: string) => (
-              <Tag color={status === "ACTIVE" ? "green" : "default"}>{status}</Tag>
+              <Tag color={status === "ACTIVE" ? "green" : "default"}>
+                {status}
+              </Tag>
             ),
           },
           {
@@ -628,8 +660,8 @@ function PvRuleTab({
           </Form.Item>
         </Form>
         <p style={{ fontSize: 12, color: "#8c887e", marginBottom: 0 }}>
-          Rule phải có ít nhất một selector (SKU hoặc Tag) và ưu tiên không trùng
-          với rule ACTIVE khác trong cùng ngành nghề.
+          Rule phải có ít nhất một selector (SKU hoặc Tag) và ưu tiên không
+          trùng với rule ACTIVE khác trong cùng ngành nghề.
         </p>
       </Modal>
     </div>

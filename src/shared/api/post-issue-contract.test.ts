@@ -42,9 +42,9 @@ describe("WWHN-201 / DEC-OUT-STOCK-HTTP-001 — hợp đồng lỗi Post Issue",
   });
 
   it("409 CONCURRENCY_CONFLICT: giữ key cũ", () => {
-    expect(shouldReuseIdempotencyKey(apiError(409, "CONCURRENCY_CONFLICT"))).toBe(
-      true,
-    );
+    expect(
+      shouldReuseIdempotencyKey(apiError(409, "CONCURRENCY_CONFLICT")),
+    ).toBe(true);
   });
 
   it("409 IDEMPOTENCY_CONFLICT: bắt buộc key mới", () => {
@@ -54,9 +54,9 @@ describe("WWHN-201 / DEC-OUT-STOCK-HTTP-001 — hợp đồng lỗi Post Issue",
   });
 
   it("409 STATE_CONFLICT (đã POSTED/CANCELLED): dừng, không retry", () => {
-    expect(classifyPostIssueError(apiError(409, "STATE_CONFLICT"))?.action).toBe(
-      "STOP",
-    );
+    expect(
+      classifyPostIssueError(apiError(409, "STATE_CONFLICT"))?.action,
+    ).toBe("STOP");
   });
 
   it("428 PRECONDITION_REQUIRED: dừng", () => {
@@ -68,10 +68,14 @@ describe("WWHN-201 / DEC-OUT-STOCK-HTTP-001 — hợp đồng lỗi Post Issue",
     expect(classifyPostIssueError(timeout)).toBeNull();
     // Không biết server đã ghi hay chưa → replay an toàn hơn Post lần hai.
     expect(shouldReuseIdempotencyKey(timeout)).toBe(true);
-    expect(shouldReuseIdempotencyKey(apiError(500, "INTERNAL_ERROR"))).toBe(true);
+    expect(shouldReuseIdempotencyKey(apiError(500, "INTERNAL_ERROR"))).toBe(
+      true,
+    );
   });
 
   it("422 VALIDATION_ERROR khác không bị nuốt vào nhánh thiếu tồn", () => {
-    expect(classifyPostIssueError(apiError(422, "VALIDATION_ERROR"))).toBeNull();
+    expect(
+      classifyPostIssueError(apiError(422, "VALIDATION_ERROR")),
+    ).toBeNull();
   });
 });

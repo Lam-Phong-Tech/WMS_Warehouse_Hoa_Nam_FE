@@ -55,7 +55,9 @@ describe("WWHN-252 · PvCatalogPage (SCR-PV-01)", () => {
   beforeEach(() => {
     getPvProductsMock.mockReset();
     getPvIndustriesMock.mockReset().mockResolvedValue({ data: [], meta: {} });
-    getPvRecommendationsMock.mockReset().mockResolvedValue({ data: [], meta: {} });
+    getPvRecommendationsMock
+      .mockReset()
+      .mockResolvedValue({ data: [], meta: {} });
   });
 
   it("hiện trạng thái loading trước khi có dữ liệu", async () => {

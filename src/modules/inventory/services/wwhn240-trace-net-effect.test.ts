@@ -93,9 +93,9 @@ describe("WWHN-240 · trace-source correction chain + net effect", () => {
     // Không được rơi mất reversal thứ hai — đúng lỗi gốc của DEV240-P1-02B.
     expect(result.chain).toHaveLength(3);
     expect(result.chain[0].role).toBe("ORIGINAL");
-    expect(result.chain.filter((node) => node.role === "REVERSAL")).toHaveLength(
-      2,
-    );
+    expect(
+      result.chain.filter((node) => node.role === "REVERSAL"),
+    ).toHaveLength(2);
   });
 
   it("map net effect theo ledger authoritative", async () => {

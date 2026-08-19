@@ -81,7 +81,10 @@ export interface PublicPage<T> {
 }
 
 export const publicHttp = {
-  async get<T>(url: string, config?: AxiosRequestConfig): Promise<PublicPage<T>> {
+  async get<T>(
+    url: string,
+    config?: AxiosRequestConfig,
+  ): Promise<PublicPage<T>> {
     try {
       const res = await publicApi.get<ApiResponse<T>>(url, config);
       const body = res.data as { data?: T; meta?: ApiMeta } | undefined;

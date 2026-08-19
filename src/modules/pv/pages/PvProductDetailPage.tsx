@@ -41,9 +41,7 @@ export default function PvProductDetailPage() {
         ) : null
       }
       actions={
-        detail ? (
-          <PvFreshnessIndicator meta={product.data?.meta} />
-        ) : null
+        detail ? <PvFreshnessIndicator meta={product.data?.meta} /> : null
       }
     >
       <div style={{ marginBottom: 12 }}>
@@ -98,7 +96,11 @@ export default function PvProductDetailPage() {
                   <img
                     src={detail.images[0].url}
                     alt={detail.images[0].alt_text ?? detail.display_name}
-                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                    }}
                   />
                 ) : (
                   <span style={{ color: "#a8a397", fontSize: 13 }}>
@@ -145,11 +147,18 @@ export default function PvProductDetailPage() {
                 }}
               >
                 <div
-                  style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}
+                  style={{
+                    display: "flex",
+                    gap: 8,
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                  }}
                 >
                   <Tag
                     color={
-                      detail.stock_status === "OUT_OF_STOCK" ? "default" : "green"
+                      detail.stock_status === "OUT_OF_STOCK"
+                        ? "default"
+                        : "green"
                     }
                     data-testid="pv-detail-stock"
                     data-stock-status={detail.stock_status}
@@ -185,9 +194,21 @@ export default function PvProductDetailPage() {
                 data-testid="pv-detail-spec"
                 style={{ background: "#fff" }}
                 items={[
-                  { key: "brand", label: "Thương hiệu", children: detail.brand_name ?? "—" },
-                  { key: "category", label: "Nhóm hàng", children: detail.category_name ?? "—" },
-                  { key: "model", label: "Model", children: detail.model_name ?? "—" },
+                  {
+                    key: "brand",
+                    label: "Thương hiệu",
+                    children: detail.brand_name ?? "—",
+                  },
+                  {
+                    key: "category",
+                    label: "Nhóm hàng",
+                    children: detail.category_name ?? "—",
+                  },
+                  {
+                    key: "model",
+                    label: "Model",
+                    children: detail.model_name ?? "—",
+                  },
                   {
                     key: "power",
                     label: "Nguồn điện",

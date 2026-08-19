@@ -99,7 +99,8 @@ export function usePvRecommendations(industryId: string | undefined) {
 export function usePvAdminIndustries(params: Record<string, string> = {}) {
   return useQuery({
     queryKey: pvKeys.admin("industries", params),
-    queryFn: () => listPvAdminResources<PvAdminSimpleMaster>("industries", params),
+    queryFn: () =>
+      listPvAdminResources<PvAdminSimpleMaster>("industries", params),
   });
 }
 
@@ -155,7 +156,11 @@ export function useSavePvIndustry() {
       payload: PvAdminSimpleMasterPayload;
     }) =>
       input.id
-        ? updatePvIndustry(input.id, requiredVersion(input.version), input.payload)
+        ? updatePvIndustry(
+            input.id,
+            requiredVersion(input.version),
+            input.payload,
+          )
         : createPvIndustry(input.payload),
     onSuccess: invalidate,
   });
@@ -200,7 +205,11 @@ export function useSavePvProfile() {
       payload: PvAdminProfilePayload;
     }) =>
       input.id
-        ? updatePvProfile(input.id, requiredVersion(input.version), input.payload)
+        ? updatePvProfile(
+            input.id,
+            requiredVersion(input.version),
+            input.payload,
+          )
         : createPvProfile(input.payload),
     onSuccess: invalidate,
   });

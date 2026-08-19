@@ -33,7 +33,11 @@ function ifMatch(version: number) {
  * Thà hỏng ngay ở client với thông điệp rõ ràng còn hơn ghi sai lên server.
  */
 function assertVersion(version: number | undefined, action: string): number {
-  if (typeof version !== "number" || !Number.isInteger(version) || version < 0) {
+  if (
+    typeof version !== "number" ||
+    !Number.isInteger(version) ||
+    version < 0
+  ) {
     throw new Error(
       `Thiếu version hiện tại để ${action}. Hãy tải lại danh sách rồi thử lại.`,
     );

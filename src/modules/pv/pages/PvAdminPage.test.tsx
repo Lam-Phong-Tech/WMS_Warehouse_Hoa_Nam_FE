@@ -5,13 +5,12 @@ import { renderWithProviders } from "@/test/test-utils";
 import { useAuthStore } from "@/shared/store/auth.store";
 import type { PvAdminProfile } from "@/modules/pv/types/pv.types";
 
-const {
-  listPvAdminResourcesMock,
-  setPvProductPublishedMock,
-} = vi.hoisted(() => ({
-  listPvAdminResourcesMock: vi.fn(),
-  setPvProductPublishedMock: vi.fn(),
-}));
+const { listPvAdminResourcesMock, setPvProductPublishedMock } = vi.hoisted(
+  () => ({
+    listPvAdminResourcesMock: vi.fn(),
+    setPvProductPublishedMock: vi.fn(),
+  }),
+);
 
 vi.mock("@/modules/pv/services/pv-admin.service", () => ({
   listPvAdminResources: listPvAdminResourcesMock,
@@ -59,12 +58,14 @@ function signInWith(permissionCodes: string[]) {
  */
 describe("WWHN-252 · PvAdminPage (SCR-PV-ADM-01)", () => {
   beforeEach(() => {
-    listPvAdminResourcesMock.mockReset().mockImplementation((resource: string) =>
-      Promise.resolve({
-        data: resource === "product-profiles" ? [PROFILE] : [],
-        meta: {},
-      }),
-    );
+    listPvAdminResourcesMock
+      .mockReset()
+      .mockImplementation((resource: string) =>
+        Promise.resolve({
+          data: resource === "product-profiles" ? [PROFILE] : [],
+          meta: {},
+        }),
+      );
     setPvProductPublishedMock.mockReset().mockResolvedValue({
       published_to_app: true,
       pv_profile_version: PROFILE.version + 1,
@@ -78,9 +79,7 @@ describe("WWHN-252 · PvAdminPage (SCR-PV-ADM-01)", () => {
 
     const toggle = await screen.findByTestId("pv-admin-publish-switch");
     expect(toggle).toBeDisabled();
-    expect(
-      screen.getByText(/không có quyền pv\.publish/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/không có quyền pv\.publish/i)).toBeInTheDocument();
   });
 
   it("người có pv.publish bật/tắt được publish", async () => {

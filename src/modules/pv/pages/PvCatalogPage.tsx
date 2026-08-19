@@ -86,7 +86,8 @@ export default function PvCatalogPage() {
           marginBottom: 16,
           display: "grid",
           gap: 10,
-          gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))",
+          gridTemplateColumns:
+            "repeat(auto-fit, minmax(min(100%, 220px), 1fr))",
           alignItems: "center",
         }}
       >
@@ -116,12 +117,19 @@ export default function PvCatalogPage() {
           style={{ width: "100%" }}
         />
         <label
-          style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            fontSize: 13,
+          }}
         >
           <Switch
             checked={inStockOnly}
             data-testid="pv-in-stock-filter"
-            onChange={(checked) => patchParams({ in_stock: checked ? "1" : null })}
+            onChange={(checked) =>
+              patchParams({ in_stock: checked ? "1" : null })
+            }
           />
           Chỉ hiện sản phẩm còn hàng
         </label>
@@ -152,9 +160,15 @@ export default function PvCatalogPage() {
       ) : null}
 
       {products.isPending ? (
-        <LoadingState tip="Đang tải danh mục sản phẩm…" testId="pv-list-loading" />
+        <LoadingState
+          tip="Đang tải danh mục sản phẩm…"
+          testId="pv-list-loading"
+        />
       ) : products.isError ? (
-        <PvErrorState error={products.error} onRetry={() => products.refetch()} />
+        <PvErrorState
+          error={products.error}
+          onRetry={() => products.refetch()}
+        />
       ) : (products.data?.data.length ?? 0) === 0 ? (
         <EmptyState
           testId="pv-list-empty"
@@ -171,7 +185,11 @@ export default function PvCatalogPage() {
             <Button
               data-testid="pv-clear-filters"
               onClick={() =>
-                patchParams({ keyword: null, industry_id: null, in_stock: null })
+                patchParams({
+                  keyword: null,
+                  industry_id: null,
+                  in_stock: null,
+                })
               }
             >
               Xoá bộ lọc

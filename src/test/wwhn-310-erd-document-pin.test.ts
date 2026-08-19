@@ -19,7 +19,10 @@ import { findStaleErdDigests } from "./wwhn-310-erd-pin-rot";
  * kiểm bằng `tests/Feature/Wwhn310ErdDocumentPinTest.php`, nên hai bản lệch
  * nhau là đỏ ở cả hai phía.
  */
-const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const repoRoot = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../..",
+);
 const ERD_PATH = "docs/HoaNam_ERD_Moi_Nhat.md";
 const PIN_PATH = "docs/contracts/erd-document-pin.json";
 
@@ -36,7 +39,9 @@ interface ErdDocumentPin {
   rule: string;
 }
 
-const pin = JSON.parse(readFileSync(path.join(repoRoot, PIN_PATH), "utf8")) as ErdDocumentPin;
+const pin = JSON.parse(
+  readFileSync(path.join(repoRoot, PIN_PATH), "utf8"),
+) as ErdDocumentPin;
 const erdBytes = readFileSync(path.join(repoRoot, ERD_PATH));
 const erdText = erdBytes.toString("utf8");
 
@@ -45,8 +50,12 @@ describe("WWHN-310 — pin bản ERD dùng chung giữa hai repo", () => {
     expect(pin.document_id).toBe("HN-WMS-ERD-DD-001");
     expect(pin.path).toBe(ERD_PATH);
     expect(pin.table_count).toBe(59);
-    expect(pin.gates.frontend).toBe("src/test/wwhn-310-erd-document-pin.test.ts");
-    expect(pin.gates.backend).toBe("tests/Feature/Wwhn310ErdDocumentPinTest.php");
+    expect(pin.gates.frontend).toBe(
+      "src/test/wwhn-310-erd-document-pin.test.ts",
+    );
+    expect(pin.gates.backend).toBe(
+      "tests/Feature/Wwhn310ErdDocumentPinTest.php",
+    );
   });
 
   it("checksum thật của ERD trong repo FE trùng checksum đã pin", () => {
@@ -64,7 +73,9 @@ describe("WWHN-310 — pin bản ERD dùng chung giữa hai repo", () => {
   });
 
   it("sổ đăng ký §0.0 khớp danh sách amendments đã pin", () => {
-    const registered = [...erdText.matchAll(/^ {2}(ERD-AMD-\d{3})\b/gm)].map((m) => m[1]);
+    const registered = [...erdText.matchAll(/^ {2}(ERD-AMD-\d{3})\b/gm)].map(
+      (m) => m[1],
+    );
     const unique = [...new Set(registered)].sort();
 
     expect(unique).toEqual([...pin.amendments].sort());
@@ -72,7 +83,9 @@ describe("WWHN-310 — pin bản ERD dùng chung giữa hai repo", () => {
   });
 
   it("hậu tố bản hiệu lực bằng mã amendment lớn nhất và có mặt trong ERD", () => {
-    const codes = [...erdText.matchAll(/^ {2}ERD-AMD-(\d{3})\b/gm)].map((m) => Number(m[1]));
+    const codes = [...erdText.matchAll(/^ {2}ERD-AMD-(\d{3})\b/gm)].map((m) =>
+      Number(m[1]),
+    );
     const highest = Math.max(...codes);
     const expected = `${pin.released_version}+AMD${String(highest).padStart(3, "0")}`;
 
