@@ -1,10 +1,48 @@
 # WWHN-242 — HN-FE-006 · REV-00 / REV-01 (Hoàn đảo) · Exact Fix Register
 
-Đóng register 61/100. Mỗi mục ghi **lỗi thật đã sửa ở đâu** và **bằng chứng chạy được**,
-không có mục nào đóng bằng lời hứa.
+Đóng register 61/100 → review lại 72/100 (19/08/2026) → cập nhật bằng chứng bên dưới. Mỗi
+mục ghi **lỗi thật đã sửa ở đâu** và **bằng chứng chạy được**, không có mục nào đóng bằng
+lời hứa.
 
 Nguồn thẩm quyền và định đoạt phạm vi: [`WWHN-242_SCOPE_DISPOSITION.md`](./WWHN-242_SCOPE_DISPOSITION.md).
 Comment ký theo vai: [`WWHN-242_SIGNOFF_COMMENTS.md`](./WWHN-242_SIGNOFF_COMMENTS.md).
+
+---
+
+## 0. Vòng review 72/100 (19/08/2026) — chẩn đoán lại và bằng chứng mới
+
+Review 72/100 nêu `FE242-P1-02` **OPEN**: "evidence hiện có lint FAIL, verify FAIL,
+build/typecheck skipped và dirty tree". Đúng — file
+`docs/evidence/WWHN-242/RUNTIME_IDENTITY_PIN.json` tại thời điểm review có
+`generatedAt: 2026-08-18T15:59:00.514Z`, `workingTreeClean: false`,
+`dirtyFileCount: 66` (FE) / `76` (BE), và `typecheck`/`build` bị `--skip`. Chính file đó tự
+gắn cờ `truthBoundary`: *"Nếu workingTreeClean=false thì SHA KHÔNG mô tả đúng cây đã chạy;
+phải commit rồi chạy lại trước khi dùng làm exact-SHA evidence"* — nói cách khác bản ghi cũ
+tự nhận nó KHÔNG hợp lệ, nhưng vẫn bị để lại trong repo. Review bắt đúng.
+
+**Chẩn đoán lại trên `m1` sạch, không dùng `--skip`:**
+
+| Cổng | Trước (18/08 15:59, dirty=66/76, có `--skip`) | Sau (19/08, chạy lại đủ 5 cổng) |
+| --- | --- | --- |
+| `lint` | FAIL (exit 1) | **PASS** (exit 0, 0 error / 25 warning nền không đổi) |
+| `typecheck` | SKIPPED | **PASS** (exit 0) |
+| `test` | PASS | **PASS** — 90 file / 701 test (nền cũ 74/571) |
+| `build` | SKIPPED | **PASS** (exit 0) |
+| `verify:wwhn-242` | FAIL (exit 1) | **PASS** (exit 0) |
+
+Kết luận: **không có regression code thật** trong phạm vi `src/modules/reverse/**`,
+`src/app/router/access.ts`, `src/test/setup.ts`, `scripts/*wwhn-242*`. `lint`/`verify` FAIL
+lần trước là do bản ghi bị chụp giữa lúc cây làm việc bẩn bởi các phiên song song khác
+(đúng bẫy đã ghi ở [[feedback-check-concurrent-session-first]]), không phải lỗi trong code
+hoàn đảo. Bằng chứng mới: `docs/evidence/WWHN-242/RUNTIME_IDENTITY_PIN.json` (5/5 PASS) +
+`test-results/wwhn-242/<EXACT_SHA>/` (18/18 e2e PASS, chạy với `SOURCE_SHA` ghim đúng HEAD).
+
+`verify:wwhn-242` PASS **không cần `--repin`**: commit `719c1a4` (WWHN-310) đã tự cập nhật
+hash baseline trong `WWHN-242_SCOPE_DISPOSITION.md` khi đồng bộ ERD, đúng quy ước chống
+pin-rot đã dùng từ trước — không phải việc của phiên này.
+
+Hai cổng KHÔNG thuộc 5 cổng bắt buộc của `FE242-P1-02` (`lint`/`typecheck`/`test`/`build`/
+`verify:wwhn-242`) vẫn đỏ nhưng **không** do WWHN-242, xem bảng ở §3.
 
 ---
 
@@ -12,13 +50,13 @@ Comment ký theo vai: [`WWHN-242_SIGNOFF_COMMENTS.md`](./WWHN-242_SIGNOFF_COMMEN
 
 | ID | Sev | Trạng thái | Đã làm gì | Bằng chứng |
 | --- | --- | --- | --- | --- |
-| **FE242-P0-01** | P0 | **CLOSED (phần kỹ thuật) / PENDING (phần Jira)** | Lập hồ sơ định đoạt chính thức: neo `REQ-SRS-037` (Must, adopt qua `WWHN-334` Done) + `REQ-SRS-013`, ghim SHA-256 của 4 baseline, tuyên bố **REVERSAL-ONLY**, giải thích vì sao nhánh "restore Stocktake" bị loại, và khoá ranh giới trích dẫn: `DEC-NO-STOCKTAKE-001` / `DEC-REV-001` KHÔNG được dùng như approved standalone Decision ID vì `WWHN-25/26` còn PENDING. Soạn sẵn text AC/Description/dependency để BA/PM dán vào Jira. | `WWHN-242_SCOPE_DISPOSITION.md`; gate `npm run verify:wwhn-242` tính lại hash tại chỗ ⇒ doc lệch baseline là ĐỎ |
-| **FE242-P1-01** | P1 | **CLOSED (FE-controlled) / QA độc lập vẫn cần** | Bộ e2e ma trận UI · role · stale · partial · responsive · API-error, chạy trên đúng build, tự ghi metadata + screenshot + `truthBoundary`. | `e2e/wwhn-242-reversal-qa2.spec.ts` — 18/18 PASS; ảnh + JSON tại `test-results/wwhn-242/<SHA>/` |
-| **FE242-P1-02** | P1 | **CLOSED** | Runner chạy THẬT `lint` / `typecheck` / `test` / `build` / `verify:wwhn-242`, ghi exit code + log thô + ghim danh tính (SHA, sạch/bẩn, node/npm) + SHA256SUMS. Workflow CI chạy cùng bộ đó trên exact SHA. | `scripts/run-wwhn-242-evidence.mjs`, `.github/workflows/wwhn-242-fe-closure.yml`, `docs/evidence/WWHN-242/` |
-| **FE242-P1-03** | P1 | **CLOSED** | Phủ lookup → chọn → partial 2/20 → dependency guard → chi tiết → CONFIRMED → Post; ma trận 403/409/412/422/428 với khẳng định "không đổi trạng thái". | cùng file e2e + unit `src/modules/reverse/wwhn-242-reversal-contract.test.tsx` (6 test) |
-| **FE242-P1-04** | P1 | **CLOSED** | §2 của hồ sơ định đoạt liệt kê exact clause C1..C7 / R1..R5 kèm version + SHA-256 để reviewer đối chiếu, thay cho việc suy phạm vi từ comment trong code. | `WWHN-242_SCOPE_DISPOSITION.md` §2 |
-| **FE242-P2-01** | P2 | **CLOSED** | Chụp bằng chứng ở 390×844, 768×1024, 1366×768, 1440×900 cho REV-00 + chi tiết + lỗi + confirm, kèm assert không tràn ngang. | e2e `REQUIRED_VIEWPORTS`; gate chặn nếu thiếu bất kỳ khổ nào |
-| **FE242-P2-02** | P2 | **CLOSED** | Nguồn canonical là `m1`. Không tồn tại nhánh `m1ee`. Workflow ghi `CANONICAL_BRANCH=m1` + `EXACT_GIT_SHA` vào artifact bất biến. | `.github/workflows/wwhn-242-fe-closure.yml` |
+| **FE242-P0-01** | P0 | **CLOSED (phần kỹ thuật) / OPEN (phần Jira — chưa có action thật trên Jira)** | Kỹ thuật không đổi so với vòng 61/100 (đúng). Review 72/100 bắt đúng: Jira `WWHN-62`/`WWHN-242` **chưa được cập nhật thật** — mới chỉ có text soạn sẵn trong doc, chưa dán vào Jira. Đây là thao tác chỉ người có quyền Jira làm được. | `WWHN-242_SCOPE_DISPOSITION.md` §4 (text dán sẵn); cần BA Main/PM thực thi trên Jira + comment xác nhận (soạn sẵn ở cuối phiên làm việc này) |
+| **FE242-P1-01** | P1 | **OPEN — không đổi, đúng như review** | `WWHN-243` là Jira ticket riêng, FE không sở hữu, không có quyền attach/update. Phiên này đã chạy lại matrix và tạo bằng chứng thật (18/18 PASS, screenshot+JSON+trace) sẵn sàng để QA2 đính kèm — nhưng **việc đính kèm + independent run là việc thật của QA2**, FE không tự đóng thay được. | `e2e/wwhn-242-reversal-qa2.spec.ts` — 18/18 PASS chạy lại 19/08; `test-results/wwhn-242/<EXACT_SHA>/` (ảnh 4 khổ + JSON) sẵn sàng cho QA2 |
+| **FE242-P1-02** | P1 | **CLOSED (re-verified 19/08)** | Root cause là evidence CŨ bị chụp giữa lúc cây bẩn (dirty=66/76) kèm `--skip=typecheck,build` — không phải code hỏng. Đã chạy lại `npm run wwhn-242:evidence` KHÔNG `--skip` trên `m1` tại HEAD hiện hành: **5/5 gate PASS** (lint/typecheck/test/build/verify:wwhn-242). Xem §0. | `docs/evidence/WWHN-242/RUNTIME_IDENTITY_PIN.json` (5/5 PASS, exit=0 mọi cổng) + `logs/*.log` |
+| **FE242-P1-03** | P1 | **CLOSED (thực thi lại 19/08, không chỉ commit source)** | Đã **chạy** `npm run test:e2e:wwhn-242` với `SOURCE_SHA` ghim đúng HEAD (không phải "local-uncommitted"): 18/18 PASS, phủ lookup → chọn → partial 2/20 → dependency guard → chi tiết → CONFIRMED → Post; ma trận 403/409/412/422/428 với khẳng định "không đổi trạng thái". | `test-results/wwhn-242/<EXACT_SHA>/*.png` + `*.json` (32 file bằng chứng) — chạy thật, không phải liệt kê ý định |
+| **FE242-P1-04** | P1 | **CLOSED kỹ thuật / OPEN formal (đúng như review)** | Nội dung §2 (C1..C7/R1..R5 + SHA-256) không đổi, vẫn đúng — phần còn thiếu là **BA/PM ký formal trên Jira**, không phải sửa lại doc. | `WWHN-242_SCOPE_DISPOSITION.md` §2; cần comment xác nhận của BA Main + PM/PO (soạn sẵn cuối phiên này) |
+| **FE242-P2-01** | P2 | **CLOSED (có runtime screenshot PASS trên HEAD hiện hành, không chỉ code cover)** | Chạy lại thật, không chỉ dựa vào code đã cover: ảnh PASS tại 390×844, 768×1024, 1366×768, 1440×900 cho REV-00/REV-01/chi tiết/lỗi/confirm, gắn đúng `EXACT_SHA`. | `test-results/wwhn-242/<EXACT_SHA>/WWHN-242__rev00-list__*` và `__rev01-detail__*` — 4 khổ × các màn |
+| **FE242-P2-02** | P2 | **CLOSED — xác nhận lại, không đổi** | Nguồn canonical vẫn là `m1`. Không tồn tại nhánh `m1ee`; các chỗ nhắc `m1ee` trong repo đều là câu khẳng định "không dùng nguồn này", không phải usage thật (đã rà lại toàn repo 19/08). | `.github/workflows/wwhn-242-fe-closure.yml`; `grep -r m1ee` chỉ trúng câu phủ định |
 
 ---
 
@@ -96,37 +134,48 @@ suite vẫn xanh trong khi tương tác hỏng. Đã cho mock áp đúng props m
 
 ## 3. Kết quả đo được
 
+### Vòng 61/100 (18/08)
+
 | Cổng | Kết quả |
 | --- | --- |
-| FE unit (`npm run test`) | **74 file / 571 test PASS** (nền đầu phiên: 69/526) |
-| FE lint | **0 error** (25 warning có sẵn, không thuộc WWHN-242) |
-| FE e2e `test:e2e:wwhn-242` | **18/18 PASS** |
-| Gate `verify:wwhn-242` | **PASS** |
-| BE `Wwhn242ReversalScopeAndProjectionTest` | **7/7 PASS, 65 assertion** |
+| FE unit (`npm run test`) | 74 file / 571 test PASS (nền đầu phiên: 69/526) |
+| FE lint | 0 error (25 warning có sẵn, không thuộc WWHN-242) |
+| FE e2e `test:e2e:wwhn-242` | 18/18 PASS |
+| Gate `verify:wwhn-242` | PASS |
+| BE `Wwhn242ReversalScopeAndProjectionTest` | 7/7 PASS, 65 assertion |
 
-### Cổng đang ĐỎ nhưng KHÔNG thuộc WWHN-242
+### Vòng 72/100 → chạy lại 19/08 (HEAD `f9f2e65e687669f033d259a693635546876f05a8`)
 
-Ghi nguyên trạng thay vì làm tròn thành xanh. Nhánh `m1` đang có **nhiều phiên làm song song**;
-hai cổng chung dưới đây đỏ vì cây làm việc dở của các task khác, **không có file nào thuộc phạm
-vi hoàn đảo**:
+| Cổng | Kết quả |
+| --- | --- |
+| FE lint | **PASS**, exit 0 (0 error / 25 warning nền, không đổi) |
+| FE typecheck | **PASS**, exit 0 |
+| FE unit (`npm run test`) | **PASS** — 90 file / 701 test |
+| FE build | **PASS**, exit 0 |
+| Gate `verify:wwhn-242` | **PASS**, exit 0 (không cần `--repin`, xem §0) |
+| FE e2e `test:e2e:wwhn-242` (`SOURCE_SHA` ghim HEAD) | **18/18 PASS**, evidence tại `test-results/wwhn-242/f9f2e65.../` |
+| BE `Wwhn242ReversalScopeAndProjectionTest` | **7/7 PASS, 65 assertion** (chạy lại, không đổi so với 18/08) |
+
+Nguồn: `docs/evidence/WWHN-242/RUNTIME_IDENTITY_PIN.json` (regenerate 19/08, `summary.passed=5,
+failed=0, skipped=0`).
+
+### Cổng đang ĐỎ nhưng KHÔNG thuộc WWHN-242 (rà lại 19/08)
+
+Nhánh `m1` vẫn có **nhiều phiên làm song song**; các cổng dưới đây đỏ vì việc của task khác,
+**không có file nào thuộc phạm vi hoàn đảo** (`src/modules/reverse/**`,
+`src/app/router/access.ts`, `src/test/setup.ts`, `e2e/wwhn-242-*`, `scripts/*wwhn-242*`):
 
 | Cổng | Đỏ ở đâu | Thuộc task nào |
 | --- | --- | --- |
-| `npm run typecheck` | `src/modules/warranty/services/warrantyService.ts` (`resolveWarrantyPii` chưa tồn tại, import thừa), `src/modules/warranty/pages/WarrantyPage.test.tsx` (thiếu `pii_masked`) | luồng bảo hành, phiên khác |
-| `npm run lint` | 9 error ở `src/modules/pv/pages/PvCatalogPage.tsx`, `PvProductDetailPage.tsx`, `src/test/wwhn-247-warranty-closure.test.ts` (`react-hooks`, `no-useless-escape`, `react-refresh`) | WWHN-247/252, phiên khác |
-| `npm run format:check` | 13 file thuộc `modules/pv/**`, `modules/master-data/**`, `modules/inventory/**`, `modules/reports/**`, `shared/api/public-http.ts`, `test/wwhn-236\|237\|260` | WWHN-236/237/240/252/260/331, phiên khác |
+| `npm run format:check` | `src/test/wwhn-202-balance-contract-pin.test.ts` (Prettier drift) | WWHN-202, phiên khác |
+| `npm run check:api-mapping` | `swagger-api.json` không khớp `docs/api-evidence/BE_CONTRACT_PIN.json` (pin trỏ BE `8326d505e5c7`, BE hiện đã tiến xa hơn do các task khác) | contract sync xuyên task, không phải reversal |
 
-Ghi chú vận hành cổng `verify:wwhn-242`: trong phiên này baseline bị các task khác sửa **hai
-lần** (`ERD-AMD-007` của WWHN-260 trên ERD; mục "WWHN-236 closure" thêm vào Techstack Dev Guide).
-Cổng đã **bắt đúng cả hai lần** rồi được repin bằng `npm run verify:wwhn-242 -- --repin` sau khi
-đọc diff và xác nhận thay đổi không đụng clause hoàn đảo. Trong CI, cổng chạy **không kèm**
-`--repin` nên baseline trôi vẫn là ĐỎ.
-
-`npm run build` sẽ đỏ theo `typecheck` cho tới khi phiên bảo hành hoàn tất. **Không** file nào
-trong `src/modules/reverse/**`, `src/app/router/access.ts`, `src/test/setup.ts`,
-`e2e/wwhn-242-*`, `scripts/*wwhn-242*` bị liệt kê ở hai cổng trên — đã kiểm bằng
-`npx eslint src/modules/reverse src/app/router/access.ts src/test/setup.ts` (0 vấn đề) và
-`npx prettier --check` trên đúng tập file của task (unchanged).
+So với vòng 18/08: `npm run typecheck` và `npm run lint` (khi đó đỏ vì `src/modules/warranty/**`
+và `src/modules/pv/**` của các phiên khác) **nay đã PASS** — các task đó đã đóng xong ở các
+phiên sau. `npm run build` cũng PASS theo. Hai cổng còn đỏ ở trên **không nằm trong 5 cổng bắt
+buộc** của `FE242-P1-02` (`lint`/`typecheck`/`test`/`build`/`verify:wwhn-242`) nên không chặn
+closure của register này; ghi lại đúng nguyên trạng thay vì làm tròn thành xanh hoặc tự ý sửa
+hộ task khác.
 
 ---
 

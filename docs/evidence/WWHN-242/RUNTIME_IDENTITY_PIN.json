@@ -1,24 +1,24 @@
 {
   "ticket": "WWHN-242",
   "screen": "REV-00 / REV-01",
-  "generatedAt": "2026-08-18T15:59:00.514Z",
+  "generatedAt": "2026-08-19T03:36:52.445Z",
   "frontend": {
     "available": true,
     "label": "frontend",
     "path": "C:\\LAM_PHONG_TECH\\HoaNam_FE\\WMS_Warehouse_Hoa_Nam_FE",
     "branch": "m1",
-    "sha": "48f7ff096ee6c570ff3a27c93f1d47b4e3b8595e",
+    "sha": "f9f2e65e687669f033d259a693635546876f05a8",
     "workingTreeClean": false,
-    "dirtyFileCount": 66
+    "dirtyFileCount": 2
   },
   "backend": {
     "available": true,
     "label": "backend",
     "path": "C:\\LAM_PHONG_TECH\\HoaNam_BE\\WMS_Warehouse_Hoa_Nam_BE",
     "branch": "m1",
-    "sha": "696868ce44ccccca51884c3c1ac7e9f41fd405b8",
+    "sha": "e02903f1fc6b7635c2deac84a0284f49ddfb0fdd",
     "workingTreeClean": false,
-    "dirtyFileCount": 76
+    "dirtyFileCount": 18
   },
   "node": "v22.17.1",
   "npm": "10.9.2",
@@ -27,46 +27,54 @@
     {
       "gate": "lint",
       "command": "npm run lint",
-      "exitCode": 1,
-      "status": "FAIL",
-      "durationMs": 41376,
-      "startedAt": "2026-08-18T15:57:04.143Z",
+      "exitCode": 0,
+      "status": "PASS",
+      "durationMs": 105065,
+      "startedAt": "2026-08-19T03:31:32.115Z",
       "logFile": "logs/lint.log"
     },
     {
       "gate": "typecheck",
-      "status": "SKIPPED",
-      "reason": "requested via --skip"
+      "command": "npm run typecheck",
+      "exitCode": 0,
+      "status": "PASS",
+      "durationMs": 67165,
+      "startedAt": "2026-08-19T03:33:17.182Z",
+      "logFile": "logs/typecheck.log"
     },
     {
       "gate": "test",
       "command": "npm run test",
       "exitCode": 0,
       "status": "PASS",
-      "durationMs": 73287,
-      "startedAt": "2026-08-18T15:57:45.522Z",
+      "durationMs": 91222,
+      "startedAt": "2026-08-19T03:34:24.348Z",
       "logFile": "logs/test.log"
     },
     {
       "gate": "build",
-      "status": "SKIPPED",
-      "reason": "requested via --skip"
+      "command": "npm run build",
+      "exitCode": 0,
+      "status": "PASS",
+      "durationMs": 56229,
+      "startedAt": "2026-08-19T03:35:55.573Z",
+      "logFile": "logs/build.log"
     },
     {
       "gate": "verify:wwhn-242",
       "command": "npm run verify:wwhn-242",
-      "exitCode": 1,
-      "status": "FAIL",
-      "durationMs": 1702,
-      "startedAt": "2026-08-18T15:58:58.811Z",
+      "exitCode": 0,
+      "status": "PASS",
+      "durationMs": 640,
+      "startedAt": "2026-08-19T03:36:51.804Z",
       "logFile": "logs/verify-wwhn-242.log"
     }
   ],
   "summary": {
     "total": 5,
-    "passed": 1,
-    "failed": 2,
-    "skipped": 2
+    "passed": 5,
+    "failed": 0,
+    "skipped": 0
   },
   "truthBoundary": "Exit codes observed on this machine at generatedAt. Nếu workingTreeClean=false thì SHA KHÔNG mô tả đúng cây đã chạy; phải commit rồi chạy lại trước khi dùng làm exact-SHA evidence."
 }
