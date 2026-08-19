@@ -327,6 +327,11 @@ for (const needle of [
   "evidenceValidity",
   "INVALID_FOR_CLOSURE",
   "gate-results.json",
+  // Nếu để Playwright tự bật dev server, `reuseExistingServer` sẽ bám vào bất kỳ
+  // server nào đang giữ cổng — kể cả của một cây làm việc khác — và manifest sẽ ghi
+  // kết quả của ứng dụng KHÔNG thuộc SHA này.
+  "E2E_BASE_URL",
+  "e2eTargetBaseUrl",
 ]) {
   requireText(exactShaRunner, needle, `exact-SHA runner contract ${needle}`);
 }

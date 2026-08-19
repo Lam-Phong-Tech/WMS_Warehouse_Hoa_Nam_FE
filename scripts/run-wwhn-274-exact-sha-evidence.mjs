@@ -17,7 +17,7 @@
  * Manifest nay la bang chung LOCAL tai exact SHA. No khong thay the run cua GitHub Actions
  * tren cung SHA; ca hai deu phai tro ve cung mot commit thi moi duoc coi la khop.
  */
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -26,6 +26,77 @@ const allowDirty = args.includes("--allow-dirty");
 const withRealEnv = args.includes("--with-real-env");
 const onlyArg = args.find((value) => value.startsWith("--only="));
 const only = onlyArg ? onlyArg.slice("--only=".length).split(",") : null;
+
+// Bang chung phai do dung build cua SHA dang xet. Neu de Playwright tu bat
+// `npm run dev`, `reuseExistingServer` se bam vao BAT KY dev server nao dang giu
+// cong 5173 — ke ca server cua mot cay lam viec khac — va manifest se ghi PASS/FAIL
+// cua mot ung dung khong phai SHA nay. Vi vay runner tu dung `vite preview` tren
+// dist vua build va ep E2E_BASE_URL tro vao do.
+const previewPort = Number(process.env.WWHN_274_PREVIEW_PORT ?? 4271);
+const previewHost = "127.0.0.1";
+let previewProcess = null;
+let e2eTargetBaseUrl = process.env.E2E_BASE_URL ?? "";
+
+async function waitForHttp(url, timeoutMs = 90_000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    try {
+      const response = await fetch(url);
+      if (response.ok) return true;
+    } catch {
+      // server chua san sang
+    }
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+  return false;
+}
+
+async function ensurePreviewServer() {
+  if (e2eTargetBaseUrl) return true;
+  if (!existsSync(join("dist", "index.html"))) {
+    console.error(
+      "[WWHN-274] khong tim thay dist/index.html — gate build phai chay truoc cac gate E2E.",
+    );
+    return false;
+  }
+  const url = `http://${previewHost}:${previewPort}`;
+  previewProcess = spawn(
+    "npx",
+    [
+      "vite",
+      "preview",
+      "--port",
+      String(previewPort),
+      "--strictPort",
+      "--host",
+      previewHost,
+    ],
+    { shell: true, stdio: "ignore" },
+  );
+  const up = await waitForHttp(`${url}/`);
+  if (!up) {
+    console.error(`[WWHN-274] preview server khong len duoc tai ${url}.`);
+    previewProcess.kill();
+    previewProcess = null;
+    return false;
+  }
+  e2eTargetBaseUrl = url;
+  process.env.E2E_BASE_URL = url;
+  process.stdout.write(`[WWHN-274] E2E chay tren build cua SHA nay: ${url}\n`);
+  return true;
+}
+
+function stopPreviewServer() {
+  if (!previewProcess) return;
+  if (process.platform === "win32") {
+    spawnSync("taskkill", ["/pid", String(previewProcess.pid), "/T", "/F"], {
+      stdio: "ignore",
+    });
+  } else {
+    previewProcess.kill("SIGTERM");
+  }
+  previewProcess = null;
+}
 
 function git(...gitArgs) {
   const result = spawnSync("git", gitArgs, { encoding: "utf8" });
@@ -46,7 +117,10 @@ if (!sourceSha) {
   process.exit(1);
 }
 
-const evidenceDir = join("docs", "evidence", "WWHN-274", sourceSha);
+// Cung goc voi evidence cua cac spec E2E (docs/evidence/WWHN-274/generated/<sha>/...)
+// de artifact cua workflow chi can upload MOT duong dan va manifest nam cung cho voi
+// screenshot/metadata cua chinh SHA do.
+const evidenceDir = join("docs", "evidence", "WWHN-274", "generated", sourceSha);
 mkdirSync(evidenceDir, { recursive: true });
 
 /** Chuoi gate phai giu dung thu tu cua workflow de manifest so sanh duoc 1-1. */
@@ -82,6 +156,25 @@ const results = [];
 let failed = 0;
 
 for (const gate of selected) {
+  // Gate E2E dau tien phai chay tren build cua chinh SHA nay, khong phai tren dev
+  // server nao dang tinh co mo san.
+  if (gate.id.startsWith("e2e") && gate.id !== "e2e-real-env") {
+    const ready = await ensurePreviewServer();
+    if (!ready) {
+      results.push({
+        id: gate.id,
+        command: gate.command,
+        result: "FAIL",
+        exitCode: null,
+        durationMs: 0,
+        reason:
+          "Khong dung duoc preview server cho build cua SHA nay (xem log build).",
+      });
+      failed += 1;
+      continue;
+    }
+  }
+
   const missingEnv = (gate.requiresEnv ?? []).filter((key) => !process.env[key]);
   if (missingEnv.length > 0) {
     console.error(
@@ -130,6 +223,8 @@ for (const gate of selected) {
   });
 }
 
+stopPreviewServer();
+
 const allPass = failed === 0;
 const evidenceValidity =
   treeState === "clean" && allPass
@@ -153,6 +248,9 @@ const manifest = {
   dirtyEntries: porcelain === "" ? [] : porcelain.split(/\r?\n/u),
   runner: "scripts/run-wwhn-274-exact-sha-evidence.mjs",
   runnerMode: withRealEnv ? "gates+real-env" : "gates",
+  // Ghi ro E2E do vao dau: neu day khong phai build cua chinh sourceSha thi manifest
+  // khong con la bang chung cua SHA nay.
+  e2eTargetBaseUrl: e2eTargetBaseUrl || null,
   generatedAt: new Date().toISOString(),
   nodeVersion: process.version,
   platform: `${process.platform}-${process.arch}`,
