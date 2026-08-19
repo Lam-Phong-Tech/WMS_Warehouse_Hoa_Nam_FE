@@ -259,22 +259,41 @@ export function AlignedOutboundDetailModal({
     onChanged?.();
   };
 
+  /**
+   * WWHN-195 / DEV195-P1-01R2 — chế độ quét khai tường minh.
+   *
+   * Chỉ FE mới biết mã đến từ camera hay bàn phím; server có code_value thì luôn
+   * suy ra HARDWARE nên camera bị ghi sai vào audit. Nay FE gửi `scan_source`
+   * theo đúng CHECK của ERD bảng 25 (CAMERA/MANUAL/HARDWARE).
+   *
+   * Mode là thuộc tính của TỪNG lần quét, không khoá theo phiếu: đổi qua lại giữa
+   * camera và nhập tay trong cùng phiếu là hợp lệ và cần thiết
+   * (AC-SRS-005 + NFR-SRS-021: camera denied/unsupported phải rơi về nhập tay).
+   */
   const scanMutation = useMutation({
-    mutationFn: async (rawCode: string) => {
-      const codeValue = rawCode.trim();
+    mutationFn: async (input: {
+      rawCode: string;
+      scanSource: "CAMERA" | "MANUAL";
+    }) => {
+      const codeValue = input.rawCode.trim();
       if (!detail || !lineId || !codeValue)
         throw new Error("Chọn dòng và nhập/quét mã item.");
       return scanOutboundItem({
         documentId,
         lineId,
         codeValue,
+        scanSource: input.scanSource,
         ifMatch: version ?? detail.document.version,
       });
     },
     onSuccess: async (result) => {
       setVersion(result.version || null);
       setScanCode("");
-      toast.success("Đã match item. Scan không tạo nhãn và không trừ tồn.");
+      toast.success(
+        result.scanSource === "CAMERA"
+          ? "Đã match item (camera). Scan không tạo nhãn và không trừ tồn."
+          : "Đã match item (nhập tay). Scan không tạo nhãn và không trừ tồn.",
+      );
       await refresh();
     },
     onError: (error) => {
@@ -734,7 +753,12 @@ export function AlignedOutboundDetailModal({
                   value={scanCode}
                   placeholder="Quét Barcode / QR item"
                   onChange={(event) => setScanCode(event.target.value)}
-                  onPressEnter={() => scanMutation.mutate(scanCode)}
+                  onPressEnter={() =>
+                    scanMutation.mutate({
+                      rawCode: scanCode,
+                      scanSource: "MANUAL",
+                    })
+                  }
                 />
                 <Button
                   icon={<CameraOutlined />}
@@ -748,7 +772,12 @@ export function AlignedOutboundDetailModal({
                   icon={<ScanOutlined />}
                   loading={scanMutation.isPending}
                   disabled={!lineId || !scanCode.trim()}
-                  onClick={() => scanMutation.mutate(scanCode)}
+                  onClick={() =>
+                    scanMutation.mutate({
+                      rawCode: scanCode,
+                      scanSource: "MANUAL",
+                    })
+                  }
                 >
                   Match item
                 </Button>
@@ -1084,7 +1113,7 @@ export function AlignedOutboundDetailModal({
         onDetected={(code) => {
           setCameraOpen(false);
           setScanCode(code);
-          scanMutation.mutate(code);
+          scanMutation.mutate({ rawCode: code, scanSource: "CAMERA" });
         }}
       />
 

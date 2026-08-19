@@ -13,7 +13,6 @@ import {
   reprintLabelSnapshot,
   scanOutboundItem,
   unmatchOutboundItem,
-  updateOutboundDocument,
   type IssueEvidence,
   type OutboundDetail,
   type OutboundDocumentRecord,
@@ -38,7 +37,6 @@ export {
   reprintLabelSnapshot,
   scanOutboundItem,
   unmatchOutboundItem,
-  updateOutboundDocument,
 };
 
 export type {

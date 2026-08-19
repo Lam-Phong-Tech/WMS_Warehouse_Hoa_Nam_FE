@@ -91,30 +91,19 @@ export interface OutboundLinePayload {
   note?: string | null;
 }
 
-/**
- * BP-WMS-04/05: phiếu xuất luôn sinh từ toa đã consume — BE bắt buộc
- * outbound_request_id và từ chối lines thủ công (lines hydrate từ toa).
- */
-export interface CreateOutboundPayload {
-  doc_no?: string | null;
-  doc_date?: string | null;
-  src_warehouse_id: string;
-  outbound_request_id: string;
-  agency_id?: string | null;
-  recipient_name?: string | null;
-  recipient_address?: string | null;
-  note?: string | null;
-}
-
-export interface UpdateOutboundPayload {
-  doc_no?: string | null;
-  doc_date?: string | null;
-  agency_id?: string | null;
-  recipient_name?: string | null;
-  recipient_address?: string | null;
-  note?: string | null;
-  lines?: OutboundLinePayload[];
-}
+// WWHN-195 / DEV195-P1-05R2 — đã gỡ hai cặp payload+hàm gọi endpoint không tồn tại:
+//
+//   - `CreateOutboundPayload` + `createOutboundDocument()` → POST /outbound-documents
+//   - `UpdateOutboundPayload` + `updateOutboundDocument()` → PATCH /outbound-documents/{id}
+//
+// SRS v1.12 §8.1/Annex C: "Confirm creates exactly one outbound DRAFT; no direct
+// POST /outbound-documents create operation" — BE không đăng ký hai route này nên
+// mọi lần gọi chỉ trả 404. Giữ lại trong service chỉ tạo ảo giác rằng FE còn một
+// đường tạo/sửa phiếu trực tiếp.
+//
+// Đường đúng: OutboundIntakeModal → POST /outbound-request-imports (hoặc
+// /manual) → POST /outbound-request-imports/{id}/confirm, Confirm sinh đúng 01
+// outbound DRAFT và chốt luôn recipient/địa chỉ/SĐT (REQ-SRS-014).
 
 export interface OutboundScanResult {
   codeValue: string;
@@ -128,6 +117,10 @@ export interface OutboundScanResult {
   labelSnapshotId?: string | null;
   labelStatus?: string | null;
   printError?: string | null;
+  /** Mode server đã ghi vào scan evidence (ERD bảng 25). */
+  scanSource?: "CAMERA" | "MANUAL" | "HARDWARE" | null;
+  /** EXPLICIT khi FE khai; INFERRED khi server tự suy luận. */
+  scanSourceOrigin?: "EXPLICIT" | "INFERRED" | null;
 }
 
 export interface IssueEvidence {
@@ -389,8 +382,7 @@ function normalizeDetail(row: RawRecord): OutboundDetail {
   ).map(normalizeMovement);
   const statusHistory = rowsOf(
     (row.status_history ?? row.statusHistory ?? []) as
-      | RawRecord[]
-      | { data?: RawRecord[] },
+      RawRecord[] | { data?: RawRecord[] },
   ).map(normalizeStatusHistory);
   const itemMatches = rowsOf(
     (row.item_matches ?? []) as RawRecord[] | { data?: RawRecord[] },
@@ -471,27 +463,9 @@ export async function fetchOutboundDetail(id: string): Promise<OutboundDetail> {
   );
 }
 
-export async function createOutboundDocument(
-  payload: CreateOutboundPayload,
-): Promise<OutboundDetail> {
-  return normalizeDetail(
-    await http.post<RawRecord>(API_ENDPOINTS.OUTBOUND_DOCUMENTS, payload),
-  );
-}
+// `createOutboundDocument()` đã gỡ — xem ghi chú ở chỗ khai báo payload phía trên.
 
-export async function updateOutboundDocument(
-  id: string,
-  payload: UpdateOutboundPayload,
-  ifMatch: number,
-): Promise<OutboundDetail> {
-  return normalizeDetail(
-    await http.patch<RawRecord>(
-      endpoint(API_ENDPOINTS.OUTBOUND_DOCUMENT, id),
-      payload,
-      headers(ifMatch),
-    ),
-  );
-}
+// `updateOutboundDocument()` đã gỡ — xem ghi chú ở chỗ UpdateOutboundPayload.
 
 export async function cancelOutboundDocument(
   id: string,
@@ -507,11 +481,23 @@ export async function cancelOutboundDocument(
   );
 }
 
+/**
+ * WWHN-195 / DEV195-P1-01R2 — chế độ quét khai tường minh.
+ *
+ * Trước đây FE gửi đúng `code_value` cho cả hai đường (camera decode và gõ tay),
+ * nên server chỉ suy luận được "có mã / không mã" và ghi mọi lần camera thành
+ * HARDWARE. ERD bảng 25 `scan_events.scan_source` có sẵn CHECK
+ * CAMERA/MANUAL/HARDWARE; chỉ FE mới biết mã đến từ camera hay bàn phím, nên FE
+ * phải khai. Không khai thì server vẫn nhận và đánh dấu INFERRED.
+ */
+export type OutboundScanSource = "CAMERA" | "MANUAL" | "HARDWARE";
+
 export async function scanOutboundItem(input: {
   documentId: string;
   lineId: string;
   codeValue: string;
   ifMatch: number;
+  scanSource?: OutboundScanSource;
   printerConfigId?: string;
 }): Promise<OutboundScanResult> {
   const row = await http.post<RawRecord>(
@@ -520,6 +506,7 @@ export async function scanOutboundItem(input: {
       line_id: input.lineId,
       quantity: 1,
       code_value: input.codeValue,
+      ...(input.scanSource ? { scan_source: input.scanSource } : {}),
       ...(input.printerConfigId
         ? { printer_config_id: input.printerConfigId }
         : {}),
@@ -538,6 +525,9 @@ export async function scanOutboundItem(input: {
     labelSnapshotId: text(row.label_snapshot_id) || null,
     labelStatus: text(row.label_status) || null,
     printError: text(row.print_error) || null,
+    scanSource: (text(row.scan_source) || null) as OutboundScanSource | null,
+    scanSourceOrigin: (text(row.scan_source_origin) || null) as
+      "EXPLICIT" | "INFERRED" | null,
   };
 }
 
@@ -614,15 +604,13 @@ function normalizeImport(payload: RawRecord): OutboundImportResult {
   const importRow = (payload.import ?? {}) as RawRecord;
   const rows = rowsOf(
     (payload.rows ?? []) as RawRecord[] | { data?: RawRecord[] },
-  ).map(
-    (row): OutboundImportRow => ({
-      id: text(row.id),
-      rowNo: num(row.row_no),
-      status: text(row.validation_status),
-      normalized: parseJsonObject(row.normalized_payload),
-      errors: parseJsonArray(row.validation_errors ?? row.errors),
-    }),
-  );
+  ).map((row): OutboundImportRow => ({
+    id: text(row.id),
+    rowNo: num(row.row_no),
+    status: text(row.validation_status),
+    normalized: parseJsonObject(row.normalized_payload),
+    errors: parseJsonArray(row.validation_errors ?? row.errors),
+  }));
   return {
     id: text(importRow.id),
     importNo: text(importRow.import_no),
