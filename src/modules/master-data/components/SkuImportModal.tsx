@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Alert,
   Button,
@@ -38,6 +38,7 @@ import {
   type SkuImportResult,
   type SkuImportRowError,
 } from "@/modules/master-data/services/sku-import.service";
+import { sha256OfFile } from "@/shared/utils/file-digest";
 
 interface SkuImportModalProps {
   open: boolean;
@@ -163,15 +164,64 @@ function acceptAttribute(constraints: SkuImportConstraints | null): string {
  * Vân tay gắn vào kết quả preview giải quyết cả hai chiều, và cũng chặn được ca đua:
  * người dùng gạt công tắc trong lúc dry-run đang chạy, response cũ về sau đó thì kết quả
  * đó thuộc payload cũ, không được phép mở khoá nút Import cho payload mới.
+ *
+ * ── FE331-P1-07R4: vân tay phải lấy từ NỘI DUNG, không lấy từ metadata ──────────────
+ *
+ * Bản R3 dựng vân tay từ `name` + `size` + `lastModified`. Bộ ba đó KHÔNG định danh nội
+ * dung, nên chính lỗ hổng vừa vá vẫn còn nguyên qua hai đường vào khác:
+ *
+ * - **Hai file khác nhau nhưng trùng cả ba.** Dry-run `sku.xlsx` ở thư mục A rồi chọn
+ *   `sku.xlsx` ở thư mục B (bản tải lại, bản đồng nghiệp gửi): trùng tên là chuyện
+ *   thường, hai workbook cùng template thường trùng `size`, còn `lastModified` trùng khi
+ *   file được sao chép giữ mốc thời gian / giải nén từ zip / đồng bộ qua ổ mạng. Nút
+ *   Import mở khoá cho một file CHƯA HỀ được kiểm tra thử.
+ * - **Cùng một file, nội dung đã đổi.** Dry-run thấy lỗi → mở Excel sửa → **ghi đè lên
+ *   chính file đó** → bấm Import mà không dry-run lại. `size` có thể không đổi khi chỉ
+ *   sửa vài ô, và `lastModified` mà trình duyệt đã chụp lúc chọn file thì không tự cập
+ *   nhật. Kiểm tra thử một nội dung, commit một nội dung khác.
+ *
+ * Nay vân tay là SHA-256 của chính các byte, và nó còn được đối chiếu hai chiều:
+ *
+ * 1. Với `file_sha256` máy chủ trả về — xác nhận thứ máy chủ đã đọc đúng là thứ người
+ *    dùng đã chọn, thay vì tin rằng đường truyền không làm gì với nó.
+ * 2. Với chính file đó **ngay trước khi commit** — bắt được ca "sửa file rồi bấm Import".
  */
-function payloadSignature(file: File | null, updateExisting: boolean): string {
-  if (!file) return "";
+function payloadSignature(
+  fileSha256: string | null,
+  updateExisting: boolean,
+): string {
+  if (!fileSha256) return "";
   return [
-    file.name,
-    file.size,
-    file.lastModified,
+    fileSha256,
     updateExisting ? "update_existing=1" : "update_existing=0",
   ].join("|");
+}
+
+/**
+ * WWHN-331 FE331-P1-07R4 — lỗi file đã đổi nội dung giữa kiểm tra thử và Import.
+ *
+ * Không phải lỗi máy chủ nên không đi qua `getApiErrorMessage`; và cũng không được
+ * gộp vào một toast "Import thất bại" chung chung, vì việc người dùng cần làm rất cụ
+ * thể: chạy lại Kiểm tra trước cho nội dung mới.
+ */
+/**
+ * Payload của một lần gửi. `generation` đi kèm để callback biết mình có còn thuộc về
+ * thao tác hiện tại của người dùng không — xem `payloadGeneration`.
+ */
+interface PreviewPayload {
+  file: File;
+  fileSha256: string;
+  updateExisting: boolean;
+  generation: number;
+}
+
+class SkuImportFileChangedError extends Error {
+  constructor() {
+    super(
+      "Nội dung file đã thay đổi sau lần kiểm tra thử (file bị sửa/ghi đè trên đĩa). Không gửi đi để tránh import một nội dung chưa được kiểm tra — hãy chạy lại Kiểm tra trước (dry-run).",
+    );
+    this.name = "SkuImportFileChangedError";
+  }
 }
 
 /**
@@ -347,14 +397,34 @@ export function SkuImportModal({
   const [commitResult, setCommitResult] = useState<SkuImportResult | null>(
     null,
   );
+  /** Vân tay NỘI DUNG của file đang chọn — xem payloadSignature(). */
+  const [fileSha256, setFileSha256] = useState<string | null>(null);
+  const [digestPending, setDigestPending] = useState(false);
+  const [digestError, setDigestError] = useState<string | null>(null);
+
+  /**
+   * FE331-P1-07R4 — số thế hệ của payload. Tăng mỗi lần người dùng đổi file, đổi tùy
+   * chọn, hoặc làm lại.
+   *
+   * Vì sao cần thêm nó dù đã có vân tay nội dung: hai lần kiểm tra thử có thể cùng đang
+   * bay. Người dùng dry-run với `update_existing=false`, gạt công tắc, dry-run lại. Nếu
+   * response của lần MỚI về trước rồi response của lần CŨ về sau, mà cả hai đều được
+   * quyền ghi vào state, thì màn hình hiển thị số liệu của lần cũ trong khi trạng thái
+   * nút lại nói "lựa chọn đã đổi" — người dùng đọc một bảng số không thuộc về thao tác
+   * nào họ vừa làm. Số thế hệ khiến response của một payload đã bị bỏ qua bị **loại
+   * hẳn**, thay vì được ghi vào rồi mới bị vô hiệu hoá bằng phép so vân tay.
+   */
+  const payloadGeneration = useRef(0);
 
   /**
    * Đổi file hoặc đổi tùy chọn → kết quả cũ hết hiệu lực ngay: xoá số liệu để màn hình
-   * không còn con số thuộc payload khác. Vân tay của lần kiểm tra thử gần nhất được GIỮ
-   * lại (không xoá) để UI phân biệt được "chưa từng kiểm tra thử" với "đã kiểm tra thử
-   * nhưng lựa chọn vừa thay đổi" — hai trạng thái cần hai câu hướng dẫn khác nhau.
+   * không còn con số thuộc payload khác, và mọi response đang bay của thế hệ trước bị
+   * loại. Vân tay của lần kiểm tra thử gần nhất được GIỮ lại (không xoá) để UI phân biệt
+   * được "chưa từng kiểm tra thử" với "đã kiểm tra thử nhưng lựa chọn vừa thay đổi" —
+   * hai trạng thái cần hai câu hướng dẫn khác nhau.
    */
   const invalidatePreview = () => {
+    payloadGeneration.current += 1;
     setPreviewResult(null);
     setCommitResult(null);
   };
@@ -371,27 +441,99 @@ export function SkuImportModal({
     resetResults();
   };
 
+  /**
+   * Tính vân tay nội dung ngay khi chọn file. Chạy bất đồng bộ nên phải tự dọn: cờ
+   * `cancelled` bảo đảm kết quả băm của một file đã bị thay thế không bao giờ được ghi
+   * đè lên vân tay của file hiện tại.
+   *
+   * Không đọc được file là một trạng thái phải NÓI RA chứ không được nuốt: trình duyệt
+   * từ chối đọc chính vì file đã bị sửa/xoá trên đĩa sau khi chọn — đúng kịch bản mà vân
+   * tay này sinh ra để bắt. Nuốt lỗi rồi để nút Import sáng lên là quay lại đúng lỗi cũ.
+   */
+  useEffect(() => {
+    if (!file) {
+      setFileSha256(null);
+      setDigestPending(false);
+      setDigestError(null);
+      return;
+    }
+
+    let cancelled = false;
+    setFileSha256(null);
+    setDigestError(null);
+    setDigestPending(true);
+
+    sha256OfFile(file)
+      .then((sha256) => {
+        if (cancelled) return;
+        setFileSha256(sha256);
+        setDigestPending(false);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setDigestError(
+          "Không đọc được nội dung file (file có thể đã bị di chuyển, đổi tên hoặc sửa sau khi chọn). Hãy chọn lại file.",
+        );
+        setDigestPending(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [file]);
+
   const close = () => {
     if (previewMutation.isPending || commitMutation.isPending) return;
     resetAll();
     onClose();
   };
 
+  /** Payload của thế hệ trước = người dùng đã đổi file/tùy chọn từ lúc request được gửi. */
+  const isStaleGeneration = (payload: PreviewPayload): boolean =>
+    payload.generation !== payloadGeneration.current;
+
+  /** Bộ (file, nội dung file, tùy chọn, thế hệ) tại đúng thời điểm bấm nút. */
+  const currentPayload = (): PreviewPayload | null =>
+    file && fileSha256
+      ? {
+          file,
+          fileSha256,
+          updateExisting,
+          generation: payloadGeneration.current,
+        }
+      : null;
+
   // Payload được truyền vào mutation thay vì đọc lại từ state trong callback: kết quả
   // trả về luôn gắn đúng bộ (file, update_existing) đã gửi đi, kể cả khi người dùng đổi
   // lựa chọn trong lúc request còn đang chạy.
   const previewMutation = useMutation({
-    mutationFn: async (payload: { file: File; updateExisting: boolean }) => {
+    mutationFn: async (payload: PreviewPayload) => {
       const result = await importSkuExcel(payload.file, {
         updateExisting: payload.updateExisting,
         dryRun: true,
       });
       return {
         result,
-        signature: payloadSignature(payload.file, payload.updateExisting),
+        signature: payloadSignature(payload.fileSha256, payload.updateExisting),
       };
     },
-    onSuccess: ({ result, signature }) => {
+    onSuccess: ({ result, signature }, payload) => {
+      if (isStaleGeneration(payload)) return;
+
+      // FE331-P1-07R4: máy chủ trả lại sha256 của chính file nó đã đọc. Lệch nghĩa là
+      // thứ được kiểm tra thử KHÔNG phải thứ người dùng đang cầm (đường truyền cắt cụt,
+      // proxy biến đổi nội dung, hoặc file đã đổi ngay giữa lúc gửi). Mở khoá nút Import
+      // trong hoàn cảnh đó là commit một nội dung không ai từng kiểm tra.
+      if (result.fileSha256 && result.fileSha256 !== payload.fileSha256) {
+        setCommitResult(null);
+        setPreviewResult(null);
+        setPreviewSignature("");
+        toast.error(
+          "Nội dung file máy chủ nhận được không khớp với file trên máy bạn. Không mở khoá Import — hãy chọn lại file và kiểm tra thử lại.",
+        );
+        return;
+      }
+
       setCommitResult(null);
       setPreviewResult(result);
       setPreviewSignature(signature);
@@ -406,6 +548,8 @@ export function SkuImportModal({
       }
     },
     onError: (error, payload) => {
+      if (isStaleGeneration(payload)) return;
+
       setCommitResult(null);
       // Dry-run không lấy khoá nên về nguyên tắc không gặp 409; xử lý ở đây để nếu hợp
       // đồng đổi thì UI vẫn nói đúng bản chất thay vì vẽ một bảng lỗi trống.
@@ -423,7 +567,7 @@ export function SkuImportModal({
       if (error instanceof SkuImportRejectedError) {
         setPreviewResult(error.result);
         setPreviewSignature(
-          payloadSignature(payload.file, payload.updateExisting),
+          payloadSignature(payload.fileSha256, payload.updateExisting),
         );
         toast.warning(error.message);
         return;
@@ -435,7 +579,20 @@ export function SkuImportModal({
   });
 
   const commitMutation = useMutation({
-    mutationFn: async (payload: { file: File; updateExisting: boolean }) => {
+    mutationFn: async (payload: PreviewPayload) => {
+      // FE331-P1-07R4 — băm lại NGAY TRƯỚC KHI GỬI.
+      //
+      // Khoảng giữa "kiểm tra thử" và "Import chính thức" là khoảng người dùng hay quay
+      // sang Excel sửa file rồi ghi đè lên chính đường dẫn đó. Đối tượng File mà trình
+      // duyệt giữ chỉ là một tay cầm trỏ vào đường dẫn ấy: có trình duyệt sẽ ném lỗi khi
+      // đọc, nhưng có trình duyệt đọc ra NỘI DUNG MỚI mà không báo gì. Trường hợp thứ hai
+      // là commit một nội dung chưa từng được kiểm tra thử — mà lần này người dùng tin
+      // chắc là đã kiểm tra rồi, nên còn nguy hiểm hơn ca chưa kiểm tra bao giờ.
+      const currentSha256 = await sha256OfFile(payload.file);
+      if (currentSha256 !== payload.fileSha256) {
+        throw new SkuImportFileChangedError();
+      }
+
       return importSkuExcel(payload.file, {
         updateExisting: payload.updateExisting,
         dryRun: false,
@@ -460,6 +617,16 @@ export function SkuImportModal({
       onImported();
     },
     onError: (error) => {
+      // Nội dung file đã đổi sau lần kiểm tra thử: KHÔNG có request nào được gửi đi, nên
+      // không có gì để nói về trạng thái máy chủ. Vô hiệu hoá kết quả kiểm tra thử cũ
+      // (nó thuộc về nội dung cũ) và chỉ đúng việc cần làm.
+      if (error instanceof SkuImportFileChangedError) {
+        setCommitResult(null);
+        setPreviewResult(null);
+        setPreviewSignature("");
+        toast.error(error.message);
+        return;
+      }
       // WWHN-330 DEV330-P1-07R3: 409 CONCURRENCY_CONFLICT — file hợp lệ, chỉ là đang có
       // một lần import trùng định danh chạy dở. Giữ nguyên kết quả kiểm tra thử để người
       // dùng bấm Import lại ngay được, và KHÔNG gọi setCommitResult(null) vì làm vậy sẽ
@@ -516,10 +683,11 @@ export function SkuImportModal({
     },
   });
 
-  const currentSignature = payloadSignature(file, updateExisting);
+  const currentSignature = payloadSignature(fileSha256, updateExisting);
   /**
-   * WWHN-331 FE331-P1-01R3: preview chỉ còn hiệu lực khi payload hiện tại y hệt payload
-   * đã kiểm tra thử. Đổi file HOẶC đổi update_existing đều làm preview cũ hết hiệu lực.
+   * WWHN-331 FE331-P1-01R3 + FE331-P1-07R4: preview chỉ còn hiệu lực khi payload hiện
+   * tại y hệt payload đã kiểm tra thử — cùng NỘI DUNG file (sha256) và cùng
+   * `update_existing`. Đổi bất kỳ vế nào đều làm preview cũ hết hiệu lực.
    */
   const previewMatchesCurrentPayload =
     previewSignature !== "" && previewSignature === currentSignature;
@@ -527,9 +695,13 @@ export function SkuImportModal({
   // Chỉ cho Import chính thức khi ĐÚNG payload này đã dry-run và không còn lỗi — tránh
   // commit một payload chưa từng được kiểm tra thử, tránh gửi file chắc chắn bị 422, và
   // tránh double-submit (nút bị disable + loading trong lúc gửi).
+  //
+  // `fileSha256` phải có mặt: chưa băm xong (hoặc băm hỏng) thì chưa biết payload hiện
+  // tại là gì, mà "chưa biết" không bao giờ được suy thành "khớp".
   const canCommit =
     canImport &&
     Boolean(file) &&
+    Boolean(fileSha256) &&
     previewMatchesCurrentPayload &&
     previewResult?.errorRows === 0 &&
     !previewMutation.isPending &&
@@ -607,11 +779,14 @@ export function SkuImportModal({
         <Space wrap>
           <Button
             icon={<EyeOutlined />}
-            loading={previewMutation.isPending}
-            disabled={!canImport || !file || commitMutation.isPending}
-            onClick={() =>
-              file && previewMutation.mutate({ file, updateExisting })
+            loading={previewMutation.isPending || digestPending}
+            disabled={
+              !canImport || !fileSha256 || digestPending || commitMutation.isPending
             }
+            onClick={() => {
+              const payload = currentPayload();
+              if (payload) previewMutation.mutate(payload);
+            }}
           >
             Kiểm tra trước (dry-run)
           </Button>
@@ -620,9 +795,10 @@ export function SkuImportModal({
             icon={<UploadOutlined />}
             loading={commitMutation.isPending}
             disabled={!canCommit}
-            onClick={() =>
-              file && commitMutation.mutate({ file, updateExisting })
-            }
+            onClick={() => {
+              const payload = currentPayload();
+              if (payload) commitMutation.mutate(payload);
+            }}
           >
             Import chính thức
           </Button>
@@ -630,15 +806,23 @@ export function SkuImportModal({
             <Typography.Text type="secondary">
               Bạn không có quyền sku.manage.
             </Typography.Text>
+          ) : digestError ? (
+            <Typography.Text type="danger">{digestError}</Typography.Text>
+          ) : digestPending ? (
+            <Typography.Text type="secondary">
+              Đang đọc nội dung file để lấy vân tay (sha256)…
+            </Typography.Text>
           ) : commitMutation.isPending ||
             previewMutation.isPending ? null : previewSignature !== "" &&
             !previewMatchesCurrentPayload ? (
             // FE331-P1-01R3: nói rõ vì sao nút Import tắt đi sau khi người dùng đổi
             // lựa chọn — nếu không, trạng thái này trông như một lỗi giao diện.
+            // FE331-P1-07R4: "nội dung file" chứ không phải "file", vì phép so nay là so
+            // sha256 — chọn lại một file trùng tên nhưng khác nội dung cũng rơi vào đây.
             <Typography.Text type="secondary">
-              Tùy chọn hoặc file đã thay đổi sau lần kiểm tra thử. Chạy lại Kiểm
-              tra trước (dry-run) cho đúng lựa chọn hiện tại rồi mới Import
-              được.
+              Tùy chọn hoặc nội dung file đã thay đổi sau lần kiểm tra thử. Chạy
+              lại Kiểm tra trước (dry-run) cho đúng file và lựa chọn hiện tại
+              rồi mới Import được.
             </Typography.Text>
           ) : !previewResult ? (
             <Typography.Text type="secondary">
