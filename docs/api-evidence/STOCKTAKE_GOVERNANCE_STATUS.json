@@ -55,7 +55,8 @@
       {
         "artifact": "Wireframe MVP ALIGNED v3.20 / v1.12",
         "repositoryPath": "docs/HN_WMS_Wireframe_MVP_ALIGNED_v3.20_v1.12_20260814.html",
-        "sha256": "107a2b4de0f5763e39278ec130758d57e772e004e525416c088018cf9ddba658",
+        "sha256": "22c69d4b96d6c4f797e77e8f87075cc89d67aa12ed6eac8bbc71ae78297b47d6",
+        "sha256Note": "WWHN-311 R2: digest cu 107a2b4d... duoc tinh tu ban checkout CRLF cua working tree cu, trong khi .gitattributes ep eol=lf nen moi checkout sach (worktree/clone) doc ra bytes LF. Digest nay la digest cua noi dung canonical LF - khop moi checkout sach va khop git blob. Noi dung wireframe khong doi.",
         "anchor": "No Stocktake/Variance screen, menu entry or stock-edit action exists in the aligned wireframe."
       }
     ],
