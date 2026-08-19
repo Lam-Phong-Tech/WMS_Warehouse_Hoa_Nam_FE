@@ -5,12 +5,12 @@
   "controlling_requirement": "REQ-SRS-037",
   "fe": {
     "branch": "m1",
-    "commit_sha": "0eda8248ea121be10518f6e3edda0d2ca74b9c26",
+    "commit_sha": "f9f2e65e687669f033d259a693635546876f05a8",
     "working_tree_clean": false
   },
   "be": {
     "branch": "m1",
-    "commit_sha": "d6f7258ce59252d04a4ae73f5363ac2b0028f155"
+    "commit_sha": "831bda6d554faf3d1e1b11c5ff299bd53792f7bf"
   },
   "baselines": {
     "docs/HN_SRS_FRD_v1.12_FULL.md": "02cd010cdc40036b62ec23a0d3aa645e4cce813497edf8b0e851ba6fcb512ff2",
