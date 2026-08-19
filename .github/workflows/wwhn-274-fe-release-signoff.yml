@@ -34,20 +34,29 @@ jobs:
       VITE_API_HEALTH_PATH: /health
 
     steps:
-      - name: Checkout exact m1 SHA
+      # `fetch-depth: 0` la bat buoc cho che do chay lai theo SHA: input `ref` cua
+      # actions/checkout KHONG nhan SHA rut gon (`76f2efd` -> git fetch that bai,
+      # exit 1 ngay o buoc checkout), va mot shallow clone cung khong co commit cu de
+      # checkout tiep. Lay du lich su roi tu resolve o buoc duoi la cach chay lai duoc
+      # tren dung candidate SHA da pin trong Jira/tai lieu.
+      - name: Checkout m1
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.source_sha || github.sha }}
-          fetch-depth: 1
+          fetch-depth: 0
 
       - name: Pin resolved source SHA
         id: sha
         shell: bash
         run: |
           set -euo pipefail
-          ACTUAL="$(git rev-parse HEAD)"
           REQUESTED="${{ inputs.source_sha }}"
-          if [ -n "$REQUESTED" ] && [ "$ACTUAL" != "$REQUESTED" ]; then
+          if [ -n "$REQUESTED" ]; then
+            # Chap nhan ca SHA day du lan rut gon; rev-parse chuan hoa ve 40 hex.
+            FULL="$(git rev-parse --verify "${REQUESTED}^{commit}")"
+            git checkout --detach "$FULL"
+          fi
+          ACTUAL="$(git rev-parse HEAD)"
+          if [ -n "$REQUESTED" ] && [ "${ACTUAL#"$REQUESTED"}" = "$ACTUAL" ]; then
             echo "Requested SHA $REQUESTED but checked out $ACTUAL" >&2
             exit 1
           fi

@@ -335,6 +335,19 @@ requireText(
   "inputs.source_sha",
   "workflow_dispatch chạy lại được trên đúng candidate SHA",
 );
+// Chạy lại theo SHA chỉ hoạt động khi có đủ lịch sử: `ref:` của actions/checkout
+// không nhận SHA rút gọn và shallow clone không có commit cũ để checkout tiếp —
+// run 32206344201 đã chết ngay ở bước checkout đúng vì lý do này.
+requireText(
+  workflow,
+  "fetch-depth: 0",
+  "đủ lịch sử để checkout candidate SHA",
+);
+rejectText(
+  workflow,
+  "ref: ${{ inputs.source_sha",
+  "checkout theo input SHA (hỏng với SHA rút gọn) thay vì tự resolve",
+);
 requireText(
   workflow,
   "npm run test:e2e:wwhn-274:a11y",
