@@ -1,0 +1,12 @@
+
+ RUN  v4.1.10 C:/LAM_PHONG_TECH/HoaNam_FE/WMS_Warehouse_Hoa_Nam_FE
+
+ ✓ src/test/wwhn-236-adjustment-deferral-gate.test.ts (4 tests) 16ms
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  23:06:38
+   Duration  3.61s (transform 220ms, setup 924ms, import 113ms, tests 16ms, environment 2.22s)
+
+JSON report written to C:/LAM_PHONG_TECH/HoaNam_FE/WMS_Warehouse_Hoa_Nam_FE/test-results/vitest-results.json
+JUNIT report written to C:/LAM_PHONG_TECH/HoaNam_FE/WMS_Warehouse_Hoa_Nam_FE/test-results/vitest-junit.xml

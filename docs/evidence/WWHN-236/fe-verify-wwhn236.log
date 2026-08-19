@@ -1,0 +1,12 @@
+WWHN-236 / DISP-STK-236 — FE closure gate
+
+  PASS [FE-ROUTES] ROUTES: zero route stocktake/apply-adjustment
+  PASS [FE-PERMISSIONS] permission catalog: 64 code, zero stocktake/adjust/variance
+  PASS [FE-ENDPOINTS] endpoints: 161 path, zero adjustment/stocktake/variance
+  PASS [FE-SCREENS] src/modules + src/app: zero màn hình/module stocktake/adjustment
+  PASS [FE-GUARD-TESTS] access.test.ts + wms-contract-signoff-guards.test.ts còn assert no-Stocktake
+  PASS [ANTI-DANGLING] 5 artifact FE mà DISP-STK-236 cam kết đều tồn tại
+  PASS [GOVERNANCE] STOCKTAKE_GOVERNANCE_STATUS neo cùng controlling requirement REQ-SRS-037
+  NOTE [GOVERNANCE] docs/api-evidence/STOCKTAKE_GOVERNANCE_STATUS.json chưa liệt DISP-STK-236 trong deferralDispositions (WWHN-233 cập nhật).
+
+7/7 check PASS — bề mặt adjustment/stocktake ở FE = zero.

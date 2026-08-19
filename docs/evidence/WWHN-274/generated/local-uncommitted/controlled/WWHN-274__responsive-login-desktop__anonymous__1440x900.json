@@ -1,0 +1,26 @@
+{
+  "ticket": "WWHN-274",
+  "parent": "WWHN-72",
+  "parentTempKey": "HN-DEVOPS-003",
+  "evidenceClass": "FE_CONTROLLED_NOT_QA_UAT",
+  "result": "PASS",
+  "sourceSha": "local-uncommitted",
+  "environment": "local-controlled",
+  "buildVersion": "local-dev",
+  "browserProject": "chromium",
+  "role": "anonymous",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "route": "/login",
+  "finalUrl": "http://127.0.0.1:5173/login",
+  "timestamp": "2026-08-19T01:43:35.527Z",
+  "screenshotFilename": "WWHN-274__responsive-login-desktop__anonymous__1440x900.png",
+  "assertions": [
+    "Required viewport 1440x900 rendered",
+    "Login heading and submit action are visible",
+    "No horizontal page overflow"
+  ],
+  "truthBoundary": "Controlled FE release-signoff evidence only; not independent QA1/UAT evidence and not proof of backend authorization/data-scope, deployment, backup, restore or rollback."
+}

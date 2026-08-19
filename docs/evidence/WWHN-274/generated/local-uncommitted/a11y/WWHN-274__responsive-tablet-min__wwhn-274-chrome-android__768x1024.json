@@ -1,0 +1,31 @@
+{
+  "ticket": "WWHN-274",
+  "finding": "FE274-P2-03",
+  "parent": "WWHN-72",
+  "requirement": "NFR-SRS-006",
+  "evidenceClass": "FE_CONTROLLED_ENGINE_EMULATION_NOT_REAL_DEVICE",
+  "scenario": "responsive-tablet-min",
+  "result": "PASS",
+  "sourceSha": "local-uncommitted",
+  "environment": "local-controlled",
+  "buildVersion": "local-dev",
+  "browserProject": "wwhn-274-chrome-android",
+  "browserMatrixTarget": "Chrome Android (Chromium mobile emulation, Pixel-class 360px)",
+  "engine": "chromium",
+  "viewport": {
+    "width": 768,
+    "height": 1024
+  },
+  "route": "/login",
+  "timestamp": "2026-08-19T02:42:37.717Z",
+  "screenshotFilename": "WWHN-274__responsive-tablet-min__wwhn-274-chrome-android__768x1024.png",
+  "assertions": [
+    "Viewport 768x1024 khong tran ngang",
+    "Hanh dong chinh hien thi va co vung cham du lon"
+  ],
+  "observed": {
+    "horizontalOverflowPx": 0,
+    "submitHeightPx": 40
+  },
+  "truthBoundary": "Emulation-level browser/device evidence + basic a11y. Khong phai real-device matrix cua QA1 (WWHN-275) va khong phai audit WCAG day du."
+}
