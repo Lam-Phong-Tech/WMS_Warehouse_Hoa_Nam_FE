@@ -193,11 +193,26 @@ describe("WWHN-181 exact BE v1.7 guards", () => {
       warehouse_id: WAREHOUSE_ID,
     });
     // Path chuẩn của Annex C scanInboundDocument là /scans (số nhiều).
+    //
+    // WWHN-187 (DEC-SCAN-IDEMP-001) bổ sung Idempotency-Key cho từng hành động
+    // quét, nên guard này khớp header theo TẬP CON: If-Match vẫn phải đúng
+    // version, còn key được kiểm riêng theo đúng hình dạng đã chốt
+    // `fe:inbound-scan:<uuid>:<chỉ số mã trong lần gọi>`. Khớp cứng cả object
+    // sẽ biến mọi lần bổ sung header hợp lệ thành đỏ, còn bỏ hẳn phần key thì
+    // guard không còn thấy được nếu ai đó gỡ nó đi.
     expect(http.post).toHaveBeenNthCalledWith(
       2,
       "/inbound-documents/IN-1/scans",
       { line_id: "LINE-IN-1", qty: 1, code_value: "RAW-IN" },
-      { headers: { "If-Match": "1" } },
+      expect.objectContaining({
+        headers: expect.objectContaining({ "If-Match": "1" }),
+      }),
+    );
+    const scanHeaders = vi.mocked(http.post).mock.calls[1][2]?.headers as
+      | Record<string, string>
+      | undefined;
+    expect(scanHeaders?.["Idempotency-Key"]).toMatch(
+      /^fe:inbound-scan:[0-9a-f-]{36}:0$/,
     );
   });
 

@@ -119,7 +119,7 @@ describe("WWHN-247 · §13.8 PII fail-closed ở tầng service", () => {
   });
 });
 
-describe("WWHN-247 · shape mask khớp App\Support\WarrantyPiiMasker", () => {
+describe("WWHN-247 · shape mask khớp App\\Support\\WarrantyPiiMasker", () => {
   it("đúng shape §13.8 / NFR-SRS-015", () => {
     expect(maskWarrantyName("Nguyễn Văn An")).toBe("N*** V*** A***");
     expect(maskWarrantyPhone("0909129922")).toBe("*******922");
