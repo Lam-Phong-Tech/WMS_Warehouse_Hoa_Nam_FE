@@ -13,22 +13,22 @@
   "identity": {
     "frontend": {
       "repository": "Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_FE",
-      "branch": "m1",
-      "commitSha": "cc76a4e36069d3b6f299b0e0b4d371cf65a5e996",
-      "workingTreeClean": false
+      "branch": "HEAD",
+      "commitSha": "f9f2e65e687669f033d259a693635546876f05a8",
+      "workingTreeClean": true
     },
     "backend": {
       "repository": "Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_BE",
-      "branch": "m1",
-      "commitSha": "b90d5ef67c6577db166fdac00f1323741ccfd888",
-      "workingTreeClean": false
+      "branch": "HEAD",
+      "commitSha": "831bda6d554faf3d1e1b11c5ff299bd53792f7bf",
+      "workingTreeClean": true
     }
   },
   "baselineDigests": {
     "docs/HN_SRS_FRD_v1.12_FULL.md": "02cd010cdc40036b62ec23a0d3aa645e4cce813497edf8b0e851ba6fcb512ff2",
     "docs/HoaNam_ERD_Moi_Nhat.md": "5209358cb0e9d91ced71b3b2ebaeb6e50d7f4304c03618a81a6a6a0adabf12e2",
-    "docs/HN_WMS_Wireframe_MVP_ALIGNED_v3.20_v1.12_20260814.html": "107a2b4de0f5763e39278ec130758d57e772e004e525416c088018cf9ddba658",
-    "docs/api-evidence/STOCKTAKE_GOVERNANCE_STATUS.json": "ced858a58009cb765b90dee74184067ce5577d51779316dbd9f5eb3d8f2f1367",
+    "docs/HN_WMS_Wireframe_MVP_ALIGNED_v3.20_v1.12_20260814.html": "22c69d4b96d6c4f797e77e8f87075cc89d67aa12ed6eac8bbc71ae78297b47d6",
+    "docs/api-evidence/STOCKTAKE_GOVERNANCE_STATUS.json": "8dc0f157d0aed783375b8ce8519b42a9e1150df9d0c64ad5e290a695159415e1",
     "docs/api-evidence/WWHN-230_SCOPE_DISPOSITION.json": "a9719c12cc4699f4c3700c76c0e6b11f74bb68c5c7230f636c561bf2041d1acf"
   },
   "checks": [
@@ -141,9 +141,17 @@
       "id": "SIGNOFF",
       "status": "PENDING",
       "detail": "Sign-off still open for: baMain, pmApprover, techLead, qa1, bas (run with --require-signoff to enforce)."
+    },
+    {
+      "id": "TEST-LOCK",
+      "status": "PASS",
+      "detail": "wwhn-230-stocktake-scope-guard passed."
     }
   ],
-  "testResult": null,
+  "testResult": {
+    "exitCode": 0,
+    "tail": "   Duration  3.55s (transform 288ms, setup 907ms, import 38ms, tests 120ms, environment 2.16s)\n\nJSON report written to C:/wt230/HoaNam_FE/WMS_Warehouse_Hoa_Nam_FE/test-results/vitest-results.json\nJUNIT report written to C:/wt230/HoaNam_FE/WMS_Warehouse_Hoa_Nam_FE/test-results/vitest-junit.xml"
+  },
   "result": "PASS",
   "failures": []
 }
