@@ -178,6 +178,41 @@ process.env.WMS_EXECUTION_SHA = frontendIdentity.sha;
 mkdirSync(logDir, { recursive: true });
 
 const runs = [];
+
+// ---------------------------------------------------------------------------
+// The OpenAPI contract the tests read (swagger-api.json) is a synced artifact
+// pinned by docs/api-evidence/BE_CONTRACT_PIN.json (WWHN-309) and is
+// deliberately NOT tracked — so a clean checkout of the exact SHA does not have
+// it. Materialize it from the pinned BE revision before the gates run; the sync
+// itself fail-closes on any hash mismatch against the committed pin, and the
+// result is recorded as evidence like every other command.
+// ---------------------------------------------------------------------------
+{
+  const logFile = join(logDir, "contract-sync.log");
+  const startedAt = new Date().toISOString();
+  const started = Date.now();
+  const result = spawnSync(
+    process.execPath,
+    [join(root, "scripts/sync-be-openapi.mjs"), "--from", backendRoot],
+    { cwd: root, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
+  );
+  const exitCode = result.status ?? 1;
+  writeFileSync(
+    logFile,
+    `$ node scripts/sync-be-openapi.mjs --from ${backendRoot}\n\n${result.stdout ?? ""}\n${result.stderr ?? ""}\nexit code: ${exitCode}\n`,
+  );
+  runs.push({
+    command: "npm run contract:sync -- --from <pinned BE checkout>",
+    status: exitCode === 0 ? "PASS" : "FAIL",
+    exitCode,
+    startedAt,
+    durationMs: Date.now() - started,
+    log: toPosix(relative(root, logFile)),
+  });
+  console.log(
+    `[wwhn-296] ${exitCode === 0 ? "PASS" : "FAIL"} contract:sync --from ${backendRoot} (exit ${exitCode})`,
+  );
+}
 for (const script of GATE_COMMANDS) {
   const logFile = join(logDir, `${script.replace(/[^a-z0-9]+/giu, "-")}.log`);
   if (skip.has(script)) {
