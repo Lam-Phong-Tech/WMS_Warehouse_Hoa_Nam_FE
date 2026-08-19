@@ -3,6 +3,17 @@
 # nên lỗi noUnusedLocals/strict bị bắt tại máy dev thay vì fail ở pipeline build/deploy.
 # (POSIX sh thuần, cùng ràng buộc như .husky/pre-commit.)
 
+# Pre-flight: phân biệt "tsc chưa được cài" với "TypeScript compile lỗi". Sự cố 2026-08-19:
+# node_modules rỗng làm `tsc` is not recognized, hook vẫn in "TypeScript compile lỗi" —
+# thông báo sai nguyên nhân khiến dev đi sửa code thay vì cài lại dependencies.
+if [ ! -f node_modules/.bin/tsc ] && [ ! -f node_modules/.bin/tsc.cmd ]; then
+  echo ""
+  echo "⛔ PUSH REJECTED: tsc chưa được cài (node_modules thiếu/rỗng) — KHÔNG phải lỗi code."
+  echo "   Dự án dùng yarn.lock. Chạy: yarn install --frozen-lockfile"
+  echo "   Cài xong push lại bình thường."
+  exit 1
+fi
+
 echo "🔍 Typecheck (tsc -b) trước khi push..."
 npm run typecheck || {
   echo ""

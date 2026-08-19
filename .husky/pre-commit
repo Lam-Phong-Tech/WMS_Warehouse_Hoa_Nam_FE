@@ -146,6 +146,14 @@ echo "✅ No credentials detected. Proceeding with commit."
 # CHỈ khi staged files có .ts/.tsx — commit tài liệu/evidence không bị chậm. `tsc -b` là
 # incremental nên lần chạy lặp lại rất nhanh.
 if git diff --cached --name-only --diff-filter=ACM | grep -q -E '\.(ts|tsx)$'; then
+  # Pre-flight: phân biệt "tsc chưa được cài" với "TypeScript compile lỗi" (cùng lý do với
+  # .husky/pre-push — sự cố 2026-08-19 node_modules rỗng, thông báo sai nguyên nhân).
+  if [ ! -f node_modules/.bin/tsc ] && [ ! -f node_modules/.bin/tsc.cmd ]; then
+    echo ""
+    echo "⛔ COMMIT REJECTED: tsc chưa được cài (node_modules thiếu/rỗng) — KHÔNG phải lỗi code."
+    echo "   Dự án dùng yarn.lock. Chạy: yarn install --frozen-lockfile"
+    exit 1
+  fi
   echo "🔍 Typecheck (tsc -b) vì commit có đụng TypeScript..."
   npm run typecheck || {
     echo ""
