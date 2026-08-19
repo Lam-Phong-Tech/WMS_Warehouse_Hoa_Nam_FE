@@ -1,10 +1,14 @@
 # WWHN-311 - Hoàn thiện tài liệu build/component FE
 
-Cập nhật: 2026-08-18  
+Cập nhật: 2026-08-19 (R2 theo register comment 15621)  
 Repository: `Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_FE`  
 Nhánh thực hiện: `m1`  
-Pre-remediation FE SHA: `5cc27970d36edd2063fd3ce4181d2108dd0077d0`  
-BE baseline đối chiếu: `Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_BE@m1` / `0a7bd392f4510f3ad5d5be7394173695463f2b6e`
+Pre-remediation FE SHA (R1, historical): `5cc27970d36edd2063fd3ce4181d2108dd0077d0`  
+R1 closure SHA (historical, đã bị supersede): `13ef8b6f85afeba147f83bb593e493ddfc522e8e`  
+BE baseline đối chiếu R1 (historical): `Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_BE@m1` / `0a7bd392f4510f3ad5d5be7394173695463f2b6e`  
+BE re-verify R2: canonical permission seed (`audit_log.view`, `scan.execute|scan.classify`, `putaway.view/manage`, `packing_label.*`, `outbound.request.*`) được xác nhận vẫn tồn tại không đổi tại BE `m1` HEAD hiện hành khi chốt R2; SHA BE re-verify ghi trong evidence pack R2.
+
+Quy tắc chốt candidate R2: candidate là **commit cuối cùng chạm tập artifact handover** (`docs/Task_docs_Jira/WWHN-311.md`, `README.md`, `.env.example`, `package.json`, `src/app/router/*`, `src/shared/constants/wms-permissions.ts`, `src/shared/api/*`) trên `m1`; exact SHA của candidate và của evidence run được ghi trong `docs/evidence/WWHN-311/R2/run-identity.txt` (evidence pack đứng ngoài tập artifact được pin để tránh pin tự tham chiếu).
 
 ## 1. Phạm vi và nguồn chuẩn
 
@@ -31,7 +35,7 @@ Các invariants FE không được làm sai:
 | --- | --- | --- | --- | --- |
 | P0 | Parent WWHN-83 còn `Blocked/Pending` | Giữ fail-closed; WWHN-311 không tự tuyên bố parent Done | EXTERNAL GATE PENDING | BAS/PM + sibling owners |
 | P1 | Chưa có independent review Frontend handover | Chuẩn hóa handover này, build/RBAC/module/evidence boundary để reviewer xác nhận một lần | READY FOR REVIEW | BA/QA/DevOps |
-| P1 | Lint/build/test chỉ ghi trong tài liệu, thiếu exact execution identity | GitHub Actions `CI` trên push `m1` là execution source: exact commit SHA + run ID + `VITE_APP_VERSION` + env + logs; reviewer phải dùng run của closure SHA, không dùng “latest m1” mơ hồ | READY ON CLOSURE CI | FE1 + reviewer |
+| P1 | Lint/build/test chỉ ghi trong tài liệu, thiếu exact execution identity | Execution identity theo exact SHA: raw command logs + exit code + env + `VITE_APP_VERSION` + SHA256SUMS trong `docs/evidence/WWHN-311/R2/` (local reproducible run, cùng pattern đã nghiệm thu ở WWHN-292); CI exact-SHA run là kênh bổ sung, không phải điều kiện duy nhất | CLOSED (local identity R2) | FE1 + reviewer |
 | P1 | Permission/API workflow conditional | Đối chiếu BE canonical permission seed; sửa FE route keys sai `AUDIT_LOG_VIEW`, Scan thiếu `scan.execute`, Putaway thiếu `putaway.*`; phần formal API/permission handover vẫn thuộc WWHN-309/BA | FE RUNTIME FIXED / FORMAL SIGN-OFF PENDING | BE + BA |
 | P1 | Weak GitHub trace | Tạo canonical path `docs/Task_docs_Jira/WWHN-311.md` và ghi exact pre-remediation SHA/BE baseline | CLOSED | FE1 |
 | P2 | README/script mismatch | README đồng bộ package hiện hành, bỏ stocktake ngoài MVP, ghi đúng Ant Design 6 / React Router 7 và test commands | CLOSED | FE1 |
@@ -46,7 +50,7 @@ Runtime baseline hiện tại:
 - Zustand cho auth/client state; TanStack Query cho server state.
 - Vitest unit/integration; Playwright E2E.
 
-Các lệnh phải chạy/được CI ghi log trên exact closure SHA:
+Các lệnh phải được chạy và ghi raw log trên exact closure SHA (CI run hoặc local reproducible run có SHA256SUMS):
 
 ```bash
 yarn install --frozen-lockfile --non-interactive
@@ -66,7 +70,7 @@ Execution identity tối thiểu cần ghi khi review:
 
 - Branch: `m1`
 - Source/commit SHA
-- GitHub Actions run ID/URL
+- Run identity: GitHub Actions run ID/URL, hoặc local run identity (timestamp + máy chạy + raw log + SHA256SUMS trong `docs/evidence/WWHN-311/`)
 - `VITE_APP_ENV`
 - `VITE_APP_VERSION` / build version
 - Kết quả lint/typecheck/unit/build/health/API mapping/E2E liên quan
@@ -111,7 +115,7 @@ Formal lock endpoint/payload/error/sample/permission cho backend handover phải
 
 ## 6. Evidence và acceptance boundary
 
-FE-owned output đủ điều kiện chuyển sang independent review khi closure commit đã có CI execution theo exact SHA và các gate bắt buộc PASS.
+FE-owned output đủ điều kiện chuyển sang independent review khi closure commit đã có execution identity theo exact SHA (CI run hoặc local reproducible evidence pack có raw log + SHA256SUMS) và các gate bắt buộc PASS.
 
 Các gate không thuộc FE1 và không được giả lập:
 
@@ -126,6 +130,31 @@ Các gate không thuộc FE1 và không được giả lập:
 - Canonical frontend handover nằm trong repo và truy vết được tới exact SHA.
 - README/build/component docs khớp package/runtime hiện hành và MVP baseline.
 - Không còn FE RBAC mismatch đã biết ở audit/scan/putaway.
-- CI exact closure SHA chứng minh lint/typecheck/test/build/health/API mapping/E2E theo scope.
+- Execution identity tại exact closure SHA chứng minh lint/typecheck/test/build/health/API mapping theo scope (raw log + SHA256SUMS; E2E theo scope khi môi trường runtime có sẵn).
 - Không có stocktake/partial-post/RFID-mandatory drift trong handover.
 - Independent reviewers ghi một sign-off rõ phạm vi; FE không tự đóng external gate.
+
+## 8. Remediation R2 theo register WWHN-311 comment 15621 (PASS có điều kiện 82/100)
+
+Compare scope chính thức `13ef8b6f...` → candidate R2, giới hạn trong tập artifact handover:
+
+| File | Thay đổi kể từ R1 closure | Disposition R2 |
+| --- | --- | --- |
+| `README.md` | Bảng env sửa `VITE_API_BASE_URL` `8000→8080`, `VITE_API_WITH_CREDENTIALS` `false→true`, làm rõ health path (commit `7320501`, WWHN-296) | Chính là fix của FE311-P1-02; README/.env.example nhất quán `8080/true` tại candidate R2 |
+| `.env.example` | Không đổi kể từ R1 (`8080/true` từ trước) | Nguồn đúng; README đã hội tụ về nguồn này |
+| `package.json` | Chỉ thêm task-specific verifier/e2e scripts của các ticket khác; không đổi dependency runtime, không đổi các gate command của WWHN-311 | Không ảnh hưởng handover contract |
+| `src/app/router/access.ts`, `access.test.ts`, `index.tsx` | Bổ sung route/access của các ticket sau R1 (dashboard, reversal, ...) | RBAC regression `access.test.ts` phải PASS lại tại candidate R2 |
+| `src/shared/constants/wms-permissions.ts` | Bổ sung permission key mới theo BE canonical seed | Đối chiếu lại BE seed tại BE `m1` HEAD: các key WWHN-311 quan tâm không đổi |
+| `src/shared/api/*` | Bổ sung contract pin/test của các ticket khác (267/289/202/...) | Không phá API boundary đã bàn giao; unit/integration suite phải PASS lại |
+| `docs/Task_docs_Jira/WWHN-311.md` | Cập nhật R2 (tài liệu này) | Canonical handover hiện hành |
+
+Disposition từng mục register:
+
+| ID | Disposition R2 |
+| --- | --- |
+| FE311-P1-01 | Chốt candidate R2 theo quy tắc commit-cuối-chạm-artifact ở đầu tài liệu; compare scope như bảng trên; sign-off refresh tại exact candidate SHA (ghi trong evidence pack + Jira comment) |
+| FE311-P1-02 | Fix nằm trong lịch sử `m1` (commit `7320501`); tại candidate R2, README và `.env.example` cùng SHA và cùng giá trị `http://localhost:8080/api/v1` + `VITE_API_WITH_CREDENTIALS=true` |
+| FE311-P1-03 | Jira attachment ATT-11431 (01/08) tuyên bố SUPERSEDED bằng Jira comment; canonical duy nhất là `docs/Task_docs_Jira/WWHN-311.md` tại exact candidate SHA trên GitHub |
+| FE311-P1-04 | Execution identity tái lập được: raw log lint/typecheck/test/build/health/API-mapping + env + build version + SHA256SUMS trong `docs/evidence/WWHN-311/R2/`; không phụ thuộc mô tả miệng |
+| FE311-P1-05 | External gate của DO; FE cung cấp đủ build/run/env/artifact input; DO ghi sign-off độc lập trên Jira |
+| FE311-P2-01 | External gate của BE2/BAS actual owner; không xóa comment cũ; owner thật bổ sung confirmation độc lập trên Jira |
