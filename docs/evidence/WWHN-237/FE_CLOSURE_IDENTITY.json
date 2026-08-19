@@ -1,16 +1,19 @@
 {
-  "schema_version": "1.0.0",
+  "schema_version": "1.1.0",
   "jira_key": "WWHN-237",
   "disposition": "DISP-STK-237",
   "controlling_requirement": "REQ-SRS-037",
+  "identity_source": "docs/evidence/WWHN-237/CANDIDATE_PAIR.json — KHÔNG dùng `git rev-parse HEAD`. Đó chính là lỗi DEV237-P1-02R2: HEAD trôi theo task khác trên m1 và hai repo chạy lệch giờ sinh ra hai cặp SHA khác nhau.",
   "fe": {
     "branch": "m1",
-    "commit_sha": "cf0fe8d0a948b650492d5a96ad3509bf1180d23b",
+    "commit_sha": "c77ba6429c68982c7e7b8d297917c0cab26f8380",
+    "head_at_run": "49149962487c60e734bc966b9559c1bba85e876c",
     "working_tree_clean": false
   },
   "be": {
     "branch": "m1",
-    "commit_sha": "22564b46898f616c0df2880f797fcc0f1fcf9507"
+    "commit_sha": "d1af7ca00016271b64312e2d537ca45bdea9d794",
+    "head_at_run": "d1af7ca00016271b64312e2d537ca45bdea9d794"
   },
   "baselines": {
     "docs/HN_SRS_FRD_v1.12_FULL.md": "5ab1dd6c468e93f57a932741e823855806a9d37ac5dde9b118335ff8f84de086",
@@ -104,6 +107,11 @@
       "id": "BE-GATE",
       "status": "PASS",
       "detail": "gate BE có mặt"
+    },
+    {
+      "id": "CANDIDATE-PAIR",
+      "status": "PASS",
+      "detail": "một cặp duy nhất BE d1af7ca0 / FE c77ba642, giải lại khớp, hai bản pin byte-identical"
     }
   ],
   "status": "PASS"
