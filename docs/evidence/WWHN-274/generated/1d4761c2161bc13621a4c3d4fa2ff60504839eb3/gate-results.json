@@ -1,0 +1,127 @@
+{
+  "ticket": "WWHN-274",
+  "finding": "FE274-P1-01",
+  "parent": "WWHN-72",
+  "parentTempKey": "HN-DEVOPS-003",
+  "repository": "https://github.com/Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_FE",
+  "branch": "HEAD",
+  "sourceSha": "1d4761c2161bc13621a4c3d4fa2ff60504839eb3",
+  "shortSha": "1d4761c",
+  "commitSubject": "chore(format): chay prettier cho 17 file drift dang chan gate format cua ca nhanh",
+  "committedAt": "2026-08-19T09:47:51+07:00",
+  "treeState": "clean",
+  "dirtyEntries": [
+    "M playwright-report/index.html"
+  ],
+  "sourceDirtyEntries": [],
+  "runner": "scripts/run-wwhn-274-exact-sha-evidence.mjs",
+  "runnerMode": "gates",
+  "e2eTargetBaseUrl": "http://127.0.0.1:4271",
+  "generatedAt": "2026-08-19T02:52:05.447Z",
+  "nodeVersion": "v22.17.1",
+  "platform": "win32-x64",
+  "overallResult": "FAIL",
+  "evidenceValidity": "INVALID_FOR_CLOSURE_GATE_FAILED",
+  "gates": [
+    {
+      "id": "source-contract",
+      "command": "npm run wwhn-274:verify",
+      "result": "PASS",
+      "exitCode": 0,
+      "durationMs": 380,
+      "logFile": "docs/evidence/WWHN-274/generated/1d4761c2161bc13621a4c3d4fa2ff60504839eb3/gate-source-contract.log",
+      "tail": "> wms-hoa-nam-frontend@0.0.0 wwhn-274:verify\n> node scripts/verify-wwhn-274-closure.mjs\n\nWWHN-274 source-controlled closure contract PASS\nTruth boundary: FE controlled evidence only; independent QA/UAT/DevOps evidence remains role-owned."
+    },
+    {
+      "id": "format",
+      "command": "npm run format:check",
+      "result": "PASS",
+      "exitCode": 0,
+      "durationMs": 4312,
+      "logFile": "docs/evidence/WWHN-274/generated/1d4761c2161bc13621a4c3d4fa2ff60504839eb3/gate-format.log",
+      "tail": "> wms-hoa-nam-frontend@0.0.0 format:check\n> node scripts/verify-format-baseline.mjs\n\n[format-baseline] PASS: no new formatting drift; 0 unchanged baseline-debt file(s) remain, 0 were cleaned."
+    },
+    {
+      "id": "lint",
+      "command": "npm run lint",
+      "result": "PASS",
+      "exitCode": 0,
+      "durationMs": 14392,
+      "logFile": "docs/evidence/WWHN-274/generated/1d4761c2161bc13621a4c3d4fa2ff60504839eb3/gate-lint.log",
+      "tail": "Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).\n\nC:\\Users\\ACER\\AppData\\Local\\Temp\\claude\\C--Users-ACER-Downloads-New-folder\\dc85c572-c4b8-4227-9bd6-017f7e70accd\\scratchpad\\wt-274\\src\\shared\\components\\forms\\CameraScanModal.tsx:56:5\n  54 |     let disposed = false;\n  55 |     detectedRef.current = false;\n> 56 |     setCameraError(null);\n     |     ^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect\n  57 |     setCameraReady(false);\n  58 |\n  59 |     const stop = () => {  react-hooks/set-state-in-effect\n\n✖ 25 problems (0 errors, 25 warnings)"
+    },
+    {
+      "id": "typecheck",
+      "command": "npm run typecheck",
+      "result": "PASS",
+      "exitCode": 0,
+      "durationMs": 10855,
+      "logFile": "docs/evidence/WWHN-274/generated/1d4761c2161bc13621a4c3d4fa2ff60504839eb3/gate-typecheck.log",
+      "tail": "> wms-hoa-nam-frontend@0.0.0 typecheck\n> tsc -b --pretty false"
+    },
+    {
+      "id": "unit",
+      "command": "npm run test",
+      "result": "FAIL",
+      "exitCode": 1,
+      "durationMs": 36270,
+      "logFile": "docs/evidence/WWHN-274/generated/1d4761c2161bc13621a4c3d4fa2ff60504839eb3/gate-unit.log",
+      "tail": " FAIL  src/test/wwhn-260-migration-operational-only.test.ts > WWHN-260 — migration là operational-only trên FE > hợp đồng OpenAPI mà FE dùng không có operation migration\nError: ENOENT: no such file or directory, open 'C:\\Users\\ACER\\AppData\\Local\\Temp\\claude\\C--Users-ACER-Downloads-New-folder\\dc85c572-c4b8-4227-9bd6-017f7e70accd\\scratchpad\\wt-274\\swagger-api.json'\n ❯ readRepoFile src/test/wwhn-260-migration-operational-only.test.ts:25:10\n     23|\n     24| function readRepoFile(relativePath: string): string {\n     25|   return readFileSync(path.join(repoRoot, relativePath), \"utf8\");\n       |          ^\n     26| }\n     27|\n ❯ src/test/wwhn-260-migration-operational-only.test.ts:54:32\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯"
+    },
+    {
+      "id": "env-contract",
+      "command": "npm run env:verify",
+      "result": "PASS",
+      "exitCode": 0,
+      "durationMs": 361,
+      "logFile": "docs/evidence/WWHN-274/generated/1d4761c2161bc13621a4c3d4fa2ff60504839eb3/gate-env-contract.log",
+      "tail": "> wms-hoa-nam-frontend@0.0.0 env:verify\n> node scripts/verify-env-health-contract.mjs\n\n[env-contract] PASS: FE /health.json and versioned backend /api/v1/health contracts are locked; /api/health is rejected."
+    },
+    {
+      "id": "api-mapping",
+      "command": "npm run check:api-mapping",
+      "result": "PASS",
+      "exitCode": 0,
+      "durationMs": 387,
+      "logFile": "docs/evidence/WWHN-274/generated/1d4761c2161bc13621a4c3d4fa2ff60504839eb3/gate-api-mapping.log",
+      "tail": "> wms-hoa-nam-frontend@0.0.0 check:api-mapping\n> node scripts/check-api-mapping.mjs\n\n[api-mapping] docs/api-evidence/M1_API_MAPPING.md: 31 endpoint rows\n[api-mapping] docs/api-evidence/M2_DEPENDENCY_LIST.md: 10 endpoint rows\n[api-mapping] docs/api-evidence/M3_DEPENDENCY_LIST.md: 15 endpoint rows\n[api-mapping] PASS: 56 documented rows checked (4 explicitly fail-closed); current MVP paths and permissions are internally consistent.\n\n[api-mapping] WARNING: swagger-api.json is unavailable: validating FE constants/registers only; this is not BE OpenAPI sign-off."
+    },
+    {
+      "id": "build",
+      "command": "npm run build",
+      "result": "PASS",
+      "exitCode": 0,
+      "durationMs": 12272,
+      "logFile": "docs/evidence/WWHN-274/generated/1d4761c2161bc13621a4c3d4fa2ff60504839eb3/gate-build.log",
+      "tail": "dist/assets/select-Bbdlsl6d.js                    73.89 kB │ gzip: 25.21 kB\ndist/assets/vendor-data-Vm1J76xK.js               81.45 kB │ gzip: 28.21 kB\ndist/assets/WarrantyPage-BBG7K9v0.js              89.69 kB │ gzip: 28.14 kB\ndist/assets/chunk-4ZMWKKQ3-Cky6-5DW.js            91.83 kB │ gzip: 30.49 kB\ndist/assets/vendor-form-CPXf7GJk.js               97.35 kB │ gzip: 28.65 kB\ndist/assets/date-picker-D-F13VOa.js              170.05 kB │ gzip: 37.27 kB\ndist/assets/vendor-react-Bg3lly1P.js             181.71 kB │ gzip: 57.16 kB\ndist/assets/ContextIsolator-DUXzh-Lg.js          192.95 kB │ gzip: 68.00 kB\ndist/assets/table-BOkNQftH.js                    197.46 kB │ gzip: 60.75 kB\n\n\u001b[32m✓ built in 596ms\u001b[39m\n[build-manifest] Wrote dist/build-manifest.json for 1d4761c2161bc13621a4c3d4fa2ff60504839eb3 (1.0.0)."
+    },
+    {
+      "id": "health",
+      "command": "npm run health:check",
+      "result": "PASS",
+      "exitCode": 0,
+      "durationMs": 413,
+      "logFile": "docs/evidence/WWHN-274/generated/1d4761c2161bc13621a4c3d4fa2ff60504839eb3/gate-health.log",
+      "tail": "> wms-hoa-nam-frontend@0.0.0 health:check\n> node scripts/check-frontend-health.mjs\n\n[health] PASS: deployable FE artifact 1.0.0 exposes /health.json and immutable build-manifest.json for source 1d4761c2161bc13621a4c3d4fa2ff60504839eb3."
+    },
+    {
+      "id": "e2e-controlled",
+      "command": "npm run test:e2e:wwhn-274",
+      "result": "PASS",
+      "exitCode": 0,
+      "durationMs": 10910,
+      "logFile": "docs/evidence/WWHN-274/generated/1d4761c2161bc13621a4c3d4fa2ff60504839eb3/gate-e2e-controlled.log",
+      "tail": "\n\nRunning 6 tests using 1 worker\n\n  ok 1 [chromium] › e2e\\wwhn-274-release-signoff.spec.ts:183:5 › WWHN-274 FE-controlled build/config/smoke release sign-off › responsive login shell 1440x900 (1.1s)\n  ok 2 [chromium] › e2e\\wwhn-274-release-signoff.spec.ts:183:5 › WWHN-274 FE-controlled build/config/smoke release sign-off › responsive login shell 768x1024 (889ms)\n  ok 3 [chromium] › e2e\\wwhn-274-release-signoff.spec.ts:183:5 › WWHN-274 FE-controlled build/config/smoke release sign-off › responsive login shell 375x812 (890ms)\n  ok 4 [chromium] › e2e\\wwhn-274-release-signoff.spec.ts:209:3 › WWHN-274 FE-controlled build/config/smoke release sign-off › shared release UI states are explicit and action-safe (1.8s)\n  ok 5 [chromium] › e2e\\wwhn-274-release-signoff.spec.ts:240:3 › WWHN-274 FE-controlled build/config/smoke release sign-off › limited role menu and direct protected URL fail closed to 403 (2.2s)\n  ok 6 [chromium] › e2e\\wwhn-274-release-signoff.spec.ts:266:3 › WWHN-274 FE-controlled build/config/smoke release sign-off › login-api-422-retry-safe (1.1s)\n\n  6 passed (9.8s)"
+    },
+    {
+      "id": "e2e-a11y-browser-matrix",
+      "command": "npm run test:e2e:wwhn-274:a11y",
+      "result": "PASS",
+      "exitCode": 0,
+      "durationMs": 9614,
+      "logFile": "docs/evidence/WWHN-274/generated/1d4761c2161bc13621a4c3d4fa2ff60504839eb3/gate-e2e-a11y-browser-matrix.log",
+      "tail": "  ok 2 [wwhn-274-desktop-chromium] › e2e\\wwhn-274-a11y-browser-matrix.spec.ts:154:3 › WWHN-274 a11y + browser/device matrix (NFR-SRS-006) › login shell keeps accessible semantics on every matrix engine (1.9s)\n  ok 1 [wwhn-274-chrome-android] › e2e\\wwhn-274-a11y-browser-matrix.spec.ts:154:3 › WWHN-274 a11y + browser/device matrix (NFR-SRS-006) › login shell keeps accessible semantics on every matrix engine (1.9s)\n  -  5 [wwhn-274-chrome-android] › e2e\\wwhn-274-a11y-browser-matrix.spec.ts:193:3 › WWHN-274 a11y + browser/device matrix (NFR-SRS-006) › keyboard-only operation reaches and submits the login form\n  ok 3 [wwhn-274-safari-ios] › e2e\\wwhn-274-a11y-browser-matrix.spec.ts:154:3 › WWHN-274 a11y + browser/device matrix (NFR-SRS-006) › login shell keeps accessible semantics on every matrix engine (2.7s)\n  ok 4 [wwhn-274-desktop-chromium] › e2e\\wwhn-274-a11y-browser-matrix.spec.ts:193:3 › WWHN-274 a11y + browser/device matrix (NFR-SRS-006) › keyboard-only operation reaches and submits the login form (1.5s)\n  -  7 [wwhn-274-safari-ios] › e2e\\wwhn-274-a11y-browser-matrix.spec.ts:193:3 › WWHN-274 a11y + browser/device matrix (NFR-SRS-006) › keyboard-only operation reaches and submits the login form\n  ok 6 [wwhn-274-chrome-android] › e2e\\wwhn-274-a11y-browser-matrix.spec.ts:253:3 › WWHN-274 a11y + browser/device matrix (NFR-SRS-006) › no horizontal overflow at the NFR-SRS-006 breakpoints (2.7s)\n  ok 8 [wwhn-274-desktop-chromium] › e2e\\wwhn-274-a11y-browser-matrix.spec.ts:253:3 › WWHN-274 a11y + browser/device matrix (NFR-SRS-006) › no horizontal overflow at the NFR-SRS-006 breakpoints (2.1s)\n  ok 9 [wwhn-274-safari-ios] › e2e\\wwhn-274-a11y-browser-matrix.spec.ts:253:3 › WWHN-274 a11y + browser/device matrix (NFR-SRS-006) › no horizontal overflow at the NFR-SRS-006 breakpoints (4.2s)\n\n  2 skipped\n  7 passed (8.6s)"
+    }
+  ],
+  "truthBoundary": "Bang chung local tai exact SHA cho pham vi FE-owned (build/config/UI). Khong thay the run GitHub Actions tren cung SHA, khong phai QA1 release smoke (WWHN-275) va khong phai deploy/backup/rollback cua DevOps (WWHN-272)."
+}

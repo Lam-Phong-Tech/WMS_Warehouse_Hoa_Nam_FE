@@ -1,0 +1,10 @@
+$ npm run wwhn-274:verify
+
+
+> wms-hoa-nam-frontend@0.0.0 wwhn-274:verify
+> node scripts/verify-wwhn-274-closure.mjs
+
+WWHN-274 source-controlled closure contract PASS
+Truth boundary: FE controlled evidence only; independent QA/UAT/DevOps evidence remains role-owned.
+
+

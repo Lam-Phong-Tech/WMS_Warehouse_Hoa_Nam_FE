@@ -1,0 +1,9 @@
+$ npm run format:check
+
+
+> wms-hoa-nam-frontend@0.0.0 format:check
+> node scripts/verify-format-baseline.mjs
+
+[format-baseline] PASS: no new formatting drift; 0 unchanged baseline-debt file(s) remain, 0 were cleaned.
+
+

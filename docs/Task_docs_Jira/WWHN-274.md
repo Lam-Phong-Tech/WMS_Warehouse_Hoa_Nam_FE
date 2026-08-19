@@ -169,6 +169,69 @@ nằm trong `.gitignore` nên không pin theo SHA được.
 Bảng này được điền bằng `npm run wwhn-274:exact-sha` chạy trên cây **sạch**; nếu cây
 bẩn, manifest ghi `INVALID_FOR_CLOSURE_DIRTY_TREE` và không được dùng để đóng task.
 
+Bằng chứng đã chạy: `docs/evidence/WWHN-274/generated/1d4761c2161bc13621a4c3d4fa2ff60504839eb3/`
+(manifest `gate-results.json`, log từng gate, metadata E2E). Cây làm việc **sạch**
+(`treeState: clean`), E2E đo trên `http://127.0.0.1:4271` — chính là build `vite preview`
+của SHA này, không phải một dev server nào khác.
+
+| Gate                       | Kết quả | Ghi chú                                                                                              |
+| -------------------------- | ------- | ------------------------------------------------------------------------------------------------------ |
+| `wwhn-274:verify`          | PASS    | hợp đồng nguồn của task                                                                                |
+| `format:check`             | PASS    | sau khi dọn 17 file drift thuộc các task khác (commit `1d4761c`)                                       |
+| `lint`                     | PASS    | 25 cảnh báo, 0 lỗi                                                                                     |
+| `typecheck`                | PASS    |                                                                                                        |
+| `test` (unit)              | FAIL    | 677/679; 2 test đỏ là `wwhn-233-count-deferral-gate` và `wwhn-260-migration-operational-only`, cùng một nguyên nhân: digest của wireframe baseline lệch do **line ending** khi checkout ở worktree phụ. Cả hai PASS trên cây làm việc chính và **không** thuộc artifact WWHN-274 — chủ sở hữu là WWHN-233 / WWHN-260. |
+| `env:verify`               | PASS    |                                                                                                        |
+| `check:api-mapping`        | PASS    |                                                                                                        |
+| `build`                    | PASS    |                                                                                                        |
+| `health:check`             | PASS    |                                                                                                        |
+| `test:e2e:wwhn-274`        | PASS    | 6/6 — 3 viewport, 7 trạng thái UI, RBAC 403, API 422 retry-safe                                        |
+| `test:e2e:wwhn-274:a11y`   | PASS    | 7 passed / 2 skipped (bàn phím chỉ áp dụng desktop) trên Chromium desktop, Chrome Android, WebKit iOS  |
+
+### Real-env FE↔BE smoke (FE274-P1-06) — đã chạy thật
+
+`npm run test:e2e:wwhn-274:real-env` với `WWHN_274_REQUIRE_REAL_ENV=1` và
+`WWHN_274_REQUIRE_AUTHENTICATED=1`: **5/5 PASS** trên build đã deploy
+(`vite preview`) nói chuyện với backend Laravel thật (`/api/v1`, DB PostgreSQL
+riêng đã migrate + seed):
+
+| Kịch bản                                         | Kết quả đo được                                                                        |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| `backend-health-canonical`                       | `GET /api/v1/health` = 200, `checks.database/migrations/seed = ok`; `GET /api/health` = 404 |
+| `protected-api-401-fail-closed`                  | `GET /api/v1/skus` không phiên = 401, envelope `success=false`                             |
+| `deployed-fe-guard-and-bootstrap`                | `/dashboard` chưa đăng nhập → `/login`, bootstrap gọi thật `/auth/refresh`                 |
+| `real-login-rejection-retry-safe`                | đăng nhập sai → 401/422 thật, vẫn ở `/login`, nút submit còn bấm lại được                  |
+| `authenticated-session-and-representative-read`  | đăng nhập thật 200 → `/auth/me` 200 → F5 giữ phiên qua HttpOnly refresh cookie → có GET nghiệp vụ 200 |
+
+Ranh giới: đây là môi trường **local có kiểm soát**, không phải Beta. Chạy lại đúng
+bộ này trên Beta cần `WWHN_274_REAL_BASE_URL` / `WWHN_274_REAL_API_BASE_URL` (và
+credential) do DevOps cung cấp — tức là phụ thuộc WWHN-272; kết quả trên Beta vẫn
+không thay thế release smoke độc lập của QA1 (WWHN-275).
+
 ## Commit trace (FE274-P2-02)
 
 <!-- WWHN-274-COMMIT-TRACE -->
+
+| Commit    | Chạm gì                                                                                                          | Đóng ID                                       |
+| --------- | ------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------- |
+| `76f2efd` | `e2e/wwhn-274-real-env-smoke.spec.ts`, `e2e/wwhn-274-a11y-browser-matrix.spec.ts`, `scripts/run-wwhn-274-exact-sha-evidence.mjs`, `scripts/verify-wwhn-274-closure.mjs`, `playwright.config.ts`, `package.json`, workflow, tài liệu này | FE274-P1-01, P1-06, P2-01, P2-02, P2-03        |
+| `ffbff16` | workflow: checkout đủ lịch sử + tự resolve `inputs.source_sha`; verifier khoá lại                                   | FE274-P1-01 (chạy lại theo SHA)                |
+| `4a17bff` | runner tự dựng `vite preview` cho build của chính SHA, manifest ghi `e2eTargetBaseUrl`                              | FE274-P1-01 (evidence đo đúng build)           |
+
+Nhánh `m1` có nhiều phiên làm việc song song trên cùng cây làm việc; ba commit trên
+chỉ chứa artifact của WWHN-274 (đã tách phần của task khác ra khỏi index trước khi commit).
+
+## Trạng thái GitHub Actions tại thời điểm đóng vòng 2
+
+Workflow `wwhn-274-fe-release-signoff.yml` đã chạy lại được theo SHA, nhưng **mọi
+job Actions của repository hiện không khởi động được**:
+
+> The job was not started because recent account payments have failed or your
+> spending limit needs to be increased.
+
+Điều này áp cho toàn bộ workflow của repo (`CI`, `WWHN-233`, `WWHN-274` — các run
+`32206985014`, `32206985042`, `32207008464`), không phải lỗi riêng của gate này. Vì
+vậy “run ID + job PASS + artifact” của FE274-P1-01 **chỉ có thể tạo sau khi tài
+khoản GitHub được mở lại**; cho tới lúc đó bằng chứng hợp lệ duy nhất là manifest
+exact-SHA chạy trên cây làm việc **sạch** (`npm run wwhn-274:exact-sha`), và nó
+phải được trình bày đúng như vậy, không được gọi là bằng chứng CI.

@@ -1,0 +1,35 @@
+{
+  "ticket": "WWHN-274",
+  "finding": "FE274-P1-06",
+  "parent": "WWHN-72",
+  "evidenceClass": "FE_BE_REAL_INTEGRATION_NOT_QA_UAT",
+  "scenario": "real-login-rejection-retry-safe",
+  "result": "PASS",
+  "sourceSha": "1d4761c2161bc13621a4c3d4fa2ff60504839eb3",
+  "environment": "test",
+  "buildVersion": "wwhn-274-1d4761c",
+  "frontendBaseUrl": "http://127.0.0.1:4173",
+  "apiBaseUrl": "http://127.0.0.1:8081/api/v1",
+  "browserProject": "chromium",
+  "timestamp": "2026-08-19T02:54:31.802Z",
+  "assertions": [
+    "POST {api}/auth/login sai thong tin tra 401/422 tu backend that",
+    "Nguoi dung van o /login va nut dang nhap con bam lai duoc"
+  ],
+  "observed": {
+    "loginStatus": 401,
+    "apiTraffic": [
+      {
+        "method": "POST",
+        "url": "http://127.0.0.1:8081/api/v1/auth/refresh",
+        "status": 422
+      },
+      {
+        "method": "POST",
+        "url": "http://127.0.0.1:8081/api/v1/auth/login",
+        "status": 401
+      }
+    ]
+  },
+  "truthBoundary": "Bang chung tich hop that FE-BE tren build da deploy. KHONG thay the QA1 release smoke (WWHN-275) va KHONG phai bang chung deploy/backup/rollback cua DevOps (WWHN-272)."
+}

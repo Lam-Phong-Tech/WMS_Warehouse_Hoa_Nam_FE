@@ -1,0 +1,24 @@
+{
+  "ticket": "WWHN-274",
+  "finding": "FE274-P1-06",
+  "parent": "WWHN-72",
+  "evidenceClass": "FE_BE_REAL_INTEGRATION_NOT_QA_UAT",
+  "scenario": "protected-api-401-fail-closed",
+  "result": "PASS",
+  "sourceSha": "1d4761c2161bc13621a4c3d4fa2ff60504839eb3",
+  "environment": "test",
+  "buildVersion": "wwhn-274-1d4761c",
+  "frontendBaseUrl": "http://127.0.0.1:4173",
+  "apiBaseUrl": "http://127.0.0.1:8081/api/v1",
+  "browserProject": "chromium",
+  "timestamp": "2026-08-19T02:54:28.857Z",
+  "assertions": [
+    "GET {api}/skus khong co phien tra 401 tu backend that (NFR-SRS-005)",
+    "Envelope loi giu success=false"
+  ],
+  "observed": {
+    "status": 401,
+    "errorCode": "UNAUTHENTICATED"
+  },
+  "truthBoundary": "Bang chung tich hop that FE-BE tren build da deploy. KHONG thay the QA1 release smoke (WWHN-275) va KHONG phai bang chung deploy/backup/rollback cua DevOps (WWHN-272)."
+}

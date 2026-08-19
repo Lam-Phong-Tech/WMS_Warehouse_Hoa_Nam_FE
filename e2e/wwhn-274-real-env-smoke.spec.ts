@@ -371,13 +371,23 @@ test.describe("WWHN-274 real-environment FE-BE smoke", () => {
     });
     expect(page.url()).toBe(urlBeforeReload);
 
-    const representativeReads = traffic.filter(
-      (entry) =>
-        entry.method === "GET" &&
-        entry.status === 200 &&
-        !entry.url.endsWith("/auth/me"),
-    );
-    expect(representativeReads.length).toBeGreaterThan(0);
+    // Doc nghiep vu sau F5 la bat dong bo: chup `traffic` ngay khi shell hien ra se
+    // dem hut cac request con dang bay va bai test do ngau nhien. Cho den khi that su
+    // co it nhat mot GET nghiep vu 200, thay vi dem mot lan roi ket luan.
+    const isRepresentativeRead = (entry: ApiTrafficEntry): boolean =>
+      entry.method === "GET" &&
+      entry.status === 200 &&
+      !entry.url.endsWith("/auth/me");
+
+    await expect
+      .poll(() => traffic.filter(isRepresentativeRead).length, {
+        timeout: 30_000,
+        message:
+          "Sau khi dang nhap that va F5, khong co GET nghiep vu nao tra 200 tu backend that",
+      })
+      .toBeGreaterThan(0);
+
+    const representativeReads = traffic.filter(isRepresentativeRead);
 
     await writeRealEvidence(testInfo, {
       scenario: "authenticated-session-and-representative-read",
