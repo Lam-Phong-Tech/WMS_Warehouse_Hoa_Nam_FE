@@ -37,7 +37,7 @@ The guard is anchored to the approved requirement baseline, not to a standalone 
 | --- | --- | --- |
 | Controlling requirement | `docs/HN_SRS_FRD_v1.12_FULL.md` (HN-SRS-FRD-001 v1.12, SHA-256 `02cd010cdc40036b62ec23a0d3aa645e4cce813497edf8b0e851ba6fcb512ff2`) | `REQ-SRS-037` — **Must** — "Không expose Stocktake/Variance, menu/API/permission/entity/report hoặc action sửa tồn trực tiếp"; AC-SRS-037 / TC-SRS-037 / BR-NOSTK-01..03. |
 | Baseline adoption | `WWHN-334` — status `DONE REDFLAG`, resolution `Done` (observed 18/08/2026) | SRS §0.1 defines the effective date as the WWHN-334 transition to DONE. Open review points OP-01/OP-05/OP-09 do not concern Stocktake. |
-| Data baseline | `docs/HoaNam_ERD_Moi_Nhat.md` (SHA-256 `c81381546d580edf50f4e327fbd859af72f9d3a190814043c00daa27511a06d3`) | §0.1 "Entity/field bị loại khỏi baseline": no `Stocktake_Session`, `Stocktake_Snapshot`, `Stocktake_Count`, `Variance_Line`, `Adjustment` or matching report/permission. |
+| Data baseline | `docs/HoaNam_ERD_Moi_Nhat.md` (SHA-256 `5209358cb0e9d91ced71b3b2ebaeb6e50d7f4304c03618a81a6a6a0adabf12e2`) | §0.1 "Entity/field bị loại khỏi baseline": no `Stocktake_Session`, `Stocktake_Snapshot`, `Stocktake_Count`, `Variance_Line`, `Adjustment` or matching report/permission. |
 | UI baseline | `docs/HN_WMS_Wireframe_MVP_ALIGNED_v3.20_v1.12_20260814.html` (SHA-256 `107a2b4de0f5763e39278ec130758d57e772e004e525416c088018cf9ddba658`) | No Stocktake/Variance screen, menu entry or stock-edit action. |
 
 `DEC-NO-STOCKTAKE-001` appears only as a decision row inside that baseline. The standalone Decision Record `WWHN-25 / DEC-STK-001` is still `In Progress` (BA comments `14791`, `15251`), so:

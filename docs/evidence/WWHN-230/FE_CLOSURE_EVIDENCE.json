@@ -26,7 +26,7 @@
   },
   "baselineDigests": {
     "docs/HN_SRS_FRD_v1.12_FULL.md": "02cd010cdc40036b62ec23a0d3aa645e4cce813497edf8b0e851ba6fcb512ff2",
-    "docs/HoaNam_ERD_Moi_Nhat.md": "30badd145e3eba41d080492b07e995d92dacbc370d304c60c015adeddfa8c33b",
+    "docs/HoaNam_ERD_Moi_Nhat.md": "5209358cb0e9d91ced71b3b2ebaeb6e50d7f4304c03618a81a6a6a0adabf12e2",
     "docs/HN_WMS_Wireframe_MVP_ALIGNED_v3.20_v1.12_20260814.html": "107a2b4de0f5763e39278ec130758d57e772e004e525416c088018cf9ddba658",
     "docs/api-evidence/STOCKTAKE_GOVERNANCE_STATUS.json": "ced858a58009cb765b90dee74184067ce5577d51779316dbd9f5eb3d8f2f1367",
     "docs/api-evidence/WWHN-230_SCOPE_DISPOSITION.json": "a9719c12cc4699f4c3700c76c0e6b11f74bb68c5c7230f636c561bf2041d1acf"

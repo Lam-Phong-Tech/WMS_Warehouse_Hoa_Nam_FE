@@ -88,7 +88,7 @@ The no-Stocktake guard is anchored to the adopted requirement baseline, not to a
   SHA-256 `02cd010cdc40036b62ec23a0d3aa645e4cce813497edf8b0e851ba6fcb512ff2`.
 - Baseline adoption: `WWHN-334`, status `DONE REDFLAG` / resolution `Done` (observed 18/08/2026). SRS section 0.1
   defines the effective date as that transition.
-- Data baseline: `docs/HoaNam_ERD_Moi_Nhat.md` SHA-256 `c81381546d580edf50f4e327fbd859af72f9d3a190814043c00daa27511a06d3`,
+- Data baseline: `docs/HoaNam_ERD_Moi_Nhat.md` SHA-256 `5209358cb0e9d91ced71b3b2ebaeb6e50d7f4304c03618a81a6a6a0adabf12e2`,
   section 0.1 excludes `Stocktake_Session`, `Stocktake_Snapshot`, `Stocktake_Count`, `Variance_Line`, `Adjustment`.
 - UI baseline: `docs/HN_WMS_Wireframe_MVP_ALIGNED_v3.20_v1.12_20260814.html` SHA-256
   `107a2b4de0f5763e39278ec130758d57e772e004e525416c088018cf9ddba658` — no Stocktake screen/menu/stock-edit action.

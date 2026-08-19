@@ -1,0 +1,24 @@
+=== typecheck ===
+
+> wms-hoa-nam-frontend@0.0.0 typecheck
+> tsc -b --pretty false
+
+=== lint ===
+  122:41  error  Unnecessary escape character: \S  no-useless-escape
+  122:49  error  Unnecessary escape character: \W  no-useless-escape
+
+✖ 27 problems (2 errors, 25 warnings)
+
+=== test ===
+    199|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  2 failed | 84 passed (86)
+      Tests  2 failed | 654 passed (656)
+   Start at  01:05:08
+   Duration  116.45s (transform 259.24s, setup 402.70s, import 323.17s, tests 88.32s, environment 664.43s)
+
+JSON report written to C:/LAM_PHONG_TECH/HoaNam_FE/WMS_Warehouse_Hoa_Nam_FE/test-results/vitest-results.json
+JUNIT report written to C:/LAM_PHONG_TECH/HoaNam_FE/WMS_Warehouse_Hoa_Nam_FE/test-results/vitest-junit.xml
