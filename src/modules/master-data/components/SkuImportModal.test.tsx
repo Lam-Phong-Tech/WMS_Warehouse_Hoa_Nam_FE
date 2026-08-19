@@ -431,7 +431,12 @@ describe("SkuImportModal — vân tay nội dung và ca đua preview (FE331-P1-0
 
   function renderModal() {
     return renderWithProviders(
-      <SkuImportModal open canImport onClose={() => {}} onImported={() => {}} />,
+      <SkuImportModal
+        open
+        canImport
+        onClose={() => {}}
+        onImported={() => {}}
+      />,
     );
   }
 

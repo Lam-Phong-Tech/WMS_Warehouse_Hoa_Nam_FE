@@ -781,7 +781,10 @@ export function SkuImportModal({
             icon={<EyeOutlined />}
             loading={previewMutation.isPending || digestPending}
             disabled={
-              !canImport || !fileSha256 || digestPending || commitMutation.isPending
+              !canImport ||
+              !fileSha256 ||
+              digestPending ||
+              commitMutation.isPending
             }
             onClick={() => {
               const payload = currentPayload();
