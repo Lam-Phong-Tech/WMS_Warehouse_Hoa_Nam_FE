@@ -1,0 +1,10 @@
+# WWHN-258 · bước flow06-formatting
+# candidate SHA: ba99f60171974649123bd17eca3c50ce8225cdf9
+# branch: m1
+# workdir: detached worktree
+
+$ npx prettier --check src/modules/outbound/services/alignedOutboundService.ts src/modules/outbound/components/AlignedOutboundDetailModal.tsx src/modules/outbound/pages/AlignedMvpOutboundPage.tsx src/modules/reports/pages/AlignedReportsPage.tsx src/test/flow06-packing-label-alignment.test.ts src/test/flow06-report-pagination-export.test.ts
+
+Checking formatting...
+All matched files use Prettier code style!
+

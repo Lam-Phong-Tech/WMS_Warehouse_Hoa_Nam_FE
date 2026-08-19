@@ -1,0 +1,45 @@
+# WWHN-258 · bước flow06-tests
+# candidate SHA: ba99f60171974649123bd17eca3c50ce8225cdf9
+# branch: m1
+# workdir: detached worktree
+
+$ npx vitest run src/test/flow06-packing-label-alignment.test.ts src/test/flow06-report-pagination-export.test.ts src/test/wwhn-258-report-pii-rbac.test.tsx
+
+
+ RUN  v4.1.10 C:/Users/ACER/AppData/Local/Temp/wwhn-258-ba99f6017197
+
+ ✓ src/test/flow06-report-pagination-export.test.ts (7 tests) 9ms
+ ✓ src/test/flow06-packing-label-alignment.test.ts (5 tests) 7ms
+ ✓ src/test/wwhn-258-report-pii-rbac.test.tsx (9 tests) 556ms
+
+ Test Files  3 passed (3)
+      Tests  21 passed (21)
+   Start at  17:26:06
+   Duration  15.13s (transform 1.05s, setup 16.57s, import 906ms, tests 572ms, environment 23.60s)
+
+JSON report written to C:/Users/ACER/AppData/Local/Temp/wwhn-258-ba99f6017197/test-results/vitest-results.json
+JUNIT report written to C:/Users/ACER/AppData/Local/Temp/wwhn-258-ba99f6017197/test-results/vitest-junit.xml
+
+stderr | src/test/wwhn-258-report-pii-rbac.test.tsx > WWHN-258 · báo cáo bảo hành — gate PII theo quyền > thiếu warranty.pii.export: không có ô lý do và thông điệp nói rõ vì sao
+React does not recognize the `allowClear` prop on a DOM element. If you intentionally want it to appear in the DOM as a custom attribute, spell it as lowercase `allowclear` instead. If you accidentally passed it from a parent component, remove it from the DOM element.
+React does not recognize the `showSearch` prop on a DOM element. If you intentionally want it to appear in the DOM as a custom attribute, spell it as lowercase `showsearch` instead. If you accidentally passed it from a parent component, remove it from the DOM element.
+React does not recognize the `optionFilterProp` prop on a DOM element. If you intentionally want it to appear in the DOM as a custom attribute, spell it as lowercase `optionfilterprop` instead. If you accidentally passed it from a parent component, remove it from the DOM element.
+Received `true` for a non-boolean attribute `loading`.
+
+If you want to write it to the DOM, pass a string instead: loading="true" or loading={value.toString()}.
+React does not recognize the `disabledDate` prop on a DOM element. If you intentionally want it to appear in the DOM as a custom attribute, spell it as lowercase `disableddate` instead. If you accidentally passed it from a parent component, remove it from the DOM element.
+React does not recognize the `labelRender` prop on a DOM element. If you intentionally want it to appear in the DOM as a custom attribute, spell it as lowercase `labelrender` instead. If you accidentally passed it from a parent component, remove it from the DOM element.
+React does not recognize the `rowKey` prop on a DOM element. If you intentionally want it to appear in the DOM as a custom attribute, spell it as lowercase `rowkey` instead. If you accidentally passed it from a parent component, remove it from the DOM element.
+
+stderr | src/test/wwhn-258-report-pii-rbac.test.tsx > WWHN-258 · báo cáo bảo hành — gate PII theo quyền > thiếu warranty.pii.export: không có ô lý do và thông điệp nói rõ vì sao
+Received `true` for a non-boolean attribute `wrap`.
+
+If you want to write it to the DOM, pass a string instead: wrap="true" or wrap={value.toString()}.
+Received `false` for a non-boolean attribute `pagination`.
+
+If you want to write it to the DOM, pass a string instead: pagination="false" or pagination={value.toString()}.
+
+If you used to conditionally omit it with pagination={condition && value}, pass pagination={condition ? value : undefined} instead.
+
+Not implemented: navigation to another Document
+Not implemented: navigation to another Document
