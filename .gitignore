@@ -7,6 +7,12 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# WWHN-217: raw log cua gate tai exact SHA la BANG CHUNG dong task (FE217-P1-03 doi
+# "raw logs hoac CI run gan 40-char SHA"). Quy tac `*.log` o tren nuot chung im lang, nen
+# ai clone lai repo se thay manifest tro toi file khong ton tai. Chi mo lai dung pham vi
+# docs/evidence — log rac cua runtime van bi loai nhu cu.
+!docs/evidence/**/*.log
+
 node_modules
 dist
 dist-ssr
