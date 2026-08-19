@@ -33,6 +33,11 @@ import {
   normalizeError,
 } from "@/shared/api/api-error";
 import {
+  classifyConcurrencyError,
+  isRetryableAfterReload,
+  WmsConcurrencyError,
+} from "@/shared/api/concurrency-contract";
+import {
   hasAnyWmsPermission,
   WMS_ACTION_PERMISSIONS,
   WMS_PERMISSION_CATALOG as P,
@@ -89,6 +94,31 @@ type ScanLogRow = {
 
 function makeKey(prefix: string) {
   return `${prefix}-${globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`}`;
+}
+
+/**
+ * WWHN-187 (DEV187-P1-07) — lần gửi lại tiếp theo có phải *cùng một hành động quét*
+ * hay không.
+ *
+ * Chỉ hai nhóm được giữ nguyên Idempotency-Key:
+ *  - thua race đã phân loại `RELOAD_THEN_RETRY` (412 STALE_VERSION / 409
+ *    CONCURRENCY_CONFLICT) — AC-GWT-CONC-001 cấm gửi lại bằng key mới;
+ *  - lỗi **không có HTTP status** (mất mạng, timeout, response rơi giữa đường) —
+ *    đúng kịch bản BE đã ghi xong nhưng client không biết; gửi lại bằng key cũ thì
+ *    BE replay, bằng key mới thì `scanned_qty` bị cộng đôi.
+ *
+ * Lỗi nghiệp vụ có status (422/403/409 trạng thái) thì hành động coi như kết thúc:
+ * giữ key cũ sẽ khiến lần quét sau (nội dung khác) bị 409 IDEMPOTENCY_CONFLICT oan.
+ */
+function shouldReuseScanKey(error: unknown): boolean {
+  if (error instanceof WmsConcurrencyError) {
+    return isRetryableAfterReload(error.outcome);
+  }
+  const outcome = classifyConcurrencyError(error);
+  if (outcome !== null) return isRetryableAfterReload(outcome);
+  const status = (error as { response?: { status?: unknown } } | null)?.response
+    ?.status;
+  return status === undefined || status === null;
 }
 
 function useInboundPermission(code: string | readonly string[]) {
@@ -312,6 +342,14 @@ export function InboundScanModal({
     useState<ReceiptEvidence | null>(null);
   const [cameraTarget, setCameraTarget] = useState<"box" | "code" | null>(null);
   const postKeyRef = useRef<string | null>(null);
+  /**
+   * WWHN-187 (DEV187-P1-07): key của hành động quét đang dở, kèm dấu vân tay nội
+   * dung của chính hành động đó. Giữ lại qua một lần gửi hỏng để lần gửi kế tiếp là
+   * *cùng hành động* chứ không phải lần quét thứ hai. Dấu vân tay để khi người dùng
+   * đổi mã/số lượng/BOX rồi quét tiếp thì key cũ bị bỏ — nếu không, nội dung mới đi
+   * với key cũ sẽ bị BE trả 409 IDEMPOTENCY_CONFLICT một cách oan uổng.
+   */
+  const scanKeyRef = useRef<{ key: string; fingerprint: string } | null>(null);
   const canEdit = useInboundPermission(P.INBOUND_CREATE);
   const canScan = useInboundPermission(P.INBOUND_SCAN);
   const canPost = useInboundPermission(P.INBOUND_POST);
@@ -420,6 +458,19 @@ export function InboundScanModal({
     }
 
     const logicalCode = normalizedCode || normalizedBox;
+    // Một hành động quét = một key, giữ nguyên qua mọi lần gửi lại của chính nó.
+    const scanFingerprint = [
+      selectedLine.id,
+      scanQuantity,
+      normalizedCode,
+      normalizedBox,
+    ].join("|");
+    const pendingScanKey = scanKeyRef.current;
+    const scanAttemptKey =
+      pendingScanKey?.fingerprint === scanFingerprint
+        ? pendingScanKey.key
+        : makeKey(`inbound-scan-${documentId}`);
+    scanKeyRef.current = { key: scanAttemptKey, fingerprint: scanFingerprint };
     try {
       let containerId: string | undefined;
       if (isComponent) {
@@ -444,22 +495,34 @@ export function InboundScanModal({
         includeCodeValue: !isComponent || isSerialTracked,
         quantity: scanQuantity,
         containerId,
+        idempotencyKey: scanAttemptKey,
       });
       const first = result[0];
       if (!first) throw new Error("API không trả kết quả scan.");
+      // Hành động quét này đã có kết quả xác định — lần quét sau là hành động mới.
+      scanKeyRef.current = null;
       setScanVersion(first.version);
       setScanLog((current) =>
         [
           {
             key: makeKey("scan"),
             code: logicalCode,
-            result: `Hợp lệ · +${scanQuantity}`,
+            result: first.replayed
+              ? "Hợp lệ · replay (đã ghi nhận trước đó, không cộng thêm)"
+              : `Hợp lệ · +${scanQuantity}`,
             success: true,
             lineId: first.line_id,
           },
           ...current,
         ].slice(0, 20),
       );
+      // AC-GWT-IN-001 áp cho bước quét: replay phải được nói rõ, nếu không người
+      // dùng tưởng lần gửi lại đã cộng thêm và sẽ quét bù một lần nữa.
+      if (first.replayed) {
+        toast.success(
+          "Lần quét này đã được ghi nhận trước đó. Hệ thống trả lại kết quả cũ (replay) — số đã quét KHÔNG tăng thêm.",
+        );
+      }
       setScanCode("");
       if (!isSerialTracked) setQuantity(1);
       await Promise.all([detailQuery.refetch(), scanEntriesQuery.refetch()]);
@@ -467,6 +530,14 @@ export function InboundScanModal({
     } catch (error) {
       const errorText = getApiErrorMessage(error, "Scan không hợp lệ.");
       const errorCode = normalizeError(error).code ?? undefined;
+      // WWHN-187 (DEV187-P1-07): chỉ giữ lại key khi lần gửi sau là *cùng một hành
+      // động quét* — thua race sau khi reload (412/409 CONCURRENCY) hoặc mất
+      // response (không có HTTP status). Đúng những ca đó mới cần replay. Lỗi
+      // nghiệp vụ (422/409 trạng thái) thì hành động coi như bỏ, phải sinh key mới,
+      // nếu không lần quét khác nội dung sẽ bị 409 IDEMPOTENCY_CONFLICT oan.
+      scanKeyRef.current = shouldReuseScanKey(error)
+        ? { key: scanAttemptKey, fingerprint: scanFingerprint }
+        : null;
       setScanLog((current) =>
         [
           {

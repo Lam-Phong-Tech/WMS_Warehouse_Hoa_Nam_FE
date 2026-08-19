@@ -123,6 +123,7 @@ export function useScanInbound() {
       includeCodeValue,
       quantity,
       containerId,
+      idempotencyKey,
     }: {
       id: string;
       code: string;
@@ -131,6 +132,11 @@ export function useScanInbound() {
       includeCodeValue: boolean;
       quantity?: number;
       containerId?: string;
+      /**
+       * WWHN-187 (DEV187-P1-07): caller giữ key của hành động quét và truyền lại
+       * đúng key đó khi gửi lại, để BE replay thay vì cộng đôi `scanned_qty`.
+       */
+      idempotencyKey?: string;
     }) =>
       scanInboundDocument(id, [code], {
         lineId,
@@ -138,6 +144,7 @@ export function useScanInbound() {
         includeCodeValue,
         quantity,
         containerId,
+        idempotencyKey,
       }),
   );
 }

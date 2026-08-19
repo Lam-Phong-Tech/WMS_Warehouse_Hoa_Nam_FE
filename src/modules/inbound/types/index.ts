@@ -127,4 +127,16 @@ export interface InboundScanResult {
   line_id?: string;
   message?: string;
   version: number;
+  /**
+   * WWHN-187 (DEV187-P1-07) — key đã dùng cho đúng *hành động quét* này. Lần gửi
+   * lại của cùng hành động phải dùng lại đúng key này (AC-GWT-CONC-001: không bao
+   * giờ retry bằng key mới), nếu không BE coi đó là một lần quét thật thứ hai và
+   * `scanned_qty` bị cộng đôi.
+   */
+  idempotency_key?: string;
+  /**
+   * `true` khi BE trả lại snapshot của lần quét trước (replay) — `scanned_qty`
+   * KHÔNG tăng thêm. UI phải nói rõ để người dùng không quét bù thêm một lần.
+   */
+  replayed?: boolean;
 }

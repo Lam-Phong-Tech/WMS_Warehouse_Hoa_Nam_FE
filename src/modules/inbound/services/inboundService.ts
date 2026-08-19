@@ -38,6 +38,15 @@ type ScanOptions = {
   includeCodeValue?: boolean;
   quantity?: number;
   containerId?: string;
+  /**
+   * WWHN-187 (DEV187-P1-07) — key của đúng *hành động quét* đang thực hiện.
+   *
+   * Bỏ trống thì service tự sinh một key mới cho lần gửi này. Khi gọi lại đúng
+   * hành động cũ (mất response, 412/409 CONCURRENCY sau khi reload), caller BẮT
+   * BUỘC truyền lại đúng key cũ — đó là điều kiện để BE replay thay vì cộng dồn
+   * `scanned_qty` lần thứ hai (DEC-SCAN-IDEMP-001).
+   */
+  idempotencyKey?: string;
 };
 
 export interface InboundListResult {
@@ -495,12 +504,33 @@ export async function scanInboundDocument(
     if (itemId) body.item_id = itemId;
     if (options.containerId) body.container_id = options.containerId;
 
-    const response = await http.post<RawRecord>(
-      endpoint(API_ENDPOINTS.INBOUND_SCAN, id),
-      body,
-      mutationHeaders(currentVersion),
+    // WWHN-187 (DEV187-P1-07) — mỗi hành động quét mang đúng một Idempotency-Key.
+    //
+    // `If-Match` chỉ chặn được replay *cũ*. Kịch bản làm hỏng dữ liệu là replay
+    // *mới*: BE đã ghi xong nhưng response rơi trên đường về, client tải lại phiếu
+    // thấy version đã nhảy rồi gửi lại đúng hành động đó với version mới hợp lệ.
+    // Nhánh PRODUCT/serial được `DUPLICATE_ITEM_IN_DOCUMENT` che, còn COMPONENT
+    // quantity-mode không có `item_id` nên `scanned_qty` bị cộng đôi (2 -> 4).
+    // BE chỉ nhận diện được điều đó khi có key (DEC-SCAN-IDEMP-001) — không gửi
+    // key thì hành vi vẫn y như cũ, nên FE phải luôn gửi.
+    //
+    // Nhiều mã trong một lần gọi là nhiều hành động quét khác nhau: phải tách key
+    // theo chỉ số, nếu dùng chung một key thì mã thứ hai sẽ bị 409
+    // IDEMPOTENCY_CONFLICT vì cùng key nhưng khác fingerprint.
+    const scanKey = `${options.idempotencyKey ?? makeIdempotencyKey("inbound-scan")}:${results.length}`;
+
+    // Thua race (412 STALE_VERSION / 409 CONCURRENCY_CONFLICT) phải nổi lên thành
+    // hướng dẫn "reload rồi gửi lại bằng ĐÚNG key cũ" thay vì một lỗi đỏ chung —
+    // AC-GWT-CONC-001 cấm UI tự submit lại bằng key mới.
+    const response = await withConcurrencyContract(() =>
+      http.post<RawRecord>(
+        endpoint(API_ENDPOINTS.INBOUND_SCAN, id),
+        body,
+        mutationHeaders(currentVersion, scanKey),
+      ),
     );
     assertReadOnlyScanResponse(response);
+    const replayed = response.replayed === true;
     currentVersion = requirePositiveNumber(response.version, "scan.version");
     results.push({
       code_value: code,
@@ -509,11 +539,19 @@ export async function scanInboundDocument(
       line_id: lineId,
       message: text(response.message) || undefined,
       version: currentVersion,
+      idempotency_key: scanKey,
+      replayed,
     });
 
     const index = lines.indexOf(line);
     if (index >= 0) {
-      lines[index] = { ...line, scanned_qty: alreadyScanned + quantity };
+      // Replay không cộng thêm vào `scanned_qty` phía server, nên bản sao cục bộ
+      // cũng không được cộng — nếu không, guard "vượt Expected" ở vòng lặp sau sẽ
+      // chặn nhầm một mã hợp lệ.
+      lines[index] = {
+        ...line,
+        scanned_qty: replayed ? alreadyScanned : alreadyScanned + quantity,
+      };
     }
   }
   return results;

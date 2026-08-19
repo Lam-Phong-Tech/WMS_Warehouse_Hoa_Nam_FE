@@ -207,10 +207,17 @@ describe("inbound real API contract", () => {
       context: "INBOUND",
       warehouse_id: "WH-1",
     });
+    // WWHN-187 (DEV187-P1-07): mọi lần quét đều mang Idempotency-Key. Không có key
+    // thì BE không phân biệt được "gửi lại" với "quét lần nữa" (DEC-SCAN-IDEMP-001).
     expect(http.post).toHaveBeenCalledWith(
       "/inbound-documents/DOC-1/scans",
       { line_id: "L-1", qty: 1, code_value: "BC-001", item_id: "ITEM-1" },
-      { headers: { "If-Match": "4" } },
+      {
+        headers: {
+          "If-Match": "4",
+          "Idempotency-Key": expect.stringMatching(/^fe:inbound-scan:.+:0$/),
+        },
+      },
     );
     expect(result[0]).toMatchObject({
       status: "VALID",
@@ -321,8 +328,130 @@ describe("inbound real API contract", () => {
     expect(http.post).toHaveBeenCalledWith(
       "/inbound-documents/DOC-1/scans",
       { line_id: "L-1", qty: 5, container_id: "CT-1" },
-      { headers: { "If-Match": "2" } },
+      {
+        headers: {
+          "If-Match": "2",
+          "Idempotency-Key": expect.stringMatching(/^fe:inbound-scan:.+:0$/),
+        },
+      },
     );
+  });
+
+  /**
+   * WWHN-187 · DEV187-P1-07 — nhánh COMPONENT quantity-mode là chỗ duy nhất mất an
+   * toàn: không có `item_id` nên `DUPLICATE_ITEM_IN_DOCUMENT` không bám vào đâu, và
+   * `If-Match` chỉ bắt được version cũ. Bộ test này canh đúng ba điều kiện để BE
+   * (DEC-SCAN-IDEMP-001) replay được thay vì cộng đôi `scanned_qty`.
+   */
+  it("gửi lại đúng hành động quét bằng key cũ và không cộng đôi khi BE trả replayed", async () => {
+    vi.mocked(http.get).mockResolvedValue({
+      id: "DOC-1",
+      dst_warehouse_id: "WH-1",
+      status: "SCANNING",
+      version: 2,
+      lines: [
+        { id: "L-1", product_id: "SKU-COMP", qty_planned: 4, scanned_qty: 2 },
+      ],
+    });
+    // Response của lần gửi lại: BE nhận ra đúng hành động cũ, trả nguyên snapshot
+    // (version giữ nguyên 2, replayed=true) chứ không bump lên 3.
+    vi.mocked(http.post).mockResolvedValue({
+      version: 2,
+      replayed: true,
+      stock_effect: "NONE",
+      movement_created: false,
+    });
+
+    const result = await scanInboundDocument("DOC-1", ["BOX-001"], {
+      lineId: "L-1",
+      ifMatch: 2,
+      includeCodeValue: false,
+      quantity: 2,
+      containerId: "CT-1",
+      idempotencyKey: "fe:inbound-scan:attempt-cu",
+    });
+
+    expect(http.post).toHaveBeenCalledWith(
+      "/inbound-documents/DOC-1/scans",
+      { line_id: "L-1", qty: 2, container_id: "CT-1" },
+      {
+        headers: {
+          "If-Match": "2",
+          "Idempotency-Key": "fe:inbound-scan:attempt-cu:0",
+        },
+      },
+    );
+    expect(result[0]).toMatchObject({
+      replayed: true,
+      version: 2,
+      idempotency_key: "fe:inbound-scan:attempt-cu:0",
+    });
+  });
+
+  it("tách key theo từng mã trong một lần gọi để mã thứ hai không bị 409 IDEMPOTENCY_CONFLICT", async () => {
+    // Cùng một key cho hai mã khác nhau là cùng key + khác fingerprint — đúng định
+    // nghĩa 409 IDEMPOTENCY_CONFLICT của SRS §8.2. Suffix theo chỉ số tránh điều đó.
+    vi.mocked(http.get).mockResolvedValue({
+      id: "DOC-1",
+      dst_warehouse_id: "WH-1",
+      status: "SCANNING",
+      version: 1,
+      lines: [
+        { id: "L-1", product_id: "SKU-COMP", qty_planned: 4, scanned_qty: 0 },
+      ],
+    });
+    vi.mocked(http.post)
+      .mockResolvedValueOnce({
+        version: 2,
+        stock_effect: "NONE",
+        movement_created: false,
+      })
+      .mockResolvedValueOnce({
+        version: 3,
+        stock_effect: "NONE",
+        movement_created: false,
+      });
+
+    const result = await scanInboundDocument("DOC-1", ["BOX-A", "BOX-B"], {
+      lineId: "L-1",
+      ifMatch: 1,
+      includeCodeValue: false,
+      quantity: 1,
+      containerId: "CT-1",
+      idempotencyKey: "fe:inbound-scan:lo-hai-ma",
+    });
+
+    expect(result[0]?.idempotency_key).toBe("fe:inbound-scan:lo-hai-ma:0");
+    expect(result[1]?.idempotency_key).toBe("fe:inbound-scan:lo-hai-ma:1");
+  });
+
+  it("phân loại 409 CONCURRENCY_CONFLICT của bước quét thành reload-rồi-thử-lại (giữ nguyên key)", async () => {
+    vi.mocked(http.get).mockResolvedValue({
+      id: "DOC-1",
+      dst_warehouse_id: "WH-1",
+      status: "SCANNING",
+      version: 2,
+      lines: [
+        { id: "L-1", product_id: "SKU-COMP", qty_planned: 4, scanned_qty: 0 },
+      ],
+    });
+    vi.mocked(http.post).mockRejectedValue({
+      isAxiosError: true,
+      response: { status: 409, data: { error_code: "CONCURRENCY_CONFLICT" } },
+    });
+
+    await expect(
+      scanInboundDocument("DOC-1", ["BOX-001"], {
+        lineId: "L-1",
+        ifMatch: 2,
+        includeCodeValue: false,
+        quantity: 2,
+        containerId: "CT-1",
+      }),
+    ).rejects.toMatchObject({
+      code: "CONCURRENCY_CONFLICT",
+      outcome: { action: "RELOAD_THEN_RETRY", reuseIdempotencyKey: true },
+    });
   });
 
   it("removes a scan entry before Post through the ERD unscan endpoint", async () => {
