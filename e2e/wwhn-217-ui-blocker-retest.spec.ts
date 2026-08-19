@@ -593,6 +593,40 @@ test.describe("WWHN-217 · QA2 retest — back / duplicate / retry / network", (
     });
   });
 
+  test("TC-217-BACK-OUT: Back đóng overlay chi tiết của OUT-01 và giữ nguyên màn xuất kho", async ({
+    page,
+  }, testInfo) => {
+    await setupMockApi(page);
+    await page.setViewportSize({ width: 375, height: 812 });
+    await login(page, "/outbound");
+
+    await expect(page.locator("table").first()).toBeVisible();
+    // OUTBOUND_ROW ở trạng thái SCANNING + đủ quyền outbound.scan → nút hành động là "Mở"
+    // (vào overlay chi tiết scan → tổng hợp → Packing Label → Post Issue).
+    await page.getByRole("button", { name: /Mở|Xem/ }).first().click();
+    await expect(page.getByRole("dialog").first()).toBeVisible();
+
+    await page.goBack();
+
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expect(page).toHaveURL(/\/outbound/);
+
+    await captureEvidence(page, testInfo, {
+      testCaseId: "TC-217-BACK-OUT",
+      defectId: "D-217-02",
+      dimension: "back",
+      screen: "SCR-OUT-01",
+      route: "/outbound",
+      role: "warehouse-staff",
+      viewport: { width: 375, height: 812 },
+      assertions: [
+        "Mở overlay chi tiết OUT đẩy một history entry",
+        "Back đóng overlay chi tiết",
+        "Back KHÔNG rời khỏi /outbound giữa chuỗi scan → Packing Label → Post Issue",
+      ],
+    });
+  });
+
   test("TC-217-NET-READ: mất mạng khi tải danh sách thì có trạng thái lỗi và nút thử lại", async ({
     page,
   }, testInfo) => {
