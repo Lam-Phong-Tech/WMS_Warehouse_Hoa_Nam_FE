@@ -67,7 +67,7 @@ function git(cwd, args) {
   }
 }
 
-function repoIdentity(cwd, label) {
+function repoIdentity(cwd, label, excludes = []) {
   if (!existsSync(cwd)) {
     return {
       available: false,
@@ -75,7 +75,14 @@ function repoIdentity(cwd, label) {
     };
   }
   const sha = git(cwd, "rev-parse HEAD");
-  const status = git(cwd, "status --porcelain");
+  // The evidence pack this runner is about to (re)generate is excluded from the
+  // cleanliness verdict — otherwise a prior pack (e.g. a committed positive
+  // control log) would block its own regeneration. Everything that is SOURCE
+  // must still be byte-identical to the checked-out SHA.
+  const statusArgs = excludes.length
+    ? `status --porcelain -- . ${excludes.map((entry) => `":(exclude)${entry}"`).join(" ")}`
+    : "status --porcelain";
+  const status = git(cwd, statusArgs);
   // m1 is a shared working tree between concurrent sessions, so the sanctioned
   // way to get a clean checkout of an exact SHA is a detached git worktree.
   // Detached is only accepted when the commit is actually on m1 — the pin then
@@ -97,6 +104,7 @@ function repoIdentity(cwd, label) {
     // A dirty tree means the SHA does not describe what was actually executed.
     workingTreeClean: status === "",
     uncommittedFiles: status ? status.split(/\r?\n/u).length : 0,
+    dirtyCheckExcludes: excludes,
     commitTimestamp: git(cwd, "log -1 --format=%cI"),
   };
 }
@@ -124,7 +132,9 @@ function toPosix(path) {
 // command in this run executed against.
 // ---------------------------------------------------------------------------
 const identityCapturedAt = new Date().toISOString();
-const frontendIdentity = repoIdentity(root, "frontend");
+const frontendIdentity = repoIdentity(root, "frontend", [
+  "docs/evidence/WWHN-296",
+]);
 const backendIdentity = repoIdentity(backendRoot, "backend");
 
 const preRunErrors = [];
