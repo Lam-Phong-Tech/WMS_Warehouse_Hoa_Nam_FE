@@ -150,8 +150,6 @@ export interface CreateWarrantyCaseRequest {
   received_condition?: string;
   missing_code_reason?: string;
   manual_product_description?: string;
-  consent_contact?: boolean;
-  consent_photo?: boolean;
   notes?: string;
   priority?: WarrantyPriority;
 }
