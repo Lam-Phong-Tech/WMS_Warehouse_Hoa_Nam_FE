@@ -57,6 +57,17 @@ quyết định phạm vi từ file riêng.
 chung đang có phiên khác sửa. Commit `52969fb` (candidate `f9f2e65`, 4/4 vitest pass,
 `workingTreeClean=true` cả hai phía). Chi tiết đầy đủ + cách chạy lại: xem §6 bản BE
 (`../../HoaNam_BE/WMS_Warehouse_Hoa_Nam_BE/docs/docs_task_jira/WWHN-230.md`).
-- `npm run wwhn-230:verify`: **PASS** (1 PENDING là sign-off, đúng thiết kế).
 - `npm run check:api-mapping`: **PASS** (56 dòng, 4 fail-closed có chủ đích).
 - Full vitest: **575 test**, không có regression do task này.
+
+## Vòng 3 — soát lại (2026-08-19): nhãn subject commit `52969fb` bị lệch
+
+Subject của commit `52969fb` ghi "candidate 1bb3cba" (cha trực tiếp của commit đó trên `m1` tại
+thời điểm soạn message), nhưng **nội dung** `FE_CLOSURE_EVIDENCE.json` mà chính commit đó ghi lại
+pin đúng `identity.frontend.commitSha = f9f2e65e687669f033d259a693635546876f05a8` (ancestor xa
+hơn) — khớp với bảng "Vòng 2" ở trên, không lệch. Nguyên nhân: worktree cô lập được dựng tại
+`f9f2e65...`, nhưng vài commit song song khác chen vào trước khi kết quả được commit lên working
+tree chung, nên subject soạn theo HEAD ambient lúc đó (`1bb3cba`) thay vì SHA đã pin trong file.
+Không amend commit cũ (nhánh dùng chung). SHA chuẩn luôn là SHA **trong nội dung file**, không
+phải SHA trong dòng `git log --oneline`. Chi tiết đối chiếu đầy đủ: §6.1 bản BE
+(`../../HoaNam_BE/WMS_Warehouse_Hoa_Nam_BE/docs/docs_task_jira/WWHN-230.md`).
