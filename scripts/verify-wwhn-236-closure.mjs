@@ -302,7 +302,8 @@ const EMIT_IDENTITY = process.argv.includes("--emit-identity");
 
 const gitFE = (args, cwd = FE_ROOT) => {
   try {
-    return _exec("git", args, { cwd, encoding: "utf8" }).trim();
+    // stderr bị nuốt có chủ đích: `git rev-parse HEAD:<path>` in cảnh báo cho file mới.
+    return _exec("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
   } catch {
     return null;
   }
@@ -424,7 +425,10 @@ const IDENTITY_REL = "docs/evidence/WWHN-236/FE_CLOSURE_IDENTITY.json";
     const status = gitFE(["status", "--porcelain"]) ?? "";
     const dirty = status.split("\n").filter(Boolean).map((l) => l.slice(3).trim().replace(/^"|"$/g, ""));
     const governedPaths = new Set(files.map((f) => f.path));
-    const governedDirty = files.filter((f) => f.uncommitted || (f.present && !f.tracked)).map((f) => f.path);
+    // Pin carrier luôn bẩn tại thời điểm sinh identity — chúng CHÍNH LÀ thứ đang được ghi.
+    const governedDirty = files
+      .filter((f) => !f.pin_carrier && (f.uncommitted || (f.present && !f.tracked)))
+      .map((f) => f.path);
     const payload = {
       document: "FE_CLOSURE_IDENTITY",
       task: "WWHN-236",
@@ -442,7 +446,7 @@ const IDENTITY_REL = "docs/evidence/WWHN-236/FE_CLOSURE_IDENTITY.json";
       governed_working_tree: governedDirty.length === 0 ? "CLEAN" : "DIRTY",
       governed_dirty_files: governedDirty,
       foreign_dirty_files: dirty.filter((p) => !governedPaths.has(p)),
-      governed_files: files,
+      governed_files: files.map((f) => (f.path === IDENTITY_REL ? { ...f, present: true } : f)),
     };
     mkdirSync(join(FE_ROOT, "docs/evidence/WWHN-236"), { recursive: true });
     writeFileSync(join(FE_ROOT, IDENTITY_REL), `${JSON.stringify(payload, null, 2)}\n`);
