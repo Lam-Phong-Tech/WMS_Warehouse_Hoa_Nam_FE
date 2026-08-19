@@ -185,3 +185,13 @@ export interface PvAdminProfilePayload {
   industry_ids: string[];
   tag_ids: string[];
 }
+
+/**
+ * FE252-P1-08 — kết quả `publishPvProduct`. `pv_profile_version` là version hồ
+ * sơ App PV SAU thao tác: BE trả về để màn hình cập nhật precondition tại chỗ
+ * thay vì phải đọc lại cả danh sách mới dám bấm công tắc lần hai.
+ */
+export interface PvPublishResult {
+  published_to_app: boolean;
+  pv_profile_version: number;
+}

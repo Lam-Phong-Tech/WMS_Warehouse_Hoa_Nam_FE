@@ -126,6 +126,21 @@ export function usePvAdminProfiles(params: Record<string, string> = {}) {
   });
 }
 
+/**
+ * Bốn hook lưu master PV trước đây rơi về `?? 1` khi thiếu version. Điều đó
+ * biến If-Match thành số bịa và làm optimistic lock mất tác dụng đúng vào lúc
+ * cần nhất (bản ghi vừa bị người khác sửa). Thiếu version là lỗi lập trình của
+ * màn hình, phải nổ ngay chứ không được im lặng ghi đè.
+ */
+function requiredVersion(version: number | undefined): number {
+  if (typeof version !== "number") {
+    throw new Error(
+      "Thiếu version bản ghi đang mở. Hãy tải lại danh sách rồi thử lại.",
+    );
+  }
+  return version;
+}
+
 function useInvalidatePv() {
   const queryClient = useQueryClient();
   return () => queryClient.invalidateQueries({ queryKey: pvKeys.all });
@@ -140,7 +155,7 @@ export function useSavePvIndustry() {
       payload: PvAdminSimpleMasterPayload;
     }) =>
       input.id
-        ? updatePvIndustry(input.id, input.version ?? 1, input.payload)
+        ? updatePvIndustry(input.id, requiredVersion(input.version), input.payload)
         : createPvIndustry(input.payload),
     onSuccess: invalidate,
   });
@@ -155,7 +170,7 @@ export function useSavePvTag() {
       payload: PvAdminSimpleMasterPayload;
     }) =>
       input.id
-        ? updatePvTag(input.id, input.version ?? 1, input.payload)
+        ? updatePvTag(input.id, requiredVersion(input.version), input.payload)
         : createPvTag(input.payload),
     onSuccess: invalidate,
   });
@@ -170,7 +185,7 @@ export function useSavePvRule() {
       payload: PvAdminRulePayload;
     }) =>
       input.id
-        ? updatePvRule(input.id, input.version ?? 1, input.payload)
+        ? updatePvRule(input.id, requiredVersion(input.version), input.payload)
         : createPvRule(input.payload),
     onSuccess: invalidate,
   });
@@ -185,17 +200,31 @@ export function useSavePvProfile() {
       payload: PvAdminProfilePayload;
     }) =>
       input.id
-        ? updatePvProfile(input.id, input.version ?? 1, input.payload)
+        ? updatePvProfile(input.id, requiredVersion(input.version), input.payload)
         : createPvProfile(input.payload),
     onSuccess: invalidate,
   });
 }
 
+/**
+ * FE252-P1-08 — `profileVersion` là version hồ sơ App PV của đúng dòng người
+ * dùng đang bấm (`PvAdminProfile.version`). Hook KHÔNG có giá trị mặc định:
+ * không có version thì không có precondition, và một precondition bịa ra còn
+ * nguy hiểm hơn là không gửi gì.
+ *
+ * Sau khi thành công phải invalidate để version mới (`pv_profile_version`) thay
+ * chỗ version cũ trong cache — lần bấm kế tiếp phải dùng số mới, nếu không
+ * chính FE tự tạo ra 412 STALE_VERSION cho mình.
+ */
 export function useSetPvPublished() {
   const invalidate = useInvalidatePv();
   return useMutation({
-    mutationFn: (input: { skuId: string; published: boolean }) =>
-      setPvProductPublished(input.skuId, input.published),
+    mutationFn: (input: {
+      skuId: string;
+      published: boolean;
+      profileVersion: number;
+    }) =>
+      setPvProductPublished(input.skuId, input.published, input.profileVersion),
     onSuccess: invalidate,
   });
 }

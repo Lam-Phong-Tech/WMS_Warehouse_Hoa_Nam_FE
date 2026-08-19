@@ -18,7 +18,7 @@ import type {
   PvAdminRule,
   PvAdminSimpleMaster,
 } from "@/modules/pv/types/pv.types";
-import { getMutationErrorMessage } from "@/shared/api/api-error";
+import { getMutationErrorMessage, normalizeError } from "@/shared/api/api-error";
 import { LoadingState } from "@/shared/components/data-display/LoadingState";
 import { WMS_PERMISSION_CATALOG as P } from "@/shared/constants/wms-permissions";
 import { UI_STATE, uiStateProps } from "@/shared/constants/ui-state";
@@ -271,11 +271,32 @@ export default function PvAdminPage() {
     }
   }
 
+  /**
+   * FE252-P1-08 — công tắc publish gửi If-Match theo version hồ sơ App PV của
+   * ĐÚNG dòng đang bấm (`row.version`, nguồn: GET /pv-admin/resources/
+   * product-profiles). Không có version nào được đoán ở đây.
+   *
+   * 412 STALE_VERSION / 428 PRECONDITION_REQUIRED đều có nghĩa là màn hình đang
+   * cầm dữ liệu cũ, nên phải tải lại danh sách rồi mới cho bấm tiếp — báo lỗi
+   * suông sẽ khiến người dùng bấm lại đúng version cũ và hỏng lần nữa.
+   */
   async function togglePublish(row: PvAdminProfile, next: boolean) {
     try {
-      await setPublished.mutateAsync({ skuId: row.sku_id, published: next });
+      await setPublished.mutateAsync({
+        skuId: row.sku_id,
+        published: next,
+        profileVersion: row.version,
+      });
       toast.success(next ? "Đã publish lên App PV." : "Đã gỡ khỏi App PV.");
     } catch (error) {
+      const normalized = normalizeError(error);
+      if (normalized.status === 412 || normalized.status === 428) {
+        await profiles.refetch();
+        toast.error(
+          "Hồ sơ App PV đã đổi ở phiên khác. Danh sách vừa được tải lại — kiểm tra rồi bật/tắt lại.",
+        );
+        return;
+      }
       toast.error(getMutationErrorMessage(error));
     }
   }

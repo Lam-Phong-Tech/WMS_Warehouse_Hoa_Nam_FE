@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { createMockAxiosError } from "@/shared/api/api-error";
 import { renderWithProviders } from "@/test/test-utils";
 import { useAuthStore } from "@/shared/store/auth.store";
 import type { PvAdminProfile } from "@/modules/pv/types/pv.types";
@@ -66,6 +67,7 @@ describe("WWHN-252 · PvAdminPage (SCR-PV-ADM-01)", () => {
     );
     setPvProductPublishedMock.mockReset().mockResolvedValue({
       published_to_app: true,
+      pv_profile_version: PROFILE.version + 1,
     });
   });
 
@@ -110,5 +112,56 @@ describe("WWHN-252 · PvAdminPage (SCR-PV-ADM-01)", () => {
     expect(
       await screen.findByTestId("pv-admin-publish-switch"),
     ).not.toBeDisabled();
+  });
+
+  /**
+   * FE252-P1-08 — công tắc phải gửi ĐÚNG version của dòng đang bấm. Đây là test
+   * chặn hồi quy cho gốc lỗi: trước đây FE gọi publish không kèm precondition
+   * nào, nên hai người bấm cùng lúc thì người bấm sau ghi đè im lặng.
+   */
+  it("gửi version hồ sơ của đúng dòng đang bấm làm precondition", async () => {
+    signInWith(["pv.master.manage", "pv.publish"]);
+
+    renderWithProviders(<PvAdminPage />);
+
+    fireEvent.click(await screen.findByTestId("pv-admin-publish-switch"));
+
+    await waitFor(() =>
+      expect(setPvProductPublishedMock).toHaveBeenCalledWith(
+        PROFILE.sku_id,
+        true,
+        PROFILE.version,
+      ),
+    );
+  });
+
+  /** 412/428 = màn hình đang cầm dữ liệu cũ ⇒ phải tải lại rồi mới cho bấm tiếp. */
+  it.each([
+    [412, "STALE_VERSION"],
+    [428, "PRECONDITION_REQUIRED"],
+  ])("%i làm màn hình tải lại danh sách hồ sơ", async (status, code) => {
+    signInWith(["pv.master.manage", "pv.publish"]);
+    setPvProductPublishedMock.mockRejectedValueOnce(
+      createMockAxiosError({
+        status,
+        data: { success: false, error_code: code, message: "Version lệch." },
+      }),
+    );
+
+    renderWithProviders(<PvAdminPage />);
+    await screen.findByTestId("pv-admin-publish-switch");
+
+    const callsBefore = listPvAdminResourcesMock.mock.calls.filter(
+      ([resource]) => resource === "product-profiles",
+    ).length;
+
+    fireEvent.click(screen.getByTestId("pv-admin-publish-switch"));
+
+    await waitFor(() => {
+      const callsAfter = listPvAdminResourcesMock.mock.calls.filter(
+        ([resource]) => resource === "product-profiles",
+      ).length;
+      expect(callsAfter).toBeGreaterThan(callsBefore);
+    });
   });
 });

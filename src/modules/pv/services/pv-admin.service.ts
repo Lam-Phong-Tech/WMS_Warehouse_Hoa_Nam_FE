@@ -9,6 +9,7 @@ import type {
   PvAdminSimpleMaster,
   PvAdminSimpleMasterPayload,
   PvPage,
+  PvPublishResult,
 } from "@/modules/pv/types/pv.types";
 
 /**
@@ -23,6 +24,21 @@ import type {
 
 function ifMatch(version: number) {
   return { headers: { "If-Match": String(version) } };
+}
+
+/**
+ * FE252-P1-08: chặn ngay tại tầng service việc gửi một version "đoán". Trước
+ * đây hook rơi về `?? 1` khi thiếu version — nghĩa là FE tự bịa precondition và
+ * biến 412 STALE_VERSION thành một lần ghi đè im lặng đúng lúc dữ liệu đã đổi.
+ * Thà hỏng ngay ở client với thông điệp rõ ràng còn hơn ghi sai lên server.
+ */
+function assertVersion(version: number | undefined, action: string): number {
+  if (typeof version !== "number" || !Number.isInteger(version) || version < 0) {
+    throw new Error(
+      `Thiếu version hiện tại để ${action}. Hãy tải lại danh sách rồi thử lại.`,
+    );
+  }
+  return version;
 }
 
 export async function listPvAdminResources<T>(
@@ -66,7 +82,7 @@ export function updatePvIndustry(
       status: payload.status,
       sort_order: payload.sort_order,
     },
-    ifMatch(version),
+    ifMatch(assertVersion(version, "cập nhật master App PV")),
   );
 }
 
@@ -97,7 +113,7 @@ export function updatePvTag(
       sort_order: payload.sort_order,
       tag_type: payload.tag_type ?? null,
     },
-    ifMatch(version),
+    ifMatch(assertVersion(version, "cập nhật master App PV")),
   );
 }
 
@@ -116,7 +132,7 @@ export function updatePvRule(
   return http.patch<PvAdminRule>(
     PV_API_ENDPOINTS.ADMIN_RESOURCE("recommendation-rules", id),
     payload,
-    ifMatch(version),
+    ifMatch(assertVersion(version, "cập nhật master App PV")),
   );
 }
 
@@ -145,14 +161,31 @@ export function updatePvProfile(
       industry_ids: payload.industry_ids,
       tag_ids: payload.tag_ids,
     },
-    ifMatch(version),
+    ifMatch(assertVersion(version, "cập nhật master App PV")),
   );
 }
 
-/** REQ-SRS-020 — permission RIÊNG `pv.publish`, không phải pv.master.manage. */
-export function setPvProductPublished(skuId: string, published: boolean) {
-  return http.patch<{ published_to_app: boolean }>(
+/**
+ * REQ-SRS-020 — permission RIÊNG `pv.publish`, không phải pv.master.manage.
+ *
+ * FE252-P1-08: publish là hành động đổi trạng thái mặt CÔNG KHAI nên Annex C
+ * khai `If-Match` bắt buộc. Version phải là version HỒ SƠ App PV của đúng dòng
+ * đang mở trên SCR-PV-ADM-01 (`PvAdminProfile.version`, do
+ * `GET /pv-admin/resources/product-profiles` trả về) — không phải version SKU,
+ * không phải hằng số đoán trước. Thiếu header BE trả 428 PRECONDITION_REQUIRED,
+ * lệch version trả 412 STALE_VERSION.
+ *
+ * `profileVersion = 0` là giá trị hợp lệ, nghĩa là "SKU chưa có hồ sơ App PV"
+ * (lần publish đầu tiên) — xem BE `docs/decision-records/DEC-API-IFMATCH-002-pv-publish-precondition.md`.
+ */
+export function setPvProductPublished(
+  skuId: string,
+  published: boolean,
+  profileVersion: number,
+) {
+  return http.patch<PvPublishResult>(
     PV_API_ENDPOINTS.PRODUCT_PUBLISH(skuId),
     { published },
+    ifMatch(assertVersion(profileVersion, "publish App PV")),
   );
 }
