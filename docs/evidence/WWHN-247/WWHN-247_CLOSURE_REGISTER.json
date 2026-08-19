@@ -6,6 +6,13 @@
     "verdict": "Chưa đạt yêu cầu",
     "date": "2026-08-18"
   },
+  "reviewInputR2": {
+    "score": "89/100",
+    "verdict": "Đạt yêu cầu",
+    "date": "2026-08-19",
+    "closure": "docs/evidence/WWHN-247/WWHN-247_R2_CLOSURE.md",
+    "qa2Report": "docs/evidence/WWHN-248/QA2_TEST_REPORT.md"
+  },
   "candidate": {
     "feSha": "59c4b16883d64081c8cf150e0df74f90b1d5a8fc",
     "beSha": "08abf3f95f9e83be3bc9efe1258fd5f3ea5baa9e",
@@ -13,7 +20,16 @@
     "feDocsSha": "c6bab76ef3abbf0c0c111477a4e6cf7bd2c58dae",
     "pinInvariant": "feSha là commit chứa toàn bộ thay đổi hành vi của WWHN-247. feDocsSha chỉ thêm docs/ và sửa bộ luật phát hiện mojibake trong scripts/verify-wwhn-247-closure.mjs. Bất biến chống pin rot — phải rỗng: git diff --stat 59c4b16..<HEAD> -- src/modules/warranty src/test/wwhn-247-warranty-closure.test.ts. Nếu không rỗng thì kết quả QA gắn với feSha phải chạy lại, không được dùng lại.",
     "relatedFeSha": "be18bec7d161b0656c460a44e37a7c286099c24c",
-    "relatedFeShaNote": "WWHN-244 — đồng bộ ma trận trạng thái + mask PII ở tầng render; WWHN-247 xây tiếp trên đó, không chồng lấn."
+    "relatedFeShaNote": "WWHN-244 — đồng bộ ma trận trạng thái + mask PII ở tầng render; WWHN-247 xây tiếp trên đó, không chồng lấn.",
+    "r2": {
+      "date": "2026-08-19",
+      "feWarrantyScopeCandidate": "c9f52df44638558cc3c2e08807e05a9d05f689c8",
+      "feHeadAtRun": "ebdb061098bea9426c2949e5c50b53ba8a09289f",
+      "beHeadAtRun": "4a6965b5d432947c497a2c3370a62a17907251a3",
+      "beWarrantyScopeLastTouch": "0142b49ed11ac410136ca96993b3fb6ca2ac2971",
+      "rangeInvariant": "git diff --stat c9f52df..ebdb061 -- src/modules/warranty src/test/wwhn-247-warranty-closure.test.ts scripts/verify-wwhn-247-closure.mjs src/test/warranty-v17-fail-closed.test.ts = rỗng (kiểm 19/08/2026)",
+      "reason": "Bất biến pin của 59c4b16 vỡ bởi c9f52df (WWHN-244 P1-07, xoá field chết) + ce17940 (WWHN-252, escape chuỗi test) — theo luật pin, toàn bộ QA đã rerun trên candidate mới; log trong WWHN-247_R2_CLOSURE.md"
+    }
   },
   "sourceOfTruth": [
     "HN_SRS_FRD_v1.12_FULL.md §6 STATE MODEL",

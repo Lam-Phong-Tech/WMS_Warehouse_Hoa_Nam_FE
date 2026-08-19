@@ -155,3 +155,17 @@ chéo hai repo.
   `warranty-flow04-live-runtime.spec.ts`, cần `E2E_LIVE_RUNTIME=1` với BE + DB thật.
 - Chữ ký BA lên bảng ma trận (`STATUS_MATRIX.md` §5) là hạng mục **quy trình** còn lại, không phải
   hạng mục kỹ thuật.
+
+## 8. Vòng R2 — review 89/100 (19/08/2026)
+
+- Register FE247-P1-01..04 / P2-01..02 đóng tại
+  `docs/evidence/WWHN-247/WWHN-247_R2_CLOSURE.md`; QA2 độc lập (WWHN-248) tại
+  `docs/evidence/WWHN-248/QA2_TEST_REPORT.md` — verdict **ACCEPTED**, 16/16 e2e PASS,
+  12 screenshot.
+- **Nhánh canonical là `m1`** — không tồn tại nhánh `m1ee`/`m1ee/m1`; mọi tham chiếu như
+  vậy trong prompt/review cũ là sai chính tả (FE247-P2-01, cùng mẫu FE217-P2-01/FE242-P2-02/
+  FE296-P2-01). Mọi trích dẫn nguồn dùng `m1` + exact SHA 40 ký tự.
+- Candidate R2: FE warranty-scope `c9f52df44638558cc3c2e08807e05a9d05f689c8`, FE HEAD lúc
+  chạy `ebdb061098bea9426c2949e5c50b53ba8a09289f`, BE HEAD
+  `4a6965b5d432947c497a2c3370a62a17907251a3`. `STATUS_MATRIX.md` stamp **v1.1** cho BA Main
+  sign-off trên Jira (FE247-P2-02).

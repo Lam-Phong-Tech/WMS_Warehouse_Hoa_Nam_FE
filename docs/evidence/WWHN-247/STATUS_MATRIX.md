@@ -1,5 +1,10 @@
 # WWHN-247 — Ma trận trạng thái bảo hành: SRS ↔ BE ↔ FE
 
+**Phiên bản tài liệu: v1.1 — 19/08/2026.** (v1.0 = 18/08/2026 tại `c6bab76`. v1.1 KHÔNG đổi
+bất kỳ nội dung nghiệp vụ nào của §1–§4 — chỉ cập nhật SHA chứng thực ở §5 theo candidate R2
+và ghi chú đối tượng sign-off. Đây là phiên bản BA Main tham chiếu khi sign-off trên Jira —
+FE247-P2-02.)
+
 Đây là **bản đối chiếu cuối** cho red flag *"Status enum mismatch — đóng phần FE, final matrix
 còn chờ BE/BA"*. Trước đây mỗi tầng tự khai một ma trận và tự test chính mình, nên khi một
 tầng đổi thì không tầng nào đỏ. Bảng dưới đây là nguồn chốt; ba nơi phải trùng khít và đã có
@@ -79,9 +84,9 @@ nhau là gate đỏ ngay, không cần chờ ai phát hiện bằng mắt.
 
 | Bên | Nội dung cần duyệt                                                     | Trạng thái |
 | --- | ---------------------------------------------------------------------- | ---------- |
-| BE  | `TRANSITIONS` = bảng §2, guard bằng chứng = bảng §3                     | Đã khớp code + test tại `08abf3f95f9e83be3bc9efe1258fd5f3ea5baa9e` |
-| FE  | `WARRANTY_NEXT_STATUS` + form guard = bảng §2/§3                        | Đã khớp code + test tại `59c4b16883d64081c8cf150e0df74f90b1d5a8fc` |
-| BA  | Xác nhận bảng §2/§3 là bản cuối của SRS §6 + DEC-WAR-STATE-001          | Cần chữ ký trên tài liệu này |
+| BE  | `TRANSITIONS` = bảng §2, guard bằng chứng = bảng §3                     | Đã khớp code + test tại `08abf3f95f9e83be3bc9efe1258fd5f3ea5baa9e`; **re-verify R2 19/08/2026** tại BE HEAD `4a6965b5d432947c497a2c3370a62a17907251a3` (commit cuối chạm artifact: `0142b49` — chỉ refactor import/bản sao unrouted, ma trận không đổi; `Wwhn247WarrantyStateMachineParityTest` PASS) |
+| FE  | `WARRANTY_NEXT_STATUS` + form guard = bảng §2/§3                        | Đã khớp code + test tại `59c4b16883d64081c8cf150e0df74f90b1d5a8fc`; **re-verify R2 19/08/2026** tại FE HEAD `ebdb061098bea9426c2949e5c50b53ba8a09289f` (candidate warranty-scope `c9f52df44638558cc3c2e08807e05a9d05f689c8`; vitest 59/59 + QA2 16/16 + `verify:wwhn-247` PASS) |
+| BA  | Xác nhận bảng §2/§3 là bản cuối của SRS §6 + DEC-WAR-STATE-001          | **Sign-off thực hiện bằng comment trên Jira** (WWHN-247), tham chiếu đích danh "STATUS_MATRIX.md v1.1" — không dùng draft text trong repo làm chữ ký (FE247-P2-02) |
 
 Ba nơi khai báo đã trùng khít và có gate tự động; phần còn lại của "final matrix" chỉ là chữ ký
-BA lên chính bảng §2/§3 — không còn hạng mục kỹ thuật nào đang mở.
+BA lên chính bảng §2/§3 (comment Jira tham chiếu v1.1) — không còn hạng mục kỹ thuật nào đang mở.

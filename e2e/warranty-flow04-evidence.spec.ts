@@ -245,8 +245,9 @@ test("Happy: WAR-01 hiển thị danh sách; WAR-02 tạo TEMP_ONLY với Idempo
   await expect(page.getByText("BH-E2E-0002")).toBeVisible();
   await expect(page.getByText("TEMP-E2E-02")).toBeVisible();
 
-  // WAR-02: intake TEMP_ONLY.
-  await page.getByRole("button", { name: "+ Tiếp nhận bảo hành" }).click();
+  // WAR-02: intake TEMP_ONLY. Locator dùng regex vì accessible name của nút là
+  // "<icon> Tiếp nhận bảo hành" (antd v6 icon không đóng góp ký tự "+" vào name).
+  await page.getByRole("button", { name: /Tiếp nhận bảo hành/ }).click();
   await expect(page.getByText("Tiếp nhận bảo hành").first()).toBeVisible();
   await page.getByText("Mất mã (TEMP_ONLY)").click();
   await expect(
@@ -298,7 +299,7 @@ test("Negative: BE 422 khi tạo case hiển thị lỗi + request id, form retr
   await page.goto("/warranty");
 
   await expect(page.getByText("BH-E2E-0001")).toBeVisible();
-  await page.getByRole("button", { name: "+ Tiếp nhận bảo hành" }).click();
+  await page.getByRole("button", { name: /Tiếp nhận bảo hành/ }).click();
   await page.getByText("Mất mã (TEMP_ONLY)").click();
   await page.getByLabel("Lý do mất/không có mã").fill("Mất tem");
   await page.getByLabel("Mô tả nhận diện máy").fill("Máy khoan xanh");
