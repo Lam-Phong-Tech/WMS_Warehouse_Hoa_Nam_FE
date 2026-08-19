@@ -1,17 +1,12 @@
-Re-run: 2026-08-19 (danh gia 48/100 remediation, DEV236-P1-04R)
 
  RUN  v4.1.10 C:/LAM_PHONG_TECH/HoaNam_FE/WMS_Warehouse_Hoa_Nam_FE
 
- ✓ src/test/wwhn-236-adjustment-deferral-gate.test.ts (5 tests) 19ms
+ ✓ src/test/wwhn-236-adjustment-deferral-gate.test.ts (8 tests) 9ms
 
  Test Files  1 passed (1)
-      Tests  5 passed (5)
-   Start at  10:46:21
-   Duration  28.47s (transform 568ms, setup 8.79s, import 173ms, tests 19ms, environment 18.93s)
+      Tests  8 passed (8)
+   Start at  16:38:58
+   Duration  2.25s (transform 159ms, setup 631ms, import 105ms, tests 9ms, environment 1.31s)
 
 JSON report written to C:/LAM_PHONG_TECH/HoaNam_FE/WMS_Warehouse_Hoa_Nam_FE/test-results/vitest-results.json
 JUNIT report written to C:/LAM_PHONG_TECH/HoaNam_FE/WMS_Warehouse_Hoa_Nam_FE/test-results/vitest-junit.xml
-
-Ghi chu: so test tang tu 4 len 5 so voi log truoc (2026-08-18 23:06) vi file test dung chung
-voi nhanh song song WWHN-233 tren cung m1 co them mot assertion; khong phai thay doi cua
-WWHN-236. Van 100% pass, khong test nao bi xoa.

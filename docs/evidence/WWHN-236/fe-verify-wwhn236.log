@@ -1,6 +1,3 @@
-Re-run: 2026-08-19 (danh gia 48/100 remediation, DEV236-P1-04R) — noi dung khong doi so voi lan
-chot truoc, xac nhan lai tren HEAD hien hanh.
-
 WWHN-236 / DISP-STK-236 — FE closure gate
 
   PASS [FE-ROUTES] ROUTES: zero route stocktake/apply-adjustment
@@ -10,6 +7,9 @@ WWHN-236 / DISP-STK-236 — FE closure gate
   PASS [FE-GUARD-TESTS] access.test.ts + wms-contract-signoff-guards.test.ts còn assert no-Stocktake
   PASS [ANTI-DANGLING] 5 artifact FE mà DISP-STK-236 cam kết đều tồn tại
   PASS [GOVERNANCE] STOCKTAKE_GOVERNANCE_STATUS neo cùng controlling requirement REQ-SRS-037
+  PASS [GOVERNANCE-R3] approval record (PROPOSED) + chain 9 ticket: DEFERRED, zero Blocked/Pending
+  PASS [FE-IDENTITY] candidate 4914996 · 4 governed file khớp blob · PR=N/A direct-to-m1
   NOTE [GOVERNANCE] docs/api-evidence/STOCKTAKE_GOVERNANCE_STATUS.json chưa liệt DISP-STK-236 trong deferralDispositions (WWHN-233 cập nhật).
+  NOTE [GOVERNANCE-R3] còn 6 vai trò chưa ký: dev, baMain, pmPo, bas, techLead, qa1.
 
-7/7 check PASS — bề mặt adjustment/stocktake ở FE = zero.
+9/9 check PASS — bề mặt adjustment/stocktake ở FE = zero.
