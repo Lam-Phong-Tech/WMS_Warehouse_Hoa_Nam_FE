@@ -1,0 +1,37 @@
+# WWHN-217 gate e2e-wwhn-217
+# candidate SHA: dc0e4b5e79d706bceba4db4e7a5adb44ef4490fc
+# branch: m1
+# workdir: detached worktree
+
+$ npm run test:e2e:wwhn-217
+
+
+> wms-hoa-nam-frontend@0.0.0 test:e2e:wwhn-217
+> playwright test e2e/wwhn-217-ui-blocker-retest.spec.ts --project=chromium
+
+
+Running 20 tests using 1 worker
+
+  ok  1 [chromium] › e2e\wwhn-217-ui-blocker-retest.spec.ts:431:7 › WWHN-217 · QA2 retest — responsive matrix (NFR-SRS-006) › TC-217-RSP-inbound-desktop: SCR-IN-01 tại 1280x900 (2.9s)
+  ok  2 [chromium] › e2e\wwhn-217-ui-blocker-retest.spec.ts:431:7 › WWHN-217 · QA2 retest — responsive matrix (NFR-SRS-006) › TC-217-RSP-inbound-tablet: SCR-IN-01 tại 768x1024 (2.3s)
+  ok  3 [chromium] › e2e\wwhn-217-ui-blocker-retest.spec.ts:431:7 › WWHN-217 · QA2 retest — responsive matrix (NFR-SRS-006) › TC-217-RSP-inbound-mobile: SCR-IN-01 tại 375x812 (2.7s)
+  ok  4 [chromium] › e2e\wwhn-217-ui-blocker-retest.spec.ts:431:7 › WWHN-217 · QA2 retest — responsive matrix (NFR-SRS-006) › TC-217-RSP-outbound-desktop: SCR-OUT-01 tại 1280x900 (2.5s)
+  ok  5 [chromium] › e2e\wwhn-217-ui-blocker-retest.spec.ts:431:7 › WWHN-217 · QA2 retest — responsive matrix (NFR-SRS-006) › TC-217-RSP-outbound-tablet: SCR-OUT-01 tại 768x1024 (2.4s)
+  ok  6 [chromium] › e2e\wwhn-217-ui-blocker-retest.spec.ts:431:7 › WWHN-217 · QA2 retest — responsive matrix (NFR-SRS-006) › TC-217-RSP-outbound-mobile: SCR-OUT-01 tại 375x812 (2.3s)
+  ok  7 [chromium] › e2e\wwhn-217-ui-blocker-retest.spec.ts:431:7 › WWHN-217 · QA2 retest — responsive matrix (NFR-SRS-006) › TC-217-RSP-inventory-desktop: SCR-INV-01 tại 1280x900 (2.4s)
+  ok  8 [chromium] › e2e\wwhn-217-ui-blocker-retest.spec.ts:431:7 › WWHN-217 · QA2 retest — responsive matrix (NFR-SRS-006) › TC-217-RSP-inventory-tablet: SCR-INV-01 tại 768x1024 (2.4s)
+  ok  9 [chromium] › e2e\wwhn-217-ui-blocker-retest.spec.ts:431:7 › WWHN-217 · QA2 retest — responsive matrix (NFR-SRS-006) › TC-217-RSP-inventory-mobile: SCR-INV-01 tại 375x812 (2.3s)
+  ok 10 [chromium] › e2e\wwhn-217-ui-blocker-retest.spec.ts:465:5 › WWHN-217 · QA2 retest — RBAC / 403 › TC-217-RBAC-inbound-entry: thiếu quyền thì /inbound chặn ở router (2.4s)
+  ok 11 [chromium] › e2e\wwhn-217-ui-blocker-retest.spec.ts:465:5 › WWHN-217 · QA2 retest — RBAC / 403 › TC-217-RBAC-outbound-entry: thiếu quyền thì /outbound chặn ở router (2.4s)
+  ok 12 [chromium] › e2e\wwhn-217-ui-blocker-retest.spec.ts:465:5 › WWHN-217 · QA2 retest — RBAC / 403 › TC-217-RBAC-inventory-entry: thiếu quyền thì /inventory chặn ở router (2.3s)
+  ok 13 [chromium] › e2e\wwhn-217-ui-blocker-retest.spec.ts:489:3 › WWHN-217 · QA2 retest — RBAC / 403 › TC-217-RBAC-API-403: API trả 403 thì màn hiển thị trạng thái không có quyền, không retry vòng lặp (4.4s)
+  ok 14 [chromium] › e2e\wwhn-217-ui-blocker-retest.spec.ts:533:3 › WWHN-217 · QA2 retest — back / duplicate / retry / network › TC-217-BACK-INV: Back đóng modal chi tiết và giữ nguyên INV-01 (3.4s)
+  ok 15 [chromium] › e2e\wwhn-217-ui-blocker-retest.spec.ts:565:3 › WWHN-217 · QA2 retest — back / duplicate / retry / network › TC-217-BACK-IN: Back đóng modal của IN-01 và giữ nguyên màn nhập kho (2.9s)
+  ok 16 [chromium] › e2e\wwhn-217-ui-blocker-retest.spec.ts:596:3 › WWHN-217 · QA2 retest — back / duplicate / retry / network › TC-217-BACK-OUT: Back đóng overlay chi tiết của OUT-01 và giữ nguyên màn xuất kho (2.9s)
+  ok 17 [chromium] › e2e\wwhn-217-ui-blocker-retest.spec.ts:630:3 › WWHN-217 · QA2 retest — back / duplicate / retry / network › TC-217-NET-READ: mất mạng khi tải danh sách thì có trạng thái lỗi và nút thử lại (3.8s)
+  ok 18 [chromium] › e2e\wwhn-217-ui-blocker-retest.spec.ts:660:3 › WWHN-217 · QA2 retest — back / duplicate / retry / network › TC-217-RETRY-READ: lỗi 500 tạm thời rồi bấm Thử lại thì màn phục hồi (4.0s)
+  ok 19 [chromium] › e2e\wwhn-217-ui-blocker-retest.spec.ts:691:3 › WWHN-217 · QA2 retest — back / duplicate / retry / network › TC-217-DUP-READ: bấm Thử lại liên tiếp không tạo bão request (8.8s)
+  ok 20 [chromium] › e2e\wwhn-217-ui-blocker-retest.spec.ts:726:3 › WWHN-217 · QA2 retest — back / duplicate / retry / network › TC-217-NET-WRITE-OFFLINE: ngoại tuyến thì thao tác ghi bị chặn, không xếp hàng (3.1s)
+
+  20 passed (1.1m)
+
