@@ -13,22 +13,22 @@
   "identity": {
     "frontend": {
       "repository": "Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_FE",
-      "branch": "HEAD",
-      "commitSha": "f9f2e65e687669f033d259a693635546876f05a8",
-      "workingTreeClean": true
+      "branch": "m1",
+      "commitSha": "3cc524f82f860218d199756aebedf07025fef1f3",
+      "workingTreeClean": false
     },
     "backend": {
       "repository": "Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_BE",
-      "branch": "HEAD",
-      "commitSha": "831bda6d554faf3d1e1b11c5ff299bd53792f7bf",
+      "branch": "m1",
+      "commitSha": "7da26cb1cc13df58537c5ff8556070ad8529ed4d",
       "workingTreeClean": true
     }
   },
   "baselineDigests": {
-    "docs/HN_SRS_FRD_v1.12_FULL.md": "02cd010cdc40036b62ec23a0d3aa645e4cce813497edf8b0e851ba6fcb512ff2",
+    "docs/HN_SRS_FRD_v1.12_FULL.md": "5ab1dd6c468e93f57a932741e823855806a9d37ac5dde9b118335ff8f84de086",
     "docs/HoaNam_ERD_Moi_Nhat.md": "5209358cb0e9d91ced71b3b2ebaeb6e50d7f4304c03618a81a6a6a0adabf12e2",
     "docs/HN_WMS_Wireframe_MVP_ALIGNED_v3.20_v1.12_20260814.html": "22c69d4b96d6c4f797e77e8f87075cc89d67aa12ed6eac8bbc71ae78297b47d6",
-    "docs/api-evidence/STOCKTAKE_GOVERNANCE_STATUS.json": "8dc0f157d0aed783375b8ce8519b42a9e1150df9d0c64ad5e290a695159415e1",
+    "docs/api-evidence/STOCKTAKE_GOVERNANCE_STATUS.json": "84f40b9f5273708e8e0adcc5698dbf7d2a3525682918bde163dcf21f0556cdef",
     "docs/api-evidence/WWHN-230_SCOPE_DISPOSITION.json": "a9719c12cc4699f4c3700c76c0e6b11f74bb68c5c7230f636c561bf2041d1acf"
   },
   "checks": [
@@ -141,17 +141,9 @@
       "id": "SIGNOFF",
       "status": "PENDING",
       "detail": "Sign-off still open for: baMain, pmApprover, techLead, qa1, bas (run with --require-signoff to enforce)."
-    },
-    {
-      "id": "TEST-LOCK",
-      "status": "PASS",
-      "detail": "wwhn-230-stocktake-scope-guard passed."
     }
   ],
-  "testResult": {
-    "exitCode": 0,
-    "tail": "   Duration  3.55s (transform 288ms, setup 907ms, import 38ms, tests 120ms, environment 2.16s)\n\nJSON report written to C:/wt230/HoaNam_FE/WMS_Warehouse_Hoa_Nam_FE/test-results/vitest-results.json\nJUNIT report written to C:/wt230/HoaNam_FE/WMS_Warehouse_Hoa_Nam_FE/test-results/vitest-junit.xml"
-  },
+  "testResult": null,
   "result": "PASS",
   "failures": []
 }

@@ -1,0 +1,14 @@
+$ npm run verify:wwhn-242
+cwd: C:\LAM_PHONG_TECH\HoaNam_FE\WMS_Warehouse_Hoa_Nam_FE
+startedAt: 2026-08-19T03:36:51.804Z
+exitCode: 0
+
+----- stdout -----
+
+> wms-hoa-nam-frontend@0.0.0 verify:wwhn-242
+> node scripts/verify-wwhn-242-closure.mjs
+
+
+WWHN-242 closure gate: PASS
+
+----- stderr -----

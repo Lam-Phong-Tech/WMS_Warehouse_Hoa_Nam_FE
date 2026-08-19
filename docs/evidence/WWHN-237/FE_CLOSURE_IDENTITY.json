@@ -7,18 +7,18 @@
   "fe": {
     "branch": "m1",
     "commit_sha": "c77ba6429c68982c7e7b8d297917c0cab26f8380",
-    "head_at_run": "cede17ec5c73fae392ace548e246f156202b71ec",
+    "head_at_run": "3cc524f82f860218d199756aebedf07025fef1f3",
     "working_tree_clean": false
   },
   "be": {
     "branch": "m1",
     "commit_sha": "d1af7ca00016271b64312e2d537ca45bdea9d794",
-    "head_at_run": "9d888a1c490ea64f7c0eaf8026a0f08c92e7cd41"
+    "head_at_run": "7da26cb1cc13df58537c5ff8556070ad8529ed4d"
   },
   "baselines": {
     "docs/HN_SRS_FRD_v1.12_FULL.md": "5ab1dd6c468e93f57a932741e823855806a9d37ac5dde9b118335ff8f84de086",
     "docs/HoaNam_ERD_Moi_Nhat.md": "5209358cb0e9d91ced71b3b2ebaeb6e50d7f4304c03618a81a6a6a0adabf12e2",
-    "docs/HN_WMS_Wireframe_MVP_ALIGNED_v3.20_v1.12_20260814.html": "107a2b4de0f5763e39278ec130758d57e772e004e525416c088018cf9ddba658",
+    "docs/HN_WMS_Wireframe_MVP_ALIGNED_v3.20_v1.12_20260814.html": "22c69d4b96d6c4f797e77e8f87075cc89d67aa12ed6eac8bbc71ae78297b47d6",
     "docs/api-evidence/WMS_FE_CONTRACT_BASELINE.json": "fa3128b0840b979a924b1a113fa1c9cdc6271fa714e2e831a9c11341286a14f9"
   },
   "baseline_hash_rule": "Hash ghi tại thời điểm chạy gate, không phải hằng số dán tay: ERD còn đang được cập nhật ở task khác nên guard xác minh bằng anchor text §0.1, còn hash chỉ để QA1 tái lập đúng bản đã kiểm.",
@@ -110,9 +110,9 @@
     },
     {
       "id": "CANDIDATE-PAIR",
-      "status": "PASS",
-      "detail": "một cặp duy nhất BE d1af7ca0 / FE c77ba642, giải lại khớp, hai bản pin byte-identical"
+      "status": "FAIL",
+      "detail": "pin FE c77ba6429c68982c7e7b8d297917c0cab26f8380 ≠ commit cuối chạm scope 2b94a79b6fb408c849ab59c0304ecc83fe2c535b — artifact FE đã đổi sau khi pin; chạy lại build pin rồi xin lại consumer confirmation"
     }
   ],
-  "status": "PASS"
+  "status": "FAIL"
 }

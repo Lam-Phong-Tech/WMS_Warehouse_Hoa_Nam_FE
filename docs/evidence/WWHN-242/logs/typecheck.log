@@ -1,0 +1,12 @@
+$ npm run typecheck
+cwd: C:\LAM_PHONG_TECH\HoaNam_FE\WMS_Warehouse_Hoa_Nam_FE
+startedAt: 2026-08-19T03:33:17.182Z
+exitCode: 0
+
+----- stdout -----
+
+> wms-hoa-nam-frontend@0.0.0 typecheck
+> tsc -b --pretty false
+
+
+----- stderr -----
