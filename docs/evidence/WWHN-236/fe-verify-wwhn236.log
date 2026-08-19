@@ -1,3 +1,6 @@
+Re-run: 2026-08-19 (danh gia 48/100 remediation, DEV236-P1-04R) — noi dung khong doi so voi lan
+chot truoc, xac nhan lai tren HEAD hien hanh.
+
 WWHN-236 / DISP-STK-236 — FE closure gate
 
   PASS [FE-ROUTES] ROUTES: zero route stocktake/apply-adjustment
