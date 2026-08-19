@@ -600,4 +600,143 @@ describe("inbound real API contract", () => {
     ).rejects.toMatchObject({ code: "WMS_FE_POST_REQUIRES_FULL_SCAN" });
     expect(http.postWithMeta).not.toHaveBeenCalled();
   });
+
+  it("phân loại 412 STALE_VERSION của post-receipt thành reload-rồi-thử-lại (giữ nguyên key)", async () => {
+    vi.mocked(http.get).mockResolvedValue({
+      id: "DOC-1",
+      dst_warehouse_id: "WH-1",
+      status: "SCANNING",
+      version: 5,
+      lines: [
+        { id: "L-1", product_id: "SKU-1", qty_planned: 2, scanned_qty: 2 },
+      ],
+    });
+    vi.mocked(http.postWithMeta).mockRejectedValue({
+      isAxiosError: true,
+      response: { status: 412, data: { error_code: "STALE_VERSION" } },
+    });
+
+    await expect(
+      postInboundReceipt({
+        documentId: "DOC-1",
+        idempotencyKey: "idem-post-1",
+        ifMatch: 5,
+      }),
+    ).rejects.toMatchObject({
+      code: "STALE_VERSION",
+      outcome: { action: "RELOAD_THEN_RETRY", reuseIdempotencyKey: true },
+    });
+  });
+
+  it("phân loại 409 CONCURRENCY_CONFLICT của post-receipt thành reload-rồi-thử-lại", async () => {
+    vi.mocked(http.get).mockResolvedValue({
+      id: "DOC-1",
+      dst_warehouse_id: "WH-1",
+      status: "SCANNING",
+      version: 5,
+      lines: [
+        { id: "L-1", product_id: "SKU-1", qty_planned: 2, scanned_qty: 2 },
+      ],
+    });
+    vi.mocked(http.postWithMeta).mockRejectedValue({
+      isAxiosError: true,
+      response: { status: 409, data: { error_code: "CONCURRENCY_CONFLICT" } },
+    });
+
+    await expect(
+      postInboundReceipt({
+        documentId: "DOC-1",
+        idempotencyKey: "idem-post-1",
+        ifMatch: 5,
+      }),
+    ).rejects.toMatchObject({
+      code: "CONCURRENCY_CONFLICT",
+      outcome: { action: "RELOAD_THEN_RETRY", reuseIdempotencyKey: true },
+    });
+  });
+
+  it("phân loại 409 IDEMPOTENCY_CONFLICT của post-receipt thành bắt buộc key mới", async () => {
+    vi.mocked(http.get).mockResolvedValue({
+      id: "DOC-1",
+      dst_warehouse_id: "WH-1",
+      status: "SCANNING",
+      version: 5,
+      lines: [
+        { id: "L-1", product_id: "SKU-1", qty_planned: 2, scanned_qty: 2 },
+      ],
+    });
+    vi.mocked(http.postWithMeta).mockRejectedValue({
+      isAxiosError: true,
+      response: { status: 409, data: { error_code: "IDEMPOTENCY_CONFLICT" } },
+    });
+
+    await expect(
+      postInboundReceipt({
+        documentId: "DOC-1",
+        idempotencyKey: "idem-post-1",
+        ifMatch: 5,
+      }),
+    ).rejects.toMatchObject({
+      code: "IDEMPOTENCY_CONFLICT",
+      outcome: { action: "NEW_KEY_REQUIRED", reuseIdempotencyKey: false },
+    });
+  });
+
+  it("phân loại 428 PRECONDITION_REQUIRED của post-receipt thành dừng lại", async () => {
+    vi.mocked(http.get).mockResolvedValue({
+      id: "DOC-1",
+      dst_warehouse_id: "WH-1",
+      status: "SCANNING",
+      version: 5,
+      lines: [
+        { id: "L-1", product_id: "SKU-1", qty_planned: 2, scanned_qty: 2 },
+      ],
+    });
+    vi.mocked(http.postWithMeta).mockRejectedValue({
+      isAxiosError: true,
+      response: { status: 428, data: { error_code: "PRECONDITION_REQUIRED" } },
+    });
+
+    await expect(
+      postInboundReceipt({
+        documentId: "DOC-1",
+        idempotencyKey: "idem-post-1",
+        ifMatch: 5,
+      }),
+    ).rejects.toMatchObject({
+      code: "PRECONDITION_REQUIRED",
+      outcome: { action: "STOP", reuseIdempotencyKey: false },
+    });
+  });
+
+  it("giữ nguyên lỗi gốc (không bọc WmsConcurrencyError) khi post-receipt trả 422 FULL_POST_REQUIRED — ngoài phạm vi §8.2 theo thiết kế của classifyConcurrencyError", async () => {
+    vi.mocked(http.get).mockResolvedValue({
+      id: "DOC-1",
+      dst_warehouse_id: "WH-1",
+      status: "SCANNING",
+      version: 5,
+      lines: [
+        { id: "L-1", product_id: "SKU-1", qty_planned: 2, scanned_qty: 2 },
+      ],
+    });
+    const originalError = {
+      isAxiosError: true,
+      response: {
+        status: 422,
+        data: {
+          error_code: "FULL_POST_REQUIRED",
+          message: "Còn dòng chưa quét đủ số lượng yêu cầu.",
+        },
+      },
+    };
+    vi.mocked(http.postWithMeta).mockRejectedValue(originalError);
+
+    await expect(
+      postInboundReceipt({
+        documentId: "DOC-1",
+        idempotencyKey: "idem-post-1",
+        ifMatch: 5,
+      }),
+    ).rejects.toBe(originalError);
+  });
 });
