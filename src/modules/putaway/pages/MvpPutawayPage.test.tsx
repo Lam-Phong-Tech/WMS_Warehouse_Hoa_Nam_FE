@@ -112,11 +112,18 @@ describe("PTW-00/PTW-01 · quyền Putaway theo SRS §3", () => {
     await expect(confirmPutawayTask("PTW-1", 1)).resolves.toMatchObject({
       status: "CONFIRMED",
     });
-    // Annex C confirmPutawayTask: path canonical /putaway-tasks + If-Match.
+    // Annex C confirmPutawayTask: path canonical /putaway-tasks + If-Match; kèm
+    // Idempotency-Key suy diễn của DEC-PTW-RETRY-001 (tuỳ chọn theo Annex C, bắt buộc theo
+    // hợp đồng phục hồi sau mất response của WWHN-193).
     expect(http.post).toHaveBeenCalledWith(
       "/putaway-tasks/PTW-1/confirm",
       undefined,
-      { headers: { "If-Match": "1" } },
+      {
+        headers: {
+          "If-Match": "1",
+          "Idempotency-Key": "ptw-confirm-PTW-1-v1",
+        },
+      },
     );
   });
 

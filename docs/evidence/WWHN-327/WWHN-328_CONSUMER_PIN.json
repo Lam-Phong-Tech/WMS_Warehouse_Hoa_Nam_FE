@@ -15,7 +15,7 @@
   "frontendCandidate": {
     "repository": "Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_FE",
     "branch": "m1",
-    "commit": "__FE_CANDIDATE_SHA__"
+    "commit": "5a0cfda4ccdacfa4aac324ed7c16bda513c3c8f3"
   },
   "supersedes": {
     "frontend": [

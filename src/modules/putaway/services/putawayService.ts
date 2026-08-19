@@ -51,6 +51,27 @@ export interface PutawayEvent {
   version: number;
   stock_effect: "NONE";
   movement_created: false;
+  /** BE gắn cờ này khi response là replay của một lần đã commit (DEC-PTW-RETRY-001). */
+  replayed?: boolean;
+  /** Chỉ xuất hiện khi request rơi vào 409 nhưng phục hồi được — xem recoverPutawayConflict. */
+  recovery?: PutawayRecovery;
+}
+
+export type PutawayRecoveryOutcome =
+  | "ALREADY_APPLIED_BY_CALLER"
+  | "ALREADY_APPLIED_BY_OTHER"
+  | "FINALIZED_DIFFERENT_OUTCOME";
+
+/**
+ * WWHN-193 · DEC-PTW-RETRY-001 — ngữ nghĩa phục hồi BE trả kèm 409 STATE_CONFLICT khi
+ * request không mang Idempotency-Key.
+ */
+export interface PutawayRecovery {
+  contract: string;
+  outcome: PutawayRecoveryOutcome;
+  applied_by_caller: boolean;
+  safe_to_treat_as_success: boolean;
+  next_action: "RELOAD_AND_CONTINUE" | "RELOAD_AND_REVIEW";
 }
 
 function endpoint(template: string, id: string) {
@@ -160,6 +181,87 @@ export async function createPutawayTask(payload: {
   return assertStockNeutral(result, "Create Putaway DRAFT");
 }
 
+/**
+ * WWHN-193 · DEC-PTW-RETRY-001 — khoá idempotency suy diễn (deterministic), không random.
+ *
+ * Khoá phải GIỐNG NHAU giữa các lần gửi lại của cùng một thao tác logic thì BE mới replay
+ * được kết quả cũ sau khi client mất response (timeout/đóng tab/proxy cắt). Vì thế khoá
+ * bám vào (operation, id, version đang cầm trên màn hình) chứ không phải một uuid mới mỗi
+ * lần bấm: cùng version = cùng ý định = cùng khoá; version đổi nghĩa là thao tác khác.
+ */
+export function putawayIdempotencyKey(
+  operation: "confirm" | "cancel",
+  id: string,
+  version: number,
+): string {
+  return `ptw-${operation}-${id}-v${version}`;
+}
+
+/**
+ * Đọc khối recovery từ body lỗi, chấp nhận cả hai hình dạng envelope BE đang dùng
+ * (`error.details` lồng và `errors` phẳng) và cả hai nguồn lỗi của tầng http
+ * (`ApiEnvelopeError.data` và `AxiosError.response.data`).
+ */
+function readRecovery(
+  error: unknown,
+): { recovery: PutawayRecovery; details: Record<string, unknown> } | null {
+  if (typeof error !== "object" || error === null) return null;
+
+  const container = error as Record<string, unknown>;
+  const response = container.response as Record<string, unknown> | undefined;
+  const body = (container.data ?? response?.data) as
+    | Record<string, unknown>
+    | undefined;
+  if (!body) return null;
+
+  const errorNode = body.error as Record<string, unknown> | undefined;
+  const code =
+    (body.error_code as string | undefined) ??
+    (errorNode?.code as string | undefined);
+  if (code !== "STATE_CONFLICT") return null;
+
+  const details =
+    (errorNode?.details as Record<string, unknown> | undefined) ??
+    (body.errors as Record<string, unknown> | undefined);
+  const recovery = details?.recovery as PutawayRecovery | undefined;
+  if (!recovery || typeof recovery.outcome !== "string") return null;
+
+  return { recovery, details: details ?? {} };
+}
+
+/**
+ * Biến 409 "phục hồi được" thành kết quả thành công đã-được-đánh-dấu.
+ *
+ * Chỉ nhận khi BE khẳng định `safe_to_treat_as_success` — tức tác vụ NÀY đã đạt đúng trạng
+ * thái mà thao tác hướng tới. `FINALIZED_DIFFERENT_OUTCOME` (ví dụ bấm Hủy trên một task đã
+ * CONFIRMED) vẫn ném lỗi để người dùng đọc lại tình hình, đúng `next_action`.
+ */
+function recoverPutawayConflict(
+  error: unknown,
+  id: string,
+  operation: "confirm" | "cancel",
+): PutawayEvent {
+  const parsed = readRecovery(error);
+  if (!parsed?.recovery.safe_to_treat_as_success) {
+    throw error;
+  }
+  const { recovery, details } = parsed;
+
+  return {
+    id,
+    box_container_id: String(details?.box_container_id ?? ""),
+    to_tray_id: String(details?.to_tray_id ?? ""),
+    status: (operation === "confirm" ? "CONFIRMED" : "CANCELLED") as
+      | "CONFIRMED"
+      | "CANCELLED",
+    version: Number(details?.current_version ?? 0),
+    stock_effect: "NONE",
+    movement_created: false,
+    replayed: true,
+    recovery,
+  };
+}
+
 export async function confirmPutawayTask(
   id: string,
   version: number,
@@ -168,12 +270,21 @@ export async function confirmPutawayTask(
     WMS_ACTION_PERMISSIONS.PUTAWAY_CONTAINER,
     "confirm putaway",
   );
-  const result = await http.post<PutawayEvent>(
-    endpoint(API_ENDPOINTS.PUTAWAY_CONFIRM, id),
-    undefined,
-    { headers: { "If-Match": String(version) } },
-  );
-  return assertStockNeutral(result, "Confirm Putaway");
+  try {
+    const result = await http.post<PutawayEvent>(
+      endpoint(API_ENDPOINTS.PUTAWAY_CONFIRM, id),
+      undefined,
+      {
+        headers: {
+          "If-Match": String(version),
+          "Idempotency-Key": putawayIdempotencyKey("confirm", id, version),
+        },
+      },
+    );
+    return assertStockNeutral(result, "Confirm Putaway");
+  } catch (error) {
+    return recoverPutawayConflict(error, id, "confirm");
+  }
 }
 
 export async function cancelPutawayTask(
@@ -184,10 +295,19 @@ export async function cancelPutawayTask(
     WMS_ACTION_PERMISSIONS.PUTAWAY_CONTAINER,
     "cancel putaway draft",
   );
-  const result = await http.post<PutawayEvent>(
-    endpoint(API_ENDPOINTS.PUTAWAY_CANCEL, id),
-    undefined,
-    { headers: { "If-Match": String(version) } },
-  );
-  return assertStockNeutral(result, "Cancel Putaway DRAFT");
+  try {
+    const result = await http.post<PutawayEvent>(
+      endpoint(API_ENDPOINTS.PUTAWAY_CANCEL, id),
+      undefined,
+      {
+        headers: {
+          "If-Match": String(version),
+          "Idempotency-Key": putawayIdempotencyKey("cancel", id, version),
+        },
+      },
+    );
+    return assertStockNeutral(result, "Cancel Putaway DRAFT");
+  } catch (error) {
+    return recoverPutawayConflict(error, id, "cancel");
+  }
 }
