@@ -1,0 +1,12 @@
+{
+  "task": "WWHN-309",
+  "note": "FE pin đúng revision OpenAPI của BE. Không sửa tay - chạy npm run contract:sync -- <BE_SHA> --repin.",
+  "be_repo": "Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_BE",
+  "be_branch": "m1",
+  "be_sha": "8326d505e5c7c2b690a02ae3a41c5c91119d5ed7",
+  "spec_path": "storage/api-docs/api-docs.json",
+  "spec_sha256": "b86330ff5f29031303b46e1075f8d036e1fe0d19e5d610ec3cb1c38dcd12bf45",
+  "openapi_version": "2.0.0",
+  "openapi_paths": 183,
+  "openapi_operations": 231
+}

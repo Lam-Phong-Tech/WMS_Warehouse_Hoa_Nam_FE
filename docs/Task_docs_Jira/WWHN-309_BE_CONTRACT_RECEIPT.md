@@ -6,9 +6,10 @@
 | Task FE liên quan | WWHN-311 — [FE1] Hoàn thiện tài liệu build/component FE |
 | Repo FE | `Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_FE`, nhánh `m1` |
 | Repo BE | `Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_BE`, nhánh `m1` |
-| Cập nhật | 2026-08-18 |
+| Cập nhật | 2026-08-19 |
+| BE candidate SHA đã pin | `8326d505e5c7c2b690a02ae3a41c5c91119d5ed7` (nguồn: `docs/api-evidence/BE_CONTRACT_PIN.json`) |
 
-Tài liệu này ghi lại **phía FE đã nhận gì từ backend handover và đã kiểm chứng bằng cách nào**. FE **không** ký thay BE1 cho WWHN-309; đây là biên nhận của bên tiêu thụ contract.
+Tài liệu này ghi lại **phía FE đã nhận gì từ backend handover và đã kiểm chứng bằng cách nào**. FE **không** ký thay DEV cho WWHN-309; đây là biên nhận của bên tiêu thụ contract.
 
 ---
 
@@ -29,8 +30,9 @@ Nghĩa là phần đối chiếu FE ↔ BE **không thực sự chạy**, và c�
 | --- | --- |
 | OpenAPI 3.0 (được commit) | `storage/api-docs/api-docs.json` và `.yaml` |
 | Contract bàn giao cho FE/QA | `docs/api-contract/HN-BE-API-001_API_CONTRACT_HANDOVER.md` |
-| Catalog error code (243 mã, sinh tự động) | `docs/api-contract/HN-BE-API-002_ERROR_CODE_CATALOG.md` |
-| Ma trận endpoint × permission (226 operation) | `docs/api-contract/HN-BE-API-003_ENDPOINT_PERMISSION_MATRIX.md` |
+| Catalog error code (sinh tự động) | `docs/api-contract/HN-BE-API-002_ERROR_CODE_CATALOG.md` |
+| Ma trận endpoint × permission | `docs/api-contract/HN-BE-API-003_ENDPOINT_PERMISSION_MATRIX.md` |
+| Số liệu contract chính thức (sinh tự động) | `docs/api-contract/HN-BE-API-004_CONTRACT_METRICS.md` |
 | Kiến trúc as-built | `docs/architecture/HN-BE-ARCH-001_BACKEND_ARCHITECTURE.md` |
 | Runbook vận hành | `docs/ops/HN-BE-OPS-001_OPERATIONS_RUNBOOK.md` |
 
@@ -71,8 +73,8 @@ Bất biến MVP được script kiểm cùng lúc và đều đạt: không có
 
 1. **Envelope đọc được từ spec.** Mọi response đều `$ref` tới `ApiSuccessEnvelope` hoặc `ApiErrorEnvelope`; FE sinh type từ spec được, không cần đọc ngược code BE.
 2. **`error_code` và `error.code` luôn bằng nhau.** Bắt lỗi theo `error_code`, không bắt theo `message`.
-3. **`Idempotency-Key`** — 27 operation khai (23 bắt buộc). Thiếu ở endpoint bắt buộc → **428**. Cùng key + cùng payload = replay an toàn; cùng key + payload khác → **409**. FE nên sinh key theo hành động nghiệp vụ để retry mạng không tạo bản ghi trùng.
-4. **`If-Match`** — 41 operation khai. Sai version → **412 `STALE_VERSION`**: tải lại bản ghi, lấy `version` mới, gửi lại. Không retry mù.
+3. **`Idempotency-Key`** — số operation khai và số bắt buộc đọc ở `HN-BE-API-004`. Thiếu ở endpoint bắt buộc → **428**. Cùng key + cùng payload = replay an toàn; cùng key + payload khác → **409**. FE nên sinh key theo hành động nghiệp vụ để retry mạng không tạo bản ghi trùng.
+4. **`If-Match`** — số operation khai đọc ở `HN-BE-API-004`. Sai version → **412 `STALE_VERSION`**: tải lại bản ghi, lấy `version` mới, gửi lại. Không retry mù.
 5. **`meta.request_id`** có ở mọi response — luôn kèm khi báo lỗi cho BE.
 6. **Route guard của FE là UX guard.** Biên phân quyền thật nằm ở BE; ẩn nút không phải biện pháp bảo mật.
 
@@ -81,3 +83,20 @@ Bất biến MVP được script kiểm cùng lúc và đều đạt: không có
 - FE xác nhận **đã nhận đủ contract để tích hợp và kiểm chứng được**.
 - FE **không** ký thay BE1 cho Backend handover, không ký thay QA/DevOps/BAS, không tự đóng WWHN-83.
 - Khi pin evidence sign-off, phải ghi **cả hai** exact SHA (FE và BE) đã dùng để chạy `check:api-mapping`.
+
+## 7. Chống lệch revision (WWHN-309 / DEV309-P1-02)
+
+Vòng review trước bắt lỗi: *"exact same-revision artifacts chưa pin"* — FE và QA có thể đang
+đọc hai bản OpenAPI khác nhau mà cả hai đều báo PASS.
+
+Đã đóng bằng `docs/api-evidence/BE_CONTRACT_PIN.json`:
+
+1. Pin khai **BE SHA + SHA-256 của spec**, không chỉ khai "lấy từ m1".
+2. `npm run contract:sync` so hash sau khi tải; lệch là **exit 1** kèm hướng dẫn lấy đúng
+   revision. Đổi contract có chủ đích thì bắt buộc `--repin` và bắt buộc truyền exact SHA
+   40 ký tự (không nhận branch).
+3. `npm run check:api-mapping` **từ chối** kết luận sign-off nếu `swagger-api.json` không
+   khớp pin — trước đây thiếu file thì nó tự hạ cấp và vẫn in PASS.
+
+Kiểm chứng đã chạy: sửa một byte trong `swagger-api.json` ⇒ `check:api-mapping` FAIL đúng
+chỗ (`swagger-api.json không khớp BE_CONTRACT_PIN.json`), khôi phục ⇒ PASS 56 dòng.

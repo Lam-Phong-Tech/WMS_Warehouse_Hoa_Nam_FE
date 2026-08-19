@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -109,6 +110,29 @@ if (!swaggerRoutes) {
   warnings.push(
     "swagger-api.json is unavailable: validating FE constants/registers only; this is not BE OpenAPI sign-off.",
   );
+} else {
+  // WWHN-309 / DEV309-P1-02: có spec chưa đủ - phải là ĐÚNG spec của revision BE
+  // đã pin. Trước đây FE và QA có thể đang đọc hai bản OpenAPI khác nhau mà cả hai
+  // đều báo PASS, nên "FE đã đối chiếu contract" không nói lên được điều gì.
+  const pinPath = join(root, "docs/api-evidence/BE_CONTRACT_PIN.json");
+  if (!existsSync(pinPath)) {
+    failures.push(
+      "docs/api-evidence/BE_CONTRACT_PIN.json không tồn tại: không xác định được swagger-api.json thuộc revision BE nào.",
+    );
+  } else {
+    const pin = JSON.parse(readFileSync(pinPath, "utf8"));
+    const actual = createHash("sha256").update(readFileSync(swaggerPath)).digest("hex");
+    if (actual !== pin.spec_sha256) {
+      failures.push(
+        `swagger-api.json không khớp BE_CONTRACT_PIN.json (BE ${String(pin.be_sha).slice(0, 12)}):\n` +
+          `    pinned  ${pin.spec_sha256}\n` +
+          `    current ${actual}\n` +
+          `    Chạy: npm run contract:sync -- ${pin.be_sha}  (hoặc re-pin nếu BE đã đổi contract có chủ đích)`,
+      );
+    } else {
+      console.log(`[api-mapping] OK: swagger-api.json khớp BE pin ${String(pin.be_sha).slice(0, 12)}`);
+    }
+  }
 }
 
 let totalRows = 0;

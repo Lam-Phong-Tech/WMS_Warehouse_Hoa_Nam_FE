@@ -19,17 +19,83 @@
  *
  * Sau khi tải: npm run check:api-mapping
  */
-import { copyFileSync, existsSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { copyFileSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const target = join(root, "swagger-api.json");
+const pinPath = join(root, "docs/api-evidence/BE_CONTRACT_PIN.json");
 const BE_REPO = "Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_BE";
 const BE_SPEC_PATH = "storage/api-docs/api-docs.json";
 
-const args = process.argv.slice(2);
+const rawArgs = process.argv.slice(2);
+const repin = rawArgs.includes("--repin");
+const args = rawArgs.filter((arg) => arg !== "--repin");
 const fromIndex = args.indexOf("--from");
+
+/**
+ * WWHN-309 / DEV309-P1-02 - pin REVISION, không chỉ tải nội dung.
+ *
+ * Tải được spec chưa đủ: FE và QA phải chắc chắn đang đọc **cùng một revision BE**.
+ * Trước đây mỗi bên tự lấy "bản mới nhất" nên hai bên có thể cùng báo PASS trên hai
+ * bản OpenAPI khác nhau mà không ai phát hiện.
+ *
+ * `docs/api-evidence/BE_CONTRACT_PIN.json` khai BE SHA + SHA-256 của spec. Sau khi
+ * sync, hàm này so hash; lệch là FAIL. Đổi contract có chủ đích thì chạy lại với
+ * `--repin` và **phải** truyền exact SHA (không nhận branch).
+ */
+function reconcilePin(specText, resolvedRef) {
+  const actual = createHash("sha256").update(Buffer.from(specText, "utf8")).digest("hex");
+
+  if (repin) {
+    if (!/^[0-9a-f]{40}$/.test(String(resolvedRef))) {
+      console.error("[sync-be-openapi] --repin bắt buộc dùng exact SHA 40 ký tự, không nhận branch/đường dẫn.");
+      process.exit(1);
+    }
+    const spec = JSON.parse(specText);
+    const HTTP = new Set(["get", "post", "put", "patch", "delete"]);
+    let operations = 0;
+    for (const item of Object.values(spec.paths ?? {})) {
+      for (const method of Object.keys(item ?? {})) if (HTTP.has(method)) operations += 1;
+    }
+    const pin = {
+      task: "WWHN-309",
+      note: "FE pin đúng revision OpenAPI của BE. Không sửa tay - chạy npm run contract:sync -- <BE_SHA> --repin.",
+      be_repo: BE_REPO,
+      be_branch: "m1",
+      be_sha: resolvedRef,
+      spec_path: BE_SPEC_PATH,
+      spec_sha256: actual,
+      openapi_version: spec.info?.version ?? null,
+      openapi_paths: Object.keys(spec.paths ?? {}).length,
+      openapi_operations: operations,
+    };
+    writeFileSync(pinPath, JSON.stringify(pin, null, 2) + "\n", "utf8");
+    console.log(
+      "[sync-be-openapi] Đã ghi pin BE " + resolvedRef.slice(0, 12) + " -> docs/api-evidence/BE_CONTRACT_PIN.json",
+    );
+    return;
+  }
+
+  if (!existsSync(pinPath)) {
+    console.warn("[sync-be-openapi] CẢNH BÁO: chưa có docs/api-evidence/BE_CONTRACT_PIN.json - chạy lại với --repin.");
+    return;
+  }
+
+  const pin = JSON.parse(readFileSync(pinPath, "utf8"));
+  if (actual !== pin.spec_sha256) {
+    console.error("[sync-be-openapi] FAIL: spec vừa lấy KHÔNG khớp revision đã pin.");
+    console.error("[sync-be-openapi]   pinned BE    " + pin.be_sha);
+    console.error("[sync-be-openapi]   pinned hash  " + pin.spec_sha256);
+    console.error("[sync-be-openapi]   current hash " + actual);
+    console.error("[sync-be-openapi] Lấy đúng revision: npm run contract:sync -- " + pin.be_sha);
+    console.error("[sync-be-openapi] Nếu BE đổi contract có chủ đích: npm run contract:sync -- <BE_SHA_MOI> --repin");
+    process.exit(1);
+  }
+  console.log("[sync-be-openapi] OK: spec khớp pin BE " + String(pin.be_sha).slice(0, 12));
+}
 
 function summarize(specText, source) {
   const spec = JSON.parse(specText);
@@ -68,10 +134,11 @@ if (fromIndex !== -1) {
     process.exit(1);
   }
   copyFileSync(candidate, target);
-  summarize(
-    await import("node:fs").then((fs) => fs.readFileSync(target, "utf8")),
-    candidate,
-  );
+  const localText = readFileSync(target, "utf8");
+  summarize(localText, candidate);
+  // Nguồn cục bộ không tự khai được SHA; muốn --repin thì truyền exact SHA của BE
+  // ở tham số đầu tiên (npm run contract:sync -- <BE_SHA> --from <path>).
+  reconcilePin(localText, args[0] !== "--from" ? args[0] : null);
 } else {
   const ref = args[0] ?? "m1";
   const url = `https://raw.githubusercontent.com/${BE_REPO}/${ref}/${BE_SPEC_PATH}`;
@@ -93,4 +160,5 @@ if (fromIndex !== -1) {
       '[sync-be-openapi] CẢNH BÁO: đang dùng nhánh "m1", không phải exact SHA. Evidence sign-off phải pin đúng BE SHA.',
     );
   }
+  reconcilePin(text, ref);
 }
