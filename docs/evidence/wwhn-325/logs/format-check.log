@@ -1,0 +1,15 @@
+== WWHN-325 local gate: format-check ==
+gate_sha=a43967e42b087a17ef6d23c205048431a212774d
+candidate_sha=3cc524f82f860218d199756aebedf07025fef1f3
+worktree_dirty_entries=0 (swagger-api.json = input artifact synced tu BE pin theo WWHN-296, gitignored)
+started_at=2026-08-19T13:19:29Z
+node=v22.17.1 npm=10.9.2
+command: npm run format:check
+----
+
+> wms-hoa-nam-frontend@0.0.0 format:check
+> node scripts/verify-format-baseline.mjs
+
+[format-baseline] PASS: no new formatting drift; 0 unchanged baseline-debt file(s) remain, 0 were cleaned.
+----
+exit_code=0
