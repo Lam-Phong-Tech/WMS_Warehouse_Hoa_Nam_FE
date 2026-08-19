@@ -463,6 +463,19 @@ vi.mock("antd", () => {
         // mà component khai báo, không thêm hành vi nào khác.
         const rowProps = (record: any, rowIndex: number) =>
           typeof onRow === "function" ? (onRow(record, rowIndex) ?? {}) : {};
+        // WWHN-240: mock cũ bỏ qua grouped columns (`column.children` — antd
+        // dùng cho nhóm cột Nhập/Xuất/Xuất LK gross/đã đảo/thuần của báo cáo
+        // XNT), nên mọi ô thuộc nhóm render thành null: bug tráo/mất cột
+        // reversal lọt qua mà suite vẫn xanh — cùng lớp lỗi mock-nuốt-prop đã
+        // ghi ở WWHN-242 (onRow) bên trên. Flatten đệ quy về cột lá; cột không
+        // có children giữ nguyên hành vi cũ.
+        const flattenColumns = (cols: any[]): any[] =>
+          (Array.isArray(cols) ? cols : []).flatMap((column: any) =>
+            Array.isArray(column?.children) && column.children.length > 0
+              ? flattenColumns(column.children)
+              : [column],
+          );
+        const leafColumns = flattenColumns(columns);
         const getValue = (record: any, dataIndex?: string) => {
           if (!dataIndex) return undefined;
           if (typeof dataIndex === "string") {
@@ -496,7 +509,7 @@ vi.mock("antd", () => {
                   rowSelection
                     ? React.createElement("div", { key: "selection" }, "✓")
                     : null,
-                  (columns ?? []).map((column: any, columnIndex: number) => {
+                  leafColumns.map((column: any, columnIndex: number) => {
                     const value = getValue(record, column?.dataIndex);
                     const content =
                       typeof column?.render === "function"
