@@ -1,24 +1,16 @@
+=== FE gate @ commit 719c1a4 ===
 === typecheck ===
-
 > wms-hoa-nam-frontend@0.0.0 typecheck
 > tsc -b --pretty false
 
-=== lint ===
-  122:41  error  Unnecessary escape character: \S  no-useless-escape
-  122:49  error  Unnecessary escape character: \W  no-useless-escape
-
-✖ 27 problems (2 errors, 25 warnings)
-
 === test ===
-    199|   });
-
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 
 
- Test Files  2 failed | 84 passed (86)
-      Tests  2 failed | 654 passed (656)
-   Start at  01:05:08
-   Duration  116.45s (transform 259.24s, setup 402.70s, import 323.17s, tests 88.32s, environment 664.43s)
+ Test Files  1 failed | 88 passed (89)
+      Tests  1 failed | 695 passed (696)
+   Start at  08:39:49
+   Duration  79.29s (transform 26.84s, setup 267.93s, import 47.39s, tests 51.29s, environment 669.36s)
 
 JSON report written to C:/LAM_PHONG_TECH/HoaNam_FE/WMS_Warehouse_Hoa_Nam_FE/test-results/vitest-results.json
 JUNIT report written to C:/LAM_PHONG_TECH/HoaNam_FE/WMS_Warehouse_Hoa_Nam_FE/test-results/vitest-junit.xml
