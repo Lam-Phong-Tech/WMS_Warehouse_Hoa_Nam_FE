@@ -1,0 +1,14 @@
+WWHN-311 R2 local execution identity
+date_utc=2026-08-19T13:19:05Z
+branch=m1
+candidate_sha_artifact_set=ecbed01bb5113a5406ea19850f732a39342e4f09
+evidence_run_sha=a43967e42b087a17ef6d23c205048431a212774d
+range_invariant=ecbed01..a43967e: 8 commit sau candidate, git log xac nhan khong commit nao cham tap artifact handover WWHN-311 (WWHN-311.md, README.md, .env.example, package.json, src/app/router/*, wms-permissions.ts, src/shared/api/*)
+be_reverify_sha=7da26cb1cc13df58537c5ff8556070ad8529ed4d (WMS_Warehouse_Hoa_Nam_BE@m1 HEAD luc chot R2; canonical permission seed keys khong doi)
+be_contract_pin=8326d505e5c7c2b690a02ae3a41c5c91119d5ed7 (docs/api-evidence/BE_CONTRACT_PIN.json; swagger-api.json trich tu BE local repo bang git show, sync-be-openapi xac nhan hash khop pin)
+run_mode=local reproducible run trong git worktree sach tai exact SHA (khong dung GitHub Actions theo quota policy); node_modules junction tu main checkout cung yarn.lock
+node=v22.17.1
+npm=10.9.2
+os=MINGW64_NT-10.0-22631 x86_64
+VITE_APP_ENV=local (contract .env.example: VITE_API_BASE_URL=http://localhost:8080/api/v1, VITE_API_WITH_CREDENTIALS=true)
+app_version=0.0.0

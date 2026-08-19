@@ -1,0 +1,5 @@
+
+> wms-hoa-nam-frontend@0.0.0 health:check
+> node scripts/check-frontend-health.mjs
+
+[health] PASS: deployable FE artifact 1.0.0 exposes /health.json and immutable build-manifest.json for source local-uncommitted.

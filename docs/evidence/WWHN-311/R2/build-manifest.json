@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "1.0.0",
+  "service": "wms-hoa-nam-frontend",
+  "task": "WWHN-156",
+  "sourceSha": "local-uncommitted",
+  "executionSha": "local-uncommitted",
+  "artifactVersion": "1.0.0",
+  "environment": "local",
+  "generatedAt": "2026-08-19T13:21:10.187Z",
+  "healthContract": {
+    "contractVersion": "WWHN-156-health-v1",
+    "frontendStaticPath": "/health.json",
+    "backendResolvedUrl": "http://localhost:8080/api/v1/health",
+    "backendResolvedPath": "/api/v1/health"
+  }
+}
