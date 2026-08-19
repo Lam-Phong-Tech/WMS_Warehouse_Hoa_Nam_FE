@@ -76,9 +76,23 @@ function repoIdentity(cwd, label) {
   }
   const sha = git(cwd, "rev-parse HEAD");
   const status = git(cwd, "status --porcelain");
+  // m1 is a shared working tree between concurrent sessions, so the sanctioned
+  // way to get a clean checkout of an exact SHA is a detached git worktree.
+  // Detached is only accepted when the commit is actually on m1 — the pin then
+  // records the canonical branch plus how the checkout was materialized.
+  let branch = git(cwd, "rev-parse --abbrev-ref HEAD");
+  let checkoutMode = "attached-branch";
+  if (branch === "HEAD") {
+    const onM1 = git(cwd, "merge-base --is-ancestor HEAD refs/heads/m1");
+    if (onM1 !== null) {
+      branch = "m1";
+      checkoutMode = "detached-exact-sha-on-m1";
+    }
+  }
   return {
     available: sha !== null,
-    branch: git(cwd, "rev-parse --abbrev-ref HEAD"),
+    branch,
+    checkoutMode,
     sha,
     // A dirty tree means the SHA does not describe what was actually executed.
     workingTreeClean: status === "",
