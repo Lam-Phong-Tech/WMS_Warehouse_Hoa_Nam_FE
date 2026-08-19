@@ -76,6 +76,18 @@ const git = (args, cwd) => {
   }
 };
 
+const argValue = (name) => {
+  const hit = process.argv.slice(2).find((a) => a.startsWith(name + "="));
+  return hit ? hit.slice(name.length + 1) : null;
+};
+const EXPECT_BE_SHA = argValue("--expect-be-sha");
+const EXPECT_FE_SHA = argValue("--expect-fe-sha");
+
+/** Đường dẫn bản pin — hai repo giữ hai bản **byte-identical**. */
+const PAIR_RELATIVE_PATH = "docs/evidence/WWHN-237/CANDIDATE_PAIR.json";
+/** Scope FE không được co lại để pin dễ thoả. */
+const FE_SCOPE_MANDATORY = ["scripts/verify-wwhn-237-closure.mjs", "src/test/wwhn-237-variance-report-guard.test.ts"];
+
 // ── 1. FE contract baseline không còn khai capability kiểm kê ────────────────
 {
   const rel = "docs/api-evidence/WMS_FE_CONTRACT_BASELINE.json";
@@ -236,20 +248,95 @@ const git = (args, cwd) => {
   record("BE-GATE", beGate !== null, beGate === null ? "thiếu gate BE" : "gate BE có mặt");
 }
 
+// ── 6b. Frozen candidate pair — DEV237-P1-02R2 ──────────────────────────────
+/**
+ * Lỗi thật của vòng R1: file này và `SOURCE_REGISTER.json` (BE) đều ghi `rev-parse HEAD`
+ * tại thời điểm chạy, hai repo chạy lệch giờ nên khai **hai cặp SHA khác nhau**. Nay
+ * định danh **đọc từ bản pin**, và bản pin phải giải lại được từ git.
+ */
+let pinnedPair = null;
+{
+  const raw = readText(PAIR_RELATIVE_PATH);
+  if (raw === null) {
+    record("CANDIDATE-PAIR", false, `${PAIR_RELATIVE_PATH} không tồn tại — chạy build-wwhn237-candidate-pair.mjs bên BE.`);
+  } else {
+    const problems = [];
+    try {
+      pinnedPair = JSON.parse(raw);
+    } catch (error) {
+      problems.push(`không parse được: ${error.message}`);
+    }
+
+    if (pinnedPair) {
+      const feSha = pinnedPair?.pair?.frontend?.commit_sha ?? null;
+      const beSha = pinnedPair?.pair?.backend?.commit_sha ?? null;
+      const feScope = pinnedPair?.pair?.frontend?.artifact_scope ?? [];
+
+      for (const [label, sha] of [["frontend", feSha], ["backend", beSha]]) {
+        if (!/^[0-9a-f]{40}$/.test(sha ?? "")) problems.push(`pair.${label}.commit_sha không phải SHA đầy đủ`);
+      }
+      const missingScope = FE_SCOPE_MANDATORY.filter((p) => !feScope.includes(p));
+      if (missingScope.length > 0) problems.push(`scope FE thiếu file bắt buộc: ${missingScope.join(", ")}`);
+      const dangling = feScope.filter((p) => !existsSync(join(root, p)));
+      if (dangling.length > 0) problems.push(`scope FE trỏ file không tồn tại: ${dangling.join(", ")}`);
+
+      // Giải lại từ git: pin phải là commit cuối chạm scope, không phải HEAD.
+      const liveFe = feScope.length > 0 ? git(["log", "-1", "--format=%H", "--", ...feScope], root) : null;
+      if (liveFe && liveFe !== feSha) {
+        problems.push(
+          `pin FE ${feSha} ≠ commit cuối chạm scope ${liveFe} — artifact FE đã đổi sau khi pin; chạy lại build pin rồi xin lại consumer confirmation`,
+        );
+      }
+
+      // Bản sao BE phải byte-identical.
+      if (existsSync(beRoot)) {
+        const beCopy = join(beRoot, PAIR_RELATIVE_PATH);
+        if (!existsSync(beCopy)) problems.push(`bản sao BE ${PAIR_RELATIVE_PATH} không tồn tại`);
+        else if (readFileSync(beCopy, "utf8") !== raw) problems.push("bản sao BE của CANDIDATE_PAIR.json KHÔNG byte-identical");
+        const liveBe = git(["log", "-1", "--format=%H", "--", ...(pinnedPair?.pair?.backend?.artifact_scope ?? [])], beRoot);
+        if (liveBe && liveBe !== beSha) problems.push(`pin BE ${beSha} ≠ commit cuối chạm scope BE ${liveBe}`);
+      }
+
+      const sup = pinnedPair?.branch_supersession ?? {};
+      if (sup.superseded_branch !== "m1-be-2" || sup.is_pure_ancestor !== true || sup.m1_be_2_commits_ahead_of_m1 !== 0) {
+        problems.push("branch_supersession chưa chứng minh m1-be-2 là ancestor thuần của m1");
+      }
+
+      if (EXPECT_BE_SHA && EXPECT_BE_SHA !== beSha) problems.push(`--expect-be-sha ${EXPECT_BE_SHA} ≠ pin ${beSha}`);
+      if (EXPECT_FE_SHA && EXPECT_FE_SHA !== feSha) problems.push(`--expect-fe-sha ${EXPECT_FE_SHA} ≠ pin ${feSha}`);
+
+      record(
+        "CANDIDATE-PAIR",
+        problems.length === 0,
+        problems.length === 0
+          ? `một cặp duy nhất BE ${beSha.slice(0, 8)} / FE ${feSha.slice(0, 8)}, giải lại khớp, hai bản pin byte-identical`
+          : problems.join(" | "),
+      );
+    } else {
+      record("CANDIDATE-PAIR", false, problems.join(" | "));
+    }
+  }
+}
+
 // ── 7. Pin định danh để QA1 tái lập WWHN-238 ────────────────────────────────
 const identity = {
-  schema_version: "1.0.0",
+  schema_version: "1.1.0",
   jira_key: "WWHN-237",
   disposition: "DISP-STK-237",
   controlling_requirement: "REQ-SRS-037",
+  identity_source:
+    "docs/evidence/WWHN-237/CANDIDATE_PAIR.json — KHÔNG dùng `git rev-parse HEAD`. Đó chính là lỗi DEV237-P1-02R2: " +
+    "HEAD trôi theo task khác trên m1 và hai repo chạy lệch giờ sinh ra hai cặp SHA khác nhau.",
   fe: {
-    branch: git(["rev-parse", "--abbrev-ref", "HEAD"], root),
-    commit_sha: git(["rev-parse", "HEAD"], root),
+    branch: pinnedPair?.pair?.frontend?.branch ?? git(["rev-parse", "--abbrev-ref", "HEAD"], root),
+    commit_sha: pinnedPair?.pair?.frontend?.commit_sha ?? null,
+    head_at_run: git(["rev-parse", "HEAD"], root),
     working_tree_clean: git(["status", "--porcelain"], root) === "",
   },
   be: {
-    branch: git(["rev-parse", "--abbrev-ref", "HEAD"], beRoot),
-    commit_sha: git(["rev-parse", "HEAD"], beRoot),
+    branch: pinnedPair?.pair?.backend?.branch ?? "m1",
+    commit_sha: pinnedPair?.pair?.backend?.commit_sha ?? null,
+    head_at_run: git(["rev-parse", "HEAD"], beRoot),
   },
   baselines: {
     "docs/HN_SRS_FRD_v1.12_FULL.md": sha256("docs/HN_SRS_FRD_v1.12_FULL.md"),
