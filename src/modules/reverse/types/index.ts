@@ -108,10 +108,24 @@ export interface ReversibleMovementLine {
   items?: ReversibleItemCandidate[];
 }
 
+/**
+ * DEC-REV-COMPONENT-001 (WWHN-266 · BE266-D03): các movement trừ tồn mà reversal
+ * sẽ CỘNG LẠI tồn — ISSUE và COMPONENT_ISSUE. Cả hai cùng chịu BR-REV-06/07:
+ * chỉ Post khi hàng vật lý đã quay lại kho, phải khai return_condition, và chỉ
+ * SELLABLE mới cộng available_qty. Mọi movement khác (RECEIPT) đảo theo chiều
+ * trừ tồn. KHÔNG so sánh movement_type === "ISSUE" trực tiếp trong component —
+ * dùng helper này để COMPONENT_ISSUE không bị phân loại nhầm sang nhánh receipt.
+ */
+export function isStockRestoringMovement(
+  movementType: string | undefined | null,
+): boolean {
+  return movementType === "ISSUE" || movementType === "COMPONENT_ISSUE";
+}
+
 export interface ReversibleMovement {
   id: string;
   movement_code: string;
-  movement_type: "RECEIPT" | "ISSUE" | string;
+  movement_type: "RECEIPT" | "ISSUE" | "COMPONENT_ISSUE" | string;
   source_document_type: string;
   source_document_id: string;
   source_document_code: string;

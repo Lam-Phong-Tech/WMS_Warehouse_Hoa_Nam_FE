@@ -28,6 +28,7 @@ import type {
   ReversibleMovement,
   ReversibleMovementLine,
 } from "../types";
+import { isStockRestoringMovement } from "../types";
 
 const RETURN_CONDITION_OPTIONS: Array<{
   value: ReversalReturnCondition;
@@ -112,7 +113,13 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
   const invalidLine = selectedLines.find(
     (line) => line.reversal_qty > line.max,
   );
-  const isIssueReversal = selectedMovement?.movement_type === "ISSUE";
+  // DEC-REV-COMPONENT-001: ISSUE và COMPONENT_ISSUE cùng là reversal cộng-lại-tồn,
+  // cùng chịu BR-REV-06/07 (return_condition + xác nhận hàng vật lý). So sánh
+  // movement_type === "ISSUE" trực tiếp sẽ đẩy COMPONENT_ISSUE nhầm sang nhánh
+  // receipt (trừ tồn, bỏ qua điều kiện hàng về).
+  const isIssueReversal = isStockRestoringMovement(
+    selectedMovement?.movement_type,
+  );
   // Wireframe REV-01 "Hiện tại → Reversal → Sau Reversal": Reverse Issue cộng lại tồn
   // (chỉ khi SELLABLE), Reverse Receipt trừ tồn. Dấu ở đây chỉ để preview, backend vẫn
   // là nơi quyết định stock effect thật.
