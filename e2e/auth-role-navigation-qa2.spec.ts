@@ -128,6 +128,19 @@ function authResponse(options: Required<MockAuthOptions>) {
     email: "qa.wwhn144@example.com",
     code: "QA-WWHN-144",
     is_super_admin: options.isSuperAdmin,
+    // WWHN-165: auth.store.setProfile() đọc `permissionCodes` từ me.permissions
+    // top-level (BE m1 trả permission ở top-level /auth/me, không theo
+    // active_context) — thiếu field này khiến mọi menu/route gate theo
+    // permission bị ẩn hết dù mock có permissionCodes trong active_context.
+    permissions: options.permissionCodes,
+    roles: [
+      {
+        role_id: "1",
+        role_code: options.isSuperAdmin ? "SUPER_ADMIN" : "QA_WWHN_144",
+        role_name: options.isSuperAdmin ? "Super Admin" : "Inventory Viewer",
+      },
+    ],
+    warehouse_scope_ids: [],
     active_context: activeContext,
     available_contexts: [activeContext],
   };
@@ -234,14 +247,18 @@ test.describe("WWHN-144 / WWHN-145 closure", () => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await setupMockApi(page, { refreshSuccess: false });
 
-    await page.goto(`${BASE_URL}/master-data?source=direct-url`);
+    // ROUTES.MASTER_DATA = "/master-data/skus" (route thật, xem
+    // src/shared/constants/routes.ts) — "/master-data" trần không khớp route
+    // nào và rơi vào wildcard "*" → Navigate(HOME), khiến case anonymous vô
+    // tình vẫn PASS (đích cuối trùng /login) nhưng không test đúng route bảo vệ.
+    await page.goto(`${BASE_URL}/master-data/skus?source=direct-url`);
     await expect(page).toHaveURL(/\/login$/);
 
     await captureEvidence(page, testInfo, {
       scenario: "anonymous-direct-url-login-guard",
       role: "anonymous",
       viewport: { width: 1440, height: 900 },
-      route: "/master-data?source=direct-url",
+      route: "/master-data/skus?source=direct-url",
       result: "PASS",
       assertions: [
         "Protected direct URL does not render before authentication",
@@ -268,7 +285,7 @@ test.describe("WWHN-144 / WWHN-145 closure", () => {
       page.getByText("Danh sách SKU / Product Master", { exact: true }),
     ).toHaveCount(0);
 
-    await page.goto(`${BASE_URL}/master-data?source=direct-url`);
+    await page.goto(`${BASE_URL}/master-data/skus?source=direct-url`);
     await expect(page).toHaveURL(/\/errors\/403$/);
     await expect(
       page.getByText("Không có quyền truy cập", { exact: true }),
@@ -278,7 +295,7 @@ test.describe("WWHN-144 / WWHN-145 closure", () => {
       scenario: "limited-role-menu-direct-url-403",
       role: "inventory_viewer",
       viewport: { width: 1440, height: 900 },
-      route: "/master-data?source=direct-url",
+      route: "/master-data/skus?source=direct-url",
       result: "PASS",
       assertions: [
         "Allowed inventory menu is visible",
@@ -325,27 +342,34 @@ test.describe("WWHN-144 / WWHN-145 closure", () => {
 
     await page.goto(`${BASE_URL}/dashboard?screen=MAP-01`);
     await expect(page.locator('[data-mvp-screen="MAP-01"]')).toBeVisible();
+    // Nội dung footer-note MAP-01 được refresh sang trích dẫn versioned
+    // (BRD v3.20 / SRS-FRD v1.12 / BPD v1.12 · DEC-HN-20260814-01) — assertion
+    // cũ trỏ câu chữ generic trước khi refresh, luôn fail độc lập với hành vi.
     await expect(
       page.getByText(
-        "Wireframe mức low-fi · Nguồn BA: BRD / SRS-FRD / BPD hiện tại.",
+        "Wireframe low-fi · Nguồn hiện hành: BRD v3.20 / SRS-FRD v1.12 / BPD v1.12 · DEC-HN-20260814-01.",
       ),
     ).toBeVisible();
 
     await page
       .getByText("Danh sách SKU / Product Master", { exact: true })
       .click();
-    await expect(page).toHaveURL(/\/master-data\?screen=MST-01$/);
+    await expect(page).toHaveURL(/\/master-data\/skus\?screen=MST-01$/);
     await expect(page.locator('[data-mvp-screen="MST-01"]')).toBeVisible();
+    // MST-01 sau khi vào bằng SideNav render SkuMasterScreen thật (component
+    // API-backed, ApiMasterScreens.tsx) chứ không phải bảng tĩnh của
+    // MvpSourceScreen wireframe nữa — cột "Theo dõi serial"/nút "+ Tạo SKU" là
+    // câu chữ wireframe cũ, component thật dùng "Serial" (<th>) và "Thêm SKU".
     await expect(
-      page.getByRole("columnheader", { name: "Theo dõi serial" }),
+      page.getByRole("columnheader", { name: "Serial" }),
     ).toBeVisible();
-    await expect(page.getByRole("button", { name: "+ Tạo SKU" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Thêm SKU" })).toBeVisible();
 
     await captureEvidence(page, testInfo, {
       scenario: "verbatim-ba-source-screen-navigation",
       role: "super_admin",
       viewport: { width: 1440, height: 900 },
-      route: "/master-data?screen=MST-01",
+      route: "/master-data/skus?screen=MST-01",
       result: "PASS",
       assertions: [
         "MAP-01 is rendered by the verbatim BA source-port",
