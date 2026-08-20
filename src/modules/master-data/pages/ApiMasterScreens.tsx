@@ -14,11 +14,11 @@ import {
   EditOutlined,
   ImportOutlined,
   PlusOutlined,
-  ReloadOutlined,
   SaveOutlined,
 } from "@ant-design/icons";
 import { toast } from "sonner";
 import { SkuImportModal } from "@/modules/master-data/components/SkuImportModal";
+import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import {
   useCreateMvpAgency,
   useCreateMvpDefect,
@@ -124,26 +124,6 @@ function refLabel(
   if (!value) return "—";
   const found = index.get(value);
   return found ? found.name || found.code : compactRef(value);
-}
-
-function ApiErrorAlert({
-  error,
-  fallback,
-  onRetry,
-}: {
-  error: unknown;
-  fallback: string;
-  onRetry: () => void;
-}) {
-  if (!error) return null;
-  return (
-    <div className="alert" role="alert" style={{ marginBottom: 14 }}>
-      {getApiErrorMessage(error, fallback)}{" "}
-      <button className="btn small" type="button" onClick={onRetry}>
-        <ReloadOutlined /> Thử lại
-      </button>
-    </div>
-  );
 }
 
 function ModalActions({

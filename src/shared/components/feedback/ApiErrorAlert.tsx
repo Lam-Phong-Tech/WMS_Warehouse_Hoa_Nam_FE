@@ -2,6 +2,7 @@ import type { CSSProperties } from "react";
 import { Alert, Button } from "antd";
 import { ReloadOutlined } from "@ant-design/icons";
 import {
+  getApiErrorMessage,
   getErrorRequestId,
   isNoPermissionError,
   normalizeError,
@@ -14,6 +15,8 @@ export interface ApiErrorAlertProps {
   error: unknown;
   /** Tiêu đề Alert. */
   title?: string;
+  /** Thông điệp khi BE không kèm `message` (network/timeout/lỗi không rõ dạng). */
+  fallback?: string;
   /** Có nút "Thử lại" khi truyền onRetry. */
   onRetry?: () => void;
   style?: CSSProperties;
@@ -32,6 +35,7 @@ export interface ApiErrorAlertProps {
 export function ApiErrorAlert({
   error,
   title = "Đã xảy ra lỗi",
+  fallback,
   onRetry,
   style,
   testId,
@@ -72,7 +76,10 @@ export function ApiErrorAlert({
     );
   }
 
-  const { message, errors } = normalizeError(error);
+  const { errors } = normalizeError(error);
+  const message = fallback
+    ? getApiErrorMessage(error, fallback)
+    : normalizeError(error).message;
   const fieldMessages = errors
     ? Object.values(errors).flatMap((v) => (Array.isArray(v) ? v : [v]))
     : [];

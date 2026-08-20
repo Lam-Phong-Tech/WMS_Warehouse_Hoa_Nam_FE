@@ -178,6 +178,13 @@ async function mockSession(
             email: "qa.wwhn178@example.com",
             code: "QA-WWHN-178",
             is_super_admin: false,
+            // useAuthStore.setProfile đọc quyền ở me.permissions top-level
+            // ("BE m1 trả permission ở top-level /auth/me, không theo
+            // active_context" — src/shared/store/auth.store.ts). Chỉ đặt
+            // permission_codes trong active_context (như R1) khiến
+            // RequirePermission luôn thấy permissionCodes=[] và redirect
+            // /errors/403 bất kể mock permissions truyền vào.
+            permissions,
             active_context: activeContext,
             available_contexts: [activeContext],
           },
