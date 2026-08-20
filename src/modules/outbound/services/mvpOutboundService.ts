@@ -110,6 +110,14 @@ export interface OutboundScanResult {
   documentId: string;
   lineId: string;
   itemId?: string | null;
+  /**
+   * Change Pack QR/SKU (DEC-QR-001): identity BE parse từ composite QR — FE chỉ
+   * hiển thị, không tự tách SKU/serial từ raw payload.
+   */
+  skuCode?: string | null;
+  itemUnique?: string | null;
+  payloadFormat?: "COMPOSITE_V1" | "LEGACY_CODE_VALUE" | null;
+  resolutionStatus?: "EXISTING_ITEM" | "LEGACY_ITEM" | null;
   quantity: number;
   expected: number;
   scanned: number;
@@ -495,7 +503,11 @@ export type OutboundScanSource = "CAMERA" | "MANUAL" | "HARDWARE";
 
 export async function scanOutboundItem(input: {
   documentId: string;
-  lineId: string;
+  /**
+   * Change Pack QR/SKU (DEC-QR-001): bỏ trống — server tự match dòng theo SKU
+   * embedded trong QR composite; gửi tường minh thì server cross-check WRONG_SKU.
+   */
+  lineId?: string;
   codeValue: string;
   ifMatch: number;
   scanSource?: OutboundScanSource;
@@ -504,7 +516,7 @@ export async function scanOutboundItem(input: {
   const row = await http.post<RawRecord>(
     endpoint(API_ENDPOINTS.OUTBOUND_SCAN, input.documentId),
     {
-      line_id: input.lineId,
+      ...(input.lineId ? { line_id: input.lineId } : {}),
       quantity: 1,
       code_value: input.codeValue,
       ...(input.scanSource ? { scan_source: input.scanSource } : {}),
@@ -517,8 +529,14 @@ export async function scanOutboundItem(input: {
   return {
     codeValue: input.codeValue,
     documentId: text(row.document_id, input.documentId),
-    lineId: text(row.line_id, input.lineId),
+    lineId: text(row.line_id, input.lineId ?? ""),
     itemId: text(row.item_id) || null,
+    skuCode: text(row.sku_code) || null,
+    itemUnique: text(row.item_unique) || null,
+    payloadFormat: (text(row.payload_format) ||
+      null) as OutboundScanResult["payloadFormat"],
+    resolutionStatus: (text(row.resolution_status) ||
+      null) as OutboundScanResult["resolutionStatus"],
     quantity: num(row.quantity ?? 1),
     expected: num(row.required_quantity),
     scanned: num(row.scanned_quantity),

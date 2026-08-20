@@ -108,10 +108,12 @@ function normalizeClassifyRequest(
   request: ScanClassifyRequest,
 ): ScanClassifyRequest {
   const rawCode = requireNonEmptyString(request.raw_code, "raw_code");
-  if (rawCode.length > 150) {
+  // Change Pack QR/SKU 20/08/2026: raw_code là RAW scan payload (composite
+  // PRODUCT QR); trần contract nâng 150 -> 512 đồng bộ với BE.
+  if (rawCode.length > 512) {
     throw new WmsContractError(
       "WMS_FE_INVALID_PAYLOAD",
-      "raw_code must contain at most 150 characters",
+      "raw_code must contain at most 512 characters",
     );
   }
 
@@ -209,7 +211,37 @@ function normalizeClassifyResponse(
     );
   }
 
+  // Change Pack QR/SKU (DEC-QR-001): identity đã parse từ composite PRODUCT QR —
+  // optional, chỉ hiển thị; FE tuyệt đối không tự parse raw payload (AC-QR-10).
+  const optionalText = (value: unknown): string | undefined => {
+    const normalized = text(value).trim();
+    return normalized === "" ? undefined : normalized;
+  };
+  const payloadFormat =
+    text(row.payload_format).toUpperCase() === "COMPOSITE_V1"
+      ? ("COMPOSITE_V1" as const)
+      : undefined;
+  const parsedIdentity =
+    payloadFormat === undefined
+      ? {}
+      : {
+          payload_format: payloadFormat,
+          payload_version:
+            row.payload_version === null || row.payload_version === undefined
+              ? undefined
+              : num(row.payload_version),
+          sku_code: optionalText(row.sku_code),
+          item_unique: optionalText(row.item_unique),
+          serial_number: optionalText(row.serial_number),
+          normalized_code_value: optionalText(row.normalized_code_value),
+          resolution_status:
+            text(row.resolution_status).toUpperCase() === "EXISTING_ITEM"
+              ? ("EXISTING_ITEM" as const)
+              : undefined,
+        };
+
   return {
+    ...parsedIdentity,
     raw_code: rawCode,
     context,
     classification,

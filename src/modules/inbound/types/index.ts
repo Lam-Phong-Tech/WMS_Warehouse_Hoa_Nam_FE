@@ -78,6 +78,12 @@ export interface InboundScanEntry {
   itemCode?: string;
   serialNumber?: string;
   containerId?: string;
+  /**
+   * Change Pack QR/SKU (DEC-QR-03): item mới từ composite QR chưa có itemId cho
+   * tới Post Receipt — identity hiển thị qua candidateItemUnique.
+   */
+  candidateItemUnique?: string;
+  candidateSerialNumber?: string;
   sku: string;
   skuName: string;
   quantity: number;
@@ -125,6 +131,15 @@ export interface InboundScanResult {
   status: InboundScanStatus;
   sku?: string;
   line_id?: string;
+  /**
+   * Change Pack QR/SKU (DEC-QR-001): identity BE parse từ composite QR — FE chỉ
+   * hiển thị. item_id có thể vắng với NEW_ITEM_CANDIDATE cho tới Post Receipt.
+   */
+  item_id?: string;
+  item_unique?: string;
+  serial_number?: string;
+  payload_format?: "COMPOSITE_V1" | "LEGACY_CODE_VALUE";
+  resolution_status?: "NEW_ITEM_CANDIDATE" | "EXISTING_ITEM" | "LEGACY_ITEM";
   message?: string;
   version: number;
   /**

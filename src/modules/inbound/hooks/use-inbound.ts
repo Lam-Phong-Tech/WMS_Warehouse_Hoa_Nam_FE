@@ -127,7 +127,11 @@ export function useScanInbound() {
     }: {
       id: string;
       code: string;
-      lineId: string;
+      /**
+       * Change Pack QR/SKU (DEC-QR-001): bỏ trống với scan PRODUCT — server tự
+       * match dòng theo SKU embedded trong QR composite.
+       */
+      lineId?: string;
       ifMatch: number;
       includeCodeValue: boolean;
       quantity?: number;
