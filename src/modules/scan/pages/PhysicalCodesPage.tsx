@@ -204,7 +204,7 @@ export default function PhysicalCodesPage() {
             label: "Danh sách mã vật lý",
             children: (
               <>
-                <Space style={{ marginBottom: 16 }}>
+                <Space wrap style={{ marginBottom: 16 }}>
                   <Input.Search
                     placeholder="Giá trị mã / UID..."
                     style={{ width: 285 }}
@@ -326,7 +326,7 @@ export default function PhysicalCodesPage() {
                   <Alert
                     type={classifyState === "success" ? "success" : "error"}
                     title={
-                      <Space>
+                      <Space wrap>
                         <Typography.Text strong>Kết quả:</Typography.Text>
                         <Tag color={stateColorMap[classifyState]}>
                           {classifyState.toUpperCase()}

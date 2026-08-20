@@ -17,7 +17,7 @@
     "height": 664
   },
   "route": "/login",
-  "timestamp": "2026-08-19T02:42:30.962Z",
+  "timestamp": "2026-08-20T03:10:26.720Z",
   "screenshotFilename": "WWHN-274__accessible-login-semantics__wwhn-274-safari-ios__390x664.png",
   "assertions": [
     "Co dung mot landmark <main> va dung mot heading level 1",

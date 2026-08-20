@@ -176,7 +176,7 @@ export default function ReversalPage() {
   };
 
   return (
-    <div className="reversal-page">
+    <div className="reversal-page hn-mvp-source-screen">
       <div className="toolbar-wrap" style={{ gap: 6 }}>
         <span className="pill blue">GET /reversal-documents</span>
         <span className="pill blue">POST /reversal-documents</span>
@@ -282,7 +282,7 @@ export default function ReversalPage() {
           ),
         }}
         onRow={(row) => ({ onDoubleClick: () => setDetailId(row.id) })}
-        scroll={{ x: 1400 }}
+        scroll={{ x: "max-content" }}
       />
 
       <div className="footer-note">

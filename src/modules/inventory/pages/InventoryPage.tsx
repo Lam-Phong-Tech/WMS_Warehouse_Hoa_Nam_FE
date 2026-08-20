@@ -379,7 +379,7 @@ export default function InventoryPage() {
   };
 
   return (
-    <div className="inventory-page">
+    <div className="inventory-page hn-mvp-source-screen">
       <div className="toolbar-wrap" style={{ gap: 6 }}>
         <span className="pill blue">GET /inventory/balances</span>
         <span className="pill blue">GET /stock-movements</span>
@@ -503,7 +503,7 @@ export default function InventoryPage() {
                   onRow={(row) => ({
                     onDoubleClick: () => setBalanceDetailRow(row),
                   })}
-                  scroll={{ x: 1600 }}
+                  scroll={{ x: "max-content" }}
                 />
 
                 <div className="footer-note" style={{ marginBottom: 8 }}>
@@ -594,7 +594,7 @@ export default function InventoryPage() {
                       "Không có movement theo bộ lọc hiện tại",
                     ),
                   }}
-                  scroll={{ x: 1200 }}
+                  scroll={{ x: "max-content" }}
                 />
               </>
             ),

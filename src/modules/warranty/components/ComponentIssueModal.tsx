@@ -387,7 +387,11 @@ export function ComponentIssueModal({
             layout="vertical"
             initialValues={{ lines: [{}] }}
           >
-            <Descriptions size="small" column={2} style={{ marginBottom: 12 }}>
+            <Descriptions
+              size="small"
+              column={{ xs: 1, sm: 2 }}
+              style={{ marginBottom: 12 }}
+            >
               <Descriptions.Item label="Kho xuất">
                 {warehouse
                   ? `${String(warehouse.code ?? warehouse.warehouse_code ?? "")} · ${String(
@@ -408,6 +412,7 @@ export function ComponentIssueModal({
                     <Space
                       key={field.key}
                       align="start"
+                      wrap
                       style={{ display: "flex", marginBottom: 4 }}
                     >
                       <Form.Item
@@ -510,6 +515,7 @@ export function ComponentIssueModal({
                 onRow={(line) => ({
                   onClick: () => setSelectedLineId(line.id),
                 })}
+                scroll={{ x: "max-content" }}
               />
 
               {isOpenDocument ? (

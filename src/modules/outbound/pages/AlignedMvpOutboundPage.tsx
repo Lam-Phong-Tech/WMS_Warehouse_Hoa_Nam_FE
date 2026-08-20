@@ -248,7 +248,7 @@ export default function AlignedMvpOutboundPage() {
     void queryClient.invalidateQueries({ queryKey: ["mvp-outbound"] });
 
   return (
-    <div className="outbound-page">
+    <div className="outbound-page hn-mvp-source-screen">
       <div className="toolbar-wrap" style={{ gap: 6 }}>
         <span className="pill ok">
           Scan → tổng hợp → 1 Packing Label/lô → Post Issue
@@ -333,7 +333,7 @@ export default function AlignedMvpOutboundPage() {
             "Chưa có phiếu xuất phù hợp",
           ),
         }}
-        scroll={{ x: 1390 }}
+        scroll={{ x: "max-content" }}
       />
 
       <div className="footer-note">

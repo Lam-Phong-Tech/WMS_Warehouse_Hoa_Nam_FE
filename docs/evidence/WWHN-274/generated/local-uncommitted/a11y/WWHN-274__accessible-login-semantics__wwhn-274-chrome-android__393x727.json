@@ -17,7 +17,7 @@
     "height": 727
   },
   "route": "/login",
-  "timestamp": "2026-08-19T02:42:30.261Z",
+  "timestamp": "2026-08-20T03:10:17.897Z",
   "screenshotFilename": "WWHN-274__accessible-login-semantics__wwhn-274-chrome-android__393x727.png",
   "assertions": [
     "Co dung mot landmark <main> va dung mot heading level 1",

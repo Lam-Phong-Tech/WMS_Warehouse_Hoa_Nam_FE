@@ -266,7 +266,7 @@ export default function WarrantyPage() {
   };
 
   return (
-    <div className="warranty-page">
+    <div className="warranty-page hn-mvp-source-screen">
       <div className="toolbar-wrap" style={{ gap: 6 }}>
         <span className="pill blue">GET/POST /warranty-cases</span>
         <span className="pill blue">POST /warranty-cases/:id/status</span>
@@ -413,7 +413,7 @@ export default function WarrantyPage() {
           ),
         }}
         onRow={(row) => ({ onDoubleClick: () => setDetailId(row.id) })}
-        scroll={{ x: 1350 }}
+        scroll={{ x: "max-content" }}
       />
 
       <div className="footer-note">

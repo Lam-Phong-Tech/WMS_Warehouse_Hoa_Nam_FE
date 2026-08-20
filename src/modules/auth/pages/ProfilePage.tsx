@@ -27,6 +27,7 @@ export function ProfilePage() {
         <div
           style={{
             display: "flex",
+            flexWrap: "wrap",
             alignItems: "center",
             gap: 16,
             marginBottom: 24,
@@ -35,9 +36,9 @@ export function ProfilePage() {
           <Avatar
             size={64}
             icon={<UserOutlined />}
-            style={{ background: BRAND.primary }}
+            style={{ background: BRAND.primary, flexShrink: 0 }}
           />
-          <div>
+          <div style={{ minWidth: 0, overflowWrap: "anywhere" }}>
             <div style={{ fontSize: 18, fontWeight: 600 }}>{displayName}</div>
             {email && <div style={{ color: "rgba(0,0,0,0.45)" }}>{email}</div>}
           </div>

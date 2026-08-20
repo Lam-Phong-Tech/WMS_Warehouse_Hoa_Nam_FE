@@ -197,7 +197,7 @@ export function WarehouseConfigScreen() {
     <Space orientation="vertical" size={16} style={{ width: "100%" }}>
       <Row justify="space-between" align="middle" gutter={[12, 12]}>
         <Col>
-          <Space align="center">
+          <Space align="center" wrap>
             <HomeOutlined />
             <div>
               <Typography.Title level={3} style={{ margin: 0 }}>
@@ -211,7 +211,7 @@ export function WarehouseConfigScreen() {
           </Space>
         </Col>
         <Col>
-          <Space>
+          <Space wrap>
             <Button
               icon={<ReloadOutlined />}
               onClick={() => {

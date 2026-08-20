@@ -479,7 +479,7 @@ export function InboundDraftModal({
                   rowKey="key"
                   pagination={false}
                   dataSource={fields}
-                  scroll={{ x: 900 }}
+                  scroll={{ x: "max-content" }}
                   locale={{
                     emptyText: "Phiếu nhập phải có ít nhất một dòng SKU",
                   }}
@@ -684,6 +684,7 @@ export function InboundDraftModal({
           <div
             style={{
               display: "flex",
+              flexWrap: "wrap",
               gap: 8,
               justifyContent: "flex-end",
               marginTop: 16,

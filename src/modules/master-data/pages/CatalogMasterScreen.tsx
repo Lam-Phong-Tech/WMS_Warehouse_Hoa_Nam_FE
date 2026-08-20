@@ -398,6 +398,7 @@ export function CatalogMasterScreen() {
         dataSource={rows}
         columns={columns}
         locale={{ emptyText: `Chưa có ${activeTab.itemLabel} nào.` }}
+        scroll={{ x: "max-content" }}
         pagination={{
           current: pagination.current,
           pageSize: perPage,
@@ -414,7 +415,7 @@ export function CatalogMasterScreen() {
     <Space orientation="vertical" size={16} style={{ width: "100%" }}>
       <Row justify="space-between" align="middle" gutter={[12, 12]}>
         <Col>
-          <Space align="center">
+          <Space align="center" wrap>
             <ProfileOutlined />
             <div>
               <Typography.Title level={3} style={{ margin: 0 }}>
@@ -428,7 +429,7 @@ export function CatalogMasterScreen() {
           </Space>
         </Col>
         <Col>
-          <Space>
+          <Space wrap>
             <Button
               icon={<ReloadOutlined />}
               onClick={() => {
@@ -552,7 +553,7 @@ export function CatalogMasterScreen() {
             <Input.TextArea rows={3} disabled={saveMutation.isPending} />
           </Form.Item>
           <Row gutter={12}>
-            <Col span={12}>
+            <Col xs={24} sm={12}>
               <Form.Item name="sort_order" label="Thứ tự hiển thị">
                 <InputNumber
                   min={0}
@@ -561,7 +562,7 @@ export function CatalogMasterScreen() {
                 />
               </Form.Item>
             </Col>
-            <Col span={12}>
+            <Col xs={24} sm={12}>
               <Form.Item
                 name="status"
                 label="Trạng thái"

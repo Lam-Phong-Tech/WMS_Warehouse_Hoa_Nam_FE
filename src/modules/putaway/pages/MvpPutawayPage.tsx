@@ -585,7 +585,7 @@ export default function MvpPutawayPage() {
                     locale={{
                       emptyText: "Không có BOX COMPONENT chờ xếp khay",
                     }}
-                    scroll={{ x: 1270 }}
+                    scroll={{ x: "max-content" }}
                   />
                 </>
               ),
@@ -644,7 +644,7 @@ export default function MvpPutawayPage() {
             <Descriptions
               bordered
               size="small"
-              column={2}
+              column={{ xs: 1, sm: 2 }}
               style={{ marginBottom: 14 }}
             >
               <Descriptions.Item label="BOX">

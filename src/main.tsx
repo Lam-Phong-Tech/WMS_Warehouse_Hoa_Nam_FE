@@ -11,6 +11,9 @@ import "./styles/hn-wms-mvp-exact.css";
 import "./styles/hn-wms-page-normalize.css";
 import "./styles/hn-wms-sidebar-account.css";
 import "./styles/hn-wms-source-screen.css";
+// hn-responsive.css phải đứng cuối: nó là lớp responsive foundation thắng
+// cascade của các file wireframe "exact" phía trên mà không sửa nội dung gốc.
+import "./styles/hn-responsive.css";
 
 // auth.store dùng skipHydration để tránh rehydrate cookie chạy ngầm không
 // xác định thời điểm (xem ghi chú trong auth.store.ts) — gọi 1 lần ở đây,

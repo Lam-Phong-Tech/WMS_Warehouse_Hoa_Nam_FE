@@ -18,9 +18,15 @@ const EVIDENCE_ROOT =
   join("test-results", "wwhn-292", SOURCE_SHA);
 
 const REQUIRED_VIEWPORTS = [
+  { key: "desktop-fhd", width: 1920, height: 1080 },
   { key: "desktop", width: 1440, height: 900 },
+  { key: "laptop-1366", width: 1366, height: 768 },
+  { key: "laptop-1024", width: 1024, height: 768 },
+  { key: "tablet-820", width: 820, height: 1180 },
   { key: "tablet", width: 768, height: 1024 },
+  { key: "mobile-390", width: 390, height: 844 },
   { key: "mobile", width: 375, height: 812 },
+  { key: "mobile-320", width: 320, height: 568 },
 ] as const;
 
 interface EvidenceInput {
@@ -383,10 +389,16 @@ test.describe("WWHN-292 FE-controlled UI/responsive/RBAC closure", () => {
    * 980px. The authenticated shell — not only /login — must honour both.
    */
   const SHELL_VIEWPORTS = [
+    { key: "desktop-fhd", width: 1920, height: 1080 },
     { key: "desktop", width: 1440, height: 900 },
+    { key: "laptop-1366", width: 1366, height: 768 },
     { key: "desktop-nfr-006-min", width: 1280, height: 900 },
+    { key: "laptop-1024", width: 1024, height: 768 },
+    { key: "tablet-820", width: 820, height: 1180 },
     { key: "tablet", width: 768, height: 1024 },
+    { key: "mobile-390", width: 390, height: 844 },
     { key: "mobile", width: 375, height: 812 },
+    { key: "mobile-320", width: 320, height: 568 },
   ] as const;
 
   const WIREFRAME_STACK_BREAKPOINT = 980;

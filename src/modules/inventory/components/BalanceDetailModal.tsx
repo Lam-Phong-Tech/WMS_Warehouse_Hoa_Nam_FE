@@ -290,7 +290,7 @@ export function BalanceDetailModal({
             rowKey={(row) => text(row.id, String(Math.random()))}
             loading={subledgerQuery.isLoading}
             pagination={false}
-            scroll={{ x: 860 }}
+            scroll={{ x: "max-content" }}
             locale={{ emptyText: "Không có item instance" }}
           />
         </div>
@@ -307,7 +307,7 @@ export function BalanceDetailModal({
             rowKey={(row) => text(row.id, String(Math.random()))}
             loading={subledgerQuery.isLoading}
             pagination={false}
-            scroll={{ x: 650 }}
+            scroll={{ x: "max-content" }}
             locale={{ emptyText: "Không có container" }}
           />
         </div>
@@ -324,7 +324,7 @@ export function BalanceDetailModal({
             rowKey="id"
             loading={movementsQuery.isLoading}
             pagination={false}
-            scroll={{ x: 760 }}
+            scroll={{ x: "max-content" }}
             locale={{ emptyText: "Không có movement liên quan" }}
           />
         </div>

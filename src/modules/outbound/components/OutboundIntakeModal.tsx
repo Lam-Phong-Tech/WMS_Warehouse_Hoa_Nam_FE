@@ -423,7 +423,7 @@ export function OutboundIntakeModal({
           description="Blocking error khiến cả batch không được Confirm (không tạo một phần). Một toa chỉ một người nhận; trùng source key/checksum/số toa đều bị chặn, không tạo phiếu trùng."
         />
 
-        <Space>
+        <Space wrap>
           <Button
             type={mode === "manual" ? "primary" : "default"}
             icon={<EditOutlined />}
@@ -561,7 +561,7 @@ export function OutboundIntakeModal({
               )}
             </Form.List>
 
-            <Space style={{ marginTop: 12 }}>
+            <Space wrap style={{ marginTop: 12 }}>
               <Button
                 type="primary"
                 icon={<EyeOutlined />}
@@ -692,7 +692,7 @@ export function OutboundIntakeModal({
                   />
                 </Space>
               </Card>
-              <Space>
+              <Space wrap>
                 <Button
                   type="primary"
                   icon={<CheckCircleOutlined />}

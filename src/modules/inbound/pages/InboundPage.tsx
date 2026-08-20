@@ -256,7 +256,7 @@ function InboundListScreen() {
   };
 
   return (
-    <div className="inbound-page">
+    <div className="inbound-page hn-mvp-source-screen">
       <div className="toolbar">
         <input
           className="input search"
@@ -341,7 +341,7 @@ function InboundListScreen() {
             "Chưa có phiếu nhập phù hợp",
           ),
         }}
-        scroll={{ x: 1080 }}
+        scroll={{ x: "max-content" }}
       />
 
       {draftOpen ? (

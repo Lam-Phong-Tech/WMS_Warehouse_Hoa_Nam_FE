@@ -27,7 +27,7 @@
 
 .hn-dashboard-filter {
   display: grid;
-  grid-template-columns: repeat(2, minmax(170px, 1fr)) auto;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
   gap: 10px;
   align-items: end;
 }
@@ -102,7 +102,9 @@
 
 .hn-dashboard-kpi-grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(140px, 1fr));
+  /* minmax(0,...) — floor 140px cộng sidebar 300px từng gây tràn ngang ở
+     viewport 1101–1119px (5×140 + 4×12 = 748px > content 727px). */
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -140,10 +142,8 @@
 
 .hn-dashboard-bar-row {
   display: grid;
-  grid-template-columns: minmax(100px, 130px) minmax(120px, 1fr) minmax(
-      70px,
-      auto
-    );
+  /* Floor 100+120+70px từng tràn khỏi card trong dải 561–780px (grid 2 cột). */
+  grid-template-columns: minmax(0, 130px) minmax(0, 1fr) auto;
   gap: 10px;
   align-items: center;
 }
@@ -201,7 +201,7 @@
 
 @media (max-width: 1100px) {
   .hn-dashboard-kpi-grid {
-    grid-template-columns: repeat(3, minmax(150px, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 

@@ -280,7 +280,7 @@ export function TraceModal({ movementId, onClose }: Props) {
                   )}
                   rowKey="__rowKey"
                   pagination={false}
-                  scroll={{ x: 500 }}
+                  scroll={{ x: "max-content" }}
                   columns={[
                     {
                       title: "Container",
@@ -322,7 +322,7 @@ export function TraceModal({ movementId, onClose }: Props) {
                   dataSource={codeTrace.movements}
                   rowKey={(row) => text(row.id, String(Math.random()))}
                   pagination={false}
-                  scroll={{ x: 700 }}
+                  scroll={{ x: "max-content" }}
                   columns={[
                     {
                       title: "Movement",
@@ -545,7 +545,7 @@ export function TraceModal({ movementId, onClose }: Props) {
                   )}
                   rowKey="__rowKey"
                   pagination={false}
-                  scroll={{ x: 600 }}
+                  scroll={{ x: "max-content" }}
                   columns={[
                     {
                       title: "SKU",
@@ -670,7 +670,7 @@ export function TraceModal({ movementId, onClose }: Props) {
                   dataSource={trace.chain ?? []}
                   rowKey="id"
                   pagination={false}
-                  scroll={{ x: 760 }}
+                  scroll={{ x: "max-content" }}
                   columns={[
                     {
                       title: "Vai trò",

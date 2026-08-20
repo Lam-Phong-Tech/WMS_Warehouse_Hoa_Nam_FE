@@ -35,7 +35,9 @@ export function SearchInput({
       onChange={(e) => onChange?.(e.target.value)}
       size={size}
       aria-label={rest["aria-label"] ?? placeholder}
-      style={{ width, ...style }}
+      // width cố định inline sẽ đè mọi rule width:100% ở mobile (specificity
+      // của inline style); dùng maxWidth để control co được dưới 576px.
+      style={{ width: "100%", maxWidth: width, ...style }}
       autoComplete="off"
       {...rest}
     />

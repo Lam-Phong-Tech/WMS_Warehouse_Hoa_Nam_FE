@@ -867,6 +867,7 @@ export function SkuImportModal({
                 size="small"
                 dataSource={activeResult.rowErrors}
                 columns={ROW_ERROR_COLUMNS}
+                scroll={{ x: "max-content" }}
                 pagination={
                   activeResult.rowErrors.length > 10
                     ? { pageSize: 10, showSizeChanger: false }
@@ -885,7 +886,7 @@ export function SkuImportModal({
           </Space>
         )}
 
-        <Space style={{ justifyContent: "flex-end", width: "100%" }}>
+        <Space wrap style={{ justifyContent: "flex-end", width: "100%" }}>
           <Button
             icon={<ReloadOutlined />}
             disabled={previewMutation.isPending || commitMutation.isPending}

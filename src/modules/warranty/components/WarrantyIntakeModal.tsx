@@ -207,7 +207,7 @@ export function WarrantyIntakeModal({
       open={open}
       onCancel={onClose}
       footer={
-        <Space>
+        <Space wrap>
           <Button icon={<CloseOutlined />} onClick={onClose}>
             Hủy
           </Button>
@@ -289,7 +289,7 @@ export function WarrantyIntakeModal({
             ]}
             extra="Item phải đã xuất cho khách (ISSUED hoặc RETURNED_TO_CUSTOMER) và chưa có case bảo hành đang hoạt động."
           >
-            <div style={{ display: "flex", gap: 8 }}>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <div style={{ flex: 1 }}>
                 <ScanInput
                   value={itemCode ?? ""}

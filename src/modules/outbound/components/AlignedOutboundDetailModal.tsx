@@ -795,7 +795,7 @@ export function AlignedOutboundDetailModal({
               pagination={false}
               columns={lineColumns}
               dataSource={detail?.lines ?? []}
-              scroll={{ x: 700 }}
+              scroll={{ x: "max-content" }}
             />
             <Table
               rowKey="id"
@@ -874,7 +874,7 @@ export function AlignedOutboundDetailModal({
                     {packingLabel.status}
                   </Tag>
                 </div>
-                <Descriptions bordered size="small" column={2}>
+                <Descriptions bordered size="small" column={{ xs: 1, sm: 2 }}>
                   <Descriptions.Item label="Mã nhãn">
                     {packingLabel.labelCode}
                   </Descriptions.Item>
@@ -921,6 +921,7 @@ export function AlignedOutboundDetailModal({
                   rowKey={(row) => `${row.skuId}-${row.skuCode}`}
                   size="small"
                   pagination={false}
+                  scroll={{ x: "max-content" }}
                   dataSource={packingLabel.skuSummary}
                   columns={[
                     { title: "SKU", dataIndex: "skuCode" },

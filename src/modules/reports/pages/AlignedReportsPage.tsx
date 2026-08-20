@@ -824,6 +824,7 @@ function DocumentLines({ lines }: { lines: Raw[] }) {
       pagination={false}
       rowKey={(row) => text(row.id ?? row.line_no)}
       dataSource={lines}
+      scroll={{ x: "max-content" }}
       columns={[
         { title: "Dòng", dataIndex: "line_no", width: 70, align: "right" },
         { title: "Mã SKU", dataIndex: "product_code", width: 160 },

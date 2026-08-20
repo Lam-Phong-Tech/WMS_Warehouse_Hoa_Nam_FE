@@ -17,7 +17,7 @@
     "height": 900
   },
   "route": "/login",
-  "timestamp": "2026-08-19T02:42:36.383Z",
+  "timestamp": "2026-08-20T03:10:23.404Z",
   "screenshotFilename": "WWHN-274__keyboard-only-login__wwhn-274-desktop-chromium__1440x900.png",
   "assertions": [
     "Focus khoi tao nam o o nhap dau tien",
@@ -27,7 +27,7 @@
   ],
   "observed": {
     "blurredFocusStyle": "none|3px|none|rgb(216, 223, 235)",
-    "focusedFocusStyle": "none|1px|rgba(37, 99, 235, 0.063) 0px 0px 0px 1.60477px|rgb(72, 124, 235)"
+    "focusedFocusStyle": "none|1px|rgba(37, 99, 235, 0.08) 0px 0px 0px 1.96693px|rgb(40, 101, 235)"
   },
   "truthBoundary": "Emulation-level browser/device evidence + basic a11y. Khong phai real-device matrix cua QA1 (WWHN-275) va khong phai audit WCAG day du."
 }

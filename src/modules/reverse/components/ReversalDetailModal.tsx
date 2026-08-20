@@ -399,7 +399,7 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
             rowKey="id"
             loading={linesQuery.isLoading}
             pagination={lines.length > 10 ? { pageSize: 10 } : false}
-            scroll={{ x: 1080 }}
+            scroll={{ x: "max-content" }}
             locale={{ emptyText: "Chưa có dòng hoàn đảo" }}
             columns={[
               { title: "#", dataIndex: "line_no", width: 50 },

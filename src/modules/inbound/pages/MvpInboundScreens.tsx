@@ -859,7 +859,7 @@ export function InboundScanModal({
             </Descriptions>
 
             <Row gutter={[12, 12]} style={{ marginBottom: 14 }}>
-              <Col xs={12} md={6}>
+              <Col xs={24} sm={12} md={6}>
                 <Card size="small">
                   <div style={{ fontSize: 12, color: "#6b7280" }}>
                     Mã hợp lệ
@@ -869,7 +869,7 @@ export function InboundScanModal({
                   </div>
                 </Card>
               </Col>
-              <Col xs={12} md={6}>
+              <Col xs={24} sm={12} md={6}>
                 <Card size="small">
                   <div style={{ fontSize: 12, color: "#6b7280" }}>
                     Số lượng cần nhận
@@ -879,7 +879,7 @@ export function InboundScanModal({
                   </div>
                 </Card>
               </Col>
-              <Col xs={12} md={6}>
+              <Col xs={24} sm={12} md={6}>
                 <Card size="small">
                   {/* Đếm ở mức phiếu (đọc từ inbound_scan_entries) nên không mất
                       sau khi tải lại trang, khác với bộ đếm theo phiên trước đây. */}
@@ -889,7 +889,7 @@ export function InboundScanModal({
                   </div>
                 </Card>
               </Col>
-              <Col xs={12} md={6}>
+              <Col xs={24} sm={12} md={6}>
                 <Card size="small">
                   <div style={{ fontSize: 12, color: "#6b7280" }}>
                     Mã trùng / lỗi (phiên)
@@ -1188,6 +1188,7 @@ export function InboundScanModal({
                   columns={scanLogColumns}
                   dataSource={scanLog}
                   pagination={{ pageSize: 8, hideOnSinglePage: true }}
+                  scroll={{ x: "max-content" }}
                 />
               </Card>
             ) : null}

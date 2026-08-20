@@ -17,6 +17,7 @@
     "test:e2e:wwhn-175": "playwright test e2e/wwhn-175-foundation-evidence.spec.ts --project=chromium",
     "test:e2e:wwhn-178": "playwright test e2e/wwhn-178-master-sku-qa2.spec.ts --project=chromium",
     "test:e2e:wwhn-292": "playwright test e2e/wwhn-292-ui-responsive-rbac.spec.ts --project=chromium",
+    "test:e2e:responsive": "playwright test e2e/responsive-sweep.spec.ts --project=chromium",
     "test:e2e:wwhn-274": "playwright test e2e/wwhn-274-release-signoff.spec.ts --project=chromium",
     "test:e2e:wwhn-274:a11y": "playwright test e2e/wwhn-274-a11y-browser-matrix.spec.ts --project=wwhn-274-desktop-chromium --project=wwhn-274-chrome-android --project=wwhn-274-safari-ios",
     "test:e2e:wwhn-274:real-env": "playwright test e2e/wwhn-274-real-env-smoke.spec.ts --project=chromium",

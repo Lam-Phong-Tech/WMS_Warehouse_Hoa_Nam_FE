@@ -293,7 +293,7 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
           size="small"
           loading={movementsQuery.isLoading}
           pagination={{ pageSize: 5 }}
-          scroll={{ x: 900 }}
+          scroll={{ x: "max-content" }}
           locale={{
             emptyText:
               "Chưa có movement reversible hoặc endpoint lookup chưa sẵn sàng",
@@ -439,7 +439,7 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
               dataSource={selectedMovement.lines}
               rowKey="id"
               pagination={false}
-              scroll={{ x: 780 }}
+              scroll={{ x: "max-content" }}
               columns={[
                 { title: "SKU", dataIndex: "sku", width: 130 },
                 { title: "Tên", dataIndex: "sku_name", width: 160 },

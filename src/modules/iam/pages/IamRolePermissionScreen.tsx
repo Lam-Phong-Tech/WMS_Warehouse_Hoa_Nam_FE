@@ -287,7 +287,7 @@ export function IamRolePermissionScreen() {
     <Space orientation="vertical" size={16} style={{ width: "100%" }}>
       <Row justify="space-between" align="middle" gutter={[12, 12]}>
         <Col>
-          <Space align="center">
+          <Space align="center" wrap>
             <SafetyCertificateOutlined />
             <div>
               <Typography.Title level={3} style={{ margin: 0 }}>
@@ -301,7 +301,7 @@ export function IamRolePermissionScreen() {
           </Space>
         </Col>
         <Col>
-          <Space>
+          <Space wrap>
             <Button
               icon={<ReloadOutlined />}
               onClick={() => {
@@ -360,6 +360,7 @@ export function IamRolePermissionScreen() {
               loading={rolesQuery.isLoading || rolesQuery.isFetching}
               dataSource={roles}
               columns={columns}
+              scroll={{ x: "max-content" }}
               pagination={{
                 current: rolePagination.current,
                 pageSize: rolePerPage,

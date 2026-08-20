@@ -607,7 +607,7 @@ export function WarrantyDetailModal({
             size="small"
             title={`Tệp đính kèm (${attachmentsQuery.data?.length ?? 0})`}
             extra={
-              <Space>
+              <Space wrap>
                 <Select
                   size="small"
                   value={attachmentType}
@@ -638,6 +638,7 @@ export function WarrantyDetailModal({
               loading={attachmentsQuery.isLoading}
               pagination={false}
               locale={{ emptyText: "Chưa có ảnh/tệp đính kèm." }}
+              scroll={{ x: "max-content" }}
             />
           </Card>
 
@@ -657,6 +658,7 @@ export function WarrantyDetailModal({
                   emptyText:
                     "Chưa có phiếu xuất linh kiện — dùng nút “Xuất linh kiện” để tạo.",
                 }}
+                scroll={{ x: "max-content" }}
               />
             </Card>
           ) : null}
