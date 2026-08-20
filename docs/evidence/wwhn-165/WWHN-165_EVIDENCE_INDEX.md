@@ -1,8 +1,23 @@
 # WWHN-165 — Evidence Index và Final Gate Ledger
 
-Cập nhật: 2026-08-05  
+Cập nhật: 2026-08-20  
 Nhánh: `m1`  
 Nguyên tắc: evidence chỉ hợp lệ khi truy ngược được `environment + build/run + exact SHA + role/scope + viewport (nếu UI) + timestamp`.
+
+## 0. Code fix mới nhất + local exact-SHA gate (2026-08-20)
+
+Đóng các gap P1 từ review comment Jira 14741: giữ attempted URL khi 401 giữa
+phiên (QA2-LOGIN-001), fail-closed route chưa khai báo permission, guard
+chống hồi quy no-stack-trace, dọn `stocktake.*` khỏi contract expectation
+(REQ-SRS-037), bổ sung vocabulary 409/412/428.
+
+- Code SHA: `78738f99874a7e3c674b5b3363708f29246df29f`
+- Gate SHA: `6e4c397d81671700a6f526b51c3ddf8d2d888dc2`
+- Manifest: `docs/evidence/wwhn-165/WWHN-165_LOCAL_GATE_MANIFEST.md`
+- Quyết định CI: `docs/decision-records/DEC-165-CI-LOCAL-01.md` (local gate
+  thay CI run mới vì quota Actions hết 3000/3000 phút)
+- Đây **không phải** sign-off độc lập của QA1/QA2/BE/BAS/BA — mục 5 dưới đây
+  vẫn giữ nguyên trạng thái PENDING cho tới khi từng vai trò tự ký trên Jira.
 
 ## 1. FE remediation baseline đã xác minh
 

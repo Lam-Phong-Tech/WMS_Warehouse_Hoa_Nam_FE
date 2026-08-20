@@ -3,7 +3,7 @@
   "task": "WWHN-165",
   "parent": "WWHN-35",
   "branch": "m1",
-  "updatedAt": "2026-08-05T21:30:00+07:00",
+  "updatedAt": "2026-08-20T10:15:00+07:00",
   "sourceShaPolicy": "Mỗi lần nghiệm thu phải khóa exact source SHA từ GitHub Actions; không dùng nhãn latest hoặc chỉ tên nhánh.",
   "architectureBaseline": "docs/WMS_Hoa_Nam_Techstack_Architecture_Dev_Guide.md",
   "feOwnedStatus": "COMPLETE",
@@ -28,6 +28,15 @@
       "expired": false
     },
     "scope": "Bằng chứng xác nhận remediation FE tại SHA nêu trên; commit kế tiếp phải có CI riêng và không được tái sử dụng run này như proof cho code mới."
+  },
+  "localExactShaGate": {
+    "decisionRecord": "DEC-165-CI-LOCAL-01",
+    "reason": "GitHub Actions quota 3000/3000 phut da het; PM chi dao khong duoc cham CI. Gate local thay CI run moi.",
+    "codeSha": "78738f99874a7e3c674b5b3363708f29246df29f",
+    "gateSha": "6e4c397d81671700a6f526b51c3ddf8d2d888dc2",
+    "manifest": "docs/evidence/wwhn-165/WWHN-165_LOCAL_GATE_MANIFEST.md",
+    "result": "PASS format/lint/typecheck/unit(777)/build/verify; e2e WWHN-165 4/4, WWHN-292 25/25, WWHN-274 matrix 7/7 (2 skip mobile keyboard), Edge that 9/11 (2 fail = drift WWHN-144/145 tien-hanh-truoc, khong lien quan)",
+    "notIndependentSignOff": true
   },
   "traceability": {
     "canonicalTaskDoc": "docs/Task_docs_Jira/WWHN-165.md",

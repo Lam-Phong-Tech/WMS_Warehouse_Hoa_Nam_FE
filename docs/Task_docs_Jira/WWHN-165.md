@@ -1,8 +1,24 @@
 # WWHN-165 - Tích hợp đăng nhập, phiên làm việc và trạng thái 403
 
-Cập nhật: 2026-08-05  
+Cập nhật: 2026-08-20  
 Nhánh: `m1`  
 Baseline: `docs/WMS_Hoa_Nam_Techstack_Architecture_Dev_Guide.md`
+
+## 0. Đóng gap P1 từ review comment Jira 14741 (2026-08-20)
+
+Root cause từng gap trong bảng P0/P1/P2 register (comment 14741, 06/08) và
+remediation:
+
+| Gap (comment 14741) | Root cause | Fix |
+| --- | --- | --- |
+| Backend authorization chưa chứng minh độc lập | 403 permission/data-scope KHÔNG ghi audit; no-stack-trace chỉ đúng khi `APP_DEBUG=false` (conditional) | BE: audit `result=DENIED` cho mọi 403 permission/data-scope (best-effort, không chặn response); fail-closed no-stack-trace mọi env — xem tiến độ ở evidence BE |
+| Contract/permission/sample còn conditional | Chưa có release pack version+hash+sample cho auth | BE: `docs/api-contract/releases/WWHN-165/1.0.0/` (OpenAPI+Postman+SHA256SUMS+samples 401/403/409/412/422/428) |
+| Blob evidence 14612/14699 non-evidence | — | Đã disposition từ trước (`SUPERSEDED_NON_EVIDENCE`), giữ nguyên |
+| CI/artifact chưa quan sát độc lập | GitHub Actions hết quota 3000/3000 phút | `DEC-165-CI-LOCAL-01`: gate local exact-SHA thay CI, xem `WWHN-165_LOCAL_GATE_MANIFEST.md` |
+| (Phát hiện thêm khi audit sâu, không nằm trong comment 14741 gốc) | `redirectToLogin()` không giữ attempted URL khi 401 giữa phiên; route thiếu entry trong `ROUTE_PERMISSIONS` fail-open; không có test chống hồi quy no-stack-trace UI | Code fix `78738f9`/`6e4c397`: `?redirect=` param, sentinel `UNREGISTERED_ROUTE_PERMISSION`, `ErrorBoundary.test.tsx` |
+
+Code SHA: `78738f99874a7e3c674b5b3363708f29246df29f` (+ 1 commit test-align
+`6e4c397d81671700a6f526b51c3ddf8d2d888dc2`). Gate: xem mục 4b.
 
 ## 1. Kết luận kiểm soát
 
@@ -83,6 +99,24 @@ Baseline: `docs/WMS_Hoa_Nam_Techstack_Architecture_Dev_Guide.md`
 | Expiry | `2026-11-02T13:24:06Z` |
 
 Run #107 chỉ chứng minh SHA `57638b1…`; commit mới phải có run riêng. Không tái sử dụng evidence cũ thay cho exact-SHA sign-off mới.
+
+## 4b. Local exact-SHA gate cho code fix 2026-08-20 (DEC-165-CI-LOCAL-01)
+
+| Trường | Giá trị |
+| --- | --- |
+| Code SHA | `78738f99874a7e3c674b5b3363708f29246df29f` |
+| Gate SHA | `6e4c397d81671700a6f526b51c3ddf8d2d888dc2` |
+| Format/Lint/Typecheck/Build/Verify | PASS |
+| Unit/integration (vitest) | 777/777 PASS |
+| E2E WWHN-165 (Chromium) | 4/4 PASS |
+| E2E WWHN-292 (Chromium) | 25/25 PASS |
+| E2E WWHN-274 browser/device matrix | 7/7 PASS, 2 skip (mobile keyboard, kỳ vọng) |
+| E2E QA2 Edge thật (msedge) | 9/11 PASS — 2 fail thuộc WWHN-144/145 (drift text UI có từ trước, đã xác nhận bằng `git diff` không liên quan 2 commit này, đã spawn task riêng) |
+
+Chi tiết đầy đủ + môi trường + lý do CI: `docs/evidence/wwhn-165/WWHN-165_LOCAL_GATE_MANIFEST.md`, `docs/decision-records/DEC-165-CI-LOCAL-01.md`.
+
+Gate này KHÔNG thay thế sign-off độc lập của QA1/QA2/BE/BAS/BA — chỉ chứng
+minh code fix không phá vỡ regression FE hiện có.
 
 ## 5. Evidence canonical
 

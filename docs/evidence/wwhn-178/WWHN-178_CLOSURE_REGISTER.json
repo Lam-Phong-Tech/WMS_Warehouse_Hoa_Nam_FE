@@ -1,43 +1,67 @@
 {
-  "schemaVersion": "2.0.0",
+  "schemaVersion": "2.1.0",
   "task": "WWHN-178",
   "parent": "WWHN-39",
   "repository": "Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_FE",
   "branch": "m1",
-  "updatedAt": "2026-08-06T10:52:00+07:00",
+  "updatedAt": "2026-08-20T10:00:00+07:00",
+  "revision": "R2",
+  "revisionReason": "R1 evidence rot: MasterPage.tsx cũ đã bị thay bằng ApiMasterScreens (MST-01) + SkuImportModal (WWHN-331); QA2 pack R1 fail toàn bộ; forbid-regex một-dòng của verify script bị Prettier vô hiệu. R2 tái lập gate theo pinned-contract-presence, viết lại QA2 pack theo UI hiện tại, cập nhật owner gates theo trạng thái Jira 2026-08-20.",
   "acceptancePolicy": {
     "overallResult": "BLOCKED_BY_INDEPENDENT_OWNER_GATES",
     "feOwnedResult": "COMPLETE",
-    "runSelectionRule": "CURRENT_SUCCESSFUL_PUSH_RUN_FOR_EXACT_SOURCE_SHA",
-    "artifactSelectionRule": "wms-fe-closure-evidence-<SOURCE_SHA> from the selected run",
+    "runSelectionRule": "LOCAL_EXACT_SHA_EVIDENCE_GATE",
+    "ciSubstitutionDecision": "DEC-178-CI-LOCAL-01",
+    "ciSubstitutionReason": "GitHub Actions quota 3000/3000 đã cạn (không được phát sinh thêm phí). Theo tiền lệ DEC-325-CI-LOCAL-01: gate nghiệm thu chạy local tại exact SHA, evidence pack + SHA256SUMS commit kèm, executionSha = sourceSha. Không dùng run in_progress; không hard-code run ID.",
+    "artifactSelectionRule": "docs/evidence/wwhn-178/generated/<SOURCE_SHA>/ + SHA256SUMS committed on m1",
     "hardCodedAcceptanceRunId": null,
     "supersededRunIds": [30987735727, 30987738397],
-    "rule": "A historical run is reference-only. Acceptance must use exactly one successful push run whose head_sha equals the commit under review."
+    "rule": "A historical run is reference-only. Acceptance evidence must be produced at the exact commit under review; the evidence pack records sourceSha and is hash-manifested."
+  },
+  "beContractPin": {
+    "be_repo": "Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_BE",
+    "be_branch": "m1",
+    "be_sha": "7da26cb1cc13df58537c5ff8556070ad8529ed4d",
+    "spec_path": "storage/api-docs/api-docs.json",
+    "spec_sha256": "46cbfc0140fe3da389625ed55c0ef91e18a21f50dbd5389488c270be4e2e7af2",
+    "openapi_version": "2.0.0",
+    "permission_matrix": "BE docs/api-contract/HN-BE-API-003_ENDPOINT_PERMISSION_MATRIX.json (WWHN-309)",
+    "import_manifest": "BE docs/evidence/WWHN-331/BE_CHANGE_MANIFEST.md (pin 93b1e71f)"
   },
   "feControls": [
     {
       "id": "FE-P0-CONTRACT-GATE",
       "status": "PASS",
+      "mechanism": "PINNED_CONTRACT_PRESENCE",
+      "note": "Capability master/SKU chỉ hợp lệ khi path tồn tại trong swagger-api.json (đồng bộ BE_CONTRACT_PIN qua check:api-mapping). Phantom endpoints /uoms, /suppliers bị cấm tuyệt đối (BE không có route/spec/bảng). Cơ chế forbid-regex call-site R1 đã bị Prettier vô hiệu và được thay thế.",
       "evidence": [
-        "src/modules/master-data/contracts/master-data.contract.ts",
-        "src/modules/master-data/contracts/master-data.contract.test.ts",
-        "src/modules/master-data/services/master-data.service.test.ts"
+        "scripts/verify-master-sku-closure.mjs",
+        "docs/api-evidence/BE_CONTRACT_PIN.json",
+        "swagger-api.json"
       ]
     },
     {
       "id": "FE-P1-QA2-PACK",
       "status": "PASS",
+      "note": "Pack R2 viết lại theo SkuMasterScreen hiện tại: 3 viewport, loading/empty/success, 403 ACCESS_DENIED + request_id hiển thị, validation/keyboard, import modal theo permission, view-only, route RBAC, contract boundary.",
       "evidence": ["e2e/wwhn-178-master-sku-qa2.spec.ts"]
     },
     {
+      "id": "FE-P1-403-TRACEABILITY",
+      "status": "PASS",
+      "note": "ApiErrorAlert hiển thị HTTP 403 + error code + request_id (SRS §8.2: 403 luôn trả request_id).",
+      "evidence": ["src/shared/components/feedback/ApiErrorAlert.tsx"]
+    },
+    {
       "id": "FE-P1-DIRECT-API-RUNNER",
-      "status": "PASS_CONTRACT_ONLY",
+      "status": "PASS",
+      "note": "Runner hỗ trợ positive-control (200), permission-deny (403 ACCESS_DENIED) và data-scope probe với expected status khai báo được (404 mask theo ImportReportController + SRS §13.8 vì master-data là dữ liệu toàn cục, không có warehouse scope).",
       "evidence": ["scripts/run-wwhn-178-direct-api-rbac.mjs"]
     },
     {
       "id": "FE-P1-CI-PROVENANCE",
-      "status": "PASS_BY_DYNAMIC_SELECTION_RULE",
-      "evidence": ["acceptancePolicy.runSelectionRule"]
+      "status": "PASS_BY_LOCAL_EXACT_SHA_GATE",
+      "evidence": ["acceptancePolicy.ciSubstitutionDecision"]
     },
     {
       "id": "FE-P2-PARENT-MATRIX",
@@ -50,44 +74,48 @@
       "id": "QA2-WWHN-179",
       "owner": "QA2",
       "jiraStatusObserved": "TO_DO",
-      "acceptanceStatus": "PENDING",
-      "required": "Run exact SHA/build/browser/environment; attach screenshot/video/trace and comment PASS or FAIL."
+      "acceptanceStatus": "EVIDENCED_PENDING_SIGNOFF",
+      "required": "QA2 chạy pack tại exact SHA/build/browser/env, attach screenshot/video/trace và comment PASS/FAIL trên WWHN-179.",
+      "evidenceProvided": "e2e pack R2 chạy được một lệnh (mục 5 task doc); evidence tự sinh dưới docs/evidence/wwhn-178/generated/<SOURCE_SHA>/qa2/."
     },
     {
       "id": "HN-MC-001-BASELINE",
       "owner": "BA+BAS+QA2",
       "jiraIssues": ["WWHN-14", "WWHN-100", "WWHN-101"],
-      "jiraStatusObserved": ["IN_PROGRESS", "TO_DO", "TO_DO"],
+      "jiraStatusObserved": ["IN_PROGRESS", "DONE_REDFLAG", "IN_PROGRESS"],
       "acceptanceStatus": "PENDING",
-      "required": "Baseline fields, enums, import rules, item/code/physical-code semantics."
+      "required": "Baseline fields, enums, import rules, item/code/physical-code semantics. HN-MC-001 không có nội dung trong SRS v1.12/ERD/wireframe/dev-guide (0 hit) — chỉ tồn tại như định danh Jira.",
+      "openPoints": "8 divergences SRS↔ERD↔DevGuide↔wireframe ghi tại docs/api-evidence/WWHN-178_MASTER_SKU_CONTRACT_BASELINE.json (divergenceRegister)."
     },
     {
       "id": "BE-OFFICIAL-CONTRACT",
       "owner": "BE2+BE1",
       "jiraIssues": ["WWHN-36", "WWHN-37", "WWHN-171"],
-      "jiraStatusObserved": ["IN_PROGRESS", "IN_PROGRESS", "IN_PROGRESS"],
-      "acceptanceStatus": "PENDING",
-      "required": "Publish and sign exact OpenAPI/Postman/payload/error/permission/sample-data version and hash."
+      "jiraStatusObserved": ["IN_PROGRESS", "IN_PROGRESS", "DONE_REDFLAG"],
+      "acceptanceStatus": "EVIDENCED_PENDING_SIGNOFF",
+      "required": "BE1/BE2 comment xác nhận OpenAPI 2.0.0 (spec_sha256 46cbfc01...) tại BE m1 7da26cb là contract chính thức cho bề mặt master/SKU/import.",
+      "evidenceProvided": "Spec pin + HN-BE-API-003 permission matrix + WWHN-331 BE_CHANGE_MANIFEST; check:api-mapping PASS ở FE."
     },
     {
       "id": "BE-QA-LIVE-AUTHORIZATION",
       "owner": "BE+QA",
-      "acceptanceStatus": "PENDING",
-      "required": "Live direct API 403, permission deny and data-scope deny evidence with real request metadata and redacted tokens."
+      "acceptanceStatus": "EVIDENCED_PENDING_SIGNOFF",
+      "required": "BE/QA xác nhận fixture role/permission/scope của các probe live.",
+      "evidenceProvided": "Live direct API trên BE local (nginx 127.0.0.1:8080, PostgreSQL 16): positive-control 200, permission-deny 403 ACCESS_DENIED + request_id, data-scope mask 404 (ACTOR_SCOPED import-reports). Records tại docs/evidence/wwhn-178/generated/<SOURCE_SHA>/rbac/."
     }
   ],
   "parentClosureMatrix": [
     {
       "issue": "WWHN-178",
       "role": "FE1",
-      "statusObserved": "IN_PROGRESS_REDF",
+      "statusObserved": "DONE_REDFLAG",
       "deliveryStatus": "FE_COMPLETE_AWAITING_INDEPENDENT_GATES",
       "evidence": [
         "docs/Task_docs_Jira/WWHN-178.md",
         "docs/api-evidence/WWHN-178_MASTER_SKU_CONTRACT_BASELINE.json",
         "docs/evidence/wwhn-178/WWHN-178_CLOSURE_REGISTER.json"
       ],
-      "remainingBlocker": "Independent BA/BE/QA gates only"
+      "remainingBlocker": "Independent BA/BE/QA sign-off comments only"
     },
     {
       "issue": "WWHN-179",
@@ -103,7 +131,7 @@
       "statusObserved": "IN_PROGRESS",
       "deliveryStatus": "NOT_READY_TO_CLOSE",
       "evidence": ["parentClosureMatrix"],
-      "remainingBlocker": "WWHN-179 plus BA/BE/live authorization gates"
+      "remainingBlocker": "WWHN-179 sign-off + HN-MC-001 baseline (WWHN-14/100/101) + BE contract sign-off comment"
     }
   ]
 }

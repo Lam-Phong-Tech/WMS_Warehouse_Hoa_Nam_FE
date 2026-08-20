@@ -1,7 +1,11 @@
 import type { CSSProperties } from "react";
 import { Alert, Button } from "antd";
 import { ReloadOutlined } from "@ant-design/icons";
-import { isNoPermissionError, normalizeError } from "@/shared/api/api-error";
+import {
+  getErrorRequestId,
+  isNoPermissionError,
+  normalizeError,
+} from "@/shared/api/api-error";
 import { UI_STATE, uiStateProps } from "@/shared/constants/ui-state";
 import { NoPermissionState } from "./NoPermissionState";
 
@@ -35,12 +39,32 @@ export function ApiErrorAlert({
   if (!error) return null;
 
   if (isNoPermissionError(error)) {
+    // SRS §8.2: 403 luôn trả request_id để tra soát. Hiển thị mã lỗi +
+    // request_id ngay tại chỗ (WWHN-178/179 evidence: "403/request-id") thay vì
+    // bắt người dùng mở DevTools khi báo lỗi cho BE.
+    const denied = normalizeError(error);
+    const deniedRequestId = getErrorRequestId(error);
     return (
       <div style={style} data-ui-state={UI_STATE.PERMISSION_DENIED}>
         <NoPermissionState
           compact
           showHomeButton={false}
           title="Không có quyền truy cập"
+          description={
+            <>
+              Bạn không có quyền thực hiện thao tác này. Liên hệ quản trị viên
+              để được cấp quyền.
+              {denied.code || deniedRequestId ? (
+                <>
+                  <br />
+                  <span data-testid="permission-denied-trace">
+                    HTTP 403{denied.code ? ` · ${denied.code}` : ""}
+                    {deniedRequestId ? ` · Request ID: ${deniedRequestId}` : ""}
+                  </span>
+                </>
+              ) : null}
+            </>
+          }
           actionText={onRetry ? "Thử lại" : "Quay lại"}
           onAction={onRetry}
         />

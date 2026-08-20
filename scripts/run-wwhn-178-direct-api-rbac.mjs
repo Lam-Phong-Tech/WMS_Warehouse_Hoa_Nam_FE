@@ -33,9 +33,23 @@ const scopeMethod = (
 ).toUpperCase();
 const scopePath = process.env.WWHN_178_SCOPE_DENIED_PATH ?? "";
 const scopeBody = parseJsonEnv("WWHN_178_SCOPE_DENIED_BODY_JSON", undefined);
+// Data-scope trên master-data: SKU/products là dữ liệu toàn cục (không có
+// warehouse_id — xem ImportReportController), scope duy nhất là import-reports
+// ACTOR_SCOPED và bản ghi ngoài scope bị MASK bằng 404 RESOURCE_NOT_FOUND
+// (SRS §13.8 cho phép 404 mask ngoài data scope). Vì vậy probe data-scope có
+// thể khai expected status 404 thay vì 403.
+const scopeExpectedStatus = Number(
+  process.env.WWHN_178_SCOPE_EXPECTED_STATUS ?? "403",
+);
+// Positive control: token hợp lệ phải nhận 200 trên một GET được phép — chứng
+// minh server sống và deny ở trên không phải do server chết/token hỏng.
+const controlToken = process.env.WWHN_178_CONTROL_TOKEN ?? "";
+const controlPath = process.env.WWHN_178_CONTROL_PATH ?? "/products";
+// BE thật phát ACCESS_DENIED (app/Support/ApiError.php + CheckPermission).
+// Các mã catalog (PERMISSION_DENIED/DATA_SCOPE_DENIED) giữ lại để tương thích.
 const expectedCodes = (
   process.env.WWHN_178_EXPECTED_DENY_CODES ??
-  "FORBIDDEN,PERMISSION_DENIED,DATA_SCOPE_DENIED"
+  "ACCESS_DENIED,FORBIDDEN,PERMISSION_DENIED,DATA_SCOPE_DENIED,RESOURCE_NOT_FOUND"
 )
   .split(",")
   .map((value) => value.trim().toUpperCase())
@@ -81,7 +95,14 @@ function extractErrorCode(body) {
   );
 }
 
-async function executeProbe({ id, method, path, token, body }) {
+async function executeProbe({
+  id,
+  method,
+  path,
+  token,
+  body,
+  expectedStatus = 403,
+}) {
   const url = `${baseUrl}${path.startsWith("/") ? path : `/${path}`}`;
   const headers = {
     Accept: "application/json",
@@ -120,8 +141,8 @@ async function executeProbe({ id, method, path, token, body }) {
     qaTask: "WWHN-179",
     probeId: id,
     result:
-      response.status === 403 &&
-      (!errorCode || expectedCodes.includes(errorCode))
+      response.status === expectedStatus &&
+      (expectedStatus === 200 || !errorCode || expectedCodes.includes(errorCode))
         ? "PASS"
         : "FAIL",
     sourceSha,
@@ -143,8 +164,8 @@ async function executeProbe({ id, method, path, token, body }) {
     },
     assertions: {
       directApiRequest: true,
-      expectedHttpStatus: 403,
-      acceptedErrorCodes: expectedCodes,
+      expectedHttpStatus: expectedStatus,
+      acceptedErrorCodes: expectedStatus === 200 ? [] : expectedCodes,
       tokenRedacted: true,
       noUiDependency: true,
     },
@@ -161,7 +182,7 @@ async function executeProbe({ id, method, path, token, body }) {
 
   if (record.result !== "PASS") {
     throw new Error(
-      `${id} expected HTTP 403 with a deny code; got ${response.status} ${errorCode ?? "NO_ERROR_CODE"}.`,
+      `${id} expected HTTP ${expectedStatus}; got ${response.status} ${errorCode ?? "NO_ERROR_CODE"}.`,
     );
   }
   return record;
@@ -182,6 +203,16 @@ async function main() {
       "WWHN_178_SCOPE_DENIED_TOKEN (optional; defaults to denied token)",
     ],
     probes: [
+      ...(controlToken
+        ? [
+            {
+              id: "positive-control",
+              method: "GET",
+              path: controlPath,
+              expectedStatus: 200,
+            },
+          ]
+        : []),
       {
         id: "permission-deny",
         method: deniedMethod,
@@ -194,7 +225,7 @@ async function main() {
               id: "data-scope-deny",
               method: scopeMethod,
               path: scopePath,
-              expectedStatus: 403,
+              expectedStatus: scopeExpectedStatus,
             },
           ]
         : []),
@@ -228,6 +259,18 @@ async function main() {
   assertSafeUrl(baseUrl);
 
   const records = [];
+  if (controlToken) {
+    records.push(
+      await executeProbe({
+        id: "positive-control",
+        method: "GET",
+        path: controlPath,
+        token: controlToken,
+        expectedStatus: 200,
+      }),
+    );
+  }
+
   records.push(
     await executeProbe({
       id: "permission-deny",
@@ -246,6 +289,7 @@ async function main() {
         path: scopePath,
         token: scopeToken,
         body: scopeBody,
+        expectedStatus: scopeExpectedStatus,
       }),
     );
   }

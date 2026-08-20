@@ -1,6 +1,17 @@
 /**
  * WWHN-178 / WWHN-179 – Master/SKU UI, validation, responsive, RBAC and
- * API-error evidence.
+ * API-error evidence (R2 — rebuilt 2026-08-20 against the current
+ * SkuMasterScreen at ROUTES.MASTER_DATA).
+ *
+ * R1 của pack này viết cho MasterPage.tsx cũ (tabs Item/Mã vật lý, nút
+ * "Import SKU cũ") — UI đó đã bị thay bằng ApiMasterScreens.SkuMasterScreen
+ * (MST-01) + SkuImportModal (WWHN-331), nên R1 fail toàn bộ và không còn là
+ * bằng chứng. R2 mô tả đúng bề mặt hiện tại:
+ *   - GET /products là nguồn danh sách SKU (OpenAPI 2.0.0 đã pin, BE m1);
+ *   - Import Excel đã được mở chính thức theo WWHN-330/331 (không còn
+ *     fail-closed);
+ *   - 403 dùng đúng envelope BE thật: error_code ACCESS_DENIED +
+ *     meta.request_id (ApiError.php), FE hiển thị mã lỗi + request id.
  *
  * Controlled mocks prove deterministic FE behaviour only. They do not replace
  * independent QA2 execution or backend authorization evidence.
@@ -25,6 +36,9 @@ const EVIDENCE_ROOT =
   process.env.WWHN_178_EVIDENCE_DIR ??
   join("test-results", "wwhn-178", SOURCE_SHA);
 
+const MASTER_ROUTE = "/master-data/skus";
+const FORBIDDEN_REQUEST_ID = "req-wwhn-178-forbidden";
+
 const VIEWPORTS = [
   { key: "desktop", width: 1440, height: 900 },
   { key: "tablet", width: 768, height: 1024 },
@@ -42,7 +56,7 @@ interface SessionOptions {
 function safeName(value: string): string {
   return value
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[̀-ͯ]/g, "")
     .replace(/[^a-zA-Z0-9_-]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .toLowerCase();
@@ -70,7 +84,7 @@ async function captureEvidence(
   });
 
   const metadata = {
-    schemaVersion: "1.0.0",
+    schemaVersion: "2.0.0",
     ticket: "WWHN-178",
     qaTicket: "WWHN-179",
     scenario,
@@ -80,7 +94,7 @@ async function captureEvidence(
     buildVersion: BUILD_VERSION,
     browserProject: testInfo.project.name,
     viewport,
-    route: "/master-data",
+    route: MASTER_ROUTE,
     finalUrl: page.url(),
     timestamp: new Date().toISOString(),
     screenshotFilename,
@@ -102,10 +116,14 @@ async function captureEvidence(
   });
 }
 
+/**
+ * Mock session theo envelope BE thật ({ success, data, meta }).
+ * Trả về danh sách path đã được FE gọi để assert contract boundary.
+ */
 async function mockSession(
   page: Page,
   {
-    permissions = ["sku.manage", "master.manage"],
+    permissions = ["sku.view", "sku.manage"],
     productMode = "success",
     latencyMs = 0,
   }: SessionOptions = {},
@@ -169,17 +187,24 @@ async function mockSession(
       return;
     }
 
-    if (path.endsWith("/products")) {
+    if (path.endsWith("/products") && route.request().method() === "GET") {
       if (productMode === "forbidden") {
+        // Envelope 403 thật của BE (app/Support/ApiError.php):
+        // error_code = ACCESS_DENIED, request_id nằm trong meta.
         await route.fulfill({
           status: 403,
           contentType: "application/json",
-          headers: { "x-request-id": "req-wwhn-178-forbidden" },
+          headers: { "x-request-id": FORBIDDEN_REQUEST_ID },
           body: JSON.stringify({
             success: false,
-            message: "Permission denied",
-            error_code: "PERMISSION_DENIED",
-            meta: { request_id: "req-wwhn-178-forbidden" },
+            message: "Bạn không có quyền thực hiện thao tác này.",
+            error_code: "ACCESS_DENIED",
+            errors: [],
+            error: { code: "ACCESS_DENIED", details: [] },
+            meta: {
+              request_id: FORBIDDEN_REQUEST_ID,
+              timestamp: new Date().toISOString(),
+            },
           }),
         });
         return;
@@ -190,16 +215,24 @@ async function mockSession(
           ? []
           : [
               {
-                id: 178,
-                product_code: "SKU-WWHN-178",
-                barcode: "8930000000178",
+                sku_id: "wwhn-178-sku-1",
+                id: "wwhn-178-sku-1",
+                sku_code: "SKU-WWHN-178",
+                code: "SKU-WWHN-178",
+                sku_name: "Sản phẩm evidence WWHN-178",
                 name: "Sản phẩm evidence WWHN-178",
-                supplier_id: 1,
-                category_id: 1,
-                uom_id: 1,
-                list_price_net: 100000,
-                vat_rate: 8,
-                status: "active",
+                sku_type: "PRODUCT",
+                unit: "PCS",
+                brand_id: null,
+                category_id: null,
+                model_id: null,
+                power_source_id: null,
+                package_variant_id: null,
+                version_code: "V1",
+                is_serial_tracked: true,
+                status: "ACTIVE",
+                published_to_app: false,
+                version: 0,
               },
             ];
       await route.fulfill({
@@ -207,43 +240,28 @@ async function mockSession(
         contentType: "application/json",
         body: JSON.stringify({
           success: true,
-          data: {
-            data: rows,
+          data: rows,
+          meta: {
             current_page: 1,
             per_page: 15,
             total: rows.length,
             last_page: 1,
+            request_id: "req-wwhn-178-products",
           },
-          meta: { request_id: "req-wwhn-178-products" },
         }),
       });
       return;
     }
 
-    if (
-      path.endsWith("/uoms") ||
-      path.endsWith("/suppliers") ||
-      path.endsWith("/product-categories")
-    ) {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          success: true,
-          data: [],
-          meta: { total: 0, request_id: "req-wwhn-178-reference" },
-        }),
-      });
-      return;
-    }
-
+    // Catalog refs cho MST-02 (brands/product-categories/product-models/
+    // power-sources/package-variants) và mọi GET phụ khác: danh sách rỗng.
     await route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
         success: true,
         data: [],
-        meta: { request_id: "req-wwhn-178-generic" },
+        meta: { total: 0, request_id: "req-wwhn-178-generic" },
       }),
     });
   });
@@ -260,22 +278,23 @@ async function expectNoDocumentOverflow(page: Page): Promise<void> {
 
 test.use({ video: "on", trace: "on", screenshot: "on" });
 
-test.describe("WWHN-178 / WWHN-179 Master/SKU closure", () => {
+test.describe("WWHN-178 / WWHN-179 Master/SKU closure R2", () => {
   for (const viewport of VIEWPORTS) {
     test(`success and responsive ${viewport.width}x${viewport.height}`, async ({
       page,
     }, testInfo) => {
       await page.setViewportSize(viewport);
       await mockSession(page, { productMode: "success" });
-      await page.goto(`${BASE_URL}/master-data`);
+      await page.goto(`${BASE_URL}${MASTER_ROUTE}`);
 
-      await expect(
-        page.getByRole("heading", { name: "Danh mục /SKU" }),
-      ).toBeVisible();
+      await expect(page.locator('[data-mvp-screen="MST-01"]')).toBeVisible();
       await expect(page.getByText("SKU-WWHN-178")).toBeVisible();
       await expect(
-        page.getByRole("button", { name: "Import SKU cũ" }),
-      ).toBeDisabled();
+        page.getByRole("button", { name: /Thêm SKU/ }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: /Import Excel/ }),
+      ).toBeVisible();
       await expectNoDocumentOverflow(page);
 
       await captureEvidence(
@@ -283,8 +302,8 @@ test.describe("WWHN-178 / WWHN-179 Master/SKU closure", () => {
         testInfo,
         `success-responsive-${viewport.key}`,
         [
-          "Canonical /products data renders",
-          "Unapproved SKU import remains disabled",
+          "Canonical GET /products data renders on MST-01",
+          "Thêm SKU and Import Excel actions are visible with sku.manage",
           "Document has no horizontal overflow",
           "Named controls expose accessible roles",
         ],
@@ -294,11 +313,13 @@ test.describe("WWHN-178 / WWHN-179 Master/SKU closure", () => {
 
   test("loading and empty states", async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 1440, height: 900 });
-    await mockSession(page, { productMode: "empty", latencyMs: 800 });
-    await page.goto(`${BASE_URL}/master-data`);
+    await mockSession(page, { productMode: "empty", latencyMs: 1200 });
+    await page.goto(`${BASE_URL}${MASTER_ROUTE}`);
 
-    await expect(page.locator(".ant-table-wrapper .ant-spin")).toBeVisible();
-    await expect(page.getByText("Chưa có SKU")).toBeVisible();
+    await expect(page.getByText("Đang tải dữ liệu từ API...")).toBeVisible();
+    await expect(
+      page.getByText("Không có SKU phù hợp bộ lọc."),
+    ).toBeVisible();
 
     await captureEvidence(page, testInfo, "loading-empty", [
       "Table loading indicator is visible during delayed API response",
@@ -306,87 +327,91 @@ test.describe("WWHN-178 / WWHN-179 Master/SKU closure", () => {
     ]);
   });
 
-  test("403 API error exposes code and request id", async ({
+  test("403 API error exposes ACCESS_DENIED code and request id", async ({
     page,
   }, testInfo) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await mockSession(page, { productMode: "forbidden" });
-    await page.goto(`${BASE_URL}/master-data`);
+    await page.goto(`${BASE_URL}${MASTER_ROUTE}`);
 
-    await expect(
-      page.getByText("Không có quyền truy cập dữ liệu"),
-    ).toBeVisible();
-    await expect(page.getByText(/HTTP 403/)).toBeVisible();
-    await expect(page.getByText(/PERMISSION_DENIED/)).toBeVisible();
-    await expect(page.getByText(/req-wwhn-178-forbidden/)).toBeVisible();
+    await expect(page.getByText("Không có quyền truy cập")).toBeVisible();
+    const trace = page.getByTestId("permission-denied-trace");
+    await expect(trace).toBeVisible();
+    await expect(trace).toContainText("HTTP 403");
+    await expect(trace).toContainText("ACCESS_DENIED");
+    await expect(trace).toContainText(FORBIDDEN_REQUEST_ID);
 
     await captureEvidence(page, testInfo, "api-error-403", [
-      "HTTP 403 renders a dedicated no-permission state",
-      "Backend error code is visible",
-      "Request ID is visible for traceability",
+      "HTTP 403 renders the shared NoPermissionState",
+      "Real backend error code ACCESS_DENIED is visible",
+      "Request ID is visible for traceability (SRS §8.2)",
     ]);
   });
 
   test("validation and keyboard focus", async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await mockSession(page);
-    await page.goto(`${BASE_URL}/master-data`);
+    await page.goto(`${BASE_URL}${MASTER_ROUTE}`);
 
-    const createButton = page.getByRole("button", { name: "Tạo sản phẩm" });
+    const createButton = page.getByRole("button", { name: /Thêm SKU/ });
     await createButton.focus();
     await expect(createButton).toBeFocused();
     await page.keyboard.press("Enter");
 
-    const dialog = page.getByRole("dialog", {
-      name: "Tạo sản phẩm/SKU mới",
-    });
+    const dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
-    await dialog.getByRole("button", { name: "Lưu" }).click();
+    await expect(dialog.getByText("Thêm SKU").first()).toBeVisible();
+    await dialog.getByRole("button", { name: "Lưu SKU" }).click();
 
-    await expect(page.getByText("Vui lòng nhập mã sản phẩm")).toBeVisible();
-    await expect(page.getByText("Vui lòng nhập tên sản phẩm")).toBeVisible();
-    await expect(page.getByText("Vui lòng chọn đơn vị tính")).toBeVisible();
-    await expect(page.getByText("Vui lòng nhập giá niêm yết")).toBeVisible();
+    await expect(
+      dialog.getByText("Mã SKU và tên SKU là bắt buộc."),
+    ).toBeVisible();
 
     await captureEvidence(page, testInfo, "validation-keyboard-focus", [
-      "Keyboard Enter opens the named dialog",
-      "Required field validation is visible",
-      "Import action remains disabled pending contract",
+      "Keyboard Enter opens the SKU create dialog",
+      "Required field validation (mã/tên SKU) is visible",
     ]);
   });
 
-  test("item and physical-code tabs never call unapproved endpoints", async ({
+  test("import modal opens for sku.manage and is absent without it", async ({
     page,
   }, testInfo) => {
     await page.setViewportSize({ width: 1440, height: 900 });
-    const requestedPaths = await mockSession(page);
-    await page.goto(`${BASE_URL}/master-data`);
+    await mockSession(page);
+    await page.goto(`${BASE_URL}${MASTER_ROUTE}`);
 
-    await page.getByRole("tab", { name: "Item" }).click();
+    await page.getByRole("button", { name: /Import Excel/ }).click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
     await expect(
-      page.getByText("Chưa có contract API chính thức"),
+      dialog.getByText("Import SKU từ Excel (WWHN-331)"),
     ).toBeVisible();
+    await page.keyboard.press("Escape");
+
+    await captureEvidence(page, testInfo, "import-modal-permission", [
+      "Import Excel opens the WWHN-331 SkuImportModal for sku.manage",
+      "Import surface is the officially contracted /skus/import-* family",
+    ]);
+  });
+
+  test("view-only user has no manage actions", async ({ page }, testInfo) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await mockSession(page, { permissions: ["sku.view"] });
+    await page.goto(`${BASE_URL}${MASTER_ROUTE}`);
+
+    await expect(page.locator('[data-mvp-screen="MST-01"]')).toBeVisible();
+    await expect(page.getByText("SKU-WWHN-178")).toBeVisible();
     await expect(
-      page.getByText(/OpenAPI 3\.0\.0 hiện chưa publish \/items/),
-    ).toBeVisible();
-
-    await page.getByRole("tab", { name: "Mã vật lý" }).click();
+      page.getByRole("button", { name: /Thêm SKU/ }),
+    ).toHaveCount(0);
     await expect(
-      page.getByText(/OpenAPI 3\.0\.0 hiện chưa publish \/physical-codes/),
-    ).toBeVisible();
+      page.getByRole("button", { name: /Import Excel/ }),
+    ).toHaveCount(0);
 
-    expect(requestedPaths.some((path) => path.endsWith("/items"))).toBe(false);
-    expect(
-      requestedPaths.some((path) => path.endsWith("/physical-codes")),
-    ).toBe(false);
-    expect(
-      requestedPaths.some((path) => path.endsWith("/skus/import-excel")),
-    ).toBe(false);
-
-    await captureEvidence(page, testInfo, "contract-fail-closed", [
-      "Item tab shows an explicit contract blocker",
-      "Physical-code tab shows an explicit contract blocker",
-      "No /items, /physical-codes or /skus/import-excel request is sent",
+    await captureEvidence(page, testInfo, "view-only-actions-hidden", [
+      "sku.view renders the list (route allows view-only)",
+      "Thêm SKU / Import Excel are not rendered without sku.manage",
+      "UI hiding is UX only; backend authorization remains the boundary",
     ]);
   });
 
@@ -395,12 +420,47 @@ test.describe("WWHN-178 / WWHN-179 Master/SKU closure", () => {
   }, testInfo) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await mockSession(page, { permissions: [] });
-    await page.goto(`${BASE_URL}/master-data`);
+    await page.goto(`${BASE_URL}${MASTER_ROUTE}`);
 
     await expect(page).toHaveURL(/\/errors\/403$/);
     await captureEvidence(page, testInfo, "route-rbac-deny", [
-      "User without sku.manage/master.manage is redirected to /errors/403",
+      "User without sku.view/sku.manage is redirected to /errors/403",
       "This is a FE entry guard and does not replace backend authorization",
+    ]);
+  });
+
+  test("screen only calls endpoints inside the pinned BE contract", async ({
+    page,
+  }, testInfo) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    const requestedPaths = await mockSession(page);
+    await page.goto(`${BASE_URL}${MASTER_ROUTE}`);
+    await expect(page.getByText("SKU-WWHN-178")).toBeVisible();
+
+    // Bề mặt hợp lệ của MST-01 theo swagger-api.json (BE pin 7da26cb):
+    // auth/*, /products, catalog refs. Phantom endpoint (/uoms, /suppliers —
+    // có controller nhưng không route/spec) tuyệt đối không được gọi.
+    const allowed = [
+      /\/api\/v1\/auth\/(refresh|me|logout)$/,
+      /\/api\/v1\/products$/,
+      /\/api\/v1\/brands$/,
+      /\/api\/v1\/product-categories$/,
+      /\/api\/v1\/product-models$/,
+      /\/api\/v1\/power-sources$/,
+      /\/api\/v1\/package-variants$/,
+    ];
+    const outside = requestedPaths.filter(
+      (path) => !allowed.some((pattern) => pattern.test(path)),
+    );
+    expect(outside).toEqual([]);
+    expect(requestedPaths.some((path) => path.endsWith("/uoms"))).toBe(false);
+    expect(requestedPaths.some((path) => path.endsWith("/suppliers"))).toBe(
+      false,
+    );
+
+    await captureEvidence(page, testInfo, "contract-boundary", [
+      "MST-01 only calls endpoints present in the pinned OpenAPI 2.0.0",
+      "Phantom endpoints /uoms and /suppliers are never requested",
     ]);
   });
 });

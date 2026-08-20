@@ -1,4 +1,4 @@
-# WWHN-178 — FE Master/SKU/import closure package
+# WWHN-178 — FE Master/SKU/import closure package (R2)
 
 - Task: **WWHN-178 — [FE1] Triển khai UI dữ liệu danh mục/SKU/import**
 - Parent: **WWHN-39 — [FE] Màn hình dùng lại cho dữ liệu danh mục và SKU/item/code**
@@ -7,63 +7,78 @@
 - BE contract dependency: **WWHN-36 / WWHN-37 / WWHN-171**
 - Repository/branch: `Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_FE@m1`
 - Architecture reference: `docs/WMS_Hoa_Nam_Techstack_Architecture_Dev_Guide.md`
-- Updated: **2026-08-06 (Asia/Bangkok)**
+- Updated: **2026-08-20 (Asia/Bangkok) — R2**
+
+## 0. Vì sao có R2
+
+R1 (2026-08-06) bị **evidence rot** sau các refactor hợp lệ của những ticket đóng
+sau đó (WWHN-330/331 mở import SKU chính thức; MasterPage.tsx cũ được thay bằng
+`ApiMasterScreens.SkuMasterScreen` — MST-01):
+
+1. QA2 pack R1 mô tả UI không còn tồn tại (tabs Item/Mã vật lý, nút "Import SKU
+   cũ") → fail toàn bộ, không còn là bằng chứng.
+2. Guard forbid call-site trong `verify-master-sku-closure.mjs` dùng regex
+   một-dòng, Prettier xuống dòng sau `(` nên **không bao giờ match** — guard
+   PASS trong khi `/skus/import-excel` đã được gọi thật (hợp lệ theo WWHN-331).
+3. Bảng "capability được phép" R1 liệt kê `/uoms`, `/suppliers` — hai endpoint
+   **ma**: BE có controller nhưng không có route/spec/bảng/seeder → gọi là 404.
+
+R2 xử lý gốc rễ cả ba điểm; cơ chế gate đổi từ "hình dạng call-site" sang
+"**path phải tồn tại trong OpenAPI đã pin**" nên refactor/format không thể làm
+guard câm lặng.
 
 ## 1. Kết luận chính xác
 
-**FE-owned P0/P1/P2 controls: COMPLETE. Overall cross-functional acceptance: BLOCKED_BY_INDEPENDENT_OWNER_GATES.**
+**FE-owned P0/P1/P2 controls: COMPLETE. Overall cross-functional acceptance:
+BLOCKED_BY_INDEPENDENT_OWNER_GATES.**
 
-Không còn P0 trực tiếp phía FE. `/items`, `/physical-codes` và `/skus/import-excel` bị chặn bằng typed contract gate trước HTTP. FE không tự mở endpoint chỉ vì UI đã tồn tại.
-
-FE **không tự nhận QA2 sign-off** và **không tự nhận/coi backend evidence là BE sign-off**. WWHN-178/WWHN-39 không được kết luận đóng toàn luồng cho tới khi QA2, BA/BAS và BE/QA cung cấp evidence độc lập.
+FE **không tự nhận QA2 sign-off** và **không tự nhận/coi backend evidence là BE
+sign-off**. WWHN-178/WWHN-39 không được kết luận đóng toàn luồng cho tới khi
+QA2, BA/BAS và BE/QA xác nhận độc lập trên Jira.
 
 Nguồn trạng thái machine-readable duy nhất:
+`docs/evidence/wwhn-178/WWHN-178_CLOSURE_REGISTER.json` (schema 2.1.0).
 
-`docs/evidence/wwhn-178/WWHN-178_CLOSURE_REGISTER.json`
+## 2. Xử lý gốc rễ theo đánh giá Remove Flag (comment 14740)
 
-## 2. Xử lý gốc rễ theo đánh giá Remove Flag
-
-| Sev | Vấn đề | Xử lý trong FE | Evidence | Trạng thái nghiệm thu |
+| Sev | Vấn đề | Xử lý R2 | Evidence | Trạng thái |
 | --- | --- | --- | --- | --- |
-| P0 | Runtime endpoint chưa có contract | Central registry + `assertMasterDataContractApproved()` + typed error `WMS_FE_CONTRACT_NOT_APPROVED`; unit test buộc không phát sinh HTTP | `master-data.contract.ts`, contract/service tests | **FE PASS** |
-| P1 | QA2 WWHN-179 chưa PASS | Cung cấp deterministic Playwright pack cho loading/empty/success/403/validation/RBAC/keyboard và 3 viewport; không giả lập chữ ký QA2 | `e2e/wwhn-178-master-sku-qa2.spec.ts` | **PENDING QA2** |
-| P1 | HN-MC-001 chưa baseline | Ghi proposal/open points dạng JSON; FE không biến proposal thành baseline | `docs/api-evidence/WWHN-178_MASTER_SKU_CONTRACT_BASELINE.json` | **PENDING WWHN-14/100/101** |
-| P1 | BE contract còn mở | Item/physical-code/import vẫn `approved:false`; chỉ mở bằng exact OpenAPI/Postman version/hash + payload/error/permission/sample data | contract registry | **PENDING WWHN-36/37/171** |
-| P1 | Backend authorization chưa có evidence live | Có direct API runner tách khỏi UI; contract-only CI không được coi là live proof | `scripts/run-wwhn-178-direct-api-rbac.mjs` | **PENDING BE+QA LIVE RUN** |
-| P1 | CI trace không đồng bộ | Loại bỏ hard-coded acceptance run. Run nghiệm thu được chọn theo rule `CURRENT_SUCCESSFUL_PUSH_RUN_FOR_EXACT_SOURCE_SHA`; hai run `30987735727` và `30987738397` chỉ là historical/superseded | closure register + current workflow metadata | **FE PASS; current run required** |
-| P2 | Parent closure matrix thiếu | Thêm matrix subtask → status → evidence → owner → blocker; CI kiểm tra bắt buộc đủ trường | closure register, mục 3 | **FE PASS** |
+| P0 | Runtime endpoint chưa có contract | Gate PINNED_CONTRACT_PRESENCE: mọi capability master/SKU phải có path trong `swagger-api.json` (pin BE m1 `7da26cb`, sha256 `46cbfc01…`, verify bằng `check:api-mapping`). Import `/skus/import-*` đã CONTRACT_PINNED theo WWHN-330/331. Endpoint ma `/uoms`, `/suppliers` bị cấm tuyệt đối. | `scripts/verify-master-sku-closure.mjs`, `docs/api-evidence/BE_CONTRACT_PIN.json` | **FE PASS** |
+| P1 | QA2 `WWHN-179` chưa PASS | Pack R2 viết lại theo UI hiện tại, chạy một lệnh tại exact SHA, tự sinh screenshot/video/trace/JSON | `e2e/wwhn-178-master-sku-qa2.spec.ts` | **EVIDENCED — chờ QA2 comment PASS/FAIL** |
+| P1 | `HN-MC-001` chưa baseline | Xác minh 0-hit trong cả 4 tài liệu baseline; cập nhật proposal JSON kèm **divergenceRegister 8 điểm lệch** SRS↔ERD↔DevGuide↔wireframe làm checklist cho WWHN-14/100/101. FE không biến proposal thành baseline. | `docs/api-evidence/WWHN-178_MASTER_SKU_CONTRACT_BASELINE.json` | **PENDING BA/BAS (WWHN-14/100/101)** |
+| P1 | BE contract còn mở | OpenAPI 2.0.0 đã publish + pin (BE m1 `7da26cb`, 183 paths/231 operations, HN-BE-API-003 permission matrix); FE `check:api-mapping` PASS trên pin | `BE_CONTRACT_PIN.json`, BE `HN-BE-API-003_ENDPOINT_PERMISSION_MATRIX.json` | **EVIDENCED — chờ BE1/BE2 comment xác nhận** |
+| P1 | Backend authorization chưa có live evidence | Live direct API trên BE local (nginx `127.0.0.1:8080`, PostgreSQL 16): positive-control 200, permission-deny **403 `ACCESS_DENIED` + request_id**, data-scope **404 mask** (import-reports ACTOR_SCOPED — master-data là dữ liệu toàn cục theo thiết kế, SRS §13.8 cho phép mask) | `docs/evidence/wwhn-178/generated/<SOURCE_SHA>/rbac/` | **EVIDENCED — chờ BE/QA xác nhận fixture** |
+| P1 | CI trace chưa chốt | **DEC-178-CI-LOCAL-01**: quota GitHub Actions 3000/3000 đã cạn → gate nghiệm thu chạy local tại exact SHA (tiền lệ DEC-325-CI-LOCAL-01), evidence pack + SHA256SUMS commit kèm; không run in_progress, không hard-code run ID | closure register `acceptancePolicy` | **FE PASS** |
+| P2 | Parent closure matrix | Matrix cập nhật theo trạng thái Jira 2026-08-20; verify script bắt buộc đủ trường | closure register mục `parentClosureMatrix` | **FE PASS** |
 
 ## 3. Parent closure matrix — WWHN-39
 
-| Issue | Owner | Status quan sát 2026-08-06 | Evidence hiện có | Remaining blocker | Closure decision |
+| Issue | Owner | Status quan sát 2026-08-20 | Evidence hiện có | Remaining blocker | Closure decision |
 | --- | --- | --- | --- | --- | --- |
-| WWHN-178 | FE1 | `IN PROGRESS REDF` | contract gate, unit tests, QA2 pack, direct API runner, closure register | Independent BA/BE/QA gates | **FE complete; chưa close parent** |
-| WWHN-179 | QA2 | `TO DO` | executable pack sẵn sàng | QA2 phải chạy exact SHA/build/browser/env, attach screenshot/video/trace, comment PASS/FAIL | **Pending owner** |
-| WWHN-39 | FE1/Lead | `IN PROGRESS` | matrix này + WWHN-178 evidence | WWHN-179, HN-MC-001, BE official contract, live authorization | **NOT READY TO CLOSE** |
+| WWHN-178 | FE1 | `DONE REDFLAG` | contract-pin gate, QA2 pack R2, live RBAC evidence, closure register 2.1.0 | Sign-off comments của QA2/BA-BAS/BE | **FE complete; chưa close parent** |
+| WWHN-179 | QA2 | `TO DO` | executable pack R2 + evidence tự sinh | QA2 chạy exact SHA, attach evidence, comment PASS/FAIL | **Pending owner** |
+| WWHN-39 | FE1/Lead | `IN PROGRESS` | matrix này + WWHN-178 evidence | WWHN-179, HN-MC-001 (WWHN-14/100/101), BE contract sign-off | **NOT READY TO CLOSE** |
 
-Parent chỉ được chuyển trạng thái đóng khi mọi hàng bắt buộc có owner outcome và không còn P0/P1 chưa disposition.
+## 4. Contract boundary (R2)
 
-## 4. Contract boundary
+### Capability CONTRACT_PINNED (được phép gọi)
 
-### Capability được phép gọi
+Theo `swagger-api.json` pin BE m1 `7da26cb` (OpenAPI 2.0.0):
 
-- `GET/POST /products`
-- `PATCH /products/:id/enable` hoặc `/disable`
-- `GET/POST /product-categories`
-- `GET /uoms`
-- `GET /suppliers`
+- `GET/POST /products`, `GET/PATCH /products/:id`, `PATCH /products/:id/enable|disable` — `sku.view`/`sku.manage`
+- `GET /product-categories`, `/brands`, `/product-models`, `/power-sources`, `/package-variants` (catalog refs MST-02)
+- `GET /skus/import-template`, `POST /skus/import-excel`, `GET /skus/import-reports[/:id][/error-file]` — `sku.manage` (WWHN-330/331)
+- `GET /item-instances`, `GET /physical-codes` — pinned; MST-01 không gọi trực tiếp
 
-Tất cả request đi qua `src/shared/api/http.ts`; route/action dùng `sku.manage` hoặc `master.manage`.
+### Capability bị cấm (phantom — BE không có route/spec)
 
-### Capability bắt buộc fail-closed
+| Path | Lý do |
+| --- | --- |
+| `GET /uoms` | Controller tồn tại nhưng không route/không spec/không bảng → 404 `RESOURCE_NOT_FOUND` |
+| `GET /suppliers` | Như trên; supplier chỉ là cột text trên `import_batches` |
 
-| Capability | Path | Điều kiện để mở |
-| --- | --- | --- |
-| Item list | `GET /items` | BA/BAS item semantics + official BE contract + QA2 |
-| Physical code list | `GET /physical-codes` | physical-code identity/type/carrier/cardinality/duplicate semantics + official BE contract + QA2 |
-| SKU import | `POST /skus/import-excel` | multipart/file schema, column dictionary, enum, duplicate/upsert, atomicity, row error, permission/data-scope/audit, sample errors |
-
-Không đổi `approved:false` thành `true` bằng thay đổi FE độc lập.
+Không mở capability mới bằng thay đổi FE độc lập — điều kiện mở là path xuất
+hiện trong spec pin mới (`npm run contract:sync -- <BE_SHA> --repin`).
 
 ## 5. QA2 WWHN-179 execution gate
 
@@ -71,11 +86,15 @@ Không đổi `approved:false` thành `true` bằng thay đổi FE độc lập.
 SOURCE_SHA="$(git rev-parse HEAD)" \
 VITE_APP_ENV="QA" \
 VITE_APP_VERSION="<exact-build-id>" \
-WWHN_178_EVIDENCE_DIR="test-results/wwhn-178/$(git rev-parse HEAD)" \
+WWHN_178_EVIDENCE_DIR="docs/evidence/wwhn-178/generated/$(git rev-parse HEAD)/qa2" \
 npx playwright test e2e/wwhn-178-master-sku-qa2.spec.ts --project=chromium
 ```
 
-QA2 phải ghi browser/version, environment, exact source SHA, build ID, timestamp và outcome PASS/FAIL. Evidence tối thiểu gồm screenshot, video, trace và JSON cho desktop `1440x900`, tablet `768x1024`, mobile `375x812`; loading, empty, success, 403/request-id, validation, disabled import, item/code blocker, keyboard/focus và overflow.
+QA2 phải ghi browser/version, environment, exact source SHA, build ID,
+timestamp và outcome PASS/FAIL. Evidence tối thiểu gồm screenshot, video, trace
+và JSON cho desktop `1440x900`, tablet `768x1024`, mobile `375x812`; loading,
+empty, success, 403 `ACCESS_DENIED`/request-id, validation, import modal theo
+permission, view-only, route RBAC, contract boundary và overflow.
 
 ## 6. Backend authorization gate
 
@@ -86,40 +105,42 @@ SOURCE_SHA="$(git rev-parse HEAD)" WWHN_178_ENV="CI" \
 node scripts/run-wwhn-178-direct-api-rbac.mjs --contract-only
 ```
 
-Live permission/data-scope check:
+Live permission/data-scope check (BE local hoặc QA):
 
 ```bash
 SOURCE_SHA="$(git rev-parse HEAD)" \
-WWHN_178_ENV="QA" \
-WWHN_178_API_BASE_URL="https://<qa-api>/api/v1" \
-WWHN_178_DENIED_TOKEN="<denied-role-token>" \
+WWHN_178_ENV="LOCAL_PG" \
+WWHN_178_API_BASE_URL="http://127.0.0.1:8080/api/v1" \
+WWHN_178_CONTROL_TOKEN="<sku.view-token>" \
+WWHN_178_DENIED_TOKEN="<token-thiếu-sku.manage>" \
 WWHN_178_DENIED_METHOD="POST" \
 WWHN_178_DENIED_PATH="/products" \
-WWHN_178_SCOPE_DENIED_TOKEN="<outside-scope-token>" \
+WWHN_178_SCOPE_DENIED_TOKEN="<warehouse-scoped-sku.manage-token>" \
 WWHN_178_SCOPE_DENIED_METHOD="GET" \
-WWHN_178_SCOPE_DENIED_PATH="/products?warehouse_id=<outside-scope>" \
+WWHN_178_SCOPE_DENIED_PATH="/skus/import-reports/<report-của-actor-khác>" \
+WWHN_178_SCOPE_EXPECTED_STATUS="404" \
 node scripts/run-wwhn-178-direct-api-rbac.mjs
 ```
 
-Pass criteria: request trực tiếp API, HTTP 403, deny code nếu contract quy định, request ID, token redacted, role/permission/scope fixture được BE/QA xác nhận. UI disabled không thay thế bằng chứng này.
+Pass criteria: request trực tiếp API (không UI), positive control 200 chứng
+minh server sống, **HTTP 403 + `ACCESS_DENIED` + request ID** cho permission
+deny, **404 `RESOURCE_NOT_FOUND` mask** cho bản ghi ngoài data-scope
+(ImportReportController ACTOR_SCOPED; master-data là dữ liệu toàn cục — không
+có warehouse scope theo thiết kế), token redacted, fixture role/permission/scope
+được BE/QA xác nhận. UI disabled không thay thế bằng chứng này.
 
-## 7. Trace PR / CI — một nguồn nghiệm thu
+## 7. Provenance nghiệm thu — DEC-178-CI-LOCAL-01
 
-Do chỉ sửa trực tiếp `m1`, PR riêng là N/A theo delivery instruction. Exact commit SHA không thể tự ghi trong chính commit vì tạo vòng hash.
+GitHub Actions quota 3000/3000 đã dùng hết và **cấm phát sinh thêm phí**, nên
+rule CI `CURRENT_SUCCESSFUL_PUSH_RUN_FOR_EXACT_SOURCE_SHA` (R1) được thay bằng:
 
-Rule bắt buộc:
+`LOCAL_EXACT_SHA_EVIDENCE_GATE` — theo tiền lệ **DEC-325-CI-LOCAL-01**:
 
-`CURRENT_SUCCESSFUL_PUSH_RUN_FOR_EXACT_SOURCE_SHA`
-
-Run/artifact được dùng nghiệm thu phải đồng thời thỏa:
-
-1. Event là push vào `refs/heads/m1`.
-2. `head_sha`/`SOURCE_SHA` bằng exact commit đang review.
-3. Workflow conclusion là `success`.
-4. Artifact tên `wms-fe-closure-evidence-<SOURCE_SHA>` thuộc chính run đó.
-5. Jira chỉ ghi đúng một run/artifact final; run cũ được đánh dấu superseded.
-
-Run `30987735727` và `30987738397` không còn là acceptance pointer cho commit mới. Chúng chỉ là historical evidence.
+1. Toàn bộ gate mục 8 chạy local tại exact commit trên `m1`.
+2. Evidence pack ghi `sourceSha` = `executionSha` = exact SHA, kèm `SHA256SUMS`.
+3. Run `30987735727` và `30987738397` chỉ là historical/superseded.
+4. Không hard-code run ID; không dùng bất kỳ run `in_progress` nào làm nghiệm thu.
+5. Khi quota CI được cấp lại, rule R1 tự động thay thế rule local cho các vòng sau.
 
 ## 8. Automated enforcement
 
@@ -136,21 +157,22 @@ npm run test:e2e:wwhn-178
 
 `master-sku:verify` fail khi:
 
-- endpoint chưa approved có thể phát sinh HTTP;
-- task doc khai overall hoàn tất tuyệt đối khi owner gates còn pending;
-- hard-code một run ID làm acceptance source;
-- thiếu QA2/BA/BE/live authorization gate;
-- thiếu hàng WWHN-178, WWHN-179 hoặc WWHN-39 trong parent matrix;
-- status/evidence/owner/blocker của matrix không đầy đủ.
+- capability master/SKU trỏ tới path không có trong OpenAPI đã pin;
+- src tham chiếu endpoint ma `/uoms` hoặc `/suppliers`;
+- register không khớp `BE_CONTRACT_PIN.json` (chống register rot);
+- owner gate bị tự chuyển sang trạng thái sign-off khi chưa có comment owner;
+- thiếu hàng WWHN-178/WWHN-179/WWHN-39 hoặc thiếu trường trong parent matrix;
+- task doc thiếu boundary QA2/BE, thiếu DEC-178-CI-LOCAL-01, hoặc khai hoàn tất tuyệt đối.
 
 ## 9. Definition of Done
 
-FE-owned scope đạt COMPLETE khi exact commit trên `m1` có current successful push run và artifact đúng SHA.
+FE-owned scope đạt COMPLETE khi exact commit trên `m1` có evidence pack local
+exact-SHA (mục 7) với đủ 8 gate PASS.
 
 Cross-functional acceptance chỉ đạt sau khi:
 
-- WWHN-179 có QA2 PASS độc lập;
-- WWHN-14/100/101 baseline field, enum, import rule, item/code/physical-code semantics;
-- WWHN-36/37/171 khóa official OpenAPI/Postman/payload/error/permission/sample data;
-- BE/QA có live direct API 403, permission deny và data-scope deny evidence;
+- WWHN-179 có QA2 PASS độc lập (chạy lại pack tại exact SHA);
+- WWHN-14/100/101 baseline HN-MC-001 (field, enum, import rule, item/code/physical-code semantics — xử lý 8 divergences trong `WWHN-178_MASTER_SKU_CONTRACT_BASELINE.json`);
+- WWHN-36/37/171 có comment BE1/BE2 xác nhận OpenAPI 2.0.0 pin `46cbfc01…` là contract chính thức;
+- BE/QA xác nhận fixture của live authorization evidence;
 - WWHN-39 matrix được Lead xác nhận không còn P0/P1 mở.
