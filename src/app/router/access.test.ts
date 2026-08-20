@@ -80,6 +80,32 @@ describe("WMS route access contract", () => {
     expect(ROUTE_PERMISSIONS[ROUTES.REPORTS]).not.toContain("report.export");
   });
 
+  it("fail-closed: route chưa khai báo nhận sentinel không ai có (WWHN-165)", async () => {
+    const {
+      ROUTE_PERMISSIONS,
+      UNREGISTERED_ROUTE_PERMISSION,
+      resolveRouteEntryPermission,
+    } = await import("@/app/router/access");
+    const { ROUTES } = await import("@/shared/constants/routes");
+    const { WMS_PERMISSION_CATALOG } =
+      await import("@/shared/constants/wms-permissions");
+
+    // Route đã khai tường minh `undefined` (mở cho mọi user đã đăng nhập) phải
+    // giữ nguyên semantic — resolver không được đổi thành sentinel.
+    expect(resolveRouteEntryPermission(ROUTES.DASHBOARD)).toBeUndefined();
+    expect(Object.hasOwn(ROUTE_PERMISSIONS, ROUTES.DASHBOARD)).toBe(true);
+
+    // Route KHÔNG có entry -> sentinel -> RequirePermission chặn về /errors/403.
+    expect(resolveRouteEntryPermission("/route-moi-quen-khai-bao")).toBe(
+      UNREGISTERED_ROUTE_PERMISSION,
+    );
+
+    // Sentinel không bao giờ được seed thành permission thật.
+    expect(Object.values(WMS_PERMISSION_CATALOG)).not.toContain(
+      UNREGISTERED_ROUTE_PERMISSION,
+    );
+  });
+
   it("keeps canonical BE permission spelling for sensitive routes", async () => {
     const { WMS_PERMISSION_CATALOG: P, canonicalizeWmsPermission } =
       await import("@/shared/constants/wms-permissions");

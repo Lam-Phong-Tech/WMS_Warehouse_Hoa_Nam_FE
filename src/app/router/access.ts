@@ -76,3 +76,19 @@ export const ROUTE_PERMISSIONS: Record<string, string | string[] | undefined> =
     [ROUTES.COMPONENT_CATALOG]: undefined,
     [ROUTES.PROFILE]: undefined,
   };
+
+/**
+ * WWHN-165: sentinel cấp cho route KHÔNG có entry trong ROUTE_PERMISSIONS.
+ * Không role nào được seed permission này, nên RequirePermission luôn chặn về
+ * /errors/403 — route mới quên khai báo sẽ fail-closed thay vì mở cho mọi user
+ * đã đăng nhập. Muốn mở route cho mọi user phải khai tường minh `undefined`.
+ */
+export const UNREGISTERED_ROUTE_PERMISSION = "__route.not_registered__";
+
+export function resolveRouteEntryPermission(
+  path: string,
+): string | string[] | undefined {
+  return Object.hasOwn(ROUTE_PERMISSIONS, path)
+    ? ROUTE_PERMISSIONS[path]
+    : UNREGISTERED_ROUTE_PERMISSION;
+}

@@ -69,5 +69,25 @@ export default defineConfig({
         trace: "on-first-retry",
       },
     },
+    // WWHN-167 QA2: evidence Edge thật (channel msedge, Windows). Gate bằng env
+    // QA2_EDGE=1 để không đổi hành vi mặc định của `npx playwright test` cho
+    // các phiên/gate khác; CI không bao giờ bật cờ này.
+    ...(process.env.QA2_EDGE === "1"
+      ? [
+          {
+            name: "qa2-msedge",
+            testMatch: [
+              "**/wwhn-165-auth-session.spec.ts",
+              "**/auth-role-navigation-qa2.spec.ts",
+            ],
+            use: {
+              ...devices["Desktop Edge"],
+              channel: "msedge" as const,
+              viewport: { width: 1440, height: 900 },
+              video: "on" as const,
+            },
+          },
+        ]
+      : []),
   ],
 });

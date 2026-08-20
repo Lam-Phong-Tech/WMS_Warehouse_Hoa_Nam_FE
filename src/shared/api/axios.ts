@@ -92,7 +92,16 @@ function redirectToLogin() {
   useAuthStore.getState().logout();
   useAuthStore.persist.clearStorage();
   if (window.location.pathname !== ROUTES.LOGIN) {
-    window.location.assign(ROUTES.LOGIN);
+    // WWHN-165/QA2-LOGIN-001: phiên hết hạn giữa chừng vẫn phải giữ attempted
+    // URL để đăng nhập lại quay về đúng màn đang làm việc. Chỉ nhận path nội
+    // bộ (bắt đầu bằng "/" đơn) — không nhận URL tuyệt đối/"//" để tránh
+    // open-redirect.
+    const attempted = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    const redirectQuery =
+      attempted.startsWith("/") && !attempted.startsWith("//")
+        ? `?redirect=${encodeURIComponent(attempted)}`
+        : "";
+    window.location.assign(`${ROUTES.LOGIN}${redirectQuery}`);
   }
 }
 

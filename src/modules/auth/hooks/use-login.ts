@@ -31,9 +31,22 @@ export function useLogin() {
       });
 
       const from = (location.state as LoginLocationState | null)?.from;
+      // Nhánh interceptor (phiên hết hạn giữa chừng) truyền attempted URL qua
+      // ?redirect= vì window.location.assign không mang được router state.
+      // Chỉ nhận path nội bộ để tránh open-redirect; không quay lại /login.
+      const redirectParam = new URLSearchParams(location.search).get(
+        "redirect",
+      );
+      const safeRedirect =
+        redirectParam &&
+        redirectParam.startsWith("/") &&
+        !redirectParam.startsWith("//") &&
+        redirectParam !== ROUTES.LOGIN
+          ? redirectParam
+          : null;
       const nextPath = from?.pathname
         ? `${from.pathname}${from.search ?? ""}${from.hash ?? ""}`
-        : ROUTES.DASHBOARD;
+        : (safeRedirect ?? ROUTES.DASHBOARD);
       navigate(nextPath, { replace: true });
     },
     onError: () => {

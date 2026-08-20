@@ -49,27 +49,33 @@ function LoginHarness() {
   );
 }
 
-function renderHarness(children: ReactNode) {
+function renderHarness(
+  children: ReactNode,
+  entry: { pathname: string; search?: string; state?: unknown } = {
+    pathname: ROUTES.LOGIN,
+    state: {
+      from: { pathname: ROUTES.INBOUND, search: "?status=DRAFT" },
+    },
+  },
+) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter
-        initialEntries={[
-          {
-            pathname: ROUTES.LOGIN,
-            state: {
-              from: { pathname: ROUTES.INBOUND, search: "?status=DRAFT" },
-            },
-          },
-        ]}
-      >
-        {children}
-      </MemoryRouter>
+      <MemoryRouter initialEntries={[entry]}>{children}</MemoryRouter>
     </QueryClientProvider>,
   );
 }
+
+const LOGIN_OK = {
+  access_token: "access-token",
+  refresh_token: "refresh-token",
+  token_type: "bearer" as const,
+  expires_in: 3600,
+  available_contexts: [CONTEXT],
+  user: { id: 1, name: "Quang", email: EMAIL, code: "HN-FE-01" },
+};
 
 describe("useLogin WWHN-165", () => {
   beforeEach(() => {
@@ -130,6 +136,43 @@ describe("useLogin WWHN-165", () => {
     expect(authService.switchContext).not.toHaveBeenCalled();
     expect(useAuthStore.getState().contexts).toEqual([CONTEXT, secondContext]);
     expect(useAuthStore.getState().token).toBe("access-token");
+  });
+
+  it("khôi phục attempted URL từ ?redirect= khi phiên hết hạn giữa chừng", async () => {
+    vi.mocked(authService.login).mockResolvedValue(LOGIN_OK);
+
+    renderHarness(
+      <Routes>
+        <Route path={ROUTES.LOGIN} element={<LoginHarness />} />
+        <Route path={ROUTES.INBOUND} element={<div>Inbound restored</div>} />
+      </Routes>,
+      {
+        pathname: ROUTES.LOGIN,
+        search: `?redirect=${encodeURIComponent(`${ROUTES.INBOUND}?status=DRAFT`)}`,
+      },
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Login" }));
+
+    expect(await screen.findByText("Inbound restored")).toBeInTheDocument();
+  });
+
+  it("từ chối ?redirect= không phải path nội bộ (chống open-redirect)", async () => {
+    vi.mocked(authService.login).mockResolvedValue(LOGIN_OK);
+
+    renderHarness(
+      <Routes>
+        <Route path={ROUTES.LOGIN} element={<LoginHarness />} />
+        <Route path={ROUTES.DASHBOARD} element={<div>Dashboard home</div>} />
+        <Route path={ROUTES.INBOUND} element={<div>Inbound restored</div>} />
+      </Routes>,
+      {
+        pathname: ROUTES.LOGIN,
+        search: `?redirect=${encodeURIComponent("//evil.example.com/phish")}`,
+      },
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Login" }));
+
+    expect(await screen.findByText("Dashboard home")).toBeInTheDocument();
   });
 
   it("login lỗi không tạo authenticated state", async () => {

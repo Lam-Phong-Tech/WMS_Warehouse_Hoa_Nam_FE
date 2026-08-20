@@ -132,7 +132,7 @@ describe("axios auth/session interceptor WWHN-165", () => {
     expect(window.location.assign).not.toHaveBeenCalled();
   });
 
-  it("refresh 401 xác nhận hết phiên -> logout và redirect", async () => {
+  it("refresh 401 xác nhận hết phiên -> logout và redirect giữ attempted URL", async () => {
     const refreshError = makeError(401, API_ENDPOINTS.REFRESH);
     vi.spyOn(api, "post").mockRejectedValue(refreshError);
     const originalError = makeError(401, "/inventory-balances");
@@ -140,7 +140,32 @@ describe("axios auth/session interceptor WWHN-165", () => {
     await expect(rejectedHandler()(originalError)).rejects.toBe(refreshError);
     expect(logoutMock).toHaveBeenCalledTimes(1);
     expect(clearStorageMock).toHaveBeenCalledTimes(1);
-    expect(window.location.assign).toHaveBeenCalledWith(ROUTES.LOGIN);
+    // WWHN-165/QA2-LOGIN-001: attempted URL đi kèm ?redirect= để login xong
+    // quay lại đúng màn đang làm việc.
+    expect(window.location.assign).toHaveBeenCalledWith(
+      `${ROUTES.LOGIN}?redirect=${encodeURIComponent("/inventory")}`,
+    );
+  });
+
+  it("redirect login giữ cả search/hash của attempted URL", async () => {
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      value: {
+        ...originalLocation,
+        pathname: "/inbound",
+        search: "?status=DRAFT",
+        hash: "#line-2",
+        assign: vi.fn(),
+      },
+    });
+    const refreshError = makeError(403, API_ENDPOINTS.REFRESH);
+    vi.spyOn(api, "post").mockRejectedValue(refreshError);
+    const originalError = makeError(401, "/inbound-documents");
+
+    await expect(rejectedHandler()(originalError)).rejects.toBe(refreshError);
+    expect(window.location.assign).toHaveBeenCalledWith(
+      `${ROUTES.LOGIN}?redirect=${encodeURIComponent("/inbound?status=DRAFT#line-2")}`,
+    );
   });
 
   it("403/409/422 giữ semantic flag cho UI", async () => {

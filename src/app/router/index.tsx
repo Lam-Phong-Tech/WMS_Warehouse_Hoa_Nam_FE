@@ -3,7 +3,7 @@ import { lazy, Suspense, type ReactNode } from "react";
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import { ProtectedRoute } from "@/app/router/ProtectedRoute";
 import { RequirePermission } from "@/app/router/RequirePermission";
-import { ROUTE_PERMISSIONS } from "@/app/router/access";
+import { resolveRouteEntryPermission } from "@/app/router/access";
 import { PageSkeleton } from "@/shared/components/ui-states/PageSkeleton";
 import { ROUTES } from "@/shared/constants/routes";
 import { LoginPage } from "@/modules/auth/pages/LoginPage";
@@ -139,8 +139,10 @@ function withPageLoader(node: ReactNode) {
   return <Suspense fallback={<PageSkeleton />}>{node}</Suspense>;
 }
 function routeEl(path: string, node: ReactNode) {
+  // resolveRouteEntryPermission fail-closed: route chưa khai trong
+  // ROUTE_PERMISSIONS nhận sentinel không ai có -> /errors/403.
   return (
-    <RequirePermission permission={ROUTE_PERMISSIONS[path]}>
+    <RequirePermission permission={resolveRouteEntryPermission(path)}>
       {withPageLoader(node)}
     </RequirePermission>
   );
