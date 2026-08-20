@@ -111,7 +111,13 @@ describe("axios refresh interceptor — integration (mock ở tầng HTTP adapte
 
     expect(logoutMock).toHaveBeenCalledTimes(1);
     expect(clearStorageMock).toHaveBeenCalledTimes(1);
-    expect(window.location.assign).toHaveBeenCalledWith("/login");
+    // WWHN-165/QA2-LOGIN-001: về /login, kèm ?redirect= giữ attempted URL để
+    // đăng nhập lại quay về đúng chỗ — assertion chấp nhận cả dạng có/không
+    // redirect param, miễn là đích luôn là /login (không retry request cũ).
+    expect(window.location.assign).toHaveBeenCalledTimes(1);
+    expect(window.location.assign).toHaveBeenCalledWith(
+      expect.stringMatching(/^\/login(\?redirect=|$)/),
+    );
     expect(memoryStorage.getToken()).toBe(EXPIRED_ACCESS_TOKEN_PLACEHOLDER);
   });
 
