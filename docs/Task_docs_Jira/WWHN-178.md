@@ -27,6 +27,18 @@ R2 xử lý gốc rễ cả ba điểm; cơ chế gate đổi từ "hình dạng
 "**path phải tồn tại trong OpenAPI đã pin**" nên refactor/format không thể làm
 guard câm lặng.
 
+Khi chạy lại QA2 pack đã viết mới tại đúng exact SHA để lấy evidence (bước bắt
+buộc trước khi công bố PASS), phát hiện thêm **một bug thật, không phải lỗi
+test**: `ApiMasterScreens.tsx` (chứa `SkuMasterScreen`/MST-01) tự định nghĩa
+một component tên trùng `ApiErrorAlert` (chỉ là `<div>` + message + nút "Thử
+lại"), che khuất hoàn toàn component dùng chung cùng tên đã được nâng cấp để
+hiện `NoPermissionState` + error code + `request_id` khi 403. Kết quả thực tế
+trên MST-01: lỗi 403 chỉ hiện message chung chung, không có mã lỗi lẫn
+request_id — đúng thứ mà comment 14740 (P1 "Backend authorization chưa có
+evidence live") đòi phải truy vết được. Đã xóa component cục bộ, chuyển sang
+dùng component dùng chung, chạy lại đủ 8 gate + evidence tại đúng SHA cuối
+cùng đã chạm code (`b9c7413`).
+
 ## 1. Kết luận chính xác
 
 **FE-owned P0/P1/P2 controls: COMPLETE. Overall cross-functional acceptance:
@@ -141,6 +153,13 @@ rule CI `CURRENT_SUCCESSFUL_PUSH_RUN_FOR_EXACT_SOURCE_SHA` (R1) được thay b�
 3. Run `30987735727` và `30987738397` chỉ là historical/superseded.
 4. Không hard-code run ID; không dùng bất kỳ run `in_progress` nào làm nghiệm thu.
 5. Khi quota CI được cấp lại, rule R1 tự động thay thế rule local cho các vòng sau.
+
+Candidate commit của R2: **`b9c7413d4ea5c6f8745b92e8108abc08d0c0fbbe`**
+(commit-cuối-chạm-artifact — commit `707841f` trước đó bị supersede vì bug
+ApiErrorAlert-shadow lộ ra ngay khi chạy evidence tại SHA đó). Evidence pack:
+`docs/evidence/wwhn-178/generated/b9c7413d4ea5c6f8745b92e8108abc08d0c0fbbe/`
+(qa2/ = 10 kịch bản × screenshot+JSON; rbac/ = 3 probe live PASS + plan/summary;
+`SHA256SUMS` ký 25 file).
 
 ## 8. Automated enforcement
 

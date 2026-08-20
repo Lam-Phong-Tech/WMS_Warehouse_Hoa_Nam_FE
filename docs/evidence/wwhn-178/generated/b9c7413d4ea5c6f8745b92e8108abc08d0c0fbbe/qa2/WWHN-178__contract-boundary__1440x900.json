@@ -1,0 +1,26 @@
+{
+  "schemaVersion": "2.0.0",
+  "ticket": "WWHN-178",
+  "qaTicket": "WWHN-179",
+  "scenario": "contract-boundary",
+  "result": "PASS",
+  "sourceSha": "b9c7413d4ea5c6f8745b92e8108abc08d0c0fbbe",
+  "environment": "LOCAL_EVIDENCE",
+  "buildVersion": "local-dev",
+  "browserProject": "chromium",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "route": "/master-data/skus",
+  "finalUrl": "http://127.0.0.1:5180/master-data/skus",
+  "timestamp": "2026-08-20T03:23:51.568Z",
+  "screenshotFilename": "WWHN-178__contract-boundary__1440x900.png",
+  "videoPolicy": "on",
+  "tracePolicy": "on",
+  "assertions": [
+    "MST-01 only calls endpoints present in the pinned OpenAPI 2.0.0",
+    "Phantom endpoints /uoms and /suppliers are never requested"
+  ],
+  "evidenceBoundary": "Controlled FE evidence only; independent QA2 execution and direct backend 403/data-scope evidence remain separate owner gates."
+}

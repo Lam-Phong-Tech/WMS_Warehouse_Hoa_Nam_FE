@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "2.0.0",
+  "ticket": "WWHN-178",
+  "qaTicket": "WWHN-179",
+  "scenario": "success-responsive-desktop",
+  "result": "PASS",
+  "sourceSha": "b9c7413d4ea5c6f8745b92e8108abc08d0c0fbbe",
+  "environment": "LOCAL_EVIDENCE",
+  "buildVersion": "local-dev",
+  "browserProject": "chromium",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "route": "/master-data/skus",
+  "finalUrl": "http://127.0.0.1:5180/master-data/skus",
+  "timestamp": "2026-08-20T03:23:28.094Z",
+  "screenshotFilename": "WWHN-178__success-responsive-desktop__1440x900.png",
+  "videoPolicy": "on",
+  "tracePolicy": "on",
+  "assertions": [
+    "Canonical GET /products data renders on MST-01",
+    "Thêm SKU and Import Excel actions are visible with sku.manage",
+    "Document has no horizontal overflow",
+    "Named controls expose accessible roles"
+  ],
+  "evidenceBoundary": "Controlled FE evidence only; independent QA2 execution and direct backend 403/data-scope evidence remain separate owner gates."
+}

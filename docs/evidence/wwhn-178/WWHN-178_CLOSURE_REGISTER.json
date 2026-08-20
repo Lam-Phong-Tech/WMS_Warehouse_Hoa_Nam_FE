@@ -4,9 +4,12 @@
   "parent": "WWHN-39",
   "repository": "Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_FE",
   "branch": "m1",
-  "updatedAt": "2026-08-20T10:00:00+07:00",
+  "updatedAt": "2026-08-20T10:26:00+07:00",
   "revision": "R2",
-  "revisionReason": "R1 evidence rot: MasterPage.tsx cũ đã bị thay bằng ApiMasterScreens (MST-01) + SkuImportModal (WWHN-331); QA2 pack R1 fail toàn bộ; forbid-regex một-dòng của verify script bị Prettier vô hiệu. R2 tái lập gate theo pinned-contract-presence, viết lại QA2 pack theo UI hiện tại, cập nhật owner gates theo trạng thái Jira 2026-08-20.",
+  "revisionReason": "R1 evidence rot: MasterPage.tsx cũ đã bị thay bằng ApiMasterScreens (MST-01) + SkuImportModal (WWHN-331); QA2 pack R1 fail toàn bộ; forbid-regex một-dòng của verify script bị Prettier vô hiệu. R2 tái lập gate theo pinned-contract-presence, viết lại QA2 pack theo UI hiện tại, cập nhật owner gates theo trạng thái Jira 2026-08-20. Khi chạy QA2 pack tại exact SHA để lấy evidence, phát hiện thêm bug thật: MST-01 tự định nghĩa ApiErrorAlert cục bộ che khuất component dùng chung (403 không hiện request_id) — đã sửa và re-capture toàn bộ evidence.",
+  "candidateCommit": "b9c7413d4ea5c6f8745b92e8108abc08d0c0fbbe",
+  "candidateCommitNote": "commit-cuối-chạm-artifact: b9c7413 (fix ApiErrorAlert shadow) là commit cuối cùng chạm code WWHN-178 trước khi evidence pack này được sinh ra. Commit trung gian 707841f (fix R2 ban đầu) đã bị supersede vì bug ApiErrorAlert-shadow được phát hiện NGAY khi chạy evidence tại SHA đó.",
+  "evidenceDir": "docs/evidence/wwhn-178/generated/b9c7413d4ea5c6f8745b92e8108abc08d0c0fbbe/",
   "acceptancePolicy": {
     "overallResult": "BLOCKED_BY_INDEPENDENT_OWNER_GATES",
     "feOwnedResult": "COMPLETE",
@@ -101,7 +104,7 @@
       "owner": "BE+QA",
       "acceptanceStatus": "EVIDENCED_PENDING_SIGNOFF",
       "required": "BE/QA xác nhận fixture role/permission/scope của các probe live.",
-      "evidenceProvided": "Live direct API trên BE local (nginx 127.0.0.1:8080, PostgreSQL 16): positive-control 200, permission-deny 403 ACCESS_DENIED + request_id, data-scope mask 404 (ACTOR_SCOPED import-reports). Records tại docs/evidence/wwhn-178/generated/<SOURCE_SHA>/rbac/."
+      "evidenceProvided": "Live direct API trên BE local cô lập (php artisan serve 127.0.0.1:8178, sqlite migrate:fresh --seed riêng — tránh đụng DB dùng chung nginx:8080/PostgreSQL của các phiên song song khác trên m1): positive-control 200, permission-deny 403 ACCESS_DENIED + request_id, data-scope mask 404 (ACTOR_SCOPED import-reports, 2 actor sku.manage khác scope_ref theo đúng pattern Wwhn331ImportContractClosureTest::scopedSkuManager). Records tại docs/evidence/wwhn-178/generated/<SOURCE_SHA>/rbac/."
     }
   ],
   "parentClosureMatrix": [
