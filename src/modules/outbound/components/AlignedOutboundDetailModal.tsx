@@ -174,16 +174,16 @@ export function AlignedOutboundDetailModal({
   useEffect(() => {
     if (!detail) return;
     setVersion(detail.document.version);
+    // Change Pack QR/SKU (guide §12): mặc định KHÔNG chọn dòng — server tự match
+    // theo SKU embedded trong QR composite. Chỉ reset khi dòng đã chọn tay không
+    // còn hợp lệ (đã đủ hoặc không tồn tại).
     if (
+      lineId &&
       !detail.lines.some(
         (line) => line.id === lineId && line.scanned < line.expected,
       )
     ) {
-      setLineId(
-        detail.lines.find((line) => line.scanned < line.expected)?.id ??
-          detail.lines[0]?.id ??
-          "",
-      );
+      setLineId("");
     }
   }, [detail, lineId]);
 
@@ -276,11 +276,13 @@ export function AlignedOutboundDetailModal({
       scanSource: "CAMERA" | "MANUAL";
     }) => {
       const codeValue = input.rawCode.trim();
-      if (!detail || !lineId || !codeValue)
-        throw new Error("Chọn dòng và nhập/quét mã item.");
+      // Change Pack QR/SKU (guide §12): không bắt chọn dòng — FE gửi RAW payload,
+      // server parse SKU embedded trong QR composite và tự match dòng; chọn dòng
+      // tường minh vẫn được cross-check WRONG_SKU phía server.
+      if (!detail || !codeValue) throw new Error("Nhập/quét mã item trước.");
       return scanOutboundItem({
         documentId,
-        lineId,
+        lineId: lineId || undefined,
         codeValue,
         scanSource: input.scanSource,
         ifMatch: version ?? detail.document.version,
@@ -289,19 +291,32 @@ export function AlignedOutboundDetailModal({
     onSuccess: async (result) => {
       setVersion(result.version || null);
       setScanCode("");
+      const identity = [
+        result.skuCode ? `SKU ${result.skuCode}` : "",
+        result.itemUnique ?? "",
+      ]
+        .filter(Boolean)
+        .join(" · ");
       toast.success(
-        result.scanSource === "CAMERA"
-          ? "Đã match item (camera). Scan không tạo nhãn và không trừ tồn."
-          : "Đã match item (nhập tay). Scan không tạo nhãn và không trừ tồn.",
+        `${
+          result.scanSource === "CAMERA"
+            ? "Đã match item (camera)."
+            : "Đã match item (nhập tay)."
+        }${identity ? ` ${identity}.` : ""} Scan không tạo nhãn và không trừ tồn.`,
       );
       await refresh();
     },
     onError: (error) => {
+      // Change Pack QR/SKU §9: ưu tiên phân loại theo mã lỗi tường minh của
+      // composite path (WRONG_SKU/UNKNOWN_CODE/INVALID_PAYLOAD...) trước khi
+      // rơi về so khớp chuỗi cho các mã legacy.
       const code = normalizeError(error).code ?? "";
       setScanRejects((current) =>
         code.includes("DUPLICATE")
           ? { ...current, duplicate: current.duplicate + 1 }
-          : code.includes("SKU") || code.includes("MISMATCH")
+          : code === "WRONG_SKU" ||
+              code.includes("SKU") ||
+              code.includes("MISMATCH")
             ? { ...current, wrongSku: current.wrongSku + 1 }
             : { ...current, unknown: current.unknown + 1 },
       );
@@ -737,16 +752,20 @@ export function AlignedOutboundDetailModal({
             />
             {mutable && can("outbound.scan") && !packingLabel ? (
               <Space wrap>
+                {/* Change Pack QR/SKU (guide §12): chọn dòng là tùy chọn — để
+                    trống thì server tự match theo SKU trong QR composite. */}
                 <Select
                   style={{ width: 290 }}
-                  value={lineId || undefined}
-                  placeholder="Chọn dòng còn thiếu"
+                  value={lineId || ""}
                   onChange={setLineId}
-                  options={(detail?.lines ?? []).map((line) => ({
-                    value: line.id,
-                    label: `${short(line.productId)} · ${line.scanned}/${line.expected}`,
-                    disabled: line.scanned >= line.expected,
-                  }))}
+                  options={[
+                    { value: "", label: "Tự động theo QR (server match SKU)" },
+                    ...(detail?.lines ?? []).map((line) => ({
+                      value: line.id,
+                      label: `${short(line.productId)} · ${line.scanned}/${line.expected}`,
+                      disabled: line.scanned >= line.expected,
+                    })),
+                  ]}
                 />
                 <Input
                   style={{ width: 310 }}
@@ -762,7 +781,7 @@ export function AlignedOutboundDetailModal({
                 />
                 <Button
                   icon={<CameraOutlined />}
-                  disabled={!lineId || scanMutation.isPending}
+                  disabled={scanMutation.isPending}
                   onClick={() => setCameraOpen(true)}
                 >
                   Quét bằng camera
@@ -771,7 +790,7 @@ export function AlignedOutboundDetailModal({
                   type="primary"
                   icon={<ScanOutlined />}
                   loading={scanMutation.isPending}
-                  disabled={!lineId || !scanCode.trim()}
+                  disabled={!scanCode.trim()}
                   onClick={() =>
                     scanMutation.mutate({
                       rawCode: scanCode,

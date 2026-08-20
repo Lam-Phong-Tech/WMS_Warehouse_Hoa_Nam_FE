@@ -161,6 +161,10 @@ describe("WWHN-181 exact BE v1.7 guards", () => {
   });
 
   it("resolves inbound raw code to canonical line_id + qty with If-Match", async () => {
+    // Change Pack QR/SKU 20/08/2026 (DEC-QR-001): FE gửi RAW payload thẳng vào
+    // endpoint scan; KHÔNG còn preflight classify và KHÔNG resolve line ở client
+    // — backend parse composite QR authoritative và tự match dòng; line_id đọc
+    // từ response BE.
     grant(P.INBOUND_SCAN, P.SCAN_CLASSIFY);
     vi.mocked(http.get).mockResolvedValue({
       id: "IN-1",
@@ -176,22 +180,15 @@ describe("WWHN-181 exact BE v1.7 guards", () => {
         },
       ],
     });
-    vi.mocked(http.post)
-      .mockResolvedValueOnce(classification("RAW-IN", "INBOUND"))
-      .mockResolvedValueOnce({
-        line_id: "LINE-IN-1",
-        stock_effect: "NONE",
-        movement_created: false,
-        version: 2,
-      });
-
-    await scanInboundDocument("IN-1", ["RAW-IN"]);
-
-    expect(http.post).toHaveBeenNthCalledWith(1, "/scan/classify", {
-      raw_code: "RAW-IN",
-      context: "INBOUND",
-      warehouse_id: WAREHOUSE_ID,
+    vi.mocked(http.post).mockResolvedValueOnce({
+      line_id: "LINE-IN-1",
+      stock_effect: "NONE",
+      movement_created: false,
+      version: 2,
     });
+
+    const results = await scanInboundDocument("IN-1", ["RAW-IN"]);
+
     // Path chuẩn của Annex C scanInboundDocument là /scans (số nhiều).
     //
     // WWHN-187 (DEC-SCAN-IDEMP-001) bổ sung Idempotency-Key cho từng hành động
@@ -201,14 +198,15 @@ describe("WWHN-181 exact BE v1.7 guards", () => {
     // sẽ biến mọi lần bổ sung header hợp lệ thành đỏ, còn bỏ hẳn phần key thì
     // guard không còn thấy được nếu ai đó gỡ nó đi.
     expect(http.post).toHaveBeenNthCalledWith(
-      2,
+      1,
       "/inbound-documents/IN-1/scans",
-      { line_id: "LINE-IN-1", qty: 1, code_value: "RAW-IN" },
+      { qty: 1, code_value: "RAW-IN" },
       expect.objectContaining({
         headers: expect.objectContaining({ "If-Match": "1" }),
       }),
     );
-    const scanHeaders = vi.mocked(http.post).mock.calls[1][2]?.headers as
+    expect(results[0]).toMatchObject({ line_id: "LINE-IN-1", version: 2 });
+    const scanHeaders = vi.mocked(http.post).mock.calls[0][2]?.headers as
       | Record<string, string>
       | undefined;
     expect(scanHeaders?.["Idempotency-Key"]).toMatch(

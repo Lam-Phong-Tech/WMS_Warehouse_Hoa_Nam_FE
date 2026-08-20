@@ -174,44 +174,36 @@ describe("inbound real API contract", () => {
   });
 
   it("scans through the canonical Annex C endpoint with If-Match and enforces stock-neutral response", async () => {
-    vi.mocked(http.get).mockResolvedValue({
-      id: "DOC-1",
-      doc_no: "PN-001",
-      dst_warehouse_id: "WH-1",
-      status: "SCANNING",
-      version: 4,
-      lines: [
-        { id: "L-1", product_id: "SKU-1", qty_planned: 2, scanned_qty: 1 },
-      ],
-    });
-    // Annex D SCR-IN-01 map scan_input -> /scan-batches/classify.codes[].
-    vi.mocked(classifyScanCodes).mockResolvedValue({
-      product_id: "SKU-1",
-      item_id: "ITEM-1",
-    } as never);
+    // Change Pack QR/SKU (DEC-QR-001): FE gửi RAW payload thẳng vào endpoint
+    // scan — KHÔNG preflight classify (classify 404 với new item candidate),
+    // KHÔNG resolve line phía client; line/identity lấy từ response BE.
     vi.mocked(http.post).mockResolvedValue({
       version: 5,
+      line_id: "L-1",
+      sku_code: "SKU-CODE-1",
+      item_unique: "SN-0001",
+      payload_format: "COMPOSITE_V1",
+      resolution_status: "NEW_ITEM_CANDIDATE",
       stock_effect: "NONE",
       movement_created: false,
     });
 
-    const result = await scanInboundDocument("DOC-1", ["BC-001"], {
-      lineId: "L-1",
-      ifMatch: 4,
-      includeCodeValue: true,
-      quantity: 1,
-    });
+    const result = await scanInboundDocument(
+      "DOC-1",
+      ["HN1|SKU=SKU-CODE-1|ITEM=SN-0001"],
+      {
+        ifMatch: 4,
+        includeCodeValue: true,
+        quantity: 1,
+      },
+    );
 
-    expect(classifyScanCodes).toHaveBeenCalledWith({
-      raw_code: "BC-001",
-      context: "INBOUND",
-      warehouse_id: "WH-1",
-    });
+    expect(classifyScanCodes).not.toHaveBeenCalled();
     // WWHN-187 (DEV187-P1-07): mọi lần quét đều mang Idempotency-Key. Không có key
     // thì BE không phân biệt được "gửi lại" với "quét lần nữa" (DEC-SCAN-IDEMP-001).
     expect(http.post).toHaveBeenCalledWith(
       "/inbound-documents/DOC-1/scans",
-      { line_id: "L-1", qty: 1, code_value: "BC-001", item_id: "ITEM-1" },
+      { qty: 1, code_value: "HN1|SKU=SKU-CODE-1|ITEM=SN-0001" },
       {
         headers: {
           "If-Match": "4",
@@ -223,7 +215,34 @@ describe("inbound real API contract", () => {
       status: "VALID",
       version: 5,
       line_id: "L-1",
+      sku: "SKU-CODE-1",
+      item_unique: "SN-0001",
+      resolution_status: "NEW_ITEM_CANDIDATE",
     });
+  });
+
+  it("gửi kèm line_id khi người dùng chọn dòng tường minh để BE cross-check WRONG_SKU", async () => {
+    vi.mocked(http.post).mockResolvedValue({
+      version: 5,
+      line_id: "L-1",
+      stock_effect: "NONE",
+      movement_created: false,
+    });
+
+    await scanInboundDocument("DOC-1", ["BC-001"], {
+      lineId: "L-1",
+      ifMatch: 4,
+      includeCodeValue: true,
+      quantity: 1,
+    });
+
+    expect(http.post).toHaveBeenCalledWith(
+      "/inbound-documents/DOC-1/scans",
+      { qty: 1, code_value: "BC-001", line_id: "L-1" },
+      expect.objectContaining({
+        headers: expect.objectContaining({ "If-Match": "4" }),
+      }),
+    );
   });
 
   it("cho phép classify khi actor chỉ có scan.execute (alias Annex C của scan.classify)", async () => {
@@ -274,30 +293,30 @@ describe("inbound real API contract", () => {
     ).toBe(false);
   });
 
-  it("blocks a code that classifies to a different SKU than the selected line", async () => {
-    vi.mocked(http.get).mockResolvedValue({
-      id: "DOC-1",
-      dst_warehouse_id: "WH-1",
-      status: "SCANNING",
-      version: 4,
-      lines: [
-        { id: "L-1", product_id: "SKU-1", qty_planned: 2, scanned_qty: 0 },
-      ],
-    });
-    vi.mocked(classifyScanCodes).mockResolvedValue({
-      product_id: "SKU-OTHER",
-      item_id: "ITEM-9",
-    } as never);
+  it("nổi nguyên lỗi WRONG_SKU của BE khi QR composite lệch dòng đã chọn (BE là resolver authoritative)", async () => {
+    // Change Pack QR/SKU (guide §12 mục 18): FE không tự phán SKU mismatch nữa —
+    // BE parse payload và trả 422 WRONG_SKU; FE hiển thị, không cho override tay.
+    const wrongSku = {
+      isAxiosError: true,
+      response: {
+        status: 422,
+        data: {
+          error_code: "WRONG_SKU",
+          message: "SKU embedded trong QR không khớp SKU của dòng chứng từ.",
+        },
+      },
+    };
+    vi.mocked(http.post).mockRejectedValue(wrongSku);
 
     await expect(
-      scanInboundDocument("DOC-1", ["BC-WRONG"], {
+      scanInboundDocument("DOC-1", ["HN1|SKU=SKU-OTHER|ITEM=SN-9"], {
         lineId: "L-1",
         ifMatch: 4,
         includeCodeValue: true,
         quantity: 1,
       }),
-    ).rejects.toMatchObject({ code: "WMS_FE_SCAN_SKU_MISMATCH" });
-    expect(http.post).not.toHaveBeenCalled();
+    ).rejects.toBe(wrongSku);
+    expect(classifyScanCodes).not.toHaveBeenCalled();
   });
 
   it("skips classify for COMPONENT quantity mode because the code is a BOX code", async () => {

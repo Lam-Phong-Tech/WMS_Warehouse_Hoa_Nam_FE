@@ -1,5 +1,6 @@
 import { useState } from "react";
 import {
+  Alert,
   Modal,
   Descriptions,
   Space,
@@ -8,9 +9,13 @@ import {
   Timeline,
   Typography,
 } from "antd";
+import { useQuery } from "@tanstack/react-query";
 import { CameraOutlined, SearchOutlined } from "@ant-design/icons";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
+import { getApiErrorMessage } from "@/shared/api/api-error";
 import { CameraScanModal } from "@/shared/components/forms/CameraScanModal";
+import { classifyScanCodes } from "@/modules/scan/services/scanService";
+import { fetchWarehouses } from "@/modules/master-data/services/warehouse.service";
 import {
   useStockMovement,
   useStockMovementTrace,
@@ -34,6 +39,13 @@ export function TraceModal({ movementId, onClose }: Props) {
   // warranty receive/search" — TRACE-01 phải quét được bằng camera; nhập tay là manual
   // fallback và dùng chung server validation.
   const [cameraOpen, setCameraOpen] = useState(false);
+  const [scanResolveError, setScanResolveError] = useState<string | null>(null);
+  // Change Pack QR/SKU: classify(TRACE) cần warehouse_id (một kho ACTIVE).
+  const warehousesQuery = useQuery({
+    queryKey: ["inventory", "trace-warehouse"],
+    queryFn: () => fetchWarehouses({ status: "ACTIVE" }),
+  });
+  const warehouse = warehousesQuery.data?.[0];
 
   const effectiveId = movementId;
 
@@ -61,6 +73,9 @@ export function TraceModal({ movementId, onClose }: Props) {
   const handleLookup = () => {
     const trimmed = lookupCode.trim();
     if (trimmed.length > 0) {
+      // Nhập tay nhận cả raw composite lẫn legacy — backend trace parse
+      // authoritative (Change Pack QR/SKU §13).
+      setScanResolveError(null);
       setSubmittedCode(trimmed);
     }
   };
@@ -71,12 +86,36 @@ export function TraceModal({ movementId, onClose }: Props) {
     }
   };
 
-  const handleCameraDetected = (code: string) => {
+  /**
+   * Change Pack QR/SKU (guide §9.2/§13): camera trả RAW payload -> backend
+   * classify(TRACE) resolve composite -> tra cứu bằng normalized_code_value.
+   * Không bao giờ tự ghép/parse raw composite ở FE; classify lỗi thì hiển thị
+   * nguyên nhân (INVALID_PAYLOAD/UNKNOWN_CODE/...) thay vì đoán.
+   */
+  const handleCameraDetected = async (code: string) => {
     const trimmed = code.trim();
     setCameraOpen(false);
+    setScanResolveError(null);
     if (trimmed.length === 0) return;
     setLookupCode(trimmed);
-    setSubmittedCode(trimmed);
+    if (!warehouse?.id) {
+      // Chưa có warehouse để classify — backend trace tự parse composite.
+      setSubmittedCode(trimmed);
+      return;
+    }
+    try {
+      const classified = await classifyScanCodes({
+        raw_code: trimmed,
+        context: "TRACE",
+        warehouse_id: String(warehouse.id),
+      });
+      setSubmittedCode(classified.normalized_code_value || trimmed);
+    } catch (error) {
+      setSubmittedCode(null);
+      setScanResolveError(
+        getApiErrorMessage(error, "Không resolve được mã đã quét."),
+      );
+    }
   };
 
   return (
@@ -124,9 +163,13 @@ export function TraceModal({ movementId, onClose }: Props) {
         <CameraScanModal
           open={cameraOpen}
           title="Quét mã để truy vết (TRACE-01)"
-          onDetected={handleCameraDetected}
+          onDetected={(code) => void handleCameraDetected(code)}
           onClose={() => setCameraOpen(false)}
         />
+
+        {scanResolveError ? (
+          <Alert type="warning" showIcon title={scanResolveError} />
+        ) : null}
 
         {!effectiveId && !submittedCode ? (
           <div className="footer-note">

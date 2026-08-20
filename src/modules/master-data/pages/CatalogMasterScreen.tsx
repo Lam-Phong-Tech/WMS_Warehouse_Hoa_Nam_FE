@@ -18,12 +18,8 @@ import {
   Typography,
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
-import {
-  EditOutlined,
-  PlusOutlined,
-  ProfileOutlined,
-  ReloadOutlined,
-} from "@ant-design/icons";
+import { toast } from "sonner";
+import { EditOutlined, PlusOutlined, ProfileOutlined } from "@ant-design/icons";
 import {
   catalogMasterSupportsBrand,
   createCatalogMaster,
@@ -270,6 +266,11 @@ export function CatalogMasterScreen() {
     }
     try {
       await saveMutation.mutateAsync(values);
+      toast.success(
+        editingRecord
+          ? `Đã cập nhật ${activeTab.itemLabel}.`
+          : `Đã thêm ${activeTab.itemLabel}.`,
+      );
       setIsModalOpen(false);
       setEditingRecord(null);
     } catch (error) {
@@ -353,7 +354,7 @@ export function CatalogMasterScreen() {
       )}
 
       <Row gutter={[12, 12]} align="middle" style={{ marginBottom: 12 }}>
-        <Col xs={24} md={10}>
+        <Col xs={24} md={12}>
           <Input
             allowClear
             value={keyword}
@@ -365,7 +366,7 @@ export function CatalogMasterScreen() {
             }}
           />
         </Col>
-        <Col xs={24} md={6}>
+        <Col xs={24} md={12}>
           <Select<MasterStatus | "">
             value={statusFilter}
             style={{ width: "100%" }}
@@ -380,16 +381,15 @@ export function CatalogMasterScreen() {
             ]}
           />
         </Col>
-        <Col xs={24} md={8}>
-          <MvpPageSizeSelector
-            value={perPage}
-            onChange={(value) => {
-              setPerPage(value);
-              setPage(1);
-            }}
-          />
-        </Col>
       </Row>
+
+      <MvpPageSizeSelector
+        value={perPage}
+        onChange={(value) => {
+          setPerPage(value);
+          setPage(1);
+        }}
+      />
 
       <Table<CatalogMasterRecord>
         rowKey="id"
@@ -430,15 +430,6 @@ export function CatalogMasterScreen() {
         </Col>
         <Col>
           <Space wrap>
-            <Button
-              icon={<ReloadOutlined />}
-              onClick={() => {
-                void listQuery.refetch();
-                void brandQuery.refetch();
-              }}
-            >
-              Làm mới
-            </Button>
             {canManage && (
               <Button
                 type="primary"

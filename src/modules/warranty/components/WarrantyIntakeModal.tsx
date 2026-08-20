@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   Alert,
   Col,
@@ -31,6 +32,8 @@ import {
 import { CameraScanModal } from "@/shared/components/forms/CameraScanModal";
 import { ScanInput } from "@/shared/components/forms/ScanInput";
 import { useMvpDefects } from "@/modules/master-data/hooks/use-mvp-master";
+import { fetchWarehouses } from "@/modules/master-data/services/warehouse.service";
+import { classifyScanCodes } from "@/modules/scan/services/scanService";
 import {
   useCreateWarrantyCase,
   useUploadWarrantyAttachment,
@@ -89,6 +92,55 @@ export function WarrantyIntakeModal({
   const createMutation = useCreateWarrantyCase();
   const uploadMutation = useUploadWarrantyAttachment();
   const defectsQuery = useMvpDefects({ status: "ACTIVE", per_page: 100 });
+  // Change Pack QR/SKU (guide §13 WAR-02): quét raw QR -> classify(WARRANTY) ->
+  // tự điền item/SKU; classify cần warehouse_id (REQ-SRS-001: một kho ACTIVE).
+  const warehousesQuery = useQuery({
+    queryKey: ["warranty", "intake-warehouse"],
+    queryFn: () => fetchWarehouses({ status: "ACTIVE" }),
+    enabled: open,
+  });
+  const warehouse = warehousesQuery.data?.[0];
+  const [resolvedItem, setResolvedItem] = useState<{
+    skuCode?: string;
+    itemUnique?: string;
+    objectStatus?: string;
+  } | null>(null);
+  const [resolveError, setResolveError] = useState<string | null>(null);
+
+  /**
+   * AC-QR-06: backend là resolver authoritative — FE gửi RAW payload vào
+   * classify, nhận normalized item_code + SKU để tự điền. Không resolve được thì
+   * GIỮ nguyên mã đã quét (BE create sẽ revalidate) và gợi ý TEMP_ONLY, tuyệt
+   * đối không auto-switch (guide §13: "không auto-switch silent").
+   */
+  const resolveScannedCode = async (rawCode: string) => {
+    const code = rawCode.trim();
+    if (!code) return;
+    form.setFieldValue("item_code", code);
+    setResolvedItem(null);
+    setResolveError(null);
+    if (!warehouse?.id) return;
+    try {
+      const classified = await classifyScanCodes({
+        raw_code: code,
+        context: "WARRANTY_RECEIVE",
+        warehouse_id: String(warehouse.id),
+      });
+      form.setFieldValue("item_code", classified.normalized_code_value || code);
+      setResolvedItem({
+        skuCode: classified.sku_code,
+        itemUnique: classified.item_unique,
+        objectStatus: classified.object_status,
+      });
+    } catch (error) {
+      setResolveError(
+        getApiErrorMessage(
+          error,
+          "Không resolve được mã từ QR; kiểm tra lại hoặc chuyển TEMP_ONLY.",
+        ),
+      );
+    }
+  };
 
   // Ảnh chỉ được giữ lại ở client tới khi case có id; BE giới hạn 10 file ACTIVE
   // mỗi case, mimes jpg/jpeg/png/webp/heic/pdf và 10240KB mỗi file.
@@ -297,9 +349,13 @@ export function WarrantyIntakeModal({
                   // Annex D SCR-WAR-01 scan-focus: ô quét tự nhận focus khi mở WAR-02
                   // ở nhánh IDENTIFIED để đầu đọc bắn được ngay.
                   autoFocus
-                  placeholder="Quét Barcode/QR hoặc nhập serial"
-                  onChange={(value) => form.setFieldValue("item_code", value)}
-                  onScan={(code) => form.setFieldValue("item_code", code)}
+                  placeholder="Quét QR composite / Barcode hoặc nhập serial"
+                  onChange={(value) => {
+                    form.setFieldValue("item_code", value);
+                    setResolvedItem(null);
+                    setResolveError(null);
+                  }}
+                  onScan={(code) => void resolveScannedCode(code)}
                 />
               </div>
               <Button
@@ -309,6 +365,29 @@ export function WarrantyIntakeModal({
                 Camera
               </Button>
             </div>
+            {resolvedItem ? (
+              <Alert
+                type="success"
+                showIcon
+                style={{ marginTop: 8 }}
+                title={`Đã nhận diện item${
+                  resolvedItem.skuCode ? ` · SKU ${resolvedItem.skuCode}` : ""
+                }${resolvedItem.itemUnique ? ` · ${resolvedItem.itemUnique}` : ""}${
+                  resolvedItem.objectStatus
+                    ? ` · trạng thái ${resolvedItem.objectStatus}`
+                    : ""
+                }`}
+              />
+            ) : null}
+            {resolveError ? (
+              <Alert
+                type="warning"
+                showIcon
+                style={{ marginTop: 8 }}
+                title={resolveError}
+                description="Nếu QR hỏng hoặc item không định danh được, chuyển sang tab “Mất mã (TEMP_ONLY)” — hệ thống không tự suy đoán liên kết item."
+              />
+            ) : null}
           </Form.Item>
         )}
 
@@ -427,7 +506,9 @@ export function WarrantyIntakeModal({
         open={cameraOpen}
         title="Quét mã máy bảo hành"
         onDetected={(code) => {
-          form.setFieldValue("item_code", code.trim().toUpperCase());
+          // Change Pack QR/SKU: gửi RAW payload cho backend resolve — FE không
+          // tự tách/parse; classify trả normalized item_code + SKU để tự điền.
+          void resolveScannedCode(code);
           setCameraOpen(false);
         }}
         onClose={() => setCameraOpen(false)}

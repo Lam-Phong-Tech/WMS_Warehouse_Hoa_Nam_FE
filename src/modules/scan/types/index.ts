@@ -55,6 +55,17 @@ export interface ScanClassifyResponse {
   posting_event_created: false;
   idempotency_cache_written: false;
   current_location: ScanCurrentLocation;
+  /**
+   * Change Pack QR/SKU 20/08/2026 (DEC-QR-001): chỉ có khi raw_code là composite
+   * PRODUCT QR (HN1|SKU=...|ITEM=...). BE parse authoritative — FE chỉ hiển thị.
+   */
+  payload_format?: "COMPOSITE_V1";
+  payload_version?: number;
+  sku_code?: string;
+  item_unique?: string;
+  serial_number?: string;
+  normalized_code_value?: string;
+  resolution_status?: "EXISTING_ITEM";
 }
 
 export interface ScanBatch {

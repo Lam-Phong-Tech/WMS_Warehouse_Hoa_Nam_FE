@@ -92,6 +92,14 @@ type ScanLogRow = {
   errorCode?: string;
 };
 
+/**
+ * Change Pack QR/SKU 20/08/2026 (guide §11): mặc định người kho KHÔNG chọn dòng
+ * cho từng lần scan PRODUCT — server parse SKU từ QR composite và tự match dòng.
+ * Chọn dòng cụ thể chỉ còn cần cho COMPONENT (BOX/quantity-mode) hoặc khi muốn
+ * ép cross-check một dòng nhất định.
+ */
+const AUTO_LINE = "__AUTO__";
+
 function makeKey(prefix: string) {
   return `${prefix}-${globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`}`;
 }
@@ -330,7 +338,7 @@ export function InboundScanModal({
   const unscanMutation = useUnscanInbound();
   const postMutation = usePostInboundReceipt();
   const cancelMutation = useCancelInbound();
-  const [lineId, setLineId] = useState("");
+  const [lineId, setLineId] = useState<string>(AUTO_LINE);
   const [scanCode, setScanCode] = useState("");
   const [boxCode, setBoxCode] = useState("");
   const [quantity, setQuantity] = useState(1);
@@ -365,15 +373,14 @@ export function InboundScanModal({
   useEffect(() => {
     if (!detail) return;
     setScanVersion(detail.document.version);
-    const selected = detail.lines.find(
-      (line) => line.id === lineId && line.scanned < line.expected,
-    );
-    if (!selected) {
-      setLineId(
-        detail.lines.find((line) => line.scanned < line.expected)?.id ??
-          detail.lines[0]?.id ??
-          "",
-      );
+    // Change Pack QR/SKU (guide §11): mặc định KHÔNG bắt chọn dòng cho scan
+    // PRODUCT — server tự match theo SKU trong QR (AUTO_LINE). Chỉ khi người
+    // dùng đã chọn một dòng cụ thể mà dòng đó không còn hợp lệ thì quay về auto.
+    if (
+      lineId !== AUTO_LINE &&
+      !detail.lines.some((line) => line.id === lineId)
+    ) {
+      setLineId(AUTO_LINE);
     }
   }, [detail, lineId]);
 
@@ -432,15 +439,11 @@ export function InboundScanModal({
   // Annex D SCR-IN-01: Enter/reader event submits — mã đến từ ScanInput được
   // truyền thẳng vào handler thay vì đọc lại state, tránh lệch nhịp với reader.
   const handleScan = async (scannedCode?: string) => {
-    if (
-      !detail ||
-      !selectedLine ||
-      !selectedSku ||
-      scanVersion === null ||
-      !canScan ||
-      !isMutable
-    )
-      return;
+    // Change Pack QR/SKU (guide §11): scan PRODUCT không cần chọn dòng — khi ở
+    // chế độ AUTO, server tự match dòng theo SKU embedded trong QR composite.
+    const autoMatch = !selectedLine;
+    if (!detail || scanVersion === null || !canScan || !isMutable) return;
+    if (!autoMatch && !selectedSku) return;
     const normalizedBox = boxCode.trim();
     const normalizedCode = (scannedCode ?? scanCode).trim();
     const scanQuantity =
@@ -460,7 +463,7 @@ export function InboundScanModal({
     const logicalCode = normalizedCode || normalizedBox;
     // Một hành động quét = một key, giữ nguyên qua mọi lần gửi lại của chính nó.
     const scanFingerprint = [
-      selectedLine.id,
+      selectedLine?.id ?? AUTO_LINE,
       scanQuantity,
       normalizedCode,
       normalizedBox,
@@ -473,7 +476,7 @@ export function InboundScanModal({
     scanKeyRef.current = { key: scanAttemptKey, fingerprint: scanFingerprint };
     try {
       let containerId: string | undefined;
-      if (isComponent) {
+      if (isComponent && selectedLine) {
         const box = await registerBoxMutation.mutateAsync({
           id: documentId,
           lineId: selectedLine.id,
@@ -490,7 +493,7 @@ export function InboundScanModal({
       const result = await scanMutation.mutateAsync({
         id: documentId,
         code: logicalCode,
-        lineId: selectedLine.id,
+        lineId: selectedLine?.id,
         ifMatch: scanVersion,
         includeCodeValue: !isComponent || isSerialTracked,
         quantity: scanQuantity,
@@ -502,6 +505,18 @@ export function InboundScanModal({
       // Hành động quét này đã có kết quả xác định — lần quét sau là hành động mới.
       scanKeyRef.current = null;
       setScanVersion(first.version);
+      // Change Pack QR/SKU: hiển thị SKU/item mà BE đã parse + trạng thái
+      // NEW_ITEM_CANDIDATE (item mới, đăng ký khi Post Receipt) — guide §11.
+      const identityText = [
+        first.sku ? `SKU ${first.sku}` : "",
+        first.item_unique ?? "",
+      ]
+        .filter(Boolean)
+        .join(" · ");
+      const candidateText =
+        first.resolution_status === "NEW_ITEM_CANDIDATE"
+          ? " · Item MỚI (đăng ký khi Post)"
+          : "";
       setScanLog((current) =>
         [
           {
@@ -509,7 +524,7 @@ export function InboundScanModal({
             code: logicalCode,
             result: first.replayed
               ? "Hợp lệ · replay (đã ghi nhận trước đó, không cộng thêm)"
-              : `Hợp lệ · +${scanQuantity}`,
+              : `Hợp lệ · +${scanQuantity}${identityText ? ` · ${identityText}` : ""}${candidateText}`,
             success: true,
             lineId: first.line_id,
           },
@@ -545,7 +560,7 @@ export function InboundScanModal({
             code: logicalCode,
             result: errorText,
             success: false,
-            lineId: selectedLine.id,
+            lineId: selectedLine?.id,
             errorCode,
           },
           ...current,
@@ -697,6 +712,7 @@ export function InboundScanModal({
         <span style={{ fontFamily: "monospace" }}>
           {entry.itemCode ||
             entry.serialNumber ||
+            entry.candidateItemUnique ||
             entry.itemId ||
             entry.containerId ||
             "-"}
@@ -728,9 +744,16 @@ export function InboundScanModal({
       width: 130,
       render: (_, entry) =>
         entry.status === "ACTIVE" ? (
-          <Tag color="success" icon={<CheckCircleOutlined />}>
-            Hợp lệ
-          </Tag>
+          entry.candidateItemUnique && !entry.itemId ? (
+            // DEC-QR-03: item mới từ QR composite — đăng ký tại Post Receipt.
+            <Tag color="processing" icon={<CheckCircleOutlined />}>
+              Item mới · chờ Post
+            </Tag>
+          ) : (
+            <Tag color="success" icon={<CheckCircleOutlined />}>
+              Hợp lệ
+            </Tag>
+          )
         ) : (
           <Tag color="default" icon={<CloseCircleOutlined />}>
             Đã gỡ
@@ -929,22 +952,31 @@ export function InboundScanModal({
                           color: "#6b7280",
                         }}
                       >
-                        Dòng nhận *
+                        Dòng nhận
                       </div>
+                      {/* Change Pack QR/SKU (guide §11): PRODUCT scan không cần
+                          chọn dòng — server tự match theo SKU trong QR. Chọn dòng
+                          cụ thể chỉ cần cho COMPONENT/BOX. */}
                       <Select
                         style={{ width: "100%" }}
-                        value={lineId || undefined}
+                        value={lineId}
                         disabled={!canScan || busy}
                         onChange={setLineId}
-                        placeholder="Chọn dòng chưa đủ"
-                        options={detail.lines.map((line) => {
-                          const sku = skuById.get(line.productId);
-                          return {
-                            value: line.id,
-                            disabled: line.scanned >= line.expected,
-                            label: `${sku?.sku_code ?? line.productId} · ${line.scanned}/${line.expected}`,
-                          };
-                        })}
+                        options={[
+                          {
+                            value: AUTO_LINE,
+                            label:
+                              "Tự động theo QR (PRODUCT — server match SKU)",
+                          },
+                          ...detail.lines.map((line) => {
+                            const sku = skuById.get(line.productId);
+                            return {
+                              value: line.id,
+                              disabled: line.scanned >= line.expected,
+                              label: `${sku?.sku_code ?? line.productId} · ${line.scanned}/${line.expected}`,
+                            };
+                          }),
+                        ]}
                       />
                     </div>
 

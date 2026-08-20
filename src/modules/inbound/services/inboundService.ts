@@ -10,7 +10,6 @@ import {
   WmsContractError,
 } from "@/shared/api/wms-contract";
 import { WMS_ACTION_PERMISSIONS } from "@/shared/constants/wms-permissions";
-import { classifyScanCodes } from "@/modules/scan/services/scanService";
 import type { ApiMeta } from "@/shared/types/api-response";
 import type {
   CreateInboundPayload,
@@ -189,45 +188,6 @@ function assertReadOnlyScanResponse(row: RawRecord): void {
       "Inbound scan must not create stock movement",
     );
   }
-}
-function findSingleLineForProduct(
-  lines: RawRecord[],
-  productId: string,
-  code: string,
-): RawRecord {
-  const candidates = lines.filter((line) => {
-    if (text(line.product_id ?? line.sku_id) !== productId) return false;
-    return (
-      num(line.qty_planned ?? line.qty_expected ?? line.quantity) >
-      num(line.scanned_qty ?? line.qty_scanned ?? 0)
-    );
-  });
-  if (candidates.length === 0) {
-    throw new WmsContractError(
-      "WMS_FE_SCAN_LINE_NOT_FOUND",
-      `No remaining inbound line matches ${code}`,
-    );
-  }
-  if (candidates.length > 1) {
-    throw new WmsContractError(
-      "WMS_FE_SCAN_LINE_AMBIGUOUS",
-      `Multiple inbound lines match ${code}; choose a line first`,
-    );
-  }
-  return candidates[0];
-}
-function findLineById(lines: RawRecord[], lineId: string): RawRecord {
-  const line = lines.find(
-    (candidate) =>
-      text(candidate.id ?? candidate.stock_document_line_id) === lineId,
-  );
-  if (!line) {
-    throw new WmsContractError(
-      "WMS_FE_SCAN_LINE_NOT_FOUND",
-      "Selected inbound line no longer exists",
-    );
-  }
-  return line;
 }
 function assertFullyScanned(detail: InboundDetail): void {
   if (detail.lines.length === 0) {
@@ -427,81 +387,37 @@ export async function scanInboundDocument(
     "codes",
     "WMS_FE_DUPLICATE_SCAN_CODE",
   );
-  const rawDetail = await http.get<RawRecord>(
-    endpoint(API_ENDPOINTS.INBOUND_DOCUMENT, id),
-  );
-  const lines = rawLines(rawDetail);
-  const warehouseId = requireNonEmptyString(
-    rawDetail.dst_warehouse_id ?? rawDetail.warehouse_id,
-    "dst_warehouse_id",
-  );
-  let currentVersion = options.ifMatch ?? num(rawDetail.version);
+  // Change Pack QR/SKU 20/08/2026 (DEC-QR-001, AC-QR-02/10): FE gửi RAW payload
+  // thẳng vào endpoint scan — backend parse composite QR authoritative, tự match
+  // dòng theo SKU embedded và chấp nhận new item candidate. Không còn preflight
+  // classify (classify sẽ 404 với item mới nên chặn nhầm luồng nhập) và không
+  // còn resolve line phía client. COMPONENT quantity-mode (includeCodeValue=false)
+  // vẫn bắt buộc chọn dòng như cũ.
+  if (options.includeCodeValue === false) {
+    requireNonEmptyString(options.lineId, "line_id");
+  }
+  let currentVersion: number;
+  if (options.ifMatch !== undefined) {
+    currentVersion = options.ifMatch;
+  } else {
+    const rawDetail = await http.get<RawRecord>(
+      endpoint(API_ENDPOINTS.INBOUND_DOCUMENT, id),
+    );
+    currentVersion = num(rawDetail.version);
+  }
   const results: InboundScanResult[] = [];
 
   for (const code of normalizedCodes) {
-    let line: RawRecord;
-    let itemId: string | null = null;
-
-    // Annex D SCR-IN-01 map `scan_input` -> `/scan-batches/classify.codes[]`:
-    // mọi mã vật lý đều đi qua classify (read-only, stock_effect=NONE) trước khi
-    // ghi nhận. Trước đây classify bị bỏ qua khi người dùng đã chọn dòng, nên mã
-    // lạ chỉ bị chặn ở tận BE với lỗi thô, và sai SKU cũng không được nói rõ.
-    // Ngoại lệ: COMPONENT quantity-mode gửi mã BOX (includeCodeValue=false) —
-    // đó không phải mã ITEM nên không classify.
-    const shouldClassify = options.includeCodeValue !== false;
-    const classification = shouldClassify
-      ? await classifyScanCodes({
-          raw_code: code,
-          context: "INBOUND",
-          warehouse_id: warehouseId,
-        })
-      : null;
-
-    if (classification) {
-      const productId = requireNonEmptyString(
-        classification.product_id,
-        "classification.product_id",
-        "WMS_FE_SCAN_PRODUCT_UNRESOLVED",
-      );
-      itemId = classification.item_id;
-      if (options.lineId) {
-        line = findLineById(lines, options.lineId);
-        const lineProductId = text(line.product_id ?? line.sku_id);
-        if (lineProductId && lineProductId !== productId) {
-          throw new WmsContractError(
-            "WMS_FE_SCAN_SKU_MISMATCH",
-            `Mã ${code} thuộc SKU khác với dòng đang chọn; chọn đúng dòng trước khi quét.`,
-          );
-        }
-      } else {
-        line = findSingleLineForProduct(lines, productId, code);
-      }
-    } else {
-      line = findLineById(
-        lines,
-        requireNonEmptyString(options.lineId, "line_id"),
-      );
-    }
-    const lineId = requireNonEmptyString(
-      line.id ?? line.stock_document_line_id,
-      "line_id",
-    );
-    const planned = num(line.qty_planned ?? line.qty_expected ?? line.quantity);
-    const alreadyScanned = num(line.scanned_qty ?? line.qty_scanned ?? 0);
     const quantity = options.quantity ?? 1;
-    if (
-      !Number.isInteger(quantity) ||
-      quantity <= 0 ||
-      alreadyScanned + quantity > planned
-    ) {
+    if (!Number.isInteger(quantity) || quantity <= 0) {
       throw new WmsContractError(
         "WMS_FE_INVALID_SCAN_QUANTITY",
-        "Scan quantity must be a positive integer within the remaining planned quantity",
+        "Scan quantity must be a positive integer",
       );
     }
-    const body: RawRecord = { line_id: lineId, qty: quantity };
+    const body: RawRecord = { qty: quantity };
     if (options.includeCodeValue !== false) body.code_value = code;
-    if (itemId) body.item_id = itemId;
+    if (options.lineId) body.line_id = options.lineId;
     if (options.containerId) body.container_id = options.containerId;
 
     // WWHN-187 (DEV187-P1-07) — mỗi hành động quét mang đúng một Idempotency-Key.
@@ -535,24 +451,24 @@ export async function scanInboundDocument(
     results.push({
       code_value: code,
       status: "VALID",
-      sku: text(line.sku ?? line.sku_code ?? line.product_code) || undefined,
-      line_id: lineId,
+      sku: text(response.sku_code) || undefined,
+      line_id: text(response.line_id) || undefined,
+      item_id: text(response.item_id) || undefined,
+      item_unique: text(response.item_unique) || undefined,
+      serial_number: text(response.serial_number) || undefined,
+      payload_format:
+        (text(
+          response.payload_format,
+        ) as InboundScanResult["payload_format"]) || undefined,
+      resolution_status:
+        (text(
+          response.resolution_status,
+        ) as InboundScanResult["resolution_status"]) || undefined,
       message: text(response.message) || undefined,
       version: currentVersion,
       idempotency_key: scanKey,
       replayed,
     });
-
-    const index = lines.indexOf(line);
-    if (index >= 0) {
-      // Replay không cộng thêm vào `scanned_qty` phía server, nên bản sao cục bộ
-      // cũng không được cộng — nếu không, guard "vượt Expected" ở vòng lặp sau sẽ
-      // chặn nhầm một mã hợp lệ.
-      lines[index] = {
-        ...line,
-        scanned_qty: replayed ? alreadyScanned : alreadyScanned + quantity,
-      };
-    }
   }
   return results;
 }
@@ -610,6 +526,8 @@ export async function fetchInboundScanEntries(
       itemId: text(row.item_id) || undefined,
       itemCode: text(row.item_code) || undefined,
       serialNumber: text(row.serial_number) || undefined,
+      candidateItemUnique: text(row.candidate_item_unique) || undefined,
+      candidateSerialNumber: text(row.candidate_serial_number) || undefined,
       containerId: text(row.container_id) || undefined,
       sku: text(row.sku_code),
       skuName: text(row.sku_name),
