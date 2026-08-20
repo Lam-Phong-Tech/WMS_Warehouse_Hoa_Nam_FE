@@ -57,9 +57,11 @@ const permissionApproval = {
   runtimeCatalogSnapshot: { path: 'evidence/catalog-response.json', sha256: H2, requestId: 'req-catalog', missingCanonicalCodes: [] },
   backendPermissionCatalog: { path: 'backend/permission-catalog.json', sha256: H, version: '1.0.0', backendCommitSha: '6'.repeat(40) },
   endpointPermissionRoleMapping: [
-    { endpointAction: 'POST /stocktake/sessions/:sessionId/apply-adjustment', permission: 'stocktake.adjust', roles: ['stock-controller'], approved: true },
+    { endpointAction: 'POST /inbound-documents/:id/post-receipt', permission: 'inbound.post', roles: ['keeper'], approved: true },
+    { endpointAction: 'POST /outbound-documents/:id/post-issue', permission: 'outbound.post', roles: ['keeper'], approved: true },
     { endpointAction: 'GET /reports/inventory-xnt/export-excel', permission: 'report.export', roles: ['reporter'], approved: true },
-    { endpointAction: 'POST /warranty/cases:TEMP_ONLY', permission: 'warranty.temp_only', roles: ['warranty'], approved: true },
+    { endpointAction: 'POST /warranty-cases/:id/temp-only', permission: 'warranty.temp_only', roles: ['warranty'], approved: true },
+    { endpointAction: 'POST /scan-batches/classify', permission: 'scan.execute|scan.classify', roles: ['staff'], approved: true },
   ],
 };
 const sourceProvenance = {
@@ -97,6 +99,20 @@ assert.equal(evaluate({ manifest: fakeEffect }).gates.find((gate) => gate.id ===
 const badCatalog = structuredClone(permissionApproval);
 badCatalog.runtimeCatalogSnapshot.sha256 = H;
 assert.equal(evaluate({ permissionApproval: badCatalog }).gates.find((gate) => gate.id === 'PERMISSION-APPROVAL').status, 'FAIL');
+
+// REQ-SRS-037 regression: stocktake.* trong mapping phải fail-closed PERMISSION-APPROVAL,
+// kể cả khi mọi field khác hợp lệ và approved=true (WWHN-153 root-cause 2026-08-20).
+const forbiddenPermission = structuredClone(permissionApproval);
+forbiddenPermission.endpointPermissionRoleMapping.push({
+  endpointAction: 'POST /stocktake/sessions/:sessionId/apply-adjustment',
+  permission: 'stocktake.adjust',
+  roles: ['stock-controller'],
+  approved: true,
+});
+assert.equal(
+  evaluate({ permissionApproval: forbiddenPermission }).gates.find((gate) => gate.id === 'PERMISSION-APPROVAL').status,
+  'FAIL',
+);
 
 const pendingManifest = JSON.parse(fs.readFileSync(path.join(evidenceDir, 'WWHN-153_SIGNOFF_MANIFEST.json'), 'utf8'));
 const pendingApproval = JSON.parse(fs.readFileSync(path.join(evidenceDir, 'WWHN-153_PERMISSION_APPROVAL.json'), 'utf8'));

@@ -16,17 +16,22 @@
     "path": null, "sha256": null, "version": null, "backendCommitSha": null
   },
   "endpointPermissionRoleMapping": [
-    {"endpointAction": "POST /scan/classify", "permission": "inventory.trace|scan.classify", "roles": [], "approved": false},
-    {"endpointAction": "POST /inbound-documents/:id/post-receipt", "permission": "inbound.post", "roles": [], "approved": false},
-    {"endpointAction": "POST /outbound-documents/:id/post-issue", "permission": "outbound.post", "roles": [], "approved": false},
-    {"endpointAction": "POST /stocktake/sessions/:sessionId/apply-adjustment", "permission": "stocktake.adjust", "roles": [], "approved": false},
-    {"endpointAction": "GET /reports/inventory-xnt/export-excel", "permission": "report.export", "roles": [], "approved": false},
-    {"endpointAction": "POST /warranty/cases:TEMP_ONLY", "permission": "warranty.temp_only", "roles": [], "approved": false}
+    {"endpointAction": "POST /inbound-documents/:id/post-receipt", "permission": "inbound.post", "roles": ["ADMIN", "SUPER_ADMIN", "WAREHOUSE_APPROVER", "WAREHOUSE_KEEPER", "WAREHOUSE_MANAGER"], "approved": false},
+    {"endpointAction": "POST /outbound-documents/:id/post-issue", "permission": "outbound.post", "roles": ["ADMIN", "SUPER_ADMIN", "WAREHOUSE_APPROVER", "WAREHOUSE_KEEPER", "WAREHOUSE_MANAGER"], "approved": false},
+    {"endpointAction": "GET /reports/inventory-xnt/export-excel", "permission": "report.export", "roles": ["ADMIN", "SUPER_ADMIN", "WAREHOUSE_MANAGER"], "approved": false},
+    {"endpointAction": "POST /warranty-cases/:id/temp-only", "permission": "warranty.temp_only", "roles": ["SUPER_ADMIN", "WAREHOUSE_MANAGER"], "approved": false},
+    {"endpointAction": "POST /scan-batches/classify", "permission": "scan.execute|scan.classify", "roles": ["ADMIN", "SUPER_ADMIN", "WAREHOUSE_KEEPER", "WAREHOUSE_MANAGER", "WAREHOUSE_STAFF", "WARRANTY_STAFF"], "approved": false}
   ],
+  "sourceOfMapping": {
+    "note": "roles/permission lấy nguyên văn từ endpoint_permission_role_matrix runtime (route:list + backend_enforced=true), không suy diễn.",
+    "path": "docs/api-contract/HN-BE-API-003_ENDPOINT_PERMISSION_MATRIX.json",
+    "field": "endpoint_permission_role_matrix",
+    "beRepo": "Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_BE"
+  },
   "rules": [
     "Backend remains authorization authority; FE guard is defense-in-depth only.",
     "Runtime catalog response hash must equal PERMISSION_CATALOG response artifact hash in WWHN-182 package.",
     "BE/RBAC, BA and FE approvers must be three distinct accounts.",
-    "stocktake.manage must never authorize stocktake.adjust."
+    "REQ-SRS-037 (WWHN-230 Option B): không permission/route/entity stocktake.* nào được xuất hiện trong mapping hoặc trong runtime catalog; đây là bề mặt bị cấm hoàn toàn khỏi MVP, không phải quan hệ manage/adjust cần tách quyền."
   ]
 }

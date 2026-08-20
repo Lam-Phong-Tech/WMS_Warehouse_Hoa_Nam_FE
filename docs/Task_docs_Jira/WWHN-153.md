@@ -21,7 +21,7 @@ Không hard-code SHA của chính commit vào nội dung commit vì tạo vòng 
 4. **Request/response dùng chung artifact**: runner v2 tách file/hash, bắt request_id, scan secret/JWT và package bằng `SHA256SUMS`.
 5. **Permission approval chưa bind runtime package**: catalog response hash, source/build/env/artifact digest/summary/SHA256SUMS phải khớp WWHN-182; ba approver BE/RBAC, BA, FE phải độc lập.
 6. **SHA Jira lệch HEAD**: thêm provenance policy và CI parent/tree/run/artifact gate. SHA cũ được ghi rõ superseded.
-7. **Dev Guide là ví dụ không đầy đủ**: architecture alignment khóa canonical catalog tại `wms-permissions.ts`, gồm `stocktake.adjust`, `report.export`, `warranty.temp_only`.
+7. **Dev Guide là ví dụ không đầy đủ**: architecture alignment khóa canonical catalog tại `wms-permissions.ts`. Root cause tái phát 2026-08-20: mapping nhạy cảm ban đầu dùng `stocktake.adjust` — permission này bị **REQ-SRS-037** cấm hoàn toàn khỏi MVP (không entity/API/permission/screen Stocktake). Đã thay bằng 5 action nhạy cảm thật trên runtime m1 (`inbound.post`, `outbound.post`, `report.export`, `warranty.temp_only`, `scan.execute|scan.classify`), lấy nguyên văn từ `HN-BE-API-003_ENDPOINT_PERMISSION_MATRIX.json`; gate `PERMISSION-APPROVAL` fail-closed nếu phát hiện bất kỳ permission nào khớp `/^stocktake\./i`.
 8. **Cross-contract verifier dùng ID assessment legacy**: giữ mapping tương thích một-một với finding v4 để CI cũ và gate mới cùng đọc một closure matrix, không nhân đôi trạng thái.
 
 ## 3. RISK & ACTION REGISTER sau remediation

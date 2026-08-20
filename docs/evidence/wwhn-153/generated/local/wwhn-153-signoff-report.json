@@ -1,31 +1,31 @@
 {
-  "generatedAt": "2026-08-13T11:58:59.879Z",
+  "generatedAt": "2026-08-20T02:48:47.959Z",
   "mode": "INTEGRITY",
   "sourceContext": {
     "status": "PENDING",
     "isCi": false,
     "repository": "Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_FE",
     "branch": "m1",
-    "sourceSha": "7c6c0124a5a9134e728abb9efab10422c0a75e6f",
-    "executionSha": "7c6c0124a5a9134e728abb9efab10422c0a75e6f",
-    "parentSha": "f5325572659a8ffca2394790dd91f70d8e6a4d61",
-    "treeSha": "6b5e9ecf96eb79885ee9eb30bb3a323cd7adad70",
+    "sourceSha": "6e4c397d81671700a6f526b51c3ddf8d2d888dc2",
+    "executionSha": "6e4c397d81671700a6f526b51c3ddf8d2d888dc2",
+    "parentSha": "78738f99874a7e3c674b5b3363708f29246df29f",
+    "treeSha": "7b0580f35fee8561db1d854cd66522da78be7cc7",
     "runId": "",
     "runUrl": "",
-    "artifactName": "wwhn-153-signoff-integrity-7c6c0124a5a9134e728abb9efab10422c0a75e6f"
+    "artifactName": "wwhn-153-signoff-integrity-6e4c397d81671700a6f526b51c3ddf8d2d888dc2"
   },
   "inputDigests": {
     "manifestPath": {
       "path": "docs\\evidence\\wwhn-153\\WWHN-153_SIGNOFF_MANIFEST.json",
-      "sha256": "7713290f6c96e7265530a5c65f919805b8a8a6d26aa465590a0b60348c0b86bb"
+      "sha256": "29f9d1317c92a55110af678d317f1bee04715d77864b5f6881f56aaedc5f4c2c"
     },
     "permissionPath": {
       "path": "docs\\evidence\\wwhn-153\\WWHN-153_PERMISSION_APPROVAL.json",
-      "sha256": "8c3d6d8a8d8ee2247217d621d1d0d4c3a059047e3d44450931226c3f34d5023a"
+      "sha256": "a3291becb3c6a192165b1b0fdb0a76b834be8dbd2f5c71ab40c74490aac877bd"
     },
     "provenancePath": {
       "path": "docs\\evidence\\wwhn-153\\WWHN-153_FE_SOURCE_PROVENANCE.json",
-      "sha256": "0d302d1dd2d347a049eced5ab88d3aefb86e46616db4836b674e7fe3c32aaf53"
+      "sha256": "659a079996b22120715b61af99a7c42dc8169ca45f91b99fe5ab56db29b85786"
     }
   },
   "schemaVersion": "4.0.0",
@@ -43,9 +43,9 @@
     {
       "id": "FE-SOURCE-PROVENANCE",
       "status": "PENDING",
-      "sourceSha": "7c6c0124a5a9134e728abb9efab10422c0a75e6f",
-      "parentSha": "f5325572659a8ffca2394790dd91f70d8e6a4d61",
-      "treeSha": "6b5e9ecf96eb79885ee9eb30bb3a323cd7adad70"
+      "sourceSha": "6e4c397d81671700a6f526b51c3ddf8d2d888dc2",
+      "parentSha": "78738f99874a7e3c674b5b3363708f29246df29f",
+      "treeSha": "7b0580f35fee8561db1d854cd66522da78be7cc7"
     },
     {
       "id": "OFFICIAL-RELEASE",

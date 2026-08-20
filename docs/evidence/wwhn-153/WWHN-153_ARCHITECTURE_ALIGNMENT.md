@@ -11,15 +11,17 @@ Ngày đối chiếu: 2026-08-06.
 
 ## Canonical permission source
 
-Nguồn code duy nhất là `src/shared/constants/wms-permissions.ts`. Các ví dụ permission trong Dev Guide không phải catalog đầy đủ. Ba action nhạy cảm bắt buộc:
+Nguồn code duy nhất là `src/shared/constants/wms-permissions.ts`. Các ví dụ permission trong Dev Guide không phải catalog đầy đủ. Năm action nhạy cảm bắt buộc (khớp `endpoint_permission_role_matrix` của BE, `backend_enforced=true`):
 
-| Action | Permission hẹp |
-| --- | --- |
-| Apply stocktake adjustment | `stocktake.adjust` |
-| Export inventory XNT | `report.export` |
-| Create TEMP_ONLY warranty | `warranty.temp_only` |
+| Action | Permission hẹp | Roles runtime (BE) |
+| --- | --- | --- |
+| Post-receipt inbound | `inbound.post` | ADMIN, SUPER_ADMIN, WAREHOUSE_APPROVER, WAREHOUSE_KEEPER, WAREHOUSE_MANAGER |
+| Post-issue outbound | `outbound.post` | ADMIN, SUPER_ADMIN, WAREHOUSE_APPROVER, WAREHOUSE_KEEPER, WAREHOUSE_MANAGER |
+| Export inventory XNT | `report.export` | ADMIN, SUPER_ADMIN, WAREHOUSE_MANAGER |
+| Create TEMP_ONLY warranty | `warranty.temp_only` | SUPER_ADMIN, WAREHOUSE_MANAGER |
+| Classify scan batch | `scan.execute\|scan.classify` | ADMIN, SUPER_ADMIN, WAREHOUSE_KEEPER, WAREHOUSE_MANAGER, WAREHOUSE_STAFF, WARRANTY_STAFF |
 
-`stocktake.manage` không được dùng thay `stocktake.adjust`. Runtime `/permissions` phải reconcile với toàn bộ `WMS_PERMISSION_CATALOG`; hash response được bind vào permission approval.
+**Sửa root cause 2026-08-20**: mapping cũ liệt kê `stocktake.adjust` (và ngụ ý `stocktake.manage`) làm action nhạy cảm thứ ba. Đây là bề mặt bị **REQ-SRS-037** cấm hoàn toàn khỏi MVP (không entity, không API, không permission, không màn hình) — xác nhận lại bằng ERD (`Stocktake_Session`/`Variance_Line`/`Adjustment` không được tạo) và bằng runtime catalog thật (83 permission_key hiện có trên BE, không permission nào khớp `stocktake.*`). Giữ nguyên item này trong mapping/probe sẽ buộc một approver ký duyệt một quyền không được phép tồn tại. `stocktake.manage`/`stocktake.adjust` không được xuất hiện ở bất kỳ đâu trong permission approval, `SENSITIVE_ACTIONS`, hay probe runtime; gate `PERMISSION-APPROVAL` fail-closed nếu phát hiện permission khớp `/^stocktake\./i`. Runtime `/permissions` phải reconcile với toàn bộ `WMS_PERMISSION_CATALOG`; hash response được bind vào permission approval.
 
 ## Evidence architecture
 

@@ -38,10 +38,16 @@ const PENDING = 'PENDING';
 const FAIL = 'FAIL';
 const ALLOWED_GATE_STATUS = new Set([PASS, PENDING, FAIL]);
 const FORBIDDEN_ENV = /^(local|ci|mock|test|synthetic)$/i;
+// REQ-SRS-037 (WWHN-230 Option B): MVP không được expose bất kỳ capability Stocktake nào,
+// kể cả permission code trong runtime catalog. Mapping cũ chứa stocktake.adjust ép duyệt
+// một permission bị cấm — thay bằng bề mặt nhạy cảm thật của runtime m1 (route:list + Annex C).
+const FORBIDDEN_PERMISSION_PATTERN = /^stocktake\./i;
 const SENSITIVE_ACTIONS = Object.freeze({
-  'POST /stocktake/sessions/:sessionId/apply-adjustment': 'stocktake.adjust',
+  'POST /inbound-documents/:id/post-receipt': 'inbound.post',
+  'POST /outbound-documents/:id/post-issue': 'outbound.post',
   'GET /reports/inventory-xnt/export-excel': 'report.export',
-  'POST /warranty/cases:TEMP_ONLY': 'warranty.temp_only',
+  'POST /warranty-cases/:id/temp-only': 'warranty.temp_only',
+  'POST /scan-batches/classify': 'scan.execute|scan.classify',
 });
 
 function isObject(value) {
@@ -330,10 +336,15 @@ function evaluatePermission(manifest, approval, qa2Gate, blockers) {
     const item = mapped.get(action);
     return item?.permission === permission && Array.isArray(item.roles) && item.roles.length > 0 && item.approved === true;
   });
+  // REQ-SRS-037: không permission stocktake.* nào được phép xuất hiện, kể cả ở dòng chưa approve.
+  const noForbiddenPermission = (approval?.endpointPermissionRoleMapping ?? []).every(
+    (item) => !FORBIDDEN_PERMISSION_PATTERN.test(text(item?.permission)),
+  );
   const valid =
     state === PASS &&
     approval.issueKey === 'WWHN-153' &&
     qa2Gate.status === PASS &&
+    noForbiddenPermission &&
     separateAccounts(approval.approverAccounts, 3) &&
     approval.approverRoles?.includes('BE/RBAC') &&
     approval.approverRoles?.includes('BA') &&

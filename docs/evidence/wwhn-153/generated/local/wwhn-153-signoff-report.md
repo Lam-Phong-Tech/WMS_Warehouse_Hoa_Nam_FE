@@ -2,9 +2,9 @@
 
 - Mode: `INTEGRITY`
 - Repository/ref: `Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_FE@m1`
-- Source SHA: `7c6c0124a5a9134e728abb9efab10422c0a75e6f`
-- Parent SHA: `f5325572659a8ffca2394790dd91f70d8e6a4d61`
-- Tree SHA: `6b5e9ecf96eb79885ee9eb30bb3a323cd7adad70`
+- Source SHA: `6e4c397d81671700a6f526b51c3ddf8d2d888dc2`
+- Parent SHA: `78738f99874a7e3c674b5b3363708f29246df29f`
+- Tree SHA: `7b0580f35fee8561db1d854cd66522da78be7cc7`
 - Integrity: **PASS**
 - Final allowed: **NO**
 - Open P0/P1/P2: **2/5/0**

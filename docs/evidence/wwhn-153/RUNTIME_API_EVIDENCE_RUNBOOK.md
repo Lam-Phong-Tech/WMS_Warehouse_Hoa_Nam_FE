@@ -33,16 +33,18 @@ Mỗi probe phải có `effectProbe` đọc trạng thái business/resource bằ
 ```json
 {
   "method": "POST",
-  "path": "/stocktake/sessions/123/apply-adjustment",
-  "body": {"lines": []},
+  "path": "/warranty-cases/{id}/temp-only",
+  "body": {"missing_code_reason": "...", "manual_product_description": "..."},
   "effectProbe": {
     "method": "GET",
-    "path": "/stocktake/sessions/123",
+    "path": "/warranty-cases/{id}",
     "valuePath": "$.data.version",
     "expectedStatuses": [200]
   }
 }
 ```
+
+Ghi chú: `/stocktake/*` không tồn tại và không được dùng làm ví dụ — REQ-SRS-037 cấm mọi entity/API/permission Stocktake trong MVP (xem `WWHN-153_ARCHITECTURE_ALIGNMENT.md`). Probe thật phải trỏ vào một trong 5 hành động nhạy cảm đã khóa: `post-receipt`, `post-issue`, `report export-excel`, `warranty temp-only`, `scan classify`.
 
 Idempotency probe bổ sung `changedBody`, `idempotencyKey` và có thể có `ifMatch`. Stale probe bổ sung `staleIfMatch` và có thể có `idempotencyKey`.
 
