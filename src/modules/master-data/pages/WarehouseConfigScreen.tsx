@@ -16,7 +16,7 @@ import {
   Tag,
   Typography,
 } from "antd";
-import { HomeOutlined, ReloadOutlined, SaveOutlined } from "@ant-design/icons";
+import { HomeOutlined, SaveOutlined } from "@ant-design/icons";
 import {
   fetchWarehouse,
   fetchWarehouses,
@@ -212,15 +212,6 @@ export function WarehouseConfigScreen() {
         </Col>
         <Col>
           <Space wrap>
-            <Button
-              icon={<ReloadOutlined />}
-              onClick={() => {
-                void listQuery.refetch();
-                void detailQuery.refetch();
-              }}
-            >
-              Làm mới
-            </Button>
             {statusChanged ? (
               <Popconfirm
                 title="Đổi trạng thái kho?"
