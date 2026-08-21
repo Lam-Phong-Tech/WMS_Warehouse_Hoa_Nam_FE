@@ -1181,6 +1181,7 @@ export function InboundScanModal({
                             disabled={!canScan || busy}
                             placeholder="Quét / nhập BOX chứa đúng một SKU COMPONENT"
                             onChange={(event) => setBoxCode(event.target.value)}
+                            maxLength={120}
                           />
                           <Button
                             icon={<CameraOutlined />}
@@ -1528,7 +1529,7 @@ export function InboundScanModal({
           value={cancelReason}
           onChange={(event) => setCancelReason(event.target.value)}
           placeholder="Lý do Cancel bắt buộc"
-          maxLength={2000}
+          maxLength={1000}
           showCount
         />
       </Modal>

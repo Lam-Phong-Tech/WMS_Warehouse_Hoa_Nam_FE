@@ -370,9 +370,15 @@ export function WarehouseConfigScreen() {
                   <Form.Item
                     name="phone"
                     label="Số điện thoại"
-                    rules={[{ max: 30, message: "Tối đa 30 ký tự." }]}
+                    rules={[
+                      { max: 30, message: "Tối đa 30 ký tự." },
+                      {
+                        pattern: /^0\d{9}$/,
+                        message: "Số điện thoại phải gồm đúng 10 chữ số và bắt đầu bằng số 0.",
+                      },
+                    ]}
                   >
-                    <Input inputMode="tel" />
+                    <Input inputMode="numeric" maxLength={10} />
                   </Form.Item>
                 </Col>
               </Row>

@@ -101,6 +101,9 @@ export function AlignedOutboundDetailModal({
   // validation nghiệp vụ vẫn chạy trên cùng API như nhập tay.
   const [cameraOpen, setCameraOpen] = useState(false);
   const [customerPhone, setCustomerPhone] = useState("");
+  // DEC-PHONE-VN-001: SĐT bổ sung ở bước nhãn, khi có nhập, phải đúng định dạng VN.
+  const customerPhoneValid =
+    customerPhone === "" || /^0\d{9}$/.test(customerPhone);
   const [printerId, setPrinterId] = useState("");
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
@@ -842,26 +845,42 @@ export function AlignedOutboundDetailModal({
                     : "Chưa scan đủ. Hệ thống sẽ tự tổng hợp lô và tạo 01 Packing Label DRAFT ngay khi full match."
                 }
               />
-              <Space wrap>
-                <Input
-                  style={{ width: 300 }}
-                  value={customerPhone}
-                  placeholder="SĐT người nhận (tùy chọn) in trên nhãn"
-                  disabled={!fullScan}
-                  onChange={(event) => setCustomerPhone(event.target.value)}
-                />
-                <Button
-                  type="primary"
-                  icon={<TagOutlined />}
-                  disabled={
-                    !fullScan ||
-                    (!can("packing_label.preview") && !can("label.print"))
-                  }
-                  loading={createLabelMutation.isPending}
-                  onClick={() => createLabelMutation.mutate()}
-                >
-                  Tạo/đảm bảo 01 Packing Label
-                </Button>
+              <Space orientation="vertical" style={{ width: "100%" }} size={4}>
+                <Space wrap>
+                  <Input
+                    style={{ width: 300 }}
+                    value={customerPhone}
+                    placeholder="SĐT người nhận (tùy chọn) in trên nhãn"
+                    disabled={!fullScan}
+                    maxLength={10}
+                    inputMode="numeric"
+                    status={customerPhoneValid ? undefined : "error"}
+                    onChange={(event) =>
+                      setCustomerPhone(
+                        event.target.value.replace(/\D/g, "").slice(0, 10),
+                      )
+                    }
+                  />
+                  <Button
+                    type="primary"
+                    icon={<TagOutlined />}
+                    disabled={
+                      !fullScan ||
+                      !customerPhoneValid ||
+                      (!can("packing_label.preview") && !can("label.print"))
+                    }
+                    loading={createLabelMutation.isPending}
+                    onClick={() => createLabelMutation.mutate()}
+                  >
+                    Tạo/đảm bảo 01 Packing Label
+                  </Button>
+                </Space>
+                {!customerPhoneValid && (
+                  <Typography.Text type="danger">
+                    Số điện thoại phải gồm đúng 10 chữ số và bắt đầu bằng số
+                    0.
+                  </Typography.Text>
+                )}
               </Space>
             </Space>
           ) : (
