@@ -5,13 +5,14 @@ import {
   type FormEvent,
   type ReactNode,
 } from "react";
-import { Modal } from "antd";
+import { Descriptions, Modal, Space } from "antd";
 import {
   CloseCircleOutlined,
   CloseOutlined,
   CloudDownloadOutlined,
   CloudUploadOutlined,
   EditOutlined,
+  EyeOutlined,
   ImportOutlined,
   PlusOutlined,
   SaveOutlined,
@@ -311,6 +312,11 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
     () => toRefIndex(catalogs.powerSources),
     [catalogs],
   );
+  const packageVariantIndex = useMemo(
+    () => toRefIndex(catalogs.packageVariants),
+    [catalogs],
+  );
+  const [viewing, setViewing] = useState<SkuRecord | null>(null);
   // brand_id vẫn được gửi lên GET /products, nhưng BE ProductRepository hiện chỉ
   // filter ['status','sku_type'] nên param có thể bị bỏ qua. Lọc thêm phía client
   // trên trang đang xem để bộ lọc "Hãng" hoạt động ngay; khi BE bổ sung brand_id
@@ -675,18 +681,26 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                       </span>
                     </td>
                     <td>
-                      {canManage || canPublish ? (
-                        <>
-                          {canManage ? (
-                            <button
-                              className="btn small"
-                              type="button"
-                              onClick={() => openEdit(record)}
-                            >
-                              <EditOutlined /> Sửa
-                            </button>
-                          ) : null}{" "}
-                          {canPublish ? (
+                      <Space size={8} wrap>
+                        <button
+                          className="btn small"
+                          type="button"
+                          onClick={() => setViewing(record)}
+                        >
+                          <EyeOutlined /> Xem
+                        </button>
+                        {canManage || canPublish ? (
+                          <>
+                            {canManage ? (
+                              <button
+                                className="btn small"
+                                type="button"
+                                onClick={() => openEdit(record)}
+                              >
+                                <EditOutlined /> Sửa
+                              </button>
+                            ) : null}{" "}
+                            {canPublish ? (
                             <button
                               className="btn small"
                               type="button"
@@ -713,11 +727,10 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                                 </>
                               )}
                             </button>
-                          ) : null}
-                        </>
-                      ) : (
-                        <span className="muted">Chỉ xem</span>
-                      )}
+                            ) : null}
+                          </>
+                        ) : null}
+                      </Space>
                     </td>
                   </tr>
                 );
@@ -740,6 +753,70 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
         itemLabel="SKU"
         onChange={setPage}
       />
+
+      <Modal
+        title="Chi tiết SKU"
+        open={Boolean(viewing)}
+        onCancel={() => setViewing(null)}
+        footer={null}
+        width={760}
+        centered
+        destroyOnHidden
+        getContainer={false}
+      >
+        {viewing ? (
+          <Descriptions bordered column={{ xs: 1, md: 2 }} size="small">
+            <Descriptions.Item label="Mã SKU">
+              {viewing.sku_code ?? viewing.code}
+            </Descriptions.Item>
+            <Descriptions.Item label="Tên SKU">
+              {viewing.sku_name ?? viewing.name}
+            </Descriptions.Item>
+            <Descriptions.Item label="Loại">
+              {viewing.sku_type}
+            </Descriptions.Item>
+            <Descriptions.Item label="ĐVT">
+              {viewing.unit || "—"}
+            </Descriptions.Item>
+            <Descriptions.Item label="Hãng">
+              {refLabel(brandIndex, viewing.brand_id)}
+            </Descriptions.Item>
+            <Descriptions.Item label="Category">
+              {refLabel(categoryIndex, viewing.category_id)}
+            </Descriptions.Item>
+            <Descriptions.Item label="Model">
+              {refLabel(modelIndex, viewing.model_id)}
+            </Descriptions.Item>
+            <Descriptions.Item label="Nguồn điện">
+              {viewing.power_source_id
+                ? refLabel(powerSourceIndex, viewing.power_source_id)
+                : viewing.power_or_voltage || "—"}
+            </Descriptions.Item>
+            <Descriptions.Item label="Package variant">
+              {viewing.package_variant_id
+                ? refLabel(packageVariantIndex, viewing.package_variant_id)
+                : viewing.package_variant || "—"}
+            </Descriptions.Item>
+            <Descriptions.Item label="Phiên bản (version_code)">
+              {viewing.version_code || "—"}
+            </Descriptions.Item>
+            <Descriptions.Item label="Theo dõi serial">
+              {viewing.is_serial_tracked ? "Có" : "Không"}
+            </Descriptions.Item>
+            <Descriptions.Item label="Trạng thái">
+              <span className={statusClass(viewing.status)}>
+                {viewing.status}
+              </span>
+            </Descriptions.Item>
+            <Descriptions.Item label="App PV">
+              {viewing.published_to_app ? "Đã publish" : "Chưa publish"}
+            </Descriptions.Item>
+            <Descriptions.Item label="Version">
+              {viewing.version}
+            </Descriptions.Item>
+          </Descriptions>
+        ) : null}
+      </Modal>
 
       <Modal
         title={editing ? "Sửa SKU" : "Thêm SKU"}
@@ -1080,6 +1157,10 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
       setFormError("Mã đại lý và tên đại lý là bắt buộc.");
       return;
     }
+    if (payload.phone && !/^0\d{9}$/.test(payload.phone)) {
+      setFormError("Số điện thoại phải gồm đúng 10 chữ số và bắt đầu bằng số 0.");
+      return;
+    }
     // BR-AGY-01: deactivate là hành động phá hủy về mặt nghiệp vụ — đại lý sẽ
     // không còn chọn được cho phiếu mới (Annex D yêu cầu confirm).
     if (form.status === "INACTIVE" && editing?.status === "ACTIVE") {
@@ -1290,9 +1371,11 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                 onChange={(event) =>
                   setForm((current) => ({
                     ...current,
-                    phone: event.target.value,
+                    phone: event.target.value.replace(/\D/g, "").slice(0, 10),
                   }))
                 }
+                inputMode="numeric"
+                maxLength={10}
                 disabled={isSaving}
               />
             </Field>
