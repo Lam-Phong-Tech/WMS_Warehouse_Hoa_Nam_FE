@@ -24,6 +24,7 @@ import {
   CloseOutlined,
   DeleteOutlined,
   EditOutlined,
+  InboxOutlined,
   ScanOutlined,
 } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
@@ -46,8 +47,11 @@ import { ScanInput } from "@/shared/components/forms/ScanInput";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { useMvpSkus } from "@/modules/master-data/hooks/use-mvp-master";
 import type { SkuRecord } from "@/modules/master-data/types/mvp-master.types";
+import { classifyScanCodes } from "@/modules/scan/services/scanService";
+import type { ScanClassifyResponse } from "@/modules/scan/types";
 import {
   useCancelInbound,
+  useCompleteInboundCartonScan,
   useInboundDetail,
   useInboundScanEntries,
   usePostInboundReceipt,
@@ -56,6 +60,7 @@ import {
   useUnscanInbound,
 } from "@/modules/inbound/hooks/use-inbound";
 import type {
+  ActiveCarton,
   InboundLine,
   InboundScanEntry,
   ReceiptEvidence,
@@ -99,6 +104,16 @@ type ScanLogRow = {
  * ép cross-check một dòng nhất định.
  */
 const AUTO_LINE = "__AUTO__";
+
+/**
+ * Inbound Carton Scan v1.0 §4.3 — routing-only, KHÔNG parse identity (AC-QR-10):
+ * QR composite PRODUCT (HN<version>|...) chắc chắn không phải mã thùng, nên bỏ
+ * qua bước classify carton để không tốn một round-trip cho mỗi lần quét máy.
+ * SKU/item trong QR vẫn do backend parse authoritative.
+ */
+function looksCompositeProductQr(code: string): boolean {
+  return /^HN\d+\|/i.test(code.trim());
+}
 
 function makeKey(prefix: string) {
   return `${prefix}-${globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`}`;
@@ -338,6 +353,7 @@ export function InboundScanModal({
   const unscanMutation = useUnscanInbound();
   const postMutation = usePostInboundReceipt();
   const cancelMutation = useCancelInbound();
+  const completeCartonMutation = useCompleteInboundCartonScan();
   const [lineId, setLineId] = useState<string>(AUTO_LINE);
   const [scanCode, setScanCode] = useState("");
   const [boxCode, setBoxCode] = useState("");
@@ -349,6 +365,12 @@ export function InboundScanModal({
   const [receiptEvidence, setReceiptEvidence] =
     useState<ReceiptEvidence | null>(null);
   const [cameraTarget, setCameraTarget] = useState<"box" | "code" | null>(null);
+  /**
+   * Inbound Carton Scan v1.0 §4.3: "Thùng đang quét" là context UI thuần —
+   * cố ý KHÔNG restore sau F5 (CTN-T09); người dùng phải scan lại mã carton
+   * trước khi tiếp tục quét Item để tránh map nhầm thùng.
+   */
+  const [activeCarton, setActiveCarton] = useState<ActiveCarton | null>(null);
   const postKeyRef = useRef<string | null>(null);
   /**
    * WWHN-187 (DEV187-P1-07): key của hành động quét đang dở, kèm dấu vân tay nội
@@ -415,7 +437,8 @@ export function InboundScanModal({
     busy ||
     postMutation.isPending ||
     cancelMutation.isPending ||
-    unscanMutation.isPending;
+    unscanMutation.isPending ||
+    completeCartonMutation.isPending;
   const progressPercent = totalExpected
     ? Math.min(100, Math.round((totalScanned / totalExpected) * 100))
     : 0;
@@ -424,6 +447,13 @@ export function InboundScanModal({
     (entry) => entry.status === "ACTIVE",
   );
   const removedEntryCount = scanEntries.length - activeEntries.length;
+  // §4.3 "Count": đếm ACTIVE entries theo containerId (dữ liệu server, sống qua
+  // reload) để hiển thị "Đã quét N máy" của thùng đang quét.
+  const activeCartonScannedQty = activeCarton
+    ? activeEntries
+        .filter((entry) => entry.containerId === activeCarton.id)
+        .reduce((sum, entry) => sum + entry.quantity, 0)
+    : 0;
   const sessionDuplicateCount = scanLog.filter(
     (row) => !row.success && (row.errorCode ?? "").includes("DUPLICATE"),
   ).length;
@@ -435,6 +465,94 @@ export function InboundScanModal({
     if (isSerialTracked) setQuantity(1);
     else setQuantity(Math.max(1, Math.min(remaining || 1, quantity)));
   }, [isSerialTracked, quantity, remaining]);
+
+  /**
+   * Inbound Carton Scan v1.0 §4.3: xử lý khi mã quét resolve ra CONTAINER.
+   * CARTON hợp lệ → đặt làm "Thùng đang quét"; đang dở thùng khác → chặn và
+   * nhắc bấm "Đã quét xong thùng" trước (CTN-T07). Hoàn toàn stock-neutral —
+   * không gọi endpoint scan cho mã thùng.
+   */
+  const handleCartonDetected = (
+    classified: ScanClassifyResponse,
+    rawCode: string,
+  ) => {
+    const cartonId = classified.container_id;
+    if (!cartonId) return; // normalize contract đã chặn CONTAINER thiếu id
+    const cartonCode = classified.container_code || rawCode;
+    const pushCartonLog = (result: string, success: boolean) => {
+      setScanLog((current) =>
+        [
+          { key: makeKey("carton"), code: rawCode, result, success },
+          ...current,
+        ].slice(0, 20),
+      );
+    };
+
+    if (classified.container_type && classified.container_type !== "CARTON") {
+      const message = `"${cartonCode}" là container loại ${classified.container_type}, không phải thùng CARTON của luồng nhập PRODUCT.`;
+      pushCartonLog(message, false);
+      toast.error(message);
+      return;
+    }
+    if (activeCarton && activeCarton.id !== cartonId) {
+      // CTN-T07: không tự chuyển thùng để Item không bị gắn nhầm context.
+      const message = `Đang quét dở thùng ${activeCarton.code}. Hãy bấm "Đã quét xong thùng" trước khi chuyển sang ${cartonCode}.`;
+      pushCartonLog(message, false);
+      toast.error(message);
+      return;
+    }
+    setScanCode("");
+    if (activeCarton?.id === cartonId) {
+      toast.info(`Thùng ${cartonCode} đang là thùng được quét.`);
+      return;
+    }
+    setActiveCarton({
+      id: cartonId,
+      code: cartonCode,
+      skuId: classified.sku_id ?? undefined,
+    });
+    pushCartonLog(
+      `Thùng đang quét: ${cartonCode} · Item tiếp theo sẽ gắn vào thùng này`,
+      true,
+    );
+    toast.success(
+      `Đã mở thùng ${cartonCode}. Quét các máy trong thùng rồi bấm "Đã quét xong thùng".`,
+    );
+  };
+
+  /**
+   * §4.3 "Nút xong thùng" + CTN-01/02: chỉ audit + đóng context UI; không đổi
+   * tồn, không sửa expected_qty (CTN-08), không chặn khi thiếu/thừa (CTN-04).
+   */
+  const handleCompleteCarton = async () => {
+    if (!activeCarton || !canScan || !isMutable) return;
+    // BE guard CARTON_NO_ACTIVE_SCANS (§3.3): thùng chưa ghi nhận máy nào thì
+    // không có gì để audit — chỉ đóng context phía UI.
+    if (activeCartonScannedQty <= 0) {
+      setActiveCarton(null);
+      toast.info(
+        `Đã đóng thùng ${activeCarton.code}. Chưa ghi nhận máy nào nên không tạo mốc audit.`,
+      );
+      return;
+    }
+    try {
+      const result = await completeCartonMutation.mutateAsync({
+        id: documentId,
+        containerId: activeCarton.id,
+      });
+      setActiveCarton(null);
+      toast.success(
+        `Đã quét xong thùng ${result.cartonCode || activeCarton.code}: ${result.actualItemQty} máy. Tồn kho không đổi — chỉ Post Receipt mới tăng tồn.`,
+      );
+      await scanEntriesQuery.refetch();
+      onChanged?.();
+    } catch (error) {
+      toast.error(
+        getApiErrorMessage(error, "Không ghi nhận được mốc xong thùng."),
+      );
+      await Promise.all([detailQuery.refetch(), scanEntriesQuery.refetch()]);
+    }
+  };
 
   // Annex D SCR-IN-01: Enter/reader event submits — mã đến từ ScanInput được
   // truyền thẳng vào handler thay vì đọc lại state, tránh lệch nhịp với reader.
@@ -460,13 +578,41 @@ export function InboundScanModal({
       return;
     }
 
+    // Inbound Carton Scan v1.0 §4.3: ô quét dùng chung — mã không composite có
+    // thể là mã thùng CARTON. Classify read-only trước; nếu không resolve ra
+    // CONTAINER (hoặc classify lỗi/thiếu quyền) thì đi tiếp đường scan chuẩn.
+    // BE vẫn quyết định cuối cùng — không tạo một đường scan song song.
+    if (
+      !isComponent &&
+      normalizedCode &&
+      !looksCompositeProductQr(normalizedCode)
+    ) {
+      let classified: ScanClassifyResponse | null = null;
+      try {
+        classified = await classifyScanCodes({
+          raw_code: normalizedCode,
+          context: "INBOUND",
+          warehouse_id: detail.document.warehouseId,
+        });
+      } catch {
+        // 404/permission/mạng: không phải carton resolve được — scan như Item.
+      }
+      if (classified?.classification === "CONTAINER") {
+        handleCartonDetected(classified, normalizedCode);
+        return;
+      }
+    }
+
     const logicalCode = normalizedCode || normalizedBox;
     // Một hành động quét = một key, giữ nguyên qua mọi lần gửi lại của chính nó.
+    // CTN-05: carton context là một phần nội dung của hành động quét — đổi thùng
+    // (hoặc đóng thùng) giữa hai lần gửi thì đó là hành động khác, phải key mới.
     const scanFingerprint = [
       selectedLine?.id ?? AUTO_LINE,
       scanQuantity,
       normalizedCode,
       normalizedBox,
+      !isComponent ? (activeCarton?.id ?? "") : "",
     ].join("|");
     const pendingScanKey = scanKeyRef.current;
     const scanAttemptKey =
@@ -488,6 +634,10 @@ export function InboundScanModal({
           );
         }
         containerId = box.container_id;
+      } else if (activeCarton) {
+        // CTN-05: PRODUCT Item quét khi có thùng active phải mang container_id
+        // của đúng thùng đó; máy lẻ (activeCarton=null) gửi undefined (CTN-06).
+        containerId = activeCarton.id;
       }
 
       const result = await scanMutation.mutateAsync({
@@ -517,6 +667,9 @@ export function InboundScanModal({
         first.resolution_status === "NEW_ITEM_CANDIDATE"
           ? " · Item MỚI (đăng ký khi Post)"
           : "";
+      // §4.3: nói rõ Item vừa quét thuộc thùng nào (hay là máy lẻ).
+      const cartonText =
+        !isComponent && activeCarton ? ` · thùng ${activeCarton.code}` : "";
       setScanLog((current) =>
         [
           {
@@ -524,7 +677,7 @@ export function InboundScanModal({
             code: logicalCode,
             result: first.replayed
               ? "Hợp lệ · replay (đã ghi nhận trước đó, không cộng thêm)"
-              : `Hợp lệ · +${scanQuantity}${identityText ? ` · ${identityText}` : ""}${candidateText}`,
+              : `Hợp lệ · +${scanQuantity}${identityText ? ` · ${identityText}` : ""}${candidateText}${cartonText}`,
             success: true,
             lineId: first.line_id,
           },
@@ -944,6 +1097,37 @@ export function InboundScanModal({
               <Row gutter={[14, 14]}>
                 <Col xs={24} lg={13}>
                   <Card size="small" title="Ghi nhận Barcode / QR / BOX">
+                    {/* Inbound Carton Scan v1.0 §4.3: UI luôn cho biết rõ thùng
+                        nào đang được quét; đóng context bằng nút xong thùng. */}
+                    {!isComponent && activeCarton ? (
+                      <Alert
+                        style={{ marginBottom: 12 }}
+                        type="info"
+                        showIcon
+                        icon={<InboxOutlined />}
+                        title={`Thùng đang quét: ${activeCarton.code}`}
+                        description={
+                          <div>
+                            <div>
+                              Đã quét <strong>{activeCartonScannedQty}</strong>{" "}
+                              máy vào thùng này. Item quét tiếp theo sẽ được gắn
+                              vào thùng {activeCarton.code}.
+                            </div>
+                            <Button
+                              type="primary"
+                              size="small"
+                              style={{ marginTop: 8 }}
+                              icon={<CheckCircleOutlined />}
+                              loading={completeCartonMutation.isPending}
+                              disabled={!canScan || working}
+                              onClick={() => void handleCompleteCarton()}
+                            >
+                              Đã quét xong thùng
+                            </Button>
+                          </div>
+                        }
+                      />
+                    ) : null}
                     <div style={{ marginBottom: 12 }}>
                       <div
                         style={{
@@ -997,6 +1181,7 @@ export function InboundScanModal({
                             disabled={!canScan || busy}
                             placeholder="Quét / nhập BOX chứa đúng một SKU COMPONENT"
                             onChange={(event) => setBoxCode(event.target.value)}
+                            maxLength={120}
                           />
                           <Button
                             icon={<CameraOutlined />}
@@ -1344,7 +1529,7 @@ export function InboundScanModal({
           value={cancelReason}
           onChange={(event) => setCancelReason(event.target.value)}
           placeholder="Lý do Cancel bắt buộc"
-          maxLength={2000}
+          maxLength={1000}
           showCount
         />
       </Modal>

@@ -19,7 +19,10 @@ export const inboundDraftSchema = z
     // Annex A / Annex D SCR-IN-01: `source_reference` max 200 (không phải 255 của
     // cột vật lý source_name trong ERD bảng 26).
     sourceName: z.string().max(200, "Nguồn/tham chiếu tối đa 200 ký tự."),
-    note: z.string().max(2000, "Ghi chú tối đa 2000 ký tự."),
+    // BE ghi thẳng vào stock_documents.note varchar(1000) (xem
+    // CurrentBaselineDocumentController::storeInbound/updateInbound) — FE phải khớp để
+    // không cho nhập quá giới hạn rồi bị BE trả 422 sau khi bấm Lưu.
+    note: z.string().max(1000, "Ghi chú tối đa 1000 ký tự."),
     lines: z
       .array(inboundLineSchema)
       .min(1, "Phiếu nhập phải có ít nhất một dòng."),

@@ -21,6 +21,9 @@ export type ScanContext =
 
 export type ScanClassification = "ITEM" | "CONTAINER" | "SKU";
 
+/** ERD bảng 22: containers.container_type. */
+export type ScanContainerType = "CARTON" | "BOX" | "TRAY";
+
 export type ScanResolvedSource =
   | "physical_code"
   | "inventory_serials.serial_no"
@@ -48,6 +51,14 @@ export interface ScanClassifyResponse {
   product_id: string | null;
   stock_status: string;
   object_status?: string;
+  /**
+   * Inbound Carton Scan v1.0 §3.1: identity của container khi
+   * classification=CONTAINER (container_id non-null trong trường hợp đó) —
+   * FE dùng để đặt CARTON làm "Thùng đang quét"; null cho ITEM/SKU.
+   */
+  container_id?: string | null;
+  container_code?: string | null;
+  container_type?: ScanContainerType | null;
   resolved_source: ScanResolvedSource;
   contract_version: "WWHN-150.1.1.0";
   stock_effect: "NONE";

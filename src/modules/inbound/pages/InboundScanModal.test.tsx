@@ -17,19 +17,30 @@ vi.mock("@/modules/inbound/hooks/use-inbound", () => ({
     mutateAsync: vi.fn(),
   })),
   useCancelInbound: vi.fn(() => ({ isPending: false, mutateAsync: vi.fn() })),
+  // Inbound Carton Scan v1.0 §3.3: mốc "Đã quét xong thùng" (audit-only).
+  useCompleteInboundCartonScan: vi.fn(() => ({
+    isPending: false,
+    mutateAsync: vi.fn(),
+  })),
 }));
 vi.mock("@/modules/master-data/hooks/use-mvp-master", () => ({
   useMvpSkus: vi.fn(() => ({ data: { data: [SKU_ROW] }, isLoading: false })),
 }));
+// §4.3: mã quét không composite được classify read-only để nhận diện CARTON.
+vi.mock("@/modules/scan/services/scanService", () => ({
+  classifyScanCodes: vi.fn(),
+}));
 
 import {
   useCancelInbound,
+  useCompleteInboundCartonScan,
   useInboundDetail,
   useInboundScanEntries,
   usePostInboundReceipt,
   useScanInbound,
   useUnscanInbound,
 } from "@/modules/inbound/hooks/use-inbound";
+import { classifyScanCodes } from "@/modules/scan/services/scanService";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { WMS_PERMISSION_CATALOG as P } from "@/shared/constants/wms-permissions";
 import { InboundScanModal } from "./MvpInboundScreens";
@@ -104,7 +115,12 @@ function grant(permissionCodes: string[]) {
 function mockHooks(
   entries: Array<typeof ACTIVE_ENTRY | typeof REMOVED_ENTRY> = [ACTIVE_ENTRY],
   unscanMutateAsync = vi.fn(),
+  completeCartonMutateAsync = vi.fn(),
 ) {
+  vi.mocked(useCompleteInboundCartonScan).mockReturnValue({
+    isPending: false,
+    mutateAsync: completeCartonMutateAsync,
+  } as never);
   vi.mocked(useInboundDetail).mockReturnValue({
     data: DETAIL,
     isLoading: false,
@@ -266,5 +282,167 @@ describe("IN-03 · bảng mã đã quét và gỡ mã trước Post", () => {
     expect(await screen.findByText("ITEM-BC-000008")).toBeInTheDocument();
     // BR-REV-01: sau Post phải đi Reversal, không được gỡ mã.
     expect(screen.queryByRole("button", { name: /Gỡ mã/ })).toBeNull();
+  });
+});
+
+/**
+ * Inbound Carton Scan v1.0 (Implementation Delta 20/08/2026) — carton scan
+ * context: scan CARTON đặt "Thùng đang quét", Item quét khi thùng active mang
+ * container_id, nút "Đã quét xong thùng" chỉ audit + đóng context (CTN-01/02),
+ * chuyển thùng khi đang dở bị chặn (CTN-T07).
+ */
+describe("IN-03 · carton scan context (Đã quét xong thùng)", () => {
+  const CARTON_UUID = "11111111-1111-4111-8111-111111111111";
+  const CARTON_CLASSIFY = {
+    classification: "CONTAINER",
+    container_id: CARTON_UUID,
+    container_code: "CTN-001",
+    container_type: "CARTON",
+    sku_id: "SKU-1",
+    stock_effect: "NONE",
+  };
+  const CARTON_ENTRY = {
+    ...ACTIVE_ENTRY,
+    id: "E-CTN-1",
+    itemId: "ITEM-CTN-1",
+    itemCode: "ITEM-BC-000010",
+    containerId: CARTON_UUID,
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    grant([P.INBOUND_VIEW, P.INBOUND_SCAN, P.INBOUND_CREATE, P.INBOUND_POST]);
+  });
+
+  afterEach(() => {
+    cleanupTestState();
+  });
+
+  async function scanCode(code: string) {
+    const input = await screen.findByLabelText("Scan code");
+    fireEvent.change(input, { target: { value: code } });
+    fireEvent.keyDown(input, { key: "Enter" });
+  }
+
+  it("quét mã CARTON đặt thùng đang quét, không gọi endpoint scan", async () => {
+    const scanMutate = vi.fn();
+    mockHooks([]);
+    vi.mocked(useScanInbound).mockReturnValue({
+      isPending: false,
+      mutateAsync: scanMutate,
+    } as never);
+    vi.mocked(classifyScanCodes).mockResolvedValue(CARTON_CLASSIFY as never);
+
+    renderWithProviders(
+      <InboundScanModal documentId="IN-1" onClose={vi.fn()} />,
+    );
+    await scanCode("CTN-001");
+
+    expect(
+      await screen.findByText("Thùng đang quét: CTN-001"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Đã quét xong thùng/ }),
+    ).toBeInTheDocument();
+    // Kích hoạt thùng là stock-neutral thuần UI — không có scan API call.
+    expect(scanMutate).not.toHaveBeenCalled();
+    expect(classifyScanCodes).toHaveBeenCalledWith({
+      raw_code: "CTN-001",
+      context: "INBOUND",
+      warehouse_id: "WH-1",
+    });
+  });
+
+  it("Item quét khi thùng active mang container_id của thùng (CTN-05)", async () => {
+    const scanMutate = vi
+      .fn()
+      .mockResolvedValue([
+        { code_value: "SN-0002", status: "VALID", version: 5 },
+      ]);
+    mockHooks([]);
+    vi.mocked(useScanInbound).mockReturnValue({
+      isPending: false,
+      mutateAsync: scanMutate,
+    } as never);
+    vi.mocked(classifyScanCodes)
+      .mockResolvedValueOnce(CARTON_CLASSIFY as never)
+      .mockResolvedValueOnce({ classification: "ITEM" } as never);
+
+    renderWithProviders(
+      <InboundScanModal documentId="IN-1" onClose={vi.fn()} />,
+    );
+    await scanCode("CTN-001");
+    await screen.findByText("Thùng đang quét: CTN-001");
+    await scanCode("SN-0002");
+
+    await waitFor(() => {
+      expect(scanMutate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: "IN-1",
+          code: "SN-0002",
+          containerId: CARTON_UUID,
+        }),
+      );
+    });
+  });
+
+  it("bấm Đã quét xong thùng gọi audit endpoint rồi đóng context", async () => {
+    const completeMutate = vi.fn().mockResolvedValue({
+      documentId: "IN-1",
+      containerId: CARTON_UUID,
+      cartonCode: "CTN-001",
+      actualItemQty: 1,
+    });
+    mockHooks([CARTON_ENTRY], vi.fn(), completeMutate);
+    vi.mocked(classifyScanCodes).mockResolvedValue(CARTON_CLASSIFY as never);
+
+    renderWithProviders(
+      <InboundScanModal documentId="IN-1" onClose={vi.fn()} />,
+    );
+    await scanCode("CTN-001");
+    // Count đọc từ inbound_scan_entries theo containerId (sống qua reload).
+    expect(
+      await screen.findByText("Thùng đang quét: CTN-001"),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /Đã quét xong thùng/ }));
+
+    await waitFor(() => {
+      expect(completeMutate).toHaveBeenCalledWith({
+        id: "IN-1",
+        containerId: CARTON_UUID,
+      });
+    });
+    // CTN-01: đóng active carton context sau khi xác nhận.
+    await waitFor(() => {
+      expect(screen.queryByText("Thùng đang quét: CTN-001")).toBeNull();
+    });
+  });
+
+  it("chặn chuyển thùng khi thùng hiện tại chưa bấm xong (CTN-T07)", async () => {
+    mockHooks([]);
+    vi.mocked(classifyScanCodes)
+      .mockResolvedValueOnce(CARTON_CLASSIFY as never)
+      .mockResolvedValueOnce({
+        ...CARTON_CLASSIFY,
+        container_id: "22222222-2222-4222-8222-222222222222",
+        container_code: "CTN-002",
+      } as never);
+
+    renderWithProviders(
+      <InboundScanModal documentId="IN-1" onClose={vi.fn()} />,
+    );
+    await scanCode("CTN-001");
+    await screen.findByText("Thùng đang quét: CTN-001");
+    await scanCode("CTN-002");
+
+    // Vẫn là CTN-001; diễn biến scan ghi rõ yêu cầu bấm xong thùng trước.
+    expect(
+      await screen.findByText(
+        /Hãy bấm "Đã quét xong thùng" trước khi chuyển sang CTN-002/,
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Thùng đang quét: CTN-001")).toBeInTheDocument();
+    expect(screen.queryByText("Thùng đang quét: CTN-002")).toBeNull();
   });
 });

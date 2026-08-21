@@ -13,6 +13,7 @@ import { WMS_ACTION_PERMISSIONS } from "@/shared/constants/wms-permissions";
 import type { ApiMeta } from "@/shared/types/api-response";
 import type {
   CreateInboundPayload,
+  InboundCartonCompleteResult,
   InboundDetail,
   InboundDocument,
   InboundLine,
@@ -537,6 +538,36 @@ export async function fetchInboundScanEntries(
       capturedAt: text(row.created_at) || undefined,
     }),
   );
+}
+
+/**
+ * Inbound Carton Scan v1.0 §3.3: ghi nhận mốc "Đã quét xong thùng" cho carton
+ * trong phiếu nhập. Audit-only trên server (INBOUND_CARTON_SCAN_COMPLETED) —
+ * không đổi container.status, không tạo movement/balance, không bump version,
+ * nên không cần If-Match. Duplicate call là harmless theo contract (CTN-T11).
+ */
+export async function completeInboundCartonScan(
+  documentId: string,
+  containerId: string,
+): Promise<InboundCartonCompleteResult> {
+  assertWmsActionPermission(
+    WMS_ACTION_PERMISSIONS.SCAN_INBOUND,
+    "complete inbound carton scan",
+  );
+  const path = API_ENDPOINTS.INBOUND_CARTON_COMPLETE_SCAN.replace(
+    ":id",
+    requireNonEmptyString(documentId, "documentId"),
+  ).replace(":containerId", requireNonEmptyString(containerId, "containerId"));
+  const response = await http.post<RawRecord>(path);
+  assertReadOnlyScanResponse(response);
+
+  return {
+    documentId: text(response.document_id, documentId),
+    containerId: text(response.container_id, containerId),
+    cartonCode: text(response.carton_code),
+    actualItemQty: num(response.actual_item_qty),
+    completedAt: text(response.completed_at) || undefined,
+  };
 }
 
 /**

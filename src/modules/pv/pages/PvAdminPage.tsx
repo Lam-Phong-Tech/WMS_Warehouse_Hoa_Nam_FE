@@ -1,16 +1,19 @@
 import { useMemo, useState } from "react";
 import {
   Button,
+  Descriptions,
   Form,
   Input,
   InputNumber,
   Modal,
   Select,
+  Space,
   Switch,
   Table,
   Tabs,
   Tag,
 } from "antd";
+import { EyeOutlined } from "@ant-design/icons";
 import { toast } from "sonner";
 import { PvErrorState } from "@/modules/pv/components/PvErrorState";
 import {
@@ -252,6 +255,17 @@ export default function PvAdminPage() {
   const [profileEditing, setProfileEditing] = useState<PvAdminProfile | null>(
     null,
   );
+  const [profileViewing, setProfileViewing] = useState<PvAdminProfile | null>(
+    null,
+  );
+  const industryNameById = useMemo(
+    () => new Map(industryOptions.map((item) => [item.value, item.label])),
+    [industryOptions],
+  );
+  const tagNameById = useMemo(
+    () => new Map(tagOptions.map((item) => [item.value, item.label])),
+    [tagOptions],
+  );
   const [profileForm] = Form.useForm<{
     display_name: string;
     description?: string;
@@ -369,7 +383,18 @@ export default function PvAdminPage() {
                     {
                       title: "Ngành nghề",
                       key: "industries",
-                      render: (_, row) => row.industry_ids.length,
+                      render: (_, row) =>
+                        row.industry_ids.length > 0 ? (
+                          <Space size={[4, 4]} wrap>
+                            {row.industry_ids.map((id) => (
+                              <Tag key={id}>
+                                {industryNameById.get(id) ?? id}
+                              </Tag>
+                            ))}
+                          </Space>
+                        ) : (
+                          <span style={{ color: "#8c887e" }}>—</span>
+                        ),
                     },
                     {
                       title: "Publish",
@@ -388,14 +413,24 @@ export default function PvAdminPage() {
                       title: "",
                       key: "actions",
                       render: (_, row) => (
-                        <Button
-                          size="small"
-                          disabled={!canManageMaster}
-                          data-testid="pv-admin-profile-edit"
-                          onClick={() => openProfileForm(row)}
-                        >
-                          Sửa hiển thị
-                        </Button>
+                        <Space size={8}>
+                          <Button
+                            size="small"
+                            icon={<EyeOutlined />}
+                            data-testid="pv-admin-profile-view"
+                            onClick={() => setProfileViewing(row)}
+                          >
+                            Xem
+                          </Button>
+                          <Button
+                            size="small"
+                            disabled={!canManageMaster}
+                            data-testid="pv-admin-profile-edit"
+                            onClick={() => openProfileForm(row)}
+                          >
+                            Sửa hiển thị
+                          </Button>
+                        </Space>
                       ),
                     },
                   ]}
@@ -459,6 +494,64 @@ export default function PvAdminPage() {
           },
         ]}
       />
+
+      <Modal
+        open={profileViewing !== null}
+        title="Chi tiết hồ sơ App PV"
+        onCancel={() => setProfileViewing(null)}
+        footer={null}
+        destroyOnHidden
+      >
+        {profileViewing ? (
+          <Descriptions bordered column={1} size="small">
+            <Descriptions.Item label="SKU">
+              {profileViewing.sku_code} — {profileViewing.sku_name}
+            </Descriptions.Item>
+            <Descriptions.Item label="Tên hiển thị">
+              {profileViewing.display_name}
+            </Descriptions.Item>
+            <Descriptions.Item label="Mô tả">
+              {profileViewing.description || "—"}
+            </Descriptions.Item>
+            <Descriptions.Item label="Ngành nghề">
+              {profileViewing.industry_ids.length > 0 ? (
+                <Space size={[4, 4]} wrap>
+                  {profileViewing.industry_ids.map((id) => (
+                    <Tag key={id}>{industryNameById.get(id) ?? id}</Tag>
+                  ))}
+                </Space>
+              ) : (
+                "—"
+              )}
+            </Descriptions.Item>
+            <Descriptions.Item label="Tag">
+              {profileViewing.tag_ids.length > 0 ? (
+                <Space size={[4, 4]} wrap>
+                  {profileViewing.tag_ids.map((id) => (
+                    <Tag key={id}>{tagNameById.get(id) ?? id}</Tag>
+                  ))}
+                </Space>
+              ) : (
+                "—"
+              )}
+            </Descriptions.Item>
+            <Descriptions.Item label="Thứ tự hiển thị">
+              {profileViewing.sort_order}
+            </Descriptions.Item>
+            <Descriptions.Item label="Publish">
+              <Tag color={profileViewing.published ? "green" : "default"}>
+                {profileViewing.published ? "Đã publish" : "Chưa publish"}
+              </Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="Trạng thái SKU">
+              <Tag>{profileViewing.sku_status}</Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="Version">
+              {profileViewing.version}
+            </Descriptions.Item>
+          </Descriptions>
+        ) : null}
+      </Modal>
 
       <Modal
         open={profileEditing !== null}
@@ -525,7 +618,12 @@ function PvRuleTab({
 }) {
   const [editing, setEditing] = useState<PvAdminRule | null>(null);
   const [isOpen, setIsOpen] = useState(false);
+  const [viewing, setViewing] = useState<PvAdminRule | null>(null);
   const [form] = Form.useForm();
+  const tagNameById = useMemo(
+    () => new Map(tagOptions.map((item) => [item.value, item.label])),
+    [tagOptions],
+  );
 
   function openForm(row?: PvAdminRule) {
     setEditing(row ?? null);
@@ -587,13 +685,21 @@ function PvRuleTab({
             title: "Selector",
             key: "selector",
             render: (_, row) =>
-              row.sku_id
-                ? "SKU"
-                : row.category_id
-                  ? "Nhóm hàng"
-                  : row.tag_id
-                    ? "Tag"
-                    : "—",
+              row.sku_id ? (
+                <>
+                  <Tag>SKU</Tag> {row.sku_id}
+                </>
+              ) : row.category_id ? (
+                <>
+                  <Tag>Nhóm hàng</Tag> {row.category_id}
+                </>
+              ) : row.tag_id ? (
+                <>
+                  <Tag>Tag</Tag> {tagNameById.get(row.tag_id) ?? row.tag_id}
+                </>
+              ) : (
+                "—"
+              ),
           },
           {
             title: "Trạng thái",
@@ -608,17 +714,71 @@ function PvRuleTab({
             title: "",
             key: "actions",
             render: (_, row) => (
-              <Button
-                size="small"
-                disabled={!canManage}
-                onClick={() => openForm(row)}
-              >
-                Sửa
-              </Button>
+              <Space size={8}>
+                <Button
+                  size="small"
+                  icon={<EyeOutlined />}
+                  onClick={() => setViewing(row)}
+                >
+                  Xem
+                </Button>
+                <Button
+                  size="small"
+                  disabled={!canManage}
+                  onClick={() => openForm(row)}
+                >
+                  Sửa
+                </Button>
+              </Space>
             ),
           },
         ]}
       />
+
+      <Modal
+        open={viewing !== null}
+        title="Chi tiết rule gợi ý"
+        onCancel={() => setViewing(null)}
+        footer={null}
+        destroyOnHidden
+      >
+        {viewing ? (
+          <Descriptions bordered column={1} size="small">
+            <Descriptions.Item label="Ngành nghề">
+              {viewing.industry_name ?? viewing.industry_id}
+            </Descriptions.Item>
+            <Descriptions.Item label="Selector">
+              {viewing.sku_id ? (
+                <>
+                  <Tag>SKU</Tag> {viewing.sku_id}
+                </>
+              ) : viewing.category_id ? (
+                <>
+                  <Tag>Nhóm hàng</Tag> {viewing.category_id}
+                </>
+              ) : viewing.tag_id ? (
+                <>
+                  <Tag>Tag</Tag>{" "}
+                  {tagNameById.get(viewing.tag_id) ?? viewing.tag_id}
+                </>
+              ) : (
+                "—"
+              )}
+            </Descriptions.Item>
+            <Descriptions.Item label="Ưu tiên">
+              {viewing.priority}
+            </Descriptions.Item>
+            <Descriptions.Item label="Trạng thái">
+              <Tag color={viewing.status === "ACTIVE" ? "green" : "default"}>
+                {viewing.status}
+              </Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="Version">
+              {viewing.version}
+            </Descriptions.Item>
+          </Descriptions>
+        ) : null}
+      </Modal>
 
       <Modal
         open={isOpen}

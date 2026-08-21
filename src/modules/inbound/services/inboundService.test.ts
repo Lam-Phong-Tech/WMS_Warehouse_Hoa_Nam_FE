@@ -23,6 +23,7 @@ import {
   WMS_ACTION_PERMISSIONS,
 } from "@/shared/constants/wms-permissions";
 import {
+  completeInboundCartonScan,
   createInboundDocument,
   fetchInboundDocuments,
   fetchInboundScanEntries,
@@ -500,6 +501,46 @@ describe("inbound real API contract", () => {
       scannedQuantity: 1,
       version: 7,
     });
+  });
+
+  it("completes a carton scan through the audit-only endpoint (Inbound Carton Scan v1.0)", async () => {
+    vi.mocked(http.post).mockResolvedValue({
+      document_id: "DOC-1",
+      container_id: "CT-1",
+      carton_code: "CTN-001",
+      actual_item_qty: 5,
+      completed_at: "2026-08-21T09:00:00+07:00",
+      stock_effect: "NONE",
+      movement_created: false,
+    });
+
+    const result = await completeInboundCartonScan("DOC-1", "CT-1");
+
+    // §3.3: audit-only nên không có If-Match/Idempotency-Key và không có body.
+    expect(http.post).toHaveBeenCalledWith(
+      "/inbound-documents/DOC-1/cartons/CT-1/complete-scan",
+    );
+    expect(result).toEqual({
+      documentId: "DOC-1",
+      containerId: "CT-1",
+      cartonCode: "CTN-001",
+      actualItemQty: 5,
+      completedAt: "2026-08-21T09:00:00+07:00",
+    });
+  });
+
+  it("fails closed if the carton complete response claims a stock effect", async () => {
+    vi.mocked(http.post).mockResolvedValue({
+      document_id: "DOC-1",
+      container_id: "CT-1",
+      carton_code: "CTN-001",
+      actual_item_qty: 5,
+      stock_effect: "INCREASE",
+    });
+
+    await expect(
+      completeInboundCartonScan("DOC-1", "CT-1"),
+    ).rejects.toMatchObject({ code: "WMS_FE_INVALID_SCAN_RESPONSE" });
   });
 
   it("fails closed if the unscan response claims a stock effect", async () => {

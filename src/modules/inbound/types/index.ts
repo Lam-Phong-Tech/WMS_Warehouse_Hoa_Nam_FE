@@ -93,6 +93,28 @@ export interface InboundScanEntry {
   capturedAt?: string;
 }
 
+/**
+ * Inbound Carton Scan v1.0 §4.3: "Thùng đang quét" là context UI thuần — không
+ * restore sau F5 (CTN-T09); người dùng phải scan lại mã carton để tiếp tục.
+ */
+export interface ActiveCarton {
+  id: string;
+  code: string;
+  skuId?: string;
+}
+
+/**
+ * §3.3: response của mốc "Đã quét xong thùng" — audit-only, stock-neutral.
+ * actualItemQty = SUM quantity các ACTIVE scan entries của carton trong phiếu.
+ */
+export interface InboundCartonCompleteResult {
+  documentId: string;
+  containerId: string;
+  cartonCode: string;
+  actualItemQty: number;
+  completedAt?: string;
+}
+
 export interface InboundUnscanResult {
   documentId: string;
   lineId: string;

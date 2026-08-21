@@ -395,9 +395,15 @@ export function OutboundIntakeModal({
     },
   ];
 
+  // DEC-PHONE-VN-001: override SĐT khi Confirm, nếu có nhập, phải đúng định dạng VN
+  // (10 chữ số bắt đầu bằng 0) — cùng quy tắc với recipient_contact_phone ở form nhập tay.
+  const overridePhoneValid =
+    recipientOverride.receiver_contact_phone === "" ||
+    /^0\d{9}$/.test(recipientOverride.receiver_contact_phone);
+
   // §8.1: Confirm re-validate sau khi áp mapping/override, nên batch REJECTED vẫn
   // được thử Confirm; BE trả 409 IMPORT_HAS_BLOCKING_ERRORS kèm row còn lỗi.
-  const consumable = Boolean(preview) && canImport;
+  const consumable = Boolean(preview) && canImport && overridePhoneValid;
 
   return (
     <Modal
@@ -493,12 +499,20 @@ export function OutboundIntakeModal({
                 label="SĐT liên hệ"
                 rules={[
                   {
-                    pattern: /^\+?[0-9\s.-]{6,20}$/,
-                    message: "SĐT chỉ gồm chữ số (6-20 ký tự).",
+                    pattern: /^0\d{9}$/,
+                    message:
+                      "Số điện thoại phải gồm đúng 10 chữ số và bắt đầu bằng số 0.",
                   },
                 ]}
+                normalize={(value?: string) =>
+                  (value ?? "").replace(/\D/g, "").slice(0, 10)
+                }
               >
-                <Input maxLength={50} placeholder="VD: 0901234567" />
+                <Input
+                  maxLength={10}
+                  inputMode="numeric"
+                  placeholder="VD: 0901234567"
+                />
               </Form.Item>
               <Form.Item name="request_date" label="Ngày toa">
                 <Input placeholder="YYYY-MM-DD" maxLength={10} />
@@ -681,16 +695,26 @@ export function OutboundIntakeModal({
                   <Input
                     style={{ width: 200 }}
                     placeholder="SĐT liên hệ (tùy chọn)"
-                    maxLength={50}
+                    maxLength={10}
+                    inputMode="numeric"
+                    status={overridePhoneValid ? undefined : "error"}
                     value={recipientOverride.receiver_contact_phone}
                     onChange={(event) =>
                       setRecipientOverride((current) => ({
                         ...current,
-                        receiver_contact_phone: event.target.value,
+                        receiver_contact_phone: event.target.value
+                          .replace(/\D/g, "")
+                          .slice(0, 10),
                       }))
                     }
                   />
                 </Space>
+                {!overridePhoneValid && (
+                  <Typography.Text type="danger">
+                    Số điện thoại phải gồm đúng 10 chữ số và bắt đầu bằng số
+                    0.
+                  </Typography.Text>
+                )}
               </Card>
               <Space wrap>
                 <Button

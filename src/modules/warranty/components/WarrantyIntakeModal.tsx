@@ -405,15 +405,21 @@ export function WarrantyIntakeModal({
             <Form.Item
               name="customer_phone"
               label="Số điện thoại"
+              // Rà soát validate định dạng input (Flow04 Warranty): SĐT khách VN —
+              // bắt buộc 10 chữ số, bắt đầu bằng 0, không cho nhập chữ. normalize
+              // strip mọi ký tự không phải số ngay lúc gõ (đồng bộ với IamUserScreen).
+              normalize={(value: string | undefined) =>
+                (value ?? "").replace(/\D/g, "").slice(0, 10)
+              }
               rules={[
                 { required: true, message: "Nhập số điện thoại." },
                 {
-                  pattern: /^[0-9+\-\s()]{8,20}$/,
-                  message: "Số điện thoại chưa hợp lệ.",
+                  pattern: /^0\d{9}$/,
+                  message: "Số điện thoại phải đủ 10 chữ số và bắt đầu bằng số 0.",
                 },
               ]}
             >
-              <Input maxLength={30} />
+              <Input inputMode="numeric" maxLength={10} />
             </Form.Item>
           </Col>
         </Row>

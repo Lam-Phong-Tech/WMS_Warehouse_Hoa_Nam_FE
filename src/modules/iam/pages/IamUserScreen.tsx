@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { Modal } from "antd";
+import { Descriptions, Modal, Space, Tag } from "antd";
 import {
   CloseOutlined,
   EditOutlined,
+  EyeOutlined,
   ReloadOutlined,
   SaveOutlined,
   UserAddOutlined,
@@ -16,6 +17,7 @@ import {
 } from "@/modules/iam/hooks/use-iam";
 import type {
   IamRole,
+  IamRolePivot,
   IamUser,
   IamUserStatus,
 } from "@/modules/iam/types/iam.types";
@@ -89,6 +91,23 @@ function scopeLabel(
   return "Toàn hệ thống";
 }
 
+function formatDate(value?: string | null) {
+  if (!value) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return new Intl.DateTimeFormat("vi-VN", { dateStyle: "short" }).format(
+    parsed,
+  );
+}
+
+/** Cửa sổ hiệu lực gán vai trò (BR-IAM-08) — rỗng cả hai đầu nghĩa là vô thời hạn. */
+function effectiveWindowLabel(pivot?: IamRolePivot) {
+  const from = formatDate(pivot?.effective_from);
+  const to = formatDate(pivot?.effective_to);
+  if (!from && !to) return "Vô thời hạn";
+  return `${from ?? "—"} → ${to ?? "—"}`;
+}
+
 function formatLastLogin(value?: string | null) {
   if (!value) return "Chưa đăng nhập";
   const parsed = new Date(value);
@@ -122,6 +141,7 @@ export function IamUserScreen({
   const [editingUser, setEditingUser] = useState<IamUser | null>(null);
   const [formState, setFormState] = useState<UserFormState>(EMPTY_FORM);
   const [formError, setFormError] = useState("");
+  const [viewingUser, setViewingUser] = useState<IamUser | null>(null);
 
   const usersQuery = useIamUsers({
     keyword: search.trim(),
@@ -236,6 +256,14 @@ export function IamUserScreen({
     setIsModalOpen(true);
   };
 
+  const openView = (user: IamUser) => {
+    setViewingUser(user);
+  };
+
+  const closeView = () => {
+    setViewingUser(null);
+  };
+
   const closeModal = () => {
     if (isSaving) return;
     setIsModalOpen(false);
@@ -270,6 +298,10 @@ export function IamUserScreen({
     }
     if (editingUser && password && password.length < 8) {
       setFormError("Mật khẩu đặt lại phải có ít nhất 8 ký tự.");
+      return;
+    }
+    if (phone && !/^0\d{9}$/.test(phone)) {
+      setFormError("Số điện thoại phải gồm đúng 10 chữ số và bắt đầu bằng số 0.");
       return;
     }
 
@@ -460,17 +492,24 @@ export function IamUserScreen({
                     </td>
                     <td>{formatLastLogin(user.last_login_at)}</td>
                     <td>
-                      {canManageUsers ? (
+                      <Space size={8}>
                         <button
                           className="btn small"
                           type="button"
-                          onClick={() => openEdit(user)}
+                          onClick={() => openView(user)}
                         >
-                          <EditOutlined /> Sửa
+                          <EyeOutlined /> Xem
                         </button>
-                      ) : (
-                        <span className="muted">Chỉ xem</span>
-                      )}
+                        {canManageUsers ? (
+                          <button
+                            className="btn small"
+                            type="button"
+                            onClick={() => openEdit(user)}
+                          >
+                            <EditOutlined /> Sửa
+                          </button>
+                        ) : null}
+                      </Space>
                     </td>
                   </tr>
                 );
@@ -552,8 +591,14 @@ export function IamUserScreen({
                   className="input"
                   style={{ width: "100%" }}
                   value={formState.phone}
-                  onChange={(event) => updateField("phone", event.target.value)}
-                  inputMode="tel"
+                  onChange={(event) =>
+                    updateField(
+                      "phone",
+                      event.target.value.replace(/\D/g, "").slice(0, 10),
+                    )
+                  }
+                  inputMode="numeric"
+                  maxLength={10}
                   disabled={isSaving}
                 />
               </div>
@@ -727,6 +772,79 @@ export function IamUserScreen({
             </button>
           </div>
         </form>
+      </Modal>
+
+      <Modal
+        title="Chi tiết người dùng"
+        open={Boolean(viewingUser)}
+        onCancel={closeView}
+        footer={null}
+        width={760}
+        centered
+        destroyOnHidden
+        getContainer={false}
+      >
+        {viewingUser ? (
+          <Space orientation="vertical" size={16} style={{ width: "100%" }}>
+            <Descriptions bordered column={{ xs: 1, md: 2 }} size="small">
+              <Descriptions.Item label="Họ và tên">
+                {viewingUser.display_name}
+              </Descriptions.Item>
+              <Descriptions.Item label="Tên đăng nhập">
+                {viewingUser.username}
+              </Descriptions.Item>
+              <Descriptions.Item label="Số điện thoại">
+                {viewingUser.phone || "—"}
+              </Descriptions.Item>
+              <Descriptions.Item label="Email">
+                {viewingUser.email || "—"}
+              </Descriptions.Item>
+              <Descriptions.Item label="Trạng thái">
+                <span className={statusClass(viewingUser.status)}>
+                  {statusLabel(viewingUser.status)}
+                </span>
+              </Descriptions.Item>
+              <Descriptions.Item label="Đăng nhập cuối">
+                {formatLastLogin(viewingUser.last_login_at)}
+              </Descriptions.Item>
+              <Descriptions.Item label="Version">
+                {viewingUser.version}
+              </Descriptions.Item>
+            </Descriptions>
+
+            <div>
+              <div className="section-title">
+                Vai trò &amp; phạm vi ({viewingUser.roles?.length ?? 0})
+              </div>
+              {viewingUser.roles && viewingUser.roles.length > 0 ? (
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Vai trò</th>
+                      <th>Phạm vi</th>
+                      <th>Hiệu lực</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {viewingUser.roles.map((role) => (
+                      <tr key={role.role_id}>
+                        <td>
+                          {role.role_name}
+                          <br />
+                          <Tag>{role.scope_type ?? "—"}</Tag>
+                        </td>
+                        <td>{scopeLabel(role, warehouseNames)}</td>
+                        <td>{effectiveWindowLabel(role.pivot)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <span className="muted">Chưa gán vai trò nào.</span>
+              )}
+            </div>
+          </Space>
+        ) : null}
       </Modal>
     </div>
   );

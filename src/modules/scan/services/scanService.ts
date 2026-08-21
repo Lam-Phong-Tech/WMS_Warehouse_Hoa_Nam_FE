@@ -11,6 +11,7 @@ import type {
   ScanClassifyRequest,
   ScanClassifyResponse,
   ScanClassification,
+  ScanContainerType,
   ScanContext,
   ScanResolvedSource,
   ScanBatch,
@@ -46,6 +47,7 @@ const RESOLVED_SOURCES = new Set<ScanResolvedSource>([
   "container.container_code",
   "products.code",
 ]);
+const CONTAINER_TYPES = new Set<ScanContainerType>(["CARTON", "BOX", "TRAY"]);
 
 function rowsOf<T>(value: T[] | { data?: T[] }): T[] {
   return Array.isArray(value)
@@ -240,6 +242,22 @@ function normalizeClassifyResponse(
               : undefined,
         };
 
+  // Inbound Carton Scan v1.0 §3.1: giữ lại identity container để FE đặt CARTON
+  // làm "Thùng đang quét"; classification=CONTAINER bắt buộc có container_id.
+  const containerId = nullableUuid(row.container_id, "container_id");
+  if (classification === "CONTAINER" && containerId === null) {
+    throw new WmsContractError(
+      "WMS_FE_INVALID_SCAN_RESPONSE",
+      "classification=CONTAINER must include a non-null container_id",
+    );
+  }
+  const containerTypeText = text(row.container_type).toUpperCase();
+  const containerType = CONTAINER_TYPES.has(
+    containerTypeText as ScanContainerType,
+  )
+    ? (containerTypeText as ScanContainerType)
+    : null;
+
   return {
     ...parsedIdentity,
     raw_code: rawCode,
@@ -248,6 +266,9 @@ function normalizeClassifyResponse(
     item_id: nullableUuid(row.item_id, "item_id"),
     sku_id: nullableUuid(row.sku_id, "sku_id"),
     product_id: nullableUuid(row.product_id, "product_id"),
+    container_id: containerId,
+    container_code: text(row.container_code).trim() || null,
+    container_type: containerType,
     stock_status: requireNonEmptyString(
       row.stock_status,
       "stock_status",

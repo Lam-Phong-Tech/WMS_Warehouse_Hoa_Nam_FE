@@ -432,7 +432,7 @@ export function InboundDraftModal({
                   <Form.Item label="Ghi chú" name="note">
                     <Input.TextArea
                       rows={3}
-                      maxLength={2000}
+                      maxLength={1000}
                       showCount
                       disabled={!isMutable}
                     />
