@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   cancelInboundDocument,
+  completeInboundCartonScan,
   createInboundDocument,
   fetchInboundDetail,
   fetchInboundDocuments,
@@ -150,6 +151,16 @@ export function useScanInbound() {
         containerId,
         idempotencyKey,
       }),
+  );
+}
+/**
+ * Inbound Carton Scan v1.0 §3.3/§4.5: mốc "Đã quét xong thùng" — audit-only,
+ * stock-neutral. Invalidate inbound queries để count theo carton luôn đúng.
+ */
+export function useCompleteInboundCartonScan() {
+  return useInvalidateInboundMutation(
+    ({ id, containerId }: { id: string; containerId: string }) =>
+      completeInboundCartonScan(id, containerId),
   );
 }
 export function useUnscanInbound() {

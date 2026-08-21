@@ -57,6 +57,12 @@ export const API_ENDPOINTS = {
   INBOUND_UNSCAN: "/inbound-documents/:id/unscan",
   /** Annex D SCR-IN-01: đọc lại bảng mã đã quét sau khi tải lại trang. */
   INBOUND_SCAN_ENTRIES: "/inbound-documents/:id/scan-entries",
+  /**
+   * Inbound Carton Scan v1.0 §3.3: mốc "Đã quét xong thùng" — audit-only,
+   * stock-neutral, không đổi container.status, không bump document version.
+   */
+  INBOUND_CARTON_COMPLETE_SCAN:
+    "/inbound-documents/:id/cartons/:containerId/complete-scan",
 
   // Annex C: scanOutboundDocument = /scans, confirmOutboundRequestImport = /confirm,
   // assignItemRfid = PUT /outbound-documents/{id}/items/{item_id}/rfid,
