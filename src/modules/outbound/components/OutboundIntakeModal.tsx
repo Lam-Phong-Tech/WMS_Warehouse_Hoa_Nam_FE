@@ -95,6 +95,13 @@ const IMPORT_STATUS_COLOR: Record<string, string> = {
   CONSUMED: "default",
 };
 
+const IMPORT_STATUS_LABEL: Record<string, string> = {
+  UPLOADED: "Đã tải lên",
+  VALIDATED: "Dữ liệu hợp lệ",
+  REJECTED: "Có lỗi dữ liệu",
+  CONSUMED: "Đã tạo phiếu",
+};
+
 /**
  * OUT-REQ-01 · Tiếp nhận Phiếu yêu cầu xuất.
  * Hai chế độ: nhập tay (validate qua cùng API import) và upload file Excel.
@@ -133,14 +140,18 @@ export function OutboundIntakeModal({
   const skuRows = skuQuery.data?.data ?? [];
   const agencyRows = agencyQuery.data?.data ?? [];
 
-  // OUT-REQ-01: cột "Khả dụng" chỉ để tham khảo khi preview; availability
-  // thật luôn được BE kiểm tra lại tại thời điểm scan/Post (mục 2.1).
+  // OUT-REQ-01: availability ở preview chỉ là snapshot tham khảo. BE vẫn kiểm
+  // tra lại authoritative tại Scan/Post. Khi user map lại SKU trong preview,
+  // phải query cả SKU override để cột Khả dụng không hiển thị số của SKU cũ.
   const previewSkuIds = [
-    ...new Set(
-      (preview?.rows ?? [])
+    ...new Set([
+      ...(preview?.rows ?? [])
         .map((row) => text(row.normalized.sku_id))
         .filter(Boolean),
-    ),
+      ...Object.values(resolutions)
+        .map((resolution) => resolution.sku_id ?? "")
+        .filter(Boolean),
+    ]),
   ];
   const availabilityQuery = useQuery({
     queryKey: ["mvp-outbound", "availability", preview?.id, previewSkuIds],
@@ -148,6 +159,13 @@ export function OutboundIntakeModal({
     retry: false,
     queryFn: () => fetchAvailableQtyBySku(previewSkuIds),
   });
+
+  const rowSkuId = (row: ImportRow): string =>
+    resolutions[row.rowNo]?.sku_id || text(row.normalized.sku_id);
+
+  const rowRequiredQty = (row: ImportRow): number =>
+    resolutions[row.rowNo]?.required_qty ??
+    Number(row.normalized.required_qty ?? 0);
 
   const resetAll = () => {
     setPreview(null);
@@ -189,11 +207,11 @@ export function OutboundIntakeModal({
       setPreview(result);
       if (result.status === "VALIDATED") {
         toast.success(
-          "Yêu cầu xuất hợp lệ. Kiểm tra preview rồi Confirm để tạo Outbound DRAFT.",
+          "Dữ liệu yêu cầu xuất hợp lệ để tiếp nhận. Tồn kho sẽ được kiểm tra lại khi quét và khi Hoàn tất xuất.",
         );
       } else {
         toast.warning(
-          "Dữ liệu còn lỗi blocking — chưa thể consume. Sửa theo bảng lỗi bên dưới.",
+          "Dữ liệu còn lỗi bắt buộc — sửa theo từng dòng trước khi tạo phiếu xuất.",
         );
       }
     },
@@ -214,11 +232,11 @@ export function OutboundIntakeModal({
       setPreview(result);
       if (result.status === "VALIDATED") {
         toast.success(
-          "File Excel đã VALIDATED. Confirm để tạo Outbound DRAFT.",
+          "Dữ liệu Excel hợp lệ để tiếp nhận. Tồn kho sẽ được kiểm tra lại khi quét và khi Hoàn tất xuất.",
         );
       } else {
         toast.warning(
-          "File có row lỗi. Blocking error khiến toàn bộ batch không được consume (không consume một phần).",
+          "File có dòng lỗi bắt buộc. Cả lô chưa được tạo phiếu cho tới khi các lỗi được xử lý.",
         );
       }
     },
@@ -229,7 +247,7 @@ export function OutboundIntakeModal({
 
   const consumeMutation = useMutation({
     mutationFn: async () => {
-      if (!preview) throw new Error("Chưa có import để Confirm.");
+      if (!preview) throw new Error("Chưa có import để xác nhận.");
       // Annex C confirmOutboundRequestImport: Idempotency-Key + If-Match(version import),
       // kèm mapping line và override người nhận đã resolve ở màn review (§8.1).
       const lines = Object.entries(resolutions)
@@ -253,7 +271,7 @@ export function OutboundIntakeModal({
     },
     onSuccess: (result) => {
       toast.success(
-        `Đã tạo ${result.outboundRequestIds.length} request OPEN và ${result.outboundDocumentIds.length} phiếu xuất DRAFT.`,
+        `Đã tạo ${result.outboundRequestIds.length} yêu cầu xuất và ${result.outboundDocumentIds.length} phiếu xuất nháp.`,
       );
       const ids = result.outboundDocumentIds;
       resetAll();
@@ -277,9 +295,9 @@ export function OutboundIntakeModal({
   };
 
   const previewColumns: ColumnsType<ImportRow> = [
-    { title: "Row", dataIndex: "rowNo", width: 70 },
+    { title: "Dòng", dataIndex: "rowNo", width: 70 },
     {
-      title: "Request",
+      title: "Mã yêu cầu",
       key: "request",
       width: 170,
       render: (_, row) => text(row.normalized.request_no, "-"),
@@ -303,7 +321,7 @@ export function OutboundIntakeModal({
     },
     {
       // SCR-REQ-OUT-01: "line mapping" — resolve SKU chưa map ngay ở bước review.
-      title: "Map SKU (Confirm)",
+      title: "Map SKU khi xác nhận",
       key: "sku_mapping",
       width: 260,
       render: (_, row) => (
@@ -356,27 +374,27 @@ export function OutboundIntakeModal({
       ),
     },
     {
-      title: "Khả dụng",
+      title: "Khả dụng hiện tại",
       key: "available",
-      width: 150,
+      width: 180,
       align: "right",
       render: (_, row) => {
-        const skuId = text(row.normalized.sku_id);
+        const skuId = rowSkuId(row);
         const available = skuId ? availabilityQuery.data?.[skuId] : undefined;
         if (available === undefined) {
           return (
             <Typography.Text type="secondary">
-              {availabilityQuery.isLoading ? "…" : "—"}
+              {availabilityQuery.isLoading ? "…" : "Chưa có dữ liệu"}
             </Typography.Text>
           );
         }
-        const required = Number(row.normalized.required_qty ?? 0);
+        const required = rowRequiredQty(row);
         return (
           <Space size={4}>
             <span>{available}</span>
             {row.errors.length === 0 ? (
               <Tag color={available >= required ? "success" : "warning"}>
-                {available >= required ? "Có thể đáp ứng" : "Thiếu tồn"}
+                {available >= required ? "Đủ hiện tại" : "Thiếu hiện tại"}
               </Tag>
             ) : null}
           </Space>
@@ -384,14 +402,25 @@ export function OutboundIntakeModal({
       },
     },
     {
-      title: "Kết quả",
+      title: "Kết quả kiểm tra",
       key: "result",
-      render: (_, row) =>
-        row.errors.length === 0 ? (
-          <Tag color="success">VALID</Tag>
-        ) : (
-          <Typography.Text type="danger">{rowErrorText(row)}</Typography.Text>
-        ),
+      width: 220,
+      render: (_, row) => {
+        if (row.errors.length > 0) {
+          return (
+            <Typography.Text type="danger">{rowErrorText(row)}</Typography.Text>
+          );
+        }
+
+        const skuId = rowSkuId(row);
+        const available = skuId ? availabilityQuery.data?.[skuId] : undefined;
+        const required = rowRequiredQty(row);
+        if (available !== undefined && available < required) {
+          return <Tag color="warning">Dữ liệu hợp lệ · Thiếu tồn hiện tại</Tag>;
+        }
+
+        return <Tag color="success">Dữ liệu hợp lệ</Tag>;
+      },
     },
   ];
 
@@ -419,14 +448,14 @@ export function OutboundIntakeModal({
         <Space wrap>
           <Tag color="blue">POST /outbound-request-imports</Tag>
           <Tag color="blue">POST /outbound-request-imports/:id/confirm</Tag>
-          <Tag color="gold">Idempotency-Key + If-Match khi Confirm</Tag>
-          <Tag color="green">stock_effect=NONE</Tag>
+          <Tag color="gold">Idempotency-Key + If-Match khi xác nhận</Tag>
+          <Tag color="green">Không thay đổi tồn ở bước tiếp nhận</Tag>
         </Space>
         <Alert
           type="info"
           showIcon
-          title="Luồng chuẩn: validate request/Excel → preview lỗi row/field → map SKU/người nhận → Confirm → BE tạo Outbound DRAFT"
-          description="Blocking error khiến cả batch không được Confirm (không tạo một phần). Một toa chỉ một người nhận; trùng source key/checksum/số toa đều bị chặn, không tạo phiếu trùng."
+          title="Luồng chuẩn: kiểm tra yêu cầu/Excel → xem lỗi từng dòng → map SKU/người nhận → xác nhận → tạo phiếu xuất nháp"
+          description="Lỗi dữ liệu bắt buộc sẽ chặn tạo cả lô. Số lượng khả dụng ở màn này chỉ là snapshot tham khảo; BE kiểm tra tồn lại khi quét item và khi Hoàn tất xuất để tránh dùng số liệu cũ."
         />
 
         <Space wrap>
@@ -461,7 +490,7 @@ export function OutboundIntakeModal({
             <div className="grid-2">
               <Form.Item
                 name="request_no"
-                label="source_request_no *"
+                label="Mã phiếu yêu cầu xuất *"
                 rules={[
                   { required: true, message: "Nhập mã phiếu yêu cầu xuất" },
                 ]}
@@ -515,7 +544,7 @@ export function OutboundIntakeModal({
                 />
               </Form.Item>
               <Form.Item name="request_date" label="Ngày toa">
-                <Input placeholder="YYYY-MM-DD" maxLength={10} />
+                <Input type="date" aria-label="Ngày toa" />
               </Form.Item>
             </div>
 
@@ -583,7 +612,7 @@ export function OutboundIntakeModal({
                 disabled={!canImport}
                 onClick={() => validateManualMutation.mutate()}
               >
-                Kiểm tra & Preview
+                Kiểm tra & xem trước
               </Button>
               <Typography.Text type="secondary">
                 Người nhận bắt buộc; địa chỉ/SĐT/ngày toa tùy chọn theo SRS §15
@@ -592,7 +621,7 @@ export function OutboundIntakeModal({
             </Space>
             <ApiErrorAlert
               error={validateManualMutation.error}
-              title="Không validate được yêu cầu xuất"
+              title="Không kiểm tra được yêu cầu xuất"
               style={{ marginTop: 12 }}
             />
           </Form>
@@ -609,8 +638,8 @@ export function OutboundIntakeModal({
               Cột bắt buộc: request_no · sku_code · required_qty ·
               recipient_name/customer_name. Cột tùy chọn: request_date ·
               recipient_address · recipient_contact_phone · note (SRS §5.2/§15).
-              Tối đa 10.000 dòng, file ≤ 20MB; row lỗi có thể resolve ở bảng
-              preview trước khi Confirm.
+              Tối đa 10.000 dòng, file ≤ 20MB; dòng lỗi có thể được xử lý ở bảng
+              xem trước trước khi xác nhận.
             </Typography.Text>
             <Button
               type="primary"
@@ -619,11 +648,11 @@ export function OutboundIntakeModal({
               disabled={!canImport || !file}
               onClick={() => validateFileMutation.mutate()}
             >
-              Upload & Preview
+              Tải lên & xem trước
             </Button>
             <ApiErrorAlert
               error={validateFileMutation.error}
-              title="Không validate được file Excel"
+              title="Không kiểm tra được file Excel"
             />
           </Space>
         )}
@@ -631,21 +660,21 @@ export function OutboundIntakeModal({
         {preview && (
           <Card
             size="small"
-            title={`Kết quả import preview · ${preview.importNo || preview.id}`}
+            title={`Kết quả xem trước · ${preview.importNo || preview.id}`}
           >
             <Space orientation="vertical" style={{ width: "100%" }}>
               <Space wrap>
                 <Tag color={IMPORT_STATUS_COLOR[preview.status] ?? "default"}>
-                  {preview.status || "-"}
+                  {IMPORT_STATUS_LABEL[preview.status] || preview.status || "-"}
                 </Tag>
                 <Typography.Text>Tổng: {preview.totalRows}</Typography.Text>
                 <Typography.Text type="success">
-                  Hợp lệ: {preview.validRows}
+                  Hợp lệ dữ liệu: {preview.validRows}
                 </Typography.Text>
                 <Typography.Text
                   type={preview.errorRows > 0 ? "danger" : undefined}
                 >
-                  Lỗi: {preview.errorRows}
+                  Lỗi dữ liệu: {preview.errorRows}
                 </Typography.Text>
               </Space>
               <Table<ImportRow>
@@ -659,18 +688,18 @@ export function OutboundIntakeModal({
                     : false
                 }
                 scroll={{ x: 1420 }}
-                locale={{ emptyText: "Import không có row nào" }}
+                locale={{ emptyText: "Không có dòng dữ liệu nào" }}
               />
               {/* §8.1: ConfirmRequest "may override recipient fields"; hiệu lực
                   receiver_name bắt buộc, address/phone optional. */}
               <Card
                 size="small"
-                title="Override người nhận khi Confirm (tùy chọn)"
+                title="Ghi đè người nhận khi xác nhận (tùy chọn)"
               >
                 <Space wrap>
                   <Input
                     style={{ width: 240 }}
-                    placeholder="Người nhận (receiver_name)"
+                    placeholder="Người nhận"
                     maxLength={200}
                     value={recipientOverride.receiver_name}
                     onChange={(event) =>
@@ -724,19 +753,19 @@ export function OutboundIntakeModal({
                   loading={consumeMutation.isPending}
                   onClick={() => consumeMutation.mutate()}
                 >
-                  Confirm & tạo Outbound DRAFT
+                  Xác nhận & tạo phiếu xuất nháp
                 </Button>
                 {!consumable && (
                   <Typography.Text type="secondary">
                     {!canImport
-                      ? "Bạn không có quyền outbound.request.confirm."
-                      : "Còn row lỗi — map SKU/số lượng hoặc override người nhận rồi Confirm lại."}
+                      ? "Bạn không có quyền xác nhận yêu cầu xuất."
+                      : "Còn dòng lỗi — map SKU/số lượng hoặc sửa người nhận rồi xác nhận lại."}
                   </Typography.Text>
                 )}
               </Space>
               <ApiErrorAlert
                 error={consumeMutation.error}
-                title="Không Confirm được toa xuất"
+                title="Không xác nhận được yêu cầu xuất"
               />
             </Space>
           </Card>
