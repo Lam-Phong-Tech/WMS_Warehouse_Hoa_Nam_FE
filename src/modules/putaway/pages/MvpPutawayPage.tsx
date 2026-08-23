@@ -70,6 +70,15 @@ const putawayKeys = {
   trays: ["putaway", "trays"] as const,
 };
 
+const BOX_STATUS_LABEL: Record<string, string> = {
+  RECEIVED_PENDING_PUTAWAY: "Chờ xếp khay",
+  STORED: "Đã xếp khay",
+};
+
+function boxStatusLabel(status: string): string {
+  return BOX_STATUS_LABEL[status] ?? status;
+}
+
 function ApiErrorAlert({
   error,
   fallback,
@@ -208,9 +217,7 @@ export default function MvpPutawayPage() {
 
   const openPutaway = (row: PutawayTask) => {
     if (row.status !== "RECEIVED_PENDING_PUTAWAY") {
-      toast.error(
-        "Initial Putaway chỉ áp dụng cho BOX ở trạng thái RECEIVED_PENDING_PUTAWAY.",
-      );
+      toast.error("Chỉ BOX đang chờ xếp khay mới được thực hiện thao tác này.");
       return;
     }
     setSelected(row);
@@ -265,11 +272,11 @@ export default function MvpPutawayPage() {
       const tray = resolvePutawayTrayByScanCode(trays, rawCode);
       form.setFieldValue("to_tray_id", tray.container_id);
       setTrayScanError(null);
-      toast.success(`Đã nhận TRAY ${tray.container_code}.`);
+      toast.success(`Đã nhận khay ${tray.container_code}.`);
     } catch (error) {
       form.setFieldValue("to_tray_id", undefined);
       setTrayScanError(
-        error instanceof Error ? error.message : "Mã TRAY không hợp lệ.",
+        error instanceof Error ? error.message : "Mã khay không hợp lệ.",
       );
     }
   };
@@ -277,9 +284,7 @@ export default function MvpPutawayPage() {
   const createDraft = async () => {
     if (!selected || !canManage) return;
     if (selected.status !== "RECEIVED_PENDING_PUTAWAY") {
-      toast.error(
-        "BOX không còn ở trạng thái chờ Putaway. Hãy làm mới dữ liệu.",
-      );
+      toast.error("BOX không còn ở trạng thái chờ xếp khay. Hãy làm mới dữ liệu.");
       return;
     }
 
@@ -290,7 +295,7 @@ export default function MvpPutawayPage() {
       );
       if (!targetTray) {
         form.setFieldValue("to_tray_id", undefined);
-        toast.error("TRAY đích không còn khả dụng. Hãy scan/chọn lại.");
+        toast.error("Khay đích không còn khả dụng. Hãy quét/chọn lại.");
         return;
       }
 
@@ -301,17 +306,15 @@ export default function MvpPutawayPage() {
         note: values.note?.trim() || null,
       });
       if (result.stock_effect !== "NONE" || result.movement_created !== false) {
-        throw new Error(
-          "Invariant lỗi: tạo Putaway DRAFT không được ảnh hưởng tồn kho.",
-        );
+        throw new Error("Lỗi bất biến: tạo lệnh xếp khay không được thay đổi tồn kho.");
       }
       toast.success(
-        "Đã tạo Putaway DRAFT. Xác nhận trên danh sách để hoàn tất BOX → TRAY.",
+        "Đã tạo lệnh xếp khay nháp. Xác nhận trên danh sách để hoàn tất BOX → khay.",
       );
       closePutaway();
     } catch (error) {
       if ((error as { errorFields?: unknown }).errorFields) return;
-      toast.error(getApiErrorMessage(error, "Không tạo được Putaway DRAFT."));
+      toast.error(getApiErrorMessage(error, "Không tạo được lệnh xếp khay."));
     }
   };
 
@@ -323,15 +326,11 @@ export default function MvpPutawayPage() {
         version: row.draft_version,
       });
       if (result.stock_effect !== "NONE" || result.movement_created !== false) {
-        throw new Error(
-          "Invariant lỗi: Confirm Putaway không được tạo stock movement.",
-        );
+        throw new Error("Lỗi bất biến: xác nhận xếp khay không được tạo biến động tồn.");
       }
-      toast.success(
-        "Putaway thành công. BOX đã map vào TRAY; available_qty không đổi.",
-      );
+      toast.success("Xếp khay thành công. BOX đã được gán vào khay; số lượng tồn không đổi.");
     } catch (error) {
-      toast.error(getApiErrorMessage(error, "Không xác nhận được Putaway."));
+      toast.error(getApiErrorMessage(error, "Không xác nhận được việc xếp khay."));
       throw error;
     }
   };
@@ -344,23 +343,19 @@ export default function MvpPutawayPage() {
         version: row.draft_version,
       });
       if (result.stock_effect !== "NONE" || result.movement_created !== false) {
-        throw new Error(
-          "Invariant lỗi: Cancel Putaway không được ảnh hưởng tồn kho.",
-        );
+        throw new Error("Lỗi bất biến: hủy lệnh xếp khay không được thay đổi tồn kho.");
       }
-      toast.success(
-        "Đã hủy Putaway DRAFT. BOX vẫn chờ xếp khay; tồn kho không đổi.",
-      );
+      toast.success("Đã hủy lệnh xếp khay nháp. BOX vẫn ở trạng thái chờ xếp khay; tồn kho không đổi.");
     } catch (error) {
-      toast.error(getApiErrorMessage(error, "Không hủy được Putaway DRAFT."));
+      toast.error(getApiErrorMessage(error, "Không hủy được lệnh xếp khay."));
       throw error;
     }
   };
 
   const confirmWithPrompt = (row: PutawayTask) => {
     Modal.confirm({
-      title: "Xác nhận Putaway?",
-      content: "BOX sẽ map sang TRAY đã chọn. Không tạo stock movement.",
+      title: "Xác nhận xếp khay?",
+      content: "BOX sẽ được gán vào khay đã chọn. Thao tác này không thay đổi số lượng tồn.",
       okText: "Xác nhận",
       cancelText: "Quay lại",
       onOk: () => confirm(row),
@@ -369,9 +364,9 @@ export default function MvpPutawayPage() {
 
   const cancelWithPrompt = (row: PutawayTask) => {
     Modal.confirm({
-      title: "Hủy Putaway DRAFT?",
-      content: "BOX quay lại chờ xếp khay; tồn kho không đổi.",
-      okText: "Hủy DRAFT",
+      title: "Hủy lệnh xếp khay nháp?",
+      content: "BOX sẽ quay lại trạng thái chờ xếp khay; tồn kho không đổi.",
+      okText: "Hủy lệnh",
       okButtonProps: { danger: true },
       cancelText: "Quay lại",
       onOk: () => cancel(row),
@@ -405,16 +400,18 @@ export default function MvpPutawayPage() {
       dataIndex: "status",
       width: 210,
       render: (value: string) => (
-        <Tag color={value === "STORED" ? "success" : "warning"}>{value}</Tag>
+        <Tag color={value === "STORED" ? "success" : "warning"}>
+          {boxStatusLabel(value)}
+        </Tag>
       ),
     },
     {
-      title: "Putaway DRAFT",
+      title: "Lệnh xếp khay",
       key: "draft",
       width: 180,
       render: (_, row) =>
         row.draft_id ? (
-          <Tag color="processing">{row.to_tray_code || "Đã chọn TRAY"}</Tag>
+          <Tag color="processing">{row.to_tray_code || "Đã chọn khay"}</Tag>
         ) : (
           <Tag>Chưa tạo</Tag>
         ),
@@ -429,14 +426,14 @@ export default function MvpPutawayPage() {
           ? [
               {
                 key: "confirm",
-                label: "Xác nhận Putaway",
+                label: "Xác nhận xếp khay",
                 icon: <CheckOutlined />,
                 disabled: !canManage,
                 onClick: () => confirmWithPrompt(row),
               },
               {
                 key: "cancel",
-                label: "Hủy DRAFT",
+                label: "Hủy lệnh nháp",
                 icon: <CloseOutlined />,
                 danger: true,
                 disabled: !canManage,
@@ -467,7 +464,7 @@ export default function MvpPutawayPage() {
             </Button>
             {actionItems.length > 0 ? (
               <ActionDropdown
-                tooltip="Thao tác Putaway"
+                tooltip="Thao tác xếp khay"
                 icon={<MoreOutlined />}
                 items={actionItems}
               />
@@ -508,7 +505,7 @@ export default function MvpPutawayPage() {
     {
       title: "Ảnh hưởng tồn",
       width: 140,
-      render: () => <Tag color="success">NONE</Tag>,
+      render: () => <Tag color="success">Không đổi tồn</Tag>,
     },
   ];
 
@@ -526,8 +523,8 @@ export default function MvpPutawayPage() {
         <div className="master-data-contract-strip">
           <Tag color="blue">GET/POST /putaway/tasks</Tag>
           <Tag color="blue">POST /putaway/tasks/:id/confirm</Tag>
-          <Tag color="gold">container.view / container.manage</Tag>
-          <Tag color="green">stock_effect=NONE</Tag>
+          <Tag color="gold">Quyền xếp khay / quản lý container</Tag>
+          <Tag color="green">Không thay đổi tồn kho</Tag>
         </div>
 
         {activeTab === "pending" ? (
@@ -548,14 +545,14 @@ export default function MvpPutawayPage() {
           showIcon
           type="info"
           className="master-data-state-alert"
-          title="Putaway là bước định vị sau Full Post Receipt, không phải bước nhập tồn"
-          description="COMPONENT đã tăng tồn tại Post Receipt. PTW-00/PTW-01 chỉ map BOX → TRAY/location; create/confirm/cancel đều stock-neutral. Initial Putaway chỉ nhận BOX RECEIVED_PENDING_PUTAWAY."
+          title="Xếp khay là bước định vị sau khi đã hoàn tất nhập kho, không phải bước tăng tồn"
+          description="Linh kiện đã tăng tồn ở bước Post Receipt. Màn này chỉ gán BOX vào TRAY/vị trí; tạo, xác nhận hoặc hủy lệnh xếp khay đều không làm thay đổi số lượng tồn."
         />
 
         {firstError ? (
           <ApiErrorAlert
             error={firstError}
-            fallback="Không tải được dữ liệu Putaway."
+            fallback="Không tải được dữ liệu xếp khay."
           />
         ) : null}
 
@@ -592,7 +589,7 @@ export default function MvpPutawayPage() {
             },
             {
               key: "history",
-              label: "Lịch sử Putaway",
+              label: "Lịch sử xếp khay",
               children: (
                 <>
                   <PageSizeSelector
@@ -609,7 +606,7 @@ export default function MvpPutawayPage() {
                       showSizeChanger: false,
                       showTotal: (total) => `Tổng ${total} bản ghi`,
                     }}
-                    locale={{ emptyText: "Chưa có lịch sử Putaway" }}
+                    locale={{ emptyText: "Chưa có lịch sử xếp khay" }}
                     scroll={{ x: 1180 }}
                   />
                 </>
@@ -628,7 +625,7 @@ export default function MvpPutawayPage() {
         open={Boolean(selected)}
         onCancel={closePutaway}
         onOk={() => void createDraft()}
-        okText="Tạo Putaway DRAFT"
+        okText="Tạo lệnh xếp khay"
         okButtonProps={{
           icon: <CheckCircleOutlined />,
           loading: createMutation.isPending,
@@ -660,29 +657,29 @@ export default function MvpPutawayPage() {
                 {selected.receipt_code || "-"}
               </Descriptions.Item>
               <Descriptions.Item label="Trạng thái" span={2}>
-                <Tag color="warning">{selected.status}</Tag>
+                <Tag color="warning">{boxStatusLabel(selected.status)}</Tag>
               </Descriptions.Item>
             </Descriptions>
             <Alert
               showIcon
               type="warning"
               className="master-data-state-alert"
-              title="Tạo DRAFT chưa thay đổi mapping vật lý"
-              description="Chỉ Confirm mới cập nhật BOX → TRAY. confirmed_at/confirmed_by chỉ được ghi tại Confirm; cả DRAFT và Confirm đều không đổi tồn."
+              title="Tạo lệnh nháp chưa thay đổi vị trí vật lý"
+              description="Chỉ khi xác nhận, BOX mới được gán vào khay. Cả bước tạo lệnh và bước xác nhận đều không làm thay đổi số lượng tồn kho."
             />
           </>
         ) : null}
 
         <Form form={form} layout="vertical">
           <Form.Item
-            label="Scan Barcode/QR TRAY đích"
-            extra="Ưu tiên camera/scanner. Nhập mã thủ công là fallback; mã phải resolve đúng một TRAY khả dụng."
+            label="Quét Barcode/QR của khay đích"
+            extra="Ưu tiên camera/máy quét. Nhập mã thủ công là phương án dự phòng; mã phải xác định đúng một khay khả dụng."
           >
             <Row gutter={8} align="top">
               <Col flex="auto">
                 <ScanInput
                   value={trayScanValue}
-                  placeholder="Scan/nhập mã TRAY, VD: TRAY-A-01"
+                  placeholder="Quét/nhập mã khay, VD: TRAY-A-01"
                   error={trayScanError}
                   disabled={!canManage || traysQuery.isLoading}
                   onChange={(value) => {
@@ -707,15 +704,15 @@ export default function MvpPutawayPage() {
 
           <Form.Item
             name="to_tray_id"
-            label="TRAY đã resolve / chọn fallback"
-            rules={[{ required: true, message: "Scan hoặc chọn TRAY đích." }]}
+            label="Khay đã nhận diện / chọn thủ công"
+            rules={[{ required: true, message: "Quét hoặc chọn khay đích." }]}
           >
             <Select
               showSearch
               optionFilterProp="label"
               options={trayOptions}
               loading={traysQuery.isLoading}
-              placeholder="TRAY khả dụng"
+              placeholder="Chọn khay khả dụng"
               onChange={() => setTrayScanError(null)}
             />
           </Form.Item>
@@ -730,7 +727,7 @@ export default function MvpPutawayPage() {
 
       <CameraScanModal
         open={cameraOpen}
-        title="Camera Barcode/QR · Scan TRAY đích"
+        title="Camera Barcode/QR · Quét khay đích"
         onClose={() => setCameraOpen(false)}
         onDetected={(code) => {
           setCameraOpen(false);
@@ -741,8 +738,8 @@ export default function MvpPutawayPage() {
       <Modal
         title={
           detailRow
-            ? `Chi tiết Putaway · ${detailRow.box_code}`
-            : "Chi tiết Putaway"
+            ? `Chi tiết xếp khay · ${detailRow.box_code}`
+            : "Chi tiết xếp khay"
         }
         open={Boolean(detailRow)}
         onCancel={() => setDetailRow(null)}
@@ -777,14 +774,14 @@ export default function MvpPutawayPage() {
               <Tag
                 color={detailRow.status === "STORED" ? "success" : "warning"}
               >
-                {detailRow.status}
+                {boxStatusLabel(detailRow.status)}
               </Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="Putaway DRAFT">
-              {detailRow.draft_id || "Chưa tạo"}
+            <Descriptions.Item label="Lệnh xếp khay">
+              {detailRow.draft_id ? "Đã tạo lệnh nháp" : "Chưa tạo"}
             </Descriptions.Item>
-            <Descriptions.Item label="Stock effect">
-              <Tag color="success">NONE</Tag>
+            <Descriptions.Item label="Ảnh hưởng tồn kho">
+              <Tag color="success">Không đổi tồn</Tag>
             </Descriptions.Item>
           </Descriptions>
         ) : null}
