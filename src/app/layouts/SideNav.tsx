@@ -51,7 +51,7 @@ const NAV_GROUPS: NavGroup[] = [
         // SCR-WH-01 (REQ-SRS-001): cấu hình đúng 01 kho tổng.
         screen: "WH-01",
         path: ROUTES.WAREHOUSE_CONFIG,
-        label: "Cấu hình kho tổng",
+        label: "Cấu hình kho",
       },
       {
         screen: "AGY-01",

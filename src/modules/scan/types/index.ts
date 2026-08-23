@@ -106,6 +106,37 @@ export interface ScanEvent {
   scanned_by: string;
 }
 
+/**
+ * POST /api/v1/skus/{id}/items (Modules\Warehouse\Http\Controllers\
+ * CurrentBaselineItemIdentityController::issue) — tạo Item_Instance mới kèm
+ * Physical_Code mới, stock-neutral (item_status=NEW). Chỉ SKU sku_type=PRODUCT
+ * và is_serial_tracked=true mới hợp lệ.
+ */
+export type IssuePhysicalCodeCarrierType = "QR" | "BARCODE";
+
+export interface IssueItemPhysicalCodeRequest {
+  skuId: string;
+  carrier_type?: IssuePhysicalCodeCarrierType;
+  code_value?: string;
+  serial_number?: string;
+  idempotencyKey?: string;
+}
+
+export interface IssueItemPhysicalCodeResult {
+  item_id: string;
+  sku_id: string;
+  serial_number: string;
+  item_status: string;
+  item_condition: string;
+  physical_code_id: string;
+  code_value: string;
+  carrier_type: IssuePhysicalCodeCarrierType;
+  is_primary: boolean;
+  status: string;
+  version: number;
+  stock_effect: "NONE";
+}
+
 export interface PhysicalCode {
   id: string;
   code_value: string;

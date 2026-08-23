@@ -76,7 +76,7 @@ export const MENU: AppMenuItem[] = [
       },
       {
         key: ROUTES.WAREHOUSE_CONFIG,
-        label: "Cấu hình kho tổng",
+        label: "Cấu hình kho",
         icon: <HomeOutlined />,
         permission: ROUTE_PERMISSIONS[ROUTES.WAREHOUSE_CONFIG],
       },

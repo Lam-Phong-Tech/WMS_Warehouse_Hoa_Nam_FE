@@ -492,7 +492,7 @@ test.describe("WWHN-292 FE-controlled UI/responsive/RBAC closure", () => {
     {
       screen: "WH-01",
       route: "/master-data/warehouse",
-      menuLabel: "Cấu hình kho tổng",
+      menuLabel: "Cấu hình kho",
     },
     {
       screen: "AGY-01",

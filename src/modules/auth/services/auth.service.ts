@@ -41,6 +41,12 @@ type BackendLoginResponse = {
 
 type BackendMeResponse = BackendUser & {
   status?: string;
+  phone?: string | null;
+  company?: MeResponse["company"];
+  branch?: MeResponse["branch"];
+  department?: MeResponse["department"];
+  position?: MeResponse["position"];
+  role?: MeResponse["role"];
 };
 
 function requireNonEmptyString(value: unknown, field: string): string {
@@ -210,12 +216,12 @@ function normalizeMeResponse(data: BackendMeResponse): MeResponse {
     roles,
     permissions,
     warehouse_scope_ids: warehouseScopeIds,
-    phone: null,
-    company: null,
-    branch: null,
-    department: null,
-    position: null,
-    role: {
+    phone: data.phone ?? user.phone ?? null,
+    company: data.company ?? null,
+    branch: data.branch ?? null,
+    department: data.department ?? null,
+    position: data.position ?? null,
+    role: data.role ?? {
       id: 0,
       name: roles[0]?.role_name ?? "",
       permissions: [],
