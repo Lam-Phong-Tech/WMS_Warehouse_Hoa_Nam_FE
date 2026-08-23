@@ -27,6 +27,11 @@ const DefectMasterScreen = lazy(() =>
     default: m.DefectMasterScreen,
   })),
 );
+const DashboardPage = lazy(() =>
+  import("@/modules/dashboard/pages/DashboardPage").then((m) => ({
+    default: m.default,
+  })),
+);
 const InboundPage = lazy(() =>
   import("@/modules/inbound/pages/InboundPage").then((m) => ({
     default: m.default,
@@ -190,7 +195,7 @@ const ROUTE_META: Record<string, ScreenMeta> = {
       "Hãng, nhóm hàng, model, nguồn điện và quy cách đóng gói dùng cho form tạo SKU.",
   },
   [ROUTES.WAREHOUSE_CONFIG]: {
-    title: "Cấu hình kho tổng",
+    title: "Cấu hình kho",
     description:
       "Thông tin, liên hệ và trạng thái của kho tổng duy nhất theo REQ-SRS-001.",
   },
@@ -257,6 +262,8 @@ function resolveScreenMeta(pathname: string, search: string): ScreenMeta {
 
 function renderMvpScreen(sourceScreen: string, requestedScreen: string | null) {
   switch (sourceScreen) {
+    case "MAP-01":
+      return <DashboardPage />;
     case "IAM-01":
       return <IamUserScreen openCreateOnMount={requestedScreen === "IAM-02"} />;
     case "MST-01":

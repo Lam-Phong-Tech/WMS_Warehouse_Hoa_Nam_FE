@@ -201,7 +201,7 @@ export function WarehouseConfigScreen() {
             <HomeOutlined />
             <div>
               <Typography.Title level={3} style={{ margin: 0 }}>
-                Cấu hình kho tổng
+                Cấu hình kho
               </Typography.Title>
               <Typography.Text type="secondary">
                 Thông tin, liên hệ và trạng thái của kho tổng duy nhất

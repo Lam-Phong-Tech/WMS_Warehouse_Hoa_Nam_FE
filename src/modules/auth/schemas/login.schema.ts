@@ -2,21 +2,37 @@ import { z } from "zod";
 import type { LoginRequest } from "@/modules/auth/types/auth.types";
 
 const USERNAME_REGEX = /^[a-zA-Z0-9._-]+$/;
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL_REGEX =
+  /^[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/;
+
+function isEmailIdentifier(identifier: string): boolean {
+  return identifier.includes("@");
+}
 
 export const loginSchema = z
   .object({
     identifier: z
       .string()
       .trim()
-      .toLowerCase()
       .min(1, "Vui lòng nhập email hoặc tên đăng nhập")
       .max(254, "Email hoặc tên đăng nhập quá dài"),
     password: z.string().min(1, "Vui lòng nhập mật khẩu"),
   })
   .superRefine(({ identifier }, context) => {
-    if (identifier.includes("@")) {
-      if (!EMAIL_REGEX.test(identifier)) {
+    if (isEmailIdentifier(identifier)) {
+      const [localPart = "", domain = "", extraPart] = identifier.split("@");
+      const hasInvalidFormat =
+        extraPart !== undefined ||
+        localPart.length === 0 ||
+        domain.length === 0 ||
+        localPart.length > 64 ||
+        identifier.includes("..") ||
+        localPart.startsWith(".") ||
+        localPart.endsWith(".") ||
+        identifier !== identifier.toLowerCase() ||
+        !EMAIL_REGEX.test(identifier);
+
+      if (hasInvalidFormat) {
         context.addIssue({
           code: "custom",
           path: ["identifier"],
@@ -52,8 +68,8 @@ export type LoginFormValues = z.infer<typeof loginSchema>;
  * Keep this mapping in one place so UI wording cannot drift from API payload.
  */
 export function toLoginRequest(values: LoginFormValues): LoginRequest {
-  const identifier = values.identifier.trim().toLowerCase();
-  return identifier.includes("@")
+  const identifier = values.identifier.trim();
+  return isEmailIdentifier(identifier)
     ? { email: identifier, password: values.password }
-    : { username: identifier, password: values.password };
+    : { username: identifier.toLowerCase(), password: values.password };
 }

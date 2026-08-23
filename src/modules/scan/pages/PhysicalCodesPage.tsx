@@ -25,6 +25,9 @@ import {
   fetchScanBatchesPage,
   fetchScanEventsPage,
 } from "../services/scanService";
+import { IssuePhysicalCodeModal } from "../components/IssuePhysicalCodeModal";
+import { useCan } from "@/shared/components/permission";
+import { WMS_PERMISSION_CATALOG } from "@/shared/constants/wms-permissions";
 import type {
   PhysicalCode,
   ScanBatch,
@@ -77,6 +80,10 @@ export default function PhysicalCodesPage() {
     useState<ScanClassifyResponse | null>(null);
   const [classifyState, setClassifyState] = useState<ScanCodeState>("waiting");
   const [classifyMessage, setClassifyMessage] = useState("");
+  const [issueModalOpen, setIssueModalOpen] = useState(false);
+  const canCreatePhysicalCode = useCan(
+    WMS_PERMISSION_CATALOG.PHYSICAL_CODE_CREATE,
+  );
 
   const batchPagination = resolveApiPagination(batchMeta, {
     page: batchPage,
@@ -209,7 +216,12 @@ export default function PhysicalCodesPage() {
                     placeholder="Giá trị mã / UID..."
                     style={{ width: 285 }}
                   />
-                  <Button type="primary" icon={<BarcodeOutlined />} disabled>
+                  <Button
+                    type="primary"
+                    icon={<BarcodeOutlined />}
+                    disabled={!canCreatePhysicalCode}
+                    onClick={() => setIssueModalOpen(true)}
+                  >
                     Tạo mã
                   </Button>
                 </Space>
@@ -523,6 +535,16 @@ export default function PhysicalCodesPage() {
             ),
           },
         ]}
+      />
+      <IssuePhysicalCodeModal
+        open={issueModalOpen}
+        onClose={() => setIssueModalOpen(false)}
+        onIssued={() => {
+          setIssueModalOpen(false);
+          setActiveTab("list");
+          setCodePage(1);
+          setReloadKey((value) => value + 1);
+        }}
       />
     </div>
   );

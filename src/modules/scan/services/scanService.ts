@@ -4,6 +4,7 @@ import { http } from "@/shared/api/http";
 import {
   WmsContractError,
   requireNonEmptyString,
+  requireIdempotencyKeyHeader,
 } from "@/shared/api/wms-contract";
 import { WMS_ACTION_PERMISSIONS } from "@/shared/constants/wms-permissions";
 import type { ApiMeta } from "@/shared/types/api-response";
@@ -17,6 +18,9 @@ import type {
   ScanBatch,
   ScanEvent,
   PhysicalCode,
+  IssueItemPhysicalCodeRequest,
+  IssueItemPhysicalCodeResult,
+  IssuePhysicalCodeCarrierType,
 } from "../types";
 
 type RawRecord = Record<string, unknown>;
@@ -27,7 +31,7 @@ export interface ScanPageResult<T> {
 }
 
 const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const SCAN_CONTEXTS = new Set<ScanContext>([
   "INBOUND",
   "OUTBOUND",
@@ -48,6 +52,20 @@ const RESOLVED_SOURCES = new Set<ScanResolvedSource>([
   "products.code",
 ]);
 const CONTAINER_TYPES = new Set<ScanContainerType>(["CARTON", "BOX", "TRAY"]);
+const ISSUE_CARRIER_TYPES = new Set<IssuePhysicalCodeCarrierType>([
+  "QR",
+  "BARCODE",
+]);
+
+function endpoint(template: string, id: string): string {
+  return template.replace(":id", id);
+}
+
+function makeIdempotencyKey(operation: string): string {
+  const uuid =
+    globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
+  return `fe:${operation}:${uuid}`;
+}
 
 function rowsOf<T>(value: T[] | { data?: T[] }): T[] {
   return Array.isArray(value)
@@ -416,4 +434,97 @@ export async function fetchPhysicalCodes(
     "WMS_FE_CONTRACT_NOT_APPROVED",
     "Physical code list endpoint is not approved. FE requires BE/BA route, payload, status enum, error code, sample response, and permission sign-off.",
   );
+}
+
+function normalizeIssueResult(value: unknown): IssueItemPhysicalCodeResult {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new WmsContractError(
+      "WMS_FE_INVALID_ISSUE_RESPONSE",
+      "Issue item physical code response data must be an object",
+    );
+  }
+  const row = value as RawRecord;
+  const carrierType = text(row.carrier_type).toUpperCase();
+  if (!ISSUE_CARRIER_TYPES.has(carrierType as IssuePhysicalCodeCarrierType)) {
+    throw new WmsContractError(
+      "WMS_FE_INVALID_ISSUE_RESPONSE",
+      `Unexpected carrier_type in response: ${carrierType || "empty"}`,
+    );
+  }
+  if (row.stock_effect !== "NONE") {
+    throw new WmsContractError(
+      "WMS_FE_INVALID_ISSUE_RESPONSE",
+      "stock_effect must be NONE for issuing a new item identity",
+    );
+  }
+
+  return {
+    item_id: requireNonEmptyString(
+      row.item_id,
+      "item_id",
+      "WMS_FE_INVALID_ISSUE_RESPONSE",
+    ),
+    sku_id: requireNonEmptyString(
+      row.sku_id,
+      "sku_id",
+      "WMS_FE_INVALID_ISSUE_RESPONSE",
+    ),
+    serial_number: text(row.serial_number),
+    item_status: text(row.item_status),
+    item_condition: text(row.item_condition),
+    physical_code_id: requireNonEmptyString(
+      row.physical_code_id,
+      "physical_code_id",
+      "WMS_FE_INVALID_ISSUE_RESPONSE",
+    ),
+    code_value: requireNonEmptyString(
+      row.code_value,
+      "code_value",
+      "WMS_FE_INVALID_ISSUE_RESPONSE",
+    ),
+    carrier_type: carrierType as IssuePhysicalCodeCarrierType,
+    is_primary: row.is_primary === true,
+    status: text(row.status),
+    version: num(row.version),
+    stock_effect: "NONE",
+  };
+}
+
+/**
+ * POST /api/v1/skus/{id}/items — permission physical_code.create. Tạo Item_Instance
+ * mới + Physical_Code mới cùng lúc (không tồn tại API nào khác làm được việc này
+ * trước đây; xem CurrentBaselineItemIdentityController@issue trên BE).
+ * Stock-neutral: item tạo với item_status=NEW, không phát sinh movement.
+ */
+export async function issueItemPhysicalCode(
+  request: IssueItemPhysicalCodeRequest,
+): Promise<IssueItemPhysicalCodeResult> {
+  assertWmsActionPermission(
+    WMS_ACTION_PERMISSIONS.PHYSICAL_CODE_CREATE,
+    "issue new item physical code",
+  );
+  const skuId = requireUuid(request.skuId, "skuId");
+  const carrierType = request.carrier_type
+    ? requireKnownCode(
+        request.carrier_type.toUpperCase(),
+        ISSUE_CARRIER_TYPES,
+        "carrier_type",
+      )
+    : undefined;
+  const codeValue = request.code_value?.trim() || undefined;
+  const serialNumber = request.serial_number?.trim() || undefined;
+  const idempotencyKey = requireIdempotencyKeyHeader(
+    request.idempotencyKey ?? makeIdempotencyKey(`physical-code-issue-${skuId}`),
+  )["Idempotency-Key"];
+
+  const result = await http.post<unknown>(
+    endpoint(API_ENDPOINTS.SKU_ITEM_ISSUE, skuId),
+    {
+      ...(carrierType ? { carrier_type: carrierType } : {}),
+      ...(codeValue ? { code_value: codeValue } : {}),
+      ...(serialNumber ? { serial_number: serialNumber } : {}),
+    },
+    { headers: { "Idempotency-Key": idempotencyKey } },
+  );
+  return normalizeIssueResult(result);
 }

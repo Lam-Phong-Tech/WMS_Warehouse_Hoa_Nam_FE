@@ -68,6 +68,8 @@ export const WMS_PERMISSION_CATALOG = {
   PACKING_LABEL_PRINT: "packing_label.print",
   PACKING_LABEL_REPRINT: "packing_label.reprint",
   PHYSICAL_CODE_ASSIGN_RFID: "physical_code.assign_rfid",
+  /** Phát hành Item_Instance mới kèm Physical_Code mới (QR/Barcode) — POST /skus/{id}/items. */
+  PHYSICAL_CODE_CREATE: "physical_code.create",
   // REQ-SRS-037 (Must; nhãn `DEC-NO-STOCKTAKE-001` CHƯA có formal approval — xem
   // ghi chú thẩm quyền ở src/shared/constants/routes.ts): MVP không có permission
   // kiểm kê hay sửa tồn trực tiếp. Sửa sai sau Post chỉ đi qua REVERSAL_POST bên dưới.
@@ -187,6 +189,7 @@ export const WMS_ACTION_PERMISSIONS = {
   WARRANTY_COMPONENT_ISSUE: [WMS_PERMISSION_CATALOG.WARRANTY_COMPONENT_ISSUE],
   EXPORT_REPORT: [WMS_PERMISSION_CATALOG.REPORT_EXPORT],
   POST_REVERSAL: [WMS_PERMISSION_CATALOG.REVERSAL_POST],
+  PHYSICAL_CODE_CREATE: [WMS_PERMISSION_CATALOG.PHYSICAL_CODE_CREATE],
 } as const;
 
 export type WmsPermissionCode =

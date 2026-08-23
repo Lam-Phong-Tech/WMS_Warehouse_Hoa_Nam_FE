@@ -185,6 +185,12 @@ export const API_ENDPOINTS = {
   // điều kiện endpoint này dùng để trả 200 hay 404 (xem SkuImportModal). Đường dẫn lưu
   // trữ nội bộ `error_file_path` không được BE trả ra ngoài.
   SKU_IMPORT_REPORT_ERROR_FILE: "/skus/import-reports/:id/error-file",
+  /**
+   * ERD bảng 20/21 — phát hành Item_Instance mới kèm Physical_Code mới
+   * (QR/Barcode) cho SKU PRODUCT serial-tracked, stock-neutral. Permission
+   * physical_code.create (Modules/Warehouse/routes/governance.php).
+   */
+  SKU_ITEM_ISSUE: "/skus/:id/items",
   /** @deprecated ERD bảng import_batch (item_instance traceability) — không phải SKU import. */
   IMPORT_BATCHES: "/import-batches",
 

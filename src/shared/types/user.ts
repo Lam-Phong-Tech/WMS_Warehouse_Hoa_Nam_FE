@@ -13,6 +13,8 @@ export interface User {
   display_name?: string;
   email: string;
   code: string;
+  phone?: string | null;
+  status?: string;
   roles?: UserRoleAssignment[];
   permissions?: string[];
   warehouse_scope_ids?: string[];
