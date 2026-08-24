@@ -32,23 +32,23 @@ const FLOW_LANES: FlowLane[] = [
     label: "Nhập kho",
     nodes: [
       { label: "Danh sách phiếu nhập", route: ROUTES.INBOUND },
-      { label: "Tạo DRAFT", route: ROUTES.INBOUND },
-      { label: "Quét / camera", route: ROUTES.INBOUND },
-      { label: "Post toàn bộ", route: ROUTES.INBOUND },
+      { label: "Tạo phiếu nháp", route: ROUTES.INBOUND },
+      { label: "Quét hàng", route: ROUTES.INBOUND },
+      { label: "Ghi nhận nhập kho", route: ROUTES.INBOUND },
       { label: "Linh kiện chờ xếp khay", route: ROUTES.PUTAWAY },
-      { label: "Putaway", route: ROUTES.PUTAWAY },
+      { label: "Xếp vị trí", route: ROUTES.PUTAWAY },
     ],
   },
   {
     label: "Xuất kho",
     nodes: [
       { label: "Phiếu yêu cầu xuất", route: ROUTES.OUTBOUND },
-      { label: "Import Excel / nhập tay", route: ROUTES.OUTBOUND },
+      { label: "Nhập từ Excel / nhập tay", route: ROUTES.OUTBOUND },
       { label: "Danh sách phiếu xuất", route: ROUTES.OUTBOUND },
       { label: "Chi tiết phiếu xuất", route: ROUTES.OUTBOUND },
-      { label: "Quét match", route: ROUTES.OUTBOUND },
+      { label: "Quét đối chiếu", route: ROUTES.OUTBOUND },
       { label: "In nhãn", route: ROUTES.OUTBOUND },
-      { label: "Map RFID / Post", route: ROUTES.OUTBOUND },
+      { label: "Gắn RFID / ghi nhận xuất", route: ROUTES.OUTBOUND },
     ],
   },
   {
@@ -65,18 +65,20 @@ const FLOW_LANES: FlowLane[] = [
     nodes: [
       { label: "Tra cứu tồn", route: ROUTES.INVENTORY },
       { label: "Truy vết", route: ROUTES.SCAN },
-      { label: "Danh sách Reversal", route: ROUTES.REVERSE },
-      { label: "Tạo Reversal", route: ROUTES.REVERSE },
+      { label: "Danh sách điều chỉnh tồn", route: ROUTES.REVERSE },
+      { label: "Tạo điều chỉnh tồn", route: ROUTES.REVERSE },
     ],
   },
 ];
 
-const MVP_NOTES = [
-  "Không dựng App PV trong bộ wireframe này.",
-  "Giao diện ưu tiên tiếng Việt cho người dùng vận hành kho.",
-  "Camera điện thoại có thể thay máy quét Barcode / QR trong các màn nghiệp vụ.",
-  "Luồng nhập / xuất vẫn bám nguyên tắc full-post, không partial.",
-];
+const WARRANTY_STATUS_LABELS: Record<string, string> = {
+  RECEIVED: "Đã tiếp nhận",
+  CHECKING: "Đang kiểm tra",
+  REPAIRING: "Đang sửa chữa",
+  COMPLETED: "Đã hoàn tất sửa chữa",
+  RETURNED: "Đã trả khách",
+  CANCELLED: "Đã hủy",
+};
 
 const numberFormatter = new Intl.NumberFormat("vi-VN", {
   maximumFractionDigits: 2,
@@ -192,7 +194,7 @@ export default function DashboardPage() {
       },
       {
         key: "reversal_net",
-        label: "Reversal (net)",
+        label: "Điều chỉnh tồn (ròng)",
         value: dashboardQuery.data.reversal_net,
       },
     ];
@@ -203,11 +205,6 @@ export default function DashboardPage() {
     ...flowMetrics.map((metric) => Math.abs(metric.value)),
   );
 
-  /**
-   * role="img" là leaf node đối với screen reader: mọi text bên trong bị bỏ qua.
-   * Nhãn vì thế phải mang luôn số liệu, nếu không người dùng AT chỉ nghe được tên
-   * biểu đồ và mất toàn bộ giá trị KPI trong kỳ.
-   */
   const flowChartLabel = useMemo(() => {
     if (!dashboardQuery.data) return "";
     const series = flowMetrics
@@ -246,18 +243,17 @@ export default function DashboardPage() {
         aria-labelledby="dashboard-title"
       >
         <div>
-          <div className="tag">WWHN-327 · Dashboard enhancement</div>
+          <div className="tag">Tổng quan vận hành</div>
           <h1 id="dashboard-title" className="hn-dashboard-title">
-            Tổng quan dashboard
+            Tổng quan kho
           </h1>
           <p className="hn-dashboard-muted">
-            Số liệu lấy trực tiếp từ GET /reports/dashboard-quick. Các luồng
-            nhập/xuất dùng occurred_at trong kỳ; tồn khả dụng, bảo hành và đối
-            soát là số liệu snapshot/toàn bộ theo contract backend.
+            Theo dõi tồn khả dụng, nhập kho, xuất kho, bảo hành và các cảnh báo
+            đối soát trên cùng một màn hình.
           </p>
         </div>
 
-        <div className="hn-dashboard-filter" aria-label="Bộ lọc kỳ dashboard">
+        <div className="hn-dashboard-filter" aria-label="Bộ lọc kỳ thống kê">
           <label>
             <span>Từ ngày</span>
             <input
@@ -295,7 +291,7 @@ export default function DashboardPage() {
               onClick={resetFilter}
               disabled={dashboardQuery.isFetching || !canViewReport}
             >
-              Mặc định BE
+              Đặt lại
             </button>
           </div>
         </div>
@@ -305,22 +301,22 @@ export default function DashboardPage() {
           </div>
         ) : null}
         <div className="hn-dashboard-muted hn-dashboard-timezone">
-          Cutoff ngày theo timezone backend: Asia/Ho_Chi_Minh. Khi không gửi bộ
-          lọc, backend dùng kỳ mặc định 30 ngày gần nhất.
+          Dữ liệu được tổng hợp theo múi giờ Việt Nam. Khi không chọn khoảng
+          ngày, hệ thống hiển thị 30 ngày gần nhất.
         </div>
       </section>
 
       {isProfileLoaded && !canViewReport ? (
         <section className="hn-card hn-dashboard-state" role="alert">
-          <strong>Không có quyền xem dashboard báo cáo.</strong>
-          <span>Bạn không có quyền report.view trong context hiện hành.</span>
+          <strong>Không có quyền xem báo cáo tổng quan.</strong>
+          <span>Vui lòng liên hệ quản trị viên nếu bạn cần quyền truy cập.</span>
         </section>
       ) : null}
 
       {canViewReport && dashboardQuery.isLoading ? (
         <section className="hn-card hn-dashboard-state" aria-live="polite">
-          <strong>Đang tải số liệu dashboard…</strong>
-          <span>Hệ thống đang lấy KPI từ backend.</span>
+          <strong>Đang tải số liệu tổng quan…</strong>
+          <span>Hệ thống đang tổng hợp dữ liệu vận hành.</span>
         </section>
       ) : null}
 
@@ -328,15 +324,15 @@ export default function DashboardPage() {
         <section className="hn-card hn-dashboard-state" role="alert">
           <strong>
             {status === 403
-              ? "Bạn không có quyền report.view."
+              ? "Bạn không có quyền xem báo cáo tổng quan."
               : status === 422
-                ? "Bộ lọc ngày không hợp lệ."
-                : "Không tải được số liệu dashboard."}
+                ? "Khoảng ngày đã chọn không hợp lệ."
+                : "Không tải được số liệu tổng quan."}
           </strong>
           <span>
             {status === 401
               ? "Phiên đăng nhập không còn hợp lệ."
-              : "Không hiển thị dữ liệu cũ hoặc dữ liệu giả khi API lỗi."}
+              : "Hệ thống không hiển thị dữ liệu cũ khi việc tải dữ liệu thất bại."}
           </span>
           <button
             type="button"
@@ -355,49 +351,46 @@ export default function DashboardPage() {
             <div className="hn-dashboard-section-heading">
               <div>
                 <h2 id="dashboard-kpi-title" className="hn-section-title">
-                  KPI vận hành
+                  Chỉ số vận hành
                 </h2>
                 <div className="hn-dashboard-muted">
-                  Kỳ BE trả về: {data.period.from_date} → {data.period.to_date}
+                  Kỳ thống kê: {data.period.from_date} → {data.period.to_date}
                 </div>
-                {/* WWHN-328: phạm vi dữ liệu phải hiện trên màn hình, nếu không
-                    người dùng bị giới hạn kho không phân biệt được KPI của mình
-                    với KPI toàn hệ thống. */}
                 <div className="hn-dashboard-muted">
                   Phạm vi dữ liệu:{" "}
                   {data.data_scope === "GLOBAL"
-                    ? "Toàn hệ thống (không giới hạn kho)"
-                    : `Giới hạn ${data.scope_warehouse_ids?.length ?? 0} kho theo phân quyền`}
+                    ? "Toàn hệ thống"
+                    : `Theo ${data.scope_warehouse_ids?.length ?? 0} kho bạn được phân quyền`}
                 </div>
               </div>
-              <span className="tag">Nguồn: backend authoritative</span>
+              <span className="tag">Dữ liệu hệ thống</span>
             </div>
 
             <div className="hn-dashboard-kpi-grid">
               <DashboardMetricCard
                 label="Tồn khả dụng"
                 value={data.available_qty}
-                note="Snapshot AVAILABLE hiện tại"
+                note="Số lượng hiện có thể sử dụng"
               />
               <DashboardMetricCard
                 label="Nhập kho"
                 value={data.receipt_qty}
-                note="RECEIPT theo occurred_at trong kỳ"
+                note="Tổng số lượng đã ghi nhận nhập trong kỳ"
               />
               <DashboardMetricCard
                 label="Xuất kho"
                 value={data.issue_qty}
-                note="ISSUE theo occurred_at trong kỳ"
+                note="Tổng số lượng đã ghi nhận xuất trong kỳ"
               />
               <DashboardMetricCard
                 label="Xuất linh kiện"
                 value={data.component_issue_qty}
-                note="COMPONENT_ISSUE trong kỳ"
+                note="Tổng linh kiện đã xuất trong kỳ"
               />
               <DashboardMetricCard
-                label="Reversal net"
+                label="Điều chỉnh tồn (ròng)"
                 value={data.reversal_net}
-                note="Có thể âm; không lấy trị tuyệt đối ở KPI"
+                note="Chênh lệch tăng/giảm tồn do điều chỉnh trong kỳ"
               />
             </div>
           </section>
@@ -405,22 +398,19 @@ export default function DashboardPage() {
           {empty ? (
             <section className="hn-card hn-dashboard-state" aria-live="polite">
               <strong>Không có số liệu trong kỳ.</strong>
-              <span>
-                API trả về 0 cho toàn bộ KPI và không có cảnh báo/ca bảo hành để
-                hiển thị.
-              </span>
+              <span>Chưa phát sinh dữ liệu vận hành trong khoảng ngày đã chọn.</span>
             </section>
           ) : (
             <section
               className="hn-dashboard-grid"
-              aria-label="Biểu đồ dashboard"
+              aria-label="Biểu đồ tổng quan"
             >
               <div className="hn-card">
                 <div className="hn-section-title">
                   Biểu đồ luồng kho trong kỳ
                 </div>
                 <div className="hn-dashboard-muted">
-                  So sánh theo độ lớn; Reversal vẫn giữ dấu ở nhãn số liệu.
+                  So sánh quy mô nhập, xuất, xuất linh kiện và điều chỉnh tồn.
                 </div>
                 <div
                   className="hn-dashboard-bar-chart"
@@ -452,17 +442,12 @@ export default function DashboardPage() {
               <div className="hn-card">
                 <div className="hn-section-title">Bảo hành theo trạng thái</div>
                 <div className="hn-dashboard-muted">
-                  Toàn bộ warranty case, không áp dụng bộ lọc kỳ.
+                  Tổng hợp các ca bảo hành hiện có trong hệ thống.
                 </div>
-                {/* WWHN-328 KPI matrix v1.2 §1: warranty_cases_by_status là ngoại lệ
-                    GLOBAL có chủ đích (ERD warranty_case không có warehouse_id). Không
-                    nói ra thì người dùng bị giới hạn kho đọc "Phạm vi dữ liệu: giới hạn
-                    N kho" ở trên rồi quy nhầm số ca bảo hành này về kho của mình. */}
                 {data.data_scope === "WAREHOUSE_SCOPED" ? (
                   <div className="hn-dashboard-scope-exception" role="note">
-                    Ngoại lệ phạm vi: số liệu bảo hành vẫn là toàn hệ thống,
-                    không cắt theo phạm vi kho — warranty_case không gắn kho
-                    trong ERD.
+                    Số liệu bảo hành được tổng hợp toàn hệ thống và không giới
+                    hạn theo kho.
                   </div>
                 ) : null}
                 {warrantyEntries.length === 0 ? (
@@ -476,7 +461,10 @@ export default function DashboardPage() {
                         className="hn-dashboard-status-row"
                         key={warrantyStatus}
                       >
-                        <span>{warrantyStatus.replaceAll("_", " ")}</span>
+                        <span>
+                          {WARRANTY_STATUS_LABELS[warrantyStatus] ??
+                            warrantyStatus.replaceAll("_", " ")}
+                        </span>
                         <strong>{formatNumber(count)}</strong>
                       </div>
                     ))}
@@ -490,9 +478,7 @@ export default function DashboardPage() {
                   {formatNumber(data.reconciliation_warning_count)} cảnh báo
                 </strong>
                 <div className="hn-dashboard-muted">
-                  Số dòng reconciliation_status=MISMATCH tại thời điểm gọi API.
-                  {/* Đếm bằng reconciliation_warning_count, không bằng độ dài mảng:
-                      BE chỉ nhúng tối đa 50 dòng mẫu (WWHN-328). */}
+                  Số trường hợp chênh lệch cần kiểm tra tại thời điểm hiện tại.
                 </div>
               </div>
             </section>
@@ -530,22 +516,6 @@ export default function DashboardPage() {
           ))}
         </div>
       </section>
-
-      <div className="hn-grid-2" style={{ marginTop: 16 }}>
-        <div className="hn-card hn-soft">
-          <div className="hn-section-title">Ghi chú phạm vi MVP</div>
-          {MVP_NOTES.map((note) => (
-            <div className="hn-rule" key={note}>
-              <span className="hn-dot" aria-hidden="true" />
-              <span>{note}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="hn-footer-note">
-        Wireframe mức low-fi · Nguồn BA: BRD / SRS-FRD / BPD hiện tại.
-      </div>
     </div>
   );
 }
