@@ -73,10 +73,8 @@ describe("DashboardPage / WWHN-327", () => {
 
     renderDashboard();
 
-    // KPI card và biểu đồ cùng hiển thị một con số, nên phải query trong phạm vi
-    // từng region — query toàn trang sẽ mơ hồ và không chứng minh được card nào.
     const kpiRegion = await screen.findByRole("region", {
-      name: "KPI vận hành",
+      name: "Chỉ số vận hành",
     });
     expect(within(kpiRegion).getByText("1.234")).toBeInTheDocument();
     expect(within(kpiRegion).getByText("300")).toBeInTheDocument();
@@ -85,15 +83,14 @@ describe("DashboardPage / WWHN-327", () => {
     expect(within(kpiRegion).getByText("-5")).toBeInTheDocument();
 
     const chartRegion = screen.getByRole("region", {
-      name: "Biểu đồ dashboard",
+      name: "Biểu đồ tổng quan",
     });
     expect(within(chartRegion).getByText("300")).toBeInTheDocument();
     expect(within(chartRegion).getByText("-5")).toBeInTheDocument();
 
-    // role="img" là leaf với screen reader: nhãn phải mang đủ số liệu chuỗi.
     expect(
       within(chartRegion).getByRole("img", {
-        name: "Biểu đồ luồng kho từ 2026-07-19 đến 2026-08-18: Nhập kho 300; Xuất kho 120; Xuất linh kiện 25; Reversal (net) -5",
+        name: "Biểu đồ luồng kho từ 2026-07-19 đến 2026-08-18: Nhập kho 300; Xuất kho 120; Xuất linh kiện 25; Điều chỉnh tồn (ròng) -5",
       }),
     ).toBeInTheDocument();
 
@@ -116,6 +113,26 @@ describe("DashboardPage / WWHN-327", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("does not expose backend/API implementation language to operators", async () => {
+    mockedFetchDashboardKPI.mockResolvedValue(populatedDashboard);
+
+    renderDashboard();
+    await screen.findByRole("region", { name: "Chỉ số vận hành" });
+
+    const visibleText = document.body.textContent ?? "";
+    for (const forbidden of [
+      "Mặc định BE",
+      "Kỳ BE",
+      "backend authoritative",
+      "/reports/dashboard-quick",
+      "occurred_at",
+      "scope_type",
+      "wireframe",
+    ]) {
+      expect(visibleText).not.toContain(forbidden);
+    }
+  });
+
   it("does not call report API when the loaded profile lacks report.view", () => {
     useAuthStore.setState({
       isProfileLoaded: true,
@@ -127,14 +144,12 @@ describe("DashboardPage / WWHN-327", () => {
 
     expect(
       screen.getByText(
-        "Bạn không có quyền report.view trong context hiện hành.",
+        "Vui lòng liên hệ quản trị viên nếu bạn cần quyền truy cập.",
       ),
     ).toBeInTheDocument();
     expect(mockedFetchDashboardKPI).not.toHaveBeenCalled();
   });
 
-  // WWHN-328 DEV328-P1-01: phạm vi dữ liệu và tổng cảnh báo phải đọc từ contract,
-  // không suy ra từ độ dài mảng mẫu mà BE đã cắt trần.
   it("shows the warehouse data scope returned by the aggregate contract", async () => {
     mockedFetchDashboardKPI.mockResolvedValue({
       ...populatedDashboard,
@@ -144,18 +159,14 @@ describe("DashboardPage / WWHN-327", () => {
 
     renderDashboard();
 
-    // Nhãn và giá trị nằm chung một <div> nên phải khớp theo regex trên textContent.
     expect(
       await screen.findByText(
-        /Phạm vi dữ liệu:\s*Giới hạn 2 kho theo phân quyền/,
+        /Phạm vi dữ liệu:\s*Theo 2 kho bạn được phân quyền/,
       ),
     ).toBeInTheDocument();
   });
 
-  // WWHN-327: KPI matrix v1.2 §1 khai warranty là ngoại lệ GLOBAL có chủ đích. Người
-  // dùng bị giới hạn kho vừa đọc "Giới hạn N kho" ở KPI sẽ quy nhầm số ca bảo hành về
-  // kho của mình nếu màn hình không nói ngoại lệ đó ra.
-  it("declares the warranty GLOBAL exception when the payload is warehouse-scoped", async () => {
+  it("declares the warranty global exception when the payload is warehouse-scoped", async () => {
     mockedFetchDashboardKPI.mockResolvedValue({
       ...populatedDashboard,
       data_scope: "WAREHOUSE_SCOPED",
@@ -165,20 +176,16 @@ describe("DashboardPage / WWHN-327", () => {
     renderDashboard();
 
     const exception = await screen.findByRole("note");
-    expect(exception).toHaveTextContent(
-      /số liệu bảo hành vẫn là toàn hệ thống/i,
-    );
-    expect(exception).toHaveTextContent(
-      /warranty_case không gắn kho trong ERD/i,
-    );
+    expect(exception).toHaveTextContent(/bảo hành được tổng hợp toàn hệ thống/i);
+    expect(exception).toHaveTextContent(/không giới hạn theo kho/i);
   });
 
-  it("does not show the warranty scope exception on a GLOBAL payload", async () => {
+  it("does not show the warranty scope exception on a global payload", async () => {
     mockedFetchDashboardKPI.mockResolvedValue(populatedDashboard);
 
     renderDashboard();
 
-    await screen.findByRole("region", { name: "KPI vận hành" });
+    await screen.findByRole("region", { name: "Chỉ số vận hành" });
     expect(screen.queryByRole("note")).not.toBeInTheDocument();
   });
 
@@ -192,7 +199,7 @@ describe("DashboardPage / WWHN-327", () => {
     renderDashboard();
 
     const chartRegion = await screen.findByRole("region", {
-      name: "Biểu đồ dashboard",
+      name: "Biểu đồ tổng quan",
     });
     expect(within(chartRegion).getByText("137 cảnh báo")).toBeInTheDocument();
   });
