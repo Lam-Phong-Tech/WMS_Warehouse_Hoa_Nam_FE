@@ -28,6 +28,7 @@ import {
   fetchWarrantyAttachments,
   fetchWarrantyCase,
   fetchWarrantyCaseEvents,
+  updateWarrantyCase,
 } from "@/modules/warranty/services/warrantyService";
 import { fetchComponentIssueDocuments } from "@/modules/warranty/services/componentIssueService";
 import { useAuthStore } from "@/shared/store/auth.store";
@@ -44,6 +45,7 @@ const DETAIL = {
   manual_product_description: "Máy khoan màu xanh",
   customer_name: "Ng*** A",
   customer_phone: "09*****01",
+  customer_address: "12*** TP.HCM",
   defect: "Không lên nguồn",
   defect_code: "PWR",
   reported_defect: "Máy không chạy",
@@ -89,6 +91,7 @@ describe("WarrantyDetailModal (WAR-03)", () => {
         } as never,
       ],
     });
+    vi.mocked(updateWarrantyCase).mockReset();
     useAuthStore.setState({
       isSuperAdmin: false,
       permissionCodes: ["warranty.manage", "warranty.component_issue"],
@@ -109,15 +112,10 @@ describe("WarrantyDetailModal (WAR-03)", () => {
     );
 
     expect(await screen.findByText("BH-0001")).toBeInTheDocument();
-    // Thiếu warranty.pii.view → hiện cảnh báo mask.
     expect(screen.getByText(/warranty.pii.view/)).toBeInTheDocument();
-    // Cảnh báo TEMP_ONLY + mã tạm, không liên kết item gốc.
     expect(screen.getByText(/Mã tạm: TEMP-0001/)).toBeInTheDocument();
-    // Field chẩn đoán WAR-P1-02 hiển thị từ dữ liệu persist (stub Descriptions
-    // render text-node trần nên đối chiếu qua textContent).
     expect(document.body.textContent).toContain("Chết mạch nguồn");
     expect(document.body.textContent).toContain("Pin 20V, sạc");
-    // Đính kèm + phiếu xuất linh kiện của case.
     expect(await screen.findByText("mat-truoc.jpg")).toBeInTheDocument();
     expect(await screen.findByText("CI-0001")).toBeInTheDocument();
   });
@@ -141,11 +139,44 @@ describe("WarrantyDetailModal (WAR-03)", () => {
       documentId: null,
     });
 
-    // Bấm vào số phiếu CI-0001 mở đúng document.
     fireEvent.click(screen.getByRole("button", { name: "CI-0001" }));
     expect(onOpenComponentIssue).toHaveBeenLastCalledWith(
       expect.objectContaining({ caseId: "wc-1", documentId: "ci-1" }),
     );
+  });
+
+  it("không tự lưu thay đổi trước khi người dùng bấm Lưu", async () => {
+    useAuthStore.setState({
+      isSuperAdmin: false,
+      permissionCodes: [
+        "warranty.manage",
+        "warranty.component_issue",
+        "warranty.pii.view",
+      ],
+    });
+
+    renderWithProviders(
+      <WarrantyDetailModal
+        caseId="wc-1"
+        onClose={() => {}}
+        onOpenComponentIssue={() => {}}
+      />,
+    );
+    await screen.findByText("BH-0001");
+
+    fireEvent.click(screen.getByRole("button", { name: "Sửa thông tin" }));
+    const customerName = await screen.findByLabelText("Tên khách gửi (PII)");
+    fireEvent.change(customerName, { target: { value: "Nguyễn Văn B" } });
+
+    expect(updateWarrantyCase).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Hủy" }));
+    await waitFor(() => {
+      expect(
+        screen.queryByRole("dialog", { name: "Sửa thông tin case bảo hành" }),
+      ).not.toBeInTheDocument();
+    });
+    expect(updateWarrantyCase).not.toHaveBeenCalled();
   });
 
   it("case RETURNED (terminal): không cho cập nhật trạng thái, caseActive=false", async () => {
