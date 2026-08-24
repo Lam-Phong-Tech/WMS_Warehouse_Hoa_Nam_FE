@@ -19,7 +19,10 @@ vi.mock("@/shared/api/axios", () => ({
   },
 }));
 
-import { http } from "@/shared/api/http";
+import {
+  http,
+  normalizeMultipartBooleanFields,
+} from "@/shared/api/http";
 
 describe("http unwrap hardening", () => {
   beforeEach(() => {
@@ -69,5 +72,47 @@ describe("http unwrap hardening", () => {
     const raw = { items: [1, 2] };
     getMock.mockResolvedValue({ status: 200, data: raw });
     await expect(http.getPage("/x")).resolves.toEqual({ data: raw, meta: {} });
+  });
+});
+
+describe("multipart boolean transport contract", () => {
+  it("chuẩn hóa true/false thành 1/0 để Laravel boolean validator chấp nhận", () => {
+    const body = new FormData();
+    body.append("update_existing", "true");
+    body.append("dry_run", "false");
+
+    normalizeMultipartBooleanFields(body);
+
+    expect(body.get("update_existing")).toBe("1");
+    expect(body.get("dry_run")).toBe("0");
+  });
+
+  it("không ép dữ liệu rác thành false", () => {
+    const body = new FormData();
+    body.append("update_existing", "yes");
+    body.append("dry_run", "invalid");
+
+    normalizeMultipartBooleanFields(body);
+
+    expect(body.get("update_existing")).toBe("yes");
+    expect(body.get("dry_run")).toBe("invalid");
+  });
+
+  it("http.post luôn chuẩn hóa FormData trước khi gửi", async () => {
+    const body = new FormData();
+    body.append("update_existing", "true");
+    body.append("dry_run", "false");
+    postMock.mockResolvedValue({
+      status: 200,
+      data: { success: true, data: { ok: true } },
+    });
+
+    await expect(http.post("/api/v1/skus/import-excel", body)).resolves.toEqual({
+      ok: true,
+    });
+
+    const sentBody = postMock.mock.calls[0]?.[1] as FormData;
+    expect(sentBody.get("update_existing")).toBe("1");
+    expect(sentBody.get("dry_run")).toBe("0");
   });
 });

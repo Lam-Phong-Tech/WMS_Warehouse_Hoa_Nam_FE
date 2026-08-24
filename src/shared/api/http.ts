@@ -22,6 +22,32 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+/**
+ * Browser FormData serializes booleans to strings. Laravel's boolean validator
+ * accepts boolean values and 1/0 representations, but not the literal strings
+ * "true"/"false". Normalize only the documented multipart boolean field names
+ * at the transport boundary so every current/future caller uses one wire shape.
+ *
+ * Unknown values are deliberately preserved: the server must still reject bad
+ * input with 422 rather than the client silently coercing it to false.
+ */
+export function normalizeMultipartBooleanFields(body: unknown): unknown {
+  if (typeof FormData === "undefined" || !(body instanceof FormData)) {
+    return body;
+  }
+
+  for (const field of ["dry_run", "update_existing"]) {
+    const value = body.get(field);
+    if (value === "true") {
+      body.set(field, "1");
+    } else if (value === "false") {
+      body.set(field, "0");
+    }
+  }
+
+  return body;
+}
+
 function warnUnexpectedShape(url: string, body: unknown): void {
   if (import.meta.env.DEV) {
     console.warn(
@@ -111,7 +137,14 @@ export const http = {
     body?: unknown,
     config?: AxiosRequestConfig,
   ): Promise<T> {
-    return unwrap(await api.post<ApiResponse<T>>(url, body, config), url);
+    return unwrap(
+      await api.post<ApiResponse<T>>(
+        url,
+        normalizeMultipartBooleanFields(body),
+        config,
+      ),
+      url,
+    );
   },
 
   /**
@@ -125,7 +158,11 @@ export const http = {
     config?: AxiosRequestConfig,
   ): Promise<{ data: T; meta: ApiMeta }> {
     return unwrapWithMeta(
-      await api.post<ApiResponse<T>>(url, body, config),
+      await api.post<ApiResponse<T>>(
+        url,
+        normalizeMultipartBooleanFields(body),
+        config,
+      ),
       url,
     );
   },
@@ -135,7 +172,14 @@ export const http = {
     body?: unknown,
     config?: AxiosRequestConfig,
   ): Promise<T> {
-    return unwrap(await api.put<ApiResponse<T>>(url, body, config), url);
+    return unwrap(
+      await api.put<ApiResponse<T>>(
+        url,
+        normalizeMultipartBooleanFields(body),
+        config,
+      ),
+      url,
+    );
   },
 
   async patch<T>(
@@ -143,7 +187,14 @@ export const http = {
     body?: unknown,
     config?: AxiosRequestConfig,
   ): Promise<T> {
-    return unwrap(await api.patch<ApiResponse<T>>(url, body, config), url);
+    return unwrap(
+      await api.patch<ApiResponse<T>>(
+        url,
+        normalizeMultipartBooleanFields(body),
+        config,
+      ),
+      url,
+    );
   },
 
   async delete<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
