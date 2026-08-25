@@ -62,7 +62,7 @@ interface IntakeFormValues {
   customer_phone: string;
   customer_address?: string;
   purchase_date?: Dayjs;
-  defect_id?: string;
+  defect_ids?: string[];
   reported_defect: string;
   accessories_received?: string;
   received_condition?: string;
@@ -218,7 +218,7 @@ export function WarrantyIntakeModal({
         purchase_date: values.purchase_date
           ? values.purchase_date.format("YYYY-MM-DD")
           : undefined,
-        defect_id: values.defect_id,
+        defect_ids: values.defect_ids,
         defect_description: values.reported_defect.trim(),
         reported_defect: values.reported_defect.trim(),
         accessories_received: values.accessories_received?.trim(),
@@ -446,8 +446,9 @@ export function WarrantyIntakeModal({
 
         <Row gutter={12}>
           <Col xs={24} md={12}>
-            <Form.Item name="defect_id" label="Bệnh / lỗi (danh mục)">
+            <Form.Item name="defect_ids" label="Bệnh / lỗi (danh mục)">
               <Select
+                mode="multiple"
                 allowClear
                 showSearch
                 optionFilterProp="label"

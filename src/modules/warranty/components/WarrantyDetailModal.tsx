@@ -68,7 +68,8 @@ import type {
 } from "@/modules/warranty/types";
 
 interface CorrectionFormValues {
-  defect_id?: string;
+  defect_ids?: string[];
+  estimated_completion_date?: Dayjs | null;
   customer_name?: string;
   customer_phone?: string;
   customer_address?: string;
@@ -236,7 +237,10 @@ export function WarrantyDetailModal({
       await updateMutation.mutateAsync({
         id: detail.id,
         request: {
-          defect_id: values.defect_id || undefined,
+          defect_ids: values.defect_ids,
+          estimated_completion_date: values.estimated_completion_date
+            ? values.estimated_completion_date.format("YYYY-MM-DD")
+            : undefined,
           customer_name: canViewPii
             ? values.customer_name?.trim() || undefined
             : undefined,
@@ -445,7 +449,10 @@ export function WarrantyDetailModal({
             onClick={() => {
               if (!detail) return;
               correctForm.setFieldsValue({
-                defect_id: detail.defect_id,
+                defect_ids: detail.defect_ids ?? (detail.defect_id ? [detail.defect_id] : []),
+                estimated_completion_date: detail.estimated_completion_date
+                  ? dayjs(detail.estimated_completion_date)
+                  : null,
                 customer_name: canViewPii ? detail.customer_name : undefined,
                 customer_phone: canViewPii ? detail.customer_phone : undefined,
                 customer_address: canViewPii
@@ -506,7 +513,41 @@ export function WarrantyDetailModal({
           style={{ marginBottom: 12 }}
         />
       ) : null}
-
+      <Card
+        size="small"
+        title="Timeline trạng thái"
+        loading={eventsQuery.isLoading}
+      >
+        <Timeline
+          items={
+            (eventsQuery.data ?? []).length
+              ? (eventsQuery.data ?? []).map((event) => ({
+                  color: WARRANTY_STATUS_COLORS[event.to_status] ?? "blue",
+                  children: (
+                    <Space orientation="vertical" size={2}>
+                      <Typography.Text strong>
+                        {event.event_type === "NOTE"
+                          ? "Ghi chú xử lý"
+                          : (WARRANTY_STATUS_LABELS[event.to_status] ??
+                            event.to_status)}
+                      </Typography.Text>
+                      <Typography.Text type="secondary">
+                        {formatWarrantyDateTime(event.performed_at)}
+                      </Typography.Text>
+                      <Typography.Text>{event.description}</Typography.Text>
+                    </Space>
+                  ),
+                }))
+              : [
+                  {
+                    color: "gray",
+                    children: "Chưa có lịch sử trạng thái cho case này.",
+                  },
+                ]
+          }
+        />
+      </Card>
+      <br></br>
       {detail ? (
         <Space orientation="vertical" size={16} style={{ width: "100%" }}>
           {detail.identification_type === "TEMP_ONLY" ? (
@@ -662,41 +703,6 @@ export function WarrantyDetailModal({
               />
             </Card>
           ) : null}
-
-          <Card
-            size="small"
-            title="Timeline trạng thái"
-            loading={eventsQuery.isLoading}
-          >
-            <Timeline
-              items={
-                (eventsQuery.data ?? []).length
-                  ? (eventsQuery.data ?? []).map((event) => ({
-                      color: WARRANTY_STATUS_COLORS[event.to_status] ?? "blue",
-                      children: (
-                        <Space orientation="vertical" size={2}>
-                          <Typography.Text strong>
-                            {event.event_type === "NOTE"
-                              ? "Ghi chú xử lý"
-                              : (WARRANTY_STATUS_LABELS[event.to_status] ??
-                                event.to_status)}
-                          </Typography.Text>
-                          <Typography.Text type="secondary">
-                            {formatWarrantyDateTime(event.performed_at)}
-                          </Typography.Text>
-                          <Typography.Text>{event.description}</Typography.Text>
-                        </Space>
-                      ),
-                    }))
-                  : [
-                      {
-                        color: "gray",
-                        children: "Chưa có lịch sử trạng thái cho case này.",
-                      },
-                    ]
-              }
-            />
-          </Card>
         </Space>
       ) : null}
 
@@ -729,8 +735,9 @@ export function WarrantyDetailModal({
           style={{ marginBottom: 12 }}
         />
         <Form form={correctForm} layout="vertical">
-          <Form.Item name="defect_id" label="Bệnh / lỗi (danh mục)">
+          <Form.Item name="defect_ids" label="Bệnh / lỗi (danh mục)">
             <Select
+              mode="multiple"
               allowClear
               showSearch
               optionFilterProp="label"
@@ -740,6 +747,18 @@ export function WarrantyDetailModal({
                 value: defect.defect_id,
                 label: `${defect.defect_code} · ${defect.defect_name}`,
               }))}
+            />
+          </Form.Item>
+          <Form.Item
+            name="estimated_completion_date"
+            label="Ngày dự kiến sửa xong"
+          >
+            <DatePicker
+              style={{ width: "100%" }}
+              format="DD/MM/YYYY"
+              disabledDate={(current) =>
+                current && current < dayjs().startOf("day")
+              }
             />
           </Form.Item>
           <Form.Item name="purchase_date" label="Ngày mua">
@@ -770,7 +789,8 @@ export function WarrantyDetailModal({
             rules={[
               {
                 pattern: /^0\d{9}$/,
-                message: "Số điện thoại phải đủ 10 chữ số và bắt đầu bằng số 0.",
+                message:
+                  "Số điện thoại phải đủ 10 chữ số và bắt đầu bằng số 0.",
               },
             ]}
           >

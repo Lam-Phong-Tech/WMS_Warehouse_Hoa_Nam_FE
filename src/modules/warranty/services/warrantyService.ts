@@ -148,6 +148,9 @@ function normalizeWarrantyCase(row: RawRecord): WarrantyCase {
   const status = canonicalStatus(row.status);
   const caseDescription = text(row.description ?? row.notes) || undefined;
   const pii = resolveWarrantyPii(row);
+  const expectedCompletionDate =
+    text(row.expected_completion_date ?? row.estimated_completion_date) ||
+    undefined;
 
   return {
     id: text(row.warranty_case_id ?? row.id),
@@ -178,6 +181,12 @@ function normalizeWarrantyCase(row: RawRecord): WarrantyCase {
     defect: text(row.defect_name ?? row.defect ?? row.defect_description, "-"),
     defect_code: text(row.defect_code),
     defect_id: text(row.defect_id) || undefined,
+    defect_ids: Array.isArray(row.defect_ids)
+      ? row.defect_ids.map((id) => text(id)).filter(Boolean)
+      : undefined,
+    defects: Array.isArray(row.defects)
+      ? (row.defects as WarrantyCase["defects"])
+      : undefined,
     reported_defect: text(row.reported_defect ?? row.description) || undefined,
     confirmed_defect: text(row.confirmed_defect) || undefined,
     accessories_received: text(row.accessories_received) || undefined,
@@ -195,6 +204,8 @@ function normalizeWarrantyCase(row: RawRecord): WarrantyCase {
     warehouse_name: text(row.warehouse_name ?? row.scope_name) || undefined,
     received_at: text(row.received_at ?? row.created_at),
     expected_return_at: text(row.expected_return_at) || undefined,
+    expected_completion_date: expectedCompletionDate,
+    estimated_completion_date: expectedCompletionDate,
     completed_at: text(row.completed_at) || undefined,
     returned_at:
       text(
@@ -282,6 +293,7 @@ export async function fetchWarrantyCases(
     status: params.status ? canonicalStatus(params.status) : undefined,
     identification_status: params.identification_status,
     defect_id: params.defect_id,
+    defect_ids: params.defect_ids,
     keyword: params.search ?? params.keyword,
   };
   const result = await http.getPage<RawRecord[] | { data?: RawRecord[] }>(
@@ -342,6 +354,12 @@ export async function createWarrantyCase(
     customer_address: payload.customer_address?.trim() || undefined,
     purchase_date: payload.purchase_date || undefined,
     defect_id: payload.defect_id || undefined,
+    defect_ids: payload.defect_ids,
+    defect_codes: payload.defect_codes,
+    expected_completion_date:
+      payload.expected_completion_date ?? payload.estimated_completion_date,
+    estimated_completion_date:
+      payload.estimated_completion_date ?? payload.expected_completion_date,
     defect_code: payload.defect_code || undefined,
     description,
     reported_defect: payload.reported_defect?.trim() || description,
@@ -407,6 +425,12 @@ export async function updateWarrantyCase(
       // Annex D SCR-WAR-01: sửa lại chẩn đoán/PII sai lúc tiếp nhận. PII chỉ gửi khi
       // caller thực sự nhập — BE trả 403 nếu actor thiếu warranty.pii.view.
       defect_id: request.defect_id,
+      defect_ids: request.defect_ids,
+      defect_codes: request.defect_codes,
+      expected_completion_date:
+        request.expected_completion_date ?? request.estimated_completion_date,
+      estimated_completion_date:
+        request.estimated_completion_date ?? request.expected_completion_date,
       customer_name: request.customer_name,
       customer_phone: request.customer_phone,
       customer_address: request.customer_address,

@@ -72,6 +72,8 @@ export interface WarrantyCase {
   expected_return_at?: string;
   /** BA M1: expected repair/completion date; nullable and editable. */
   expected_completion_date?: string;
+  /** Backward-compatible FE alias for older local UI code. */
+  estimated_completion_date?: string;
   completed_at?: string;
   returned_at?: string;
   case_age_days?: number;
@@ -137,6 +139,7 @@ export interface WarrantyListParams {
   status?: WarrantyCaseStatus | string;
   identification_status?: WarrantyIdentificationType | string;
   defect_id?: string;
+  defect_ids?: string[];
   page?: number;
   per_page?: number;
 }
@@ -170,6 +173,7 @@ export interface CreateWarrantyCaseRequest {
   manual_product_description?: string;
   notes?: string;
   priority?: WarrantyPriority;
+  estimated_completion_date?: string;
 }
 
 export interface UpdateWarrantyCaseRequest {
@@ -186,6 +190,7 @@ export interface UpdateWarrantyCaseRequest {
   defect_ids?: string[];
   defect_codes?: string[];
   expected_completion_date?: string;
+  estimated_completion_date?: string;
   /** PII — chỉ gửi khi actor có `warranty.pii.view`; BE trả 403 nếu thiếu quyền. */
   customer_name?: string;
   customer_phone?: string;
