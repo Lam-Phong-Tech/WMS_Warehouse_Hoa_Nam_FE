@@ -30,6 +30,10 @@ import {
 } from "@/shared/api/api-error";
 import { useCan } from "@/shared/components/permission";
 import { WMS_PERMISSION_CATALOG as P } from "@/shared/constants/wms-permissions";
+import {
+  MASTER_STATUS_LABELS,
+  businessLabel,
+} from "@/shared/constants/business-labels";
 
 interface WarehouseRecord {
   id: string;
@@ -71,21 +75,13 @@ function toWarehouse(row: Record<string, unknown>): WarehouseRecord {
   };
 }
 
-/** REQ-SRS-001: BE là nguồn thực thi rule "đúng 01 kho ACTIVE". */
 function saveErrorMessage(error: unknown): string {
   const normalized = normalizeError(error);
   if (normalized.code === "STATE_CONFLICT") {
-    return "Hệ thống chỉ cho phép đúng một kho ở trạng thái Đang hoạt động (REQ-SRS-001). Hãy chuyển kho đang hoạt động sang Ngừng hoạt động trước khi kích hoạt kho này.";
+    return "Hệ thống chỉ cho phép đúng một kho ở trạng thái Đang hoạt động. Hãy chuyển kho đang hoạt động sang Ngừng hoạt động trước khi kích hoạt kho này.";
   }
-  // WWHN-267 (FE267-D06): backend phát nhiều mã khác nhau trong cùng hạng 403
-  // (ACCESS_DENIED mặc định, PERMISSION_DENIED, DATA_SCOPE_DENIED,
-  // WAREHOUSE_SCOPE_DENIED) và danh mục này còn chờ disposition của BA (DIV-403-01).
-  // Chỉ so đúng một chuỗi "ACCESS_DENIED" thì mọi mã 403 khác rơi về thông điệp chung
-  // "Không lưu được cấu hình kho." — người dùng mất hẳn manh mối là do phạm vi dữ
-  // liệu. Nhận diện theo HTTP 403 trước; danh mục mã chỉ là đường lui khi lỗi không
-  // mang status (envelope nghiệp vụ gói trong 2xx).
   if (normalized.status === 403 || isForbiddenErrorCode(normalized.code)) {
-    return "Kho này nằm ngoài phạm vi dữ liệu của tài khoản. Liên hệ quản trị viên để được cấp scope.";
+    return "Kho này nằm ngoài phạm vi dữ liệu của tài khoản. Liên hệ quản trị viên để được cấp quyền phù hợp.";
   }
   return getApiErrorMessage(error, "Không lưu được cấu hình kho.");
 }
@@ -98,7 +94,6 @@ export function WarehouseConfigScreen() {
   const [selectedId, setSelectedId] = useState("");
   const [saveError, setSaveError] = useState("");
   const [savedAt, setSavedAt] = useState("");
-  // Trạng thái đang chọn trên form (chưa lưu) để biết khi nào cần bước xác nhận.
   const draftStatus = Form.useWatch("status", form);
 
   const listQuery = useQuery({
@@ -111,8 +106,6 @@ export function WarehouseConfigScreen() {
     [listQuery.data],
   );
 
-  // Kho tổng duy nhất là mặc định; danh sách nhiều dòng chỉ xảy ra với dữ liệu
-  // cũ nên vẫn cho chọn để người dùng ngừng kích hoạt kho thừa.
   const resolvedId =
     warehouses.find((row) => row.id === selectedId)?.id ??
     warehouses.find((row) => row.status === "ACTIVE")?.id ??
@@ -204,8 +197,7 @@ export function WarehouseConfigScreen() {
                 Cấu hình kho
               </Typography.Title>
               <Typography.Text type="secondary">
-                Thông tin, liên hệ và trạng thái của kho tổng duy nhất
-                (REQ-SRS-001 · SCR-WH-01).
+                Quản lý thông tin, liên hệ và trạng thái của kho tổng.
               </Typography.Text>
             </div>
           </Space>
@@ -215,9 +207,9 @@ export function WarehouseConfigScreen() {
             {statusChanged ? (
               <Popconfirm
                 title="Đổi trạng thái kho?"
-                description="Hệ thống chỉ cho phép đúng một kho Đang hoạt động. Thao tác này không sinh chứng từ và không làm thay đổi tồn kho (stock effect = 0)."
+                description="Hệ thống chỉ cho phép đúng một kho Đang hoạt động. Thao tác đổi trạng thái không tạo chứng từ và không làm thay đổi tồn kho."
                 okText="Đồng ý"
-                cancelText="Huỷ"
+                cancelText="Hủy"
                 onConfirm={handleSubmit}
               >
                 {saveButton}
@@ -232,8 +224,8 @@ export function WarehouseConfigScreen() {
       <Alert
         type="info"
         showIcon
-        title="Phạm vi một kho tổng"
-        description="Hệ thống vận hành đúng một kho tổng: API không mở tạo/xoá kho, chỉ cho xem và sửa thông tin. Bật Đang hoạt động cho kho thứ hai sẽ bị backend từ chối bằng lỗi 409 STATE_CONFLICT."
+        title="Hệ thống sử dụng một kho tổng"
+        description="Trong phạm vi hiện tại, hệ thống vận hành một kho tổng. Người dùng chỉ xem và cập nhật thông tin kho; không tạo hoặc xóa kho trực tiếp tại màn hình này."
       />
 
       {listError && <Alert type="error" showIcon title={listError} />}
@@ -253,7 +245,7 @@ export function WarehouseConfigScreen() {
           type="warning"
           showIcon
           title="Chưa có kho tổng trong hệ thống"
-          description="API không mở endpoint tạo kho; liên hệ quản trị hệ thống để khởi tạo kho tổng trước khi cấu hình."
+          description="Liên hệ quản trị hệ thống để khởi tạo kho tổng trước khi cấu hình."
         />
       )}
 
@@ -262,7 +254,7 @@ export function WarehouseConfigScreen() {
           type="warning"
           showIcon
           title={`Đang có ${warehouses.length} kho trong dữ liệu`}
-          description="Chỉ được giữ đúng một kho Đang hoạt động — chọn từng kho bên dưới để ngừng kích hoạt kho thừa."
+          description="Chỉ được giữ đúng một kho Đang hoạt động. Hãy chọn từng kho bên dưới để ngừng hoạt động kho thừa."
         />
       )}
 
@@ -312,7 +304,11 @@ export function WarehouseConfigScreen() {
                         warehouse.status === "ACTIVE" ? "success" : "default"
                       }
                     >
-                      {warehouse.status === "ACTIVE"
+                      {businessLabel(
+                        MASTER_STATUS_LABELS,
+                        warehouse.status,
+                        "Trạng thái khác",
+                      ) === "Đang sử dụng"
                         ? "Đang hoạt động"
                         : "Ngừng hoạt động"}
                     </Tag>
@@ -386,8 +382,7 @@ export function WarehouseConfigScreen() {
 
             {!canManage && (
               <Typography.Text type="secondary">
-                Tài khoản chỉ có quyền xem (warehouse.view) nên không sửa được
-                cấu hình kho.
+                Tài khoản hiện tại chỉ có quyền xem nên không thể sửa cấu hình kho.
               </Typography.Text>
             )}
           </>
