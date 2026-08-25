@@ -6,6 +6,7 @@ import { useLayoutEffect, type ReactNode } from "react";
  * Nguyên tắc:
  * - chỉ thay TEXT/placeholder/title/aria-label mà người dùng nhìn hoặc đọc bằng screen reader;
  * - không đụng value form, data-*, permission key, API field, endpoint hay raw enum gửi BE;
+ * - dữ liệu nghiệp vụ trong ô bảng chỉ được map khi giá trị là exact enum đã biết;
  * - các module mới vẫn phải dùng domain label map trong business-labels.ts; boundary này
  *   chỉ là fail-closed safety net để literal cũ không lọt ra giao diện vận hành.
  */
@@ -111,6 +112,8 @@ const INLINE_TOKEN_LABELS: Readonly<Record<string, string>> = {
   INACTIVE: "ngừng hoạt động",
   PRODUCT: "sản phẩm",
   COMPONENT: "linh kiện",
+  BOX: "hộp",
+  TRAY: "khay",
   RECEIVED_PENDING_PUTAWAY: "chờ xếp khay",
   STORED: "đã xếp khay",
 };
@@ -174,10 +177,6 @@ const PHRASE_REPLACEMENTS: ReadonlyArray<readonly [RegExp, string]> = [
   [/\bscope\b/gi, "phạm vi"],
   [/\bItem\b/g, "Sản phẩm"],
   [/\bitem\b/g, "sản phẩm"],
-  [/\bBOX\b/g, "Hộp"],
-  [/\bbox\b/g, "hộp"],
-  [/\bTRAY\b/g, "Khay"],
-  [/\btray\b/g, "khay"],
   [/\bVersion\b/g, "Phiên bản"],
   [/\bPublish\b/g, "Đưa lên ứng dụng"],
   [/\bUnpublish\b/g, "Gỡ khỏi ứng dụng"],
@@ -193,13 +192,13 @@ const PHRASE_REPLACEMENTS: ReadonlyArray<readonly [RegExp, string]> = [
   [/\bwireframe\b/gi, "giao diện mẫu"],
   [/\blow-fi\b/gi, "mô phỏng"],
   [/\baction\b/gi, "thao tác"],
-  [/\bCategory\b/g, "Nhóm hàng"],
-  [/\bModel\b/g, "Mẫu sản phẩm"],
 ];
 
 const LOCALIZED_ATTRIBUTES = ["placeholder", "title", "aria-label"] as const;
 const SKIP_SELECTOR =
-  'script,style,code,pre,[data-no-vietnamese-localization="true"]';
+  'script,style,code,pre,[data-no-vietnamese-localization="true"],[data-testid="pv-product-card"]';
+const UI_CONTROL_SELECTOR =
+  'button,label,th,option,[role="button"],[role="tab"],.ant-tag,.pill,.ant-alert,.ant-modal-title,.ant-card-head-title,.ant-descriptions-item-label,.ant-tabs-tab';
 
 function preserveOuterWhitespace(source: string, replacement: string): string {
   const leading = source.match(/^\s*/)?.[0] ?? "";
@@ -207,12 +206,16 @@ function preserveOuterWhitespace(source: string, replacement: string): string {
   return `${leading}${replacement}${trailing}`;
 }
 
+function exactBusinessLabel(source: string): string | null {
+  const exact = EXACT_TEXT_LABELS[source.trim()];
+  return exact ? preserveOuterWhitespace(source, exact) : null;
+}
+
 export function translateUserFacingText(source: string): string {
   if (!source) return source;
 
-  const trimmed = source.trim();
-  const exact = EXACT_TEXT_LABELS[trimmed];
-  if (exact) return preserveOuterWhitespace(source, exact);
+  const exact = exactBusinessLabel(source);
+  if (exact !== null) return exact;
 
   let translated = source;
   for (const [pattern, replacement] of PHRASE_REPLACEMENTS) {
@@ -235,11 +238,21 @@ function shouldSkip(element: Element | null): boolean {
   return Boolean(element?.closest(SKIP_SELECTOR));
 }
 
+function isPlainTableData(parent: Element): boolean {
+  return Boolean(parent.closest("td")) && !Boolean(parent.closest(UI_CONTROL_SELECTOR));
+}
+
 function localizeTextNode(node: Text): void {
   const parent = node.parentElement;
   if (!parent || shouldSkip(parent)) return;
   const current = node.nodeValue ?? "";
-  const next = translateUserFacingText(current);
+
+  // Không dịch tự do dữ liệu nghiệp vụ trong cell. Chỉ exact enum/status đã biết mới
+  // được map. Nhờ vậy tên khách/SKU như "Tool Box" hay "Item Pro" không bị thay chữ.
+  const next = isPlainTableData(parent)
+    ? (exactBusinessLabel(current) ?? current)
+    : translateUserFacingText(current);
+
   if (next !== current) node.nodeValue = next;
 }
 
