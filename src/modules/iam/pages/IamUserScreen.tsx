@@ -30,12 +30,17 @@ import {
   MvpPaginationFooter,
 } from "@/shared/components/mvp/MvpListPagination";
 import { resolveApiPagination } from "@/shared/components/mvp/mvp-pagination";
+import {
+  IAM_SCOPE_TYPE_LABELS,
+  IAM_USER_STATUS_LABELS,
+  businessLabel,
+} from "@/shared/constants/business-labels";
 import { useAuthStore } from "@/shared/store/auth.store";
 
 const STATUS_OPTIONS: Array<{ value: IamUserStatus; label: string }> = [
-  { value: "ACTIVE", label: "Đang hoạt động" },
-  { value: "INACTIVE", label: "Tạm ngưng" },
-  { value: "LOCKED", label: "Đã khóa" },
+  { value: "ACTIVE", label: IAM_USER_STATUS_LABELS.ACTIVE },
+  { value: "INACTIVE", label: IAM_USER_STATUS_LABELS.INACTIVE },
+  { value: "LOCKED", label: IAM_USER_STATUS_LABELS.LOCKED },
 ];
 
 type UserFormState = {
@@ -44,7 +49,6 @@ type UserFormState = {
   phone: string;
   email: string;
   roleId: string;
-  /** BR-IAM-08: id kho mà vai trò có hiệu lực; rỗng = toàn hệ thống. */
   scopeRef: string;
   effectiveFrom: string;
   effectiveTo: string;
@@ -66,7 +70,7 @@ const EMPTY_FORM: UserFormState = {
 };
 
 function statusLabel(status: IamUserStatus) {
-  return STATUS_OPTIONS.find((item) => item.value === status)?.label ?? status;
+  return businessLabel(IAM_USER_STATUS_LABELS, status);
 }
 
 function statusClass(status: IamUserStatus) {
@@ -75,17 +79,17 @@ function statusClass(status: IamUserStatus) {
   return "pill warn-pill";
 }
 
-/**
- * SCR-IAM-01 cột "Phạm vi": scope_ref trỏ tới kho (ERD user_roles). Hiển thị tên
- * kho thay vì uuid; không có scope_ref nghĩa là vai trò áp toàn hệ thống.
- */
+function scopeTypeLabel(scopeType?: string | null): string {
+  return businessLabel(IAM_SCOPE_TYPE_LABELS, scopeType);
+}
+
 function scopeLabel(
   role: IamRole | undefined,
   warehouseNames: Map<string, string>,
 ) {
   if (!role) return "Chưa gán";
   const scopeRef = role.pivot?.scope_ref;
-  if (scopeRef) return warehouseNames.get(scopeRef) ?? scopeRef;
+  if (scopeRef) return warehouseNames.get(scopeRef) ?? "Kho không xác định";
   if (role.scope_type === "WAREHOUSE") return "Mọi kho";
   if (role.scope_type === "FUNCTION") return "Theo chức năng";
   return "Toàn hệ thống";
@@ -100,7 +104,6 @@ function formatDate(value?: string | null) {
   );
 }
 
-/** Cửa sổ hiệu lực gán vai trò (BR-IAM-08) — rỗng cả hai đầu nghĩa là vô thời hạn. */
 function effectiveWindowLabel(pivot?: IamRolePivot) {
   const from = formatDate(pivot?.effective_from);
   const to = formatDate(pivot?.effective_to);
@@ -119,7 +122,7 @@ function formatLastLogin(value?: string | null) {
 }
 
 export interface IamUserScreenProps {
-  /** Legacy IAM-02 deep links open the create modal on IAM-01 instead of routing to a separate page. */
+  /** Deep-link IAM-02 mở cửa sổ tạo người dùng trên IAM-01. */
   openCreateOnMount?: boolean;
 }
 
@@ -150,7 +153,6 @@ export function IamUserScreen({
     per_page: roleFilter ? 100 : perPage,
   });
   const rolesQuery = useIamRoles({ per_page: 100 });
-  // BR-IAM-08: phạm vi dữ liệu gán theo kho, nên cần danh sách kho để chọn.
   const warehousesQuery = useIamScopeWarehouses();
   const createUser = useCreateIamUser();
   const updateUser = useUpdateIamUser();
@@ -194,9 +196,6 @@ export function IamUserScreen({
     [formState.roleId, roles],
   );
 
-  // SCR-IAM-01 (no self-escalation): BE luôn từ chối POST /users/{own_id}/roles
-  // bất kể giá trị mới là gì, nên khoá luôn ô chọn vai trò khi đang sửa chính
-  // tài khoản actor thay vì để họ đổi rồi mới nhận lỗi 409 lúc submit.
   const isEditingSelf = Boolean(
     editingUser && currentUserId && editingUser.user_id === currentUserId,
   );
@@ -216,9 +215,6 @@ export function IamUserScreen({
     setIsModalOpen(true);
   };
 
-  // Dep phải là string ổn định: `roles` là mảng fallback `?? []` đổi identity
-  // mỗi render — để nguyên trong deps sẽ tạo vòng setState -> render -> effect
-  // vô hạn (test IamUserScreen từng OOM 4GB vì đúng vòng lặp này).
   const defaultRoleId = roles[0]?.role_id ?? "";
   useEffect(() => {
     if (!openCreateOnMount || !canManageUsers) return;
@@ -314,7 +310,6 @@ export function IamUserScreen({
       ...(password ? { password } : {}),
     };
 
-    // BR-IAM-08 "scope assignment explicit": gửi kèm scope_ref + cửa sổ hiệu lực.
     const assignment = {
       role_id: formState.roleId,
       scope_ref: formState.scopeRef || null,
@@ -470,7 +465,7 @@ export function IamUserScreen({
             {usersQuery.isLoading ? (
               <tr>
                 <td colSpan={6}>
-                  <span className="muted">Đang tải dữ liệu từ API...</span>
+                  <span className="muted">Đang tải dữ liệu...</span>
                 </td>
               </tr>
             ) : displayedUsers.length > 0 ? (
@@ -659,9 +654,7 @@ export function IamUserScreen({
                 </select>
                 {isEditingSelf ? (
                   <div className="muted" style={{ marginTop: 6 }}>
-                    Không thể tự đổi vai trò của chính mình (SCR-IAM-01 — chống
-                    tự leo thang đặc quyền). Nhờ một quản trị viên khác thực
-                    hiện thay đổi này.
+                    Không thể tự đổi vai trò của chính mình. Nhờ một quản trị viên khác thực hiện thay đổi này.
                   </div>
                 ) : null}
               </div>
@@ -685,8 +678,7 @@ export function IamUserScreen({
                   ))}
                 </select>
                 <div className="muted" style={{ marginTop: 6 }}>
-                  BR-IAM-08: phạm vi được gán tường minh theo kho. Vai trò đang
-                  chọn có scope_type “{selectedRole?.scope_type ?? "—"}”.
+                  Phạm vi được gán tường minh theo kho. Loại phạm vi của vai trò đang chọn: {scopeTypeLabel(selectedRole?.scope_type)}.
                 </div>
               </div>
               <div className="field">
@@ -742,11 +734,10 @@ export function IamUserScreen({
               </div>
               {editingUser ? (
                 <div className="field">
-                  <label>Version</label>
+                  <label>Phiên bản dữ liệu</label>
                   <div className="value">{editingUser.version}</div>
                   <div className="muted" style={{ marginTop: 6 }}>
-                    FE gửi version hiện tại để backend chặn ghi đè khi có xung
-                    đột đồng thời.
+                    Hệ thống dùng phiên bản hiện tại để ngăn ghi đè khi có thay đổi đồng thời.
                   </div>
                 </div>
               ) : null}
@@ -807,7 +798,7 @@ export function IamUserScreen({
               <Descriptions.Item label="Đăng nhập cuối">
                 {formatLastLogin(viewingUser.last_login_at)}
               </Descriptions.Item>
-              <Descriptions.Item label="Version">
+              <Descriptions.Item label="Phiên bản dữ liệu">
                 {viewingUser.version}
               </Descriptions.Item>
             </Descriptions>
@@ -831,7 +822,7 @@ export function IamUserScreen({
                         <td>
                           {role.role_name}
                           <br />
-                          <Tag>{role.scope_type ?? "—"}</Tag>
+                          <Tag>{scopeTypeLabel(role.scope_type)}</Tag>
                         </td>
                         <td>{scopeLabel(role, warehouseNames)}</td>
                         <td>{effectiveWindowLabel(role.pivot)}</td>
