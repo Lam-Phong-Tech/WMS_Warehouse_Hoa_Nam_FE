@@ -46,24 +46,20 @@ type IntakeMode = "manual" | "excel";
 
 type IntakeFormValues = {
   request_no: string;
-  // §5.2: toa mang "số toa - ngày - người nhận".
   request_date?: string;
   agency_id?: string;
   recipient_name: string;
-  // SRS v1.12 §15: address/phone nullable.
   recipient_address?: string;
   recipient_contact_phone?: string;
   lines: Array<{ product_id: string; required_qty: number }>;
 };
 
-/** Annex C OutboundRequestImportConfirmRequest — resolve mapping ở bước review. */
 type LineResolution = { sku_id?: string; required_qty?: number };
 
 interface OutboundIntakeModalProps {
   open: boolean;
   canImport: boolean;
   onClose: () => void;
-  /** Consume thành công: trả danh sách outbound document id vừa được BE tạo. */
   onConsumed: (outboundDocumentIds: string[]) => void;
 }
 
@@ -102,13 +98,6 @@ const IMPORT_STATUS_LABEL: Record<string, string> = {
   CONSUMED: "Đã tạo phiếu",
 };
 
-/**
- * OUT-REQ-01 · Tiếp nhận Phiếu yêu cầu xuất.
- * Hai chế độ: nhập tay (validate qua cùng API import) và upload file Excel.
- * Luồng chuẩn baseline: validate → preview lỗi theo row/field → consume
- * (Idempotency-Key) → BE tự tạo outbound request OPEN + outbound DRAFT.
- * Toàn bộ bước này stock-neutral.
- */
 export function OutboundIntakeModal({
   open,
   canImport,
@@ -119,8 +108,6 @@ export function OutboundIntakeModal({
   const [file, setFile] = useState<File | null>(null);
   const [fileInputKey, setFileInputKey] = useState(0);
   const [preview, setPreview] = useState<OutboundImportResult | null>(null);
-  // SCR-REQ-OUT-01 "line mapping" + §8.1: người dùng resolve SKU/số lượng và
-  // override người nhận ngay ở màn review, không phải sửa file rồi upload lại.
   const [resolutions, setResolutions] = useState<
     Record<number, LineResolution>
   >({});
@@ -140,9 +127,6 @@ export function OutboundIntakeModal({
   const skuRows = skuQuery.data?.data ?? [];
   const agencyRows = agencyQuery.data?.data ?? [];
 
-  // OUT-REQ-01: availability ở preview chỉ là snapshot tham khảo. BE vẫn kiểm
-  // tra lại authoritative tại Scan/Post. Khi user map lại SKU trong preview,
-  // phải query cả SKU override để cột Khả dụng không hiển thị số của SKU cũ.
   const previewSkuIds = [
     ...new Set([
       ...(preview?.rows ?? [])
@@ -194,7 +178,6 @@ export function OutboundIntakeModal({
         request_date: (values.request_date ?? "").trim() || undefined,
         customer_name: values.recipient_name.trim(),
         customer_address: (values.recipient_address ?? "").trim(),
-        // §5.2 + Annex D SCR-OUT-01: SĐT người nhận tiếp nhận ngay từ toa (nullable).
         recipient_contact_phone:
           (values.recipient_contact_phone ?? "").trim() || undefined,
         sku_id: line.product_id,
@@ -207,7 +190,7 @@ export function OutboundIntakeModal({
       setPreview(result);
       if (result.status === "VALIDATED") {
         toast.success(
-          "Dữ liệu yêu cầu xuất hợp lệ để tiếp nhận. Tồn kho sẽ được kiểm tra lại khi quét và khi Hoàn tất xuất.",
+          "Dữ liệu yêu cầu xuất hợp lệ để tiếp nhận. Tồn kho sẽ được kiểm tra lại khi quét và khi hoàn tất xuất kho.",
         );
       } else {
         toast.warning(
@@ -225,31 +208,29 @@ export function OutboundIntakeModal({
   const validateFileMutation = useMutation({
     mutationFn: async () => {
       if (!file)
-        throw new Error("Chọn file Excel (.xlsx/.xls) trước khi kiểm tra.");
+        throw new Error("Chọn tệp Excel (.xlsx/.xls) trước khi kiểm tra.");
       return uploadOutboundRequestFile(file);
     },
     onSuccess: (result) => {
       setPreview(result);
       if (result.status === "VALIDATED") {
         toast.success(
-          "Dữ liệu Excel hợp lệ để tiếp nhận. Tồn kho sẽ được kiểm tra lại khi quét và khi Hoàn tất xuất.",
+          "Dữ liệu Excel hợp lệ để tiếp nhận. Tồn kho sẽ được kiểm tra lại khi quét và khi hoàn tất xuất kho.",
         );
       } else {
         toast.warning(
-          "File có dòng lỗi bắt buộc. Cả lô chưa được tạo phiếu cho tới khi các lỗi được xử lý.",
+          "Tệp có dòng lỗi bắt buộc. Cả lô chưa được tạo phiếu cho tới khi các lỗi được xử lý.",
         );
       }
     },
     onError: (error) => {
-      toast.error(getApiErrorMessage(error, "Xác nhận file thất bại."));
+      toast.error(getApiErrorMessage(error, "Kiểm tra tệp thất bại."));
     },
   });
 
   const consumeMutation = useMutation({
     mutationFn: async () => {
-      if (!preview) throw new Error("Chưa có import để xác nhận.");
-      // Annex C confirmOutboundRequestImport: Idempotency-Key + If-Match(version import),
-      // kèm mapping line và override người nhận đã resolve ở màn review (§8.1).
+      if (!preview) throw new Error("Chưa có dữ liệu nhập để xác nhận.");
       const lines = Object.entries(resolutions)
         .map(([rowNo, value]) => ({
           row_no: Number(rowNo),
@@ -320,8 +301,7 @@ export function OutboundIntakeModal({
         text(row.normalized.sku_code ?? row.normalized.sku_id, "-"),
     },
     {
-      // SCR-REQ-OUT-01: "line mapping" — resolve SKU chưa map ngay ở bước review.
-      title: "Map SKU khi xác nhận",
+      title: "Gán SKU khi xác nhận",
       key: "sku_mapping",
       width: 260,
       render: (_, row) => (
@@ -331,7 +311,7 @@ export function OutboundIntakeModal({
           size="small"
           style={{ width: 240 }}
           optionFilterProp="label"
-          placeholder="Giữ nguyên theo file"
+          placeholder="Giữ nguyên theo tệp"
           loading={skuQuery.isLoading}
           value={resolutions[row.rowNo]?.sku_id}
           onChange={(value?: string) =>
@@ -424,19 +404,14 @@ export function OutboundIntakeModal({
     },
   ];
 
-  // DEC-PHONE-VN-001: override SĐT khi Confirm, nếu có nhập, phải đúng định dạng VN
-  // (10 chữ số bắt đầu bằng 0) — cùng quy tắc với recipient_contact_phone ở form nhập tay.
   const overridePhoneValid =
     recipientOverride.receiver_contact_phone === "" ||
     /^0\d{9}$/.test(recipientOverride.receiver_contact_phone);
-
-  // §8.1: Confirm re-validate sau khi áp mapping/override, nên batch REJECTED vẫn
-  // được thử Confirm; BE trả 409 IMPORT_HAS_BLOCKING_ERRORS kèm row còn lỗi.
   const consumable = Boolean(preview) && canImport && overridePhoneValid;
 
   return (
     <Modal
-      title="OUT-REQ-01 · Tiếp nhận Phiếu yêu cầu xuất"
+      title="OUT-REQ-01 · Tiếp nhận phiếu yêu cầu xuất"
       open={open}
       width={1060}
       footer={null}
@@ -446,16 +421,16 @@ export function OutboundIntakeModal({
     >
       <Space orientation="vertical" size={14} style={{ width: "100%" }}>
         <Space wrap>
-          <Tag color="blue">POST /outbound-request-imports</Tag>
-          <Tag color="blue">POST /outbound-request-imports/:id/confirm</Tag>
-          <Tag color="gold">Idempotency-Key + If-Match khi xác nhận</Tag>
+          <Tag color="blue">Tiếp nhận yêu cầu xuất</Tag>
+          <Tag color="blue">Xác nhận và tạo phiếu xuất nháp</Tag>
+          <Tag color="gold">Kiểm soát phiên bản & chống ghi nhận trùng</Tag>
           <Tag color="green">Không thay đổi tồn ở bước tiếp nhận</Tag>
         </Space>
         <Alert
           type="info"
           showIcon
-          title="Luồng chuẩn: kiểm tra yêu cầu/Excel → xem lỗi từng dòng → map SKU/người nhận → xác nhận → tạo phiếu xuất nháp"
-          description="Lỗi dữ liệu bắt buộc sẽ chặn tạo cả lô. Số lượng khả dụng ở màn này chỉ là snapshot tham khảo; BE kiểm tra tồn lại khi quét item và khi Hoàn tất xuất để tránh dùng số liệu cũ."
+          title="Luồng chuẩn: kiểm tra yêu cầu/Excel → xem lỗi từng dòng → gán SKU/người nhận → xác nhận → tạo phiếu xuất nháp"
+          description="Lỗi dữ liệu bắt buộc sẽ chặn tạo cả lô. Số lượng khả dụng ở màn này chỉ là số liệu tham khảo tại thời điểm xem; hệ thống kiểm tra tồn lại khi quét sản phẩm và khi hoàn tất xuất kho."
         />
 
         <Space wrap>
@@ -477,7 +452,7 @@ export function OutboundIntakeModal({
               setPreview(null);
             }}
           >
-            Import Excel
+            Nhập từ Excel
           </Button>
         </Space>
 
@@ -518,8 +493,6 @@ export function OutboundIntakeModal({
               >
                 <Input maxLength={200} />
               </Form.Item>
-              {/* SRS v1.12 §15 + REQ-SRS-014: address/phone của toa nullable —
-                  toa mẫu Kinh doanh phát hành có thể không có địa chỉ. */}
               <Form.Item name="recipient_address" label="Địa chỉ nhận">
                 <Input maxLength={1000} />
               </Form.Item>
@@ -556,7 +529,7 @@ export function OutboundIntakeModal({
                       <Form.Item
                         {...field}
                         name={[field.name, "product_id"]}
-                        label="SKU PRODUCT *"
+                        label="SKU sản phẩm *"
                         rules={[{ required: true, message: "Chọn SKU" }]}
                       >
                         <Select
@@ -564,7 +537,7 @@ export function OutboundIntakeModal({
                           optionFilterProp="label"
                           style={{ width: 430 }}
                           loading={skuQuery.isLoading}
-                          placeholder="Chỉ SKU PRODUCT ACTIVE (COMPONENT đi luồng bảo hành)"
+                          placeholder="Chỉ SKU sản phẩm đang sử dụng"
                           options={skuRows.map((sku) => ({
                             value: sku.sku_id,
                             label: `${sku.sku_code} · ${sku.sku_name}`,
@@ -615,8 +588,7 @@ export function OutboundIntakeModal({
                 Kiểm tra & xem trước
               </Button>
               <Typography.Text type="secondary">
-                Người nhận bắt buộc; địa chỉ/SĐT/ngày toa tùy chọn theo SRS §15
-                — thiếu thì Packing Label render blank.
+                Người nhận bắt buộc; địa chỉ/SĐT/ngày toa tùy chọn theo quy định hiện hành — thiếu thì nhãn đóng gói để trống trường tương ứng.
               </Typography.Text>
             </Space>
             <ApiErrorAlert
@@ -631,15 +603,11 @@ export function OutboundIntakeModal({
               key={fileInputKey}
               type="file"
               accept=".xlsx,.xls"
-              aria-label="Chọn file Excel yêu cầu xuất"
+              aria-label="Chọn tệp Excel yêu cầu xuất"
               onChange={(event) => setFile(event.target.files?.[0] ?? null)}
             />
             <Typography.Text type="secondary">
-              Cột bắt buộc: request_no · sku_code · required_qty ·
-              recipient_name/customer_name. Cột tùy chọn: request_date ·
-              recipient_address · recipient_contact_phone · note (SRS §5.2/§15).
-              Tối đa 10.000 dòng, file ≤ 20MB; dòng lỗi có thể được xử lý ở bảng
-              xem trước trước khi xác nhận.
+              Tên cột bắt buộc trong tệp: request_no · sku_code · required_qty · recipient_name/customer_name. Cột tùy chọn: request_date · recipient_address · recipient_contact_phone · note. Tối đa 10.000 dòng, tệp ≤ 20MB; dòng lỗi có thể được xử lý ở bảng xem trước trước khi xác nhận.
             </Typography.Text>
             <Button
               type="primary"
@@ -652,7 +620,7 @@ export function OutboundIntakeModal({
             </Button>
             <ApiErrorAlert
               error={validateFileMutation.error}
-              title="Không kiểm tra được file Excel"
+              title="Không kiểm tra được tệp Excel"
             />
           </Space>
         )}
@@ -665,7 +633,7 @@ export function OutboundIntakeModal({
             <Space orientation="vertical" style={{ width: "100%" }}>
               <Space wrap>
                 <Tag color={IMPORT_STATUS_COLOR[preview.status] ?? "default"}>
-                  {IMPORT_STATUS_LABEL[preview.status] || preview.status || "-"}
+                  {IMPORT_STATUS_LABEL[preview.status] ?? "Chưa xác định"}
                 </Tag>
                 <Typography.Text>Tổng: {preview.totalRows}</Typography.Text>
                 <Typography.Text type="success">
@@ -690,8 +658,6 @@ export function OutboundIntakeModal({
                 scroll={{ x: 1420 }}
                 locale={{ emptyText: "Không có dòng dữ liệu nào" }}
               />
-              {/* §8.1: ConfirmRequest "may override recipient fields"; hiệu lực
-                  receiver_name bắt buộc, address/phone optional. */}
               <Card
                 size="small"
                 title="Ghi đè người nhận khi xác nhận (tùy chọn)"
@@ -740,8 +706,7 @@ export function OutboundIntakeModal({
                 </Space>
                 {!overridePhoneValid && (
                   <Typography.Text type="danger">
-                    Số điện thoại phải gồm đúng 10 chữ số và bắt đầu bằng số
-                    0.
+                    Số điện thoại phải gồm đúng 10 chữ số và bắt đầu bằng số 0.
                   </Typography.Text>
                 )}
               </Card>
@@ -759,7 +724,7 @@ export function OutboundIntakeModal({
                   <Typography.Text type="secondary">
                     {!canImport
                       ? "Bạn không có quyền xác nhận yêu cầu xuất."
-                      : "Còn dòng lỗi — map SKU/số lượng hoặc sửa người nhận rồi xác nhận lại."}
+                      : "Còn dòng lỗi — gán SKU/số lượng hoặc sửa người nhận rồi xác nhận lại."}
                   </Typography.Text>
                 )}
               </Space>
