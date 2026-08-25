@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { translateUserFacingText } from "@/shared/localization/VietnameseUiBoundary";
+import { translateUserFacingText } from "@/shared/localization/translateUserFacingText";
 
 const EXPECTED_EXACT_LABELS: ReadonlyArray<readonly [string, string]> = [
   ["Save", "Lưu"],

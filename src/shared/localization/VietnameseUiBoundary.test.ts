@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { translateUserFacingText } from "@/shared/localization/VietnameseUiBoundary";
+import { translateUserFacingText } from "@/shared/localization/translateUserFacingText";
 
 describe("translateUserFacingText", () => {
   it("localizes the inbound/outbound blockers from the localization checklist", () => {
