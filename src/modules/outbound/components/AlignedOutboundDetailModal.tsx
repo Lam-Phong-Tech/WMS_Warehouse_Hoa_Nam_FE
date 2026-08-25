@@ -35,6 +35,10 @@ import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { CameraScanModal } from "@/shared/components/forms/CameraScanModal";
 import { useHasPermission } from "@/shared/components/permission";
 import {
+  OUTBOUND_STATUS_LABELS,
+  businessLabel,
+} from "@/shared/constants/business-labels";
+import {
   applyPackingLabel,
   assignRfidToItem,
   cancelOutboundDocument,
@@ -56,14 +60,23 @@ import {
   type PackingLabelRecord,
 } from "@/modules/outbound/services/alignedOutboundService";
 
-/** SRS §6 Packing_Label state model. */
 const LABEL_LIFECYCLE = [
   "DRAFT",
   "PREVIEWED",
   "READY_TO_PRINT",
   "PRINTED",
-  "ĐÃ DÁN",
+  "APPLIED",
 ] as const;
+
+const LABEL_STATUS_LABELS: Readonly<Record<string, string>> = {
+  DRAFT: "Nháp",
+  PENDING_PRINT: "Chờ in",
+  PREVIEWED: "Đã xem trước",
+  READY_TO_PRINT: "Sẵn sàng in",
+  PRINTED: "Đã in",
+  PRINT_FAILED: "In thất bại",
+  APPLIED: "Đã dán",
+};
 
 const { Text } = Typography;
 
@@ -86,7 +99,10 @@ function short(value?: string | null): string {
   return value.length > 18 ? `${value.slice(0, 14)}…` : value;
 }
 
-/** Scan -> aggregate -> exactly one Packing Label -> print/apply -> Post Issue. RFID is optional. */
+function labelStatus(value?: string | null): string {
+  return businessLabel(LABEL_STATUS_LABELS, value);
+}
+
 export function AlignedOutboundDetailModal({
   documentId,
   onClose,
@@ -97,11 +113,8 @@ export function AlignedOutboundDetailModal({
   const [version, setVersion] = useState<number | null>(null);
   const [lineId, setLineId] = useState("");
   const [scanCode, setScanCode] = useState("");
-  // SRS §5.3: outbound là camera context hợp lệ; camera chỉ decode ra code_value,
-  // validation nghiệp vụ vẫn chạy trên cùng API như nhập tay.
   const [cameraOpen, setCameraOpen] = useState(false);
   const [customerPhone, setCustomerPhone] = useState("");
-  // DEC-PHONE-VN-001: SĐT bổ sung ở bước nhãn, khi có nhập, phải đúng định dạng VN.
   const customerPhoneValid =
     customerPhone === "" || /^0\d{9}$/.test(customerPhone);
   const [printerId, setPrinterId] = useState("");
@@ -111,14 +124,7 @@ export function AlignedOutboundDetailModal({
   const [rfidCode, setRfidCode] = useState("");
   const [rfidHardwareUid, setRfidHardwareUid] = useState("");
   const [evidence, setEvidence] = useState<IssueEvidence | null>(null);
-  /**
-   * WWHN-201: Idempotency-Key dính của Post Issue. Giữ nguyên qua các lần thử lại
-   * an toàn (412/409 CONCURRENCY/lỗi mạng) để lần gửi lại là REPLAY, không phải lần
-   * Post thứ hai. Chỉ nhả khi thao tác đã có kết quả cuối cùng hoặc khi §8.2 yêu cầu
-   * key mới.
-   */
   const postKeyRef = useRef<string | null>(null);
-  // OUT-02: đếm lỗi scan trong phiên (sai SKU / trùng / unknown) — chỉ hiển thị, không phải state nghiệp vụ.
   const [scanRejects, setScanRejects] = useState({
     wrongSku: 0,
     duplicate: 0,
@@ -137,7 +143,6 @@ export function AlignedOutboundDetailModal({
     queryKey: ["mvp-outbound", "printers"],
     queryFn: fetchPrinterConfigs,
   });
-  // Annex D SCR-OUT-01 field available_qty: "Refresh at commit; stale warning".
   const lineSkuIds = useMemo(
     () => [
       ...new Set(
@@ -177,9 +182,6 @@ export function AlignedOutboundDetailModal({
   useEffect(() => {
     if (!detail) return;
     setVersion(detail.document.version);
-    // Change Pack QR/SKU (guide §12): mặc định KHÔNG chọn dòng — server tự match
-    // theo SKU embedded trong QR composite. Chỉ reset khi dòng đã chọn tay không
-    // còn hợp lệ (đã đủ hoặc không tồn tại).
     if (
       lineId &&
       !detail.lines.some(
@@ -190,8 +192,6 @@ export function AlignedOutboundDetailModal({
     }
   }, [detail, lineId]);
 
-  // Đổi phiếu thì thao tác Post cũ không còn ý nghĩa: nhả key để không mang key của
-  // phiếu này sang phiếu khác.
   useEffect(() => {
     postKeyRef.current = null;
   }, [documentId]);
@@ -219,7 +219,6 @@ export function AlignedOutboundDetailModal({
   const mutable = doc?.status === "DRAFT" || doc?.status === "SCANNING";
   const labelPrinted = packingLabel?.status === "PRINTED";
   const labelApplied = Boolean(packingLabel?.applied);
-  // §6: chỉ được gửi lệnh in khi nhãn đã READY_TO_PRINT (hoặc retry sau PRINT_FAILED).
   const labelReadyToPrint = packingLabel?.status === "READY_TO_PRINT";
   const labelPrintFailed = packingLabel?.status === "PRINT_FAILED";
   const canPreviewLabel =
@@ -233,19 +232,19 @@ export function AlignedOutboundDetailModal({
   const postBlockReason = !doc
     ? ""
     : !doc.outboundRequestId
-      ? "Phiếu thiếu toa/request nguồn."
+      ? "Phiếu thiếu yêu cầu xuất nguồn."
       : !fullScan
-        ? `Chưa scan đủ: ${totalScanned}/${totalExpected}.`
+        ? `Chưa quét đủ: ${totalScanned}/${totalExpected}.`
         : packingLabels.length !== 1
           ? packingLabels.length === 0
-            ? "Chưa tạo Packing Label cho lô."
-            : `Có ${packingLabels.length} Packing Label; phải reconcile về đúng 1.`
+            ? "Chưa tạo nhãn đóng gói cho lô."
+            : `Có ${packingLabels.length} nhãn đóng gói; phải đối chiếu về đúng 1 nhãn.`
           : !labelPrinted
-            ? "Packing Label chưa PRINTED."
+            ? "Nhãn đóng gói chưa được in."
             : !labelApplied
-              ? "Chưa xác nhận đã dán Packing Label."
+              ? "Chưa xác nhận đã dán nhãn đóng gói."
               : doc.status !== "SCANNING"
-                ? "Chỉ phiếu SCANNING mới được Hoàn tất xuất."
+                ? "Chỉ phiếu đang quét xuất hàng mới được hoàn tất xuất kho."
                 : "";
   const postReady = Boolean(doc && !postBlockReason);
 
@@ -262,27 +261,13 @@ export function AlignedOutboundDetailModal({
     onChanged?.();
   };
 
-  /**
-   * WWHN-195 / DEV195-P1-01R2 — chế độ quét khai tường minh.
-   *
-   * Chỉ FE mới biết mã đến từ camera hay bàn phím; server có code_value thì luôn
-   * suy ra HARDWARE nên camera bị ghi sai vào audit. Nay FE gửi `scan_source`
-   * theo đúng CHECK của ERD bảng 25 (CAMERA/MANUAL/HARDWARE).
-   *
-   * Mode là thuộc tính của TỪNG lần quét, không khoá theo phiếu: đổi qua lại giữa
-   * camera và nhập tay trong cùng phiếu là hợp lệ và cần thiết
-   * (AC-SRS-005 + NFR-SRS-021: camera denied/unsupported phải rơi về nhập tay).
-   */
   const scanMutation = useMutation({
     mutationFn: async (input: {
       rawCode: string;
       scanSource: "CAMERA" | "MANUAL";
     }) => {
       const codeValue = input.rawCode.trim();
-      // Change Pack QR/SKU (guide §12): không bắt chọn dòng — FE gửi RAW payload,
-      // server parse SKU embedded trong QR composite và tự match dòng; chọn dòng
-      // tường minh vẫn được cross-check WRONG_SKU phía server.
-      if (!detail || !codeValue) throw new Error("Nhập/quét mã item trước.");
+      if (!detail || !codeValue) throw new Error("Nhập hoặc quét mã sản phẩm trước.");
       return scanOutboundItem({
         documentId,
         lineId: lineId || undefined,
@@ -303,16 +288,13 @@ export function AlignedOutboundDetailModal({
       toast.success(
         `${
           result.scanSource === "CAMERA"
-            ? "Đã match item (camera)."
-            : "Đã match item (nhập tay)."
-        }${identity ? ` ${identity}.` : ""} Scan không tạo nhãn và không trừ tồn.`,
+            ? "Đã đối chiếu sản phẩm bằng camera."
+            : "Đã đối chiếu sản phẩm nhập tay."
+        }${identity ? ` ${identity}.` : ""} Quét không tạo nhãn và không trừ tồn kho.`,
       );
       await refresh();
     },
     onError: (error) => {
-      // Change Pack QR/SKU §9: ưu tiên phân loại theo mã lỗi tường minh của
-      // composite path (WRONG_SKU/UNKNOWN_CODE/INVALID_PAYLOAD...) trước khi
-      // rơi về so khớp chuỗi cho các mã legacy.
       const code = normalizeError(error).code ?? "";
       setScanRejects((current) =>
         code.includes("DUPLICATE")
@@ -323,7 +305,7 @@ export function AlignedOutboundDetailModal({
             ? { ...current, wrongSku: current.wrongSku + 1 }
             : { ...current, unknown: current.unknown + 1 },
       );
-      toast.error(getApiErrorMessage(error, "Scan/match thất bại."));
+      toast.error(getApiErrorMessage(error, "Quét/đối chiếu thất bại."));
     },
   });
 
@@ -338,27 +320,25 @@ export function AlignedOutboundDetailModal({
     },
     onSuccess: async (result) => {
       setVersion(result.version || null);
-      toast.success("Đã gỡ match; stock-neutral.");
+      toast.success("Đã gỡ đối chiếu; tồn kho không thay đổi.");
       await refresh();
     },
     onError: (error) =>
-      toast.error(getApiErrorMessage(error, "Gỡ match thất bại.")),
+      toast.error(getApiErrorMessage(error, "Gỡ đối chiếu thất bại.")),
   });
 
   const createLabelMutation = useMutation({
     mutationFn: async () => {
       if (!fullScan)
-        throw new Error("Phải scan đủ toàn bộ phiếu trước khi tạo nhãn.");
-      // SRS §5.2 + §15 + AC-GWT-OUTBOUND-REQUEST-001: address/phone optional,
-      // thiếu thì nhãn render blank — không chặn tạo nhãn (REQ-SRS-014).
+        throw new Error("Phải quét đủ toàn bộ phiếu trước khi tạo nhãn.");
       return createPackingLabel({ documentId, customerPhone });
     },
     onSuccess: async () => {
-      toast.success("Đã tạo đúng 01 Packing Label cho phiếu/lô xuất.");
+      toast.success("Đã tạo đúng 01 nhãn đóng gói cho phiếu/lô xuất.");
       await refresh();
     },
     onError: (error) =>
-      toast.error(getApiErrorMessage(error, "Không thể tạo Packing Label.")),
+      toast.error(getApiErrorMessage(error, "Không thể tạo nhãn đóng gói.")),
   });
 
   const previewMutation = useMutation({
@@ -369,11 +349,11 @@ export function AlignedOutboundDetailModal({
         ifMatch: label.version,
       }),
     onSuccess: async () => {
-      toast.success("Đã Preview Packing Label; snapshot chưa đóng băng.");
+      toast.success("Đã xem trước nhãn đóng gói; bản lưu nhãn chưa được khóa.");
       await refresh();
     },
     onError: (error) =>
-      toast.error(getApiErrorMessage(error, "Preview Packing Label thất bại.")),
+      toast.error(getApiErrorMessage(error, "Xem trước nhãn đóng gói thất bại.")),
   });
 
   const readyMutation = useMutation({
@@ -386,17 +366,17 @@ export function AlignedOutboundDetailModal({
       }),
     onSuccess: async () => {
       toast.success(
-        "Đã Ready — snapshot Packing Label được đóng băng, sẵn sàng in.",
+        "Nhãn đã sẵn sàng — bản lưu nhãn được khóa và có thể gửi lệnh in.",
       );
       await refresh();
     },
     onError: (error) =>
-      toast.error(getApiErrorMessage(error, "Ready Packing Label thất bại.")),
+      toast.error(getApiErrorMessage(error, "Đưa nhãn về trạng thái sẵn sàng thất bại.")),
   });
 
   const printMutation = useMutation({
     mutationFn: async (label: PackingLabelRecord) => {
-      if (!printerId) throw new Error("Chọn máy in ACTIVE.");
+      if (!printerId) throw new Error("Chọn máy in đang hoạt động.");
       const payload = {
         documentId,
         labelId: label.id,
@@ -409,12 +389,11 @@ export function AlignedOutboundDetailModal({
         : printLabelSnapshot(payload);
     },
     onSuccess: async () => {
-      toast.success("Đã gửi lệnh in/in lại Packing Label; tồn kho không đổi.");
+      toast.success("Đã gửi lệnh in/in lại nhãn đóng gói; tồn kho không đổi.");
       await refresh();
     },
     onError: async (error) => {
-      // §5.2: print failure đặt nhãn về PRINT_FAILED và chặn hoàn tất xuất.
-      toast.error(getApiErrorMessage(error, "In Packing Label thất bại."));
+      toast.error(getApiErrorMessage(error, "In nhãn đóng gói thất bại."));
       await refresh();
     },
   });
@@ -423,7 +402,7 @@ export function AlignedOutboundDetailModal({
     mutationFn: (label: PackingLabelRecord) =>
       applyPackingLabel(label.id, label.version),
     onSuccess: async () => {
-      toast.success("Đã xác nhận dán Packing Label; tồn kho vẫn chưa đổi.");
+      toast.success("Đã xác nhận dán nhãn đóng gói; tồn kho vẫn chưa đổi.");
       await refresh();
     },
     onError: (error) =>
@@ -432,11 +411,10 @@ export function AlignedOutboundDetailModal({
 
   const rfidMutation = useMutation({
     mutationFn: async () => {
-      if (!rfidTarget) throw new Error("Chưa chọn item.");
+      if (!rfidTarget) throw new Error("Chưa chọn sản phẩm.");
       if (!rfidHardwareUid.trim())
-        throw new Error("Nhập hardware UID của tag, hoặc bỏ qua RFID.");
+        throw new Error("Nhập UID phần cứng của thẻ, hoặc bỏ qua RFID.");
       if (!detail) throw new Error("Chưa tải phiếu.");
-      // Annex C assignItemRfid: RFID gắn theo item của đúng phiếu xuất này.
       return assignRfidToItem({
         documentId,
         itemId: rfidTarget.itemId,
@@ -446,25 +424,20 @@ export function AlignedOutboundDetailModal({
       });
     },
     onSuccess: async () => {
-      toast.success("Đã map RFID tùy chọn; stock-neutral.");
+      toast.success("Đã gán RFID tùy chọn; tồn kho không thay đổi.");
       setRfidTarget(null);
       setRfidCode("");
       setRfidHardwareUid("");
       await refresh();
     },
     onError: (error) =>
-      toast.error(getApiErrorMessage(error, "Map RFID thất bại.")),
+      toast.error(getApiErrorMessage(error, "Gán RFID thất bại.")),
   });
 
   const postMutation = useMutation({
     mutationFn: async () => {
       if (!detail || !postReady)
         throw new Error(postBlockReason || "Phiếu chưa sẵn sàng.");
-      // WWHN-201 / DEV201-P1-01R (kịch bản "stale If-Match" và "forced rollback"):
-      // Idempotency-Key phải DÍNH theo phiếu qua các lần thử lại. Sinh key mới ở mỗi
-      // lần bấm biến một retry sau 412/timeout thành một lệnh Post THẬT thứ hai —
-      // đúng nghĩa double-post. Đây là cùng pattern postKeyRef của luồng nhập
-      // (MvpInboundScreens) nay áp cho luồng xuất.
       const idempotencyKey =
         postKeyRef.current ?? makeKey(`post-issue-${documentId}`);
       postKeyRef.current = idempotencyKey;
@@ -475,30 +448,22 @@ export function AlignedOutboundDetailModal({
       });
     },
     onSuccess: async (result) => {
-      // Thao tác đã có kết quả nghiệp vụ cuối cùng → nhả key, lần Post sau (nếu có)
-      // là một thao tác mới thật sự.
       postKeyRef.current = null;
       setEvidence(result);
       toast.success(
         result.replayed
-          ? "Phiếu đã được Post trước đó. Hệ thống trả lại kết quả cũ (replay); tồn kho KHÔNG bị trừ thêm lần nữa."
-          : "Hoàn tất xuất thành công. Tồn kho được trừ tại Post Issue.",
+          ? "Phiếu đã được hoàn tất xuất kho trước đó. Hệ thống trả lại kết quả cũ; tồn kho không bị trừ thêm lần nữa."
+          : "Hoàn tất xuất kho thành công. Tồn kho đã được trừ đúng một lần.",
       );
       await refresh();
     },
     onError: async (error) => {
-      // §8.2: chỉ giữ key khi lần gửi lại phải là REPLAY của đúng thao tác cũ
-      // (412 STALE_VERSION, 409 CONCURRENCY_CONFLICT, lỗi mạng/5xx không rõ kết quả).
-      // 409 IDEMPOTENCY_CONFLICT / STATE_CONFLICT và 422 thiếu tồn phải bắt đầu lại
-      // bằng key mới.
       if (!shouldReuseIdempotencyKey(error)) postKeyRef.current = null;
       const outcome = classifyPostIssueError(error);
       toast.error(
         outcome?.message ??
-          getApiErrorMessage(error, "Hoàn tất xuất thất bại."),
+          getApiErrorMessage(error, "Hoàn tất xuất kho thất bại."),
       );
-      // Sau mọi xung đột, trạng thái/version dưới chân người dùng đã đổi: nạp lại để
-      // If-Match của lần sau là bản mới nhất.
       if (outcome !== null) await refresh();
     },
   });
@@ -514,7 +479,7 @@ export function AlignedOutboundDetailModal({
       );
     },
     onSuccess: async () => {
-      toast.success("Đã hủy phiếu; không phát sinh stock effect.");
+      toast.success("Đã hủy phiếu; không làm thay đổi tồn kho.");
       setCancelOpen(false);
       await refresh();
     },
@@ -537,7 +502,7 @@ export function AlignedOutboundDetailModal({
       render: (value) => <Text code>{short(value)}</Text>,
     },
     { title: "Yêu cầu", dataIndex: "expected", width: 90, align: "right" },
-    { title: "Đã scan", dataIndex: "scanned", width: 90, align: "right" },
+    { title: "Đã quét", dataIndex: "scanned", width: 90, align: "right" },
     { title: "Còn lại", dataIndex: "remaining", width: 90, align: "right" },
     {
       title: "Khả dụng",
@@ -565,7 +530,7 @@ export function AlignedOutboundDetailModal({
 
   const matchColumns: ColumnsType<OutboundItemMatchRecord> = [
     {
-      title: "Item",
+      title: "Sản phẩm",
       width: 190,
       render: (_, row) => row.itemCode ?? row.serialNumber ?? short(row.itemId),
     },
@@ -582,7 +547,7 @@ export function AlignedOutboundDetailModal({
         row.rfidCode ? (
           <Tag color="blue">{row.rfidCode}</Tag>
         ) : (
-          <Tag>Không có · vẫn Post được</Tag>
+          <Tag>Không có · vẫn hoàn tất xuất được</Tag>
         ),
     },
     {
@@ -603,7 +568,7 @@ export function AlignedOutboundDetailModal({
                 })
               }
             >
-              RFID tùy chọn
+              Gán RFID tùy chọn
             </Button>
           ) : null}
           {can("outbound.scan") &&
@@ -647,7 +612,7 @@ export function AlignedOutboundDetailModal({
     <Modal
       open
       width={1180}
-      title="Chi tiết phiếu xuất · Scan → 1 Packing Label/lô → Hoàn tất xuất"
+      title="Chi tiết phiếu xuất · Quét → 1 nhãn đóng gói/lô → Hoàn tất xuất kho"
       onCancel={onClose}
       footer={null}
       destroyOnClose
@@ -656,8 +621,8 @@ export function AlignedOutboundDetailModal({
         <Alert
           type="info"
           showIcon
-          title="Baseline hiện hành"
-          description="Scan đủ → tổng hợp lô → tạo/preview/in/dán đúng 01 Packing Label → RFID tùy chọn → Hoàn tất xuất. Chỉ Post Issue mới trừ tồn."
+          title="Quy trình hiện hành"
+          description="Quét đủ → tổng hợp lô → tạo/xem trước/in/dán đúng 01 nhãn đóng gói → RFID tùy chọn → hoàn tất xuất kho. Chỉ bước hoàn tất xuất kho mới trừ tồn."
         />
 
         <Descriptions bordered size="small" column={{ xs: 1, sm: 2, lg: 4 }}>
@@ -665,7 +630,7 @@ export function AlignedOutboundDetailModal({
             {doc?.code ?? "-"}
           </Descriptions.Item>
           <Descriptions.Item label="Trạng thái">
-            <Tag>{doc?.status ?? "-"}</Tag>
+            <Tag>{businessLabel(OUTBOUND_STATUS_LABELS, doc?.status)}</Tag>
           </Descriptions.Item>
           <Descriptions.Item label="Người nhận">
             {doc?.recipientName ?? "-"}
@@ -677,27 +642,27 @@ export function AlignedOutboundDetailModal({
           <Descriptions.Item label="SĐT">
             {packingLabel?.customerPhone || customerPhone || "-"}
           </Descriptions.Item>
-          <Descriptions.Item label="Request">
+          <Descriptions.Item label="Yêu cầu xuất">
             {short(doc?.outboundRequestId)}
           </Descriptions.Item>
-          <Descriptions.Item label="Version">
+          <Descriptions.Item label="Phiên bản dữ liệu">
             {version ?? doc?.version ?? "-"}
           </Descriptions.Item>
         </Descriptions>
 
-        <Card title="Tiến độ & gate" size="small">
+        <Card title="Tiến độ & điều kiện hoàn tất" size="small">
           <Descriptions bordered size="small" column={{ xs: 1, sm: 2, lg: 3 }}>
-            <Descriptions.Item label="Match Item">
+            <Descriptions.Item label="Sản phẩm đã đối chiếu">
               {totalScanned} / {totalExpected}
             </Descriptions.Item>
             <Descriptions.Item label="Tổng hợp lô">
               {packingLabel
-                ? `${packingLabel.skuCount} SKU · ${packingLabel.itemCount} Item`
-                : `${detail?.lines.length ?? 0} SKU · ${totalScanned} Item`}
+                ? `${packingLabel.skuCount} SKU · ${packingLabel.itemCount} sản phẩm`
+                : `${detail?.lines.length ?? 0} SKU · ${totalScanned} sản phẩm`}
             </Descriptions.Item>
-            <Descriptions.Item label="Packing Label">
+            <Descriptions.Item label="Nhãn đóng gói">
               {packingLabels.length} / 1
-              {packingLabel ? ` · ${packingLabel.status}` : ""}
+              {packingLabel ? ` · ${labelStatus(packingLabel.status)}` : ""}
             </Descriptions.Item>
             <Descriptions.Item label="Tồn khả dụng">
               {availabilityQuery.isSuccess ? (
@@ -715,10 +680,10 @@ export function AlignedOutboundDetailModal({
                 {labelApplied ? "Có" : "Chưa"}
               </Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="RFID đã map">
+            <Descriptions.Item label="RFID đã gán">
               {rfidMappedCount} / {activeMatches.length} · tùy chọn
             </Descriptions.Item>
-            <Descriptions.Item label="Có thể Hoàn tất xuất">
+            <Descriptions.Item label="Có thể hoàn tất xuất kho">
               <Tag color={postReady ? "success" : "warning"}>
                 {postReady
                   ? "Có · thiếu RFID không chặn"
@@ -728,11 +693,11 @@ export function AlignedOutboundDetailModal({
           </Descriptions>
         </Card>
 
-        <Card title="1 · Scan & match item — stock-neutral" size="small">
+        <Card title="1 · Quét & đối chiếu sản phẩm — không đổi tồn kho" size="small">
           <Space orientation="vertical" style={{ width: "100%" }} size={10}>
             <Space wrap size={6}>
               <Tag color="success">
-                Item đã match: {totalScanned} / {totalExpected}
+                Sản phẩm đã đối chiếu: {totalScanned} / {totalExpected}
               </Tag>
               <Tag color={scanRejects.wrongSku ? "error" : "default"}>
                 Mã sai SKU (phiên): {scanRejects.wrongSku}
@@ -741,7 +706,7 @@ export function AlignedOutboundDetailModal({
                 Mã trùng (phiên): {scanRejects.duplicate}
               </Tag>
               <Tag color={scanRejects.unknown ? "error" : "default"}>
-                Unknown (phiên): {scanRejects.unknown}
+                Không nhận diện (phiên): {scanRejects.unknown}
               </Tag>
             </Space>
             <Progress
@@ -755,14 +720,15 @@ export function AlignedOutboundDetailModal({
             />
             {mutable && can("outbound.scan") && !packingLabel ? (
               <Space wrap>
-                {/* Change Pack QR/SKU (guide §12): chọn dòng là tùy chọn — để
-                    trống thì server tự match theo SKU trong QR composite. */}
                 <Select
-                  style={{ width: 290 }}
+                  style={{ width: 310 }}
                   value={lineId || ""}
                   onChange={setLineId}
                   options={[
-                    { value: "", label: "Tự động theo QR (server match SKU)" },
+                    {
+                      value: "",
+                      label: "Tự động theo QR (hệ thống tự đối chiếu SKU)",
+                    },
                     ...(detail?.lines ?? []).map((line) => ({
                       value: line.id,
                       label: `${short(line.productId)} · ${line.scanned}/${line.expected}`,
@@ -773,7 +739,7 @@ export function AlignedOutboundDetailModal({
                 <Input
                   style={{ width: 310 }}
                   value={scanCode}
-                  placeholder="Quét Barcode / QR item"
+                  placeholder="Quét mã vạch / QR sản phẩm"
                   onChange={(event) => setScanCode(event.target.value)}
                   onPressEnter={() =>
                     scanMutation.mutate({
@@ -801,14 +767,14 @@ export function AlignedOutboundDetailModal({
                     })
                   }
                 >
-                  Match item
+                  Đối chiếu sản phẩm
                 </Button>
               </Space>
             ) : packingLabel ? (
               <Alert
                 type="warning"
                 showIcon
-                title="Đã tạo Packing Label; match được khóa để bảo toàn snapshot nhãn."
+                title="Đã tạo nhãn đóng gói; việc đối chiếu sản phẩm được khóa để bảo toàn nội dung nhãn."
               />
             ) : null}
             <Table
@@ -831,7 +797,7 @@ export function AlignedOutboundDetailModal({
         </Card>
 
         <Card
-          title="2 · Tổng hợp & Packing Label — đúng 01 nhãn/phiếu-lô"
+          title="2 · Tổng hợp & nhãn đóng gói — đúng 01 nhãn/phiếu-lô"
           size="small"
         >
           {!packingLabel ? (
@@ -841,8 +807,8 @@ export function AlignedOutboundDetailModal({
                 showIcon
                 title={
                   fullScan
-                    ? "Đã scan đủ nhưng chưa thấy nhãn — bấm để tạo/đảm bảo lại 01 Packing Label."
-                    : "Chưa scan đủ. Hệ thống sẽ tự tổng hợp lô và tạo 01 Packing Label DRAFT ngay khi full match."
+                    ? "Đã quét đủ nhưng chưa thấy nhãn — bấm để tạo/đảm bảo lại 01 nhãn đóng gói."
+                    : "Chưa quét đủ. Hệ thống sẽ tự tổng hợp lô và tạo 01 nhãn đóng gói nháp ngay khi đối chiếu đủ."
                 }
               />
               <Space orientation="vertical" style={{ width: "100%" }} size={4}>
@@ -872,13 +838,12 @@ export function AlignedOutboundDetailModal({
                     loading={createLabelMutation.isPending}
                     onClick={() => createLabelMutation.mutate()}
                   >
-                    Tạo/đảm bảo 01 Packing Label
+                    Tạo/đảm bảo 01 nhãn đóng gói
                   </Button>
                 </Space>
                 {!customerPhoneValid && (
                   <Typography.Text type="danger">
-                    Số điện thoại phải gồm đúng 10 chữ số và bắt đầu bằng số
-                    0.
+                    Số điện thoại phải gồm đúng 10 chữ số và bắt đầu bằng số 0.
                   </Typography.Text>
                 )}
               </Space>
@@ -889,13 +854,13 @@ export function AlignedOutboundDetailModal({
                 <Alert
                   type="error"
                   showIcon
-                  title={`Có ${packingLabels.length} nhãn canonical cho cùng phiếu; không được Post.`}
+                  title={`Có ${packingLabels.length} nhãn chính thức cho cùng phiếu; chưa thể hoàn tất xuất kho.`}
                 />
               ) : null}
               <div className="label-preview">
                 <div className="label-head">
                   <div>
-                    <div className="label-brand">HOA NAM · PACKING LABEL</div>
+                    <div className="label-brand">HOA NAM · NHÃN ĐÓNG GÓI</div>
                     <div className="label-sub">
                       01 nhãn duy nhất cho phiếu/lô xuất
                     </div>
@@ -909,7 +874,7 @@ export function AlignedOutboundDetailModal({
                           : "warning"
                     }
                   >
-                    {packingLabel.status}
+                    {labelStatus(packingLabel.status)}
                   </Tag>
                 </div>
                 <Descriptions bordered size="small" column={{ xs: 1, sm: 2 }}>
@@ -919,7 +884,7 @@ export function AlignedOutboundDetailModal({
                   <Descriptions.Item label="Phiếu xuất">
                     {packingLabel.outboundNo || doc?.code}
                   </Descriptions.Item>
-                  <Descriptions.Item label="Phiếu toa / Request">
+                  <Descriptions.Item label="Phiếu toa / Yêu cầu xuất">
                     {packingLabel.sourceRequestNo ||
                       short(doc?.outboundRequestId)}
                   </Descriptions.Item>
@@ -940,11 +905,11 @@ export function AlignedOutboundDetailModal({
                   <Descriptions.Item label="Tổng SKU">
                     {packingLabel.skuCount}
                   </Descriptions.Item>
-                  <Descriptions.Item label="Tổng Item">
+                  <Descriptions.Item label="Tổng sản phẩm">
                     {packingLabel.itemCount}
                   </Descriptions.Item>
-                  <Descriptions.Item label="Snapshot" span={2}>
-                    {short(packingLabel.id)} · immutable/current
+                  <Descriptions.Item label="Bản lưu nhãn" span={2}>
+                    {short(packingLabel.id)} · bản hiện hành không chỉnh sửa trực tiếp
                   </Descriptions.Item>
                   <Descriptions.Item label="Tóm tắt hàng" span={2}>
                     {packingLabel.skuSummary.length
@@ -982,14 +947,14 @@ export function AlignedOutboundDetailModal({
                   style={{ marginTop: 10 }}
                   type="info"
                   showIcon
-                  title="QR/Barcode đại diện cho kiện/phiếu xuất. Không dùng Barcode của từng Item làm Packing Label."
+                  title="QR/mã vạch này đại diện cho kiện/phiếu xuất. Không dùng mã vạch của từng sản phẩm làm nhãn đóng gói."
                 />
               </div>
               <Alert
                 type="info"
                 showIcon
-                title={`Lifecycle §6: ${LABEL_LIFECYCLE.join(" → ")} (PRINT_FAILED nếu in lỗi)`}
-                description="Ready đóng băng immutable Packing_Label_Snapshot; Print/Retry/Reprint dùng lại đúng snapshot đó và không đổi tồn."
+                title={`Vòng đời nhãn: ${LABEL_LIFECYCLE.map((status) => labelStatus(status)).join(" → ")} (In thất bại nếu máy in lỗi)`}
+                description="Khi chuyển sang Sẵn sàng in, bản lưu nhãn được khóa. In, thử lại hoặc in lại đều dùng đúng bản lưu đó và không làm thay đổi tồn kho."
               />
               <Space wrap>
                 <Button
@@ -1002,7 +967,7 @@ export function AlignedOutboundDetailModal({
                   loading={previewMutation.isPending}
                   onClick={() => previewMutation.mutate(packingLabel)}
                 >
-                  Preview
+                  Xem trước
                 </Button>
                 <Button
                   icon={<LockOutlined />}
@@ -1014,7 +979,7 @@ export function AlignedOutboundDetailModal({
                   loading={readyMutation.isPending}
                   onClick={() => readyMutation.mutate(packingLabel)}
                 >
-                  Ready · đóng băng snapshot
+                  Sẵn sàng in · khóa bản lưu nhãn
                 </Button>
                 <Select
                   style={{ width: 260 }}
@@ -1040,10 +1005,10 @@ export function AlignedOutboundDetailModal({
                   onClick={() => printMutation.mutate(packingLabel)}
                 >
                   {labelPrinted
-                    ? "In lại Packing Label"
+                    ? "In lại nhãn đóng gói"
                     : labelPrintFailed
                       ? "In lại sau lỗi máy in"
-                      : "In Packing Label"}
+                      : "In nhãn đóng gói"}
                 </Button>
                 <Button
                   type="primary"
@@ -1063,7 +1028,7 @@ export function AlignedOutboundDetailModal({
                 <Alert
                   type="warning"
                   showIcon
-                  title="Phải Preview → Ready trước khi gửi lệnh in (§6)."
+                  title="Phải xem trước rồi chuyển sang Sẵn sàng in trước khi gửi lệnh in."
                 />
               ) : null}
             </Space>
@@ -1075,25 +1040,25 @@ export function AlignedOutboundDetailModal({
             <Alert
               type="info"
               showIcon
-              title="RFID không phải gate Post Issue"
-              description="Có thể map RFID nếu vận hành có tag. Không tạo RFID giả và không chặn Hoàn tất xuất khi thiếu RFID."
+              title="RFID không phải điều kiện bắt buộc để hoàn tất xuất kho"
+              description="Có thể gán RFID nếu vận hành có thẻ. Không tạo RFID giả và không chặn hoàn tất xuất kho khi thiếu RFID."
             />
             <Text>
-              Đã map RFID: <b>{rfidMappedCount}</b> / {activeMatches.length} ·
-              tùy chọn. Item không có tag dùng Barcode/QR fallback (nút map ở
-              bảng item mục 1). RFID mapping là stock-neutral.
+              Đã gán RFID: <b>{rfidMappedCount}</b> / {activeMatches.length} ·
+              tùy chọn. Sản phẩm không có thẻ dùng mã vạch/QR; nút gán nằm ở
+              bảng sản phẩm mục 1. Việc gán RFID không làm thay đổi tồn kho.
             </Text>
           </Space>
         </Card>
 
-        <Card title="4 · Hoàn tất xuất / Post Issue" size="small">
+        <Card title="4 · Hoàn tất xuất kho" size="small">
           <Space orientation="vertical" style={{ width: "100%" }}>
             {shortStockLines.length ? (
               <Alert
                 type="warning"
                 showIcon
                 title="Tồn khả dụng hiện thấp hơn số lượng cần xuất"
-                description={`BE kiểm tra lại tồn tại thời điểm Post; các SKU thiếu: ${shortStockLines
+                description={`Hệ thống kiểm tra lại tồn tại thời điểm hoàn tất xuất kho; các SKU thiếu: ${shortStockLines
                   .map((line) => short(line.productId))
                   .join(", ")}.`}
               />
@@ -1104,7 +1069,7 @@ export function AlignedOutboundDetailModal({
               <Alert
                 type="success"
                 showIcon
-                title="Đủ gate: scan đủ + đúng 01 Packing Label PRINTED + đã dán. RFID không nằm trong gate."
+                title="Đủ điều kiện: quét đủ + đúng 01 nhãn đóng gói đã in + đã dán. RFID không phải điều kiện bắt buộc."
               />
             )}
             <Space wrap>
@@ -1115,15 +1080,15 @@ export function AlignedOutboundDetailModal({
                 loading={postMutation.isPending}
                 onClick={() =>
                   Modal.confirm({
-                    title: "Hoàn tất xuất / Post Issue?",
+                    title: "Hoàn tất xuất kho?",
                     content:
-                      "Đây là thời điểm duy nhất tồn kho bị trừ. Phiếu POSTED là bất biến; sửa sai dùng Reversal.",
-                    okText: "Hoàn tất xuất",
+                      "Đây là thời điểm duy nhất tồn kho bị trừ. Phiếu đã xuất kho không được chỉnh sửa trực tiếp; sửa sai dùng Điều chỉnh tồn kho.",
+                    okText: "Hoàn tất xuất kho",
                     onOk: () => postMutation.mutateAsync(),
                   })
                 }
               >
-                Hoàn tất xuất · trừ tồn
+                Hoàn tất xuất kho · trừ tồn
               </Button>
               {can("outbound.cancel") && mutable ? (
                 <Button danger onClick={() => setCancelOpen(true)}>
@@ -1135,19 +1100,17 @@ export function AlignedOutboundDetailModal({
               <Alert
                 type="success"
                 showIcon
-                title="Post Issue thành công"
-                description={`Document ${evidence.documentId} · ${evidence.movementRefs.length} movement · request ${evidence.requestId || "-"}`}
+                title="Hoàn tất xuất kho thành công"
+                description={`Phiếu ${evidence.documentId} · ${evidence.movementRefs.length} biến động tồn kho · mã yêu cầu ${evidence.requestId || "-"}`}
               />
             ) : null}
           </Space>
         </Card>
       </Space>
 
-      {/* SRS §5.3: camera trả đúng một code_value vào field đang hoạt động;
-          permission denied / no camera / unsupported browser rơi về nhập tay. */}
       <CameraScanModal
         open={cameraOpen}
-        title="Camera Barcode/QR · Quét item xuất kho"
+        title="Quét sản phẩm xuất kho bằng camera"
         onClose={() => setCameraOpen(false)}
         onDetected={(code) => {
           setCameraOpen(false);
@@ -1158,26 +1121,26 @@ export function AlignedOutboundDetailModal({
 
       <Modal
         open={Boolean(rfidTarget)}
-        title={`Map RFID tùy chọn · ${rfidTarget?.itemCode ?? ""}`}
+        title={`Gán RFID tùy chọn · ${rfidTarget?.itemCode ?? ""}`}
         onCancel={() => setRfidTarget(null)}
         onOk={() => rfidMutation.mutate()}
-        okText="Map RFID"
+        okText="Gán RFID"
         confirmLoading={rfidMutation.isPending}
       >
         <Alert
           style={{ marginBottom: 12 }}
           type="info"
-          title="Có thể đóng và bỏ qua RFID; Post Issue vẫn hợp lệ."
+          title="Có thể đóng và bỏ qua RFID; phiếu vẫn có thể hoàn tất xuất kho."
         />
         <Space orientation="vertical" style={{ width: "100%" }}>
           <Input
             value={rfidCode}
-            placeholder="RFID code"
+            placeholder="Mã RFID"
             onChange={(event) => setRfidCode(event.target.value)}
           />
           <Input
             value={rfidHardwareUid}
-            placeholder="Hardware UID"
+            placeholder="UID phần cứng"
             onChange={(event) => setRfidHardwareUid(event.target.value)}
           />
         </Space>
