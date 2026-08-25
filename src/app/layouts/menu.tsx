@@ -31,6 +31,7 @@ export interface AppMenuItem {
   permission?: string | string[];
   children?: AppMenuItem[];
 }
+
 export const MENU: AppMenuItem[] = [
   {
     key: "overview",
@@ -64,13 +65,13 @@ export const MENU: AppMenuItem[] = [
       },
       {
         key: ROUTES.MASTER_DATA,
-        label: "SKU / Product Master",
+        label: "SKU / Danh mục sản phẩm",
         icon: <ProfileOutlined />,
         permission: ROUTE_PERMISSIONS[ROUTES.MASTER_DATA],
       },
       {
         key: ROUTES.CATALOG_MASTER,
-        label: "Danh mục Product Master",
+        label: "Danh mục sản phẩm",
         icon: <AppstoreOutlined />,
         permission: ROUTE_PERMISSIONS[ROUTES.CATALOG_MASTER],
       },
@@ -107,13 +108,13 @@ export const MENU: AppMenuItem[] = [
     children: [
       {
         key: ROUTES.INBOUND,
-        label: "Phiếu nhập & Full Post",
+        label: "Phiếu nhập & hoàn tất nhập kho",
         icon: <InboxOutlined />,
         permission: ROUTE_PERMISSIONS[ROUTES.INBOUND],
       },
       {
         key: ROUTES.PUTAWAY,
-        label: "Putaway linh kiện",
+        label: "Xếp khay linh kiện",
         icon: <SwapOutlined />,
         permission: ROUTE_PERMISSIONS[ROUTES.PUTAWAY],
       },
@@ -126,7 +127,7 @@ export const MENU: AppMenuItem[] = [
     children: [
       {
         key: ROUTES.OUTBOUND,
-        label: "Phiếu xuất & Post Issue",
+        label: "Phiếu xuất & hoàn tất xuất kho",
         icon: <StockOutlined />,
         permission: ROUTE_PERMISSIONS[ROUTES.OUTBOUND],
       },
@@ -158,7 +159,7 @@ export const MENU: AppMenuItem[] = [
       },
       {
         key: ROUTES.REVERSE,
-        label: "Đảo ngược",
+        label: "Điều chỉnh tồn kho",
         icon: <RollbackOutlined />,
         permission: ROUTE_PERMISSIONS[ROUTES.REVERSE],
       },
@@ -183,7 +184,7 @@ export const MENU: AppMenuItem[] = [
       },
       {
         key: ROUTES.COMPONENT_CATALOG,
-        label: "Component catalog",
+        label: "Danh mục linh kiện",
         icon: <AppstoreOutlined />,
         permission: ROUTE_PERMISSIONS[ROUTES.COMPONENT_CATALOG],
       },
@@ -224,6 +225,7 @@ export function filterMenu(
     })
     .filter((item): item is AppMenuItem => item !== null);
 }
+
 export function toMenuItems(items: AppMenuItem[]): MenuProps["items"] {
   return items.map((it) => ({
     key: it.key,
@@ -232,22 +234,26 @@ export function toMenuItems(items: AppMenuItem[]): MenuProps["items"] {
     children: it.children ? toMenuItems(it.children) : undefined,
   }));
 }
+
 export interface Crumb {
   label: string;
   path?: string;
 }
+
 function splitKey(key: string) {
   const idx = key.indexOf("?");
   return idx === -1
     ? { path: key, query: "" }
     : { path: key.slice(0, idx), query: key.slice(idx) };
 }
+
 function matchesPath(key: string, pathname: string, search = "") {
   const { path, query } = splitKey(key);
   const pathMatches =
     path === pathname || (path !== "/" && pathname.startsWith(`${path}/`));
   return pathMatches && (query === "" || query === search);
 }
+
 function findMatchingItem(items: AppMenuItem[], pathname: string, search = "") {
   const specific = items.find(
     (c) => splitKey(c.key).query !== "" && matchesPath(c.key, pathname, search),
@@ -260,6 +266,7 @@ function findMatchingItem(items: AppMenuItem[], pathname: string, search = "") {
     )
   );
 }
+
 export function getBreadcrumb(pathname: string, search = ""): Crumb[] {
   for (const top of MENU) {
     if (matchesPath(top.key, pathname, search))
@@ -270,11 +277,13 @@ export function getBreadcrumb(pathname: string, search = ""): Crumb[] {
   }
   return [];
 }
+
 export function getOpenKeys(pathname: string, search = "") {
   return MENU.filter((top) =>
     top.children?.some((c) => matchesPath(c.key, pathname, search)),
   ).map((top) => top.key);
 }
+
 export function getSelectedKey(pathname: string, search = "") {
   for (const top of MENU) {
     if (top.key === pathname) return top.key;
