@@ -79,7 +79,10 @@ describe("WWHN-252 · PvAdminPage (SCR-PV-ADM-01)", () => {
 
     const toggle = await screen.findByTestId("pv-admin-publish-switch");
     expect(toggle).toBeDisabled();
-    expect(screen.getByText(/không có quyền pv\.publish/i)).toBeInTheDocument();
+    // i18n: thông điệp không còn nêu mã quyền kỹ thuật pv.publish.
+    expect(
+      screen.getByText(/không có quyền bật hoặc tắt hiển thị sản phẩm/i),
+    ).toBeInTheDocument();
   });
 
   it("người có pv.publish bật/tắt được publish", async () => {

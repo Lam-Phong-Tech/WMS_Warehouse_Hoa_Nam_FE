@@ -10,6 +10,11 @@ vi.mock("@/modules/inbound/hooks/use-inbound", () => ({
     isPending: false,
     mutateAsync: vi.fn(),
   })),
+  // GĐ1 scan-driven: picker "Thêm dòng linh kiện" gọi ensure-component-line.
+  useEnsureComponentLine: vi.fn(() => ({
+    isPending: false,
+    mutateAsync: vi.fn(),
+  })),
   useScanInbound: vi.fn(() => ({ isPending: false, mutateAsync: vi.fn() })),
   useUnscanInbound: vi.fn(),
   usePostInboundReceipt: vi.fn(() => ({
@@ -178,8 +183,8 @@ describe("IN-03 · bảng mã đã quét và gỡ mã trước Post", () => {
     expect(await screen.findByText("Mã đã quét của phiếu")).toBeInTheDocument();
     expect(screen.getByText("ITEM-BC-000008")).toBeInTheDocument();
     expect(screen.getByText("ITEM-BC-000009")).toBeInTheDocument();
-    expect(screen.getByText("CAMERA/MÃ")).toBeInTheDocument();
-    expect(screen.getByText("NHẬP TAY")).toBeInTheDocument();
+    expect(screen.getByText("Camera / mã")).toBeInTheDocument();
+    expect(screen.getByText("Nhập tay")).toBeInTheDocument();
     // Đọc từ inbound_scan_entries nên phân biệt được dòng còn hiệu lực / đã gỡ.
     expect(screen.getByText("Hợp lệ")).toBeInTheDocument();
     expect(screen.getByText("Đã gỡ")).toBeInTheDocument();

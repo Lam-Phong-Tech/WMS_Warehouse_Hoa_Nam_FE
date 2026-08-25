@@ -115,16 +115,20 @@ function mockDetailHooks() {
 
 /**
  * Bấm Post rồi xác nhận trong hộp Modal.confirm của antd. Nút OK của hộp thoại mang
- * cùng nhãn "Post reversal" với nút mở, nên phải lấy nút xuất hiện SAU.
+ * cùng nhãn "Hoàn tất điều chỉnh" với nút mở, nên phải lấy nút xuất hiện SAU.
  */
 async function clickPostAndConfirm() {
-  fireEvent.click(screen.getByRole("button", { name: /Post reversal/i }));
+  fireEvent.click(
+    screen.getByRole("button", { name: /Hoàn tất điều chỉnh/i }),
+  );
   await waitFor(() =>
     expect(
-      screen.getAllByRole("button", { name: /Post reversal/i }).length,
+      screen.getAllByRole("button", { name: /Hoàn tất điều chỉnh/i }).length,
     ).toBeGreaterThan(1),
   );
-  const buttons = screen.getAllByRole("button", { name: /Post reversal/i });
+  const buttons = screen.getAllByRole("button", {
+    name: /Hoàn tất điều chỉnh/i,
+  });
   fireEvent.click(buttons[buttons.length - 1]);
 }
 
@@ -172,7 +176,7 @@ describe("WWHN-242 · REV-00/REV-01 contract", () => {
       await waitFor(() => expect(docRefetch).toHaveBeenCalled());
       expect(linesRefetch).toHaveBeenCalled();
       expect(
-        await screen.findByText(/Phiên bản phiếu đã thay đổi/i),
+        await screen.findByText(/Phiếu đã được cập nhật ở phiên khác/i),
       ).toBeInTheDocument();
     },
   );
@@ -198,7 +202,7 @@ describe("WWHN-242 · REV-00/REV-01 contract", () => {
     await waitFor(() => expect(postMutate).toHaveBeenCalled());
     expect(docRefetch).not.toHaveBeenCalled();
     expect(
-      screen.queryByText(/Phiên bản phiếu đã thay đổi/i),
+      screen.queryByText(/Phiếu đã được cập nhật ở phiên khác/i),
     ).not.toBeInTheDocument();
   });
 
@@ -250,13 +254,15 @@ describe("WWHN-242 · REV-00/REV-01 contract", () => {
     fireEvent.click(row!);
 
     expect(
-      await screen.findByText(/Tạo hoàn đảo từ MOV-RECEIPT-000123/i),
+      await screen.findByText(/Điều chỉnh từ MOV-RECEIPT-000123/i),
     ).toBeInTheDocument();
     expect(
-      await screen.findByText(/Thiếu version chứng từ gốc/i),
+      await screen.findByText(
+        /Dữ liệu chứng từ gốc chưa đủ để tạo phiếu điều chỉnh/i,
+      ),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /Tạo hoàn đảo/i }),
+      screen.getByRole("button", { name: /Tạo phiếu điều chỉnh/i }),
     ).toBeDisabled();
   });
 });

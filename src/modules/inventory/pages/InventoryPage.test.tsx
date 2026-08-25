@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { renderWithProviders } from "@/test/test-utils";
 import { cleanupTestState } from "@/test/setup";
 
@@ -132,14 +132,19 @@ describe("InventoryPage (INV-01 hub)", () => {
 
     expect(await screen.findByText("SKU-001")).toBeInTheDocument();
     expect(screen.getByText("Máy khoan KT-2000")).toBeInTheDocument();
-    expect(screen.getByText("MATCH")).toBeInTheDocument();
+    // i18n: reconcile MATCH render qua RECONCILE_STATUS_LABELS thành "Khớp";
+    // so trong dòng dữ liệu để không đụng chú thích chân bảng.
+    const cell = screen.getByText("SKU-001");
+    const row = cell.closest('[role="row"]') ?? cell.closest("tr");
+    expect(row).not.toBeNull();
+    expect(within(row as HTMLElement).getByText("Khớp")).toBeInTheDocument();
   });
 
-  it("chuyển tab Lịch sử dịch chuyển hiển thị movement", async () => {
+  it("chuyển tab Lịch sử biến động hiển thị movement", async () => {
     renderWithProviders(<InventoryPage />);
     await screen.findByText("SKU-001");
 
-    fireEvent.click(screen.getByText("Lịch sử dịch chuyển"));
+    fireEvent.click(screen.getByRole("tab", { name: /Lịch sử biến động/ }));
 
     expect(await screen.findByText("MV-0001")).toBeInTheDocument();
   });
@@ -160,10 +165,12 @@ describe("InventoryPage (INV-01 hub)", () => {
     renderWithProviders(<InventoryPage />);
     await screen.findByText("SKU-001");
 
-    fireEvent.click(screen.getByText("Lịch sử dịch chuyển"));
+    fireEvent.click(screen.getByRole("tab", { name: /Lịch sử biến động/ }));
     await screen.findByText("MV-0001");
 
-    expect(screen.getByRole("button", { name: /Trace/ })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: /^Truy vết$/ }),
+    ).toBeDisabled();
     // Không có quyền trace thì cũng không hiện nút "Truy vết mã" toolbar.
     expect(screen.queryByText("Truy vết mã")).not.toBeInTheDocument();
   });
@@ -173,15 +180,15 @@ describe("InventoryPage (INV-01 hub)", () => {
     renderWithProviders(<InventoryPage />);
     await screen.findByText("SKU-001");
 
-    fireEvent.click(screen.getByText("Lịch sử dịch chuyển"));
+    fireEvent.click(screen.getByRole("tab", { name: /Lịch sử biến động/ }));
     await screen.findByText("MV-0001");
 
-    const traceButton = screen.getByRole("button", { name: /Trace/ });
+    const traceButton = screen.getByRole("button", { name: /^Truy vết$/ });
     expect(traceButton).toBeEnabled();
     fireEvent.click(traceButton);
 
     expect(
-      await screen.findByText("Truy vết chứng từ nguồn (TRACE-01)"),
+      await screen.findByText("Truy vết chứng từ nguồn"),
     ).toBeInTheDocument();
   });
 
@@ -241,7 +248,7 @@ describe("InventoryPage (INV-01 hub)", () => {
     ]);
 
     expect(
-      await screen.findByText("Truy vết chứng từ nguồn (TRACE-01)"),
+      await screen.findByText("Truy vết chứng từ nguồn"),
     ).toBeInTheDocument();
   });
 });

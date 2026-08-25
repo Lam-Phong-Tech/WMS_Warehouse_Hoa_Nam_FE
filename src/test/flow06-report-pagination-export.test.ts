@@ -73,8 +73,10 @@ describe("Flow 06 report pagination/export alignment", () => {
     expect(source).toContain("printer_name");
     expect(source).toContain("printed_by_name");
     expect(source).toContain("result.actor_id = actorId");
-    // RPT-MOV-01: movement_id là cột đầu
-    expect(source).toContain('title: "Movement ID"');
+    // RPT-MOV-01: movement_id là cột đầu (i18n: "Mã biến động", ghim trái)
+    expect(source.replace(/\s+/gu, " ")).toContain(
+      'title: "Mã biến động", dataIndex: "id", width: 190, fixed: "left"',
+    );
     // RPT-IO-01: tầng dòng expected/scanned/posted + filter nơi nhận
     expect(source).toContain("DocumentLines");
     expect(source).toContain("posted_qty");

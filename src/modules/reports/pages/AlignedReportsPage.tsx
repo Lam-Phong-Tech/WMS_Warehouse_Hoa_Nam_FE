@@ -1229,7 +1229,7 @@ export default function AlignedReportsPage() {
         showIcon
         type="info"
         style={{ marginBottom: 14 }}
-        title="Luồng 06 · Báo cáo vận hành"
+        title="Báo cáo vận hành"
         description="Dữ liệu được phân trang bởi hệ thống; XLSX/PDF giữ nguyên bộ lọc và chỉ người có quyền xuất báo cáo mới thực hiện được. Mỗi phiếu/lô xuất có đúng 01 nhãn đóng gói."
       />
 
