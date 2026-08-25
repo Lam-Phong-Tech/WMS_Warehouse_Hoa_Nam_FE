@@ -97,18 +97,40 @@ export const INVENTORY_STOCK_STATUS_LABELS = {
 
 export const RECONCILE_STATUS_LABELS = {
   MATCH: "Khớp",
+  PASS: "Khớp",
   MISMATCH: "Có chênh lệch",
+  FAIL: "Có chênh lệch",
 } as const;
 
 export const MOVEMENT_TYPE_LABELS = {
   RECEIPT: "Nhập kho",
   ISSUE: "Xuất kho",
   COMPONENT_ISSUE: "Xuất linh kiện",
+  REVERSAL: "Điều chỉnh tồn kho",
+} as const;
+
+export const MOVEMENT_STATUS_LABELS = {
+  DRAFT: "Nháp",
+  POSTED: "Đã ghi nhận",
+  REVERSED: "Đã điều chỉnh",
+  CANCELLED: "Đã hủy",
 } as const;
 
 export const MOVEMENT_ROLE_LABELS = {
   ORIGINAL: "Giao dịch gốc",
   REVERSAL: "Giao dịch điều chỉnh",
+} as const;
+
+export const SOURCE_DOCUMENT_TYPE_LABELS = {
+  receipt: "Phiếu nhập",
+  issue: "Phiếu xuất",
+  transfer: "Phiếu chuyển kho",
+  inbound: "Phiếu nhập",
+  outbound: "Phiếu xuất",
+  RECEIPT: "Phiếu nhập",
+  ISSUE: "Phiếu xuất",
+  COMPONENT_ISSUE: "Phiếu xuất linh kiện",
+  REVERSAL: "Phiếu điều chỉnh tồn",
 } as const;
 
 export const MASTER_STATUS_LABELS = {
