@@ -81,7 +81,7 @@ type ScreenMeta = {
 const MVP_SCREEN_META: Record<string, ScreenMeta> = {
   "MAP-01": {
     title: "Bản đồ màn hình & phạm vi",
-    description: "Tổng quan phạm vi wireframe MVP, không bao gồm App PV.",
+    description: "Tổng quan phạm vi giao diện MVP, không bao gồm ứng dụng phân vùng.",
   },
   "IAM-01": {
     title: "Danh sách người dùng & phân quyền",
@@ -89,8 +89,8 @@ const MVP_SCREEN_META: Record<string, ScreenMeta> = {
       "Danh sách người dùng, vai trò, phạm vi dữ liệu và trạng thái.",
   },
   "MST-01": {
-    title: "Danh sách SKU / Product Master",
-    description: "Danh sách SKU, chỉ cần action Sửa.",
+    title: "Danh sách SKU / Danh mục sản phẩm",
+    description: "Danh sách SKU và thao tác chỉnh sửa dữ liệu sản phẩm.",
   },
   "AGY-01": {
     title: "Danh mục đại lý / nơi nhận",
@@ -105,24 +105,24 @@ const MVP_SCREEN_META: Record<string, ScreenMeta> = {
     description: "Danh sách phiếu nhập.",
   },
   "IN-02": {
-    title: "Tạo / sửa phiếu nhập DRAFT",
-    description: "Tạo / sửa phiếu nhập DRAFT.",
+    title: "Tạo / sửa phiếu nhập nháp",
+    description: "Tạo mới hoặc chỉnh sửa phiếu nhập chưa hoàn tất.",
   },
   "IN-03": {
-    title: "Quét & Full Post Receipt",
-    description: "Quét hàng và Full Post Receipt.",
+    title: "Quét & hoàn tất nhập kho",
+    description: "Quét hàng và hoàn tất nhập kho.",
   },
   "PTW-00": {
     title: "Danh sách linh kiện chờ xếp khay",
-    description: "Danh sách linh kiện chờ xếp khay để chọn box Putaway.",
+    description: "Danh sách linh kiện chờ xếp khay để chọn hộp cần xử lý.",
   },
   "PTW-01": {
-    title: "Putaway linh kiện vào khay",
-    description: "Màn Putaway linh kiện vào khay.",
+    title: "Xếp linh kiện vào khay",
+    description: "Xếp linh kiện từ hộp vào khay đích.",
   },
   "OUT-REQ-01": {
-    title: "Tiếp nhận Phiếu yêu cầu xuất",
-    description: "Tiếp nhận phiếu yêu cầu xuất, có import file Excel.",
+    title: "Tiếp nhận phiếu yêu cầu xuất",
+    description: "Tiếp nhận phiếu yêu cầu xuất, có thể nhập dữ liệu từ tệp Excel.",
   },
   "OUT-01": {
     title: "Danh sách phiếu xuất",
@@ -130,18 +130,21 @@ const MVP_SCREEN_META: Record<string, ScreenMeta> = {
   },
   "OUT-03": {
     title: "Chi tiết phiếu xuất",
-    description: "Màn chi tiết phiếu xuất khi bấm Mở / Xem.",
+    description: "Chi tiết phiếu xuất khi mở hoặc xem phiếu.",
   },
-  "OUT-02": { title: "Quét & match Item", description: "Quét và match Item." },
+  "OUT-02": {
+    title: "Quét & đối chiếu sản phẩm",
+    description: "Quét mã và đối chiếu sản phẩm trong phiếu xuất.",
+  },
   "LBL-01": {
-    title: "Packing Label lô hàng",
+    title: "Nhãn đóng gói lô hàng",
     description:
-      "Tạo/Preview/Ready/Print đúng một Packing Label cho phiếu/lô xuất, sau đó xác nhận đã dán nhãn.",
+      "Tạo, xem trước, chuẩn bị và in đúng một nhãn đóng gói cho phiếu/lô xuất, sau đó xác nhận đã dán nhãn.",
   },
   "RFID-01": {
-    title: "RFID tùy chọn & Hoàn tất xuất",
+    title: "RFID tùy chọn & hoàn tất xuất kho",
     description:
-      "Map RFID khi có tag (không bắt buộc) và kiểm tra gate trước Hoàn tất xuất/Post Issue.",
+      "Gán RFID khi có thẻ và kiểm tra đủ điều kiện trước khi hoàn tất xuất kho.",
   },
   "WAR-01": { title: "Danh sách bảo hành", description: "Danh sách bảo hành." },
   "WAR-02": { title: "Tiếp nhận bảo hành", description: "Tiếp nhận bảo hành." },
@@ -159,10 +162,13 @@ const MVP_SCREEN_META: Record<string, ScreenMeta> = {
     description: "Truy vết mã vật lý.",
   },
   "REV-00": {
-    title: "Danh sách phiếu Reversal",
-    description: "Danh sách phiếu để chọn tạo Reversal.",
+    title: "Danh sách phiếu điều chỉnh tồn kho",
+    description: "Danh sách phiếu để chọn tạo điều chỉnh tồn kho.",
   },
-  "REV-01": { title: "Tạo Reversal", description: "Tạo Reversal." },
+  "REV-01": {
+    title: "Tạo phiếu điều chỉnh tồn kho",
+    description: "Tạo phiếu điều chỉnh tồn kho.",
+  },
   "RPT-01": {
     title: "Báo cáo vận hành",
     description:
@@ -190,9 +196,9 @@ const ROUTE_META: Record<string, ScreenMeta> = {
   // SCR-MST-01 / SCR-WH-01 nằm ngoài bộ wireframe MVP nên render qua Outlet
   // (giữ nguyên route guard RequirePermission) thay vì renderMvpScreen.
   [ROUTES.CATALOG_MASTER]: {
-    title: "Danh mục Product Master",
+    title: "Danh mục sản phẩm",
     description:
-      "Hãng, nhóm hàng, model, nguồn điện và quy cách đóng gói dùng cho form tạo SKU.",
+      "Hãng, nhóm hàng, mẫu sản phẩm, nguồn điện và quy cách đóng gói dùng khi tạo SKU.",
   },
   [ROUTES.WAREHOUSE_CONFIG]: {
     title: "Cấu hình kho",
@@ -202,7 +208,7 @@ const ROUTE_META: Record<string, ScreenMeta> = {
   [ROUTES.IAM_ROLES]: {
     title: "Vai trò & phân quyền",
     description:
-      "Quản trị role template và permission theo contract IAM hiện hành.",
+      "Quản trị mẫu vai trò và quyền sử dụng theo quy tắc phân quyền hiện hành.",
   },
   [ROUTES.AUDIT_LOGS]: {
     title: "Nhật ký kiểm tra",
@@ -213,8 +219,8 @@ const ROUTE_META: Record<string, ScreenMeta> = {
     description: "Thông tin tài khoản và ngữ cảnh truy cập hiện hành.",
   },
   [ROUTES.COMPONENT_CATALOG]: {
-    title: "Component catalog",
-    description: "Danh mục component dùng nội bộ cho FE.",
+    title: "Danh mục linh kiện",
+    description: "Danh mục linh kiện dùng nội bộ trong hệ thống.",
   },
 };
 
