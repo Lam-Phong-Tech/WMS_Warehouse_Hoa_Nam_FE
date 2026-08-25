@@ -54,4 +54,36 @@ describe("VietnameseUiBoundary", () => {
     expect(node).toHaveAttribute("data-ui-state", "POSTED");
     expect(node).toHaveAttribute("data-permission", "inbound.post");
   });
+
+  it("keeps free-form table data intact while mapping exact enum cells", async () => {
+    render(
+      <VietnameseUiBoundary>
+        <table>
+          <tbody>
+            <tr>
+              <td data-testid="business-name">Tool Box Item Pro</td>
+              <td data-testid="raw-status">QUARANTINE</td>
+              <td>
+                <span className="ant-tag" data-testid="status-tag">
+                  Packing Label chưa PRINTED
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </VietnameseUiBoundary>,
+    );
+
+    expect(screen.getByTestId("business-name")).toHaveTextContent(
+      "Tool Box Item Pro",
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId("raw-status")).toHaveTextContent("Chờ kiểm tra"),
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId("status-tag")).toHaveTextContent(
+        "Nhãn đóng gói chưa được in",
+      ),
+    );
+  });
 });
