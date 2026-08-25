@@ -43,6 +43,12 @@ import {
   WMS_ACTION_PERMISSIONS,
   WMS_PERMISSION_CATALOG as P,
 } from "@/shared/constants/wms-permissions";
+import {
+  INBOUND_STATUS_LABELS,
+  QR_RESOLUTION_STATUS_LABELS,
+  SKU_TYPE_LABELS,
+  businessLabel,
+} from "@/shared/constants/business-labels";
 import { ScanInput } from "@/shared/components/forms/ScanInput";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { useMvpSkus } from "@/modules/master-data/hooks/use-mvp-master";
@@ -97,20 +103,8 @@ type ScanLogRow = {
   errorCode?: string;
 };
 
-/**
- * Change Pack QR/SKU 20/08/2026 (guide §11): mặc định người kho KHÔNG chọn dòng
- * cho từng lần scan PRODUCT — server parse SKU từ QR composite và tự match dòng.
- * Chọn dòng cụ thể chỉ còn cần cho COMPONENT (BOX/quantity-mode) hoặc khi muốn
- * ép cross-check một dòng nhất định.
- */
 const AUTO_LINE = "__AUTO__";
 
-/**
- * Inbound Carton Scan v1.0 §4.3 — routing-only, KHÔNG parse identity (AC-QR-10):
- * QR composite PRODUCT (HN<version>|...) chắc chắn không phải mã thùng, nên bỏ
- * qua bước classify carton để không tốn một round-trip cho mỗi lần quét máy.
- * SKU/item trong QR vẫn do backend parse authoritative.
- */
 function looksCompositeProductQr(code: string): boolean {
   return /^HN\d+\|/i.test(code.trim());
 }
@@ -119,20 +113,6 @@ function makeKey(prefix: string) {
   return `${prefix}-${globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`}`;
 }
 
-/**
- * WWHN-187 (DEV187-P1-07) — lần gửi lại tiếp theo có phải *cùng một hành động quét*
- * hay không.
- *
- * Chỉ hai nhóm được giữ nguyên Idempotency-Key:
- *  - thua race đã phân loại `RELOAD_THEN_RETRY` (412 STALE_VERSION / 409
- *    CONCURRENCY_CONFLICT) — AC-GWT-CONC-001 cấm gửi lại bằng key mới;
- *  - lỗi **không có HTTP status** (mất mạng, timeout, response rơi giữa đường) —
- *    đúng kịch bản BE đã ghi xong nhưng client không biết; gửi lại bằng key cũ thì
- *    BE replay, bằng key mới thì `scanned_qty` bị cộng đôi.
- *
- * Lỗi nghiệp vụ có status (422/403/409 trạng thái) thì hành động coi như kết thúc:
- * giữ key cũ sẽ khiến lần quét sau (nội dung khác) bị 409 IDEMPOTENCY_CONFLICT oan.
- */
 function shouldReuseScanKey(error: unknown): boolean {
   if (error instanceof WmsConcurrencyError) {
     return isRetryableAfterReload(error.outcome);
@@ -199,19 +179,19 @@ function CameraScanModal({
       const Detector = getBarcodeDetector();
       if (!Detector) {
         setCameraError(
-          "Trình duyệt chưa hỗ trợ BarcodeDetector. Hãy đóng camera và nhập Barcode/QR thủ công.",
+          "Trình duyệt chưa hỗ trợ tính năng đọc mã vạch/QR. Hãy đóng camera và nhập mã thủ công.",
         );
         return;
       }
       if (!window.isSecureContext) {
         setCameraError(
-          "Camera Web WMS yêu cầu HTTPS/secure context. Hãy đóng camera và nhập mã thủ công.",
+          "Camera của WMS yêu cầu kết nối HTTPS an toàn. Hãy đóng camera và nhập mã thủ công.",
         );
         return;
       }
       if (!navigator.mediaDevices?.getUserMedia) {
         setCameraError(
-          "Thiết bị/trình duyệt không cung cấp camera API. Hãy dùng nhập mã thủ công.",
+          "Thiết bị hoặc trình duyệt không cung cấp chức năng camera. Hãy nhập mã thủ công.",
         );
         return;
       }
@@ -263,7 +243,7 @@ function CameraScanModal({
               }
             }
           } catch {
-            // Detector errors are transient; manual fallback always remains available.
+            // Lỗi đọc khung hình có thể xảy ra tạm thời; người dùng luôn có thể nhập tay.
           }
           frameRef.current = requestAnimationFrame(() => void detectFrame());
         };
@@ -273,7 +253,7 @@ function CameraScanModal({
         const reason =
           error instanceof Error ? error.message : "Không xác định";
         setCameraError(
-          `Không truy cập được camera (${reason}). Hãy đóng camera và nhập Barcode/QR thủ công.`,
+          `Không truy cập được camera (${reason}). Hãy đóng camera và nhập mã thủ công.`,
         );
         stop();
       }
@@ -317,7 +297,7 @@ function CameraScanModal({
             type="info"
             showIcon
             title={cameraReady ? "Camera sẵn sàng" : "Đang khởi tạo camera..."}
-            description="Đưa Barcode/QR vào khung hình. Camera chỉ đọc mã; dữ liệu vẫn phải qua cùng validation và API như nhập tay. Camera không dùng để đọc RFID."
+            description="Đưa mã vạch/QR vào khung hình. Camera chỉ đọc mã; dữ liệu vẫn phải qua cùng kiểm tra hợp lệ như khi nhập tay. Camera không dùng để đọc RFID."
           />
         </>
       )}
@@ -329,7 +309,7 @@ function errorDescription(error: unknown) {
   const normalized = normalizeError(error);
   const requestId = getErrorRequestId(error);
   return [
-    normalized.status ? `HTTP ${normalized.status}` : undefined,
+    normalized.status ? `Mã phản hồi ${normalized.status}` : undefined,
     normalized.code ? `Mã lỗi: ${normalized.code}` : undefined,
     requestId ? `Mã yêu cầu: ${requestId}` : undefined,
   ]
@@ -345,8 +325,6 @@ export function InboundScanModal({
 }: InboundScanModalProps) {
   const detailQuery = useInboundDetail(documentId);
   const skuQuery = useMvpSkus({ status: "ACTIVE", per_page: 100 });
-  // Annex D SCR-IN-01: bảng mã đã quét đọc từ server nên F5 / đóng-mở lại modal
-  // vẫn còn bằng chứng, và 4 thẻ số là của cả phiếu chứ không riêng phiên thao tác.
   const scanEntriesQuery = useInboundScanEntries(documentId, "ALL");
   const registerBoxMutation = useRegisterInboundBox();
   const scanMutation = useScanInbound();
@@ -365,20 +343,8 @@ export function InboundScanModal({
   const [receiptEvidence, setReceiptEvidence] =
     useState<ReceiptEvidence | null>(null);
   const [cameraTarget, setCameraTarget] = useState<"box" | "code" | null>(null);
-  /**
-   * Inbound Carton Scan v1.0 §4.3: "Thùng đang quét" là context UI thuần —
-   * cố ý KHÔNG restore sau F5 (CTN-T09); người dùng phải scan lại mã carton
-   * trước khi tiếp tục quét Item để tránh map nhầm thùng.
-   */
   const [activeCarton, setActiveCarton] = useState<ActiveCarton | null>(null);
   const postKeyRef = useRef<string | null>(null);
-  /**
-   * WWHN-187 (DEV187-P1-07): key của hành động quét đang dở, kèm dấu vân tay nội
-   * dung của chính hành động đó. Giữ lại qua một lần gửi hỏng để lần gửi kế tiếp là
-   * *cùng hành động* chứ không phải lần quét thứ hai. Dấu vân tay để khi người dùng
-   * đổi mã/số lượng/BOX rồi quét tiếp thì key cũ bị bỏ — nếu không, nội dung mới đi
-   * với key cũ sẽ bị BE trả 409 IDEMPOTENCY_CONFLICT một cách oan uổng.
-   */
   const scanKeyRef = useRef<{ key: string; fingerprint: string } | null>(null);
   const canEdit = useInboundPermission(P.INBOUND_CREATE);
   const canScan = useInboundPermission(P.INBOUND_SCAN);
@@ -395,9 +361,6 @@ export function InboundScanModal({
   useEffect(() => {
     if (!detail) return;
     setScanVersion(detail.document.version);
-    // Change Pack QR/SKU (guide §11): mặc định KHÔNG bắt chọn dòng cho scan
-    // PRODUCT — server tự match theo SKU trong QR (AUTO_LINE). Chỉ khi người
-    // dùng đã chọn một dòng cụ thể mà dòng đó không còn hợp lệ thì quay về auto.
     if (
       lineId !== AUTO_LINE &&
       !detail.lines.some((line) => line.id === lineId)
@@ -447,8 +410,6 @@ export function InboundScanModal({
     (entry) => entry.status === "ACTIVE",
   );
   const removedEntryCount = scanEntries.length - activeEntries.length;
-  // §4.3 "Count": đếm ACTIVE entries theo containerId (dữ liệu server, sống qua
-  // reload) để hiển thị "Đã quét N máy" của thùng đang quét.
   const activeCartonScannedQty = activeCarton
     ? activeEntries
         .filter((entry) => entry.containerId === activeCarton.id)
@@ -466,18 +427,12 @@ export function InboundScanModal({
     else setQuantity(Math.max(1, Math.min(remaining || 1, quantity)));
   }, [isSerialTracked, quantity, remaining]);
 
-  /**
-   * Inbound Carton Scan v1.0 §4.3: xử lý khi mã quét resolve ra CONTAINER.
-   * CARTON hợp lệ → đặt làm "Thùng đang quét"; đang dở thùng khác → chặn và
-   * nhắc bấm "Đã quét xong thùng" trước (CTN-T07). Hoàn toàn stock-neutral —
-   * không gọi endpoint scan cho mã thùng.
-   */
   const handleCartonDetected = (
     classified: ScanClassifyResponse,
     rawCode: string,
   ) => {
     const cartonId = classified.container_id;
-    if (!cartonId) return; // normalize contract đã chặn CONTAINER thiếu id
+    if (!cartonId) return;
     const cartonCode = classified.container_code || rawCode;
     const pushCartonLog = (result: string, success: boolean) => {
       setScanLog((current) =>
@@ -489,13 +444,12 @@ export function InboundScanModal({
     };
 
     if (classified.container_type && classified.container_type !== "CARTON") {
-      const message = `"${cartonCode}" là container loại ${classified.container_type}, không phải thùng CARTON của luồng nhập PRODUCT.`;
+      const message = `"${cartonCode}" là vật chứa loại ${classified.container_type}, không phải thùng carton của luồng nhập sản phẩm.`;
       pushCartonLog(message, false);
       toast.error(message);
       return;
     }
     if (activeCarton && activeCarton.id !== cartonId) {
-      // CTN-T07: không tự chuyển thùng để Item không bị gắn nhầm context.
       const message = `Đang quét dở thùng ${activeCarton.code}. Hãy bấm "Đã quét xong thùng" trước khi chuyển sang ${cartonCode}.`;
       pushCartonLog(message, false);
       toast.error(message);
@@ -512,7 +466,7 @@ export function InboundScanModal({
       skuId: classified.sku_id ?? undefined,
     });
     pushCartonLog(
-      `Thùng đang quét: ${cartonCode} · Item tiếp theo sẽ gắn vào thùng này`,
+      `Thùng đang quét: ${cartonCode} · Sản phẩm quét tiếp theo sẽ gắn vào thùng này`,
       true,
     );
     toast.success(
@@ -520,18 +474,12 @@ export function InboundScanModal({
     );
   };
 
-  /**
-   * §4.3 "Nút xong thùng" + CTN-01/02: chỉ audit + đóng context UI; không đổi
-   * tồn, không sửa expected_qty (CTN-08), không chặn khi thiếu/thừa (CTN-04).
-   */
   const handleCompleteCarton = async () => {
     if (!activeCarton || !canScan || !isMutable) return;
-    // BE guard CARTON_NO_ACTIVE_SCANS (§3.3): thùng chưa ghi nhận máy nào thì
-    // không có gì để audit — chỉ đóng context phía UI.
     if (activeCartonScannedQty <= 0) {
       setActiveCarton(null);
       toast.info(
-        `Đã đóng thùng ${activeCarton.code}. Chưa ghi nhận máy nào nên không tạo mốc audit.`,
+        `Đã đóng thùng ${activeCarton.code}. Chưa ghi nhận máy nào nên không tạo mốc nhật ký.`,
       );
       return;
     }
@@ -542,7 +490,7 @@ export function InboundScanModal({
       });
       setActiveCarton(null);
       toast.success(
-        `Đã quét xong thùng ${result.cartonCode || activeCarton.code}: ${result.actualItemQty} máy. Tồn kho không đổi — chỉ Post Receipt mới tăng tồn.`,
+        `Đã quét xong thùng ${result.cartonCode || activeCarton.code}: ${result.actualItemQty} máy. Tồn kho không đổi — chỉ hoàn tất nhập kho mới tăng tồn.`,
       );
       await scanEntriesQuery.refetch();
       onChanged?.();
@@ -554,11 +502,7 @@ export function InboundScanModal({
     }
   };
 
-  // Annex D SCR-IN-01: Enter/reader event submits — mã đến từ ScanInput được
-  // truyền thẳng vào handler thay vì đọc lại state, tránh lệch nhịp với reader.
   const handleScan = async (scannedCode?: string) => {
-    // Change Pack QR/SKU (guide §11): scan PRODUCT không cần chọn dòng — khi ở
-    // chế độ AUTO, server tự match dòng theo SKU embedded trong QR composite.
     const autoMatch = !selectedLine;
     if (!detail || scanVersion === null || !canScan || !isMutable) return;
     if (!autoMatch && !selectedSku) return;
@@ -570,18 +514,14 @@ export function InboundScanModal({
         : Math.max(1, Math.min(Number(quantity) || 1, remaining));
 
     if (isComponent && !normalizedBox) {
-      toast.error("SKU COMPONENT bắt buộc có BOX trước khi ghi nhận scan.");
+      toast.error("Linh kiện bắt buộc có hộp trước khi ghi nhận quét.");
       return;
     }
     if ((!isComponent || isSerialTracked) && !normalizedCode) {
-      toast.error("Barcode/serial là bắt buộc cho dòng này.");
+      toast.error("Mã vạch hoặc số sê-ri là bắt buộc cho dòng này.");
       return;
     }
 
-    // Inbound Carton Scan v1.0 §4.3: ô quét dùng chung — mã không composite có
-    // thể là mã thùng CARTON. Classify read-only trước; nếu không resolve ra
-    // CONTAINER (hoặc classify lỗi/thiếu quyền) thì đi tiếp đường scan chuẩn.
-    // BE vẫn quyết định cuối cùng — không tạo một đường scan song song.
     if (
       !isComponent &&
       normalizedCode &&
@@ -595,7 +535,7 @@ export function InboundScanModal({
           warehouse_id: detail.document.warehouseId,
         });
       } catch {
-        // 404/permission/mạng: không phải carton resolve được — scan như Item.
+        // Không nhận diện được là thùng thì tiếp tục xử lý như mã sản phẩm.
       }
       if (classified?.classification === "CONTAINER") {
         handleCartonDetected(classified, normalizedCode);
@@ -604,9 +544,6 @@ export function InboundScanModal({
     }
 
     const logicalCode = normalizedCode || normalizedBox;
-    // Một hành động quét = một key, giữ nguyên qua mọi lần gửi lại của chính nó.
-    // CTN-05: carton context là một phần nội dung của hành động quét — đổi thùng
-    // (hoặc đóng thùng) giữa hai lần gửi thì đó là hành động khác, phải key mới.
     const scanFingerprint = [
       selectedLine?.id ?? AUTO_LINE,
       scanQuantity,
@@ -630,13 +567,11 @@ export function InboundScanModal({
         });
         if (box.stock_effect !== "NONE" || box.movement_created !== false) {
           throw new Error(
-            "Invariant lỗi: đăng ký BOX không được làm thay đổi tồn kho.",
+            "Lỗi bất biến: đăng ký hộp không được làm thay đổi tồn kho.",
           );
         }
         containerId = box.container_id;
       } else if (activeCarton) {
-        // CTN-05: PRODUCT Item quét khi có thùng active phải mang container_id
-        // của đúng thùng đó; máy lẻ (activeCarton=null) gửi undefined (CTN-06).
         containerId = activeCarton.id;
       }
 
@@ -651,12 +586,9 @@ export function InboundScanModal({
         idempotencyKey: scanAttemptKey,
       });
       const first = result[0];
-      if (!first) throw new Error("API không trả kết quả scan.");
-      // Hành động quét này đã có kết quả xác định — lần quét sau là hành động mới.
+      if (!first) throw new Error("Hệ thống không trả kết quả quét.");
       scanKeyRef.current = null;
       setScanVersion(first.version);
-      // Change Pack QR/SKU: hiển thị SKU/item mà BE đã parse + trạng thái
-      // NEW_ITEM_CANDIDATE (item mới, đăng ký khi Post Receipt) — guide §11.
       const identityText = [
         first.sku ? `SKU ${first.sku}` : "",
         first.item_unique ?? "",
@@ -665,9 +597,8 @@ export function InboundScanModal({
         .join(" · ");
       const candidateText =
         first.resolution_status === "NEW_ITEM_CANDIDATE"
-          ? " · Item MỚI (đăng ký khi Post)"
+          ? ` · ${QR_RESOLUTION_STATUS_LABELS.NEW_ITEM_CANDIDATE}`
           : "";
-      // §4.3: nói rõ Item vừa quét thuộc thùng nào (hay là máy lẻ).
       const cartonText =
         !isComponent && activeCarton ? ` · thùng ${activeCarton.code}` : "";
       setScanLog((current) =>
@@ -676,7 +607,7 @@ export function InboundScanModal({
             key: makeKey("scan"),
             code: logicalCode,
             result: first.replayed
-              ? "Hợp lệ · replay (đã ghi nhận trước đó, không cộng thêm)"
+              ? "Hợp lệ · đã ghi nhận trước đó, không cộng thêm"
               : `Hợp lệ · +${scanQuantity}${identityText ? ` · ${identityText}` : ""}${candidateText}${cartonText}`,
             success: true,
             lineId: first.line_id,
@@ -684,11 +615,9 @@ export function InboundScanModal({
           ...current,
         ].slice(0, 20),
       );
-      // AC-GWT-IN-001 áp cho bước quét: replay phải được nói rõ, nếu không người
-      // dùng tưởng lần gửi lại đã cộng thêm và sẽ quét bù một lần nữa.
       if (first.replayed) {
         toast.success(
-          "Lần quét này đã được ghi nhận trước đó. Hệ thống trả lại kết quả cũ (replay) — số đã quét KHÔNG tăng thêm.",
+          "Lần quét này đã được ghi nhận trước đó. Hệ thống trả lại kết quả cũ — số đã quét không tăng thêm.",
         );
       }
       setScanCode("");
@@ -696,13 +625,8 @@ export function InboundScanModal({
       await Promise.all([detailQuery.refetch(), scanEntriesQuery.refetch()]);
       onChanged?.();
     } catch (error) {
-      const errorText = getApiErrorMessage(error, "Scan không hợp lệ.");
+      const errorText = getApiErrorMessage(error, "Mã quét không hợp lệ.");
       const errorCode = normalizeError(error).code ?? undefined;
-      // WWHN-187 (DEV187-P1-07): chỉ giữ lại key khi lần gửi sau là *cùng một hành
-      // động quét* — thua race sau khi reload (412/409 CONCURRENCY) hoặc mất
-      // response (không có HTTP status). Đúng những ca đó mới cần replay. Lỗi
-      // nghiệp vụ (422/409 trạng thái) thì hành động coi như bỏ, phải sinh key mới,
-      // nếu không lần quét khác nội dung sẽ bị 409 IDEMPOTENCY_CONFLICT oan.
       scanKeyRef.current = shouldReuseScanKey(error)
         ? { key: scanAttemptKey, fingerprint: scanFingerprint }
         : null;
@@ -725,10 +649,6 @@ export function InboundScanModal({
     }
   };
 
-  /**
-   * ERD bảng 28: gỡ mã quét sai trước Post (ACTIVE -> REMOVED), stock-neutral.
-   * Trước đây quét sai chỉ còn cách Cancel cả phiếu và tạo lại từ đầu.
-   */
   const handleUnscan = async (entry: InboundScanEntry) => {
     if (!detail || scanVersion === null || !canScan || !isMutable) return;
     try {
@@ -770,17 +690,15 @@ export function InboundScanModal({
       });
       postKeyRef.current = null;
       setReceiptEvidence(evidence);
-      // AC-GWT-IN-001: replay phải được nói rõ, tránh người dùng hiểu là lần Post
-      // thứ hai đã cộng tồn thêm một lần.
       toast.success(
         evidence.replayed
-          ? "Phiếu đã được Post trước đó. Hệ thống trả lại kết quả cũ (replay), tồn kho KHÔNG tăng thêm lần nữa."
-          : "Full Post Receipt thành công. Tồn kho tăng đúng một lần.",
+          ? "Phiếu đã được hoàn tất nhập kho trước đó. Hệ thống trả lại kết quả cũ, tồn kho không tăng thêm lần nữa."
+          : "Hoàn tất nhập kho thành công. Tồn kho tăng đúng một lần.",
       );
       await Promise.all([detailQuery.refetch(), scanEntriesQuery.refetch()]);
       onChanged?.();
     } catch (error) {
-      toast.error(getApiErrorMessage(error, "Không Full Post Receipt được."));
+      toast.error(getApiErrorMessage(error, "Không hoàn tất nhập kho được."));
       await detailQuery.refetch();
       onChanged?.();
     }
@@ -795,12 +713,12 @@ export function InboundScanModal({
         reason: cancelReason.trim(),
         ifMatch: scanVersion,
       });
-      toast.success("Đã Cancel phiếu nhập. Không phát sinh stock movement.");
+      toast.success("Đã hủy phiếu nhập. Không phát sinh biến động tồn kho.");
       setCancelOpen(false);
       onChanged?.();
       onClose();
     } catch (error) {
-      toast.error(getApiErrorMessage(error, "Không Cancel được phiếu nhập."));
+      toast.error(getApiErrorMessage(error, "Không hủy được phiếu nhập."));
       await detailQuery.refetch();
       onChanged?.();
     }
@@ -827,14 +745,16 @@ export function InboundScanModal({
           <div>
             <div>{sku?.sku_name ?? "-"}</div>
             {sku?.sku_type ? (
-              <Tag style={{ marginTop: 4 }}>{sku.sku_type}</Tag>
+              <Tag style={{ marginTop: 4 }}>
+                {businessLabel(SKU_TYPE_LABELS, sku.sku_type)}
+              </Tag>
             ) : null}
           </div>
         );
       },
     },
-    { title: "Expected", dataIndex: "expected", width: 110, align: "right" },
-    { title: "Đã scan", dataIndex: "scanned", width: 110, align: "right" },
+    { title: "Dự kiến", dataIndex: "expected", width: 110, align: "right" },
+    { title: "Đã quét", dataIndex: "scanned", width: 110, align: "right" },
     {
       title: "Còn lại",
       key: "remaining",
@@ -854,8 +774,6 @@ export function InboundScanModal({
     },
   ];
 
-  // Annex D SCR-IN-01: bảng "Mã / SKU / Kết quả / Nguồn" của phiếu, đọc từ
-  // inbound_scan_entries nên tồn tại qua reload; kèm hành động gỡ trước Post.
   const scanEntryColumns: ColumnsType<InboundScanEntry> = [
     {
       title: "Mã",
@@ -894,13 +812,12 @@ export function InboundScanModal({
     {
       title: "Kết quả",
       key: "result",
-      width: 130,
+      width: 180,
       render: (_, entry) =>
         entry.status === "ACTIVE" ? (
           entry.candidateItemUnique && !entry.itemId ? (
-            // DEC-QR-03: item mới từ QR composite — đăng ký tại Post Receipt.
             <Tag color="processing" icon={<CheckCircleOutlined />}>
-              Item mới · chờ Post
+              Sản phẩm mới · chờ ghi nhận
             </Tag>
           ) : (
             <Tag color="success" icon={<CheckCircleOutlined />}>
@@ -916,12 +833,12 @@ export function InboundScanModal({
     {
       title: "Nguồn",
       key: "source",
-      width: 130,
+      width: 140,
       render: (_, entry) => (
         <Tag>
           {entry.scanSource === "CAMERA_OR_MANUAL_CODE"
-            ? "CAMERA/MÃ"
-            : "NHẬP TAY"}
+            ? "Camera / mã"
+            : "Nhập tay"}
         </Tag>
       ),
     },
@@ -968,8 +885,8 @@ export function InboundScanModal({
       <Modal
         title={
           detail
-            ? `Quét & Full Post · ${detail.document.code || documentId}`
-            : "Quét & Full Post Receipt"
+            ? `Quét & hoàn tất nhập kho · ${detail.document.code || documentId}`
+            : "Quét & hoàn tất nhập kho"
         }
         open
         width={1200}
@@ -981,10 +898,10 @@ export function InboundScanModal({
         destroyOnHidden
       >
         <Space wrap style={{ marginBottom: 12 }}>
-          <Tag color="blue">POST /inbound-documents/:id/scan</Tag>
-          <Tag color="blue">POST /inbound-documents/:id/post-receipt</Tag>
-          <Tag color="gold">If-Match</Tag>
-          <Tag color="gold">Idempotency-Key khi Post</Tag>
+          <Tag color="blue">Quét và ghi nhận hàng thực nhận</Tag>
+          <Tag color="blue">Hoàn tất nhập kho khi đã quét đủ</Tag>
+          <Tag color="gold">Kiểm soát phiên bản dữ liệu</Tag>
+          <Tag color="gold">Chống ghi nhận trùng</Tag>
         </Space>
 
         {detailQuery.isLoading ? <Card loading /> : null}
@@ -1026,10 +943,13 @@ export function InboundScanModal({
                           : "warning"
                   }
                 >
-                  {detail.document.status}
+                  {businessLabel(
+                    INBOUND_STATUS_LABELS,
+                    detail.document.status,
+                  )}
                 </Tag>
               </Descriptions.Item>
-              <Descriptions.Item label="Version / If-Match">
+              <Descriptions.Item label="Phiên bản dữ liệu">
                 {scanVersion ?? detail.document.version}
               </Descriptions.Item>
             </Descriptions>
@@ -1057,8 +977,6 @@ export function InboundScanModal({
               </Col>
               <Col xs={24} sm={12} md={6}>
                 <Card size="small">
-                  {/* Đếm ở mức phiếu (đọc từ inbound_scan_entries) nên không mất
-                      sau khi tải lại trang, khác với bộ đếm theo phiên trước đây. */}
                   <div style={{ fontSize: 12, color: "#6b7280" }}>Mã đã gỡ</div>
                   <div style={{ fontSize: 22, fontWeight: 700 }}>
                     {removedEntryCount}
@@ -1079,7 +997,7 @@ export function InboundScanModal({
 
             <Card
               size="small"
-              title="Tiến độ Full Post"
+              title="Tiến độ hoàn tất nhập kho"
               style={{ marginBottom: 14 }}
             >
               <Progress
@@ -1088,17 +1006,15 @@ export function InboundScanModal({
               />
               <div style={{ color: "#6b7280", marginTop: 6 }}>
                 {isFullScan
-                  ? "Mọi dòng đã scan đủ chính xác. Full Post chỉ được thực hiện khi phiếu đang SCANNING và người dùng có inbound.post."
-                  : `Đã ghi nhận ${totalScanned}/${totalExpected}. Không có partial receipt; còn thiếu phải tiếp tục scan hoặc hiệu chỉnh Expected hợp lệ.`}
+                  ? "Mọi dòng đã quét đủ chính xác. Chỉ có thể hoàn tất nhập kho khi phiếu đang ở trạng thái Đang quét nhận hàng và người dùng có quyền ghi nhận nhập kho."
+                  : `Đã ghi nhận ${totalScanned}/${totalExpected}. Không nhập kho một phần; còn thiếu phải tiếp tục quét hoặc điều chỉnh số lượng dự kiến hợp lệ.`}
               </div>
             </Card>
 
             {isMutable ? (
               <Row gutter={[14, 14]}>
                 <Col xs={24} lg={13}>
-                  <Card size="small" title="Ghi nhận Barcode / QR / BOX">
-                    {/* Inbound Carton Scan v1.0 §4.3: UI luôn cho biết rõ thùng
-                        nào đang được quét; đóng context bằng nút xong thùng. */}
+                  <Card size="small" title="Ghi nhận mã vạch / QR / hộp">
                     {!isComponent && activeCarton ? (
                       <Alert
                         style={{ marginBottom: 12 }}
@@ -1110,7 +1026,7 @@ export function InboundScanModal({
                           <div>
                             <div>
                               Đã quét <strong>{activeCartonScannedQty}</strong>{" "}
-                              máy vào thùng này. Item quét tiếp theo sẽ được gắn
+                              máy vào thùng này. Sản phẩm quét tiếp theo sẽ được gắn
                               vào thùng {activeCarton.code}.
                             </div>
                             <Button
@@ -1138,9 +1054,6 @@ export function InboundScanModal({
                       >
                         Dòng nhận
                       </div>
-                      {/* Change Pack QR/SKU (guide §11): PRODUCT scan không cần
-                          chọn dòng — server tự match theo SKU trong QR. Chọn dòng
-                          cụ thể chỉ cần cho COMPONENT/BOX. */}
                       <Select
                         style={{ width: "100%" }}
                         value={lineId}
@@ -1150,7 +1063,7 @@ export function InboundScanModal({
                           {
                             value: AUTO_LINE,
                             label:
-                              "Tự động theo QR (PRODUCT — server match SKU)",
+                              "Tự động theo QR (sản phẩm — hệ thống tự đối chiếu SKU)",
                           },
                           ...detail.lines.map((line) => {
                             const sku = skuById.get(line.productId);
@@ -1173,13 +1086,13 @@ export function InboundScanModal({
                             color: "#6b7280",
                           }}
                         >
-                          BOX *
+                          Hộp *
                         </div>
                         <Space.Compact style={{ width: "100%" }}>
                           <Input
                             value={boxCode}
                             disabled={!canScan || busy}
-                            placeholder="Quét / nhập BOX chứa đúng một SKU COMPONENT"
+                            placeholder="Quét / nhập hộp chứa đúng một SKU linh kiện"
                             onChange={(event) => setBoxCode(event.target.value)}
                             maxLength={120}
                           />
@@ -1188,7 +1101,7 @@ export function InboundScanModal({
                             disabled={!canScan || busy}
                             onClick={() => setCameraTarget("box")}
                           >
-                            Camera
+                            Quét bằng camera
                           </Button>
                         </Space.Compact>
                       </div>
@@ -1203,11 +1116,9 @@ export function InboundScanModal({
                         }}
                       >
                         {isComponent && !isSerialTracked
-                          ? "Barcode/serial (không bắt buộc với COMPONENT quantity)"
-                          : "Barcode / Serial *"}
+                          ? "Mã vạch / số sê-ri (không bắt buộc với linh kiện nhập theo số lượng)"
+                          : "Mã vạch / Số sê-ri *"}
                       </div>
-                      {/* Annex D SCR-IN-01: Auto-focus scan input; Enter/reader
-                          event submits; retain focus after success/error. */}
                       <Row gutter={8} align="top">
                         <Col flex="auto">
                           <ScanInput
@@ -1216,8 +1127,8 @@ export function InboundScanModal({
                             disabled={!canScan || busy}
                             placeholder={
                               isSerialTracked
-                                ? "Quét serial / Barcode"
-                                : "Quét Barcode/QR hoặc nhập tay fallback"
+                                ? "Quét số sê-ri / mã vạch"
+                                : "Quét mã vạch/QR hoặc nhập tay"
                             }
                             onChange={setScanCode}
                             onScan={(code) => void handleScan(code)}
@@ -1229,7 +1140,7 @@ export function InboundScanModal({
                             disabled={!canScan || busy}
                             onClick={() => setCameraTarget("code")}
                           >
-                            Camera
+                            Quét bằng camera
                           </Button>
                         </Col>
                       </Row>
@@ -1270,7 +1181,7 @@ export function InboundScanModal({
                       loading={busy}
                       onClick={() => void handleScan()}
                     >
-                      Ghi nhận scan
+                      Ghi nhận quét
                     </Button>
 
                     {selectedLine ? (
@@ -1281,8 +1192,8 @@ export function InboundScanModal({
                         title={`${selectedSku?.sku_code ?? selectedLine.productId}: ${selectedLine.scanned}/${selectedLine.expected}`}
                         description={
                           isComponent
-                            ? "COMPONENT: BOX bắt buộc. Với quantity-mode có thể ghi nhận N đơn vị/BOX; serial-tracked vẫn quantity=1. Sau Full Post mới đi Putaway."
-                            : "PRODUCT: Barcode/QR inbound. RFID không bắt buộc; ở outbound RFID chỉ là mapping tùy chọn, không chặn Post Issue."
+                            ? "Linh kiện: bắt buộc có hộp. Với linh kiện nhập theo số lượng có thể ghi nhận nhiều đơn vị mỗi hộp; linh kiện quản lý số sê-ri vẫn ghi nhận từng đơn vị. Sau khi hoàn tất nhập kho mới thực hiện xếp khay."
+                            : "Sản phẩm: quét mã vạch/QR khi nhập kho. RFID không bắt buộc; ở luồng xuất kho, RFID chỉ là gán mã tùy chọn và không chặn hoàn tất xuất kho."
                         }
                       />
                     ) : null}
@@ -1290,33 +1201,28 @@ export function InboundScanModal({
                 </Col>
 
                 <Col xs={24} lg={11}>
-                  <Card size="small" title="Guard nghiệp vụ">
+                  <Card size="small" title="Quy tắc nghiệp vụ">
                     <Space orientation="vertical" size={10}>
                       <div>
                         {isFullScan ? "✅" : "⚠️"}{" "}
                         {isFullScan
-                          ? "Tất cả dòng đã scan đủ chính xác."
+                          ? "Tất cả dòng đã quét đủ chính xác."
                           : `Còn ${Math.max(totalExpected - totalScanned, 0)} đơn vị chưa ghi nhận.`}
                       </div>
                       <div>
-                        • Camera và nhập tay cùng đi một validation/API path;
-                        camera không đọc RFID.
+                        • Camera và nhập tay dùng cùng quy tắc kiểm tra; camera không đọc RFID.
                       </div>
                       <div>
-                        • Scan/đăng ký BOX bắt buộc stock_effect=NONE và không
-                        tạo movement.
+                        • Quét và đăng ký hộp không được làm thay đổi tồn kho hoặc tạo biến động tồn kho.
                       </div>
                       <div>
-                        • Scan vượt Expected, sai SKU/state hoặc duplicate phải
-                        bị backend từ chối.
+                        • Quét vượt số lượng dự kiến, sai SKU/trạng thái hoặc trùng mã phải bị hệ thống từ chối.
                       </div>
                       <div>
-                        • Full Post dùng If-Match + Idempotency-Key và là
-                        transaction atomic.
+                        • Hoàn tất nhập kho kiểm soát phiên bản, chống ghi nhận trùng và thực hiện nguyên tử.
                       </div>
                       <div>
-                        • COMPONENT sau Post mới vào Putaway; Confirm Putaway
-                        stock-neutral.
+                        • Linh kiện chỉ xếp khay sau khi hoàn tất nhập kho; xác nhận xếp khay không làm thay đổi tồn kho.
                       </div>
                     </Space>
                   </Card>
@@ -1328,13 +1234,13 @@ export function InboundScanModal({
                 showIcon
                 title={
                   detail.document.status === "POSTED"
-                    ? "Phiếu đã Full Post và chỉ đọc"
-                    : "Phiếu đã CANCELLED và chỉ đọc"
+                    ? "Phiếu đã nhập kho và chỉ đọc"
+                    : "Phiếu đã hủy và chỉ đọc"
                 }
                 description={
                   detail.document.status === "POSTED"
-                    ? "Không sửa/xóa chứng từ POSTED. Sai giao dịch phải xử lý bằng Reversal/Correction append-only."
-                    : "CANCELLED không có stock effect. Muốn làm lại phải tạo phiếu mới."
+                    ? "Không sửa/xóa phiếu đã nhập kho. Sai giao dịch phải xử lý bằng điều chỉnh tồn kho theo cơ chế ghi bổ sung."
+                    : "Phiếu đã hủy không làm thay đổi tồn kho. Muốn làm lại phải tạo phiếu mới."
                 }
                 style={{ marginBottom: 14 }}
               />
@@ -1355,7 +1261,6 @@ export function InboundScanModal({
               />
             </Card>
 
-            {/* Annex D SCR-IN-01: bảng mã đã quét của phiếu — đọc lại được sau reload. */}
             <Card
               size="small"
               title="Mã đã quét của phiếu"
@@ -1387,7 +1292,7 @@ export function InboundScanModal({
                   scroll={{ x: 900 }}
                   locale={{
                     emptyText:
-                      "Chưa ghi nhận mã nào. Quét Barcode/QR hoặc đăng ký BOX để bắt đầu.",
+                      "Chưa ghi nhận mã nào. Quét mã vạch/QR hoặc đăng ký hộp để bắt đầu.",
                   }}
                 />
               )}
@@ -1396,7 +1301,7 @@ export function InboundScanModal({
             {scanLog.length ? (
               <Card
                 size="small"
-                title="Diễn biến scan trong phiên thao tác"
+                title="Diễn biến quét trong phiên thao tác"
                 style={{ marginTop: 14 }}
               >
                 <Table<ScanLogRow>
@@ -1415,16 +1320,16 @@ export function InboundScanModal({
                 type="success"
                 showIcon
                 style={{ marginTop: 14 }}
-                title="Evidence Full Post Receipt"
+                title="Kết quả hoàn tất nhập kho"
                 description={
                   <div>
                     <div>
-                      Request ID: <strong>{receiptEvidence.requestId}</strong>
+                      Mã yêu cầu: <strong>{receiptEvidence.requestId}</strong>
                     </div>
                     <div>
-                      Movement: {receiptEvidence.movementRefs.join(", ")}
+                      Biến động tồn kho: {receiptEvidence.movementRefs.join(", ")}
                     </div>
-                    <div>Receipt: {receiptEvidence.receiptId}</div>
+                    <div>Phiếu nhập: {receiptEvidence.receiptId}</div>
                   </div>
                 }
               />
@@ -1452,7 +1357,7 @@ export function InboundScanModal({
                   disabled={working}
                   onClick={onEditExpected}
                 >
-                  Hiệu chỉnh Expected
+                  Điều chỉnh số lượng dự kiến
                 </Button>
               ) : null}
               {canCancel && isMutable ? (
@@ -1462,7 +1367,7 @@ export function InboundScanModal({
                   disabled={working}
                   onClick={() => setCancelOpen(true)}
                 >
-                  Cancel phiếu
+                  Hủy phiếu
                 </Button>
               ) : null}
               {isMutable ? (
@@ -1478,7 +1383,7 @@ export function InboundScanModal({
                   loading={postMutation.isPending}
                   onClick={() => void handlePost()}
                 >
-                  Full Post Receipt
+                  Hoàn tất nhập kho
                 </Button>
               ) : null}
             </div>
@@ -1490,20 +1395,20 @@ export function InboundScanModal({
         open={cameraTarget !== null}
         title={
           cameraTarget === "box"
-            ? "Quét mã BOX bằng camera"
-            : "Quét Barcode / QR bằng camera"
+            ? "Quét mã hộp bằng camera"
+            : "Quét mã vạch / QR bằng camera"
         }
         onClose={() => setCameraTarget(null)}
         onDetected={(code) => {
           if (cameraTarget === "box") setBoxCode(code);
           else setScanCode(code);
           setCameraTarget(null);
-          toast.success("Đã đọc mã từ camera. Kiểm tra và bấm Ghi nhận scan.");
+          toast.success("Đã đọc mã từ camera. Kiểm tra và bấm Ghi nhận quét.");
         }}
       />
 
       <Modal
-        title="Cancel phiếu nhập"
+        title="Hủy phiếu nhập"
         open={cancelOpen}
         onCancel={() => setCancelOpen(false)}
         onOk={() => void handleCancel()}
@@ -1514,21 +1419,21 @@ export function InboundScanModal({
           danger: true,
           disabled: !cancelReason.trim() || cancelMutation.isPending,
         }}
-        okText={cancelMutation.isPending ? "Đang Cancel..." : "Xác nhận Cancel"}
+        okText={cancelMutation.isPending ? "Đang hủy..." : "Xác nhận hủy"}
         cancelText="Quay lại"
       >
         <Alert
           type="warning"
           showIcon
-          title="Cancel là trạng thái kết thúc và stock-neutral"
-          description="Phiếu CANCELLED không thể tiếp tục scan/Post. Nếu cần làm lại, tạo phiếu mới để bảo toàn audit trail."
+          title="Hủy là trạng thái kết thúc và không làm thay đổi tồn kho"
+          description="Phiếu đã hủy không thể tiếp tục quét hoặc hoàn tất nhập kho. Nếu cần làm lại, hãy tạo phiếu mới để bảo toàn lịch sử thao tác."
           style={{ marginBottom: 12 }}
         />
         <Input.TextArea
           rows={4}
           value={cancelReason}
           onChange={(event) => setCancelReason(event.target.value)}
-          placeholder="Lý do Cancel bắt buộc"
+          placeholder="Lý do hủy bắt buộc"
           maxLength={1000}
           showCount
         />
@@ -1547,7 +1452,7 @@ export function InboundSourceScreen({
   return (
     <Card>
       {screenId === "IN-03"
-        ? "Quét & Full Post Receipt được mở từ Danh sách phiếu nhập dưới dạng modal."
+        ? "Quét & hoàn tất nhập kho được mở từ Danh sách phiếu nhập dưới dạng cửa sổ thao tác."
         : "IN-01/IN-02 được quản lý trong Danh sách phiếu nhập."}
     </Card>
   );
