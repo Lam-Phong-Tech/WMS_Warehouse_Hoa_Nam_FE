@@ -4,6 +4,11 @@ import { Alert, Descriptions, Form, Input, Modal, Select, Tag } from "antd";
 import { toast } from "sonner";
 import { useMvpSkus } from "@/modules/master-data/hooks/use-mvp-master";
 import { getApiErrorMessage } from "@/shared/api/api-error";
+import {
+  ITEM_STATUS_LABELS,
+  MASTER_STATUS_LABELS,
+  businessLabel,
+} from "@/shared/constants/business-labels";
 import { issueItemPhysicalCode } from "../services/scanService";
 import type {
   IssueItemPhysicalCodeResult,
@@ -13,7 +18,6 @@ import type {
 interface IssuePhysicalCodeModalProps {
   open: boolean;
   onClose: () => void;
-  /** Gọi sau khi tạo thành công để trang danh sách refetch. */
   onIssued?: (result: IssueItemPhysicalCodeResult) => void;
 }
 
@@ -29,17 +33,13 @@ const CARRIER_OPTIONS: Array<{
   label: string;
 }> = [
   { value: "QR", label: "QR" },
-  { value: "BARCODE", label: "Barcode" },
+  { value: "BARCODE", label: "Mã vạch" },
 ];
 
-/**
- * "Tạo mã" trên PhysicalCodesPage — trước đây nút này bị disabled cứng vì
- * chưa từng có API tạo Item_Instance + Physical_Code MỚI cùng lúc (chỉ có
- * API gán mã cho item đã tồn tại sẵn). Gọi POST /skus/{id}/items
- * (CurrentBaselineItemIdentityController@issue), permission physical_code.create.
- * Chỉ liệt kê SKU sku_type=PRODUCT + is_serial_tracked=true — đúng điều kiện
- * BE yêu cầu (SKU_NOT_SERIAL_TRACKED nếu sai).
- */
+function carrierLabel(value: IssuePhysicalCodeCarrierType) {
+  return value === "BARCODE" ? "Mã vạch" : "QR";
+}
+
 export function IssuePhysicalCodeModal({
   open,
   onClose,
@@ -73,7 +73,7 @@ export function IssuePhysicalCodeModal({
         serial_number: values.serial_number,
       }),
     onSuccess: (result) => {
-      toast.success(`Đã tạo mã ${result.code_value} cho item mới.`);
+      toast.success(`Đã tạo mã ${result.code_value} cho sản phẩm mới.`);
       queryClient.invalidateQueries({ queryKey: ["scan"] });
       onIssued?.(result);
       form.resetFields();
@@ -117,28 +117,36 @@ export function IssuePhysicalCodeModal({
         type="info"
         showIcon
         style={{ marginBottom: 16 }}
-        message="Stock-neutral"
-        description="Tạo một Item_Instance mới (item_status=NEW) kèm Physical_Code mới (ACTIVE, is_primary=true). Không phát sinh biến động tồn kho. Chỉ áp dụng cho SKU loại PRODUCT đang theo dõi serial."
+        message="Tạo mã không làm thay đổi tồn kho"
+        description="Hệ thống tạo một sản phẩm cụ thể kèm mã vật lý mới. Thao tác này chỉ tạo thông tin nhận diện, chưa làm tăng hoặc giảm tồn kho. Chỉ áp dụng cho SKU sản phẩm có quản lý số sê-ri."
       />
       {result ? (
         <Descriptions bordered size="small" column={1}>
-          <Descriptions.Item label="Item ID">
+          <Descriptions.Item label="Mã sản phẩm">
             {result.item_id}
           </Descriptions.Item>
           <Descriptions.Item label="Giá trị mã">
             <Tag color="blue">{result.code_value}</Tag>
           </Descriptions.Item>
-          <Descriptions.Item label="Vật mang">
-            {result.carrier_type}
+          <Descriptions.Item label="Hình thức mã">
+            {carrierLabel(result.carrier_type)}
           </Descriptions.Item>
-          <Descriptions.Item label="Serial number">
+          <Descriptions.Item label="Số sê-ri">
             {result.serial_number}
           </Descriptions.Item>
-          <Descriptions.Item label="Trạng thái item">
-            {result.item_status}
+          <Descriptions.Item label="Trạng thái sản phẩm">
+            {businessLabel(
+              ITEM_STATUS_LABELS,
+              result.item_status,
+              "Trạng thái khác",
+            )}
           </Descriptions.Item>
           <Descriptions.Item label="Trạng thái mã">
-            {result.status}
+            {businessLabel(
+              MASTER_STATUS_LABELS,
+              result.status,
+              "Trạng thái khác",
+            )}
           </Descriptions.Item>
         </Descriptions>
       ) : (
@@ -148,7 +156,7 @@ export function IssuePhysicalCodeModal({
           initialValues={{ carrier_type: "QR" }}
         >
           <Form.Item
-            label="SKU (PRODUCT, theo dõi serial)"
+            label="SKU sản phẩm có quản lý số sê-ri"
             name="sku_id"
             rules={[{ required: true, message: "Vui lòng chọn SKU" }]}
           >
@@ -161,30 +169,30 @@ export function IssuePhysicalCodeModal({
               notFoundContent={
                 skuQuery.isLoading
                   ? "Đang tải..."
-                  : "Không có SKU PRODUCT theo dõi serial nào đang ACTIVE"
+                  : "Không có SKU sản phẩm đang sử dụng và có quản lý số sê-ri"
               }
             />
           </Form.Item>
           <Form.Item
-            label="Vật mang mã"
+            label="Hình thức mã"
             name="carrier_type"
             rules={[{ required: true }]}
           >
             <Select options={CARRIER_OPTIONS} />
           </Form.Item>
           <Form.Item
-            label="Giá trị mã (bỏ trống để tự sinh)"
+            label="Giá trị mã (bỏ trống để hệ thống tự sinh)"
             name="code_value"
             rules={[{ max: 200, message: "Tối đa 200 ký tự" }]}
           >
-            <Input placeholder="VD: SP-0001-20260822-AB12" />
+            <Input placeholder="Ví dụ: SP-0001-20260822-AB12" />
           </Form.Item>
           <Form.Item
-            label="Serial number (bỏ trống để tự sinh)"
+            label="Số sê-ri (bỏ trống để hệ thống tự sinh)"
             name="serial_number"
             rules={[{ max: 100, message: "Tối đa 100 ký tự" }]}
           >
-            <Input placeholder="VD: SN-SP-0001-8F3C1A2B" />
+            <Input placeholder="Ví dụ: SN-SP-0001-8F3C1A2B" />
           </Form.Item>
         </Form>
       )}
