@@ -32,6 +32,11 @@ import {
   hasAnyWmsPermission,
   WMS_PERMISSION_CATALOG as P,
 } from "@/shared/constants/wms-permissions";
+import {
+  INBOUND_STATUS_LABELS,
+  SKU_TYPE_LABELS,
+  businessLabel,
+} from "@/shared/constants/business-labels";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { useMvpSkus } from "@/modules/master-data/hooks/use-mvp-master";
 import { fetchWarehouses } from "@/modules/master-data/services/warehouse.service";
@@ -99,8 +104,6 @@ function backendFieldPath(key: string): InboundDraftFieldPath | null {
   const direct: Record<string, InboundDraftFieldPath> = {
     doc_date: ["documentDate"],
     dst_warehouse_id: ["warehouseId"],
-    // BE có thể trả field error theo tên chuẩn Annex A (`source_reference`) hoặc
-    // tên cột vật lý (`source_name`); cả hai đều gắn về cùng một input.
     source_reference: ["sourceName"],
     source_name: ["sourceName"],
     note: ["note"],
@@ -157,7 +160,7 @@ function ApiErrorAlert({
           : getApiErrorMessage(error, fallback)
       }
       description={[
-        normalized.status ? `HTTP ${normalized.status}` : undefined,
+        normalized.status ? `Mã phản hồi ${normalized.status}` : undefined,
         normalized.code ? `Mã lỗi: ${normalized.code}` : undefined,
         requestId ? `Mã yêu cầu: ${requestId}` : undefined,
       ]
@@ -261,7 +264,7 @@ export function InboundDraftModal({
     });
     if (invalidExpected) {
       toast.error(
-        "Expected qty phải là số nguyên dương và không được nhỏ hơn số đã scan.",
+        "Số lượng dự kiến phải là số nguyên dương và không được nhỏ hơn số đã quét.",
       );
       return;
     }
@@ -283,7 +286,7 @@ export function InboundDraftModal({
         });
         toast.success(
           hasScanEvidence
-            ? "Đã hiệu chỉnh Expected; toàn bộ line ID và scan evidence được giữ nguyên."
+            ? "Đã hiệu chỉnh số lượng dự kiến; các dòng hàng và bằng chứng quét được giữ nguyên."
             : "Đã cập nhật phiếu nhập.",
         );
         onSaved(updated.id);
@@ -299,7 +302,7 @@ export function InboundDraftModal({
       };
       const created = await createMutation.mutateAsync(payload);
       toast.success(
-        "Đã tạo phiếu nhập DRAFT. Chưa phát sinh biến động tồn kho.",
+        "Đã tạo phiếu nhập nháp. Chưa phát sinh biến động tồn kho.",
       );
       onSaved(created.id);
     } catch (error) {
@@ -314,11 +317,11 @@ export function InboundDraftModal({
 
   const modalTitle = documentId
     ? status === "SCANNING"
-      ? "Hiệu chỉnh phiếu nhập SCANNING"
+      ? "Hiệu chỉnh phiếu nhập đang quét"
       : status === "POSTED" || status === "CANCELLED"
         ? "Xem phiếu nhập"
-        : "Sửa phiếu nhập DRAFT"
-    : "Tạo phiếu nhập DRAFT";
+        : "Sửa phiếu nhập nháp"
+    : "Tạo phiếu nhập nháp";
 
   return (
     <Modal
@@ -333,9 +336,9 @@ export function InboundDraftModal({
       destroyOnHidden
     >
       <div className="master-data-contract-strip">
-        <Tag color="blue">POST / PATCH /inbound-documents</Tag>
-        <Tag color="gold">inbound.create</Tag>
-        <Tag>Full-post only</Tag>
+        <Tag color="blue">Tạo / cập nhật phiếu nhập</Tag>
+        <Tag color="gold">Yêu cầu quyền tạo phiếu nhập</Tag>
+        <Tag>Chỉ hoàn tất toàn bộ phiếu</Tag>
       </div>
 
       {detailQuery.isError ? (
@@ -354,10 +357,10 @@ export function InboundDraftModal({
           className="master-data-state-alert"
           title={
             detail.document.status === "POSTED"
-              ? "Phiếu đã POSTED và bất biến"
-              : "Phiếu đã CANCELLED và là trạng thái kết thúc"
+              ? "Phiếu đã nhập kho và không chỉnh sửa trực tiếp"
+              : "Phiếu đã hủy và là trạng thái kết thúc"
           }
-          description="Không sửa/xóa chứng từ kết thúc. Sai giao dịch POSTED phải đi Reversal/Correction để giữ audit trail."
+          description="Không sửa/xóa chứng từ đã kết thúc. Nếu giao dịch đã nhập kho bị sai, phải tạo phiếu điều chỉnh tồn kho để bảo toàn lịch sử."
         />
       ) : null}
 
@@ -366,8 +369,8 @@ export function InboundDraftModal({
           showIcon
           type="warning"
           className="master-data-state-alert"
-          title="Phiếu đã có scan evidence"
-          description="Không được thêm/xóa dòng, đổi SKU hoặc import batch. Chỉ hiệu chỉnh Expected/ghi chú; Expected không được nhỏ hơn scanned_qty. Muốn đổi cấu trúc phải Cancel và tạo phiếu mới."
+          title="Phiếu đã có dữ liệu quét"
+          description="Không được thêm/xóa dòng, đổi SKU hoặc đổi lô nhập. Chỉ được hiệu chỉnh số lượng dự kiến/ghi chú; số lượng dự kiến không được nhỏ hơn số đã quét. Muốn đổi cấu trúc phải hủy phiếu và tạo phiếu mới."
         />
       ) : null}
 
@@ -414,7 +417,7 @@ export function InboundDraftModal({
                     rules={[
                       {
                         required: true,
-                        message: "Chọn kho nhận ACTIVE.",
+                        message: "Chọn kho nhận đang hoạt động.",
                       },
                     ]}
                   >
@@ -424,7 +427,7 @@ export function InboundDraftModal({
                       loading={warehousesQuery.isLoading}
                       options={warehouseOptions}
                       disabled={!isMutable || Boolean(documentId)}
-                      placeholder="Chọn kho ACTIVE"
+                      placeholder="Chọn kho đang hoạt động"
                     />
                   </Form.Item>
                 </Col>
@@ -446,24 +449,22 @@ export function InboundDraftModal({
             <Card size="small" title="Quy tắc nhập kho bắt buộc">
               <Space orientation="vertical" size={10}>
                 <div>
-                  • Expected qty là toàn bộ số lượng phải nhận của từng dòng.
+                  • Số lượng dự kiến là toàn bộ số lượng cần nhận của từng dòng.
                 </div>
                 <div>
-                  • DRAFT/SCANNING, scan và đăng ký BOX đều stock-neutral.
+                  • Phiếu nháp/đang quét, thao tác quét và đăng ký hộp đều không làm thay đổi tồn kho.
                 </div>
                 <div>
-                  • Không có partial, thiếu/thừa, remainder hoặc
-                  PARTIALLY_POSTED.
+                  • Quy trình hiện hành không nhập một phần và không có trạng thái ghi nhận một phần.
                 </div>
                 <div>
-                  • Scan sai SKU/state, trùng hoặc vượt Expected phải bị từ
-                  chối.
+                  • Quét sai SKU/trạng thái, trùng mã hoặc vượt số lượng dự kiến phải bị từ chối.
                 </div>
                 <div>
-                  • Chỉ Full Post khi mọi dòng scanned_qty = expected_qty.
+                  • Chỉ hoàn tất nhập kho khi số đã quét của mọi dòng bằng đúng số lượng dự kiến.
                 </div>
                 <div>
-                  • COMPONENT putaway sau Receipt không được cộng tồn lần hai.
+                  • Xếp khay linh kiện sau khi hoàn tất nhập kho không được cộng tồn lần hai.
                 </div>
               </Space>
             </Card>
@@ -525,7 +526,7 @@ export function InboundDraftModal({
                                   optionFilterProp="label"
                                   loading={skuQuery.isLoading}
                                   options={skuOptions}
-                                  placeholder="Chọn SKU ACTIVE"
+                                  placeholder="Chọn SKU đang sử dụng"
                                 />
                               </Form.Item>
                             ) : (
@@ -557,14 +558,16 @@ export function InboundDraftModal({
                           <div>
                             <div>{sku?.sku_name ?? "-"}</div>
                             {sku?.sku_type ? (
-                              <Tag style={{ marginTop: 4 }}>{sku.sku_type}</Tag>
+                              <Tag style={{ marginTop: 4 }}>
+                                {businessLabel(SKU_TYPE_LABELS, sku.sku_type)}
+                              </Tag>
                             ) : null}
                           </div>
                         );
                       },
                     },
                     {
-                      title: "Expected qty",
+                      title: "Số lượng dự kiến",
                       width: 150,
                       render: (_, field) => {
                         const scanned = Number(
@@ -576,7 +579,7 @@ export function InboundDraftModal({
                             rules={[
                               {
                                 required: true,
-                                message: "Nhập Expected.",
+                                message: "Nhập số lượng dự kiến.",
                               },
                               {
                                 validator: (_, value) => {
@@ -586,12 +589,14 @@ export function InboundDraftModal({
                                     expected < 1
                                   ) {
                                     return Promise.reject(
-                                      new Error("Số nguyên > 0."),
+                                      new Error("Phải là số nguyên lớn hơn 0."),
                                     );
                                   }
                                   if (expected < scanned) {
                                     return Promise.reject(
-                                      new Error(`Không nhỏ hơn ${scanned}.`),
+                                      new Error(
+                                        `Không được nhỏ hơn số đã quét (${scanned}).`,
+                                      ),
                                     );
                                   }
                                   return Promise.resolve();
@@ -611,7 +616,7 @@ export function InboundDraftModal({
                       },
                     },
                     {
-                      title: "Đã scan",
+                      title: "Đã quét",
                       width: 120,
                       align: "right",
                       render: (_, field) => {
@@ -680,6 +685,14 @@ export function InboundDraftModal({
               </>
             )}
           </Form.List>
+
+          {documentId && status ? (
+            <div style={{ marginTop: 10 }}>
+              <Tag>
+                Trạng thái: {businessLabel(INBOUND_STATUS_LABELS, status)}
+              </Tag>
+            </div>
+          ) : null}
 
           <div
             style={{
