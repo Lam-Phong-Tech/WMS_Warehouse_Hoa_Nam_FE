@@ -13,6 +13,7 @@ import {
 } from "antd";
 import { BarcodeOutlined } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
+import { getApiErrorMessage } from "@/shared/api/api-error";
 import {
   InlineApiError,
   tableEmptyText,
@@ -21,7 +22,6 @@ import { MvpPageSizeSelector } from "@/shared/components/mvp/MvpListPagination";
 import { resolveApiPagination } from "@/shared/components/mvp/mvp-pagination";
 import type { ApiMeta } from "@/shared/types/api-response";
 import {
-  CONTAINER_TYPE_LABELS,
   INVENTORY_STOCK_STATUS_LABELS,
   MASTER_STATUS_LABELS,
   SCAN_BATCH_STATUS_LABELS,
@@ -229,9 +229,7 @@ export default function PhysicalCodesPage() {
     } catch (error: unknown) {
       setClassifyState("error");
       setClassifyMessage(
-        error instanceof Error
-          ? error.message
-          : "Không nhận diện được mã. Vui lòng thử lại.",
+        getApiErrorMessage(error, "Không nhận diện được mã. Vui lòng thử lại."),
       );
     } finally {
       setLoading(false);
