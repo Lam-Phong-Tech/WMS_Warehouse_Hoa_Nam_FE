@@ -17,6 +17,21 @@ import { CameraScanModal } from "@/shared/components/forms/CameraScanModal";
 import { classifyScanCodes } from "@/modules/scan/services/scanService";
 import { fetchWarehouses } from "@/modules/master-data/services/warehouse.service";
 import {
+  CONTAINER_TYPE_LABELS,
+  INBOUND_STATUS_LABELS,
+  ITEM_STATUS_LABELS,
+  MASTER_STATUS_LABELS,
+  MOVEMENT_ROLE_LABELS,
+  MOVEMENT_STATUS_LABELS,
+  MOVEMENT_TYPE_LABELS,
+  OUTBOUND_STATUS_LABELS,
+  PUTAWAY_STATUS_LABELS,
+  SCAN_CLASSIFICATION_LABELS,
+  SCAN_RESULT_LABELS,
+  SOURCE_DOCUMENT_TYPE_LABELS,
+  businessLabel,
+} from "@/shared/constants/business-labels";
+import {
   useStockMovement,
   useStockMovementTrace,
   usePhysicalCodeTrace,
@@ -27,82 +42,83 @@ interface Props {
   onClose: () => void;
 }
 
-/**
- * TRACE-01 · Truy vết mã vật lý / movement.
- * Hiển thị chi tiết movement, chứng từ nguồn, timeline chuỗi nghiệp vụ.
- * Hỗ trợ tra cứu bằng Physical Code → Item/Container/SKU → Movement chain.
- */
+type RawRecord = Record<string, unknown>;
+
+const CARRIER_LABELS: Record<string, string> = {
+  QR: "QR",
+  BARCODE: "Mã vạch",
+  RFID: "RFID",
+};
+
+function text(value: unknown, fallback = "-"): string {
+  return value === undefined || value === null ? fallback : String(value);
+}
+
+function nested(obj: RawRecord | undefined, key: string): RawRecord | undefined {
+  const value = obj?.[key];
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as RawRecord)
+    : undefined;
+}
+
+function statusLabel(value: unknown): string {
+  const raw = text(value, "");
+  if (!raw) return "Chưa xác định";
+  return (
+    INBOUND_STATUS_LABELS[raw as keyof typeof INBOUND_STATUS_LABELS] ??
+    OUTBOUND_STATUS_LABELS[raw as keyof typeof OUTBOUND_STATUS_LABELS] ??
+    MOVEMENT_STATUS_LABELS[raw as keyof typeof MOVEMENT_STATUS_LABELS] ??
+    MASTER_STATUS_LABELS[raw as keyof typeof MASTER_STATUS_LABELS] ??
+    PUTAWAY_STATUS_LABELS[raw as keyof typeof PUTAWAY_STATUS_LABELS] ??
+    SCAN_RESULT_LABELS[raw as keyof typeof SCAN_RESULT_LABELS] ??
+    "Trạng thái khác"
+  );
+}
+
+function withRowKey(row: RawRecord, rowKey: string) {
+  return { ...row, __rowKey: rowKey } as RawRecord & { __rowKey: string };
+}
+
+/** TRACE-01 · Truy vết mã vật lý, biến động tồn và chứng từ nguồn. */
 export function TraceModal({ movementId, onClose }: Props) {
   const [lookupCode, setLookupCode] = useState("");
   const [submittedCode, setSubmittedCode] = useState<string | null>(null);
-  // SRS §5.3: "Supported camera contexts: inbound, outbound, inventory trace/search và
-  // warranty receive/search" — TRACE-01 phải quét được bằng camera; nhập tay là manual
-  // fallback và dùng chung server validation.
   const [cameraOpen, setCameraOpen] = useState(false);
   const [scanResolveError, setScanResolveError] = useState<string | null>(null);
-  // Change Pack QR/SKU: classify(TRACE) cần warehouse_id (một kho ACTIVE).
+
   const warehousesQuery = useQuery({
     queryKey: ["inventory", "trace-warehouse"],
     queryFn: () => fetchWarehouses({ status: "ACTIVE" }),
   });
   const warehouse = warehousesQuery.data?.[0];
 
-  const effectiveId = movementId;
-
-  const movementQuery = useStockMovement(effectiveId);
-  const traceQuery = useStockMovementTrace(effectiveId);
+  const movementQuery = useStockMovement(movementId);
+  const traceQuery = useStockMovementTrace(movementId);
   const physicalCodeQuery = usePhysicalCodeTrace(submittedCode);
 
-  const movement = movementQuery.data as Record<string, unknown> | undefined;
+  const movement = movementQuery.data as RawRecord | undefined;
   const trace = traceQuery.data;
   const codeTrace = physicalCodeQuery.data;
 
-  const text = (val: unknown, fallback = "-") =>
-    val === undefined || val === null ? fallback : String(val);
-
-  const nested = (obj: Record<string, unknown> | undefined, key: string) =>
-    obj?.[key] && typeof obj[key] === "object"
-      ? (obj[key] as Record<string, unknown>)
-      : undefined;
-
-  const withRowKey = (row: Record<string, unknown>, rowKey: string) =>
-    ({ ...row, __rowKey: rowKey }) as Record<string, unknown> & {
-      __rowKey: string;
-    };
-
   const handleLookup = () => {
     const trimmed = lookupCode.trim();
-    if (trimmed.length > 0) {
-      // Nhập tay nhận cả raw composite lẫn legacy — backend trace parse
-      // authoritative (Change Pack QR/SKU §13).
-      setScanResolveError(null);
-      setSubmittedCode(trimmed);
-    }
+    if (!trimmed) return;
+    setScanResolveError(null);
+    setSubmittedCode(trimmed);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleLookup();
-    }
-  };
-
-  /**
-   * Change Pack QR/SKU (guide §9.2/§13): camera trả RAW payload -> backend
-   * classify(TRACE) resolve composite -> tra cứu bằng normalized_code_value.
-   * Không bao giờ tự ghép/parse raw composite ở FE; classify lỗi thì hiển thị
-   * nguyên nhân (INVALID_PAYLOAD/UNKNOWN_CODE/...) thay vì đoán.
-   */
   const handleCameraDetected = async (code: string) => {
     const trimmed = code.trim();
     setCameraOpen(false);
     setScanResolveError(null);
-    if (trimmed.length === 0) return;
+    if (!trimmed) return;
     setLookupCode(trimmed);
+
     if (!warehouse?.id) {
-      // Chưa có warehouse để classify — backend trace tự parse composite.
       setSubmittedCode(trimmed);
       return;
     }
+
     try {
       const classified = await classifyScanCodes({
         raw_code: trimmed,
@@ -113,10 +129,13 @@ export function TraceModal({ movementId, onClose }: Props) {
     } catch (error) {
       setSubmittedCode(null);
       setScanResolveError(
-        getApiErrorMessage(error, "Không resolve được mã đã quét."),
+        getApiErrorMessage(error, "Không nhận diện được mã đã quét."),
       );
     }
   };
+
+  const resolvedObject = codeTrace?.resolved_object as RawRecord | null | undefined;
+  const physicalCode = codeTrace?.physical_code as RawRecord | null | undefined;
 
   return (
     <Modal
@@ -125,7 +144,7 @@ export function TraceModal({ movementId, onClose }: Props) {
       destroyOnHidden
       mask={{ closable: false }}
       width={960}
-      title="Truy vết chứng từ nguồn (TRACE-01)"
+      title="Truy vết chứng từ nguồn"
       footer={null}
       onCancel={onClose}
     >
@@ -133,11 +152,13 @@ export function TraceModal({ movementId, onClose }: Props) {
         <div className="toolbar" style={{ marginBottom: 0 }}>
           <input
             className="input search"
-            placeholder="Item code / Serial / Box / Tray / SKU / Barcode / QR / RFID..."
+            placeholder="Mã sản phẩm / Số sê-ri / Hộp / Khay / SKU / Mã vạch / QR / RFID..."
             value={lookupCode}
             aria-label="Tra cứu mã vật lý"
-            onChange={(e) => setLookupCode(e.target.value)}
-            onKeyDown={handleKeyDown}
+            onChange={(event) => setLookupCode(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") handleLookup();
+            }}
             style={{ flex: 1 }}
           />
           <button
@@ -152,7 +173,7 @@ export function TraceModal({ movementId, onClose }: Props) {
           <button
             className="btn"
             type="button"
-            disabled={lookupCode.trim().length === 0}
+            disabled={!lookupCode.trim()}
             onClick={handleLookup}
           >
             <SearchOutlined style={{ marginRight: 4 }} />
@@ -162,7 +183,7 @@ export function TraceModal({ movementId, onClose }: Props) {
 
         <CameraScanModal
           open={cameraOpen}
-          title="Quét mã để truy vết (TRACE-01)"
+          title="Quét mã để truy vết"
           onDetected={(code) => void handleCameraDetected(code)}
           onClose={() => setCameraOpen(false)}
         />
@@ -171,14 +192,12 @@ export function TraceModal({ movementId, onClose }: Props) {
           <Alert type="warning" showIcon title={scanResolveError} />
         ) : null}
 
-        {!effectiveId && !submittedCode ? (
+        {!movementId && !submittedCode ? (
           <div className="footer-note">
-            Chọn một movement từ danh sách tồn kho hoặc nhập mã vật lý để truy
-            vết.
+            Chọn một biến động tồn kho từ danh sách hoặc nhập mã vật lý để truy vết.
           </div>
         ) : null}
 
-        {/* ──── Physical Code Trace Results ──── */}
         {physicalCodeQuery.isError ? (
           <ApiErrorAlert
             error={physicalCodeQuery.error}
@@ -203,102 +222,87 @@ export function TraceModal({ movementId, onClose }: Props) {
             >
               <Descriptions.Item label="Mã vật lý">
                 <Typography.Text code copyable>
-                  {text(
-                    (codeTrace.physical_code as Record<string, unknown>)
-                      ?.code_value,
-                  )}
+                  {text(physicalCode?.code_value)}
                 </Typography.Text>
               </Descriptions.Item>
               <Descriptions.Item label="Loại mã">
                 <Tag>
-                  {text(
-                    (codeTrace.physical_code as Record<string, unknown>)
-                      ?.carrier_type,
-                  )}
+                  {CARRIER_LABELS[text(physicalCode?.carrier_type, "")] ??
+                    "Loại mã khác"}
                 </Tag>
               </Descriptions.Item>
               <Descriptions.Item label="Đối tượng gắn">
-                <Tag color="blue">{text(codeTrace.resolved_type)}</Tag>
+                <Tag color="blue">
+                  {businessLabel(
+                    SCAN_CLASSIFICATION_LABELS,
+                    codeTrace.resolved_type,
+                    "Đối tượng khác",
+                  )}
+                </Tag>
               </Descriptions.Item>
               <Descriptions.Item label="Trạng thái">
                 <Tag
                   color={
-                    text(
-                      (codeTrace.physical_code as Record<string, unknown>)
-                        ?.status,
-                    ) === "ACTIVE"
+                    text(physicalCode?.status, "") === "ACTIVE"
                       ? "success"
                       : "default"
                   }
                 >
-                  {text(
-                    (codeTrace.physical_code as Record<string, unknown>)
-                      ?.status,
-                  )}
+                  {statusLabel(physicalCode?.status)}
                 </Tag>
               </Descriptions.Item>
-              {codeTrace.resolved_type === "ITEM" &&
-              codeTrace.resolved_object ? (
+
+              {codeTrace.resolved_type === "ITEM" && resolvedObject ? (
                 <>
                   <Descriptions.Item label="SKU">
                     <Typography.Text code>
-                      {text(
-                        (codeTrace.resolved_object as Record<string, unknown>)
-                          .sku_code,
-                      )}
+                      {text(resolvedObject.sku_code)}
                     </Typography.Text>{" "}
-                    {text(
-                      (codeTrace.resolved_object as Record<string, unknown>)
-                        .sku_name,
-                    )}
+                    {text(resolvedObject.sku_name)}
                   </Descriptions.Item>
-                  <Descriptions.Item label="Trạng thái Item">
+                  <Descriptions.Item label="Trạng thái sản phẩm">
                     <Tag>
-                      {text(
-                        (codeTrace.resolved_object as Record<string, unknown>)
-                          .status,
+                      {businessLabel(
+                        ITEM_STATUS_LABELS,
+                        text(
+                          resolvedObject.status ?? resolvedObject.item_status,
+                          "",
+                        ),
+                        "Trạng thái khác",
                       )}
                     </Tag>
                   </Descriptions.Item>
                 </>
               ) : null}
-              {codeTrace.resolved_type === "CONTAINER" &&
-              codeTrace.resolved_object ? (
+
+              {codeTrace.resolved_type === "CONTAINER" && resolvedObject ? (
                 <>
-                  <Descriptions.Item label="Mã container">
+                  <Descriptions.Item label="Mã vật chứa">
                     <Typography.Text code>
-                      {text(
-                        (codeTrace.resolved_object as Record<string, unknown>)
-                          .container_code,
-                      )}
+                      {text(resolvedObject.container_code)}
                     </Typography.Text>
                   </Descriptions.Item>
-                  <Descriptions.Item label="Loại container">
+                  <Descriptions.Item label="Loại vật chứa">
                     <Tag>
-                      {text(
-                        (codeTrace.resolved_object as Record<string, unknown>)
-                          .container_type,
+                      {businessLabel(
+                        CONTAINER_TYPE_LABELS,
+                        text(resolvedObject.container_type, ""),
+                        "Vật chứa khác",
                       )}
                     </Tag>
                   </Descriptions.Item>
                 </>
               ) : null}
-              {codeTrace.resolved_type === "SKU" &&
-              codeTrace.resolved_object ? (
+
+              {codeTrace.resolved_type === "SKU" && resolvedObject ? (
                 <>
                   <Descriptions.Item label="Mã SKU">
                     <Typography.Text code>
-                      {text(
-                        (codeTrace.resolved_object as Record<string, unknown>)
-                          .sku_code,
-                      )}
+                      {text(resolvedObject.sku_code)}
                     </Typography.Text>
                   </Descriptions.Item>
                   <Descriptions.Item label="Tên SKU">
-                    {text(
-                      (codeTrace.resolved_object as Record<string, unknown>)
-                        .sku_name,
-                    )}
+                    {text(resolvedObject.sku_name)}
                   </Descriptions.Item>
                 </>
               ) : null}
@@ -310,15 +314,14 @@ export function TraceModal({ movementId, onClose }: Props) {
                   strong
                   style={{ display: "block", marginBottom: 8 }}
                 >
-                  Container Items ({codeTrace.container_items.length})
+                  Sản phẩm trong vật chứa ({codeTrace.container_items.length})
                 </Typography.Text>
                 <Table
                   size="small"
                   dataSource={codeTrace.container_items.map((row, index) =>
                     withRowKey(
                       row,
-                      text(row.id ?? row.container_code, String(index)) +
-                        `-${index}`,
+                      `${text(row.id ?? row.container_code, String(index))}-${index}`,
                     ),
                   )}
                   rowKey="__rowKey"
@@ -326,26 +329,36 @@ export function TraceModal({ movementId, onClose }: Props) {
                   scroll={{ x: "max-content" }}
                   columns={[
                     {
-                      title: "Container",
+                      title: "Vật chứa",
                       width: 160,
                       render: (_, row) => text(row.container_code),
                     },
                     {
                       title: "Loại",
-                      width: 100,
-                      render: (_, row) => <Tag>{text(row.container_type)}</Tag>,
+                      width: 120,
+                      render: (_, row) => (
+                        <Tag>
+                          {businessLabel(
+                            CONTAINER_TYPE_LABELS,
+                            text(row.container_type, ""),
+                            "Vật chứa khác",
+                          )}
+                        </Tag>
+                      ),
                     },
                     {
-                      title: "SL",
-                      width: 80,
+                      title: "Số lượng",
+                      width: 100,
                       align: "right",
                       render: (_, row) =>
                         Number(row.quantity ?? 0).toLocaleString("vi-VN"),
                     },
                     {
                       title: "Trạng thái",
-                      width: 100,
-                      render: (_, row) => text(row.status, "-"),
+                      width: 140,
+                      render: (_, row) => (
+                        <Tag>{statusLabel(row.status)}</Tag>
+                      ),
                     },
                   ]}
                 />
@@ -358,7 +371,7 @@ export function TraceModal({ movementId, onClose }: Props) {
                   strong
                   style={{ display: "block", marginBottom: 8 }}
                 >
-                  Lịch sử movement ({codeTrace.movements.length})
+                  Lịch sử biến động ({codeTrace.movements.length})
                 </Typography.Text>
                 <Table
                   size="small"
@@ -368,8 +381,8 @@ export function TraceModal({ movementId, onClose }: Props) {
                   scroll={{ x: "max-content" }}
                   columns={[
                     {
-                      title: "Movement",
-                      width: 130,
+                      title: "Mã biến động",
+                      width: 150,
                       render: (_, row) => (
                         <Typography.Text code>
                           {text(row.movement_no)}
@@ -378,8 +391,16 @@ export function TraceModal({ movementId, onClose }: Props) {
                     },
                     {
                       title: "Loại",
-                      width: 110,
-                      render: (_, row) => <Tag>{text(row.movement_type)}</Tag>,
+                      width: 150,
+                      render: (_, row) => (
+                        <Tag>
+                          {businessLabel(
+                            MOVEMENT_TYPE_LABELS,
+                            text(row.movement_type, ""),
+                            "Biến động khác",
+                          )}
+                        </Tag>
+                      ),
                     },
                     {
                       title: "SKU",
@@ -387,8 +408,8 @@ export function TraceModal({ movementId, onClose }: Props) {
                       render: (_, row) => text(row.product_code),
                     },
                     {
-                      title: "SL",
-                      width: 80,
+                      title: "Số lượng",
+                      width: 100,
                       align: "right",
                       render: (_, row) => {
                         const qty = Number(row.qty_delta ?? row.quantity ?? 0);
@@ -410,9 +431,7 @@ export function TraceModal({ movementId, onClose }: Props) {
                       title: "Chứng từ",
                       width: 130,
                       render: (_, row) => (
-                        <Typography.Text code>
-                          {text(row.doc_no)}
-                        </Typography.Text>
+                        <Typography.Text code>{text(row.doc_no)}</Typography.Text>
                       ),
                     },
                     {
@@ -428,11 +447,10 @@ export function TraceModal({ movementId, onClose }: Props) {
           </>
         ) : null}
 
-        {/* ──── Movement-based Trace (original) ──── */}
         {movementQuery.isError ? (
           <ApiErrorAlert
             error={movementQuery.error}
-            title="Không thể tải chi tiết movement"
+            title="Không thể tải chi tiết biến động"
             onRetry={() => movementQuery.refetch()}
           />
         ) : null}
@@ -442,9 +460,9 @@ export function TraceModal({ movementId, onClose }: Props) {
             bordered
             column={{ xs: 1, md: 2 }}
             size="small"
-            title="Chi tiết movement"
+            title="Chi tiết biến động"
           >
-            <Descriptions.Item label="Movement">
+            <Descriptions.Item label="Mã biến động">
               <Typography.Text code copyable>
                 {text(movement.movement_no ?? movement.code ?? movement.id)}
               </Typography.Text>
@@ -456,8 +474,14 @@ export function TraceModal({ movementId, onClose }: Props) {
                   movement.created_at,
               )}
             </Descriptions.Item>
-            <Descriptions.Item label="Loại">
-              <Tag>{text(movement.movement_type ?? movement.source_type)}</Tag>
+            <Descriptions.Item label="Loại biến động">
+              <Tag>
+                {businessLabel(
+                  MOVEMENT_TYPE_LABELS,
+                  text(movement.movement_type ?? movement.source_type, ""),
+                  "Biến động khác",
+                )}
+              </Tag>
             </Descriptions.Item>
             <Descriptions.Item label="SKU">
               {text(
@@ -475,10 +499,9 @@ export function TraceModal({ movementId, onClose }: Props) {
                   movement.warehouse_code ??
                   nested(movement, "warehouse")?.name ??
                   nested(movement, "warehouse")?.code,
-                "-",
               )}
             </Descriptions.Item>
-            <Descriptions.Item label="SL thay đổi">
+            <Descriptions.Item label="Số lượng thay đổi">
               <Typography.Text
                 style={{
                   color:
@@ -493,12 +516,17 @@ export function TraceModal({ movementId, onClose }: Props) {
                 ).toLocaleString("vi-VN")}
               </Typography.Text>
             </Descriptions.Item>
-            <Descriptions.Item label="Before / After">
+            <Descriptions.Item label="Tồn trước / sau">
               {text(movement.qty_before ?? movement.balance_before)} /{" "}
               {text(movement.qty_after ?? movement.balance_after)}
             </Descriptions.Item>
-            <Descriptions.Item label="Nguồn">
-              {text(movement.document_type ?? movement.source_type)} —{" "}
+            <Descriptions.Item label="Chứng từ nguồn">
+              {businessLabel(
+                SOURCE_DOCUMENT_TYPE_LABELS,
+                text(movement.document_type ?? movement.source_type, ""),
+                "Nguồn khác",
+              )}{" "}
+              —{" "}
               {text(
                 movement.document_code ??
                   movement.doc_no ??
@@ -512,14 +540,14 @@ export function TraceModal({ movementId, onClose }: Props) {
         {traceQuery.isError ? (
           <ApiErrorAlert
             error={traceQuery.error}
-            title="Không thể truy vết nguồn movement"
+            title="Không thể truy vết chứng từ nguồn"
             onRetry={() => traceQuery.refetch()}
           />
         ) : null}
 
         {traceQuery.isLoading ? (
           <div style={{ padding: 16, textAlign: "center" }}>
-            Đang tải trace-source...
+            Đang tải dữ liệu truy vết...
           </div>
         ) : null}
 
@@ -532,7 +560,13 @@ export function TraceModal({ movementId, onClose }: Props) {
               title="Chứng từ nguồn"
             >
               <Descriptions.Item label="Loại nguồn">
-                <Tag>{trace.sourceType}</Tag>
+                <Tag>
+                  {businessLabel(
+                    SOURCE_DOCUMENT_TYPE_LABELS,
+                    trace.sourceType,
+                    "Nguồn khác",
+                  )}
+                </Tag>
               </Descriptions.Item>
               <Descriptions.Item label="Mã chứng từ">
                 <Typography.Text code copyable>
@@ -550,16 +584,16 @@ export function TraceModal({ movementId, onClose }: Props) {
                         : "processing"
                   }
                 >
-                  {trace.status}
+                  {statusLabel(trace.status)}
                 </Tag>
               </Descriptions.Item>
-              <Descriptions.Item label="Posted at">
+              <Descriptions.Item label="Thời điểm ghi nhận">
                 {trace.postedAt || "-"}
               </Descriptions.Item>
               <Descriptions.Item label="Người thao tác">
-                {trace.actor}
+                {trace.actor || "-"}
               </Descriptions.Item>
-              <Descriptions.Item label="Request ID">
+              <Descriptions.Item label="Mã yêu cầu kỹ thuật">
                 <Typography.Text
                   copyable={Boolean(trace.requestId)}
                   style={{ fontSize: 12 }}
@@ -582,8 +616,7 @@ export function TraceModal({ movementId, onClose }: Props) {
                   dataSource={trace.lines.map((row, index) =>
                     withRowKey(
                       row,
-                      text(row.id ?? row.sku ?? row.sku_code, String(index)) +
-                        `-${index}`,
+                      `${text(row.id ?? row.sku ?? row.sku_code, String(index))}-${index}`,
                     ),
                   )}
                   rowKey="__rowKey"
@@ -594,17 +627,14 @@ export function TraceModal({ movementId, onClose }: Props) {
                       title: "SKU",
                       width: 130,
                       render: (_, row) => {
-                        const prod = nested(
-                          row as Record<string, unknown>,
-                          "product",
-                        );
+                        const product = nested(row as RawRecord, "product");
                         return text(
                           row.sku ??
                             row.sku_code ??
                             row.product_sku ??
                             row.product_code ??
-                            prod?.code ??
-                            prod?.sku_code,
+                            product?.code ??
+                            product?.sku_code,
                         );
                       },
                     },
@@ -612,22 +642,19 @@ export function TraceModal({ movementId, onClose }: Props) {
                       title: "Tên",
                       width: 180,
                       render: (_, row) => {
-                        const prod = nested(
-                          row as Record<string, unknown>,
-                          "product",
-                        );
+                        const product = nested(row as RawRecord, "product");
                         return text(
                           row.product_name ??
                             row.sku_name ??
                             row.name ??
-                            prod?.name ??
-                            prod?.sku_name,
+                            product?.name ??
+                            product?.sku_name,
                         );
                       },
                     },
                     {
-                      title: "SL",
-                      width: 90,
+                      title: "Số lượng",
+                      width: 100,
                       align: "right",
                       render: (_, row) =>
                         Number(
@@ -636,35 +663,36 @@ export function TraceModal({ movementId, onClose }: Props) {
                     },
                     {
                       title: "Trạng thái",
-                      width: 110,
-                      render: (_, row) =>
-                        text(row.status ?? row.line_status, "-"),
+                      width: 130,
+                      render: (_, row) => (
+                        <Tag>{statusLabel(row.status ?? row.line_status)}</Tag>
+                      ),
                     },
                   ]}
                 />
               </div>
             ) : null}
 
-            {/*
-              WWHN-240 · BR-REV-11 + §13.10 RPT-MOV-01: "Show gross movement + reversal
-              chain + net effect; never hide original". Trước WWHN-240 BE chỉ trả một
-              reversal duy nhất nên màn hình này không thể dựng chuỗi; nay hiển thị đủ
-              movement gốc, mọi lần đảo và tác động ròng còn lại.
-            */}
             {trace.netEffect ? (
               <Descriptions
                 bordered
                 column={{ xs: 1, md: 3 }}
                 size="small"
-                title="Net effect (nguồn: ledger authoritative)"
+                title="Tác động tồn kho sau điều chỉnh"
               >
                 <Descriptions.Item label="Giao dịch gốc">
-                  <Tag>{trace.netEffect.originalMovementType}</Tag>
+                  <Tag>
+                    {businessLabel(
+                      MOVEMENT_TYPE_LABELS,
+                      trace.netEffect.originalMovementType,
+                      "Biến động khác",
+                    )}
+                  </Tag>
                 </Descriptions.Item>
-                <Descriptions.Item label="SL gốc">
+                <Descriptions.Item label="Số lượng gốc">
                   {trace.netEffect.originalQty.toLocaleString("vi-VN")}
                 </Descriptions.Item>
-                <Descriptions.Item label="Đã đảo">
+                <Descriptions.Item label="Đã điều chỉnh">
                   <Typography.Text
                     style={{
                       color:
@@ -675,21 +703,19 @@ export function TraceModal({ movementId, onClose }: Props) {
                     {trace.netEffect.reversedQty.toLocaleString("vi-VN")}
                   </Typography.Text>
                 </Descriptions.Item>
-                <Descriptions.Item label="Còn đảo được">
-                  {trace.netEffect.remainingReversibleQty.toLocaleString(
-                    "vi-VN",
-                  )}
+                <Descriptions.Item label="Còn điều chỉnh được">
+                  {trace.netEffect.remainingReversibleQty.toLocaleString("vi-VN")}
                 </Descriptions.Item>
                 <Descriptions.Item label="Tác động ròng">
                   {trace.netEffect.netQtyDelta.toLocaleString("vi-VN")}
                 </Descriptions.Item>
-                <Descriptions.Item label="Trạng thái đảo">
+                <Descriptions.Item label="Trạng thái">
                   <Tag
                     color={trace.netEffect.fullyReversed ? "error" : "success"}
                   >
                     {trace.netEffect.fullyReversed
-                      ? "Đã đảo toàn bộ"
-                      : `Còn hiệu lực (${trace.netEffect.reversalCount} lần đảo)`}
+                      ? "Đã điều chỉnh toàn bộ"
+                      : `Còn hiệu lực (${trace.netEffect.reversalCount} lần điều chỉnh)`}
                   </Tag>
                 </Descriptions.Item>
               </Descriptions>
@@ -701,10 +727,10 @@ export function TraceModal({ movementId, onClose }: Props) {
                   strong
                   style={{ display: "block", marginBottom: 8 }}
                 >
-                  Correction chain ({(trace.chain ?? []).length} bút toán)
+                  Chuỗi điều chỉnh ({(trace.chain ?? []).length} bút toán)
                   {trace.chainTruncated ? (
                     <Typography.Text type="danger" style={{ marginLeft: 8 }}>
-                      · chuỗi quá dài, đã cắt bớt
+                      · chuỗi quá dài, đã rút gọn
                     </Typography.Text>
                   ) : null}
                 </Typography.Text>
@@ -717,15 +743,19 @@ export function TraceModal({ movementId, onClose }: Props) {
                   columns={[
                     {
                       title: "Vai trò",
-                      width: 110,
+                      width: 140,
                       render: (_, row) => (
                         <Tag color={row.role === "ORIGINAL" ? "blue" : "red"}>
-                          {row.role === "ORIGINAL" ? "Gốc" : "Đảo"}
+                          {businessLabel(
+                            MOVEMENT_ROLE_LABELS,
+                            row.role,
+                            "Vai trò khác",
+                          )}
                         </Tag>
                       ),
                     },
                     {
-                      title: "Movement",
+                      title: "Mã biến động",
                       width: 170,
                       render: (_, row) => (
                         <Typography.Text
@@ -737,10 +767,19 @@ export function TraceModal({ movementId, onClose }: Props) {
                         </Typography.Text>
                       ),
                     },
-                    { title: "Loại", dataIndex: "movement_type", width: 130 },
                     {
-                      title: "Δ Tồn",
-                      width: 90,
+                      title: "Loại",
+                      width: 150,
+                      render: (_, row) =>
+                        businessLabel(
+                          MOVEMENT_TYPE_LABELS,
+                          row.movement_type,
+                          "Biến động khác",
+                        ),
+                    },
+                    {
+                      title: "Thay đổi tồn",
+                      width: 110,
                       align: "right",
                       render: (_, row) => (
                         <Typography.Text
@@ -782,20 +821,24 @@ export function TraceModal({ movementId, onClose }: Props) {
                 strong
                 style={{ display: "block", marginBottom: 8 }}
               >
-                Timeline
+                Diễn biến
               </Typography.Text>
               {trace.timeline.length > 0 ? (
                 <Timeline
                   items={trace.timeline.map((item, index) => {
+                    const from = item.from_status
+                      ? statusLabel(item.from_status)
+                      : "";
+                    const to = item.to_status ? statusLabel(item.to_status) : "";
                     const label =
-                      item.from_status && item.to_status
-                        ? `${String(item.from_status)} → ${String(item.to_status)}${item.action ? ` (${String(item.action)})` : ""}`
-                        : String(
+                      from && to
+                        ? `${from} → ${to}`
+                        : text(
                             item.title ??
                               item.event ??
                               item.movement_no ??
-                              item.code ??
-                              `Bước ${index + 1}`,
+                              item.code,
+                            `Bước ${index + 1}`,
                           );
                     const time = item.created_at ?? item.changed_at;
                     return {
@@ -817,7 +860,7 @@ export function TraceModal({ movementId, onClose }: Props) {
                 />
               ) : (
                 <Typography.Text type="secondary">
-                  Backend chưa trả timeline/chain.
+                  Chưa có dữ liệu diễn biến để hiển thị.
                 </Typography.Text>
               )}
             </div>
