@@ -43,7 +43,7 @@ const STATUS_COLOR: Record<OutboundStatus, string> = {
 
 const DETAIL_SCREENS = new Set(["OUT-03", "OUT-02", "LBL-01", "RFID-01"]);
 
-/** Canonical OUT-01 hub: quét -> 1 nhãn đóng gói/lô -> RFID tùy chọn -> hoàn tất xuất. */
+/** BA baseline 2026-08-25: quét đủ -> Post Issue -> Packing Label độc lập; RFID tùy chọn. */
 export default function AlignedMvpOutboundPage() {
   const can = useHasPermission();
   const queryClient = useQueryClient();
@@ -165,21 +165,14 @@ export default function AlignedMvpOutboundPage() {
     {
       title: "Nhãn đóng gói",
       key: "label",
-      width: 160,
+      width: 180,
       render: (_, row) => {
         const printed = row.labelPrintedCount ?? 0;
-        return printed >= 1 ? (
-          <Tag color="success">1/1 đã in</Tag>
+        if (printed >= 1) return <Tag color="success">Đã in</Tag>;
+        return row.status === "POSTED" ? (
+          <Tag color="warning">Chờ xử lý sau xuất kho</Tag>
         ) : (
-          <Tag
-            color={
-              row.scanned >= row.expected && row.expected > 0
-                ? "warning"
-                : "default"
-            }
-          >
-            Chưa in
-          </Tag>
+          <Tag>Chưa tới bước nhãn</Tag>
         );
       },
     },
@@ -188,11 +181,7 @@ export default function AlignedMvpOutboundPage() {
       key: "rfid",
       width: 150,
       render: (_, row) => (
-        <Tag
-          color={
-            row.rfidMappedCount && row.rfidMappedCount > 0 ? "blue" : "default"
-          }
-        >
+        <Tag color={row.rfidMappedCount && row.rfidMappedCount > 0 ? "blue" : "default"}>
           Tùy chọn · {row.rfidMappedCount ?? 0}
         </Tag>
       ),
@@ -222,11 +211,7 @@ export default function AlignedMvpOutboundPage() {
       render: (_, row) => {
         const mutable = row.status === "DRAFT" || row.status === "SCANNING";
         return (
-          <button
-            className="btn small"
-            type="button"
-            onClick={() => setDetailId(row.id)}
-          >
+          <button className="btn small" type="button" onClick={() => setDetailId(row.id)}>
             {mutable && canScan ? (
               <ScanOutlined style={{ marginRight: 4 }} />
             ) : (
@@ -245,11 +230,10 @@ export default function AlignedMvpOutboundPage() {
   return (
     <div className="outbound-page hn-mvp-source-screen">
       <div className="toolbar-wrap" style={{ gap: 6 }}>
-        <span className="pill ok">
-          Quét đủ → tổng hợp → in 1 nhãn đóng gói/lô → hoàn tất xuất kho
-        </span>
+        <span className="pill ok">Quét đủ → Ghi nhận xuất kho → xử lý nhãn đóng gói</span>
+        <span className="pill blue">Packing Label độc lập sau Post</span>
         <span className="pill blue">RFID tùy chọn</span>
-        <span className="pill warn-pill">Chỉ hoàn tất xuất kho mới trừ tồn</span>
+        <span className="pill warn-pill">Chỉ Ghi nhận xuất kho mới trừ tồn</span>
       </div>
 
       <div className="toolbar">
@@ -271,18 +255,12 @@ export default function AlignedMvpOutboundPage() {
         >
           <option value="">Trạng thái: Tất cả</option>
           {STATUS_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
+            <option key={option.value} value={option.value}>{option.label}</option>
           ))}
         </select>
         <div className="spacer" />
         {canImport ? (
-          <button
-            className="btn primary"
-            type="button"
-            onClick={() => setIntakeOpen(true)}
-          >
+          <button className="btn primary" type="button" onClick={() => setIntakeOpen(true)}>
             <PlusOutlined /> Tiếp nhận yêu cầu xuất
           </button>
         ) : null}
@@ -290,11 +268,7 @@ export default function AlignedMvpOutboundPage() {
 
       {listQuery.isError ? (
         <div style={{ marginBottom: 14 }}>
-          <ApiErrorAlert
-            error={listQuery.error}
-            title="Không tải được danh sách phiếu xuất"
-            onRetry={() => listQuery.refetch()}
-          />
+          <ApiErrorAlert error={listQuery.error} title="Không tải được danh sách phiếu xuất" onRetry={() => listQuery.refetch()} />
         </div>
       ) : null}
 
@@ -306,9 +280,7 @@ export default function AlignedMvpOutboundPage() {
         }}
       />
 
-      <TableLoadingBanner
-        loading={listQuery.isLoading || listQuery.isFetching}
-      />
+      <TableLoadingBanner loading={listQuery.isLoading || listQuery.isFetching} />
       <Table<OutboundDocumentRecord>
         rowKey="id"
         columns={columns}
@@ -332,12 +304,8 @@ export default function AlignedMvpOutboundPage() {
       />
 
       <div className="footer-note">
-        Mở phiếu để thực hiện đúng thứ tự:{" "}
-        <b>
-          Quét đủ → tổng hợp lô → tạo/xem trước/in/dán đúng 01 nhãn đóng gói →
-          RFID tùy chọn → Hoàn tất xuất kho
-        </b>
-        .
+        Mở phiếu để thực hiện đúng thứ tự: <b>Quét đủ → Ghi nhận xuất kho (trừ tồn) → tạo/xem trước/in/dán nhãn đóng gói.</b>{" "}
+        Lỗi in nhãn không rollback phiếu đã Post; RFID không phải điều kiện bắt buộc.
       </div>
 
       {intakeOpen ? (
