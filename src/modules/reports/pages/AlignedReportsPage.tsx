@@ -403,9 +403,7 @@ function columnsFor(
                   ? "default"
                   : "error";
             return (
-              <Tag color={color}>
-                {businessLabel(RECONCILE_LABELS, status)}
-              </Tag>
+              <Tag color={color}>{businessLabel(RECONCILE_LABELS, status)}</Tag>
             );
           },
         },
@@ -768,7 +766,12 @@ function columnsFor(
       ];
     case "warranty":
       return [
-        { title: "Ca bảo hành", dataIndex: "case_no", width: 160, fixed: "left" },
+        {
+          title: "Ca bảo hành",
+          dataIndex: "case_no",
+          width: 160,
+          fixed: "left",
+        },
         {
           title: "Nhận diện",
           dataIndex: "identification_status",
@@ -997,7 +1000,9 @@ export default function AlignedReportsPage() {
   const [actorId, setActorId] = useState<string>();
   const [skuCode, setSkuCode] = useState("");
   const [asOf, setAsOf] = useState<Dayjs | null>(null);
-  const [defectId, setDefectId] = useState<string>();
+  // REQ-022/P2-04: BE /reports/warranty-defects (BaM1ReportController::
+  // warrantyDefects) nhận defect_ids[] — cho lọc nhiều bệnh/lỗi cùng lúc.
+  const [defectIds, setDefectIds] = useState<string[]>([]);
   const [identification, setIdentification] = useState<string>();
   const [movementType, setMovementType] = useState<string>();
   const [docType, setDocType] = useState<"all" | "inbound" | "outbound">("all");
@@ -1070,7 +1075,9 @@ export default function AlignedReportsPage() {
     }
     if (report === "warranty") {
       if (status) result.status = status;
-      if (defectId) result.defect_id = defectId;
+      // Axios mặc định serialize mảng thành defect_ids[]=a&defect_ids[]=b —
+      // đúng dạng Laravel validate array; export POST gửi nguyên mảng JSON.
+      if (defectIds.length > 0) result.defect_ids = defectIds;
       if (identification) result.identification_status = identification;
       if (keyword.trim()) result.model = keyword.trim();
     }
@@ -1093,7 +1100,7 @@ export default function AlignedReportsPage() {
     actorId,
     skuCode,
     asOf,
-    defectId,
+    defectIds,
     identification,
     movementType,
     docType,
@@ -1236,7 +1243,7 @@ export default function AlignedReportsPage() {
           setPrinterId(undefined);
           setActorId(undefined);
           setCategoryId(undefined);
-          setDefectId(undefined);
+          setDefectIds([]);
           setIdentification(undefined);
           setMovementType(undefined);
           setSkuCode("");
@@ -1451,14 +1458,16 @@ export default function AlignedReportsPage() {
             <Select
               allowClear
               showSearch
+              mode="multiple"
+              maxTagCount="responsive"
               optionFilterProp="label"
-              style={{ width: 210 }}
-              placeholder="Bệnh / lỗi"
-              value={defectId}
+              style={{ minWidth: 210 }}
+              placeholder="Bệnh / lỗi (chọn được nhiều)"
+              value={defectIds}
               loading={defects.isLoading}
               options={defectOptions}
               onChange={(value) => {
-                setDefectId(value);
+                setDefectIds(value);
                 resetPage();
               }}
             />

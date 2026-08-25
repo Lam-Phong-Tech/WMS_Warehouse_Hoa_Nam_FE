@@ -165,7 +165,7 @@ export async function getCatalogMasters(
 ): Promise<CatalogMasterPage> {
   const result = await http.getPage<RawRecord[]>(
     CATALOG_MASTER_DEFINITIONS[kind].endpoint,
-    { params: cleanParams({ ...params, per_page: params.per_page ?? 15 }) },
+    { params: cleanParams({ ...params, per_page: params.per_page ?? 10 }) },
   );
   const rows = Array.isArray(result.data) ? result.data : [];
   return { data: rows.map((row) => toRecord(kind, row)), meta: result.meta };

@@ -12,22 +12,31 @@ describe("Flow 06 Packing Label alignment", () => {
       "AlignedMvpOutboundPage",
     );
     const page = read("src/modules/outbound/pages/AlignedMvpOutboundPage.tsx");
-    expect(page).toContain("1 Packing Label/lô");
+    expect(page).toContain("Packing Label độc lập sau Post");
     expect(page).toContain("RFID tùy chọn");
-    expect(page).toContain("Chỉ Post Issue mới trừ tồn");
+    expect(page).toContain("Chỉ Ghi nhận xuất kho mới trừ tồn");
     expect(page).not.toContain("Nhãn từng Item");
   });
 
-  it("does not include RFID in the FE post readiness gate", () => {
+  it("does not include RFID or label state in the FE post readiness gate", () => {
     const modal = read(
       "src/modules/outbound/components/AlignedOutboundDetailModal.tsx",
     );
-    expect(modal).toContain("packingLabels.length !== 1");
-    expect(modal).toContain("!labelPrinted");
-    expect(modal).toContain("!labelApplied");
-    expect(modal).toContain("RFID không phải gate Post Issue");
+    // GĐ1: gate Post là quét đủ, không phải nhãn/RFID.
+    expect(modal).toContain("postBlockReason");
+    expect(modal).toContain("Chưa quét đủ");
+    // Không còn trạng thái nghiệp vụ "đã dán nhãn" và RFID không gate Post.
+    expect(modal).toContain('tồn tại trạng thái nghiệp vụ "đã dán"');
+    expect(modal).not.toContain("labelApplied");
     expect(modal).not.toContain("allRfidMapped");
     expect(modal).not.toContain("ITEM_RFID_REQUIRED");
+    // Print fail không rollback stock; FE reset preparedLabel để lần in lại
+    // dùng version mới của server (BE bump version kể cả PRINT_FAILED).
+    const onErrorBlock = modal.slice(modal.indexOf("printMutation"));
+    expect(onErrorBlock).toContain("setPreparedLabel(null)");
+    expect(onErrorBlock).toContain(
+      "Phiếu xuất kho vẫn giữ trạng thái đã ghi nhận.",
+    );
   });
 
   it("creates the packing label at document level with customer phone", () => {
@@ -74,11 +83,16 @@ describe("Flow 06 Packing Label alignment", () => {
     const modal = read(
       "src/modules/outbound/components/AlignedOutboundDetailModal.tsx",
     );
-    expect(modal).toContain("LABEL_LIFECYCLE");
-    expect(modal).toContain("READY_TO_PRINT");
-    // §6: không được gửi lệnh in khi nhãn chưa Ready.
-    expect(modal).toContain("canSendPrint");
-    expect(modal).toContain("Phải Preview → Ready trước khi gửi lệnh in");
+    // §6: lifecycle DRAFT/PENDING_PRINT → PREVIEWED → READY_TO_PRINT → PRINTED.
+    expect(modal).toContain('READY_TO_PRINT: "Sẵn sàng in"');
+    expect(modal).toContain('PRINT_FAILED: "In thất bại"');
+    // Không gửi lệnh in khi nhãn chưa Ready: prepareLabel chạy Preview → Ready
+    // trước, print/reprint chỉ nhận label ở READY_TO_PRINT/PRINT_FAILED/PRINTED.
+    expect(modal).toContain("previewPackingLabel({");
+    expect(modal).toContain("readyPackingLabel({");
+    expect(modal).toContain(
+      '["READY_TO_PRINT", "PRINT_FAILED", "PRINTED"].includes(label.status)',
+    );
   });
 
   it("keeps outbound documents creatable only through toa confirm (§8.1)", () => {
@@ -96,7 +110,8 @@ describe("Flow 06 Packing Label alignment", () => {
     // Annex D SCR-OUT-01/SCR-REQ-OUT-01: SĐT + ngày toa + line mapping ở bước tiếp nhận.
     expect(intake).toContain("recipient_contact_phone");
     expect(intake).toContain("request_date");
-    expect(intake).toContain("Map SKU (Confirm)");
-    expect(intake).toContain("Override người nhận khi Confirm");
+    // Line mapping SKU + override người nhận thực hiện ở bước xác nhận toa.
+    expect(intake).toContain("gán SKU/người nhận → xác nhận");
+    expect(intake).toContain("Ghi đè người nhận khi xác nhận");
   });
 });

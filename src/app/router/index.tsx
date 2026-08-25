@@ -283,13 +283,20 @@ export const router = createBrowserRouter([
             path: ROUTES.REPORTS,
             element: routeEl(ROUTES.REPORTS, <ReportsPage />),
           },
-          {
-            path: ROUTES.COMPONENT_CATALOG,
-            element: routeEl(
-              ROUTES.COMPONENT_CATALOG,
-              <ComponentCatalogPage />,
-            ),
-          },
+          // REQ-017: màn demo /component-catalog là công cụ nội bộ cho DEV —
+          // không đăng ký route ở bản production (access.ts + menu.tsx gate
+          // cùng điều kiện để giữ contract menu ↔ ROUTE_PERMISSIONS).
+          ...(import.meta.env.DEV
+            ? [
+                {
+                  path: ROUTES.COMPONENT_CATALOG,
+                  element: routeEl(
+                    ROUTES.COMPONENT_CATALOG,
+                    <ComponentCatalogPage />,
+                  ),
+                },
+              ]
+            : []),
           {
             path: ROUTES.PV_ADMIN,
             element: routeEl(ROUTES.PV_ADMIN, <PvAdminPage />),

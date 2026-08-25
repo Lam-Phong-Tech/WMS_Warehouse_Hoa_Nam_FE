@@ -31,7 +31,7 @@ export function TopPagination({
   current,
   pageSize,
   unitName = "bản ghi",
-  pageSizeOptions = [15, 20, 50, 100],
+  pageSizeOptions = [10, 20, 50],
   onChange,
   placement = "top",
   showSizeChanger = true,

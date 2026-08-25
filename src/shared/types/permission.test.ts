@@ -16,12 +16,12 @@ import { PERMISSION_RULES, getPermissionCode } from "./permission";
  *   create/edit/delete/approve/export đều map về ROLE_MANAGE.
  */
 describe("PERMISSION_RULES khớp catalog BE (BA Module 1)", () => {
-  it("departments: delete → DEPT_INACTIVE (không phải DEPT_DELETE)", () => {
-    expect(PERMISSION_RULES.departments.delete).toBe("DEPT_INACTIVE");
-    expect(PERMISSION_RULES.departments.view).toBe("DEPT_VIEW");
-    expect(PERMISSION_RULES.departments.create).toBe("DEPT_CREATE");
-    expect(PERMISSION_RULES.departments.edit).toBe("DEPT_EDIT");
-    expect(PERMISSION_RULES.departments.export).toBe("DEPT_EXPORT");
+  it("departments: map về iam.user.* (catalog WMS không có mã DEPT_* — REQ-011)", () => {
+    expect(PERMISSION_RULES.departments.view).toBe("iam.user.view");
+    expect(PERMISSION_RULES.departments.create).toBe("iam.user.manage");
+    expect(PERMISSION_RULES.departments.edit).toBe("iam.user.manage");
+    expect(PERMISSION_RULES.departments.delete).toBe("iam.user.manage");
+    expect(PERMISSION_RULES.departments.export).toBe("iam.user.view");
   });
 
   it("employees: delete → EMP_INACTIVE (không phải EMP_DELETE)", () => {
@@ -78,7 +78,7 @@ describe("PERMISSION_RULES khớp catalog BE (BA Module 1)", () => {
   });
 
   it("getPermissionCode trả đúng mã catalog cho action+module", () => {
-    expect(getPermissionCode("delete", "departments")).toBe("DEPT_INACTIVE");
+    expect(getPermissionCode("delete", "departments")).toBe("iam.user.manage");
     expect(getPermissionCode("delete", "employees")).toBe("EMP_INACTIVE");
     expect(getPermissionCode("delete", "positions")).toBe("POS_INACTIVE");
     expect(getPermissionCode("delete", "org_units")).toBe("ORG_INACTIVE");

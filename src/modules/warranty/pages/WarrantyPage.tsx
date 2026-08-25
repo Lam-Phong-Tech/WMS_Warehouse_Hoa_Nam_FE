@@ -88,7 +88,7 @@ export default function WarrantyPage() {
   >("");
   const [defectId, setDefectId] = useState("");
   const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(15);
+  const [perPage, setPerPage] = useState(10);
   const [intakeOpen, setIntakeOpen] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [componentTarget, setComponentTarget] =

@@ -90,11 +90,11 @@ export default function PhysicalCodesPage() {
   const [batches, setBatches] = useState<ScanBatch[]>([]);
   const [events, setEvents] = useState<ScanEvent[]>([]);
   const [codePage, setCodePage] = useState(1);
-  const [codePerPage, setCodePerPage] = useState(15);
+  const [codePerPage, setCodePerPage] = useState(10);
   const [batchPage, setBatchPage] = useState(1);
-  const [batchPerPage, setBatchPerPage] = useState(15);
+  const [batchPerPage, setBatchPerPage] = useState(10);
   const [eventPage, setEventPage] = useState(1);
-  const [eventPerPage, setEventPerPage] = useState(15);
+  const [eventPerPage, setEventPerPage] = useState(10);
   const [batchMeta, setBatchMeta] = useState<ApiMeta>({});
   const [eventMeta, setEventMeta] = useState<ApiMeta>({});
   const [scanValue, setScanValue] = useState("");
@@ -491,7 +491,9 @@ export default function PhysicalCodesPage() {
                       {
                         title: "Ảnh hưởng tồn kho",
                         key: "stock_effect",
-                        render: () => <Tag color="success">Không thay đổi tồn</Tag>,
+                        render: () => (
+                          <Tag color="success">Không thay đổi tồn</Tag>
+                        ),
                       },
                     ]}
                   />
@@ -539,11 +541,7 @@ export default function PhysicalCodesPage() {
                       dataIndex: "source_type",
                       key: "source_type",
                       render: (value: string) =>
-                        businessLabel(
-                          SCAN_CONTEXT_LABELS,
-                          value,
-                          "Nguồn khác",
-                        ),
+                        businessLabel(SCAN_CONTEXT_LABELS, value, "Nguồn khác"),
                     },
                     {
                       title: "Trạng thái",

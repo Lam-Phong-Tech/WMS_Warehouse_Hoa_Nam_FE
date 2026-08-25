@@ -121,7 +121,8 @@ describe("API-backed MVP master screens", () => {
   it("loads agency data and opens add/edit modal", () => {
     render(<AgencyMasterScreen />);
     expect(screen.getByText("Đại lý Minh Anh")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /Thêm đại lý/ }));
+    // REQ-001: màn master đổi nhãn "Đại lý" → "Nơi nhận".
+    fireEvent.click(screen.getByRole("button", { name: /Thêm nơi nhận/ }));
     expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 

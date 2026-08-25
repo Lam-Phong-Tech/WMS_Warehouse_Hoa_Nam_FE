@@ -2,7 +2,7 @@ import type { ApiMeta } from "@/shared/types/api-response";
 
 // Tách khỏi MvpListPagination.tsx: file component chỉ được export component
 // (react-refresh/only-export-components).
-export const MVP_PAGE_SIZE_OPTIONS = [15, 20, 50, 100] as const;
+export const MVP_PAGE_SIZE_OPTIONS = [10, 20, 50] as const;
 
 export function resolveApiPagination(
   meta: ApiMeta | Record<string, unknown> | undefined,

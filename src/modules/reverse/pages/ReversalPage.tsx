@@ -37,7 +37,7 @@ export default function ReversalPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(15);
+  const [perPage, setPerPage] = useState(10);
   const [createOpen, setCreateOpen] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
 
@@ -187,7 +187,9 @@ export default function ReversalPage() {
       <div className="toolbar-wrap" style={{ gap: 6 }}>
         <span className="pill blue">Điều chỉnh bằng chứng từ đối ứng</span>
         <span className="pill blue">Giữ nguyên giao dịch gốc</span>
-        <span className="pill ok">Có kiểm tra điều kiện trước khi ghi nhận</span>
+        <span className="pill ok">
+          Có kiểm tra điều kiện trước khi ghi nhận
+        </span>
       </div>
 
       {!canPost ? (

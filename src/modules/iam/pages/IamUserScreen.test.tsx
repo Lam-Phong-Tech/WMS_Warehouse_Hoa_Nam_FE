@@ -60,6 +60,19 @@ vi.mock("@/modules/iam/hooks/use-iam", () => ({
     isLoading: false,
     error: null,
   }),
+  // REQ-011: dropdown Phòng ban (lọc + gán) trên màn User.
+  useIamDepartments: () => ({
+    data: [
+      {
+        department_id: "dept-1",
+        department_code: "KHO",
+        department_name: "Phòng Kho vận",
+        status: "ACTIVE",
+      },
+    ],
+    isLoading: false,
+    error: null,
+  }),
   useCreateIamUser: mutation,
   useUpdateIamUser: mutation,
 }));

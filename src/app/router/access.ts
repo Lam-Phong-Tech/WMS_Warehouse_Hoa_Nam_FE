@@ -73,7 +73,10 @@ export const ROUTE_PERMISSIONS: Record<string, string | string[] | undefined> =
     // route công khai, không đi qua RequirePermission.
     [ROUTES.PV_ADMIN]: [P.PV_MASTER_MANAGE, P.PV_PUBLISH],
     [ROUTES.AUDIT_LOGS]: P.AUDIT_LOG_VIEW,
-    [ROUTES.COMPONENT_CATALOG]: undefined,
+    // REQ-017: route demo /component-catalog chỉ tồn tại ở bản DEV (xem
+    // router/index.tsx). Production không có entry -> resolver trả sentinel
+    // UNREGISTERED_ROUTE_PERMISSION -> fail-closed nếu route lọt lại.
+    ...(import.meta.env.DEV ? { [ROUTES.COMPONENT_CATALOG]: undefined } : {}),
     [ROUTES.PROFILE]: undefined,
   };
 

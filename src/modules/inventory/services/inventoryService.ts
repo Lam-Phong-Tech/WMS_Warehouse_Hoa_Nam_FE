@@ -483,7 +483,7 @@ export async function fetchInventoryBalances(
   const result = await http.getPage<
     InventoryBalanceRow[] | { data?: RawRecord[] }
   >(API_ENDPOINTS.INVENTORY_BALANCES, {
-    params: clean({ per_page: 20, ...params }),
+    params: clean({ per_page: 10, ...params }),
   });
   return {
     rows: rowsOf(result.data as RawRecord[] | { data?: RawRecord[] }).map(
@@ -507,7 +507,7 @@ export async function fetchStockMovements(
   const result = await http.getPage<
     StockMovementRow[] | { data?: RawRecord[] }
   >(API_ENDPOINTS.STOCK_MOVEMENTS, {
-    params: clean({ per_page: 20, ...params }),
+    params: clean({ per_page: 10, ...params }),
   });
   return {
     rows: rowsOf(result.data as RawRecord[] | { data?: RawRecord[] }).map(

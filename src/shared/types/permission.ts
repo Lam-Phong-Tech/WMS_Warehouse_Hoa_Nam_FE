@@ -74,19 +74,20 @@ export const PERMISSION_RULES: Record<
     export: "ORG_EXPORT",
     import: "ORG_EXPORT",
   },
-  // Catalog chuẩn hóa theo BE (xác minh qua GET /api/v1/permissions trên
-  // môi trường test 2026-07-09). Lưu ý: "xóa" ở FE (xóa mềm / ngừng hoạt động)
-  // map vào mã *_INACTIVE của BE, KHÔNG PHẢI *_DELETE — mã *_DELETE (vd
-  // DEPT_FORCE_DELETE) là xóa vĩnh viễn và chỉ dùng khi có action riêng.
+  // REQ-011 (2026-08-25): catalog BE WMS KHÔNG có mã DEPT_* — Phòng ban chỉ là
+  // danh mục gán trên màn User (user đã chủ ý bỏ tab quản lý master Phòng ban).
+  // Map về cặp quyền IAM thật đang enforce ở runtime: xem danh sách phòng ban
+  // đi kèm màn user (iam.user.view), mọi thao tác gán/sửa qua user
+  // (iam.user.manage). Giữ mã DEPT_* cũ sẽ làm PermissionGuard check mã không
+  // tồn tại → luôn false → ẩn/chặn sai.
   departments: {
-    view: "DEPT_VIEW",
-    create: "DEPT_CREATE",
-    edit: "DEPT_EDIT",
-    // Xóa mềm / ngừng hoạt động → DEPT_INACTIVE (khớp màn Department)
-    delete: "DEPT_INACTIVE",
-    approve: "DEPT_EDIT",
-    export: "DEPT_EXPORT",
-    import: "DEPT_EXPORT",
+    view: "iam.user.view",
+    create: "iam.user.manage",
+    edit: "iam.user.manage",
+    delete: "iam.user.manage",
+    approve: "iam.user.manage",
+    export: "iam.user.view",
+    import: "iam.user.manage",
   },
   employees: {
     view: "EMP_VIEW",

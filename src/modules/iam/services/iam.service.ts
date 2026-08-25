@@ -1,6 +1,8 @@
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { http } from "@/shared/api/http";
 import type {
+  IamDepartment,
+  IamDepartmentListParams,
   IamPermission,
   IamPermissionListParams,
   IamRole,
@@ -51,6 +53,23 @@ export async function getIamPermissions(
 ): Promise<IamPageResult<IamPermission>> {
   const result = await http.getPage<IamPermission[]>(
     API_ENDPOINTS.PERMISSIONS,
+    {
+      params: cleanParams({ ...params, per_page: params.per_page ?? 100 }),
+    },
+  );
+  return { data: result.data, meta: result.meta };
+}
+
+/**
+ * REQ-011: danh sách Phòng ban chỉ để gán/lọc trên màn User (user đã chủ ý bỏ
+ * tab quản lý master Phòng ban nên không có create/update ở FE).
+ * GET /departments trả respondPaginated chuẩn.
+ */
+export async function getIamDepartments(
+  params: IamDepartmentListParams = {},
+): Promise<IamPageResult<IamDepartment>> {
+  const result = await http.getPage<IamDepartment[]>(
+    API_ENDPOINTS.DEPARTMENTS,
     {
       params: cleanParams({ ...params, per_page: params.per_page ?? 100 }),
     },

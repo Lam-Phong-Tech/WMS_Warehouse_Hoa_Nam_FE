@@ -71,9 +71,9 @@ export default function InventoryPage() {
   const [movementSearch, setMovementSearch] = useState("");
   const [movementType, setMovementType] = useState("");
   const [balancePage, setBalancePage] = useState(1);
-  const [balancePerPage, setBalancePerPage] = useState(15);
+  const [balancePerPage, setBalancePerPage] = useState(10);
   const [movementPage, setMovementPage] = useState(1);
-  const [movementPerPage, setMovementPerPage] = useState(15);
+  const [movementPerPage, setMovementPerPage] = useState(10);
 
   const [activeTab, setActiveTab] = useState("balance");
 
@@ -258,11 +258,7 @@ export default function InventoryPage() {
           }
         >
           <Tag color={reconcileColor(value)}>
-            {businessLabel(
-              RECONCILE_STATUS_LABELS,
-              value,
-              "Chưa đối soát",
-            )}
+            {businessLabel(RECONCILE_STATUS_LABELS, value, "Chưa đối soát")}
           </Tag>
         </Tooltip>
       ),
@@ -528,8 +524,9 @@ export default function InventoryPage() {
                 />
 
                 <div className="footer-note" style={{ marginBottom: 8 }}>
-                  <b>Đối soát</b> so sánh sổ biến động với số tồn hiện tại. Trạng
-                  thái <b>Khớp</b> nghĩa là hai nguồn trùng nhau; <b>Có chênh lệch</b>
+                  <b>Đối soát</b> so sánh sổ biến động với số tồn hiện tại.
+                  Trạng thái <b>Khớp</b> nghĩa là hai nguồn trùng nhau;{" "}
+                  <b>Có chênh lệch</b>
                   nghĩa là cần kiểm tra. Bấm <b>Mở</b> để xem chi tiết tồn kho,
                   sản phẩm/hộp và các biến động liên quan.
                 </div>
@@ -569,7 +566,9 @@ export default function InventoryPage() {
                     <option value="">Loại: Tất cả</option>
                     <option value="RECEIPT">Nhập kho</option>
                     <option value="ISSUE">Xuất kho</option>
-                    <option value="COMPONENT_ISSUE">Xuất linh kiện bảo hành</option>
+                    <option value="COMPONENT_ISSUE">
+                      Xuất linh kiện bảo hành
+                    </option>
                     <option value="REVERSAL">Điều chỉnh tồn kho</option>
                   </select>
                 </div>

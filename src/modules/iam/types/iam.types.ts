@@ -34,6 +34,13 @@ export interface IamDepartment {
   description?: string | null;
 }
 
+export interface IamDepartmentListParams {
+  keyword?: string;
+  status?: "ACTIVE" | "INACTIVE" | "";
+  page?: number;
+  per_page?: number;
+}
+
 export interface IamUser {
   user_id: string;
   username: string;
@@ -41,6 +48,12 @@ export interface IamUser {
   email?: string | null;
   phone?: string | null;
   department_id?: string | null;
+  /** REQ-011: BE eager-load relation `department` trong user list. */
+  department?: {
+    department_id: string;
+    department_code?: string;
+    department_name: string;
+  } | null;
   status: IamUserStatus;
   version: number;
   last_login_at?: string | null;

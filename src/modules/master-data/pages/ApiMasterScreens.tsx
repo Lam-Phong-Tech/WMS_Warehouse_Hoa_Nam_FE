@@ -5,7 +5,7 @@ import {
   type FormEvent,
   type ReactNode,
 } from "react";
-import { Descriptions, Modal, Space } from "antd";
+import { Descriptions, Modal, Space, Tag } from "antd";
 import {
   CloseCircleOutlined,
   CloseOutlined,
@@ -62,6 +62,12 @@ import {
   SKU_TYPE_LABELS,
   businessLabel,
 } from "@/shared/constants/business-labels";
+import {
+  RECIPIENT_TYPES,
+  RECIPIENT_TYPE_LABELS,
+  recipientTypeLabel,
+  type RecipientType,
+} from "@/shared/constants/recipient-types";
 import { useAuthStore } from "@/shared/store/auth.store";
 
 const STATUS_OPTIONS: Array<{ value: MasterStatus; label: string }> = [
@@ -193,7 +199,9 @@ function MasterSelect({
       >
         <option value="">— Chưa chọn —</option>
         {isMissing ? (
-          <option value={value}>Giữ liên kết hiện tại (đã ngừng sử dụng)</option>
+          <option value={value}>
+            Giữ liên kết hiện tại (đã ngừng sử dụng)
+          </option>
         ) : null}
         {rows.map((row) => (
           <option key={row.id} value={row.id}>
@@ -203,7 +211,8 @@ function MasterSelect({
       </select>
       {isMissing ? (
         <div className="muted" style={{ marginTop: 4 }}>
-          Danh mục đang gán đã ngừng sử dụng — giữ nguyên hoặc chọn danh mục khác.
+          Danh mục đang gán đã ngừng sử dụng — giữ nguyên hoặc chọn danh mục
+          khác.
         </div>
       ) : null}
     </>
@@ -292,12 +301,18 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   const apiRows = useMemo(() => query.data?.data ?? [], [query.data]);
   const catalogs = catalogsQuery.data ?? EMPTY_CATALOGS;
   const brands = catalogs.brands;
-  const brandIndex = useMemo(() => toRefIndex(catalogs.brands), [catalogs.brands]);
+  const brandIndex = useMemo(
+    () => toRefIndex(catalogs.brands),
+    [catalogs.brands],
+  );
   const categoryIndex = useMemo(
     () => toRefIndex(catalogs.categories),
     [catalogs.categories],
   );
-  const modelIndex = useMemo(() => toRefIndex(catalogs.models), [catalogs.models]);
+  const modelIndex = useMemo(
+    () => toRefIndex(catalogs.models),
+    [catalogs.models],
+  );
   const powerSourceIndex = useMemo(
     () => toRefIndex(catalogs.powerSources),
     [catalogs.powerSources],
@@ -865,7 +880,10 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                   style={{ width: "100%" }}
                   value={form.unit}
                   onChange={(event) =>
-                    setForm((current) => ({ ...current, unit: event.target.value }))
+                    setForm((current) => ({
+                      ...current,
+                      unit: event.target.value,
+                    }))
                   }
                   disabled={isSaving}
                 />
@@ -1030,11 +1048,22 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   );
 }
 
-// ===== Đối tượng nhận hàng / đại lý =====
+// ===== Nơi nhận (REQ-001: distributor / đại lý / khách công trình / khách lẻ) =====
 
-const EMPTY_AGENCY_FORM: AgencyPayload = {
+/**
+ * Form giữ recipient_type = "" khi chưa chọn (payload thật yêu cầu đúng 1 trong
+ * 4 mã RECIPIENT_TYPES) — validate chặn trước submit thay vì gửi chuỗi rỗng.
+ */
+type AgencyFormState = Omit<AgencyPayload, "recipient_type"> & {
+  recipient_type: RecipientType | "";
+};
+
+const EMPTY_AGENCY_FORM: AgencyFormState = {
   agency_code: "",
   agency_name: "",
+  recipient_type: "",
+  market: "",
+  region: "",
   contact_name: "",
   phone: "",
   address: "",
@@ -1045,16 +1074,18 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   const canManage = useCanManage("agency.manage");
   const [keyword, setKeyword] = useState("");
   const [status, setStatus] = useState<MasterStatus | "">("");
+  const [recipientType, setRecipientType] = useState<RecipientType | "">("");
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(15);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<AgencyRecord | null>(null);
-  const [form, setForm] = useState<AgencyPayload>(EMPTY_AGENCY_FORM);
+  const [form, setForm] = useState<AgencyFormState>(EMPTY_AGENCY_FORM);
   const [formError, setFormError] = useState("");
 
   const query = useMvpAgencies({
     keyword: keyword.trim(),
     status,
+    recipient_type: recipientType,
     page,
     per_page: perPage,
   });
@@ -1087,6 +1118,9 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
     setForm({
       agency_code: record.agency_code,
       agency_name: record.agency_name,
+      recipient_type: record.recipient_type ?? "",
+      market: record.market ?? "",
+      region: record.region ?? "",
       contact_name: record.contact_name ?? "",
       phone: record.phone ?? "",
       address: record.address ?? "",
@@ -1106,27 +1140,38 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setFormError("");
+    // recipient_type required (BE BaM1RecipientController) — chặn tại FE để
+    // báo lỗi tiếng Việt thay vì đợi 422.
+    if (!form.recipient_type) {
+      setFormError("Vui lòng chọn loại nơi nhận.");
+      return;
+    }
     const payload: AgencyPayload = {
       agency_code: form.agency_code.trim(),
       agency_name: form.agency_name.trim(),
+      recipient_type: form.recipient_type,
+      market: form.market?.trim() || null,
+      region: form.region?.trim() || null,
       contact_name: form.contact_name?.trim() || null,
       phone: form.phone?.trim() || null,
       address: form.address?.trim() || null,
       status: form.status,
     };
     if (!payload.agency_code || !payload.agency_name) {
-      setFormError("Mã đại lý và tên đại lý là bắt buộc.");
+      setFormError("Mã nơi nhận và tên nơi nhận là bắt buộc.");
       return;
     }
     if (payload.phone && !/^0\d{9}$/.test(payload.phone)) {
-      setFormError("Số điện thoại phải gồm đúng 10 chữ số và bắt đầu bằng số 0.");
+      setFormError(
+        "Số điện thoại phải gồm đúng 10 chữ số và bắt đầu bằng số 0.",
+      );
       return;
     }
     if (form.status === "INACTIVE" && editing?.status === "ACTIVE") {
       const confirmed = await confirmAction({
-        title: "Ngừng sử dụng đại lý?",
+        title: "Ngừng sử dụng nơi nhận?",
         content:
-          "Đại lý sẽ không còn được chọn cho chứng từ mới. Chứng từ đã lập giữ nguyên.",
+          "Nơi nhận sẽ không còn được chọn cho chứng từ mới. Chứng từ đã lập giữ nguyên.",
         okText: "Ngừng sử dụng",
       });
       if (!confirmed) return;
@@ -1139,10 +1184,10 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           payload,
           version: editing.version,
         });
-        toast.success("Đã cập nhật đại lý");
+        toast.success("Đã cập nhật nơi nhận");
       } else {
         await createMutation.mutateAsync(payload);
-        toast.success("Đã thêm đại lý");
+        toast.success("Đã thêm nơi nhận");
       }
       setModalOpen(false);
       setEditing(null);
@@ -1162,8 +1207,24 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
             setKeyword(event.target.value);
             setPage(1);
           }}
-          placeholder="Tìm mã / tên đại lý"
+          placeholder="Tìm mã / tên / thị trường / khu vực"
         />
+        <select
+          className="select"
+          value={recipientType}
+          onChange={(event) => {
+            setRecipientType(event.target.value as RecipientType | "");
+            setPage(1);
+          }}
+          aria-label="Lọc theo loại nơi nhận"
+        >
+          <option value="">Loại nơi nhận: Tất cả</option>
+          {RECIPIENT_TYPES.map((value) => (
+            <option key={value} value={value}>
+              {RECIPIENT_TYPE_LABELS[value]}
+            </option>
+          ))}
+        </select>
         <select
           className="select"
           value={status}
@@ -1182,14 +1243,14 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
         <div className="spacer" />
         {canManage ? (
           <button className="btn primary" type="button" onClick={openCreate}>
-            <PlusOutlined /> Thêm đại lý
+            <PlusOutlined /> Thêm nơi nhận
           </button>
         ) : null}
       </div>
 
       <ApiErrorAlert
         error={query.error}
-        fallback="Không tải được danh sách đại lý."
+        fallback="Không tải được danh sách nơi nhận."
         onRetry={() => void query.refetch()}
       />
       <MvpPageSizeSelector
@@ -1205,7 +1266,10 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           <thead>
             <tr>
               <th>Mã</th>
-              <th>Tên đại lý</th>
+              <th>Tên nơi nhận</th>
+              <th>Loại nơi nhận</th>
+              <th>Thị trường</th>
+              <th>Khu vực</th>
               <th>Người liên hệ</th>
               <th>Điện thoại</th>
               <th>Địa chỉ</th>
@@ -1216,7 +1280,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           <tbody>
             {query.isLoading ? (
               <tr>
-                <td colSpan={7} className="muted">
+                <td colSpan={10} className="muted">
                   Đang tải dữ liệu...
                 </td>
               </tr>
@@ -1225,6 +1289,15 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                 <tr key={record.agency_id}>
                   <td>{record.agency_code}</td>
                   <td>{record.agency_name}</td>
+                  <td>
+                    {record.recipient_type ? (
+                      <Tag>{recipientTypeLabel(record.recipient_type)}</Tag>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
+                  <td>{record.market || "—"}</td>
+                  <td>{record.region || "—"}</td>
                   <td>{record.contact_name || "—"}</td>
                   <td>{record.phone || "—"}</td>
                   <td>{record.address || "—"}</td>
@@ -1250,8 +1323,8 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               ))
             ) : (
               <tr>
-                <td colSpan={7} className="muted">
-                  Không có đại lý phù hợp bộ lọc.
+                <td colSpan={10} className="muted">
+                  Không có nơi nhận phù hợp bộ lọc.
                 </td>
               </tr>
             )}
@@ -1263,12 +1336,12 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
         current={pagination.current}
         pageSize={perPage}
         total={pagination.total}
-        itemLabel="đại lý"
+        itemLabel="nơi nhận"
         onChange={setPage}
       />
 
       <Modal
-        title={editing ? "Sửa đại lý" : "Thêm đại lý"}
+        title={editing ? "Sửa nơi nhận" : "Thêm nơi nhận"}
         open={modalOpen}
         onCancel={close}
         footer={null}
@@ -1285,7 +1358,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
             </div>
           ) : null}
           <div className="grid-2">
-            <Field label="Mã đại lý *">
+            <Field label="Mã nơi nhận *">
               <input
                 className="input"
                 style={{ width: "100%" }}
@@ -1299,7 +1372,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                 disabled={isSaving}
               />
             </Field>
-            <Field label="Tên đại lý *">
+            <Field label="Tên nơi nhận *">
               <input
                 className="input"
                 style={{ width: "100%" }}
@@ -1308,6 +1381,55 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                   setForm((current) => ({
                     ...current,
                     agency_name: event.target.value,
+                  }))
+                }
+                disabled={isSaving}
+              />
+            </Field>
+            <Field label="Loại nơi nhận *">
+              <select
+                className="select"
+                style={{ width: "100%" }}
+                value={form.recipient_type}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    recipient_type: event.target.value as RecipientType | "",
+                  }))
+                }
+                disabled={isSaving}
+              >
+                <option value="">Chọn loại nơi nhận</option>
+                {RECIPIENT_TYPES.map((value) => (
+                  <option key={value} value={value}>
+                    {RECIPIENT_TYPE_LABELS[value]}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Thị trường">
+              <input
+                className="input"
+                style={{ width: "100%" }}
+                value={form.market ?? ""}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    market: event.target.value,
+                  }))
+                }
+                disabled={isSaving}
+              />
+            </Field>
+            <Field label="Khu vực">
+              <input
+                className="input"
+                style={{ width: "100%" }}
+                value={form.region ?? ""}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    region: event.target.value,
                   }))
                 }
                 disabled={isSaving}
@@ -1381,7 +1503,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           <ModalActions
             isSaving={isSaving}
             onCancel={close}
-            submitLabel="Lưu đại lý"
+            submitLabel="Lưu nơi nhận"
           />
         </form>
       </Modal>

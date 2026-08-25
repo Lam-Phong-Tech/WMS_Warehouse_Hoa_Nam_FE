@@ -4,6 +4,7 @@ import {
   createIamRole,
   createIamUserWithRole,
   deleteIamRole,
+  getIamDepartments,
   getIamPermissions,
   getIamRole,
   getIamRoles,
@@ -15,6 +16,7 @@ import {
 import { fetchWarehouses } from "@/modules/master-data/services/warehouse.service";
 import { getMutationErrorMessage } from "@/shared/api/api-error";
 import type {
+  IamDepartmentListParams,
   IamPermissionListParams,
   IamRoleListParams,
   IamRolePayload,
@@ -34,7 +36,22 @@ export const iamKeys = {
   role: (roleId: string) => [...iamKeys.all, "role", roleId] as const,
   permissions: (params: IamPermissionListParams = {}) =>
     [...iamKeys.all, "permissions", params] as const,
+  departments: (params: IamDepartmentListParams = {}) =>
+    [...iamKeys.all, "departments", params] as const,
 };
+
+/**
+ * REQ-011: dropdown Phòng ban trên màn User (lọc + gán khi tạo/sửa).
+ * Danh mục ít biến động nên cache 5 phút như danh sách kho.
+ */
+export function useIamDepartments(params: IamDepartmentListParams = {}) {
+  return useQuery({
+    queryKey: iamKeys.departments(params),
+    queryFn: () => getIamDepartments(params),
+    select: (result) => result.data,
+    staleTime: 5 * 60_000,
+  });
+}
 
 export function useIamUsers(params: IamUserListParams) {
   return useQuery({

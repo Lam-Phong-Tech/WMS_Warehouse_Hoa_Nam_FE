@@ -15,25 +15,18 @@ import { useQuery } from "@tanstack/react-query";
 import dayjs, { type Dayjs } from "dayjs";
 import { http } from "@/shared/api/http";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
+import {
+  RECIPIENT_TYPE_LABELS,
+  recipientTypeLabel,
+  type RecipientType,
+} from "@/shared/constants/recipient-types";
 
 const { RangePicker } = DatePicker;
 const { Text } = Typography;
 
 type Raw = Record<string, unknown>;
-type RecipientType =
-  | "DISTRIBUTOR"
-  | "AGENCY"
-  | "PROJECT_CUSTOMER"
-  | "RETAIL_CUSTOMER";
 
 type SelectOption = { value: string; label: string };
-
-const RECIPIENT_LABELS: Record<RecipientType, string> = {
-  DISTRIBUTOR: "Nhà phân phối",
-  AGENCY: "Đại lý",
-  PROJECT_CUSTOMER: "Khách công trình",
-  RETAIL_CUSTOMER: "Khách lẻ",
-};
 
 function text(value: unknown, fallback = "—"): string {
   return value === undefined || value === null || value === ""
@@ -60,7 +53,9 @@ function RecipientReport() {
     dayjs().subtract(30, "day"),
     dayjs(),
   ]);
-  const [recipientType, setRecipientType] = useState<RecipientType | undefined>();
+  const [recipientType, setRecipientType] = useState<
+    RecipientType | undefined
+  >();
   const [recipientId, setRecipientId] = useState<string>();
   const [market, setMarket] = useState<string>();
   const [region, setRegion] = useState<string>();
@@ -113,8 +108,7 @@ function RecipientReport() {
   };
   const reportQuery = useQuery({
     queryKey: ["gd1", "outbound-by-recipient", params],
-    queryFn: () =>
-      http.get<Raw>("/reports/outbound-by-recipient", { params }),
+    queryFn: () => http.get<Raw>("/reports/outbound-by-recipient", { params }),
   });
   const data = (reportQuery.data ?? {}) as Raw;
   const rows = rowsOf(data.rows ?? data);
@@ -128,9 +122,7 @@ function RecipientReport() {
       title: "Loại nơi nhận",
       dataIndex: "recipient_type",
       width: 150,
-      render: (value) => (
-        <Tag>{RECIPIENT_LABELS[value as RecipientType] ?? text(value)}</Tag>
-      ),
+      render: (value) => <Tag>{recipientTypeLabel(text(value, ""))}</Tag>,
     },
     { title: "Nơi nhận", dataIndex: "recipient_name", width: 210 },
     { title: "Thị trường", dataIndex: "market", width: 130 },
@@ -165,10 +157,12 @@ function RecipientReport() {
             style={{ width: 180 }}
             placeholder="Loại nơi nhận"
             value={recipientType}
-            options={Object.entries(RECIPIENT_LABELS).map(([value, label]) => ({
-              value,
-              label,
-            }))}
+            options={Object.entries(RECIPIENT_TYPE_LABELS).map(
+              ([value, label]) => ({
+                value,
+                label,
+              }),
+            )}
             onChange={(value) => {
               setRecipientType(value as RecipientType | undefined);
               setRecipientId(undefined);
@@ -262,6 +256,11 @@ function RecipientReport() {
         loading={reportQuery.isLoading || reportQuery.isFetching}
         columns={columns}
         dataSource={rows}
+        locale={{
+          emptyText: (
+            <Empty description="Chưa có dữ liệu xuất theo bộ lọc hiện tại" />
+          ),
+        }}
         scroll={{ x: 1250 }}
         pagination={{
           current: number(pagination.current_page) || page,
@@ -281,7 +280,9 @@ function DefectSkuReport() {
     dayjs().subtract(30, "day"),
     dayjs(),
   ]);
-  const [defectId, setDefectId] = useState<string>();
+  // REQ-022/P2-04: lọc nhiều bệnh/lỗi cùng lúc — BE defectSkuBreakdown nhận
+  // defect_ids[] (axios mặc định serialize mảng params thành defect_ids[]=...).
+  const [defectIds, setDefectIds] = useState<string[]>([]);
 
   const defectsQuery = useQuery({
     queryKey: ["gd1", "defects"],
@@ -300,7 +301,7 @@ function DefectSkuReport() {
   const params = {
     from_date: period[0].format("YYYY-MM-DD"),
     to_date: period[1].format("YYYY-MM-DD"),
-    defect_id: defectId,
+    defect_ids: defectIds.length > 0 ? defectIds : undefined,
   };
   const query = useQuery({
     queryKey: ["gd1", "warranty-defect-sku", params],
@@ -338,13 +339,15 @@ function DefectSkuReport() {
           <Select
             allowClear
             showSearch
+            mode="multiple"
+            maxTagCount="responsive"
             optionFilterProp="label"
-            style={{ width: 300 }}
-            placeholder="Bệnh/lỗi"
-            value={defectId}
+            style={{ minWidth: 300 }}
+            placeholder="Bệnh/lỗi (chọn được nhiều)"
+            value={defectIds}
             options={defectOptions}
             loading={defectsQuery.isLoading}
-            onChange={setDefectId}
+            onChange={setDefectIds}
           />
         </Space>
       </Card>
@@ -367,9 +370,12 @@ function DefectSkuReport() {
               const percent = Math.max(4, Math.round((count / maxCount) * 100));
               return (
                 <div key={`${text(row.sku_id, "")}-${text(row.defect_id, "")}`}>
-                  <Space style={{ width: "100%", justifyContent: "space-between" }}>
+                  <Space
+                    style={{ width: "100%", justifyContent: "space-between" }}
+                  >
                     <Text>
-                      <strong>{text(row.sku_code)}</strong> · {text(row.defect_name)}
+                      <strong>{text(row.sku_code)}</strong> ·{" "}
+                      {text(row.defect_name)}
                     </Text>
                     <Text>{count} case</Text>
                   </Space>

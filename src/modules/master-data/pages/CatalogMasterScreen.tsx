@@ -145,7 +145,7 @@ export function CatalogMasterScreen() {
   const [keyword, setKeyword] = useState("");
   const [statusFilter, setStatusFilter] = useState<MasterStatus | "">("");
   const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(15);
+  const [perPage, setPerPage] = useState(10);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRecord, setEditingRecord] =
     useState<CatalogMasterRecord | null>(null);
@@ -386,11 +386,7 @@ export function CatalogMasterScreen() {
         </Col>
         {canManage && (
           <Col>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={openCreate}
-            >
+            <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
               Tạo {activeTab.itemLabel}
             </Button>
           </Col>

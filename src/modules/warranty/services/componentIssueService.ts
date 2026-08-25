@@ -179,7 +179,7 @@ export async function fetchComponentIssueDocuments(
       status: params.status,
       keyword: params.keyword,
       page: params.page,
-      per_page: params.per_page ?? 15,
+      per_page: params.per_page ?? 10,
     }).filter(([, value]) => value !== undefined && value !== ""),
   );
   const result = await http.getPage<RawRecord[] | { data?: RawRecord[] }>(

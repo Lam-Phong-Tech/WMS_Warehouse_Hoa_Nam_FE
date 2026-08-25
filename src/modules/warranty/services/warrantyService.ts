@@ -291,7 +291,7 @@ export async function fetchWarrantyCases(
   assertWarrantyRead("view warranty cases");
   const mappedParams = {
     page: params.page,
-    per_page: params.per_page ?? 15,
+    per_page: params.per_page ?? 10,
     status: params.status ? canonicalStatus(params.status) : undefined,
     identification_status: params.identification_status,
     defect_id: params.defect_id,
