@@ -1,5 +1,6 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
+import { MenuFoldOutlined, MenuUnfoldOutlined } from "@ant-design/icons";
 import { SideNav } from "@/app/layouts/SideNav";
 import { UserMenu } from "@/app/layouts/UserMenu";
 import { useMe } from "@/modules/auth/hooks/use-me";
@@ -7,9 +8,19 @@ import { Loading } from "@/shared/components";
 import { ROUTES } from "@/shared/constants/routes";
 import { useAuthStore } from "@/shared/store/auth.store";
 
-const IamUserScreen = lazy(() =>
-  import("@/modules/iam/pages/IamUserScreen").then((m) => ({
-    default: m.IamUserScreen,
+const SIDEBAR_COLLAPSED_STORAGE_KEY = "hn-wms-sidebar-collapsed";
+
+function readStoredSidebarCollapsed() {
+  try {
+    return localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+const IamUsersGd1Page = lazy(() =>
+  import("@/modules/iam/pages/IamUsersGd1Page").then((m) => ({
+    default: m.IamUsersGd1Page,
   })),
 );
 const SkuMasterScreen = lazy(() =>
@@ -275,18 +286,32 @@ function renderMvpScreen(sourceScreen: string, requestedScreen: string | null) {
     case "MAP-01":
       return <DashboardPage />;
     case "IAM-01":
-      return <IamUserScreen openCreateOnMount={requestedScreen === "IAM-02"} />;
+      return (
+        <div className="hn-mvp-source-screen">
+          <IamUsersGd1Page openCreateOnMount={requestedScreen === "IAM-02"} />
+        </div>
+      );
     case "MST-01":
       return (
-        <SkuMasterScreen openCreateOnMount={requestedScreen === "MST-02"} />
+        <div className="hn-mvp-source-screen">
+          <SkuMasterScreen openCreateOnMount={requestedScreen === "MST-02"} />
+        </div>
       );
     case "AGY-01":
       return (
-        <AgencyMasterScreen openCreateOnMount={requestedScreen === "AGY-02"} />
+        <div className="hn-mvp-source-screen">
+          <AgencyMasterScreen
+            openCreateOnMount={requestedScreen === "AGY-02"}
+          />
+        </div>
       );
     case "DEF-01":
       return (
-        <DefectMasterScreen openCreateOnMount={requestedScreen === "DEF-02"} />
+        <div className="hn-mvp-source-screen">
+          <DefectMasterScreen
+            openCreateOnMount={requestedScreen === "DEF-02"}
+          />
+        </div>
       );
     case "IN-01":
       return (
@@ -339,6 +364,23 @@ export function MainLayout() {
   const location = useLocation();
   const isProfileLoaded = useAuthStore((state) => state.isProfileLoaded);
   const { isLoading: isLoadingProfile } = useMe();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(
+    readStoredSidebarCollapsed,
+  );
+  const toggleSidebar = () => {
+    setSidebarCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem(
+          SIDEBAR_COLLAPSED_STORAGE_KEY,
+          next ? "1" : "0",
+        );
+      } catch {
+        // localStorage không khả dụng (chế độ ẩn danh) — bỏ qua, chỉ giữ state trong phiên.
+      }
+      return next;
+    });
+  };
   const requestedScreen = new URLSearchParams(location.search).get("screen");
   const normalizedScreen = normalizeScreen(requestedScreen);
   const sourceScreen =
@@ -350,15 +392,29 @@ export function MainLayout() {
   if (isLoadingProfile && !isProfileLoaded) return <Loading />;
 
   return (
-    <div className="hn-mvp-app">
-      <aside className="hn-mvp-aside">
+    <div
+      className={`hn-mvp-app${sidebarCollapsed ? " is-sidebar-collapsed" : ""}`}
+    >
+      <aside className="hn-mvp-aside" aria-hidden={sidebarCollapsed}>
         <SideNav />
       </aside>
       <main className="hn-mvp-main">
         <header className="hn-mvp-header">
-          <div className="hn-mvp-title">
-            <h2>{meta.title}</h2>
-            <p>{meta.description}</p>
+          <div className="hn-mvp-header-left">
+            <button
+              type="button"
+              className="hn-mvp-sidebar-toggle"
+              onClick={toggleSidebar}
+              aria-label={sidebarCollapsed ? "Hiện menu" : "Ẩn menu"}
+              aria-pressed={sidebarCollapsed}
+              title={sidebarCollapsed ? "Hiện menu" : "Ẩn menu"}
+            >
+              {sidebarCollapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+            </button>
+            <div className="hn-mvp-title">
+              <h2>{meta.title}</h2>
+              <p>{meta.description}</p>
+            </div>
           </div>
           <UserMenu />
         </header>

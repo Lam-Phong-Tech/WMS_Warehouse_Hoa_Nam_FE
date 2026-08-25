@@ -16,7 +16,8 @@ body{font-size:14px;line-height:1.5}
 
 /* Exact application shell from HN_WMS_Wireframe_MVP.html */
 .hn-mvp-app{min-height:100vh;background:var(--bg)}
-.hn-mvp-aside{position:fixed;top:0;left:0;width:300px;height:100vh;background:#0f172a;color:#e5e7eb;padding:18px 14px;overflow:auto;z-index:40}
+.hn-mvp-aside{position:fixed;top:0;left:0;width:300px;height:100vh;background:#0f172a;color:#e5e7eb;padding:18px 14px;overflow:auto;z-index:40;transition:width .2s ease,padding .2s ease}
+.hn-mvp-app.is-sidebar-collapsed .hn-mvp-aside{width:0;padding-left:0;padding-right:0;overflow:hidden}
 .hn-mvp-brand{display:flex;gap:10px;align-items:center;margin-bottom:18px}
 .hn-mvp-logo{width:40px;height:40px;border-radius:10px;background:#2563eb;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;flex:none}
 .hn-mvp-brand-copy h1{font-size:18px;line-height:1.25;margin:0;color:#fff!important;font-weight:800;text-shadow:none}
@@ -28,8 +29,12 @@ body{font-size:14px;line-height:1.5}
 .hn-mvp-account{margin-top:18px;padding-top:14px;border-top:1px solid rgba(148,163,184,.25)}
 .hn-mvp-account .ant-btn,.hn-mvp-account .ant-dropdown-trigger{color:#e5e7eb!important}
 
-.hn-mvp-main{margin-left:300px;min-height:100vh;display:flex;flex-direction:column;min-width:0;background:var(--bg)}
+.hn-mvp-main{margin-left:300px;min-height:100vh;display:flex;flex-direction:column;min-width:0;background:var(--bg);transition:margin-left .2s ease}
+.hn-mvp-app.is-sidebar-collapsed .hn-mvp-main{margin-left:0}
 .hn-mvp-header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 18px;background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:30}
+.hn-mvp-header-left{display:flex;align-items:center;gap:12px;min-width:0}
+.hn-mvp-sidebar-toggle{flex:none;display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--text);cursor:pointer;font-size:16px}
+.hn-mvp-sidebar-toggle:hover{background:var(--bg);border-color:var(--primary);color:var(--primary)}
 .hn-mvp-title h2{margin:0;font-size:24px;line-height:1.2;color:var(--text);font-weight:700}
 .hn-mvp-title p{margin:4px 0 0;color:var(--muted);font-size:13px}
 .hn-mvp-note-banner{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 14px;font-size:13px;color:var(--muted);white-space:nowrap}

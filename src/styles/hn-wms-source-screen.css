@@ -23,7 +23,8 @@
 .hn-mvp-source-screen table{width:100%;border-collapse:collapse;font-size:13px}
 .hn-mvp-source-screen .table-wrap{overflow:auto;border:1px solid #d8dfeb;border-radius:12px}
 .hn-mvp-source-screen th,.hn-mvp-source-screen td{border-bottom:1px solid #d8dfeb;padding:10px;vertical-align:top;text-align:left}
-.hn-mvp-source-screen th{background:#f8fafc}
+.hn-mvp-source-screen th{background:#f8fafc;white-space:nowrap}
+.hn-mvp-source-screen td{white-space:nowrap}
 .hn-mvp-source-screen tr:last-child td{border-bottom:none}
 .hn-mvp-source-screen .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;font-size:12px;font-weight:700}
 .hn-mvp-source-screen .ok{background:#dcfce7;color:#166534}

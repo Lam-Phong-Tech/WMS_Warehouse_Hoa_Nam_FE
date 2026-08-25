@@ -37,6 +37,12 @@ canvas {
   max-width: 100%;
 }
 
+/* Icon antd đặt width qua attribute 1em; max-width:100% ở trên tạo vòng co
+   kích thước trong nút chỉ-có-icon (svg teo còn vài px) — gỡ giới hạn. */
+.anticon svg {
+  max-width: none;
+}
+
 /* Code/SKU/serial/barcode dài không được nong layout. */
 .hn-value,
 .hn-mvp-source-screen .value,
@@ -240,13 +246,17 @@ canvas {
   overflow-wrap: anywhere;
 }
 
-/* Pill wireframe: cho phép wrap chữ, không nong viewport ở 320px. */
-.hn-pill,
-.hn-mvp-source-screen .pill,
-.ant-modal .pill,
-.ant-drawer .pill {
-  max-width: 100%;
-  white-space: normal;
+/* Pill wireframe: cho phép wrap chữ ở màn rất hẹp (<576px) để không nong
+   viewport; ở tablet/desktop giữ 1 dòng cho gọn (không ghi đè nowrap của
+   bảng .hn-mvp-source-screen td). */
+@media (max-width: 576px) {
+  .hn-pill,
+  .hn-mvp-source-screen .pill,
+  .ant-modal .pill,
+  .ant-drawer .pill {
+    max-width: 100%;
+    white-space: normal;
+  }
 }
 
 /* Token code (permission_key, SKU, UUID) phải bẻ được dòng ở màn hẹp. */

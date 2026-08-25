@@ -19,7 +19,7 @@ import {
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { toast } from "sonner";
-import { EditOutlined, PlusOutlined, ProfileOutlined } from "@ant-design/icons";
+import { EditOutlined, PlusOutlined } from "@ant-design/icons";
 import {
   catalogMasterSupportsBrand,
   createCatalogMaster,
@@ -350,34 +350,51 @@ export function CatalogMasterScreen() {
         />
       )}
 
-      <Row gutter={[12, 12]} align="middle" style={{ marginBottom: 12 }}>
-        <Col xs={24} md={12}>
-          <Input
-            allowClear
-            value={keyword}
-            placeholder={`Tìm mã / tên ${activeTab.itemLabel}`}
-            aria-label={`Tìm ${activeTab.itemLabel}`}
-            onChange={(event) => {
-              setKeyword(event.target.value);
-              setPage(1);
-            }}
-          />
+      <Row
+        justify="space-between"
+        align="middle"
+        gutter={[12, 12]}
+        style={{ marginBottom: 12 }}
+      >
+        <Col>
+          <Space wrap size={12}>
+            <Input
+              allowClear
+              value={keyword}
+              placeholder={`Tìm mã / tên ${activeTab.itemLabel}`}
+              aria-label={`Tìm ${activeTab.itemLabel}`}
+              style={{ width: 260 }}
+              onChange={(event) => {
+                setKeyword(event.target.value);
+                setPage(1);
+              }}
+            />
+            <Select<MasterStatus | "">
+              value={statusFilter}
+              style={{ width: 200 }}
+              aria-label="Lọc theo trạng thái"
+              onChange={(value) => {
+                setStatusFilter(value);
+                setPage(1);
+              }}
+              options={[
+                { value: "", label: "Trạng thái: Tất cả" },
+                ...STATUS_OPTIONS,
+              ]}
+            />
+          </Space>
         </Col>
-        <Col xs={24} md={12}>
-          <Select<MasterStatus | "">
-            value={statusFilter}
-            style={{ width: "100%" }}
-            aria-label="Lọc theo trạng thái"
-            onChange={(value) => {
-              setStatusFilter(value);
-              setPage(1);
-            }}
-            options={[
-              { value: "", label: "Trạng thái: Tất cả" },
-              ...STATUS_OPTIONS,
-            ]}
-          />
-        </Col>
+        {canManage && (
+          <Col>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={openCreate}
+            >
+              Tạo {activeTab.itemLabel}
+            </Button>
+          </Col>
+        )}
       </Row>
 
       <MvpPageSizeSelector
@@ -410,43 +427,6 @@ export function CatalogMasterScreen() {
 
   return (
     <Space orientation="vertical" size={16} style={{ width: "100%" }}>
-      <Row justify="space-between" align="middle" gutter={[12, 12]}>
-        <Col>
-          <Space align="center" wrap>
-            <ProfileOutlined />
-            <div>
-              <Typography.Title level={3} style={{ margin: 0 }}>
-                Danh mục sản phẩm
-              </Typography.Title>
-              <Typography.Text type="secondary">
-                Quản lý hãng, nhóm hàng, mẫu sản phẩm, nguồn điện và quy cách
-                đóng gói dùng khi tạo SKU.
-              </Typography.Text>
-            </div>
-          </Space>
-        </Col>
-        <Col>
-          <Space wrap>
-            {canManage && (
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={openCreate}
-              >
-                Tạo {activeTab.itemLabel}
-              </Button>
-            )}
-          </Space>
-        </Col>
-      </Row>
-
-      <Alert
-        type="info"
-        showIcon
-        title="Quy tắc sử dụng danh mục"
-        description="Danh mục không xóa trực tiếp: khi không còn dùng, chuyển sang trạng thái Ngừng sử dụng. Mã đã được SKU tham chiếu không thể đổi; muốn đổi mã cần tạo danh mục mới. Mẫu sản phẩm chỉ được gắn với hãng đang sử dụng."
-      />
-
       <Card styles={{ body: { paddingTop: 12 } }}>
         <Tabs
           activeKey={activeKind}

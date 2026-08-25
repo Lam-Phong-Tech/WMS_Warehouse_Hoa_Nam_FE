@@ -188,13 +188,20 @@ export const router = createBrowserRouter([
           },
           {
             path: ROUTES.MASTER_DATA,
-            element: routeEl(ROUTES.MASTER_DATA, <SkuMasterScreen />),
+            element: routeEl(
+              ROUTES.MASTER_DATA,
+              <div className="hn-mvp-source-screen">
+                <SkuMasterScreen />
+              </div>,
+            ),
           },
           {
             path: ROUTES.SKU_CREATE,
             element: routeEl(
               ROUTES.SKU_CREATE,
-              <SkuMasterScreen openCreateOnMount />,
+              <div className="hn-mvp-source-screen">
+                <SkuMasterScreen openCreateOnMount />
+              </div>,
             ),
           },
           {
@@ -210,24 +217,38 @@ export const router = createBrowserRouter([
           },
           {
             path: ROUTES.AGENCIES,
-            element: routeEl(ROUTES.AGENCIES, <AgencyMasterScreen />),
+            element: routeEl(
+              ROUTES.AGENCIES,
+              <div className="hn-mvp-source-screen">
+                <AgencyMasterScreen />
+              </div>,
+            ),
           },
           {
             path: ROUTES.AGENCY_CREATE,
             element: routeEl(
               ROUTES.AGENCY_CREATE,
-              <AgencyMasterScreen openCreateOnMount />,
+              <div className="hn-mvp-source-screen">
+                <AgencyMasterScreen openCreateOnMount />
+              </div>,
             ),
           },
           {
             path: ROUTES.DEFECTS,
-            element: routeEl(ROUTES.DEFECTS, <DefectMasterScreen />),
+            element: routeEl(
+              ROUTES.DEFECTS,
+              <div className="hn-mvp-source-screen">
+                <DefectMasterScreen />
+              </div>,
+            ),
           },
           {
             path: ROUTES.DEFECT_CREATE,
             element: routeEl(
               ROUTES.DEFECT_CREATE,
-              <DefectMasterScreen openCreateOnMount />,
+              <div className="hn-mvp-source-screen">
+                <DefectMasterScreen openCreateOnMount />
+              </div>,
             ),
           },
           {

@@ -31,6 +31,8 @@ const NAV_GROUPS: NavGroup[] = [
     name: "01 · Hệ thống & danh mục",
     items: [
       {
+        // Gộp cả tab "Vai trò & ma trận quyền" và "Phòng ban" bên trong
+        // (IamUsersGd1Page); route /system/roles vẫn sống cho deep-link.
         screen: "IAM-01",
         path: ROUTES.IAM_USERS,
         label: "Danh sách người dùng & phân quyền",

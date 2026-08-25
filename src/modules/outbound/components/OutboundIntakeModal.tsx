@@ -3,6 +3,7 @@ import {
   Alert,
   Button,
   Card,
+  DatePicker,
   Form,
   Input,
   InputNumber,
@@ -14,6 +15,8 @@ import {
   Typography,
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
+import type { Dayjs } from "dayjs";
+import dayjs from "dayjs";
 import { toast } from "sonner";
 import {
   CheckCircleOutlined,
@@ -46,7 +49,7 @@ type IntakeMode = "manual" | "excel";
 
 type IntakeFormValues = {
   request_no: string;
-  request_date?: string;
+  request_date?: Dayjs;
   agency_id?: string;
   recipient_name: string;
   recipient_address?: string;
@@ -175,7 +178,9 @@ export function OutboundIntakeModal({
       const values = await form.validateFields();
       const rows: OutboundRequestRowInput[] = values.lines.map((line) => ({
         request_no: values.request_no.trim(),
-        request_date: (values.request_date ?? "").trim() || undefined,
+        request_date: values.request_date
+          ? values.request_date.format("YYYY-MM-DD")
+          : undefined,
         customer_name: values.recipient_name.trim(),
         customer_address: (values.recipient_address ?? "").trim(),
         recipient_contact_phone:
@@ -517,7 +522,14 @@ export function OutboundIntakeModal({
                 />
               </Form.Item>
               <Form.Item name="request_date" label="Ngày toa">
-                <Input type="date" aria-label="Ngày toa" />
+                <DatePicker
+                  style={{ width: "100%" }}
+                  format="DD/MM/YYYY"
+                  aria-label="Ngày toa"
+                  disabledDate={(current) =>
+                    !!current && current > dayjs().endOf("day")
+                  }
+                />
               </Form.Item>
             </div>
 

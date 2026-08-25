@@ -16,7 +16,7 @@ import {
   Tag,
   Typography,
 } from "antd";
-import { HomeOutlined, SaveOutlined } from "@ant-design/icons";
+import { SaveOutlined } from "@ant-design/icons";
 import {
   fetchWarehouse,
   fetchWarehouses,
@@ -188,36 +188,21 @@ export function WarehouseConfigScreen() {
 
   return (
     <Space orientation="vertical" size={16} style={{ width: "100%" }}>
-      <Row justify="space-between" align="middle" gutter={[12, 12]}>
+      <Row justify="end">
         <Col>
-          <Space align="center" wrap>
-            <HomeOutlined />
-            <div>
-              <Typography.Title level={3} style={{ margin: 0 }}>
-                Cấu hình kho
-              </Typography.Title>
-              <Typography.Text type="secondary">
-                Quản lý thông tin, liên hệ và trạng thái của kho tổng.
-              </Typography.Text>
-            </div>
-          </Space>
-        </Col>
-        <Col>
-          <Space wrap>
-            {statusChanged ? (
-              <Popconfirm
-                title="Đổi trạng thái kho?"
-                description="Hệ thống chỉ cho phép đúng một kho Đang hoạt động. Thao tác đổi trạng thái không tạo chứng từ và không làm thay đổi tồn kho."
-                okText="Đồng ý"
-                cancelText="Hủy"
-                onConfirm={handleSubmit}
-              >
-                {saveButton}
-              </Popconfirm>
-            ) : (
-              saveButton
-            )}
-          </Space>
+          {statusChanged ? (
+            <Popconfirm
+              title="Đổi trạng thái kho?"
+              description="Hệ thống chỉ cho phép đúng một kho Đang hoạt động. Thao tác đổi trạng thái không tạo chứng từ và không làm thay đổi tồn kho."
+              okText="Đồng ý"
+              cancelText="Hủy"
+              onConfirm={handleSubmit}
+            >
+              {saveButton}
+            </Popconfirm>
+          ) : (
+            saveButton
+          )}
         </Col>
       </Row>
 
