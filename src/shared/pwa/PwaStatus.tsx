@@ -32,8 +32,9 @@ export function PwaStatus() {
       <div className="wms-pwa-status wms-pwa-status--offline" role="status">
         <strong>Đang ngoại tuyến.</strong>
         <span>
-          Chỉ giao diện tĩnh có thể dùng từ cache. Dữ liệu nghiệp vụ không được
-          cache và mọi thao tác ghi đã bị khóa; hãy kết nối mạng rồi thử lại.
+          Chỉ giao diện tĩnh có thể dùng từ bộ nhớ tạm. Dữ liệu nghiệp vụ không
+          được lưu tạm và mọi thao tác ghi đã bị khóa; hãy kết nối mạng rồi thử
+          lại.
         </span>
       </div>
     );
@@ -42,7 +43,8 @@ export function PwaStatus() {
   return (
     <div className="wms-pwa-status wms-pwa-status--update" role="status">
       <span>
-        Có phiên bản ứng dụng mới, cần tải lại để tránh chạy bundle cũ.
+        Có phiên bản ứng dụng mới, cần tải lại để tránh dùng phiên bản giao diện
+        cũ.
       </span>
       <button type="button" onClick={activateWaitingServiceWorker}>
         Cập nhật ngay
