@@ -67,11 +67,6 @@ const ReportsPage = lazy(() =>
     default: m.default,
   })),
 );
-const MvpSourceScreen = lazy(() =>
-  import("@/shared/components/mvp/MvpSourceScreen").then((m) => ({
-    default: m.MvpSourceScreen,
-  })),
-);
 
 type ScreenMeta = {
   title: string;
@@ -81,7 +76,8 @@ type ScreenMeta = {
 const MVP_SCREEN_META: Record<string, ScreenMeta> = {
   "MAP-01": {
     title: "Bản đồ màn hình & phạm vi",
-    description: "Tổng quan phạm vi giao diện MVP, không bao gồm ứng dụng phân vùng.",
+    description:
+      "Tổng quan phạm vi giao diện MVP, không bao gồm ứng dụng phân vùng.",
   },
   "IAM-01": {
     title: "Danh sách người dùng & phân quyền",
@@ -122,7 +118,8 @@ const MVP_SCREEN_META: Record<string, ScreenMeta> = {
   },
   "OUT-REQ-01": {
     title: "Tiếp nhận phiếu yêu cầu xuất",
-    description: "Tiếp nhận phiếu yêu cầu xuất, có thể nhập dữ liệu từ tệp Excel.",
+    description:
+      "Tiếp nhận phiếu yêu cầu xuất, có thể nhập dữ liệu từ tệp Excel.",
   },
   "OUT-01": {
     title: "Danh sách phiếu xuất",
@@ -146,9 +143,18 @@ const MVP_SCREEN_META: Record<string, ScreenMeta> = {
     description:
       "Gán RFID khi có thẻ và kiểm tra đủ điều kiện trước khi hoàn tất xuất kho.",
   },
-  "WAR-01": { title: "Danh sách bảo hành", description: "Danh sách bảo hành." },
-  "WAR-02": { title: "Tiếp nhận bảo hành", description: "Tiếp nhận bảo hành." },
-  "WAR-03": { title: "Chi tiết bảo hành", description: "Chi tiết bảo hành." },
+  "WAR-01": {
+    title: "Danh sách bảo hành",
+    description: "Danh sách bảo hành.",
+  },
+  "WAR-02": {
+    title: "Tiếp nhận bảo hành",
+    description: "Tiếp nhận bảo hành.",
+  },
+  "WAR-03": {
+    title: "Chi tiết bảo hành",
+    description: "Chi tiết bảo hành.",
+  },
   "COMP-01": {
     title: "Xuất linh kiện cho bảo hành",
     description: "Xuất linh kiện cho bảo hành.",
@@ -193,8 +199,6 @@ const ROUTE_DEFAULT_SCREEN: Record<string, string> = {
 };
 
 const ROUTE_META: Record<string, ScreenMeta> = {
-  // SCR-MST-01 / SCR-WH-01 nằm ngoài bộ wireframe MVP nên render qua Outlet
-  // (giữ nguyên route guard RequirePermission) thay vì renderMvpScreen.
   [ROUTES.CATALOG_MASTER]: {
     title: "Danh mục sản phẩm",
     description:
@@ -303,21 +307,18 @@ function renderMvpScreen(sourceScreen: string, requestedScreen: string | null) {
         </div>
       );
     case "WAR-01":
-      // WarrantyPage tự đọc ?screen=WAR-02/WAR-03/COMP-01 để mở modal tương ứng.
       return (
         <div className="hn-mvp-source-screen">
           <WarrantyPage />
         </div>
       );
     case "INV-01":
-      // InventoryPage tự đọc ?screen=TRACE-01 để mở modal truy vết.
       return (
         <div className="hn-mvp-source-screen">
           <InventoryPage />
         </div>
       );
     case "REV-00":
-      // ReversalPage tự đọc ?screen=REV-01 để mở modal tạo reversal.
       return (
         <div className="hn-mvp-source-screen">
           <ReversalPage />
@@ -330,11 +331,10 @@ function renderMvpScreen(sourceScreen: string, requestedScreen: string | null) {
         </div>
       );
     default:
-      return <MvpSourceScreen screenId={sourceScreen} />;
+      return <Outlet />;
   }
 }
 
-/** Exact DOM shell of HN_WMS_Wireframe_MVP.html with selected edit flows folded into modals. */
 export function MainLayout() {
   const location = useLocation();
   const isProfileLoaded = useAuthStore((state) => state.isProfileLoaded);
