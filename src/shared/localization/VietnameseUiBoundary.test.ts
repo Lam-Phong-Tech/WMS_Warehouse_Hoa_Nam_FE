@@ -71,6 +71,18 @@ describe("translateUserFacingText", () => {
     }
   });
 
+  it("localizes browser/network errors that do not come from the backend", () => {
+    expect(translateUserFacingText("Network Error")).toBe(
+      "Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.",
+    );
+    expect(translateUserFacingText("Failed to fetch")).toBe(
+      "Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.",
+    );
+    expect(translateUserFacingText("timeout of 10000ms exceeded")).toBe(
+      "Yêu cầu quá thời gian, vui lòng thử lại.",
+    );
+  });
+
   it("keeps approved technical identifiers that users may legitimately need", () => {
     expect(translateUserFacingText("SKU · QR · RFID")).toBe("SKU · QR · RFID");
     expect(translateUserFacingText("sku.manage")).toBe("sku.manage");
