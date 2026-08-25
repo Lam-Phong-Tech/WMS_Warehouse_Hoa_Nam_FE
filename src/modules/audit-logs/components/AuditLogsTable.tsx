@@ -4,27 +4,25 @@ import { DataTable, TopPagination } from "@/shared/components";
 import type { ColumnWithSortType } from "@/shared/components";
 import type { AuditLog } from "../types/audit-logs.types";
 import { formatDateTime } from "@/shared/utils/format-date";
+import {
+  AUDIT_ACTION_LABELS,
+  businessLabel,
+} from "@/shared/constants/business-labels";
 
 const { Text } = Typography;
 
-/**
- * Mapping action sang màu và nhãn hiển thị
- */
-const ACTION_CONFIG: Record<string, { color: string; label: string }> = {
-  CREATE: { color: "green", label: "Tạo mới" },
-  UPDATE: { color: "blue", label: "Cập nhật" },
-  DELETE: { color: "red", label: "Xóa" },
-  REVOKE_ROLE_SCOPE: { color: "orange", label: "Thu hồi quyền" },
-  SYNC_ROLE_SCOPES: { color: "purple", label: "Đồng bộ quyền" },
-  SUBMIT: { color: "cyan", label: "Nộp" },
-  CANCEL: { color: "magenta", label: "Hủy" },
-  ARCHIVE: { color: "gray", label: "Lưu trữ" },
-  RESTORE: { color: "lime", label: "Khôi phục" },
+const ACTION_COLOR: Record<string, string> = {
+  CREATE: "green",
+  UPDATE: "blue",
+  DELETE: "red",
+  REVOKE_ROLE_SCOPE: "orange",
+  SYNC_ROLE_SCOPES: "purple",
+  SUBMIT: "cyan",
+  CANCEL: "magenta",
+  ARCHIVE: "gray",
+  RESTORE: "lime",
 };
 
-/**
- * Mapping module sang nhãn hiển thị
- */
 const MODULE_LABELS: Record<string, string> = {
   Employees: "Nhân sự",
   User: "Người dùng",
@@ -32,6 +30,10 @@ const MODULE_LABELS: Record<string, string> = {
   OrgUnits: "Đơn vị",
   Departments: "Phòng ban",
   Roles: "Vai trò",
+  Warehouse: "Kho",
+  Inventory: "Tồn kho",
+  Warranty: "Bảo hành",
+  Auth: "Tài khoản & đăng nhập",
 };
 
 export interface AuditLogsTableProps {
@@ -46,7 +48,6 @@ export interface AuditLogsTableProps {
   onSortChange?: (field?: string, order?: "asc" | "desc") => void;
 }
 
-/** Bảng danh sách audit logs */
 export function AuditLogsTable({
   data,
   loading,
@@ -70,22 +71,20 @@ export function AuditLogsTable({
       title: "Hành động",
       dataIndex: "action",
       key: "action",
-      width: 150,
-      render: (action: string) => {
-        const config = ACTION_CONFIG[action] || {
-          color: "default",
-          label: action,
-        };
-        return <Tag color={config.color}>{config.label}</Tag>;
-      },
+      width: 190,
+      render: (action: string) => (
+        <Tag color={ACTION_COLOR[action] ?? "default"}>
+          {businessLabel(AUDIT_ACTION_LABELS, action, "Hành động khác")}
+        </Tag>
+      ),
     },
     {
-      title: "Module",
+      title: "Phân hệ",
       dataIndex: "module",
       key: "module",
-      width: 120,
+      width: 160,
       render: (module: string) => (
-        <Text>{MODULE_LABELS[module] || module}</Text>
+        <Text>{MODULE_LABELS[module] || "Phân hệ khác"}</Text>
       ),
     },
     {
@@ -93,10 +92,8 @@ export function AuditLogsTable({
       dataIndex: "auditable_type",
       key: "auditable_type",
       width: 180,
-      render: (auditable_type: string, record: AuditLog) => (
-        <Text>
-          {auditable_type} #{record.auditable_id}
-        </Text>
+      render: (_auditableType: string, record: AuditLog) => (
+        <Text>Mã #{record.auditable_id}</Text>
       ),
     },
     {
@@ -105,11 +102,11 @@ export function AuditLogsTable({
       key: "user_email",
       width: 200,
       render: (user: AuditLog["user"]) => (
-        <Text copyable>{user?.email || "N/A"}</Text>
+        <Text copyable>{user?.email || "Không có"}</Text>
       ),
     },
     {
-      title: "IP Address",
+      title: "Địa chỉ IP",
       dataIndex: "ip_address",
       key: "ip_address",
       width: 140,
@@ -133,8 +130,9 @@ export function AuditLogsTable({
             <Button
               size="small"
               icon={<EyeOutlined />}
+              aria-label="Xem chi tiết nhật ký"
               onClick={() => onView(record)}
-            ></Button>
+            />
           )}
         </Space>
       ),
