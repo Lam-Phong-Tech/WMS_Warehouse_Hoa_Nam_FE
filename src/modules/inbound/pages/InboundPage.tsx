@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import {
   Button,
-  Progress,
   Select,
   Space,
   Table,
@@ -16,7 +15,6 @@ import {
 } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import { useSearchParams } from "react-router-dom";
-import { ActionDropdown } from "@/shared/components/feedback/ActionDropdown";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import {
   TableLoadingBanner,
@@ -37,15 +35,13 @@ import { useInboundDocuments } from "@/modules/inbound/hooks/use-inbound";
 import { InboundScanModal } from "@/modules/inbound/pages/MvpInboundScreens";
 import type { InboundDocument } from "@/modules/inbound/types";
 
-const STATUS_OPTIONS: Array<{
-  label: string;
-  value: InboundDocument["status"];
-}> = Object.entries(INBOUND_STATUS_LABELS).map(([value, label]) => ({
-  value: value as InboundDocument["status"],
-  label,
-}));
-
-const PAGE_SIZE_OPTIONS = [15, 20, 50, 100];
+const STATUS_OPTIONS = Object.entries(INBOUND_STATUS_LABELS).map(
+  ([value, label]) => ({
+    value: value as InboundDocument["status"],
+    label,
+  }),
+);
+const PAGE_SIZE_OPTIONS = [10, 20, 50];
 const SEARCH_DEBOUNCE_MS = 250;
 
 function statusTag(status: InboundDocument["status"]) {
@@ -76,7 +72,7 @@ function InboundListScreen() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<string | undefined>();
   const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(15);
+  const [perPage, setPerPage] = useState(10);
   const [draftOpen, setDraftOpen] = useState(false);
   const [draftDocumentId, setDraftDocumentId] = useState<string | null>(null);
   const [scanDocumentId, setScanDocumentId] = useState<string | null>(null);
@@ -96,7 +92,6 @@ function InboundListScreen() {
   useEffect(() => {
     const requestedScreen = searchParams.get("screen");
     if (requestedScreen !== "IN-02" && requestedScreen !== "IN-03") return;
-
     const id = searchParams.get("id");
     if (requestedScreen === "IN-02") {
       setDraftDocumentId(id);
@@ -104,7 +99,6 @@ function InboundListScreen() {
     } else if (id) {
       setScanDocumentId(id);
     }
-
     const nextParams = new URLSearchParams(searchParams);
     nextParams.set("screen", "IN-01");
     nextParams.delete("id");
@@ -116,19 +110,8 @@ function InboundListScreen() {
       setSearch(searchInput.trim());
       setPage(1);
     }, SEARCH_DEBOUNCE_MS);
-
     return () => window.clearTimeout(timer);
   }, [searchInput]);
-
-  const openCreateModal = () => {
-    setDraftDocumentId(null);
-    setDraftOpen(true);
-  };
-
-  const openEditModal = (documentId: string) => {
-    setDraftDocumentId(documentId);
-    setDraftOpen(true);
-  };
 
   const closeDraftModal = () => {
     setDraftOpen(false);
@@ -140,23 +123,16 @@ function InboundListScreen() {
     setScanDocumentId(documentId);
   };
 
-  const openExpectedCorrectionFromScan = (documentId: string) => {
-    setScanDocumentId(null);
-    openEditModal(documentId);
-  };
-
-  // WWHN-217 · D-217-01: Back của trình duyệt (và nút Back cứng/cử chỉ vuốt trên
-  // Chrome Android — thiết bị bắt buộc theo NFR-SRS-006) phải đóng overlay IN-02/IN-03
-  // và giữ người dùng ở IN-01, thay vì rời hẳn màn nhập kho giữa lúc đang quét dở.
-  // Gộp mọi overlay của màn vào MỘT cờ để bước chuyển IN-02 -> IN-03 (lưu nháp rồi
-  // sang scan) không sinh cặp push/pop chồng nhau trong cùng một commit.
   const overlayOpen = draftOpen || scanDocumentId !== null;
-  const closeOverlays = () => {
-    setDraftOpen(false);
-    setDraftDocumentId(null);
-    setScanDocumentId(null);
-  };
-  useOverlayBackDismiss(overlayOpen, closeOverlays, "IN-01-overlay");
+  useOverlayBackDismiss(
+    overlayOpen,
+    () => {
+      setDraftOpen(false);
+      setDraftDocumentId(null);
+      setScanDocumentId(null);
+    },
+    "IN-01-overlay",
+  );
 
   const columns: ColumnsType<InboundDocument> = [
     {
@@ -175,32 +151,17 @@ function InboundListScreen() {
       render: (value: string) => value || "-",
     },
     {
-      title: "Tiến độ quét",
-      key: "progress",
-      width: 220,
-      render: (_, row) => {
-        const percent =
-          row.expected > 0
-            ? Math.min(100, Math.round((row.scanned / row.expected) * 100))
-            : 0;
-        return (
-          <div style={{ minWidth: 170 }}>
-            <Progress
-              percent={percent}
-              size="small"
-              status={row.status === "POSTED" ? "success" : "normal"}
-            />
-            <span style={{ fontSize: 12 }}>
-              {row.scanned} / {row.expected}
-            </span>
-          </div>
-        );
-      },
+      title: "Số lượng đã quét",
+      dataIndex: "scanned",
+      key: "scanned",
+      width: 150,
+      align: "right",
+      render: (value: number) => value.toLocaleString("vi-VN"),
     },
     {
       title: "Trạng thái",
       dataIndex: "status",
-      width: 170,
+      width: 160,
       render: statusTag,
     },
     {
@@ -212,47 +173,36 @@ function InboundListScreen() {
     {
       title: "Hành động",
       key: "actions",
-      width: 210,
+      width: 230,
       fixed: "right",
       render: (_, row) => {
         const mutable = row.status === "DRAFT" || row.status === "SCANNING";
-        const primaryLabel =
-          mutable && canScan
-            ? row.status === "DRAFT"
-              ? "Bắt đầu quét"
-              : "Tiếp tục quét"
-            : "Xem";
-
         return (
-          <Space size={2}>
+          <Space size={4} wrap>
             <Button
               type="link"
               size="small"
               icon={mutable && canScan ? <ScanOutlined /> : <EyeOutlined />}
               onClick={() => setScanDocumentId(row.id)}
             >
-              {primaryLabel}
+              {mutable && canScan
+                ? row.status === "DRAFT"
+                  ? "Bắt đầu quét"
+                  : "Tiếp tục quét"
+                : "Xem"}
             </Button>
             {canCreate && mutable ? (
-              <ActionDropdown
-                tooltip={
-                  row.status === "SCANNING"
-                    ? "Điều chỉnh số lượng dự kiến"
-                    : "Sửa phiếu nháp"
-                }
+              <Button
+                type="link"
+                size="small"
                 icon={<EditOutlined />}
-                items={[
-                  {
-                    key: "edit-inbound",
-                    label:
-                      row.status === "SCANNING"
-                        ? "Điều chỉnh số lượng dự kiến"
-                        : "Sửa phiếu",
-                    icon: <EditOutlined />,
-                    onClick: () => openEditModal(row.id),
-                  },
-                ]}
-              />
+                onClick={() => {
+                  setDraftDocumentId(row.id);
+                  setDraftOpen(true);
+                }}
+              >
+                Sửa thông tin
+              </Button>
             ) : null}
           </Space>
         );
@@ -295,7 +245,10 @@ function InboundListScreen() {
           <button
             className="btn primary"
             type="button"
-            onClick={openCreateModal}
+            onClick={() => {
+              setDraftDocumentId(null);
+              setDraftOpen(true);
+            }}
           >
             <PlusOutlined /> Tạo phiếu nhập
           </button>
@@ -317,8 +270,6 @@ function InboundListScreen() {
           size="small"
           value={perPage}
           style={{ width: 110 }}
-          showSearch={false}
-          labelRender={({ value }) => `${value} / trang`}
           options={PAGE_SIZE_OPTIONS.map((size) => ({
             value: size,
             label: `${size} / trang`,
@@ -366,7 +317,6 @@ function InboundListScreen() {
           documentId={scanDocumentId}
           onClose={() => setScanDocumentId(null)}
           onChanged={() => void query.refetch()}
-          onEditExpected={() => openExpectedCorrectionFromScan(scanDocumentId)}
         />
       ) : null}
     </div>
