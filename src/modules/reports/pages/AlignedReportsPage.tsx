@@ -29,6 +29,14 @@ import {
   WMS_ACTION_PERMISSIONS,
   WMS_PERMISSION_CATALOG,
 } from "@/shared/constants/wms-permissions";
+import {
+  INVENTORY_STOCK_STATUS_LABELS,
+  MOVEMENT_TYPE_LABELS,
+  RECONCILE_STATUS_LABELS,
+  SOURCE_DOCUMENT_TYPE_LABELS,
+  WARRANTY_IDENTIFICATION_STATUS_LABELS,
+  businessLabel,
+} from "@/shared/constants/business-labels";
 import { UI_STATE, uiStateProps } from "@/shared/constants/ui-state";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { MvpPageSizeSelector } from "@/shared/components/mvp/MvpListPagination";
@@ -59,20 +67,7 @@ type ReportKey =
 
 type SelectOption = { value: string; label: string };
 
-/**
- * §13.8 Privacy Contract: "PII export requires warranty.pii.export + reason".
- * BE `AlignedWarrantyReportController::PII_REASON_MIN_LENGTH` từ chối reason ngắn
- * hơn 5 ký tự bằng 422 `PII_EXPORT_REASON_INVALID`; giữ cùng ngưỡng ở client để
- * người dùng không phải bấm export mới biết mình gõ thiếu.
- */
 const PII_REASON_MIN_LENGTH = 5;
-
-/**
- * BE chặn mọi file export quá 10.000 dòng bằng 422
- * `REPORT_EXPORT_ROW_LIMIT_EXCEEDED`. Màn hình biết `pagination.total` trước khi
- * bấm export nên phải cảnh báo trước, thay vì để người dùng chờ hết vòng tạo job
- * rồi mới nhận lỗi.
- */
 const EXPORT_ROW_LIMIT = 10000;
 
 type ReportConfig = {
@@ -82,7 +77,6 @@ type ReportConfig = {
   rowsKey?: "rows" | "lines";
   fileStem: string;
   dateFilter?: boolean;
-  /** report_code dùng cho Annex C createReportExport (POST /reports/export). */
   reportCode: string;
 };
 
@@ -112,7 +106,7 @@ const CONFIG: Record<ReportKey, ReportConfig> = {
     reportCode: "document-history",
   },
   "movement-trace": {
-    label: "Movement / Trace",
+    label: "Biến động / Truy vết",
     endpoint: API_ENDPOINTS.REPORTS_MOVEMENT_TRACE,
     exportEndpoint: API_ENDPOINTS.REPORTS_MOVEMENT_TRACE_EXPORT_EXCEL,
     fileStem: "movement-trace",
@@ -128,7 +122,7 @@ const CONFIG: Record<ReportKey, ReportConfig> = {
     reportCode: "import-match",
   },
   "label-log": {
-    label: "Packing Label",
+    label: "Nhật ký nhãn đóng gói",
     endpoint: API_ENDPOINTS.REPORTS_LABEL_LOG,
     exportEndpoint: API_ENDPOINTS.REPORTS_LABEL_LOG_EXPORT_EXCEL,
     fileStem: "packing-label-log",
@@ -159,6 +153,37 @@ const MOVEMENT_COLORS: Record<string, string> = {
   ISSUE: "orange",
   COMPONENT_ISSUE: "purple",
   REVERSAL: "red",
+};
+
+const MOVEMENT_LABELS: Readonly<Record<string, string>> = {
+  OPENING: "Tồn đầu kỳ",
+  ...MOVEMENT_TYPE_LABELS,
+};
+
+const RECONCILE_LABELS: Readonly<Record<string, string>> = {
+  ...RECONCILE_STATUS_LABELS,
+  NOT_APPLICABLE: "Không áp dụng",
+};
+
+const REPORT_STATUS_LABELS: Readonly<Record<string, string>> = {
+  DRAFT: "Nháp",
+  SCANNING: "Đang quét",
+  POSTED: "Đã ghi nhận",
+  CANCELLED: "Đã hủy",
+  UPLOADED: "Đã tải lên",
+  VALIDATED: "Đã kiểm tra",
+  CONSUMED: "Đã sử dụng",
+  REJECTED: "Đã từ chối",
+  PENDING_PRINT: "Chờ in",
+  PRINTED: "Đã in",
+  PRINT_FAILED: "In thất bại",
+  RECEIVED: "Đã tiếp nhận",
+  CHECKING: "Đang kiểm tra",
+  REPAIRING: "Đang sửa chữa",
+  COMPLETED: "Đã hoàn tất",
+  RETURNED: "Đã trả khách",
+  IDENTIFIED: WARRANTY_IDENTIFICATION_STATUS_LABELS.IDENTIFIED,
+  TEMP_ONLY: WARRANTY_IDENTIFICATION_STATUS_LABELS.TEMP_ONLY,
 };
 
 const STATUS_COLORS: Record<string, string> = {
@@ -200,15 +225,10 @@ function objectOf(value: unknown): Raw {
     : {};
 }
 
-/**
- * download_url của ExportJob là đường dẫn tuyệt đối `/api/v1/...`, còn axios đã
- * gắn sẵn baseURL kết thúc ở `/api/v1` nên phải cắt tiền tố để không gọi trùng.
- */
 function stripApiPrefix(url: string): string {
   return url.replace(/^\/api\/v1/, "");
 }
 
-/** Annex C createReportExport yêu cầu Idempotency-Key cho mỗi lần tạo job. */
 function createIdempotencyKey(): string {
   const cryptoApi = globalThis.crypto;
   if (typeof cryptoApi?.randomUUID === "function") {
@@ -257,7 +277,6 @@ function usePrinterOptions(): { options: SelectOption[]; loading: boolean } {
   };
 }
 
-/** §13.10 RPT-LABEL-01 có filter "actor" — người thực hiện lần in nhãn. */
 function useActorOptions(enabled: boolean): {
   options: SelectOption[];
   loading: boolean;
@@ -282,7 +301,6 @@ function useActorOptions(enabled: boolean): {
   };
 }
 
-/** §13.10: RPT-INV-01 và RPT-XNT-01 đều lọc theo category. */
 function useCategoryOptions(): { options: SelectOption[]; loading: boolean } {
   const query = useQuery({
     queryKey: ["product-categories", "flow06-filter"],
@@ -305,6 +323,14 @@ function useCategoryOptions(): { options: SelectOption[]; loading: boolean } {
   };
 }
 
+function reportStatusLabel(value: unknown): string {
+  return businessLabel(REPORT_STATUS_LABELS, text(value, ""));
+}
+
+function stockStatusLabel(value: unknown): string {
+  return businessLabel(INVENTORY_STOCK_STATUS_LABELS, text(value, ""));
+}
+
 function columnsFor(
   report: ReportKey,
   canViewPii: boolean,
@@ -320,9 +346,13 @@ function columnsFor(
           fixed: "left",
         },
         { title: "Tên SKU", dataIndex: "product_name", width: 220 },
-        // §13.10 RPT-INV-01: category, serial_qty, box_qty, location_hint.
         { title: "Nhóm hàng", dataIndex: "category", width: 140 },
-        { title: "Trạng thái", dataIndex: "stock_status", width: 130 },
+        {
+          title: "Trạng thái",
+          dataIndex: "stock_status",
+          width: 150,
+          render: (value) => <Tag>{stockStatusLabel(value)}</Tag>,
+        },
         {
           title: "Tồn kho",
           dataIndex: "on_hand_qty",
@@ -336,7 +366,7 @@ function columnsFor(
           render: fmt,
         },
         {
-          title: "Serial",
+          title: "Số sê-ri",
           dataIndex: "serial_qty",
           align: "right",
           render: fmt,
@@ -349,7 +379,7 @@ function columnsFor(
         },
         { title: "Vị trí gợi ý", dataIndex: "location_hint", width: 150 },
         {
-          title: "Ledger",
+          title: "Sổ tồn kho",
           dataIndex: "ledger_qty",
           align: "right",
           render: fmt,
@@ -363,21 +393,22 @@ function columnsFor(
         {
           title: "Đối soát",
           dataIndex: "reconciliation_status",
-          width: 130,
+          width: 150,
           render: (v) => {
             const status = text(v, "");
-            // as_of quá khứ ⇒ NOT_APPLICABLE: ledger đã cắt theo mốc nên so với
-            // balance hiện tại là vô nghĩa, không phải divergence.
             const color =
               status === "MATCH"
                 ? "success"
                 : status === "NOT_APPLICABLE"
                   ? "default"
                   : "error";
-            return <Tag color={color}>{status || "-"}</Tag>;
+            return (
+              <Tag color={color}>
+                {businessLabel(RECONCILE_LABELS, status)}
+              </Tag>
+            );
           },
         },
-        // §13.10 RPT-INV-01 liệt kê updated_at trong bộ cột bắt buộc.
         { title: "Cập nhật", dataIndex: "updated_at", width: 170 },
       ];
     case "xnt":
@@ -390,17 +421,18 @@ function columnsFor(
           fixed: "left",
         },
         { title: "Tên SKU", dataIndex: "product_name", width: 210 },
-        { title: "Tồn", dataIndex: "stock_status", width: 120 },
+        {
+          title: "Trạng thái tồn",
+          dataIndex: "stock_status",
+          width: 140,
+          render: (value) => stockStatusLabel(value),
+        },
         { title: "Đầu kỳ", dataIndex: "opening", align: "right", render: fmt },
-        // WWHN-240 / BR-RPT-01..07 "hiển thị gross/net" + BR-REV-11 "report hiển thị
-        // movement gốc, toàn bộ Reversal chain và net effect". Một cột "Reversal" gộp
-        // hai chiều thì người đọc không biết Nhập/Xuất thực của kỳ là bao nhiêu, nên
-        // mỗi chiều tách thành ba cột gross / đã đảo / thuần.
         {
           title: "Nhập",
           children: [
             {
-              title: "Gross",
+              title: "Tổng phát sinh",
               dataIndex: "receipt_gross",
               align: "right",
               render: (_: unknown, row: Raw) =>
@@ -425,7 +457,7 @@ function columnsFor(
           title: "Xuất",
           children: [
             {
-              title: "Gross",
+              title: "Tổng phát sinh",
               dataIndex: "issue_gross",
               align: "right",
               render: (_: unknown, row: Raw) =>
@@ -446,10 +478,10 @@ function columnsFor(
           ],
         },
         {
-          title: "Xuất LK",
+          title: "Xuất linh kiện",
           children: [
             {
-              title: "Gross",
+              title: "Tổng phát sinh",
               dataIndex: "component_issue_gross",
               align: "right",
               render: (_: unknown, row: Raw) =>
@@ -471,7 +503,7 @@ function columnsFor(
           ],
         },
         {
-          title: "Reversal net",
+          title: "Điều chỉnh thuần",
           dataIndex: "reversal_net",
           align: "right",
           render: fmt,
@@ -486,25 +518,30 @@ function columnsFor(
           width: 160,
           fixed: "left",
         },
-        { title: "Loại", dataIndex: "doc_type", width: 100 },
+        {
+          title: "Loại",
+          dataIndex: "doc_type",
+          width: 120,
+          render: (value) =>
+            businessLabel(SOURCE_DOCUMENT_TYPE_LABELS, text(value, "")),
+        },
         { title: "Kho", dataIndex: "warehouse_code", width: 100 },
         { title: "Đối tác/Nơi nhận", dataIndex: "counterpart", width: 200 },
         { title: "Ngày", dataIndex: "document_date", width: 120 },
         {
           title: "Trạng thái",
           dataIndex: "status",
-          width: 120,
+          width: 130,
           render: statusTag,
         },
         { title: "Người tạo", dataIndex: "created_by_name", width: 140 },
-        { title: "Người post", dataIndex: "posted_by_name", width: 140 },
-        { title: "Posted at", dataIndex: "posted_at", width: 170 },
+        { title: "Người ghi nhận", dataIndex: "posted_by_name", width: 140 },
+        { title: "Thời điểm ghi nhận", dataIndex: "posted_at", width: 170 },
       ];
     case "movement-trace":
       return [
-        // §13.10 RPT-MOV-01: movement_id là cột đầu tiên, khoá truy ngược ledger.
         {
-          title: "Movement ID",
+          title: "Mã biến động",
           dataIndex: "id",
           width: 190,
           fixed: "left",
@@ -518,33 +555,41 @@ function columnsFor(
         {
           title: "Loại",
           dataIndex: "movement_type",
-          width: 130,
-          render: (v) => (
-            <Tag color={MOVEMENT_COLORS[text(v, "")]}>{text(v)}</Tag>
-          ),
+          width: 150,
+          render: (v) => {
+            const raw = text(v, "");
+            return (
+              <Tag color={MOVEMENT_COLORS[raw]}>
+                {businessLabel(MOVEMENT_LABELS, raw)}
+              </Tag>
+            );
+          },
         },
         { title: "Kho", dataIndex: "warehouse_code", width: 100 },
         { title: "SKU", dataIndex: "product_code", width: 130 },
         { title: "Tên SKU", dataIndex: "product_name", width: 190 },
         { title: "SL Δ", dataIndex: "qty_delta", align: "right", render: fmt },
         { title: "Mã vật lý", dataIndex: "physical_code", width: 170 },
-        // §13.10 RPT-MOV-01 yêu cầu cột actor.
         { title: "Người thực hiện", dataIndex: "actor", width: 150 },
-        { title: "Nguồn", dataIndex: "source_type", width: 130 },
         {
-          title: "Movement gốc",
+          title: "Nguồn",
+          dataIndex: "source_type",
+          width: 150,
+          render: (value) =>
+            businessLabel(SOURCE_DOCUMENT_TYPE_LABELS, text(value, "")),
+        },
+        {
+          title: "Biến động gốc",
           dataIndex: "original_movement_id",
           width: 180,
         },
         {
-          title: "Correction chain",
+          title: "Chuỗi điều chỉnh",
           dataIndex: "correction_chain_id",
           width: 180,
         },
       ];
     case "import-match":
-      // §13.10 RPT-OUT-MATCH-01: source_request_no, source_version, SKU,
-      // required/matched/scanned, validation status — báo cáo ở tầng dòng của toa.
       return [
         {
           title: "Phiếu toa",
@@ -554,7 +599,7 @@ function columnsFor(
           render: (v) => text(v),
         },
         {
-          title: "Version",
+          title: "Phiên bản",
           dataIndex: "source_version",
           width: 90,
           align: "right",
@@ -581,49 +626,49 @@ function columnsFor(
           render: fmt,
         },
         {
-          title: "Đã match",
+          title: "Đã đối chiếu",
           dataIndex: "matched_qty",
           align: "right",
           render: fmt,
         },
         {
-          title: "Đã scan",
+          title: "Đã quét",
           dataIndex: "scanned_qty",
           align: "right",
           render: fmt,
         },
         {
-          title: "Đã post",
+          title: "Đã ghi nhận",
           dataIndex: "posted_qty",
           align: "right",
           render: fmt,
         },
         {
-          title: "Validation",
+          title: "Kiểm tra",
           dataIndex: "validation_status",
-          width: 120,
+          width: 130,
           render: statusTag,
         },
         { title: "Phiếu xuất", dataIndex: "outbound_no", width: 150 },
         {
-          title: "Batch",
+          title: "Lô nhập",
           dataIndex: "import_no",
           width: 150,
         },
         {
-          title: "File nguồn",
+          title: "Tệp nguồn",
           dataIndex: "source_file_name",
           width: 200,
           ellipsis: true,
         },
         {
-          title: "Trạng thái batch",
+          title: "Trạng thái lô nhập",
           dataIndex: "import_status",
-          width: 140,
+          width: 150,
           render: statusTag,
         },
-        { title: "Người upload", dataIndex: "uploaded_by_name", width: 150 },
-        { title: "Người consume", dataIndex: "consumed_by_name", width: 150 },
+        { title: "Người tải lên", dataIndex: "uploaded_by_name", width: 150 },
+        { title: "Người sử dụng", dataIndex: "consumed_by_name", width: 150 },
       ];
     case "label-log":
       return [
@@ -634,14 +679,14 @@ function columnsFor(
           fixed: "left",
         },
         {
-          title: "Packing_Label",
+          title: "Mã nhãn đóng gói",
           dataIndex: "label_code",
           width: 180,
           ellipsis: true,
           render: (v) => text(v),
         },
         {
-          title: "Label_Snapshot",
+          title: "Mã bản lưu nhãn",
           dataIndex: "id",
           width: 150,
           ellipsis: true,
@@ -657,9 +702,9 @@ function columnsFor(
           render: fmt,
         },
         {
-          title: "Item",
+          title: "Sản phẩm",
           dataIndex: "item_count",
-          width: 80,
+          width: 90,
           align: "right",
           render: fmt,
         },
@@ -690,7 +735,6 @@ function columnsFor(
             <Tag color={v ? "success" : "warning"}>{v ? "CÓ" : "CHƯA"}</Tag>
           ),
         },
-        // §13.10 RPT-LABEL-01 columns: printer + actor của lần in gần nhất.
         {
           title: "Máy in",
           dataIndex: "printer_name",
@@ -724,9 +768,18 @@ function columnsFor(
       ];
     case "warranty":
       return [
-        { title: "Case", dataIndex: "case_no", width: 160, fixed: "left" },
-        { title: "Nhận diện", dataIndex: "identification_status", width: 120 },
-        { title: "SKU/Model", dataIndex: "model", width: 170 },
+        { title: "Ca bảo hành", dataIndex: "case_no", width: 160, fixed: "left" },
+        {
+          title: "Nhận diện",
+          dataIndex: "identification_status",
+          width: 170,
+          render: (value) =>
+            businessLabel(
+              WARRANTY_IDENTIFICATION_STATUS_LABELS,
+              text(value, ""),
+            ),
+        },
+        { title: "SKU/Mẫu sản phẩm", dataIndex: "model", width: 170 },
         { title: "Bệnh/lỗi", dataIndex: "defect", width: 180 },
         {
           title: "Linh kiện đã xuất",
@@ -739,26 +792,17 @@ function columnsFor(
           width: 130,
           render: statusTag,
         },
-        // §13.10 RPT-WAR-01 columns: received/returned + turnaround, purchase_date optional.
         { title: "Ngày mua", dataIndex: "purchase_date", width: 130 },
         { title: "Ngày nhận", dataIndex: "received_at", width: 170 },
         { title: "Ngày trả khách", dataIndex: "returned_at", width: 170 },
         {
-          title: "Turnaround",
+          title: "Thời gian xử lý",
           dataIndex: "turnaround_days",
-          width: 110,
+          width: 120,
           align: "right",
           render: (value: number | null | undefined) =>
             value === null || value === undefined ? "—" : `${value} ngày`,
         },
-        // §13.8 + §13.10: cột khách hàng luôn hiển thị nhưng ở dạng đã mask
-        // (N*** H*** / ******922 / "***, <địa giới cuối>"), không bao giờ PII thô.
-        //
-        // WWHN-258 · FE258-P1-04: trước đây ba cột này là `dataIndex` trần, tức là
-        // đổ thẳng payload BE ra bảng. Mask khi đó chỉ là lời hứa của BE — hỏng
-        // lớp đó (hoặc gọi qua một route chưa mask) là PII thô hiển thị ngay.
-        // `warrantyPiiText` idempotent trên chuỗi BE đã mask nên gọi vô điều kiện
-        // được, và fail-closed theo `warranty.pii.view` của chính actor.
         {
           title: "Khách hàng",
           dataIndex: "customer_name",
@@ -785,8 +829,6 @@ function columnsFor(
       ];
     case "outbound-by-agency":
       return [
-        // §13.10 RPT-RECIPIENT-01: source_request_no là khoá trace về toa nguồn;
-        // contact hiển thị dạng đã mask theo BR-EXP.
         { title: "Phiếu toa", dataIndex: "source_request_no", width: 150 },
         { title: "Mã nơi nhận", dataIndex: "agency_code", width: 130 },
         { title: "Nơi nhận", dataIndex: "agency_name", width: 190 },
@@ -812,11 +854,6 @@ function columnsFor(
   }
 }
 
-/**
- * §13.10 RPT-IO-01 yêu cầu tầng dòng: line, expected/required, scanned/matched,
- * posted/issued. posted lấy từ movement authoritative nên cột này chính là bằng
- * chứng đối soát "Sum authoritative movements = posted/issued qty".
- */
 function DocumentLines({ lines }: { lines: Raw[] }) {
   return (
     <Table<Raw>
@@ -837,14 +874,14 @@ function DocumentLines({ lines }: { lines: Raw[] }) {
           render: fmt,
         },
         {
-          title: "Đã scan",
+          title: "Đã quét",
           dataIndex: "scanned_qty",
           width: 110,
           align: "right",
           render: fmt,
         },
         {
-          title: "Đã post",
+          title: "Đã ghi nhận",
           dataIndex: "posted_qty",
           width: 110,
           align: "right",
@@ -857,7 +894,11 @@ function DocumentLines({ lines }: { lines: Raw[] }) {
 
 function statusTag(value: unknown) {
   const status = text(value, "");
-  return <Tag color={STATUS_COLORS[status] ?? "default"}>{status || "-"}</Tag>;
+  return (
+    <Tag color={STATUS_COLORS[status] ?? "default"}>
+      {businessLabel(REPORT_STATUS_LABELS, status)}
+    </Tag>
+  );
 }
 
 function Summary({ report, data }: { report: ReportKey; data?: Raw }) {
@@ -871,7 +912,7 @@ function Summary({ report, data }: { report: ReportKey; data?: Raw }) {
         ["Tồn kho", summary.total_on_hand, "blue"],
         ["Khả dụng", summary.total_available, "green"],
         [
-          "Lệch ledger",
+          "Lệch sổ tồn kho",
           summary.mismatch_count,
           n(summary.mismatch_count) > 0 ? "error" : "success",
         ],
@@ -880,31 +921,31 @@ function Summary({ report, data }: { report: ReportKey; data?: Raw }) {
     case "document-history":
       tags.push(
         ["Tổng", summary.total],
-        ["POSTED", summary.posted, "success"],
-        ["SCANNING", summary.scanning, "processing"],
-        ["CANCELLED", summary.cancelled, "error"],
+        ["Đã ghi nhận", summary.posted, "success"],
+        ["Đang quét", summary.scanning, "processing"],
+        ["Đã hủy", summary.cancelled, "error"],
       );
       break;
     case "movement-trace":
       tags.push(
-        ["Movement", summary.total_movements],
-        ["Net effect", summary.net_effect, "blue"],
-        ["Reversal", summary.reversal_count, "red"],
+        ["Biến động", summary.total_movements],
+        ["Ảnh hưởng thuần", summary.net_effect, "blue"],
+        ["Điều chỉnh", summary.reversal_count, "red"],
       );
       break;
     case "import-match":
       tags.push(
-        ["Batch", summary.total_batches],
+        ["Lô nhập", summary.total_batches],
         ["Dòng toa", summary.total_lines, "blue"],
         ["Khớp đủ", summary.fully_matched_lines, "success"],
         ["Dòng lỗi", summary.invalid_lines, "error"],
         ["SL yêu cầu", summary.total_required_qty],
-        ["SL đã scan", summary.total_scanned_qty, "green"],
+        ["SL đã quét", summary.total_scanned_qty, "green"],
       );
       break;
     case "label-log":
       tags.push(
-        ["Packing Label", summary.total_labels],
+        ["Nhãn đóng gói", summary.total_labels],
         ["Đã in", summary.printed, "success"],
         ["Đã dán", summary.applied, "blue"],
         ["Lỗi", summary.failed, "error"],
@@ -913,11 +954,11 @@ function Summary({ report, data }: { report: ReportKey; data?: Raw }) {
       break;
     case "warranty":
       tags.push(
-        ["Case", summary.total],
+        ["Ca bảo hành", summary.total],
         ["Đang xử lý", summary.processing, "processing"],
         ["Đã trả", summary.returned, "success"],
         ["Đã hủy", summary.cancelled, "error"],
-        ["TEMP_ONLY", summary.temp_only, "warning"],
+        ["Tiếp nhận tạm", summary.temp_only, "warning"],
       );
       break;
     case "outbound-by-agency":
@@ -955,7 +996,6 @@ export default function AlignedReportsPage() {
   const [printerId, setPrinterId] = useState<string>();
   const [actorId, setActorId] = useState<string>();
   const [skuCode, setSkuCode] = useState("");
-  // §13.10 RPT-INV-01: "as_of inclusive" — chốt số liệu tại một mốc quá khứ.
   const [asOf, setAsOf] = useState<Dayjs | null>(null);
   const [defectId, setDefectId] = useState<string>();
   const [identification, setIdentification] = useState<string>();
@@ -964,27 +1004,16 @@ export default function AlignedReportsPage() {
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(15);
   const [exporting, setExporting] = useState<"xlsx" | "pdf" | null>(null);
-  /**
-   * WWHN-258 · FE258-P1-04: 403 của export trước đây bị gom vào một `toast.error`
-   * chung với lỗi mạng, nên bằng chứng QA2 không phân biệt được "bị từ chối
-   * quyền" và "API hỏng". Surface riêng này phát `data-ui-state=permission-denied`
-   * theo hợp đồng UI_STATE.
-   */
   const [exportDenied, setExportDenied] = useState<string | null>(null);
-
   const [piiReason, setPiiReason] = useState("");
 
   const warehouses = useWarehouseOptions();
   const printers = usePrinterOptions();
-  // Danh sách actor lấy từ /users nên chỉ tải khi actor có quyền đọc user; người
-  // chỉ có report.view vẫn xem được báo cáo, chỉ là không lọc theo người in.
   const hasPermission = useHasPermission();
   const actors = useActorOptions(
     report === "label-log" &&
       hasPermission(WMS_PERMISSION_CATALOG.IAM_USER_VIEW),
   );
-  // §13.8 / NFR-SRS-015: xem PII và xuất PII là HAI quyền tách rời. Trang báo cáo
-  // phải hành xử khác nhau theo từng quyền, không gộp chung vào report.view.
   const canViewPii = hasPermission(WMS_PERMISSION_CATALOG.WARRANTY_PII_VIEW);
   const canExportPii = hasPermission(
     WMS_PERMISSION_CATALOG.WARRANTY_PII_EXPORT,
@@ -1005,7 +1034,6 @@ export default function AlignedReportsPage() {
       result.from_date = from;
       result.to_date = to;
     }
-    // §13.10: RPT-INV-01 lọc SKU/category/status + as_of; RPT-XNT-01 lọc SKU/category.
     if (report === "inventory-balance") {
       if (keyword.trim()) result.keyword = keyword.trim();
       if (status) result.stock_status = status;
@@ -1019,7 +1047,6 @@ export default function AlignedReportsPage() {
       if (categoryId) result.category_id = categoryId;
     }
     if (report === "document-history") {
-      // §13.10 RPT-IO-01 filters: date, SKU, status, agency recipient.
       result.doc_type = docType;
       if (keyword.trim()) result.keyword = keyword.trim();
       if (status) result.status = status;
@@ -1031,13 +1058,11 @@ export default function AlignedReportsPage() {
       if (warehouseId) result.warehouse_id = warehouseId;
     }
     if (report === "import-match") {
-      // §13.10 RPT-OUT-MATCH-01 filters: request / date / SKU / status.
       if (keyword.trim()) result.keyword = keyword.trim();
       if (status) result.status = status;
       if (skuCode.trim()) result.sku_code = skuCode.trim();
     }
     if (report === "label-log") {
-      // §13.10 RPT-LABEL-01 filters: date / printer / result / actor.
       if (keyword.trim()) result.keyword = keyword.trim();
       if (status) result.status = status;
       if (printerId) result.printer_id = printerId;
@@ -1047,7 +1072,6 @@ export default function AlignedReportsPage() {
       if (status) result.status = status;
       if (defectId) result.defect_id = defectId;
       if (identification) result.identification_status = identification;
-      // §13.10 RPT-WAR-01 filters: date, model, defect, status.
       if (keyword.trim()) result.model = keyword.trim();
     }
     if (report === "outbound-by-agency") {
@@ -1113,20 +1137,11 @@ export default function AlignedReportsPage() {
     setExporting(format);
     setExportDenied(null);
     try {
-      // BR-EXP-01..05: export là hành động riêng, phải chặn tại client trước khi
-      // gọi mạng (BE vẫn là lớp enforce authoritative bằng permission report.export).
       assertWmsActionPermission(
         WMS_ACTION_PERMISSIONS.EXPORT_REPORT,
         "report export",
       );
       const { page: _page, per_page: _perPage, ...filters } = params;
-      // §13.8: PII chỉ ra khỏi hệ thống khi có warranty.pii.export VÀ lý do.
-      //
-      // WWHN-258 · FE258-P1-04: fail-closed tại client. `reason` gửi kèm khi
-      // actor KHÔNG có warranty.pii.export bị BE trả 403 PERMISSION_DENIED — tức
-      // là lần export đó chắc chắn hỏng, sau khi đã kịp tạo job và ghi một bản
-      // audit REPORT_EXPORT_REQUESTED vô nghĩa. Không có quyền thì không bao giờ
-      // đính `reason`; file vẫn xuất được nhưng ở dạng đã mask.
       if (
         report === "warranty" &&
         canExportPii &&
@@ -1135,9 +1150,6 @@ export default function AlignedReportsPage() {
         filters.reason = piiReasonTrimmed;
       }
 
-      // Annex D SCR-RPT-01 + Annex C createReportExport: hành động export đi qua
-      // POST /reports/export để job được audit và có Idempotency-Key, sau đó tải
-      // file theo download_url mà BE trả về (đã mang đúng bộ lọc đã gửi).
       const job = await http.post<Raw>(
         API_ENDPOINTS.REPORTS_EXPORT,
         { report_code: config.reportCode, format, filters },
@@ -1148,7 +1160,6 @@ export default function AlignedReportsPage() {
         downloadUrl ? stripApiPrefix(downloadUrl) : config.exportEndpoint,
         downloadUrl ? undefined : { params: { ...filters, format } },
       );
-      // BR-EXP-03: ưu tiên tên file BE đặt vì chỉ nó mang timestamp phát hành.
       const suffix = config.dateFilter ? `-${from}-${to}` : "";
       handleBlobDownload(
         blob,
@@ -1196,11 +1207,12 @@ export default function AlignedReportsPage() {
                 ]
               : [];
 
+  const statusOptionLabel = (value: string) =>
+    report === "inventory-balance"
+      ? businessLabel(INVENTORY_STOCK_STATUS_LABELS, value)
+      : businessLabel(REPORT_STATUS_LABELS, value);
+
   return (
-    // WWHN-258 · FE258-P2-02: CSS của `.toolbar`/`.spacer` scoped dưới
-    // `.hn-mvp-source-screen` (src/styles/hn-wms-source-screen.css). Class cũ
-    // `reversal-page` không có định nghĩa nào, nên vào bằng route /reports
-    // toolbar mất flex/gap/wrap — vỡ responsive 390px dù code "có vẻ" đã wrap.
     <div
       className="hn-mvp-source-screen"
       data-mvp-screen="RPT-01"
@@ -1210,8 +1222,8 @@ export default function AlignedReportsPage() {
         showIcon
         type="info"
         style={{ marginBottom: 14 }}
-        title="Flow 06 · Báo cáo vận hành"
-        description="Dữ liệu trang được phân trang tại BE; XLSX/PDF giữ nguyên bộ lọc và được kiểm soát bằng report.export. Packing Label được báo cáo theo đúng 01 nhãn/phiếu-lô."
+        title="Luồng 06 · Báo cáo vận hành"
+        description="Dữ liệu được phân trang bởi hệ thống; XLSX/PDF giữ nguyên bộ lọc và chỉ người có quyền xuất báo cáo mới thực hiện được. Mỗi phiếu/lô xuất có đúng 01 nhãn đóng gói."
       />
 
       <Tabs
@@ -1220,8 +1232,6 @@ export default function AlignedReportsPage() {
           setReport(key as ReportKey);
           setStatus(undefined);
           setKeyword("");
-          // Bộ lọc chuyên biệt của từng báo cáo phải reset khi đổi tab, nếu không
-          // filter cũ sẽ đi kèm request của báo cáo mới và làm sai phạm vi export.
           setAgencyId(undefined);
           setPrinterId(undefined);
           setActorId(undefined);
@@ -1263,7 +1273,6 @@ export default function AlignedReportsPage() {
           "import-match",
           "label-log",
           "outbound-by-agency",
-          // §13.10 RPT-WAR-01 có filter "model" — dùng chung ô từ khóa.
           "warranty",
         ].includes(report) ? (
           <Input
@@ -1272,9 +1281,9 @@ export default function AlignedReportsPage() {
             style={{ width: 230 }}
             placeholder={
               report === "movement-trace"
-                ? "Mã vật lý / barcode"
+                ? "Mã vật lý / mã vạch"
                 : report === "warranty"
-                  ? "SKU / model"
+                  ? "SKU / mẫu sản phẩm"
                   : "Từ khóa"
             }
             value={keyword}
@@ -1288,14 +1297,17 @@ export default function AlignedReportsPage() {
         {statusOptions.length ? (
           <Select
             allowClear
-            style={{ width: 170 }}
+            style={{ width: 190 }}
             placeholder="Trạng thái"
             value={status}
             onChange={(value) => {
               setStatus(value);
               resetPage();
             }}
-            options={statusOptions.map((value) => ({ value, label: value }))}
+            options={statusOptions.map((value) => ({
+              value,
+              label: statusOptionLabel(value),
+            }))}
           />
         ) : null}
 
@@ -1320,7 +1332,7 @@ export default function AlignedReportsPage() {
           <DatePicker
             allowClear
             style={{ width: 190 }}
-            placeholder="Chốt số liệu (as_of)"
+            placeholder="Chốt số liệu tại ngày"
             value={asOf}
             disabledDate={(current) =>
               current && current.isAfter(dayjs(), "day")
@@ -1381,8 +1393,8 @@ export default function AlignedReportsPage() {
         {report === "movement-trace" ? (
           <Select
             allowClear
-            style={{ width: 175 }}
-            placeholder="Loại movement"
+            style={{ width: 190 }}
+            placeholder="Loại biến động"
             value={movementType}
             onChange={(value) => {
               setMovementType(value);
@@ -1394,7 +1406,10 @@ export default function AlignedReportsPage() {
               "ISSUE",
               "COMPONENT_ISSUE",
               "REVERSAL",
-            ].map((value) => ({ value, label: value }))}
+            ].map((value) => ({
+              value,
+              label: businessLabel(MOVEMENT_LABELS, value),
+            }))}
           />
         ) : null}
 
@@ -1449,12 +1464,18 @@ export default function AlignedReportsPage() {
             />
             <Select
               allowClear
-              style={{ width: 155 }}
+              style={{ width: 220 }}
               placeholder="Nhận diện"
               value={identification}
               options={[
-                { value: "IDENTIFIED", label: "IDENTIFIED" },
-                { value: "TEMP_ONLY", label: "TEMP_ONLY" },
+                {
+                  value: "IDENTIFIED",
+                  label: WARRANTY_IDENTIFICATION_STATUS_LABELS.IDENTIFIED,
+                },
+                {
+                  value: "TEMP_ONLY",
+                  label: WARRANTY_IDENTIFICATION_STATUS_LABELS.TEMP_ONLY,
+                },
               ]}
               onChange={(value) => {
                 setIdentification(value);
@@ -1481,17 +1502,14 @@ export default function AlignedReportsPage() {
           />
         ) : null}
 
-        {/* §13.8: ô lý do chỉ có nghĩa với actor thực sự được xuất PII. Hiện nó cho
-            người thiếu `warranty.pii.export` là mời họ vào một hành động BE chắc
-            chắn trả 403 — xem FE258-P1-04. */}
         {report === "warranty" && canExportPii ? (
           <Input
             allowClear
             data-testid="report-pii-reason"
-            style={{ width: 240 }}
+            style={{ width: 260 }}
             maxLength={500}
             status={piiReasonInvalid ? "error" : undefined}
-            placeholder={`Lý do xuất PII (≥ ${PII_REASON_MIN_LENGTH} ký tự; bỏ trống = mask)`}
+            placeholder={`Lý do xuất PII (≥ ${PII_REASON_MIN_LENGTH} ký tự; bỏ trống = che thông tin)`}
             value={piiReason}
             onChange={(event) => setPiiReason(event.target.value)}
           />
@@ -1513,7 +1531,7 @@ export default function AlignedReportsPage() {
             exceedsExportRowLimit
           }
           onClick={() => exportReport("xlsx")}
-          disabledTooltip="Cần report.export và bộ lọc hợp lệ"
+          disabledTooltip="Bạn cần quyền xuất báo cáo và bộ lọc hợp lệ"
         >
           Xuất XLSX
         </ActionButton>
@@ -1533,7 +1551,7 @@ export default function AlignedReportsPage() {
             exceedsExportRowLimit
           }
           onClick={() => exportReport("pdf")}
-          disabledTooltip="Cần report.export và bộ lọc hợp lệ"
+          disabledTooltip="Bạn cần quyền xuất báo cáo và bộ lọc hợp lệ"
         >
           Xuất PDF
         </ActionButton>
@@ -1554,8 +1572,8 @@ export default function AlignedReportsPage() {
           style={{ marginBottom: 12 }}
           title={
             canExportPii
-              ? `Khách hàng/SĐT/địa chỉ hiển thị ở dạng đã mask. File export chỉ chứa PII thô khi bạn nhập lý do (≥ ${PII_REASON_MIN_LENGTH} ký tự); mọi lần export đều được audit kèm lý do.`
-              : "Khách hàng/SĐT/địa chỉ hiển thị ở dạng đã mask. Tài khoản của bạn không có warranty.pii.export nên file export luôn ở dạng mask; cần PII thô hãy liên hệ quản trị để được cấp quyền."
+              ? `Khách hàng/SĐT/địa chỉ hiển thị ở dạng đã che. Tệp xuất chỉ chứa PII thô khi bạn nhập lý do (≥ ${PII_REASON_MIN_LENGTH} ký tự); mọi lần xuất đều được ghi nhật ký.`
+              : "Khách hàng/SĐT/địa chỉ hiển thị ở dạng đã che. Tài khoản của bạn không có quyền xuất PII nên tệp xuất luôn che thông tin; cần PII thô hãy liên hệ quản trị để được cấp quyền."
           }
         />
       ) : null}
@@ -1564,18 +1582,16 @@ export default function AlignedReportsPage() {
           type="warning"
           showIcon
           style={{ marginBottom: 12 }}
-          title={`Lý do xuất PII phải có ít nhất ${PII_REASON_MIN_LENGTH} ký tự (BE trả 422 PII_EXPORT_REASON_INVALID nếu ngắn hơn). Bỏ trống nếu chỉ cần file đã mask.`}
+          title={`Lý do xuất PII phải có ít nhất ${PII_REASON_MIN_LENGTH} ký tự. Bỏ trống nếu chỉ cần tệp đã che thông tin.`}
         />
       ) : null}
-      {/* Thuộc tính trạng thái đặt trên `div` bao ngoài: antd v6 không chuyển tiếp
-          prop lạ xuống DOM, nên `data-ui-state` gắn thẳng lên Alert sẽ biến mất. */}
       {exceedsExportRowLimit ? (
         <div {...uiStateProps(UI_STATE.DISABLED, "report-export-row-limit")}>
           <Alert
             type="warning"
             showIcon
             style={{ marginBottom: 12 }}
-            title={`Bộ lọc hiện tại có ${fmt(total)} dòng — vượt trần ${fmt(EXPORT_ROW_LIMIT)} dòng/file của BE (422 REPORT_EXPORT_ROW_LIMIT_EXCEEDED). Thu hẹp khoảng ngày hoặc bộ lọc trước khi xuất.`}
+            title={`Bộ lọc hiện tại có ${fmt(total)} dòng — vượt giới hạn ${fmt(EXPORT_ROW_LIMIT)} dòng mỗi tệp. Thu hẹp khoảng ngày hoặc bộ lọc trước khi xuất.`}
           />
         </div>
       ) : null}
@@ -1593,14 +1609,11 @@ export default function AlignedReportsPage() {
             closable
             onClose={() => setExportDenied(null)}
             style={{ marginBottom: 12 }}
-            title="Export bị từ chối quyền (403)."
+            title="Xuất báo cáo bị từ chối quyền."
             description={exportDenied}
           />
         </div>
       ) : null}
-      {/* WWHN-254 DEV254-P1-03/P1-04: BE nay cắt mọi báo cáo theo warehouse data-scope
-          của người gọi. Người dùng bị giới hạn kho phải nhìn thấy điều đó, nếu không họ
-          sẽ đọc một tổng cục bộ như tổng toàn hệ thống. */}
       {query.data?.data_scope === "WAREHOUSE_SCOPED" ? (
         <Alert
           type="info"
@@ -1610,7 +1623,7 @@ export default function AlignedReportsPage() {
             Array.isArray(query.data.scope_warehouse_ids)
               ? query.data.scope_warehouse_ids.length
               : 0
-          } kho). Đây không phải tổng toàn hệ thống; file export dùng đúng phạm vi này.`}
+          } kho). Đây không phải tổng toàn hệ thống; tệp xuất dùng đúng phạm vi này.`}
         />
       ) : null}
       {report === "inventory-balance" && query.data?.as_of_snapshot ? (
@@ -1618,7 +1631,7 @@ export default function AlignedReportsPage() {
           type="warning"
           showIcon
           style={{ marginBottom: 12 }}
-          title={`Đang xem ảnh chụp theo sổ ledger tại ${text(query.data.as_of)}. Cột "Tồn kho" là số dư tại mốc đó, nên đối soát Ledger↔Balance hiện tại không áp dụng (NOT_APPLICABLE).`}
+          title={`Đang xem ảnh chụp theo sổ tồn kho tại ${text(query.data.as_of)}. Cột "Tồn kho" là số dư tại mốc đó, nên đối soát sổ tồn kho với số dư hiện tại không áp dụng.`}
         />
       ) : null}
       {report === "document-history" ? (
@@ -1626,7 +1639,7 @@ export default function AlignedReportsPage() {
           type="info"
           showIcon
           style={{ marginBottom: 12 }}
-          title="Mở rộng từng phiếu để xem tầng dòng: kế hoạch / đã scan / đã post. Số đã post lấy từ movement authoritative."
+          title="Mở rộng từng phiếu để xem tầng dòng: kế hoạch / đã quét / đã ghi nhận. Số đã ghi nhận lấy từ biến động tồn kho chính thức."
         />
       ) : null}
       {report === "outbound-by-agency" ? (
@@ -1634,7 +1647,7 @@ export default function AlignedReportsPage() {
           type="info"
           showIcon
           style={{ marginBottom: 12 }}
-          title="Agency chỉ là chiều báo cáo/nơi nhận, không phải stock bucket."
+          title="Nơi nhận chỉ là chiều báo cáo, không phải một nhóm tồn kho riêng."
         />
       ) : null}
       {report === "label-log" ? (
@@ -1642,7 +1655,7 @@ export default function AlignedReportsPage() {
           type="success"
           showIcon
           style={{ marginBottom: 12 }}
-          title="Cardinality hiện hành: đúng 01 Packing Label cho mỗi phiếu/lô xuất."
+          title="Quy tắc hiện hành: đúng 01 nhãn đóng gói cho mỗi phiếu/lô xuất."
         />
       ) : null}
 
@@ -1704,14 +1717,17 @@ export default function AlignedReportsPage() {
           style={{ marginTop: 16 }}
           size="small"
           pagination={false}
-          // Annex D SCR-RPT-01: "360/768/1280+, no horizontal loss of critical
-          // action". Bảng tổng hợp thiếu scroll sẽ đẩy ngang cả trang ở 390px.
           scroll={{ x: "max-content" }}
           rowKey={(row) => text(row.defect)}
           dataSource={query.data.by_defect as Raw[]}
           columns={[
             { title: "Bệnh / lỗi", dataIndex: "defect" },
-            { title: "Case", dataIndex: "total", align: "right", render: fmt },
+            {
+              title: "Ca bảo hành",
+              dataIndex: "total",
+              align: "right",
+              render: fmt,
+            },
             {
               title: "Đang xử lý",
               dataIndex: "processing",
@@ -1731,7 +1747,7 @@ export default function AlignedReportsPage() {
               render: fmt,
             },
             {
-              title: "TEMP_ONLY",
+              title: "Tiếp nhận tạm",
               dataIndex: "temp_only",
               align: "right",
               render: fmt,
