@@ -3,10 +3,10 @@ export type InboundStatus = "DRAFT" | "SCANNING" | "POSTED" | "CANCELLED";
 export interface InboundDocument {
   id: string;
   code: string;
-  /** Giá trị hiển thị của Annex A `source_reference` (BE lưu ở cột source_name). */
   source: string;
   date: string;
   warehouseId: string;
+  /** Under the GĐ1 scan-driven contract this mirrors actual scanned quantity. */
   expected: number;
   scanned: number;
   posted: number;
@@ -26,6 +26,7 @@ export interface InboundLine {
   sku: string;
   skuName: string;
   scanTarget: string;
+  /** Compatibility field; canonical source is actual scan quantity. */
   expected: number;
   scanned: number;
   posted: number;
@@ -40,8 +41,11 @@ export interface InboundDetail {
   lines: InboundLine[];
 }
 
+/**
+ * Legacy shape kept only for response/read compatibility. GĐ1 UI must not submit
+ * manual inbound lines; SKU and quantity are derived from physical scans.
+ */
 export interface InboundLinePayload {
-  /** Existing line id is required by BE when correcting Expected after scan evidence exists. */
   id?: string;
   product_id: string;
   qty_planned: number;
@@ -53,10 +57,10 @@ export interface CreateInboundPayload {
   doc_no?: string | null;
   doc_date?: string | null;
   dst_warehouse_id: string;
-  /** Annex A / Annex D SCR-IN-01: tên field chuẩn là `source_reference`, max 200. */
   source_reference?: string | null;
   note?: string | null;
-  lines: InboundLinePayload[];
+  /** Canonical GĐ1 create is header-only. */
+  lines?: [];
 }
 
 export interface UpdateInboundPayload {
@@ -64,13 +68,10 @@ export interface UpdateInboundPayload {
   doc_date?: string | null;
   source_reference?: string | null;
   note?: string | null;
-  lines?: InboundLinePayload[];
+  /** Canonical GĐ1 update never edits expected lines. */
+  lines?: [];
 }
 
-/**
- * Annex D SCR-IN-01: bảng "mã / SKU / kết quả / nguồn" của phiếu nhập phải đọc lại
- * được sau khi tải lại trang, nên nó là dữ liệu server chứ không phải state phiên.
- */
 export interface InboundScanEntry {
   id: string;
   lineId: string;
@@ -78,35 +79,22 @@ export interface InboundScanEntry {
   itemCode?: string;
   serialNumber?: string;
   containerId?: string;
-  /**
-   * Change Pack QR/SKU (DEC-QR-03): item mới từ composite QR chưa có itemId cho
-   * tới Post Receipt — identity hiển thị qua candidateItemUnique.
-   */
   candidateItemUnique?: string;
   candidateSerialNumber?: string;
   sku: string;
   skuName: string;
   quantity: number;
-  /** CAMERA_OR_MANUAL_CODE khi có code_value, MANUAL khi chọn item/quantity trực tiếp. */
   scanSource: string;
   status: "ACTIVE" | "REMOVED";
   capturedAt?: string;
 }
 
-/**
- * Inbound Carton Scan v1.0 §4.3: "Thùng đang quét" là context UI thuần — không
- * restore sau F5 (CTN-T09); người dùng phải scan lại mã carton để tiếp tục.
- */
 export interface ActiveCarton {
   id: string;
   code: string;
   skuId?: string;
 }
 
-/**
- * §3.3: response của mốc "Đã quét xong thùng" — audit-only, stock-neutral.
- * actualItemQty = SUM quantity các ACTIVE scan entries của carton trong phiếu.
- */
 export interface InboundCartonCompleteResult {
   documentId: string;
   containerId: string;
@@ -136,10 +124,6 @@ export interface ReceiptEvidence {
   version?: number;
 }
 
-/**
- * Atomic receipt posting requires both optimistic-lock and idempotency headers.
- * No posting body is sent: BE posts every fully scanned line as one transaction.
- */
 export interface PostReceiptRequest {
   documentId: string;
   idempotencyKey: string;
@@ -153,10 +137,6 @@ export interface InboundScanResult {
   status: InboundScanStatus;
   sku?: string;
   line_id?: string;
-  /**
-   * Change Pack QR/SKU (DEC-QR-001): identity BE parse từ composite QR — FE chỉ
-   * hiển thị. item_id có thể vắng với NEW_ITEM_CANDIDATE cho tới Post Receipt.
-   */
   item_id?: string;
   item_unique?: string;
   serial_number?: string;
@@ -164,16 +144,6 @@ export interface InboundScanResult {
   resolution_status?: "NEW_ITEM_CANDIDATE" | "EXISTING_ITEM" | "LEGACY_ITEM";
   message?: string;
   version: number;
-  /**
-   * WWHN-187 (DEV187-P1-07) — key đã dùng cho đúng *hành động quét* này. Lần gửi
-   * lại của cùng hành động phải dùng lại đúng key này (AC-GWT-CONC-001: không bao
-   * giờ retry bằng key mới), nếu không BE coi đó là một lần quét thật thứ hai và
-   * `scanned_qty` bị cộng đôi.
-   */
   idempotency_key?: string;
-  /**
-   * `true` khi BE trả lại snapshot của lần quét trước (replay) — `scanned_qty`
-   * KHÔNG tăng thêm. UI phải nói rõ để người dùng không quét bù thêm một lần.
-   */
   replayed?: boolean;
 }
