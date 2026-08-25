@@ -47,6 +47,11 @@ import { MvpPageSizeSelector } from "@/shared/components/mvp/MvpListPagination";
 import { resolveApiPagination } from "@/shared/components/mvp/mvp-pagination";
 import { useCan } from "@/shared/components/permission";
 import { WMS_PERMISSION_CATALOG as P } from "@/shared/constants/wms-permissions";
+import {
+  IAM_ROLE_STATUS_LABELS,
+  IAM_SCOPE_LABELS,
+  businessLabel,
+} from "@/shared/constants/business-labels";
 
 interface RoleFormValues {
   role_code: string;
@@ -55,12 +60,64 @@ interface RoleFormValues {
   status: IamRoleStatus;
 }
 
+const PERMISSION_MODULE_LABELS: Record<string, string> = {
+  iam: "Người dùng & phân quyền",
+  sku: "SKU & sản phẩm",
+  catalog: "Danh mục",
+  inbound: "Nhập kho",
+  outbound: "Xuất kho",
+  inventory: "Tồn kho",
+  warranty: "Bảo hành",
+  report: "Báo cáo",
+  reports: "Báo cáo",
+  pv: "Ứng dụng phân vùng",
+  audit: "Nhật ký hệ thống",
+  container: "Vật chứa",
+  putaway: "Xếp khay",
+  component: "Linh kiện",
+  rfid: "RFID",
+  label: "Nhãn đóng gói",
+  scan: "Quét mã",
+  warehouse: "Kho",
+  agency: "Đối tượng nhận hàng",
+  system: "Hệ thống",
+};
+
+const PERMISSION_ACTION_LABELS: Record<string, string> = {
+  view: "Xem",
+  manage: "Quản lý",
+  create: "Tạo mới",
+  update: "Cập nhật",
+  delete: "Xóa",
+  scan: "Quét mã",
+  post: "Hoàn tất",
+  cancel: "Hủy",
+  import: "Nhập dữ liệu",
+  export: "Xuất dữ liệu",
+  trace: "Truy vết",
+  publish: "Đưa lên ứng dụng",
+  issue: "Xuất",
+  approve: "Phê duyệt",
+  pii: "Xem thông tin cá nhân",
+};
+
 function permissionGroup(permission: IamPermission): string {
   if (permission.permission_name.toLowerCase().startsWith("legacy")) {
-    return "Tương thích cũ (legacy)";
+    return "Tương thích dữ liệu cũ";
   }
   const [module] = permission.permission_key.split(".");
-  return module || "system";
+  return PERMISSION_MODULE_LABELS[module] ?? "Quyền hệ thống khác";
+}
+
+function permissionLabel(permission: IamPermission): string {
+  const parts = permission.permission_key.split(".").filter(Boolean);
+  const module = PERMISSION_MODULE_LABELS[parts[0]] ?? "Chức năng";
+  const action =
+    [...parts]
+      .reverse()
+      .map((part) => PERMISSION_ACTION_LABELS[part])
+      .find(Boolean) ?? "Thực hiện";
+  return `${action} · ${module}`;
 }
 
 function isSystemRole(role?: IamRole): boolean {
@@ -125,11 +182,7 @@ export function IamRolePermissionScreen() {
       const group = permissionGroup(permission);
       groups.set(group, [...(groups.get(group) ?? []), permission]);
     });
-    return [...groups.entries()].sort(([a], [b]) => {
-      if (a.startsWith("Tương thích")) return 1;
-      if (b.startsWith("Tương thích")) return -1;
-      return a.localeCompare(b);
-    });
+    return [...groups.entries()].sort(([a], [b]) => a.localeCompare(b, "vi"));
   }, [permissions]);
 
   const openCreate = () => {
@@ -145,7 +198,7 @@ export function IamRolePermissionScreen() {
 
   const openEdit = (role: IamRole) => {
     if (isSystemRole(role)) {
-      toast.warning("SUPER_ADMIN là vai trò hệ thống và không được chỉnh sửa.");
+      toast.warning("Vai trò Quản trị cao nhất là vai trò hệ thống và không được chỉnh sửa.");
       return;
     }
     setEditingRole(role);
@@ -168,9 +221,11 @@ export function IamRolePermissionScreen() {
     };
     if (editingRole) {
       await updateRole.mutateAsync({ roleId: editingRole.role_id, payload });
+      toast.success("Đã cập nhật vai trò.");
     } else {
       const created = await createRole.mutateAsync(payload);
       setSelectedRoleId(created.role_id);
+      toast.success("Đã tạo vai trò.");
     }
     setRoleModalOpen(false);
   };
@@ -179,7 +234,7 @@ export function IamRolePermissionScreen() {
     if (!selectedRole) return;
     if (isSystemRole(selectedRole)) {
       toast.warning(
-        "SUPER_ADMIN dùng quyền hệ thống toàn cục và không cho phép sửa ma trận.",
+        "Vai trò Quản trị cao nhất có toàn quyền hệ thống và không cho phép sửa ma trận quyền.",
       );
       return;
     }
@@ -187,6 +242,7 @@ export function IamRolePermissionScreen() {
       roleId: selectedRole.role_id,
       permissionIds: [...new Set(checkedIds)].sort(),
     });
+    toast.success("Đã cập nhật quyền cho vai trò.");
   };
 
   const toggleGroup = (items: IamPermission[], checked: boolean) => {
@@ -214,21 +270,31 @@ export function IamRolePermissionScreen() {
     {
       title: "Phạm vi",
       dataIndex: "scope_type",
-      width: 120,
-      render: (value) => <Tag>{value ?? "FUNCTION"}</Tag>,
+      width: 150,
+      render: (value: IamRoleScopeType | null | undefined) => (
+        <Tag>
+          {businessLabel(
+            IAM_SCOPE_LABELS,
+            value ?? "FUNCTION",
+            "Theo chức năng",
+          )}
+        </Tag>
+      ),
     },
     {
       title: "Trạng thái",
       dataIndex: "status",
-      width: 110,
+      width: 140,
       render: (value: IamRoleStatus) => (
-        <Tag color={value === "ACTIVE" ? "success" : "default"}>{value}</Tag>
+        <Tag color={value === "ACTIVE" ? "success" : "default"}>
+          {businessLabel(IAM_ROLE_STATUS_LABELS, value, "Trạng thái khác")}
+        </Tag>
       ),
     },
     {
-      title: "Quyền",
+      title: "Số quyền",
       key: "permissions",
-      width: 80,
+      width: 90,
       align: "right",
       render: (_, role) => role.permissions?.length ?? 0,
     },
@@ -250,17 +316,17 @@ export function IamRolePermissionScreen() {
               }}
             />
             <Popconfirm
-              title="Xoá vai trò?"
-              description="BE sẽ từ chối nếu vai trò vẫn đang được gán cho người dùng."
-              okText="Xoá"
-              cancelText="Huỷ"
+              title="Xóa vai trò?"
+              description="Không thể xóa vai trò nếu vai trò vẫn đang được gán cho người dùng."
+              okText="Xóa"
+              cancelText="Hủy"
               onConfirm={() => deleteRole.mutateAsync(role.role_id)}
             >
               <Button
                 danger
                 type="text"
                 icon={<DeleteOutlined />}
-                aria-label={`Xoá ${role.role_name}`}
+                aria-label={`Xóa ${role.role_name}`}
                 onClick={(event) => event.stopPropagation()}
               />
             </Popconfirm>
@@ -291,11 +357,10 @@ export function IamRolePermissionScreen() {
             <SafetyCertificateOutlined />
             <div>
               <Typography.Title level={3} style={{ margin: 0 }}>
-                IAM · Vai trò & ma trận quyền
+                Vai trò & ma trận quyền
               </Typography.Title>
               <Typography.Text type="secondary">
-                Permission là catalog hệ thống chỉ đọc; role được CRUD và sync
-                quyền toàn bộ.
+                Quản lý vai trò và các quyền được phép sử dụng trong hệ thống.
               </Typography.Text>
             </div>
           </Space>
@@ -327,8 +392,8 @@ export function IamRolePermissionScreen() {
       <Alert
         type="info"
         showIcon
-        title="Nguyên tắc RBAC"
-        description="Route/API là nguồn thực thi quyền. UI chỉ ẩn hoặc khoá action theo permission. SUPER_ADMIN là role hệ thống bất biến; permission catalog không cho tạo/sửa/xoá qua UI."
+        title="Nguyên tắc phân quyền"
+        description="Mỗi vai trò chỉ được sử dụng các chức năng đã được cấp quyền. Vai trò Quản trị cao nhất là vai trò hệ thống cố định và luôn có toàn quyền."
       />
 
       <Row gutter={[16, 16]} align="stretch">
@@ -399,7 +464,7 @@ export function IamRolePermissionScreen() {
               <Alert
                 type="warning"
                 showIcon
-                title="Tài khoản không có iam.permission.view nên không thể đọc permission catalog."
+                title="Tài khoản không có quyền xem danh sách phân quyền."
               />
             ) : permissionsQuery.isLoading ? (
               <div style={{ textAlign: "center", padding: 48 }}>
@@ -413,8 +478,8 @@ export function IamRolePermissionScreen() {
                   <Alert
                     type="warning"
                     showIcon
-                    title="SUPER_ADMIN là vai trò hệ thống"
-                    description="Không cho phép đổi mã, xoá hoặc thay ma trận quyền. Runtime Super Admin vẫn có quyền toàn cục theo invariant của hệ thống."
+                    title="Đây là vai trò Quản trị cao nhất"
+                    description="Không cho phép đổi mã, xóa hoặc thay ma trận quyền của vai trò hệ thống này."
                   />
                 )}
                 {groupedPermissions.map(([group, items]) => {
@@ -448,7 +513,7 @@ export function IamRolePermissionScreen() {
                               toggleGroup(items, event.target.checked)
                             }
                           >
-                            Chọn nhóm
+                            Chọn cả nhóm
                           </Checkbox>
                         ) : null
                       }
@@ -472,14 +537,15 @@ export function IamRolePermissionScreen() {
                               }}
                             >
                               <Space orientation="vertical" size={0}>
-                                <Typography.Text code>
-                                  {permission.permission_key}
+                                <Typography.Text>
+                                  {permissionLabel(permission)}
                                 </Typography.Text>
                                 <Typography.Text
                                   type="secondary"
-                                  style={{ fontSize: 12 }}
+                                  style={{ fontSize: 11 }}
+                                  copyable
                                 >
-                                  {permission.permission_name}
+                                  {permission.permission_key}
                                 </Typography.Text>
                               </Space>
                             </Checkbox>
@@ -515,7 +581,7 @@ export function IamRolePermissionScreen() {
         onCancel={() => setRoleModalOpen(false)}
         onOk={saveRole}
         okText="Lưu vai trò"
-        cancelText="Huỷ"
+        cancelText="Hủy"
         confirmLoading={createRole.isPending || updateRole.isPending}
         destroyOnHidden
       >
@@ -533,7 +599,7 @@ export function IamRolePermissionScreen() {
           >
             <Input
               maxLength={100}
-              placeholder="VD: WAREHOUSE_QA"
+              placeholder="Ví dụ: KIEM_SOAT_KHO"
               autoComplete="off"
             />
           </Form.Item>
@@ -542,18 +608,18 @@ export function IamRolePermissionScreen() {
             label="Tên vai trò"
             rules={[{ required: true, message: "Nhập tên vai trò" }]}
           >
-            <Input maxLength={255} placeholder="VD: Warehouse QA" />
+            <Input maxLength={255} placeholder="Ví dụ: Kiểm soát kho" />
           </Form.Item>
           <Form.Item
             name="scope_type"
-            label="Loại phạm vi"
+            label="Phạm vi áp dụng"
             rules={[{ required: true }]}
           >
             <Select
               options={[
-                { value: "SYSTEM", label: "SYSTEM" },
-                { value: "WAREHOUSE", label: "WAREHOUSE" },
-                { value: "FUNCTION", label: "FUNCTION" },
+                { value: "SYSTEM", label: "Toàn hệ thống" },
+                { value: "WAREHOUSE", label: "Theo kho" },
+                { value: "FUNCTION", label: "Theo chức năng" },
               ]}
             />
           </Form.Item>
@@ -564,8 +630,8 @@ export function IamRolePermissionScreen() {
           >
             <Select
               options={[
-                { value: "ACTIVE", label: "ACTIVE" },
-                { value: "INACTIVE", label: "INACTIVE" },
+                { value: "ACTIVE", label: "Đang sử dụng" },
+                { value: "INACTIVE", label: "Ngừng sử dụng" },
               ]}
             />
           </Form.Item>
