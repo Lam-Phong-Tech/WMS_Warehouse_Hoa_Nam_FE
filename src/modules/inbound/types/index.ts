@@ -60,7 +60,7 @@ export interface CreateInboundPayload {
   source_reference?: string | null;
   note?: string | null;
   /** Canonical GĐ1 create is header-only. */
-  lines?: [];
+  lines?: InboundLinePayload[];
 }
 
 export interface UpdateInboundPayload {
@@ -69,7 +69,7 @@ export interface UpdateInboundPayload {
   source_reference?: string | null;
   note?: string | null;
   /** Canonical GĐ1 update never edits expected lines. */
-  lines?: [];
+  lines?: InboundLinePayload[];
 }
 
 export interface InboundScanEntry {
