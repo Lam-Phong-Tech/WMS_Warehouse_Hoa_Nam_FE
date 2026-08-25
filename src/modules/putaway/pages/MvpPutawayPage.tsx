@@ -76,7 +76,7 @@ const BOX_STATUS_LABEL: Record<string, string> = {
 };
 
 function boxStatusLabel(status: string): string {
-  return BOX_STATUS_LABEL[status] ?? status;
+  return BOX_STATUS_LABEL[status] ?? "Chưa xác định";
 }
 
 function ApiErrorAlert({
@@ -98,7 +98,7 @@ function ApiErrorAlert({
           : getApiErrorMessage(error, fallback)
       }
       description={[
-        normalized.status ? `HTTP ${normalized.status}` : undefined,
+        normalized.status ? `Mã phản hồi ${normalized.status}` : undefined,
         normalized.code ? `Mã lỗi: ${normalized.code}` : undefined,
         requestId ? `Mã yêu cầu: ${requestId}` : undefined,
       ]
@@ -217,7 +217,7 @@ export default function MvpPutawayPage() {
 
   const openPutaway = (row: PutawayTask) => {
     if (row.status !== "RECEIVED_PENDING_PUTAWAY") {
-      toast.error("Chỉ BOX đang chờ xếp khay mới được thực hiện thao tác này.");
+      toast.error("Chỉ hộp đang chờ xếp khay mới được thực hiện thao tác này.");
       return;
     }
     setSelected(row);
@@ -284,7 +284,7 @@ export default function MvpPutawayPage() {
   const createDraft = async () => {
     if (!selected || !canManage) return;
     if (selected.status !== "RECEIVED_PENDING_PUTAWAY") {
-      toast.error("BOX không còn ở trạng thái chờ xếp khay. Hãy làm mới dữ liệu.");
+      toast.error("Hộp không còn ở trạng thái chờ xếp khay. Hãy làm mới dữ liệu.");
       return;
     }
 
@@ -309,7 +309,7 @@ export default function MvpPutawayPage() {
         throw new Error("Lỗi bất biến: tạo lệnh xếp khay không được thay đổi tồn kho.");
       }
       toast.success(
-        "Đã tạo lệnh xếp khay nháp. Xác nhận trên danh sách để hoàn tất BOX → khay.",
+        "Đã tạo lệnh xếp khay nháp. Xác nhận trên danh sách để hoàn tất gán hộp vào khay.",
       );
       closePutaway();
     } catch (error) {
@@ -328,7 +328,7 @@ export default function MvpPutawayPage() {
       if (result.stock_effect !== "NONE" || result.movement_created !== false) {
         throw new Error("Lỗi bất biến: xác nhận xếp khay không được tạo biến động tồn.");
       }
-      toast.success("Xếp khay thành công. BOX đã được gán vào khay; số lượng tồn không đổi.");
+      toast.success("Xếp khay thành công. Hộp đã được gán vào khay; số lượng tồn không đổi.");
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Không xác nhận được việc xếp khay."));
       throw error;
@@ -345,7 +345,7 @@ export default function MvpPutawayPage() {
       if (result.stock_effect !== "NONE" || result.movement_created !== false) {
         throw new Error("Lỗi bất biến: hủy lệnh xếp khay không được thay đổi tồn kho.");
       }
-      toast.success("Đã hủy lệnh xếp khay nháp. BOX vẫn ở trạng thái chờ xếp khay; tồn kho không đổi.");
+      toast.success("Đã hủy lệnh xếp khay nháp. Hộp vẫn ở trạng thái chờ xếp khay; tồn kho không đổi.");
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Không hủy được lệnh xếp khay."));
       throw error;
@@ -355,7 +355,7 @@ export default function MvpPutawayPage() {
   const confirmWithPrompt = (row: PutawayTask) => {
     Modal.confirm({
       title: "Xác nhận xếp khay?",
-      content: "BOX sẽ được gán vào khay đã chọn. Thao tác này không thay đổi số lượng tồn.",
+      content: "Hộp sẽ được gán vào khay đã chọn. Thao tác này không thay đổi số lượng tồn.",
       okText: "Xác nhận",
       cancelText: "Quay lại",
       onOk: () => confirm(row),
@@ -365,7 +365,7 @@ export default function MvpPutawayPage() {
   const cancelWithPrompt = (row: PutawayTask) => {
     Modal.confirm({
       title: "Hủy lệnh xếp khay nháp?",
-      content: "BOX sẽ quay lại trạng thái chờ xếp khay; tồn kho không đổi.",
+      content: "Hộp sẽ quay lại trạng thái chờ xếp khay; tồn kho không đổi.",
       okText: "Hủy lệnh",
       okButtonProps: { danger: true },
       cancelText: "Quay lại",
@@ -375,7 +375,7 @@ export default function MvpPutawayPage() {
 
   const taskColumns: ColumnsType<PutawayTask> = [
     {
-      title: "BOX",
+      title: "Hộp",
       dataIndex: "box_code",
       fixed: "left",
       width: 170,
@@ -396,7 +396,7 @@ export default function MvpPutawayPage() {
       render: (value) => value || "-",
     },
     {
-      title: "Trạng thái BOX",
+      title: "Trạng thái hộp",
       dataIndex: "status",
       width: 210,
       render: (value: string) => (
@@ -477,7 +477,7 @@ export default function MvpPutawayPage() {
 
   const historyColumns: ColumnsType<PutawayHistory> = [
     { title: "Thời gian", dataIndex: "created_at", width: 190 },
-    { title: "BOX", dataIndex: "box_code", width: 170 },
+    { title: "Hộp", dataIndex: "box_code", width: 170 },
     {
       title: "Khay cũ",
       dataIndex: "old_tray_code",
@@ -521,9 +521,9 @@ export default function MvpPutawayPage() {
 
       <Card className="master-data-panel" variant="borderless">
         <div className="master-data-contract-strip">
-          <Tag color="blue">GET/POST /putaway/tasks</Tag>
-          <Tag color="blue">POST /putaway/tasks/:id/confirm</Tag>
-          <Tag color="gold">Quyền xếp khay / quản lý container</Tag>
+          <Tag color="blue">Danh sách và lệnh xếp khay</Tag>
+          <Tag color="blue">Xác nhận vị trí lưu trữ</Tag>
+          <Tag color="gold">Yêu cầu quyền xếp khay hoặc quản lý vật chứa</Tag>
           <Tag color="green">Không thay đổi tồn kho</Tag>
         </div>
 
@@ -532,9 +532,9 @@ export default function MvpPutawayPage() {
             <Col xs={24} md={8}>
               <Input
                 value={searchDraft}
-                placeholder="Tìm BOX / SKU..."
+                placeholder="Tìm hộp / SKU..."
                 allowClear
-                aria-label="Tìm BOX hoặc SKU chờ xếp khay"
+                aria-label="Tìm hộp hoặc SKU chờ xếp khay"
                 onChange={(event) => setSearchDraft(event.target.value)}
               />
             </Col>
@@ -546,7 +546,7 @@ export default function MvpPutawayPage() {
           type="info"
           className="master-data-state-alert"
           title="Xếp khay là bước định vị sau khi đã hoàn tất nhập kho, không phải bước tăng tồn"
-          description="Linh kiện đã tăng tồn ở bước Post Receipt. Màn này chỉ gán BOX vào TRAY/vị trí; tạo, xác nhận hoặc hủy lệnh xếp khay đều không làm thay đổi số lượng tồn."
+          description="Linh kiện đã tăng tồn ở bước hoàn tất nhập kho. Màn này chỉ gán hộp vào khay/vị trí; tạo, xác nhận hoặc hủy lệnh xếp khay đều không làm thay đổi số lượng tồn."
         />
 
         {firstError ? (
@@ -577,10 +577,10 @@ export default function MvpPutawayPage() {
                     pagination={{
                       pageSize: pendingPageSize,
                       showSizeChanger: false,
-                      showTotal: (total) => `Tổng ${total} BOX`,
+                      showTotal: (total) => `Tổng ${total} hộp`,
                     }}
                     locale={{
-                      emptyText: "Không có BOX COMPONENT chờ xếp khay",
+                      emptyText: "Không có hộp linh kiện chờ xếp khay",
                     }}
                     scroll={{ x: "max-content" }}
                   />
@@ -644,7 +644,7 @@ export default function MvpPutawayPage() {
               column={{ xs: 1, sm: 2 }}
               style={{ marginBottom: 14 }}
             >
-              <Descriptions.Item label="BOX">
+              <Descriptions.Item label="Hộp">
                 {selected.box_code}
               </Descriptions.Item>
               <Descriptions.Item label="SKU">
@@ -665,14 +665,14 @@ export default function MvpPutawayPage() {
               type="warning"
               className="master-data-state-alert"
               title="Tạo lệnh nháp chưa thay đổi vị trí vật lý"
-              description="Chỉ khi xác nhận, BOX mới được gán vào khay. Cả bước tạo lệnh và bước xác nhận đều không làm thay đổi số lượng tồn kho."
+              description="Chỉ khi xác nhận, hộp mới được gán vào khay. Cả bước tạo lệnh và bước xác nhận đều không làm thay đổi số lượng tồn kho."
             />
           </>
         ) : null}
 
         <Form form={form} layout="vertical">
           <Form.Item
-            label="Quét Barcode/QR của khay đích"
+            label="Quét mã vạch/QR của khay đích"
             extra="Ưu tiên camera/máy quét. Nhập mã thủ công là phương án dự phòng; mã phải xác định đúng một khay khả dụng."
           >
             <Row gutter={8} align="top">
@@ -696,7 +696,7 @@ export default function MvpPutawayPage() {
                   disabled={!canManage || traysQuery.isLoading}
                   onClick={() => setCameraOpen(true)}
                 >
-                  Camera
+                  Quét bằng camera
                 </Button>
               </Col>
             </Row>
@@ -727,7 +727,7 @@ export default function MvpPutawayPage() {
 
       <CameraScanModal
         open={cameraOpen}
-        title="Camera Barcode/QR · Quét khay đích"
+        title="Quét mã vạch/QR khay đích bằng camera"
         onClose={() => setCameraOpen(false)}
         onDetected={(code) => {
           setCameraOpen(false);
@@ -752,7 +752,7 @@ export default function MvpPutawayPage() {
       >
         {detailRow ? (
           <Descriptions bordered size="small" column={1}>
-            <Descriptions.Item label="BOX">
+            <Descriptions.Item label="Hộp">
               {detailRow.box_code}
             </Descriptions.Item>
             <Descriptions.Item label="SKU">
@@ -770,7 +770,7 @@ export default function MvpPutawayPage() {
             <Descriptions.Item label="Vị trí">
               {detailRow.location_hint || "-"}
             </Descriptions.Item>
-            <Descriptions.Item label="Trạng thái BOX">
+            <Descriptions.Item label="Trạng thái hộp">
               <Tag
                 color={detailRow.status === "STORED" ? "success" : "warning"}
               >
