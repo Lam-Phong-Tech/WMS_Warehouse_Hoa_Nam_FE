@@ -17,6 +17,13 @@ export type WarrantyCaseStatus =
 export type WarrantyIdentificationType = "IDENTIFIED" | "TEMP_ONLY";
 export type WarrantyPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 
+export interface WarrantyCaseDefect {
+  defect_id: string;
+  defect_code: string;
+  defect_name: string;
+  is_primary?: boolean;
+}
+
 export interface WarrantyCase {
   id: string;
   case_code: string;
@@ -42,9 +49,13 @@ export interface WarrantyCase {
    */
   pii_masked: boolean;
   agency_name?: string;
+  /** Legacy primary defect display, kept for old screens. */
   defect: string;
   defect_code: string;
   defect_id?: string;
+  /** BA M1: one warranty case can contain multiple catalog defects. */
+  defect_ids?: string[];
+  defects?: WarrantyCaseDefect[];
   reported_defect?: string;
   confirmed_defect?: string;
   accessories_received?: string;
@@ -59,6 +70,8 @@ export interface WarrantyCase {
   warehouse_name?: string;
   received_at: string;
   expected_return_at?: string;
+  /** BA M1: expected repair/completion date; nullable and editable. */
+  expected_completion_date?: string;
   completed_at?: string;
   returned_at?: string;
   case_age_days?: number;
@@ -142,12 +155,17 @@ export interface CreateWarrantyCaseRequest {
   customer_address?: string;
   purchase_date?: string;
   agency_name?: string;
+  /** Legacy primary defect fields. */
   defect_id?: string;
   defect_code?: string;
+  /** BA M1 preferred multi-defect fields. */
+  defect_ids?: string[];
+  defect_codes?: string[];
   defect_description: string;
   reported_defect?: string;
   accessories_received?: string;
   received_condition?: string;
+  expected_completion_date?: string;
   missing_code_reason?: string;
   manual_product_description?: string;
   notes?: string;
@@ -163,8 +181,11 @@ export interface UpdateWarrantyCaseRequest {
   received_condition?: string;
   accessories_received?: string;
   cancel_reason?: string;
-  /** Annex D SCR-WAR-01: gán/sửa bệnh-lỗi danh mục khi CHECKING có kết luận. */
+  /** Legacy primary defect field; new forms should prefer defect_ids. */
   defect_id?: string;
+  defect_ids?: string[];
+  defect_codes?: string[];
+  expected_completion_date?: string;
   /** PII — chỉ gửi khi actor có `warranty.pii.view`; BE trả 403 nếu thiếu quyền. */
   customer_name?: string;
   customer_phone?: string;
