@@ -72,6 +72,21 @@ export interface UpdateInboundPayload {
   lines?: InboundLinePayload[];
 }
 
+/**
+ * GĐ1 COMPONENT theo Box: kết quả materialize dòng linh kiện (idempotent theo
+ * document + SKU, qty_planned luôn 0 — số lượng đến từ scan/đếm thực tế).
+ */
+export interface ComponentLineEnsureResult {
+  line_id: string;
+  document_id: string;
+  sku_id: string;
+  sku_code: string;
+  sku_name: string;
+  is_serial_tracked: boolean;
+  scanned_qty: number;
+  quantity_source: "ACTUAL_CODE_SCAN" | "ACTUAL_BOX_COUNT";
+}
+
 export interface InboundScanEntry {
   id: string;
   lineId: string;

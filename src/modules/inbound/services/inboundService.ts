@@ -12,6 +12,7 @@ import {
 import { WMS_ACTION_PERMISSIONS } from "@/shared/constants/wms-permissions";
 import type { ApiMeta } from "@/shared/types/api-response";
 import type {
+  ComponentLineEnsureResult,
   CreateInboundPayload,
   InboundCartonCompleteResult,
   InboundDetail,
@@ -190,17 +191,18 @@ function assertReadOnlyScanResponse(row: RawRecord): void {
     );
   }
 }
-function assertFullyScanned(detail: InboundDetail): void {
-  if (detail.lines.length === 0) {
+// GĐ1-REQ-004/006: số lượng nhập lấy từ hàng thực quét/đếm; không còn khái niệm
+// "quét đủ theo dự kiến". Điều kiện duy nhất phía client là phiếu đã ghi nhận
+// được ít nhất một đơn vị — thiếu/thừa so với chứng từ tham chiếu vẫn Post được.
+function assertHasScannedQuantity(detail: InboundDetail): void {
+  const totalScanned = detail.lines.reduce(
+    (sum, line) => sum + line.scanned,
+    0,
+  );
+  if (totalScanned <= 0) {
     throw new WmsContractError(
-      "WMS_FE_POST_REQUIRES_LINES",
-      "Inbound document must contain lines",
-    );
-  }
-  if (detail.lines.some((line) => line.scanned !== line.expected)) {
-    throw new WmsContractError(
-      "WMS_FE_POST_REQUIRES_FULL_SCAN",
-      "Every inbound line must be fully scanned before Post Receipt",
+      "WMS_FE_POST_REQUIRES_SCANNED",
+      "Inbound document must have at least one scanned unit before Post Receipt",
     );
   }
 }
@@ -356,6 +358,37 @@ export async function cancelInboundDocument(
   );
 }
 
+/**
+ * GĐ1 COMPONENT theo Box: materialize dòng linh kiện theo document + SKU (không
+ * nhập số lượng dự kiến). Idempotent — SKU đã có dòng thì trả lại dòng đó.
+ */
+export async function ensureComponentLine(
+  documentId: string,
+  skuId: string,
+): Promise<ComponentLineEnsureResult> {
+  assertWmsActionPermission(
+    WMS_ACTION_PERMISSIONS.SCAN_INBOUND,
+    "materialize inbound component line",
+  );
+  const row = await http.post<RawRecord>(
+    endpoint(API_ENDPOINTS.INBOUND_COMPONENT_LINES, documentId),
+    { sku_id: requireNonEmptyString(skuId, "sku_id") },
+  );
+  return {
+    line_id: requireNonEmptyString(row.line_id, "line_id"),
+    document_id: text(row.document_id),
+    sku_id: text(row.sku_id),
+    sku_code: text(row.sku_code),
+    sku_name: text(row.sku_name),
+    is_serial_tracked: row.is_serial_tracked === true,
+    scanned_qty: num(row.scanned_qty),
+    quantity_source:
+      text(row.quantity_source) === "ACTUAL_CODE_SCAN"
+        ? "ACTUAL_CODE_SCAN"
+        : "ACTUAL_BOX_COUNT",
+  };
+}
+
 export async function registerInboundBox(
   documentId: string,
   lineId: string,
@@ -486,7 +519,7 @@ export async function postInboundReceipt(
     "Idempotency-Key"
   ];
   const detail = await fetchInboundDetail(documentId);
-  assertFullyScanned(detail);
+  assertHasScannedQuantity(detail);
   if (detail.document.version !== request.ifMatch) {
     throw new WmsContractError(
       "WMS_FE_VERSION_CONFLICT",

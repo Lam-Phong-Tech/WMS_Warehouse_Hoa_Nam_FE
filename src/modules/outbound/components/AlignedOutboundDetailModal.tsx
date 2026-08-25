@@ -84,7 +84,7 @@ function labelStatus(value?: string | null): string {
     PRINTED: "Đã in",
     PRINT_FAILED: "In thất bại",
   };
-  return value ? labels[value] ?? value : "Chưa tạo";
+  return value ? (labels[value] ?? value) : "Chưa tạo";
 }
 
 /**
@@ -111,8 +111,9 @@ export function AlignedOutboundDetailModal({
   const [rfidCode, setRfidCode] = useState("");
   const [rfidHardwareUid, setRfidHardwareUid] = useState("");
   const [evidence, setEvidence] = useState<IssueEvidence | null>(null);
-  const [preparedLabel, setPreparedLabel] =
-    useState<PackingLabelRecord | null>(null);
+  const [preparedLabel, setPreparedLabel] = useState<PackingLabelRecord | null>(
+    null,
+  );
   const [labelWarning, setLabelWarning] = useState<string | null>(null);
   const postKeyRef = useRef<string | null>(null);
 
@@ -194,13 +195,14 @@ export function AlignedOutboundDetailModal({
     detail?.lines.reduce((sum, line) => sum + line.scanned, 0) ?? 0;
   const fullScan = Boolean(
     detail?.lines.length &&
-      detail.lines.every(
-        (line) => line.expected > 0 && line.scanned === line.expected,
-      ),
+    detail.lines.every(
+      (line) => line.expected > 0 && line.scanned === line.expected,
+    ),
   );
   const mutable = doc?.status === "DRAFT" || doc?.status === "SCANNING";
   const posted = doc?.status === "POSTED";
-  const customerPhoneValid = customerPhone === "" || /^0\d{9}$/.test(customerPhone);
+  const customerPhoneValid =
+    customerPhone === "" || /^0\d{9}$/.test(customerPhone);
   const availability = availabilityQuery.data ?? {};
   const shortStockLines = (detail?.lines ?? []).filter(
     (line) =>
@@ -396,6 +398,9 @@ export function AlignedOutboundDetailModal({
       toast.error(
         `${getApiErrorMessage(error, "In nhãn thất bại.")} Phiếu xuất kho vẫn giữ trạng thái đã ghi nhận.`,
       );
+      // BE bump version của label_snapshot kể cả khi PRINT_FAILED; giữ preparedLabel
+      // cũ sẽ làm lần in lại kế tiếp gửi If-Match version lỗi thời → 412.
+      setPreparedLabel(null);
       await refresh();
     },
   });
@@ -502,9 +507,7 @@ export function AlignedOutboundDetailModal({
                 setRfidTarget({
                   itemId: match.itemId as string,
                   itemCode:
-                    match.itemCode ||
-                    match.serialNumber ||
-                    short(match.itemId),
+                    match.itemCode || match.serialNumber || short(match.itemId),
                 })
               }
             >
@@ -518,12 +521,7 @@ export function AlignedOutboundDetailModal({
 
   if (detailQuery.isLoading) {
     return (
-      <Modal
-        open
-        title="Chi tiết phiếu xuất"
-        footer={null}
-        onCancel={onClose}
-      >
+      <Modal open title="Chi tiết phiếu xuất" footer={null} onCancel={onClose}>
         Đang tải...
       </Modal>
     );
@@ -531,12 +529,7 @@ export function AlignedOutboundDetailModal({
 
   if (detailQuery.isError || !detail || !doc) {
     return (
-      <Modal
-        open
-        title="Chi tiết phiếu xuất"
-        footer={null}
-        onCancel={onClose}
-      >
+      <Modal open title="Chi tiết phiếu xuất" footer={null} onCancel={onClose}>
         <Alert
           type="error"
           showIcon
@@ -559,11 +552,7 @@ export function AlignedOutboundDetailModal({
       destroyOnClose
     >
       <Space orientation="vertical" size={16} style={{ width: "100%" }}>
-        <Descriptions
-          bordered
-          size="small"
-          column={{ xs: 1, sm: 2, lg: 4 }}
-        >
+        <Descriptions bordered size="small" column={{ xs: 1, sm: 2, lg: 4 }}>
           <Descriptions.Item label="Phiếu">{doc.code}</Descriptions.Item>
           <Descriptions.Item label="Trạng thái">
             <Tag>{businessLabel(OUTBOUND_STATUS_LABELS, doc.status)}</Tag>
@@ -608,9 +597,7 @@ export function AlignedOutboundDetailModal({
               <Button
                 type="primary"
                 icon={<ScanOutlined />}
-                disabled={
-                  !mutable || !can("outbound.scan") || !scanCode.trim()
-                }
+                disabled={!mutable || !can("outbound.scan") || !scanCode.trim()}
                 loading={scanMutation.isPending}
                 onClick={() =>
                   scanMutation.mutate({
@@ -657,7 +644,9 @@ export function AlignedOutboundDetailModal({
                 title="Tồn khả dụng hiện thấp hơn số lượng cần xuất"
                 description={`SKU thiếu: ${shortStockLines
                   .map((line) => short(line.productId))
-                  .join(", ")}. Hệ thống sẽ kiểm tra lại tại thời điểm ghi nhận.`}
+                  .join(
+                    ", ",
+                  )}. Hệ thống sẽ kiểm tra lại tại thời điểm ghi nhận.`}
               />
             ) : null}
             {!posted ? (

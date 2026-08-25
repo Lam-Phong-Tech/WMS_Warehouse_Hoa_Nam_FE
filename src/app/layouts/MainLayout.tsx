@@ -147,7 +147,7 @@ const MVP_SCREEN_META: Record<string, ScreenMeta> = {
   "LBL-01": {
     title: "Nhãn đóng gói lô hàng",
     description:
-      "Tạo, xem trước, chuẩn bị và in đúng một nhãn đóng gói cho phiếu/lô xuất, sau đó xác nhận đã dán nhãn.",
+      "Tạo, xem trước, chuẩn bị và in đúng một nhãn đóng gói cho phiếu/lô xuất; in lại được khi cần, không ảnh hưởng tồn kho.",
   },
   "RFID-01": {
     title: "RFID tùy chọn & hoàn tất xuất kho",
@@ -371,10 +371,7 @@ export function MainLayout() {
     setSidebarCollapsed((prev) => {
       const next = !prev;
       try {
-        localStorage.setItem(
-          SIDEBAR_COLLAPSED_STORAGE_KEY,
-          next ? "1" : "0",
-        );
+        localStorage.setItem(SIDEBAR_COLLAPSED_STORAGE_KEY, next ? "1" : "0");
       } catch {
         // localStorage không khả dụng (chế độ ẩn danh) — bỏ qua, chỉ giữ state trong phiên.
       }

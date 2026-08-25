@@ -208,12 +208,24 @@ export default function WarrantyPage() {
     {
       title: "Bệnh / lỗi",
       key: "defect",
-      width: 200,
-      ellipsis: true,
+      width: 220,
       render: (_, row) =>
-        row.defect !== "-" && row.defect
-          ? row.defect
-          : (row.reported_defect ?? row.defect_code ?? "—"),
+        row.defects?.length ? (
+          <Space wrap size={4}>
+            {row.defects.map((defect) => (
+              <Tag
+                key={defect.defect_id}
+                color={defect.is_primary ? "blue" : undefined}
+              >
+                {defect.defect_name || defect.defect_code}
+              </Tag>
+            ))}
+          </Space>
+        ) : row.defect !== "-" && row.defect ? (
+          row.defect
+        ) : (
+          (row.reported_defect ?? row.defect_code ?? "—")
+        ),
     },
     {
       title: "Ngày nhận",

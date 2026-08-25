@@ -9,7 +9,6 @@ import {
   Input,
   InputNumber,
   Modal,
-  Progress,
   Row,
   Select,
   Space,
@@ -23,7 +22,6 @@ import {
   CloseCircleOutlined,
   CloseOutlined,
   DeleteOutlined,
-  EditOutlined,
   InboxOutlined,
   ScanOutlined,
 } from "@ant-design/icons";
@@ -58,6 +56,7 @@ import type { ScanClassifyResponse } from "@/modules/scan/types";
 import {
   useCancelInbound,
   useCompleteInboundCartonScan,
+  useEnsureComponentLine,
   useInboundDetail,
   useInboundScanEntries,
   usePostInboundReceipt,
@@ -91,7 +90,6 @@ type InboundScanModalProps = {
   documentId: string;
   onClose: () => void;
   onChanged?: () => void;
-  onEditExpected?: () => void;
 };
 
 type ScanLogRow = {
@@ -321,18 +319,19 @@ export function InboundScanModal({
   documentId,
   onClose,
   onChanged,
-  onEditExpected,
 }: InboundScanModalProps) {
   const detailQuery = useInboundDetail(documentId);
   const skuQuery = useMvpSkus({ status: "ACTIVE", per_page: 100 });
   const scanEntriesQuery = useInboundScanEntries(documentId, "ALL");
   const registerBoxMutation = useRegisterInboundBox();
+  const ensureComponentMutation = useEnsureComponentLine();
   const scanMutation = useScanInbound();
   const unscanMutation = useUnscanInbound();
   const postMutation = usePostInboundReceipt();
   const cancelMutation = useCancelInbound();
   const completeCartonMutation = useCompleteInboundCartonScan();
   const [lineId, setLineId] = useState<string>(AUTO_LINE);
+  const [componentSkuId, setComponentSkuId] = useState<string | undefined>();
   const [scanCode, setScanCode] = useState("");
   const [boxCode, setBoxCode] = useState("");
   const [quantity, setQuantity] = useState(1);
@@ -346,7 +345,6 @@ export function InboundScanModal({
   const [activeCarton, setActiveCarton] = useState<ActiveCarton | null>(null);
   const postKeyRef = useRef<string | null>(null);
   const scanKeyRef = useRef<{ key: string; fingerprint: string } | null>(null);
-  const canEdit = useInboundPermission(P.INBOUND_CREATE);
   const canScan = useInboundPermission(P.INBOUND_SCAN);
   const canPost = useInboundPermission(P.INBOUND_POST);
   const canCancel = useInboundPermission(WMS_ACTION_PERMISSIONS.CANCEL_INBOUND);
@@ -379,32 +377,29 @@ export function InboundScanModal({
   const selectedSku = selectedLine
     ? skuById.get(selectedLine.productId)
     : undefined;
-  const remaining = selectedLine
-    ? Math.max(selectedLine.expected - selectedLine.scanned, 0)
-    : 0;
   const isComponent = selectedSku?.sku_type === "COMPONENT";
   const isSerialTracked = Boolean(selectedSku?.is_serial_tracked);
-  const totalExpected =
-    detail?.lines.reduce((sum, line) => sum + line.expected, 0) ?? 0;
+  // GĐ1-REQ-004: số lượng nhập đến từ hàng thực quét/đếm — không còn khái niệm
+  // "dự kiến/còn lại" làm gate; Post chỉ cần đã ghi nhận ít nhất một đơn vị.
   const totalScanned =
     detail?.lines.reduce((sum, line) => sum + line.scanned, 0) ?? 0;
-  const isFullScan = Boolean(
-    detail?.lines.length &&
-    detail.lines.every((line) => line.scanned === line.expected),
+  const hasScanned = totalScanned > 0;
+  const componentSkuOptions = skuRows.filter(
+    (sku) => sku.sku_type === "COMPONENT",
   );
   const isMutable =
     detail?.document.status === "DRAFT" ||
     detail?.document.status === "SCANNING";
-  const busy = scanMutation.isPending || registerBoxMutation.isPending;
+  const busy =
+    scanMutation.isPending ||
+    registerBoxMutation.isPending ||
+    ensureComponentMutation.isPending;
   const working =
     busy ||
     postMutation.isPending ||
     cancelMutation.isPending ||
     unscanMutation.isPending ||
     completeCartonMutation.isPending;
-  const progressPercent = totalExpected
-    ? Math.min(100, Math.round((totalScanned / totalExpected) * 100))
-    : 0;
   const scanEntries = scanEntriesQuery.data ?? [];
   const activeEntries = scanEntries.filter(
     (entry) => entry.status === "ACTIVE",
@@ -424,8 +419,7 @@ export function InboundScanModal({
 
   useEffect(() => {
     if (isSerialTracked) setQuantity(1);
-    else setQuantity(Math.max(1, Math.min(remaining || 1, quantity)));
-  }, [isSerialTracked, quantity, remaining]);
+  }, [isSerialTracked]);
 
   const handleCartonDetected = (
     classified: ScanClassifyResponse,
@@ -509,9 +503,7 @@ export function InboundScanModal({
     const normalizedBox = boxCode.trim();
     const normalizedCode = (scannedCode ?? scanCode).trim();
     const scanQuantity =
-      isSerialTracked || !isComponent
-        ? 1
-        : Math.max(1, Math.min(Number(quantity) || 1, remaining));
+      isSerialTracked || !isComponent ? 1 : Math.max(1, Number(quantity) || 1);
 
     if (isComponent && !normalizedBox) {
       toast.error("Linh kiện bắt buộc có hộp trước khi ghi nhận quét.");
@@ -649,6 +641,33 @@ export function InboundScanModal({
     }
   };
 
+  // GĐ1 COMPONENT theo Box: materialize dòng linh kiện theo SKU thực nhận rồi
+  // chuyển sang nhánh Hộp/serial/số đếm hiện có. Idempotent theo document + SKU.
+  const handleAddComponentLine = async () => {
+    if (!componentSkuId || !canScan || !isMutable) return;
+    try {
+      const result = await ensureComponentMutation.mutateAsync({
+        id: documentId,
+        skuId: componentSkuId,
+      });
+      const refreshed = await detailQuery.refetch();
+      setLineId(result.line_id);
+      setComponentSkuId(undefined);
+      const version = refreshed.data?.document.version;
+      if (version !== undefined) setScanVersion(version);
+      toast.success(
+        `Đã sẵn sàng ghi nhận linh kiện ${result.sku_code} theo hộp (${
+          result.is_serial_tracked
+            ? "quét từng số sê-ri"
+            : "nhập số lượng đếm thực tế"
+        }).`,
+      );
+      onChanged?.();
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Không tạo được dòng linh kiện."));
+    }
+  };
+
   const handleUnscan = async (entry: InboundScanEntry) => {
     if (!detail || scanVersion === null || !canScan || !isMutable) return;
     try {
@@ -659,7 +678,7 @@ export function InboundScanModal({
       });
       setScanVersion(result.version);
       toast.success(
-        `Đã gỡ mã khỏi phiếu. Dòng còn ${result.scannedQuantity}/${result.requiredQuantity}; tồn kho không đổi.`,
+        `Đã gỡ mã khỏi phiếu. Dòng còn ${result.scannedQuantity} đơn vị đã quét; tồn kho không đổi.`,
       );
       await Promise.all([detailQuery.refetch(), scanEntriesQuery.refetch()]);
       onChanged?.();
@@ -674,7 +693,7 @@ export function InboundScanModal({
     if (
       !detail ||
       scanVersion === null ||
-      !isFullScan ||
+      !hasScanned ||
       !canPost ||
       detail.document.status !== "SCANNING"
     )
@@ -753,24 +772,12 @@ export function InboundScanModal({
         );
       },
     },
-    { title: "Dự kiến", dataIndex: "expected", width: 110, align: "right" },
-    { title: "Đã quét", dataIndex: "scanned", width: 110, align: "right" },
     {
-      title: "Còn lại",
-      key: "remaining",
-      width: 110,
+      title: "Số lượng đã quét",
+      dataIndex: "scanned",
+      width: 140,
       align: "right",
-      render: (_, line) => Math.max(line.expected - line.scanned, 0),
-    },
-    {
-      title: "Kết quả",
-      key: "result",
-      width: 120,
-      render: (_, line) => (
-        <Tag color={line.scanned === line.expected ? "success" : "warning"}>
-          {line.scanned === line.expected ? "ĐỦ" : "CHƯA ĐỦ"}
-        </Tag>
-      ),
+      render: (value: number) => <strong>{value}</strong>,
     },
   ];
 
@@ -943,10 +950,7 @@ export function InboundScanModal({
                           : "warning"
                   }
                 >
-                  {businessLabel(
-                    INBOUND_STATUS_LABELS,
-                    detail.document.status,
-                  )}
+                  {businessLabel(INBOUND_STATUS_LABELS, detail.document.status)}
                 </Tag>
               </Descriptions.Item>
               <Descriptions.Item label="Phiên bản dữ liệu">
@@ -968,10 +972,10 @@ export function InboundScanModal({
               <Col xs={24} sm={12} md={6}>
                 <Card size="small">
                   <div style={{ fontSize: 12, color: "#6b7280" }}>
-                    Số lượng cần nhận
+                    Dòng SKU thực nhận
                   </div>
                   <div style={{ fontSize: 22, fontWeight: 700 }}>
-                    {totalExpected}
+                    {detail.lines.length}
                   </div>
                 </Card>
               </Col>
@@ -997,17 +1001,13 @@ export function InboundScanModal({
 
             <Card
               size="small"
-              title="Tiến độ hoàn tất nhập kho"
+              title="Hàng thực nhận đã ghi nhận"
               style={{ marginBottom: 14 }}
             >
-              <Progress
-                percent={progressPercent}
-                status={isFullScan ? "success" : "active"}
-              />
-              <div style={{ color: "#6b7280", marginTop: 6 }}>
-                {isFullScan
-                  ? "Mọi dòng đã quét đủ chính xác. Chỉ có thể hoàn tất nhập kho khi phiếu đang ở trạng thái Đang quét nhận hàng và người dùng có quyền ghi nhận nhập kho."
-                  : `Đã ghi nhận ${totalScanned}/${totalExpected}. Không nhập kho một phần; còn thiếu phải tiếp tục quét hoặc điều chỉnh số lượng dự kiến hợp lệ.`}
+              <div style={{ color: "#6b7280" }}>
+                {hasScanned
+                  ? `Đã ghi nhận ${totalScanned} đơn vị trên ${detail.lines.length} dòng SKU từ quét/đếm thực tế. Số lượng nhập kho lấy theo hàng thực nhận — thiếu/thừa so với chứng từ vận chuyển vẫn ghi nhận nhập được.`
+                  : "Chưa ghi nhận đơn vị nào. Quét mã sản phẩm hoặc chọn SKU linh kiện theo hộp để bắt đầu; dòng phiếu sẽ tự được tạo theo hàng thực nhận."}
               </div>
             </Card>
 
@@ -1026,8 +1026,8 @@ export function InboundScanModal({
                           <div>
                             <div>
                               Đã quét <strong>{activeCartonScannedQty}</strong>{" "}
-                              máy vào thùng này. Sản phẩm quét tiếp theo sẽ được gắn
-                              vào thùng {activeCarton.code}.
+                              máy vào thùng này. Sản phẩm quét tiếp theo sẽ được
+                              gắn vào thùng {activeCarton.code}.
                             </div>
                             <Button
                               type="primary"
@@ -1069,12 +1069,51 @@ export function InboundScanModal({
                             const sku = skuById.get(line.productId);
                             return {
                               value: line.id,
-                              disabled: line.scanned >= line.expected,
-                              label: `${sku?.sku_code ?? line.productId} · ${line.scanned}/${line.expected}`,
+                              label: `${sku?.sku_code ?? line.productId} · đã quét ${line.scanned}`,
                             };
                           }),
                         ]}
                       />
+                    </div>
+
+                    <div style={{ marginBottom: 12 }}>
+                      <div
+                        style={{
+                          marginBottom: 6,
+                          fontSize: 12,
+                          color: "#6b7280",
+                        }}
+                      >
+                        Nhận linh kiện theo hộp — chọn SKU linh kiện thực nhận
+                        (dòng phiếu tự tạo, không nhập số lượng dự kiến)
+                      </div>
+                      <Space.Compact style={{ width: "100%" }}>
+                        <Select
+                          style={{ width: "100%" }}
+                          showSearch
+                          allowClear
+                          optionFilterProp="label"
+                          placeholder="Chọn SKU linh kiện"
+                          value={componentSkuId}
+                          disabled={!canScan || busy}
+                          onChange={(value) =>
+                            setComponentSkuId(value ?? undefined)
+                          }
+                          options={componentSkuOptions.map((sku) => ({
+                            value: sku.sku_id,
+                            label: `${sku.sku_code} · ${sku.sku_name}`,
+                          }))}
+                        />
+                        <Button
+                          type="primary"
+                          ghost
+                          disabled={!canScan || busy || !componentSkuId}
+                          loading={ensureComponentMutation.isPending}
+                          onClick={() => void handleAddComponentLine()}
+                        >
+                          Thêm dòng linh kiện
+                        </Button>
+                      </Space.Compact>
                     </div>
 
                     {isComponent ? (
@@ -1159,7 +1198,6 @@ export function InboundScanModal({
                         </div>
                         <InputNumber
                           min={1}
-                          max={Math.max(1, remaining)}
                           value={quantity}
                           onChange={(value) => setQuantity(Number(value ?? 1))}
                           disabled={!canScan || busy}
@@ -1173,10 +1211,8 @@ export function InboundScanModal({
                       icon={<ScanOutlined />}
                       disabled={
                         !canScan ||
-                        !lineId ||
                         busy ||
-                        remaining <= 0 ||
-                        !selectedSku
+                        (lineId !== AUTO_LINE && !selectedSku)
                       }
                       loading={busy}
                       onClick={() => void handleScan()}
@@ -1189,7 +1225,7 @@ export function InboundScanModal({
                         style={{ marginTop: 12 }}
                         type="info"
                         showIcon
-                        title={`${selectedSku?.sku_code ?? selectedLine.productId}: ${selectedLine.scanned}/${selectedLine.expected}`}
+                        title={`${selectedSku?.sku_code ?? selectedLine.productId}: đã quét ${selectedLine.scanned}`}
                         description={
                           isComponent
                             ? "Linh kiện: bắt buộc có hộp. Với linh kiện nhập theo số lượng có thể ghi nhận nhiều đơn vị mỗi hộp; linh kiện quản lý số sê-ri vẫn ghi nhận từng đơn vị. Sau khi hoàn tất nhập kho mới thực hiện xếp khay."
@@ -1204,25 +1240,30 @@ export function InboundScanModal({
                   <Card size="small" title="Quy tắc nghiệp vụ">
                     <Space orientation="vertical" size={10}>
                       <div>
-                        {isFullScan ? "✅" : "⚠️"}{" "}
-                        {isFullScan
-                          ? "Tất cả dòng đã quét đủ chính xác."
-                          : `Còn ${Math.max(totalExpected - totalScanned, 0)} đơn vị chưa ghi nhận.`}
+                        {hasScanned ? "✅" : "⚠️"}{" "}
+                        {hasScanned
+                          ? `Đã ghi nhận ${totalScanned} đơn vị thực nhận.`
+                          : "Chưa ghi nhận đơn vị nào — quét mã để bắt đầu."}
                       </div>
                       <div>
-                        • Camera và nhập tay dùng cùng quy tắc kiểm tra; camera không đọc RFID.
+                        • Camera và nhập tay dùng cùng quy tắc kiểm tra; camera
+                        không đọc RFID.
                       </div>
                       <div>
-                        • Quét và đăng ký hộp không được làm thay đổi tồn kho hoặc tạo biến động tồn kho.
+                        • Quét và đăng ký hộp không được làm thay đổi tồn kho
+                        hoặc tạo biến động tồn kho.
                       </div>
                       <div>
-                        • Quét vượt số lượng dự kiến, sai SKU/trạng thái hoặc trùng mã phải bị hệ thống từ chối.
+                        • Mã máy đã tồn tại trong hệ thống, sai SKU/trạng thái
+                        hoặc trùng mã phải bị hệ thống từ chối.
                       </div>
                       <div>
-                        • Hoàn tất nhập kho kiểm soát phiên bản, chống ghi nhận trùng và thực hiện nguyên tử.
+                        • Hoàn tất nhập kho kiểm soát phiên bản, chống ghi nhận
+                        trùng và thực hiện nguyên tử.
                       </div>
                       <div>
-                        • Linh kiện chỉ xếp khay sau khi hoàn tất nhập kho; xác nhận xếp khay không làm thay đổi tồn kho.
+                        • Linh kiện chỉ xếp khay sau khi hoàn tất nhập kho; xác
+                        nhận xếp khay không làm thay đổi tồn kho.
                       </div>
                     </Space>
                   </Card>
@@ -1248,7 +1289,7 @@ export function InboundScanModal({
 
             <Card
               size="small"
-              title="Đối soát từng dòng"
+              title="Hàng thực nhận theo SKU"
               style={{ marginTop: 14 }}
             >
               <Table<InboundLine>
@@ -1258,6 +1299,32 @@ export function InboundScanModal({
                 dataSource={detail.lines}
                 pagination={false}
                 scroll={{ x: 920 }}
+                expandable={{
+                  rowExpandable: (line) =>
+                    activeEntries.some((entry) => entry.lineId === line.id),
+                  expandedRowRender: (line) => {
+                    const lineEntries = activeEntries.filter(
+                      (entry) => entry.lineId === line.id,
+                    );
+                    return (
+                      <Space wrap size={4}>
+                        {lineEntries.map((entry) => (
+                          <Tag
+                            key={entry.id}
+                            style={{ fontFamily: "monospace" }}
+                          >
+                            {entry.itemCode ||
+                              entry.serialNumber ||
+                              entry.candidateItemUnique ||
+                              (entry.quantity > 1
+                                ? `SL ${entry.quantity}`
+                                : entry.itemId || "-")}
+                          </Tag>
+                        ))}
+                      </Space>
+                    );
+                  },
+                }}
               />
             </Card>
 
@@ -1327,7 +1394,8 @@ export function InboundScanModal({
                       Mã yêu cầu: <strong>{receiptEvidence.requestId}</strong>
                     </div>
                     <div>
-                      Biến động tồn kho: {receiptEvidence.movementRefs.join(", ")}
+                      Biến động tồn kho:{" "}
+                      {receiptEvidence.movementRefs.join(", ")}
                     </div>
                     <div>Phiếu nhập: {receiptEvidence.receiptId}</div>
                   </div>
@@ -1351,15 +1419,6 @@ export function InboundScanModal({
               >
                 Đóng
               </Button>
-              {canEdit && isMutable && onEditExpected ? (
-                <Button
-                  icon={<EditOutlined />}
-                  disabled={working}
-                  onClick={onEditExpected}
-                >
-                  Điều chỉnh số lượng dự kiến
-                </Button>
-              ) : null}
               {canCancel && isMutable ? (
                 <Button
                   danger
@@ -1376,14 +1435,14 @@ export function InboundScanModal({
                   icon={<CheckCircleOutlined />}
                   disabled={
                     !canPost ||
-                    !isFullScan ||
+                    !hasScanned ||
                     detail.document.status !== "SCANNING" ||
                     postMutation.isPending
                   }
                   loading={postMutation.isPending}
                   onClick={() => void handlePost()}
                 >
-                  Hoàn tất nhập kho
+                  Ghi nhận nhập
                 </Button>
               ) : null}
             </div>

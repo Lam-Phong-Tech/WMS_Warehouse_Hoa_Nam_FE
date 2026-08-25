@@ -3,6 +3,7 @@ import {
   cancelInboundDocument,
   completeInboundCartonScan,
   createInboundDocument,
+  ensureComponentLine,
   fetchInboundDetail,
   fetchInboundDocuments,
   fetchInboundScanEntries,
@@ -99,6 +100,16 @@ export function useCancelInbound() {
       reason: string;
       ifMatch: number;
     }) => cancelInboundDocument(id, reason, ifMatch),
+  );
+}
+/**
+ * GĐ1 COMPONENT theo Box: materialize dòng linh kiện theo SKU thực nhận —
+ * idempotent, không nhập số lượng dự kiến.
+ */
+export function useEnsureComponentLine() {
+  return useInvalidateInboundMutation(
+    ({ id, skuId }: { id: string; skuId: string }) =>
+      ensureComponentLine(id, skuId),
   );
 }
 export function useRegisterInboundBox() {

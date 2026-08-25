@@ -1,5 +1,15 @@
 import { useEffect, useRef } from "react";
-import { Alert, Button, Col, Form, Input, Modal, Row, Select, Space } from "antd";
+import {
+  Alert,
+  Button,
+  Col,
+  Form,
+  Input,
+  Modal,
+  Row,
+  Select,
+  Space,
+} from "antd";
 import { SaveOutlined } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -133,7 +143,9 @@ export function InboundDraftModal({
         note: values.note?.trim() || null,
       };
       const created = await createMutation.mutateAsync(payload);
-      toast.success("Đã tạo phiếu nhập. Quét hàng để hệ thống tự nhận SKU và số lượng.");
+      toast.success(
+        "Đã tạo phiếu nhập. Quét hàng để hệ thống tự nhận SKU và số lượng.",
+      );
       onSaved(created.id);
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Không lưu được phiếu nhập."));
@@ -167,8 +179,15 @@ export function InboundDraftModal({
       {detailQuery.isError ? (
         <Alert
           showIcon
-          type={normalizeError(detailQuery.error).status === 403 ? "warning" : "error"}
-          title={getApiErrorMessage(detailQuery.error, "Không tải được phiếu nhập.")}
+          type={
+            normalizeError(detailQuery.error).status === 403
+              ? "warning"
+              : "error"
+          }
+          title={getApiErrorMessage(
+            detailQuery.error,
+            "Không tải được phiếu nhập.",
+          )}
           style={{ marginBottom: 16 }}
         />
       ) : null}
@@ -224,7 +243,12 @@ export function InboundDraftModal({
         </Form.Item>
 
         <Form.Item label="Ghi chú" name="note">
-          <Input.TextArea rows={3} maxLength={1000} showCount disabled={!mutable} />
+          <Input.TextArea
+            rows={3}
+            maxLength={1000}
+            showCount
+            disabled={!mutable}
+          />
         </Form.Item>
 
         <Space style={{ width: "100%", justifyContent: "flex-end" }}>

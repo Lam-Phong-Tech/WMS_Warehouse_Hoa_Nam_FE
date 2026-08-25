@@ -48,6 +48,8 @@ export const API_ENDPOINTS = {
   INBOUND_LINES: "/inbound-documents/:id",
   INBOUND_CANCEL: "/inbound-documents/:id/cancel",
   INBOUND_BOXES: "/inbound-documents/:id/boxes",
+  /** GĐ1: materialize dòng COMPONENT theo Box (không nhập số lượng dự kiến). */
+  INBOUND_COMPONENT_LINES: "/inbound-documents/:id/component-lines",
   INBOUND_POST_RECEIPT: "/inbound-documents/:id/post-receipt",
   // Path chuẩn theo SRS v1.12 §8.1 + Annex C (scanInboundDocument /
   // postReceiptReversal). Route số ít /scan, /reverse chỉ là legacy của BE.
