@@ -160,6 +160,8 @@ export const IAM_SCOPE_LABELS = {
   FUNCTION: "Theo chức năng",
 } as const;
 
+export const IAM_SCOPE_TYPE_LABELS = IAM_SCOPE_LABELS;
+
 export const PV_STOCK_STATUS_LABELS = {
   IN_STOCK: "Còn hàng",
   OUT_OF_STOCK: "Chưa có hàng",
