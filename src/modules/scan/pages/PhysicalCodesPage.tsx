@@ -12,6 +12,7 @@ import {
   Typography,
 } from "antd";
 import { BarcodeOutlined } from "@ant-design/icons";
+import { useQuery } from "@tanstack/react-query";
 import {
   InlineApiError,
   tableEmptyText,
@@ -19,6 +20,17 @@ import {
 import { MvpPageSizeSelector } from "@/shared/components/mvp/MvpListPagination";
 import { resolveApiPagination } from "@/shared/components/mvp/mvp-pagination";
 import type { ApiMeta } from "@/shared/types/api-response";
+import {
+  CONTAINER_TYPE_LABELS,
+  INVENTORY_STOCK_STATUS_LABELS,
+  MASTER_STATUS_LABELS,
+  SCAN_BATCH_STATUS_LABELS,
+  SCAN_CLASSIFICATION_LABELS,
+  SCAN_CONTEXT_LABELS,
+  SCAN_RESULT_LABELS,
+  businessLabel,
+} from "@/shared/constants/business-labels";
+import { fetchWarehouses } from "@/modules/master-data/services/warehouse.service";
 import {
   classifyScanCodes,
   fetchPhysicalCodes,
@@ -44,17 +56,33 @@ const stateColorMap: Record<ScanCodeState, string> = {
   error: "error",
 };
 
-const SCAN_CONTEXT_OPTIONS: Array<{
-  value: ScanContext;
-  label: string;
-}> = [
+const STATE_LABELS: Record<ScanCodeState, string> = {
+  waiting: "Chờ quét",
+  scanned: "Đang xử lý",
+  success: "Thành công",
+  error: "Có lỗi",
+};
+
+const CARRIER_LABELS: Record<string, string> = {
+  QR: "QR",
+  BARCODE: "Mã vạch",
+  RFID: "RFID",
+};
+
+const SCAN_CONTEXT_OPTIONS: Array<{ value: ScanContext; label: string }> = [
   { value: "INBOUND", label: "Nhập kho" },
   { value: "OUTBOUND", label: "Xuất kho" },
-  { value: "INVENTORY", label: "Tra cứu tồn" },
+  { value: "INVENTORY", label: "Tra cứu tồn kho" },
   { value: "TRACE", label: "Truy vết" },
   { value: "WARRANTY_RECEIVE", label: "Tiếp nhận bảo hành" },
-  { value: "WARRANTY_TEMP_ONLY", label: "Bảo hành mã tạm" },
+  { value: "WARRANTY_TEMP_ONLY", label: "Bảo hành tạm" },
 ];
+
+function warehouseLabel(row: Record<string, unknown>) {
+  return String(
+    row.name ?? row.warehouse_name ?? row.code ?? row.warehouse_code ?? "Kho",
+  );
+}
 
 export default function PhysicalCodesPage() {
   const [activeTab, setActiveTab] = useState("list");
@@ -81,9 +109,22 @@ export default function PhysicalCodesPage() {
   const [classifyState, setClassifyState] = useState<ScanCodeState>("waiting");
   const [classifyMessage, setClassifyMessage] = useState("");
   const [issueModalOpen, setIssueModalOpen] = useState(false);
+
   const canCreatePhysicalCode = useCan(
     WMS_PERMISSION_CATALOG.PHYSICAL_CODE_CREATE,
   );
+
+  const warehousesQuery = useQuery({
+    queryKey: ["physical-codes", "active-warehouse"],
+    queryFn: () => fetchWarehouses({ status: "ACTIVE" }),
+  });
+  const warehouses = warehousesQuery.data ?? [];
+
+  useEffect(() => {
+    if (!warehouseId && warehouses.length > 0) {
+      setWarehouseId(String(warehouses[0].id ?? ""));
+    }
+  }, [warehouseId, warehouses]);
 
   const batchPagination = resolveApiPagination(batchMeta, {
     page: batchPage,
@@ -159,7 +200,6 @@ export default function PhysicalCodesPage() {
     reloadKey,
   ]);
 
-  /** POST /api/v1/scan/classify — exact WWHN-150.1.1.0 read-only contract. */
   const submitScan = useCallback(async () => {
     const rawCode = scanValue.trim();
     if (!rawCode || !warehouseId.trim()) return;
@@ -179,8 +219,11 @@ export default function PhysicalCodesPage() {
       setClassifyResult(response);
       setClassifyState("success");
       setClassifyMessage(
-        `Mã ${response.raw_code} được nhận diện là ${response.classification}. ` +
-          "Đây là thao tác chỉ đọc, không phát sinh biến động tồn kho.",
+        `Mã ${response.raw_code} được nhận diện là ${businessLabel(
+          SCAN_CLASSIFICATION_LABELS,
+          response.classification,
+          "đối tượng khác",
+        )}. Thao tác này chỉ dùng để tra cứu, không thay đổi tồn kho.`,
       );
       setScanValue("");
     } catch (error: unknown) {
@@ -188,7 +231,7 @@ export default function PhysicalCodesPage() {
       setClassifyMessage(
         error instanceof Error
           ? error.message
-          : "Lỗi khi phân loại mã. Vui lòng thử lại.",
+          : "Không nhận diện được mã. Vui lòng thử lại.",
       );
     } finally {
       setLoading(false);
@@ -213,7 +256,7 @@ export default function PhysicalCodesPage() {
               <>
                 <Space wrap style={{ marginBottom: 16 }}>
                   <Input.Search
-                    placeholder="Giá trị mã / UID..."
+                    placeholder="Giá trị mã..."
                     style={{ width: 285 }}
                   />
                   <Button
@@ -222,7 +265,7 @@ export default function PhysicalCodesPage() {
                     disabled={!canCreatePhysicalCode}
                     onClick={() => setIssueModalOpen(true)}
                   >
-                    Tạo mã
+                    Tạo mã vật lý
                   </Button>
                 </Space>
                 <InlineApiError
@@ -258,27 +301,51 @@ export default function PhysicalCodesPage() {
                       key: "code_value",
                     },
                     {
-                      title: "Loại",
+                      title: "Loại mã",
                       dataIndex: "code_type",
                       key: "code_type",
-                      render: (value: string) => <Tag>{value}</Tag>,
+                      render: (value: string) => (
+                        <Tag>{CARRIER_LABELS[value] ?? "Loại mã khác"}</Tag>
+                      ),
                     },
                     {
-                      title: "Vật mang",
+                      title: "Hình thức mã",
                       dataIndex: "carrier_type",
                       key: "carrier_type",
+                      render: (value: string) =>
+                        CARRIER_LABELS[value] ?? "Hình thức khác",
                     },
                     {
-                      title: "Đối tượng",
+                      title: "Đối tượng gắn mã",
                       dataIndex: "target_type",
                       key: "target_type",
+                      render: (value: string) =>
+                        businessLabel(
+                          SCAN_CLASSIFICATION_LABELS,
+                          value,
+                          "Đối tượng khác",
+                        ),
                     },
                     {
-                      title: "SKU/Container",
-                      dataIndex: "sku_code",
-                      key: "sku_code",
+                      title: "SKU / vật chứa",
+                      key: "target",
+                      render: (_: unknown, row: PhysicalCode) =>
+                        row.sku_code || row.container_code || "—",
                     },
-                    { title: "Trạng thái", dataIndex: "status", key: "status" },
+                    {
+                      title: "Trạng thái",
+                      dataIndex: "status",
+                      key: "status",
+                      render: (value: string) => (
+                        <Tag color={value === "ACTIVE" ? "success" : "default"}>
+                          {businessLabel(
+                            MASTER_STATUS_LABELS,
+                            value,
+                            "Trạng thái khác",
+                          )}
+                        </Tag>
+                      ),
+                    },
                     {
                       title: "Vị trí gợi ý",
                       dataIndex: "location_hint",
@@ -291,36 +358,41 @@ export default function PhysicalCodesPage() {
           },
           {
             key: "classify",
-            label: "Phân loại mã quét",
+            label: "Nhận diện mã quét",
             children: (
               <>
                 <Alert
                   type="info"
                   showIcon
-                  title="Contract WWHN-150.1.1.0 — read-only"
-                  description="Phân loại không tạo stock movement, posting event hoặc idempotency cache. Warehouse ID phải là UUID đúng scope hiện hành."
+                  title="Tra cứu mã an toàn"
+                  description="Nhận diện mã chỉ dùng để tra cứu thông tin. Thao tác này không làm tăng, giảm hoặc thay đổi tồn kho."
                   style={{ marginBottom: 16 }}
                 />
                 <Space wrap style={{ marginBottom: 16 }}>
-                  <Input
-                    placeholder="Warehouse UUID..."
-                    value={warehouseId}
-                    onChange={(event) => setWarehouseId(event.target.value)}
-                    style={{ width: 320 }}
+                  <Select
+                    placeholder="Chọn kho"
+                    value={warehouseId || undefined}
+                    loading={warehousesQuery.isLoading}
+                    style={{ width: 250 }}
+                    onChange={setWarehouseId}
+                    options={warehouses.map((row) => ({
+                      value: String(row.id ?? ""),
+                      label: warehouseLabel(row),
+                    }))}
                   />
                   <Select<ScanContext>
                     value={scanContext}
                     onChange={setScanContext}
                     options={SCAN_CONTEXT_OPTIONS}
-                    style={{ width: 210 }}
+                    style={{ width: 220 }}
                   />
                   <Input.Search
-                    placeholder="Quét/nhập mã..."
+                    placeholder="Quét hoặc nhập mã..."
                     value={scanValue}
                     onChange={(event) => setScanValue(event.target.value)}
                     onSearch={submitScan}
                     style={{ width: 360 }}
-                    enterButton="Phân loại"
+                    enterButton="Nhận diện"
                     disabled={!warehouseId.trim()}
                   />
                   <Button
@@ -330,7 +402,7 @@ export default function PhysicalCodesPage() {
                     disabled={!scanValue.trim() || !warehouseId.trim()}
                     icon={<BarcodeOutlined />}
                   >
-                    Gửi quét
+                    Nhận diện mã
                   </Button>
                 </Space>
 
@@ -341,7 +413,7 @@ export default function PhysicalCodesPage() {
                       <Space wrap>
                         <Typography.Text strong>Kết quả:</Typography.Text>
                         <Tag color={stateColorMap[classifyState]}>
-                          {classifyState.toUpperCase()}
+                          {STATE_LABELS[classifyState]}
                         </Tag>
                         <Typography.Text>{classifyMessage}</Typography.Text>
                       </Space>
@@ -354,7 +426,7 @@ export default function PhysicalCodesPage() {
                 {loading && classifyState === "scanned" && (
                   <Alert
                     type="info"
-                    title="Đang phân loại mã..."
+                    title="Đang nhận diện mã..."
                     showIcon
                     style={{ marginBottom: 16 }}
                   />
@@ -374,25 +446,40 @@ export default function PhysicalCodesPage() {
                         key: "raw_code",
                       },
                       {
-                        title: "Context",
+                        title: "Ngữ cảnh sử dụng",
                         dataIndex: "context",
                         key: "context",
+                        render: (value: string) =>
+                          businessLabel(
+                            SCAN_CONTEXT_LABELS,
+                            value,
+                            "Ngữ cảnh khác",
+                          ),
                       },
                       {
-                        title: "Phân loại",
+                        title: "Nhận diện là",
                         dataIndex: "classification",
                         key: "classification",
-                        render: (value: string) => <Tag>{value}</Tag>,
+                        render: (value: string) => (
+                          <Tag>
+                            {businessLabel(
+                              SCAN_CLASSIFICATION_LABELS,
+                              value,
+                              "Đối tượng khác",
+                            )}
+                          </Tag>
+                        ),
                       },
                       {
                         title: "Trạng thái tồn",
                         dataIndex: "stock_status",
                         key: "stock_status",
-                      },
-                      {
-                        title: "Nguồn resolve",
-                        dataIndex: "resolved_source",
-                        key: "resolved_source",
+                        render: (value: string) =>
+                          businessLabel(
+                            INVENTORY_STOCK_STATUS_LABELS,
+                            value,
+                            "Trạng thái khác",
+                          ),
                       },
                       {
                         title: "Kho hiện tại",
@@ -404,15 +491,9 @@ export default function PhysicalCodesPage() {
                           `${location.warehouse_code} — ${location.warehouse_name}`,
                       },
                       {
-                        title: "Stock effect",
-                        dataIndex: "stock_effect",
+                        title: "Ảnh hưởng tồn kho",
                         key: "stock_effect",
-                        render: (value: string) => <Tag>{value}</Tag>,
-                      },
-                      {
-                        title: "Contract",
-                        dataIndex: "contract_version",
-                        key: "contract_version",
+                        render: () => <Tag color="success">Không thay đổi tồn</Tag>,
                       },
                     ]}
                   />
@@ -422,12 +503,12 @@ export default function PhysicalCodesPage() {
           },
           {
             key: "history",
-            label: "Lô quét / sự kiện",
+            label: "Lịch sử quét",
             children: (
               <>
                 <InlineApiError
                   error={historyError}
-                  title="Không thể tải lô quét/sự kiện"
+                  title="Không thể tải lịch sử quét"
                   onRetry={() => setReloadKey((value) => value + 1)}
                 />
                 <Typography.Text strong>Lô quét</Typography.Text>
@@ -456,43 +537,53 @@ export default function PhysicalCodesPage() {
                   columns={[
                     { title: "Lô", dataIndex: "batch_no", key: "batch_no" },
                     {
-                      title: "Nguồn",
+                      title: "Nguồn quét",
                       dataIndex: "source_type",
                       key: "source_type",
+                      render: (value: string) =>
+                        businessLabel(
+                          SCAN_CONTEXT_LABELS,
+                          value,
+                          "Nguồn khác",
+                        ),
                     },
                     {
                       title: "Trạng thái",
                       dataIndex: "status",
                       key: "status",
-                      render: (value: string) => <Tag>{value}</Tag>,
+                      render: (value: string) => (
+                        <Tag>
+                          {businessLabel(
+                            SCAN_BATCH_STATUS_LABELS,
+                            value,
+                            "Trạng thái khác",
+                          )}
+                        </Tag>
+                      ),
                     },
                     {
-                      title: "Mã hợp lệ",
+                      title: "Hợp lệ",
                       dataIndex: "valid_count",
                       key: "valid_count",
                     },
                     {
-                      title: "Trùng",
+                      title: "Đã quét trước đó",
                       dataIndex: "duplicate_count",
                       key: "duplicate_count",
                     },
                     {
-                      title: "Không rõ",
+                      title: "Không nhận diện",
                       dataIndex: "unknown_count",
                       key: "unknown_count",
                     },
                     {
-                      title: "Lỗi",
+                      title: "Không hợp lệ",
                       dataIndex: "invalid_count",
                       key: "invalid_count",
                     },
-                    {
-                      title: "Tạo lúc",
-                      dataIndex: "created_at",
-                      key: "created_at",
-                    },
                   ]}
                 />
+
                 <Typography.Text strong>Sự kiện quét</Typography.Text>
                 <MvpPageSizeSelector
                   value={eventPerPage}
@@ -517,15 +608,29 @@ export default function PhysicalCodesPage() {
                   locale={{ emptyText: tableEmptyText(historyError) }}
                   columns={[
                     { title: "Mã", dataIndex: "code_value", key: "code_value" },
-                    { title: "Loại", dataIndex: "code_type", key: "code_type" },
+                    {
+                      title: "Loại mã",
+                      dataIndex: "code_type",
+                      key: "code_type",
+                      render: (value: string) =>
+                        CARRIER_LABELS[value] ?? "Loại mã khác",
+                    },
                     {
                       title: "Kết quả",
                       dataIndex: "status",
                       key: "status",
-                      render: (value: string) => <Tag>{value}</Tag>,
+                      render: (value: string) => (
+                        <Tag>
+                          {businessLabel(
+                            SCAN_RESULT_LABELS,
+                            value,
+                            "Kết quả khác",
+                          )}
+                        </Tag>
+                      ),
                     },
                     {
-                      title: "Tạo lúc",
+                      title: "Thời gian quét",
                       dataIndex: "scanned_at",
                       key: "scanned_at",
                     },
@@ -536,6 +641,7 @@ export default function PhysicalCodesPage() {
           },
         ]}
       />
+
       <IssuePhysicalCodeModal
         open={issueModalOpen}
         onClose={() => setIssueModalOpen(false)}
