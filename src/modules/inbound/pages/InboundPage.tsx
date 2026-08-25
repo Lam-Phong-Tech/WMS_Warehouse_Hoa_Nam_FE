@@ -26,6 +26,10 @@ import {
   hasAnyWmsPermission,
   WMS_PERMISSION_CATALOG as P,
 } from "@/shared/constants/wms-permissions";
+import {
+  INBOUND_STATUS_LABELS,
+  businessLabel,
+} from "@/shared/constants/business-labels";
 import { useOverlayBackDismiss } from "@/shared/hooks/useOverlayBackDismiss";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { InboundDraftModal } from "@/modules/inbound/components/InboundDraftModal";
@@ -33,12 +37,13 @@ import { useInboundDocuments } from "@/modules/inbound/hooks/use-inbound";
 import { InboundScanModal } from "@/modules/inbound/pages/MvpInboundScreens";
 import type { InboundDocument } from "@/modules/inbound/types";
 
-const STATUS_OPTIONS = [
-  { label: "DRAFT", value: "DRAFT" },
-  { label: "SCANNING", value: "SCANNING" },
-  { label: "POSTED", value: "POSTED" },
-  { label: "CANCELLED", value: "CANCELLED" },
-];
+const STATUS_OPTIONS: Array<{
+  label: string;
+  value: InboundDocument["status"];
+}> = Object.entries(INBOUND_STATUS_LABELS).map(([value, label]) => ({
+  value: value as InboundDocument["status"],
+  label,
+}));
 
 const PAGE_SIZE_OPTIONS = [15, 20, 50, 100];
 const SEARCH_DEBOUNCE_MS = 250;
@@ -52,7 +57,11 @@ function statusTag(status: InboundDocument["status"]) {
         : status === "CANCELLED"
           ? "error"
           : "warning";
-  return <Tag color={color}>{status}</Tag>;
+  return (
+    <Tag color={color}>
+      {businessLabel(INBOUND_STATUS_LABELS, status, "Chưa xác định")}
+    </Tag>
+  );
 }
 
 function useInboundPermission(code: string) {
@@ -166,7 +175,7 @@ function InboundListScreen() {
       render: (value: string) => value || "-",
     },
     {
-      title: "Tiến độ scan",
+      title: "Tiến độ quét",
       key: "progress",
       width: 220,
       render: (_, row) => {
@@ -191,7 +200,7 @@ function InboundListScreen() {
     {
       title: "Trạng thái",
       dataIndex: "status",
-      width: 130,
+      width: 170,
       render: statusTag,
     },
     {
@@ -203,7 +212,7 @@ function InboundListScreen() {
     {
       title: "Hành động",
       key: "actions",
-      width: 190,
+      width: 210,
       fixed: "right",
       render: (_, row) => {
         const mutable = row.status === "DRAFT" || row.status === "SCANNING";
@@ -228,8 +237,8 @@ function InboundListScreen() {
               <ActionDropdown
                 tooltip={
                   row.status === "SCANNING"
-                    ? "Hiệu chỉnh Expected"
-                    : "Sửa phiếu DRAFT"
+                    ? "Điều chỉnh số lượng dự kiến"
+                    : "Sửa phiếu nháp"
                 }
                 icon={<EditOutlined />}
                 items={[
@@ -237,7 +246,7 @@ function InboundListScreen() {
                     key: "edit-inbound",
                     label:
                       row.status === "SCANNING"
-                        ? "Hiệu chỉnh Expected"
+                        ? "Điều chỉnh số lượng dự kiến"
                         : "Sửa phiếu",
                     icon: <EditOutlined />,
                     onClick: () => openEditModal(row.id),
