@@ -335,13 +335,16 @@ describe("WWHN-181 exact BE v1.7 guards", () => {
     );
   });
 
-  it("blocks atomic posting until every planned line is fully scanned", async () => {
+  // GĐ1-REQ-004/006: số lượng nhập lấy theo hàng thực quét, không còn khái niệm
+  // "quét đủ theo dự kiến". Điều kiện duy nhất phía FE là phiếu đã ghi nhận được
+  // ít nhất một đơn vị — thiếu/thừa so với chứng từ vận chuyển vẫn Post được.
+  it("blocks atomic posting only when nothing has been scanned yet", async () => {
     grant(P.INBOUND_POST);
     vi.mocked(http.get).mockResolvedValue({
       id: "IN-1",
       version: 1,
       status: "SCANNING",
-      lines: [{ id: "L1", qty_planned: 2, scanned_qty: 1 }],
+      lines: [{ id: "L1", qty_planned: 0, scanned_qty: 0 }],
     });
 
     await expect(
@@ -350,8 +353,42 @@ describe("WWHN-181 exact BE v1.7 guards", () => {
         idempotencyKey: "idem-inbound-1",
         ifMatch: 1,
       }),
-    ).rejects.toMatchObject({ code: "WMS_FE_POST_REQUIRES_FULL_SCAN" });
+    ).rejects.toMatchObject({ code: "WMS_FE_POST_REQUIRES_SCANNED" });
     expect(http.postWithMeta).not.toHaveBeenCalled();
+  });
+
+  it("posts a partially scanned document because actual quantity is authoritative", async () => {
+    grant(P.INBOUND_POST);
+    vi.mocked(http.get).mockResolvedValue({
+      id: "IN-1",
+      version: 1,
+      status: "SCANNING",
+      lines: [{ id: "L1", qty_planned: 2, scanned_qty: 1 }],
+    });
+    vi.mocked(http.postWithMeta).mockResolvedValue({
+      data: {
+        document_id: "IN-1",
+        movement_ids: ["MV-1"],
+      },
+      meta: { request_id: "req-inbound-partial" },
+    });
+
+    await postInboundReceipt({
+      documentId: "IN-1",
+      idempotencyKey: "idem-inbound-1",
+      ifMatch: 1,
+    });
+
+    expect(http.postWithMeta).toHaveBeenCalledWith(
+      "/inbound-documents/IN-1/post-receipt",
+      undefined,
+      {
+        headers: {
+          "If-Match": "1",
+          "Idempotency-Key": "idem-inbound-1",
+        },
+      },
+    );
   });
 
   // REQ-SRS-037 (Must; nhãn `DEC-NO-STOCKTAKE-001` CHƯA có formal approval — xem
