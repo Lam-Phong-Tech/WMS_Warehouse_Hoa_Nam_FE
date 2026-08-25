@@ -38,14 +38,14 @@ const NAV_GROUPS: NavGroup[] = [
       {
         screen: "MST-01",
         path: ROUTES.MASTER_DATA,
-        label: "Danh sách SKU / Product Master",
+        label: "Danh sách SKU / Danh mục sản phẩm",
       },
       {
         // SCR-MST-01 (REQ-SRS-029): hãng/nhóm hàng/model/nguồn điện/quy cách là
         // master nuôi form tạo SKU nên đứng ngay cạnh mục SKU.
         screen: "MST-CAT-01",
         path: ROUTES.CATALOG_MASTER,
-        label: "Danh mục Product Master",
+        label: "Danh mục sản phẩm",
       },
       {
         // SCR-WH-01 (REQ-SRS-001): cấu hình đúng 01 kho tổng.
@@ -115,7 +115,7 @@ const NAV_GROUPS: NavGroup[] = [
       {
         screen: "REV-00",
         path: ROUTES.REVERSE,
-        label: "Danh sách phiếu Reversal",
+        label: "Danh sách phiếu điều chỉnh tồn kho",
       },
     ],
   },
