@@ -896,7 +896,7 @@ function statusTag(value: unknown) {
   const status = text(value, "");
   return (
     <Tag color={STATUS_COLORS[status] ?? "default"}>
-      {businessLabel(REPORT_STATUS_LABELS, status)}
+      {reportStatusLabel(value)}
     </Tag>
   );
 }
@@ -1210,7 +1210,7 @@ export default function AlignedReportsPage() {
   const statusOptionLabel = (value: string) =>
     report === "inventory-balance"
       ? businessLabel(INVENTORY_STOCK_STATUS_LABELS, value)
-      : businessLabel(REPORT_STATUS_LABELS, value);
+      : reportStatusLabel(value);
 
   return (
     <div
