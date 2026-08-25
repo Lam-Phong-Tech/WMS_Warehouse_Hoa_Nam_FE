@@ -57,11 +57,16 @@ import {
 } from "@/shared/components/mvp/MvpListPagination";
 import { resolveApiPagination } from "@/shared/components/mvp/mvp-pagination";
 import { WMS_PERMISSION_CATALOG } from "@/shared/constants/wms-permissions";
+import {
+  MASTER_STATUS_LABELS,
+  SKU_TYPE_LABELS,
+  businessLabel,
+} from "@/shared/constants/business-labels";
 import { useAuthStore } from "@/shared/store/auth.store";
 
 const STATUS_OPTIONS: Array<{ value: MasterStatus; label: string }> = [
-  { value: "ACTIVE", label: "ACTIVE" },
-  { value: "INACTIVE", label: "INACTIVE" },
+  { value: "ACTIVE", label: "Đang sử dụng" },
+  { value: "INACTIVE", label: "Ngừng sử dụng" },
 ];
 
 interface ScreenProps {
@@ -77,11 +82,6 @@ function useCanManage(permission: string | string[]) {
   );
 }
 
-/**
- * Annex D §8.3: các màn luồng 01 phải hỏi xác nhận trước hành động phá hủy /
- * publish / deactivate. Bọc Modal.confirm thành promise để dùng trong submit
- * handler async mà không phải lồng callback.
- */
 function confirmAction({
   title,
   content,
@@ -107,6 +107,14 @@ function statusClass(status: MasterStatus) {
   return status === "ACTIVE" ? "pill ok" : "pill warn-pill";
 }
 
+function masterStatusLabel(status: MasterStatus | string) {
+  return businessLabel(MASTER_STATUS_LABELS, status, "Trạng thái khác");
+}
+
+function skuTypeLabel(type: SkuType | string) {
+  return businessLabel(SKU_TYPE_LABELS, type, "Loại khác");
+}
+
 function compactRef(value?: string | null) {
   if (!value) return "—";
   return value.length > 14 ? `${value.slice(0, 8)}…${value.slice(-4)}` : value;
@@ -116,8 +124,6 @@ function toRefIndex(rows: CatalogRefRecord[] | undefined) {
   return new Map((rows ?? []).map((row) => [row.id, row]));
 }
 
-// MST-01 (wireframe): cột "Hãng" hiển thị tên danh mục, không phải UUID. Nếu
-// danh mục chưa nạp được thì rơi về mã rút gọn để vẫn phân biệt được bản ghi.
 function refLabel(
   index: Map<string, CatalogRefRecord>,
   value?: string | null,
@@ -163,10 +169,6 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-/**
- * MST-02: master của SKU là FK theo ERD bảng 16, nên chọn từ danh mục ACTIVE
- * thay vì gõ mã tự do. Giá trị rỗng = chưa gán / gỡ liên kết.
- */
 function MasterSelect({
   value,
   options,
@@ -179,8 +181,6 @@ function MasterSelect({
   onChange: (value: string) => void;
 }) {
   const rows = options ?? [];
-  // Bản ghi đang trỏ tới master đã INACTIVE (không nằm trong danh sách ACTIVE)
-  // vẫn phải hiển thị được, nếu không việc mở form sửa sẽ âm thầm gỡ liên kết.
   const isMissing = Boolean(value) && !rows.some((row) => row.id === value);
   return (
     <>
@@ -193,7 +193,7 @@ function MasterSelect({
       >
         <option value="">— Chưa chọn —</option>
         {isMissing ? (
-          <option value={value}>Giữ liên kết hiện tại (đã ngừng dùng)</option>
+          <option value={value}>Giữ liên kết hiện tại (đã ngừng sử dụng)</option>
         ) : null}
         {rows.map((row) => (
           <option key={row.id} value={row.id}>
@@ -203,14 +203,14 @@ function MasterSelect({
       </select>
       {isMissing ? (
         <div className="muted" style={{ marginTop: 4 }}>
-          Master đang gán không còn ACTIVE — giữ nguyên hoặc chọn master khác.
+          Danh mục đang gán đã ngừng sử dụng — giữ nguyên hoặc chọn danh mục khác.
         </div>
       ) : null}
     </>
   );
 }
 
-// ===== SKU Master =====
+// ===== SKU =====
 
 type SkuFormState = {
   code: string;
@@ -254,14 +254,6 @@ const EMPTY_CATALOGS: ProductCatalogRefs = {
 
 export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   const canManage = useCanManage("sku.manage");
-  /**
-   * WWHN-252 (FE252-P1-03): SRS §3 xếp "Publish/unpublish sản phẩm lên App PV"
-   * vào cột App PV với permission key RIÊNG `pv.publish`. Bản cũ nhận
-   * ["pv.publish", "sku.manage"] — nghĩa là OR — nên bất kỳ ai sửa được SKU đều
-   * bật được sản phẩm lên mặt công khai, đúng thứ mà việc tách quyền sinh ra để
-   * ngăn. BE cũng đã bỏ alternative `|sku.manage` ở route publish, nên giữ
-   * sku.manage ở đây chỉ tạo ra nút bấm chắc chắn nhận 403.
-   */
   const canPublish = useCanManage(WMS_PERMISSION_CATALOG.PV_PUBLISH);
   const [keyword, setKeyword] = useState("");
   const [status, setStatus] = useState<MasterStatus | "">("");
@@ -271,10 +263,11 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   const [perPage, setPerPage] = useState(15);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<SkuRecord | null>(null);
+  const [viewing, setViewing] = useState<SkuRecord | null>(null);
   const [form, setForm] = useState<SkuFormState>(EMPTY_SKU_FORM);
   const [formError, setFormError] = useState("");
-  // WWHN-331 [FE1]: bulk import Excel — cùng quyền sku.manage với CRUD SKU.
   const [importModalOpen, setImportModalOpen] = useState(false);
+  const [publishError, setPublishError] = useState<unknown>(null);
 
   const query = useMvpSkus({
     keyword: keyword.trim(),
@@ -288,39 +281,31 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   const createMutation = useCreateMvpSku();
   const updateMutation = useUpdateMvpSku();
   const publishMutation = useSetMvpSkuPublished();
-  const [publishError, setPublishError] = useState<unknown>(null);
   const isSaving = createMutation.isPending || updateMutation.isPending;
   const editingId = editing?.sku_id ?? editing?.id ?? "";
-  // BR-SKU-10 proactive UX: khoá mã SKU/theo dõi serial ngay khi biết SKU đang
-  // có tồn > 0, thay vì chỉ phản ứng sau khi BE trả lỗi 409 lúc lưu. Best-effort
-  // (xem hasMvpSkuStock) — BE luôn là chốt chặn thật sự.
   const stockLockQuery = useMvpSkuHasStock(
     editingId,
     modalOpen && Boolean(editing),
   );
   const identityLocked = Boolean(editing) && stockLockQuery.data === true;
+
   const apiRows = useMemo(() => query.data?.data ?? [], [query.data]);
   const catalogs = catalogsQuery.data ?? EMPTY_CATALOGS;
   const brands = catalogs.brands;
-  const brandIndex = useMemo(() => toRefIndex(catalogs.brands), [catalogs]);
+  const brandIndex = useMemo(() => toRefIndex(catalogs.brands), [catalogs.brands]);
   const categoryIndex = useMemo(
     () => toRefIndex(catalogs.categories),
-    [catalogs],
+    [catalogs.categories],
   );
-  const modelIndex = useMemo(() => toRefIndex(catalogs.models), [catalogs]);
+  const modelIndex = useMemo(() => toRefIndex(catalogs.models), [catalogs.models]);
   const powerSourceIndex = useMemo(
     () => toRefIndex(catalogs.powerSources),
-    [catalogs],
+    [catalogs.powerSources],
   );
   const packageVariantIndex = useMemo(
     () => toRefIndex(catalogs.packageVariants),
-    [catalogs],
+    [catalogs.packageVariants],
   );
-  const [viewing, setViewing] = useState<SkuRecord | null>(null);
-  // brand_id vẫn được gửi lên GET /products, nhưng BE ProductRepository hiện chỉ
-  // filter ['status','sku_type'] nên param có thể bị bỏ qua. Lọc thêm phía client
-  // trên trang đang xem để bộ lọc "Hãng" hoạt động ngay; khi BE bổ sung brand_id
-  // vào $filterable thì bước lọc này thành no-op.
   const rows = useMemo(
     () =>
       brandId ? apiRows.filter((row) => row.brand_id === brandId) : apiRows,
@@ -336,16 +321,18 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
     if (!canPublish) return;
     setPublishError(null);
     const willPublish = !record.published_to_app;
-    // Annex D SCR-IAM-01/§8.3: publish/gỡ publish là thao tác ra ngoài hệ thống
-    // (App PV) nên phải xác nhận trước.
+    const skuCode = record.sku_code ?? record.code;
     const confirmed = await confirmAction({
-      title: willPublish ? "Publish SKU lên App PV?" : "Gỡ SKU khỏi App PV?",
+      title: willPublish
+        ? "Đưa SKU lên ứng dụng phân vùng?"
+        : "Gỡ SKU khỏi ứng dụng phân vùng?",
       content: willPublish
-        ? `SKU ${record.sku_code ?? record.code} sẽ hiển thị công khai trên App Phân Vùng.`
-        : `SKU ${record.sku_code ?? record.code} sẽ không còn hiển thị trên App Phân Vùng.`,
-      okText: willPublish ? "Publish" : "Gỡ publish",
+        ? `SKU ${skuCode} sẽ hiển thị trên ứng dụng phân vùng.`
+        : `SKU ${skuCode} sẽ không còn hiển thị trên ứng dụng phân vùng.`,
+      okText: willPublish ? "Đưa lên ứng dụng" : "Gỡ khỏi ứng dụng",
     });
     if (!confirmed) return;
+
     try {
       await publishMutation.mutateAsync({
         id: record.sku_id ?? record.id ?? "",
@@ -354,8 +341,8 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
       });
       toast.success(
         willPublish
-          ? "Đã publish SKU cho App Phân Vùng"
-          : "Đã gỡ publish SKU khỏi App Phân Vùng",
+          ? "Đã đưa SKU lên ứng dụng phân vùng"
+          : "Đã gỡ SKU khỏi ứng dụng phân vùng",
       );
     } catch (error) {
       toast.error(getMutationErrorMessage(error));
@@ -373,6 +360,8 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
 
   useEffect(() => {
     if (openCreateOnMount && canManage) openCreate();
+    // openCreate chỉ phụ thuộc trạng thái quyền và cờ mở modal.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canManage, openCreateOnMount]);
 
   const openEdit = (record: SkuRecord) => {
@@ -413,13 +402,10 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
       setFormError("Mã SKU và tên SKU là bắt buộc.");
       return;
     }
-    // REQ-SRS-020: chỉ SKU active mới publish. BE là nguồn thực thi (422
-    // SKU_PUBLISH_REQUIRES_ACTIVE); chặn thêm phía client để tránh round-trip lỗi.
     if (form.publishedToApp && form.status !== "ACTIVE") {
-      setFormError("Chỉ SKU ACTIVE mới được publish cho App PV.");
+      setFormError("Chỉ SKU đang sử dụng mới được đưa lên ứng dụng phân vùng.");
       return;
     }
-    // Wireframe MST-02: Hãng / Category / Model / Nguồn điện là trường bắt buộc.
     if (
       !form.brandId ||
       !form.categoryId ||
@@ -427,17 +413,16 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
       !form.powerSourceId
     ) {
       setFormError(
-        "Vui lòng chọn đủ Hãng, Category, Model và Nguồn điện cho SKU.",
+        "Vui lòng chọn đủ Hãng, Nhóm hàng, Model và Nguồn điện cho SKU.",
       );
       return;
     }
-    // Annex D SCR-MST-01: xác nhận cho hành động phá hủy — ngừng hoạt động SKU.
     if (form.status === "INACTIVE" && editing?.status === "ACTIVE") {
       const confirmed = await confirmAction({
-        title: "Ngừng hoạt động SKU?",
+        title: "Ngừng sử dụng SKU?",
         content:
-          "SKU sẽ không còn được chọn cho phiếu mới và sẽ bị gỡ khỏi App PV. Lịch sử chứng từ giữ nguyên.",
-        okText: "Ngừng hoạt động",
+          "SKU sẽ không còn được chọn cho phiếu mới và sẽ bị gỡ khỏi ứng dụng phân vùng. Lịch sử chứng từ giữ nguyên.",
+        okText: "Ngừng sử dụng",
       });
       if (!confirmed) return;
     }
@@ -473,11 +458,6 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
       setModalOpen(false);
       setEditing(null);
     } catch (error) {
-      // BR-SKU-10: BE khoá sku_code/is_serial_tracked ngay khi SKU đã có
-      // stock/movement, bất kể giá trị mới là gì. Khôi phục 2 ô này về giá trị
-      // hiện tại để người dùng có thể lưu lại các thay đổi khác mà không phải
-      // tự dò ra field nào gây lỗi. Thông báo lấy trực tiếp từ message của BE
-      // (đã thân thiện, tiếng Việt) qua getMutationErrorMessage bên dưới.
       if (
         normalizeError(error).code === "SKU_IDENTITY_IMMUTABLE_AFTER_STOCK" &&
         editing
@@ -515,10 +495,9 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           }}
         >
           <option value="">Loại: Tất cả</option>
-          <option value="PRODUCT">PRODUCT</option>
-          <option value="COMPONENT">COMPONENT</option>
+          <option value="PRODUCT">Sản phẩm</option>
+          <option value="COMPONENT">Linh kiện</option>
         </select>
-        {/* MST-01 wireframe toolbar: bộ lọc "Hãng" cạnh bộ lọc Loại. */}
         <select
           className="select"
           value={brandId}
@@ -558,7 +537,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
             type="button"
             onClick={() => setImportModalOpen(true)}
           >
-            <ImportOutlined /> Import Excel
+            <ImportOutlined /> Nhập từ Excel
           </button>
         ) : null}
         {canManage ? (
@@ -582,11 +561,12 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           onImported={() => void query.refetch()}
         />
       ) : null}
+
       {publishError ? (
         <div className="alert" role="alert" style={{ marginBottom: 14 }}>
           {getApiErrorMessage(
             publishError,
-            "Không cập nhật được trạng thái publish.",
+            "Không cập nhật được trạng thái hiển thị trên ứng dụng phân vùng.",
           )}{" "}
           <button
             className="btn small"
@@ -612,14 +592,14 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
             <tr>
               <th>SKU</th>
               <th>Loại</th>
-              <th>ĐVT</th>
+              <th>Đơn vị tính</th>
               <th>Hãng</th>
-              <th>Category</th>
+              <th>Nhóm hàng</th>
               <th>Model</th>
               <th>Nguồn điện</th>
-              <th>Serial</th>
+              <th>Quản lý số sê-ri</th>
               <th>Trạng thái</th>
-              <th>App PV</th>
+              <th>Ứng dụng phân vùng</th>
               <th aria-label="Hành động" />
             </tr>
           </thead>
@@ -627,15 +607,13 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
             {query.isLoading ? (
               <tr>
                 <td colSpan={11} className="muted">
-                  Đang tải dữ liệu từ API...
+                  Đang tải dữ liệu...
                 </td>
               </tr>
             ) : rows.length > 0 ? (
               rows.map((record) => {
                 const recordId = record.sku_id ?? record.id ?? "";
                 const isPublished = Boolean(record.published_to_app);
-                // AC-SRS-020: chỉ SKU ACTIVE mới được publish (khác với quyền
-                // `pv.publish` ở biến canPublish cấp màn hình).
                 const statusAllowsPublish = record.status === "ACTIVE";
                 return (
                   <tr key={recordId}>
@@ -646,7 +624,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                         {record.sku_name ?? record.name}
                       </span>
                     </td>
-                    <td>{record.sku_type}</td>
+                    <td>{skuTypeLabel(record.sku_type)}</td>
                     <td>{record.unit || "—"}</td>
                     <td title={record.brand_id ?? undefined}>
                       {refLabel(brandIndex, record.brand_id)}
@@ -665,7 +643,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                     <td>{record.is_serial_tracked ? "Có" : "Không"}</td>
                     <td>
                       <span className={statusClass(record.status)}>
-                        {record.status}
+                        {masterStatusLabel(record.status)}
                       </span>
                     </td>
                     <td>
@@ -673,11 +651,11 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                         className={isPublished ? "pill ok" : "pill warn-pill"}
                         title={
                           isPublished
-                            ? "SKU đang hiển thị trên App Phân Vùng"
-                            : "SKU chưa được đẩy lên App Phân Vùng"
+                            ? "SKU đang hiển thị trên ứng dụng phân vùng"
+                            : "SKU chưa hiển thị trên ứng dụng phân vùng"
                         }
                       >
-                        {isPublished ? "Đã publish" : "Chưa publish"}
+                        {isPublished ? "Đang hiển thị" : "Chưa hiển thị"}
                       </span>
                     </td>
                     <td>
@@ -689,46 +667,42 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                         >
                           <EyeOutlined /> Xem
                         </button>
-                        {canManage || canPublish ? (
-                          <>
-                            {canManage ? (
-                              <button
-                                className="btn small"
-                                type="button"
-                                onClick={() => openEdit(record)}
-                              >
-                                <EditOutlined /> Sửa
-                              </button>
-                            ) : null}{" "}
-                            {canPublish ? (
-                            <button
-                              className="btn small"
-                              type="button"
-                              disabled={
-                                publishMutation.isPending ||
-                                (!isPublished && !statusAllowsPublish)
-                              }
-                              title={
-                                !isPublished && !statusAllowsPublish
-                                  ? "Chỉ SKU ACTIVE mới được publish cho App PV."
-                                  : isPublished
-                                    ? "Gỡ SKU khỏi App Phân Vùng"
-                                    : "Đẩy SKU lên App Phân Vùng"
-                              }
-                              onClick={() => void togglePublish(record)}
-                            >
-                              {isPublished ? (
-                                <>
-                                  <CloudDownloadOutlined /> Gỡ publish
-                                </>
-                              ) : (
-                                <>
-                                  <CloudUploadOutlined /> Publish App PV
-                                </>
-                              )}
-                            </button>
-                            ) : null}
-                          </>
+                        {canManage ? (
+                          <button
+                            className="btn small"
+                            type="button"
+                            onClick={() => openEdit(record)}
+                          >
+                            <EditOutlined /> Sửa
+                          </button>
+                        ) : null}
+                        {canPublish ? (
+                          <button
+                            className="btn small"
+                            type="button"
+                            disabled={
+                              publishMutation.isPending ||
+                              (!isPublished && !statusAllowsPublish)
+                            }
+                            title={
+                              !isPublished && !statusAllowsPublish
+                                ? "Chỉ SKU đang sử dụng mới được đưa lên ứng dụng phân vùng."
+                                : isPublished
+                                  ? "Gỡ SKU khỏi ứng dụng phân vùng"
+                                  : "Đưa SKU lên ứng dụng phân vùng"
+                            }
+                            onClick={() => void togglePublish(record)}
+                          >
+                            {isPublished ? (
+                              <>
+                                <CloudDownloadOutlined /> Gỡ khỏi ứng dụng
+                              </>
+                            ) : (
+                              <>
+                                <CloudUploadOutlined /> Đưa lên ứng dụng
+                              </>
+                            )}
+                          </button>
                         ) : null}
                       </Space>
                     </td>
@@ -773,15 +747,15 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               {viewing.sku_name ?? viewing.name}
             </Descriptions.Item>
             <Descriptions.Item label="Loại">
-              {viewing.sku_type}
+              {skuTypeLabel(viewing.sku_type)}
             </Descriptions.Item>
-            <Descriptions.Item label="ĐVT">
+            <Descriptions.Item label="Đơn vị tính">
               {viewing.unit || "—"}
             </Descriptions.Item>
             <Descriptions.Item label="Hãng">
               {refLabel(brandIndex, viewing.brand_id)}
             </Descriptions.Item>
-            <Descriptions.Item label="Category">
+            <Descriptions.Item label="Nhóm hàng">
               {refLabel(categoryIndex, viewing.category_id)}
             </Descriptions.Item>
             <Descriptions.Item label="Model">
@@ -792,27 +766,24 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                 ? refLabel(powerSourceIndex, viewing.power_source_id)
                 : viewing.power_or_voltage || "—"}
             </Descriptions.Item>
-            <Descriptions.Item label="Package variant">
+            <Descriptions.Item label="Quy cách đóng gói">
               {viewing.package_variant_id
                 ? refLabel(packageVariantIndex, viewing.package_variant_id)
                 : viewing.package_variant || "—"}
             </Descriptions.Item>
-            <Descriptions.Item label="Phiên bản (version_code)">
+            <Descriptions.Item label="Phiên bản sản phẩm">
               {viewing.version_code || "—"}
             </Descriptions.Item>
-            <Descriptions.Item label="Theo dõi serial">
+            <Descriptions.Item label="Quản lý số sê-ri">
               {viewing.is_serial_tracked ? "Có" : "Không"}
             </Descriptions.Item>
             <Descriptions.Item label="Trạng thái">
               <span className={statusClass(viewing.status)}>
-                {viewing.status}
+                {masterStatusLabel(viewing.status)}
               </span>
             </Descriptions.Item>
-            <Descriptions.Item label="App PV">
-              {viewing.published_to_app ? "Đã publish" : "Chưa publish"}
-            </Descriptions.Item>
-            <Descriptions.Item label="Version">
-              {viewing.version}
+            <Descriptions.Item label="Ứng dụng phân vùng">
+              {viewing.published_to_app ? "Đang hiển thị" : "Chưa hiển thị"}
             </Descriptions.Item>
           </Descriptions>
         ) : null}
@@ -853,7 +824,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                 />
                 {identityLocked ? (
                   <div className="muted" style={{ marginTop: 4 }}>
-                    SKU đã có tồn kho — không thể đổi mã SKU (BR-SKU-10).
+                    SKU đã có tồn kho — không thể đổi mã SKU.
                   </div>
                 ) : null}
               </Field>
@@ -884,8 +855,8 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                   }
                   disabled={isSaving}
                 >
-                  <option value="PRODUCT">PRODUCT</option>
-                  <option value="COMPONENT">COMPONENT</option>
+                  <option value="PRODUCT">Sản phẩm</option>
+                  <option value="COMPONENT">Linh kiện</option>
                 </select>
               </Field>
               <Field label="Đơn vị tính">
@@ -894,10 +865,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                   style={{ width: "100%" }}
                   value={form.unit}
                   onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      unit: event.target.value,
-                    }))
+                    setForm((current) => ({ ...current, unit: event.target.value }))
                   }
                   disabled={isSaving}
                 />
@@ -908,14 +876,14 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                   style={{ width: "100%" }}
                   value={form.status}
                   onChange={(event) => {
-                    const status = event.target.value as MasterStatus;
+                    const nextStatus = event.target.value as MasterStatus;
                     setForm((current) => ({
                       ...current,
-                      status,
-                      // AC-SRS-020: inactive không được publish — bỏ publish ngay
-                      // trên UI khi chuyển khỏi ACTIVE, khớp cascade unpublish của BE.
+                      status: nextStatus,
                       publishedToApp:
-                        status === "ACTIVE" ? current.publishedToApp : false,
+                        nextStatus === "ACTIVE"
+                          ? current.publishedToApp
+                          : false,
                     }));
                   }}
                   disabled={isSaving}
@@ -927,7 +895,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                   ))}
                 </select>
               </Field>
-              <Field label="Publish cho App PV">
+              <Field label="Hiển thị trên ứng dụng phân vùng">
                 <label
                   style={{ display: "flex", gap: 8, alignItems: "center" }}
                 >
@@ -942,20 +910,21 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                     }
                     disabled={isSaving || form.status !== "ACTIVE"}
                   />
-                  Hiển thị SKU này trên App PV
+                  Cho phép hiển thị SKU này trên ứng dụng phân vùng
                 </label>
                 {form.status !== "ACTIVE" ? (
                   <div className="muted" style={{ marginTop: 4 }}>
-                    Chỉ SKU ACTIVE mới publish được.
+                    Chỉ SKU đang sử dụng mới được đưa lên ứng dụng.
                   </div>
                 ) : null}
               </Field>
             </section>
+
             <section className="card">
-              <div className="section-title">Master tham chiếu</div>
+              <div className="section-title">Danh mục tham chiếu</div>
               <div className="muted" style={{ marginBottom: 10 }}>
-                Chọn từ danh mục ACTIVE (Danh mục Product Master). Wireframe
-                MST-02 yêu cầu Hãng / Category / Model / Nguồn điện.
+                Chọn các danh mục đang sử dụng cho Hãng, Nhóm hàng, Model và
+                Nguồn điện.
               </div>
               <Field label="Hãng *">
                 <MasterSelect
@@ -967,7 +936,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                   }
                 />
               </Field>
-              <Field label="Category *">
+              <Field label="Nhóm hàng *">
                 <MasterSelect
                   value={form.categoryId}
                   options={catalogs.categories}
@@ -1010,7 +979,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                   }
                 />
               </Field>
-              <Field label="Phiên bản (version_code)">
+              <Field label="Phiên bản sản phẩm">
                 <input
                   className="input"
                   style={{ width: "100%" }}
@@ -1024,12 +993,8 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                   }
                   disabled={isSaving}
                 />
-                <div className="muted" style={{ marginTop: 4 }}>
-                  Master phiên bản của SKU (REQ-SRS-029), khác với version dùng
-                  cho optimistic locking.
-                </div>
               </Field>
-              <Field label="Theo dõi serial">
+              <Field label="Quản lý số sê-ri">
                 <label
                   style={{ display: "flex", gap: 8, alignItems: "center" }}
                 >
@@ -1044,20 +1009,14 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                     }
                     disabled={isSaving || identityLocked}
                   />
-                  Có quản lý serial/item identity
+                  Quản lý riêng từng sản phẩm bằng số sê-ri / mã vật lý
                 </label>
                 {identityLocked ? (
                   <div className="muted" style={{ marginTop: 4 }}>
-                    SKU đã có tồn kho — không thể đổi chế độ theo dõi serial
-                    (BR-SKU-10).
+                    SKU đã có tồn kho — không thể đổi chế độ quản lý số sê-ri.
                   </div>
                 ) : null}
               </Field>
-              {editing ? (
-                <Field label="Version hiện tại">
-                  <div className="value">{editing.version}</div>
-                </Field>
-              ) : null}
             </section>
           </div>
           <ModalActions
@@ -1071,7 +1030,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   );
 }
 
-// ===== Agency =====
+// ===== Đối tượng nhận hàng / đại lý =====
 
 const EMPTY_AGENCY_FORM: AgencyPayload = {
   agency_code: "",
@@ -1092,6 +1051,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   const [editing, setEditing] = useState<AgencyRecord | null>(null);
   const [form, setForm] = useState<AgencyPayload>(EMPTY_AGENCY_FORM);
   const [formError, setFormError] = useState("");
+
   const query = useMvpAgencies({
     keyword: keyword.trim(),
     status,
@@ -1118,6 +1078,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
 
   useEffect(() => {
     if (openCreateOnMount && canManage) openCreate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canManage, openCreateOnMount]);
 
   const openEdit = (record: AgencyRecord) => {
@@ -1161,17 +1122,16 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
       setFormError("Số điện thoại phải gồm đúng 10 chữ số và bắt đầu bằng số 0.");
       return;
     }
-    // BR-AGY-01: deactivate là hành động phá hủy về mặt nghiệp vụ — đại lý sẽ
-    // không còn chọn được cho phiếu mới (Annex D yêu cầu confirm).
     if (form.status === "INACTIVE" && editing?.status === "ACTIVE") {
       const confirmed = await confirmAction({
-        title: "Ngừng hoạt động đại lý?",
+        title: "Ngừng sử dụng đại lý?",
         content:
           "Đại lý sẽ không còn được chọn cho chứng từ mới. Chứng từ đã lập giữ nguyên.",
-        okText: "Ngừng hoạt động",
+        okText: "Ngừng sử dụng",
       });
       if (!confirmed) return;
     }
+
     try {
       if (editing) {
         await updateMutation.mutateAsync({
@@ -1226,6 +1186,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           </button>
         ) : null}
       </div>
+
       <ApiErrorAlert
         error={query.error}
         fallback="Không tải được danh sách đại lý."
@@ -1238,6 +1199,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           setPage(1);
         }}
       />
+
       <div className="table-wrap" aria-busy={query.isLoading}>
         <table>
           <thead>
@@ -1255,7 +1217,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
             {query.isLoading ? (
               <tr>
                 <td colSpan={7} className="muted">
-                  Đang tải dữ liệu từ API...
+                  Đang tải dữ liệu...
                 </td>
               </tr>
             ) : rows.length > 0 ? (
@@ -1268,7 +1230,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                   <td>{record.address || "—"}</td>
                   <td>
                     <span className={statusClass(record.status)}>
-                      {record.status}
+                      {masterStatusLabel(record.status)}
                     </span>
                   </td>
                   <td>
@@ -1296,6 +1258,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           </tbody>
         </table>
       </div>
+
       <MvpPaginationFooter
         current={pagination.current}
         pageSize={perPage}
@@ -1303,6 +1266,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
         itemLabel="đại lý"
         onChange={setPage}
       />
+
       <Modal
         title={editing ? "Sửa đại lý" : "Thêm đại lý"}
         open={modalOpen}
@@ -1425,7 +1389,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   );
 }
 
-// ===== Defect Catalog =====
+// ===== Danh mục lỗi / bệnh =====
 
 const EMPTY_DEFECT_FORM: DefectPayload = {
   defect_code: "",
@@ -1444,6 +1408,7 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   const [editing, setEditing] = useState<DefectRecord | null>(null);
   const [form, setForm] = useState<DefectPayload>(EMPTY_DEFECT_FORM);
   const [formError, setFormError] = useState("");
+
   const query = useMvpDefects({
     keyword: keyword.trim(),
     status,
@@ -1470,6 +1435,7 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
 
   useEffect(() => {
     if (openCreateOnMount && canManage) openCreate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canManage, openCreateOnMount]);
 
   const openEdit = (record: DefectRecord) => {
@@ -1505,16 +1471,16 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
       setFormError("Mã lỗi và tên lỗi là bắt buộc.");
       return;
     }
-    // BR-DEF-01..04: inactive không chọn mới, lịch sử case giữ nguyên.
     if (form.status === "INACTIVE" && editing?.status === "ACTIVE") {
       const confirmed = await confirmAction({
-        title: "Ngừng sử dụng bệnh/lỗi?",
+        title: "Ngừng sử dụng lỗi / bệnh?",
         content:
-          "Bệnh/lỗi sẽ không còn được chọn cho hồ sơ bảo hành mới. Hồ sơ đã gán giữ nguyên.",
+          "Lỗi / bệnh sẽ không còn được chọn cho hồ sơ bảo hành mới. Hồ sơ đã gán giữ nguyên.",
         okText: "Ngừng sử dụng",
       });
       if (!confirmed) return;
     }
+
     try {
       if (editing) {
         await updateMutation.mutateAsync({
@@ -1569,6 +1535,7 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           </button>
         ) : null}
       </div>
+
       <ApiErrorAlert
         error={query.error}
         fallback="Không tải được danh mục lỗi."
@@ -1581,6 +1548,7 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           setPage(1);
         }}
       />
+
       <div className="table-wrap" aria-busy={query.isLoading}>
         <table>
           <thead>
@@ -1596,7 +1564,7 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
             {query.isLoading ? (
               <tr>
                 <td colSpan={5} className="muted">
-                  Đang tải dữ liệu từ API...
+                  Đang tải dữ liệu...
                 </td>
               </tr>
             ) : rows.length > 0 ? (
@@ -1607,7 +1575,7 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                   <td>{record.description || "—"}</td>
                   <td>
                     <span className={statusClass(record.status)}>
-                      {record.status}
+                      {masterStatusLabel(record.status)}
                     </span>
                   </td>
                   <td>
@@ -1635,6 +1603,7 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           </tbody>
         </table>
       </div>
+
       <MvpPaginationFooter
         current={pagination.current}
         pageSize={perPage}
@@ -1642,6 +1611,7 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
         itemLabel="lỗi / bệnh"
         onChange={setPage}
       />
+
       <Modal
         title={editing ? "Sửa lỗi / bệnh" : "Thêm lỗi / bệnh"}
         open={modalOpen}
@@ -1660,8 +1630,6 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
             </div>
           ) : null}
           <div className="grid-2">
-            {/* WWHN-310: chặn đúng giới hạn Data Dictionary (defect_catalogs.defect_code
-                varchar(80), defect_name varchar(200)) để không gửi lên rồi nhận 422. */}
             <Field label="Mã lỗi *">
               <input
                 className="input"
