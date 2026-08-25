@@ -1,5 +1,6 @@
 import { Tag } from "antd";
 import type { TagProps } from "antd";
+import { UNKNOWN_BUSINESS_LABEL } from "@/shared/constants/business-labels";
 
 export interface StatusTagProps extends Omit<TagProps, "color" | "children"> {
   /** Giá trị trạng thái: số (employee status), boolean (active/inactive), hoặc string tuỳ ý. */
@@ -8,6 +9,8 @@ export interface StatusTagProps extends Omit<TagProps, "color" | "children"> {
   colorMap?: Record<string | number, string>;
   /** Map value → nhãn hiển thị. */
   labelMap?: Record<string | number, string>;
+  /** Nhãn an toàn khi enum chưa có mapping. Không render raw enum ra giao diện người dùng. */
+  unknownLabel?: string;
 }
 
 const DEFAULT_BOOL_COLOR: Record<string, string> = {
@@ -21,22 +24,15 @@ const DEFAULT_BOOL_LABEL: Record<string, string> = {
 };
 
 /**
- * Tag trạng thái linh hoạt — thay thế cho StatusBadge khi cần hiển thị enum
- * nhiều giá trị (không chỉ active/inactive boolean).
- *
- * ```tsx
- * // Active/inactive (boolean)
- * <StatusTag status={dept.active} />
- *
- * // Employee status (number enum)
- * import { EMPLOYEE_STATUS_COLOR_MAP, EMPLOYEE_STATUS_LABEL_MAP } from '@/shared/components';
- * <StatusTag status={employee.employeeStatus} colorMap={EMPLOYEE_STATUS_COLOR_MAP} labelMap={EMPLOYEE_STATUS_LABEL_MAP} />
- * ```
+ * Tag trạng thái dùng chung. Với string enum, caller nên truyền labelMap theo domain.
+ * Nếu enum mới chưa được map, component hiển thị nhãn an toàn thay vì làm lộ raw
+ * contract tiếng Anh lên giao diện operator.
  */
 export function StatusTag({
   status,
   colorMap,
   labelMap,
+  unknownLabel = UNKNOWN_BUSINESS_LABEL,
   ...tagProps
 }: StatusTagProps) {
   const key = String(status);
@@ -47,11 +43,16 @@ export function StatusTag({
     DEFAULT_BOOL_COLOR[key] ??
     "default";
 
-  const label =
+  const mappedLabel =
     labelMap?.[status as string | number] ??
     labelMap?.[key] ??
-    DEFAULT_BOOL_LABEL[key] ??
-    key;
+    DEFAULT_BOOL_LABEL[key];
+
+  // Number enum không có map vẫn giữ số để không phá các badge số hiện hữu.
+  // String enum không có map phải fail-closed về tiếng Việt.
+  const label =
+    mappedLabel ??
+    (typeof status === "number" ? String(status) : unknownLabel);
 
   return (
     <Tag color={color} {...tagProps}>

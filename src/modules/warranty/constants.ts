@@ -1,4 +1,10 @@
 import type { WarrantyCaseStatus } from "./types";
+export {
+  ITEM_STATUS_LABELS,
+  WARRANTY_EVENT_TYPE_LABELS,
+  WARRANTY_IDENTIFICATION_STATUS_LABELS,
+  WARRANTY_TRACE_STATUS_LABELS,
+} from "@/shared/constants/business-labels";
 
 /** Trạng thái baseline theo SRS v1.6: RECEIVED → CHECKING → REPAIRING → COMPLETED → RETURNED / CANCELLED. */
 export const WARRANTY_BASELINE_STATUSES: WarrantyCaseStatus[] = [
@@ -54,7 +60,7 @@ export const WARRANTY_NOTE_REQUIRED_LABELS: Partial<
 
 export const WARRANTY_STATUS_LABELS: Record<string, string> = {
   RECEIVED: "Đã tiếp nhận",
-  OPEN: "Mở case",
+  OPEN: "Đang mở",
   CHECKING: "Đang kiểm tra",
   PROCESSING: "Đang xử lý",
   WAITING_PARTS: "Chờ linh kiện",

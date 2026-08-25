@@ -2,27 +2,25 @@ import { Descriptions, Tag, Typography, Divider } from "antd";
 import { DetailDrawer } from "@/shared/components";
 import type { AuditLog } from "../types/audit-logs.types";
 import { formatDateTime } from "@/shared/utils/format-date";
+import {
+  AUDIT_ACTION_LABELS,
+  businessLabel,
+} from "@/shared/constants/business-labels";
 
 const { Text } = Typography;
 
-/**
- * Mapping action sang màu và nhãn hiển thị
- */
-const ACTION_CONFIG: Record<string, { color: string; label: string }> = {
-  CREATE: { color: "green", label: "Tạo mới" },
-  UPDATE: { color: "blue", label: "Cập nhật" },
-  DELETE: { color: "red", label: "Xóa" },
-  REVOKE_ROLE_SCOPE: { color: "orange", label: "Thu hồi quyền" },
-  SYNC_ROLE_SCOPES: { color: "purple", label: "Đồng bộ quyền" },
-  SUBMIT: { color: "cyan", label: "Nộp" },
-  CANCEL: { color: "magenta", label: "Hủy" },
-  ARCHIVE: { color: "gray", label: "Lưu trữ" },
-  RESTORE: { color: "lime", label: "Khôi phục" },
+const ACTION_COLOR: Record<string, string> = {
+  CREATE: "green",
+  UPDATE: "blue",
+  DELETE: "red",
+  REVOKE_ROLE_SCOPE: "orange",
+  SYNC_ROLE_SCOPES: "purple",
+  SUBMIT: "cyan",
+  CANCEL: "magenta",
+  ARCHIVE: "gray",
+  RESTORE: "lime",
 };
 
-/**
- * Mapping module sang nhãn hiển thị
- */
 const MODULE_LABELS: Record<string, string> = {
   Employees: "Nhân sự",
   User: "Người dùng",
@@ -30,6 +28,10 @@ const MODULE_LABELS: Record<string, string> = {
   OrgUnits: "Đơn vị",
   Departments: "Phòng ban",
   Roles: "Vai trò",
+  Warehouse: "Kho",
+  Inventory: "Tồn kho",
+  Warranty: "Bảo hành",
+  Auth: "Tài khoản & đăng nhập",
 };
 
 export interface AuditLogDetailDrawerProps {
@@ -38,10 +40,6 @@ export interface AuditLogDetailDrawerProps {
   auditLog: AuditLog | null;
 }
 
-/**
- * Drawer hiển thị chi tiết audit log entry
- * Hiển thị thông tin cơ bản và old_values/new_values
- */
 export function AuditLogDetailDrawer({
   open,
   onClose,
@@ -49,36 +47,39 @@ export function AuditLogDetailDrawer({
 }: AuditLogDetailDrawerProps) {
   if (!auditLog) return null;
 
-  const actionConfig = ACTION_CONFIG[auditLog.action] || {
-    color: "default",
-    label: auditLog.action,
-  };
+  const actionLabel = businessLabel(
+    AUDIT_ACTION_LABELS,
+    auditLog.action,
+    "Hành động khác",
+  );
 
   return (
     <DetailDrawer
-      title="Chi tiết nhật ký kiểm tra"
+      title="Chi tiết nhật ký hệ thống"
       open={open}
       onClose={onClose}
       width={600}
     >
       <Descriptions column={1} bordered>
-        <Descriptions.Item label="ID">{auditLog.id}</Descriptions.Item>
+        <Descriptions.Item label="Mã bản ghi">{auditLog.id}</Descriptions.Item>
         <Descriptions.Item label="Thời gian">
           {formatDateTime(auditLog.created_at)}
         </Descriptions.Item>
         <Descriptions.Item label="Hành động">
-          <Tag color={actionConfig.color}>{actionConfig.label}</Tag>
+          <Tag color={ACTION_COLOR[auditLog.action] ?? "default"}>
+            {actionLabel}
+          </Tag>
         </Descriptions.Item>
-        <Descriptions.Item label="Module">
-          {MODULE_LABELS[auditLog.module] || auditLog.module}
+        <Descriptions.Item label="Phân hệ">
+          {MODULE_LABELS[auditLog.module] || "Phân hệ khác"}
         </Descriptions.Item>
         <Descriptions.Item label="Đối tượng">
-          {auditLog.auditable_type} #{auditLog.auditable_id}
+          Mã #{auditLog.auditable_id}
         </Descriptions.Item>
         <Descriptions.Item label="Người thực hiện">
-          {auditLog.user?.email || "N/A"}
+          {auditLog.user?.email || "Không có"}
         </Descriptions.Item>
-        <Descriptions.Item label="IP Address">
+        <Descriptions.Item label="Địa chỉ IP">
           <Text copyable>{auditLog.ip_address}</Text>
         </Descriptions.Item>
         <Descriptions.Item label="Mô tả">
@@ -88,7 +89,6 @@ export function AuditLogDetailDrawer({
 
       <Divider />
 
-      {/* Hiển thị old_values nếu có */}
       {auditLog.old_values && (
         <>
           <Typography.Title level={5}>Dữ liệu trước thay đổi</Typography.Title>
@@ -108,7 +108,6 @@ export function AuditLogDetailDrawer({
         </>
       )}
 
-      {/* Hiển thị new_values nếu có */}
       {auditLog.new_values && (
         <>
           <Typography.Title level={5}>Dữ liệu sau thay đổi</Typography.Title>

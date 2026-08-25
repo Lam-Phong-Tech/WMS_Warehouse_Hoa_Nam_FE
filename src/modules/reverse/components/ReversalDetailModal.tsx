@@ -15,6 +15,11 @@ import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { getApiErrorMessage, normalizeError } from "@/shared/api/api-error";
 import { useHasPermission } from "@/shared/components/permission";
 import {
+  RETURN_CONDITION_LABELS,
+  SOURCE_DOCUMENT_TYPE_LABELS,
+  businessLabel,
+} from "@/shared/constants/business-labels";
+import {
   useCancelReversal,
   useConfirmReversal,
   usePostReversal,
@@ -38,9 +43,9 @@ const RETURN_CONDITION_OPTIONS: Array<{
   value: ReversalReturnCondition;
   label: string;
 }> = [
-  { value: "SELLABLE", label: "SELLABLE · cộng lại available" },
-  { value: "DEFECTIVE", label: "DEFECTIVE · không cộng available" },
-  { value: "NON_SELLABLE", label: "NON_SELLABLE · không cộng available" },
+  { value: "SELLABLE", label: "Có thể bán/xuất lại" },
+  { value: "DEFECTIVE", label: "Hàng lỗi" },
+  { value: "NON_SELLABLE", label: "Không thể bán/xuất" },
 ];
 
 interface Props {
@@ -48,13 +53,6 @@ interface Props {
   onClose: () => void;
 }
 
-/**
- * REV-01 · Chi tiết Reversal + lifecycle SRS §6.
- *
- * DRAFT → Confirm (xác nhận hàng vật lý về, stock-neutral) → Post (điểm duy nhất sinh
- * movement đối ứng) hoặc Cancel. BR-REV-08: POSTED là append-only, không sửa/huỷ được;
- * muốn chỉnh tiếp phải tạo Reversal mới trong cùng correction_chain_id.
- */
 export function ReversalDetailModal({ documentId, onClose }: Props) {
   const can = useHasPermission();
   const canPost = can("inventory.reversal.post");
@@ -81,15 +79,6 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
     postMutation.isPending ||
     cancelMutation.isPending;
 
-  /**
-   * WWHN-242 · phục hồi optimistic-lock.
-   *
-   * BR-REV-02 bắt buộc If-Match theo `version` hiện hành, nên 409/412/428 luôn có
-   * nghĩa là bản chụp phiếu trong cache đã cũ. Trước đây FE chỉ nhắc "tải lại phiếu"
-   * rồi giữ nguyên cache — bấm lại vẫn gửi đúng version cũ và thất bại vô hạn.
-   * Nay tự nạp lại header + line ngay khi gặp ba mã đó để lần thử kế tiếp mang
-   * version mới; người dùng vẫn thấy nguyên nhân qua alert + toast.
-   */
   function handleFailure(error: unknown, fallback: string) {
     setActionError(error);
     const normalized = normalizeError(error);
@@ -103,7 +92,7 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
       void docQuery.refetch();
       void linesQuery.refetch();
       toast.error(
-        `${normalized.message}. Đã tự nạp lại phiên bản phiếu — kiểm tra trạng thái rồi thử lại.`,
+        `${normalized.message}. Hệ thống đã tải lại phiếu mới nhất; hãy kiểm tra trạng thái rồi thử lại.`,
       );
       return;
     }
@@ -123,25 +112,25 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
         return_condition: returnCondition,
       });
       toast.success(
-        "Đã xác nhận hàng vật lý quay lại kho; chưa phát sinh tồn.",
+        "Đã xác nhận hàng vật lý quay lại kho; tồn kho chưa thay đổi ở bước này.",
       );
     } catch (error) {
-      handleFailure(error, "Không thể xác nhận hàng về");
+      handleFailure(error, "Không thể xác nhận hàng đã về kho");
     }
   }
 
   async function handlePost() {
     if (!doc) return;
     Modal.confirm({
-      title: "Post reversal?",
-      okText: "Post reversal",
+      title: "Hoàn tất phiếu điều chỉnh tồn kho?",
+      okText: "Hoàn tất điều chỉnh",
       cancelText: "Kiểm tra lại",
       okButtonProps: { danger: true },
       content: (
         <Typography.Text>
-          Đây là bước duy nhất phát sinh movement đối ứng. Movement gốc giữ
-          nguyên (append-only) và không thể hoàn tác — sửa tiếp phải tạo
-          Reversal mới trong cùng chuỗi.
+          Đây là bước làm phát sinh giao dịch đối ứng và thay đổi tồn kho. Giao
+          dịch gốc vẫn được giữ nguyên. Nếu cần điều chỉnh tiếp, phải tạo phiếu
+          điều chỉnh mới.
         </Typography.Text>
       ),
       onOk: async () => {
@@ -153,9 +142,9 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
             version: doc.version,
             idempotency_key: idempotencyKey("post", doc.id),
           });
-          toast.success("Đã Post reversal; movement đối ứng đã được ghi.");
+          toast.success("Đã hoàn tất điều chỉnh tồn kho.");
         } catch (error) {
-          handleFailure(error, "Không thể Post reversal");
+          handleFailure(error, "Không thể hoàn tất điều chỉnh tồn kho");
         }
       },
     });
@@ -171,10 +160,10 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
         version: doc.version,
         reason: cancelReason.trim(),
       });
-      toast.success("Đã huỷ reversal DRAFT; không phát sinh tồn.");
+      toast.success("Đã hủy phiếu điều chỉnh; tồn kho không thay đổi.");
       setCancelReason("");
     } catch (error) {
-      handleFailure(error, "Không thể huỷ reversal");
+      handleFailure(error, "Không thể hủy phiếu điều chỉnh");
     }
   }
 
@@ -185,7 +174,7 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
       destroyOnHidden
       mask={{ closable: false }}
       width={1040}
-      title={`Chi tiết hoàn đảo — ${doc?.reversal_code ?? documentId}`}
+      title={`Chi tiết phiếu điều chỉnh — ${doc?.reversal_code ?? documentId}`}
       footer={null}
       onCancel={onClose}
     >
@@ -193,7 +182,7 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
         {docQuery.isError ? (
           <ApiErrorAlert
             error={docQuery.error}
-            title="Không thể tải chi tiết hoàn đảo"
+            title="Không thể tải chi tiết phiếu điều chỉnh"
             onRetry={() => docQuery.refetch()}
           />
         ) : null}
@@ -201,7 +190,7 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
         {actionError ? (
           <ApiErrorAlert
             error={actionError}
-            title="Thao tác lifecycle không thành công"
+            title="Thao tác không thành công"
             onRetry={() => {
               setActionError(null);
               setStaleRecovered(false);
@@ -217,10 +206,8 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
             showIcon
             role="status"
             data-testid="reversal-stale-version-notice"
-            title="Phiên bản phiếu đã thay đổi"
-            description={`Yêu cầu trước bị từ chối vì If-Match không khớp version hiện hành (BR-REV-02). Hệ thống đã tự nạp lại phiếu — version mới là ${
-              doc?.version ?? "-"
-            }, trạng thái ${doc?.status ?? "-"}. Kiểm tra lại rồi thao tác tiếp; không có stock effect nào được ghi.`}
+            title="Phiếu đã được cập nhật ở phiên khác"
+            description="Hệ thống đã tự tải lại dữ liệu mới nhất. Hãy kiểm tra trạng thái hiện tại trước khi tiếp tục thao tác. Không có thay đổi tồn kho nào được ghi từ lần thao tác bị từ chối."
           />
         ) : null}
 
@@ -233,7 +220,7 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
         {doc ? (
           <>
             <Descriptions bordered column={{ xs: 1, md: 2 }} size="small">
-              <Descriptions.Item label="Mã hoàn đảo">
+              <Descriptions.Item label="Mã điều chỉnh">
                 <Typography.Text code copyable>
                   {doc.reversal_code}
                 </Typography.Text>
@@ -248,9 +235,15 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
                 <Typography.Text code>
                   {doc.reference_document_code}
                 </Typography.Text>{" "}
-                <Tag>{doc.reference_document_type}</Tag>
+                <Tag>
+                  {businessLabel(
+                    SOURCE_DOCUMENT_TYPE_LABELS,
+                    doc.reference_document_type,
+                    "Chứng từ khác",
+                  )}
+                </Tag>
               </Descriptions.Item>
-              <Descriptions.Item label="Chuỗi hoàn đảo">
+              <Descriptions.Item label="Mã chuỗi điều chỉnh">
                 <Typography.Text code>
                   {doc.correction_chain_id ?? "-"}
                 </Typography.Text>
@@ -258,14 +251,11 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
               <Descriptions.Item label="Kho">
                 {doc.warehouse_name}
               </Descriptions.Item>
-              <Descriptions.Item label="Version (If-Match)">
-                {doc.version}
-              </Descriptions.Item>
               <Descriptions.Item label="Lý do">
                 {doc.reason_code ? <Tag>{doc.reason_code}</Tag> : null}
                 {doc.reason}
               </Descriptions.Item>
-              <Descriptions.Item label="Tổng dòng / SL">
+              <Descriptions.Item label="Tổng dòng / số lượng">
                 {doc.total_lines} dòng · {qty(doc.total_qty)}
               </Descriptions.Item>
               <Descriptions.Item label="Ngày tạo">
@@ -274,10 +264,10 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
               <Descriptions.Item label="Người tạo">
                 {doc.created_by}
               </Descriptions.Item>
-              <Descriptions.Item label="Posted at / by">
+              <Descriptions.Item label="Thời điểm hoàn tất / người thực hiện">
                 {doc.reversed_at ?? "-"} · {doc.posted_by ?? "-"}
               </Descriptions.Item>
-              <Descriptions.Item label="Huỷ">
+              <Descriptions.Item label="Thông tin hủy">
                 {doc.cancelled_at
                   ? `${doc.cancelled_at} · ${doc.cancel_reason ?? "-"}`
                   : "-"}
@@ -288,8 +278,8 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
               <Alert
                 type="success"
                 showIcon
-                title="Reversal đã POSTED — append-only"
-                description="Movement gốc giữ nguyên, movement đối ứng đã ghi. Muốn sửa tiếp phải tạo Reversal mới tham chiếu movement gần nhất trong cùng chuỗi (BR-REV-08)."
+                title="Phiếu điều chỉnh đã hoàn tất"
+                description="Giao dịch gốc vẫn được giữ nguyên và giao dịch đối ứng đã được ghi. Nếu cần sửa tiếp, hãy tạo phiếu điều chỉnh mới tham chiếu giao dịch gần nhất trong cùng chuỗi."
               />
             ) : null}
 
@@ -306,7 +296,7 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
                   strong
                   style={{ display: "block", marginBottom: 12 }}
                 >
-                  Lifecycle DRAFT → CONFIRMED → POSTED
+                  Các bước xử lý phiếu điều chỉnh
                 </Typography.Text>
 
                 {pendingReturn ? (
@@ -316,7 +306,7 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
                         type="secondary"
                         style={{ display: "block", fontSize: 12 }}
                       >
-                        Tình trạng hàng trả về (BR-REV-06/07)
+                        Tình trạng hàng trả về
                       </Typography.Text>
                       <Select<ReversalReturnCondition>
                         value={returnCondition}
@@ -339,8 +329,8 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
                     type="info"
                     showIcon
                     style={{ marginBottom: 12 }}
-                    title="Đã đủ điều kiện Post"
-                    description="Hàng vật lý đã được xác nhận quay lại kho; bấm Post reversal để ghi movement đối ứng."
+                    title="Đã đủ điều kiện hoàn tất"
+                    description="Hàng vật lý đã được xác nhận quay lại kho. Bấm Hoàn tất điều chỉnh để ghi thay đổi tồn kho."
                   />
                 )}
 
@@ -351,20 +341,20 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
                     disabled={busy || pendingReturn}
                     onClick={() => void handlePost()}
                   >
-                    Post reversal
+                    Hoàn tất điều chỉnh
                   </button>
                   <div>
                     <Typography.Text
                       type="secondary"
                       style={{ display: "block", fontSize: 12 }}
                     >
-                      Lý do huỷ (tối thiểu 5 ký tự)
+                      Lý do hủy (tối thiểu 5 ký tự)
                     </Typography.Text>
                     <Input
                       value={cancelReason}
                       style={{ width: 320 }}
-                      placeholder="Nhập lý do huỷ phiếu DRAFT..."
-                      onChange={(e) => setCancelReason(e.target.value)}
+                      placeholder="Nhập lý do hủy phiếu..."
+                      onChange={(event) => setCancelReason(event.target.value)}
                     />
                   </div>
                   <button
@@ -373,7 +363,7 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
                     disabled={busy || cancelReason.trim().length < 5}
                     onClick={() => void handleCancel()}
                   >
-                    Huỷ phiếu DRAFT
+                    Hủy phiếu
                   </button>
                 </Space>
               </div>
@@ -384,14 +374,14 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
         {linesQuery.isError ? (
           <ApiErrorAlert
             error={linesQuery.error}
-            title="Không thể tải dòng hoàn đảo"
+            title="Không thể tải các dòng điều chỉnh"
             onRetry={() => linesQuery.refetch()}
           />
         ) : null}
 
         <div>
           <Typography.Text strong style={{ display: "block", marginBottom: 8 }}>
-            Dòng hoàn đảo ({lines.length})
+            Dòng điều chỉnh ({lines.length})
           </Typography.Text>
           <Table<ReversalLine>
             size="small"
@@ -400,14 +390,14 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
             loading={linesQuery.isLoading}
             pagination={lines.length > 10 ? { pageSize: 10 } : false}
             scroll={{ x: "max-content" }}
-            locale={{ emptyText: "Chưa có dòng hoàn đảo" }}
+            locale={{ emptyText: "Chưa có dòng điều chỉnh" }}
             columns={[
               { title: "#", dataIndex: "line_no", width: 50 },
               { title: "SKU", dataIndex: "sku", width: 140 },
               { title: "Tên", dataIndex: "sku_name", width: 170 },
               {
-                title: "Movement gốc",
-                width: 150,
+                title: "Giao dịch gốc",
+                width: 160,
                 render: (_: unknown, row: ReversalLine) => (
                   <Typography.Text code>
                     {row.original_movement_code || row.original_movement_id}
@@ -415,54 +405,60 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
                 ),
               },
               {
-                title: "Item / Serial",
-                width: 150,
+                title: "Sản phẩm / Số sê-ri",
+                width: 170,
                 render: (_: unknown, row: ReversalLine) =>
                   row.serial_number || row.item_code || "-",
               },
               {
-                title: "SL gốc",
+                title: "Số lượng gốc",
                 dataIndex: "original_qty",
-                width: 90,
+                width: 110,
                 align: "right",
                 render: qty,
               },
               {
-                title: "SL đảo",
+                title: "Số lượng điều chỉnh",
                 dataIndex: "reversal_qty",
-                width: 90,
-                align: "right",
-                render: (v: number) => (
-                  <Typography.Text strong type="danger">
-                    {qty(v)}
-                  </Typography.Text>
-                ),
-              },
-              {
-                title: "Đã đảo",
-                dataIndex: "reversed_qty",
-                width: 90,
+                width: 130,
                 align: "right",
                 render: qty,
               },
               {
-                title: "Còn đảo",
+                title: "Đã điều chỉnh",
+                dataIndex: "reversed_qty",
+                width: 110,
+                align: "right",
+                render: qty,
+              },
+              {
+                title: "Còn có thể điều chỉnh",
                 dataIndex: "remaining_qty",
-                width: 90,
+                width: 150,
                 align: "right",
                 render: qty,
               },
               {
                 title: "Tình trạng trả về",
                 dataIndex: "return_condition",
-                width: 140,
+                width: 160,
                 render: (value: string | undefined) =>
-                  value ? <Tag>{value}</Tag> : "-",
+                  value ? (
+                    <Tag>
+                      {businessLabel(
+                        RETURN_CONDITION_LABELS,
+                        value,
+                        "Tình trạng khác",
+                      )}
+                    </Tag>
+                  ) : (
+                    "-"
+                  ),
               },
               {
                 title: "Trạng thái",
                 dataIndex: "status",
-                width: 110,
+                width: 150,
                 render: (value: string) => (
                   <ReversalStatusTag status={value} compact />
                 ),

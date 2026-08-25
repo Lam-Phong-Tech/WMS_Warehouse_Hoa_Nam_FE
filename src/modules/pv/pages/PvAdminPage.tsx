@@ -39,17 +39,12 @@ import {
 import { LoadingState } from "@/shared/components/data-display/LoadingState";
 import { WMS_PERMISSION_CATALOG as P } from "@/shared/constants/wms-permissions";
 import { UI_STATE, uiStateProps } from "@/shared/constants/ui-state";
+import {
+  MASTER_STATUS_LABELS,
+  businessLabel,
+} from "@/shared/constants/business-labels";
 import { useAuthStore } from "@/shared/store/auth.store";
 
-/**
- * WWHN-252 — SCR-PV-ADM-01 (PV publish/master).
- *
- * Hai quyền TÁCH BIỆT được thể hiện đúng trên UI (gốc của FE252-P1-03):
- * - `pv.master.manage`: tạo/sửa ngành nghề, tag, rule gợi ý, hồ sơ hiển thị.
- * - `pv.publish`: bật/tắt việc SKU xuất hiện trên mặt công khai.
- * Người chỉ có một trong hai vẫn vào được màn nhưng chỉ thao tác được đúng phần
- * của mình. UI ẩn/khoá chỉ là gợi ý — BE mới là nơi cưỡng chế (§8.4/NFR-SRS-005).
- */
 function useCanManagePv() {
   const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
   const permissionCodes = useAuthStore((state) => state.permissionCodes);
@@ -65,6 +60,10 @@ interface MasterFormValues {
   name: string;
   status: "ACTIVE" | "INACTIVE";
   sort_order: number;
+}
+
+function masterStatusLabel(status: string) {
+  return businessLabel(MASTER_STATUS_LABELS, status, "Trạng thái khác");
 }
 
 function SimpleMasterTab({
@@ -157,12 +156,11 @@ function SimpleMasterTab({
             dataIndex: "status",
             render: (status: string) => (
               <Tag color={status === "ACTIVE" ? "green" : "default"}>
-                {status}
+                {masterStatusLabel(status)}
               </Tag>
             ),
           },
           { title: "Thứ tự", dataIndex: "sort_order" },
-          { title: "Version", dataIndex: "version" },
           {
             title: "",
             key: "actions",
@@ -186,7 +184,7 @@ function SimpleMasterTab({
         onCancel={() => setIsOpen(false)}
         onOk={submit}
         okText="Lưu"
-        cancelText="Huỷ"
+        cancelText="Hủy"
         destroyOnHidden
       >
         <Form form={form} layout="vertical">
@@ -207,8 +205,8 @@ function SimpleMasterTab({
           <Form.Item name="status" label="Trạng thái">
             <Select
               options={[
-                { value: "ACTIVE", label: "ACTIVE" },
-                { value: "INACTIVE", label: "INACTIVE" },
+                { value: "ACTIVE", label: "Đang sử dụng" },
+                { value: "INACTIVE", label: "Ngừng sử dụng" },
               ]}
             />
           </Form.Item>
@@ -300,22 +298,13 @@ export default function PvAdminPage() {
           tag_ids: values.tag_ids ?? [],
         },
       });
-      toast.success("Đã cập nhật hồ sơ App PV.");
+      toast.success("Đã cập nhật hồ sơ hiển thị.");
       setProfileEditing(null);
     } catch (error) {
       toast.error(getMutationErrorMessage(error));
     }
   }
 
-  /**
-   * FE252-P1-08 — công tắc publish gửi If-Match theo version hồ sơ App PV của
-   * ĐÚNG dòng đang bấm (`row.version`, nguồn: GET /pv-admin/resources/
-   * product-profiles). Không có version nào được đoán ở đây.
-   *
-   * 412 STALE_VERSION / 428 PRECONDITION_REQUIRED đều có nghĩa là màn hình đang
-   * cầm dữ liệu cũ, nên phải tải lại danh sách rồi mới cho bấm tiếp — báo lỗi
-   * suông sẽ khiến người dùng bấm lại đúng version cũ và hỏng lần nữa.
-   */
   async function togglePublish(row: PvAdminProfile, next: boolean) {
     try {
       await setPublished.mutateAsync({
@@ -323,13 +312,17 @@ export default function PvAdminPage() {
         published: next,
         profileVersion: row.version,
       });
-      toast.success(next ? "Đã publish lên App PV." : "Đã gỡ khỏi App PV.");
+      toast.success(
+        next
+          ? "Đã đưa sản phẩm lên ứng dụng phân vùng."
+          : "Đã gỡ sản phẩm khỏi ứng dụng phân vùng.",
+      );
     } catch (error) {
       const normalized = normalizeError(error);
       if (normalized.status === 412 || normalized.status === 428) {
         await profiles.refetch();
         toast.error(
-          "Hồ sơ App PV đã đổi ở phiên khác. Danh sách vừa được tải lại — kiểm tra rồi bật/tắt lại.",
+          "Hồ sơ sản phẩm đã được cập nhật ở phiên khác. Danh sách vừa được tải lại; hãy kiểm tra rồi thao tác lại.",
         );
         return;
       }
@@ -340,13 +333,14 @@ export default function PvAdminPage() {
   return (
     <div style={{ padding: "clamp(8px, 2vw, 16px)" }}>
       <h1 style={{ fontSize: "clamp(17px, 3vw, 22px)", fontWeight: 700 }}>
-        Quản trị App PV
+        Quản trị ứng dụng phân vùng
       </h1>
       <p style={{ color: "#7a766c", fontSize: 13, marginTop: 0 }}>
-        Ngành nghề, tag, rule gợi ý và hồ sơ hiển thị của trang công khai.
+        Quản lý ngành nghề, thẻ phân loại, quy tắc gợi ý và hồ sơ sản phẩm hiển
+        thị trên ứng dụng.
         {canPublish
           ? ""
-          : " Bạn không có quyền pv.publish nên không bật/tắt được publish."}
+          : " Tài khoản hiện tại không có quyền bật hoặc tắt hiển thị sản phẩm."}
       </p>
 
       <Tabs
@@ -375,7 +369,7 @@ export default function PvAdminPage() {
                   pagination={false}
                   locale={{
                     emptyText:
-                      "Chưa có hồ sơ App PV nào. Hồ sơ được tạo khi SKU được publish lần đầu.",
+                      "Chưa có hồ sơ sản phẩm nào. Hồ sơ được tạo khi sản phẩm được đưa lên ứng dụng lần đầu.",
                   }}
                   columns={[
                     { title: "Mã SKU", dataIndex: "sku_code" },
@@ -397,16 +391,19 @@ export default function PvAdminPage() {
                         ),
                     },
                     {
-                      title: "Publish",
+                      title: "Hiển thị trên ứng dụng",
                       key: "published",
                       render: (_, row) => (
-                        <Switch
-                          checked={row.published}
-                          disabled={!canPublish}
-                          loading={setPublished.isPending}
-                          data-testid="pv-admin-publish-switch"
-                          onChange={(next) => togglePublish(row, next)}
-                        />
+                        <Space size={8}>
+                          <Switch
+                            checked={row.published}
+                            disabled={!canPublish}
+                            loading={setPublished.isPending}
+                            data-testid="pv-admin-publish-switch"
+                            onChange={(next) => togglePublish(row, next)}
+                          />
+                          <span>{row.published ? "Đang hiển thị" : "Đang ẩn"}</span>
+                        </Space>
                       ),
                     },
                     {
@@ -457,11 +454,11 @@ export default function PvAdminPage() {
           },
           {
             key: "tags",
-            label: "Tag",
+            label: "Thẻ phân loại",
             children: (
               <SimpleMasterTab
                 testId="pv-admin-tags"
-                title="tag"
+                title="thẻ phân loại"
                 rows={tags.data?.data ?? []}
                 isPending={tags.isPending}
                 isError={tags.isError}
@@ -474,7 +471,7 @@ export default function PvAdminPage() {
           },
           {
             key: "rules",
-            label: "Rule gợi ý",
+            label: "Quy tắc gợi ý",
             children: rules.isPending ? (
               <LoadingState tip="Đang tải…" testId="pv-admin-rules-loading" />
             ) : rules.isError ? (
@@ -497,7 +494,7 @@ export default function PvAdminPage() {
 
       <Modal
         open={profileViewing !== null}
-        title="Chi tiết hồ sơ App PV"
+        title="Chi tiết hồ sơ sản phẩm"
         onCancel={() => setProfileViewing(null)}
         footer={null}
         destroyOnHidden
@@ -524,7 +521,7 @@ export default function PvAdminPage() {
                 "—"
               )}
             </Descriptions.Item>
-            <Descriptions.Item label="Tag">
+            <Descriptions.Item label="Thẻ phân loại">
               {profileViewing.tag_ids.length > 0 ? (
                 <Space size={[4, 4]} wrap>
                   {profileViewing.tag_ids.map((id) => (
@@ -538,16 +535,13 @@ export default function PvAdminPage() {
             <Descriptions.Item label="Thứ tự hiển thị">
               {profileViewing.sort_order}
             </Descriptions.Item>
-            <Descriptions.Item label="Publish">
+            <Descriptions.Item label="Hiển thị trên ứng dụng">
               <Tag color={profileViewing.published ? "green" : "default"}>
-                {profileViewing.published ? "Đã publish" : "Chưa publish"}
+                {profileViewing.published ? "Đang hiển thị" : "Đang ẩn"}
               </Tag>
             </Descriptions.Item>
             <Descriptions.Item label="Trạng thái SKU">
-              <Tag>{profileViewing.sku_status}</Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="Version">
-              {profileViewing.version}
+              <Tag>{masterStatusLabel(profileViewing.sku_status)}</Tag>
             </Descriptions.Item>
           </Descriptions>
         ) : null}
@@ -555,11 +549,11 @@ export default function PvAdminPage() {
 
       <Modal
         open={profileEditing !== null}
-        title="Sửa hiển thị App PV"
+        title="Sửa thông tin hiển thị"
         onCancel={() => setProfileEditing(null)}
         onOk={submitProfile}
         okText="Lưu"
-        cancelText="Huỷ"
+        cancelText="Hủy"
         destroyOnHidden
       >
         <Form form={profileForm} layout="vertical">
@@ -576,7 +570,7 @@ export default function PvAdminPage() {
           <Form.Item name="industry_ids" label="Ngành nghề">
             <Select mode="multiple" options={industryOptions} allowClear />
           </Form.Item>
-          <Form.Item name="tag_ids" label="Tag">
+          <Form.Item name="tag_ids" label="Thẻ phân loại">
             <Select mode="multiple" options={tagOptions} allowClear />
           </Form.Item>
           <Form.Item name="sort_order" label="Thứ tự hiển thị">
@@ -584,8 +578,7 @@ export default function PvAdminPage() {
           </Form.Item>
         </Form>
         <p style={{ fontSize: 12, color: "#8c887e", marginBottom: 0 }}>
-          Publish/unpublish không nằm ở form này — dùng công tắc Publish ở bảng
-          (yêu cầu quyền pv.publish).
+          Bật hoặc tắt hiển thị sản phẩm bằng công tắc ở bảng danh sách.
         </p>
       </Modal>
     </div>
@@ -652,7 +645,9 @@ function PvRuleTab({
           status: values.status,
         },
       });
-      toast.success(editing ? "Đã cập nhật rule." : "Đã thêm rule.");
+      toast.success(
+        editing ? "Đã cập nhật quy tắc gợi ý." : "Đã thêm quy tắc gợi ý.",
+      );
       setIsOpen(false);
     } catch (error) {
       toast.error(getMutationErrorMessage(error));
@@ -668,7 +663,7 @@ function PvRuleTab({
           data-testid="pv-admin-rules-create"
           onClick={() => openForm()}
         >
-          Thêm rule gợi ý
+          Thêm quy tắc gợi ý
         </Button>
       </div>
       <Table<PvAdminRule>
@@ -677,12 +672,12 @@ function PvRuleTab({
         scroll={{ x: "max-content" }}
         dataSource={rows}
         pagination={false}
-        locale={{ emptyText: "Chưa có rule gợi ý nào." }}
+        locale={{ emptyText: "Chưa có quy tắc gợi ý nào." }}
         columns={[
           { title: "Ngành nghề", dataIndex: "industry_name" },
-          { title: "Ưu tiên", dataIndex: "priority" },
+          { title: "Mức ưu tiên", dataIndex: "priority" },
           {
-            title: "Selector",
+            title: "Điều kiện áp dụng",
             key: "selector",
             render: (_, row) =>
               row.sku_id ? (
@@ -695,7 +690,8 @@ function PvRuleTab({
                 </>
               ) : row.tag_id ? (
                 <>
-                  <Tag>Tag</Tag> {tagNameById.get(row.tag_id) ?? row.tag_id}
+                  <Tag>Thẻ phân loại</Tag>{" "}
+                  {tagNameById.get(row.tag_id) ?? row.tag_id}
                 </>
               ) : (
                 "—"
@@ -706,7 +702,7 @@ function PvRuleTab({
             dataIndex: "status",
             render: (status: string) => (
               <Tag color={status === "ACTIVE" ? "green" : "default"}>
-                {status}
+                {masterStatusLabel(status)}
               </Tag>
             ),
           },
@@ -737,7 +733,7 @@ function PvRuleTab({
 
       <Modal
         open={viewing !== null}
-        title="Chi tiết rule gợi ý"
+        title="Chi tiết quy tắc gợi ý"
         onCancel={() => setViewing(null)}
         footer={null}
         destroyOnHidden
@@ -747,7 +743,7 @@ function PvRuleTab({
             <Descriptions.Item label="Ngành nghề">
               {viewing.industry_name ?? viewing.industry_id}
             </Descriptions.Item>
-            <Descriptions.Item label="Selector">
+            <Descriptions.Item label="Điều kiện áp dụng">
               {viewing.sku_id ? (
                 <>
                   <Tag>SKU</Tag> {viewing.sku_id}
@@ -758,23 +754,20 @@ function PvRuleTab({
                 </>
               ) : viewing.tag_id ? (
                 <>
-                  <Tag>Tag</Tag>{" "}
+                  <Tag>Thẻ phân loại</Tag>{" "}
                   {tagNameById.get(viewing.tag_id) ?? viewing.tag_id}
                 </>
               ) : (
                 "—"
               )}
             </Descriptions.Item>
-            <Descriptions.Item label="Ưu tiên">
+            <Descriptions.Item label="Mức ưu tiên">
               {viewing.priority}
             </Descriptions.Item>
             <Descriptions.Item label="Trạng thái">
               <Tag color={viewing.status === "ACTIVE" ? "green" : "default"}>
-                {viewing.status}
+                {masterStatusLabel(viewing.status)}
               </Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="Version">
-              {viewing.version}
             </Descriptions.Item>
           </Descriptions>
         ) : null}
@@ -782,11 +775,11 @@ function PvRuleTab({
 
       <Modal
         open={isOpen}
-        title={editing ? "Sửa rule gợi ý" : "Thêm rule gợi ý"}
+        title={editing ? "Sửa quy tắc gợi ý" : "Thêm quy tắc gợi ý"}
         onCancel={() => setIsOpen(false)}
         onOk={submit}
         okText="Lưu"
-        cancelText="Huỷ"
+        cancelText="Hủy"
         destroyOnHidden
       >
         <Form form={form} layout="vertical">
@@ -797,31 +790,35 @@ function PvRuleTab({
           >
             <Select options={industryOptions} />
           </Form.Item>
-          <Form.Item name="sku_id" label="SKU ID (chọn 1 trong 2 selector)">
-            <Input placeholder="UUID của SKU" />
+          <Form.Item
+            name="sku_id"
+            label="SKU áp dụng (chọn SKU hoặc thẻ phân loại)"
+          >
+            <Input placeholder="Mã định danh SKU" />
           </Form.Item>
-          <Form.Item name="tag_id" label="Tag">
+          <Form.Item name="tag_id" label="Thẻ phân loại">
             <Select options={tagOptions} allowClear />
           </Form.Item>
           <Form.Item
             name="priority"
-            label="Ưu tiên"
-            rules={[{ required: true, message: "Nhập ưu tiên" }]}
+            label="Mức ưu tiên"
+            rules={[{ required: true, message: "Nhập mức ưu tiên" }]}
           >
             <InputNumber min={0} style={{ width: "100%" }} />
           </Form.Item>
           <Form.Item name="status" label="Trạng thái">
             <Select
               options={[
-                { value: "ACTIVE", label: "ACTIVE" },
-                { value: "INACTIVE", label: "INACTIVE" },
+                { value: "ACTIVE", label: "Đang sử dụng" },
+                { value: "INACTIVE", label: "Ngừng sử dụng" },
               ]}
             />
           </Form.Item>
         </Form>
         <p style={{ fontSize: 12, color: "#8c887e", marginBottom: 0 }}>
-          Rule phải có ít nhất một selector (SKU hoặc Tag) và ưu tiên không
-          trùng với rule ACTIVE khác trong cùng ngành nghề.
+          Quy tắc phải có ít nhất một điều kiện áp dụng (SKU hoặc thẻ phân loại)
+          và mức ưu tiên không được trùng với quy tắc đang sử dụng khác trong cùng
+          ngành nghề.
         </p>
       </Modal>
     </div>

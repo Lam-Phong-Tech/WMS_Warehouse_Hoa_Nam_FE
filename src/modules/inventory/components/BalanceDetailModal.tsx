@@ -10,6 +10,16 @@ import {
 import type { ColumnsType } from "antd/es/table";
 import { HistoryOutlined } from "@ant-design/icons";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
+import {
+  CONTAINER_TYPE_LABELS,
+  INVENTORY_STOCK_STATUS_LABELS,
+  ITEM_STATUS_LABELS,
+  MOVEMENT_TYPE_LABELS,
+  PUTAWAY_STATUS_LABELS,
+  RECONCILE_STATUS_LABELS,
+  SOURCE_DOCUMENT_TYPE_LABELS,
+  businessLabel,
+} from "@/shared/constants/business-labels";
 import type { InventoryBalanceRow } from "../services/inventoryService";
 import { useStockMovements, useBalanceSubledger } from "../hooks/use-inventory";
 import type { StockMovementRow } from "../services/inventoryService";
@@ -31,6 +41,21 @@ function reconcileColor(status: string) {
   if (status === "MATCH" || status === "PASS") return "success";
   if (status === "MISMATCH" || status === "FAIL") return "error";
   return "warning";
+}
+
+function itemConditionLabel(value: unknown): string {
+  const status = text(value, "");
+  const labels: Record<string, string> = {
+    NEW: "Mới",
+    GOOD: "Tốt",
+    NORMAL: "Bình thường",
+    SELLABLE: "Có thể bán/xuất",
+    DEFECTIVE: "Hàng lỗi",
+    DAMAGED: "Hư hỏng",
+    NON_SELLABLE: "Không thể bán/xuất",
+    QUARANTINE: "Chờ kiểm tra",
+  };
+  return labels[status] ?? (status ? "Tình trạng khác" : "-");
 }
 
 interface Props {
@@ -55,7 +80,7 @@ export function BalanceDetailModal({
 
   const movementColumns: ColumnsType<StockMovementRow> = [
     {
-      title: "Mã dịch chuyển",
+      title: "Mã biến động",
       dataIndex: "movementId",
       width: 140,
       render: (value: string) => (
@@ -64,15 +89,17 @@ export function BalanceDetailModal({
     },
     { title: "Thời gian", dataIndex: "time", width: 150 },
     {
-      title: "Loại",
+      title: "Loại biến động",
       dataIndex: "type",
-      width: 120,
-      render: (value: string) => <Tag>{value || "-"}</Tag>,
+      width: 150,
+      render: (value: string) => (
+        <Tag>{businessLabel(MOVEMENT_TYPE_LABELS, value, "Biến động khác")}</Tag>
+      ),
     },
     {
-      title: "SL thay đổi",
+      title: "Số lượng thay đổi",
       dataIndex: "qty",
-      width: 110,
+      width: 140,
       align: "right",
       render: (value: number) => (
         <Typography.Text
@@ -89,14 +116,18 @@ export function BalanceDetailModal({
       ),
     },
     {
-      title: "Nguồn",
+      title: "Chứng từ nguồn",
       dataIndex: "source",
-      width: 160,
+      width: 180,
       render: (value: string, row) => (
         <Space orientation="vertical" size={0}>
           <Typography.Text code>{value || "-"}</Typography.Text>
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            {row.sourceType}
+            {businessLabel(
+              SOURCE_DOCUMENT_TYPE_LABELS,
+              row.sourceType,
+              "Nguồn khác",
+            )}
           </Typography.Text>
         </Space>
       ),
@@ -104,7 +135,7 @@ export function BalanceDetailModal({
     {
       title: "",
       key: "actions",
-      width: 80,
+      width: 100,
       fixed: "right",
       render: (_, row) =>
         onTraceMovement ? (
@@ -114,7 +145,7 @@ export function BalanceDetailModal({
             onClick={() => onTraceMovement(String(row.id))}
           >
             <HistoryOutlined style={{ marginRight: 4 }} />
-            Trace
+            Truy vết
           </button>
         ) : null,
     },
@@ -122,7 +153,7 @@ export function BalanceDetailModal({
 
   const itemColumns: ColumnsType<RawRecord> = [
     {
-      title: "Mã Item",
+      title: "Mã sản phẩm",
       width: 140,
       render: (_, row) => (
         <Typography.Text code>
@@ -131,23 +162,31 @@ export function BalanceDetailModal({
       ),
     },
     {
-      title: "Serial",
+      title: "Số sê-ri",
       width: 140,
       render: (_, row) => text(row.serial_number),
     },
     {
       title: "Trạng thái",
-      width: 100,
-      render: (_, row) => <Tag>{text(row.status)}</Tag>,
+      width: 140,
+      render: (_, row) => (
+        <Tag>
+          {businessLabel(
+            ITEM_STATUS_LABELS,
+            text(row.status, ""),
+            "Trạng thái khác",
+          )}
+        </Tag>
+      ),
     },
     {
       title: "Tình trạng",
-      width: 100,
-      render: (_, row) => text(row.condition),
+      width: 130,
+      render: (_, row) => itemConditionLabel(row.condition),
     },
     {
-      title: "Physical Code",
-      width: 130,
+      title: "Mã vật lý",
+      width: 140,
       render: (_, row) =>
         row.physical_code ? (
           <Typography.Text code>{text(row.physical_code)}</Typography.Text>
@@ -161,15 +200,15 @@ export function BalanceDetailModal({
       render: (_, row) => text(row.location_hint),
     },
     {
-      title: "Nhận",
-      width: 130,
+      title: "Thời điểm nhận",
+      width: 150,
       render: (_, row) => text(row.received_at),
     },
   ];
 
   const containerColumns: ColumnsType<RawRecord> = [
     {
-      title: "Mã Container",
+      title: "Mã vật chứa",
       width: 140,
       render: (_, row) => (
         <Typography.Text code>{text(row.container_code)}</Typography.Text>
@@ -177,22 +216,38 @@ export function BalanceDetailModal({
     },
     {
       title: "Loại",
-      width: 100,
-      render: (_, row) => <Tag>{text(row.container_type)}</Tag>,
+      width: 110,
+      render: (_, row) => (
+        <Tag>
+          {businessLabel(
+            CONTAINER_TYPE_LABELS,
+            text(row.container_type, ""),
+            "Vật chứa khác",
+          )}
+        </Tag>
+      ),
     },
     {
-      title: "SL",
-      width: 80,
+      title: "Số lượng",
+      width: 100,
       align: "right",
       render: (_, row) => numberFormatter.format(Number(row.quantity ?? 0)),
     },
     {
-      title: "TT Container",
-      width: 110,
-      render: (_, row) => <Tag>{text(row.container_status)}</Tag>,
+      title: "Trạng thái vật chứa",
+      width: 160,
+      render: (_, row) => (
+        <Tag>
+          {businessLabel(
+            PUTAWAY_STATUS_LABELS,
+            text(row.container_status, ""),
+            "Trạng thái khác",
+          )}
+        </Tag>
+      ),
     },
     {
-      title: "Zone",
+      title: "Khu vực",
       width: 100,
       render: (_, row) => text(row.zone_code),
     },
@@ -229,12 +284,20 @@ export function BalanceDetailModal({
                 balance.stockStatus === "AVAILABLE" ? "success" : "warning"
               }
             >
-              {balance.stockStatus}
+              {businessLabel(
+                INVENTORY_STOCK_STATUS_LABELS,
+                balance.stockStatus,
+                "Trạng thái khác",
+              )}
             </Tag>
           </Descriptions.Item>
           <Descriptions.Item label="Đối soát">
             <Tag color={reconcileColor(balance.reconcile)}>
-              {balance.reconcile}
+              {businessLabel(
+                RECONCILE_STATUS_LABELS,
+                balance.reconcile,
+                "Chưa đối soát",
+              )}
             </Tag>
             {balance.reconcileNote ? (
               <Typography.Text type="secondary" style={{ marginLeft: 6 }}>
@@ -248,40 +311,42 @@ export function BalanceDetailModal({
           <Descriptions.Item label="Vị trí gợi ý">
             {[balance.containerCode, balance.location]
               .filter(Boolean)
-              .join(" · ") || "Chưa khảo sát"}
+              .join(" · ") || "Chưa có vị trí gợi ý"}
           </Descriptions.Item>
-          <Descriptions.Item label="Movement gần nhất">
+          <Descriptions.Item label="Biến động gần nhất">
             {balance.lastMovementId || "-"}
           </Descriptions.Item>
         </Descriptions>
 
         <Space wrap size="middle">
           <Statistic
-            title="Available"
+            title="Khả dụng"
             value={balance.available}
             suffix={balance.uom}
           />
           <Statistic
-            title="On-hand"
+            title="Tồn hiện có"
             value={balance.onHand}
             suffix={balance.uom}
           />
-          <Statistic title="Serial qty" value={formatQty(balance.serialQty)} />
-          <Statistic title="Box qty" value={formatQty(balance.boxQty)} />
+          <Statistic
+            title="Số sản phẩm"
+            value={formatQty(balance.serialQty)}
+          />
+          <Statistic title="Số hộp" value={formatQty(balance.boxQty)} />
         </Space>
 
-        {/* ──── Item Subledger ──── */}
         {subledgerQuery.isError ? (
           <ApiErrorAlert
             error={subledgerQuery.error}
-            title="Không tải được subledger"
+            title="Không tải được chi tiết tồn kho"
             onRetry={() => subledgerQuery.refetch()}
           />
         ) : null}
 
         <div>
           <Typography.Text strong style={{ display: "block", marginBottom: 8 }}>
-            Item Subledger ({subledger?.item_count ?? balance.serialQty})
+            Sản phẩm cụ thể ({subledger?.item_count ?? balance.serialQty})
           </Typography.Text>
           <Table
             size="small"
@@ -291,14 +356,13 @@ export function BalanceDetailModal({
             loading={subledgerQuery.isLoading}
             pagination={false}
             scroll={{ x: "max-content" }}
-            locale={{ emptyText: "Không có item instance" }}
+            locale={{ emptyText: "Không có sản phẩm cụ thể" }}
           />
         </div>
 
-        {/* ──── Container Subledger ──── */}
         <div>
           <Typography.Text strong style={{ display: "block", marginBottom: 8 }}>
-            Container Subledger ({subledger?.container_count ?? balance.boxQty})
+            Vật chứa ({subledger?.container_count ?? balance.boxQty})
           </Typography.Text>
           <Table
             size="small"
@@ -308,14 +372,13 @@ export function BalanceDetailModal({
             loading={subledgerQuery.isLoading}
             pagination={false}
             scroll={{ x: "max-content" }}
-            locale={{ emptyText: "Không có container" }}
+            locale={{ emptyText: "Không có vật chứa" }}
           />
         </div>
 
-        {/* ──── Movement liên quan ──── */}
         <div>
           <Typography.Text strong style={{ display: "block", marginBottom: 8 }}>
-            Movement liên quan ({movements.length})
+            Biến động liên quan ({movements.length})
           </Typography.Text>
           <Table
             size="small"
@@ -325,7 +388,7 @@ export function BalanceDetailModal({
             loading={movementsQuery.isLoading}
             pagination={false}
             scroll={{ x: "max-content" }}
-            locale={{ emptyText: "Không có movement liên quan" }}
+            locale={{ emptyText: "Không có biến động liên quan" }}
           />
         </div>
       </Space>

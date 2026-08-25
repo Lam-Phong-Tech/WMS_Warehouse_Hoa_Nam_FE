@@ -13,6 +13,10 @@ import {
 import { MvpPageSizeSelector } from "@/shared/components/mvp/MvpListPagination";
 import { resolveApiPagination } from "@/shared/components/mvp/mvp-pagination";
 import { useHasPermission } from "@/shared/components/permission";
+import {
+  OUTBOUND_STATUS_LABELS,
+  businessLabel,
+} from "@/shared/constants/business-labels";
 import { useOverlayBackDismiss } from "@/shared/hooks/useOverlayBackDismiss";
 import { AlignedOutboundDetailModal } from "@/modules/outbound/components/AlignedOutboundDetailModal";
 import { OutboundIntakeModal } from "@/modules/outbound/components/OutboundIntakeModal";
@@ -24,12 +28,11 @@ import {
 
 const SEARCH_DEBOUNCE_MS = 250;
 
-const STATUS_OPTIONS: Array<{ value: OutboundStatus; label: string }> = [
-  { value: "DRAFT", label: "DRAFT" },
-  { value: "SCANNING", label: "ĐANG QUÉT" },
-  { value: "POSTED", label: "ĐÃ POST" },
-  { value: "CANCELLED", label: "ĐÃ HỦY" },
-];
+const STATUS_OPTIONS: Array<{ value: OutboundStatus; label: string }> =
+  Object.entries(OUTBOUND_STATUS_LABELS).map(([value, label]) => ({
+    value: value as OutboundStatus,
+    label,
+  }));
 
 const STATUS_COLOR: Record<OutboundStatus, string> = {
   DRAFT: "warning",
@@ -38,16 +41,9 @@ const STATUS_COLOR: Record<OutboundStatus, string> = {
   CANCELLED: "error",
 };
 
-const STATUS_LABEL: Record<OutboundStatus, string> = {
-  DRAFT: "DRAFT",
-  SCANNING: "ĐANG QUÉT",
-  POSTED: "ĐÃ POST",
-  CANCELLED: "ĐÃ HỦY",
-};
-
 const DETAIL_SCREENS = new Set(["OUT-03", "OUT-02", "LBL-01", "RFID-01"]);
 
-/** Canonical OUT-01 hub: scan -> 1 Packing Label/lot -> optional RFID -> Post Issue. */
+/** Canonical OUT-01 hub: quét -> 1 nhãn đóng gói/lô -> RFID tùy chọn -> hoàn tất xuất. */
 export default function AlignedMvpOutboundPage() {
   const can = useHasPermission();
   const queryClient = useQueryClient();
@@ -107,9 +103,6 @@ export default function AlignedMvpOutboundPage() {
     setSearchParams(next, { replace: true });
   }, [searchParams, setSearchParams]);
 
-  // WWHN-217 · D-217-02: Back của trình duyệt phải đóng overlay OUT-REQ-01/OUT-03 và
-  // giữ người dùng ở OUT-01. Trước đây overlay chỉ là state React nên Back rời hẳn màn
-  // xuất kho ngay giữa chuỗi scan -> Packing Label -> Post Issue.
   const overlayOpen = intakeOpen || detailId !== null;
   const closeOverlays = () => {
     setIntakeOpen(false);
@@ -127,7 +120,7 @@ export default function AlignedMvpOutboundPage() {
       render: (value: string, row) => <strong>{value || row.id}</strong>,
     },
     {
-      title: "Request",
+      title: "Yêu cầu xuất",
       dataIndex: "outboundRequestId",
       key: "request",
       width: 150,
@@ -137,7 +130,7 @@ export default function AlignedMvpOutboundPage() {
             {value.length > 12 ? `${value.slice(0, 8)}…` : value}
           </span>
         ) : (
-          <Tag color="error">Thiếu request</Tag>
+          <Tag color="error">Thiếu yêu cầu xuất</Tag>
         ),
     },
     {
@@ -147,7 +140,7 @@ export default function AlignedMvpOutboundPage() {
       width: 190,
     },
     {
-      title: "Match",
+      title: "Đối chiếu",
       key: "match",
       width: 190,
       render: (_, row) => {
@@ -170,13 +163,13 @@ export default function AlignedMvpOutboundPage() {
       },
     },
     {
-      title: "Packing Label",
+      title: "Nhãn đóng gói",
       key: "label",
       width: 160,
       render: (_, row) => {
         const printed = row.labelPrintedCount ?? 0;
         return printed >= 1 ? (
-          <Tag color="success">1/1 ĐÃ IN</Tag>
+          <Tag color="success">1/1 đã in</Tag>
         ) : (
           <Tag
             color={
@@ -185,7 +178,7 @@ export default function AlignedMvpOutboundPage() {
                 : "default"
             }
           >
-            0/1
+            Chưa in
           </Tag>
         );
       },
@@ -208,9 +201,11 @@ export default function AlignedMvpOutboundPage() {
       title: "Trạng thái",
       dataIndex: "status",
       key: "status",
-      width: 130,
+      width: 170,
       render: (value: OutboundStatus) => (
-        <Tag color={STATUS_COLOR[value]}>{STATUS_LABEL[value]}</Tag>
+        <Tag color={STATUS_COLOR[value]}>
+          {businessLabel(OUTBOUND_STATUS_LABELS, value, "Chưa xác định")}
+        </Tag>
       ),
     },
     {
@@ -251,10 +246,10 @@ export default function AlignedMvpOutboundPage() {
     <div className="outbound-page hn-mvp-source-screen">
       <div className="toolbar-wrap" style={{ gap: 6 }}>
         <span className="pill ok">
-          Scan → tổng hợp → 1 Packing Label/lô → Post Issue
+          Quét đủ → tổng hợp → in 1 nhãn đóng gói/lô → hoàn tất xuất kho
         </span>
         <span className="pill blue">RFID tùy chọn</span>
-        <span className="pill warn-pill">Chỉ Post Issue mới trừ tồn</span>
+        <span className="pill warn-pill">Chỉ hoàn tất xuất kho mới trừ tồn</span>
       </div>
 
       <div className="toolbar">
@@ -339,8 +334,8 @@ export default function AlignedMvpOutboundPage() {
       <div className="footer-note">
         Mở phiếu để thực hiện đúng thứ tự:{" "}
         <b>
-          Scan đủ → tổng hợp lô → tạo/preview/in/dán đúng 01 Packing Label →
-          RFID tùy chọn → Hoàn tất xuất
+          Quét đủ → tổng hợp lô → tạo/xem trước/in/dán đúng 01 nhãn đóng gói →
+          RFID tùy chọn → Hoàn tất xuất kho
         </b>
         .
       </div>

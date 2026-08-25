@@ -36,11 +36,14 @@ import { MvpPageSizeSelector } from "@/shared/components/mvp/MvpListPagination";
 import { resolveApiPagination } from "@/shared/components/mvp/mvp-pagination";
 import { useCan } from "@/shared/components/permission";
 import { WMS_PERMISSION_CATALOG as P } from "@/shared/constants/wms-permissions";
+import {
+  MASTER_STATUS_LABELS,
+  businessLabel,
+} from "@/shared/constants/business-labels";
 
 interface CatalogTabMeta {
   kind: CatalogMasterKind;
   label: string;
-  /** Danh từ dùng trong nút tạo, tiêu đề modal và tổng số dòng. */
   itemLabel: string;
   codeLabel: string;
   nameLabel: string;
@@ -69,10 +72,10 @@ const CATALOG_TABS: CatalogTabMeta[] = [
   },
   {
     kind: "MODEL",
-    label: "Model",
-    itemLabel: "model",
-    codeLabel: "Mã model",
-    nameLabel: "Tên model",
+    label: "Mẫu sản phẩm",
+    itemLabel: "mẫu sản phẩm",
+    codeLabel: "Mã mẫu sản phẩm",
+    nameLabel: "Tên mẫu sản phẩm",
     codePlaceholder: "DJZ10A",
     namePlaceholder: "Máy khoan DJZ10A",
   },
@@ -97,8 +100,8 @@ const CATALOG_TABS: CatalogTabMeta[] = [
 ];
 
 const STATUS_OPTIONS: Array<{ value: MasterStatus; label: string }> = [
-  { value: "ACTIVE", label: "Đang dùng" },
-  { value: "INACTIVE", label: "Ngừng dùng" },
+  { value: "ACTIVE", label: "Đang sử dụng" },
+  { value: "INACTIVE", label: "Ngừng sử dụng" },
 ];
 
 interface CatalogFormValues {
@@ -119,20 +122,16 @@ const EMPTY_FORM: CatalogFormValues = {
   status: "ACTIVE",
 };
 
-/**
- * BE (CurrentBaselineMasterController) là nguồn thực thi BR-MST-01..07; FE chỉ
- * diễn giải mã lỗi thành câu hướng dẫn thao tác tiếp theo.
- */
 function saveErrorMessage(error: unknown): string {
   const normalized = normalizeError(error);
   if (normalized.code === "MASTER_CODE_IMMUTABLE_AFTER_USE") {
-    return "Mã master đã được SKU tham chiếu nên không được đổi (BR-MST). Giữ nguyên mã và chỉ sửa tên/mô tả, hoặc tạo master mới rồi ngừng dùng master cũ.";
+    return "Mã danh mục đã được SKU sử dụng nên không thể đổi. Hãy giữ nguyên mã và chỉ sửa tên/mô tả, hoặc tạo danh mục mới rồi ngừng sử dụng danh mục cũ.";
   }
   if (normalized.code === "STALE_VERSION") {
-    return "Bản ghi đã được người khác cập nhật. Bấm Làm mới để tải bản mới nhất rồi sửa lại.";
+    return "Bản ghi đã được người khác cập nhật. Hãy tải lại dữ liệu mới nhất rồi sửa lại.";
   }
   if (normalized.code === "BRAND_NOT_ACTIVE") {
-    return "Model chỉ được tham chiếu hãng đang ở trạng thái Đang dùng. Chọn hãng khác hoặc kích hoạt lại hãng trước.";
+    return "Mẫu sản phẩm chỉ được gắn với hãng đang sử dụng. Hãy chọn hãng khác hoặc kích hoạt lại hãng trước.";
   }
   return getApiErrorMessage(error, "Không lưu được danh mục.");
 }
@@ -168,8 +167,6 @@ export function CatalogMasterScreen() {
     queryFn: () => getCatalogMasters(activeKind, listParams),
   });
 
-  // Danh sách hãng nạp riêng vì bảng Model chỉ lưu brand_id, cần map sang tên
-  // và cấp option cho form; danh mục đổi ít nên cache lâu.
   const brandQuery = useQuery({
     queryKey: ["catalog-master", "brand-options"],
     queryFn: getActiveBrandOptions,
@@ -313,10 +310,10 @@ export function CatalogMasterScreen() {
     {
       title: "Trạng thái",
       dataIndex: "status",
-      width: 130,
+      width: 140,
       render: (value: MasterStatus) => (
         <Tag color={value === "ACTIVE" ? "success" : "default"}>
-          {value === "ACTIVE" ? "Đang dùng" : "Ngừng dùng"}
+          {businessLabel(MASTER_STATUS_LABELS, value, "Trạng thái khác")}
         </Tag>
       ),
     },
@@ -419,11 +416,11 @@ export function CatalogMasterScreen() {
             <ProfileOutlined />
             <div>
               <Typography.Title level={3} style={{ margin: 0 }}>
-                Danh mục Product Master
+                Danh mục sản phẩm
               </Typography.Title>
               <Typography.Text type="secondary">
-                Hãng / nhóm hàng / model / nguồn điện / quy cách đóng gói dùng
-                cho form tạo SKU (REQ-SRS-029).
+                Quản lý hãng, nhóm hàng, mẫu sản phẩm, nguồn điện và quy cách
+                đóng gói dùng khi tạo SKU.
               </Typography.Text>
             </div>
           </Space>
@@ -446,8 +443,8 @@ export function CatalogMasterScreen() {
       <Alert
         type="info"
         showIcon
-        title="Quy tắc danh mục (BR-MST)"
-        description="Danh mục không có thao tác xoá: ngừng dùng bằng cách chuyển trạng thái sang INACTIVE. Mã đã được SKU tham chiếu là bất biến — muốn đổi mã phải tạo master mới. Model chỉ được gắn hãng đang ở trạng thái Đang dùng."
+        title="Quy tắc sử dụng danh mục"
+        description="Danh mục không xóa trực tiếp: khi không còn dùng, chuyển sang trạng thái Ngừng sử dụng. Mã đã được SKU tham chiếu không thể đổi; muốn đổi mã cần tạo danh mục mới. Mẫu sản phẩm chỉ được gắn với hãng đang sử dụng."
       />
 
       <Card styles={{ body: { paddingTop: 12 } }}>
@@ -457,8 +454,6 @@ export function CatalogMasterScreen() {
           items={CATALOG_TABS.map((tab) => ({
             key: tab.kind,
             label: tab.label,
-            // Chỉ tab đang mở mới dựng bảng: mọi tab dùng chung một bộ state
-            // filter/paging nên tránh render năm bảng cùng lúc.
             children: tab.kind === activeKind ? panel : null,
           }))}
         />
@@ -475,8 +470,6 @@ export function CatalogMasterScreen() {
         centered
         width={640}
         mask={{ closable: false }}
-        // Form phải mount sẵn thì form.setFieldsValue lúc bấm Sửa mới nạp được
-        // dữ liệu dòng đang chọn (antd bỏ qua lời gọi khi instance chưa gắn).
         forceRender
       >
         {formError && (
@@ -497,7 +490,7 @@ export function CatalogMasterScreen() {
             ]}
             extra={
               editingRecord
-                ? "Mã đã được SKU tham chiếu sẽ bị BE từ chối khi đổi (409 MASTER_CODE_IMMUTABLE_AFTER_USE)."
+                ? "Nếu mã đã được SKU sử dụng thì hệ thống sẽ không cho phép đổi."
                 : undefined
             }
           >
@@ -523,7 +516,7 @@ export function CatalogMasterScreen() {
             <Form.Item
               name="brand_id"
               label="Hãng"
-              extra="Chỉ liệt kê hãng đang ở trạng thái Đang dùng."
+              extra="Chỉ hiển thị các hãng đang sử dụng."
             >
               <Select
                 allowClear

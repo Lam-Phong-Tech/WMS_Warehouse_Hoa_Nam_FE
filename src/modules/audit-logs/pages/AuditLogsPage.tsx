@@ -31,14 +31,14 @@ export function AuditLogsPage() {
   return (
     <div>
       <PageHeader
-        title="Nhật ký kiểm tra"
-        subtitle="Lịch sử thay đổi hệ thống - đối chiếu khi xảy ra mất mát hoặc thất thoát dữ liệu."
+        title="Nhật ký hệ thống"
+        subtitle="Lịch sử thay đổi và thao tác quan trọng để phục vụ kiểm tra, đối chiếu khi cần."
       />
 
       {isError && (
         <ApiErrorAlert
           error={error}
-          title="Không tải được audit logs"
+          title="Không tải được nhật ký hệ thống"
           onRetry={refetch}
           style={{ marginBottom: 16 }}
         />
@@ -46,11 +46,11 @@ export function AuditLogsPage() {
 
       <Card variant="borderless">
         {isLoading && auditLogs.length === 0 ? (
-          <LoadingState tip="Đang tải audit logs..." minHeight={320} />
+          <LoadingState tip="Đang tải nhật ký hệ thống..." minHeight={320} />
         ) : !isLoading && auditLogs.length === 0 ? (
           <EmptyState
-            title="Chưa có audit log"
-            description="Hệ thống chưa có bản ghi nào."
+            title="Chưa có nhật ký hệ thống"
+            description="Hệ thống chưa ghi nhận bản ghi nào."
           />
         ) : (
           <AuditLogsTable

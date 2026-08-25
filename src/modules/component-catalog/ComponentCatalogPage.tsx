@@ -27,7 +27,7 @@ interface CatalogRow {
 
 const columns: ColumnsType<CatalogRow> = [
   { title: "Mã chứng từ", dataIndex: "code", key: "code" },
-  { title: "Module", dataIndex: "owner", key: "owner", responsive: ["sm"] },
+  { title: "Phân hệ", dataIndex: "owner", key: "owner", responsive: ["sm"] },
   {
     title: "Trạng thái",
     dataIndex: "status",
@@ -42,10 +42,10 @@ const columns: ColumnsType<CatalogRow> = [
           ERROR: "error",
         }}
         labelMap={{
-          DRAFT: "Draft",
-          SCANNING: "Scanning",
-          POSTED: "Posted",
-          ERROR: "Error",
+          DRAFT: "Nháp",
+          SCANNING: "Đang quét",
+          POSTED: "Đã ghi nhận",
+          ERROR: "Có lỗi",
         }}
       />
     ),
@@ -61,18 +61,18 @@ export default function ComponentCatalogPage() {
   return (
     <Space orientation="vertical" size={20} style={{ width: "100%" }}>
       <PageHeader
-        title="Component catalog"
-        subtitle="Route nội bộ cho BA/QA kiểm tra UI states dùng chung theo HN-FE-001."
+        title="Thư viện thành phần giao diện"
+        subtitle="Màn nội bộ để kiểm tra các trạng thái giao diện dùng chung."
         extra={
           <Space wrap>
-            <Button onClick={() => toast.success("Toast success đã sẵn sàng")}>
-              Toast success
+            <Button onClick={() => toast.success("Thông báo thành công đã sẵn sàng")}>
+              Thử thông báo thành công
             </Button>
-            <Button danger onClick={() => toast.error("Toast error theo API")}>
-              Toast error
+            <Button danger onClick={() => toast.error("Thông báo lỗi đã sẵn sàng")}>
+              Thử thông báo lỗi
             </Button>
             <Button type="primary" onClick={() => setModalOpen(true)}>
-              Mở modal
+              Mở biểu mẫu
             </Button>
           </Space>
         }
@@ -80,7 +80,7 @@ export default function ComponentCatalogPage() {
 
       <Row gutter={[16, 16]}>
         <Col xs={24} xl={14}>
-          <Card title="Table + status + pagination" style={cardStyle}>
+          <Card title="Bảng dữ liệu, trạng thái và phân trang" style={cardStyle}>
             <DataTable<CatalogRow>
               columns={columns}
               dataSource={[]}
@@ -88,24 +88,24 @@ export default function ComponentCatalogPage() {
                 total: 0,
                 current: 1,
                 pageSize: 10,
-                onChange: () => toast.info("Pagination callback đã được gọi"),
+                onChange: () => toast.info("Đã thay đổi trang"),
               }}
             />
           </Card>
         </Col>
         <Col xs={24} xl={10}>
-          <Card title="Scan states" style={cardStyle}>
+          <Card title="Trạng thái quét mã" style={cardStyle}>
             <Space orientation="vertical" size={12} style={{ width: "100%" }}>
               <ScanInput
                 recentCodes={recentCodes}
-                duplicateMessage="Mã vừa scan bị trùng trong batch hiện tại"
+                duplicateMessage="Mã vừa quét đã có trong lô hiện tại"
                 onScan={(code) => {
                   setRecentCodes((codes) => [code, ...codes].slice(0, 5));
-                  toast.success(`Đã nhận scan ${code}`);
+                  toast.success(`Đã nhận mã ${code}`);
                 }}
               />
               <Typography.Text type="secondary">
-                Recent: {recentCodes.join(", ")}
+                Mã gần đây: {recentCodes.join(", ")}
               </Typography.Text>
               <ScanInput
                 disabled
@@ -119,22 +119,22 @@ export default function ComponentCatalogPage() {
 
       <Row gutter={[16, 16]}>
         <Col xs={24} md={12} xl={6}>
-          <Card title="Loading" style={cardStyle}>
+          <Card title="Đang tải" style={cardStyle}>
             <LoadingState tip="Đang tải danh sách..." />
           </Card>
         </Col>
         <Col xs={24} md={12} xl={6}>
-          <Card title="Empty" style={cardStyle}>
+          <Card title="Không có dữ liệu" style={cardStyle}>
             <EmptyState description="Không có bản ghi phù hợp bộ lọc." />
           </Card>
         </Col>
         <Col xs={24} md={12} xl={6}>
-          <Card title="Error" style={cardStyle}>
-            <ErrorState onRetry={() => toast.info("Retry callback")} />
+          <Card title="Có lỗi" style={cardStyle}>
+            <ErrorState onRetry={() => toast.info("Đang thử lại")} />
           </Card>
         </Col>
         <Col xs={24} md={12} xl={6}>
-          <Card title="No permission" style={cardStyle}>
+          <Card title="Không có quyền" style={cardStyle}>
             <NoPermissionState />
           </Card>
         </Col>
@@ -142,53 +142,51 @@ export default function ComponentCatalogPage() {
 
       <Row gutter={[16, 16]}>
         <Col xs={24} lg={12}>
-          <Card title="API error + field errors" style={cardStyle}>
+          <Card title="Lỗi dữ liệu và lỗi trường nhập" style={cardStyle}>
             <ApiErrorAlert
               error={{
                 response: {
                   data: {
                     success: false,
-                    message: "Validation failed",
+                    message: "Dữ liệu chưa hợp lệ",
                     error_code: "WMS_VALIDATION_ERROR",
                     errors: {
                       sku_id: ["SKU bắt buộc"],
-                      warehouse_id: ["Kho không nằm trong data scope"],
+                      warehouse_id: ["Kho không nằm trong phạm vi dữ liệu"],
                     },
                   },
                 },
               }}
-              onRetry={() => toast.info("Refetch callback")}
+              onRetry={() => toast.info("Đang tải lại dữ liệu")}
             />
           </Card>
         </Col>
         <Col xs={24} lg={12}>
-          <Card title="Confirm + disabled action" style={cardStyle}>
+          <Card title="Xác nhận và hành động bị khóa" style={cardStyle}>
             <Space wrap>
               <ConfirmButton
                 danger
                 title="Xác nhận thao tác"
-                description="Confirm cho action có rủi ro."
+                description="Dùng xác nhận trước các thao tác có rủi ro."
                 onConfirm={() => toast.success("Đã xác nhận thao tác")}
               >
-                Confirm action
+                Xác nhận thao tác
               </ConfirmButton>
-              {/* WWHN-268: dùng SubmitButton để state "disabled" phát ra
-                  data-ui-state chuẩn, thay cho Button trần không có test hook. */}
-              <SubmitButton disabled>Disabled until valid</SubmitButton>
+              <SubmitButton disabled>Chưa đủ điều kiện thực hiện</SubmitButton>
             </Space>
           </Card>
         </Col>
       </Row>
 
-      <Card title="Page skeleton">
+      <Card title="Khung tải trang">
         <PageSkeleton />
       </Card>
 
       <FormModal
         open={modalOpen}
-        title="Form modal"
+        title="Biểu mẫu mẫu"
         onOk={() => {
-          toast.success("Submit callback đã chạy");
+          toast.success("Đã gửi biểu mẫu");
           setModalOpen(false);
         }}
         onCancel={() => setModalOpen(false)}
