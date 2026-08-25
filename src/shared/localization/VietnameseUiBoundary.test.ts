@@ -45,6 +45,30 @@ describe("translateUserFacingText", () => {
     expect(translateUserFacingText("RECEIVED_PENDING_PUTAWAY")).toBe(
       "Chờ xếp khay",
     );
+    expect(translateUserFacingText("BOX")).toBe("Hộp");
+    expect(translateUserFacingText("TRAY")).toBe("Khay");
+  });
+
+  it("closes the remaining putaway/report/shell terminology register", () => {
+    const cases: Array<[string, string]> = [
+      ["Movement / Trace", "Biến động / Truy vết"],
+      ["Packing Label", "Nhãn đóng gói"],
+      ["Serial", "Số sê-ri"],
+      ["Ledger", "Sổ tồn kho"],
+      ["Putaway", "Xếp khay"],
+      ["Reversal", "Điều chỉnh tồn kho"],
+      ["Product Master", "Danh mục sản phẩm"],
+      ["Version", "Phiên bản"],
+      ["Publish", "Đưa lên ứng dụng"],
+      ["Unpublish", "Gỡ khỏi ứng dụng"],
+      ["runtime", "khi vận hành"],
+      ["CRUD", "Tạo / Xem / Sửa / Xóa"],
+      ["System scope", "Toàn hệ thống"],
+    ];
+
+    for (const [source, expected] of cases) {
+      expect(translateUserFacingText(source)).toBe(expected);
+    }
   });
 
   it("keeps approved technical identifiers that users may legitimately need", () => {
