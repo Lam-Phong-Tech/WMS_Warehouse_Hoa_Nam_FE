@@ -20,6 +20,22 @@ describe("translateUserFacingText", () => {
     ).toBe("Quét đủ → Xem trước Nhãn đóng gói → Hoàn tất xuất kho");
   });
 
+  it("keeps outbound detail sentences natural after enum localization", () => {
+    expect(translateUserFacingText("Packing Label chưa PRINTED.")).toBe(
+      "Nhãn đóng gói chưa được in.",
+    );
+    expect(
+      translateUserFacingText(
+        "Phiếu POSTED là bất biến; sửa sai dùng Reversal.",
+      ),
+    ).toBe(
+      "Phiếu đã xuất kho không được chỉnh sửa trực tiếp; sửa sai dùng Điều chỉnh tồn kho.",
+    );
+    expect(
+      translateUserFacingText("RFID mapping là stock-neutral."),
+    ).toBe("Việc gán RFID không làm thay đổi tồn kho.");
+  });
+
   it("localizes raw business states without changing contract values in code", () => {
     expect(translateUserFacingText("MATCH")).toBe("Khớp");
     expect(translateUserFacingText("MISMATCH")).toBe("Có chênh lệch");
