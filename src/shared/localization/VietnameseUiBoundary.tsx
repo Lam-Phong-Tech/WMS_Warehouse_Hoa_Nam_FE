@@ -11,6 +11,12 @@ import { useLayoutEffect, type ReactNode } from "react";
  *   chỉ là fail-closed safety net để literal cũ không lọt ra giao diện vận hành.
  */
 const EXACT_TEXT_LABELS: Readonly<Record<string, string>> = {
+  "Network Error": "Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.",
+  "Failed to fetch": "Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.",
+  "Load failed": "Không tải được dữ liệu. Kiểm tra mạng rồi thử lại.",
+  "Request aborted": "Yêu cầu đã bị hủy.",
+  Canceled: "Yêu cầu đã bị hủy.",
+  canceled: "Yêu cầu đã bị hủy.",
   DRAFT: "Nháp",
   SCANNING: "Đang quét",
   POSTED: "Đã ghi nhận",
@@ -119,6 +125,7 @@ const INLINE_TOKEN_LABELS: Readonly<Record<string, string>> = {
 };
 
 const PHRASE_REPLACEMENTS: ReadonlyArray<readonly [RegExp, string]> = [
+  [/timeout of [0-9]+ms exceeded/gi, "Yêu cầu quá thời gian, vui lòng thử lại."],
   [/Packing Label chưa PRINTED/gi, "Nhãn đóng gói chưa được in"],
   [/Phiếu POSTED là bất biến/gi, "Phiếu đã xuất kho không được chỉnh sửa trực tiếp"],
   [/Đã Preview Packing Label/gi, "Đã xem trước nhãn đóng gói"],
