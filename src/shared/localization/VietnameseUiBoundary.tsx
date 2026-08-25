@@ -36,9 +36,16 @@ const EXACT_TEXT_LABELS: Readonly<Record<string, string>> = {
   LOCKED: "Đã khóa",
   PRODUCT: "Sản phẩm",
   COMPONENT: "Linh kiện",
+  CARTON: "Thùng carton",
+  BOX: "Hộp",
+  TRAY: "Khay",
   OPEN: "Đang mở",
   CLASSIFIED: "Đã phân loại",
+  PARTIALLY_POSTED: "Đã ghi nhận một phần",
   CLOSED: "Đã đóng",
+  NEW_ITEM_CANDIDATE: "Sản phẩm mới chờ ghi nhận",
+  EXISTING_ITEM: "Sản phẩm đã có trong hệ thống",
+  LEGACY_ITEM: "Sản phẩm từ dữ liệu cũ",
   PENDING_RETURN: "Chờ hàng quay lại kho",
   CONFIRMED: "Đã xác nhận hàng về kho",
   SELLABLE: "Có thể bán/xuất lại",
@@ -52,6 +59,60 @@ const EXACT_TEXT_LABELS: Readonly<Record<string, string>> = {
   NOT_TRACEABLE: "Chưa có thông tin truy xuất",
   IN_WARRANTY: "Đang bảo hành",
   RETURNED_TO_CUSTOMER: "Đã trả khách",
+  RECEIVED: "Đã tiếp nhận",
+  CHECKING: "Đang kiểm tra",
+  WAITING_PARTS: "Chờ linh kiện",
+  REPAIRING: "Đang sửa chữa",
+  COMPLETED: "Đã hoàn tất",
+  RETURNED: "Đã trả khách",
+  READY: "Sẵn sàng trả",
+  REJECTED: "Đã từ chối",
+  CONSUMED: "Đã sử dụng",
+  OPENING: "Tồn đầu kỳ",
+  RECEIPT: "Nhập kho",
+  ISSUE: "Xuất kho",
+  COMPONENT_ISSUE: "Xuất linh kiện",
+  REVERSAL: "Điều chỉnh tồn kho",
+  ORIGINAL: "Giao dịch gốc",
+  SYSTEM: "Toàn hệ thống",
+  WAREHOUSE: "Theo kho",
+  FUNCTION: "Theo chức năng",
+  draft: "Nháp",
+  pending: "Chờ duyệt",
+  approved: "Đã duyệt",
+  rejected: "Đã từ chối",
+  converted: "Đã tạo phiếu kho",
+  cancelled: "Đã hủy",
+  in_transit: "Đang vận chuyển",
+  return_in_transit: "Đang vận chuyển hoàn",
+  completed: "Đã hoàn tất",
+  completed_with_loss: "Hoàn tất, có thiếu hụt",
+  returned: "Đã hoàn trả",
+};
+
+const INLINE_TOKEN_LABELS: Readonly<Record<string, string>> = {
+  DRAFT: "nháp",
+  SCANNING: "đang quét",
+  POSTED: "đã ghi nhận",
+  CANCELLED: "đã hủy",
+  PRINTED: "đã in",
+  PREVIEWED: "đã xem trước",
+  READY_TO_PRINT: "sẵn sàng in",
+  PENDING_PRINT: "chờ in",
+  PRINT_FAILED: "in thất bại",
+  MATCH: "khớp",
+  MISMATCH: "có chênh lệch",
+  NOT_APPLICABLE: "không áp dụng",
+  AVAILABLE: "khả dụng",
+  NON_SELLABLE: "không thể bán/xuất",
+  DEFECTIVE: "hàng lỗi",
+  QUARANTINE: "chờ kiểm tra",
+  ACTIVE: "đang hoạt động",
+  INACTIVE: "ngừng hoạt động",
+  PRODUCT: "sản phẩm",
+  COMPONENT: "linh kiện",
+  RECEIVED_PENDING_PUTAWAY: "chờ xếp khay",
+  STORED: "đã xếp khay",
 };
 
 const PHRASE_REPLACEMENTS: ReadonlyArray<readonly [RegExp, string]> = [
@@ -68,9 +129,18 @@ const PHRASE_REPLACEMENTS: ReadonlyArray<readonly [RegExp, string]> = [
   [/Component catalog/gi, "Danh mục linh kiện"],
   [/role template/gi, "mẫu vai trò"],
   [/permission catalog/gi, "danh mục quyền"],
+  [/System scope/gi, "Toàn hệ thống"],
   [/Request ID/gi, "Mã yêu cầu"],
+  [/RFID code/gi, "Mã RFID"],
   [/Item mới\s*·\s*chờ Post/gi, "Sản phẩm mới · chờ ghi nhận"],
   [/Baseline hiện hành/gi, "Quy trình hiện hành"],
+  [/App PV/gi, "ứng dụng phân vùng"],
+  [/Import Excel/gi, "Nhập từ Excel"],
+  [/Confirm Outbound/gi, "Xác nhận phiếu xuất"],
+  [/secure context/gi, "ngữ cảnh bảo mật"],
+  [/camera API/gi, "chức năng camera"],
+  [/Barcode\s*\/\s*QR/gi, "Mã vạch / QR"],
+  [/Map RFID/gi, "Gán RFID"],
   [/\bstock-neutral\b/gi, "không làm thay đổi tồn kho"],
   [/\bavailable_qty\b/g, "tồn khả dụng"],
   [/\bsnapshot\b/gi, "nội dung nhãn đã lưu"],
@@ -79,6 +149,7 @@ const PHRASE_REPLACEMENTS: ReadonlyArray<readonly [RegExp, string]> = [
   [/\bReady\b/g, "Sẵn sàng"],
   [/\bLedger\b/g, "Sổ tồn kho"],
   [/\bSerial\b/g, "Số sê-ri"],
+  [/\bserial\b/g, "số sê-ri"],
   [/\bPutaway\b/g, "Xếp khay"],
   [/\bReversal\b/g, "Điều chỉnh tồn kho"],
   [/\bScan\b/g, "Quét"],
@@ -92,12 +163,22 @@ const PHRASE_REPLACEMENTS: ReadonlyArray<readonly [RegExp, string]> = [
   [/\bTRAY\b/g, "Khay"],
   [/\btray\b/g, "khay"],
   [/\bVersion\b/g, "Phiên bản"],
+  [/\bPublish\b/g, "Đưa lên ứng dụng"],
+  [/\bUnpublish\b/g, "Gỡ khỏi ứng dụng"],
+  [/\bImport\b/g, "Nhập dữ liệu"],
+  [/\bExport\b/g, "Xuất dữ liệu"],
+  [/\bCRUD\b/g, "Tạo / Xem / Sửa / Xóa"],
   [/\bruntime\b/gi, "khi vận hành"],
   [/\bcache\b/gi, "bộ nhớ tạm"],
   [/\bbundle\b/gi, "phiên bản giao diện"],
   [/\bfallback\b/gi, "phương án thay thế"],
   [/\bgate\b/gi, "điều kiện"],
   [/\breplay\b/gi, "trả lại kết quả cũ"],
+  [/\bwireframe\b/gi, "giao diện mẫu"],
+  [/\blow-fi\b/gi, "mô phỏng"],
+  [/\baction\b/gi, "thao tác"],
+  [/\bCategory\b/g, "Nhóm hàng"],
+  [/\bModel\b/g, "Mẫu sản phẩm"],
 ];
 
 const LOCALIZED_ATTRIBUTES = ["placeholder", "title", "aria-label"] as const;
@@ -121,6 +202,16 @@ export function translateUserFacingText(source: string): string {
   for (const [pattern, replacement] of PHRASE_REPLACEMENTS) {
     translated = translated.replace(pattern, replacement);
   }
+
+  // Raw enum nằm trong một câu người dùng vẫn phải được Việt hóa. Không áp dụng cho
+  // chuỗi giống mã kỹ thuật đơn lẻ (không có khoảng trắng/dấu câu) để tránh đổi mã SKU,
+  // permission key hoặc identifier có chứa một token trùng tên trạng thái.
+  if (/\s|[·:,.()]/.test(translated)) {
+    for (const [token, label] of Object.entries(INLINE_TOKEN_LABELS)) {
+      translated = translated.replace(new RegExp(`\\b${token}\\b`, "g"), label);
+    }
+  }
+
   return translated;
 }
 
@@ -167,7 +258,10 @@ function localizeSubtree(node: Node): void {
 
 export function VietnameseUiBoundary({ children }: { children: ReactNode }) {
   useLayoutEffect(() => {
-    const root = document.getElementById("root");
+    // Ant Design render Modal/Drawer/Dropdown/notification bằng portal dưới body,
+    // không nhất thiết nằm trong #root. Observe toàn body để safety net áp dụng đồng
+    // nhất cho cả page thường và overlay/portal.
+    const root = document.body;
     if (!root) return;
 
     localizeSubtree(root);
