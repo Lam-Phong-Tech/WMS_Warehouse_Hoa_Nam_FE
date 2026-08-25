@@ -13,6 +13,11 @@ import {
 import { MvpPageSizeSelector } from "@/shared/components/mvp/MvpListPagination";
 import { resolveApiPagination } from "@/shared/components/mvp/mvp-pagination";
 import { useHasPermission } from "@/shared/components/permission";
+import {
+  REVERSAL_STATUS_LABELS,
+  SOURCE_DOCUMENT_TYPE_LABELS,
+  businessLabel,
+} from "@/shared/constants/business-labels";
 import { useReversalDocuments, reversalKeys } from "../hooks/use-reversal";
 import { ReversalCreateModal } from "../components/ReversalCreateModal";
 import { ReversalDetailModal } from "../components/ReversalDetailModal";
@@ -20,14 +25,9 @@ import { ReversalStatusTag } from "../components/ReversalStatusTag";
 import type { ReversalDocument } from "../types";
 
 const SEARCH_DEBOUNCE_MS = 250;
-
 const numberFormatter = new Intl.NumberFormat("vi-VN");
 
-/**
- * REV-00 · Danh sách phiếu Reversal — màn hub cho hoàn đảo.
- * Tạo Reversal (REV-01) và Chi tiết đều mở modal ngay trên danh sách,
- * không chuyển trang — đồng bộ pattern luồng 02/03/04.
- */
+/** REV-00 · Danh sách phiếu điều chỉnh tồn kho bằng nghiệp vụ hoàn đảo. */
 export default function ReversalPage() {
   const can = useHasPermission();
   const queryClient = useQueryClient();
@@ -50,8 +50,7 @@ export default function ReversalPage() {
     per_page: perPage,
   });
   const rows = listQuery.data?.rows ?? [];
-  const listMeta = listQuery.data?.meta;
-  const listPagination = resolveApiPagination(listMeta, {
+  const listPagination = resolveApiPagination(listQuery.data?.meta, {
     page,
     pageSize: perPage,
     rowCount: rows.length,
@@ -85,10 +84,10 @@ export default function ReversalPage() {
 
   const columns: ColumnsType<ReversalDocument> = [
     {
-      title: "Mã hoàn đảo",
+      title: "Mã điều chỉnh",
       dataIndex: "reversal_code",
       key: "reversal_code",
-      width: 160,
+      width: 170,
       fixed: "left",
       render: (value: string, row) => <strong>{value || row.id}</strong>,
     },
@@ -105,8 +104,16 @@ export default function ReversalPage() {
     {
       title: "Loại chứng từ gốc",
       key: "reference_document_type",
-      width: 170,
-      render: (_, row) => <Tag>{row.reference_document_type || "-"}</Tag>,
+      width: 180,
+      render: (_, row) => (
+        <Tag>
+          {businessLabel(
+            SOURCE_DOCUMENT_TYPE_LABELS,
+            row.reference_document_type,
+            "Chứng từ khác",
+          )}
+        </Tag>
+      ),
     },
     {
       title: "Kho",
@@ -115,10 +122,10 @@ export default function ReversalPage() {
       width: 140,
     },
     {
-      title: "Tổng SL",
+      title: "Tổng số lượng",
       dataIndex: "total_qty",
       key: "total_qty",
-      width: 100,
+      width: 120,
       align: "right",
       render: (value: number) => numberFormatter.format(value),
     },
@@ -132,7 +139,7 @@ export default function ReversalPage() {
     {
       title: "Trạng thái",
       key: "status",
-      width: 190,
+      width: 210,
       render: (_, row) => (
         <ReversalStatusTag
           status={row.status}
@@ -178,20 +185,11 @@ export default function ReversalPage() {
   return (
     <div className="reversal-page hn-mvp-source-screen">
       <div className="toolbar-wrap" style={{ gap: 6 }}>
-        <span className="pill blue">GET /reversal-documents</span>
-        <span className="pill blue">POST /reversal-documents</span>
-        <span className="pill blue">GET /stock-movements/reversible</span>
-        <span className="pill warn-pill">Idempotency-Key · If-Match</span>
-        <span className="pill ok">
-          Append-only · Movement gốc bất biến · Dependency guard
-        </span>
+        <span className="pill blue">Điều chỉnh bằng chứng từ đối ứng</span>
+        <span className="pill blue">Giữ nguyên giao dịch gốc</span>
+        <span className="pill ok">Có kiểm tra điều kiện trước khi ghi nhận</span>
       </div>
 
-      {/*
-        WWHN-242 · REV-00 mở cho cả vai chỉ đọc (BE cấp GET reversal-documents bằng
-        `inventory.view`). Nói rõ vì sao không thấy hành động ghi, thay vì để màn hình
-        trông như bị lỗi thiếu nút.
-      */}
       {!canPost ? (
         <div
           className="footer-note"
@@ -199,10 +197,9 @@ export default function ReversalPage() {
           data-testid="reversal-readonly-note"
           style={{ marginBottom: 12 }}
         >
-          Chế độ chỉ đọc: tài khoản không có quyền{" "}
-          <b>inventory.reversal.post</b> nên không tạo/xác nhận/Post/huỷ được
-          phiếu hoàn đảo. Danh sách và chi tiết vẫn xem được theo quyền{" "}
-          <b>inventory.view</b>.
+          Chế độ chỉ xem: tài khoản hiện tại chưa có quyền tạo, xác nhận, hoàn
+          tất hoặc hủy phiếu điều chỉnh tồn kho. Bạn vẫn có thể xem danh sách và
+          chi tiết.
         </div>
       ) : null}
 
@@ -210,23 +207,25 @@ export default function ReversalPage() {
         <input
           className="input search"
           value={searchInput}
-          placeholder="Mã hoàn đảo, chứng từ gốc, lý do..."
-          aria-label="Tìm phiếu hoàn đảo"
-          onChange={(e) => setSearchInput(e.target.value)}
+          placeholder="Mã điều chỉnh, chứng từ gốc, lý do..."
+          aria-label="Tìm phiếu điều chỉnh tồn kho"
+          onChange={(event) => setSearchInput(event.target.value)}
         />
         <select
           className="select"
           value={statusFilter}
-          aria-label="Lọc trạng thái hoàn đảo"
-          onChange={(e) => {
-            setStatusFilter(e.target.value);
+          aria-label="Lọc trạng thái phiếu điều chỉnh"
+          onChange={(event) => {
+            setStatusFilter(event.target.value);
             setPage(1);
           }}
         >
           <option value="">Trạng thái: Tất cả</option>
-          <option value="DRAFT">DRAFT</option>
-          <option value="POSTED">POSTED</option>
-          <option value="CANCELLED">CANCELLED</option>
+          {Object.entries(REVERSAL_STATUS_LABELS).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label.replace(/ ·.*$/, "")}
+            </option>
+          ))}
         </select>
         <div className="spacer" />
         {canPost ? (
@@ -235,7 +234,7 @@ export default function ReversalPage() {
             type="button"
             onClick={() => setCreateOpen(true)}
           >
-            <PlusOutlined /> Tạo hoàn đảo
+            <PlusOutlined /> Tạo phiếu điều chỉnh
           </button>
         ) : null}
       </div>
@@ -244,7 +243,7 @@ export default function ReversalPage() {
         <div style={{ marginBottom: 14 }}>
           <ApiErrorAlert
             error={listQuery.error}
-            title="Không tải được danh sách hoàn đảo"
+            title="Không tải được danh sách phiếu điều chỉnh"
             onRetry={() => listQuery.refetch()}
           />
         </div>
@@ -252,8 +251,8 @@ export default function ReversalPage() {
 
       <MvpPageSizeSelector
         value={perPage}
-        onChange={(v) => {
-          setPerPage(v);
+        onChange={(value) => {
+          setPerPage(value);
           setPage(1);
         }}
       />
@@ -273,12 +272,12 @@ export default function ReversalPage() {
           total: listPagination.total,
           showSizeChanger: false,
           showTotal: (total) =>
-            `Tổng ${new Intl.NumberFormat("vi-VN").format(total)} phiếu hoàn đảo`,
+            `Tổng ${numberFormatter.format(total)} phiếu điều chỉnh`,
         }}
         locale={{
           emptyText: tableEmptyText(
             listQuery.isError ? listQuery.error : null,
-            "Không có phiếu hoàn đảo theo bộ lọc hiện tại",
+            "Không có phiếu điều chỉnh theo bộ lọc hiện tại",
           ),
         }}
         onRow={(row) => ({ onDoubleClick: () => setDetailId(row.id) })}
@@ -286,12 +285,10 @@ export default function ReversalPage() {
       />
 
       <div className="footer-note">
-        Bấm <b>Mở</b> sẽ hiện modal chi tiết hoàn đảo (thông tin chứng từ &amp;
-        dòng hoàn đảo) ngay trên danh sách — không chuyển trang. Bấm{" "}
-        <b>+ Tạo hoàn đảo</b> để lookup movement và tạo reversal mới.
+        Bấm <b>Mở</b> để xem chứng từ gốc, các dòng điều chỉnh và ảnh hưởng tồn
+        kho. Bấm <b>Tạo phiếu điều chỉnh</b> để chọn giao dịch cần điều chỉnh.
       </div>
 
-      {/* ──── Modals ──── */}
       {createOpen ? (
         <ReversalCreateModal
           onClose={() => setCreateOpen(false)}
