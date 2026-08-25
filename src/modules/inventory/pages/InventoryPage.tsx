@@ -21,6 +21,15 @@ import { useCanAny } from "@/shared/components/permission";
 import { useOverlayBackDismiss } from "@/shared/hooks/useOverlayBackDismiss";
 import { WMS_PERMISSION_CATALOG as P } from "@/shared/constants/wms-permissions";
 import {
+  INVENTORY_STOCK_STATUS_LABELS,
+  MOVEMENT_STATUS_LABELS,
+  MOVEMENT_TYPE_LABELS,
+  RECONCILE_STATUS_LABELS,
+  SKU_TYPE_LABELS,
+  SOURCE_DOCUMENT_TYPE_LABELS,
+  businessLabel,
+} from "@/shared/constants/business-labels";
+import {
   useInventoryBalances,
   useStockMovements,
 } from "../hooks/use-inventory";
@@ -74,8 +83,6 @@ export default function InventoryPage() {
 
   const balanceQuery = useInventoryBalances({
     keyword: search || undefined,
-    // Annex D SCR-INV-01 "Filter SKU/type/status": status là stock_status theo ERD
-    // bảng 29, không phải định mức tồn an toàn (không có trong MVP).
     stock_status: stockStatus || undefined,
     sku_type: skuType || undefined,
     page: balancePage,
@@ -138,9 +145,6 @@ export default function InventoryPage() {
     setTraceMovementId(movementId);
   };
 
-  // WWHN-217 · D-217-03: Back của trình duyệt phải đóng modal chi tiết/truy vết và giữ
-  // người dùng ở INV-01 kèm bộ lọc đang dùng, thay vì rời hẳn màn tồn kho. Gộp cả hai
-  // overlay vào một cờ để bước INV-02 -> TRACE-01 không sinh cặp push/pop chồng nhau.
   const overlayOpen = balanceDetailRow !== null || traceMovementId !== null;
   const closeOverlays = () => {
     setBalanceDetailRow(null);
@@ -169,7 +173,7 @@ export default function InventoryPage() {
         <Space orientation="vertical" size={0}>
           <strong>{row.name || "-"}</strong>
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            {row.type}
+            {businessLabel(SKU_TYPE_LABELS, row.type, "Loại khác")}
           </Typography.Text>
         </Space>
       ),
@@ -179,9 +183,15 @@ export default function InventoryPage() {
       title: "Trạng thái tồn",
       dataIndex: "stockStatus",
       key: "stockStatus",
-      width: 130,
+      width: 170,
       render: (value: string) => (
-        <Tag color={value === "AVAILABLE" ? "success" : "warning"}>{value}</Tag>
+        <Tag color={value === "AVAILABLE" ? "success" : "warning"}>
+          {businessLabel(
+            INVENTORY_STOCK_STATUS_LABELS,
+            value,
+            "Trạng thái khác",
+          )}
+        </Tag>
       ),
     },
     {
@@ -195,21 +205,21 @@ export default function InventoryPage() {
       ),
     },
     {
-      title: "On-hand",
+      title: "Tồn hiện có",
       dataIndex: "onHand",
       key: "onHand",
-      width: 100,
+      width: 120,
       align: "right",
       render: (value: number, row: InventoryBalanceRow) =>
         formatQty(value, row.uom),
     },
     {
-      title: "Item/Box",
+      title: "Sản phẩm/Hộp",
       key: "subledger",
-      width: 90,
+      width: 120,
       align: "center",
       render: (_, row: InventoryBalanceRow) => (
-        <Tooltip title={`Item: ${row.serialQty} · Container: ${row.boxQty}`}>
+        <Tooltip title={`Sản phẩm: ${row.serialQty} · Hộp: ${row.boxQty}`}>
           <Typography.Text style={{ fontSize: 12 }}>
             {row.serialQty}/{row.boxQty}
           </Typography.Text>
@@ -217,7 +227,6 @@ export default function InventoryPage() {
       ),
     },
     {
-      // DR-LOC-001: chỉ hiển thị, không tham gia available_qty, có thể trống.
       title: "Vị trí gợi ý",
       key: "location",
       width: 160,
@@ -229,7 +238,7 @@ export default function InventoryPage() {
           </Typography.Text>
         ) : (
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            Chưa khảo sát
+            Chưa có vị trí gợi ý
           </Typography.Text>
         );
       },
@@ -238,17 +247,23 @@ export default function InventoryPage() {
       title: "Đối soát",
       dataIndex: "reconcile",
       key: "reconcile",
-      width: 110,
+      width: 140,
       render: (value: string, row: InventoryBalanceRow) => (
         <Tooltip
           title={
             row.reconcileNote ||
-            (value === "MATCH"
-              ? "Ledger ↔ Balance khớp"
-              : "Ledger ↔ Balance lệch")
+            (value === "MATCH" || value === "PASS"
+              ? "Sổ cái và số tồn hiện tại khớp nhau"
+              : "Sổ cái và số tồn hiện tại đang có chênh lệch")
           }
         >
-          <Tag color={reconcileColor(value)}>{value}</Tag>
+          <Tag color={reconcileColor(value)}>
+            {businessLabel(
+              RECONCILE_STATUS_LABELS,
+              value,
+              "Chưa đối soát",
+            )}
+          </Tag>
         </Tooltip>
       ),
     },
@@ -279,7 +294,7 @@ export default function InventoryPage() {
 
   const movementColumns: ColumnsType<StockMovementRow> = [
     {
-      title: "Mã dịch chuyển",
+      title: "Mã biến động",
       dataIndex: "movementId",
       key: "movementId",
       width: 140,
@@ -289,15 +304,21 @@ export default function InventoryPage() {
     },
     { title: "Thời gian", dataIndex: "time", key: "time", width: 150 },
     {
-      title: "Loại",
+      title: "Loại biến động",
       dataIndex: "type",
       key: "type",
-      width: 130,
+      width: 170,
       render: (value: string, row: StockMovementRow) => (
         <Space orientation="vertical" size={0}>
-          <Tag>{value || "-"}</Tag>
+          <Tag>
+            {businessLabel(MOVEMENT_TYPE_LABELS, value, "Biến động khác")}
+          </Tag>
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            {row.status}
+            {businessLabel(
+              MOVEMENT_STATUS_LABELS,
+              row.status,
+              "Trạng thái khác",
+            )}
           </Typography.Text>
         </Space>
       ),
@@ -305,10 +326,10 @@ export default function InventoryPage() {
     { title: "SKU", dataIndex: "sku", key: "sku", width: 120 },
     { title: "Kho", dataIndex: "warehouse", key: "warehouse", width: 120 },
     {
-      title: "SL thay đổi",
+      title: "Số lượng thay đổi",
       dataIndex: "qty",
       key: "qty",
-      width: 110,
+      width: 140,
       align: "right",
       render: (value: number) => (
         <Typography.Text
@@ -325,14 +346,18 @@ export default function InventoryPage() {
       ),
     },
     {
-      title: "Nguồn",
+      title: "Chứng từ nguồn",
       key: "source",
-      width: 160,
+      width: 180,
       render: (_, row: StockMovementRow) => (
         <Space orientation="vertical" size={0}>
           <Typography.Text code>{row.source || "-"}</Typography.Text>
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            {row.sourceType}
+            {businessLabel(
+              SOURCE_DOCUMENT_TYPE_LABELS,
+              row.sourceType,
+              "Nguồn khác",
+            )}
           </Typography.Text>
         </Space>
       ),
@@ -346,14 +371,14 @@ export default function InventoryPage() {
     {
       title: "",
       key: "actions",
-      width: 80,
+      width: 100,
       fixed: "right",
       render: (_, row: StockMovementRow) => (
         <Tooltip
           title={
             canTrace
               ? "Truy vết chứng từ nguồn"
-              : "Cần quyền inventory.trace để truy vết"
+              : "Tài khoản chưa có quyền truy vết tồn kho"
           }
         >
           <button
@@ -363,7 +388,7 @@ export default function InventoryPage() {
             onClick={() => handleOpenTrace(String(row.id))}
           >
             <HistoryOutlined style={{ marginRight: 4 }} />
-            Trace
+            Truy vết
           </button>
         </Tooltip>
       ),
@@ -381,14 +406,10 @@ export default function InventoryPage() {
   return (
     <div className="inventory-page hn-mvp-source-screen">
       <div className="toolbar-wrap" style={{ gap: 6 }}>
-        <span className="pill blue">GET /inventory/balances</span>
-        <span className="pill blue">GET /stock-movements</span>
-        <span className="pill blue">GET /stock-movements/:id/trace-source</span>
-        <span className="pill blue">GET /stock-movements/trace-by-code</span>
-        <span className="pill ok">
-          Balance là chiếu (projection) · Movement là sổ cái (ledger) ·
-          Reconciliation authoritative
-        </span>
+        <span className="pill blue">Tồn kho hiện tại</span>
+        <span className="pill blue">Lịch sử biến động</span>
+        <span className="pill blue">Truy vết chứng từ</span>
+        <span className="pill ok">Đối soát tồn kho tự động</span>
       </div>
 
       <Tabs
@@ -441,10 +462,10 @@ export default function InventoryPage() {
                     }}
                   >
                     <option value="">Trạng thái tồn: Tất cả</option>
-                    <option value="AVAILABLE">AVAILABLE</option>
-                    <option value="NON_SELLABLE">NON_SELLABLE</option>
-                    <option value="DEFECTIVE">DEFECTIVE</option>
-                    <option value="QUARANTINE">QUARANTINE</option>
+                    <option value="AVAILABLE">Khả dụng</option>
+                    <option value="NON_SELLABLE">Không thể bán/xuất</option>
+                    <option value="DEFECTIVE">Hàng lỗi</option>
+                    <option value="QUARANTINE">Chờ kiểm tra</option>
                   </select>
                   <div className="spacer" />
                   {canTrace ? (
@@ -507,10 +528,10 @@ export default function InventoryPage() {
                 />
 
                 <div className="footer-note" style={{ marginBottom: 8 }}>
-                  <b>Đối soát</b> do backend tính: Ledger (SUM qty_delta) ↔
-                  Balance (on_hand_qty). MATCH = khớp, MISMATCH = lệch. Bấm{" "}
-                  <b>Mở</b> để xem chi tiết tồn kho, item/box subledger và
-                  movement liên quan.
+                  <b>Đối soát</b> so sánh sổ biến động với số tồn hiện tại. Trạng
+                  thái <b>Khớp</b> nghĩa là hai nguồn trùng nhau; <b>Có chênh lệch</b>
+                  nghĩa là cần kiểm tra. Bấm <b>Mở</b> để xem chi tiết tồn kho,
+                  sản phẩm/hộp và các biến động liên quan.
                 </div>
               </>
             ),
@@ -520,7 +541,7 @@ export default function InventoryPage() {
             label: (
               <span>
                 <SwapOutlined style={{ marginRight: 6 }} />
-                Lịch sử dịch chuyển
+                Lịch sử biến động
               </span>
             ),
             children: (
@@ -529,8 +550,8 @@ export default function InventoryPage() {
                   <input
                     className="input search"
                     value={movementSearch}
-                    placeholder="Movement, chứng từ, SKU..."
-                    aria-label="Tìm movement"
+                    placeholder="Mã biến động, chứng từ, SKU..."
+                    aria-label="Tìm biến động tồn kho"
                     onChange={(e) => {
                       setMovementSearch(e.target.value);
                       setMovementPage(1);
@@ -539,7 +560,7 @@ export default function InventoryPage() {
                   <select
                     className="select"
                     value={movementType}
-                    aria-label="Lọc loại dịch chuyển"
+                    aria-label="Lọc loại biến động"
                     onChange={(e) => {
                       setMovementType(e.target.value);
                       setMovementPage(1);
@@ -548,8 +569,8 @@ export default function InventoryPage() {
                     <option value="">Loại: Tất cả</option>
                     <option value="RECEIPT">Nhập kho</option>
                     <option value="ISSUE">Xuất kho</option>
-                    <option value="COMPONENT_ISSUE">Xuất linh kiện BH</option>
-                    <option value="REVERSAL">Hoàn đảo</option>
+                    <option value="COMPONENT_ISSUE">Xuất linh kiện bảo hành</option>
+                    <option value="REVERSAL">Điều chỉnh tồn kho</option>
                   </select>
                 </div>
 
@@ -557,7 +578,7 @@ export default function InventoryPage() {
                   <div style={{ marginBottom: 14 }}>
                     <ApiErrorAlert
                       error={movementQuery.error}
-                      title="Không thể tải lịch sử dịch chuyển"
+                      title="Không thể tải lịch sử biến động"
                       onRetry={() => movementQuery.refetch()}
                     />
                   </div>
@@ -586,12 +607,12 @@ export default function InventoryPage() {
                     total: movementPagination.total,
                     showSizeChanger: false,
                     showTotal: (total) =>
-                      `Tổng ${numberFormatter.format(total)} movement`,
+                      `Tổng ${numberFormatter.format(total)} biến động`,
                   }}
                   locale={{
                     emptyText: tableEmptyText(
                       movementQuery.isError ? movementQuery.error : null,
-                      "Không có movement theo bộ lọc hiện tại",
+                      "Không có biến động theo bộ lọc hiện tại",
                     ),
                   }}
                   scroll={{ x: "max-content" }}
@@ -602,7 +623,6 @@ export default function InventoryPage() {
         ]}
       />
 
-      {/* ──── Modals ──── */}
       {balanceDetailRow ? (
         <BalanceDetailModal
           balance={balanceDetailRow}
