@@ -1,16 +1,27 @@
 import { useState } from "react";
+import { Table } from "antd";
 import {
   Alert,
-  Descriptions,
-  Input,
-  Modal,
+  Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControl,
+  Grid,
+  IconButton,
+  InputLabel,
+  MenuItem,
   Select,
-  Space,
-  Table,
-  Tag,
+  Stack,
+  TextField,
+  ThemeProvider,
   Typography,
-} from "antd";
+} from "@mui/material";
 import { toast } from "sonner";
+import { muiTheme } from "@/app/mui-theme";
+import { CloseOutlined, CopyOutlined } from "@/shared/components/icons";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { getApiErrorMessage, normalizeError } from "@/shared/api/api-error";
 import { useHasPermission } from "@/shared/components/permission";
@@ -29,6 +40,7 @@ import {
 import { ReversalStatusTag } from "./ReversalStatusTag";
 import type { ReversalLine, ReversalReturnCondition } from "../types";
 import { formatDateTime } from "@/shared/utils/format-date";
+import type { ReactNode } from "react";
 
 const numberFormatter = new Intl.NumberFormat("vi-VN");
 
@@ -48,6 +60,20 @@ const RETURN_CONDITION_OPTIONS: Array<{
   { value: "DEFECTIVE", label: "Hàng lỗi" },
   { value: "NON_SELLABLE", label: "Không thể bán/xuất" },
 ];
+
+/** Cặp nhãn/giá trị trong Dialog chi tiết (thay antd Descriptions.Item). */
+function DetailField({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <Grid size={{ xs: 12, md: 6 }}>
+      <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+        {label}
+      </Typography>
+      <Typography variant="body2" component="div">
+        {value}
+      </Typography>
+    </Grid>
+  );
+}
 
 interface Props {
   documentId: string;
@@ -72,6 +98,8 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
   const [cancelReason, setCancelReason] = useState("");
   const [actionError, setActionError] = useState<unknown>(null);
   const [staleRecovered, setStaleRecovered] = useState(false);
+  const [postConfirmOpen, setPostConfirmOpen] = useState(false);
+  const [postBusy, setPostBusy] = useState(false);
 
   const isDraft = doc?.status === "DRAFT";
   const pendingReturn = doc?.physical_return_status === "PENDING_RETURN";
@@ -122,33 +150,22 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
 
   async function handlePost() {
     if (!doc) return;
-    Modal.confirm({
-      title: "Hoàn tất phiếu điều chỉnh tồn kho?",
-      okText: "Hoàn tất điều chỉnh",
-      cancelText: "Kiểm tra lại",
-      okButtonProps: { danger: true },
-      content: (
-        <Typography.Text>
-          Đây là bước làm phát sinh giao dịch đối ứng và thay đổi tồn kho. Giao
-          dịch gốc vẫn được giữ nguyên. Nếu cần điều chỉnh tiếp, phải tạo phiếu
-          điều chỉnh mới.
-        </Typography.Text>
-      ),
-      onOk: async () => {
-        setActionError(null);
-        setStaleRecovered(false);
-        try {
-          await postMutation.mutateAsync({
-            id: doc.id,
-            version: doc.version,
-            idempotency_key: idempotencyKey("post", doc.id),
-          });
-          toast.success("Đã hoàn tất điều chỉnh tồn kho.");
-        } catch (error) {
-          handleFailure(error, "Không thể hoàn tất điều chỉnh tồn kho");
-        }
-      },
-    });
+    setActionError(null);
+    setStaleRecovered(false);
+    setPostBusy(true);
+    try {
+      await postMutation.mutateAsync({
+        id: doc.id,
+        version: doc.version,
+        idempotency_key: idempotencyKey("post", doc.id),
+      });
+      toast.success("Đã hoàn tất điều chỉnh tồn kho.");
+      setPostConfirmOpen(false);
+    } catch (error) {
+      handleFailure(error, "Không thể hoàn tất điều chỉnh tồn kho");
+    } finally {
+      setPostBusy(false);
+    }
   }
 
   async function handleCancel() {
@@ -168,307 +185,384 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
     }
   }
 
+  const copyCode = () => {
+    if (!doc) return;
+    void navigator.clipboard?.writeText(doc.reversal_code);
+    toast.success("Đã sao chép mã điều chỉnh.");
+  };
+
   return (
-    <Modal
-      open
-      centered
-      destroyOnHidden
-      mask={{ closable: false }}
-      width={1040}
-      title={`Chi tiết phiếu điều chỉnh — ${doc?.reversal_code ?? documentId}`}
-      footer={null}
-      onCancel={onClose}
-    >
-      <Space orientation="vertical" size={16} style={{ width: "100%" }}>
-        {docQuery.isError ? (
-          <ApiErrorAlert
-            error={docQuery.error}
-            title="Không thể tải chi tiết phiếu điều chỉnh"
-            onRetry={() => docQuery.refetch()}
-          />
-        ) : null}
-
-        {actionError ? (
-          <ApiErrorAlert
-            error={actionError}
-            title="Thao tác không thành công"
-            onRetry={() => {
-              setActionError(null);
-              setStaleRecovered(false);
-              void docQuery.refetch();
-              void linesQuery.refetch();
-            }}
-          />
-        ) : null}
-
-        {staleRecovered ? (
-          <Alert
-            type="warning"
-            showIcon
-            role="status"
-            data-testid="reversal-stale-version-notice"
-            title="Phiếu đã được cập nhật ở phiên khác"
-            description="Hệ thống đã tự tải lại dữ liệu mới nhất. Hãy kiểm tra trạng thái hiện tại trước khi tiếp tục thao tác. Không có thay đổi tồn kho nào được ghi từ lần thao tác bị từ chối."
-          />
-        ) : null}
-
-        {docQuery.isLoading ? (
-          <div style={{ padding: 24, textAlign: "center" }}>
-            Đang tải chi tiết...
-          </div>
-        ) : null}
-
-        {doc ? (
-          <>
-            <Descriptions bordered column={{ xs: 1, md: 2 }} size="small">
-              <Descriptions.Item label="Mã điều chỉnh">
-                <Typography.Text code copyable>
-                  {doc.reversal_code}
-                </Typography.Text>
-              </Descriptions.Item>
-              <Descriptions.Item label="Trạng thái">
-                <ReversalStatusTag
-                  status={doc.status}
-                  physicalReturnStatus={doc.physical_return_status}
-                />
-              </Descriptions.Item>
-              <Descriptions.Item label="Chứng từ gốc">
-                <Typography.Text code>
-                  {doc.reference_document_code}
-                </Typography.Text>{" "}
-                <Tag>
-                  {businessLabel(
-                    SOURCE_DOCUMENT_TYPE_LABELS,
-                    doc.reference_document_type,
-                    "Chứng từ khác",
-                  )}
-                </Tag>
-              </Descriptions.Item>
-              <Descriptions.Item label="Mã chuỗi điều chỉnh">
-                <Typography.Text code>
-                  {doc.correction_chain_id ?? "-"}
-                </Typography.Text>
-              </Descriptions.Item>
-              <Descriptions.Item label="Kho">
-                {doc.warehouse_name}
-              </Descriptions.Item>
-              <Descriptions.Item label="Lý do">
-                {doc.reason_code ? <Tag>{doc.reason_code}</Tag> : null}
-                {doc.reason}
-              </Descriptions.Item>
-              <Descriptions.Item label="Tổng dòng / số lượng">
-                {doc.total_lines} dòng · {qty(doc.total_qty)}
-              </Descriptions.Item>
-              <Descriptions.Item label="Ngày tạo">
-                {formatDateTime(doc.created_at)}
-              </Descriptions.Item>
-              <Descriptions.Item label="Người tạo">
-                {doc.created_by}
-              </Descriptions.Item>
-              <Descriptions.Item label="Thời điểm hoàn tất / người thực hiện">
-                {doc.reversed_at ? formatDateTime(doc.reversed_at) : "-"} ·{" "}
-                {doc.posted_by ?? "-"}
-              </Descriptions.Item>
-              <Descriptions.Item label="Thông tin hủy">
-                {doc.cancelled_at
-                  ? `${formatDateTime(doc.cancelled_at)} · ${doc.cancel_reason ?? "-"}`
-                  : "-"}
-              </Descriptions.Item>
-            </Descriptions>
-
-            {doc.status === "POSTED" ? (
-              <Alert
-                type="success"
-                showIcon
-                title="Phiếu điều chỉnh đã hoàn tất"
-                description="Giao dịch gốc vẫn được giữ nguyên và giao dịch đối ứng đã được ghi. Nếu cần sửa tiếp, hãy tạo phiếu điều chỉnh mới tham chiếu giao dịch gần nhất trong cùng chuỗi."
+    <ThemeProvider theme={muiTheme}>
+      <Dialog open onClose={onClose} maxWidth="md" fullWidth>
+        <DialogTitle sx={{ pr: 6, position: "relative" }}>
+          {`Chi tiết phiếu điều chỉnh — ${doc?.reversal_code ?? documentId}`}
+          <IconButton
+            aria-label="Đóng"
+            onClick={onClose}
+            sx={{ position: "absolute", right: 10, top: 8 }}
+          >
+            <CloseOutlined style={{ fontSize: 15 }} />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers>
+          <Stack spacing={2}>
+            {docQuery.isError ? (
+              <ApiErrorAlert
+                error={docQuery.error}
+                title="Không thể tải chi tiết phiếu điều chỉnh"
+                onRetry={() => docQuery.refetch()}
               />
             ) : null}
 
-            {isDraft && canPost ? (
-              <div
-                style={{
-                  background: "#fafafa",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: 8,
-                  padding: 16,
+            {actionError ? (
+              <ApiErrorAlert
+                error={actionError}
+                title="Thao tác không thành công"
+                onRetry={() => {
+                  setActionError(null);
+                  setStaleRecovered(false);
+                  void docQuery.refetch();
+                  void linesQuery.refetch();
                 }}
-              >
-                <Typography.Text
-                  strong
-                  style={{ display: "block", marginBottom: 12 }}
-                >
-                  Các bước xử lý phiếu điều chỉnh
-                </Typography.Text>
-
-                {pendingReturn ? (
-                  <Space wrap align="end" style={{ marginBottom: 12 }}>
-                    <div>
-                      <Typography.Text
-                        type="secondary"
-                        style={{ display: "block", fontSize: 12 }}
-                      >
-                        Tình trạng hàng trả về
-                      </Typography.Text>
-                      <Select<ReversalReturnCondition>
-                        value={returnCondition}
-                        style={{ width: 320 }}
-                        options={RETURN_CONDITION_OPTIONS}
-                        onChange={setReturnCondition}
-                      />
-                    </div>
-                    <button
-                      className="btn primary"
-                      type="button"
-                      disabled={busy}
-                      onClick={() => void handleConfirm()}
-                    >
-                      Xác nhận hàng vật lý đã về
-                    </button>
-                  </Space>
-                ) : (
-                  <Alert
-                    type="info"
-                    showIcon
-                    style={{ marginBottom: 12 }}
-                    title="Đã đủ điều kiện hoàn tất"
-                    description="Hàng vật lý đã được xác nhận quay lại kho. Bấm Hoàn tất điều chỉnh để ghi thay đổi tồn kho."
-                  />
-                )}
-
-                <Space wrap align="end">
-                  <button
-                    className="btn danger"
-                    type="button"
-                    disabled={busy || pendingReturn}
-                    onClick={() => void handlePost()}
-                  >
-                    Hoàn tất điều chỉnh
-                  </button>
-                  <div>
-                    <Typography.Text
-                      type="secondary"
-                      style={{ display: "block", fontSize: 12 }}
-                    >
-                      Lý do hủy (tối thiểu 5 ký tự)
-                    </Typography.Text>
-                    <Input
-                      value={cancelReason}
-                      style={{ width: 320 }}
-                      placeholder="Nhập lý do hủy phiếu..."
-                      onChange={(event) => setCancelReason(event.target.value)}
-                    />
-                  </div>
-                  <button
-                    className="btn"
-                    type="button"
-                    disabled={busy || cancelReason.trim().length < 5}
-                    onClick={() => void handleCancel()}
-                  >
-                    Hủy phiếu
-                  </button>
-                </Space>
-              </div>
+              />
             ) : null}
-          </>
-        ) : null}
 
-        {linesQuery.isError ? (
-          <ApiErrorAlert
-            error={linesQuery.error}
-            title="Không thể tải các dòng điều chỉnh"
-            onRetry={() => linesQuery.refetch()}
-          />
-        ) : null}
+            {staleRecovered ? (
+              <Alert severity="warning" role="status" data-testid="reversal-stale-version-notice">
+                <Typography component="strong" sx={{ fontWeight: 700, display: "block" }}>
+                  Phiếu đã được cập nhật ở phiên khác
+                </Typography>
+                <Typography variant="body2">
+                  Hệ thống đã tự tải lại dữ liệu mới nhất. Hãy kiểm tra trạng
+                  thái hiện tại trước khi tiếp tục thao tác. Không có thay đổi
+                  tồn kho nào được ghi từ lần thao tác bị từ chối.
+                </Typography>
+              </Alert>
+            ) : null}
 
-        <div>
-          <Typography.Text strong style={{ display: "block", marginBottom: 8 }}>
-            Dòng điều chỉnh ({lines.length})
-          </Typography.Text>
-          <Table<ReversalLine>
-            size="small"
-            dataSource={lines}
-            rowKey="id"
-            loading={linesQuery.isLoading}
-            pagination={lines.length > 10 ? { pageSize: 10 } : false}
-            scroll={{ x: "max-content" }}
-            locale={{ emptyText: "Chưa có dòng điều chỉnh" }}
-            columns={[
-              { title: "#", dataIndex: "line_no", width: 50 },
-              { title: "SKU", dataIndex: "sku", width: 140 },
-              { title: "Tên", dataIndex: "sku_name", width: 170 },
-              {
-                title: "Giao dịch gốc",
-                width: 160,
-                render: (_: unknown, row: ReversalLine) => (
-                  <Typography.Text code>
-                    {row.original_movement_code || row.original_movement_id}
-                  </Typography.Text>
-                ),
-              },
-              {
-                title: "Sản phẩm / Số sê-ri",
-                width: 170,
-                render: (_: unknown, row: ReversalLine) =>
-                  row.serial_number || row.item_code || "-",
-              },
-              {
-                title: "Số lượng gốc",
-                dataIndex: "original_qty",
-                width: 110,
-                align: "right",
-                render: qty,
-              },
-              {
-                title: "Số lượng điều chỉnh",
-                dataIndex: "reversal_qty",
-                width: 130,
-                align: "right",
-                render: qty,
-              },
-              {
-                title: "Đã điều chỉnh",
-                dataIndex: "reversed_qty",
-                width: 110,
-                align: "right",
-                render: qty,
-              },
-              {
-                title: "Còn có thể điều chỉnh",
-                dataIndex: "remaining_qty",
-                width: 150,
-                align: "right",
-                render: qty,
-              },
-              {
-                title: "Tình trạng trả về",
-                dataIndex: "return_condition",
-                width: 160,
-                render: (value: string | undefined) =>
-                  value ? (
-                    <Tag>
-                      {businessLabel(
-                        RETURN_CONDITION_LABELS,
-                        value,
-                        "Tình trạng khác",
-                      )}
-                    </Tag>
-                  ) : (
-                    "-"
-                  ),
-              },
-              {
-                title: "Trạng thái",
-                dataIndex: "status",
-                width: 150,
-                render: (value: string) => (
-                  <ReversalStatusTag status={value} compact />
-                ),
-              },
-            ]}
-          />
-        </div>
-      </Space>
-    </Modal>
+            {docQuery.isLoading ? (
+              <Typography variant="body2" color="text.secondary" sx={{ textAlign: "center", py: 3 }}>
+                Đang tải chi tiết...
+              </Typography>
+            ) : null}
+
+            {doc ? (
+              <>
+                <Box
+                  sx={{
+                    border: "1px solid",
+                    borderColor: "divider",
+                    borderRadius: 2,
+                    p: 2,
+                  }}
+                >
+                  <Grid container spacing={2}>
+                    <DetailField
+                      label="Mã điều chỉnh"
+                      value={
+                        <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
+                          <span>{doc.reversal_code}</span>
+                          <IconButton size="small" aria-label="Sao chép mã điều chỉnh" onClick={copyCode}>
+                            <CopyOutlined style={{ fontSize: 14 }} />
+                          </IconButton>
+                        </Stack>
+                      }
+                    />
+                    <DetailField
+                      label="Trạng thái"
+                      value={
+                        <ReversalStatusTag
+                          status={doc.status}
+                          physicalReturnStatus={doc.physical_return_status}
+                        />
+                      }
+                    />
+                    <DetailField
+                      label="Chứng từ gốc"
+                      value={
+                        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+                          <span>{doc.reference_document_code}</span>
+                          <Box
+                            component="span"
+                            sx={{
+                              px: 1,
+                              py: 0.25,
+                              borderRadius: 1,
+                              bgcolor: "action.hover",
+                              fontSize: 12,
+                            }}
+                          >
+                            {businessLabel(
+                              SOURCE_DOCUMENT_TYPE_LABELS,
+                              doc.reference_document_type,
+                              "Chứng từ khác",
+                            )}
+                          </Box>
+                        </Stack>
+                      }
+                    />
+                    <DetailField
+                      label="Mã chuỗi điều chỉnh"
+                      value={doc.correction_chain_id ?? "-"}
+                    />
+                    <DetailField label="Kho" value={doc.warehouse_name} />
+                    <DetailField
+                      label="Lý do"
+                      value={
+                        <>
+                          {doc.reason_code ? (
+                            <Box
+                              component="span"
+                              sx={{
+                                px: 1,
+                                py: 0.25,
+                                mr: 1,
+                                borderRadius: 1,
+                                bgcolor: "action.hover",
+                                fontSize: 12,
+                              }}
+                            >
+                              {doc.reason_code}
+                            </Box>
+                          ) : null}
+                          {doc.reason}
+                        </>
+                      }
+                    />
+                    <DetailField
+                      label="Tổng dòng / số lượng"
+                      value={`${doc.total_lines} dòng · ${qty(doc.total_qty)}`}
+                    />
+                    <DetailField label="Ngày tạo" value={formatDateTime(doc.created_at)} />
+                    <DetailField label="Người tạo" value={doc.created_by} />
+                    <DetailField
+                      label="Thời điểm hoàn tất / người thực hiện"
+                      value={`${doc.reversed_at ? formatDateTime(doc.reversed_at) : "-"} · ${doc.posted_by ?? "-"}`}
+                    />
+                    <DetailField
+                      label="Thông tin hủy"
+                      value={
+                        doc.cancelled_at
+                          ? `${formatDateTime(doc.cancelled_at)} · ${doc.cancel_reason ?? "-"}`
+                          : "-"
+                      }
+                    />
+                  </Grid>
+                </Box>
+
+                {doc.status === "POSTED" ? (
+                  <Alert severity="success">
+                    <Typography component="strong" sx={{ fontWeight: 700, display: "block" }}>
+                      Phiếu điều chỉnh đã hoàn tất
+                    </Typography>
+                    <Typography variant="body2">
+                      Giao dịch gốc vẫn được giữ nguyên và giao dịch đối ứng đã
+                      được ghi. Nếu cần sửa tiếp, hãy tạo phiếu điều chỉnh mới
+                      tham chiếu giao dịch gần nhất trong cùng chuỗi.
+                    </Typography>
+                  </Alert>
+                ) : null}
+
+                {isDraft && canPost ? (
+                  <Box
+                    sx={{
+                      bgcolor: "action.hover",
+                      border: "1px solid",
+                      borderColor: "divider",
+                      borderRadius: 2,
+                      p: 2,
+                    }}
+                  >
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5 }}>
+                      Các bước xử lý phiếu điều chỉnh
+                    </Typography>
+
+                    {pendingReturn ? (
+                      <Stack
+                        direction="row"
+                        spacing={2}
+                        sx={{ alignItems: "flex-end", flexWrap: "wrap", mb: 1.5, rowGap: 1.5 }}
+                      >
+                        <FormControl size="small" sx={{ minWidth: 320 }}>
+                          <InputLabel id="reversal-return-condition-label">
+                            Tình trạng hàng trả về
+                          </InputLabel>
+                          <Select
+                            id="reversal-return-condition"
+                            labelId="reversal-return-condition-label"
+                            label="Tình trạng hàng trả về"
+                            value={returnCondition}
+                            onChange={(event) =>
+                              setReturnCondition(event.target.value as ReversalReturnCondition)
+                            }
+                          >
+                            {RETURN_CONDITION_OPTIONS.map((option) => (
+                              <MenuItem key={option.value} value={option.value}>
+                                {option.label}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                        <Button
+                          variant="contained"
+                          disabled={busy}
+                          onClick={() => void handleConfirm()}
+                        >
+                          Xác nhận hàng vật lý đã về
+                        </Button>
+                      </Stack>
+                    ) : (
+                      <Alert severity="info" sx={{ mb: 1.5 }}>
+                        <Typography component="strong" sx={{ fontWeight: 700, display: "block" }}>
+                          Đã đủ điều kiện hoàn tất
+                        </Typography>
+                        <Typography variant="body2">
+                          Hàng vật lý đã được xác nhận quay lại kho. Bấm Hoàn
+                          tất điều chỉnh để ghi thay đổi tồn kho.
+                        </Typography>
+                      </Alert>
+                    )}
+
+                    <Stack direction="row" spacing={2} sx={{ alignItems: "flex-end", flexWrap: "wrap", rowGap: 1.5 }}>
+                      <Button
+                        variant="contained"
+                        color="error"
+                        disabled={busy || pendingReturn}
+                        onClick={() => setPostConfirmOpen(true)}
+                      >
+                        Hoàn tất điều chỉnh
+                      </Button>
+                      <TextField
+                        label="Lý do hủy (tối thiểu 5 ký tự)"
+                        size="small"
+                        value={cancelReason}
+                        placeholder="Nhập lý do hủy phiếu..."
+                        onChange={(event) => setCancelReason(event.target.value)}
+                        sx={{ minWidth: 320 }}
+                      />
+                      <Button
+                        disabled={busy || cancelReason.trim().length < 5}
+                        onClick={() => void handleCancel()}
+                      >
+                        Hủy phiếu
+                      </Button>
+                    </Stack>
+                  </Box>
+                ) : null}
+              </>
+            ) : null}
+
+            {linesQuery.isError ? (
+              <ApiErrorAlert
+                error={linesQuery.error}
+                title="Không thể tải các dòng điều chỉnh"
+                onRetry={() => linesQuery.refetch()}
+              />
+            ) : null}
+
+            <Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+                Dòng điều chỉnh ({lines.length})
+              </Typography>
+              <Table<ReversalLine>
+                size="small"
+                dataSource={lines}
+                rowKey="id"
+                loading={linesQuery.isLoading}
+                pagination={lines.length > 10 ? { pageSize: 10 } : false}
+                scroll={{ x: "max-content" }}
+                locale={{ emptyText: "Chưa có dòng điều chỉnh" }}
+                columns={[
+                  { title: "#", dataIndex: "line_no", width: 50 },
+                  { title: "SKU", dataIndex: "sku", width: 140 },
+                  { title: "Tên", dataIndex: "sku_name", width: 170 },
+                  {
+                    title: "Giao dịch gốc",
+                    width: 160,
+                    render: (_: unknown, row: ReversalLine) =>
+                      row.original_movement_code || row.original_movement_id,
+                  },
+                  {
+                    title: "Sản phẩm / Số sê-ri",
+                    width: 170,
+                    render: (_: unknown, row: ReversalLine) =>
+                      row.serial_number || row.item_code || "-",
+                  },
+                  {
+                    title: "Số lượng gốc",
+                    dataIndex: "original_qty",
+                    width: 110,
+                    align: "right",
+                    render: qty,
+                  },
+                  {
+                    title: "Số lượng điều chỉnh",
+                    dataIndex: "reversal_qty",
+                    width: 130,
+                    align: "right",
+                    render: qty,
+                  },
+                  {
+                    title: "Đã điều chỉnh",
+                    dataIndex: "reversed_qty",
+                    width: 110,
+                    align: "right",
+                    render: qty,
+                  },
+                  {
+                    title: "Còn có thể điều chỉnh",
+                    dataIndex: "remaining_qty",
+                    width: 150,
+                    align: "right",
+                    render: qty,
+                  },
+                  {
+                    title: "Tình trạng trả về",
+                    dataIndex: "return_condition",
+                    width: 160,
+                    render: (value: string | undefined) =>
+                      value
+                        ? businessLabel(RETURN_CONDITION_LABELS, value, "Tình trạng khác")
+                        : "-",
+                  },
+                  {
+                    title: "Trạng thái",
+                    dataIndex: "status",
+                    width: 150,
+                    render: (value: string) => (
+                      <ReversalStatusTag status={value} compact />
+                    ),
+                  },
+                ]}
+              />
+            </Box>
+          </Stack>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={postConfirmOpen} onClose={() => setPostConfirmOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Hoàn tất phiếu điều chỉnh tồn kho?</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2">
+            Đây là bước làm phát sinh giao dịch đối ứng và thay đổi tồn kho.
+            Giao dịch gốc vẫn được giữ nguyên. Nếu cần điều chỉnh tiếp, phải
+            tạo phiếu điều chỉnh mới.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPostConfirmOpen(false)} disabled={postBusy}>
+            Kiểm tra lại
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={() => void handlePost()}
+            disabled={postBusy}
+          >
+            {postBusy ? "Đang xử lý..." : "Hoàn tất điều chỉnh"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </ThemeProvider>
   );
 }

@@ -4,6 +4,7 @@ import App from "./App";
 import { AppProviders } from "./app/providers/AppProviders";
 import { bootstrapAuth } from "./app/bootstrap-auth";
 import { registerPwa } from "./shared/pwa/register-pwa";
+import "@flaticon/flaticon-uicons/css/regular/rounded.css";
 import "./index.css";
 import "./styles/hoa-nam-wireframe.css";
 import "./styles/hoa-nam-ant-overrides.css";

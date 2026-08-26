@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitForElementToBeRemoved,
+  within,
+} from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   AgencyMasterScreen,
@@ -99,7 +105,7 @@ describe("API-backed MVP master screens", () => {
     useAuthStore.setState({ isSuperAdmin: true, permissionCodes: [] });
   });
 
-  it("keeps SKU create/edit inside the list modal", () => {
+  it("keeps SKU create/edit inside the list modal", async () => {
     render(<SkuMasterScreen />);
     expect(screen.getByText("DCH-DRILL-DJZ10A-220V-V1")).toBeInTheDocument();
 
@@ -107,6 +113,10 @@ describe("API-backed MVP master screens", () => {
     let dialog = screen.getByRole("dialog");
     expect(within(dialog).getByText("Thêm SKU")).toBeInTheDocument();
     fireEvent.click(within(dialog).getByRole("button", { name: "Hủy" }));
+    // MUI Dialog gỡ aria-hidden trên phần còn lại của trang sau khi hiệu ứng
+    // đóng hoàn tất — phải đợi dialog biến mất hẳn, nếu không các phần tử
+    // trong bảng phía sau vẫn bị coi là ẩn với getByRole (aria-hidden kẹt lại).
+    await waitForElementToBeRemoved(() => screen.queryByRole("dialog"));
 
     const row = screen.getByText("DCH-DRILL-DJZ10A-220V-V1").closest("tr");
     expect(row).not.toBeNull();

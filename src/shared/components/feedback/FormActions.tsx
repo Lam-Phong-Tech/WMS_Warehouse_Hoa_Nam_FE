@@ -1,11 +1,12 @@
 import type { ButtonProps } from "antd";
 import { Button } from "antd";
-import { CloseOutlined, SaveOutlined } from "@ant-design/icons";
+import { CloseOutlined, SaveOutlined } from "@/shared/components/icons";
 import {
   ACCENT_COLORS,
   FONT_FAMILY,
   NEUTRAL_COLORS,
 } from "@/shared/design-tokens";
+import { ACTION_ICON_COLORS } from "@/shared/theme/actionIconColors";
 
 export interface FormActionsProps {
   onOk: () => void;
@@ -62,7 +63,7 @@ export function FormActions({
     >
       {showCancel && (
         <Button
-          icon={<CloseOutlined />}
+          icon={<CloseOutlined style={{ color: ACTION_ICON_COLORS.neutral }} />}
           onClick={onCancel}
           style={cancelStyle}
           {...cancelButtonProps}

@@ -128,6 +128,8 @@ export interface WarrantyAttachment {
   file_size_bytes: number;
   checksum?: string;
   attachment_type: WarrantyAttachmentType;
+  media_kind: "IMAGE" | "VIDEO";
+  duration_seconds?: number | null;
   status: "ACTIVE" | "DELETED" | "QUARANTINED";
   uploaded_at?: string;
   uploaded_by?: string;

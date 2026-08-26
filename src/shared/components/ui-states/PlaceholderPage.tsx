@@ -1,5 +1,5 @@
 import { Typography, Card, List, Tag } from "antd";
-import { FileTextOutlined } from "@ant-design/icons";
+import { FileTextOutlined } from "@/shared/components/icons";
 
 const { Title, Paragraph, Text } = Typography;
 

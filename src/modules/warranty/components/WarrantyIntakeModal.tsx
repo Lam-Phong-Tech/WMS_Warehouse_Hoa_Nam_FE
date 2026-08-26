@@ -2,33 +2,40 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Alert,
-  Col,
-  DatePicker,
-  Form,
-  Input,
-  Modal,
-  Radio,
-  Row,
-  Select,
-  Space,
-  Upload,
-} from "antd";
-import type { UploadFile, UploadProps } from "antd";
+  Autocomplete,
+  Box,
+  Button,
+  Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Grid,
+  IconButton,
+  Stack,
+  TextField,
+  ThemeProvider,
+  ToggleButton,
+  ToggleButtonGroup,
+  Typography,
+} from "@mui/material";
+import { muiTheme } from "@/app/mui-theme";
 import { toast } from "sonner";
-import type { Dayjs } from "dayjs";
 import dayjs from "dayjs";
 import {
   CameraOutlined,
   CloseOutlined,
+  DeleteOutlined,
+  PlayCircleOutlined,
   SaveOutlined,
   UploadOutlined,
-} from "@ant-design/icons";
-import { Button } from "antd";
+} from "@/shared/components/icons";
 import {
   extractFieldErrorsRaw,
   getApiErrorMessage,
   getErrorRequestId,
 } from "@/shared/api/api-error";
+import { ACTION_ICON_COLORS } from "@/shared/theme/actionIconColors";
 import { CameraScanModal } from "@/shared/components/forms/CameraScanModal";
 import { ScanInput } from "@/shared/components/forms/ScanInput";
 import { useMvpDefects } from "@/modules/master-data/hooks/use-mvp-master";
@@ -53,19 +60,29 @@ const INTAKE_IMAGE_MIMES = [
   "image/webp",
 ];
 
-interface IntakeFormValues {
-  identification_type: WarrantyIdentificationType;
-  item_code?: string;
-  missing_code_reason?: string;
-  manual_product_description?: string;
-  customer_name: string;
-  customer_phone: string;
-  customer_address?: string;
-  purchase_date?: Dayjs;
-  defect_ids?: string[];
-  reported_defect: string;
-  accessories_received?: string;
-  received_condition?: string;
+// WAR-02 video đính kèm: mp4/mov/webm, tách riêng khỏi 10 ảnh; <=2 video;
+// <=300MB và <=5 phút/video (BE đo lại thời lượng bằng getID3, đây chỉ là
+// kiểm tra sớm phía client để không mất công tải file quá dài).
+const MAX_INTAKE_VIDEOS = 2;
+const MAX_INTAKE_VIDEO_BYTES = 300 * 1024 * 1024;
+const MAX_INTAKE_VIDEO_DURATION_SECONDS = 300;
+const INTAKE_VIDEO_MIMES = ["video/mp4", "video/quicktime", "video/webm"];
+
+function probeVideoDurationSeconds(file: File): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const videoEl = document.createElement("video");
+    videoEl.preload = "metadata";
+    videoEl.onloadedmetadata = () => {
+      URL.revokeObjectURL(url);
+      resolve(videoEl.duration);
+    };
+    videoEl.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("cannot read video metadata"));
+    };
+    videoEl.src = url;
+  });
 }
 
 interface WarrantyIntakeModalProps {
@@ -83,15 +100,31 @@ export function WarrantyIntakeModal({
   onClose,
   onCreated,
 }: WarrantyIntakeModalProps) {
-  const [form] = Form.useForm<IntakeFormValues>();
+  const [identificationType, setIdentificationType] =
+    useState<WarrantyIdentificationType>("IDENTIFIED");
+  const [itemCode, setItemCode] = useState("");
+  const [missingCodeReason, setMissingCodeReason] = useState("");
+  const [manualProductDescription, setManualProductDescription] = useState("");
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [customerAddress, setCustomerAddress] = useState("");
+  const [purchaseDate, setPurchaseDate] = useState("");
+  const [defectIds, setDefectIds] = useState<string[]>([]);
+  const [reportedDefect, setReportedDefect] = useState("");
+  const [accessoriesReceived, setAccessoriesReceived] = useState("");
+  const [receivedCondition, setReceivedCondition] = useState("");
+
   const [formError, setFormError] = useState<string | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
-  const [imageFiles, setImageFiles] = useState<UploadFile[]>([]);
-  const identificationType = Form.useWatch("identification_type", form);
-  const itemCode = Form.useWatch("item_code", form);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [videoFiles, setVideoFiles] = useState<File[]>([]);
   const createMutation = useCreateWarrantyCase();
   const uploadMutation = useUploadWarrantyAttachment();
   const defectsQuery = useMvpDefects({ status: "ACTIVE", per_page: 100 });
+  const defectOptions = (defectsQuery.data?.data ?? []).map((defect) => ({
+    value: defect.defect_id,
+    label: `${defect.defect_code} · ${defect.defect_name}`,
+  }));
   // Change Pack QR/SKU (guide §13 WAR-02): quét raw QR -> classify(WARRANTY) ->
   // tự điền item/SKU; classify cần warehouse_id (REQ-SRS-001: một kho ACTIVE).
   const warehousesQuery = useQuery({
@@ -116,7 +149,7 @@ export function WarrantyIntakeModal({
   const resolveScannedCode = async (rawCode: string) => {
     const code = rawCode.trim();
     if (!code) return;
-    form.setFieldValue("item_code", code);
+    setItemCode(code);
     setResolvedItem(null);
     setResolveError(null);
     if (!warehouse?.id) return;
@@ -126,7 +159,7 @@ export function WarrantyIntakeModal({
         context: "WARRANTY_RECEIVE",
         warehouse_id: String(warehouse.id),
       });
-      form.setFieldValue("item_code", classified.normalized_code_value || code);
+      setItemCode(classified.normalized_code_value || code);
       setResolvedItem({
         skuCode: classified.sku_code,
         itemUnique: classified.item_unique,
@@ -142,44 +175,74 @@ export function WarrantyIntakeModal({
     }
   };
 
-  // Ảnh chỉ được giữ lại ở client tới khi case có id; BE giới hạn 10 file ACTIVE
-  // mỗi case, mimes jpg/jpeg/png/webp/heic/pdf và 10240KB mỗi file.
-  const imageUploadProps: UploadProps = {
-    multiple: true,
-    listType: "picture",
-    accept: ".jpg,.jpeg,.png,.webp",
-    fileList: imageFiles,
-    disabled: createMutation.isPending || uploadMutation.isPending,
-    beforeUpload: (file, batch) => {
+  const addImageFiles = (incoming: FileList | null) => {
+    if (!incoming) return;
+    const accepted: File[] = [];
+    Array.from(incoming).forEach((file, index) => {
       if (!INTAKE_IMAGE_MIMES.includes(file.type)) {
         toast.error(`${file.name}: chỉ nhận ảnh JPG/PNG/WEBP.`);
-        return Upload.LIST_IGNORE;
+        return;
       }
       if (file.size > MAX_INTAKE_IMAGE_BYTES) {
         toast.error(`${file.name}: vượt quá 10MB.`);
-        return Upload.LIST_IGNORE;
+        return;
       }
-      const slot = imageFiles.length + Math.max(0, batch.indexOf(file));
+      const slot = imageFiles.length + accepted.length + index * 0;
       if (slot >= MAX_INTAKE_IMAGES) {
         toast.error(`Tối đa ${MAX_INTAKE_IMAGES} ảnh cho một case bảo hành.`);
-        return Upload.LIST_IGNORE;
+        return;
       }
-      return false;
-    },
-    onChange: (info) => setImageFiles(info.fileList),
+      accepted.push(file);
+    });
+    if (accepted.length > 0) {
+      setImageFiles((current) =>
+        [...current, ...accepted].slice(0, MAX_INTAKE_IMAGES),
+      );
+    }
+  };
+
+  const addVideoFiles = async (incoming: FileList | null) => {
+    if (!incoming) return;
+    const accepted: File[] = [];
+    for (const file of Array.from(incoming)) {
+      if (!INTAKE_VIDEO_MIMES.includes(file.type)) {
+        toast.error(`${file.name}: chỉ nhận video MP4/MOV/WEBM.`);
+        continue;
+      }
+      if (file.size > MAX_INTAKE_VIDEO_BYTES) {
+        toast.error(`${file.name}: vượt quá 300MB.`);
+        continue;
+      }
+      if (videoFiles.length + accepted.length >= MAX_INTAKE_VIDEOS) {
+        toast.error(`Tối đa ${MAX_INTAKE_VIDEOS} video cho một case bảo hành.`);
+        continue;
+      }
+      try {
+        const duration = await probeVideoDurationSeconds(file);
+        if (duration > MAX_INTAKE_VIDEO_DURATION_SECONDS) {
+          toast.error(`${file.name}: video vượt quá 5 phút.`);
+          continue;
+        }
+      } catch {
+        toast.error(`${file.name}: không đọc được video, thử tệp khác.`);
+        continue;
+      }
+      accepted.push(file);
+    }
+    if (accepted.length > 0) {
+      setVideoFiles((current) =>
+        [...current, ...accepted].slice(0, MAX_INTAKE_VIDEOS),
+      );
+    }
   };
 
   // Annex D SCR-WAR-01: `images` chỉ lưu attachment IDs nên case phải tồn tại
   // trước mới đính kèm được. Lỗi upload không rollback case: case là bản ghi
   // nghiệp vụ chính, ảnh có thể bổ sung lại ở màn chi tiết case (WAR-03).
   const uploadIntakeImages = async (created: WarrantyCase) => {
-    const files = imageFiles
-      .map((item) => item.originFileObj)
-      .filter((file): file is NonNullable<typeof file> => Boolean(file));
-    if (files.length === 0) return;
-
+    if (imageFiles.length === 0) return;
     const results = await Promise.allSettled(
-      files.map((file) =>
+      imageFiles.map((file) =>
         uploadMutation.mutateAsync({
           caseId: created.id,
           file,
@@ -189,40 +252,103 @@ export function WarrantyIntakeModal({
     );
     const failed = results.filter((result) => result.status === "rejected");
     if (failed.length === 0) {
-      toast.success(`Đã đính kèm ${files.length} ảnh tiếp nhận.`);
+      toast.success(`Đã đính kèm ${imageFiles.length} ảnh tiếp nhận.`);
       return;
     }
     toast.error(
-      `Đã tạo case ${created.case_code} nhưng ${failed.length}/${files.length} ảnh chưa tải lên được. Vào chi tiết case để đính kèm lại.`,
+      `Đã tạo case ${created.case_code} nhưng ${failed.length}/${imageFiles.length} ảnh chưa tải lên được. Vào chi tiết case để đính kèm lại.`,
     );
+  };
+
+  const uploadIntakeVideos = async (created: WarrantyCase) => {
+    if (videoFiles.length === 0) return;
+    const results = await Promise.allSettled(
+      videoFiles.map((file) =>
+        uploadMutation.mutateAsync({
+          caseId: created.id,
+          file,
+          attachmentType: "INTAKE",
+        }),
+      ),
+    );
+    const failed = results.filter((result) => result.status === "rejected");
+    if (failed.length === 0) {
+      toast.success(`Đã đính kèm ${videoFiles.length} video tiếp nhận.`);
+      return;
+    }
+    toast.error(
+      `Đã tạo case ${created.case_code} nhưng ${failed.length}/${videoFiles.length} video chưa tải lên được. Vào chi tiết case để đính kèm lại.`,
+    );
+  };
+
+  const resetForm = () => {
+    setIdentificationType("IDENTIFIED");
+    setItemCode("");
+    setMissingCodeReason("");
+    setManualProductDescription("");
+    setCustomerName("");
+    setCustomerPhone("");
+    setCustomerAddress("");
+    setPurchaseDate("");
+    setDefectIds([]);
+    setReportedDefect("");
+    setAccessoriesReceived("");
+    setReceivedCondition("");
+    setImageFiles([]);
+    setVideoFiles([]);
+    setResolvedItem(null);
+    setResolveError(null);
+    setFormError(null);
   };
 
   const submit = async () => {
     setFormError(null);
-    let values: IntakeFormValues;
-    try {
-      values = await form.validateFields();
-    } catch {
+    if (identificationType === "TEMP_ONLY") {
+      if (!missingCodeReason.trim()) {
+        setFormError("Nhập lý do bắt buộc.");
+        return;
+      }
+      if (!manualProductDescription.trim()) {
+        setFormError("Nhập mô tả máy bắt buộc.");
+        return;
+      }
+    } else if (!itemCode.trim()) {
+      setFormError("Quét hoặc nhập mã máy cần bảo hành.");
+      return;
+    }
+    if (!customerName.trim()) {
+      setFormError("Nhập tên khách gửi.");
+      return;
+    }
+    if (!customerPhone.trim()) {
+      setFormError("Nhập số điện thoại.");
+      return;
+    }
+    if (!/^0\d{9}$/.test(customerPhone)) {
+      setFormError("Số điện thoại phải đủ 10 chữ số và bắt đầu bằng số 0.");
+      return;
+    }
+    if (!reportedDefect.trim()) {
+      setFormError("Nhập mô tả lỗi khách phản ánh.");
       return;
     }
 
     try {
       const created = await createMutation.mutateAsync({
-        identification_type: values.identification_type,
-        item_code: values.item_code?.trim(),
-        missing_code_reason: values.missing_code_reason?.trim(),
-        manual_product_description: values.manual_product_description?.trim(),
-        customer_name: values.customer_name.trim(),
-        customer_phone: values.customer_phone.trim(),
-        customer_address: values.customer_address?.trim(),
-        purchase_date: values.purchase_date
-          ? values.purchase_date.format("YYYY-MM-DD")
-          : undefined,
-        defect_ids: values.defect_ids,
-        defect_description: values.reported_defect.trim(),
-        reported_defect: values.reported_defect.trim(),
-        accessories_received: values.accessories_received?.trim(),
-        received_condition: values.received_condition?.trim(),
+        identification_type: identificationType,
+        item_code: itemCode.trim() || undefined,
+        missing_code_reason: missingCodeReason.trim() || undefined,
+        manual_product_description:
+          manualProductDescription.trim() || undefined,
+        customer_name: customerName.trim(),
+        customer_phone: customerPhone.trim(),
+        customer_address: customerAddress.trim() || undefined,
+        purchase_date: purchaseDate || undefined,
+        defect_ids: defectIds,
+        defect_description: reportedDefect.trim(),
+        reported_defect: reportedDefect.trim(),
+        accessories_received: accessoriesReceived.trim() || undefined,
+        received_condition: receivedCondition.trim() || undefined,
       });
       toast.success(
         created.identification_type === "TEMP_ONLY" &&
@@ -231,296 +357,405 @@ export function WarrantyIntakeModal({
           : `Đã tạo case bảo hành ${created.case_code}.`,
       );
       await uploadIntakeImages(created);
-      form.resetFields();
-      setImageFiles([]);
+      await uploadIntakeVideos(created);
+      resetForm();
       onCreated(created);
     } catch (error: unknown) {
       const fieldErrors = extractFieldErrorsRaw(error);
-      if (fieldErrors) {
-        form.setFields(
-          Object.entries(fieldErrors).map(([name, errors]) => ({
-            name: [name] as never,
-            errors: [errors],
-          })),
-        );
-      }
       const requestId = getErrorRequestId(error);
       const errorMsg = `${getApiErrorMessage(error, "Không tạo được case bảo hành.")}${
         requestId ? ` — Request ${requestId}` : ""
-      }`;
+      }${fieldErrors ? ` (${Object.values(fieldErrors).flat().join("; ")})` : ""}`;
       toast.error(errorMsg);
       setFormError(errorMsg);
     }
   };
 
+  const busy = createMutation.isPending || uploadMutation.isPending;
+
   return (
-    <Modal
-      title="Tiếp nhận bảo hành"
-      open={open}
-      onCancel={onClose}
-      footer={
-        <Space wrap>
-          <Button icon={<CloseOutlined />} onClick={onClose}>
+    <ThemeProvider theme={muiTheme}>
+      <Dialog
+        open={open}
+        onClose={onClose}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle sx={{ pr: 6, position: "relative" }}>
+          Tiếp nhận bảo hành
+          <IconButton
+            aria-label="Đóng"
+            onClick={onClose}
+            sx={{ position: "absolute", right: 10, top: 8 }}
+          >
+            <CloseOutlined style={{ fontSize: 15 }} />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers>
+          <Stack spacing={2}>
+            {formError ? <Alert severity="error">{formError}</Alert> : null}
+
+            <Box>
+              <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.5 }}>
+                Loại tiếp nhận *
+              </Typography>
+              <ToggleButtonGroup
+                exclusive
+                value={identificationType}
+                onChange={(_event, value: WarrantyIdentificationType | null) => {
+                  if (value) setIdentificationType(value);
+                }}
+                size="small"
+                color="primary"
+              >
+                <ToggleButton value="IDENTIFIED">Có mã máy (IDENTIFIED)</ToggleButton>
+                <ToggleButton value="TEMP_ONLY">Mất mã (TEMP_ONLY)</ToggleButton>
+              </ToggleButtonGroup>
+            </Box>
+
+            {identificationType === "TEMP_ONLY" ? (
+              <>
+                <Alert severity="warning">
+                  Case TEMP_ONLY không liên kết item gốc, không xác nhận lịch
+                  sử bán hàng (NOT_TRACEABLE) và không sinh stock movement. Mã
+                  tạm sẽ do hệ thống sinh sau khi lưu.
+                </Alert>
+                <TextField
+                  required
+                  fullWidth
+                  multiline
+                  minRows={2}
+                  label="Lý do mất/không có mã"
+                  value={missingCodeReason}
+                  onChange={(event) => setMissingCodeReason(event.target.value)}
+                  slotProps={{ htmlInput: { maxLength: 500 } }}
+                  helperText={`${missingCodeReason.length}/500`}
+                />
+                <TextField
+                  required
+                  fullWidth
+                  multiline
+                  minRows={2}
+                  label="Mô tả nhận diện máy"
+                  value={manualProductDescription}
+                  onChange={(event) =>
+                    setManualProductDescription(event.target.value)
+                  }
+                  slotProps={{ htmlInput: { maxLength: 2000 } }}
+                  helperText={`${manualProductDescription.length}/2000`}
+                />
+              </>
+            ) : (
+              <Box>
+                <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.5 }}>
+                  Mã máy / serial / barcode item *
+                </Typography>
+                <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap", rowGap: 1 }}>
+                  <Box sx={{ flex: 1, minWidth: 240 }}>
+                    <ScanInput
+                      value={itemCode}
+                      size="middle"
+                      // Annex D SCR-WAR-01 scan-focus: ô quét tự nhận focus khi mở WAR-02
+                      // ở nhánh IDENTIFIED để đầu đọc bắn được ngay.
+                      autoFocus
+                      placeholder="Quét QR composite / Barcode hoặc nhập serial"
+                      onChange={(value) => {
+                        setItemCode(value);
+                        setResolvedItem(null);
+                        setResolveError(null);
+                      }}
+                      onScan={(code) => void resolveScannedCode(code)}
+                    />
+                  </Box>
+                  <Button
+                    variant="outlined"
+                    startIcon={<CameraOutlined style={{ color: ACTION_ICON_COLORS.sync }} />}
+                    onClick={() => setCameraOpen(true)}
+                  >
+                    Camera
+                  </Button>
+                </Stack>
+                <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.5 }}>
+                  Item phải đã xuất cho khách (ISSUED hoặc RETURNED_TO_CUSTOMER)
+                  và chưa có case bảo hành đang hoạt động.
+                </Typography>
+                {resolvedItem ? (
+                  <Alert severity="success" sx={{ mt: 1 }}>
+                    {`Đã nhận diện item${
+                      resolvedItem.skuCode ? ` · SKU ${resolvedItem.skuCode}` : ""
+                    }${resolvedItem.itemUnique ? ` · ${resolvedItem.itemUnique}` : ""}${
+                      resolvedItem.objectStatus
+                        ? ` · trạng thái ${resolvedItem.objectStatus}`
+                        : ""
+                    }`}
+                  </Alert>
+                ) : null}
+                {resolveError ? (
+                  <Alert severity="warning" sx={{ mt: 1 }}>
+                    <Typography variant="body2">{resolveError}</Typography>
+                    <Typography variant="caption">
+                      Nếu QR hỏng hoặc item không định danh được, chuyển sang
+                      tab "Mất mã (TEMP_ONLY)" — hệ thống không tự suy đoán
+                      liên kết item.
+                    </Typography>
+                  </Alert>
+                ) : null}
+              </Box>
+            )}
+
+            <Grid container spacing={2}>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <TextField
+                  required
+                  fullWidth
+                  label="Tên khách gửi"
+                  value={customerName}
+                  onChange={(event) => setCustomerName(event.target.value)}
+                  slotProps={{ htmlInput: { maxLength: 200 } }}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <TextField
+                  required
+                  fullWidth
+                  label="Số điện thoại"
+                  value={customerPhone}
+                  onChange={(event) =>
+                    setCustomerPhone(
+                      event.target.value.replace(/\D/g, "").slice(0, 10),
+                    )
+                  }
+                  error={Boolean(customerPhone) && !/^0\d{9}$/.test(customerPhone)}
+                  helperText={
+                    Boolean(customerPhone) && !/^0\d{9}$/.test(customerPhone)
+                      ? "Số điện thoại phải đủ 10 chữ số và bắt đầu bằng số 0."
+                      : undefined
+                  }
+                  slotProps={{ htmlInput: { maxLength: 10, inputMode: "numeric" } }}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, md: 8 }}>
+                <TextField
+                  fullWidth
+                  label="Địa chỉ khách (PII)"
+                  value={customerAddress}
+                  onChange={(event) => setCustomerAddress(event.target.value)}
+                  slotProps={{ htmlInput: { maxLength: 500 } }}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, md: 4 }}>
+                <TextField
+                  fullWidth
+                  type="date"
+                  label="Ngày mua (nếu có)"
+                  value={purchaseDate}
+                  onChange={(event) => setPurchaseDate(event.target.value)}
+                  slotProps={{
+                    inputLabel: { shrink: true },
+                    htmlInput: { max: dayjs().format("YYYY-MM-DD") },
+                  }}
+                  helperText="Định dạng: ngày/tháng/năm"
+                />
+              </Grid>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <Autocomplete
+                  multiple
+                  options={defectOptions}
+                  value={defectOptions.filter((option) =>
+                    defectIds.includes(option.value),
+                  )}
+                  loading={defectsQuery.isLoading}
+                  getOptionLabel={(option) => option.label}
+                  isOptionEqualToValue={(option, value) =>
+                    option.value === value.value
+                  }
+                  onChange={(_event, options) =>
+                    setDefectIds(options.map((option) => option.value))
+                  }
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Bệnh / lỗi (danh mục)"
+                      placeholder="Chọn từ danh mục bệnh/lỗi"
+                    />
+                  )}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <TextField
+                  fullWidth
+                  label="Phụ kiện đi kèm"
+                  placeholder="VD: Pin 20V, sạc, hộp"
+                  value={accessoriesReceived}
+                  onChange={(event) => setAccessoriesReceived(event.target.value)}
+                  slotProps={{ htmlInput: { maxLength: 1000 } }}
+                />
+              </Grid>
+            </Grid>
+
+            <TextField
+              required
+              fullWidth
+              multiline
+              minRows={3}
+              label="Bệnh / lỗi khách phản ánh"
+              value={reportedDefect}
+              onChange={(event) => setReportedDefect(event.target.value)}
+              slotProps={{ htmlInput: { maxLength: 2000 } }}
+              helperText={`${reportedDefect.length}/2000`}
+            />
+
+            <TextField
+              fullWidth
+              multiline
+              minRows={2}
+              label="Tình trạng máy khi tiếp nhận"
+              placeholder="VD: Trầy xước nhẹ thân máy, còn nguyên tem"
+              value={receivedCondition}
+              onChange={(event) => setReceivedCondition(event.target.value)}
+              slotProps={{ htmlInput: { maxLength: 500 } }}
+              helperText={`${receivedCondition.length}/500`}
+            />
+
+            <Box>
+              <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                {`Ảnh đính kèm (${imageFiles.length}/${MAX_INTAKE_IMAGES})`}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1 }}>
+                JPG/PNG/WEBP, tối đa 10 ảnh, mỗi ảnh ≤ 10MB. Ảnh được tải lên
+                sau khi case bảo hành được tạo.
+              </Typography>
+              <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap", rowGap: 1 }}>
+                {imageFiles.map((file, index) => (
+                  <Chip
+                    key={`${file.name}-${index}`}
+                    label={file.name}
+                    onDelete={() =>
+                      setImageFiles((current) =>
+                        current.filter((_, i) => i !== index),
+                      )
+                    }
+                    deleteIcon={<DeleteOutlined />}
+                  />
+                ))}
+              </Stack>
+              {imageFiles.length < MAX_INTAKE_IMAGES ? (
+                <Button
+                  component="label"
+                  variant="outlined"
+                  size="small"
+                  disabled={busy}
+                  startIcon={<UploadOutlined style={{ color: ACTION_ICON_COLORS.upload }} />}
+                  sx={{ mt: 1 }}
+                >
+                  Tải ảnh
+                  <input
+                    type="file"
+                    accept=".jpg,.jpeg,.png,.webp"
+                    multiple
+                    hidden
+                    onChange={(event) => {
+                      addImageFiles(event.target.files);
+                      event.target.value = "";
+                    }}
+                  />
+                </Button>
+              ) : null}
+            </Box>
+
+            <Box>
+              <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                {`Video đính kèm (${videoFiles.length}/${MAX_INTAKE_VIDEOS})`}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1 }}>
+                MP4/MOV/WEBM, tối đa 2 video, mỗi video ≤ 300MB và ≤ 5 phút.
+                Video được tải lên sau khi case bảo hành được tạo.
+              </Typography>
+              <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap", rowGap: 1, mb: 1 }}>
+                {videoFiles.map((file, index) => (
+                  <Chip
+                    key={`${file.name}-${index}`}
+                    label={file.name}
+                    onDelete={() =>
+                      setVideoFiles((current) =>
+                        current.filter((_, i) => i !== index),
+                      )
+                    }
+                    deleteIcon={<DeleteOutlined />}
+                  />
+                ))}
+              </Stack>
+              {videoFiles.length < MAX_INTAKE_VIDEOS ? (
+                <Box
+                  component="label"
+                  onDragOver={(event) => event.preventDefault()}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    void addVideoFiles(event.dataTransfer.files);
+                  }}
+                  sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 0.5,
+                    border: "1px dashed",
+                    borderColor: "divider",
+                    borderRadius: 2,
+                    py: 3,
+                    cursor: busy ? "not-allowed" : "pointer",
+                    opacity: busy ? 0.6 : 1,
+                  }}
+                >
+                  <PlayCircleOutlined style={{ color: ACTION_ICON_COLORS.upload, fontSize: 24 }} />
+                  <Typography variant="body2">
+                    Kéo thả video vào đây hoặc bấm để chọn
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Tối đa {MAX_INTAKE_VIDEOS} video, mỗi video ≤ 300MB, ≤ 5 phút.
+                  </Typography>
+                  <input
+                    type="file"
+                    accept=".mp4,.mov,.webm"
+                    multiple
+                    hidden
+                    disabled={busy}
+                    onChange={(event) => {
+                      void addVideoFiles(event.target.files);
+                      event.target.value = "";
+                    }}
+                  />
+                </Box>
+              ) : null}
+            </Box>
+          </Stack>
+
+          <CameraScanModal
+            open={cameraOpen}
+            title="Quét mã máy bảo hành"
+            onDetected={(code) => {
+              // Change Pack QR/SKU: gửi RAW payload cho backend resolve — FE không
+              // tự tách/parse; classify trả normalized item_code + SKU để tự điền.
+              void resolveScannedCode(code);
+              setCameraOpen(false);
+            }}
+            onClose={() => setCameraOpen(false)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button startIcon={<CloseOutlined />} onClick={onClose} disabled={busy}>
             Hủy
           </Button>
           <Button
-            type="primary"
-            icon={<SaveOutlined />}
-            loading={createMutation.isPending || uploadMutation.isPending}
-            onClick={submit}
+            variant="contained"
+            startIcon={<SaveOutlined />}
+            disabled={busy}
+            onClick={() => void submit()}
           >
-            Lưu tiếp nhận
+            {busy ? "Đang lưu..." : "Lưu tiếp nhận"}
           </Button>
-        </Space>
-      }
-      width={860}
-      centered
-      mask={{ closable: false }}
-      destroyOnHidden
-    >
-      {formError ? (
-        <Alert
-          type="error"
-          showIcon
-          title={formError}
-          style={{ marginBottom: 12 }}
-        />
-      ) : null}
-      <Form
-        form={form}
-        layout="vertical"
-        initialValues={{ identification_type: "IDENTIFIED" }}
-      >
-        <Form.Item
-          name="identification_type"
-          label="Loại tiếp nhận"
-          rules={[{ required: true, message: "Chọn loại tiếp nhận." }]}
-        >
-          <Radio.Group
-            optionType="button"
-            buttonStyle="solid"
-            options={[
-              { value: "IDENTIFIED", label: "Có mã máy (IDENTIFIED)" },
-              { value: "TEMP_ONLY", label: "Mất mã (TEMP_ONLY)" },
-            ]}
-          />
-        </Form.Item>
-
-        {identificationType === "TEMP_ONLY" ? (
-          <>
-            <Alert
-              type="warning"
-              showIcon
-              title="Case TEMP_ONLY không liên kết item gốc, không xác nhận lịch sử bán hàng (NOT_TRACEABLE) và không sinh stock movement. Mã tạm sẽ do hệ thống sinh sau khi lưu."
-              style={{ marginBottom: 12 }}
-            />
-            <Form.Item
-              name="missing_code_reason"
-              label="Lý do mất/không có mã"
-              rules={[{ required: true, message: "Nhập lý do bắt buộc." }]}
-            >
-              <Input.TextArea rows={2} maxLength={500} showCount />
-            </Form.Item>
-            <Form.Item
-              name="manual_product_description"
-              label="Mô tả nhận diện máy"
-              rules={[{ required: true, message: "Nhập mô tả máy bắt buộc." }]}
-            >
-              <Input.TextArea rows={2} maxLength={2000} showCount />
-            </Form.Item>
-          </>
-        ) : (
-          <Form.Item
-            name="item_code"
-            label="Mã máy / serial / barcode item"
-            rules={[
-              {
-                required: true,
-                message: "Quét hoặc nhập mã máy cần bảo hành.",
-              },
-            ]}
-            extra="Item phải đã xuất cho khách (ISSUED hoặc RETURNED_TO_CUSTOMER) và chưa có case bảo hành đang hoạt động."
-          >
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <div style={{ flex: 1 }}>
-                <ScanInput
-                  value={itemCode ?? ""}
-                  size="middle"
-                  // Annex D SCR-WAR-01 scan-focus: ô quét tự nhận focus khi mở WAR-02
-                  // ở nhánh IDENTIFIED để đầu đọc bắn được ngay.
-                  autoFocus
-                  placeholder="Quét QR composite / Barcode hoặc nhập serial"
-                  onChange={(value) => {
-                    form.setFieldValue("item_code", value);
-                    setResolvedItem(null);
-                    setResolveError(null);
-                  }}
-                  onScan={(code) => void resolveScannedCode(code)}
-                />
-              </div>
-              <Button
-                icon={<CameraOutlined />}
-                onClick={() => setCameraOpen(true)}
-              >
-                Camera
-              </Button>
-            </div>
-            {resolvedItem ? (
-              <Alert
-                type="success"
-                showIcon
-                style={{ marginTop: 8 }}
-                title={`Đã nhận diện item${
-                  resolvedItem.skuCode ? ` · SKU ${resolvedItem.skuCode}` : ""
-                }${resolvedItem.itemUnique ? ` · ${resolvedItem.itemUnique}` : ""}${
-                  resolvedItem.objectStatus
-                    ? ` · trạng thái ${resolvedItem.objectStatus}`
-                    : ""
-                }`}
-              />
-            ) : null}
-            {resolveError ? (
-              <Alert
-                type="warning"
-                showIcon
-                style={{ marginTop: 8 }}
-                title={resolveError}
-                description="Nếu QR hỏng hoặc item không định danh được, chuyển sang tab “Mất mã (TEMP_ONLY)” — hệ thống không tự suy đoán liên kết item."
-              />
-            ) : null}
-          </Form.Item>
-        )}
-
-        <Row gutter={12}>
-          <Col xs={24} md={12}>
-            <Form.Item
-              name="customer_name"
-              label="Tên khách gửi"
-              rules={[{ required: true, message: "Nhập tên khách gửi." }]}
-            >
-              <Input maxLength={200} />
-            </Form.Item>
-          </Col>
-          <Col xs={24} md={12}>
-            <Form.Item
-              name="customer_phone"
-              label="Số điện thoại"
-              // Rà soát validate định dạng input (Flow04 Warranty): SĐT khách VN —
-              // bắt buộc 10 chữ số, bắt đầu bằng 0, không cho nhập chữ. normalize
-              // strip mọi ký tự không phải số ngay lúc gõ (đồng bộ với IamUserScreen).
-              normalize={(value: string | undefined) =>
-                (value ?? "").replace(/\D/g, "").slice(0, 10)
-              }
-              rules={[
-                { required: true, message: "Nhập số điện thoại." },
-                {
-                  pattern: /^0\d{9}$/,
-                  message:
-                    "Số điện thoại phải đủ 10 chữ số và bắt đầu bằng số 0.",
-                },
-              ]}
-            >
-              <Input inputMode="numeric" maxLength={10} />
-            </Form.Item>
-          </Col>
-        </Row>
-
-        <Row gutter={12}>
-          <Col xs={24} md={16}>
-            <Form.Item name="customer_address" label="Địa chỉ khách (PII)">
-              {/* Annex A/D: customer_address tối đa 500 ký tự. */}
-              <Input maxLength={500} />
-            </Form.Item>
-          </Col>
-          <Col xs={24} md={8}>
-            <Form.Item name="purchase_date" label="Ngày mua (nếu có)">
-              <DatePicker
-                style={{ width: "100%" }}
-                format="DD/MM/YYYY"
-                disabledDate={(current) =>
-                  current && current > dayjs().endOf("day")
-                }
-              />
-            </Form.Item>
-          </Col>
-        </Row>
-
-        <Row gutter={12}>
-          <Col xs={24} md={12}>
-            <Form.Item name="defect_ids" label="Bệnh / lỗi (danh mục)">
-              <Select
-                mode="multiple"
-                allowClear
-                showSearch
-                optionFilterProp="label"
-                loading={defectsQuery.isLoading}
-                placeholder="Chọn từ danh mục bệnh/lỗi"
-                options={(defectsQuery.data?.data ?? []).map((defect) => ({
-                  value: defect.defect_id,
-                  label: `${defect.defect_code} · ${defect.defect_name}`,
-                }))}
-              />
-            </Form.Item>
-          </Col>
-          <Col xs={24} md={12}>
-            <Form.Item name="accessories_received" label="Phụ kiện đi kèm">
-              <Input maxLength={1000} placeholder="VD: Pin 20V, sạc, hộp" />
-            </Form.Item>
-          </Col>
-        </Row>
-
-        <Form.Item
-          name="reported_defect"
-          label="Bệnh / lỗi khách phản ánh"
-          rules={[
-            { required: true, message: "Nhập mô tả lỗi khách phản ánh." },
-          ]}
-        >
-          <Input.TextArea rows={3} maxLength={2000} showCount />
-        </Form.Item>
-
-        <Form.Item
-          name="received_condition"
-          label="Tình trạng máy khi tiếp nhận"
-        >
-          <Input.TextArea
-            rows={2}
-            maxLength={500}
-            showCount
-            placeholder="VD: Trầy xước nhẹ thân máy, còn nguyên tem"
-          />
-        </Form.Item>
-
-        <Form.Item
-          label="Ảnh đính kèm"
-          extra="JPG/PNG/WEBP, tối đa 10 ảnh, mỗi ảnh ≤ 10MB. Ảnh được tải lên sau khi case bảo hành được tạo."
-        >
-          <Upload {...imageUploadProps}>
-            <Button
-              icon={<UploadOutlined />}
-              disabled={
-                imageFiles.length >= MAX_INTAKE_IMAGES ||
-                createMutation.isPending ||
-                uploadMutation.isPending
-              }
-            >
-              Chọn ảnh tiếp nhận ({imageFiles.length}/{MAX_INTAKE_IMAGES})
-            </Button>
-          </Upload>
-        </Form.Item>
-      </Form>
-
-      <CameraScanModal
-        open={cameraOpen}
-        title="Quét mã máy bảo hành"
-        onDetected={(code) => {
-          // Change Pack QR/SKU: gửi RAW payload cho backend resolve — FE không
-          // tự tách/parse; classify trả normalized item_code + SKU để tự điền.
-          void resolveScannedCode(code);
-          setCameraOpen(false);
-        }}
-        onClose={() => setCameraOpen(false)}
-      />
-    </Modal>
+        </DialogActions>
+      </Dialog>
+    </ThemeProvider>
   );
 }

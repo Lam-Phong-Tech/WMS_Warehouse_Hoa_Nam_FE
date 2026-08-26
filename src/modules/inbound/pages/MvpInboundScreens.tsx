@@ -1,20 +1,25 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Table, Tag } from "antd";
+import type { ColumnsType } from "antd/es/table";
 import {
   Alert,
+  Autocomplete,
+  Box,
   Button,
-  Card,
-  Col,
-  Descriptions,
-  Input,
-  InputNumber,
-  Modal,
-  Row,
-  Select,
-  Space,
-  Table,
-  Tag,
-} from "antd";
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Grid,
+  IconButton,
+  MenuItem,
+  Stack,
+  TextField,
+  ThemeProvider,
+  Typography,
+} from "@mui/material";
+import { muiTheme } from "@/app/mui-theme";
 import { toast } from "sonner";
 import {
   CameraOutlined,
@@ -24,13 +29,8 @@ import {
   DeleteOutlined,
   InboxOutlined,
   ScanOutlined,
-} from "@ant-design/icons";
-import type { ColumnsType } from "antd/es/table";
-import {
-  getApiErrorMessage,
-  getErrorRequestId,
-  normalizeError,
-} from "@/shared/api/api-error";
+} from "@/shared/components/icons";
+import { getApiErrorMessage, getErrorRequestId, normalizeError } from "@/shared/api/api-error";
 import {
   classifyConcurrencyError,
   isRetryableAfterReload,
@@ -102,6 +102,17 @@ type ScanLogRow = {
 };
 
 const AUTO_LINE = "__AUTO__";
+
+function StatCard({ label, value }: { label: string; value: number }) {
+  return (
+    <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: 2, p: 1.5, height: "100%" }}>
+      <Typography variant="caption" color="text.secondary">
+        {label}
+      </Typography>
+      <Typography sx={{ fontSize: 22, fontWeight: 700 }}>{value}</Typography>
+    </Box>
+  );
+}
 
 function looksCompositeProductQr(code: string): boolean {
   return /^HN\d+\|/i.test(code.trim());
@@ -265,41 +276,44 @@ function CameraScanModal({
   }, [open]);
 
   return (
-    <Modal
-      title={title}
-      open={open}
-      onCancel={onClose}
-      footer={<Button onClick={onClose}>Đóng / nhập tay</Button>}
-      destroyOnHidden
-      centered
-      mask={{ closable: false }}
-    >
-      {cameraError ? (
-        <Alert type="warning" showIcon title={cameraError} />
-      ) : (
-        <>
-          <video
-            ref={videoRef}
-            muted
-            playsInline
-            autoPlay
-            style={{
-              width: "100%",
-              minHeight: 260,
-              borderRadius: 12,
-              background: "#0f172a",
-            }}
-          />
-          <Alert
-            style={{ marginTop: 12 }}
-            type="info"
-            showIcon
-            title={cameraReady ? "Camera sẵn sàng" : "Đang khởi tạo camera..."}
-            description="Đưa mã vạch/QR vào khung hình. Camera chỉ đọc mã; dữ liệu vẫn phải qua cùng kiểm tra hợp lệ như khi nhập tay. Camera không dùng để đọc RFID."
-          />
-        </>
-      )}
-    </Modal>
+    <ThemeProvider theme={muiTheme}>
+      <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+        <DialogTitle>{title}</DialogTitle>
+        <DialogContent dividers>
+          {cameraError ? (
+            <Alert severity="warning">{cameraError}</Alert>
+          ) : (
+            <>
+              <video
+                ref={videoRef}
+                muted
+                playsInline
+                autoPlay
+                style={{
+                  width: "100%",
+                  minHeight: 260,
+                  borderRadius: 12,
+                  background: "#0f172a",
+                }}
+              />
+              <Alert severity="info" sx={{ mt: 1.5 }}>
+                <Typography sx={{ fontWeight: 700 }}>
+                  {cameraReady ? "Camera sẵn sàng" : "Đang khởi tạo camera..."}
+                </Typography>
+                <Typography variant="body2">
+                  Đưa mã vạch/QR vào khung hình. Camera chỉ đọc mã; dữ liệu vẫn
+                  phải qua cùng kiểm tra hợp lệ như khi nhập tay. Camera không
+                  dùng để đọc RFID.
+                </Typography>
+              </Alert>
+            </>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={onClose}>Đóng / nhập tay</Button>
+        </DialogActions>
+      </Dialog>
+    </ThemeProvider>
   );
 }
 
@@ -856,10 +870,10 @@ export function InboundScanModal({
       render: (_, entry) =>
         entry.status === "ACTIVE" && canScan && isMutable ? (
           <Button
-            danger
-            type="link"
+            color="error"
+            variant="text"
             size="small"
-            icon={<DeleteOutlined />}
+            startIcon={<DeleteOutlined />}
             disabled={working}
             onClick={() => void handleUnscan(entry)}
           >
@@ -875,543 +889,465 @@ export function InboundScanModal({
       title: "Kết quả",
       dataIndex: "result",
       render: (value: string, row) => (
-        <Space>
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
           {row.success ? (
             <CheckCircleOutlined style={{ color: "#16a34a" }} />
           ) : (
             <CloseCircleOutlined style={{ color: "#dc2626" }} />
           )}
           <span>{value}</span>
-        </Space>
+        </Stack>
       ),
     },
   ];
 
+  const componentSkuAutocompleteOptions = componentSkuOptions.map((sku) => ({
+    value: sku.sku_id,
+    label: `${sku.sku_code} · ${sku.sku_name}`,
+  }));
+
   return (
-    <>
-      <Modal
-        title={
-          detail
-            ? `Quét & hoàn tất nhập kho · ${detail.document.code || documentId}`
-            : "Quét & hoàn tất nhập kho"
-        }
+    <ThemeProvider theme={muiTheme}>
+      <Dialog
         open
-        width={1200}
-        footer={null}
-        onCancel={onClose}
-        centered
-        closable={!working}
-        mask={{ closable: false }}
-        destroyOnHidden
+        onClose={() => {
+          if (working) return;
+          onClose();
+        }}
+        maxWidth="lg"
+        fullWidth
       >
+        <DialogTitle sx={{ pr: 6, position: "relative" }}>
+          {detail
+            ? `Quét & hoàn tất nhập kho · ${detail.document.code || documentId}`
+            : "Quét & hoàn tất nhập kho"}
+          <IconButton
+            aria-label="Đóng"
+            onClick={onClose}
+            disabled={working}
+            sx={{ position: "absolute", right: 10, top: 8 }}
+          >
+            <CloseOutlined style={{ fontSize: 15 }} />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers>
+          {detailQuery.isError ? (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              <Typography sx={{ fontWeight: 700 }}>
+                {getApiErrorMessage(detailQuery.error, "Không tải được phiếu nhập.")}
+              </Typography>
+              <Typography variant="body2">{errorDescription(detailQuery.error)}</Typography>
+            </Alert>
+          ) : null}
 
-        {detailQuery.isLoading ? <Card loading /> : null}
-        {detailQuery.isError ? (
-          <Alert
-            type="error"
-            showIcon
-            title={getApiErrorMessage(
-              detailQuery.error,
-              "Không tải được phiếu nhập.",
-            )}
-            description={errorDescription(detailQuery.error)}
-          />
-        ) : null}
+          {detail ? (
+            <>
+              <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: 2, p: 2, mb: 2 }}>
+                <Grid container spacing={2}>
+                  <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+                      Phiếu
+                    </Typography>
+                    <Typography variant="body2">{detail.document.code || documentId}</Typography>
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+                      Nguồn
+                    </Typography>
+                    <Typography variant="body2">{detail.document.source || "-"}</Typography>
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+                      Trạng thái
+                    </Typography>
+                    <Tag
+                      color={
+                        detail.document.status === "POSTED"
+                          ? "success"
+                          : detail.document.status === "SCANNING"
+                            ? "processing"
+                            : detail.document.status === "CANCELLED"
+                              ? "error"
+                              : "warning"
+                      }
+                    >
+                      {businessLabel(INBOUND_STATUS_LABELS, detail.document.status)}
+                    </Tag>
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+                      Phiên bản dữ liệu
+                    </Typography>
+                    <Typography variant="body2">{scanVersion ?? detail.document.version}</Typography>
+                  </Grid>
+                </Grid>
+              </Box>
 
-        {detail ? (
-          <>
-            <Descriptions
-              bordered
-              size="small"
-              column={{ xs: 1, sm: 2, lg: 4 }}
-              style={{ marginBottom: 14 }}
-            >
-              <Descriptions.Item label="Phiếu">
-                {detail.document.code || documentId}
-              </Descriptions.Item>
-              <Descriptions.Item label="Nguồn">
-                {detail.document.source || "-"}
-              </Descriptions.Item>
-              <Descriptions.Item label="Trạng thái">
-                <Tag
-                  color={
-                    detail.document.status === "POSTED"
-                      ? "success"
-                      : detail.document.status === "SCANNING"
-                        ? "processing"
-                        : detail.document.status === "CANCELLED"
-                          ? "error"
-                          : "warning"
-                  }
-                >
-                  {businessLabel(INBOUND_STATUS_LABELS, detail.document.status)}
-                </Tag>
-              </Descriptions.Item>
-              <Descriptions.Item label="Phiên bản dữ liệu">
-                {scanVersion ?? detail.document.version}
-              </Descriptions.Item>
-            </Descriptions>
+              <Grid container spacing={1.5} sx={{ mb: 2 }}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                  <StatCard label="Mã hợp lệ" value={totalScanned} />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                  <StatCard label="Dòng SKU thực nhận" value={detail.lines.length} />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                  <StatCard label="Mã đã gỡ" value={removedEntryCount} />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                  <StatCard label="Mã trùng / lỗi (phiên)" value={sessionDuplicateCount + sessionErrorCount} />
+                </Grid>
+              </Grid>
 
-            <Row gutter={[12, 12]} style={{ marginBottom: 14 }}>
-              <Col xs={24} sm={12} md={6}>
-                <Card size="small">
-                  <div style={{ fontSize: 12, color: "#6b7280" }}>
-                    Mã hợp lệ
-                  </div>
-                  <div style={{ fontSize: 22, fontWeight: 700 }}>
-                    {totalScanned}
-                  </div>
-                </Card>
-              </Col>
-              <Col xs={24} sm={12} md={6}>
-                <Card size="small">
-                  <div style={{ fontSize: 12, color: "#6b7280" }}>
-                    Dòng SKU thực nhận
-                  </div>
-                  <div style={{ fontSize: 22, fontWeight: 700 }}>
-                    {detail.lines.length}
-                  </div>
-                </Card>
-              </Col>
-              <Col xs={24} sm={12} md={6}>
-                <Card size="small">
-                  <div style={{ fontSize: 12, color: "#6b7280" }}>Mã đã gỡ</div>
-                  <div style={{ fontSize: 22, fontWeight: 700 }}>
-                    {removedEntryCount}
-                  </div>
-                </Card>
-              </Col>
-              <Col xs={24} sm={12} md={6}>
-                <Card size="small">
-                  <div style={{ fontSize: 12, color: "#6b7280" }}>
-                    Mã trùng / lỗi (phiên)
-                  </div>
-                  <div style={{ fontSize: 22, fontWeight: 700 }}>
-                    {sessionDuplicateCount + sessionErrorCount}
-                  </div>
-                </Card>
-              </Col>
-            </Row>
+              <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: 2, p: 2, mb: 2 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+                  Hàng thực nhận đã ghi nhận
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {hasScanned
+                    ? `Đã ghi nhận ${totalScanned} đơn vị trên ${detail.lines.length} dòng SKU từ quét/đếm thực tế. Số lượng nhập kho lấy theo hàng thực nhận — thiếu/thừa so với chứng từ vận chuyển vẫn ghi nhận nhập được.`
+                    : "Chưa ghi nhận đơn vị nào. Quét mã sản phẩm hoặc chọn SKU linh kiện theo hộp để bắt đầu; dòng phiếu sẽ tự được tạo theo hàng thực nhận."}
+                </Typography>
+              </Box>
 
-            <Card
-              size="small"
-              title="Hàng thực nhận đã ghi nhận"
-              style={{ marginBottom: 14 }}
-            >
-              <div style={{ color: "#6b7280" }}>
-                {hasScanned
-                  ? `Đã ghi nhận ${totalScanned} đơn vị trên ${detail.lines.length} dòng SKU từ quét/đếm thực tế. Số lượng nhập kho lấy theo hàng thực nhận — thiếu/thừa so với chứng từ vận chuyển vẫn ghi nhận nhập được.`
-                  : "Chưa ghi nhận đơn vị nào. Quét mã sản phẩm hoặc chọn SKU linh kiện theo hộp để bắt đầu; dòng phiếu sẽ tự được tạo theo hàng thực nhận."}
-              </div>
-            </Card>
+              {isMutable ? (
+                <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: 2, p: 2, mb: 2 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5 }}>
+                    Ghi nhận mã vạch / QR / hộp
+                  </Typography>
+                  {!isComponent && activeCarton ? (
+                    <Alert severity="info" icon={<InboxOutlined />} sx={{ mb: 1.5 }}>
+                      <Typography sx={{ fontWeight: 700 }}>
+                        {`Thùng đang quét: ${activeCarton.code}`}
+                      </Typography>
+                      <Typography variant="body2">
+                        Đã quét <strong>{activeCartonScannedQty}</strong> máy vào
+                        thùng này. Sản phẩm quét tiếp theo sẽ được gắn vào thùng{" "}
+                        {activeCarton.code}.
+                      </Typography>
+                      <Button
+                        variant="contained"
+                        size="small"
+                        sx={{ mt: 1 }}
+                        startIcon={<CheckCircleOutlined />}
+                        disabled={!canScan || working}
+                        onClick={() => void handleCompleteCarton()}
+                      >
+                        {completeCartonMutation.isPending ? "Đang xử lý..." : "Đã quét xong thùng"}
+                      </Button>
+                    </Alert>
+                  ) : null}
 
-            {isMutable ? (
-              <Row gutter={[14, 14]}>
-                <Col xs={24} lg={13}>
-                  <Card size="small" title="Ghi nhận mã vạch / QR / hộp">
-                    {!isComponent && activeCarton ? (
-                      <Alert
-                        style={{ marginBottom: 12 }}
-                        type="info"
-                        showIcon
-                        icon={<InboxOutlined />}
-                        title={`Thùng đang quét: ${activeCarton.code}`}
-                        description={
-                          <div>
-                            <div>
-                              Đã quét <strong>{activeCartonScannedQty}</strong>{" "}
-                              máy vào thùng này. Sản phẩm quét tiếp theo sẽ được
-                              gắn vào thùng {activeCarton.code}.
-                            </div>
-                            <Button
-                              type="primary"
-                              size="small"
-                              style={{ marginTop: 8 }}
-                              icon={<CheckCircleOutlined />}
-                              loading={completeCartonMutation.isPending}
-                              disabled={!canScan || working}
-                              onClick={() => void handleCompleteCarton()}
-                            >
-                              Đã quét xong thùng
-                            </Button>
-                          </div>
+                  <Box sx={{ mb: 1.5 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.5 }}>
+                      Dòng nhận
+                    </Typography>
+                    <TextField
+                      select
+                      fullWidth
+                      value={lineId}
+                      disabled={!canScan || busy}
+                      onChange={(event) => setLineId(event.target.value)}
+                    >
+                      <MenuItem value={AUTO_LINE}>
+                        Tự động theo QR (sản phẩm — hệ thống tự đối chiếu SKU)
+                      </MenuItem>
+                      {detail.lines.map((line) => {
+                        const sku = skuById.get(line.productId);
+                        return (
+                          <MenuItem key={line.id} value={line.id}>
+                            {`${sku?.sku_code ?? line.productId} · đã quét ${line.scanned}`}
+                          </MenuItem>
+                        );
+                      })}
+                    </TextField>
+                  </Box>
+
+                  <Box sx={{ mb: 1.5 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.5 }}>
+                      Nhận linh kiện theo hộp — chọn SKU linh kiện thực nhận (dòng
+                      phiếu tự tạo, không nhập số lượng dự kiến)
+                    </Typography>
+                    <Stack direction="row" spacing={1}>
+                      <Autocomplete
+                        sx={{ flex: 1 }}
+                        options={componentSkuAutocompleteOptions}
+                        value={
+                          componentSkuAutocompleteOptions.find(
+                            (option) => option.value === componentSkuId,
+                          ) ?? null
                         }
-                      />
-                    ) : null}
-                    <div style={{ marginBottom: 12 }}>
-                      <div
-                        style={{
-                          marginBottom: 6,
-                          fontSize: 12,
-                          color: "#6b7280",
-                        }}
-                      >
-                        Dòng nhận
-                      </div>
-                      <Select
-                        style={{ width: "100%" }}
-                        value={lineId}
                         disabled={!canScan || busy}
-                        onChange={setLineId}
-                        options={[
-                          {
-                            value: AUTO_LINE,
-                            label:
-                              "Tự động theo QR (sản phẩm — hệ thống tự đối chiếu SKU)",
-                          },
-                          ...detail.lines.map((line) => {
-                            const sku = skuById.get(line.productId);
-                            return {
-                              value: line.id,
-                              label: `${sku?.sku_code ?? line.productId} · đã quét ${line.scanned}`,
-                            };
-                          }),
-                        ]}
+                        getOptionLabel={(option) => option.label}
+                        isOptionEqualToValue={(option, value) => option.value === value.value}
+                        onChange={(_event, option) => setComponentSkuId(option?.value ?? undefined)}
+                        renderInput={(params) => (
+                          <TextField {...params} placeholder="Chọn SKU linh kiện" />
+                        )}
                       />
-                    </div>
-
-                    <div style={{ marginBottom: 12 }}>
-                      <div
-                        style={{
-                          marginBottom: 6,
-                          fontSize: 12,
-                          color: "#6b7280",
-                        }}
+                      <Button
+                        variant="outlined"
+                        disabled={!canScan || busy || !componentSkuId}
+                        onClick={() => void handleAddComponentLine()}
                       >
-                        Nhận linh kiện theo hộp — chọn SKU linh kiện thực nhận
-                        (dòng phiếu tự tạo, không nhập số lượng dự kiến)
-                      </div>
-                      <Space.Compact style={{ width: "100%" }}>
-                        <Select
-                          style={{ width: "100%" }}
-                          showSearch
-                          allowClear
-                          optionFilterProp="label"
-                          placeholder="Chọn SKU linh kiện"
-                          value={componentSkuId}
+                        {ensureComponentMutation.isPending ? "Đang thêm..." : "Thêm dòng linh kiện"}
+                      </Button>
+                    </Stack>
+                  </Box>
+
+                  {isComponent ? (
+                    <Box sx={{ mb: 1.5 }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.5 }}>
+                        Hộp *
+                      </Typography>
+                      <Stack direction="row" spacing={1}>
+                        <TextField
+                          fullWidth
+                          value={boxCode}
                           disabled={!canScan || busy}
-                          onChange={(value) =>
-                            setComponentSkuId(value ?? undefined)
-                          }
-                          options={componentSkuOptions.map((sku) => ({
-                            value: sku.sku_id,
-                            label: `${sku.sku_code} · ${sku.sku_name}`,
-                          }))}
+                          placeholder="Quét / nhập hộp chứa đúng một SKU linh kiện"
+                          onChange={(event) => setBoxCode(event.target.value)}
+                          slotProps={{ htmlInput: { maxLength: 120 } }}
                         />
                         <Button
-                          type="primary"
-                          ghost
-                          disabled={!canScan || busy || !componentSkuId}
-                          loading={ensureComponentMutation.isPending}
-                          onClick={() => void handleAddComponentLine()}
-                        >
-                          Thêm dòng linh kiện
-                        </Button>
-                      </Space.Compact>
-                    </div>
-
-                    {isComponent ? (
-                      <div style={{ marginBottom: 12 }}>
-                        <div
-                          style={{
-                            marginBottom: 6,
-                            fontSize: 12,
-                            color: "#6b7280",
-                          }}
-                        >
-                          Hộp *
-                        </div>
-                        <Space.Compact style={{ width: "100%" }}>
-                          <Input
-                            value={boxCode}
-                            disabled={!canScan || busy}
-                            placeholder="Quét / nhập hộp chứa đúng một SKU linh kiện"
-                            onChange={(event) => setBoxCode(event.target.value)}
-                            maxLength={120}
-                          />
-                          <Button
-                            icon={<CameraOutlined />}
-                            disabled={!canScan || busy}
-                            onClick={() => setCameraTarget("box")}
-                          >
-                            Quét bằng camera
-                          </Button>
-                        </Space.Compact>
-                      </div>
-                    ) : null}
-
-                    <div style={{ marginBottom: 12 }}>
-                      <div
-                        style={{
-                          marginBottom: 6,
-                          fontSize: 12,
-                          color: "#6b7280",
-                        }}
-                      >
-                        {isComponent && !isSerialTracked
-                          ? "Mã vạch / số sê-ri (không bắt buộc với linh kiện nhập theo số lượng)"
-                          : "Mã vạch / Số sê-ri *"}
-                      </div>
-                      <Row gutter={8} align="top">
-                        <Col flex="auto">
-                          <ScanInput
-                            value={scanCode}
-                            size="middle"
-                            disabled={!canScan || busy}
-                            placeholder={
-                              isSerialTracked
-                                ? "Quét số sê-ri / mã vạch"
-                                : "Quét mã vạch/QR hoặc nhập tay"
-                            }
-                            onChange={setScanCode}
-                            onScan={(code) => void handleScan(code)}
-                          />
-                        </Col>
-                        <Col>
-                          <Button
-                            icon={<CameraOutlined />}
-                            disabled={!canScan || busy}
-                            onClick={() => setCameraTarget("code")}
-                          >
-                            Quét bằng camera
-                          </Button>
-                        </Col>
-                      </Row>
-                    </div>
-
-                    {isComponent && !isSerialTracked ? (
-                      <div style={{ marginBottom: 12 }}>
-                        <div
-                          style={{
-                            marginBottom: 6,
-                            fontSize: 12,
-                            color: "#6b7280",
-                          }}
-                        >
-                          Số lượng lần nhận *
-                        </div>
-                        <InputNumber
-                          min={1}
-                          value={quantity}
-                          onChange={(value) => setQuantity(Number(value ?? 1))}
+                          variant="outlined"
+                          startIcon={<CameraOutlined />}
                           disabled={!canScan || busy}
-                          style={{ width: 180 }}
+                          onClick={() => setCameraTarget("box")}
+                          sx={{ flexShrink: 0 }}
+                        >
+                          Quét bằng camera
+                        </Button>
+                      </Stack>
+                    </Box>
+                  ) : null}
+
+                  <Box sx={{ mb: 1.5 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.5 }}>
+                      {isComponent && !isSerialTracked
+                        ? "Mã vạch / số sê-ri (không bắt buộc với linh kiện nhập theo số lượng)"
+                        : "Mã vạch / Số sê-ri *"}
+                    </Typography>
+                    <Stack direction="row" spacing={1} sx={{ alignItems: "flex-start" }}>
+                      <Box sx={{ flex: 1 }}>
+                        <ScanInput
+                          value={scanCode}
+                          size="middle"
+                          disabled={!canScan || busy}
+                          placeholder={
+                            isSerialTracked
+                              ? "Quét số sê-ri / mã vạch"
+                              : "Quét mã vạch/QR hoặc nhập tay"
+                          }
+                          onChange={setScanCode}
+                          onScan={(code) => void handleScan(code)}
                         />
-                      </div>
-                    ) : null}
+                      </Box>
+                      <Button
+                        variant="outlined"
+                        startIcon={<CameraOutlined />}
+                        disabled={!canScan || busy}
+                        onClick={() => setCameraTarget("code")}
+                        sx={{ flexShrink: 0 }}
+                      >
+                        Quét bằng camera
+                      </Button>
+                    </Stack>
+                  </Box>
 
-                    <Button
-                      type="primary"
-                      icon={<ScanOutlined />}
-                      disabled={
-                        !canScan ||
-                        busy ||
-                        (lineId !== AUTO_LINE && !selectedSku)
-                      }
-                      loading={busy}
-                      onClick={() => void handleScan()}
-                    >
-                      Ghi nhận quét
-                    </Button>
-
-                    {selectedLine ? (
-                      <Alert
-                        style={{ marginTop: 12 }}
-                        type="info"
-                        showIcon
-                        title={`${selectedSku?.sku_code ?? selectedLine.productId}: đã quét ${selectedLine.scanned}`}
-                        description={
-                          isComponent
-                            ? "Linh kiện: bắt buộc có hộp. Với linh kiện nhập theo số lượng có thể ghi nhận nhiều đơn vị mỗi hộp; linh kiện quản lý số sê-ri vẫn ghi nhận từng đơn vị. Sau khi hoàn tất nhập kho mới thực hiện xếp khay."
-                            : "Sản phẩm: quét mã vạch/QR khi nhập kho. RFID không bắt buộc; ở luồng xuất kho, RFID chỉ là gán mã tùy chọn và không chặn hoàn tất xuất kho."
-                        }
+                  {isComponent && !isSerialTracked ? (
+                    <Box sx={{ mb: 1.5 }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.5 }}>
+                        Số lượng lần nhận *
+                      </Typography>
+                      <TextField
+                        type="number"
+                        value={quantity}
+                        onChange={(event) => setQuantity(Number(event.target.value) || 1)}
+                        disabled={!canScan || busy}
+                        sx={{ width: 180 }}
+                        slotProps={{ htmlInput: { min: 1 } }}
                       />
-                    ) : null}
-                  </Card>
-                </Col>
+                    </Box>
+                  ) : null}
 
-               
-              </Row>
-            ) : (
-              <Alert
-                type={detail.document.status === "POSTED" ? "success" : "info"}
-                showIcon
-                title={
-                  detail.document.status === "POSTED"
-                    ? "Phiếu đã nhập kho và chỉ đọc"
-                    : "Phiếu đã hủy và chỉ đọc"
-                }
-                description={
-                  detail.document.status === "POSTED"
-                    ? "Không sửa/xóa phiếu đã nhập kho. Sai giao dịch phải xử lý bằng điều chỉnh tồn kho theo cơ chế ghi bổ sung."
-                    : "Phiếu đã hủy không làm thay đổi tồn kho. Muốn làm lại phải tạo phiếu mới."
-                }
-                style={{ marginBottom: 14 }}
-              />
-            )}
+                  <Button
+                    variant="contained"
+                    startIcon={<ScanOutlined />}
+                    disabled={!canScan || busy || (lineId !== AUTO_LINE && !selectedSku)}
+                    onClick={() => void handleScan()}
+                  >
+                    {busy ? "Đang xử lý..." : "Ghi nhận quét"}
+                  </Button>
 
-            <Card
-              size="small"
-              title="Hàng thực nhận theo SKU"
-              style={{ marginTop: 14 }}
-            >
-              <Table<InboundLine>
-                size="small"
-                rowKey="id"
-                columns={lineColumns}
-                dataSource={detail.lines}
-                pagination={false}
-                scroll={{ x: 920 }}
-                expandable={{
-                  rowExpandable: (line) =>
-                    activeEntries.some((entry) => entry.lineId === line.id),
-                  expandedRowRender: (line) => {
-                    const lineEntries = activeEntries.filter(
-                      (entry) => entry.lineId === line.id,
-                    );
-                    return (
-                      <Space wrap size={4}>
-                        {lineEntries.map((entry) => (
-                          <Tag
-                            key={entry.id}
-                            style={{ fontFamily: "monospace" }}
-                          >
-                            {entry.itemCode ||
-                              entry.serialNumber ||
-                              entry.candidateItemUnique ||
-                              (entry.quantity > 1
-                                ? `SL ${entry.quantity}`
-                                : entry.itemId || "-")}
-                          </Tag>
-                        ))}
-                      </Space>
-                    );
-                  },
-                }}
-              />
-            </Card>
-
-            <Card
-              size="small"
-              title="Mã đã quét của phiếu"
-              style={{ marginTop: 14 }}
-              loading={scanEntriesQuery.isLoading}
-            >
-              <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 8 }}>
-                {`${activeEntries.length} hợp lệ${
-                  removedEntryCount ? ` · ${removedEntryCount} đã gỡ` : ""
-                }`}
-              </div>
-              {scanEntriesQuery.isError ? (
-                <Alert
-                  type="error"
-                  showIcon
-                  title={getApiErrorMessage(
-                    scanEntriesQuery.error,
-                    "Không tải được danh sách mã đã quét.",
-                  )}
-                  description={errorDescription(scanEntriesQuery.error)}
-                />
+                  {selectedLine ? (
+                    <Alert severity="info" sx={{ mt: 1.5 }}>
+                      <Typography sx={{ fontWeight: 700 }}>
+                        {`${selectedSku?.sku_code ?? selectedLine.productId}: đã quét ${selectedLine.scanned}`}
+                      </Typography>
+                      <Typography variant="body2">
+                        {isComponent
+                          ? "Linh kiện: bắt buộc có hộp. Với linh kiện nhập theo số lượng có thể ghi nhận nhiều đơn vị mỗi hộp; linh kiện quản lý số sê-ri vẫn ghi nhận từng đơn vị. Sau khi hoàn tất nhập kho mới thực hiện xếp khay."
+                          : "Sản phẩm: quét mã vạch/QR khi nhập kho. RFID không bắt buộc; ở luồng xuất kho, RFID chỉ là gán mã tùy chọn và không chặn hoàn tất xuất kho."}
+                      </Typography>
+                    </Alert>
+                  ) : null}
+                </Box>
               ) : (
-                <Table<InboundScanEntry>
+                <Alert
+                  severity={detail.document.status === "POSTED" ? "success" : "info"}
+                  sx={{ mb: 2 }}
+                >
+                  <Typography sx={{ fontWeight: 700 }}>
+                    {detail.document.status === "POSTED"
+                      ? "Phiếu đã nhập kho và chỉ đọc"
+                      : "Phiếu đã hủy và chỉ đọc"}
+                  </Typography>
+                  <Typography variant="body2">
+                    {detail.document.status === "POSTED"
+                      ? "Không sửa/xóa phiếu đã nhập kho. Sai giao dịch phải xử lý bằng điều chỉnh tồn kho theo cơ chế ghi bổ sung."
+                      : "Phiếu đã hủy không làm thay đổi tồn kho. Muốn làm lại phải tạo phiếu mới."}
+                  </Typography>
+                </Alert>
+              )}
+
+              <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: 2, p: 2, mt: 2 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+                  Hàng thực nhận theo SKU
+                </Typography>
+                <Table<InboundLine>
                   size="small"
                   rowKey="id"
-                  columns={scanEntryColumns}
-                  dataSource={scanEntries}
-                  pagination={{ pageSize: 10, hideOnSinglePage: true }}
-                  scroll={{ x: 900 }}
-                  locale={{
-                    emptyText:
-                      "Chưa ghi nhận mã nào. Quét mã vạch/QR hoặc đăng ký hộp để bắt đầu.",
+                  columns={lineColumns}
+                  dataSource={detail.lines}
+                  pagination={false}
+                  scroll={{ x: 920 }}
+                  expandable={{
+                    rowExpandable: (line) =>
+                      activeEntries.some((entry) => entry.lineId === line.id),
+                    expandedRowRender: (line) => {
+                      const lineEntries = activeEntries.filter(
+                        (entry) => entry.lineId === line.id,
+                      );
+                      return (
+                        <Stack direction="row" spacing={0.5} sx={{ flexWrap: "wrap", rowGap: 0.5 }}>
+                          {lineEntries.map((entry) => (
+                            <Tag key={entry.id} style={{ fontFamily: "monospace" }}>
+                              {entry.itemCode ||
+                                entry.serialNumber ||
+                                entry.candidateItemUnique ||
+                                (entry.quantity > 1
+                                  ? `SL ${entry.quantity}`
+                                  : entry.itemId || "-")}
+                            </Tag>
+                          ))}
+                        </Stack>
+                      );
+                    },
                   }}
                 />
-              )}
-            </Card>
+              </Box>
 
-            {scanLog.length ? (
-              <Card
-                size="small"
-                title="Diễn biến quét trong phiên thao tác"
-                style={{ marginTop: 14 }}
-              >
-                <Table<ScanLogRow>
-                  size="small"
-                  rowKey="key"
-                  columns={scanLogColumns}
-                  dataSource={scanLog}
-                  pagination={{ pageSize: 8, hideOnSinglePage: true }}
-                  scroll={{ x: "max-content" }}
-                />
-              </Card>
-            ) : null}
+              <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: 2, p: 2, mt: 2 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+                  Mã đã quét của phiếu
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1 }}>
+                  {`${activeEntries.length} hợp lệ${
+                    removedEntryCount ? ` · ${removedEntryCount} đã gỡ` : ""
+                  }`}
+                </Typography>
+                {scanEntriesQuery.isError ? (
+                  <Alert severity="error">
+                    <Typography sx={{ fontWeight: 700 }}>
+                      {getApiErrorMessage(
+                        scanEntriesQuery.error,
+                        "Không tải được danh sách mã đã quét.",
+                      )}
+                    </Typography>
+                    <Typography variant="body2">
+                      {errorDescription(scanEntriesQuery.error)}
+                    </Typography>
+                  </Alert>
+                ) : (
+                  <Table<InboundScanEntry>
+                    size="small"
+                    rowKey="id"
+                    columns={scanEntryColumns}
+                    dataSource={scanEntries}
+                    loading={scanEntriesQuery.isLoading}
+                    pagination={{ pageSize: 10, hideOnSinglePage: true }}
+                    scroll={{ x: 900 }}
+                    locale={{
+                      emptyText:
+                        "Chưa ghi nhận mã nào. Quét mã vạch/QR hoặc đăng ký hộp để bắt đầu.",
+                    }}
+                  />
+                )}
+              </Box>
 
-            {receiptEvidence ? (
-              <Alert
-                type="success"
-                showIcon
-                style={{ marginTop: 14 }}
-                title="Kết quả hoàn tất nhập kho"
-                description={
-                  <div>
-                    <div>
-                      Mã yêu cầu: <strong>{receiptEvidence.requestId}</strong>
-                    </div>
-                    <div>
-                      Biến động tồn kho:{" "}
-                      {receiptEvidence.movementRefs.join(", ")}
-                    </div>
-                    <div>Phiếu nhập: {receiptEvidence.receiptId}</div>
-                  </div>
-                }
-              />
-            ) : null}
+              {scanLog.length ? (
+                <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: 2, p: 2, mt: 2 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+                    Diễn biến quét trong phiên thao tác
+                  </Typography>
+                  <Table<ScanLogRow>
+                    size="small"
+                    rowKey="key"
+                    columns={scanLogColumns}
+                    dataSource={scanLog}
+                    pagination={{ pageSize: 8, hideOnSinglePage: true }}
+                    scroll={{ x: "max-content" }}
+                  />
+                </Box>
+              ) : null}
 
-            <div
-              style={{
-                display: "flex",
-                gap: 8,
-                justifyContent: "flex-end",
-                marginTop: 16,
-                flexWrap: "wrap",
-              }}
+              {receiptEvidence ? (
+                <Alert severity="success" sx={{ mt: 2 }}>
+                  <Typography sx={{ fontWeight: 700 }}>Kết quả hoàn tất nhập kho</Typography>
+                  <Typography variant="body2">
+                    Mã yêu cầu: <strong>{receiptEvidence.requestId}</strong>
+                  </Typography>
+                  <Typography variant="body2">
+                    Biến động tồn kho: {receiptEvidence.movementRefs.join(", ")}
+                  </Typography>
+                  <Typography variant="body2">Phiếu nhập: {receiptEvidence.receiptId}</Typography>
+                </Alert>
+              ) : null}
+            </>
+          ) : null}
+        </DialogContent>
+        <DialogActions>
+          <Button startIcon={<CloseOutlined />} disabled={working} onClick={onClose}>
+            Đóng
+          </Button>
+          {detail && canCancel && isMutable ? (
+            <Button
+              color="error"
+              variant="outlined"
+              startIcon={<CloseCircleOutlined />}
+              disabled={working}
+              onClick={() => setCancelOpen(true)}
             >
-              <Button
-                icon={<CloseOutlined />}
-                disabled={working}
-                onClick={onClose}
-              >
-                Đóng
-              </Button>
-              {canCancel && isMutable ? (
-                <Button
-                  danger
-                  icon={<CloseCircleOutlined />}
-                  disabled={working}
-                  onClick={() => setCancelOpen(true)}
-                >
-                  Hủy phiếu
-                </Button>
-              ) : null}
-              {isMutable ? (
-                <Button
-                  type="primary"
-                  icon={<CheckCircleOutlined />}
-                  disabled={
-                    !canPost ||
-                    !hasScanned ||
-                    detail.document.status !== "SCANNING" ||
-                    postMutation.isPending
-                  }
-                  loading={postMutation.isPending}
-                  onClick={() => void handlePost()}
-                >
-                  Ghi nhận nhập
-                </Button>
-              ) : null}
-            </div>
-          </>
-        ) : null}
-      </Modal>
+              Hủy phiếu
+            </Button>
+          ) : null}
+          {detail && isMutable ? (
+            <Button
+              variant="contained"
+              startIcon={<CheckCircleOutlined />}
+              disabled={
+                !canPost ||
+                !hasScanned ||
+                detail.document.status !== "SCANNING" ||
+                postMutation.isPending
+              }
+              onClick={() => void handlePost()}
+            >
+              {postMutation.isPending ? "Đang xử lý..." : "Ghi nhận nhập"}
+            </Button>
+          ) : null}
+        </DialogActions>
+      </Dialog>
 
       <CameraScanModal
         open={cameraTarget !== null}
@@ -1429,38 +1365,52 @@ export function InboundScanModal({
         }}
       />
 
-      <Modal
-        title="Hủy phiếu nhập"
+      <Dialog
         open={cancelOpen}
-        onCancel={() => setCancelOpen(false)}
-        onOk={() => void handleCancel()}
-        centered
-        mask={{ closable: false }}
-        closable={!cancelMutation.isPending}
-        okButtonProps={{
-          danger: true,
-          disabled: !cancelReason.trim() || cancelMutation.isPending,
-        }}
-        okText={cancelMutation.isPending ? "Đang hủy..." : "Xác nhận hủy"}
-        cancelText="Quay lại"
+        onClose={() => !cancelMutation.isPending && setCancelOpen(false)}
+        maxWidth="xs"
+        fullWidth
       >
-        <Alert
-          type="warning"
-          showIcon
-          title="Hủy là trạng thái kết thúc và không làm thay đổi tồn kho"
-          description="Phiếu đã hủy không thể tiếp tục quét hoặc hoàn tất nhập kho. Nếu cần làm lại, hãy tạo phiếu mới để bảo toàn lịch sử thao tác."
-          style={{ marginBottom: 12 }}
-        />
-        <Input.TextArea
-          rows={4}
-          value={cancelReason}
-          onChange={(event) => setCancelReason(event.target.value)}
-          placeholder="Lý do hủy bắt buộc"
-          maxLength={1000}
-          showCount
-        />
-      </Modal>
-    </>
+        <DialogTitle>Hủy phiếu nhập</DialogTitle>
+        <DialogContent dividers>
+          <Stack spacing={1.5}>
+            <Alert severity="warning">
+              <Typography sx={{ fontWeight: 700 }}>
+                Hủy là trạng thái kết thúc và không làm thay đổi tồn kho
+              </Typography>
+              <Typography variant="body2">
+                Phiếu đã hủy không thể tiếp tục quét hoặc hoàn tất nhập kho.
+                Nếu cần làm lại, hãy tạo phiếu mới để bảo toàn lịch sử thao
+                tác.
+              </Typography>
+            </Alert>
+            <TextField
+              fullWidth
+              multiline
+              minRows={4}
+              value={cancelReason}
+              onChange={(event) => setCancelReason(event.target.value)}
+              placeholder="Lý do hủy bắt buộc"
+              slotProps={{ htmlInput: { maxLength: 1000 } }}
+              helperText={`${cancelReason.length}/1000`}
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCancelOpen(false)} disabled={cancelMutation.isPending}>
+            Quay lại
+          </Button>
+          <Button
+            color="error"
+            variant="contained"
+            disabled={!cancelReason.trim() || cancelMutation.isPending}
+            onClick={() => void handleCancel()}
+          >
+            {cancelMutation.isPending ? "Đang hủy..." : "Xác nhận hủy"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </ThemeProvider>
   );
 }
 
@@ -1472,10 +1422,12 @@ export function InboundSourceScreen({
   screenId: LegacyScreenId;
 }) {
   return (
-    <Card>
-      {screenId === "IN-03"
-        ? "Quét & hoàn tất nhập kho được mở từ Danh sách phiếu nhập dưới dạng cửa sổ thao tác."
-        : "IN-01/IN-02 được quản lý trong Danh sách phiếu nhập."}
-    </Card>
+    <ThemeProvider theme={muiTheme}>
+      <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: 2, p: 2 }}>
+        {screenId === "IN-03"
+          ? "Quét & hoàn tất nhập kho được mở từ Danh sách phiếu nhập dưới dạng cửa sổ thao tác."
+          : "IN-01/IN-02 được quản lý trong Danh sách phiếu nhập."}
+      </Box>
+    </ThemeProvider>
   );
 }

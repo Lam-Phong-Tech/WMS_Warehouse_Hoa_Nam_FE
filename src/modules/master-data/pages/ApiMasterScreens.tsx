@@ -5,7 +5,30 @@ import {
   type FormEvent,
   type ReactNode,
 } from "react";
-import { Descriptions, Modal, Space, Tag } from "antd";
+import { Modal, Tag } from "antd";
+import {
+  Alert,
+  Box,
+  Button,
+  Checkbox,
+  Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControl,
+  FormControlLabel,
+  Grid,
+  IconButton,
+  InputLabel,
+  MenuItem,
+  Select,
+  Stack,
+  TextField,
+  ThemeProvider,
+  Typography,
+} from "@mui/material";
+import { muiTheme } from "@/app/mui-theme";
 import {
   CloseCircleOutlined,
   CloseOutlined,
@@ -16,10 +39,11 @@ import {
   ImportOutlined,
   PlusOutlined,
   SaveOutlined,
-} from "@ant-design/icons";
+} from "@/shared/components/icons";
 import { toast } from "sonner";
 import { SkuImportModal } from "@/modules/master-data/components/SkuImportModal";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
+import { ACTION_ICON_COLORS } from "@/shared/theme/actionIconColors";
 import {
   useCreateMvpAgency,
   useCreateMvpDefect,
@@ -51,11 +75,11 @@ import {
   getMutationErrorMessage,
   normalizeError,
 } from "@/shared/api/api-error";
+import { MvpPaginationFooter } from "@/shared/components/mvp/MvpListPagination";
 import {
-  MvpPageSizeSelector,
-  MvpPaginationFooter,
-} from "@/shared/components/mvp/MvpListPagination";
-import { resolveApiPagination } from "@/shared/components/mvp/mvp-pagination";
+  MVP_PAGE_SIZE_OPTIONS,
+  resolveApiPagination,
+} from "@/shared/components/mvp/mvp-pagination";
 import {
   MvpSelectionCheckbox,
   mvpRowNumber,
@@ -144,86 +168,6 @@ function refLabel(
   return found ? found.name || found.code : compactRef(value);
 }
 
-function ModalActions({
-  isSaving,
-  onCancel,
-  submitLabel,
-}: {
-  isSaving: boolean;
-  onCancel: () => void;
-  submitLabel: string;
-}) {
-  return (
-    <div className="toolbar" style={{ marginTop: 16, marginBottom: 0 }}>
-      <div className="spacer" />
-      <button
-        className="btn"
-        type="button"
-        onClick={onCancel}
-        disabled={isSaving}
-      >
-        <CloseOutlined /> Hủy
-      </button>
-      <button className="btn primary" type="submit" disabled={isSaving}>
-        <SaveOutlined /> {isSaving ? "Đang lưu..." : submitLabel}
-      </button>
-    </div>
-  );
-}
-
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className="field">
-      <label>{label}</label>
-      {children}
-    </div>
-  );
-}
-
-function MasterSelect({
-  value,
-  options,
-  disabled,
-  onChange,
-}: {
-  value: string;
-  options?: CatalogRefRecord[];
-  disabled?: boolean;
-  onChange: (value: string) => void;
-}) {
-  const rows = options ?? [];
-  const isMissing = Boolean(value) && !rows.some((row) => row.id === value);
-  return (
-    <>
-      <select
-        className="select"
-        style={{ width: "100%" }}
-        value={value}
-        disabled={disabled}
-        onChange={(event) => onChange(event.target.value)}
-      >
-        <option value="">— Chưa chọn —</option>
-        {isMissing ? (
-          <option value={value}>
-            Giữ liên kết hiện tại (đã ngừng sử dụng)
-          </option>
-        ) : null}
-        {rows.map((row) => (
-          <option key={row.id} value={row.id}>
-            {row.code} · {row.name}
-          </option>
-        ))}
-      </select>
-      {isMissing ? (
-        <div className="muted" style={{ marginTop: 4 }}>
-          Danh mục đang gán đã ngừng sử dụng — giữ nguyên hoặc chọn danh mục
-          khác.
-        </div>
-      ) : null}
-    </>
-  );
-}
-
 // ===== SKU =====
 
 type SkuFormState = {
@@ -265,6 +209,106 @@ const EMPTY_CATALOGS: ProductCatalogRefs = {
   powerSources: [],
   packageVariants: [],
 };
+
+/**
+ * Toolbar filter cần nhỏ gọn hơn field trong form (đồng bộ chuẩn với
+ * IamUserScreen) — dùng chung cho toolbar của cả Sku/Agency/Defect Master.
+ * Xem gotcha #4 trong memory pilot MUI: sx gốc của TextField áp vào
+ * .MuiFormControl-root (khung bọc ngoài) chứ không phải .MuiOutlinedInput-root,
+ * còn Select thì gốc sx chính là khung viền — selector kép
+ * "&, & .MuiOutlinedInput-root" xử lý được cả hai.
+ */
+const MASTER_TOOLBAR_SX = {
+  "&, & .MuiOutlinedInput-root": { height: 35 },
+  "& .MuiSelect-select, & .MuiInputBase-input": {
+    paddingTop: "8px !important",
+    paddingBottom: "8px !important",
+    fontSize: "13.5px !important",
+    boxSizing: "border-box",
+  },
+};
+
+function skuStatusChipColor(status: MasterStatus): "success" | "warning" {
+  return status === "ACTIVE" ? "success" : "warning";
+}
+
+/** Cặp nhãn/giá trị trong Dialog "Chi tiết SKU" (thay antd Descriptions.Item). */
+function SkuDetailField({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <Grid size={{ xs: 12, md: 6 }}>
+      <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+        {label}
+      </Typography>
+      <Typography variant="body2" component="div">
+        {value}
+      </Typography>
+    </Grid>
+  );
+}
+
+/**
+ * Bản MUI riêng cho form SKU — KHÔNG dùng lại component `MasterSelect` (antd
+ * shim) vì nó còn dùng chung cho AgencyMasterScreen/DefectMasterScreen trong
+ * cùng file này; đổi `MasterSelect` sẽ ảnh hưởng 2 màn đó ngoài phạm vi yêu
+ * cầu. Giữ đúng hành vi gốc: option "Giữ liên kết hiện tại (đã ngừng sử
+ * dụng)" khi giá trị đang chọn không còn trong danh sách ACTIVE.
+ */
+function SkuCatalogSelect({
+  id,
+  label,
+  required,
+  value,
+  options,
+  disabled,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  required?: boolean;
+  value: string;
+  options?: CatalogRefRecord[];
+  disabled?: boolean;
+  onChange: (value: string) => void;
+}) {
+  const rows = options ?? [];
+  const isMissing = Boolean(value) && !rows.some((row) => row.id === value);
+  const labelId = `${id}-label`;
+  return (
+    <Box>
+      <FormControl fullWidth required={required} disabled={disabled}>
+        <InputLabel id={labelId} shrink>
+          {label}
+        </InputLabel>
+        <Select
+          id={id}
+          labelId={labelId}
+          label={label}
+          displayEmpty
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+        >
+          <MenuItem value="">— Chưa chọn —</MenuItem>
+          {isMissing ? (
+            <MenuItem value={value}>
+              Giữ liên kết hiện tại (đã ngừng sử dụng)
+            </MenuItem>
+          ) : null}
+          {rows.map((row) => (
+            <MenuItem key={row.id} value={row.id}>
+              {row.code} · {row.name}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
+      {isMissing ? (
+        <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.5 }}>
+          Danh mục đang gán đã ngừng sử dụng — giữ nguyên hoặc chọn danh mục
+          khác.
+        </Typography>
+      ) : null}
+    </Box>
+  );
+}
 
 export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   const canManage = useCanManage("sku.manage");
@@ -497,84 +541,110 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
     }
   };
 
+  const perPageOptions = MVP_PAGE_SIZE_OPTIONS.includes(
+    perPage as (typeof MVP_PAGE_SIZE_OPTIONS)[number],
+  )
+    ? MVP_PAGE_SIZE_OPTIONS
+    : [...MVP_PAGE_SIZE_OPTIONS, perPage].sort((a, b) => a - b);
+
   return (
-    <div className="hn-mvp-source-screen" data-mvp-screen="MST-01">
+    <ThemeProvider theme={muiTheme}>
+      <div className="hn-mvp-source-screen" data-mvp-screen="MST-01">
       <div className="toolbar">
-        <input
-          className="input search"
+        <TextField
           value={keyword}
           onChange={(event) => {
             setKeyword(event.target.value);
             setPage(1);
           }}
           placeholder="Tìm mã / tên SKU"
-          aria-label="Tìm SKU"
+          slotProps={{ htmlInput: { "aria-label": "Tìm SKU" } }}
+          sx={{ minWidth: 190, ...MASTER_TOOLBAR_SX }}
         />
-        <select
-          className="select"
+        <Select
+          displayEmpty
           value={type}
           onChange={(event) => {
             setType(event.target.value as SkuType | "");
             setPage(1);
           }}
+          inputProps={{ "aria-label": "Lọc theo loại SKU" }}
+          sx={{ minWidth: 128, ...MASTER_TOOLBAR_SX }}
         >
-          <option value="">Loại: Tất cả</option>
-          <option value="PRODUCT">Sản phẩm</option>
-          <option value="COMPONENT">Linh kiện</option>
-        </select>
-        <select
-          className="select"
+          <MenuItem value="">Loại: Tất cả</MenuItem>
+          <MenuItem value="PRODUCT">Sản phẩm</MenuItem>
+          <MenuItem value="COMPONENT">Linh kiện</MenuItem>
+        </Select>
+        <Select
+          displayEmpty
           value={brandId}
-          aria-label="Lọc theo hãng"
           disabled={catalogsQuery.isLoading}
           onChange={(event) => {
             setBrandId(event.target.value);
             setPage(1);
           }}
+          inputProps={{ "aria-label": "Lọc theo hãng" }}
+          sx={{ minWidth: 136, ...MASTER_TOOLBAR_SX }}
         >
-          <option value="">Hãng: Tất cả</option>
+          <MenuItem value="">Hãng: Tất cả</MenuItem>
           {brands.map((brand) => (
-            <option key={brand.id} value={brand.id}>
+            <MenuItem key={brand.id} value={brand.id}>
               {brand.name || brand.code}
-            </option>
+            </MenuItem>
           ))}
-        </select>
-        <select
-          className="select"
+        </Select>
+        <Select
+          displayEmpty
           value={status}
           onChange={(event) => {
             setStatus(event.target.value as MasterStatus | "");
             setPage(1);
           }}
+          inputProps={{ "aria-label": "Lọc theo trạng thái" }}
+          sx={{ minWidth: 128, ...MASTER_TOOLBAR_SX }}
         >
-          <option value="">Trạng thái: Tất cả</option>
+          <MenuItem value="">Trạng thái: Tất cả</MenuItem>
           {STATUS_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
+            <MenuItem key={option.value} value={option.value}>
               {option.label}
-            </option>
+            </MenuItem>
           ))}
-        </select>
-        <MvpPageSizeSelector
+        </Select>
+        <Select
           value={perPage}
-          onChange={(value) => {
-            setPerPage(value);
+          onChange={(event) => {
+            setPerPage(Number(event.target.value));
             setPage(1);
           }}
-        />
+          inputProps={{ "aria-label": "Số dòng mỗi trang" }}
+          sx={{ minWidth: 92, ...MASTER_TOOLBAR_SX }}
+        >
+          {perPageOptions.map((size) => (
+            <MenuItem key={size} value={size}>
+              {size} / trang
+            </MenuItem>
+          ))}
+        </Select>
         <div className="spacer" />
         {canManage ? (
-          <button
-            className="btn"
-            type="button"
+          <Button
+            variant="outlined"
             onClick={() => setImportModalOpen(true)}
+            startIcon={
+              <ImportOutlined style={{ color: ACTION_ICON_COLORS.upload }} />
+            }
           >
-            <ImportOutlined /> Nhập từ Excel
-          </button>
+            Nhập từ Excel
+          </Button>
         ) : null}
         {canManage ? (
-          <button className="btn primary" type="button" onClick={openCreate}>
-            <PlusOutlined /> Thêm SKU
-          </button>
+          <Button
+            variant="contained"
+            onClick={openCreate}
+            startIcon={<PlusOutlined />}
+          >
+            Thêm SKU
+          </Button>
         ) : null}
       </div>
 
@@ -594,19 +664,27 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
       ) : null}
 
       {publishError ? (
-        <div className="alert" role="alert" style={{ marginBottom: 14 }}>
+        <Alert
+          severity="error"
+          sx={{ mb: "14px" }}
+          action={
+            <Button
+              size="small"
+              color="inherit"
+              onClick={() => setPublishError(null)}
+              startIcon={
+                <CloseCircleOutlined style={{ color: ACTION_ICON_COLORS.neutral }} />
+              }
+            >
+              Đóng
+            </Button>
+          }
+        >
           {getApiErrorMessage(
             publishError,
             "Không cập nhật được trạng thái hiển thị trên ứng dụng phân vùng.",
-          )}{" "}
-          <button
-            className="btn small"
-            type="button"
-            onClick={() => setPublishError(null)}
-          >
-            <CloseCircleOutlined /> Đóng
-          </button>
-        </div>
+          )}
+        </Alert>
       ) : null}
 
       <div className="table-wrap" aria-busy={query.isLoading}>
@@ -703,27 +781,30 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                       </span>
                     </td>
                     <td>
-                      <Space size={8} wrap>
-                        <button
-                          className="btn small"
-                          type="button"
+                      <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
+                        <Button
+                          size="small"
                           onClick={() => setViewing(record)}
+                          startIcon={
+                            <EyeOutlined style={{ color: ACTION_ICON_COLORS.view }} />
+                          }
                         >
-                          <EyeOutlined /> Xem
-                        </button>
+                          Xem
+                        </Button>
                         {canManage ? (
-                          <button
-                            className="btn small"
-                            type="button"
+                          <Button
+                            size="small"
                             onClick={() => openEdit(record)}
+                            startIcon={
+                              <EditOutlined style={{ color: ACTION_ICON_COLORS.edit }} />
+                            }
                           >
-                            <EditOutlined /> Sửa
-                          </button>
+                            Sửa
+                          </Button>
                         ) : null}
                         {canPublish ? (
-                          <button
-                            className="btn small"
-                            type="button"
+                          <Button
+                            size="small"
                             disabled={
                               publishMutation.isPending ||
                               (!isPublished && !statusAllowsPublish)
@@ -736,19 +817,22 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                                   : "Đưa SKU lên ứng dụng phân vùng"
                             }
                             onClick={() => void togglePublish(record)}
+                            startIcon={
+                              isPublished ? (
+                                <CloudDownloadOutlined
+                                  style={{ color: ACTION_ICON_COLORS.danger }}
+                                />
+                              ) : (
+                                <CloudUploadOutlined
+                                  style={{ color: ACTION_ICON_COLORS.success }}
+                                />
+                              )
+                            }
                           >
-                            {isPublished ? (
-                              <>
-                                <CloudDownloadOutlined /> Gỡ khỏi ứng dụng
-                              </>
-                            ) : (
-                              <>
-                                <CloudUploadOutlined /> Đưa lên ứng dụng
-                              </>
-                            )}
-                          </button>
+                            {isPublished ? "Gỡ khỏi ứng dụng" : "Đưa lên ứng dụng"}
+                          </Button>
                         ) : null}
-                      </Space>
+                      </Stack>
                     </td>
                   </tr>
                 );
@@ -772,308 +856,386 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
         onChange={setPage}
       />
 
-      <Modal
-        title="Chi tiết SKU"
+      <Dialog
         open={Boolean(viewing)}
-        onCancel={() => setViewing(null)}
-        footer={null}
-        width={760}
-        centered
-        destroyOnHidden
-        getContainer={false}
+        onClose={() => setViewing(null)}
+        maxWidth="sm"
+        fullWidth
+        slotProps={{ paper: { sx: { maxWidth: 760 } } }}
       >
-        {viewing ? (
-          <Descriptions bordered column={{ xs: 1, md: 2 }} size="small">
-            <Descriptions.Item label="Mã SKU">
-              {viewing.sku_code ?? viewing.code}
-            </Descriptions.Item>
-            <Descriptions.Item label="Tên SKU">
-              {viewing.sku_name ?? viewing.name}
-            </Descriptions.Item>
-            <Descriptions.Item label="Loại">
-              {skuTypeLabel(viewing.sku_type)}
-            </Descriptions.Item>
-            <Descriptions.Item label="Đơn vị tính">
-              {viewing.unit || "—"}
-            </Descriptions.Item>
-            <Descriptions.Item label="Hãng">
-              {refLabel(brandIndex, viewing.brand_id)}
-            </Descriptions.Item>
-            <Descriptions.Item label="Nhóm hàng">
-              {refLabel(categoryIndex, viewing.category_id)}
-            </Descriptions.Item>
-            <Descriptions.Item label="Model">
-              {refLabel(modelIndex, viewing.model_id)}
-            </Descriptions.Item>
-            <Descriptions.Item label="Nguồn điện">
-              {viewing.power_source_id
-                ? refLabel(powerSourceIndex, viewing.power_source_id)
-                : viewing.power_or_voltage || "—"}
-            </Descriptions.Item>
-            <Descriptions.Item label="Quy cách đóng gói">
-              {viewing.package_variant_id
-                ? refLabel(packageVariantIndex, viewing.package_variant_id)
-                : viewing.package_variant || "—"}
-            </Descriptions.Item>
-            <Descriptions.Item label="Phiên bản sản phẩm">
-              {viewing.version_code || "—"}
-            </Descriptions.Item>
-            <Descriptions.Item label="Quản lý số sê-ri">
-              {viewing.is_serial_tracked ? "Có" : "Không"}
-            </Descriptions.Item>
-            <Descriptions.Item label="Trạng thái">
-              <span className={statusClass(viewing.status)}>
-                {masterStatusLabel(viewing.status)}
-              </span>
-            </Descriptions.Item>
-            <Descriptions.Item label="Ứng dụng phân vùng">
-              {viewing.published_to_app ? "Đang hiển thị" : "Chưa hiển thị"}
-            </Descriptions.Item>
-          </Descriptions>
-        ) : null}
-      </Modal>
-
-      <Modal
-        title={editing ? "Sửa SKU" : "Thêm SKU"}
-        open={modalOpen}
-        onCancel={close}
-        footer={null}
-        width={980}
-        centered
-        getContainer={false}
-        mask={{ closable: false }}
-        closable={!isSaving}
-      >
-        <form onSubmit={submit}>
-          {formError ? (
-            <div className="alert" role="alert">
-              {formError}
-            </div>
+        <DialogTitle sx={{ pr: 6, position: "relative" }}>
+          Chi tiết SKU
+          <IconButton
+            aria-label="Đóng"
+            onClick={() => setViewing(null)}
+            sx={{ position: "absolute", right: 10, top: 8 }}
+          >
+            <CloseOutlined style={{ fontSize: 15 }} />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers>
+          {viewing ? (
+            <Box
+              sx={{
+                border: "1px solid",
+                borderColor: "divider",
+                borderRadius: 2,
+                p: 2,
+              }}
+            >
+              <Grid container spacing={2}>
+                <SkuDetailField label="Mã SKU" value={viewing.sku_code ?? viewing.code} />
+                <SkuDetailField label="Tên SKU" value={viewing.sku_name ?? viewing.name} />
+                <SkuDetailField label="Loại" value={skuTypeLabel(viewing.sku_type)} />
+                <SkuDetailField label="Đơn vị tính" value={viewing.unit || "—"} />
+                <SkuDetailField label="Hãng" value={refLabel(brandIndex, viewing.brand_id)} />
+                <SkuDetailField
+                  label="Nhóm hàng"
+                  value={refLabel(categoryIndex, viewing.category_id)}
+                />
+                <SkuDetailField label="Model" value={refLabel(modelIndex, viewing.model_id)} />
+                <SkuDetailField
+                  label="Nguồn điện"
+                  value={
+                    viewing.power_source_id
+                      ? refLabel(powerSourceIndex, viewing.power_source_id)
+                      : viewing.power_or_voltage || "—"
+                  }
+                />
+                <SkuDetailField
+                  label="Quy cách đóng gói"
+                  value={
+                    viewing.package_variant_id
+                      ? refLabel(packageVariantIndex, viewing.package_variant_id)
+                      : viewing.package_variant || "—"
+                  }
+                />
+                <SkuDetailField
+                  label="Phiên bản sản phẩm"
+                  value={viewing.version_code || "—"}
+                />
+                <SkuDetailField
+                  label="Quản lý số sê-ri"
+                  value={viewing.is_serial_tracked ? "Có" : "Không"}
+                />
+                <SkuDetailField
+                  label="Trạng thái"
+                  value={
+                    <Chip
+                      label={masterStatusLabel(viewing.status)}
+                      color={skuStatusChipColor(viewing.status)}
+                      size="small"
+                    />
+                  }
+                />
+                <SkuDetailField
+                  label="Ứng dụng phân vùng"
+                  value={viewing.published_to_app ? "Đang hiển thị" : "Chưa hiển thị"}
+                />
+              </Grid>
+            </Box>
           ) : null}
-          <div className="grid-2" style={{ marginTop: formError ? 14 : 0 }}>
-            <section className="card">
-              <div className="section-title">Thông tin SKU</div>
-              <Field label="Mã SKU *">
-                <input
-                  className="input"
-                  style={{ width: "100%" }}
-                  value={form.code}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      code: event.target.value,
-                    }))
-                  }
-                  disabled={isSaving || identityLocked}
-                />
-                {identityLocked ? (
-                  <div className="muted" style={{ marginTop: 4 }}>
-                    SKU đã có tồn kho — không thể đổi mã SKU.
-                  </div>
-                ) : null}
-              </Field>
-              <Field label="Tên SKU *">
-                <input
-                  className="input"
-                  style={{ width: "100%" }}
-                  value={form.name}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      name: event.target.value,
-                    }))
-                  }
-                  disabled={isSaving}
-                />
-              </Field>
-              <Field label="Loại SKU">
-                <select
-                  className="select"
-                  style={{ width: "100%" }}
-                  value={form.type}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      type: event.target.value as SkuType,
-                    }))
-                  }
-                  disabled={isSaving}
-                >
-                  <option value="PRODUCT">Sản phẩm</option>
-                  <option value="COMPONENT">Linh kiện</option>
-                </select>
-              </Field>
-              <Field label="Đơn vị tính">
-                <input
-                  className="input"
-                  style={{ width: "100%" }}
-                  value={form.unit}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      unit: event.target.value,
-                    }))
-                  }
-                  disabled={isSaving}
-                />
-              </Field>
-              <Field label="Trạng thái">
-                <select
-                  className="select"
-                  style={{ width: "100%" }}
-                  value={form.status}
-                  onChange={(event) => {
-                    const nextStatus = event.target.value as MasterStatus;
-                    setForm((current) => ({
-                      ...current,
-                      status: nextStatus,
-                      publishedToApp:
-                        nextStatus === "ACTIVE"
-                          ? current.publishedToApp
-                          : false,
-                    }));
-                  }}
-                  disabled={isSaving}
-                >
-                  {STATUS_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-              <Field label="Hiển thị trên ứng dụng phân vùng">
-                <label
-                  style={{ display: "flex", gap: 8, alignItems: "center" }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={form.publishedToApp}
-                    onChange={(event) =>
-                      setForm((current) => ({
-                        ...current,
-                        publishedToApp: event.target.checked,
-                      }))
-                    }
-                    disabled={isSaving || form.status !== "ACTIVE"}
-                  />
-                  Cho phép hiển thị SKU này trên ứng dụng phân vùng
-                </label>
-                {form.status !== "ACTIVE" ? (
-                  <div className="muted" style={{ marginTop: 4 }}>
-                    Chỉ SKU đang sử dụng mới được đưa lên ứng dụng.
-                  </div>
-                ) : null}
-              </Field>
-            </section>
+        </DialogContent>
+      </Dialog>
 
-            <section className="card">
-              <div className="section-title">Danh mục tham chiếu</div>
-              <div className="muted" style={{ marginBottom: 10 }}>
-                Chọn các danh mục đang sử dụng cho Hãng, Nhóm hàng, Model và
-                Nguồn điện.
-              </div>
-              <Field label="Hãng *">
-                <MasterSelect
-                  value={form.brandId}
-                  options={catalogs.brands}
-                  disabled={isSaving}
-                  onChange={(value) =>
-                    setForm((current) => ({ ...current, brandId: value }))
-                  }
-                />
-              </Field>
-              <Field label="Nhóm hàng *">
-                <MasterSelect
-                  value={form.categoryId}
-                  options={catalogs.categories}
-                  disabled={isSaving}
-                  onChange={(value) =>
-                    setForm((current) => ({ ...current, categoryId: value }))
-                  }
-                />
-              </Field>
-              <Field label="Model *">
-                <MasterSelect
-                  value={form.modelId}
-                  options={catalogs.models}
-                  disabled={isSaving}
-                  onChange={(value) =>
-                    setForm((current) => ({ ...current, modelId: value }))
-                  }
-                />
-              </Field>
-              <Field label="Nguồn điện *">
-                <MasterSelect
-                  value={form.powerSourceId}
-                  options={catalogs.powerSources}
-                  disabled={isSaving}
-                  onChange={(value) =>
-                    setForm((current) => ({ ...current, powerSourceId: value }))
-                  }
-                />
-              </Field>
-              <Field label="Quy cách đóng gói">
-                <MasterSelect
-                  value={form.packageVariantId}
-                  options={catalogs.packageVariants}
-                  disabled={isSaving}
-                  onChange={(value) =>
-                    setForm((current) => ({
-                      ...current,
-                      packageVariantId: value,
-                    }))
-                  }
-                />
-              </Field>
-              <Field label="Phiên bản sản phẩm">
-                <input
-                  className="input"
-                  style={{ width: "100%" }}
-                  value={form.versionCode}
-                  placeholder="V1"
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      versionCode: event.target.value,
-                    }))
-                  }
-                  disabled={isSaving}
-                />
-              </Field>
-              <Field label="Quản lý số sê-ri">
-                <label
-                  style={{ display: "flex", gap: 8, alignItems: "center" }}
+      <Dialog open={modalOpen} onClose={close} maxWidth="md" fullWidth>
+        <DialogTitle sx={{ pr: 6, position: "relative" }}>
+          {editing ? "Sửa SKU" : "Thêm SKU"}
+          <IconButton
+            aria-label="Đóng"
+            onClick={close}
+            disabled={isSaving}
+            sx={{ position: "absolute", right: 10, top: 8 }}
+          >
+            <CloseOutlined style={{ fontSize: 15 }} />
+          </IconButton>
+        </DialogTitle>
+        <form onSubmit={submit}>
+          <DialogContent dividers>
+            {formError ? (
+              <Alert severity="error" sx={{ mb: "14px" }}>
+                {formError}
+              </Alert>
+            ) : null}
+            <Grid container spacing={2}>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <Box
+                  sx={{
+                    border: "1px solid",
+                    borderColor: "divider",
+                    borderRadius: 2,
+                    p: 2,
+                    height: "100%",
+                  }}
                 >
-                  <input
-                    type="checkbox"
-                    checked={form.serialTracked}
-                    onChange={(event) =>
-                      setForm((current) => ({
-                        ...current,
-                        serialTracked: event.target.checked,
-                      }))
-                    }
-                    disabled={isSaving || identityLocked}
-                  />
-                  Quản lý riêng từng sản phẩm bằng số sê-ri / mã vật lý
-                </label>
-                {identityLocked ? (
-                  <div className="muted" style={{ marginTop: 4 }}>
-                    SKU đã có tồn kho — không thể đổi chế độ quản lý số sê-ri.
-                  </div>
-                ) : null}
-              </Field>
-            </section>
-          </div>
-          <ModalActions
-            isSaving={isSaving}
-            onCancel={close}
-            submitLabel="Lưu SKU"
-          />
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2 }}>
+                    Thông tin SKU
+                  </Typography>
+                  <Stack spacing={2}>
+                    <TextField
+                      id="sku-code"
+                      label="Mã SKU"
+                      required
+                      fullWidth
+                      value={form.code}
+                      onChange={(event) =>
+                        setForm((current) => ({
+                          ...current,
+                          code: event.target.value,
+                        }))
+                      }
+                      disabled={isSaving || identityLocked}
+                      helperText={
+                        identityLocked
+                          ? "SKU đã có tồn kho — không thể đổi mã SKU."
+                          : undefined
+                      }
+                    />
+                    <TextField
+                      id="sku-name"
+                      label="Tên SKU"
+                      required
+                      fullWidth
+                      value={form.name}
+                      onChange={(event) =>
+                        setForm((current) => ({
+                          ...current,
+                          name: event.target.value,
+                        }))
+                      }
+                      disabled={isSaving}
+                    />
+                    <FormControl fullWidth disabled={isSaving}>
+                      <InputLabel id="sku-type-label">Loại SKU</InputLabel>
+                      <Select
+                        id="sku-type"
+                        labelId="sku-type-label"
+                        label="Loại SKU"
+                        value={form.type}
+                        onChange={(event) =>
+                          setForm((current) => ({
+                            ...current,
+                            type: event.target.value as SkuType,
+                          }))
+                        }
+                      >
+                        <MenuItem value="PRODUCT">Sản phẩm</MenuItem>
+                        <MenuItem value="COMPONENT">Linh kiện</MenuItem>
+                      </Select>
+                    </FormControl>
+                    <TextField
+                      id="sku-unit"
+                      label="Đơn vị tính"
+                      fullWidth
+                      value={form.unit}
+                      onChange={(event) =>
+                        setForm((current) => ({
+                          ...current,
+                          unit: event.target.value,
+                        }))
+                      }
+                      disabled={isSaving}
+                    />
+                    <FormControl fullWidth disabled={isSaving}>
+                      <InputLabel id="sku-status-label">Trạng thái</InputLabel>
+                      <Select
+                        id="sku-status"
+                        labelId="sku-status-label"
+                        label="Trạng thái"
+                        value={form.status}
+                        onChange={(event) => {
+                          const nextStatus = event.target.value as MasterStatus;
+                          setForm((current) => ({
+                            ...current,
+                            status: nextStatus,
+                            publishedToApp:
+                              nextStatus === "ACTIVE"
+                                ? current.publishedToApp
+                                : false,
+                          }));
+                        }}
+                      >
+                        {STATUS_OPTIONS.map((option) => (
+                          <MenuItem key={option.value} value={option.value}>
+                            {option.label}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                    <Box>
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={form.publishedToApp}
+                            onChange={(event) =>
+                              setForm((current) => ({
+                                ...current,
+                                publishedToApp: event.target.checked,
+                              }))
+                            }
+                            disabled={isSaving || form.status !== "ACTIVE"}
+                          />
+                        }
+                        label="Cho phép hiển thị SKU này trên ứng dụng phân vùng"
+                      />
+                      {form.status !== "ACTIVE" ? (
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ display: "block", mt: 0.5 }}
+                        >
+                          Chỉ SKU đang sử dụng mới được đưa lên ứng dụng.
+                        </Typography>
+                      ) : null}
+                    </Box>
+                  </Stack>
+                </Box>
+              </Grid>
+
+              <Grid size={{ xs: 12, md: 6 }}>
+                <Box
+                  sx={{
+                    border: "1px solid",
+                    borderColor: "divider",
+                    borderRadius: 2,
+                    p: 2,
+                    height: "100%",
+                  }}
+                >
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+                    Danh mục tham chiếu
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 2 }}>
+                    Chọn các danh mục đang sử dụng cho Hãng, Nhóm hàng, Model và
+                    Nguồn điện.
+                  </Typography>
+                  <Stack spacing={2}>
+                    <SkuCatalogSelect
+                      id="sku-brand"
+                      label="Hãng"
+                      required
+                      value={form.brandId}
+                      options={catalogs.brands}
+                      disabled={isSaving}
+                      onChange={(value) =>
+                        setForm((current) => ({ ...current, brandId: value }))
+                      }
+                    />
+                    <SkuCatalogSelect
+                      id="sku-category"
+                      label="Nhóm hàng"
+                      required
+                      value={form.categoryId}
+                      options={catalogs.categories}
+                      disabled={isSaving}
+                      onChange={(value) =>
+                        setForm((current) => ({ ...current, categoryId: value }))
+                      }
+                    />
+                    <SkuCatalogSelect
+                      id="sku-model"
+                      label="Model"
+                      required
+                      value={form.modelId}
+                      options={catalogs.models}
+                      disabled={isSaving}
+                      onChange={(value) =>
+                        setForm((current) => ({ ...current, modelId: value }))
+                      }
+                    />
+                    <SkuCatalogSelect
+                      id="sku-power-source"
+                      label="Nguồn điện"
+                      required
+                      value={form.powerSourceId}
+                      options={catalogs.powerSources}
+                      disabled={isSaving}
+                      onChange={(value) =>
+                        setForm((current) => ({ ...current, powerSourceId: value }))
+                      }
+                    />
+                    <SkuCatalogSelect
+                      id="sku-package-variant"
+                      label="Quy cách đóng gói"
+                      value={form.packageVariantId}
+                      options={catalogs.packageVariants}
+                      disabled={isSaving}
+                      onChange={(value) =>
+                        setForm((current) => ({
+                          ...current,
+                          packageVariantId: value,
+                        }))
+                      }
+                    />
+                    <TextField
+                      id="sku-version-code"
+                      label="Phiên bản sản phẩm"
+                      fullWidth
+                      value={form.versionCode}
+                      placeholder="V1"
+                      onChange={(event) =>
+                        setForm((current) => ({
+                          ...current,
+                          versionCode: event.target.value,
+                        }))
+                      }
+                      disabled={isSaving}
+                    />
+                    <Box>
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={form.serialTracked}
+                            onChange={(event) =>
+                              setForm((current) => ({
+                                ...current,
+                                serialTracked: event.target.checked,
+                              }))
+                            }
+                            disabled={isSaving || identityLocked}
+                          />
+                        }
+                        label="Quản lý riêng từng sản phẩm bằng số sê-ri / mã vật lý"
+                      />
+                      {identityLocked ? (
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ display: "block", mt: 0.5 }}
+                        >
+                          SKU đã có tồn kho — không thể đổi chế độ quản lý số
+                          sê-ri.
+                        </Typography>
+                      ) : null}
+                    </Box>
+                  </Stack>
+                </Box>
+              </Grid>
+            </Grid>
+          </DialogContent>
+          <DialogActions>
+            <Button
+              onClick={close}
+              disabled={isSaving}
+              startIcon={
+                <CloseOutlined style={{ color: ACTION_ICON_COLORS.neutral }} />
+              }
+            >
+              Hủy
+            </Button>
+            <Button
+              type="submit"
+              variant="contained"
+              disabled={isSaving}
+              startIcon={<SaveOutlined />}
+            >
+              {isSaving ? "Đang lưu..." : "Lưu SKU"}
+            </Button>
+          </DialogActions>
         </form>
-      </Modal>
-    </div>
+      </Dialog>
+      </div>
+    </ThemeProvider>
   );
 }
 
@@ -1227,61 +1389,79 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
     }
   };
 
+  const perPageOptions = MVP_PAGE_SIZE_OPTIONS.includes(
+    perPage as (typeof MVP_PAGE_SIZE_OPTIONS)[number],
+  )
+    ? MVP_PAGE_SIZE_OPTIONS
+    : [...MVP_PAGE_SIZE_OPTIONS, perPage].sort((a, b) => a - b);
+
   return (
-    <div className="hn-mvp-source-screen" data-mvp-screen="AGY-01">
+    <ThemeProvider theme={muiTheme}>
+      <div className="hn-mvp-source-screen" data-mvp-screen="AGY-01">
       <div className="toolbar">
-        <input
-          className="input search"
+        <TextField
           value={keyword}
           onChange={(event) => {
             setKeyword(event.target.value);
             setPage(1);
           }}
           placeholder="Tìm mã / tên / thị trường / khu vực"
+          sx={{ minWidth: 220, ...MASTER_TOOLBAR_SX }}
         />
-        <select
-          className="select"
+        <Select
+          displayEmpty
           value={recipientType}
           onChange={(event) => {
             setRecipientType(event.target.value as RecipientType | "");
             setPage(1);
           }}
-          aria-label="Lọc theo loại nơi nhận"
+          inputProps={{ "aria-label": "Lọc theo loại nơi nhận" }}
+          sx={{ minWidth: 160, ...MASTER_TOOLBAR_SX }}
         >
-          <option value="">Loại nơi nhận: Tất cả</option>
+          <MenuItem value="">Loại nơi nhận: Tất cả</MenuItem>
           {RECIPIENT_TYPES.map((value) => (
-            <option key={value} value={value}>
+            <MenuItem key={value} value={value}>
               {RECIPIENT_TYPE_LABELS[value]}
-            </option>
+            </MenuItem>
           ))}
-        </select>
-        <select
-          className="select"
+        </Select>
+        <Select
+          displayEmpty
           value={status}
           onChange={(event) => {
             setStatus(event.target.value as MasterStatus | "");
             setPage(1);
           }}
+          inputProps={{ "aria-label": "Lọc theo trạng thái" }}
+          sx={{ minWidth: 128, ...MASTER_TOOLBAR_SX }}
         >
-          <option value="">Trạng thái: Tất cả</option>
+          <MenuItem value="">Trạng thái: Tất cả</MenuItem>
           {STATUS_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
+            <MenuItem key={option.value} value={option.value}>
               {option.label}
-            </option>
+            </MenuItem>
           ))}
-        </select>
-        <MvpPageSizeSelector
+        </Select>
+        <Select
           value={perPage}
-          onChange={(value) => {
-            setPerPage(value);
+          onChange={(event) => {
+            setPerPage(Number(event.target.value));
             setPage(1);
           }}
-        />
+          inputProps={{ "aria-label": "Số dòng mỗi trang" }}
+          sx={{ minWidth: 92, ...MASTER_TOOLBAR_SX }}
+        >
+          {perPageOptions.map((size) => (
+            <MenuItem key={size} value={size}>
+              {size} / trang
+            </MenuItem>
+          ))}
+        </Select>
         <div className="spacer" />
         {canManage ? (
-          <button className="btn primary" type="button" onClick={openCreate}>
-            <PlusOutlined /> Thêm nơi nhận
-          </button>
+          <Button variant="contained" onClick={openCreate} startIcon={<PlusOutlined />}>
+            Thêm nơi nhận
+          </Button>
         ) : null}
       </div>
 
@@ -1359,13 +1539,15 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                   </td>
                   <td>
                     {canManage ? (
-                      <button
-                        className="btn small"
-                        type="button"
+                      <Button
+                        size="small"
                         onClick={() => openEdit(record)}
+                        startIcon={
+                          <EditOutlined style={{ color: ACTION_ICON_COLORS.edit }} />
+                        }
                       >
-                        <EditOutlined /> Sửa
-                      </button>
+                        Sửa
+                      </Button>
                     ) : (
                       <span className="muted">Chỉ xem</span>
                     )}
@@ -1391,174 +1573,211 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
         onChange={setPage}
       />
 
-      <Modal
-        title={editing ? "Sửa nơi nhận" : "Thêm nơi nhận"}
-        open={modalOpen}
-        onCancel={close}
-        footer={null}
-        width={760}
-        centered
-        getContainer={false}
-        mask={{ closable: false }}
-        closable={!isSaving}
-      >
+      <Dialog open={modalOpen} onClose={close} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ pr: 6, position: "relative" }}>
+          {editing ? "Sửa nơi nhận" : "Thêm nơi nhận"}
+          <IconButton
+            aria-label="Đóng"
+            onClick={close}
+            disabled={isSaving}
+            sx={{ position: "absolute", right: 10, top: 8 }}
+          >
+            <CloseOutlined style={{ fontSize: 15 }} />
+          </IconButton>
+        </DialogTitle>
         <form onSubmit={submit}>
-          {formError ? (
-            <div className="alert" role="alert" style={{ marginBottom: 14 }}>
-              {formError}
-            </div>
-          ) : null}
-          <div className="grid-2">
-            <Field label="Mã nơi nhận *">
-              <input
-                className="input"
-                style={{ width: "100%" }}
-                value={form.agency_code}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    agency_code: event.target.value,
-                  }))
-                }
-                disabled={isSaving}
-              />
-            </Field>
-            <Field label="Tên nơi nhận *">
-              <input
-                className="input"
-                style={{ width: "100%" }}
-                value={form.agency_name}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    agency_name: event.target.value,
-                  }))
-                }
-                disabled={isSaving}
-              />
-            </Field>
-            <Field label="Loại nơi nhận *">
-              <select
-                className="select"
-                style={{ width: "100%" }}
-                value={form.recipient_type}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    recipient_type: event.target.value as RecipientType | "",
-                  }))
-                }
-                disabled={isSaving}
-              >
-                <option value="">Chọn loại nơi nhận</option>
-                {RECIPIENT_TYPES.map((value) => (
-                  <option key={value} value={value}>
-                    {RECIPIENT_TYPE_LABELS[value]}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <Field label="Thị trường">
-              <input
-                className="input"
-                style={{ width: "100%" }}
-                value={form.market ?? ""}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    market: event.target.value,
-                  }))
-                }
-                disabled={isSaving}
-              />
-            </Field>
-            <Field label="Khu vực">
-              <input
-                className="input"
-                style={{ width: "100%" }}
-                value={form.region ?? ""}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    region: event.target.value,
-                  }))
-                }
-                disabled={isSaving}
-              />
-            </Field>
-            <Field label="Người liên hệ">
-              <input
-                className="input"
-                style={{ width: "100%" }}
-                value={form.contact_name ?? ""}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    contact_name: event.target.value,
-                  }))
-                }
-                disabled={isSaving}
-              />
-            </Field>
-            <Field label="Điện thoại">
-              <input
-                className="input"
-                style={{ width: "100%" }}
-                value={form.phone ?? ""}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    phone: event.target.value.replace(/\D/g, "").slice(0, 10),
-                  }))
-                }
-                inputMode="numeric"
-                maxLength={10}
-                disabled={isSaving}
-              />
-            </Field>
-            <Field label="Trạng thái">
-              <select
-                className="select"
-                style={{ width: "100%" }}
-                value={form.status}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    status: event.target.value as MasterStatus,
-                  }))
-                }
-                disabled={isSaving}
-              >
-                {STATUS_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </Field>
-          </div>
-          <Field label="Địa chỉ">
-            <textarea
-              className="input"
-              style={{ width: "100%", minHeight: 88 }}
-              value={form.address ?? ""}
-              onChange={(event) =>
-                setForm((current) => ({
-                  ...current,
-                  address: event.target.value,
-                }))
-              }
+          <DialogContent dividers>
+            {formError ? (
+              <Alert severity="error" sx={{ mb: "14px" }}>
+                {formError}
+              </Alert>
+            ) : null}
+            <Grid container spacing={2}>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  id="agency-code"
+                  label="Mã nơi nhận"
+                  required
+                  fullWidth
+                  value={form.agency_code}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      agency_code: event.target.value,
+                    }))
+                  }
+                  disabled={isSaving}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  id="agency-name"
+                  label="Tên nơi nhận"
+                  required
+                  fullWidth
+                  value={form.agency_name}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      agency_name: event.target.value,
+                    }))
+                  }
+                  disabled={isSaving}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <FormControl fullWidth required disabled={isSaving}>
+                  <InputLabel id="agency-recipient-type-label" shrink>
+                    Loại nơi nhận
+                  </InputLabel>
+                  <Select
+                    id="agency-recipient-type"
+                    labelId="agency-recipient-type-label"
+                    label="Loại nơi nhận"
+                    displayEmpty
+                    value={form.recipient_type}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        recipient_type: event.target.value as RecipientType | "",
+                      }))
+                    }
+                  >
+                    <MenuItem value="">Chọn loại nơi nhận</MenuItem>
+                    {RECIPIENT_TYPES.map((value) => (
+                      <MenuItem key={value} value={value}>
+                        {RECIPIENT_TYPE_LABELS[value]}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  id="agency-market"
+                  label="Thị trường"
+                  fullWidth
+                  value={form.market ?? ""}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      market: event.target.value,
+                    }))
+                  }
+                  disabled={isSaving}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  id="agency-region"
+                  label="Khu vực"
+                  fullWidth
+                  value={form.region ?? ""}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      region: event.target.value,
+                    }))
+                  }
+                  disabled={isSaving}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  id="agency-contact-name"
+                  label="Người liên hệ"
+                  fullWidth
+                  value={form.contact_name ?? ""}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      contact_name: event.target.value,
+                    }))
+                  }
+                  disabled={isSaving}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  id="agency-phone"
+                  label="Điện thoại"
+                  fullWidth
+                  value={form.phone ?? ""}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      phone: event.target.value.replace(/\D/g, "").slice(0, 10),
+                    }))
+                  }
+                  disabled={isSaving}
+                  slotProps={{ htmlInput: { inputMode: "numeric", maxLength: 10 } }}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <FormControl fullWidth disabled={isSaving}>
+                  <InputLabel id="agency-status-label">Trạng thái</InputLabel>
+                  <Select
+                    id="agency-status"
+                    labelId="agency-status-label"
+                    label="Trạng thái"
+                    value={form.status}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        status: event.target.value as MasterStatus,
+                      }))
+                    }
+                  >
+                    {STATUS_OPTIONS.map((option) => (
+                      <MenuItem key={option.value} value={option.value}>
+                        {option.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid size={12}>
+                <TextField
+                  id="agency-address"
+                  label="Địa chỉ"
+                  fullWidth
+                  multiline
+                  minRows={3}
+                  value={form.address ?? ""}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      address: event.target.value,
+                    }))
+                  }
+                  disabled={isSaving}
+                />
+              </Grid>
+            </Grid>
+          </DialogContent>
+          <DialogActions>
+            <Button
+              onClick={close}
               disabled={isSaving}
-            />
-          </Field>
-          <ModalActions
-            isSaving={isSaving}
-            onCancel={close}
-            submitLabel="Lưu nơi nhận"
-          />
+              startIcon={
+                <CloseOutlined style={{ color: ACTION_ICON_COLORS.neutral }} />
+              }
+            >
+              Hủy
+            </Button>
+            <Button
+              type="submit"
+              variant="contained"
+              disabled={isSaving}
+              startIcon={<SaveOutlined />}
+            >
+              {isSaving ? "Đang lưu..." : "Lưu nơi nhận"}
+            </Button>
+          </DialogActions>
         </form>
-      </Modal>
-    </div>
+      </Dialog>
+      </div>
+    </ThemeProvider>
   );
 }
 
@@ -1675,45 +1894,62 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
     }
   };
 
+  const perPageOptions = MVP_PAGE_SIZE_OPTIONS.includes(
+    perPage as (typeof MVP_PAGE_SIZE_OPTIONS)[number],
+  )
+    ? MVP_PAGE_SIZE_OPTIONS
+    : [...MVP_PAGE_SIZE_OPTIONS, perPage].sort((a, b) => a - b);
+
   return (
-    <div className="hn-mvp-source-screen" data-mvp-screen="DEF-01">
+    <ThemeProvider theme={muiTheme}>
+      <div className="hn-mvp-source-screen" data-mvp-screen="DEF-01">
       <div className="toolbar">
-        <input
-          className="input search"
+        <TextField
           value={keyword}
           onChange={(event) => {
             setKeyword(event.target.value);
             setPage(1);
           }}
           placeholder="Tìm mã / tên lỗi"
+          sx={{ minWidth: 220, ...MASTER_TOOLBAR_SX }}
         />
-        <select
-          className="select"
+        <Select
+          displayEmpty
           value={status}
           onChange={(event) => {
             setStatus(event.target.value as MasterStatus | "");
             setPage(1);
           }}
+          inputProps={{ "aria-label": "Lọc theo trạng thái" }}
+          sx={{ minWidth: 128, ...MASTER_TOOLBAR_SX }}
         >
-          <option value="">Trạng thái: Tất cả</option>
+          <MenuItem value="">Trạng thái: Tất cả</MenuItem>
           {STATUS_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
+            <MenuItem key={option.value} value={option.value}>
               {option.label}
-            </option>
+            </MenuItem>
           ))}
-        </select>
-        <MvpPageSizeSelector
+        </Select>
+        <Select
           value={perPage}
-          onChange={(value) => {
-            setPerPage(value);
+          onChange={(event) => {
+            setPerPage(Number(event.target.value));
             setPage(1);
           }}
-        />
+          inputProps={{ "aria-label": "Số dòng mỗi trang" }}
+          sx={{ minWidth: 92, ...MASTER_TOOLBAR_SX }}
+        >
+          {perPageOptions.map((size) => (
+            <MenuItem key={size} value={size}>
+              {size} / trang
+            </MenuItem>
+          ))}
+        </Select>
         <div className="spacer" />
         {canManage ? (
-          <button className="btn primary" type="button" onClick={openCreate}>
-            <PlusOutlined /> Thêm lỗi
-          </button>
+          <Button variant="contained" onClick={openCreate} startIcon={<PlusOutlined />}>
+            Thêm lỗi
+          </Button>
         ) : null}
       </div>
 
@@ -1775,13 +2011,15 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                   </td>
                   <td>
                     {canManage ? (
-                      <button
-                        className="btn small"
-                        type="button"
+                      <Button
+                        size="small"
                         onClick={() => openEdit(record)}
+                        startIcon={
+                          <EditOutlined style={{ color: ACTION_ICON_COLORS.edit }} />
+                        }
                       >
-                        <EditOutlined /> Sửa
-                      </button>
+                        Sửa
+                      </Button>
                     ) : (
                       <span className="muted">Chỉ xem</span>
                     )}
@@ -1807,96 +2045,124 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
         onChange={setPage}
       />
 
-      <Modal
-        title={editing ? "Sửa lỗi / bệnh" : "Thêm lỗi / bệnh"}
-        open={modalOpen}
-        onCancel={close}
-        footer={null}
-        width={760}
-        centered
-        getContainer={false}
-        mask={{ closable: false }}
-        closable={!isSaving}
-      >
+      <Dialog open={modalOpen} onClose={close} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ pr: 6, position: "relative" }}>
+          {editing ? "Sửa lỗi / bệnh" : "Thêm lỗi / bệnh"}
+          <IconButton
+            aria-label="Đóng"
+            onClick={close}
+            disabled={isSaving}
+            sx={{ position: "absolute", right: 10, top: 8 }}
+          >
+            <CloseOutlined style={{ fontSize: 15 }} />
+          </IconButton>
+        </DialogTitle>
         <form onSubmit={submit}>
-          {formError ? (
-            <div className="alert" role="alert" style={{ marginBottom: 14 }}>
-              {formError}
-            </div>
-          ) : null}
-          <div className="grid-2">
-            <Field label="Mã lỗi *">
-              <input
-                className="input"
-                style={{ width: "100%" }}
-                maxLength={80}
-                value={form.defect_code}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    defect_code: event.target.value,
-                  }))
-                }
-                disabled={isSaving}
-              />
-            </Field>
-            <Field label="Tên lỗi / bệnh *">
-              <input
-                className="input"
-                style={{ width: "100%" }}
-                maxLength={200}
-                value={form.defect_name}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    defect_name: event.target.value,
-                  }))
-                }
-                disabled={isSaving}
-              />
-            </Field>
-          </div>
-          <Field label="Mô tả">
-            <textarea
-              className="input"
-              style={{ width: "100%", minHeight: 110 }}
-              value={form.description ?? ""}
-              onChange={(event) =>
-                setForm((current) => ({
-                  ...current,
-                  description: event.target.value,
-                }))
-              }
+          <DialogContent dividers>
+            {formError ? (
+              <Alert severity="error" sx={{ mb: "14px" }}>
+                {formError}
+              </Alert>
+            ) : null}
+            <Grid container spacing={2}>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  id="defect-code"
+                  label="Mã lỗi"
+                  required
+                  fullWidth
+                  value={form.defect_code}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      defect_code: event.target.value,
+                    }))
+                  }
+                  disabled={isSaving}
+                  slotProps={{ htmlInput: { maxLength: 80 } }}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  id="defect-name"
+                  label="Tên lỗi / bệnh"
+                  required
+                  fullWidth
+                  value={form.defect_name}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      defect_name: event.target.value,
+                    }))
+                  }
+                  disabled={isSaving}
+                  slotProps={{ htmlInput: { maxLength: 200 } }}
+                />
+              </Grid>
+              <Grid size={12}>
+                <TextField
+                  id="defect-description"
+                  label="Mô tả"
+                  fullWidth
+                  multiline
+                  minRows={3}
+                  value={form.description ?? ""}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      description: event.target.value,
+                    }))
+                  }
+                  disabled={isSaving}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <FormControl fullWidth disabled={isSaving}>
+                  <InputLabel id="defect-status-label">Trạng thái</InputLabel>
+                  <Select
+                    id="defect-status"
+                    labelId="defect-status-label"
+                    label="Trạng thái"
+                    value={form.status}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        status: event.target.value as MasterStatus,
+                      }))
+                    }
+                  >
+                    {STATUS_OPTIONS.map((option) => (
+                      <MenuItem key={option.value} value={option.value}>
+                        {option.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+            </Grid>
+          </DialogContent>
+          <DialogActions>
+            <Button
+              onClick={close}
               disabled={isSaving}
-            />
-          </Field>
-          <Field label="Trạng thái">
-            <select
-              className="select"
-              style={{ width: "100%" }}
-              value={form.status}
-              onChange={(event) =>
-                setForm((current) => ({
-                  ...current,
-                  status: event.target.value as MasterStatus,
-                }))
+              startIcon={
+                <CloseOutlined style={{ color: ACTION_ICON_COLORS.neutral }} />
               }
-              disabled={isSaving}
             >
-              {STATUS_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <ModalActions
-            isSaving={isSaving}
-            onCancel={close}
-            submitLabel="Lưu danh mục lỗi"
-          />
+              Hủy
+            </Button>
+            <Button
+              type="submit"
+              variant="contained"
+              disabled={isSaving}
+              startIcon={<SaveOutlined />}
+            >
+              {isSaving ? "Đang lưu..." : "Lưu danh mục lỗi"}
+            </Button>
+          </DialogActions>
         </form>
-      </Modal>
-    </div>
+      </Dialog>
+      </div>
+    </ThemeProvider>
   );
 }

@@ -4,7 +4,7 @@ import {
   LogoutOutlined,
   UserOutlined,
   ProfileOutlined,
-} from "@ant-design/icons";
+} from "@/shared/components/icons";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/shared/store/auth.store";

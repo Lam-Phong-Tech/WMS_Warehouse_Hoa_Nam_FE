@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Alert, Button, Form, Spin, Typography } from "antd";
-import { LockOutlined } from "@ant-design/icons";
+import { LockOutlined } from "@/shared/components/icons";
 import { Navigate } from "react-router-dom";
 import { isAxiosError } from "axios";
 import { useChangePassword } from "@/modules/auth/hooks/use-change-password";

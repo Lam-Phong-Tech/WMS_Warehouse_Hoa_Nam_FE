@@ -1,20 +1,23 @@
 import { useState } from "react";
-import {
-  Button,
-  Card,
-  DatePicker,
-  Form,
-  Input,
-  InputNumber,
-  Modal,
-  Select,
-  Space,
-  Table,
-  Tag,
-  Typography,
-} from "antd";
+import { Select as AntSelect, InputNumber, Table, Tag } from "antd";
 import type { ColumnsType } from "antd/es/table";
-import type { Dayjs } from "dayjs";
+import {
+  Alert,
+  Autocomplete,
+  Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Grid,
+  IconButton,
+  Stack,
+  TextField,
+  ThemeProvider,
+  Typography,
+} from "@mui/material";
+import { muiTheme } from "@/app/mui-theme";
 import dayjs from "dayjs";
 import { toast } from "sonner";
 import {
@@ -26,7 +29,7 @@ import {
   FileExcelOutlined,
   PlusOutlined,
   UploadOutlined,
-} from "@ant-design/icons";
+} from "@/shared/components/icons";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { getApiErrorMessage } from "@/shared/api/api-error";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
@@ -46,15 +49,10 @@ import {
 
 type IntakeMode = "manual" | "excel";
 
-type IntakeFormValues = {
-  request_no: string;
-  request_date?: Dayjs;
-  agency_id?: string;
-  recipient_name: string;
-  recipient_address?: string;
-  recipient_contact_phone?: string;
-  lines: Array<{ product_id: string; required_qty: number }>;
-};
+interface LineInput {
+  product_id: string;
+  required_qty: number;
+}
 
 type LineResolution = { sku_id?: string; required_qty?: number };
 
@@ -118,7 +116,17 @@ export function OutboundIntakeModal({
     receiver_address: "",
     receiver_contact_phone: "",
   });
-  const [form] = Form.useForm<IntakeFormValues>();
+
+  const [requestNo, setRequestNo] = useState("");
+  const [agencyId, setAgencyId] = useState<string | null>(null);
+  const [recipientName, setRecipientName] = useState("");
+  const [recipientAddress, setRecipientAddress] = useState("");
+  const [recipientPhone, setRecipientPhone] = useState("");
+  const [requestDate, setRequestDate] = useState("");
+  const [lines, setLines] = useState<LineInput[]>([
+    { product_id: "", required_qty: 1 },
+  ]);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const skuQuery = useMvpSkus({
     status: "ACTIVE",
@@ -128,6 +136,14 @@ export function OutboundIntakeModal({
   const agencyQuery = useMvpAgencies({ status: "ACTIVE", per_page: 100 });
   const skuRows = skuQuery.data?.data ?? [];
   const agencyRows = agencyQuery.data?.data ?? [];
+  const skuOptions = skuRows.map((sku) => ({
+    value: sku.sku_id,
+    label: `${sku.sku_code} · ${sku.sku_name}`,
+  }));
+  const agencyOptions = agencyRows.map((agency) => ({
+    value: agency.agency_id,
+    label: `${agency.agency_code} · ${agency.agency_name}`,
+  }));
 
   const previewSkuIds = [
     ...new Set([
@@ -164,7 +180,14 @@ export function OutboundIntakeModal({
     setFile(null);
     setFileInputKey((key) => key + 1);
     setMode("manual");
-    form.resetFields();
+    setRequestNo("");
+    setAgencyId(null);
+    setRecipientName("");
+    setRecipientAddress("");
+    setRecipientPhone("");
+    setRequestDate("");
+    setLines([{ product_id: "", required_qty: 1 }]);
+    setFormError(null);
   };
 
   const close = () => {
@@ -174,23 +197,39 @@ export function OutboundIntakeModal({
 
   const validateManualMutation = useMutation({
     mutationFn: async () => {
-      const values = await form.validateFields();
-      const rows: OutboundRequestRowInput[] = values.lines.map((line) => ({
-        request_no: values.request_no.trim(),
-        request_date: values.request_date
-          ? values.request_date.format("YYYY-MM-DD")
-          : undefined,
-        customer_name: values.recipient_name.trim(),
-        customer_address: (values.recipient_address ?? "").trim(),
-        recipient_contact_phone:
-          (values.recipient_contact_phone ?? "").trim() || undefined,
+      if (!requestNo.trim()) {
+        throw new Error("__FORM__Nhập mã phiếu yêu cầu xuất");
+      }
+      if (!recipientName.trim()) {
+        throw new Error("__FORM__Nhập người nhận");
+      }
+      if (recipientPhone && !/^0\d{9}$/.test(recipientPhone)) {
+        throw new Error(
+          "__FORM__Số điện thoại phải gồm đúng 10 chữ số và bắt đầu bằng số 0.",
+        );
+      }
+      for (const line of lines) {
+        if (!line.product_id) {
+          throw new Error("__FORM__Chọn SKU cho tất cả các dòng");
+        }
+        if (!line.required_qty || line.required_qty < 1) {
+          throw new Error("__FORM__Nhập số lượng cho tất cả các dòng");
+        }
+      }
+      const rows: OutboundRequestRowInput[] = lines.map((line) => ({
+        request_no: requestNo.trim(),
+        request_date: requestDate || undefined,
+        customer_name: recipientName.trim(),
+        customer_address: recipientAddress.trim(),
+        recipient_contact_phone: recipientPhone.trim() || undefined,
         sku_id: line.product_id,
         required_qty: Number(line.required_qty),
-        agency_id: values.agency_id || null,
+        agency_id: agencyId || null,
       }));
       return validateOutboundRequestRows(rows);
     },
     onSuccess: (result) => {
+      setFormError(null);
       setPreview(result);
       if (result.status === "VALIDATED") {
         toast.success(
@@ -203,6 +242,11 @@ export function OutboundIntakeModal({
       }
     },
     onError: (error) => {
+      const message = error instanceof Error ? error.message : String(error);
+      if (message.startsWith("__FORM__")) {
+        setFormError(message.replace("__FORM__", ""));
+        return;
+      }
       toast.error(
         getApiErrorMessage(error, "Xác nhận yêu cầu xuất kho thất bại."),
       );
@@ -235,7 +279,7 @@ export function OutboundIntakeModal({
   const consumeMutation = useMutation({
     mutationFn: async () => {
       if (!preview) throw new Error("Chưa có dữ liệu nhập để xác nhận.");
-      const lines = Object.entries(resolutions)
+      const consumeLines = Object.entries(resolutions)
         .map(([rowNo, value]) => ({
           row_no: Number(rowNo),
           ...(value.sku_id ? { sku_id: value.sku_id } : {}),
@@ -251,7 +295,7 @@ export function OutboundIntakeModal({
         preview.id,
         makeKey("confirm-outbound"),
         preview.version,
-        { ...(lines.length ? { lines } : {}), ...recipient },
+        { ...(consumeLines.length ? { lines: consumeLines } : {}), ...recipient },
       );
     },
     onSuccess: (result) => {
@@ -267,16 +311,20 @@ export function OutboundIntakeModal({
     },
   });
 
-  const handleAgencyChange = (agencyId?: string) => {
-    const agency: AgencyRecord | undefined = agencyId
-      ? agencyRows.find((row) => row.agency_id === agencyId)
+  const handleAgencyChange = (nextAgencyId: string | null) => {
+    setAgencyId(nextAgencyId);
+    const agency: AgencyRecord | undefined = nextAgencyId
+      ? agencyRows.find((row) => row.agency_id === nextAgencyId)
       : undefined;
     if (!agency) return;
-    form.setFieldsValue({
-      agency_id: agency.agency_id,
-      recipient_name: agency.agency_name,
-      recipient_address: agency.address ?? "",
-    });
+    setRecipientName(agency.agency_name);
+    setRecipientAddress(agency.address ?? "");
+  };
+
+  const updateLine = (index: number, patch: Partial<LineInput>) => {
+    setLines((current) =>
+      current.map((line, i) => (i === index ? { ...line, ...patch } : line)),
+    );
   };
 
   const previewColumns: ColumnsType<ImportRow> = [
@@ -309,7 +357,7 @@ export function OutboundIntakeModal({
       key: "sku_mapping",
       width: 260,
       render: (_, row) => (
-        <Select
+        <AntSelect
           allowClear
           showSearch
           size="small"
@@ -324,10 +372,7 @@ export function OutboundIntakeModal({
               [row.rowNo]: { ...current[row.rowNo], sku_id: value },
             }))
           }
-          options={skuRows.map((sku) => ({
-            value: sku.sku_id,
-            label: `${sku.sku_code} · ${sku.sku_name}`,
-          }))}
+          options={skuOptions}
         />
       ),
     },
@@ -367,21 +412,21 @@ export function OutboundIntakeModal({
         const available = skuId ? availabilityQuery.data?.[skuId] : undefined;
         if (available === undefined) {
           return (
-            <Typography.Text type="secondary">
+            <Typography variant="body2" color="text.secondary">
               {availabilityQuery.isLoading ? "…" : "Chưa có dữ liệu"}
-            </Typography.Text>
+            </Typography>
           );
         }
         const required = rowRequiredQty(row);
         return (
-          <Space size={4}>
+          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", justifyContent: "flex-end" }}>
             <span>{available}</span>
             {row.errors.length === 0 ? (
               <Tag color={available >= required ? "success" : "warning"}>
                 {available >= required ? "Đủ hiện tại" : "Thiếu hiện tại"}
               </Tag>
             ) : null}
-          </Space>
+          </Stack>
         );
       },
     },
@@ -392,7 +437,9 @@ export function OutboundIntakeModal({
       render: (_, row) => {
         if (row.errors.length > 0) {
           return (
-            <Typography.Text type="danger">{rowErrorText(row)}</Typography.Text>
+            <Typography variant="body2" color="error.main">
+              {rowErrorText(row)}
+            </Typography>
           );
         }
 
@@ -414,332 +461,391 @@ export function OutboundIntakeModal({
   const consumable = Boolean(preview) && canImport && overridePhoneValid;
 
   return (
-    <Modal
-      title="OUT-REQ-01 · Tiếp nhận phiếu yêu cầu xuất"
-      open={open}
-      width={1060}
-      footer={null}
-      onCancel={close}
-      mask={{ closable: false }}
-      destroyOnHidden
-    >
-      <Space orientation="vertical" size={14} style={{ width: "100%" }}>
-        <Space wrap>
-          <Button
-            type={mode === "manual" ? "primary" : "default"}
-            icon={<EditOutlined />}
-            onClick={() => {
-              setMode("manual");
-              setPreview(null);
-            }}
+    <ThemeProvider theme={muiTheme}>
+      <Dialog
+        open={open}
+        onClose={close}
+        maxWidth="lg"
+        fullWidth
+      >
+        <DialogTitle sx={{ pr: 6, position: "relative" }}>
+          OUT-REQ-01 · Tiếp nhận phiếu yêu cầu xuất
+          <IconButton
+            aria-label="Đóng"
+            onClick={close}
+            sx={{ position: "absolute", right: 10, top: 8 }}
           >
-            Nhập tay
-          </Button>
-          <Button
-            type={mode === "excel" ? "primary" : "default"}
-            icon={<FileExcelOutlined />}
-            onClick={() => {
-              setMode("excel");
-              setPreview(null);
-            }}
-          >
-            Nhập từ Excel
-          </Button>
-        </Space>
+            <CloseOutlined style={{ fontSize: 15 }} />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers>
+          <Stack spacing={2}>
+            <Stack direction="row" spacing={1.5}>
+              <Button
+                variant={mode === "manual" ? "contained" : "outlined"}
+                startIcon={<EditOutlined />}
+                onClick={() => {
+                  setMode("manual");
+                  setPreview(null);
+                }}
+              >
+                Nhập tay
+              </Button>
+              <Button
+                variant={mode === "excel" ? "contained" : "outlined"}
+                startIcon={<FileExcelOutlined />}
+                onClick={() => {
+                  setMode("excel");
+                  setPreview(null);
+                }}
+              >
+                Nhập từ Excel
+              </Button>
+            </Stack>
 
-        {mode === "manual" ? (
-          <Form<IntakeFormValues>
-            form={form}
-            layout="vertical"
-            initialValues={{ lines: [{ product_id: "", required_qty: 1 }] }}
-          >
-            <div className="grid-2">
-              <Form.Item
-                name="request_no"
-                label="Mã phiếu yêu cầu xuất *"
-                rules={[
-                  { required: true, message: "Nhập mã phiếu yêu cầu xuất" },
-                ]}
-              >
-                <Input placeholder="VD: REQ-20260813-001" maxLength={80} />
-              </Form.Item>
-              <Form.Item name="agency_id" label="Đại lý / nơi nhận (tùy chọn)">
-                <Select
-                  allowClear
-                  showSearch
-                  optionFilterProp="label"
-                  placeholder="Chọn đại lý để tự điền người nhận / địa chỉ"
-                  loading={agencyQuery.isLoading}
-                  onChange={handleAgencyChange}
-                  options={agencyRows.map((agency) => ({
-                    value: agency.agency_id,
-                    label: `${agency.agency_code} · ${agency.agency_name}`,
-                  }))}
-                />
-              </Form.Item>
-              <Form.Item
-                name="recipient_name"
-                label="Người / nơi nhận *"
-                rules={[{ required: true, message: "Nhập người nhận" }]}
-              >
-                <Input maxLength={200} />
-              </Form.Item>
-              <Form.Item name="recipient_address" label="Địa chỉ nhận">
-                <Input maxLength={1000} />
-              </Form.Item>
-              <Form.Item
-                name="recipient_contact_phone"
-                label="SĐT liên hệ"
-                rules={[
-                  {
-                    pattern: /^0\d{9}$/,
-                    message:
-                      "Số điện thoại phải gồm đúng 10 chữ số và bắt đầu bằng số 0.",
-                  },
-                ]}
-                normalize={(value?: string) =>
-                  (value ?? "").replace(/\D/g, "").slice(0, 10)
-                }
-              >
-                <Input
-                  maxLength={10}
-                  inputMode="numeric"
-                  placeholder="VD: 0901234567"
-                />
-              </Form.Item>
-              <Form.Item name="request_date" label="Ngày xuất">
-                <DatePicker
-                  style={{ width: "100%" }}
-                  format="DD/MM/YYYY"
-                  aria-label="Ngày toa"
-                  disabledDate={(current) =>
-                    !!current && current > dayjs().endOf("day")
-                  }
-                />
-              </Form.Item>
-            </div>
+            {mode === "manual" ? (
+              <Stack spacing={2}>
+                {formError ? <Alert severity="error">{formError}</Alert> : null}
+                <Grid container spacing={2}>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField
+                      required
+                      fullWidth
+                      label="Mã phiếu yêu cầu xuất"
+                      placeholder="VD: REQ-20260813-001"
+                      value={requestNo}
+                      onChange={(event) => setRequestNo(event.target.value)}
+                      slotProps={{ htmlInput: { maxLength: 80 } }}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <Autocomplete
+                      options={agencyOptions}
+                      value={
+                        agencyOptions.find((o) => o.value === agencyId) ?? null
+                      }
+                      loading={agencyQuery.isLoading}
+                      getOptionLabel={(option) => option.label}
+                      isOptionEqualToValue={(option, value) =>
+                        option.value === value.value
+                      }
+                      onChange={(_event, option) =>
+                        handleAgencyChange(option?.value ?? null)
+                      }
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          label="Đại lý / nơi nhận (tùy chọn)"
+                          placeholder="Chọn đại lý để tự điền người nhận / địa chỉ"
+                        />
+                      )}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField
+                      required
+                      fullWidth
+                      label="Người / nơi nhận"
+                      value={recipientName}
+                      onChange={(event) => setRecipientName(event.target.value)}
+                      slotProps={{ htmlInput: { maxLength: 200 } }}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField
+                      fullWidth
+                      label="Địa chỉ nhận"
+                      value={recipientAddress}
+                      onChange={(event) => setRecipientAddress(event.target.value)}
+                      slotProps={{ htmlInput: { maxLength: 1000 } }}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField
+                      fullWidth
+                      label="SĐT liên hệ"
+                      placeholder="VD: 0901234567"
+                      value={recipientPhone}
+                      onChange={(event) =>
+                        setRecipientPhone(
+                          event.target.value.replace(/\D/g, "").slice(0, 10),
+                        )
+                      }
+                      error={Boolean(recipientPhone) && !/^0\d{9}$/.test(recipientPhone)}
+                      helperText={
+                        Boolean(recipientPhone) && !/^0\d{9}$/.test(recipientPhone)
+                          ? "Số điện thoại phải gồm đúng 10 chữ số và bắt đầu bằng số 0."
+                          : undefined
+                      }
+                      slotProps={{ htmlInput: { maxLength: 10, inputMode: "numeric" } }}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField
+                      fullWidth
+                      type="date"
+                      label="Ngày xuất"
+                      value={requestDate}
+                      onChange={(event) => setRequestDate(event.target.value)}
+                      slotProps={{
+                        inputLabel: { shrink: true },
+                        htmlInput: { max: dayjs().format("YYYY-MM-DD") },
+                      }}
+                      helperText="Định dạng: ngày/tháng/năm"
+                    />
+                  </Grid>
+                </Grid>
 
-            <Form.List name="lines">
-              {(fields, { add, remove }) => (
-                <Space orientation="vertical" style={{ width: "100%" }}>
-                  {fields.map((field) => (
-                    <Space key={field.key} align="baseline" wrap>
-                      <Form.Item
-                        {...field}
-                        name={[field.name, "product_id"]}
-                        label="SKU sản phẩm *"
-                        rules={[{ required: true, message: "Chọn SKU" }]}
-                      >
-                        <Select
-                          showSearch
-                          optionFilterProp="label"
-                          style={{ width: 430 }}
-                          loading={skuQuery.isLoading}
-                          placeholder="Chỉ SKU sản phẩm đang sử dụng"
-                          options={skuRows.map((sku) => ({
-                            value: sku.sku_id,
-                            label: `${sku.sku_code} · ${sku.sku_name}`,
-                          }))}
-                        />
-                      </Form.Item>
-                      <Form.Item
-                        {...field}
-                        name={[field.name, "required_qty"]}
-                        label="Số lượng *"
-                        rules={[{ required: true, message: "Nhập số lượng" }]}
-                      >
-                        <InputNumber
-                          min={1}
-                          precision={0}
-                          style={{ width: 130 }}
-                        />
-                      </Form.Item>
+                <Stack spacing={1.5}>
+                  {lines.map((line, index) => (
+                    <Stack
+                      key={`line-${index}`}
+                      direction="row"
+                      spacing={1.5}
+                      sx={{ alignItems: "flex-start", flexWrap: "wrap", rowGap: 1 }}
+                    >
+                      <Autocomplete
+                        options={skuOptions}
+                        value={
+                          skuOptions.find((o) => o.value === line.product_id) ??
+                          null
+                        }
+                        loading={skuQuery.isLoading}
+                        getOptionLabel={(option) => option.label}
+                        isOptionEqualToValue={(option, value) =>
+                          option.value === value.value
+                        }
+                        onChange={(_event, option) =>
+                          updateLine(index, { product_id: option?.value ?? "" })
+                        }
+                        sx={{ minWidth: 380 }}
+                        renderInput={(params) => (
+                          <TextField
+                            {...params}
+                            required
+                            label="SKU sản phẩm"
+                            placeholder="Chỉ SKU sản phẩm đang sử dụng"
+                          />
+                        )}
+                      />
+                      <TextField
+                        required
+                        type="number"
+                        label="Số lượng"
+                        value={line.required_qty}
+                        onChange={(event) =>
+                          updateLine(index, {
+                            required_qty: Math.max(
+                              1,
+                              Math.trunc(Number(event.target.value) || 1),
+                            ),
+                          })
+                        }
+                        sx={{ width: 130 }}
+                        slotProps={{ htmlInput: { min: 1, step: 1 } }}
+                      />
                       <Button
-                        danger
-                        icon={<DeleteOutlined />}
-                        disabled={fields.length === 1}
-                        onClick={() => remove(field.name)}
+                        color="error"
+                        variant="outlined"
+                        startIcon={<DeleteOutlined />}
+                        disabled={lines.length === 1}
+                        onClick={() =>
+                          setLines((current) =>
+                            current.filter((_, i) => i !== index),
+                          )
+                        }
+                        sx={{ mt: "8px" }}
                       >
                         Xóa dòng
                       </Button>
-                    </Space>
+                    </Stack>
                   ))}
+                  <Box>
+                    <Button
+                      variant="outlined"
+                      startIcon={<PlusOutlined />}
+                      onClick={() =>
+                        setLines((current) => [
+                          ...current,
+                          { product_id: "", required_qty: 1 },
+                        ])
+                      }
+                    >
+                      Thêm dòng SKU
+                    </Button>
+                  </Box>
+                </Stack>
+
+                <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", flexWrap: "wrap", rowGap: 1 }}>
                   <Button
-                    type="dashed"
-                    icon={<PlusOutlined />}
-                    onClick={() => add({ product_id: "", required_qty: 1 })}
+                    variant="contained"
+                    startIcon={<EyeOutlined />}
+                    disabled={!canImport || validateManualMutation.isPending}
+                    onClick={() => validateManualMutation.mutate()}
                   >
-                    Thêm dòng SKU
+                    {validateManualMutation.isPending ? "Đang kiểm tra..." : "Kiểm tra & xem trước"}
                   </Button>
-                </Space>
-              )}
-            </Form.List>
+                  <Typography variant="body2" color="text.secondary">
+                    Người nhận bắt buộc; địa chỉ/SĐT/ngày toa tùy chọn theo quy
+                    định hiện hành — thiếu thì nhãn đóng gói để trống trường
+                    tương ứng.
+                  </Typography>
+                </Stack>
+                <ApiErrorAlert
+                  error={validateManualMutation.error}
+                  title="Không kiểm tra được yêu cầu xuất"
+                />
+              </Stack>
+            ) : (
+              <Stack spacing={1.5}>
+                <input
+                  key={fileInputKey}
+                  type="file"
+                  accept=".xlsx,.xls"
+                  aria-label="Chọn tệp Excel yêu cầu xuất"
+                  onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+                />
+                <Typography variant="body2" color="text.secondary">
+                  Tên cột bắt buộc trong tệp: request_no · sku_code ·
+                  required_qty · recipient_name/customer_name. Cột tùy chọn:
+                  request_date · recipient_address · recipient_contact_phone ·
+                  note. Tối đa 10.000 dòng, tệp ≤ 20MB; dòng lỗi có thể được xử
+                  lý ở bảng xem trước trước khi xác nhận.
+                </Typography>
+                <Box>
+                  <Button
+                    variant="contained"
+                    startIcon={<UploadOutlined />}
+                    disabled={!canImport || !file || validateFileMutation.isPending}
+                    onClick={() => validateFileMutation.mutate()}
+                  >
+                    {validateFileMutation.isPending ? "Đang tải lên..." : "Tải lên & xem trước"}
+                  </Button>
+                </Box>
+                <ApiErrorAlert
+                  error={validateFileMutation.error}
+                  title="Không kiểm tra được tệp Excel"
+                />
+              </Stack>
+            )}
 
-            <Space wrap style={{ marginTop: 12 }}>
-              <Button
-                type="primary"
-                icon={<EyeOutlined />}
-                loading={validateManualMutation.isPending}
-                disabled={!canImport}
-                onClick={() => validateManualMutation.mutate()}
-              >
-                Kiểm tra & xem trước
-              </Button>
-              <Typography.Text type="secondary">
-                Người nhận bắt buộc; địa chỉ/SĐT/ngày toa tùy chọn theo quy định hiện hành — thiếu thì nhãn đóng gói để trống trường tương ứng.
-              </Typography.Text>
-            </Space>
-            <ApiErrorAlert
-              error={validateManualMutation.error}
-              title="Không kiểm tra được yêu cầu xuất"
-              style={{ marginTop: 12 }}
-            />
-          </Form>
-        ) : (
-          <Space orientation="vertical" style={{ width: "100%" }}>
-            <Input
-              key={fileInputKey}
-              type="file"
-              accept=".xlsx,.xls"
-              aria-label="Chọn tệp Excel yêu cầu xuất"
-              onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-            />
-            <Typography.Text type="secondary">
-              Tên cột bắt buộc trong tệp: request_no · sku_code · required_qty · recipient_name/customer_name. Cột tùy chọn: request_date · recipient_address · recipient_contact_phone · note. Tối đa 10.000 dòng, tệp ≤ 20MB; dòng lỗi có thể được xử lý ở bảng xem trước trước khi xác nhận.
-            </Typography.Text>
-            <Button
-              type="primary"
-              icon={<UploadOutlined />}
-              loading={validateFileMutation.isPending}
-              disabled={!canImport || !file}
-              onClick={() => validateFileMutation.mutate()}
-            >
-              Tải lên & xem trước
-            </Button>
-            <ApiErrorAlert
-              error={validateFileMutation.error}
-              title="Không kiểm tra được tệp Excel"
-            />
-          </Space>
-        )}
+            {preview ? (
+              <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: 2, p: 2 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5 }}>
+                  {`Kết quả xem trước · ${preview.importNo || preview.id}`}
+                </Typography>
+                <Stack spacing={1.5}>
+                  <Stack direction="row" spacing={1.5} sx={{ flexWrap: "wrap", rowGap: 1, alignItems: "center" }}>
+                    <Tag color={IMPORT_STATUS_COLOR[preview.status] ?? "default"}>
+                      {IMPORT_STATUS_LABEL[preview.status] ?? "Chưa xác định"}
+                    </Tag>
+                    <Typography variant="body2">Tổng: {preview.totalRows}</Typography>
+                    <Typography variant="body2" color="success.main">
+                      Hợp lệ dữ liệu: {preview.validRows}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      color={preview.errorRows > 0 ? "error.main" : "text.primary"}
+                    >
+                      Lỗi dữ liệu: {preview.errorRows}
+                    </Typography>
+                  </Stack>
+                  <Table<ImportRow>
+                    rowKey="id"
+                    size="small"
+                    dataSource={preview.rows}
+                    columns={previewColumns}
+                    pagination={
+                      preview.rows.length > 10
+                        ? { pageSize: 10, showSizeChanger: false }
+                        : false
+                    }
+                    scroll={{ x: 1420 }}
+                    locale={{ emptyText: "Không có dòng dữ liệu nào" }}
+                  />
 
-        {preview && (
-          <Card
-            size="small"
-            title={`Kết quả xem trước · ${preview.importNo || preview.id}`}
-          >
-            <Space orientation="vertical" style={{ width: "100%" }}>
-              <Space wrap>
-                <Tag color={IMPORT_STATUS_COLOR[preview.status] ?? "default"}>
-                  {IMPORT_STATUS_LABEL[preview.status] ?? "Chưa xác định"}
-                </Tag>
-                <Typography.Text>Tổng: {preview.totalRows}</Typography.Text>
-                <Typography.Text type="success">
-                  Hợp lệ dữ liệu: {preview.validRows}
-                </Typography.Text>
-                <Typography.Text
-                  type={preview.errorRows > 0 ? "danger" : undefined}
-                >
-                  Lỗi dữ liệu: {preview.errorRows}
-                </Typography.Text>
-              </Space>
-              <Table<ImportRow>
-                rowKey="id"
-                size="small"
-                dataSource={preview.rows}
-                columns={previewColumns}
-                pagination={
-                  preview.rows.length > 10
-                    ? { pageSize: 10, showSizeChanger: false }
-                    : false
-                }
-                scroll={{ x: 1420 }}
-                locale={{ emptyText: "Không có dòng dữ liệu nào" }}
-              />
-              <Card
-                size="small"
-                title="Ghi đè người nhận khi xác nhận (tùy chọn)"
-              >
-                <Space wrap>
-                  <Input
-                    style={{ width: 240 }}
-                    placeholder="Người nhận"
-                    maxLength={200}
-                    value={recipientOverride.receiver_name}
-                    onChange={(event) =>
-                      setRecipientOverride((current) => ({
-                        ...current,
-                        receiver_name: event.target.value,
-                      }))
-                    }
-                  />
-                  <Input
-                    style={{ width: 300 }}
-                    placeholder="Địa chỉ nhận (tùy chọn)"
-                    maxLength={1000}
-                    value={recipientOverride.receiver_address}
-                    onChange={(event) =>
-                      setRecipientOverride((current) => ({
-                        ...current,
-                        receiver_address: event.target.value,
-                      }))
-                    }
-                  />
-                  <Input
-                    style={{ width: 200 }}
-                    placeholder="SĐT liên hệ (tùy chọn)"
-                    maxLength={10}
-                    inputMode="numeric"
-                    status={overridePhoneValid ? undefined : "error"}
-                    value={recipientOverride.receiver_contact_phone}
-                    onChange={(event) =>
-                      setRecipientOverride((current) => ({
-                        ...current,
-                        receiver_contact_phone: event.target.value
-                          .replace(/\D/g, "")
-                          .slice(0, 10),
-                      }))
-                    }
-                  />
-                </Space>
-                {!overridePhoneValid && (
-                  <Typography.Text type="danger">
-                    Số điện thoại phải gồm đúng 10 chữ số và bắt đầu bằng số 0.
-                  </Typography.Text>
-                )}
-              </Card>
-              <Space wrap>
-                <Button
-                  type="primary"
-                  icon={<CheckCircleOutlined />}
-                  disabled={!consumable}
-                  loading={consumeMutation.isPending}
-                  onClick={() => consumeMutation.mutate()}
-                >
-                  Xác nhận & tạo phiếu xuất nháp
-                </Button>
-                {!consumable && (
-                  <Typography.Text type="secondary">
-                    {!canImport
-                      ? "Bạn không có quyền xác nhận yêu cầu xuất."
-                      : "Còn dòng lỗi — gán SKU/số lượng hoặc sửa người nhận rồi xác nhận lại."}
-                  </Typography.Text>
-                )}
-              </Space>
-              <ApiErrorAlert
-                error={consumeMutation.error}
-                title="Không xác nhận được yêu cầu xuất"
-              />
-            </Space>
-          </Card>
-        )}
+                  <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: 2, p: 1.5 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+                      Ghi đè người nhận khi xác nhận (tùy chọn)
+                    </Typography>
+                    <Stack direction="row" spacing={1.5} sx={{ flexWrap: "wrap", rowGap: 1.5 }}>
+                      <TextField
+                        label="Người nhận"
+                        sx={{ width: 240 }}
+                        slotProps={{ htmlInput: { maxLength: 200 } }}
+                        value={recipientOverride.receiver_name}
+                        onChange={(event) =>
+                          setRecipientOverride((current) => ({
+                            ...current,
+                            receiver_name: event.target.value,
+                          }))
+                        }
+                      />
+                      <TextField
+                        label="Địa chỉ nhận (tùy chọn)"
+                        sx={{ width: 300 }}
+                        slotProps={{ htmlInput: { maxLength: 1000 } }}
+                        value={recipientOverride.receiver_address}
+                        onChange={(event) =>
+                          setRecipientOverride((current) => ({
+                            ...current,
+                            receiver_address: event.target.value,
+                          }))
+                        }
+                      />
+                      <TextField
+                        label="SĐT liên hệ (tùy chọn)"
+                        sx={{ width: 200 }}
+                        error={!overridePhoneValid}
+                        helperText={
+                          overridePhoneValid
+                            ? undefined
+                            : "Số điện thoại phải gồm đúng 10 chữ số và bắt đầu bằng số 0."
+                        }
+                        slotProps={{ htmlInput: { maxLength: 10, inputMode: "numeric" } }}
+                        value={recipientOverride.receiver_contact_phone}
+                        onChange={(event) =>
+                          setRecipientOverride((current) => ({
+                            ...current,
+                            receiver_contact_phone: event.target.value
+                              .replace(/\D/g, "")
+                              .slice(0, 10),
+                          }))
+                        }
+                      />
+                    </Stack>
+                  </Box>
 
-        <Space style={{ justifyContent: "flex-end", width: "100%" }}>
-          <Button icon={<CloseOutlined />} onClick={close}>
-            Đóng
-          </Button>
-        </Space>
-      </Space>
-    </Modal>
+                  <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", flexWrap: "wrap", rowGap: 1 }}>
+                    <Button
+                      variant="contained"
+                      startIcon={<CheckCircleOutlined />}
+                      disabled={!consumable || consumeMutation.isPending}
+                      onClick={() => consumeMutation.mutate()}
+                    >
+                      {consumeMutation.isPending ? "Đang xử lý..." : "Xác nhận & tạo phiếu xuất nháp"}
+                    </Button>
+                    {!consumable ? (
+                      <Typography variant="body2" color="text.secondary">
+                        {!canImport
+                          ? "Bạn không có quyền xác nhận yêu cầu xuất."
+                          : "Còn dòng lỗi — gán SKU/số lượng hoặc sửa người nhận rồi xác nhận lại."}
+                      </Typography>
+                    ) : null}
+                  </Stack>
+                  <ApiErrorAlert
+                    error={consumeMutation.error}
+                    title="Không xác nhận được yêu cầu xuất"
+                  />
+                </Stack>
+              </Box>
+            ) : null}
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={close}>Đóng</Button>
+        </DialogActions>
+      </Dialog>
+    </ThemeProvider>
   );
 }

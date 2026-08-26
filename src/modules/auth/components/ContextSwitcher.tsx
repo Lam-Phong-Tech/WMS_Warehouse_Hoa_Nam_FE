@@ -4,7 +4,7 @@ import {
   ApartmentOutlined,
   CheckOutlined,
   DownOutlined,
-} from "@ant-design/icons";
+} from "@/shared/components/icons";
 import { toast } from "sonner";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { useSwitchContext } from "@/modules/auth/hooks/use-switch-context";

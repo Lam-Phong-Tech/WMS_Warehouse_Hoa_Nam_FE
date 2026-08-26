@@ -1,5 +1,5 @@
 import { Button, Layout, Space, theme } from "antd";
-import { MenuFoldOutlined, MenuUnfoldOutlined } from "@ant-design/icons";
+import { MenuFoldOutlined, MenuUnfoldOutlined } from "@/shared/components/icons";
 import { ContextSwitcher } from "@/modules/auth/components/ContextSwitcher";
 import { UserMenu } from "@/app/layouts/UserMenu";
 import { NotificationBell } from "@/modules/notifications/components/NotificationBell";

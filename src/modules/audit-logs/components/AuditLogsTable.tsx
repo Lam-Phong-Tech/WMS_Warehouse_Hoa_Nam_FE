@@ -1,5 +1,6 @@
 import { Button, Space, Typography, Tag } from "antd";
-import { EyeOutlined } from "@ant-design/icons";
+import { EyeOutlined } from "@/shared/components/icons";
+import { ACTION_ICON_COLORS } from "@/shared/theme/actionIconColors";
 import { DataTable, TopPagination } from "@/shared/components";
 import type { ColumnWithSortType } from "@/shared/components";
 import type { AuditLog } from "../types/audit-logs.types";
@@ -129,7 +130,9 @@ export function AuditLogsTable({
           {onView && (
             <Button
               size="small"
-              icon={<EyeOutlined />}
+              icon={
+                <EyeOutlined style={{ color: ACTION_ICON_COLORS.view }} />
+              }
               aria-label="Xem chi tiết nhật ký"
               onClick={() => onView(record)}
             />

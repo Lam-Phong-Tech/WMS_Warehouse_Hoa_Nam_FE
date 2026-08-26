@@ -38,7 +38,10 @@ export function PartnerLayout() {
       </Content>
 
       <Footer style={{ textAlign: "center" }}>
-        Hệ thống ERP ©{new Date().getFullYear()} Cổng đối tác
+        Hệ thống ERP ©{new Date().getFullYear()} Cổng đối tác ·{" "}
+        <a href="https://www.flaticon.com/uicons" target="_blank" rel="noreferrer">
+          Icons by Flaticon
+        </a>
       </Footer>
     </Layout>
   );

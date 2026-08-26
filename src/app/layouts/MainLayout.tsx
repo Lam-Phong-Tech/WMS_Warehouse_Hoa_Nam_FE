@@ -1,8 +1,9 @@
 import { lazy, Suspense, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
-import { MenuFoldOutlined, MenuUnfoldOutlined } from "@ant-design/icons";
+import { MenuFoldOutlined, MenuUnfoldOutlined } from "@/shared/components/icons";
 import { SideNav } from "@/app/layouts/SideNav";
 import { UserMenu } from "@/app/layouts/UserMenu";
+import { AppBreadcrumb } from "@/app/layouts/AppBreadcrumb";
 import { useMe } from "@/modules/auth/hooks/use-me";
 import { useNotificationSocket } from "@/modules/notifications/hooks/useNotificationSocket";
 import { NotificationBell } from "@/modules/notifications/components/NotificationBell";
@@ -370,16 +371,23 @@ export function MainLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
     readStoredSidebarCollapsed,
   );
+  const persistSidebarCollapsed = (next: boolean) => {
+    try {
+      localStorage.setItem(SIDEBAR_COLLAPSED_STORAGE_KEY, next ? "1" : "0");
+    } catch {
+      // localStorage không khả dụng (chế độ ẩn danh) — bỏ qua, chỉ giữ state trong phiên.
+    }
+  };
   const toggleSidebar = () => {
     setSidebarCollapsed((prev) => {
       const next = !prev;
-      try {
-        localStorage.setItem(SIDEBAR_COLLAPSED_STORAGE_KEY, next ? "1" : "0");
-      } catch {
-        // localStorage không khả dụng (chế độ ẩn danh) — bỏ qua, chỉ giữ state trong phiên.
-      }
+      persistSidebarCollapsed(next);
       return next;
     });
+  };
+  const expandSidebar = () => {
+    setSidebarCollapsed(false);
+    persistSidebarCollapsed(false);
   };
   const requestedScreen = new URLSearchParams(location.search).get("screen");
   const normalizedScreen = normalizeScreen(requestedScreen);
@@ -395,8 +403,8 @@ export function MainLayout() {
     <div
       className={`hn-mvp-app${sidebarCollapsed ? " is-sidebar-collapsed" : ""}`}
     >
-      <aside className="hn-mvp-aside" aria-hidden={sidebarCollapsed}>
-        <SideNav />
+      <aside className="hn-mvp-aside">
+        <SideNav collapsed={sidebarCollapsed} onExpand={expandSidebar} />
       </aside>
       <main className="hn-mvp-main">
         <header className="hn-mvp-header">
@@ -422,6 +430,7 @@ export function MainLayout() {
           </div>
         </header>
         <div className="hn-mvp-content">
+          <AppBreadcrumb />
           <section className="hn-mvp-screen">
             {sourceScreen ? (
               <Suspense fallback={<Loading />}>
@@ -433,7 +442,14 @@ export function MainLayout() {
           </section>
         </div>
         <footer className="hn-mvp-footer">
-          Hoa Nam ©{new Date().getFullYear()} — Phát triển bởi Lam Phong Tech
+          Hoa Nam ©{new Date().getFullYear()} — Phát triển bởi Lam Phong Tech ·{" "}
+          <a
+            href="https://www.flaticon.com/uicons"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Icons by Flaticon
+          </a>
         </footer>
       </main>
     </div>

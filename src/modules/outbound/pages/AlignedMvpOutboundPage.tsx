@@ -1,8 +1,11 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState, type Key } from "react";
 import { Progress, Table, Tag, type TablePaginationConfig } from "antd";
-import { EyeOutlined, PlusOutlined, ScanOutlined } from "@ant-design/icons";
+import { Button as MuiButton, MenuItem, Select, TextField, ThemeProvider } from "@mui/material";
+import { muiTheme } from "@/app/mui-theme";
+import { EyeOutlined, PlusOutlined, ScanOutlined } from "@/shared/components/icons";
 import type { ColumnsType } from "antd/es/table";
+import { ACTION_ICON_COLORS } from "@/shared/theme/actionIconColors";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
@@ -10,8 +13,10 @@ import {
   TableLoadingBanner,
   tableEmptyText,
 } from "@/shared/components/feedback/BusinessState";
-import { MvpPageSizeSelector } from "@/shared/components/mvp/MvpListPagination";
-import { resolveApiPagination } from "@/shared/components/mvp/mvp-pagination";
+import {
+  MVP_PAGE_SIZE_OPTIONS,
+  resolveApiPagination,
+} from "@/shared/components/mvp/mvp-pagination";
 import { useHasPermission } from "@/shared/components/permission";
 import {
   OUTBOUND_STATUS_LABELS,
@@ -27,6 +32,17 @@ import {
 } from "@/modules/outbound/services/alignedOutboundService";
 
 const SEARCH_DEBOUNCE_MS = 250;
+
+/** Toolbar filter nhỏ gọn — đồng bộ chuẩn mui-theme.ts (xem gotcha #4/#5 memory pilot MUI). */
+const TOOLBAR_SX = {
+  "&, & .MuiOutlinedInput-root": { height: 35 },
+  "& .MuiSelect-select, & .MuiInputBase-input": {
+    paddingTop: "8px !important",
+    paddingBottom: "8px !important",
+    fontSize: "13.5px !important",
+    boxSizing: "border-box",
+  },
+};
 
 const STATUS_OPTIONS: Array<{ value: OutboundStatus; label: string }> =
   Object.entries(OUTBOUND_STATUS_LABELS).map(([value, label]) => ({
@@ -230,9 +246,13 @@ export default function AlignedMvpOutboundPage() {
             onClick={() => setDetailId(row.id)}
           >
             {mutable && canScan ? (
-              <ScanOutlined style={{ marginRight: 4 }} />
+              <ScanOutlined
+                style={{ marginRight: 4, color: ACTION_ICON_COLORS.sync }}
+              />
             ) : (
-              <EyeOutlined style={{ marginRight: 4 }} />
+              <EyeOutlined
+                style={{ marginRight: 4, color: ACTION_ICON_COLORS.view }}
+              />
             )}
             {mutable && canScan ? "Mở" : "Xem"}
           </button>
@@ -244,50 +264,64 @@ export default function AlignedMvpOutboundPage() {
   const refreshAll = () =>
     void queryClient.invalidateQueries({ queryKey: ["mvp-outbound"] });
 
-  return (
-    <div className="outbound-page hn-mvp-source-screen">
-      
+  const perPageOptions = MVP_PAGE_SIZE_OPTIONS.includes(
+    perPage as (typeof MVP_PAGE_SIZE_OPTIONS)[number],
+  )
+    ? MVP_PAGE_SIZE_OPTIONS
+    : [...MVP_PAGE_SIZE_OPTIONS, perPage].sort((a, b) => a - b);
 
+  return (
+    <ThemeProvider theme={muiTheme}>
+      <div className="outbound-page hn-mvp-source-screen">
       <div className="toolbar">
-        <input
-          className="input search"
+        <TextField
           value={searchInput}
           placeholder="Tìm mã phiếu xuất / ghi chú..."
-          aria-label="Tìm phiếu xuất"
+          slotProps={{ htmlInput: { "aria-label": "Tìm phiếu xuất" } }}
           onChange={(event) => setSearchInput(event.target.value)}
+          sx={{ minWidth: 220, ...TOOLBAR_SX }}
         />
-        <select
-          className="select"
+        <Select
+          displayEmpty
           value={status}
-          aria-label="Lọc trạng thái phiếu xuất"
+          inputProps={{ "aria-label": "Lọc trạng thái phiếu xuất" }}
           onChange={(event) => {
             setStatus(event.target.value as OutboundStatus | "");
             setPage(1);
           }}
+          sx={{ minWidth: 168, ...TOOLBAR_SX }}
         >
-          <option value="">Trạng thái: Tất cả</option>
+          <MenuItem value="">Trạng thái: Tất cả</MenuItem>
           {STATUS_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
+            <MenuItem key={option.value} value={option.value}>
               {option.label}
-            </option>
+            </MenuItem>
           ))}
-        </select>
-        <MvpPageSizeSelector
+        </Select>
+        <Select
           value={perPage}
-          onChange={(value) => {
-            setPerPage(value);
+          inputProps={{ "aria-label": "Số dòng mỗi trang" }}
+          onChange={(event) => {
+            setPerPage(Number(event.target.value));
             setPage(1);
           }}
-        />
+          sx={{ minWidth: 100, ...TOOLBAR_SX }}
+        >
+          {perPageOptions.map((size) => (
+            <MenuItem key={size} value={size}>
+              {size} / trang
+            </MenuItem>
+          ))}
+        </Select>
         <div className="spacer" />
         {canImport ? (
-          <button
-            className="btn primary"
-            type="button"
+          <MuiButton
+            variant="contained"
             onClick={() => setIntakeOpen(true)}
+            startIcon={<PlusOutlined />}
           >
-            <PlusOutlined /> Tiếp nhận yêu cầu xuất
-          </button>
+            Tiếp nhận yêu cầu xuất
+          </MuiButton>
         ) : null}
       </div>
 
@@ -350,6 +384,7 @@ export default function AlignedMvpOutboundPage() {
           onChanged={refreshAll}
         />
       ) : null}
-    </div>
+      </div>
+    </ThemeProvider>
   );
 }

@@ -1,6 +1,6 @@
 import { Dropdown, Button } from "antd";
 import type { MenuProps } from "antd";
-import { EditOutlined } from "@ant-design/icons";
+import { EditOutlined } from "@/shared/components/icons";
 import type { ReactNode } from "react";
 import {
   usePermissionState,

@@ -216,9 +216,8 @@ describe("InventoryPage (INV-01 hub)", () => {
     renderWithProviders(<InventoryPage />);
     await screen.findByText("SKU-001");
 
-    fireEvent.change(screen.getByLabelText("Lọc trạng thái tồn"), {
-      target: { value: "DEFECTIVE" },
-    });
+    fireEvent.mouseDown(screen.getByLabelText("Lọc trạng thái tồn"));
+    fireEvent.click(await screen.findByRole("option", { name: "Hàng lỗi" }));
 
     await waitFor(() => {
       expect(useInventoryBalances).toHaveBeenLastCalledWith(
@@ -231,9 +230,8 @@ describe("InventoryPage (INV-01 hub)", () => {
     renderWithProviders(<InventoryPage />);
     await screen.findByText("SKU-001");
 
-    fireEvent.change(screen.getByLabelText("Lọc loại hàng"), {
-      target: { value: "COMPONENT" },
-    });
+    fireEvent.mouseDown(screen.getByLabelText("Lọc loại hàng"));
+    fireEvent.click(await screen.findByRole("option", { name: "Linh kiện" }));
 
     await waitFor(() => {
       expect(useInventoryBalances).toHaveBeenLastCalledWith(

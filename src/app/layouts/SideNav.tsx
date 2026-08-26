@@ -1,11 +1,31 @@
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import {
+  AppstoreOutlined,
+  BarChartOutlined,
+  DownOutlined,
+  FileTextOutlined,
+  FundOutlined,
+  HomeOutlined,
+  InboxOutlined,
+  ProfileOutlined,
+  RightOutlined,
+  RollbackOutlined,
+  SettingOutlined,
+  ShopOutlined,
+  StockOutlined,
+  SwapOutlined,
+  TeamOutlined,
+  ToolOutlined,
+  WarningOutlined,
+} from "@/shared/components/icons";
 import { ROUTE_PERMISSIONS } from "@/app/router/access";
 import { ROUTES } from "@/shared/constants/routes";
 import { hasAnyWmsPermission } from "@/shared/constants/wms-permissions";
 import { useAuthStore } from "@/shared/store/auth.store";
 
-type NavItem = { screen: string; label: string; path: string };
-type NavGroup = { name: string; items: NavItem[] };
+type NavItem = { screen: string; label: string; path: string; icon: ReactNode };
+type NavGroup = { name: string; icon: ReactNode; items: NavItem[] };
 
 /**
  * Navigation follows the Hoa Nam MVP screen inventory while keeping transactional
@@ -19,16 +39,19 @@ type NavGroup = { name: string; items: NavItem[] };
 const NAV_GROUPS: NavGroup[] = [
   {
     name: "Tổng quan",
+    icon: <BarChartOutlined />,
     items: [
       {
         screen: "MAP-01",
         path: ROUTES.DASHBOARD,
         label: "Bản đồ màn hình & phạm vi",
+        icon: <BarChartOutlined />,
       },
     ],
   },
   {
-    name: "01 · Hệ thống & danh mục",
+    name: "Hệ thống & danh mục",
+    icon: <SettingOutlined />,
     items: [
       {
         // Gộp cả tab "Vai trò & ma trận quyền" và "Phòng ban" bên trong
@@ -36,11 +59,13 @@ const NAV_GROUPS: NavGroup[] = [
         screen: "IAM-01",
         path: ROUTES.IAM_USERS,
         label: "Danh sách người dùng & phân quyền",
+        icon: <TeamOutlined />,
       },
       {
         screen: "MST-01",
         path: ROUTES.MASTER_DATA,
         label: "Danh sách SKU / Danh mục sản phẩm",
+        icon: <ProfileOutlined />,
       },
       {
         // SCR-MST-01 (REQ-SRS-029): hãng/nhóm hàng/model/nguồn điện/quy cách là
@@ -48,86 +73,102 @@ const NAV_GROUPS: NavGroup[] = [
         screen: "MST-CAT-01",
         path: ROUTES.CATALOG_MASTER,
         label: "Danh mục sản phẩm",
+        icon: <AppstoreOutlined />,
       },
       {
         // SCR-WH-01 (REQ-SRS-001): cấu hình đúng 01 kho tổng.
         screen: "WH-01",
         path: ROUTES.WAREHOUSE_CONFIG,
         label: "Cấu hình kho",
+        icon: <HomeOutlined />,
       },
       {
         screen: "AGY-01",
         path: ROUTES.AGENCIES,
         label: "Danh mục đại lý / nơi nhận",
+        icon: <ShopOutlined />,
       },
       {
         screen: "DEF-01",
         path: ROUTES.DEFECTS,
         label: "Danh mục bệnh / lỗi",
+        icon: <WarningOutlined />,
       },
     ],
   },
   {
-    name: "02 · Nhập kho",
+    name: "Nhập kho",
+    icon: <InboxOutlined />,
     items: [
       {
         screen: "IN-01",
         path: ROUTES.INBOUND,
         label: "Danh sách phiếu nhập",
+        icon: <InboxOutlined />,
       },
       {
         screen: "PTW-00",
         path: ROUTES.PUTAWAY,
         label: "Danh sách linh kiện chờ xếp khay",
+        icon: <SwapOutlined />,
       },
     ],
   },
   {
-    name: "03 · Xuất kho",
+    name: "Xuất kho",
+    icon: <StockOutlined />,
     items: [
       {
         screen: "OUT-01",
         path: ROUTES.OUTBOUND,
         label: "Danh sách phiếu xuất",
+        icon: <StockOutlined />,
       },
     ],
   },
   {
     // WAR-02 / WAR-03 / COMP-01 mở modal ngay trên danh sách (giống IN-02/OUT-03)
     // nên không liệt kê trong menu; deep-link ?screen= vẫn được WarrantyPage xử lý.
-    name: "04 · Bảo hành & linh kiện",
+    name: "Bảo hành & linh kiện",
+    icon: <ToolOutlined />,
     items: [
       {
         screen: "WAR-01",
         path: ROUTES.WARRANTY,
         label: "Danh sách bảo hành",
+        icon: <ToolOutlined />,
       },
     ],
   },
   {
     // TRACE-01 / REV-01 mở modal ngay trên danh sách (giống WAR-02/COMP-01)
     // nên không liệt kê trong menu; deep-link ?screen= vẫn được hub page xử lý.
-    name: "05 · Tồn kho & kiểm soát",
+    name: "Tồn kho & kiểm soát",
+    icon: <FundOutlined />,
     items: [
       {
         screen: "INV-01",
         path: ROUTES.INVENTORY,
         label: "Tra cứu tồn & đối soát",
+        icon: <FundOutlined />,
       },
       {
         screen: "REV-00",
         path: ROUTES.REVERSE,
         label: "Danh sách phiếu điều chỉnh tồn kho",
+        icon: <RollbackOutlined />,
       },
     ],
   },
   {
-    name: "06 · Báo cáo",
+    name: "Báo cáo",
+    icon: <FileTextOutlined />,
     items: [
       {
         screen: "RPT-01",
         path: ROUTES.REPORTS,
         label: "Báo cáo vận hành",
+        icon: <FileTextOutlined />,
       },
     ],
   },
@@ -183,7 +224,14 @@ function normalizeScreen(screen: string | null | undefined) {
   return MODAL_PARENT_SCREEN[screen] ?? screen;
 }
 
-export function SideNav() {
+export interface SideNavProps {
+  /** true khi thanh bên đang ở chế độ thu gọn (chỉ còn dải icon nhóm). */
+  collapsed?: boolean;
+  /** Yêu cầu mở lại thanh bên đầy đủ (gọi khi bấm icon nhóm lúc đang thu gọn). */
+  onExpand?: () => void;
+}
+
+export function SideNav({ collapsed = false, onExpand }: SideNavProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const permissionCodes = useAuthStore((state) => state.permissionCodes);
@@ -200,6 +248,48 @@ export function SideNav() {
     return hasAnyWmsPermission(permissionCodes, permissions, isSuperAdmin);
   };
 
+  const activeGroupName = NAV_GROUPS.find((group) =>
+    group.items.some(
+      (item) =>
+        selectedScreen === item.screen &&
+        matchesPath(location.pathname, item.path),
+    ),
+  )?.name;
+
+  const [openGroups, setOpenGroups] = useState<Set<string>>(
+    () => new Set(activeGroupName ? [activeGroupName] : []),
+  );
+  const isFirstRender = useRef(true);
+
+  // Trang hiện tại đổi (điều hướng từ breadcrumb, deep-link, nút back...) —
+  // luôn đảm bảo nhóm đang active được mở, không đụng tới các nhóm khác mà
+  // người dùng đã tự mở/đóng. Bỏ qua lần render đầu vì state khởi tạo đã
+  // tính sẵn giá trị này rồi.
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    if (!activeGroupName) return;
+    setOpenGroups((prev) =>
+      prev.has(activeGroupName) ? prev : new Set(prev).add(activeGroupName),
+    );
+  }, [activeGroupName]);
+
+  const handleGroupHeaderClick = (name: string) => {
+    if (collapsed) {
+      onExpand?.();
+      setOpenGroups((prev) => new Set(prev).add(name));
+      return;
+    }
+    setOpenGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
+  };
+
   return (
     <nav data-testid="primary-navigation" aria-label="Điều hướng chính">
       <div className="hn-mvp-brand">
@@ -214,25 +304,49 @@ export function SideNav() {
       {NAV_GROUPS.map((group) => {
         const visibleItems = group.items.filter((item) => canAccess(item.path));
         if (visibleItems.length === 0) return null;
+        const open = openGroups.has(group.name);
         return (
           <section key={group.name} aria-label={group.name}>
-            <div className="hn-mvp-group">{group.name}</div>
-            {visibleItems.map((item) => {
-              const active =
-                selectedScreen === item.screen &&
-                matchesPath(location.pathname, item.path);
-              return (
-                <button
-                  key={item.screen}
-                  type="button"
-                  className={`hn-mvp-nav-btn${active ? " active" : ""}`}
-                  aria-current={active ? "page" : undefined}
-                  onClick={() => navigate(`${item.path}?screen=${item.screen}`)}
-                >
-                  {item.label}
-                </button>
-              );
-            })}
+            <button
+              type="button"
+              className="hn-mvp-group"
+              onClick={() => handleGroupHeaderClick(group.name)}
+              aria-expanded={open}
+              title={group.name}
+            >
+              <span className="hn-mvp-group-icon">{group.icon}</span>
+              <span className="hn-mvp-group-label">{group.name}</span>
+              <span className="hn-mvp-group-caret">
+                {open ? <DownOutlined /> : <RightOutlined />}
+              </span>
+            </button>
+            <div
+              className={`hn-mvp-group-items${open ? "" : " is-collapsed"}`}
+            >
+              <div className="hn-mvp-group-items-inner">
+                {visibleItems.map((item) => {
+                  const active =
+                    selectedScreen === item.screen &&
+                    matchesPath(location.pathname, item.path);
+                  return (
+                    <button
+                      key={item.screen}
+                      type="button"
+                      className={`hn-mvp-nav-btn${active ? " active" : ""}`}
+                      aria-current={active ? "page" : undefined}
+                      onClick={() =>
+                        navigate(`${item.path}?screen=${item.screen}`)
+                      }
+                    >
+                      <span className="hn-mvp-nav-btn-icon">{item.icon}</span>
+                      <span className="hn-mvp-nav-btn-label">
+                        {item.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </section>
         );
       })}

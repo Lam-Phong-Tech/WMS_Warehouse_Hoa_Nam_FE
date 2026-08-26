@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Alert, Button, Form, Spin, Typography } from "antd";
-import { LockOutlined, UserOutlined } from "@ant-design/icons";
+import { LockOutlined, UserOutlined } from "@/shared/components/icons";
 import { isAxiosError } from "axios";
 import { useLogin } from "@/modules/auth/hooks/use-login";
 import {

@@ -1,28 +1,29 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
+import { Table, Tag, Typography as AntTypography } from "antd";
+import { toast } from "sonner";
+import type { TableProps } from "antd";
+import dayjs from "dayjs";
 import {
   Alert,
+  Autocomplete,
+  Box,
   Button,
-  Card,
-  DatePicker,
-  Descriptions,
-  Form,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Grid,
-  Input,
-  Modal,
-  Popconfirm,
-  Select,
-  Space,
-  Steps,
-  Table,
-  Tag,
-  Timeline,
+  IconButton,
+  MenuItem,
+  Stack,
+  Step,
+  StepLabel,
+  Stepper,
+  TextField,
+  ThemeProvider,
   Typography,
-  Upload,
-} from "antd";
-import { toast } from "sonner";
-import type { TableProps, UploadProps } from "antd";
-import type { Dayjs } from "dayjs";
-import dayjs from "dayjs";
+} from "@mui/material";
+import { muiTheme } from "@/app/mui-theme";
 import {
   CloseOutlined,
   DeleteOutlined,
@@ -32,12 +33,13 @@ import {
   SyncOutlined,
   ToolOutlined,
   UploadOutlined,
-} from "@ant-design/icons";
+} from "@/shared/components/icons";
 import {
   extractFieldErrorsRaw,
   getApiErrorMessage,
   getErrorRequestId,
 } from "@/shared/api/api-error";
+import { ACTION_ICON_COLORS } from "@/shared/theme/actionIconColors";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { useCanAny } from "@/shared/components/permission";
 import { useMvpDefects } from "@/modules/master-data/hooks/use-mvp-master";
@@ -71,26 +73,9 @@ import type {
   WarrantyCaseStatus,
 } from "@/modules/warranty/types";
 
-interface CorrectionFormValues {
-  defect_ids?: string[];
-  estimated_completion_date?: Dayjs | null;
-  customer_name?: string;
-  customer_phone?: string;
-  customer_address?: string;
-  purchase_date?: Dayjs | null;
-  reason?: string;
-}
-
-interface WarrantyDetailModalProps {
-  caseId: string;
-  onClose: () => void;
-  onOpenComponentIssue: (input: {
-    caseId: string;
-    caseCode?: string;
-    caseActive: boolean;
-    documentId?: string | null;
-  }) => void;
-}
+const RETURN_ATTACHMENT_TYPES = Object.entries(
+  WARRANTY_ATTACHMENT_TYPE_LABELS,
+) as Array<[WarrantyAttachmentType, string]>;
 
 function errorText(error: unknown, fallback: string): string {
   const requestId = getErrorRequestId(error);
@@ -112,6 +97,55 @@ function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function DetailField({
+  label,
+  value,
+  span2,
+}: {
+  label: string;
+  value: ReactNode;
+  span2?: boolean;
+}) {
+  return (
+    <Grid size={{ xs: 12, md: span2 ? 12 : 6 }}>
+      <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+        {label}
+      </Typography>
+      <Typography variant="body2" component="div">
+        {value}
+      </Typography>
+    </Grid>
+  );
+}
+
+interface CorrectionFormValues {
+  defect_ids: string[];
+  estimated_completion_date: string;
+  customer_name: string;
+  customer_phone: string;
+  customer_address: string;
+  purchase_date: string;
+  reason: string;
+}
+
+interface StatusFormValues {
+  status: WarrantyCaseStatus | "";
+  reason: string;
+  confirmed_defect: string;
+  cancel_reason: string;
+}
+
+interface WarrantyDetailModalProps {
+  caseId: string;
+  onClose: () => void;
+  onOpenComponentIssue: (input: {
+    caseId: string;
+    caseCode?: string;
+    caseActive: boolean;
+    documentId?: string | null;
+  }) => void;
 }
 
 /**
@@ -142,19 +176,32 @@ export function WarrantyDetailModal({
 
   const [statusOpen, setStatusOpen] = useState(false);
   const [statusError, setStatusError] = useState<string | null>(null);
-  const [statusForm] = Form.useForm<{
-    status: WarrantyCaseStatus;
-    reason?: string;
-    confirmed_defect?: string;
-    cancel_reason?: string;
-  }>();
+  const [statusForm, setStatusForm] = useState<StatusFormValues>({
+    status: "",
+    reason: "",
+    confirmed_defect: "",
+    cancel_reason: "",
+  });
   const [correctOpen, setCorrectOpen] = useState(false);
   const [correctError, setCorrectError] = useState<string | null>(null);
-  const [correctForm] = Form.useForm<CorrectionFormValues>();
+  const [correctForm, setCorrectForm] = useState<CorrectionFormValues>({
+    defect_ids: [],
+    estimated_completion_date: "",
+    customer_name: "",
+    customer_phone: "",
+    customer_address: "",
+    purchase_date: "",
+    reason: "",
+  });
   const defectsQuery = useMvpDefects({ status: "ACTIVE", per_page: 100 });
+  const defectOptions = (defectsQuery.data?.data ?? []).map((defect) => ({
+    value: defect.defect_id,
+    label: `${defect.defect_code} · ${defect.defect_name}`,
+  }));
   const [attachmentType, setAttachmentType] =
     useState<WarrantyAttachmentType>("INTAKE");
-  const statusValue = Form.useWatch("status", statusForm);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const statusValue = statusForm.status;
 
   const detail = detailQuery.data;
   const isTerminal = detail
@@ -179,7 +226,6 @@ export function WarrantyDetailModal({
   // GĐ1-REQ-024: thanh tiến trình 5 bước Tiếp nhận → Kiểm tra → Sửa chữa → Hoàn tất
   // → Trả khách. CANCELLED không phải một bước — hiển thị trạng thái error tại bước
   // đã đạt trước khi hủy (suy từ warranty_event) để không phá flow timeline.
-  const screens = Grid.useBreakpoint();
   const stepStatuses = WARRANTY_BASELINE_STATUSES.filter(
     (status) => status !== "CANCELLED",
   );
@@ -198,25 +244,32 @@ export function WarrantyDetailModal({
   const submitStatus = async () => {
     if (!detail) return;
     setStatusError(null);
-    let values: {
-      status: WarrantyCaseStatus;
-      reason?: string;
-      confirmed_defect?: string;
-      cancel_reason?: string;
-    };
-    try {
-      values = await statusForm.validateFields();
-    } catch {
+    if (!statusForm.status) {
+      setStatusError("Chọn trạng thái mới.");
+      return;
+    }
+    if (diagnosisRequired && !statusForm.confirmed_defect.trim()) {
+      setStatusError(
+        "Phải ghi kết quả kiểm tra trước khi rời trạng thái CHECKING.",
+      );
+      return;
+    }
+    if (statusForm.status === "CANCELLED" && !statusForm.cancel_reason.trim()) {
+      setStatusError("Hủy case cần lý do/bằng chứng.");
+      return;
+    }
+    if (noteRequiredLabel && !statusForm.reason.trim()) {
+      setStatusError(noteRequiredLabel);
       return;
     }
     try {
       const updated = await updateMutation.mutateAsync({
         id: detail.id,
         request: {
-          status: values.status,
-          reason: values.reason?.trim() || undefined,
-          confirmed_defect: values.confirmed_defect?.trim() || undefined,
-          cancel_reason: values.cancel_reason?.trim() || undefined,
+          status: statusForm.status,
+          reason: statusForm.reason.trim() || undefined,
+          confirmed_defect: statusForm.confirmed_defect.trim() || undefined,
+          cancel_reason: statusForm.cancel_reason.trim() || undefined,
           ifMatch: detail.version,
         },
       });
@@ -225,20 +278,17 @@ export function WarrantyDetailModal({
           WARRANTY_STATUS_LABELS[updated.status] ?? updated.status
         }.`,
       );
-      statusForm.resetFields();
+      setStatusForm({ status: "", reason: "", confirmed_defect: "", cancel_reason: "" });
       setStatusOpen(false);
     } catch (error: unknown) {
       const fieldErrors = extractFieldErrorsRaw(error);
-      if (fieldErrors) {
-        statusForm.setFields(
-          Object.entries(fieldErrors).map(([name, errors]) => ({
-            name: [name] as never,
-            errors: [errors],
-          })),
-        );
-      }
-      toast.error(errorText(error, "Không cập nhật được trạng thái."));
-      setStatusError(errorText(error, "Không cập nhật được trạng thái."));
+      const message = errorText(error, "Không cập nhật được trạng thái.");
+      toast.error(
+        fieldErrors
+          ? `${message} (${Object.values(fieldErrors).flat().join("; ")})`
+          : message,
+      );
+      setStatusError(message);
     }
   };
 
@@ -250,78 +300,57 @@ export function WarrantyDetailModal({
   const submitCorrection = async () => {
     if (!detail) return;
     setCorrectError(null);
-    let values: CorrectionFormValues;
-    try {
-      values = await correctForm.validateFields();
-    } catch {
-      return;
-    }
     try {
       await updateMutation.mutateAsync({
         id: detail.id,
         request: {
-          defect_ids: values.defect_ids,
-          estimated_completion_date: values.estimated_completion_date
-            ? values.estimated_completion_date.format("YYYY-MM-DD")
-            : undefined,
+          defect_ids: correctForm.defect_ids,
+          estimated_completion_date:
+            correctForm.estimated_completion_date || undefined,
           customer_name: canViewPii
-            ? values.customer_name?.trim() || undefined
+            ? correctForm.customer_name.trim() || undefined
             : undefined,
           customer_phone: canViewPii
-            ? values.customer_phone?.trim() || undefined
+            ? correctForm.customer_phone.trim() || undefined
             : undefined,
           customer_address: canViewPii
-            ? values.customer_address?.trim() || undefined
+            ? correctForm.customer_address.trim() || undefined
             : undefined,
-          purchase_date: values.purchase_date
-            ? values.purchase_date.format("YYYY-MM-DD")
-            : undefined,
-          reason: values.reason?.trim() || "Hiệu chỉnh dữ liệu tiếp nhận",
+          purchase_date: correctForm.purchase_date || undefined,
+          reason: correctForm.reason.trim() || "Hiệu chỉnh dữ liệu tiếp nhận",
           ifMatch: detail.version,
         },
       });
       toast.success("Đã cập nhật thông tin case.");
-      correctForm.resetFields();
       setCorrectOpen(false);
     } catch (error: unknown) {
       const fieldErrors = extractFieldErrorsRaw(error);
-      if (fieldErrors) {
-        correctForm.setFields(
-          Object.entries(fieldErrors).map(([name, errors]) => ({
-            name: [name] as never,
-            errors: [errors],
-          })),
-        );
-      }
       const message = errorText(error, "Không cập nhật được thông tin case.");
-      toast.error(message);
+      toast.error(
+        fieldErrors
+          ? `${message} (${Object.values(fieldErrors).flat().join("; ")})`
+          : message,
+      );
       setCorrectError(message);
     }
   };
 
-  const uploadProps: UploadProps = {
-    // Annex D SCR-WAR-01 field `images`: jpg/png/webp, <=10MB. BE cũng chỉ nhận đúng
-    // ba định dạng này và đối chiếu magic bytes (§13.8 content-type check).
-    accept: ".jpg,.jpeg,.png,.webp",
-    showUploadList: false,
-    disabled: !canManage || uploadMutation.isPending || isTerminal,
-    beforeUpload: (file) => {
-      if (!WARRANTY_IMAGE_MIMES.includes(file.type)) {
-        toast.error(`${file.name}: chỉ nhận ảnh JPG/PNG/WEBP.`);
-        return Upload.LIST_IGNORE;
-      }
-      if (file.size > 10 * 1024 * 1024) {
-        toast.error("Tệp vượt quá 10MB.");
-        return Upload.LIST_IGNORE;
-      }
-      uploadMutation
-        .mutateAsync({ caseId, file, attachmentType })
-        .then(() => toast.success(`Đã tải lên ${file.name}.`))
-        .catch((error: unknown) =>
-          toast.error(errorText(error, "Tải tệp lên thất bại.")),
-        );
-      return false;
-    },
+  const handleFileSelected = (file: File | undefined) => {
+    if (!file) return;
+    if (!WARRANTY_IMAGE_MIMES.includes(file.type)) {
+      toast.error(`${file.name}: chỉ nhận ảnh JPG/PNG/WEBP.`);
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Tệp vượt quá 10MB.");
+      return;
+    }
+    uploadMutation
+      .mutateAsync({ caseId, file, attachmentType })
+      .then(() => toast.success(`Đã tải lên ${file.name}.`))
+      .catch((error: unknown) =>
+        toast.error(errorText(error, "Tải tệp lên thất bại.")),
+      );
   };
 
   const attachmentColumns: TableProps<WarrantyAttachment>["columns"] = [
@@ -329,17 +358,17 @@ export function WarrantyDetailModal({
       title: "Tệp",
       key: "file",
       render: (_, row) => (
-        <Space>
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
           <PaperClipOutlined />
-          <Space orientation="vertical" size={0}>
-            <Typography.Text>{row.file_name}</Typography.Text>
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          <Stack spacing={0}>
+            <AntTypography.Text>{row.file_name}</AntTypography.Text>
+            <AntTypography.Text type="secondary" style={{ fontSize: 12 }}>
               {formatBytes(row.file_size_bytes)} ·{" "}
               {WARRANTY_ATTACHMENT_TYPE_LABELS[row.attachment_type] ??
                 row.attachment_type}
-            </Typography.Text>
-          </Space>
-        </Space>
+            </AntTypography.Text>
+          </Stack>
+        </Stack>
       ),
     },
     {
@@ -353,10 +382,9 @@ export function WarrantyDetailModal({
       key: "actions",
       width: 90,
       render: (_, row) => (
-        <Space>
-          <Button
-            type="text"
-            icon={<DownloadOutlined />}
+        <Stack direction="row" spacing={0.5}>
+          <IconButton
+            size="small"
             onClick={() =>
               downloadWarrantyAttachment({
                 attachmentId: row.id,
@@ -365,28 +393,18 @@ export function WarrantyDetailModal({
                 toast.error(errorText(error, "Tải tệp xuống thất bại.")),
               )
             }
-          />
-          <Popconfirm
-            title="Xóa tệp đính kèm này?"
-            okText="Xóa"
-            cancelText="Không"
-            onConfirm={() =>
-              deleteAttachmentMutation
-                .mutateAsync(row.id)
-                .then(() => toast.success("Đã xóa tệp đính kèm."))
-                .catch((error: unknown) =>
-                  toast.error(errorText(error, "Không xóa được tệp.")),
-                )
-            }
           >
-            <Button
-              type="text"
-              danger
-              icon={<DeleteOutlined />}
-              disabled={!canManage}
-            />
-          </Popconfirm>
-        </Space>
+            <DownloadOutlined style={{ color: ACTION_ICON_COLORS.download }} />
+          </IconButton>
+          <IconButton
+            size="small"
+            color="error"
+            disabled={!canManage}
+            onClick={() => setDeleteConfirmId(row.id)}
+          >
+            <DeleteOutlined />
+          </IconButton>
+        </Stack>
       ),
     },
   ];
@@ -398,8 +416,9 @@ export function WarrantyDetailModal({
       key: "component_issue_no",
       render: (value: string, row) => (
         <Button
-          type="link"
-          style={{ padding: 0 }}
+          variant="text"
+          size="small"
+          sx={{ p: 0, minWidth: 0 }}
           onClick={() =>
             onOpenComponentIssue({
               caseId,
@@ -442,51 +461,615 @@ export function WarrantyDetailModal({
   ];
 
   return (
-    <Modal
-      title={
-        <Space>
-          <span>{detail?.case_code ?? "Chi tiết bảo hành"}</span>
-          {detail ? (
-            <Tag color={WARRANTY_STATUS_COLORS[detail.status]}>
-              {WARRANTY_STATUS_LABELS[detail.status] ?? detail.status}
-            </Tag>
-          ) : null}
-          {detail?.identification_type === "TEMP_ONLY" ? (
-            <Tag color="warning">TEMP_ONLY</Tag>
-          ) : null}
-        </Space>
-      }
-      open
-      onCancel={onClose}
-      width={1000}
-      centered
-      mask={{ closable: false }}
-      destroyOnHidden
-      footer={
-        <Space wrap>
-          <Button icon={<CloseOutlined />} onClick={onClose}>
+    <ThemeProvider theme={muiTheme}>
+      <Dialog
+        open
+        onClose={onClose}
+        maxWidth="lg"
+        fullWidth
+      >
+        <DialogTitle sx={{ pr: 6, position: "relative" }}>
+          <Stack direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap", rowGap: 0.5 }}>
+            <span>{detail?.case_code ?? "Chi tiết bảo hành"}</span>
+            {detail ? (
+              <Tag color={WARRANTY_STATUS_COLORS[detail.status]}>
+                {WARRANTY_STATUS_LABELS[detail.status] ?? detail.status}
+              </Tag>
+            ) : null}
+            {detail?.identification_type === "TEMP_ONLY" ? (
+              <Tag color="warning">TEMP_ONLY</Tag>
+            ) : null}
+          </Stack>
+          <IconButton
+            aria-label="Đóng"
+            onClick={onClose}
+            sx={{ position: "absolute", right: 10, top: 8 }}
+          >
+            <CloseOutlined style={{ fontSize: 15 }} />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers>
+          <Stack spacing={2}>
+            <ApiErrorAlert
+              error={detailQuery.error}
+              title="Không tải được chi tiết case"
+              onRetry={() => detailQuery.refetch()}
+            />
+
+            {!canViewPii ? (
+              <Alert severity="info">
+                Thông tin khách hàng đang được che (mask) theo quyền
+                warranty.pii.view.
+              </Alert>
+            ) : null}
+
+            <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: 2, p: 2 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5 }}>
+                Timeline trạng thái
+              </Typography>
+              {detail ? (
+                <>
+                  <Stepper
+                    activeStep={stepIndex}
+                    alternativeLabel
+                    sx={{ mb: 2 }}
+                  >
+                    {stepStatuses.map((status, index) => (
+                      <Step key={status}>
+                        <StepLabel error={isCancelled && index === stepIndex}>
+                          {WARRANTY_STATUS_LABELS[status] ?? status}
+                        </StepLabel>
+                      </Step>
+                    ))}
+                  </Stepper>
+                  {isCancelled ? (
+                    <Alert severity="error" sx={{ mb: 2 }}>
+                      {`Case đã hủy tại bước "${
+                        WARRANTY_STATUS_LABELS[progressStatus ?? "RECEIVED"] ??
+                        progressStatus
+                      }". Lý do: ${detail.cancel_reason ?? "—"}`}
+                    </Alert>
+                  ) : null}
+                </>
+              ) : null}
+
+              {(eventsQuery.data ?? []).length ? (
+                <Stack spacing={1.25}>
+                  {(eventsQuery.data ?? []).map((event, index) => (
+                    <Stack
+                      key={`${event.to_status}-${index}`}
+                      direction="row"
+                      spacing={1.25}
+                      sx={{ alignItems: "flex-start" }}
+                    >
+                      <Box
+                        sx={{
+                          width: 8,
+                          height: 8,
+                          borderRadius: "50%",
+                          bgcolor: `${WARRANTY_STATUS_COLORS[event.to_status] ?? "primary"}.main`,
+                          mt: "6px",
+                          flexShrink: 0,
+                        }}
+                      />
+                      <Stack spacing={0}>
+                        <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                          {event.event_type === "NOTE"
+                            ? "Ghi chú xử lý"
+                            : (WARRANTY_STATUS_LABELS[event.to_status] ??
+                              event.to_status)}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {formatWarrantyDateTime(event.performed_at)}
+                          {event.performed_by && event.performed_by !== "-"
+                            ? ` · ${event.performed_by}`
+                            : ""}
+                        </Typography>
+                        <Typography variant="body2">{event.description}</Typography>
+                      </Stack>
+                    </Stack>
+                  ))}
+                </Stack>
+              ) : (
+                <Typography variant="body2" color="text.secondary">
+                  Chưa có lịch sử trạng thái cho case này.
+                </Typography>
+              )}
+            </Box>
+
+            {detail ? (
+              <Stack spacing={2}>
+                {detail.identification_type === "TEMP_ONLY" ? (
+                  <Alert severity="warning">
+                    {`Mã tạm: ${detail.temporary_item_code ?? "—"} · sales_trace_status = NOT_TRACEABLE. Không liên kết item gốc, không sinh stock movement.`}
+                  </Alert>
+                ) : null}
+
+                <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: 2, p: 2 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5 }}>
+                    Khách hàng & tiếp nhận
+                  </Typography>
+                  <Grid container spacing={2}>
+                    {/* §13.8: mask lại ở tầng render — không tin payload đã mask sẵn. */}
+                    <DetailField
+                      label="Khách gửi"
+                      value={warrantyPiiText(detail.customer_name, canViewPii, "name") || "—"}
+                    />
+                    <DetailField
+                      label="SĐT"
+                      value={warrantyPiiText(detail.customer_phone, canViewPii, "phone") || "—"}
+                    />
+                    <DetailField
+                      label="Địa chỉ"
+                      value={warrantyPiiText(detail.customer_address, canViewPii, "address") || "—"}
+                    />
+                    <DetailField
+                      label="Ngày mua"
+                      value={detail.purchase_date ? formatDate(detail.purchase_date) : "—"}
+                    />
+                    <DetailField
+                      label="Ngày tiếp nhận"
+                      value={formatWarrantyDateTime(detail.received_at)}
+                    />
+                    <DetailField
+                      label="Phụ kiện đi kèm"
+                      value={detail.accessories_received ?? "—"}
+                    />
+                    <DetailField
+                      label="Tình trạng tiếp nhận"
+                      value={detail.received_condition ?? "—"}
+                      span2
+                    />
+                  </Grid>
+                </Box>
+
+                <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: 2, p: 2 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5 }}>
+                    Máy & chẩn đoán
+                  </Typography>
+                  <Grid container spacing={2}>
+                    <DetailField
+                      label="Item / serial / mã tạm"
+                      value={
+                        detail.identification_type === "TEMP_ONLY"
+                          ? (detail.temporary_item_code ?? "—")
+                          : (detail.item_code ?? detail.serial_number ?? "—")
+                      }
+                    />
+                    <DetailField
+                      label="SKU / model"
+                      value={detail.sku || detail.sku_name || "—"}
+                    />
+                    <DetailField label="Trạng thái item" value={detail.item_status ?? "—"} />
+                    <DetailField
+                      label="Bệnh / lỗi (danh mục)"
+                      value={
+                        detail.defects?.length ? (
+                          <Stack direction="row" spacing={0.5} sx={{ flexWrap: "wrap", rowGap: 0.5 }}>
+                            {detail.defects.map((defect) => (
+                              <Tag
+                                key={defect.defect_id}
+                                color={defect.is_primary ? "blue" : undefined}
+                              >
+                                {defect.defect_code
+                                  ? `${defect.defect_code} · ${defect.defect_name}`
+                                  : defect.defect_name}
+                              </Tag>
+                            ))}
+                          </Stack>
+                        ) : detail.defect_code ? (
+                          `${detail.defect_code} · ${detail.defect}`
+                        ) : (
+                          (detail.defect ?? "—")
+                        )
+                      }
+                    />
+                    <DetailField
+                      label="Khách phản ánh"
+                      value={detail.reported_defect ?? "—"}
+                      span2
+                    />
+                    <DetailField
+                      label="Kết quả kiểm tra"
+                      value={detail.confirmed_defect ?? "Chưa có kết luận"}
+                      span2
+                    />
+                    {detail.identification_type === "TEMP_ONLY" ? (
+                      <>
+                        <DetailField
+                          label="Lý do mất mã"
+                          value={detail.missing_code_reason ?? "—"}
+                        />
+                        <DetailField
+                          label="Mô tả nhận diện"
+                          value={detail.manual_product_description ?? "—"}
+                        />
+                      </>
+                    ) : null}
+                    {detail.status === "CANCELLED" ? (
+                      <DetailField
+                        label="Lý do hủy"
+                        value={detail.cancel_reason ?? "—"}
+                        span2
+                      />
+                    ) : null}
+                    <DetailField
+                      label="Dự kiến hoàn thành"
+                      value={
+                        detail.estimated_completion_date
+                          ? formatDate(detail.estimated_completion_date)
+                          : "—"
+                      }
+                    />
+                    <DetailField
+                      label="Hoàn tất sửa"
+                      value={formatWarrantyDateTime(detail.completed_at)}
+                    />
+                    <DetailField
+                      label="Trả khách"
+                      value={formatWarrantyDateTime(detail.returned_at)}
+                    />
+                  </Grid>
+                </Box>
+
+                <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: 2, p: 2 }}>
+                  <Stack
+                    direction="row"
+                    sx={{ alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", rowGap: 1, mb: 1.5 }}
+                  >
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                      {`Tệp đính kèm (${attachmentsQuery.data?.length ?? 0})`}
+                    </Typography>
+                    <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
+                      <TextField
+                        select
+                        size="small"
+                        value={attachmentType}
+                        onChange={(event) =>
+                          setAttachmentType(event.target.value as WarrantyAttachmentType)
+                        }
+                        sx={{ minWidth: 170 }}
+                      >
+                        {RETURN_ATTACHMENT_TYPES.map(([value, label]) => (
+                          <MenuItem key={value} value={value}>
+                            {label}
+                          </MenuItem>
+                        ))}
+                      </TextField>
+                      <Button
+                        component="label"
+                        size="small"
+                        variant="outlined"
+                        startIcon={<UploadOutlined style={{ color: ACTION_ICON_COLORS.upload }} />}
+                        disabled={
+                          !canManage ||
+                          detail.status === "CANCELLED" ||
+                          uploadMutation.isPending
+                        }
+                      >
+                        {uploadMutation.isPending ? "Đang tải..." : "Tải tệp lên"}
+                        <input
+                          type="file"
+                          accept=".jpg,.jpeg,.png,.webp"
+                          hidden
+                          onChange={(event) => {
+                            handleFileSelected(event.target.files?.[0]);
+                            event.target.value = "";
+                          }}
+                        />
+                      </Button>
+                    </Stack>
+                  </Stack>
+                  <Table
+                    dataSource={attachmentsQuery.data ?? []}
+                    columns={attachmentColumns}
+                    rowKey="id"
+                    size="small"
+                    loading={attachmentsQuery.isLoading}
+                    pagination={false}
+                    locale={{ emptyText: "Chưa có ảnh/tệp đính kèm." }}
+                    scroll={{ x: "max-content" }}
+                  />
+                </Box>
+
+                {canIssue ? (
+                  <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: 2, p: 2 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5 }}>
+                      {`Phiếu xuất linh kiện của case (${issuesQuery.data?.data.length ?? 0})`}
+                    </Typography>
+                    <Table
+                      dataSource={issuesQuery.data?.data ?? []}
+                      columns={issueColumns}
+                      rowKey="id"
+                      size="small"
+                      loading={issuesQuery.isLoading}
+                      pagination={false}
+                      locale={{
+                        emptyText:
+                          "Chưa có phiếu xuất linh kiện — dùng nút “Xuất linh kiện” để tạo.",
+                      }}
+                      scroll={{ x: "max-content" }}
+                    />
+                  </Box>
+                ) : null}
+              </Stack>
+            ) : null}
+          </Stack>
+
+          <Dialog open={deleteConfirmId !== null} onClose={() => setDeleteConfirmId(null)} maxWidth="xs" fullWidth>
+            <DialogTitle>Xóa tệp đính kèm này?</DialogTitle>
+            <DialogActions>
+              <Button onClick={() => setDeleteConfirmId(null)} disabled={deleteAttachmentMutation.isPending}>
+                Không
+              </Button>
+              <Button
+                color="error"
+                variant="contained"
+                disabled={deleteAttachmentMutation.isPending}
+                onClick={() => {
+                  if (!deleteConfirmId) return;
+                  deleteAttachmentMutation
+                    .mutateAsync(deleteConfirmId)
+                    .then(() => {
+                      toast.success("Đã xóa tệp đính kèm.");
+                      setDeleteConfirmId(null);
+                    })
+                    .catch((error: unknown) =>
+                      toast.error(errorText(error, "Không xóa được tệp.")),
+                    );
+                }}
+              >
+                Xóa
+              </Button>
+            </DialogActions>
+          </Dialog>
+
+          <Dialog open={correctOpen} onClose={() => setCorrectOpen(false)} maxWidth="sm" fullWidth aria-label="Sửa thông tin case bảo hành">
+            <DialogTitle>Sửa thông tin case bảo hành</DialogTitle>
+            <DialogContent dividers>
+              <Stack spacing={2}>
+                {correctError ? <Alert severity="error">{correctError}</Alert> : null}
+                <Alert severity="info">
+                  {canViewPii
+                    ? "Sửa thông tin là stock-neutral; mọi thay đổi được ghi audit (không lưu giá trị PII vào log) và tăng version."
+                    : "Bạn không có quyền warranty.pii.view nên chỉ sửa được bệnh/lỗi và ngày mua; thông tin khách hàng bị khóa."}
+                </Alert>
+                <Autocomplete
+                  multiple
+                  options={defectOptions}
+                  value={defectOptions.filter((option) =>
+                    correctForm.defect_ids.includes(option.value),
+                  )}
+                  loading={defectsQuery.isLoading}
+                  getOptionLabel={(option) => option.label}
+                  isOptionEqualToValue={(option, value) => option.value === value.value}
+                  onChange={(_event, options) =>
+                    setCorrectForm((current) => ({
+                      ...current,
+                      defect_ids: options.map((option) => option.value),
+                    }))
+                  }
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Bệnh / lỗi (danh mục)"
+                      placeholder="Chọn từ danh mục bệnh/lỗi ACTIVE"
+                    />
+                  )}
+                />
+                <TextField
+                  fullWidth
+                  type="date"
+                  label="Ngày dự kiến sửa xong"
+                  value={correctForm.estimated_completion_date}
+                  onChange={(event) =>
+                    setCorrectForm((current) => ({
+                      ...current,
+                      estimated_completion_date: event.target.value,
+                    }))
+                  }
+                  slotProps={{
+                    inputLabel: { shrink: true },
+                    htmlInput: { min: dayjs().format("YYYY-MM-DD") },
+                  }}
+                />
+                <TextField
+                  fullWidth
+                  type="date"
+                  label="Ngày mua"
+                  value={correctForm.purchase_date}
+                  onChange={(event) =>
+                    setCorrectForm((current) => ({
+                      ...current,
+                      purchase_date: event.target.value,
+                    }))
+                  }
+                  slotProps={{
+                    inputLabel: { shrink: true },
+                    htmlInput: { max: dayjs().format("YYYY-MM-DD") },
+                  }}
+                />
+                <TextField
+                  fullWidth
+                  label="Tên khách gửi (PII)"
+                  value={correctForm.customer_name}
+                  disabled={!canViewPii}
+                  onChange={(event) =>
+                    setCorrectForm((current) => ({ ...current, customer_name: event.target.value }))
+                  }
+                  slotProps={{ htmlInput: { maxLength: 200 } }}
+                />
+                <TextField
+                  fullWidth
+                  label="Số điện thoại (PII)"
+                  value={correctForm.customer_phone}
+                  disabled={!canViewPii}
+                  // Rà soát validate định dạng input (Flow04 Warranty): SĐT khách VN —
+                  // đủ 10 chữ số, bắt đầu bằng 0, không cho nhập chữ.
+                  onChange={(event) =>
+                    setCorrectForm((current) => ({
+                      ...current,
+                      customer_phone: event.target.value.replace(/\D/g, "").slice(0, 10),
+                    }))
+                  }
+                  error={
+                    Boolean(correctForm.customer_phone) &&
+                    !/^0\d{9}$/.test(correctForm.customer_phone)
+                  }
+                  helperText={
+                    Boolean(correctForm.customer_phone) &&
+                    !/^0\d{9}$/.test(correctForm.customer_phone)
+                      ? "Số điện thoại phải đủ 10 chữ số và bắt đầu bằng số 0."
+                      : undefined
+                  }
+                  slotProps={{ htmlInput: { maxLength: 10, inputMode: "numeric" } }}
+                />
+                <TextField
+                  fullWidth
+                  label="Địa chỉ khách (PII)"
+                  value={correctForm.customer_address}
+                  disabled={!canViewPii}
+                  onChange={(event) =>
+                    setCorrectForm((current) => ({ ...current, customer_address: event.target.value }))
+                  }
+                  slotProps={{ htmlInput: { maxLength: 500 } }}
+                />
+                <TextField
+                  fullWidth
+                  multiline
+                  minRows={2}
+                  label="Lý do hiệu chỉnh (hiện trên timeline)"
+                  value={correctForm.reason}
+                  onChange={(event) =>
+                    setCorrectForm((current) => ({ ...current, reason: event.target.value }))
+                  }
+                  slotProps={{ htmlInput: { maxLength: 2000 } }}
+                  helperText={`${correctForm.reason.length}/2000`}
+                />
+              </Stack>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setCorrectOpen(false)} disabled={updateMutation.isPending}>
+                Hủy
+              </Button>
+              <Button
+                variant="contained"
+                onClick={() => void submitCorrection()}
+                disabled={updateMutation.isPending}
+              >
+                {updateMutation.isPending ? "Đang lưu..." : "Lưu"}
+              </Button>
+            </DialogActions>
+          </Dialog>
+
+          <Dialog open={statusOpen} onClose={() => setStatusOpen(false)} maxWidth="sm" fullWidth aria-label="Cập nhật trạng thái bảo hành">
+            <DialogTitle>Cập nhật trạng thái bảo hành</DialogTitle>
+            <DialogContent dividers>
+              <Stack spacing={2}>
+                {statusError ? <Alert severity="error">{statusError}</Alert> : null}
+                <Alert severity="info">
+                  Cập nhật trạng thái là stock-neutral: item không tự quay lại
+                  tồn bán; trả khách chuyển item sang RETURNED_TO_CUSTOMER.
+                </Alert>
+                <TextField
+                  select
+                  required
+                  fullWidth
+                  label="Trạng thái mới"
+                  value={statusForm.status}
+                  onChange={(event) =>
+                    setStatusForm((current) => ({
+                      ...current,
+                      status: event.target.value as WarrantyCaseStatus,
+                    }))
+                  }
+                >
+                  {nextStatuses.map((value) => (
+                    <MenuItem key={value} value={value}>
+                      {WARRANTY_STATUS_LABELS[value] ?? value}
+                    </MenuItem>
+                  ))}
+                </TextField>
+                <TextField
+                  fullWidth
+                  multiline
+                  minRows={2}
+                  required={diagnosisRequired}
+                  label={
+                    diagnosisRequired
+                      ? "Kết quả kiểm tra / bệnh xác nhận (bắt buộc)"
+                      : "Kết quả kiểm tra / bệnh xác nhận"
+                  }
+                  value={statusForm.confirmed_defect}
+                  onChange={(event) =>
+                    setStatusForm((current) => ({ ...current, confirmed_defect: event.target.value }))
+                  }
+                  slotProps={{ htmlInput: { maxLength: 2000 } }}
+                  helperText={`${statusForm.confirmed_defect.length}/2000`}
+                />
+                {statusValue === "CANCELLED" ? (
+                  <TextField
+                    fullWidth
+                    multiline
+                    minRows={2}
+                    required
+                    label="Lý do hủy (bắt buộc)"
+                    value={statusForm.cancel_reason}
+                    onChange={(event) =>
+                      setStatusForm((current) => ({ ...current, cancel_reason: event.target.value }))
+                    }
+                    slotProps={{ htmlInput: { maxLength: 1000 } }}
+                    helperText={`${statusForm.cancel_reason.length}/1000`}
+                  />
+                ) : null}
+                <TextField
+                  fullWidth
+                  multiline
+                  minRows={2}
+                  required={Boolean(noteRequiredLabel)}
+                  label={noteRequiredLabel ?? "Ghi chú xử lý (hiện trên timeline)"}
+                  value={statusForm.reason}
+                  onChange={(event) =>
+                    setStatusForm((current) => ({ ...current, reason: event.target.value }))
+                  }
+                  slotProps={{ htmlInput: { maxLength: 2000 } }}
+                  helperText={`${statusForm.reason.length}/2000`}
+                />
+              </Stack>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setStatusOpen(false)} disabled={updateMutation.isPending}>
+                Hủy
+              </Button>
+              <Button
+                variant="contained"
+                onClick={() => void submitStatus()}
+                disabled={updateMutation.isPending}
+              >
+                {updateMutation.isPending ? "Đang cập nhật..." : "Cập nhật"}
+              </Button>
+            </DialogActions>
+          </Dialog>
+        </DialogContent>
+        <DialogActions>
+          <Button startIcon={<CloseOutlined />} onClick={onClose}>
             Đóng
           </Button>
           <Button
-            icon={<EditOutlined />}
+            startIcon={<EditOutlined style={{ color: ACTION_ICON_COLORS.edit }} />}
             disabled={!canManage || !detail || isTerminal}
             onClick={() => {
               if (!detail) return;
-              correctForm.setFieldsValue({
+              setCorrectForm({
                 defect_ids:
                   detail.defect_ids ??
                   (detail.defect_id ? [detail.defect_id] : []),
-                estimated_completion_date: detail.estimated_completion_date
-                  ? dayjs(detail.estimated_completion_date)
-                  : null,
-                customer_name: canViewPii ? detail.customer_name : undefined,
-                customer_phone: canViewPii ? detail.customer_phone : undefined,
-                customer_address: canViewPii
-                  ? detail.customer_address
-                  : undefined,
-                purchase_date: detail.purchase_date
-                  ? dayjs(detail.purchase_date)
-                  : null,
+                estimated_completion_date: detail.estimated_completion_date ?? "",
+                customer_name: canViewPii ? (detail.customer_name ?? "") : "",
+                customer_phone: canViewPii ? (detail.customer_phone ?? "") : "",
+                customer_address: canViewPii ? (detail.customer_address ?? "") : "",
+                purchase_date: detail.purchase_date ?? "",
+                reason: "",
               });
               setCorrectError(null);
               setCorrectOpen(true);
@@ -495,7 +1078,7 @@ export function WarrantyDetailModal({
             Sửa thông tin
           </Button>
           <Button
-            icon={<ToolOutlined />}
+            startIcon={<ToolOutlined />}
             disabled={!canIssue || !detail}
             onClick={() =>
               detail &&
@@ -510,466 +1093,24 @@ export function WarrantyDetailModal({
             Xuất linh kiện
           </Button>
           <Button
-            type="primary"
-            icon={<SyncOutlined />}
+            variant="contained"
+            startIcon={<SyncOutlined />}
             disabled={!canManage || isTerminal || nextStatuses.length === 0}
             onClick={() => {
-              statusForm.setFieldsValue({ status: nextStatuses[0] });
+              setStatusForm({
+                status: nextStatuses[0],
+                reason: "",
+                confirmed_defect: "",
+                cancel_reason: "",
+              });
               setStatusError(null);
               setStatusOpen(true);
             }}
           >
             Cập nhật trạng thái
           </Button>
-        </Space>
-      }
-    >
-      <ApiErrorAlert
-        error={detailQuery.error}
-        title="Không tải được chi tiết case"
-        onRetry={() => detailQuery.refetch()}
-        style={{ marginBottom: 12 }}
-      />
-
-      {!canViewPii ? (
-        <Alert
-          type="info"
-          showIcon
-          title="Thông tin khách hàng đang được che (mask) theo quyền warranty.pii.view."
-          style={{ marginBottom: 12 }}
-        />
-      ) : null}
-      <Card
-        size="small"
-        title="Timeline trạng thái"
-        loading={eventsQuery.isLoading}
-      >
-        {detail ? (
-          <>
-            <Steps
-              size="small"
-              direction={screens.md ? "horizontal" : "vertical"}
-              status={
-                isCancelled
-                  ? "error"
-                  : stepIndex === stepStatuses.length - 1
-                    ? "finish"
-                    : "process"
-              }
-              current={stepIndex}
-              items={stepStatuses.map((status) => ({
-                title: WARRANTY_STATUS_LABELS[status] ?? status,
-              }))}
-              style={{ marginBottom: 16 }}
-            />
-            {isCancelled ? (
-              <Alert
-                type="error"
-                showIcon
-                title={`Case đã hủy tại bước "${
-                  WARRANTY_STATUS_LABELS[progressStatus ?? "RECEIVED"] ??
-                  progressStatus
-                }". Lý do: ${detail.cancel_reason ?? "—"}`}
-                style={{ marginBottom: 16 }}
-              />
-            ) : null}
-          </>
-        ) : null}
-        <Timeline
-          items={
-            (eventsQuery.data ?? []).length
-              ? (eventsQuery.data ?? []).map((event) => ({
-                  color: WARRANTY_STATUS_COLORS[event.to_status] ?? "blue",
-                  children: (
-                    <Space orientation="vertical" size={2}>
-                      <Typography.Text strong>
-                        {event.event_type === "NOTE"
-                          ? "Ghi chú xử lý"
-                          : (WARRANTY_STATUS_LABELS[event.to_status] ??
-                            event.to_status)}
-                      </Typography.Text>
-                      <Typography.Text type="secondary">
-                        {formatWarrantyDateTime(event.performed_at)}
-                        {event.performed_by && event.performed_by !== "-"
-                          ? ` · ${event.performed_by}`
-                          : ""}
-                      </Typography.Text>
-                      <Typography.Text>{event.description}</Typography.Text>
-                    </Space>
-                  ),
-                }))
-              : [
-                  {
-                    color: "gray",
-                    children: "Chưa có lịch sử trạng thái cho case này.",
-                  },
-                ]
-          }
-        />
-      </Card>
-      <br></br>
-      {detail ? (
-        <Space orientation="vertical" size={16} style={{ width: "100%" }}>
-          {detail.identification_type === "TEMP_ONLY" ? (
-            <Alert
-              type="warning"
-              showIcon
-              title={`Mã tạm: ${detail.temporary_item_code ?? "—"} · sales_trace_status = NOT_TRACEABLE. Không liên kết item gốc, không sinh stock movement.`}
-            />
-          ) : null}
-
-          <Descriptions
-            title="Khách hàng & tiếp nhận"
-            bordered
-            size="small"
-            column={{ xs: 1, md: 2 }}
-          >
-            {/* §13.8: mask lại ở tầng render — không tin payload đã mask sẵn. */}
-            <Descriptions.Item label="Khách gửi">
-              {warrantyPiiText(detail.customer_name, canViewPii, "name") || "—"}
-            </Descriptions.Item>
-            <Descriptions.Item label="SĐT">
-              {warrantyPiiText(detail.customer_phone, canViewPii, "phone") ||
-                "—"}
-            </Descriptions.Item>
-            <Descriptions.Item label="Địa chỉ">
-              {warrantyPiiText(
-                detail.customer_address,
-                canViewPii,
-                "address",
-              ) || "—"}
-            </Descriptions.Item>
-            <Descriptions.Item label="Ngày mua">
-              {detail.purchase_date ? formatDate(detail.purchase_date) : "—"}
-            </Descriptions.Item>
-            <Descriptions.Item label="Ngày tiếp nhận">
-              {formatWarrantyDateTime(detail.received_at)}
-            </Descriptions.Item>
-            <Descriptions.Item label="Phụ kiện đi kèm">
-              {detail.accessories_received ?? "—"}
-            </Descriptions.Item>
-            <Descriptions.Item label="Tình trạng tiếp nhận" span={2}>
-              {detail.received_condition ?? "—"}
-            </Descriptions.Item>
-          </Descriptions>
-
-          <Descriptions
-            title="Máy & chẩn đoán"
-            bordered
-            size="small"
-            column={{ xs: 1, md: 2 }}
-          >
-            <Descriptions.Item label="Item / serial / mã tạm">
-              {detail.identification_type === "TEMP_ONLY"
-                ? (detail.temporary_item_code ?? "—")
-                : (detail.item_code ?? detail.serial_number ?? "—")}
-            </Descriptions.Item>
-            <Descriptions.Item label="SKU / model">
-              {detail.sku || detail.sku_name || "—"}
-            </Descriptions.Item>
-            <Descriptions.Item label="Trạng thái item">
-              {detail.item_status ?? "—"}
-            </Descriptions.Item>
-            <Descriptions.Item label="Bệnh / lỗi (danh mục)">
-              {detail.defects?.length ? (
-                <Space wrap size={4}>
-                  {detail.defects.map((defect) => (
-                    <Tag
-                      key={defect.defect_id}
-                      color={defect.is_primary ? "blue" : undefined}
-                    >
-                      {defect.defect_code
-                        ? `${defect.defect_code} · ${defect.defect_name}`
-                        : defect.defect_name}
-                    </Tag>
-                  ))}
-                </Space>
-              ) : detail.defect_code ? (
-                `${detail.defect_code} · ${detail.defect}`
-              ) : (
-                (detail.defect ?? "—")
-              )}
-            </Descriptions.Item>
-            <Descriptions.Item label="Khách phản ánh" span={2}>
-              {detail.reported_defect ?? "—"}
-            </Descriptions.Item>
-            <Descriptions.Item label="Kết quả kiểm tra" span={2}>
-              {detail.confirmed_defect ?? "Chưa có kết luận"}
-            </Descriptions.Item>
-            {detail.identification_type === "TEMP_ONLY" ? (
-              <>
-                <Descriptions.Item label="Lý do mất mã">
-                  {detail.missing_code_reason ?? "—"}
-                </Descriptions.Item>
-                <Descriptions.Item label="Mô tả nhận diện">
-                  {detail.manual_product_description ?? "—"}
-                </Descriptions.Item>
-              </>
-            ) : null}
-            {detail.status === "CANCELLED" ? (
-              <Descriptions.Item label="Lý do hủy" span={2}>
-                {detail.cancel_reason ?? "—"}
-              </Descriptions.Item>
-            ) : null}
-            <Descriptions.Item label="Dự kiến hoàn thành">
-              {detail.estimated_completion_date
-                ? formatDate(detail.estimated_completion_date)
-                : "—"}
-            </Descriptions.Item>
-            <Descriptions.Item label="Hoàn tất sửa">
-              {formatWarrantyDateTime(detail.completed_at)}
-            </Descriptions.Item>
-            <Descriptions.Item label="Trả khách">
-              {formatWarrantyDateTime(detail.returned_at)}
-            </Descriptions.Item>
-          </Descriptions>
-
-          <Card
-            size="small"
-            title={`Tệp đính kèm (${attachmentsQuery.data?.length ?? 0})`}
-            extra={
-              <Space wrap>
-                <Select
-                  size="small"
-                  value={attachmentType}
-                  style={{ width: 170 }}
-                  onChange={(value) => setAttachmentType(value)}
-                  options={Object.entries(WARRANTY_ATTACHMENT_TYPE_LABELS).map(
-                    ([value, label]) => ({ value, label }),
-                  )}
-                />
-                <Upload {...uploadProps}>
-                  <Button
-                    size="small"
-                    icon={<UploadOutlined />}
-                    loading={uploadMutation.isPending}
-                    disabled={!canManage || detail.status === "CANCELLED"}
-                  >
-                    Tải tệp lên
-                  </Button>
-                </Upload>
-              </Space>
-            }
-          >
-            <Table
-              dataSource={attachmentsQuery.data ?? []}
-              columns={attachmentColumns}
-              rowKey="id"
-              size="small"
-              loading={attachmentsQuery.isLoading}
-              pagination={false}
-              locale={{ emptyText: "Chưa có ảnh/tệp đính kèm." }}
-              scroll={{ x: "max-content" }}
-            />
-          </Card>
-
-          {canIssue ? (
-            <Card
-              size="small"
-              title={`Phiếu xuất linh kiện của case (${issuesQuery.data?.data.length ?? 0})`}
-            >
-              <Table
-                dataSource={issuesQuery.data?.data ?? []}
-                columns={issueColumns}
-                rowKey="id"
-                size="small"
-                loading={issuesQuery.isLoading}
-                pagination={false}
-                locale={{
-                  emptyText:
-                    "Chưa có phiếu xuất linh kiện — dùng nút “Xuất linh kiện” để tạo.",
-                }}
-                scroll={{ x: "max-content" }}
-              />
-            </Card>
-          ) : null}
-        </Space>
-      ) : null}
-
-      <Modal
-        title="Sửa thông tin case bảo hành"
-        open={correctOpen}
-        onCancel={() => setCorrectOpen(false)}
-        onOk={submitCorrection}
-        okText="Lưu"
-        cancelText="Hủy"
-        confirmLoading={updateMutation.isPending}
-        destroyOnHidden
-      >
-        {correctError ? (
-          <Alert
-            type="error"
-            showIcon
-            title={correctError}
-            style={{ marginBottom: 12 }}
-          />
-        ) : null}
-        <Alert
-          type="info"
-          showIcon
-          title={
-            canViewPii
-              ? "Sửa thông tin là stock-neutral; mọi thay đổi được ghi audit (không lưu giá trị PII vào log) và tăng version."
-              : "Bạn không có quyền warranty.pii.view nên chỉ sửa được bệnh/lỗi và ngày mua; thông tin khách hàng bị khóa."
-          }
-          style={{ marginBottom: 12 }}
-        />
-        <Form form={correctForm} layout="vertical">
-          <Form.Item name="defect_ids" label="Bệnh / lỗi (danh mục)">
-            <Select
-              mode="multiple"
-              allowClear
-              showSearch
-              optionFilterProp="label"
-              loading={defectsQuery.isLoading}
-              placeholder="Chọn từ danh mục bệnh/lỗi ACTIVE"
-              options={(defectsQuery.data?.data ?? []).map((defect) => ({
-                value: defect.defect_id,
-                label: `${defect.defect_code} · ${defect.defect_name}`,
-              }))}
-            />
-          </Form.Item>
-          <Form.Item
-            name="estimated_completion_date"
-            label="Ngày dự kiến sửa xong"
-          >
-            <DatePicker
-              style={{ width: "100%" }}
-              format="DD/MM/YYYY"
-              disabledDate={(current) =>
-                current && current < dayjs().startOf("day")
-              }
-            />
-          </Form.Item>
-          <Form.Item name="purchase_date" label="Ngày mua">
-            <DatePicker
-              style={{ width: "100%" }}
-              format="DD/MM/YYYY"
-              disabledDate={(current) =>
-                current && current > dayjs().endOf("day")
-              }
-            />
-          </Form.Item>
-          <Form.Item
-            name="customer_name"
-            label="Tên khách gửi (PII)"
-            rules={[{ max: 200, message: "Tối đa 200 ký tự." }]}
-          >
-            <Input maxLength={200} disabled={!canViewPii} />
-          </Form.Item>
-          <Form.Item
-            name="customer_phone"
-            label="Số điện thoại (PII)"
-            // Rà soát validate định dạng input (Flow04 Warranty): SĐT khách VN —
-            // đủ 10 chữ số, bắt đầu bằng 0, không cho nhập chữ. Field vẫn optional
-            // (chỉ sửa khi actor thực sự nhập giá trị mới) — không đổi rule required.
-            normalize={(value: string | undefined) =>
-              (value ?? "").replace(/\D/g, "").slice(0, 10)
-            }
-            rules={[
-              {
-                pattern: /^0\d{9}$/,
-                message:
-                  "Số điện thoại phải đủ 10 chữ số và bắt đầu bằng số 0.",
-              },
-            ]}
-          >
-            <Input inputMode="numeric" maxLength={10} disabled={!canViewPii} />
-          </Form.Item>
-          <Form.Item name="customer_address" label="Địa chỉ khách (PII)">
-            <Input maxLength={500} disabled={!canViewPii} />
-          </Form.Item>
-          <Form.Item
-            name="reason"
-            label="Lý do hiệu chỉnh (hiện trên timeline)"
-          >
-            <Input.TextArea rows={2} maxLength={2000} showCount />
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      <Modal
-        title="Cập nhật trạng thái bảo hành"
-        open={statusOpen}
-        onCancel={() => setStatusOpen(false)}
-        onOk={submitStatus}
-        okText="Cập nhật"
-        cancelText="Hủy"
-        confirmLoading={updateMutation.isPending}
-        destroyOnHidden
-      >
-        {statusError ? (
-          <Alert
-            type="error"
-            showIcon
-            title={statusError}
-            style={{ marginBottom: 12 }}
-          />
-        ) : null}
-        <Alert
-          type="info"
-          showIcon
-          title="Cập nhật trạng thái là stock-neutral: item không tự quay lại tồn bán; trả khách chuyển item sang RETURNED_TO_CUSTOMER."
-          style={{ marginBottom: 12 }}
-        />
-        <Form form={statusForm} layout="vertical">
-          <Form.Item
-            name="status"
-            label="Trạng thái mới"
-            rules={[{ required: true, message: "Chọn trạng thái mới." }]}
-          >
-            <Select
-              options={nextStatuses.map((value) => ({
-                value,
-                label: WARRANTY_STATUS_LABELS[value] ?? value,
-              }))}
-            />
-          </Form.Item>
-          <Form.Item
-            name="confirmed_defect"
-            label={
-              diagnosisRequired
-                ? "Kết quả kiểm tra / bệnh xác nhận (bắt buộc)"
-                : "Kết quả kiểm tra / bệnh xác nhận"
-            }
-            rules={
-              diagnosisRequired
-                ? [
-                    {
-                      required: true,
-                      message:
-                        "Phải ghi kết quả kiểm tra trước khi rời trạng thái CHECKING.",
-                    },
-                  ]
-                : undefined
-            }
-          >
-            <Input.TextArea rows={2} maxLength={2000} showCount />
-          </Form.Item>
-          {statusValue === "CANCELLED" ? (
-            <Form.Item
-              name="cancel_reason"
-              label="Lý do hủy (bắt buộc)"
-              rules={[
-                { required: true, message: "Hủy case cần lý do/bằng chứng." },
-              ]}
-            >
-              <Input.TextArea rows={2} maxLength={1000} showCount />
-            </Form.Item>
-          ) : null}
-          <Form.Item
-            name="reason"
-            label={noteRequiredLabel ?? "Ghi chú xử lý (hiện trên timeline)"}
-            rules={
-              noteRequiredLabel
-                ? [{ required: true, message: noteRequiredLabel }]
-                : undefined
-            }
-          >
-            <Input.TextArea rows={2} maxLength={2000} showCount />
-          </Form.Item>
-        </Form>
-      </Modal>
-    </Modal>
+        </DialogActions>
+      </Dialog>
+    </ThemeProvider>
   );
 }

@@ -26,7 +26,8 @@ import {
   SaveOutlined,
   StopOutlined,
   UndoOutlined,
-} from "@ant-design/icons";
+} from "@/shared/components/icons";
+import { ACTION_ICON_COLORS } from "@/shared/theme/actionIconColors";
 import {
   useDeleteIamRole,
   useIamPermissions,
@@ -344,7 +345,11 @@ export function IamRolePermissionScreen() {
               type="text"
               size="small"
               title="Sửa vai trò"
-              icon={<EditOutlined style={{ fontSize: 15 }} />}
+              icon={
+                <EditOutlined
+                  style={{ fontSize: 15, color: ACTION_ICON_COLORS.edit }}
+                />
+              }
               aria-label={`Sửa ${role.role_name}`}
               onClick={(event) => {
                 event.stopPropagation();
@@ -371,7 +376,12 @@ export function IamRolePermissionScreen() {
                   active ? (
                     <StopOutlined style={{ fontSize: 15 }} />
                   ) : (
-                    <CheckCircleOutlined style={{ fontSize: 15 }} />
+                    <CheckCircleOutlined
+                      style={{
+                        fontSize: 15,
+                        color: ACTION_ICON_COLORS.success,
+                      }}
+                    />
                   )
                 }
                 aria-label={
@@ -469,7 +479,11 @@ export function IamRolePermissionScreen() {
               matrixEditable ? (
                 <Space size={8}>
                   <Button
-                    icon={<UndoOutlined />}
+                    icon={
+                      <UndoOutlined
+                        style={{ color: ACTION_ICON_COLORS.sync }}
+                      />
+                    }
                     disabled={!permissionsChanged}
                     onClick={resetMatrix}
                   >

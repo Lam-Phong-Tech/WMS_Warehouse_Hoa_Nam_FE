@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Button, Card, List, Typography } from "antd";
-import { CheckOutlined } from "@ant-design/icons";
+import { CheckOutlined } from "@/shared/components/icons";
 import { PageHeader, EmptyState, LoadingState } from "@/shared/components";
+import { ACTION_ICON_COLORS } from "@/shared/theme/actionIconColors";
 import { StatusTag } from "@/shared/components/data-display/StatusTag";
 import {
   useMarkAllNotificationsRead,
@@ -35,7 +36,7 @@ export default function NotificationsPage() {
         subtitle="Toàn bộ thông báo hệ thống liên quan tới bạn — nhập/xuất kho, bảo hành, tài khoản, bảo mật."
         extra={
           <Button
-            icon={<CheckOutlined />}
+            icon={<CheckOutlined style={{ color: ACTION_ICON_COLORS.success }} />}
             disabled={unreadCount === 0 || markAllRead.isPending}
             onClick={() => markAllRead.mutate()}
           >

@@ -1,26 +1,29 @@
 import { useEffect, useState, type Key } from "react";
 import {
   Button,
-  Select,
   Space,
   Table,
   Tag,
   type TablePaginationConfig,
 } from "antd";
+import { Button as MuiButton, MenuItem, Select, TextField, ThemeProvider } from "@mui/material";
+import { muiTheme } from "@/app/mui-theme";
 import {
   EditOutlined,
   EyeOutlined,
   PlusOutlined,
   ScanOutlined,
-} from "@ant-design/icons";
+} from "@/shared/components/icons";
 import type { ColumnsType } from "antd/es/table";
 import { useSearchParams } from "react-router-dom";
+import { ACTION_ICON_COLORS } from "@/shared/theme/actionIconColors";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import {
   TableLoadingBanner,
   tableEmptyText,
 } from "@/shared/components/feedback/BusinessState";
 import { mvpRowNumber } from "@/shared/components/mvp/MvpSelectionCell";
+import { MVP_PAGE_SIZE_OPTIONS } from "@/shared/components/mvp/mvp-pagination";
 import {
   hasAnyWmsPermission,
   WMS_PERMISSION_CATALOG as P,
@@ -42,8 +45,18 @@ const STATUS_OPTIONS = Object.entries(INBOUND_STATUS_LABELS).map(
     label,
   }),
 );
-const PAGE_SIZE_OPTIONS = [10, 20, 50];
 const SEARCH_DEBOUNCE_MS = 250;
+
+/** Toolbar filter nhỏ gọn — đồng bộ chuẩn mui-theme.ts (xem gotcha #4/#5 memory pilot MUI). */
+const TOOLBAR_SX = {
+  "&, & .MuiOutlinedInput-root": { height: 35 },
+  "& .MuiSelect-select, & .MuiInputBase-input": {
+    paddingTop: "8px !important",
+    paddingBottom: "8px !important",
+    fontSize: "13.5px !important",
+    boxSizing: "border-box",
+  },
+};
 
 function statusTag(status: InboundDocument["status"]) {
   const color =
@@ -193,7 +206,13 @@ function InboundListScreen() {
             <Button
               type="link"
               size="small"
-              icon={mutable && canScan ? <ScanOutlined /> : <EyeOutlined />}
+              icon={
+                mutable && canScan ? (
+                  <ScanOutlined style={{ color: ACTION_ICON_COLORS.sync }} />
+                ) : (
+                  <EyeOutlined style={{ color: ACTION_ICON_COLORS.view }} />
+                )
+              }
               onClick={() => setScanDocumentId(row.id)}
             >
               {mutable && canScan
@@ -206,7 +225,7 @@ function InboundListScreen() {
               <Button
                 type="link"
                 size="small"
-                icon={<EditOutlined />}
+                icon={<EditOutlined style={{ color: ACTION_ICON_COLORS.edit }} />}
                 onClick={() => {
                   setDraftDocumentId(row.id);
                   setDraftOpen(true);
@@ -225,59 +244,67 @@ function InboundListScreen() {
     setPage(pagination.current ?? 1);
   };
 
+  const perPageOptions = MVP_PAGE_SIZE_OPTIONS.includes(
+    perPage as (typeof MVP_PAGE_SIZE_OPTIONS)[number],
+  )
+    ? MVP_PAGE_SIZE_OPTIONS
+    : [...MVP_PAGE_SIZE_OPTIONS, perPage].sort((a, b) => a - b);
+
   return (
-    <div className="inbound-page hn-mvp-source-screen">
+    <ThemeProvider theme={muiTheme}>
+      <div className="inbound-page hn-mvp-source-screen">
       <div className="toolbar">
-        <input
-          className="input search"
+        <TextField
           value={searchInput}
           placeholder="Tìm mã phiếu / nguồn nhập..."
-          aria-label="Tìm phiếu nhập"
+          slotProps={{ htmlInput: { "aria-label": "Tìm phiếu nhập" } }}
           onChange={(event) => setSearchInput(event.target.value)}
+          sx={{ minWidth: 220, ...TOOLBAR_SX }}
         />
-        <select
-          className="select"
+        <Select
+          displayEmpty
           value={status ?? ""}
-          aria-label="Lọc trạng thái phiếu nhập"
+          inputProps={{ "aria-label": "Lọc trạng thái phiếu nhập" }}
           onChange={(event) => {
             setStatus(event.target.value || undefined);
             setPage(1);
           }}
+          sx={{ minWidth: 168, ...TOOLBAR_SX }}
         >
-          <option value="">Trạng thái: Tất cả</option>
+          <MenuItem value="">Trạng thái: Tất cả</MenuItem>
           {STATUS_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
+            <MenuItem key={option.value} value={option.value}>
               {option.label}
-            </option>
+            </MenuItem>
           ))}
-        </select>
-        <div className="table-page-size">
-          <Select
-            size="small"
-            value={perPage}
-            style={{ width: 110 }}
-            options={PAGE_SIZE_OPTIONS.map((size) => ({
-              value: size,
-              label: `${size} / trang`,
-            }))}
-            onChange={(nextPageSize) => {
-              setPerPage(nextPageSize);
-              setPage(1);
-            }}
-          />
-        </div>
+        </Select>
+        <Select
+          value={perPage}
+          inputProps={{ "aria-label": "Số dòng mỗi trang" }}
+          onChange={(event) => {
+            setPerPage(Number(event.target.value));
+            setPage(1);
+          }}
+          sx={{ minWidth: 100, ...TOOLBAR_SX }}
+        >
+          {perPageOptions.map((size) => (
+            <MenuItem key={size} value={size}>
+              {size} / trang
+            </MenuItem>
+          ))}
+        </Select>
         <div className="spacer" />
         {canCreate ? (
-          <button
-            className="btn primary"
-            type="button"
+          <MuiButton
+            variant="contained"
             onClick={() => {
               setDraftDocumentId(null);
               setDraftOpen(true);
             }}
+            startIcon={<PlusOutlined />}
           >
-            <PlusOutlined /> Tạo phiếu nhập
-          </button>
+            Tạo phiếu nhập
+          </MuiButton>
         ) : null}
       </div>
 
@@ -333,7 +360,8 @@ function InboundListScreen() {
           onChanged={() => void query.refetch()}
         />
       ) : null}
-    </div>
+      </div>
+    </ThemeProvider>
   );
 }
 

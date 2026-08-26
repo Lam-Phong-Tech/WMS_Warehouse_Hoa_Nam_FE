@@ -249,6 +249,10 @@ function normalizeAttachment(row: RawRecord): WarrantyAttachment {
     checksum: text(row.checksum) || undefined,
     attachment_type:
       (text(row.attachment_type, "OTHER") as WarrantyAttachmentType) || "OTHER",
+    media_kind:
+      (text(row.media_kind, "IMAGE") as WarrantyAttachment["media_kind"]) ||
+      "IMAGE",
+    duration_seconds: numberOrUndefined(row.duration_seconds) ?? null,
     status:
       (text(row.status, "ACTIVE") as WarrantyAttachment["status"]) || "ACTIVE",
     uploaded_at: text(row.uploaded_at ?? row.created_at) || undefined,

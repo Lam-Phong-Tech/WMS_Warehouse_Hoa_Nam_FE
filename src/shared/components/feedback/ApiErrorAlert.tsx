@@ -1,12 +1,13 @@
 import type { CSSProperties } from "react";
 import { Alert, Button } from "antd";
-import { ReloadOutlined } from "@ant-design/icons";
+import { ReloadOutlined } from "@/shared/components/icons";
 import {
   getApiErrorMessage,
   getErrorRequestId,
   isNoPermissionError,
   normalizeError,
 } from "@/shared/api/api-error";
+import { ACTION_ICON_COLORS } from "@/shared/theme/actionIconColors";
 import { UI_STATE, uiStateProps } from "@/shared/constants/ui-state";
 import { NoPermissionState } from "./NoPermissionState";
 
@@ -107,7 +108,11 @@ export function ApiErrorAlert({
         }
         action={
           onRetry ? (
-            <Button size="small" icon={<ReloadOutlined />} onClick={onRetry}>
+            <Button
+              size="small"
+              icon={<ReloadOutlined style={{ color: ACTION_ICON_COLORS.sync }} />}
+              onClick={onRetry}
+            >
               Thử lại
             </Button>
           ) : undefined

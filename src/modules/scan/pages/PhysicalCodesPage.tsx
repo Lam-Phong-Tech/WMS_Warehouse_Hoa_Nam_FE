@@ -11,7 +11,7 @@ import {
   Tag,
   Typography,
 } from "antd";
-import { BarcodeOutlined } from "@ant-design/icons";
+import { BarcodeOutlined } from "@/shared/components/icons";
 import { useQuery } from "@tanstack/react-query";
 import { getApiErrorMessage } from "@/shared/api/api-error";
 import {

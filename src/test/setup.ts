@@ -1044,17 +1044,6 @@ vi.mock("sonner", () => ({
   },
 }));
 
-vi.mock("@ant-design/icons", () => {
-  const stub = () => null;
-  const icons: Record<string, any> = {};
-  // Danh sách sinh từ: grep -rhoE "\b[A-Z][A-Za-z]+(Outlined|Filled|TwoTone)\b" src
-  // — khi UI dùng icon mới, thêm tên vào đây (giữ sort A→Z).
-  "AimOutlined ApartmentOutlined AppstoreOutlined ArrowLeftOutlined ArrowRightOutlined AuditOutlined BankOutlined BarChartOutlined BarcodeOutlined BellOutlined CameraOutlined CarOutlined CheckCircleOutlined CheckOutlined CloseCircleOutlined CloseOutlined CloudDownloadOutlined CloudUploadOutlined ClusterOutlined CopyOutlined DeleteOutlined DisconnectOutlined DownOutlined DownloadOutlined EditOutlined EnvironmentOutlined ExclamationCircleFilled ExpandAltOutlined ExperimentOutlined ExportOutlined EyeOutlined FileExcelOutlined FilePdfOutlined FileSearchOutlined FileTextOutlined FundOutlined HistoryOutlined HomeOutlined IdcardOutlined ImportOutlined InboxOutlined KeyOutlined LockOutlined LogoutOutlined MailOutlined MenuFoldOutlined MenuUnfoldOutlined MoreOutlined NodeIndexOutlined PaperClipOutlined PlayCircleOutlined PlusOutlined PrinterOutlined ProfileOutlined ReloadOutlined RollbackOutlined SafetyCertificateOutlined SaveOutlined ScanOutlined SearchOutlined SendOutlined SettingOutlined ShopOutlined ShoppingCartOutlined ShrinkOutlined SolutionOutlined StockOutlined StopOutlined SwapOutlined SyncOutlined TagOutlined TeamOutlined ToolOutlined UndoOutlined UnorderedListOutlined UploadOutlined UserAddOutlined UserOutlined UserSwitchOutlined WarningOutlined ZoomInOutlined ZoomOutOutlined"
-    .split(" ")
-    .forEach((n) => (icons[n] = stub));
-  return { default: stub, ...icons };
-});
-
 vi.mock("@/modules/auth/utils/permission", async () => {
   const { useAuthStore } = await vi.importActual<
     typeof import("@/shared/store/auth.store")

@@ -10,7 +10,7 @@
  * 3. FE242-IFMATCH: lookup không trả version ⇒ POST chắc chắn 428, phải chặn ngay ở UI.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { renderWithProviders } from "@/test/test-utils";
 import { cleanupTestState } from "@/test/setup";
 import { createMockAxiosError } from "@/shared/api/api-error";
@@ -114,22 +114,24 @@ function mockDetailHooks() {
 }
 
 /**
- * Bấm Post rồi xác nhận trong hộp Modal.confirm của antd. Nút OK của hộp thoại mang
- * cùng nhãn "Hoàn tất điều chỉnh" với nút mở, nên phải lấy nút xuất hiện SAU.
+ * Bấm Post rồi xác nhận trong Dialog xác nhận MUI (thay antd Modal.confirm).
+ * MUI đánh dấu Dialog gốc là aria-hidden khi Dialog xác nhận (chồng lên) đang
+ * mở, nên nút "Hoàn tất điều chỉnh" gốc không còn nằm trong accessibility
+ * tree — chỉ còn đúng 1 nút cùng nhãn thuộc Dialog xác nhận, cần scope bằng
+ * within() để chắc chắn bấm đúng nút đó (không phụ thuộc thứ tự DOM).
  */
 async function clickPostAndConfirm() {
   fireEvent.click(
     screen.getByRole("button", { name: /Hoàn tất điều chỉnh/i }),
   );
-  await waitFor(() =>
-    expect(
-      screen.getAllByRole("button", { name: /Hoàn tất điều chỉnh/i }).length,
-    ).toBeGreaterThan(1),
-  );
-  const buttons = screen.getAllByRole("button", {
-    name: /Hoàn tất điều chỉnh/i,
+  const confirmDialog = await screen.findByRole("dialog", {
+    name: /Hoàn tất phiếu điều chỉnh tồn kho/i,
   });
-  fireEvent.click(buttons[buttons.length - 1]);
+  fireEvent.click(
+    within(confirmDialog).getByRole("button", {
+      name: /Hoàn tất điều chỉnh/i,
+    }),
+  );
 }
 
 describe("WWHN-242 · REV-00/REV-01 contract", () => {

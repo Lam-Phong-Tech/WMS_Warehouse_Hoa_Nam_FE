@@ -1,6 +1,7 @@
 import { Badge, Button, Dropdown, Empty, List, Spin, Typography } from "antd";
-import { BellOutlined, CheckOutlined } from "@ant-design/icons";
+import { BellOutlined, CheckOutlined } from "@/shared/components/icons";
 import { useNavigate } from "react-router-dom";
+import { ACTION_ICON_COLORS } from "@/shared/theme/actionIconColors";
 import { layoutStyles } from "@/app/layouts/layout.styles";
 import { useNotificationStore } from "@/shared/store/notification.store";
 import { ROUTES } from "@/shared/constants/routes";
@@ -62,7 +63,7 @@ export function NotificationBell() {
             <Button
               type="link"
               size="small"
-              icon={<CheckOutlined />}
+              icon={<CheckOutlined style={{ color: ACTION_ICON_COLORS.success }} />}
               disabled={unreadCount === 0 || markAllRead.isPending}
               onClick={() => markAllRead.mutate()}
             >

@@ -1,6 +1,6 @@
 import { Input } from "antd";
 import type { InputProps } from "antd";
-import { SearchOutlined } from "@ant-design/icons";
+import { SearchOutlined } from "@/shared/components/icons";
 
 export interface SearchInputProps extends Omit<
   InputProps,

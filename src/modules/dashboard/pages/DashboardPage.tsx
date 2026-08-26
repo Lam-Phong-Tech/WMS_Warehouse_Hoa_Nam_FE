@@ -2,6 +2,21 @@ import { useEffect, useMemo, useState } from "react";
 import { isAxiosError } from "axios";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
+import {
+  Alert,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  LinearProgress,
+  Paper,
+  Stack,
+  TextField,
+  ThemeProvider,
+  Typography,
+} from "@mui/material";
+import { muiTheme } from "@/app/mui-theme";
 import { ROUTES } from "@/shared/constants/routes";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { fetchDashboardKPI } from "../services/dashboardService";
@@ -117,13 +132,53 @@ function DashboardMetricCard({
   note: string;
 }) {
   return (
-    <div className="hn-card hn-dashboard-metric">
-      <div className="hn-dashboard-metric-label">{label}</div>
-      <strong className="hn-dashboard-metric-value">
-        {formatNumber(value)}
-      </strong>
-      <div className="hn-dashboard-muted">{note}</div>
-    </div>
+    <Card variant="outlined" sx={{ borderRadius: 2, minWidth: 0 }}>
+      <CardContent sx={{ display: "grid", gap: 0.75, "&:last-child": { pb: 2 } }}>
+        <Typography variant="body2" sx={{ fontWeight: 700 }}>
+          {label}
+        </Typography>
+        <Typography
+          sx={{
+            fontSize: "clamp(22px, 2.5vw, 30px)",
+            fontWeight: 700,
+            overflowWrap: "anywhere",
+          }}
+        >
+          {formatNumber(value)}
+        </Typography>
+        <Typography variant="caption" color="text.secondary">
+          {note}
+        </Typography>
+      </CardContent>
+    </Card>
+  );
+}
+
+/** Khối trạng thái (không quyền / đang tải / lỗi / rỗng) — 2 Typography tách
+ * riêng để test getByText khớp chính xác từng câu, không gộp chung 1 node. */
+function DashboardStateAlert({
+  severity,
+  title,
+  description,
+  role,
+  action,
+}: {
+  severity: "warning" | "info" | "error";
+  title: string;
+  description: string;
+  role?: string;
+  action?: React.ReactNode;
+}) {
+  return (
+    <Alert severity={severity} role={role}>
+      <Stack spacing={0.5} sx={{ alignItems: "flex-start" }}>
+        <Typography component="strong" sx={{ fontWeight: 700 }}>
+          {title}
+        </Typography>
+        <Typography variant="body2">{description}</Typography>
+        {action}
+      </Stack>
+    </Alert>
   );
 }
 
@@ -238,286 +293,359 @@ export default function DashboardPage() {
     : [];
 
   return (
-    <div className="hn-dashboard-page">
-      <section
-        className="hn-card hn-dashboard-header"
-        aria-labelledby="dashboard-title"
-      >
-        <div>
-          <div className="tag">Tổng quan vận hành</div>
-          <h1 id="dashboard-title" className="hn-dashboard-title">
+    <ThemeProvider theme={muiTheme}>
+      <div className="hn-dashboard-page">
+        <Paper
+          component="section"
+          aria-labelledby="dashboard-title"
+          variant="outlined"
+          sx={{ p: 3, borderRadius: 2 }}
+        >
+          <Chip label="Tổng quan vận hành" size="small" sx={{ mb: 1.5 }} />
+          <Typography variant="h4" id="dashboard-title" sx={{ mb: 0.5 }}>
             Tổng quan kho
-          </h1>
-          <p className="hn-dashboard-muted">
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
             Theo dõi tồn khả dụng, nhập kho, xuất kho, bảo hành và các cảnh báo
             đối soát trên cùng một màn hình.
-          </p>
-        </div>
+          </Typography>
 
-        <div className="hn-dashboard-filter" aria-label="Bộ lọc kỳ thống kê">
-          <label>
-            <span>Từ ngày</span>
-            <input
+          <Stack
+            direction="row"
+            spacing={2}
+            sx={{ mt: 2.5, flexWrap: "wrap", alignItems: "flex-start" }}
+          >
+            <TextField
+              label="Từ ngày"
               type="date"
               value={draftFrom}
               onChange={(event) => setDraftFrom(event.target.value)}
               disabled={dashboardQuery.isFetching || !canViewReport}
+              helperText="Định dạng: ngày/tháng/năm"
+              slotProps={{ inputLabel: { shrink: true } }}
             />
-          </label>
-          <label>
-            <span>Đến ngày</span>
-            <input
+            <TextField
+              label="Đến ngày"
               type="date"
               value={draftTo}
               onChange={(event) => setDraftTo(event.target.value)}
               disabled={dashboardQuery.isFetching || !canViewReport}
+              helperText="Định dạng: ngày/tháng/năm"
+              slotProps={{ inputLabel: { shrink: true } }}
             />
-          </label>
-          <div className="hn-dashboard-filter-actions">
-            <button
-              type="button"
-              className="hn-node"
-              onClick={applyFilter}
-              disabled={
-                Boolean(filterError) ||
-                dashboardQuery.isFetching ||
-                !canViewReport
-              }
-            >
-              {dashboardQuery.isFetching ? "Đang tải…" : "Áp dụng"}
-            </button>
-            <button
-              type="button"
-              className="hn-node hn-dashboard-secondary-button"
-              onClick={resetFilter}
-              disabled={dashboardQuery.isFetching || !canViewReport}
-            >
-              Đặt lại
-            </button>
-          </div>
-        </div>
-        {filterError ? (
-          <div className="hn-dashboard-validation" role="alert">
-            {filterError}
-          </div>
-        ) : null}
-        <div className="hn-dashboard-muted hn-dashboard-timezone">
-          Dữ liệu được tổng hợp theo múi giờ Việt Nam. Khi không chọn khoảng
-          ngày, hệ thống hiển thị 30 ngày gần nhất.
-        </div>
-      </section>
-
-      {isProfileLoaded && !canViewReport ? (
-        <section className="hn-card hn-dashboard-state" role="alert">
-          <strong>Không có quyền xem báo cáo tổng quan.</strong>
-          <span>Vui lòng liên hệ quản trị viên nếu bạn cần quyền truy cập.</span>
-        </section>
-      ) : null}
-
-      {canViewReport && dashboardQuery.isLoading ? (
-        <section className="hn-card hn-dashboard-state" aria-live="polite">
-          <strong>Đang tải số liệu tổng quan…</strong>
-          <span>Hệ thống đang tổng hợp dữ liệu vận hành.</span>
-        </section>
-      ) : null}
-
-      {canViewReport && dashboardQuery.isError ? (
-        <section className="hn-card hn-dashboard-state" role="alert">
-          <strong>
-            {status === 403
-              ? "Bạn không có quyền xem báo cáo tổng quan."
-              : status === 422
-                ? "Khoảng ngày đã chọn không hợp lệ."
-                : "Không tải được số liệu tổng quan."}
-          </strong>
-          <span>
-            {status === 401
-              ? "Phiên đăng nhập không còn hợp lệ."
-              : "Hệ thống không hiển thị dữ liệu cũ khi việc tải dữ liệu thất bại."}
-          </span>
-          <button
-            type="button"
-            className="hn-node"
-            onClick={() => dashboardQuery.refetch()}
-            disabled={dashboardQuery.isFetching}
+            <Stack direction="row" spacing={1} sx={{ mt: "8px" }}>
+              <Button
+                variant="contained"
+                onClick={applyFilter}
+                disabled={
+                  Boolean(filterError) ||
+                  dashboardQuery.isFetching ||
+                  !canViewReport
+                }
+              >
+                {dashboardQuery.isFetching ? "Đang tải…" : "Áp dụng"}
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={resetFilter}
+                disabled={dashboardQuery.isFetching || !canViewReport}
+              >
+                Đặt lại
+              </Button>
+            </Stack>
+          </Stack>
+          {filterError ? (
+            <Alert severity="error" sx={{ mt: 2 }}>
+              {filterError}
+            </Alert>
+          ) : null}
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{
+              display: "block",
+              mt: 2.5,
+              pt: 1.5,
+              borderTop: "1px solid",
+              borderColor: "divider",
+            }}
           >
-            Thử lại
-          </button>
-        </section>
-      ) : null}
+            Dữ liệu được tổng hợp theo múi giờ Việt Nam. Khi không chọn khoảng
+            ngày, hệ thống hiển thị 30 ngày gần nhất.
+          </Typography>
+        </Paper>
 
-      {data ? (
-        <>
-          <section aria-labelledby="dashboard-kpi-title">
-            <div className="hn-dashboard-section-heading">
-              <div>
-                <h2 id="dashboard-kpi-title" className="hn-section-title">
-                  Chỉ số vận hành
-                </h2>
-                <div className="hn-dashboard-muted">
-                  Kỳ thống kê: {formatDate(data.period.from_date)} →{" "}
-                  {formatDate(data.period.to_date)}
-                </div>
-                <div className="hn-dashboard-muted">
-                  Phạm vi dữ liệu:{" "}
-                  {data.data_scope === "GLOBAL"
-                    ? "Toàn hệ thống"
-                    : `Theo ${data.scope_warehouse_ids?.length ?? 0} kho bạn được phân quyền`}
-                </div>
-              </div>
-              <span className="tag">Dữ liệu hệ thống</span>
-            </div>
+        {isProfileLoaded && !canViewReport ? (
+          <DashboardStateAlert
+            severity="warning"
+            title="Không có quyền xem báo cáo tổng quan."
+            description="Vui lòng liên hệ quản trị viên nếu bạn cần quyền truy cập."
+          />
+        ) : null}
 
-            <div className="hn-dashboard-kpi-grid">
-              <DashboardMetricCard
-                label="Tồn khả dụng"
-                value={data.available_qty}
-                note="Số lượng hiện có thể sử dụng"
+        {canViewReport && dashboardQuery.isLoading ? (
+          <DashboardStateAlert
+            severity="info"
+            title="Đang tải số liệu tổng quan…"
+            description="Hệ thống đang tổng hợp dữ liệu vận hành."
+          />
+        ) : null}
+
+        {canViewReport && dashboardQuery.isError ? (
+          <DashboardStateAlert
+            severity="error"
+            title={
+              status === 403
+                ? "Bạn không có quyền xem báo cáo tổng quan."
+                : status === 422
+                  ? "Khoảng ngày đã chọn không hợp lệ."
+                  : "Không tải được số liệu tổng quan."
+            }
+            description={
+              status === 401
+                ? "Phiên đăng nhập không còn hợp lệ."
+                : "Hệ thống không hiển thị dữ liệu cũ khi việc tải dữ liệu thất bại."
+            }
+            action={
+              <Button
+                size="small"
+                variant="outlined"
+                color="error"
+                onClick={() => dashboardQuery.refetch()}
+                disabled={dashboardQuery.isFetching}
+              >
+                Thử lại
+              </Button>
+            }
+          />
+        ) : null}
+
+        {data ? (
+          <>
+            <Box component="section" aria-labelledby="dashboard-kpi-title">
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  gap: 1.5,
+                  flexWrap: "wrap",
+                  mb: 1.5,
+                }}
+              >
+                <Box>
+                  <Typography variant="h6" id="dashboard-kpi-title">
+                    Chỉ số vận hành
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+                    Kỳ thống kê: {formatDate(data.period.from_date)} →{" "}
+                    {formatDate(data.period.to_date)}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+                    Phạm vi dữ liệu:{" "}
+                    {data.data_scope === "GLOBAL"
+                      ? "Toàn hệ thống"
+                      : `Theo ${data.scope_warehouse_ids?.length ?? 0} kho bạn được phân quyền`}
+                  </Typography>
+                </Box>
+                <Chip label="Dữ liệu hệ thống" size="small" variant="outlined" />
+              </Box>
+
+              <Box className="hn-dashboard-kpi-grid">
+                <DashboardMetricCard
+                  label="Tồn khả dụng"
+                  value={data.available_qty}
+                  note="Số lượng hiện có thể sử dụng"
+                />
+                <DashboardMetricCard
+                  label="Nhập kho"
+                  value={data.receipt_qty}
+                  note="Tổng số lượng đã ghi nhận nhập trong kỳ"
+                />
+                <DashboardMetricCard
+                  label="Xuất kho"
+                  value={data.issue_qty}
+                  note="Tổng số lượng đã ghi nhận xuất trong kỳ"
+                />
+                <DashboardMetricCard
+                  label="Xuất linh kiện"
+                  value={data.component_issue_qty}
+                  note="Tổng linh kiện đã xuất trong kỳ"
+                />
+                <DashboardMetricCard
+                  label="Điều chỉnh tồn (ròng)"
+                  value={data.reversal_net}
+                  note="Chênh lệch tăng/giảm tồn do điều chỉnh trong kỳ"
+                />
+              </Box>
+            </Box>
+
+            {empty ? (
+              <DashboardStateAlert
+                severity="info"
+                title="Không có số liệu trong kỳ."
+                description="Chưa phát sinh dữ liệu vận hành trong khoảng ngày đã chọn."
               />
-              <DashboardMetricCard
-                label="Nhập kho"
-                value={data.receipt_qty}
-                note="Tổng số lượng đã ghi nhận nhập trong kỳ"
-              />
-              <DashboardMetricCard
-                label="Xuất kho"
-                value={data.issue_qty}
-                note="Tổng số lượng đã ghi nhận xuất trong kỳ"
-              />
-              <DashboardMetricCard
-                label="Xuất linh kiện"
-                value={data.component_issue_qty}
-                note="Tổng linh kiện đã xuất trong kỳ"
-              />
-              <DashboardMetricCard
-                label="Điều chỉnh tồn (ròng)"
-                value={data.reversal_net}
-                note="Chênh lệch tăng/giảm tồn do điều chỉnh trong kỳ"
-              />
-            </div>
-          </section>
-
-          {empty ? (
-            <section className="hn-card hn-dashboard-state" aria-live="polite">
-              <strong>Không có số liệu trong kỳ.</strong>
-              <span>Chưa phát sinh dữ liệu vận hành trong khoảng ngày đã chọn.</span>
-            </section>
-          ) : (
-            <section
-              className="hn-dashboard-grid"
-              aria-label="Biểu đồ tổng quan"
-            >
-              <div className="hn-card">
-                <div className="hn-section-title">
-                  Biểu đồ luồng kho trong kỳ
-                </div>
-                <div className="hn-dashboard-muted">
-                  So sánh quy mô nhập, xuất, xuất linh kiện và điều chỉnh tồn.
-                </div>
-                <div
-                  className="hn-dashboard-bar-chart"
-                  role="img"
-                  aria-label={flowChartLabel}
-                >
-                  {flowMetrics.map((metric) => (
-                    <div className="hn-dashboard-bar-row" key={metric.key}>
-                      <div className="hn-dashboard-bar-label">
-                        {metric.label}
-                      </div>
-                      <div
-                        className="hn-dashboard-bar-track"
-                        aria-hidden="true"
-                      >
-                        <div
-                          className="hn-dashboard-bar-fill"
-                          style={{
-                            width: `${(Math.abs(metric.value) / maxFlowValue) * 100}%`,
-                          }}
-                        />
-                      </div>
-                      <strong>{formatNumber(metric.value)}</strong>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="hn-card">
-                <div className="hn-section-title">Bảo hành theo trạng thái</div>
-                <div className="hn-dashboard-muted">
-                  Tổng hợp các ca bảo hành hiện có trong hệ thống.
-                </div>
-                {data.data_scope === "WAREHOUSE_SCOPED" ? (
-                  <div className="hn-dashboard-scope-exception" role="note">
-                    Số liệu bảo hành được tổng hợp toàn hệ thống và không giới
-                    hạn theo kho.
-                  </div>
-                ) : null}
-                {warrantyEntries.length === 0 ? (
-                  <div className="hn-dashboard-inline-empty">
-                    Chưa có ca bảo hành.
-                  </div>
-                ) : (
-                  <div className="hn-dashboard-status-list">
-                    {warrantyEntries.map(([warrantyStatus, count]) => (
-                      <div
-                        className="hn-dashboard-status-row"
-                        key={warrantyStatus}
-                      >
-                        <span>
-                          {WARRANTY_STATUS_LABELS[warrantyStatus] ??
-                            warrantyStatus.replaceAll("_", " ")}
-                        </span>
-                        <strong>{formatNumber(count)}</strong>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="hn-card">
-                <div className="hn-section-title">Đối soát tồn kho</div>
-                <strong className="hn-dashboard-warning-count">
-                  {formatNumber(data.reconciliation_warning_count)} cảnh báo
-                </strong>
-                <div className="hn-dashboard-muted">
-                  Số trường hợp chênh lệch cần kiểm tra tại thời điểm hiện tại.
-                </div>
-              </div>
-            </section>
-          )}
-        </>
-      ) : null}
-
-      <section aria-labelledby="workflow-title">
-        <div className="hn-dashboard-section-heading">
-          <h2 id="workflow-title" className="hn-section-title">
-            Điều hướng luồng nghiệp vụ
-          </h2>
-        </div>
-        <div className="hn-flow">
-          {FLOW_LANES.map((lane) => (
-            <div className="hn-lane" key={lane.label}>
-              <div className="tag">{lane.label}</div>
-              {lane.nodes.map((node, index) => (
-                <span
-                  key={`${lane.label}-${node.label}`}
-                  style={{ display: "contents" }}
-                >
-                  {index > 0 ? <span aria-hidden="true">→</span> : null}
-                  <button
-                    type="button"
-                    className="hn-node"
-                    onClick={() => node.route && navigate(node.route)}
-                    style={{ cursor: node.route ? "pointer" : "default" }}
+            ) : (
+              <Box
+                component="section"
+                aria-label="Biểu đồ tổng quan"
+                className="hn-dashboard-grid"
+              >
+                <Card variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                    Biểu đồ luồng kho trong kỳ
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+                    So sánh quy mô nhập, xuất, xuất linh kiện và điều chỉnh tồn.
+                  </Typography>
+                  <Box
+                    role="img"
+                    aria-label={flowChartLabel}
+                    sx={{ display: "grid", gap: 1.5, mt: 2 }}
                   >
-                    {node.label}
-                  </button>
-                </span>
-              ))}
-            </div>
-          ))}
-        </div>
-      </section>
-    </div>
+                    {flowMetrics.map((metric) => (
+                      <Box
+                        key={metric.key}
+                        sx={{
+                          display: "grid",
+                          gridTemplateColumns: "minmax(0, 130px) minmax(0, 1fr) auto",
+                          gap: 1.25,
+                          alignItems: "center",
+                        }}
+                      >
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          {metric.label}
+                        </Typography>
+                        <LinearProgress
+                          variant="determinate"
+                          value={(Math.abs(metric.value) / maxFlowValue) * 100}
+                          sx={{ height: 10, borderRadius: 999 }}
+                        />
+                        <Typography sx={{ fontWeight: 700 }}>
+                          {formatNumber(metric.value)}
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Box>
+                </Card>
+
+                <Card variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                    Bảo hành theo trạng thái
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+                    Tổng hợp các ca bảo hành hiện có trong hệ thống.
+                  </Typography>
+                  {data.data_scope === "WAREHOUSE_SCOPED" ? (
+                    <Box
+                      role="note"
+                      sx={{
+                        mt: 1.25,
+                        pl: 1.25,
+                        py: 0.75,
+                        borderLeft: "3px solid",
+                        borderColor: "divider",
+                      }}
+                    >
+                      <Typography variant="caption" color="text.secondary">
+                        Số liệu bảo hành được tổng hợp toàn hệ thống và không
+                        giới hạn theo kho.
+                      </Typography>
+                    </Box>
+                  ) : null}
+                  {warrantyEntries.length === 0 ? (
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                      Chưa có ca bảo hành.
+                    </Typography>
+                  ) : (
+                    <Stack spacing={1} sx={{ mt: 2 }}>
+                      {warrantyEntries.map(([warrantyStatus, count]) => (
+                        <Stack
+                          key={warrantyStatus}
+                          direction="row"
+                          sx={{
+                            justifyContent: "space-between",
+                            borderBottom: "1px solid",
+                            borderColor: "divider",
+                            pb: 1,
+                          }}
+                        >
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              textTransform: "lowercase",
+                              "&::first-letter": { textTransform: "uppercase" },
+                            }}
+                          >
+                            {WARRANTY_STATUS_LABELS[warrantyStatus] ??
+                              warrantyStatus.replaceAll("_", " ")}
+                          </Typography>
+                          <Typography sx={{ fontWeight: 700 }}>
+                            {formatNumber(count)}
+                          </Typography>
+                        </Stack>
+                      ))}
+                    </Stack>
+                  )}
+                </Card>
+
+                <Card variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                    Đối soát tồn kho
+                  </Typography>
+                  <Typography sx={{ display: "block", mt: 1.5, mb: 0.5, fontSize: 24, fontWeight: 700 }}>
+                    {formatNumber(data.reconciliation_warning_count)} cảnh báo
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Số trường hợp chênh lệch cần kiểm tra tại thời điểm hiện tại.
+                  </Typography>
+                </Card>
+              </Box>
+            )}
+          </>
+        ) : null}
+
+        <Box component="section" aria-labelledby="workflow-title">
+          <Typography variant="h6" id="workflow-title" sx={{ mb: 1.5 }}>
+            Điều hướng luồng nghiệp vụ
+          </Typography>
+          <Stack spacing={1.5}>
+            {FLOW_LANES.map((lane) => (
+              <Stack
+                key={lane.label}
+                direction="row"
+                spacing={1}
+                sx={{ flexWrap: "wrap", alignItems: "center" }}
+              >
+                <Chip label={lane.label} size="small" color="primary" variant="outlined" />
+                {lane.nodes.map((node, index) => (
+                  <Stack
+                    key={`${lane.label}-${node.label}`}
+                    direction="row"
+                    spacing={1}
+                    sx={{ alignItems: "center" }}
+                  >
+                    {index > 0 ? (
+                      <Typography component="span" aria-hidden="true" color="text.secondary">
+                        →
+                      </Typography>
+                    ) : null}
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={() => node.route && navigate(node.route)}
+                      sx={{ cursor: node.route ? "pointer" : "default" }}
+                    >
+                      {node.label}
+                    </Button>
+                  </Stack>
+                ))}
+              </Stack>
+            ))}
+          </Stack>
+        </Box>
+      </div>
+    </ThemeProvider>
   );
 }

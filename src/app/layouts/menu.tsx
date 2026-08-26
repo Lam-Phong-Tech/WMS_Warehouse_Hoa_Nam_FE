@@ -19,7 +19,7 @@ import {
   ToolOutlined,
   UserOutlined,
   WarningOutlined,
-} from "@ant-design/icons";
+} from "@/shared/components/icons";
 import type { MenuProps } from "antd";
 import { ROUTES } from "@/shared/constants/routes";
 import { ROUTE_PERMISSIONS } from "@/app/router/access";

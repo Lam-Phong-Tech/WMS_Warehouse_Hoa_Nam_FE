@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Alert, Button, Modal } from "antd";
-import { CloseOutlined } from "@ant-design/icons";
+import { CloseOutlined } from "@/shared/components/icons";
 
 type BarcodeResult = { rawValue?: string };
 type BarcodeDetectorInstance = {

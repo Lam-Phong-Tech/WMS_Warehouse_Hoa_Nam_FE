@@ -2,21 +2,27 @@ import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Alert,
+  Box,
   Button,
   Card,
-  Col,
-  Descriptions,
-  Form,
-  Input,
-  Popconfirm,
-  Row,
+  Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControl,
+  Grid,
+  InputLabel,
+  MenuItem,
   Select,
   Skeleton,
-  Space,
-  Tag,
+  Stack,
+  TextField,
+  ThemeProvider,
   Typography,
-} from "antd";
-import { SaveOutlined } from "@ant-design/icons";
+} from "@mui/material";
+import { muiTheme } from "@/app/mui-theme";
+import { SaveOutlined } from "@/shared/components/icons";
 import {
   fetchWarehouse,
   fetchWarehouses,
@@ -31,10 +37,6 @@ import {
 import { useCan } from "@/shared/components/permission";
 import { WMS_PERMISSION_CATALOG as P } from "@/shared/constants/wms-permissions";
 import { formatDateTime } from "@/shared/utils/format-date";
-import {
-  MASTER_STATUS_LABELS,
-  businessLabel,
-} from "@/shared/constants/business-labels";
 
 interface WarehouseRecord {
   id: string;
@@ -87,15 +89,37 @@ function saveErrorMessage(error: unknown): string {
   return getApiErrorMessage(error, "Không lưu được cấu hình kho.");
 }
 
+function validateForm(values: WarehouseFormValues): string {
+  const name = values.name.trim();
+  if (!name) return "Nhập tên kho.";
+  if (name.length > 200) return "Tên kho tối đa 200 ký tự.";
+  if (!values.status) return "Chọn trạng thái.";
+  if ((values.address ?? "").length > 500) return "Địa chỉ tối đa 500 ký tự.";
+  if ((values.contact_person ?? "").length > 200)
+    return "Người liên hệ tối đa 200 ký tự.";
+  const phone = values.phone ?? "";
+  if (phone.length > 30) return "Số điện thoại tối đa 30 ký tự.";
+  if (phone && !/^0\d{9}$/.test(phone)) {
+    return "Số điện thoại phải gồm đúng 10 chữ số và bắt đầu bằng số 0.";
+  }
+  return "";
+}
+
 export function WarehouseConfigScreen() {
-  const [form] = Form.useForm<WarehouseFormValues>();
   const queryClient = useQueryClient();
   const canManage = useCan(P.WAREHOUSE_MANAGE);
 
   const [selectedId, setSelectedId] = useState("");
   const [saveError, setSaveError] = useState("");
   const [savedAt, setSavedAt] = useState("");
-  const draftStatus = Form.useWatch("status", form);
+  const [formValues, setFormValues] = useState<WarehouseFormValues>({
+    name: "",
+    address: "",
+    contact_person: "",
+    phone: "",
+    status: "ACTIVE",
+  });
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const listQuery = useQuery({
     queryKey: ["warehouse", "list"],
@@ -126,14 +150,14 @@ export function WarehouseConfigScreen() {
 
   useEffect(() => {
     if (!warehouse) return;
-    form.setFieldsValue({
+    setFormValues({
       name: warehouse.name,
       address: warehouse.address,
       contact_person: warehouse.contact_person,
       phone: warehouse.phone,
       status: warehouse.status,
     });
-  }, [form, warehouse]);
+  }, [warehouse]);
 
   const saveMutation = useMutation({
     mutationFn: (values: WarehouseFormValues) =>
@@ -147,13 +171,16 @@ export function WarehouseConfigScreen() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["warehouse"] }),
   });
 
-  const handleSubmit = async () => {
+  const doSave = async () => {
     setSaveError("");
     setSavedAt("");
-    let values: WarehouseFormValues;
-    try {
-      values = await form.validateFields();
-    } catch {
+    const values: WarehouseFormValues = {
+      ...formValues,
+      name: formValues.name.trim(),
+    };
+    const validationError = validateForm(values);
+    if (validationError) {
+      setSaveError(validationError);
       return;
     }
     try {
@@ -162,6 +189,19 @@ export function WarehouseConfigScreen() {
     } catch (error) {
       setSaveError(saveErrorMessage(error));
     }
+  };
+
+  const handleSubmit = async () => {
+    if (statusChanged) {
+      setConfirmOpen(true);
+      return;
+    }
+    await doSave();
+  };
+
+  const confirmStatusChange = async () => {
+    setConfirmOpen(false);
+    await doSave();
   };
 
   const listError = listQuery.error
@@ -173,207 +213,263 @@ export function WarehouseConfigScreen() {
 
   const statusChanged =
     Boolean(warehouse) &&
-    Boolean(draftStatus) &&
-    draftStatus !== warehouse?.status;
-  const saveButton = (
-    <Button
-      type="primary"
-      icon={<SaveOutlined />}
-      loading={saveMutation.isPending}
-      disabled={!canManage || !resolvedId}
-      onClick={statusChanged ? undefined : handleSubmit}
-    >
-      Lưu cấu hình
-    </Button>
-  );
+    Boolean(formValues.status) &&
+    formValues.status !== warehouse?.status;
+
+  const fieldsDisabled = !canManage || saveMutation.isPending;
 
   return (
-    <Space orientation="vertical" size={16} style={{ width: "100%" }}>
-      <Row justify="end">
-        <Col>
-          {statusChanged ? (
-            <Popconfirm
-              title="Đổi trạng thái kho?"
-              description="Hệ thống chỉ cho phép đúng một kho Đang hoạt động. Thao tác đổi trạng thái không tạo chứng từ và không làm thay đổi tồn kho."
-              okText="Đồng ý"
-              cancelText="Hủy"
-              onConfirm={handleSubmit}
-            >
-              {saveButton}
-            </Popconfirm>
+    <ThemeProvider theme={muiTheme}>
+      <Stack spacing={2}>
+        <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+          <Button
+            variant="contained"
+            onClick={() => void handleSubmit()}
+            disabled={!canManage || !resolvedId || saveMutation.isPending}
+            startIcon={<SaveOutlined />}
+          >
+            {saveMutation.isPending ? "Đang lưu..." : "Lưu cấu hình"}
+          </Button>
+        </Box>
+
+        <Alert severity="info">
+          <Typography component="strong" sx={{ fontWeight: 700, display: "block" }}>
+            Hệ thống sử dụng một kho tổng
+          </Typography>
+          <Typography variant="body2">
+            Trong phạm vi hiện tại, hệ thống vận hành một kho tổng. Người dùng
+            chỉ xem và cập nhật thông tin kho; không tạo hoặc xóa kho trực
+            tiếp tại màn hình này.
+          </Typography>
+        </Alert>
+
+        {listError ? <Alert severity="error">{listError}</Alert> : null}
+        {detailError ? <Alert severity="error">{detailError}</Alert> : null}
+        {saveError ? <Alert severity="error">{saveError}</Alert> : null}
+        {savedAt ? (
+          <Alert severity="success">
+            <Typography component="strong" sx={{ fontWeight: 700, display: "block" }}>
+              Đã lưu cấu hình kho
+            </Typography>
+            <Typography variant="body2">Cập nhật lúc {savedAt}.</Typography>
+          </Alert>
+        ) : null}
+
+        {!listQuery.isLoading && warehouses.length === 0 && !listError ? (
+          <Alert severity="warning">
+            <Typography component="strong" sx={{ fontWeight: 700, display: "block" }}>
+              Chưa có kho tổng trong hệ thống
+            </Typography>
+            <Typography variant="body2">
+              Liên hệ quản trị hệ thống để khởi tạo kho tổng trước khi cấu
+              hình.
+            </Typography>
+          </Alert>
+        ) : null}
+
+        {warehouses.length > 1 ? (
+          <Alert severity="warning">
+            <Typography component="strong" sx={{ fontWeight: 700, display: "block" }}>
+              Đang có {warehouses.length} kho trong dữ liệu
+            </Typography>
+            <Typography variant="body2">
+              Chỉ được giữ đúng một kho Đang hoạt động. Hãy chọn từng kho bên
+              dưới để ngừng hoạt động kho thừa.
+            </Typography>
+          </Alert>
+        ) : null}
+
+        <Card variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+          {listQuery.isLoading || detailQuery.isLoading ? (
+            <Stack spacing={1}>
+              {Array.from({ length: 6 }).map((_, index) => (
+                <Skeleton key={index} variant="text" height={28} />
+              ))}
+            </Stack>
+          ) : !warehouse ? (
+            <Typography variant="body2" color="text.secondary">
+              Chưa có kho để hiển thị.
+            </Typography>
           ) : (
-            saveButton
-          )}
-        </Col>
-      </Row>
+            <>
+              {warehouses.length > 1 ? (
+                <Grid container sx={{ mb: 2 }}>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <FormControl fullWidth>
+                      <InputLabel id="warehouse-select-label" shrink>
+                        Chọn kho
+                      </InputLabel>
+                      <Select
+                        id="warehouse-select"
+                        labelId="warehouse-select-label"
+                        label="Chọn kho"
+                        value={resolvedId}
+                        onChange={(event) => {
+                          setSelectedId(event.target.value);
+                          setSaveError("");
+                          setSavedAt("");
+                        }}
+                      >
+                        {warehouses.map((row) => (
+                          <MenuItem key={row.id} value={row.id}>
+                            {row.code} · {row.name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                </Grid>
+              ) : null}
 
-      <Alert
-        type="info"
-        showIcon
-        title="Hệ thống sử dụng một kho tổng"
-        description="Trong phạm vi hiện tại, hệ thống vận hành một kho tổng. Người dùng chỉ xem và cập nhật thông tin kho; không tạo hoặc xóa kho trực tiếp tại màn hình này."
-      />
+              <Box
+                sx={{
+                  border: "1px solid",
+                  borderColor: "divider",
+                  borderRadius: 2,
+                  p: 2,
+                  mb: 2,
+                }}
+              >
+                <Grid container spacing={2}>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+                      Mã kho
+                    </Typography>
+                    <Typography variant="body2">{warehouse.code}</Typography>
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+                      Trạng thái hiện tại
+                    </Typography>
+                    <Chip
+                      label={
+                        warehouse.status === "ACTIVE"
+                          ? "Đang hoạt động"
+                          : "Ngừng hoạt động"
+                      }
+                      color={warehouse.status === "ACTIVE" ? "success" : "default"}
+                      size="small"
+                    />
+                  </Grid>
+                </Grid>
+              </Box>
 
-      {listError && <Alert type="error" showIcon title={listError} />}
-      {detailError && <Alert type="error" showIcon title={detailError} />}
-      {saveError && <Alert type="error" showIcon title={saveError} />}
-      {savedAt && (
-        <Alert
-          type="success"
-          showIcon
-          title="Đã lưu cấu hình kho"
-          description={`Cập nhật lúc ${savedAt}.`}
-        />
-      )}
-
-      {!listQuery.isLoading && warehouses.length === 0 && !listError && (
-        <Alert
-          type="warning"
-          showIcon
-          title="Chưa có kho tổng trong hệ thống"
-          description="Liên hệ quản trị hệ thống để khởi tạo kho tổng trước khi cấu hình."
-        />
-      )}
-
-      {warehouses.length > 1 && (
-        <Alert
-          type="warning"
-          showIcon
-          title={`Đang có ${warehouses.length} kho trong dữ liệu`}
-          description="Chỉ được giữ đúng một kho Đang hoạt động. Hãy chọn từng kho bên dưới để ngừng hoạt động kho thừa."
-        />
-      )}
-
-      <Card>
-        {listQuery.isLoading || detailQuery.isLoading ? (
-          <Skeleton active paragraph={{ rows: 6 }} />
-        ) : !warehouse ? (
-          <Typography.Text type="secondary">
-            Chưa có kho để hiển thị.
-          </Typography.Text>
-        ) : (
-          <>
-            {warehouses.length > 1 && (
-              <Row style={{ marginBottom: 16 }}>
-                <Col xs={24} md={12}>
-                  <Typography.Text type="secondary">Chọn kho</Typography.Text>
-                  <Select
-                    value={resolvedId}
-                    style={{ width: "100%", marginTop: 6 }}
-                    aria-label="Chọn kho"
-                    onChange={(value: string) => {
-                      setSelectedId(value);
-                      setSaveError("");
-                      setSavedAt("");
-                    }}
-                    options={warehouses.map((row) => ({
-                      value: row.id,
-                      label: `${row.code} · ${row.name}`,
-                    }))}
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <TextField
+                    id="warehouse-name"
+                    label="Tên kho"
+                    required
+                    fullWidth
+                    placeholder="Kho tổng Hoa Nam"
+                    value={formValues.name}
+                    onChange={(event) =>
+                      setFormValues((current) => ({ ...current, name: event.target.value }))
+                    }
+                    disabled={fieldsDisabled}
                   />
-                </Col>
-              </Row>
-            )}
-
-            <Descriptions
-              size="small"
-              column={{ xs: 1, md: 2 }}
-              style={{ marginBottom: 16 }}
-              items={[
-                { key: "code", label: "Mã kho", children: warehouse.code },
-                {
-                  key: "status",
-                  label: "Trạng thái hiện tại",
-                  children: (
-                    <Tag
-                      color={
-                        warehouse.status === "ACTIVE" ? "success" : "default"
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <FormControl fullWidth required disabled={fieldsDisabled}>
+                    <InputLabel id="warehouse-status-label">Trạng thái</InputLabel>
+                    <Select
+                      id="warehouse-status"
+                      labelId="warehouse-status-label"
+                      label="Trạng thái"
+                      value={formValues.status}
+                      onChange={(event) =>
+                        setFormValues((current) => ({
+                          ...current,
+                          status: event.target.value as MasterStatus,
+                        }))
                       }
                     >
-                      {businessLabel(
-                        MASTER_STATUS_LABELS,
-                        warehouse.status,
-                        "Trạng thái khác",
-                      ) === "Đang sử dụng"
-                        ? "Đang hoạt động"
-                        : "Ngừng hoạt động"}
-                    </Tag>
-                  ),
-                },
-              ]}
-            />
-
-            <Form
-              form={form}
-              layout="vertical"
-              disabled={!canManage || saveMutation.isPending}
-            >
-              <Row gutter={16}>
-                <Col xs={24} md={12}>
-                  <Form.Item
-                    name="name"
-                    label="Tên kho"
-                    rules={[
-                      { required: true, message: "Nhập tên kho." },
-                      { max: 200, message: "Tối đa 200 ký tự." },
-                    ]}
-                  >
-                    <Input placeholder="Kho tổng Hoa Nam" />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} md={12}>
-                  <Form.Item
-                    name="status"
-                    label="Trạng thái"
-                    rules={[{ required: true, message: "Chọn trạng thái." }]}
-                  >
-                    <Select options={STATUS_OPTIONS} />
-                  </Form.Item>
-                </Col>
-                <Col xs={24}>
-                  <Form.Item
-                    name="address"
+                      {STATUS_OPTIONS.map((option) => (
+                        <MenuItem key={option.value} value={option.value}>
+                          {option.label}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid size={12}>
+                  <TextField
+                    id="warehouse-address"
                     label="Địa chỉ"
-                    rules={[{ max: 500, message: "Tối đa 500 ký tự." }]}
-                  >
-                    <Input.TextArea rows={2} />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} md={12}>
-                  <Form.Item
-                    name="contact_person"
+                    fullWidth
+                    multiline
+                    minRows={2}
+                    value={formValues.address ?? ""}
+                    onChange={(event) =>
+                      setFormValues((current) => ({
+                        ...current,
+                        address: event.target.value,
+                      }))
+                    }
+                    disabled={fieldsDisabled}
+                    slotProps={{ htmlInput: { maxLength: 500 } }}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <TextField
+                    id="warehouse-contact-person"
                     label="Người liên hệ"
-                    rules={[{ max: 200, message: "Tối đa 200 ký tự." }]}
-                  >
-                    <Input />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} md={12}>
-                  <Form.Item
-                    name="phone"
+                    fullWidth
+                    value={formValues.contact_person ?? ""}
+                    onChange={(event) =>
+                      setFormValues((current) => ({
+                        ...current,
+                        contact_person: event.target.value,
+                      }))
+                    }
+                    disabled={fieldsDisabled}
+                    slotProps={{ htmlInput: { maxLength: 200 } }}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <TextField
+                    id="warehouse-phone"
                     label="Số điện thoại"
-                    rules={[
-                      { max: 30, message: "Tối đa 30 ký tự." },
-                      {
-                        pattern: /^0\d{9}$/,
-                        message: "Số điện thoại phải gồm đúng 10 chữ số và bắt đầu bằng số 0.",
-                      },
-                    ]}
-                  >
-                    <Input inputMode="numeric" maxLength={10} />
-                  </Form.Item>
-                </Col>
-              </Row>
-            </Form>
+                    fullWidth
+                    value={formValues.phone ?? ""}
+                    onChange={(event) =>
+                      setFormValues((current) => ({
+                        ...current,
+                        phone: event.target.value.replace(/\D/g, "").slice(0, 10),
+                      }))
+                    }
+                    disabled={fieldsDisabled}
+                    slotProps={{ htmlInput: { inputMode: "numeric", maxLength: 10 } }}
+                  />
+                </Grid>
+              </Grid>
 
-            {!canManage && (
-              <Typography.Text type="secondary">
-                Tài khoản hiện tại chỉ có quyền xem nên không thể sửa cấu hình kho.
-              </Typography.Text>
-            )}
-          </>
-        )}
-      </Card>
-    </Space>
+              {!canManage ? (
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                  Tài khoản hiện tại chỉ có quyền xem nên không thể sửa cấu hình
+                  kho.
+                </Typography>
+              ) : null}
+            </>
+          )}
+        </Card>
+
+        <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)} maxWidth="xs" fullWidth>
+          <DialogTitle>Đổi trạng thái kho?</DialogTitle>
+          <DialogContent>
+            <Typography variant="body2">
+              Hệ thống chỉ cho phép đúng một kho Đang hoạt động. Thao tác đổi
+              trạng thái không tạo chứng từ và không làm thay đổi tồn kho.
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setConfirmOpen(false)}>Hủy</Button>
+            <Button variant="contained" onClick={() => void confirmStatusChange()}>
+              Đồng ý
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </Stack>
+    </ThemeProvider>
   );
 }

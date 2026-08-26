@@ -1,5 +1,5 @@
 import { Avatar, Card, Descriptions, Space, Tag } from "antd";
-import { UserOutlined } from "@ant-design/icons";
+import { UserOutlined } from "@/shared/components/icons";
 import { PageHeader } from "@/shared/components";
 import { BRAND } from "@/app/theme";
 import { useAuthStore } from "@/shared/store/auth.store";

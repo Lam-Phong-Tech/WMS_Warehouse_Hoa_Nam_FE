@@ -2,22 +2,27 @@
 import { useEffect, useRef, useState, type Key } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Space, Table, Tag, Typography, message } from "antd";
+import { Button as MuiButton, MenuItem, Select, TextField, ThemeProvider } from "@mui/material";
+import { muiTheme } from "@/app/mui-theme";
 import type { ColumnsType, TablePaginationConfig } from "antd/es/table";
 import {
   CameraOutlined,
   EyeOutlined,
   PlusOutlined,
   ToolOutlined,
-} from "@ant-design/icons";
+} from "@/shared/components/icons";
 import { useQueryClient } from "@tanstack/react-query";
+import { ACTION_ICON_COLORS } from "@/shared/theme/actionIconColors";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import {
   TableLoadingBanner,
   tableEmptyText,
 } from "@/shared/components/feedback/BusinessState";
 import { CameraScanModal } from "@/shared/components/forms/CameraScanModal";
-import { MvpPageSizeSelector } from "@/shared/components/mvp/MvpListPagination";
-import { resolveApiPagination } from "@/shared/components/mvp/mvp-pagination";
+import {
+  MVP_PAGE_SIZE_OPTIONS,
+  resolveApiPagination,
+} from "@/shared/components/mvp/mvp-pagination";
 import { mvpRowNumber } from "@/shared/components/mvp/MvpSelectionCell";
 import { useHasPermission } from "@/shared/components/permission";
 import { useMvpDefects } from "@/modules/master-data/hooks/use-mvp-master";
@@ -43,6 +48,17 @@ import type {
 
 const SEARCH_DEBOUNCE_MS = 250;
 const DETAIL_SCREENS = new Set(["WAR-03"]);
+
+/** Toolbar filter nhỏ gọn — đồng bộ chuẩn mui-theme.ts (xem gotcha #4/#5 memory pilot MUI). */
+const TOOLBAR_SX = {
+  "&, & .MuiOutlinedInput-root": { height: 35 },
+  "& .MuiSelect-select, & .MuiInputBase-input": {
+    paddingTop: "8px !important",
+    paddingBottom: "8px !important",
+    fontSize: "13.5px !important",
+    boxSizing: "border-box",
+  },
+};
 
 interface ComponentIssueTarget {
   caseId: string;
@@ -280,7 +296,9 @@ export default function WarrantyPage() {
           type="button"
           onClick={() => setDetailId(row.id)}
         >
-          <EyeOutlined style={{ marginRight: 4 }} />
+          <EyeOutlined
+            style={{ marginRight: 4, color: ACTION_ICON_COLORS.view }}
+          />
           Mở
         </button>
       ),
@@ -291,10 +309,15 @@ export default function WarrantyPage() {
     setPage(nextPagination.current ?? 1);
   };
 
-  return (
-    <div className="warranty-page hn-mvp-source-screen">
-     
+  const perPageOptions = MVP_PAGE_SIZE_OPTIONS.includes(
+    perPage as (typeof MVP_PAGE_SIZE_OPTIONS)[number],
+  )
+    ? MVP_PAGE_SIZE_OPTIONS
+    : [...MVP_PAGE_SIZE_OPTIONS, perPage].sort((a, b) => a - b);
 
+  return (
+    <ThemeProvider theme={muiTheme}>
+      <div className="warranty-page hn-mvp-source-screen">
       {!canViewPii ? (
         <div className="footer-note" style={{ marginBottom: 8 }}>
           <ToolOutlined style={{ marginRight: 6 }} />
@@ -307,13 +330,13 @@ export default function WarrantyPage() {
         {/* Annex D SCR-WAR-01 scan-focus: auto-focus ô quét, Enter/đầu đọc submit ngay
             (không chờ debounce) và giữ focus sau khi tìm. §5.3 liệt kê camera là context
             hợp lệ cho cả "warranty receive/search" nên WAR-01 có nút camera fallback. */}
-        <input
-          ref={searchRef}
-          className="input search"
+        <TextField
           value={searchInput}
-          autoFocus
           placeholder="Quét hoặc nhập case / mã máy / mã tạm / SĐT..."
-          aria-label="Tìm case bảo hành"
+          slotProps={{
+            htmlInput: { "aria-label": "Tìm case bảo hành" },
+            input: { inputRef: searchRef, autoFocus: true },
+          }}
           onChange={(event) => setSearchInput(event.target.value)}
           onKeyDown={(event) => {
             if (event.key !== "Enter") return;
@@ -322,78 +345,90 @@ export default function WarrantyPage() {
             setPage(1);
             searchRef.current?.focus();
           }}
+          sx={{ minWidth: 220, ...TOOLBAR_SX }}
         />
-        <button
-          className="btn"
-          type="button"
+        <MuiButton
+          variant="outlined"
           aria-label="Quét mã máy bằng camera"
           onClick={() => setCameraOpen(true)}
+          startIcon={<CameraOutlined style={{ color: ACTION_ICON_COLORS.sync }} />}
         >
-          <CameraOutlined /> Camera
-        </button>
-        <select
-          className="select"
+          Camera
+        </MuiButton>
+        <Select
+          displayEmpty
           value={status}
-          aria-label="Lọc trạng thái bảo hành"
+          inputProps={{ "aria-label": "Lọc trạng thái bảo hành" }}
           onChange={(event) => {
             setStatus(event.target.value as WarrantyCaseStatus | "");
             setPage(1);
           }}
+          sx={{ minWidth: 160, ...TOOLBAR_SX }}
         >
-          <option value="">Trạng thái: Tất cả</option>
+          <MenuItem value="">Trạng thái: Tất cả</MenuItem>
           {WARRANTY_BASELINE_STATUSES.map((value) => (
-            <option key={value} value={value}>
+            <MenuItem key={value} value={value}>
               {WARRANTY_STATUS_LABELS[value]}
-            </option>
+            </MenuItem>
           ))}
-        </select>
-        <select
-          className="select"
+        </Select>
+        <Select
+          displayEmpty
           value={identification}
-          aria-label="Lọc loại nhận diện"
+          inputProps={{ "aria-label": "Lọc loại nhận diện" }}
           onChange={(event) => {
             setIdentification(
               event.target.value as WarrantyIdentificationType | "",
             );
             setPage(1);
           }}
+          sx={{ minWidth: 148, ...TOOLBAR_SX }}
         >
-          <option value="">Nhận diện: Tất cả</option>
-          <option value="IDENTIFIED">IDENTIFIED</option>
-          <option value="TEMP_ONLY">TEMP_ONLY</option>
-        </select>
-        <select
-          className="select"
+          <MenuItem value="">Nhận diện: Tất cả</MenuItem>
+          <MenuItem value="IDENTIFIED">IDENTIFIED</MenuItem>
+          <MenuItem value="TEMP_ONLY">TEMP_ONLY</MenuItem>
+        </Select>
+        <Select
+          displayEmpty
           value={defectId}
-          aria-label="Lọc bệnh/lỗi"
+          inputProps={{ "aria-label": "Lọc bệnh/lỗi" }}
           onChange={(event) => {
             setDefectId(event.target.value);
             setPage(1);
           }}
+          sx={{ minWidth: 148, ...TOOLBAR_SX }}
         >
-          <option value="">Bệnh/lỗi: Tất cả</option>
+          <MenuItem value="">Bệnh/lỗi: Tất cả</MenuItem>
           {(defectsQuery.data?.data ?? []).map((defect) => (
-            <option key={defect.defect_id} value={defect.defect_id}>
+            <MenuItem key={defect.defect_id} value={defect.defect_id}>
               {defect.defect_code} · {defect.defect_name}
-            </option>
+            </MenuItem>
           ))}
-        </select>
-        <MvpPageSizeSelector
+        </Select>
+        <Select
           value={perPage}
-          onChange={(value) => {
-            setPerPage(value);
+          inputProps={{ "aria-label": "Số dòng mỗi trang" }}
+          onChange={(event) => {
+            setPerPage(Number(event.target.value));
             setPage(1);
           }}
-        />
+          sx={{ minWidth: 100, ...TOOLBAR_SX }}
+        >
+          {perPageOptions.map((size) => (
+            <MenuItem key={size} value={size}>
+              {size} / trang
+            </MenuItem>
+          ))}
+        </Select>
         <div className="spacer" />
         {canManage ? (
-          <button
-            className="btn primary"
-            type="button"
+          <MuiButton
+            variant="contained"
             onClick={() => setIntakeOpen(true)}
+            startIcon={<PlusOutlined />}
           >
-            <PlusOutlined /> Tiếp nhận bảo hành
-          </button>
+            Tiếp nhận bảo hành
+          </MuiButton>
         ) : null}
       </div>
 
@@ -479,6 +514,7 @@ export default function WarrantyPage() {
           onChanged={refreshAll}
         />
       ) : null}
-    </div>
+      </div>
+    </ThemeProvider>
   );
 }

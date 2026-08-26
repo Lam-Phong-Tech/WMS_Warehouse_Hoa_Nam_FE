@@ -162,9 +162,10 @@ describe("WarrantyPage (WAR-01 hub)", () => {
     renderWithProviders(<WarrantyPage />, ["/warranty"]);
     await screen.findByText("BH-0001");
 
-    fireEvent.change(screen.getByLabelText("Lọc trạng thái bảo hành"), {
-      target: { value: "CHECKING" },
-    });
+    // Bộ lọc trạng thái là MUI Select (không còn <select> gốc) — mở menu rồi
+    // chọn option thay vì fireEvent.change trực tiếp lên value.
+    fireEvent.mouseDown(screen.getByLabelText("Lọc trạng thái bảo hành"));
+    fireEvent.click(await screen.findByRole("option", { name: "Đang kiểm tra" }));
 
     await waitFor(() => {
       expect(fetchWarrantyCases).toHaveBeenCalledWith(

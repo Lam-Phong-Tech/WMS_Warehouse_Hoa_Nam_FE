@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button, Input, Typography } from "antd";
 import type { InputRef } from "antd";
-import { BarcodeOutlined } from "@ant-design/icons";
+import { BarcodeOutlined } from "@/shared/components/icons";
 
 export interface ScanInputProps {
   value?: string;

@@ -2,16 +2,21 @@
 import { useEffect, useState, type Key } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Table, Tag, Typography } from "antd";
+import { Button as MuiButton, MenuItem, Select, TextField, ThemeProvider } from "@mui/material";
+import { muiTheme } from "@/app/mui-theme";
 import type { ColumnsType, TablePaginationConfig } from "antd/es/table";
-import { EyeOutlined, PlusOutlined } from "@ant-design/icons";
+import { EyeOutlined, PlusOutlined } from "@/shared/components/icons";
+import { ACTION_ICON_COLORS } from "@/shared/theme/actionIconColors";
 import { useQueryClient } from "@tanstack/react-query";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import {
   TableLoadingBanner,
   tableEmptyText,
 } from "@/shared/components/feedback/BusinessState";
-import { MvpPageSizeSelector } from "@/shared/components/mvp/MvpListPagination";
-import { resolveApiPagination } from "@/shared/components/mvp/mvp-pagination";
+import {
+  MVP_PAGE_SIZE_OPTIONS,
+  resolveApiPagination,
+} from "@/shared/components/mvp/mvp-pagination";
 import { mvpRowNumber } from "@/shared/components/mvp/MvpSelectionCell";
 import { useHasPermission } from "@/shared/components/permission";
 import {
@@ -28,6 +33,17 @@ import { formatDateTime } from "@/shared/utils/format-date";
 
 const SEARCH_DEBOUNCE_MS = 250;
 const numberFormatter = new Intl.NumberFormat("vi-VN");
+
+/** Toolbar filter nhỏ gọn — đồng bộ chuẩn mui-theme.ts (xem gotcha #4/#5 memory pilot MUI). */
+const TOOLBAR_SX = {
+  "&, & .MuiOutlinedInput-root": { height: 35 },
+  "& .MuiSelect-select, & .MuiInputBase-input": {
+    paddingTop: "8px !important",
+    paddingBottom: "8px !important",
+    fontSize: "13.5px !important",
+    boxSizing: "border-box",
+  },
+};
 
 /** REV-00 · Danh sách phiếu điều chỉnh tồn kho bằng nghiệp vụ hoàn đảo. */
 export default function ReversalPage() {
@@ -184,7 +200,9 @@ export default function ReversalPage() {
           type="button"
           onClick={() => setDetailId(row.id)}
         >
-          <EyeOutlined style={{ marginRight: 4 }} />
+          <EyeOutlined
+            style={{ marginRight: 4, color: ACTION_ICON_COLORS.view }}
+          />
           Mở
         </button>
       ),
@@ -195,9 +213,15 @@ export default function ReversalPage() {
     setPage(nextPagination.current ?? 1);
   };
 
+  const perPageOptions = MVP_PAGE_SIZE_OPTIONS.includes(
+    perPage as (typeof MVP_PAGE_SIZE_OPTIONS)[number],
+  )
+    ? MVP_PAGE_SIZE_OPTIONS
+    : [...MVP_PAGE_SIZE_OPTIONS, perPage].sort((a, b) => a - b);
+
   return (
-    <div className="reversal-page hn-mvp-source-screen">
-      
+    <ThemeProvider theme={muiTheme}>
+      <div className="reversal-page hn-mvp-source-screen">
       {!canPost ? (
         <div
           className="footer-note"
@@ -212,45 +236,54 @@ export default function ReversalPage() {
       ) : null}
 
       <div className="toolbar">
-        <input
-          className="input search"
+        <TextField
           value={searchInput}
           placeholder="Mã điều chỉnh, chứng từ gốc, lý do..."
-          aria-label="Tìm phiếu điều chỉnh tồn kho"
+          slotProps={{ htmlInput: { "aria-label": "Tìm phiếu điều chỉnh tồn kho" } }}
           onChange={(event) => setSearchInput(event.target.value)}
+          sx={{ minWidth: 220, ...TOOLBAR_SX }}
         />
-        <select
-          className="select"
+        <Select
+          displayEmpty
           value={statusFilter}
-          aria-label="Lọc trạng thái phiếu điều chỉnh"
+          inputProps={{ "aria-label": "Lọc trạng thái phiếu điều chỉnh" }}
           onChange={(event) => {
             setStatusFilter(event.target.value);
             setPage(1);
           }}
+          sx={{ minWidth: 168, ...TOOLBAR_SX }}
         >
-          <option value="">Trạng thái: Tất cả</option>
+          <MenuItem value="">Trạng thái: Tất cả</MenuItem>
           {Object.entries(REVERSAL_STATUS_LABELS).map(([value, label]) => (
-            <option key={value} value={value}>
+            <MenuItem key={value} value={value}>
               {label.replace(/ ·.*$/, "")}
-            </option>
+            </MenuItem>
           ))}
-        </select>
-        <MvpPageSizeSelector
+        </Select>
+        <Select
           value={perPage}
-          onChange={(value) => {
-            setPerPage(value);
+          inputProps={{ "aria-label": "Số dòng mỗi trang" }}
+          onChange={(event) => {
+            setPerPage(Number(event.target.value));
             setPage(1);
           }}
-        />
+          sx={{ minWidth: 100, ...TOOLBAR_SX }}
+        >
+          {perPageOptions.map((size) => (
+            <MenuItem key={size} value={size}>
+              {size} / trang
+            </MenuItem>
+          ))}
+        </Select>
         <div className="spacer" />
         {canPost ? (
-          <button
-            className="btn primary"
-            type="button"
+          <MuiButton
+            variant="contained"
             onClick={() => setCreateOpen(true)}
+            startIcon={<PlusOutlined />}
           >
-            <PlusOutlined /> Tạo phiếu điều chỉnh
-          </button>
+            Tạo phiếu điều chỉnh
+          </MuiButton>
         ) : null}
       </div>
 
@@ -311,6 +344,7 @@ export default function ReversalPage() {
           onClose={() => setDetailId(null)}
         />
       ) : null}
-    </div>
+      </div>
+    </ThemeProvider>
   );
 }

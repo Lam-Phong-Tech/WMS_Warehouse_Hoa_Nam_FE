@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Button } from "antd";
 import type { ButtonProps } from "antd";
-import { SaveOutlined } from "@ant-design/icons";
+import { SaveOutlined } from "@/shared/components/icons";
 import { UI_STATE, uiStateTestId } from "@/shared/constants/ui-state";
 
 export interface SubmitButtonProps extends Omit<ButtonProps, "htmlType"> {

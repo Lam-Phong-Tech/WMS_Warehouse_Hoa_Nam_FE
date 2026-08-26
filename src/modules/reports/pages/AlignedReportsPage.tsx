@@ -17,7 +17,7 @@ import {
   DownloadOutlined,
   FilePdfOutlined,
   SearchOutlined,
-} from "@ant-design/icons";
+} from "@/shared/components/icons";
 import { useQuery } from "@tanstack/react-query";
 import dayjs, { type Dayjs } from "dayjs";
 import { toast } from "sonner";
@@ -42,6 +42,7 @@ import {
 } from "@/shared/constants/business-labels";
 import { UI_STATE, uiStateProps } from "@/shared/constants/ui-state";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
+import { ACTION_ICON_COLORS } from "@/shared/theme/actionIconColors";
 import { MvpPageSizeSelector } from "@/shared/components/mvp/MvpListPagination";
 import { mvpRowNumber } from "@/shared/components/mvp/MvpSelectionCell";
 import {
@@ -1778,7 +1779,9 @@ export default function AlignedReportsPage() {
           action="export"
           permissionCode="REPORT_EXPORT"
           mode="disable"
-          icon={<DownloadOutlined />}
+          icon={
+            <DownloadOutlined style={{ color: ACTION_ICON_COLORS.download }} />
+          }
           loading={exporting === "xlsx"}
           disabled={
             Boolean(exporting) ||

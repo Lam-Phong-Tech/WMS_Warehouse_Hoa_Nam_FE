@@ -1,6 +1,6 @@
 import { Breadcrumb } from "antd";
 import { Link, useLocation } from "react-router-dom";
-import { HomeOutlined } from "@ant-design/icons";
+import { HomeOutlined } from "@/shared/components/icons";
 import { getBreadcrumb } from "@/app/layouts/menu";
 import { layoutStyles } from "@/app/layouts/layout.styles";
 

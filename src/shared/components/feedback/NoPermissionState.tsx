@@ -2,7 +2,7 @@ import {
   ArrowLeftOutlined,
   HomeOutlined,
   LockOutlined,
-} from "@ant-design/icons";
+} from "@/shared/components/icons";
 import { Button, Result, Space, Typography } from "antd";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "@/shared/constants/routes";

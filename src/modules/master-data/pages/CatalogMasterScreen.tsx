@@ -2,24 +2,31 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Alert,
+  Autocomplete,
+  Box,
   Button,
   Card,
-  Col,
-  Form,
-  Input,
-  InputNumber,
-  Modal,
-  Row,
-  Select,
-  Space,
-  Tag,
+  Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Grid,
+  IconButton,
+  MenuItem,
+  Stack,
+  Tab,
   Tabs,
+  TextField,
+  ThemeProvider,
   Typography,
-} from "antd";
+} from "@mui/material";
 import type { ColumnsType } from "antd/es/table";
 import { toast } from "sonner";
-import { EditOutlined, PlusOutlined } from "@ant-design/icons";
+import { muiTheme } from "@/app/mui-theme";
+import { CloseOutlined, EditOutlined, PlusOutlined, SaveOutlined } from "@/shared/components/icons";
 import { DataTable } from "@/shared/components";
+import { ACTION_ICON_COLORS } from "@/shared/theme/actionIconColors";
 import {
   catalogMasterSupportsBrand,
   createCatalogMaster,
@@ -32,8 +39,10 @@ import {
 } from "@/modules/master-data/services/catalog-master.service";
 import type { MasterStatus } from "@/modules/master-data/types/mvp-master.types";
 import { getApiErrorMessage, normalizeError } from "@/shared/api/api-error";
-import { MvpPageSizeSelector } from "@/shared/components/mvp/MvpListPagination";
-import { resolveApiPagination } from "@/shared/components/mvp/mvp-pagination";
+import {
+  MVP_PAGE_SIZE_OPTIONS,
+  resolveApiPagination,
+} from "@/shared/components/mvp/mvp-pagination";
 import { useCan } from "@/shared/components/permission";
 import { WMS_PERMISSION_CATALOG as P } from "@/shared/constants/wms-permissions";
 import {
@@ -104,6 +113,17 @@ const STATUS_OPTIONS: Array<{ value: MasterStatus; label: string }> = [
   { value: "INACTIVE", label: "Ngừng sử dụng" },
 ];
 
+/** Toolbar filter nhỏ gọn hơn field trong form — đồng bộ chuẩn mui-theme.ts. */
+const CATALOG_TOOLBAR_SX = {
+  "&, & .MuiOutlinedInput-root": { height: 35 },
+  "& .MuiSelect-select, & .MuiInputBase-input": {
+    paddingTop: "8px !important",
+    paddingBottom: "8px !important",
+    fontSize: "13.5px !important",
+    boxSizing: "border-box",
+  },
+};
+
 interface CatalogFormValues {
   code: string;
   name: string;
@@ -137,7 +157,6 @@ function saveErrorMessage(error: unknown): string {
 }
 
 export function CatalogMasterScreen() {
-  const [form] = Form.useForm<CatalogFormValues>();
   const queryClient = useQueryClient();
   const canManage = useCan(P.CATALOG_MANAGE);
 
@@ -149,6 +168,7 @@ export function CatalogMasterScreen() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRecord, setEditingRecord] =
     useState<CatalogMasterRecord | null>(null);
+  const [formValues, setFormValues] = useState<CatalogFormValues>(EMPTY_FORM);
   const [formError, setFormError] = useState("");
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
 
@@ -219,8 +239,8 @@ export function CatalogMasterScreen() {
       queryClient.invalidateQueries({ queryKey: ["catalog-master"] }),
   });
 
-  const changeTab = (key: string) => {
-    setActiveKind(key as CatalogMasterKind);
+  const changeTab = (kind: CatalogMasterKind) => {
+    setActiveKind(kind);
     setKeyword("");
     setStatusFilter("");
     setPage(1);
@@ -229,14 +249,14 @@ export function CatalogMasterScreen() {
   const openCreate = () => {
     setEditingRecord(null);
     setFormError("");
-    form.resetFields();
+    setFormValues({ ...EMPTY_FORM });
     setIsModalOpen(true);
   };
 
   const openEdit = (record: CatalogMasterRecord) => {
     setEditingRecord(record);
     setFormError("");
-    form.setFieldsValue({
+    setFormValues({
       code: record.code,
       name: record.name,
       brand_id: record.brand_id ?? undefined,
@@ -254,12 +274,29 @@ export function CatalogMasterScreen() {
     setFormError("");
   };
 
+  const validateForm = (values: CatalogFormValues): string => {
+    const code = values.code.trim();
+    const name = values.name.trim();
+    if (!code) return `Nhập ${activeTab.codeLabel}.`;
+    if (code.length > 80) return "Mã tối đa 80 ký tự.";
+    if (!name) return `Nhập ${activeTab.nameLabel}.`;
+    if (name.length > 200) return "Tên tối đa 200 ký tự.";
+    if ((values.description ?? "").length > 2000)
+      return "Mô tả tối đa 2000 ký tự.";
+    if (!values.status) return "Chọn trạng thái.";
+    return "";
+  };
+
   const handleSubmit = async () => {
     setFormError("");
-    let values: CatalogFormValues;
-    try {
-      values = await form.validateFields();
-    } catch {
+    const values: CatalogFormValues = {
+      ...formValues,
+      code: formValues.code.trim(),
+      name: formValues.name.trim(),
+    };
+    const validationError = validateForm(values);
+    if (validationError) {
+      setFormError(validationError);
       return;
     }
     try {
@@ -282,7 +319,9 @@ export function CatalogMasterScreen() {
       dataIndex: "code",
       width: 200,
       render: (value: string) => (
-        <Typography.Text strong>{value}</Typography.Text>
+        <Typography variant="body2" sx={{ fontWeight: 700 }}>
+          {value}
+        </Typography>
       ),
     },
     { title: activeTab.nameLabel, dataIndex: "name" },
@@ -296,7 +335,9 @@ export function CatalogMasterScreen() {
               value ? (
                 (brandNameById.get(value) ?? value)
               ) : (
-                <Typography.Text type="secondary">—</Typography.Text>
+                <Typography variant="body2" color="text.secondary">
+                  —
+                </Typography>
               ),
           } as ColumnsType<CatalogMasterRecord>[number],
         ]
@@ -305,7 +346,13 @@ export function CatalogMasterScreen() {
       title: "Mô tả",
       dataIndex: "description",
       render: (value: string | null) =>
-        value ? value : <Typography.Text type="secondary">—</Typography.Text>,
+        value ? (
+          value
+        ) : (
+          <Typography variant="body2" color="text.secondary">
+            —
+          </Typography>
+        ),
     },
     { title: "Thứ tự", dataIndex: "sort_order", width: 90, align: "right" },
     {
@@ -313,9 +360,11 @@ export function CatalogMasterScreen() {
       dataIndex: "status",
       width: 140,
       render: (value: MasterStatus) => (
-        <Tag color={value === "ACTIVE" ? "success" : "default"}>
-          {businessLabel(MASTER_STATUS_LABELS, value, "Trạng thái khác")}
-        </Tag>
+        <Chip
+          label={businessLabel(MASTER_STATUS_LABELS, value, "Trạng thái khác")}
+          size="small"
+          color={value === "ACTIVE" ? "success" : "default"}
+        />
       ),
     },
     {
@@ -325,10 +374,12 @@ export function CatalogMasterScreen() {
       render: (_, record) =>
         canManage ? (
           <Button
-            type="text"
-            icon={<EditOutlined />}
+            size="small"
             aria-label={`Sửa ${record.code}`}
             onClick={() => openEdit(record)}
+            startIcon={
+              <EditOutlined style={{ color: ACTION_ICON_COLORS.edit }} />
+            }
           >
             Sửa
           </Button>
@@ -340,208 +391,279 @@ export function CatalogMasterScreen() {
     ? getApiErrorMessage(listQuery.error, "Không tải được danh mục.")
     : "";
 
-  const panel = (
-    <>
-      {listError && (
-        <Alert
-          type="error"
-          showIcon
-          title={listError}
-          style={{ marginBottom: 12 }}
-        />
-      )}
-
-      <Row
-        justify="space-between"
-        align="middle"
-        gutter={[12, 12]}
-        style={{ marginBottom: 12 }}
-      >
-        <Col>
-          <Space wrap size={12}>
-            <Input
-              allowClear
-              value={keyword}
-              placeholder={`Tìm mã / tên ${activeTab.itemLabel}`}
-              aria-label={`Tìm ${activeTab.itemLabel}`}
-              style={{ width: 260 }}
-              onChange={(event) => {
-                setKeyword(event.target.value);
-                setPage(1);
-              }}
-            />
-            <Select<MasterStatus | "">
-              value={statusFilter}
-              style={{ width: 200 }}
-              aria-label="Lọc theo trạng thái"
-              onChange={(value) => {
-                setStatusFilter(value);
-                setPage(1);
-              }}
-              options={[
-                { value: "", label: "Trạng thái: Tất cả" },
-                ...STATUS_OPTIONS,
-              ]}
-            />
-            <MvpPageSizeSelector
-              value={perPage}
-              onChange={(value) => {
-                setPerPage(value);
-                setPage(1);
-              }}
-            />
-          </Space>
-        </Col>
-        {canManage && (
-          <Col>
-            <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-              Tạo {activeTab.itemLabel}
-            </Button>
-          </Col>
-        )}
-      </Row>
-
-      <DataTable<CatalogMasterRecord>
-        rowKey="id"
-        size="small"
-        loading={listQuery.isLoading || listQuery.isFetching}
-        dataSource={rows}
-        columns={columns}
-        locale={{ emptyText: `Chưa có ${activeTab.itemLabel} nào.` }}
-        scroll={{ x: "max-content" }}
-        rowSelection={{
-          type: "checkbox",
-          selectedRowKeys,
-          onChange: setSelectedRowKeys,
-        }}
-        pagination={{
-          current: pagination.current,
-          pageSize: perPage,
-          total: pagination.total,
-          showSizeChanger: false,
-          showTotal: (total) => `Tổng ${total} ${activeTab.itemLabel}`,
-          onChange: setPage,
-        }}
-      />
-    </>
-  );
+  const selectedBrandOption =
+    brandOptions.find((option) => option.value === formValues.brand_id) ?? null;
 
   return (
-    <Space orientation="vertical" size={16} style={{ width: "100%" }}>
-      <Card styles={{ body: { paddingTop: 12 } }}>
-        <Tabs
-          activeKey={activeKind}
-          onChange={changeTab}
-          items={CATALOG_TABS.map((tab) => ({
-            key: tab.kind,
-            label: tab.label,
-            children: tab.kind === activeKind ? panel : null,
-          }))}
-        />
-      </Card>
-
-      <Modal
-        title={`${editingRecord ? "Sửa" : "Tạo"} ${activeTab.itemLabel}`}
-        open={isModalOpen}
-        onCancel={closeModal}
-        onOk={handleSubmit}
-        okText={saveMutation.isPending ? "Đang lưu..." : "Lưu"}
-        cancelText="Hủy"
-        confirmLoading={saveMutation.isPending}
-        centered
-        width={640}
-        mask={{ closable: false }}
-        forceRender
-      >
-        {formError && (
-          <Alert
-            type="error"
-            showIcon
-            title={formError}
-            style={{ marginBottom: 12 }}
-          />
-        )}
-        <Form form={form} layout="vertical" initialValues={EMPTY_FORM}>
-          <Form.Item
-            name="code"
-            label={activeTab.codeLabel}
-            rules={[
-              { required: true, message: `Nhập ${activeTab.codeLabel}.` },
-              { max: 80, message: "Tối đa 80 ký tự." },
-            ]}
-            extra={
-              editingRecord
-                ? "Nếu mã đã được SKU sử dụng thì hệ thống sẽ không cho phép đổi."
-                : undefined
-            }
-          >
-            <Input
-              placeholder={activeTab.codePlaceholder}
-              disabled={saveMutation.isPending}
-            />
-          </Form.Item>
-          <Form.Item
-            name="name"
-            label={activeTab.nameLabel}
-            rules={[
-              { required: true, message: `Nhập ${activeTab.nameLabel}.` },
-              { max: 200, message: "Tối đa 200 ký tự." },
-            ]}
-          >
-            <Input
-              placeholder={activeTab.namePlaceholder}
-              disabled={saveMutation.isPending}
-            />
-          </Form.Item>
-          {supportsBrand && (
-            <Form.Item
-              name="brand_id"
-              label="Hãng"
-              extra="Chỉ hiển thị các hãng đang sử dụng."
+    <ThemeProvider theme={muiTheme}>
+      <Stack spacing={2}>
+        <Card variant="outlined" sx={{ borderRadius: 2 }}>
+          <Box sx={{ borderBottom: "1px solid", borderColor: "divider", px: 2 }}>
+            <Tabs
+              value={activeKind}
+              onChange={(_event, value) => changeTab(value as CatalogMasterKind)}
+              variant="scrollable"
+              scrollButtons="auto"
             >
-              <Select
-                allowClear
-                showSearch
-                optionFilterProp="label"
-                placeholder="Chọn hãng (không bắt buộc)"
-                loading={brandQuery.isLoading}
-                options={brandOptions}
-                disabled={saveMutation.isPending}
-              />
-            </Form.Item>
-          )}
-          <Form.Item
-            name="description"
-            label="Mô tả"
-            rules={[{ max: 2000, message: "Tối đa 2000 ký tự." }]}
-          >
-            <Input.TextArea rows={3} disabled={saveMutation.isPending} />
-          </Form.Item>
-          <Row gutter={12}>
-            <Col xs={24} sm={12}>
-              <Form.Item name="sort_order" label="Thứ tự hiển thị">
-                <InputNumber
-                  min={0}
-                  style={{ width: "100%" }}
-                  disabled={saveMutation.isPending}
+              {CATALOG_TABS.map((tab) => (
+                <Tab key={tab.kind} value={tab.kind} label={tab.label} />
+              ))}
+            </Tabs>
+          </Box>
+
+          <Box sx={{ p: 2 }}>
+            {listError ? (
+              <Alert severity="error" sx={{ mb: 1.5 }}>
+                {listError}
+              </Alert>
+            ) : null}
+
+            <Stack
+              direction="row"
+              spacing={1.5}
+              sx={{ justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", mb: 1.5, rowGap: 1.5 }}
+            >
+              <Stack direction="row" spacing={1.5} sx={{ flexWrap: "wrap", rowGap: 1.5 }}>
+                <TextField
+                  value={keyword}
+                  placeholder={`Tìm mã / tên ${activeTab.itemLabel}`}
+                  slotProps={{ htmlInput: { "aria-label": `Tìm ${activeTab.itemLabel}` } }}
+                  onChange={(event) => {
+                    setKeyword(event.target.value);
+                    setPage(1);
+                  }}
+                  sx={{ minWidth: 220, ...CATALOG_TOOLBAR_SX }}
                 />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12}>
-              <Form.Item
-                name="status"
-                label="Trạng thái"
-                rules={[{ required: true, message: "Chọn trạng thái." }]}
-              >
-                <Select
-                  options={STATUS_OPTIONS}
+                <TextField
+                  select
+                  value={statusFilter}
+                  slotProps={{
+                    select: { displayEmpty: true },
+                    htmlInput: { "aria-label": "Lọc theo trạng thái" },
+                  }}
+                  onChange={(event) => {
+                    setStatusFilter(event.target.value as MasterStatus | "");
+                    setPage(1);
+                  }}
+                  sx={{ minWidth: 168, ...CATALOG_TOOLBAR_SX }}
+                >
+                  <MenuItem value="">Trạng thái: Tất cả</MenuItem>
+                  {STATUS_OPTIONS.map((option) => (
+                    <MenuItem key={option.value} value={option.value}>
+                      {option.label}
+                    </MenuItem>
+                  ))}
+                </TextField>
+                <TextField
+                  select
+                  value={perPage}
+                  slotProps={{ htmlInput: { "aria-label": "Số dòng mỗi trang" } }}
+                  onChange={(event) => {
+                    setPerPage(Number(event.target.value));
+                    setPage(1);
+                  }}
+                  sx={{ minWidth: 100, ...CATALOG_TOOLBAR_SX }}
+                >
+                  {MVP_PAGE_SIZE_OPTIONS.map((size) => (
+                    <MenuItem key={size} value={size}>
+                      {size} / trang
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Stack>
+              {canManage ? (
+                <Button variant="contained" onClick={openCreate} startIcon={<PlusOutlined />}>
+                  Tạo {activeTab.itemLabel}
+                </Button>
+              ) : null}
+            </Stack>
+
+            <DataTable<CatalogMasterRecord>
+              rowKey="id"
+              size="small"
+              loading={listQuery.isLoading || listQuery.isFetching}
+              dataSource={rows}
+              columns={columns}
+              locale={{ emptyText: `Chưa có ${activeTab.itemLabel} nào.` }}
+              scroll={{ x: "max-content" }}
+              rowSelection={{
+                type: "checkbox",
+                selectedRowKeys,
+                onChange: setSelectedRowKeys,
+              }}
+              pagination={{
+                current: pagination.current,
+                pageSize: perPage,
+                total: pagination.total,
+                showSizeChanger: false,
+                showTotal: (total) => `Tổng ${total} ${activeTab.itemLabel}`,
+                onChange: setPage,
+              }}
+            />
+          </Box>
+        </Card>
+
+        <Dialog open={isModalOpen} onClose={closeModal} maxWidth="sm" fullWidth>
+          <DialogTitle sx={{ pr: 6, position: "relative" }}>
+            {editingRecord ? "Sửa" : "Tạo"} {activeTab.itemLabel}
+            <IconButton
+              aria-label="Đóng"
+              onClick={closeModal}
+              disabled={saveMutation.isPending}
+              sx={{ position: "absolute", right: 10, top: 8 }}
+            >
+              <CloseOutlined style={{ fontSize: 15 }} />
+            </IconButton>
+          </DialogTitle>
+          <DialogContent dividers>
+            {formError ? (
+              <Alert severity="error" sx={{ mb: "14px" }}>
+                {formError}
+              </Alert>
+            ) : null}
+            <Grid container spacing={2}>
+              <Grid size={12}>
+                <TextField
+                  id="catalog-code"
+                  label={activeTab.codeLabel}
+                  required
+                  fullWidth
+                  placeholder={activeTab.codePlaceholder}
+                  value={formValues.code}
+                  onChange={(event) =>
+                    setFormValues((current) => ({ ...current, code: event.target.value }))
+                  }
                   disabled={saveMutation.isPending}
+                  helperText={
+                    editingRecord
+                      ? "Nếu mã đã được SKU sử dụng thì hệ thống sẽ không cho phép đổi."
+                      : undefined
+                  }
+                  slotProps={{ htmlInput: { maxLength: 80 } }}
                 />
-              </Form.Item>
-            </Col>
-          </Row>
-        </Form>
-      </Modal>
-    </Space>
+              </Grid>
+              <Grid size={12}>
+                <TextField
+                  id="catalog-name"
+                  label={activeTab.nameLabel}
+                  required
+                  fullWidth
+                  placeholder={activeTab.namePlaceholder}
+                  value={formValues.name}
+                  onChange={(event) =>
+                    setFormValues((current) => ({ ...current, name: event.target.value }))
+                  }
+                  disabled={saveMutation.isPending}
+                  slotProps={{ htmlInput: { maxLength: 200 } }}
+                />
+              </Grid>
+              {supportsBrand ? (
+                <Grid size={12}>
+                  <Autocomplete
+                    options={brandOptions}
+                    getOptionLabel={(option) => option.label}
+                    isOptionEqualToValue={(option, value) => option.value === value.value}
+                    value={selectedBrandOption}
+                    onChange={(_event, newValue) =>
+                      setFormValues((current) => ({
+                        ...current,
+                        brand_id: newValue?.value,
+                      }))
+                    }
+                    loading={brandQuery.isLoading}
+                    disabled={saveMutation.isPending}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Hãng"
+                        placeholder="Chọn hãng (không bắt buộc)"
+                        helperText="Chỉ hiển thị các hãng đang sử dụng."
+                      />
+                    )}
+                  />
+                </Grid>
+              ) : null}
+              <Grid size={12}>
+                <TextField
+                  id="catalog-description"
+                  label="Mô tả"
+                  fullWidth
+                  multiline
+                  minRows={3}
+                  value={formValues.description ?? ""}
+                  onChange={(event) =>
+                    setFormValues((current) => ({
+                      ...current,
+                      description: event.target.value,
+                    }))
+                  }
+                  disabled={saveMutation.isPending}
+                  slotProps={{ htmlInput: { maxLength: 2000 } }}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  id="catalog-sort-order"
+                  label="Thứ tự hiển thị"
+                  type="number"
+                  fullWidth
+                  value={formValues.sort_order ?? 0}
+                  onChange={(event) =>
+                    setFormValues((current) => ({
+                      ...current,
+                      sort_order: Number(event.target.value) || 0,
+                    }))
+                  }
+                  disabled={saveMutation.isPending}
+                  slotProps={{ htmlInput: { min: 0 } }}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  id="catalog-status"
+                  select
+                  label="Trạng thái"
+                  required
+                  fullWidth
+                  value={formValues.status}
+                  onChange={(event) =>
+                    setFormValues((current) => ({
+                      ...current,
+                      status: event.target.value as MasterStatus,
+                    }))
+                  }
+                  disabled={saveMutation.isPending}
+                >
+                  {STATUS_OPTIONS.map((option) => (
+                    <MenuItem key={option.value} value={option.value}>
+                      {option.label}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+            </Grid>
+          </DialogContent>
+          <DialogActions>
+            <Button
+              onClick={closeModal}
+              disabled={saveMutation.isPending}
+              startIcon={
+                <CloseOutlined style={{ color: ACTION_ICON_COLORS.neutral }} />
+              }
+            >
+              Hủy
+            </Button>
+            <Button
+              variant="contained"
+              onClick={() => void handleSubmit()}
+              disabled={saveMutation.isPending}
+              startIcon={<SaveOutlined />}
+            >
+              {saveMutation.isPending ? "Đang lưu..." : "Lưu"}
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </Stack>
+    </ThemeProvider>
   );
 }

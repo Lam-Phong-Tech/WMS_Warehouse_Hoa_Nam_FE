@@ -1,18 +1,21 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Alert,
+  Autocomplete,
   Button,
-  Col,
-  Form,
-  Input,
-  Modal,
-  Row,
-  Select,
-  Space,
-} from "antd";
-import { SaveOutlined } from "@ant-design/icons";
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Grid,
+  IconButton,
+  TextField,
+  ThemeProvider,
+} from "@mui/material";
+import { CloseOutlined, SaveOutlined } from "@/shared/components/icons";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { muiTheme } from "@/app/mui-theme";
 import { getApiErrorMessage, normalizeError } from "@/shared/api/api-error";
 import {
   hasAnyWmsPermission,
@@ -33,8 +36,8 @@ import type {
 interface FormValues {
   warehouseId: string;
   documentDate: string;
-  sourceName?: string;
-  note?: string;
+  sourceName: string;
+  note: string;
 }
 
 export interface InboundDraftModalProps {
@@ -59,6 +62,13 @@ function useInboundPermission(code: string) {
   return hasAnyWmsPermission(permissionCodes, [code], isSuperAdmin);
 }
 
+const EMPTY_FORM: FormValues = {
+  warehouseId: "",
+  documentDate: "",
+  sourceName: "",
+  note: "",
+};
+
 /**
  * GĐ1 IN-02 — create/edit only the receipt header.
  * SKU and quantity are never entered here; scan is the authoritative source.
@@ -68,7 +78,8 @@ export function InboundDraftModal({
   onClose,
   onSaved,
 }: InboundDraftModalProps) {
-  const [form] = Form.useForm<FormValues>();
+  const [formValues, setFormValues] = useState<FormValues>(EMPTY_FORM);
+  const [formError, setFormError] = useState("");
   const initializedRef = useRef<string | null>(null);
   const detailQuery = useInboundDetail(documentId);
   const warehousesQuery = useQuery({
@@ -88,7 +99,7 @@ export function InboundDraftModal({
       const firstWarehouse = warehousesQuery.data?.[0] as
         | Record<string, unknown>
         | undefined;
-      form.setFieldsValue({
+      setFormValues({
         documentDate: localToday(),
         warehouseId: text(firstWarehouse?.id ?? firstWarehouse?.warehouse_id),
         sourceName: "",
@@ -97,14 +108,14 @@ export function InboundDraftModal({
       return;
     }
     if (!detail || initializedRef.current === documentId) return;
-    form.setFieldsValue({
+    setFormValues({
       documentDate: detail.document.date?.slice(0, 10) || localToday(),
       warehouseId: detail.document.warehouseId,
       sourceName: detail.document.source === "-" ? "" : detail.document.source,
       note: detail.document.note ?? "",
     });
     initializedRef.current = documentId;
-  }, [detail, documentId, form, warehousesQuery.data]);
+  }, [detail, documentId, warehousesQuery.data]);
 
   const warehouseOptions = (warehousesQuery.data ?? []).map(
     (warehouse: Record<string, unknown>) => {
@@ -115,16 +126,28 @@ export function InboundDraftModal({
       return { value: id, label: label || id };
     },
   );
+  const selectedWarehouseOption =
+    warehouseOptions.find((option) => option.value === formValues.warehouseId) ??
+    null;
 
-  const handleSave = async (values: FormValues) => {
+  const handleSave = async () => {
+    setFormError("");
+    if (!formValues.documentDate) {
+      setFormError("Chọn ngày chứng từ.");
+      return;
+    }
+    if (!documentId && !formValues.warehouseId) {
+      setFormError("Chọn kho nhận.");
+      return;
+    }
     if (!canCreate || !mutable) return;
     try {
       if (documentId) {
         if (!detail) return;
         const payload: UpdateInboundPayload = {
-          doc_date: values.documentDate || null,
-          source_reference: values.sourceName?.trim() || null,
-          note: values.note?.trim() || null,
+          doc_date: formValues.documentDate || null,
+          source_reference: formValues.sourceName?.trim() || null,
+          note: formValues.note?.trim() || null,
         };
         const updated = await updateMutation.mutateAsync({
           id: documentId,
@@ -137,10 +160,10 @@ export function InboundDraftModal({
       }
 
       const payload: CreateInboundPayload = {
-        doc_date: values.documentDate || null,
-        dst_warehouse_id: values.warehouseId,
-        source_reference: values.sourceName?.trim() || null,
-        note: values.note?.trim() || null,
+        doc_date: formValues.documentDate || null,
+        dst_warehouse_id: formValues.warehouseId,
+        source_reference: formValues.sourceName?.trim() || null,
+        note: formValues.note?.trim() || null,
       };
       const created = await createMutation.mutateAsync(payload);
       toast.success(
@@ -157,114 +180,142 @@ export function InboundDraftModal({
   };
 
   return (
-    <Modal
-      title={documentId ? "Thông tin phiếu nhập" : "Tạo phiếu nhập"}
-      open
-      width={760}
-      footer={null}
-      onCancel={onClose}
-      centered
-      mask={{ closable: false }}
-      closable={!saving}
-      destroyOnHidden
-    >
-      <Alert
-        type="info"
-        showIcon
-        style={{ marginBottom: 16 }}
-        title="Phiếu nhập theo số lượng quét thực tế"
-        description="Không nhập SKU hoặc số lượng dự kiến. Sau khi tạo phiếu, quét QR/Barcode sản phẩm; hệ thống tự nhận SKU, tự cộng số lượng theo SKU và chỉ tăng tồn khi bấm Ghi nhận nhập."
-      />
+    <ThemeProvider theme={muiTheme}>
+      <Dialog open onClose={onClose} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ pr: 6, position: "relative" }}>
+          {documentId ? "Thông tin phiếu nhập" : "Tạo phiếu nhập"}
+          <IconButton
+            aria-label="Đóng"
+            onClick={onClose}
+            disabled={saving}
+            sx={{ position: "absolute", right: 10, top: 8 }}
+          >
+            <CloseOutlined style={{ fontSize: 15 }} />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers>
+          <Alert severity="info" sx={{ mb: 2 }}>
+            Không nhập SKU hoặc số lượng dự kiến. Sau khi tạo phiếu, quét
+            QR/Barcode sản phẩm; hệ thống tự nhận SKU, tự cộng số lượng theo
+            SKU và chỉ tăng tồn khi bấm Ghi nhận nhập.
+          </Alert>
 
-      {detailQuery.isError ? (
-        <Alert
-          showIcon
-          type={
-            normalizeError(detailQuery.error).status === 403
-              ? "warning"
-              : "error"
-          }
-          title={getApiErrorMessage(
-            detailQuery.error,
-            "Không tải được phiếu nhập.",
-          )}
-          style={{ marginBottom: 16 }}
-        />
-      ) : null}
-
-      {documentId && !mutable ? (
-        <Alert
-          showIcon
-          type="info"
-          title="Phiếu đã kết thúc và chỉ được xem"
-          style={{ marginBottom: 16 }}
-        />
-      ) : null}
-
-      <Form<FormValues>
-        form={form}
-        layout="vertical"
-        onFinish={(values) => void handleSave(values)}
-      >
-        <Row gutter={12}>
-          <Col xs={24} md={12}>
-            <Form.Item
-              label="Ngày chứng từ"
-              name="documentDate"
-              rules={[{ required: true, message: "Chọn ngày chứng từ." }]}
+          {detailQuery.isError ? (
+            <Alert
+              severity={
+                normalizeError(detailQuery.error).status === 403
+                  ? "warning"
+                  : "error"
+              }
+              sx={{ mb: 2 }}
             >
-              <Input type="date" disabled={!mutable} />
-            </Form.Item>
-          </Col>
-          <Col xs={24} md={12}>
-            <Form.Item
-              label="Kho nhận"
-              name="warehouseId"
-              rules={[{ required: true, message: "Chọn kho nhận." }]}
-            >
-              <Select
-                showSearch
-                optionFilterProp="label"
-                loading={warehousesQuery.isLoading}
-                options={warehouseOptions}
-                disabled={!mutable || Boolean(documentId)}
-                placeholder="Chọn kho nhận"
+              {getApiErrorMessage(detailQuery.error, "Không tải được phiếu nhập.")}
+            </Alert>
+          ) : null}
+
+          {documentId && !mutable ? (
+            <Alert severity="info" sx={{ mb: 2 }}>
+              Phiếu đã kết thúc và chỉ được xem
+            </Alert>
+          ) : null}
+
+          {formError ? (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {formError}
+            </Alert>
+          ) : null}
+
+          <Grid container spacing={2}>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <TextField
+                id="inbound-doc-date"
+                label="Ngày chứng từ"
+                type="date"
+                required
+                fullWidth
+                value={formValues.documentDate}
+                onChange={(event) =>
+                  setFormValues((current) => ({
+                    ...current,
+                    documentDate: event.target.value,
+                  }))
+                }
+                disabled={!mutable}
+                slotProps={{ inputLabel: { shrink: true } }}
+                helperText="Định dạng: ngày/tháng/năm"
               />
-            </Form.Item>
-          </Col>
-        </Row>
-
-        <Form.Item label="Nguồn / tham chiếu" name="sourceName">
-          <Input
-            maxLength={200}
-            disabled={!mutable}
-            placeholder="Chứng từ vận chuyển / nhà cung cấp (tùy chọn)"
-          />
-        </Form.Item>
-
-        <Form.Item label="Ghi chú" name="note">
-          <Input.TextArea
-            rows={3}
-            maxLength={1000}
-            showCount
-            disabled={!mutable}
-          />
-        </Form.Item>
-
-        <Space style={{ width: "100%", justifyContent: "flex-end" }}>
+            </Grid>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Autocomplete
+                options={warehouseOptions}
+                getOptionLabel={(option) => option.label}
+                isOptionEqualToValue={(option, value) => option.value === value.value}
+                value={selectedWarehouseOption}
+                onChange={(_event, newValue) =>
+                  setFormValues((current) => ({
+                    ...current,
+                    warehouseId: newValue?.value ?? "",
+                  }))
+                }
+                loading={warehousesQuery.isLoading}
+                disabled={!mutable || Boolean(documentId)}
+                renderInput={(params) => (
+                  <TextField {...params} label="Kho nhận" required placeholder="Chọn kho nhận" />
+                )}
+              />
+            </Grid>
+            <Grid size={12}>
+              <TextField
+                id="inbound-source"
+                label="Nguồn / tham chiếu"
+                fullWidth
+                placeholder="Chứng từ vận chuyển / nhà cung cấp (tùy chọn)"
+                value={formValues.sourceName}
+                onChange={(event) =>
+                  setFormValues((current) => ({
+                    ...current,
+                    sourceName: event.target.value,
+                  }))
+                }
+                disabled={!mutable}
+                slotProps={{ htmlInput: { maxLength: 200 } }}
+              />
+            </Grid>
+            <Grid size={12}>
+              <TextField
+                id="inbound-note"
+                label="Ghi chú"
+                fullWidth
+                multiline
+                minRows={3}
+                value={formValues.note}
+                onChange={(event) =>
+                  setFormValues((current) => ({
+                    ...current,
+                    note: event.target.value,
+                  }))
+                }
+                disabled={!mutable}
+                helperText={`${formValues.note.length}/1000`}
+                slotProps={{ htmlInput: { maxLength: 1000 } }}
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
           <Button onClick={onClose}>Đóng</Button>
           {mutable && canCreate ? (
             <Button
-              type="primary"
-              htmlType="submit"
-              icon={<SaveOutlined />}
-              loading={saving}
+              variant="contained"
+              onClick={() => void handleSave()}
+              disabled={saving}
+              startIcon={<SaveOutlined />}
             >
               {documentId ? "Lưu thông tin" : "Tạo phiếu & quét hàng"}
             </Button>
           ) : null}
-        </Space>
-      </Form>
-    </Modal>
+        </DialogActions>
+      </Dialog>
+    </ThemeProvider>
   );
 }

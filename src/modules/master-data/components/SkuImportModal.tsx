@@ -1,15 +1,21 @@
 import { useEffect, useRef, useState } from "react";
+import { Table } from "antd";
+import type { ColumnsType } from "antd/es/table";
 import {
   Alert,
+  Box,
   Button,
-  Modal,
-  Space,
+  Chip,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+  Stack,
   Switch,
-  Table,
-  Tag,
+  ThemeProvider,
   Typography,
-} from "antd";
-import type { ColumnsType } from "antd/es/table";
+} from "@mui/material";
+import { muiTheme } from "@/app/mui-theme";
 import { toast } from "sonner";
 import {
   CloseOutlined,
@@ -17,7 +23,7 @@ import {
   EyeOutlined,
   ReloadOutlined,
   UploadOutlined,
-} from "@ant-design/icons";
+} from "@/shared/components/icons";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   getApiErrorMessage,
@@ -40,6 +46,7 @@ import {
 } from "@/modules/master-data/services/sku-import.service";
 import { sha256OfFile } from "@/shared/utils/file-digest";
 import { formatDateTime } from "@/shared/utils/format-date";
+import { ACTION_ICON_COLORS } from "@/shared/theme/actionIconColors";
 
 interface SkuImportModalProps {
   open: boolean;
@@ -149,31 +156,34 @@ function ResultSummary({
   label: string;
 }) {
   return (
-    <Space wrap>
-      <Tag color="blue">{label}</Tag>
-      <Typography.Text>Tổng: {result.totalRows}</Typography.Text>
-      <Typography.Text type="success">
+    <Stack direction="row" spacing={1.5} sx={{ flexWrap: "wrap", rowGap: 1, alignItems: "center" }}>
+      <Chip label={label} color="primary" size="small" />
+      <Typography variant="body2">Tổng: {result.totalRows}</Typography>
+      <Typography variant="body2" color="success.main">
         Hợp lệ: {result.validRows}
-      </Typography.Text>
-      <Typography.Text type={result.errorRows > 0 ? "danger" : undefined}>
+      </Typography>
+      <Typography
+        variant="body2"
+        color={result.errorRows > 0 ? "error.main" : "text.primary"}
+      >
         Lỗi: {result.errorRows}
-      </Typography.Text>
+      </Typography>
       {result.dryRun ? (
         <>
-          <Typography.Text>
+          <Typography variant="body2">
             Sẽ tạo mới: {result.wouldInsertRows}
-          </Typography.Text>
-          <Typography.Text>
+          </Typography>
+          <Typography variant="body2">
             Sẽ cập nhật: {result.wouldUpdateRows}
-          </Typography.Text>
+          </Typography>
         </>
       ) : (
         <>
-          <Typography.Text>Đã tạo mới: {result.insertedRows}</Typography.Text>
-          <Typography.Text>Đã cập nhật: {result.updatedRows}</Typography.Text>
+          <Typography variant="body2">Đã tạo mới: {result.insertedRows}</Typography>
+          <Typography variant="body2">Đã cập nhật: {result.updatedRows}</Typography>
         </>
       )}
-    </Space>
+    </Stack>
   );
 }
 
@@ -222,26 +232,27 @@ function SkuImportErrorFilePanel({
 
   if (!available) {
     return (
-      <Typography.Text type="secondary">
+      <Typography variant="body2" color="text.secondary">
         Tệp lỗi không còn tải được hoặc báo cáo không có dòng lỗi. Hãy chạy lại
         Kiểm tra trước sau khi đã sửa tệp nếu cần tạo báo cáo lỗi mới.
-      </Typography.Text>
+      </Typography>
     );
   }
 
   return (
-    <Space orientation="vertical" size={6}>
+    <Stack spacing={0.75} sx={{ alignItems: "flex-start" }}>
       <Button
-        icon={<DownloadOutlined />}
-        loading={downloadMutation.isPending}
+        variant="outlined"
+        startIcon={<DownloadOutlined style={{ color: ACTION_ICON_COLORS.download }} />}
+        disabled={downloadMutation.isPending}
         onClick={() => downloadMutation.mutate()}
       >
-        Tải tệp lỗi
+        {downloadMutation.isPending ? "Đang tải..." : "Tải tệp lỗi"}
       </Button>
-      <Typography.Text type="secondary">
+      <Typography variant="body2" color="text.secondary">
         Tệp chứa số dòng, trường dữ liệu, loại lỗi, nội dung lỗi và giá trị bị
         từ chối{formatExpiry(expiresAt)}.
-      </Typography.Text>
+      </Typography>
       {downloadMutation.error &&
       !isNoPermissionError(downloadMutation.error) ? (
         <ApiErrorAlert
@@ -250,7 +261,7 @@ function SkuImportErrorFilePanel({
           onRetry={() => downloadMutation.mutate()}
         />
       ) : null}
-    </Space>
+    </Stack>
   );
 }
 
@@ -496,186 +507,209 @@ export function SkuImportModal({
   };
 
   return (
-    <Modal
-      title="Nhập danh sách SKU từ Excel"
-      open={open}
-      width={980}
-      footer={null}
-      onCancel={close}
-      mask={{ closable: false }}
-      destroyOnHidden
-    >
-      <Space orientation="vertical" size={14} style={{ width: "100%" }}>
-        <Alert
-          type="info"
-          showIcon
-          title="Chọn tệp → Kiểm tra trước → sửa lỗi nếu có → Nhập dữ liệu"
-          description={`Hệ thống chỉ ghi dữ liệu khi toàn bộ tệp hợp lệ. Nếu còn một dòng lỗi thì không SKU nào được tạo hoặc cập nhật. ${describeConstraints(constraints)}`}
-        />
-
-        <Space wrap align="center">
-          <input
-            key={fileInputKey}
-            type="file"
-            accept={acceptAttribute(constraints)}
-            aria-label="Chọn tệp Excel chứa SKU"
-            onChange={(event) => {
-              setFile(event.target.files?.[0] ?? null);
-              invalidatePreview();
-            }}
-          />
-          <Space size={6}>
-            <Switch
-              checked={updateExisting}
-              onChange={(checked) => {
-                setUpdateExisting(checked);
-                invalidatePreview();
-              }}
-              aria-label="Cho phép cập nhật SKU đã tồn tại"
-            />
-            <Typography.Text>Cho phép cập nhật SKU đã tồn tại</Typography.Text>
-          </Space>
-          <Button
-            icon={<DownloadOutlined />}
-            loading={templateMutation.isPending}
-            onClick={() => templateMutation.mutate()}
-          >
-            Tải tệp mẫu
-          </Button>
-        </Space>
-
-        <Typography.Text type="secondary">
-          Tệp cần có tối thiểu cột mã SKU và tên SKU. Các thông tin còn lại như
-          đơn vị tính, loại SKU, hãng, nhóm hàng, mẫu sản phẩm, nguồn điện, quy
-          cách đóng gói, phiên bản sản phẩm, trạng thái và chế độ quản lý số
-          sê-ri có thể khai báo thêm theo tệp mẫu.
-        </Typography.Text>
-
-        {!canImport ? (
-          <Alert
-            type="warning"
-            showIcon
-            title="Tài khoản hiện tại không có quyền nhập danh sách SKU."
-          />
-        ) : null}
-
-        {digestError ? (
-          <Alert type="error" showIcon title={digestError} />
-        ) : null}
-
-        <Space wrap>
-          <Button
-            icon={<EyeOutlined />}
-            loading={previewMutation.isPending || digestPending}
-            disabled={
-              !canImport ||
-              !fileSha256 ||
-              digestPending ||
-              commitMutation.isPending
-            }
-            onClick={() => {
-              const payload = currentPayload();
-              if (payload) previewMutation.mutate(payload);
-            }}
-          >
-            Kiểm tra trước
-          </Button>
-          <Button
-            type="primary"
-            icon={<UploadOutlined />}
-            loading={commitMutation.isPending}
-            disabled={!canCommit}
-            onClick={() => {
-              const payload = currentPayload();
-              if (payload) commitMutation.mutate(payload);
-            }}
-          >
-            Nhập dữ liệu
-          </Button>
-
-          {digestPending ? (
-            <Typography.Text type="secondary">
-              Đang kiểm tra nội dung tệp…
-            </Typography.Text>
-          ) : previewSignature !== "" && !previewMatchesCurrentPayload ? (
-            <Typography.Text type="secondary">
-              Tệp hoặc lựa chọn cập nhật đã thay đổi sau lần kiểm tra trước. Hãy
-              kiểm tra lại trước khi nhập dữ liệu.
-            </Typography.Text>
-          ) : !previewResult ? (
-            <Typography.Text type="secondary">
-              Cần kiểm tra tệp và xử lý hết lỗi trước khi nhập dữ liệu.
-            </Typography.Text>
-          ) : null}
-        </Space>
-
-        {activeResult ? (
-          <Space orientation="vertical" size={10} style={{ width: "100%" }}>
-            <ResultSummary
-              result={activeResult}
-              label={
-                commitResult
-                  ? commitResult.duplicate
-                    ? "Đã xử lý trước đó"
-                    : commitResult.committed
-                      ? "Đã nhập dữ liệu"
-                      : "Không được ghi dữ liệu"
-                  : "Kết quả kiểm tra trước"
-              }
-            />
-
-            {commitResult?.duplicate ? (
-              <Alert
-                type="warning"
-                showIcon
-                title="Tệp này đã được nhập trước đó"
-                description="Nội dung tệp và lựa chọn cập nhật giống một lần nhập gần đây, nên hệ thống không tạo hoặc cập nhật SKU lần nữa. Nếu muốn thay đổi cách xử lý SKU đã tồn tại, hãy đổi lựa chọn rồi kiểm tra lại."
-              />
-            ) : null}
-
-            {activeResult.rowErrors.length > 0 ? (
-              <Table<SkuImportRowError>
-                rowKey={(row, index) => `${row.row}-${row.field}-${index}`}
-                size="small"
-                dataSource={activeResult.rowErrors}
-                columns={ROW_ERROR_COLUMNS}
-                scroll={{ x: "max-content" }}
-                pagination={
-                  activeResult.rowErrors.length > 10
-                    ? { pageSize: 10, showSizeChanger: false }
-                    : false
-                }
-                locale={{ emptyText: "Không có dòng lỗi" }}
-              />
-            ) : null}
-
-            {activeResult.errorRows > 0 && activeResult.importReportId ? (
-              <SkuImportErrorFilePanel
-                reportId={activeResult.importReportId}
-                availableHint={activeResult.errorFileAvailable}
-                expiresAtHint={activeResult.errorFileExpiresAt}
-              />
-            ) : null}
-          </Space>
-        ) : null}
-
-        <Space wrap style={{ justifyContent: "flex-end", width: "100%" }}>
-          <Button
-            icon={<ReloadOutlined />}
-            disabled={previewMutation.isPending || commitMutation.isPending}
-            onClick={resetAll}
-          >
-            Làm lại
-          </Button>
-          <Button
-            icon={<CloseOutlined />}
-            disabled={previewMutation.isPending || commitMutation.isPending}
+    <ThemeProvider theme={muiTheme}>
+      <Dialog
+        open={open}
+        onClose={close}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle sx={{ pr: 6, position: "relative" }}>
+          Nhập danh sách SKU từ Excel
+          <IconButton
+            aria-label="Đóng"
             onClick={close}
+            sx={{ position: "absolute", right: 10, top: 8 }}
           >
-            Đóng
-          </Button>
-        </Space>
-      </Space>
-    </Modal>
+            <CloseOutlined style={{ fontSize: 15 }} />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers>
+          <Stack spacing={1.75}>
+            <Alert severity="info">
+              <Typography sx={{ fontWeight: 700 }}>
+                Chọn tệp → Kiểm tra trước → sửa lỗi nếu có → Nhập dữ liệu
+              </Typography>
+              <Typography variant="body2">
+                {`Hệ thống chỉ ghi dữ liệu khi toàn bộ tệp hợp lệ. Nếu còn một dòng lỗi thì không SKU nào được tạo hoặc cập nhật. ${describeConstraints(constraints)}`}
+              </Typography>
+            </Alert>
+
+            <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap", rowGap: 1.5, alignItems: "center" }}>
+              <input
+                key={fileInputKey}
+                type="file"
+                accept={acceptAttribute(constraints)}
+                aria-label="Chọn tệp Excel chứa SKU"
+                onChange={(event) => {
+                  setFile(event.target.files?.[0] ?? null);
+                  invalidatePreview();
+                }}
+              />
+              <Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>
+                <Switch
+                  checked={updateExisting}
+                  onChange={(event) => {
+                    setUpdateExisting(event.target.checked);
+                    invalidatePreview();
+                  }}
+                  slotProps={{ input: { "aria-label": "Cho phép cập nhật SKU đã tồn tại" } }}
+                />
+                <Typography variant="body2">Cho phép cập nhật SKU đã tồn tại</Typography>
+              </Stack>
+              <Button
+                variant="outlined"
+                startIcon={<DownloadOutlined style={{ color: ACTION_ICON_COLORS.download }} />}
+                disabled={templateMutation.isPending}
+                onClick={() => templateMutation.mutate()}
+              >
+                {templateMutation.isPending ? "Đang tải..." : "Tải tệp mẫu"}
+              </Button>
+            </Stack>
+
+            <Typography variant="body2" color="text.secondary">
+              Tệp cần có tối thiểu cột mã SKU và tên SKU. Các thông tin còn lại như
+              đơn vị tính, loại SKU, hãng, nhóm hàng, mẫu sản phẩm, nguồn điện, quy
+              cách đóng gói, phiên bản sản phẩm, trạng thái và chế độ quản lý số
+              sê-ri có thể khai báo thêm theo tệp mẫu.
+            </Typography>
+
+            {!canImport ? (
+              <Alert severity="warning">
+                Tài khoản hiện tại không có quyền nhập danh sách SKU.
+              </Alert>
+            ) : null}
+
+            {digestError ? <Alert severity="error">{digestError}</Alert> : null}
+
+            <Stack spacing={1}>
+              <Stack direction="row" spacing={1.5} sx={{ flexWrap: "wrap", rowGap: 1, alignItems: "center" }}>
+                <Button
+                  variant="outlined"
+                  startIcon={<EyeOutlined style={{ color: ACTION_ICON_COLORS.view }} />}
+                  disabled={
+                    !canImport ||
+                    !fileSha256 ||
+                    digestPending ||
+                    commitMutation.isPending ||
+                    previewMutation.isPending
+                  }
+                  onClick={() => {
+                    const payload = currentPayload();
+                    if (payload) previewMutation.mutate(payload);
+                  }}
+                >
+                  {previewMutation.isPending || digestPending
+                    ? "Đang kiểm tra..."
+                    : "Kiểm tra trước"}
+                </Button>
+                <Button
+                  variant="contained"
+                  startIcon={<UploadOutlined />}
+                  disabled={!canCommit}
+                  onClick={() => {
+                    const payload = currentPayload();
+                    if (payload) commitMutation.mutate(payload);
+                  }}
+                >
+                  {commitMutation.isPending ? "Đang nhập..." : "Nhập dữ liệu"}
+                </Button>
+              </Stack>
+
+              {digestPending ? (
+                <Typography variant="body2" color="text.secondary">
+                  Đang kiểm tra nội dung tệp…
+                </Typography>
+              ) : previewSignature !== "" && !previewMatchesCurrentPayload ? (
+                <Typography variant="body2" color="text.secondary">
+                  Tệp hoặc lựa chọn cập nhật đã thay đổi sau lần kiểm tra trước. Hãy
+                  kiểm tra lại trước khi nhập dữ liệu.
+                </Typography>
+              ) : !previewResult ? (
+                <Typography variant="body2" color="text.secondary">
+                  Cần kiểm tra tệp và xử lý hết lỗi trước khi nhập dữ liệu.
+                </Typography>
+              ) : null}
+            </Stack>
+
+            {activeResult ? (
+              <Stack spacing={1.25}>
+                <ResultSummary
+                  result={activeResult}
+                  label={
+                    commitResult
+                      ? commitResult.duplicate
+                        ? "Đã xử lý trước đó"
+                        : commitResult.committed
+                          ? "Đã nhập dữ liệu"
+                          : "Không được ghi dữ liệu"
+                      : "Kết quả kiểm tra trước"
+                  }
+                />
+
+                {commitResult?.duplicate ? (
+                  <Alert severity="warning">
+                    <Typography sx={{ fontWeight: 700 }}>
+                      Tệp này đã được nhập trước đó
+                    </Typography>
+                    <Typography variant="body2">
+                      Nội dung tệp và lựa chọn cập nhật giống một lần nhập gần
+                      đây, nên hệ thống không tạo hoặc cập nhật SKU lần nữa.
+                      Nếu muốn thay đổi cách xử lý SKU đã tồn tại, hãy đổi lựa
+                      chọn rồi kiểm tra lại.
+                    </Typography>
+                  </Alert>
+                ) : null}
+
+                {activeResult.rowErrors.length > 0 ? (
+                  <Box>
+                    <Table<SkuImportRowError>
+                      rowKey={(row, index) => `${row.row}-${row.field}-${index}`}
+                      size="small"
+                      dataSource={activeResult.rowErrors}
+                      columns={ROW_ERROR_COLUMNS}
+                      scroll={{ x: "max-content" }}
+                      pagination={
+                        activeResult.rowErrors.length > 10
+                          ? { pageSize: 10, showSizeChanger: false }
+                          : false
+                      }
+                      locale={{ emptyText: "Không có dòng lỗi" }}
+                    />
+                  </Box>
+                ) : null}
+
+                {activeResult.errorRows > 0 && activeResult.importReportId ? (
+                  <SkuImportErrorFilePanel
+                    reportId={activeResult.importReportId}
+                    availableHint={activeResult.errorFileAvailable}
+                    expiresAtHint={activeResult.errorFileExpiresAt}
+                  />
+                ) : null}
+              </Stack>
+            ) : null}
+
+            <Stack direction="row" spacing={1.5} sx={{ justifyContent: "flex-end" }}>
+              <Button
+                variant="outlined"
+                startIcon={<ReloadOutlined style={{ color: ACTION_ICON_COLORS.sync }} />}
+                disabled={previewMutation.isPending || commitMutation.isPending}
+                onClick={resetAll}
+              >
+                Làm lại
+              </Button>
+              <Button
+                variant="outlined"
+                startIcon={<CloseOutlined style={{ color: ACTION_ICON_COLORS.neutral }} />}
+                disabled={previewMutation.isPending || commitMutation.isPending}
+                onClick={close}
+              >
+                Đóng
+              </Button>
+            </Stack>
+          </Stack>
+        </DialogContent>
+      </Dialog>
+    </ThemeProvider>
   );
 }
