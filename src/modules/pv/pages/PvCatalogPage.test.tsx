@@ -28,7 +28,7 @@ function productFixture(overrides: Partial<PvProduct> = {}): PvProduct {
     description: null,
     unit: "cái",
     brand_id: null,
-    brand_name: "Hòa Nam",
+    brand_name: "Hoa Nam",
     category_id: null,
     category_name: null,
     power_source_id: null,

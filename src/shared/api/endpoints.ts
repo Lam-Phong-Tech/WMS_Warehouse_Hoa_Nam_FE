@@ -232,4 +232,9 @@ export const API_ENDPOINTS = {
   COMPONENT_ISSUE_POST: "/warranty-component-issues/:id/post",
 
   AUDIT_LOGS: "/audit-logs",
+
+  NOTIFICATIONS: "/notifications",
+  NOTIFICATIONS_UNREAD_COUNT: "/notifications/unread-count",
+  NOTIFICATION_MARK_READ: "/notifications/:id/read",
+  NOTIFICATIONS_READ_ALL: "/notifications/read-all",
 } as const;

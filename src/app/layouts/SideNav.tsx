@@ -18,7 +18,7 @@ type NavGroup = { name: string; items: NavItem[] };
  */
 const NAV_GROUPS: NavGroup[] = [
   {
-    name: "00 · Tổng quan",
+    name: "Tổng quan",
     items: [
       {
         screen: "MAP-01",

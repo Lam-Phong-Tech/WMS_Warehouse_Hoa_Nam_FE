@@ -56,6 +56,10 @@ import {
   MvpPaginationFooter,
 } from "@/shared/components/mvp/MvpListPagination";
 import { resolveApiPagination } from "@/shared/components/mvp/mvp-pagination";
+import {
+  MvpSelectionCheckbox,
+  mvpRowNumber,
+} from "@/shared/components/mvp/MvpSelectionCell";
 import { WMS_PERMISSION_CATALOG } from "@/shared/constants/wms-permissions";
 import {
   MASTER_STATUS_LABELS,
@@ -68,6 +72,7 @@ import {
   recipientTypeLabel,
   type RecipientType,
 } from "@/shared/constants/recipient-types";
+import { useRowSelection } from "@/shared/hooks/useRowSelection";
 import { useAuthStore } from "@/shared/store/auth.store";
 
 const STATUS_OPTIONS: Array<{ value: MasterStatus; label: string }> = [
@@ -331,6 +336,10 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
     pageSize: perPage,
     rowCount: apiRows.length,
   });
+  const rowSelection = useRowSelection(
+    rows,
+    (record) => record.sku_id ?? record.id ?? "",
+  );
 
   const togglePublish = async (record: SkuRecord) => {
     if (!canPublish) return;
@@ -545,6 +554,13 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
             </option>
           ))}
         </select>
+        <MvpPageSizeSelector
+          value={perPage}
+          onChange={(value) => {
+            setPerPage(value);
+            setPage(1);
+          }}
+        />
         <div className="spacer" />
         {canManage ? (
           <button
@@ -593,18 +609,19 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
         </div>
       ) : null}
 
-      <MvpPageSizeSelector
-        value={perPage}
-        onChange={(value) => {
-          setPerPage(value);
-          setPage(1);
-        }}
-      />
-
       <div className="table-wrap" aria-busy={query.isLoading}>
         <table>
           <thead>
             <tr>
+              <th className="select-col">
+                <MvpSelectionCheckbox
+                  checked={rowSelection.isAllSelected}
+                  indeterminate={rowSelection.isIndeterminate}
+                  onChange={rowSelection.toggleAll}
+                  ariaLabel="Chọn tất cả SKU"
+                />
+              </th>
+              <th className="stt-col">STT</th>
               <th>SKU</th>
               <th>Loại</th>
               <th>Đơn vị tính</th>
@@ -621,17 +638,29 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           <tbody>
             {query.isLoading ? (
               <tr>
-                <td colSpan={11} className="muted">
+                <td colSpan={13} className="muted">
                   Đang tải dữ liệu...
                 </td>
               </tr>
             ) : rows.length > 0 ? (
-              rows.map((record) => {
+              rows.map((record, index) => {
                 const recordId = record.sku_id ?? record.id ?? "";
                 const isPublished = Boolean(record.published_to_app);
                 const statusAllowsPublish = record.status === "ACTIVE";
                 return (
                   <tr key={recordId}>
+                    <td className="select-col">
+                      <MvpSelectionCheckbox
+                        checked={rowSelection.isSelected(recordId)}
+                        onChange={(checked) =>
+                          rowSelection.toggleOne(recordId, checked)
+                        }
+                        ariaLabel={`Chọn ${record.sku_code ?? record.code ?? ""}`}
+                      />
+                    </td>
+                    <td className="stt-col">
+                      {mvpRowNumber(page, perPage, index)}
+                    </td>
                     <td>
                       {record.sku_code ?? record.code}
                       <br />
@@ -726,7 +755,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               })
             ) : (
               <tr>
-                <td colSpan={11} className="muted">
+                <td colSpan={13} className="muted">
                   Không có SKU phù hợp bộ lọc.
                 </td>
               </tr>
@@ -1098,6 +1127,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
     pageSize: perPage,
     rowCount: rows.length,
   });
+  const rowSelection = useRowSelection(rows, (record) => record.agency_id);
 
   const openCreate = () => {
     if (!canManage) return;
@@ -1240,6 +1270,13 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
             </option>
           ))}
         </select>
+        <MvpPageSizeSelector
+          value={perPage}
+          onChange={(value) => {
+            setPerPage(value);
+            setPage(1);
+          }}
+        />
         <div className="spacer" />
         {canManage ? (
           <button className="btn primary" type="button" onClick={openCreate}>
@@ -1253,18 +1290,20 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
         fallback="Không tải được danh sách nơi nhận."
         onRetry={() => void query.refetch()}
       />
-      <MvpPageSizeSelector
-        value={perPage}
-        onChange={(value) => {
-          setPerPage(value);
-          setPage(1);
-        }}
-      />
 
       <div className="table-wrap" aria-busy={query.isLoading}>
         <table>
           <thead>
             <tr>
+              <th className="select-col">
+                <MvpSelectionCheckbox
+                  checked={rowSelection.isAllSelected}
+                  indeterminate={rowSelection.isIndeterminate}
+                  onChange={rowSelection.toggleAll}
+                  ariaLabel="Chọn tất cả nơi nhận"
+                />
+              </th>
+              <th className="stt-col">STT</th>
               <th>Mã</th>
               <th>Tên nơi nhận</th>
               <th>Loại nơi nhận</th>
@@ -1280,13 +1319,25 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           <tbody>
             {query.isLoading ? (
               <tr>
-                <td colSpan={10} className="muted">
+                <td colSpan={12} className="muted">
                   Đang tải dữ liệu...
                 </td>
               </tr>
             ) : rows.length > 0 ? (
-              rows.map((record) => (
+              rows.map((record, index) => (
                 <tr key={record.agency_id}>
+                  <td className="select-col">
+                    <MvpSelectionCheckbox
+                      checked={rowSelection.isSelected(record.agency_id)}
+                      onChange={(checked) =>
+                        rowSelection.toggleOne(record.agency_id, checked)
+                      }
+                      ariaLabel={`Chọn ${record.agency_name}`}
+                    />
+                  </td>
+                  <td className="stt-col">
+                    {mvpRowNumber(page, perPage, index)}
+                  </td>
                   <td>{record.agency_code}</td>
                   <td>{record.agency_name}</td>
                   <td>
@@ -1323,7 +1374,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               ))
             ) : (
               <tr>
-                <td colSpan={10} className="muted">
+                <td colSpan={12} className="muted">
                   Không có nơi nhận phù hợp bộ lọc.
                 </td>
               </tr>
@@ -1546,6 +1597,7 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
     pageSize: perPage,
     rowCount: rows.length,
   });
+  const rowSelection = useRowSelection(rows, (record) => record.defect_id);
 
   const openCreate = () => {
     if (!canManage) return;
@@ -1650,6 +1702,13 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
             </option>
           ))}
         </select>
+        <MvpPageSizeSelector
+          value={perPage}
+          onChange={(value) => {
+            setPerPage(value);
+            setPage(1);
+          }}
+        />
         <div className="spacer" />
         {canManage ? (
           <button className="btn primary" type="button" onClick={openCreate}>
@@ -1663,18 +1722,20 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
         fallback="Không tải được danh mục lỗi."
         onRetry={() => void query.refetch()}
       />
-      <MvpPageSizeSelector
-        value={perPage}
-        onChange={(value) => {
-          setPerPage(value);
-          setPage(1);
-        }}
-      />
 
       <div className="table-wrap" aria-busy={query.isLoading}>
         <table>
           <thead>
             <tr>
+              <th className="select-col">
+                <MvpSelectionCheckbox
+                  checked={rowSelection.isAllSelected}
+                  indeterminate={rowSelection.isIndeterminate}
+                  onChange={rowSelection.toggleAll}
+                  ariaLabel="Chọn tất cả lỗi / bệnh"
+                />
+              </th>
+              <th className="stt-col">STT</th>
               <th>Mã lỗi</th>
               <th>Tên lỗi / bệnh</th>
               <th>Mô tả</th>
@@ -1685,13 +1746,25 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           <tbody>
             {query.isLoading ? (
               <tr>
-                <td colSpan={5} className="muted">
+                <td colSpan={7} className="muted">
                   Đang tải dữ liệu...
                 </td>
               </tr>
             ) : rows.length > 0 ? (
-              rows.map((record) => (
+              rows.map((record, index) => (
                 <tr key={record.defect_id}>
+                  <td className="select-col">
+                    <MvpSelectionCheckbox
+                      checked={rowSelection.isSelected(record.defect_id)}
+                      onChange={(checked) =>
+                        rowSelection.toggleOne(record.defect_id, checked)
+                      }
+                      ariaLabel={`Chọn ${record.defect_name}`}
+                    />
+                  </td>
+                  <td className="stt-col">
+                    {mvpRowNumber(page, perPage, index)}
+                  </td>
                   <td>{record.defect_code}</td>
                   <td>{record.defect_name}</td>
                   <td>{record.description || "—"}</td>
@@ -1717,7 +1790,7 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               ))
             ) : (
               <tr>
-                <td colSpan={5} className="muted">
+                <td colSpan={7} className="muted">
                   Không có danh mục lỗi phù hợp bộ lọc.
                 </td>
               </tr>

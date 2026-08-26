@@ -904,12 +904,6 @@ export function InboundScanModal({
         mask={{ closable: false }}
         destroyOnHidden
       >
-        <Space wrap style={{ marginBottom: 12 }}>
-          <Tag color="blue">Quét và ghi nhận hàng thực nhận</Tag>
-          <Tag color="blue">Hoàn tất nhập kho khi đã quét đủ</Tag>
-          <Tag color="gold">Kiểm soát phiên bản dữ liệu</Tag>
-          <Tag color="gold">Chống ghi nhận trùng</Tag>
-        </Space>
 
         {detailQuery.isLoading ? <Card loading /> : null}
         {detailQuery.isError ? (
@@ -1236,38 +1230,7 @@ export function InboundScanModal({
                   </Card>
                 </Col>
 
-                <Col xs={24} lg={11}>
-                  <Card size="small" title="Quy tắc nghiệp vụ">
-                    <Space orientation="vertical" size={10}>
-                      <div>
-                        {hasScanned ? "✅" : "⚠️"}{" "}
-                        {hasScanned
-                          ? `Đã ghi nhận ${totalScanned} đơn vị thực nhận.`
-                          : "Chưa ghi nhận đơn vị nào — quét mã để bắt đầu."}
-                      </div>
-                      <div>
-                        • Camera và nhập tay dùng cùng quy tắc kiểm tra; camera
-                        không đọc RFID.
-                      </div>
-                      <div>
-                        • Quét và đăng ký hộp không được làm thay đổi tồn kho
-                        hoặc tạo biến động tồn kho.
-                      </div>
-                      <div>
-                        • Mã máy đã tồn tại trong hệ thống, sai SKU/trạng thái
-                        hoặc trùng mã phải bị hệ thống từ chối.
-                      </div>
-                      <div>
-                        • Hoàn tất nhập kho kiểm soát phiên bản, chống ghi nhận
-                        trùng và thực hiện nguyên tử.
-                      </div>
-                      <div>
-                        • Linh kiện chỉ xếp khay sau khi hoàn tất nhập kho; xác
-                        nhận xếp khay không làm thay đổi tồn kho.
-                      </div>
-                    </Space>
-                  </Card>
-                </Col>
+               
               </Row>
             ) : (
               <Alert

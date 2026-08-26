@@ -6,6 +6,7 @@ import { ROUTES } from "@/shared/constants/routes";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { fetchDashboardKPI } from "../services/dashboardService";
 import type { DashboardKPI, DashboardQuery } from "../types";
+import { formatDate } from "@/shared/utils/format-date";
 import "./DashboardPage.css";
 
 type FlowNode = {
@@ -210,7 +211,7 @@ export default function DashboardPage() {
     const series = flowMetrics
       .map((metric) => `${metric.label} ${formatNumber(metric.value)}`)
       .join("; ");
-    return `Biểu đồ luồng kho từ ${dashboardQuery.data.period.from_date} đến ${dashboardQuery.data.period.to_date}: ${series}`;
+    return `Biểu đồ luồng kho từ ${formatDate(dashboardQuery.data.period.from_date)} đến ${formatDate(dashboardQuery.data.period.to_date)}: ${series}`;
   }, [dashboardQuery.data, flowMetrics]);
 
   const applyFilter = () => {
@@ -354,7 +355,8 @@ export default function DashboardPage() {
                   Chỉ số vận hành
                 </h2>
                 <div className="hn-dashboard-muted">
-                  Kỳ thống kê: {data.period.from_date} → {data.period.to_date}
+                  Kỳ thống kê: {formatDate(data.period.from_date)} →{" "}
+                  {formatDate(data.period.to_date)}
                 </div>
                 <div className="hn-dashboard-muted">
                   Phạm vi dữ liệu:{" "}

@@ -30,6 +30,7 @@ import {
 } from "@/shared/api/api-error";
 import { useCan } from "@/shared/components/permission";
 import { WMS_PERMISSION_CATALOG as P } from "@/shared/constants/wms-permissions";
+import { formatDateTime } from "@/shared/utils/format-date";
 import {
   MASTER_STATUS_LABELS,
   businessLabel,
@@ -157,7 +158,7 @@ export function WarehouseConfigScreen() {
     }
     try {
       await saveMutation.mutateAsync(values);
-      setSavedAt(new Date().toLocaleString("vi-VN"));
+      setSavedAt(formatDateTime(new Date().toISOString()));
     } catch (error) {
       setSaveError(saveErrorMessage(error));
     }
@@ -317,7 +318,7 @@ export function WarehouseConfigScreen() {
                       { max: 200, message: "Tối đa 200 ký tự." },
                     ]}
                   >
-                    <Input placeholder="Kho tổng Hòa Nam" />
+                    <Input placeholder="Kho tổng Hoa Nam" />
                   </Form.Item>
                 </Col>
                 <Col xs={24} md={12}>

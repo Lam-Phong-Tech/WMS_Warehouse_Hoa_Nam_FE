@@ -63,7 +63,7 @@ const DOC: ReversalDocument = {
   reference_document_id: "doc-1",
   correction_chain_id: "chain-1",
   warehouse_id: "wh-1",
-  warehouse_name: "Kho tổng Hòa Nam",
+  warehouse_name: "Kho tổng Hoa Nam",
   total_lines: 1,
   total_qty: 1,
   reason: "Giao nhầm Item",
@@ -215,7 +215,7 @@ describe("WWHN-242 · REV-00/REV-01 contract", () => {
       source_document_id: "doc-1",
       source_document_code: "IN-20260801-003",
       warehouse_id: "wh-1",
-      warehouse_name: "Kho tổng Hòa Nam",
+      warehouse_name: "Kho tổng Hoa Nam",
       posted_at: "2026-08-18T09:00:00Z",
       can_reverse: true,
       lines: [

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import type { Key } from "react";
 import {
   Alert,
   Button,
@@ -11,10 +12,10 @@ import {
   Row,
   Select,
   Space,
-  Table,
   Tabs,
   Tag,
 } from "antd";
+import { DataTable } from "@/shared/components";
 import { toast } from "sonner";
 import {
   CameraOutlined,
@@ -41,6 +42,7 @@ import {
   WMS_PERMISSION_CATALOG as P,
 } from "@/shared/constants/wms-permissions";
 import { useAuthStore } from "@/shared/store/auth.store";
+import { formatDateTime } from "@/shared/utils/format-date";
 import {
   cancelPutawayTask,
   confirmPutawayTask,
@@ -158,6 +160,12 @@ export default function MvpPutawayPage() {
   const [search, setSearch] = useState("");
   const [pendingPageSize, setPendingPageSize] = useState(10);
   const [historyPageSize, setHistoryPageSize] = useState(10);
+  const [selectedPendingRowKeys, setSelectedPendingRowKeys] = useState<Key[]>(
+    [],
+  );
+  const [selectedHistoryRowKeys, setSelectedHistoryRowKeys] = useState<Key[]>(
+    [],
+  );
   const [selected, setSelected] = useState<PutawayTask | null>(null);
   const [detailRow, setDetailRow] = useState<PutawayTask | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
@@ -491,7 +499,12 @@ export default function MvpPutawayPage() {
   ];
 
   const historyColumns: ColumnsType<PutawayHistory> = [
-    { title: "Thời gian", dataIndex: "created_at", width: 190 },
+    {
+      title: "Thời gian",
+      dataIndex: "created_at",
+      width: 190,
+      render: (created_at: string) => formatDateTime(created_at),
+    },
     { title: "Hộp", dataIndex: "box_code", width: 170 },
     {
       title: "Khay cũ",
@@ -543,7 +556,12 @@ export default function MvpPutawayPage() {
         </div>
 
         {activeTab === "pending" ? (
-          <Row gutter={[12, 12]} className="filter-row">
+          <Row
+            gutter={[12, 12]}
+            className="filter-row"
+            align="middle"
+            justify="space-between"
+          >
             <Col xs={24} md={8}>
               <Input
                 value={searchDraft}
@@ -553,8 +571,23 @@ export default function MvpPutawayPage() {
                 onChange={(event) => setSearchDraft(event.target.value)}
               />
             </Col>
+            <Col>
+              <PageSizeSelector
+                value={pendingPageSize}
+                onChange={setPendingPageSize}
+              />
+            </Col>
           </Row>
-        ) : null}
+        ) : (
+          <Row justify="end" className="filter-row">
+            <Col>
+              <PageSizeSelector
+                value={historyPageSize}
+                onChange={setHistoryPageSize}
+              />
+            </Col>
+          </Row>
+        )}
 
         <Alert
           showIcon
@@ -579,52 +612,50 @@ export default function MvpPutawayPage() {
               key: "pending",
               label: `Chờ xếp khay (${tasks.length})`,
               children: (
-                <>
-                  <PageSizeSelector
-                    value={pendingPageSize}
-                    onChange={setPendingPageSize}
-                  />
-                  <Table<PutawayTask>
-                    rowKey="id"
-                    dataSource={tasks}
-                    loading={loading}
-                    columns={taskColumns}
-                    pagination={{
-                      pageSize: pendingPageSize,
-                      showSizeChanger: false,
-                      showTotal: (total) => `Tổng ${total} hộp`,
-                    }}
-                    locale={{
-                      emptyText: "Không có hộp linh kiện chờ xếp khay",
-                    }}
-                    scroll={{ x: "max-content" }}
-                  />
-                </>
+                <DataTable<PutawayTask>
+                  rowKey="id"
+                  dataSource={tasks}
+                  loading={loading}
+                  columns={taskColumns}
+                  rowSelection={{
+                    type: "checkbox",
+                    selectedRowKeys: selectedPendingRowKeys,
+                    onChange: setSelectedPendingRowKeys,
+                  }}
+                  pagination={{
+                    pageSize: pendingPageSize,
+                    showSizeChanger: false,
+                    showTotal: (total) => `Tổng ${total} hộp`,
+                  }}
+                  locale={{
+                    emptyText: "Không có hộp linh kiện chờ xếp khay",
+                  }}
+                  scroll={{ x: "max-content" }}
+                />
               ),
             },
             {
               key: "history",
               label: "Lịch sử xếp khay",
               children: (
-                <>
-                  <PageSizeSelector
-                    value={historyPageSize}
-                    onChange={setHistoryPageSize}
-                  />
-                  <Table<PutawayHistory>
-                    rowKey="id"
-                    dataSource={history}
-                    loading={loading}
-                    columns={historyColumns}
-                    pagination={{
-                      pageSize: historyPageSize,
-                      showSizeChanger: false,
-                      showTotal: (total) => `Tổng ${total} bản ghi`,
-                    }}
-                    locale={{ emptyText: "Chưa có lịch sử xếp khay" }}
-                    scroll={{ x: 1180 }}
-                  />
-                </>
+                <DataTable<PutawayHistory>
+                  rowKey="id"
+                  dataSource={history}
+                  loading={loading}
+                  columns={historyColumns}
+                  rowSelection={{
+                    type: "checkbox",
+                    selectedRowKeys: selectedHistoryRowKeys,
+                    onChange: setSelectedHistoryRowKeys,
+                  }}
+                  pagination={{
+                    pageSize: historyPageSize,
+                    showSizeChanger: false,
+                    showTotal: (total) => `Tổng ${total} bản ghi`,
+                  }}
+                  locale={{ emptyText: "Chưa có lịch sử xếp khay" }}
+                  scroll={{ x: 1180 }}
+                />
               ),
             },
           ]}

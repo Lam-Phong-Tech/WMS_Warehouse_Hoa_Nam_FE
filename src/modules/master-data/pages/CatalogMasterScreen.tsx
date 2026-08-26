@@ -12,7 +12,6 @@ import {
   Row,
   Select,
   Space,
-  Table,
   Tag,
   Tabs,
   Typography,
@@ -20,6 +19,7 @@ import {
 import type { ColumnsType } from "antd/es/table";
 import { toast } from "sonner";
 import { EditOutlined, PlusOutlined } from "@ant-design/icons";
+import { DataTable } from "@/shared/components";
 import {
   catalogMasterSupportsBrand,
   createCatalogMaster,
@@ -150,6 +150,7 @@ export function CatalogMasterScreen() {
   const [editingRecord, setEditingRecord] =
     useState<CatalogMasterRecord | null>(null);
   const [formError, setFormError] = useState("");
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
 
   const activeTab =
     CATALOG_TABS.find((tab) => tab.kind === activeKind) ?? CATALOG_TABS[0];
@@ -382,6 +383,13 @@ export function CatalogMasterScreen() {
                 ...STATUS_OPTIONS,
               ]}
             />
+            <MvpPageSizeSelector
+              value={perPage}
+              onChange={(value) => {
+                setPerPage(value);
+                setPage(1);
+              }}
+            />
           </Space>
         </Col>
         {canManage && (
@@ -393,15 +401,7 @@ export function CatalogMasterScreen() {
         )}
       </Row>
 
-      <MvpPageSizeSelector
-        value={perPage}
-        onChange={(value) => {
-          setPerPage(value);
-          setPage(1);
-        }}
-      />
-
-      <Table<CatalogMasterRecord>
+      <DataTable<CatalogMasterRecord>
         rowKey="id"
         size="small"
         loading={listQuery.isLoading || listQuery.isFetching}
@@ -409,6 +409,11 @@ export function CatalogMasterScreen() {
         columns={columns}
         locale={{ emptyText: `Chưa có ${activeTab.itemLabel} nào.` }}
         scroll={{ x: "max-content" }}
+        rowSelection={{
+          type: "checkbox",
+          selectedRowKeys,
+          onChange: setSelectedRowKeys,
+        }}
         pagination={{
           current: pagination.current,
           pageSize: perPage,

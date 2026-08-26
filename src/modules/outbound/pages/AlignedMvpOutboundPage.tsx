@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-import { useEffect, useState } from "react";
+import { useEffect, useState, type Key } from "react";
 import { Progress, Table, Tag, type TablePaginationConfig } from "antd";
 import { EyeOutlined, PlusOutlined, ScanOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
@@ -56,6 +56,7 @@ export default function AlignedMvpOutboundPage() {
   const [perPage, setPerPage] = useState(10);
   const [intakeOpen, setIntakeOpen] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
+  const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([]);
 
   const canImport = can("outbound.import");
   const canScan = can("outbound.scan");
@@ -111,6 +112,14 @@ export default function AlignedMvpOutboundPage() {
   useOverlayBackDismiss(overlayOpen, closeOverlays, "OUT-01-overlay");
 
   const columns: ColumnsType<OutboundDocumentRecord> = [
+    {
+      title: "STT",
+      key: "stt",
+      width: 60,
+      fixed: "left",
+      render: (_: unknown, __: OutboundDocumentRecord, index: number) =>
+        (page - 1) * perPage + index + 1,
+    },
     {
       title: "Phiếu xuất",
       dataIndex: "code",
@@ -237,16 +246,7 @@ export default function AlignedMvpOutboundPage() {
 
   return (
     <div className="outbound-page hn-mvp-source-screen">
-      <div className="toolbar-wrap" style={{ gap: 6 }}>
-        <span className="pill ok">
-          Quét đủ → Ghi nhận xuất kho → xử lý nhãn đóng gói
-        </span>
-        <span className="pill blue">Packing Label độc lập sau Post</span>
-        <span className="pill blue">RFID tùy chọn</span>
-        <span className="pill warn-pill">
-          Chỉ Ghi nhận xuất kho mới trừ tồn
-        </span>
-      </div>
+      
 
       <div className="toolbar">
         <input
@@ -272,6 +272,13 @@ export default function AlignedMvpOutboundPage() {
             </option>
           ))}
         </select>
+        <MvpPageSizeSelector
+          value={perPage}
+          onChange={(value) => {
+            setPerPage(value);
+            setPage(1);
+          }}
+        />
         <div className="spacer" />
         {canImport ? (
           <button
@@ -294,14 +301,6 @@ export default function AlignedMvpOutboundPage() {
         </div>
       ) : null}
 
-      <MvpPageSizeSelector
-        value={perPage}
-        onChange={(value) => {
-          setPerPage(value);
-          setPage(1);
-        }}
-      />
-
       <TableLoadingBanner
         loading={listQuery.isLoading || listQuery.isFetching}
       />
@@ -309,6 +308,10 @@ export default function AlignedMvpOutboundPage() {
         rowKey="id"
         columns={columns}
         dataSource={rows}
+        rowSelection={{
+          selectedRowKeys,
+          onChange: setSelectedRowKeys,
+        }}
         loading={listQuery.isLoading || listQuery.isFetching}
         onChange={(next: TablePaginationConfig) => setPage(next.current ?? 1)}
         pagination={{
@@ -326,15 +329,6 @@ export default function AlignedMvpOutboundPage() {
         }}
         scroll={{ x: "max-content" }}
       />
-
-      <div className="footer-note">
-        Mở phiếu để thực hiện đúng thứ tự:{" "}
-        <b>
-          Quét đủ → Ghi nhận xuất kho (trừ tồn) → xem trước / in nhãn đóng gói.
-        </b>{" "}
-        Lỗi in nhãn không rollback phiếu đã Post; RFID không phải điều kiện bắt
-        buộc.
-      </div>
 
       {intakeOpen ? (
         <OutboundIntakeModal

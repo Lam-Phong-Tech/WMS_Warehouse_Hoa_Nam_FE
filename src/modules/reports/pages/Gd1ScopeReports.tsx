@@ -1,28 +1,19 @@
-import { useMemo, useState } from "react";
-import {
-  Card,
-  DatePicker,
-  Empty,
-  Select,
-  Space,
-  Table,
-  Tabs,
-  Tag,
-  Typography,
-} from "antd";
+import { useMemo, useState, type Key } from "react";
+import { Card, DatePicker, Empty, Select, Space, Tag } from "antd";
 import type { TableColumnsType } from "antd";
 import { useQuery } from "@tanstack/react-query";
 import dayjs, { type Dayjs } from "dayjs";
 import { http } from "@/shared/api/http";
+import { DataTable } from "@/shared/components";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import {
   RECIPIENT_TYPE_LABELS,
   recipientTypeLabel,
   type RecipientType,
 } from "@/shared/constants/recipient-types";
+import { formatDate } from "@/shared/utils/format-date";
 
 const { RangePicker } = DatePicker;
-const { Text } = Typography;
 
 type Raw = Record<string, unknown>;
 
@@ -62,6 +53,7 @@ function RecipientReport() {
   const [skuCode, setSkuCode] = useState<string>();
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
+  const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([]);
 
   const recipientQuery = useQuery({
     queryKey: ["gd1", "recipients", recipientType],
@@ -116,7 +108,12 @@ function RecipientReport() {
   const pagination = (data.pagination ?? {}) as Raw;
 
   const columns: TableColumnsType<Raw> = [
-    { title: "Ngày", dataIndex: "document_date", width: 115 },
+    {
+      title: "Ngày",
+      dataIndex: "document_date",
+      width: 115,
+      render: (value) => formatDate(text(value, "")),
+    },
     { title: "Phiếu", dataIndex: "outbound_no", width: 150 },
     {
       title: "Loại nơi nhận",
@@ -249,13 +246,18 @@ function RecipientReport() {
           onRetry={() => reportQuery.refetch()}
         />
       ) : null}
-      <Table<Raw>
+      <DataTable<Raw>
         rowKey={(row) =>
           `${text(row.document_id, "")}-${text(row.sku_id, "")}-${text(row.recipient_id, "")}`
         }
         loading={reportQuery.isLoading || reportQuery.isFetching}
         columns={columns}
         dataSource={rows}
+        rowSelection={{
+          type: "checkbox",
+          selectedRowKeys,
+          onChange: setSelectedRowKeys,
+        }}
         locale={{
           emptyText: (
             <Empty description="Chưa có dữ liệu xuất theo bộ lọc hiện tại" />
@@ -275,156 +277,6 @@ function RecipientReport() {
   );
 }
 
-function DefectSkuReport() {
-  const [period, setPeriod] = useState<[Dayjs, Dayjs]>([
-    dayjs().subtract(30, "day"),
-    dayjs(),
-  ]);
-  // REQ-022/P2-04: lọc nhiều bệnh/lỗi cùng lúc — BE defectSkuBreakdown nhận
-  // defect_ids[] (axios mặc định serialize mảng params thành defect_ids[]=...).
-  const [defectIds, setDefectIds] = useState<string[]>([]);
-
-  const defectsQuery = useQuery({
-    queryKey: ["gd1", "defects"],
-    queryFn: () =>
-      http.getPage<Raw[]>("/defects", {
-        params: { status: "ACTIVE", per_page: 200 },
-      }),
-  });
-  const defectOptions: SelectOption[] = (
-    Array.isArray(defectsQuery.data?.data) ? defectsQuery.data.data : []
-  ).map((row) => ({
-    value: text(row.defect_id, ""),
-    label: `${text(row.defect_code, "")} · ${text(row.defect_name)}`,
-  }));
-
-  const params = {
-    from_date: period[0].format("YYYY-MM-DD"),
-    to_date: period[1].format("YYYY-MM-DD"),
-    defect_ids: defectIds.length > 0 ? defectIds : undefined,
-  };
-  const query = useQuery({
-    queryKey: ["gd1", "warranty-defect-sku", params],
-    queryFn: () =>
-      http.get<Raw>("/reports/warranty-defect-sku-breakdown", { params }),
-  });
-  const rows = rowsOf(query.data?.rows ?? query.data);
-  const maxCount = Math.max(1, ...rows.map((row) => number(row.case_count)));
-
-  const columns: TableColumnsType<Raw> = [
-    { title: "SKU", dataIndex: "sku_code", width: 160 },
-    { title: "Tên SKU", dataIndex: "sku_name", width: 220 },
-    { title: "Mã bệnh/lỗi", dataIndex: "defect_code", width: 150 },
-    { title: "Bệnh/lỗi", dataIndex: "defect_name", width: 230 },
-    {
-      title: "Số case",
-      dataIndex: "case_count",
-      width: 100,
-      align: "right",
-      render: (value) => number(value).toLocaleString("vi-VN"),
-    },
-  ];
-
-  return (
-    <Space orientation="vertical" size={14} style={{ width: "100%" }}>
-      <Card size="small">
-        <Space wrap>
-          <RangePicker
-            value={period}
-            format="DD/MM/YYYY"
-            onChange={(value) => {
-              if (value?.[0] && value?.[1]) setPeriod([value[0], value[1]]);
-            }}
-          />
-          <Select
-            allowClear
-            showSearch
-            mode="multiple"
-            maxTagCount="responsive"
-            optionFilterProp="label"
-            style={{ minWidth: 300 }}
-            placeholder="Bệnh/lỗi (chọn được nhiều)"
-            value={defectIds}
-            options={defectOptions}
-            loading={defectsQuery.isLoading}
-            onChange={setDefectIds}
-          />
-        </Space>
-      </Card>
-
-      {query.isError ? (
-        <ApiErrorAlert
-          error={query.error}
-          title="Không tải được thống kê bệnh/lỗi theo SKU"
-          onRetry={() => query.refetch()}
-        />
-      ) : null}
-
-      <Card size="small" title="Biểu đồ bệnh/lỗi theo SKU">
-        {rows.length === 0 && !query.isLoading ? (
-          <Empty description="Chưa có dữ liệu trong khoảng thời gian đã chọn" />
-        ) : (
-          <Space orientation="vertical" size={10} style={{ width: "100%" }}>
-            {rows.slice(0, 20).map((row) => {
-              const count = number(row.case_count);
-              const percent = Math.max(4, Math.round((count / maxCount) * 100));
-              return (
-                <div key={`${text(row.sku_id, "")}-${text(row.defect_id, "")}`}>
-                  <Space
-                    style={{ width: "100%", justifyContent: "space-between" }}
-                  >
-                    <Text>
-                      <strong>{text(row.sku_code)}</strong> ·{" "}
-                      {text(row.defect_name)}
-                    </Text>
-                    <Text>{count} case</Text>
-                  </Space>
-                  <div
-                    aria-label={`${count} case`}
-                    style={{
-                      height: 10,
-                      width: `${percent}%`,
-                      maxWidth: "100%",
-                      background: "currentColor",
-                      opacity: 0.35,
-                      borderRadius: 6,
-                    }}
-                  />
-                </div>
-              );
-            })}
-          </Space>
-        )}
-      </Card>
-
-      <Table<Raw>
-        rowKey={(row) => `${text(row.sku_id, "")}-${text(row.defect_id, "")}`}
-        loading={query.isLoading || query.isFetching}
-        columns={columns}
-        dataSource={rows}
-        pagination={{ pageSize: 10, showSizeChanger: false }}
-        scroll={{ x: 860 }}
-      />
-    </Space>
-  );
-}
-
 export default function Gd1ScopeReports() {
-  return (
-    <Tabs
-      defaultActiveKey="recipient"
-      items={[
-        {
-          key: "recipient",
-          label: "Xuất theo nơi nhận / thị trường / SKU",
-          children: <RecipientReport />,
-        },
-        {
-          key: "defect-sku",
-          label: "Bệnh lỗi theo SKU",
-          children: <DefectSkuReport />,
-        },
-      ]}
-    />
-  );
+  return <RecipientReport />;
 }

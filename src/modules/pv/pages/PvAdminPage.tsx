@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type Key } from "react";
 import {
   Button,
   Descriptions,
@@ -9,12 +9,12 @@ import {
   Select,
   Space,
   Switch,
-  Table,
   Tabs,
   Tag,
 } from "antd";
 import { EyeOutlined } from "@ant-design/icons";
 import { toast } from "sonner";
+import { DataTable } from "@/shared/components";
 import { PvErrorState } from "@/modules/pv/components/PvErrorState";
 import {
   usePvAdminIndustries,
@@ -94,6 +94,7 @@ function SimpleMasterTab({
   const [editing, setEditing] = useState<PvAdminSimpleMaster | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [form] = Form.useForm<MasterFormValues>();
+  const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([]);
 
   function openForm(row?: PvAdminSimpleMaster) {
     setEditing(row ?? null);
@@ -141,12 +142,17 @@ function SimpleMasterTab({
         </Button>
       </div>
 
-      <Table<PvAdminSimpleMaster>
+      <DataTable<PvAdminSimpleMaster>
         rowKey="id"
         size="small"
         scroll={{ x: "max-content" }}
         dataSource={rows}
         pagination={false}
+        rowSelection={{
+          type: "checkbox",
+          selectedRowKeys,
+          onChange: setSelectedRowKeys,
+        }}
         locale={{ emptyText: `Chưa có ${title} nào.` }}
         columns={[
           { title: "Mã", dataIndex: "code" },
@@ -256,6 +262,9 @@ export default function PvAdminPage() {
   const [profileViewing, setProfileViewing] = useState<PvAdminProfile | null>(
     null,
   );
+  const [profileSelectedRowKeys, setProfileSelectedRowKeys] = useState<
+    Key[]
+  >([]);
   const industryNameById = useMemo(
     () => new Map(industryOptions.map((item) => [item.value, item.label])),
     [industryOptions],
@@ -361,12 +370,17 @@ export default function PvAdminPage() {
               />
             ) : (
               <div data-testid="pv-admin-profiles">
-                <Table<PvAdminProfile>
+                <DataTable<PvAdminProfile>
                   rowKey="id"
                   size="small"
                   scroll={{ x: "max-content" }}
                   dataSource={profiles.data?.data ?? []}
                   pagination={false}
+                  rowSelection={{
+                    type: "checkbox",
+                    selectedRowKeys: profileSelectedRowKeys,
+                    onChange: setProfileSelectedRowKeys,
+                  }}
                   locale={{
                     emptyText:
                       "Chưa có hồ sơ sản phẩm nào. Hồ sơ được tạo khi sản phẩm được đưa lên ứng dụng lần đầu.",
@@ -613,6 +627,7 @@ function PvRuleTab({
   const [isOpen, setIsOpen] = useState(false);
   const [viewing, setViewing] = useState<PvAdminRule | null>(null);
   const [form] = Form.useForm();
+  const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([]);
   const tagNameById = useMemo(
     () => new Map(tagOptions.map((item) => [item.value, item.label])),
     [tagOptions],
@@ -666,12 +681,17 @@ function PvRuleTab({
           Thêm quy tắc gợi ý
         </Button>
       </div>
-      <Table<PvAdminRule>
+      <DataTable<PvAdminRule>
         rowKey="id"
         size="small"
         scroll={{ x: "max-content" }}
         dataSource={rows}
         pagination={false}
+        rowSelection={{
+          type: "checkbox",
+          selectedRowKeys,
+          onChange: setSelectedRowKeys,
+        }}
         locale={{ emptyText: "Chưa có quy tắc gợi ý nào." }}
         columns={[
           { title: "Ngành nghề", dataIndex: "industry_name" },

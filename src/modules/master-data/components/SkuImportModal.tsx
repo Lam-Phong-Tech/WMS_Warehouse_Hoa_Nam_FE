@@ -39,6 +39,7 @@ import {
   type SkuImportRowError,
 } from "@/modules/master-data/services/sku-import.service";
 import { sha256OfFile } from "@/shared/utils/file-digest";
+import { formatDateTime } from "@/shared/utils/format-date";
 
 interface SkuImportModalProps {
   open: boolean;
@@ -83,10 +84,8 @@ function handleBlobDownload(
 
 function formatExpiry(isoTimestamp: string | null): string {
   if (!isoTimestamp) return "";
-  const parsed = new Date(isoTimestamp);
-  return Number.isNaN(parsed.getTime())
-    ? ""
-    : ` · tải được đến ${parsed.toLocaleString("vi-VN")}`;
+  const formatted = formatDateTime(isoTimestamp);
+  return formatted === "-" ? "" : ` · tải được đến ${formatted}`;
 }
 
 function describeConstraints(constraints: SkuImportConstraints | null): string {

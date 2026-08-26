@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-import { useEffect, useState } from "react";
+import { useEffect, useState, type Key } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Table, Tag, Typography } from "antd";
 import type { ColumnsType, TablePaginationConfig } from "antd/es/table";
@@ -12,6 +12,7 @@ import {
 } from "@/shared/components/feedback/BusinessState";
 import { MvpPageSizeSelector } from "@/shared/components/mvp/MvpListPagination";
 import { resolveApiPagination } from "@/shared/components/mvp/mvp-pagination";
+import { mvpRowNumber } from "@/shared/components/mvp/MvpSelectionCell";
 import { useHasPermission } from "@/shared/components/permission";
 import {
   REVERSAL_STATUS_LABELS,
@@ -23,6 +24,7 @@ import { ReversalCreateModal } from "../components/ReversalCreateModal";
 import { ReversalDetailModal } from "../components/ReversalDetailModal";
 import { ReversalStatusTag } from "../components/ReversalStatusTag";
 import type { ReversalDocument } from "../types";
+import { formatDateTime } from "@/shared/utils/format-date";
 
 const SEARCH_DEBOUNCE_MS = 250;
 const numberFormatter = new Intl.NumberFormat("vi-VN");
@@ -40,6 +42,7 @@ export default function ReversalPage() {
   const [perPage, setPerPage] = useState(10);
   const [createOpen, setCreateOpen] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
+  const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([]);
 
   const canPost = can("inventory.reversal.post");
 
@@ -83,6 +86,15 @@ export default function ReversalPage() {
   };
 
   const columns: ColumnsType<ReversalDocument> = [
+    {
+      title: "STT",
+      key: "stt",
+      className: "stt-col",
+      width: 48,
+      align: "center",
+      fixed: "left",
+      render: (_value, _row, index) => mvpRowNumber(page, perPage, index),
+    },
     {
       title: "Mã điều chỉnh",
       dataIndex: "reversal_code",
@@ -153,6 +165,7 @@ export default function ReversalPage() {
       dataIndex: "created_at",
       key: "created_at",
       width: 160,
+      render: (created_at: string) => formatDateTime(created_at),
     },
     {
       title: "Người tạo",
@@ -184,14 +197,7 @@ export default function ReversalPage() {
 
   return (
     <div className="reversal-page hn-mvp-source-screen">
-      <div className="toolbar-wrap" style={{ gap: 6 }}>
-        <span className="pill blue">Điều chỉnh bằng chứng từ đối ứng</span>
-        <span className="pill blue">Giữ nguyên giao dịch gốc</span>
-        <span className="pill ok">
-          Có kiểm tra điều kiện trước khi ghi nhận
-        </span>
-      </div>
-
+      
       {!canPost ? (
         <div
           className="footer-note"
@@ -229,6 +235,13 @@ export default function ReversalPage() {
             </option>
           ))}
         </select>
+        <MvpPageSizeSelector
+          value={perPage}
+          onChange={(value) => {
+            setPerPage(value);
+            setPage(1);
+          }}
+        />
         <div className="spacer" />
         {canPost ? (
           <button
@@ -251,14 +264,6 @@ export default function ReversalPage() {
         </div>
       ) : null}
 
-      <MvpPageSizeSelector
-        value={perPage}
-        onChange={(value) => {
-          setPerPage(value);
-          setPage(1);
-        }}
-      />
-
       <TableLoadingBanner
         loading={listQuery.isLoading || listQuery.isFetching}
       />
@@ -267,6 +272,10 @@ export default function ReversalPage() {
         columns={columns}
         dataSource={rows}
         loading={listQuery.isLoading || listQuery.isFetching}
+        rowSelection={{
+          selectedRowKeys,
+          onChange: setSelectedRowKeys,
+        }}
         onChange={handleTableChange}
         pagination={{
           current: listPagination.current,
@@ -285,11 +294,6 @@ export default function ReversalPage() {
         onRow={(row) => ({ onDoubleClick: () => setDetailId(row.id) })}
         scroll={{ x: "max-content" }}
       />
-
-      <div className="footer-note">
-        Bấm <b>Mở</b> để xem chứng từ gốc, các dòng điều chỉnh và ảnh hưởng tồn
-        kho. Bấm <b>Tạo phiếu điều chỉnh</b> để chọn giao dịch cần điều chỉnh.
-      </div>
 
       {createOpen ? (
         <ReversalCreateModal

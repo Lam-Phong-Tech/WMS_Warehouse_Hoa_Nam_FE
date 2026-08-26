@@ -26,6 +26,9 @@ const AuditLogsPage = lazy(() =>
     default: m.AuditLogsPage,
   })),
 );
+const NotificationsPage = lazy(
+  () => import("@/modules/notifications/pages/NotificationsPage"),
+);
 const DashboardPage = lazy(() =>
   import("@/modules/dashboard/pages/DashboardPage").then((m) => ({
     default: m.default,
@@ -166,6 +169,10 @@ export const router = createBrowserRouter([
           {
             path: ROUTES.AUDIT_LOGS,
             element: routeEl(ROUTES.AUDIT_LOGS, <AuditLogsPage />),
+          },
+          {
+            path: ROUTES.NOTIFICATIONS,
+            element: routeEl(ROUTES.NOTIFICATIONS, <NotificationsPage />),
           },
           {
             path: ROUTES.DASHBOARD,

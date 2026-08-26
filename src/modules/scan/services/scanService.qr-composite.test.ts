@@ -43,7 +43,7 @@ describe("classifyScanCodes — composite PRODUCT QR contract", () => {
     current_location: {
       warehouse_id: WAREHOUSE_ID,
       warehouse_code: "KHO-TONG-HN",
-      warehouse_name: "Kho tổng Hòa Nam",
+      warehouse_name: "Kho tổng Hoa Nam",
     },
   };
 

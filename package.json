@@ -91,8 +91,13 @@
     "brace-expansion": "^5.0.9"
   },
   "lint-staged": {
-    "*.{ts,tsx}": ["eslint --fix --config eslint.config.js", "prettier --write"],
-    "*.{css,json,md}": ["prettier --write"]
+    "*.{ts,tsx}": [
+      "eslint --fix --config eslint.config.js",
+      "prettier --write"
+    ],
+    "*.{css,json,md}": [
+      "prettier --write"
+    ]
   },
   "dependencies": {
     "@ant-design/icons": "^6.2.5",
@@ -102,7 +107,9 @@
     "axios": "^1.18.0",
     "dayjs": "^1.11.21",
     "js-cookie": "^3.0.8",
+    "laravel-echo": "^2.4.0",
     "lodash-es": "^4.17.21",
+    "pusher-js": "^8.6.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "react-hook-form": "^7.80.0",

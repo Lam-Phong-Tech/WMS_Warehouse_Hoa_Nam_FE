@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type Key } from "react";
 import {
   Button,
   Select,
@@ -20,6 +20,7 @@ import {
   TableLoadingBanner,
   tableEmptyText,
 } from "@/shared/components/feedback/BusinessState";
+import { mvpRowNumber } from "@/shared/components/mvp/MvpSelectionCell";
 import {
   hasAnyWmsPermission,
   WMS_PERMISSION_CATALOG as P,
@@ -76,6 +77,7 @@ function InboundListScreen() {
   const [draftOpen, setDraftOpen] = useState(false);
   const [draftDocumentId, setDraftDocumentId] = useState<string | null>(null);
   const [scanDocumentId, setScanDocumentId] = useState<string | null>(null);
+  const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([]);
 
   const canCreate = useInboundPermission(P.INBOUND_CREATE);
   const canScan = useInboundPermission(P.INBOUND_SCAN);
@@ -135,6 +137,15 @@ function InboundListScreen() {
   );
 
   const columns: ColumnsType<InboundDocument> = [
+    {
+      title: "STT",
+      key: "stt",
+      className: "stt-col",
+      width: 48,
+      align: "center",
+      fixed: "left",
+      render: (_value, _row, index) => mvpRowNumber(page, perPage, index),
+    },
     {
       title: "Phiếu nhập",
       dataIndex: "code",
@@ -240,6 +251,21 @@ function InboundListScreen() {
             </option>
           ))}
         </select>
+        <div className="table-page-size">
+          <Select
+            size="small"
+            value={perPage}
+            style={{ width: 110 }}
+            options={PAGE_SIZE_OPTIONS.map((size) => ({
+              value: size,
+              label: `${size} / trang`,
+            }))}
+            onChange={(nextPageSize) => {
+              setPerPage(nextPageSize);
+              setPage(1);
+            }}
+          />
+        </div>
         <div className="spacer" />
         {canCreate ? (
           <button
@@ -265,27 +291,15 @@ function InboundListScreen() {
         </div>
       ) : null}
 
-      <div className="table-page-size">
-        <Select
-          size="small"
-          value={perPage}
-          style={{ width: 110 }}
-          options={PAGE_SIZE_OPTIONS.map((size) => ({
-            value: size,
-            label: `${size} / trang`,
-          }))}
-          onChange={(nextPageSize) => {
-            setPerPage(nextPageSize);
-            setPage(1);
-          }}
-        />
-      </div>
-
       <TableLoadingBanner loading={query.isLoading || query.isFetching} />
       <Table<InboundDocument>
         rowKey="id"
         columns={columns}
         dataSource={rows}
+        rowSelection={{
+          selectedRowKeys,
+          onChange: setSelectedRowKeys,
+        }}
         loading={query.isLoading || query.isFetching}
         onChange={handleTableChange}
         pagination={{

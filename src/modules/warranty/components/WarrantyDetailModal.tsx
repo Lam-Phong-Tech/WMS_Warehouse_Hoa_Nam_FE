@@ -41,6 +41,7 @@ import {
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { useCanAny } from "@/shared/components/permission";
 import { useMvpDefects } from "@/modules/master-data/hooks/use-mvp-master";
+import { formatDate } from "@/shared/utils/format-date";
 import {
   WARRANTY_ATTACHMENT_TYPE_LABELS,
   WARRANTY_BASELINE_STATUSES,
@@ -417,6 +418,7 @@ export function WarrantyDetailModal({
       dataIndex: "document_date",
       key: "document_date",
       width: 130,
+      render: (document_date: string) => formatDate(document_date),
     },
     {
       title: "Trạng thái",
@@ -638,7 +640,7 @@ export function WarrantyDetailModal({
               ) || "—"}
             </Descriptions.Item>
             <Descriptions.Item label="Ngày mua">
-              {detail.purchase_date ?? "—"}
+              {detail.purchase_date ? formatDate(detail.purchase_date) : "—"}
             </Descriptions.Item>
             <Descriptions.Item label="Ngày tiếp nhận">
               {formatWarrantyDateTime(detail.received_at)}
@@ -710,7 +712,9 @@ export function WarrantyDetailModal({
               </Descriptions.Item>
             ) : null}
             <Descriptions.Item label="Dự kiến hoàn thành">
-              {detail.estimated_completion_date ?? "—"}
+              {detail.estimated_completion_date
+                ? formatDate(detail.estimated_completion_date)
+                : "—"}
             </Descriptions.Item>
             <Descriptions.Item label="Hoàn tất sửa">
               {formatWarrantyDateTime(detail.completed_at)}

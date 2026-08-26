@@ -4,6 +4,8 @@ import { MenuFoldOutlined, MenuUnfoldOutlined } from "@ant-design/icons";
 import { SideNav } from "@/app/layouts/SideNav";
 import { UserMenu } from "@/app/layouts/UserMenu";
 import { useMe } from "@/modules/auth/hooks/use-me";
+import { useNotificationSocket } from "@/modules/notifications/hooks/useNotificationSocket";
+import { NotificationBell } from "@/modules/notifications/components/NotificationBell";
 import { Loading } from "@/shared/components";
 import { ROUTES } from "@/shared/constants/routes";
 import { useAuthStore } from "@/shared/store/auth.store";
@@ -364,6 +366,7 @@ export function MainLayout() {
   const location = useLocation();
   const isProfileLoaded = useAuthStore((state) => state.isProfileLoaded);
   const { isLoading: isLoadingProfile } = useMe();
+  useNotificationSocket();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
     readStoredSidebarCollapsed,
   );
@@ -413,7 +416,10 @@ export function MainLayout() {
               <p>{meta.description}</p>
             </div>
           </div>
-          <UserMenu />
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <NotificationBell />
+            <UserMenu />
+          </div>
         </header>
         <div className="hn-mvp-content">
           <section className="hn-mvp-screen">

@@ -32,11 +32,17 @@ import {
 } from "@/shared/components/mvp/MvpListPagination";
 import { resolveApiPagination } from "@/shared/components/mvp/mvp-pagination";
 import {
+  MvpSelectionCheckbox,
+  mvpRowNumber,
+} from "@/shared/components/mvp/MvpSelectionCell";
+import {
   IAM_SCOPE_TYPE_LABELS,
   IAM_USER_STATUS_LABELS,
   businessLabel,
 } from "@/shared/constants/business-labels";
+import { useRowSelection } from "@/shared/hooks/useRowSelection";
 import { useAuthStore } from "@/shared/store/auth.store";
+import { formatDate, formatDateTime } from "@/shared/utils/format-date";
 
 const STATUS_OPTIONS: Array<{ value: IamUserStatus; label: string }> = [
   { value: "ACTIVE", label: IAM_USER_STATUS_LABELS.ACTIVE },
@@ -99,30 +105,15 @@ function scopeLabel(
   return "Toàn hệ thống";
 }
 
-function formatDate(value?: string | null) {
-  if (!value) return null;
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return value;
-  return new Intl.DateTimeFormat("vi-VN", { dateStyle: "short" }).format(
-    parsed,
-  );
-}
-
 function effectiveWindowLabel(pivot?: IamRolePivot) {
-  const from = formatDate(pivot?.effective_from);
-  const to = formatDate(pivot?.effective_to);
-  if (!from && !to) return "Vô thời hạn";
-  return `${from ?? "—"} → ${to ?? "—"}`;
+  const hasFrom = Boolean(pivot?.effective_from);
+  const hasTo = Boolean(pivot?.effective_to);
+  if (!hasFrom && !hasTo) return "Vô thời hạn";
+  return `${hasFrom ? formatDate(pivot?.effective_from) : "—"} → ${hasTo ? formatDate(pivot?.effective_to) : "—"}`;
 }
 
 function formatLastLogin(value?: string | null) {
-  if (!value) return "Chưa đăng nhập";
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return value;
-  return new Intl.DateTimeFormat("vi-VN", {
-    dateStyle: "short",
-    timeStyle: "short",
-  }).format(parsed);
+  return value ? formatDateTime(value) : "Chưa đăng nhập";
 }
 
 export interface IamUserScreenProps {
@@ -219,6 +210,11 @@ export function IamUserScreen({
   const displayedUsers = roleFilter
     ? roleFilteredUsers.slice((page - 1) * perPage, page * perPage)
     : users;
+
+  const rowSelection = useRowSelection(
+    displayedUsers,
+    (user) => user.user_id,
+  );
 
   const selectedRole = useMemo(
     () => roles.find((role) => role.role_id === formState.roleId),
@@ -483,6 +479,13 @@ export function IamUserScreen({
             </option>
           ))}
         </select>
+        <MvpPageSizeSelector
+          value={perPage}
+          onChange={(value) => {
+            setPerPage(value);
+            setPage(1);
+          }}
+        />
         <div className="spacer" />
         {canManageUsers ? (
           <button
@@ -514,18 +517,19 @@ export function IamUserScreen({
         </div>
       ) : null}
 
-      <MvpPageSizeSelector
-        value={perPage}
-        onChange={(value) => {
-          setPerPage(value);
-          setPage(1);
-        }}
-      />
-
       <div className="table-wrap" aria-busy={usersQuery.isLoading}>
         <table>
           <thead>
             <tr>
+              <th className="select-col">
+                <MvpSelectionCheckbox
+                  checked={rowSelection.isAllSelected}
+                  indeterminate={rowSelection.isIndeterminate}
+                  onChange={rowSelection.toggleAll}
+                  ariaLabel="Chọn tất cả người dùng"
+                />
+              </th>
+              <th className="stt-col">STT</th>
               <th>Người dùng</th>
               <th>Phòng ban</th>
               <th>Vai trò</th>
@@ -538,15 +542,27 @@ export function IamUserScreen({
           <tbody>
             {usersQuery.isLoading ? (
               <tr>
-                <td colSpan={7}>
+                <td colSpan={9}>
                   <span className="muted">Đang tải dữ liệu...</span>
                 </td>
               </tr>
             ) : displayedUsers.length > 0 ? (
-              displayedUsers.map((user) => {
+              displayedUsers.map((user, index) => {
                 const primaryRole = user.roles?.[0];
                 return (
                   <tr key={user.user_id}>
+                    <td className="select-col">
+                      <MvpSelectionCheckbox
+                        checked={rowSelection.isSelected(user.user_id)}
+                        onChange={(checked) =>
+                          rowSelection.toggleOne(user.user_id, checked)
+                        }
+                        ariaLabel={`Chọn ${user.display_name}`}
+                      />
+                    </td>
+                    <td className="stt-col">
+                      {mvpRowNumber(page, perPage, index)}
+                    </td>
                     <td>
                       {user.display_name}
                       <br />
@@ -586,7 +602,7 @@ export function IamUserScreen({
               })
             ) : (
               <tr>
-                <td colSpan={7}>
+                <td colSpan={9}>
                   <span className="muted">
                     Không có người dùng phù hợp bộ lọc.
                   </span>

@@ -35,7 +35,7 @@ export interface AppMenuItem {
 export const MENU: AppMenuItem[] = [
   {
     key: "overview",
-    label: "00 · Tổng quan",
+    label: "Tổng quan",
     icon: <BarChartOutlined />,
     children: [
       {
@@ -48,7 +48,7 @@ export const MENU: AppMenuItem[] = [
   },
   {
     key: "foundation",
-    label: "01 · Hệ thống & danh mục",
+    label: "Hệ thống & danh mục",
     icon: <SettingOutlined />,
     children: [
       {
@@ -103,7 +103,7 @@ export const MENU: AppMenuItem[] = [
   },
   {
     key: "inbound-group",
-    label: "02 · Nhập kho",
+    label: "Nhập kho",
     icon: <InboxOutlined />,
     children: [
       {

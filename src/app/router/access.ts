@@ -78,6 +78,8 @@ export const ROUTE_PERMISSIONS: Record<string, string | string[] | undefined> =
     // UNREGISTERED_ROUTE_PERMISSION -> fail-closed nếu route lọt lại.
     ...(import.meta.env.DEV ? { [ROUTES.COMPONENT_CATALOG]: undefined } : {}),
     [ROUTES.PROFILE]: undefined,
+    // Hộp thư thông báo cá nhân — tự scope theo user_id ở BE, không cần permission riêng.
+    [ROUTES.NOTIFICATIONS]: undefined,
   };
 
 /**

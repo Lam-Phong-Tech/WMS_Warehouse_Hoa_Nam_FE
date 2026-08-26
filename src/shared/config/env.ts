@@ -12,6 +12,12 @@ export interface RuntimeConfig {
   readonly enableAnalytics: boolean;
   readonly enableDebug: boolean;
   readonly enablePerfMonitor: boolean;
+  readonly reverb: {
+    readonly appKey: string | undefined;
+    readonly host: string;
+    readonly port: number;
+    readonly scheme: "http" | "https";
+  };
 }
 
 const DEFAULT_API_TIMEOUT_MS = 10000;
@@ -162,6 +168,14 @@ export const runtimeConfig: RuntimeConfig = {
     readEnv("VITE_ENABLE_PERF_MONITOR"),
     "VITE_ENABLE_PERF_MONITOR",
   ),
+  // Không throw khi thiếu: bảng chuông thông báo tắt gracefully (không realtime,
+  // FE vẫn chạy được) thay vì làm sập toàn bộ SPA vì thiếu 1 biến optional.
+  reverb: {
+    appKey: readEnv("VITE_REVERB_APP_KEY") || undefined,
+    host: readEnv("VITE_REVERB_HOST") || "localhost",
+    port: numberEnv(readEnv("VITE_REVERB_PORT"), 6001),
+    scheme: readEnv("VITE_REVERB_SCHEME") === "https" ? "https" : "http",
+  },
 };
 
 export const apiHealthUrl = resolveApiUrl(

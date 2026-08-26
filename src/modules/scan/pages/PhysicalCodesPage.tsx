@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type Key } from "react";
 import {
   Alert,
   Button,
@@ -40,6 +40,7 @@ import {
 import { IssuePhysicalCodeModal } from "../components/IssuePhysicalCodeModal";
 import { useCan } from "@/shared/components/permission";
 import { WMS_PERMISSION_CATALOG } from "@/shared/constants/wms-permissions";
+import { formatDateTime } from "@/shared/utils/format-date";
 import type {
   PhysicalCode,
   ScanBatch,
@@ -95,6 +96,12 @@ export default function PhysicalCodesPage() {
   const [batchPerPage, setBatchPerPage] = useState(10);
   const [eventPage, setEventPage] = useState(1);
   const [eventPerPage, setEventPerPage] = useState(10);
+  const [codeSelectedRowKeys, setCodeSelectedRowKeys] = useState<Key[]>([]);
+  const [classifySelectedRowKeys, setClassifySelectedRowKeys] = useState<
+    Key[]
+  >([]);
+  const [batchSelectedRowKeys, setBatchSelectedRowKeys] = useState<Key[]>([]);
+  const [eventSelectedRowKeys, setEventSelectedRowKeys] = useState<Key[]>([]);
   const [batchMeta, setBatchMeta] = useState<ApiMeta>({});
   const [eventMeta, setEventMeta] = useState<ApiMeta>({});
   const [scanValue, setScanValue] = useState("");
@@ -257,6 +264,14 @@ export default function PhysicalCodesPage() {
                     placeholder="Giá trị mã..."
                     style={{ width: 285 }}
                   />
+                  <MvpPageSizeSelector
+                    value={codePerPage}
+                    onChange={(value) => {
+                      setCodePerPage(value);
+                      setCodePage(1);
+                    }}
+                  />
+                  <div style={{ flex: 1 }} />
                   <Button
                     type="primary"
                     icon={<BarcodeOutlined />}
@@ -271,17 +286,15 @@ export default function PhysicalCodesPage() {
                   title="Không thể tải danh sách mã vật lý"
                   onRetry={() => setReloadKey((value) => value + 1)}
                 />
-                <MvpPageSizeSelector
-                  value={codePerPage}
-                  onChange={(value) => {
-                    setCodePerPage(value);
-                    setCodePage(1);
-                  }}
-                />
                 <Table
                   dataSource={codes}
                   rowKey="id"
                   loading={loading}
+                  rowSelection={{
+                    type: "checkbox",
+                    selectedRowKeys: codeSelectedRowKeys,
+                    onChange: setCodeSelectedRowKeys,
+                  }}
                   pagination={{
                     current: codePage,
                     pageSize: codePerPage,
@@ -293,6 +306,13 @@ export default function PhysicalCodesPage() {
                   scroll={{ x: "max-content" }}
                   locale={{ emptyText: tableEmptyText(listError) }}
                   columns={[
+                    {
+                      title: "STT",
+                      key: "stt",
+                      width: 60,
+                      render: (_: unknown, __: PhysicalCode, index: number) =>
+                        (codePage - 1) * codePerPage + index + 1,
+                    },
                     {
                       title: "Giá trị mã",
                       dataIndex: "code_value",
@@ -434,10 +454,25 @@ export default function PhysicalCodesPage() {
                   <Table
                     dataSource={[classifyResult]}
                     rowKey="raw_code"
+                    rowSelection={{
+                      type: "checkbox",
+                      selectedRowKeys: classifySelectedRowKeys,
+                      onChange: setClassifySelectedRowKeys,
+                    }}
                     pagination={false}
                     size="small"
                     scroll={{ x: "max-content" }}
                     columns={[
+                      {
+                        title: "STT",
+                        key: "stt",
+                        width: 60,
+                        render: (
+                          _: unknown,
+                          __: ScanClassifyResponse,
+                          index: number,
+                        ) => index + 1,
+                      },
                       {
                         title: "Mã",
                         dataIndex: "raw_code",
@@ -511,18 +546,32 @@ export default function PhysicalCodesPage() {
                   title="Không thể tải lịch sử quét"
                   onRetry={() => setReloadKey((value) => value + 1)}
                 />
-                <Typography.Text strong>Lô quét</Typography.Text>
-                <MvpPageSizeSelector
-                  value={batchPerPage}
-                  onChange={(value) => {
-                    setBatchPerPage(value);
-                    setBatchPage(1);
+                <Space
+                  wrap
+                  style={{
+                    marginBottom: 8,
+                    width: "100%",
+                    justifyContent: "space-between",
                   }}
-                />
+                >
+                  <Typography.Text strong>Lô quét</Typography.Text>
+                  <MvpPageSizeSelector
+                    value={batchPerPage}
+                    onChange={(value) => {
+                      setBatchPerPage(value);
+                      setBatchPage(1);
+                    }}
+                  />
+                </Space>
                 <Table
                   dataSource={batches}
                   rowKey="id"
                   loading={loading}
+                  rowSelection={{
+                    type: "checkbox",
+                    selectedRowKeys: batchSelectedRowKeys,
+                    onChange: setBatchSelectedRowKeys,
+                  }}
                   pagination={{
                     current: batchPagination.current,
                     pageSize: batchPerPage,
@@ -535,6 +584,15 @@ export default function PhysicalCodesPage() {
                   scroll={{ x: "max-content" }}
                   locale={{ emptyText: tableEmptyText(historyError) }}
                   columns={[
+                    {
+                      title: "STT",
+                      key: "stt",
+                      width: 60,
+                      render: (_: unknown, __: ScanBatch, index: number) =>
+                        (batchPagination.current - 1) * batchPerPage +
+                        index +
+                        1,
+                    },
                     { title: "Lô", dataIndex: "batch_no", key: "batch_no" },
                     {
                       title: "Nguồn quét",
@@ -580,18 +638,32 @@ export default function PhysicalCodesPage() {
                   ]}
                 />
 
-                <Typography.Text strong>Sự kiện quét</Typography.Text>
-                <MvpPageSizeSelector
-                  value={eventPerPage}
-                  onChange={(value) => {
-                    setEventPerPage(value);
-                    setEventPage(1);
+                <Space
+                  wrap
+                  style={{
+                    marginBottom: 8,
+                    width: "100%",
+                    justifyContent: "space-between",
                   }}
-                />
+                >
+                  <Typography.Text strong>Sự kiện quét</Typography.Text>
+                  <MvpPageSizeSelector
+                    value={eventPerPage}
+                    onChange={(value) => {
+                      setEventPerPage(value);
+                      setEventPage(1);
+                    }}
+                  />
+                </Space>
                 <Table
                   dataSource={events}
                   rowKey="id"
                   loading={loading}
+                  rowSelection={{
+                    type: "checkbox",
+                    selectedRowKeys: eventSelectedRowKeys,
+                    onChange: setEventSelectedRowKeys,
+                  }}
                   pagination={{
                     current: eventPagination.current,
                     pageSize: eventPerPage,
@@ -603,6 +675,15 @@ export default function PhysicalCodesPage() {
                   scroll={{ x: "max-content" }}
                   locale={{ emptyText: tableEmptyText(historyError) }}
                   columns={[
+                    {
+                      title: "STT",
+                      key: "stt",
+                      width: 60,
+                      render: (_: unknown, __: ScanEvent, index: number) =>
+                        (eventPagination.current - 1) * eventPerPage +
+                        index +
+                        1,
+                    },
                     { title: "Mã", dataIndex: "code_value", key: "code_value" },
                     {
                       title: "Loại mã",
@@ -629,6 +710,8 @@ export default function PhysicalCodesPage() {
                       title: "Thời gian quét",
                       dataIndex: "scanned_at",
                       key: "scanned_at",
+                      render: (scanned_at: string) =>
+                        formatDateTime(scanned_at),
                     },
                   ]}
                 />

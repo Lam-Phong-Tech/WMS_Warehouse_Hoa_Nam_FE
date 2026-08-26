@@ -1,5 +1,5 @@
 ﻿# ============================================================================
-# Script: Seed Full Demo Data (toàn bộ nghiệp vụ WMS Hòa Nam)
+# Script: Seed Full Demo Data (toàn bộ nghiệp vụ WMS Hoa Nam)
 # Mục đích: Tạo dữ liệu mẫu đầy đủ trạng thái cho các module:
 #   1. SKU / Product Master
 #   2. Đại lý (Agency)
@@ -99,15 +99,15 @@ Write-Status "Kho: $($warehouses.data[0].name) ($warehouseId)" -Level "Info"
 Write-Status "`n=== BƯỚC 1: SKU / Product Master ===" -Level "Step"
 
 $skuDefs = @(
-    @{ code = "HN-SKU-$ts-01"; name = "Máy bơm nước Hòa Nam PV-100"; type = "PRODUCT"; unit = "cái"; serial = $false }
-    @{ code = "HN-SKU-$ts-02"; name = "Máy phát điện Hòa Nam GEN-5000"; type = "PRODUCT"; unit = "cái"; serial = $false }
-    @{ code = "HN-SKU-$ts-03"; name = "Máy cắt cỏ Hòa Nam MC-250"; type = "PRODUCT"; unit = "cái"; serial = $false }
-    @{ code = "HN-SKU-$ts-04"; name = "Máy xịt rửa áp lực Hòa Nam XR-80"; type = "PRODUCT"; unit = "cái"; serial = $true }
-    @{ code = "HN-SKU-$ts-05"; name = "Máy khoan cầm tay Hòa Nam KT-13"; type = "PRODUCT"; unit = "cái"; serial = $true }
+    @{ code = "HN-SKU-$ts-01"; name = "Máy bơm nước Hoa Nam PV-100"; type = "PRODUCT"; unit = "cái"; serial = $false }
+    @{ code = "HN-SKU-$ts-02"; name = "Máy phát điện Hoa Nam GEN-5000"; type = "PRODUCT"; unit = "cái"; serial = $false }
+    @{ code = "HN-SKU-$ts-03"; name = "Máy cắt cỏ Hoa Nam MC-250"; type = "PRODUCT"; unit = "cái"; serial = $false }
+    @{ code = "HN-SKU-$ts-04"; name = "Máy xịt rửa áp lực Hoa Nam XR-80"; type = "PRODUCT"; unit = "cái"; serial = $true }
+    @{ code = "HN-SKU-$ts-05"; name = "Máy khoan cầm tay Hoa Nam KT-13"; type = "PRODUCT"; unit = "cái"; serial = $true }
     @{ code = "HN-SKU-$ts-06"; name = "Bo mạch điều khiển động cơ"; type = "COMPONENT"; unit = "cái"; serial = $false }
     @{ code = "HN-SKU-$ts-07"; name = "Cuộn dây stator máy phát"; type = "COMPONENT"; unit = "cái"; serial = $false }
     @{ code = "HN-SKU-$ts-08"; name = "Bơm cao áp XR-80"; type = "COMPONENT"; unit = "cái"; serial = $false }
-    @{ code = "HN-SKU-$ts-09"; name = "Máy hàn điện tử Hòa Nam WD-200 (ngừng KD)"; type = "PRODUCT"; unit = "cái"; serial = $true }
+    @{ code = "HN-SKU-$ts-09"; name = "Máy hàn điện tử Hoa Nam WD-200 (ngừng KD)"; type = "PRODUCT"; unit = "cái"; serial = $true }
     @{ code = "HN-SKU-$ts-10"; name = "Lưỡi cắt cỏ hợp kim (ngừng KD)"; type = "COMPONENT"; unit = "cái"; serial = $false }
 )
 
@@ -144,14 +144,14 @@ Write-Status "Tổng SKU tạo được: $($skus.Count) (PRODUCT non-serial dùn
 Write-Status "`n=== BƯỚC 2: Đại lý / nơi nhận ===" -Level "Step"
 
 $agencyDefs = @(
-    @{ code = "AG-$ts-01"; name = "Đại lý Hòa Nam Hà Nội"; phone = "0901000001"; addr = "12 Láng Hạ, Đống Đa, Hà Nội"; status = "ACTIVE" }
-    @{ code = "AG-$ts-02"; name = "Đại lý Hòa Nam Hải Phòng"; phone = "0901000002"; addr = "45 Lạch Tray, Ngô Quyền, Hải Phòng"; status = "ACTIVE" }
-    @{ code = "AG-$ts-03"; name = "Đại lý Hòa Nam Đà Nẵng"; phone = "0901000003"; addr = "88 Nguyễn Văn Linh, Đà Nẵng"; status = "ACTIVE" }
-    @{ code = "AG-$ts-04"; name = "Đại lý Hòa Nam Nha Trang"; phone = "0901000004"; addr = "321 Trần Phú, Nha Trang"; status = "ACTIVE" }
-    @{ code = "AG-$ts-05"; name = "Đại lý Hòa Nam Cần Thơ"; phone = "0901000005"; addr = "555 Quang Trung, Cần Thơ"; status = "ACTIVE" }
-    @{ code = "AG-$ts-06"; name = "Đại lý Hòa Nam TP.HCM"; phone = "0901000006"; addr = "456 Nguyễn Trãi, Quận 11, TP.HCM"; status = "ACTIVE" }
-    @{ code = "AG-$ts-07"; name = "Đại lý Hòa Nam Long Xuyên (đã ngừng)"; phone = "0901000007"; addr = "789 Trần Hưng Đạo, Long Xuyên"; status = "INACTIVE" }
-    @{ code = "AG-$ts-08"; name = "Đại lý Hòa Nam Buôn Ma Thuột (đã ngừng)"; phone = "0901000008"; addr = "22 Y Jut, Buôn Ma Thuột"; status = "INACTIVE" }
+    @{ code = "AG-$ts-01"; name = "Đại lý Hoa Nam Hà Nội"; phone = "0901000001"; addr = "12 Láng Hạ, Đống Đa, Hà Nội"; status = "ACTIVE" }
+    @{ code = "AG-$ts-02"; name = "Đại lý Hoa Nam Hải Phòng"; phone = "0901000002"; addr = "45 Lạch Tray, Ngô Quyền, Hải Phòng"; status = "ACTIVE" }
+    @{ code = "AG-$ts-03"; name = "Đại lý Hoa Nam Đà Nẵng"; phone = "0901000003"; addr = "88 Nguyễn Văn Linh, Đà Nẵng"; status = "ACTIVE" }
+    @{ code = "AG-$ts-04"; name = "Đại lý Hoa Nam Nha Trang"; phone = "0901000004"; addr = "321 Trần Phú, Nha Trang"; status = "ACTIVE" }
+    @{ code = "AG-$ts-05"; name = "Đại lý Hoa Nam Cần Thơ"; phone = "0901000005"; addr = "555 Quang Trung, Cần Thơ"; status = "ACTIVE" }
+    @{ code = "AG-$ts-06"; name = "Đại lý Hoa Nam TP.HCM"; phone = "0901000006"; addr = "456 Nguyễn Trãi, Quận 11, TP.HCM"; status = "ACTIVE" }
+    @{ code = "AG-$ts-07"; name = "Đại lý Hoa Nam Long Xuyên (đã ngừng)"; phone = "0901000007"; addr = "789 Trần Hưng Đạo, Long Xuyên"; status = "INACTIVE" }
+    @{ code = "AG-$ts-08"; name = "Đại lý Hoa Nam Buôn Ma Thuột (đã ngừng)"; phone = "0901000008"; addr = "22 Y Jut, Buôn Ma Thuột"; status = "INACTIVE" }
 )
 $agencies = @()
 foreach ($d in $agencyDefs) {
@@ -212,7 +212,7 @@ for ($i = 0; $i -lt 3; $i++) {
     $p = $productSkus[$i % $productSkus.Count]
     $qty = 3
     $lines = @(@{ product_id = $p.sku_id; qty_planned = $qty })
-    $doc = New-InboundDoc -SourceName "NCC Hòa Nam Central $i" -Lines $lines -Note "Nhập hàng định kỳ POSTED #$i"
+    $doc = New-InboundDoc -SourceName "NCC Hoa Nam Central $i" -Lines $lines -Note "Nhập hàng định kỳ POSTED #$i"
     Track $doc
     if (-not $doc) { continue }
     $d = $doc.data
@@ -249,7 +249,7 @@ for ($i = 0; $i -lt 3; $i++) {
     if ($componentSkus.Count -eq 0) { break }
     $c = $componentSkus[$i % $componentSkus.Count]
     $lines = @(@{ product_id = $c.sku_id; qty_planned = 10 })
-    $doc = New-InboundDoc -SourceName "NCC Linh kiện Hòa Nam $i" -Lines $lines -Note "Nhập linh kiện chờ xếp khay #$i"
+    $doc = New-InboundDoc -SourceName "NCC Linh kiện Hoa Nam $i" -Lines $lines -Note "Nhập linh kiện chờ xếp khay #$i"
     Track $doc
     if (-not $doc) { continue }
     $d = $doc.data
@@ -282,7 +282,7 @@ for ($i = 0; $i -lt 2; $i++) {
     if ($productSkus.Count -eq 0) { break }
     $p = $productSkus[($i + 1) % $productSkus.Count]
     $lines = @(@{ product_id = $p.sku_id; qty_planned = 20 })
-    $doc = New-InboundDoc -SourceName "NCC Hòa Nam Partial $i" -Lines $lines -Note "Đang quét dở dang #$i"
+    $doc = New-InboundDoc -SourceName "NCC Hoa Nam Partial $i" -Lines $lines -Note "Đang quét dở dang #$i"
     Track $doc
     if (-not $doc) { continue }
     $d = $doc.data
@@ -302,7 +302,7 @@ for ($i = 0; $i -lt 2; $i++) {
 # --- 1 phiếu DRAFT (không động vào) ---
 if ($productSkus.Count -gt 0) {
     $p = $productSkus[0]
-    $doc = New-InboundDoc -SourceName "NCC Hòa Nam Draft" -Lines @(@{ product_id = $p.sku_id; qty_planned = 30 }) -Note "Phiếu nháp chưa xử lý"
+    $doc = New-InboundDoc -SourceName "NCC Hoa Nam Draft" -Lines @(@{ product_id = $p.sku_id; qty_planned = 30 }) -Note "Phiếu nháp chưa xử lý"
     Track $doc
     if ($doc) { $allInbound += $doc.data; Write-Status "  + Phiếu nhập $($doc.data.doc_no) -> DRAFT" -Level "Success" }
 }
@@ -311,7 +311,7 @@ if ($productSkus.Count -gt 0) {
 for ($i = 0; $i -lt 2; $i++) {
     if ($productSkus.Count -eq 0) { break }
     $p = $productSkus[($i + 2) % $productSkus.Count]
-    $doc = New-InboundDoc -SourceName "NCC Hòa Nam Cancel $i" -Lines @(@{ product_id = $p.sku_id; qty_planned = 10 }) -Note "Phiếu sẽ bị hủy #$i"
+    $doc = New-InboundDoc -SourceName "NCC Hoa Nam Cancel $i" -Lines @(@{ product_id = $p.sku_id; qty_planned = 10 }) -Note "Phiếu sẽ bị hủy #$i"
     Track $doc
     if (-not $doc) { continue }
     $d = $doc.data
@@ -371,7 +371,7 @@ if ($productSkus.Count -gt 0 -and $agencies.Count -gt 0) {
             request_no = "REQ-$ts-$('{0:D3}' -f $i)"
             sku_code = $p.sku_code
             required_qty = 2 + $i
-            recipient_name = "Khách hàng Hòa Nam $i"
+            recipient_name = "Khách hàng Hoa Nam $i"
             recipient_address = "Số $i, Đường ABC, Quận XYZ"
             note = "Đơn hàng mẫu #$i"
         }
@@ -433,7 +433,7 @@ function New-WarrantyCase {
         accessories_received = "Đầy đủ phụ kiện"
         received_condition = "Còn nguyên vẹn, có dấu hiệu hư hỏng theo mô tả"
         missing_code_reason = "Không xác định được mã máy, khách mang tới trực tiếp"
-        manual_product_description = "Máy móc Hòa Nam theo mô tả khách hàng, chưa định danh serial"
+        manual_product_description = "Máy móc Hoa Nam theo mô tả khách hàng, chưa định danh serial"
     }
     if ($DefectId) { $body["defect_id"] = $DefectId } elseif ($DefectCode) { $body["defect_code"] = $DefectCode }
     return Invoke-Api -Method POST -Path "/warranty-cases" -Body $body -ExtraHeaders @{ "Idempotency-Key" = (New-IdemKey "warr-create") } -AllowFail

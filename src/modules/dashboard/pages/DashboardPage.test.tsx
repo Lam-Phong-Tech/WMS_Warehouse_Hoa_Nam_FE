@@ -90,7 +90,7 @@ describe("DashboardPage / WWHN-327", () => {
 
     expect(
       within(chartRegion).getByRole("img", {
-        name: "Biểu đồ luồng kho từ 2026-07-19 đến 2026-08-18: Nhập kho 300; Xuất kho 120; Xuất linh kiện 25; Điều chỉnh tồn (ròng) -5",
+        name: "Biểu đồ luồng kho từ 19-7-2026 đến 18-8-2026: Nhập kho 300; Xuất kho 120; Xuất linh kiện 25; Điều chỉnh tồn (ròng) -5",
       }),
     ).toBeInTheDocument();
 

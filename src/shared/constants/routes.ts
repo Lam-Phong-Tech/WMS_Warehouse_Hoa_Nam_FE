@@ -3,6 +3,7 @@ export const ROUTES = {
   LOGIN: "/login",
   CHANGE_PASSWORD: "/change-password",
   PROFILE: "/profile",
+  NOTIFICATIONS: "/notifications",
 
   // 00 · Tổng quan
   DASHBOARD: "/dashboard",

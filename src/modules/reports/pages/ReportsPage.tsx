@@ -9,7 +9,7 @@ export default function ReportsPage() {
       items={[
         {
           key: "gd1",
-          label: "Phân tích theo nơi nhận",
+          label: "Báo cáo theo từng thị trường",
           children: <Gd1ScopeReports />,
         },
         {

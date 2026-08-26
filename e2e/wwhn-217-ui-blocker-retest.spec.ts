@@ -160,7 +160,7 @@ const BALANCE_ROW = {
   sku_code: "SKU-217",
   product_name: "Máy khoan WWHN-217",
   sku_type: "PRODUCT",
-  warehouse_name: "Kho tổng Hòa Nam",
+  warehouse_name: "Kho tổng Hoa Nam",
   stock_status: "AVAILABLE",
   unit: "cai",
   available_qty: 10,

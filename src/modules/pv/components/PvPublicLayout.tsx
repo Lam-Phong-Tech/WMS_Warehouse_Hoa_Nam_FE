@@ -88,7 +88,7 @@ export function PvPublicLayout({
                   lineHeight: 1.2,
                 }}
               >
-                Hòa Nam · Danh mục sản phẩm
+                Hoa Nam · Danh mục sản phẩm
               </span>
               <span
                 style={{ display: "block", fontSize: 12, color: "#7a766c" }}
