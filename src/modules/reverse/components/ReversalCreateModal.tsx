@@ -35,6 +35,7 @@ import type {
   ReversibleMovementLine,
 } from "../types";
 import { isStockRestoringMovement } from "../types";
+import { formatDateTime } from "@/shared/utils/format-date";
 
 const RETURN_CONDITION_OPTIONS: Array<{
   value: ReversalReturnCondition;
@@ -326,7 +327,12 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
               ),
             },
             { title: "Kho", dataIndex: "warehouse_name", width: 140 },
-            { title: "Thời điểm ghi nhận", dataIndex: "posted_at", width: 160 },
+            {
+              title: "Thời điểm ghi nhận",
+              dataIndex: "posted_at",
+              width: 160,
+              render: (posted_at: string) => formatDateTime(posted_at),
+            },
             {
               title: "Khả năng điều chỉnh",
               width: 180,

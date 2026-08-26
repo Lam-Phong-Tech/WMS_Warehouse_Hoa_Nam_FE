@@ -415,7 +415,8 @@ export function WarrantyIntakeModal({
                 { required: true, message: "Nhập số điện thoại." },
                 {
                   pattern: /^0\d{9}$/,
-                  message: "Số điện thoại phải đủ 10 chữ số và bắt đầu bằng số 0.",
+                  message:
+                    "Số điện thoại phải đủ 10 chữ số và bắt đầu bằng số 0.",
                 },
               ]}
             >

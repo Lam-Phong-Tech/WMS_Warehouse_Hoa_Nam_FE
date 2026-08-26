@@ -1,11 +1,8 @@
-import { Button, Layout, Space, theme, Tooltip } from "antd";
-import {
-  BellOutlined,
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
-} from "@ant-design/icons";
+import { Button, Layout, Space, theme } from "antd";
+import { MenuFoldOutlined, MenuUnfoldOutlined } from "@ant-design/icons";
 import { ContextSwitcher } from "@/modules/auth/components/ContextSwitcher";
 import { UserMenu } from "@/app/layouts/UserMenu";
+import { NotificationBell } from "@/modules/notifications/components/NotificationBell";
 import { layoutStyles } from "@/app/layouts/layout.styles";
 
 const { Header } = Layout;
@@ -76,15 +73,7 @@ export function AppHeader({ isMobile, collapsed, onToggle }: Props) {
       <Space size="middle" wrap={false}>
         <ContextSwitcher />
 
-        <Tooltip title="Thông báo sắp ra mắt. Chưa có endpoint backend được duyệt.">
-          <Button
-            type="text"
-            disabled
-            aria-label="Thông báo sắp ra mắt, chưa khả dụng"
-            icon={<BellOutlined />}
-            style={layoutStyles.headerToggleButton}
-          />
-        </Tooltip>
+        <NotificationBell />
 
         <UserMenu compact={isMobile} />
       </Space>

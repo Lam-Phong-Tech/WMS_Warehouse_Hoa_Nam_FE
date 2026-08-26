@@ -39,6 +39,7 @@ import {
   type SkuImportRowError,
 } from "@/modules/master-data/services/sku-import.service";
 import { sha256OfFile } from "@/shared/utils/file-digest";
+import { formatDateTime } from "@/shared/utils/format-date";
 
 interface SkuImportModalProps {
   open: boolean;
@@ -83,10 +84,8 @@ function handleBlobDownload(
 
 function formatExpiry(isoTimestamp: string | null): string {
   if (!isoTimestamp) return "";
-  const parsed = new Date(isoTimestamp);
-  return Number.isNaN(parsed.getTime())
-    ? ""
-    : ` · tải được đến ${parsed.toLocaleString("vi-VN")}`;
+  const formatted = formatDateTime(isoTimestamp);
+  return formatted === "-" ? "" : ` · tải được đến ${formatted}`;
 }
 
 function describeConstraints(constraints: SkuImportConstraints | null): string {
@@ -117,10 +116,9 @@ function describeConstraints(constraints: SkuImportConstraints | null): string {
 }
 
 function acceptAttribute(constraints: SkuImportConstraints | null): string {
-  const extensions =
-    constraints?.allowedExtensions?.length
-      ? constraints.allowedExtensions
-      : ["xlsx", "xls"];
+  const extensions = constraints?.allowedExtensions?.length
+    ? constraints.allowedExtensions
+    : ["xlsx", "xls"];
   return extensions.map((extension) => `.${extension}`).join(",");
 }
 
@@ -162,8 +160,12 @@ function ResultSummary({
       </Typography.Text>
       {result.dryRun ? (
         <>
-          <Typography.Text>Sẽ tạo mới: {result.wouldInsertRows}</Typography.Text>
-          <Typography.Text>Sẽ cập nhật: {result.wouldUpdateRows}</Typography.Text>
+          <Typography.Text>
+            Sẽ tạo mới: {result.wouldInsertRows}
+          </Typography.Text>
+          <Typography.Text>
+            Sẽ cập nhật: {result.wouldUpdateRows}
+          </Typography.Text>
         </>
       ) : (
         <>
@@ -240,7 +242,8 @@ function SkuImportErrorFilePanel({
         Tệp chứa số dòng, trường dữ liệu, loại lỗi, nội dung lỗi và giá trị bị
         từ chối{formatExpiry(expiresAt)}.
       </Typography.Text>
-      {downloadMutation.error && !isNoPermissionError(downloadMutation.error) ? (
+      {downloadMutation.error &&
+      !isNoPermissionError(downloadMutation.error) ? (
         <ApiErrorAlert
           error={downloadMutation.error}
           title="Không tải được tệp lỗi"
@@ -260,9 +263,13 @@ export function SkuImportModal({
   const [file, setFile] = useState<File | null>(null);
   const [fileInputKey, setFileInputKey] = useState(0);
   const [updateExisting, setUpdateExisting] = useState(false);
-  const [previewResult, setPreviewResult] = useState<SkuImportResult | null>(null);
+  const [previewResult, setPreviewResult] = useState<SkuImportResult | null>(
+    null,
+  );
   const [previewSignature, setPreviewSignature] = useState("");
-  const [commitResult, setCommitResult] = useState<SkuImportResult | null>(null);
+  const [commitResult, setCommitResult] = useState<SkuImportResult | null>(
+    null,
+  );
   const [fileSha256, setFileSha256] = useState<string | null>(null);
   const [digestPending, setDigestPending] = useState(false);
   const [digestError, setDigestError] = useState<string | null>(null);
@@ -431,7 +438,12 @@ export function SkuImportModal({
         setCommitResult(null);
         setPreviewResult(null);
         setPreviewSignature("");
-        toast.error(error.message);
+        toast.error(
+          getApiErrorMessage(
+            error,
+            "Nội dung tệp đã thay đổi sau lần kiểm tra trước. Hãy chọn lại tệp và chạy Kiểm tra trước.",
+          ),
+        );
         return;
       }
       if (
@@ -443,7 +455,12 @@ export function SkuImportModal({
       }
       if (error instanceof SkuImportRejectedError) {
         setCommitResult(error.result);
-        toast.error(error.message);
+        toast.error(
+          getApiErrorMessage(
+            error,
+            "Tệp có dòng lỗi nên hệ thống từ chối nhập dữ liệu SKU.",
+          ),
+        );
         return;
       }
       setCommitResult(null);
@@ -542,7 +559,9 @@ export function SkuImportModal({
           />
         ) : null}
 
-        {digestError ? <Alert type="error" showIcon title={digestError} /> : null}
+        {digestError ? (
+          <Alert type="error" showIcon title={digestError} />
+        ) : null}
 
         <Space wrap>
           <Button

@@ -117,7 +117,7 @@ describe("WWHN-258 · báo cáo bảo hành — gate PII theo quyền", () => {
     expect(screen.queryByTestId("report-pii-reason")).not.toBeInTheDocument();
     expect(
       screen.getByText(
-        /không có warranty\.pii\.export nên file export luôn ở dạng mask/,
+        /không có quyền xuất PII nên tệp xuất luôn che thông tin/,
       ),
     ).toBeInTheDocument();
   });
@@ -219,7 +219,9 @@ describe("WWHN-258 · phản hồi dữ liệu lớn và 403 export", () => {
 
     const banner = screen.getByTestId("report-export-row-limit");
     expect(banner).toHaveAttribute("data-ui-state", "disabled");
-    expect(within(banner).getByText(/vượt trần 10.000 dòng/)).toBeVisible();
+    expect(
+      within(banner).getByText(/vượt giới hạn 10\.000 dòng mỗi tệp/),
+    ).toBeVisible();
     expect(screen.getByRole("button", { name: /Xuất XLSX/ })).toBeDisabled();
   });
 

@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-import { useEffect, useState } from "react";
+import { useEffect, useState, type Key } from "react";
 import { Progress, Table, Tag, type TablePaginationConfig } from "antd";
 import { EyeOutlined, PlusOutlined, ScanOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
@@ -53,9 +53,10 @@ export default function AlignedMvpOutboundPage() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<OutboundStatus | "">("");
   const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(15);
+  const [perPage, setPerPage] = useState(10);
   const [intakeOpen, setIntakeOpen] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
+  const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([]);
 
   const canImport = can("outbound.import");
   const canScan = can("outbound.scan");
@@ -111,6 +112,14 @@ export default function AlignedMvpOutboundPage() {
   useOverlayBackDismiss(overlayOpen, closeOverlays, "OUT-01-overlay");
 
   const columns: ColumnsType<OutboundDocumentRecord> = [
+    {
+      title: "STT",
+      key: "stt",
+      width: 60,
+      fixed: "left",
+      render: (_: unknown, __: OutboundDocumentRecord, index: number) =>
+        (page - 1) * perPage + index + 1,
+    },
     {
       title: "Phiếu xuất",
       dataIndex: "code",
@@ -181,7 +190,11 @@ export default function AlignedMvpOutboundPage() {
       key: "rfid",
       width: 150,
       render: (_, row) => (
-        <Tag color={row.rfidMappedCount && row.rfidMappedCount > 0 ? "blue" : "default"}>
+        <Tag
+          color={
+            row.rfidMappedCount && row.rfidMappedCount > 0 ? "blue" : "default"
+          }
+        >
           Tùy chọn · {row.rfidMappedCount ?? 0}
         </Tag>
       ),
@@ -211,7 +224,11 @@ export default function AlignedMvpOutboundPage() {
       render: (_, row) => {
         const mutable = row.status === "DRAFT" || row.status === "SCANNING";
         return (
-          <button className="btn small" type="button" onClick={() => setDetailId(row.id)}>
+          <button
+            className="btn small"
+            type="button"
+            onClick={() => setDetailId(row.id)}
+          >
             {mutable && canScan ? (
               <ScanOutlined style={{ marginRight: 4 }} />
             ) : (
@@ -229,12 +246,7 @@ export default function AlignedMvpOutboundPage() {
 
   return (
     <div className="outbound-page hn-mvp-source-screen">
-      <div className="toolbar-wrap" style={{ gap: 6 }}>
-        <span className="pill ok">Quét đủ → Ghi nhận xuất kho → xử lý nhãn đóng gói</span>
-        <span className="pill blue">Packing Label độc lập sau Post</span>
-        <span className="pill blue">RFID tùy chọn</span>
-        <span className="pill warn-pill">Chỉ Ghi nhận xuất kho mới trừ tồn</span>
-      </div>
+      
 
       <div className="toolbar">
         <input
@@ -255,12 +267,25 @@ export default function AlignedMvpOutboundPage() {
         >
           <option value="">Trạng thái: Tất cả</option>
           {STATUS_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>{option.label}</option>
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
           ))}
         </select>
+        <MvpPageSizeSelector
+          value={perPage}
+          onChange={(value) => {
+            setPerPage(value);
+            setPage(1);
+          }}
+        />
         <div className="spacer" />
         {canImport ? (
-          <button className="btn primary" type="button" onClick={() => setIntakeOpen(true)}>
+          <button
+            className="btn primary"
+            type="button"
+            onClick={() => setIntakeOpen(true)}
+          >
             <PlusOutlined /> Tiếp nhận yêu cầu xuất
           </button>
         ) : null}
@@ -268,23 +293,25 @@ export default function AlignedMvpOutboundPage() {
 
       {listQuery.isError ? (
         <div style={{ marginBottom: 14 }}>
-          <ApiErrorAlert error={listQuery.error} title="Không tải được danh sách phiếu xuất" onRetry={() => listQuery.refetch()} />
+          <ApiErrorAlert
+            error={listQuery.error}
+            title="Không tải được danh sách phiếu xuất"
+            onRetry={() => listQuery.refetch()}
+          />
         </div>
       ) : null}
 
-      <MvpPageSizeSelector
-        value={perPage}
-        onChange={(value) => {
-          setPerPage(value);
-          setPage(1);
-        }}
+      <TableLoadingBanner
+        loading={listQuery.isLoading || listQuery.isFetching}
       />
-
-      <TableLoadingBanner loading={listQuery.isLoading || listQuery.isFetching} />
       <Table<OutboundDocumentRecord>
         rowKey="id"
         columns={columns}
         dataSource={rows}
+        rowSelection={{
+          selectedRowKeys,
+          onChange: setSelectedRowKeys,
+        }}
         loading={listQuery.isLoading || listQuery.isFetching}
         onChange={(next: TablePaginationConfig) => setPage(next.current ?? 1)}
         pagination={{
@@ -302,11 +329,6 @@ export default function AlignedMvpOutboundPage() {
         }}
         scroll={{ x: "max-content" }}
       />
-
-      <div className="footer-note">
-        Mở phiếu để thực hiện đúng thứ tự: <b>Quét đủ → Ghi nhận xuất kho (trừ tồn) → tạo/xem trước/in/dán nhãn đóng gói.</b>{" "}
-        Lỗi in nhãn không rollback phiếu đã Post; RFID không phải điều kiện bắt buộc.
-      </div>
 
       {intakeOpen ? (
         <OutboundIntakeModal

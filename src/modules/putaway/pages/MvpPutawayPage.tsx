@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import type { Key } from "react";
 import {
   Alert,
   Button,
@@ -11,10 +12,10 @@ import {
   Row,
   Select,
   Space,
-  Table,
   Tabs,
   Tag,
 } from "antd";
+import { DataTable } from "@/shared/components";
 import { toast } from "sonner";
 import {
   CameraOutlined,
@@ -41,6 +42,7 @@ import {
   WMS_PERMISSION_CATALOG as P,
 } from "@/shared/constants/wms-permissions";
 import { useAuthStore } from "@/shared/store/auth.store";
+import { formatDateTime } from "@/shared/utils/format-date";
 import {
   cancelPutawayTask,
   confirmPutawayTask,
@@ -60,7 +62,7 @@ type PutawayFormValues = {
   note?: string;
 };
 
-const PAGE_SIZE_OPTIONS = [15, 20, 50, 100];
+const PAGE_SIZE_OPTIONS = [10, 20, 50];
 const SEARCH_DEBOUNCE_MS = 250;
 
 const putawayKeys = {
@@ -156,8 +158,14 @@ export default function MvpPutawayPage() {
   const [activeTab, setActiveTab] = useState("pending");
   const [searchDraft, setSearchDraft] = useState("");
   const [search, setSearch] = useState("");
-  const [pendingPageSize, setPendingPageSize] = useState(15);
-  const [historyPageSize, setHistoryPageSize] = useState(15);
+  const [pendingPageSize, setPendingPageSize] = useState(10);
+  const [historyPageSize, setHistoryPageSize] = useState(10);
+  const [selectedPendingRowKeys, setSelectedPendingRowKeys] = useState<Key[]>(
+    [],
+  );
+  const [selectedHistoryRowKeys, setSelectedHistoryRowKeys] = useState<Key[]>(
+    [],
+  );
   const [selected, setSelected] = useState<PutawayTask | null>(null);
   const [detailRow, setDetailRow] = useState<PutawayTask | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
@@ -284,7 +292,9 @@ export default function MvpPutawayPage() {
   const createDraft = async () => {
     if (!selected || !canManage) return;
     if (selected.status !== "RECEIVED_PENDING_PUTAWAY") {
-      toast.error("Hộp không còn ở trạng thái chờ xếp khay. Hãy làm mới dữ liệu.");
+      toast.error(
+        "Hộp không còn ở trạng thái chờ xếp khay. Hãy làm mới dữ liệu.",
+      );
       return;
     }
 
@@ -306,7 +316,9 @@ export default function MvpPutawayPage() {
         note: values.note?.trim() || null,
       });
       if (result.stock_effect !== "NONE" || result.movement_created !== false) {
-        throw new Error("Lỗi bất biến: tạo lệnh xếp khay không được thay đổi tồn kho.");
+        throw new Error(
+          "Lỗi bất biến: tạo lệnh xếp khay không được thay đổi tồn kho.",
+        );
       }
       toast.success(
         "Đã tạo lệnh xếp khay nháp. Xác nhận trên danh sách để hoàn tất gán hộp vào khay.",
@@ -326,11 +338,17 @@ export default function MvpPutawayPage() {
         version: row.draft_version,
       });
       if (result.stock_effect !== "NONE" || result.movement_created !== false) {
-        throw new Error("Lỗi bất biến: xác nhận xếp khay không được tạo biến động tồn.");
+        throw new Error(
+          "Lỗi bất biến: xác nhận xếp khay không được tạo biến động tồn.",
+        );
       }
-      toast.success("Xếp khay thành công. Hộp đã được gán vào khay; số lượng tồn không đổi.");
+      toast.success(
+        "Xếp khay thành công. Hộp đã được gán vào khay; số lượng tồn không đổi.",
+      );
     } catch (error) {
-      toast.error(getApiErrorMessage(error, "Không xác nhận được việc xếp khay."));
+      toast.error(
+        getApiErrorMessage(error, "Không xác nhận được việc xếp khay."),
+      );
       throw error;
     }
   };
@@ -343,9 +361,13 @@ export default function MvpPutawayPage() {
         version: row.draft_version,
       });
       if (result.stock_effect !== "NONE" || result.movement_created !== false) {
-        throw new Error("Lỗi bất biến: hủy lệnh xếp khay không được thay đổi tồn kho.");
+        throw new Error(
+          "Lỗi bất biến: hủy lệnh xếp khay không được thay đổi tồn kho.",
+        );
       }
-      toast.success("Đã hủy lệnh xếp khay nháp. Hộp vẫn ở trạng thái chờ xếp khay; tồn kho không đổi.");
+      toast.success(
+        "Đã hủy lệnh xếp khay nháp. Hộp vẫn ở trạng thái chờ xếp khay; tồn kho không đổi.",
+      );
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Không hủy được lệnh xếp khay."));
       throw error;
@@ -355,7 +377,8 @@ export default function MvpPutawayPage() {
   const confirmWithPrompt = (row: PutawayTask) => {
     Modal.confirm({
       title: "Xác nhận xếp khay?",
-      content: "Hộp sẽ được gán vào khay đã chọn. Thao tác này không thay đổi số lượng tồn.",
+      content:
+        "Hộp sẽ được gán vào khay đã chọn. Thao tác này không thay đổi số lượng tồn.",
       okText: "Xác nhận",
       cancelText: "Quay lại",
       onOk: () => confirm(row),
@@ -476,7 +499,12 @@ export default function MvpPutawayPage() {
   ];
 
   const historyColumns: ColumnsType<PutawayHistory> = [
-    { title: "Thời gian", dataIndex: "created_at", width: 190 },
+    {
+      title: "Thời gian",
+      dataIndex: "created_at",
+      width: 190,
+      render: (created_at: string) => formatDateTime(created_at),
+    },
     { title: "Hộp", dataIndex: "box_code", width: 170 },
     {
       title: "Khay cũ",
@@ -528,7 +556,12 @@ export default function MvpPutawayPage() {
         </div>
 
         {activeTab === "pending" ? (
-          <Row gutter={[12, 12]} className="filter-row">
+          <Row
+            gutter={[12, 12]}
+            className="filter-row"
+            align="middle"
+            justify="space-between"
+          >
             <Col xs={24} md={8}>
               <Input
                 value={searchDraft}
@@ -538,8 +571,23 @@ export default function MvpPutawayPage() {
                 onChange={(event) => setSearchDraft(event.target.value)}
               />
             </Col>
+            <Col>
+              <PageSizeSelector
+                value={pendingPageSize}
+                onChange={setPendingPageSize}
+              />
+            </Col>
           </Row>
-        ) : null}
+        ) : (
+          <Row justify="end" className="filter-row">
+            <Col>
+              <PageSizeSelector
+                value={historyPageSize}
+                onChange={setHistoryPageSize}
+              />
+            </Col>
+          </Row>
+        )}
 
         <Alert
           showIcon
@@ -564,52 +612,50 @@ export default function MvpPutawayPage() {
               key: "pending",
               label: `Chờ xếp khay (${tasks.length})`,
               children: (
-                <>
-                  <PageSizeSelector
-                    value={pendingPageSize}
-                    onChange={setPendingPageSize}
-                  />
-                  <Table<PutawayTask>
-                    rowKey="id"
-                    dataSource={tasks}
-                    loading={loading}
-                    columns={taskColumns}
-                    pagination={{
-                      pageSize: pendingPageSize,
-                      showSizeChanger: false,
-                      showTotal: (total) => `Tổng ${total} hộp`,
-                    }}
-                    locale={{
-                      emptyText: "Không có hộp linh kiện chờ xếp khay",
-                    }}
-                    scroll={{ x: "max-content" }}
-                  />
-                </>
+                <DataTable<PutawayTask>
+                  rowKey="id"
+                  dataSource={tasks}
+                  loading={loading}
+                  columns={taskColumns}
+                  rowSelection={{
+                    type: "checkbox",
+                    selectedRowKeys: selectedPendingRowKeys,
+                    onChange: setSelectedPendingRowKeys,
+                  }}
+                  pagination={{
+                    pageSize: pendingPageSize,
+                    showSizeChanger: false,
+                    showTotal: (total) => `Tổng ${total} hộp`,
+                  }}
+                  locale={{
+                    emptyText: "Không có hộp linh kiện chờ xếp khay",
+                  }}
+                  scroll={{ x: "max-content" }}
+                />
               ),
             },
             {
               key: "history",
               label: "Lịch sử xếp khay",
               children: (
-                <>
-                  <PageSizeSelector
-                    value={historyPageSize}
-                    onChange={setHistoryPageSize}
-                  />
-                  <Table<PutawayHistory>
-                    rowKey="id"
-                    dataSource={history}
-                    loading={loading}
-                    columns={historyColumns}
-                    pagination={{
-                      pageSize: historyPageSize,
-                      showSizeChanger: false,
-                      showTotal: (total) => `Tổng ${total} bản ghi`,
-                    }}
-                    locale={{ emptyText: "Chưa có lịch sử xếp khay" }}
-                    scroll={{ x: 1180 }}
-                  />
-                </>
+                <DataTable<PutawayHistory>
+                  rowKey="id"
+                  dataSource={history}
+                  loading={loading}
+                  columns={historyColumns}
+                  rowSelection={{
+                    type: "checkbox",
+                    selectedRowKeys: selectedHistoryRowKeys,
+                    onChange: setSelectedHistoryRowKeys,
+                  }}
+                  pagination={{
+                    pageSize: historyPageSize,
+                    showSizeChanger: false,
+                    showTotal: (total) => `Tổng ${total} bản ghi`,
+                  }}
+                  locale={{ emptyText: "Chưa có lịch sử xếp khay" }}
+                  scroll={{ x: 1180 }}
+                />
               ),
             },
           ]}

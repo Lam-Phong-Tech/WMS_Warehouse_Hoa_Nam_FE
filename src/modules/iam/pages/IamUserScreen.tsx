@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { Descriptions, Modal, Space, Tag } from "antd";
+import { Collapse, Descriptions, Modal, Space, Tag } from "antd";
 import {
   CloseOutlined,
   EditOutlined,
@@ -10,6 +10,7 @@ import {
 } from "@ant-design/icons";
 import {
   useCreateIamUser,
+  useIamDepartments,
   useIamRoles,
   useIamScopeWarehouses,
   useIamUsers,
@@ -31,11 +32,17 @@ import {
 } from "@/shared/components/mvp/MvpListPagination";
 import { resolveApiPagination } from "@/shared/components/mvp/mvp-pagination";
 import {
+  MvpSelectionCheckbox,
+  mvpRowNumber,
+} from "@/shared/components/mvp/MvpSelectionCell";
+import {
   IAM_SCOPE_TYPE_LABELS,
   IAM_USER_STATUS_LABELS,
   businessLabel,
 } from "@/shared/constants/business-labels";
+import { useRowSelection } from "@/shared/hooks/useRowSelection";
 import { useAuthStore } from "@/shared/store/auth.store";
+import { formatDate, formatDateTime } from "@/shared/utils/format-date";
 
 const STATUS_OPTIONS: Array<{ value: IamUserStatus; label: string }> = [
   { value: "ACTIVE", label: IAM_USER_STATUS_LABELS.ACTIVE },
@@ -48,6 +55,8 @@ type UserFormState = {
   username: string;
   phone: string;
   email: string;
+  /** REQ-011: department_id — optional, "" nghĩa là không thuộc phòng ban nào. */
+  departmentId: string;
   roleId: string;
   scopeRef: string;
   effectiveFrom: string;
@@ -61,6 +70,7 @@ const EMPTY_FORM: UserFormState = {
   username: "",
   phone: "",
   email: "",
+  departmentId: "",
   roleId: "",
   scopeRef: "",
   effectiveFrom: "",
@@ -95,30 +105,15 @@ function scopeLabel(
   return "Toàn hệ thống";
 }
 
-function formatDate(value?: string | null) {
-  if (!value) return null;
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return value;
-  return new Intl.DateTimeFormat("vi-VN", { dateStyle: "short" }).format(
-    parsed,
-  );
-}
-
 function effectiveWindowLabel(pivot?: IamRolePivot) {
-  const from = formatDate(pivot?.effective_from);
-  const to = formatDate(pivot?.effective_to);
-  if (!from && !to) return "Vô thời hạn";
-  return `${from ?? "—"} → ${to ?? "—"}`;
+  const hasFrom = Boolean(pivot?.effective_from);
+  const hasTo = Boolean(pivot?.effective_to);
+  if (!hasFrom && !hasTo) return "Vô thời hạn";
+  return `${hasFrom ? formatDate(pivot?.effective_from) : "—"} → ${hasTo ? formatDate(pivot?.effective_to) : "—"}`;
 }
 
 function formatLastLogin(value?: string | null) {
-  if (!value) return "Chưa đăng nhập";
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return value;
-  return new Intl.DateTimeFormat("vi-VN", {
-    dateStyle: "short",
-    timeStyle: "short",
-  }).format(parsed);
+  return value ? formatDateTime(value) : "Chưa đăng nhập";
 }
 
 export interface IamUserScreenProps {
@@ -137,6 +132,7 @@ export function IamUserScreen({
 
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
+  const [departmentFilter, setDepartmentFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState<IamUserStatus | "">("");
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(15);
@@ -149,10 +145,13 @@ export function IamUserScreen({
   const usersQuery = useIamUsers({
     keyword: search.trim(),
     status: statusFilter,
+    // REQ-011: BE user list nhận department_id để lọc phía server.
+    department_id: departmentFilter || undefined,
     page: roleFilter ? 1 : page,
     per_page: roleFilter ? 100 : perPage,
   });
   const rolesQuery = useIamRoles({ per_page: 100 });
+  const departmentsQuery = useIamDepartments({ status: "ACTIVE" });
   const warehousesQuery = useIamScopeWarehouses();
   const createUser = useCreateIamUser();
   const updateUser = useUpdateIamUser();
@@ -172,7 +171,28 @@ export function IamUserScreen({
 
   const roles = rolesQuery.data ?? [];
   const users = usersQuery.data?.data ?? [];
+  const departments = departmentsQuery.data ?? [];
+  const departmentNames = useMemo(
+    () =>
+      new Map(
+        departments.map((department) => [
+          department.department_id,
+          department.department_name,
+        ]),
+      ),
+    [departments],
+  );
   const isSaving = createUser.isPending || updateUser.isPending;
+
+  /**
+   * REQ-011: tên phòng ban ưu tiên relation eager-load `department` từ user
+   * list; user cũ chưa có relation thì tra danh mục theo department_id.
+   */
+  const departmentLabel = (user: IamUser): string =>
+    user.department?.department_name ??
+    (user.department_id
+      ? (departmentNames.get(user.department_id) ?? user.department_id)
+      : "—");
 
   const roleFilteredUsers = useMemo(() => {
     if (!roleFilter) return users;
@@ -191,6 +211,11 @@ export function IamUserScreen({
     ? roleFilteredUsers.slice((page - 1) * perPage, page * perPage)
     : users;
 
+  const rowSelection = useRowSelection(
+    displayedUsers,
+    (user) => user.user_id,
+  );
+
   const selectedRole = useMemo(
     () => roles.find((role) => role.role_id === formState.roleId),
     [formState.roleId, roles],
@@ -199,6 +224,25 @@ export function IamUserScreen({
   const isEditingSelf = Boolean(
     editingUser && currentUserId && editingUser.user_id === currentUserId,
   );
+
+  /**
+   * REQ-019: "Quyền hiệu lực" = union permission_key của mọi vai trò đang gắn.
+   * Nguồn dữ liệu rẻ nhất có sẵn: GET /roles trả kèm permissions từng role
+   * (IamRolePermissionScreen cũng dựa vào đây) — ưu tiên permissions nhúng
+   * trong user.roles nếu response user có, fallback tra theo role_id.
+   */
+  const effectivePermissionKeys = useMemo(() => {
+    if (!viewingUser) return [];
+    const keys = new Set<string>();
+    (viewingUser.roles ?? []).forEach((userRole) => {
+      const permissions =
+        userRole.permissions ??
+        roles.find((role) => role.role_id === userRole.role_id)?.permissions ??
+        [];
+      permissions.forEach((permission) => keys.add(permission.permission_key));
+    });
+    return [...keys].sort((a, b) => a.localeCompare(b));
+  }, [viewingUser, roles]);
 
   const resetForm = () => {
     setFormState({
@@ -241,6 +285,7 @@ export function IamUserScreen({
       username: user.username,
       phone: user.phone ?? "",
       email: user.email ?? "",
+      departmentId: user.department_id ?? "",
       roleId: primaryRole?.role_id ?? roles[0]?.role_id ?? "",
       scopeRef: primaryRole?.pivot?.scope_ref ?? "",
       effectiveFrom: primaryRole?.pivot?.effective_from?.slice(0, 10) ?? "",
@@ -297,7 +342,9 @@ export function IamUserScreen({
       return;
     }
     if (phone && !/^0\d{9}$/.test(phone)) {
-      setFormError("Số điện thoại phải gồm đúng 10 chữ số và bắt đầu bằng số 0.");
+      setFormError(
+        "Số điện thoại phải gồm đúng 10 chữ số và bắt đầu bằng số 0.",
+      );
       return;
     }
 
@@ -306,6 +353,8 @@ export function IamUserScreen({
       username,
       email: email || null,
       phone: phone || null,
+      // REQ-011: optional — null gỡ user khỏi phòng ban (BE Store/UpdateUserRequest nhận).
+      department_id: formState.departmentId || null,
       status: formState.status,
       ...(password ? { password } : {}),
     };
@@ -396,6 +445,26 @@ export function IamUserScreen({
         </select>
         <select
           className="select"
+          value={departmentFilter}
+          onChange={(event) => {
+            setDepartmentFilter(event.target.value);
+            setPage(1);
+          }}
+          aria-label="Lọc theo phòng ban"
+          disabled={departmentsQuery.isLoading}
+        >
+          <option value="">Phòng ban: Tất cả</option>
+          {departments.map((department) => (
+            <option
+              key={department.department_id}
+              value={department.department_id}
+            >
+              {department.department_name}
+            </option>
+          ))}
+        </select>
+        <select
+          className="select"
           value={statusFilter}
           onChange={(event) => {
             setStatusFilter(event.target.value as IamUserStatus | "");
@@ -410,6 +479,13 @@ export function IamUserScreen({
             </option>
           ))}
         </select>
+        <MvpPageSizeSelector
+          value={perPage}
+          onChange={(value) => {
+            setPerPage(value);
+            setPage(1);
+          }}
+        />
         <div className="spacer" />
         {canManageUsers ? (
           <button
@@ -441,19 +517,21 @@ export function IamUserScreen({
         </div>
       ) : null}
 
-      <MvpPageSizeSelector
-        value={perPage}
-        onChange={(value) => {
-          setPerPage(value);
-          setPage(1);
-        }}
-      />
-
       <div className="table-wrap" aria-busy={usersQuery.isLoading}>
         <table>
           <thead>
             <tr>
+              <th className="select-col">
+                <MvpSelectionCheckbox
+                  checked={rowSelection.isAllSelected}
+                  indeterminate={rowSelection.isIndeterminate}
+                  onChange={rowSelection.toggleAll}
+                  ariaLabel="Chọn tất cả người dùng"
+                />
+              </th>
+              <th className="stt-col">STT</th>
               <th>Người dùng</th>
+              <th>Phòng ban</th>
               <th>Vai trò</th>
               <th>Phạm vi</th>
               <th>Trạng thái</th>
@@ -464,20 +542,33 @@ export function IamUserScreen({
           <tbody>
             {usersQuery.isLoading ? (
               <tr>
-                <td colSpan={6}>
+                <td colSpan={9}>
                   <span className="muted">Đang tải dữ liệu...</span>
                 </td>
               </tr>
             ) : displayedUsers.length > 0 ? (
-              displayedUsers.map((user) => {
+              displayedUsers.map((user, index) => {
                 const primaryRole = user.roles?.[0];
                 return (
                   <tr key={user.user_id}>
+                    <td className="select-col">
+                      <MvpSelectionCheckbox
+                        checked={rowSelection.isSelected(user.user_id)}
+                        onChange={(checked) =>
+                          rowSelection.toggleOne(user.user_id, checked)
+                        }
+                        ariaLabel={`Chọn ${user.display_name}`}
+                      />
+                    </td>
+                    <td className="stt-col">
+                      {mvpRowNumber(page, perPage, index)}
+                    </td>
                     <td>
                       {user.display_name}
                       <br />
                       <span className="muted">{user.username}</span>
                     </td>
+                    <td>{departmentLabel(user)}</td>
                     <td>{primaryRole?.role_name ?? "Chưa gán"}</td>
                     <td>{scopeLabel(primaryRole, warehouseNames)}</td>
                     <td>
@@ -511,7 +602,7 @@ export function IamUserScreen({
               })
             ) : (
               <tr>
-                <td colSpan={6}>
+                <td colSpan={9}>
                   <span className="muted">
                     Không có người dùng phù hợp bộ lọc.
                   </span>
@@ -611,6 +702,42 @@ export function IamUserScreen({
                 />
               </div>
               <div className="field">
+                <label htmlFor="iam-department">Phòng ban</label>
+                <select
+                  id="iam-department"
+                  className="select"
+                  style={{ width: "100%" }}
+                  value={formState.departmentId}
+                  onChange={(event) =>
+                    updateField("departmentId", event.target.value)
+                  }
+                  disabled={isSaving || departmentsQuery.isLoading}
+                >
+                  <option value="">Không thuộc phòng ban</option>
+                  {/* Giữ được lựa chọn hiện tại khi phòng ban đã INACTIVE
+                      (danh mục dropdown chỉ nạp phòng ban ACTIVE). */}
+                  {formState.departmentId &&
+                  !departments.some(
+                    (department) =>
+                      department.department_id === formState.departmentId,
+                  ) ? (
+                    <option value={formState.departmentId}>
+                      {departmentNames.get(formState.departmentId) ??
+                        (editingUser?.department?.department_name ||
+                          formState.departmentId)}
+                    </option>
+                  ) : null}
+                  {departments.map((department) => (
+                    <option
+                      key={department.department_id}
+                      value={department.department_id}
+                    >
+                      {department.department_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="field">
                 <label htmlFor="iam-status">Trạng thái *</label>
                 <select
                   id="iam-status"
@@ -654,7 +781,8 @@ export function IamUserScreen({
                 </select>
                 {isEditingSelf ? (
                   <div className="muted" style={{ marginTop: 6 }}>
-                    Không thể tự đổi vai trò của chính mình. Nhờ một quản trị viên khác thực hiện thay đổi này.
+                    Không thể tự đổi vai trò của chính mình. Nhờ một quản trị
+                    viên khác thực hiện thay đổi này.
                   </div>
                 ) : null}
               </div>
@@ -678,7 +806,8 @@ export function IamUserScreen({
                   ))}
                 </select>
                 <div className="muted" style={{ marginTop: 6 }}>
-                  Phạm vi được gán tường minh theo kho. Loại phạm vi của vai trò đang chọn: {scopeTypeLabel(selectedRole?.scope_type)}.
+                  Phạm vi được gán tường minh theo kho. Loại phạm vi của vai trò
+                  đang chọn: {scopeTypeLabel(selectedRole?.scope_type)}.
                 </div>
               </div>
               <div className="field">
@@ -737,7 +866,8 @@ export function IamUserScreen({
                   <label>Phiên bản dữ liệu</label>
                   <div className="value">{editingUser.version}</div>
                   <div className="muted" style={{ marginTop: 6 }}>
-                    Hệ thống dùng phiên bản hiện tại để ngăn ghi đè khi có thay đổi đồng thời.
+                    Hệ thống dùng phiên bản hiện tại để ngăn ghi đè khi có thay
+                    đổi đồng thời.
                   </div>
                 </div>
               ) : null}
@@ -790,6 +920,9 @@ export function IamUserScreen({
               <Descriptions.Item label="Email">
                 {viewingUser.email || "—"}
               </Descriptions.Item>
+              <Descriptions.Item label="Phòng ban">
+                {departmentLabel(viewingUser)}
+              </Descriptions.Item>
               <Descriptions.Item label="Trạng thái">
                 <span className={statusClass(viewingUser.status)}>
                   {statusLabel(viewingUser.status)}
@@ -834,6 +967,27 @@ export function IamUserScreen({
                 <span className="muted">Chưa gán vai trò nào.</span>
               )}
             </div>
+
+            <Collapse
+              items={[
+                {
+                  key: "effective-permissions",
+                  label: `Quyền hiệu lực (${effectivePermissionKeys.length})`,
+                  children:
+                    effectivePermissionKeys.length > 0 ? (
+                      <Space size={[6, 6]} wrap>
+                        {effectivePermissionKeys.map((permissionKey) => (
+                          <Tag key={permissionKey}>{permissionKey}</Tag>
+                        ))}
+                      </Space>
+                    ) : (
+                      <span className="muted">
+                        Chưa có quyền nào từ các vai trò đang gắn.
+                      </span>
+                    ),
+                },
+              ]}
+            />
           </Space>
         ) : null}
       </Modal>

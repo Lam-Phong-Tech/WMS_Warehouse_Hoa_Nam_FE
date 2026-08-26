@@ -115,13 +115,21 @@ describe("API-backed MVP master screens", () => {
     );
     dialog = screen.getByRole("dialog");
     expect(within(dialog).getByText("Sửa SKU")).toBeInTheDocument();
-    expect(within(dialog).getByText("3")).toBeInTheDocument();
+    // Form sửa nạp đúng dòng đang bấm (version 3 chỉ còn đi ngầm trong payload
+    // If-Match, không hiển thị trên UI nữa).
+    expect(
+      within(dialog).getByDisplayValue("DCH-DRILL-DJZ10A-220V-V1"),
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).getByDisplayValue("Máy khoan Dongcheng DJZ10A 220V"),
+    ).toBeInTheDocument();
   });
 
   it("loads agency data and opens add/edit modal", () => {
     render(<AgencyMasterScreen />);
     expect(screen.getByText("Đại lý Minh Anh")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /Thêm đại lý/ }));
+    // REQ-001: màn master đổi nhãn "Đại lý" → "Nơi nhận".
+    fireEvent.click(screen.getByRole("button", { name: /Thêm nơi nhận/ }));
     expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 

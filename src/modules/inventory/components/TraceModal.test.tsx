@@ -45,7 +45,7 @@ describe("TraceModal (TRACE-01)", () => {
     renderWithProviders(<TraceModal movementId={null} onClose={() => {}} />);
 
     expect(
-      screen.getByText(/Chọn một movement từ danh sách tồn kho/),
+      screen.getByText(/Chọn một biến động tồn kho từ danh sách/),
     ).toBeInTheDocument();
   });
 
@@ -83,8 +83,9 @@ describe("TraceModal (TRACE-01)", () => {
 
     expect(await screen.findByText("MV-0001")).toBeInTheDocument();
     expect(screen.getByText("IN-001")).toBeInTheDocument();
-    expect(screen.getByText("POSTED")).toBeInTheDocument();
-    expect(screen.getByText(/DRAFT → POSTED/)).toBeInTheDocument();
+    // i18n: status POSTED render qua statusLabel thành "Đã nhập kho".
+    expect(screen.getByText("Đã nhập kho")).toBeInTheDocument();
+    expect(screen.getByText(/Nháp → Đã nhập kho/)).toBeInTheDocument();
   });
 
   it("truy vết theo mã vật lý loại ITEM: hiển thị SKU/serial, không phải chỉ SKU approximation (DEV211-P1-01)", async () => {
@@ -116,7 +117,8 @@ describe("TraceModal (TRACE-01)", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: /Tra cứu/ }));
 
-    expect(await screen.findByText("ITEM")).toBeInTheDocument();
+    // i18n: resolved_type ITEM render qua SCAN_CLASSIFICATION_LABELS.
+    expect(await screen.findByText("Sản phẩm cụ thể")).toBeInTheDocument();
     expect(screen.getByText("SKU-001")).toBeInTheDocument();
   });
 
@@ -152,8 +154,11 @@ describe("TraceModal (TRACE-01)", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: /Tra cứu/ }));
 
-    expect(await screen.findByText("CONTAINER")).toBeInTheDocument();
-    expect(screen.getByText(/Container Items \(1\)/)).toBeInTheDocument();
+    // i18n: nhánh CONTAINER hiện mô tả "Mã vật chứa" + bảng sản phẩm trong vật chứa.
+    expect(await screen.findByText("Mã vật chứa")).toBeInTheDocument();
+    expect(
+      screen.getByText(/Sản phẩm trong vật chứa \(1\)/),
+    ).toBeInTheDocument();
   });
 
   it("hiển thị ApiErrorAlert khi tra cứu mã vật lý không tìm thấy", async () => {
@@ -184,7 +189,7 @@ describe("TraceModal (TRACE-01)", () => {
     renderWithProviders(<TraceModal movementId="mv-1" onClose={() => {}} />);
 
     expect(
-      await screen.findByText("Không thể truy vết nguồn movement"),
+      await screen.findByText("Không thể truy vết chứng từ nguồn"),
     ).toBeInTheDocument();
   });
 
@@ -209,7 +214,7 @@ describe("TraceModal (TRACE-01)", () => {
     renderWithProviders(<TraceModal movementId="mv-1" onClose={() => {}} />);
 
     expect(
-      await screen.findByText("Backend chưa trả timeline/chain."),
+      await screen.findByText("Chưa có dữ liệu diễn biến để hiển thị."),
     ).toBeInTheDocument();
   });
 

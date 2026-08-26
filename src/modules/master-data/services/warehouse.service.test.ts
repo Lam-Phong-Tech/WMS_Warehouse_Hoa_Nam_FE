@@ -10,7 +10,7 @@ describe("canonical warehouse guard", () => {
       {
         warehouse_id: "WH-1",
         warehouse_code: CANONICAL_WAREHOUSE_CODE,
-        warehouse_name: "Kho tổng Hòa Nam",
+        warehouse_name: "Kho tổng Hoa Nam",
         status: "ACTIVE",
       },
       {

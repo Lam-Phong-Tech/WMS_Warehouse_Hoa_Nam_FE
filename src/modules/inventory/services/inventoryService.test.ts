@@ -54,7 +54,7 @@ describe("inventoryService — WWHN-211 exact six endpoint contract", () => {
     });
 
     expect(http.getPage).toHaveBeenCalledWith("/inventory/balances", {
-      params: { per_page: 20, stock_status: "AVAILABLE", page: 1 },
+      params: { per_page: 10, stock_status: "AVAILABLE", page: 1 },
     });
     expect(result.rows[0]).toMatchObject({
       id: "bal-1",
@@ -149,7 +149,7 @@ describe("inventoryService — WWHN-211 exact six endpoint contract", () => {
     });
 
     expect(http.getPage).toHaveBeenCalledWith("/stock-movements", {
-      params: { per_page: 20, movement_type: "RECEIPT", page: 1 },
+      params: { per_page: 10, movement_type: "RECEIPT", page: 1 },
     });
     expect(result.rows[0]).toMatchObject({
       id: "mv-1",

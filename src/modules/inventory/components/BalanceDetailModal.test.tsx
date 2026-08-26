@@ -122,7 +122,8 @@ describe("BalanceDetailModal", () => {
     expect(
       await screen.findByText(/Chi tiết tồn kho — SKU-001/),
     ).toBeInTheDocument();
-    expect(screen.getByText("MATCH")).toBeInTheDocument();
+    // i18n: reconcile MATCH render qua RECONCILE_STATUS_LABELS thành "Khớp".
+    expect(screen.getByText("Khớp")).toBeInTheDocument();
     expect(screen.getByText("ITM-001")).toBeInTheDocument();
     expect(screen.getByText("BOX-001")).toBeInTheDocument();
     expect(screen.getByText("MV-0001")).toBeInTheDocument();
@@ -148,10 +149,12 @@ describe("BalanceDetailModal", () => {
     );
 
     expect(
-      await screen.findByText("Không có item instance"),
+      await screen.findByText("Không có sản phẩm cụ thể"),
     ).toBeInTheDocument();
-    expect(screen.getByText("Không có container")).toBeInTheDocument();
-    expect(screen.getByText("Không có movement liên quan")).toBeInTheDocument();
+    expect(screen.getByText("Không có vật chứa")).toBeInTheDocument();
+    expect(
+      screen.getByText("Không có biến động liên quan"),
+    ).toBeInTheDocument();
   });
 
   it("hiển thị ApiErrorAlert kèm nút thử lại khi tải subledger lỗi", async () => {
@@ -162,7 +165,7 @@ describe("BalanceDetailModal", () => {
     );
 
     expect(
-      await screen.findByText("Không tải được subledger"),
+      await screen.findByText("Không tải được chi tiết tồn kho"),
     ).toBeInTheDocument();
   });
 
@@ -177,7 +180,7 @@ describe("BalanceDetailModal", () => {
     );
 
     await screen.findByText("MV-0001");
-    fireEvent.click(screen.getByRole("button", { name: /Trace/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Truy vết/ }));
 
     expect(onTraceMovement).toHaveBeenCalledWith("mv-1");
   });
@@ -189,7 +192,7 @@ describe("BalanceDetailModal", () => {
 
     await screen.findByText("MV-0001");
     expect(
-      screen.queryByRole("button", { name: /Trace/ }),
+      screen.queryByRole("button", { name: /Truy vết/ }),
     ).not.toBeInTheDocument();
   });
 });

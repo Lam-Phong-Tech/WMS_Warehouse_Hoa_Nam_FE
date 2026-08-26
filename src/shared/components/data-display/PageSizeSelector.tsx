@@ -15,7 +15,7 @@ export interface PageSizeSelectorProps {
 export function PageSizeSelector({
   current,
   pageSize,
-  pageSizeOptions = [15, 20, 50, 100],
+  pageSizeOptions = [10, 20, 50],
   onChange,
 }: PageSizeSelectorProps) {
   return (

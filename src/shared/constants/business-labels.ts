@@ -31,6 +31,12 @@ export const SCAN_RESULT_LABELS = {
   INVALID: "Không hợp lệ",
 } as const;
 
+export const NOTIFICATION_SEVERITY_LABELS = {
+  info: "Thông tin",
+  warning: "Cảnh báo",
+  critical: "Nghiêm trọng",
+} as const;
+
 export const SCAN_ENTRY_STATUS_LABELS = {
   ACTIVE: "Đang hiệu lực",
   REMOVED: "Đã bỏ khỏi phiếu",

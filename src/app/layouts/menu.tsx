@@ -35,7 +35,7 @@ export interface AppMenuItem {
 export const MENU: AppMenuItem[] = [
   {
     key: "overview",
-    label: "00 · Tổng quan",
+    label: "Tổng quan",
     icon: <BarChartOutlined />,
     children: [
       {
@@ -48,7 +48,7 @@ export const MENU: AppMenuItem[] = [
   },
   {
     key: "foundation",
-    label: "01 · Hệ thống & danh mục",
+    label: "Hệ thống & danh mục",
     icon: <SettingOutlined />,
     children: [
       {
@@ -103,7 +103,7 @@ export const MENU: AppMenuItem[] = [
   },
   {
     key: "inbound-group",
-    label: "02 · Nhập kho",
+    label: "Nhập kho",
     icon: <InboxOutlined />,
     children: [
       {
@@ -182,12 +182,18 @@ export const MENU: AppMenuItem[] = [
         icon: <AuditOutlined />,
         permission: ROUTE_PERMISSIONS[ROUTES.AUDIT_LOGS],
       },
-      {
-        key: ROUTES.COMPONENT_CATALOG,
-        label: "Danh mục linh kiện",
-        icon: <AppstoreOutlined />,
-        permission: ROUTE_PERMISSIONS[ROUTES.COMPONENT_CATALOG],
-      },
+      // REQ-017: màn demo component-catalog chỉ hiện ở bản DEV — route cũng
+      // chỉ được đăng ký khi DEV (app/router/index.tsx + access.ts).
+      ...(import.meta.env.DEV
+        ? [
+            {
+              key: ROUTES.COMPONENT_CATALOG,
+              label: "Danh mục linh kiện",
+              icon: <AppstoreOutlined />,
+              permission: ROUTE_PERMISSIONS[ROUTES.COMPONENT_CATALOG],
+            },
+          ]
+        : []),
     ],
   },
   {

@@ -301,6 +301,18 @@ vi.mock("antd", () => {
   const createFormItem = (props: any) => {
     const { label, children, help, validateStatus, message, name, ...rest } =
       props ?? {};
+    // Gắn aria-label = label cho control con (khi control chưa có) để
+    // getByLabelText tìm được input theo nhãn Form.Item như antd thật.
+    let control = children ?? null;
+    if (
+      typeof label === "string" &&
+      React.isValidElement(children) &&
+      (children.props as any)?.["aria-label"] == null
+    ) {
+      control = React.cloneElement(children as React.ReactElement<any>, {
+        "aria-label": label,
+      });
+    }
     return React.createElement(
       "div",
       {
@@ -317,7 +329,7 @@ vi.mock("antd", () => {
       React.createElement(
         "div",
         { className: "ant-form-item-control" },
-        children ?? null,
+        control,
       ),
       (message ?? help) != null
         ? React.createElement(
@@ -597,7 +609,38 @@ vi.mock("antd", () => {
       Item: createFormItem,
       List: stub,
       Provider: stub,
-      useForm: () => [{}],
+      // App code (vd WarrantyDetailModal "Sửa thông tin") gọi các method của
+      // form instance; stub rỗng cũ làm setFieldsValue nổ TypeError và modal
+      // không bao giờ render. Giữ store tối thiểu để form API không throw.
+      useForm: () => {
+        const store: Record<string, unknown> = {};
+        const form = {
+          setFieldsValue: (values: Record<string, unknown> | undefined) => {
+            Object.assign(store, values ?? {});
+          },
+          setFieldValue: (name: string, value: unknown) => {
+            store[String(name)] = value;
+          },
+          setFields: (
+            fields: Array<{ name: unknown; value?: unknown }> | undefined,
+          ) => {
+            for (const field of fields ?? []) {
+              if ("value" in (field ?? {}))
+                store[String(field.name)] = field.value;
+            }
+          },
+          getFieldsError: () => [],
+          isFieldsTouched: () => false,
+          getFieldValue: (name: string) => store[String(name)],
+          getFieldsValue: () => ({ ...store }),
+          resetFields: () => {
+            for (const key of Object.keys(store)) delete store[key];
+          },
+          validateFields: async () => ({ ...store }),
+          submit: () => {},
+        };
+        return [form];
+      },
       useWatch: () => undefined,
     }),
     Input: Object.assign(createInput, {

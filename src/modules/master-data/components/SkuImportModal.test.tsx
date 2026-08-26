@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+﻿import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "@/test/test-utils";
 import { cleanupTestState } from "@/test/setup";
@@ -78,7 +78,7 @@ function selectFile(
   lastModified?: number,
 ) {
   const input = screen.getByLabelText(
-    "Chọn file Excel import SKU",
+    "Chọn tệp Excel chứa SKU",
   ) as HTMLInputElement;
   const file = new File([content], name, {
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -89,13 +89,11 @@ function selectFile(
 }
 
 function commitButton() {
-  return screen.getByRole("button", { name: /Import chính thức/ });
+  return screen.getByRole("button", { name: /Nhập dữ liệu/ });
 }
 
 function optionSwitch() {
-  return screen.getByLabelText(
-    "Cho phép ghi đè SKU đã tồn tại (update_existing)",
-  );
+  return screen.getByLabelText("Cho phép cập nhật SKU đã tồn tại");
 }
 
 function dryRunButton() {
@@ -165,7 +163,7 @@ describe("SkuImportModal — hiệu lực của kết quả dry-run (FE331-P1-01
     await waitFor(() => expect(commitButton()).toBeDisabled());
     expect(
       screen.getByText(
-        /Tùy chọn hoặc nội dung file đã thay đổi sau lần kiểm tra thử/,
+        /Tệp hoặc lựa chọn cập nhật đã thay đổi sau lần kiểm tra trước/,
       ),
     ).toBeInTheDocument();
 
@@ -260,18 +258,21 @@ describe("SkuImportModal — hiệu lực của kết quả dry-run (FE331-P1-01
     renderModal();
 
     await waitFor(() =>
-      expect(screen.getByText(/tối đa 250 dòng dữ liệu/)).toBeInTheDocument(),
+      expect(screen.getByText(/Tối đa 250 dòng dữ liệu/)).toBeInTheDocument(),
     );
-    expect(screen.getByText(/file ≤ 5 MB/)).toBeInTheDocument();
     expect(
-      screen.getByText(/trong 6h được coi là gửi trùng/),
+      screen.getByText(/kích thước tệp không quá 5 MB/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/tệp lỗi có thể tải trong 12 giờ/),
     ).toBeInTheDocument();
     // DEV330-P1-02R3: trần quét dòng bảng tính cũng là hạn mức người dùng chạm phải,
     // nên phải hiển thị — nếu không, thông báo lỗi máy chủ sẽ trông như mâu thuẫn.
     expect(
-      screen.getByText(/5.040 dòng bảng tính \(kể cả dòng trống\)/),
+      screen.getByText(/không trải quá 5.040 dòng kể cả dòng trống/),
     ).toBeInTheDocument();
-    expect(screen.queryByText(/1000 dòng/)).not.toBeInTheDocument();
+    // maxRows 1.000 mặc định không được hard-code vào mô tả khi BE công bố 250.
+    expect(screen.queryByText(/1\.000 dòng/)).not.toBeInTheDocument();
   });
 
   it("BE không công bố hạn mức: mô tả chung, không bịa con số", async () => {
@@ -285,7 +286,7 @@ describe("SkuImportModal — hiệu lực của kết quả dry-run (FE331-P1-01
     await waitFor(() =>
       expect(
         screen.getByText(
-          /Giới hạn số dòng và kích thước file do máy chủ quy định/,
+          /Giới hạn số dòng và kích thước tệp do hệ thống kiểm soát/,
         ),
       ).toBeInTheDocument(),
     );
@@ -354,7 +355,9 @@ describe("SkuImportModal — tranh chấp import đồng thời (DEV330-P1-07R3)
       expect(vi.mocked(importSkuExcel)).toHaveBeenCalledTimes(2),
     );
     await waitFor(() => expect(commitButton()).toBeEnabled());
-    expect(screen.queryByText(/Import bị từ chối/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Không được ghi dữ liệu"),
+    ).not.toBeInTheDocument();
   });
 
   /**
@@ -391,7 +394,9 @@ describe("SkuImportModal — tranh chấp import đồng thời (DEV330-P1-07R3)
       expect(vi.mocked(importSkuExcel)).toHaveBeenCalledTimes(2),
     );
     await waitFor(() => expect(commitButton()).toBeEnabled());
-    expect(screen.queryByText(/Import bị từ chối/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Không được ghi dữ liệu"),
+    ).not.toBeInTheDocument();
   });
 });
 
@@ -476,7 +481,7 @@ describe("SkuImportModal — vân tay nội dung và ca đua preview (FE331-P1-0
     // không phân biệt được "tắt vì chưa băm xong" với "tắt vì phát hiện khác nội dung".
     await waitFor(() =>
       expect(
-        screen.getByText(/Tùy chọn hoặc nội dung file đã thay đổi/),
+        screen.getByText(/Tệp hoặc lựa chọn cập nhật đã thay đổi/),
       ).toBeInTheDocument(),
     );
     expect(commitButton()).toBeDisabled();
@@ -538,7 +543,7 @@ describe("SkuImportModal — vân tay nội dung và ca đua preview (FE331-P1-0
 
     await waitFor(() =>
       expect(
-        screen.getByText(/Phải Kiểm tra trước \(dry-run\) hết lỗi/),
+        screen.getByText(/Cần kiểm tra tệp và xử lý hết lỗi trước khi nhập dữ liệu/),
       ).toBeInTheDocument(),
     );
     // Bằng chứng quan trọng nhất: KHÔNG có request commit nào được gửi đi.
@@ -599,7 +604,7 @@ describe("SkuImportModal — vân tay nội dung và ca đua preview (FE331-P1-0
     );
     await waitFor(() => expect(commitButton()).toBeDisabled());
     expect(
-      screen.getByText(/Phải Kiểm tra trước \(dry-run\) hết lỗi/),
+      screen.getByText(/Cần kiểm tra tệp và xử lý hết lỗi trước khi nhập dữ liệu/),
     ).toBeInTheDocument();
   });
 });

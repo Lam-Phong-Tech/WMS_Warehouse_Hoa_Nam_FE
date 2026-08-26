@@ -1,3 +1,5 @@
+import type { RecipientType } from "@/shared/constants/recipient-types";
+
 export type MasterStatus = "ACTIVE" | "INACTIVE";
 export type SkuType = "PRODUCT" | "COMPONENT";
 
@@ -7,6 +9,8 @@ export interface MasterListParams {
   sku_type?: SkuType | "";
   /** MST-01 toolbar "Hãng" — gửi kèm GET /products để lọc theo Brand. */
   brand_id?: string;
+  /** REQ-001 màn Nơi nhận — lọc GET /agencies theo loại nơi nhận. */
+  recipient_type?: RecipientType | "";
   page?: number;
   per_page?: number;
 }
@@ -79,6 +83,13 @@ export interface AgencyRecord {
   agency_id: string;
   agency_code: string;
   agency_name: string;
+  /**
+   * REQ-001: bắt buộc khi tạo mới (BE BaM1RecipientController validate),
+   * nhưng bản ghi cũ trước khi bổ sung cột có thể chưa có → nullable khi đọc.
+   */
+  recipient_type?: RecipientType | null;
+  market?: string | null;
+  region?: string | null;
   contact_name?: string | null;
   phone?: string | null;
   address?: string | null;
@@ -90,6 +101,10 @@ export interface AgencyRecord {
 export interface AgencyPayload {
   agency_code: string;
   agency_name: string;
+  /** REQ-001: BE yêu cầu required khi POST; FE validate trước khi submit. */
+  recipient_type?: RecipientType;
+  market?: string | null;
+  region?: string | null;
   contact_name?: string | null;
   phone?: string | null;
   address?: string | null;

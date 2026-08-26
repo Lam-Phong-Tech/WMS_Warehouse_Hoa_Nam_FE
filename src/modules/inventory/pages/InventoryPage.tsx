@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-import { useEffect, useState } from "react";
+import { useEffect, useState, type Key } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Space, Table, Tabs, Tag, Tooltip, Typography } from "antd";
 import type { ColumnsType, TablePaginationConfig } from "antd/es/table";
@@ -16,6 +16,7 @@ import {
   tableEmptyText,
 } from "@/shared/components/feedback/BusinessState";
 import { MvpPageSizeSelector } from "@/shared/components/mvp/MvpListPagination";
+import { mvpRowNumber } from "@/shared/components/mvp/MvpSelectionCell";
 import { resolveApiPagination } from "@/shared/components/mvp/mvp-pagination";
 import { useCanAny } from "@/shared/components/permission";
 import { useOverlayBackDismiss } from "@/shared/hooks/useOverlayBackDismiss";
@@ -40,6 +41,7 @@ import type {
   InventoryStockStatus,
   StockMovementRow,
 } from "../services/inventoryService";
+import { formatDateTime } from "@/shared/utils/format-date";
 
 const numberFormatter = new Intl.NumberFormat("vi-VN");
 const SEARCH_DEBOUNCE_MS = 250;
@@ -71,9 +73,15 @@ export default function InventoryPage() {
   const [movementSearch, setMovementSearch] = useState("");
   const [movementType, setMovementType] = useState("");
   const [balancePage, setBalancePage] = useState(1);
-  const [balancePerPage, setBalancePerPage] = useState(15);
+  const [balancePerPage, setBalancePerPage] = useState(10);
   const [movementPage, setMovementPage] = useState(1);
-  const [movementPerPage, setMovementPerPage] = useState(15);
+  const [movementPerPage, setMovementPerPage] = useState(10);
+  const [balanceSelectedRowKeys, setBalanceSelectedRowKeys] = useState<
+    Key[]
+  >([]);
+  const [movementSelectedRowKeys, setMovementSelectedRowKeys] = useState<
+    Key[]
+  >([]);
 
   const [activeTab, setActiveTab] = useState("balance");
 
@@ -153,6 +161,14 @@ export default function InventoryPage() {
   useOverlayBackDismiss(overlayOpen, closeOverlays, "INV-01-overlay");
 
   const balanceColumns: ColumnsType<InventoryBalanceRow> = [
+    {
+      title: "STT",
+      key: "stt",
+      width: 60,
+      fixed: "left",
+      render: (_, __, index) =>
+        mvpRowNumber(balancePage, balancePerPage, index),
+    },
     {
       title: "SKU",
       dataIndex: "sku",
@@ -258,11 +274,7 @@ export default function InventoryPage() {
           }
         >
           <Tag color={reconcileColor(value)}>
-            {businessLabel(
-              RECONCILE_STATUS_LABELS,
-              value,
-              "Chưa đối soát",
-            )}
+            {businessLabel(RECONCILE_STATUS_LABELS, value, "Chưa đối soát")}
           </Tag>
         </Tooltip>
       ),
@@ -294,6 +306,13 @@ export default function InventoryPage() {
 
   const movementColumns: ColumnsType<StockMovementRow> = [
     {
+      title: "STT",
+      key: "stt",
+      width: 60,
+      render: (_, __, index) =>
+        mvpRowNumber(movementPage, movementPerPage, index),
+    },
+    {
       title: "Mã biến động",
       dataIndex: "movementId",
       key: "movementId",
@@ -302,7 +321,13 @@ export default function InventoryPage() {
         <Typography.Text code>{value || "-"}</Typography.Text>
       ),
     },
-    { title: "Thời gian", dataIndex: "time", key: "time", width: 150 },
+    {
+      title: "Thời gian",
+      dataIndex: "time",
+      key: "time",
+      width: 150,
+      render: (time: string) => formatDateTime(time),
+    },
     {
       title: "Loại biến động",
       dataIndex: "type",
@@ -405,13 +430,6 @@ export default function InventoryPage() {
 
   return (
     <div className="inventory-page hn-mvp-source-screen">
-      <div className="toolbar-wrap" style={{ gap: 6 }}>
-        <span className="pill blue">Tồn kho hiện tại</span>
-        <span className="pill blue">Lịch sử biến động</span>
-        <span className="pill blue">Truy vết chứng từ</span>
-        <span className="pill ok">Đối soát tồn kho tự động</span>
-      </div>
-
       <Tabs
         activeKey={activeTab}
         onChange={setActiveTab}
@@ -467,6 +485,13 @@ export default function InventoryPage() {
                     <option value="DEFECTIVE">Hàng lỗi</option>
                     <option value="QUARANTINE">Chờ kiểm tra</option>
                   </select>
+                  <MvpPageSizeSelector
+                    value={balancePerPage}
+                    onChange={(v) => {
+                      setBalancePerPage(v);
+                      setBalancePage(1);
+                    }}
+                  />
                   <div className="spacer" />
                   {canTrace ? (
                     <button
@@ -490,14 +515,6 @@ export default function InventoryPage() {
                   </div>
                 ) : null}
 
-                <MvpPageSizeSelector
-                  value={balancePerPage}
-                  onChange={(v) => {
-                    setBalancePerPage(v);
-                    setBalancePage(1);
-                  }}
-                />
-
                 <TableLoadingBanner
                   loading={balanceQuery.isLoading || balanceQuery.isFetching}
                 />
@@ -507,6 +524,11 @@ export default function InventoryPage() {
                   dataSource={balances}
                   loading={balanceQuery.isLoading || balanceQuery.isFetching}
                   onChange={handleBalanceTableChange}
+                  rowSelection={{
+                    selectedRowKeys: balanceSelectedRowKeys,
+                    onChange: setBalanceSelectedRowKeys,
+                    fixed: true,
+                  }}
                   pagination={{
                     current: balancePagination.current,
                     pageSize: balancePagination.pageSize,
@@ -527,12 +549,7 @@ export default function InventoryPage() {
                   scroll={{ x: "max-content" }}
                 />
 
-                <div className="footer-note" style={{ marginBottom: 8 }}>
-                  <b>Đối soát</b> so sánh sổ biến động với số tồn hiện tại. Trạng
-                  thái <b>Khớp</b> nghĩa là hai nguồn trùng nhau; <b>Có chênh lệch</b>
-                  nghĩa là cần kiểm tra. Bấm <b>Mở</b> để xem chi tiết tồn kho,
-                  sản phẩm/hộp và các biến động liên quan.
-                </div>
+             
               </>
             ),
           },
@@ -569,9 +586,18 @@ export default function InventoryPage() {
                     <option value="">Loại: Tất cả</option>
                     <option value="RECEIPT">Nhập kho</option>
                     <option value="ISSUE">Xuất kho</option>
-                    <option value="COMPONENT_ISSUE">Xuất linh kiện bảo hành</option>
+                    <option value="COMPONENT_ISSUE">
+                      Xuất linh kiện bảo hành
+                    </option>
                     <option value="REVERSAL">Điều chỉnh tồn kho</option>
                   </select>
+                  <MvpPageSizeSelector
+                    value={movementPerPage}
+                    onChange={(v) => {
+                      setMovementPerPage(v);
+                      setMovementPage(1);
+                    }}
+                  />
                 </div>
 
                 {movementQuery.isError ? (
@@ -584,14 +610,6 @@ export default function InventoryPage() {
                   </div>
                 ) : null}
 
-                <MvpPageSizeSelector
-                  value={movementPerPage}
-                  onChange={(v) => {
-                    setMovementPerPage(v);
-                    setMovementPage(1);
-                  }}
-                />
-
                 <TableLoadingBanner
                   loading={movementQuery.isLoading || movementQuery.isFetching}
                 />
@@ -601,6 +619,10 @@ export default function InventoryPage() {
                   dataSource={movements}
                   loading={movementQuery.isLoading || movementQuery.isFetching}
                   onChange={handleMovementTableChange}
+                  rowSelection={{
+                    selectedRowKeys: movementSelectedRowKeys,
+                    onChange: setMovementSelectedRowKeys,
+                  }}
                   pagination={{
                     current: movementPagination.current,
                     pageSize: movementPagination.pageSize,

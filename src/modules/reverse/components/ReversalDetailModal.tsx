@@ -28,6 +28,7 @@ import {
 } from "../hooks/use-reversal";
 import { ReversalStatusTag } from "./ReversalStatusTag";
 import type { ReversalLine, ReversalReturnCondition } from "../types";
+import { formatDateTime } from "@/shared/utils/format-date";
 
 const numberFormatter = new Intl.NumberFormat("vi-VN");
 
@@ -259,17 +260,18 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
                 {doc.total_lines} dòng · {qty(doc.total_qty)}
               </Descriptions.Item>
               <Descriptions.Item label="Ngày tạo">
-                {doc.created_at}
+                {formatDateTime(doc.created_at)}
               </Descriptions.Item>
               <Descriptions.Item label="Người tạo">
                 {doc.created_by}
               </Descriptions.Item>
               <Descriptions.Item label="Thời điểm hoàn tất / người thực hiện">
-                {doc.reversed_at ?? "-"} · {doc.posted_by ?? "-"}
+                {doc.reversed_at ? formatDateTime(doc.reversed_at) : "-"} ·{" "}
+                {doc.posted_by ?? "-"}
               </Descriptions.Item>
               <Descriptions.Item label="Thông tin hủy">
                 {doc.cancelled_at
-                  ? `${doc.cancelled_at} · ${doc.cancel_reason ?? "-"}`
+                  ? `${formatDateTime(doc.cancelled_at)} · ${doc.cancel_reason ?? "-"}`
                   : "-"}
               </Descriptions.Item>
             </Descriptions>

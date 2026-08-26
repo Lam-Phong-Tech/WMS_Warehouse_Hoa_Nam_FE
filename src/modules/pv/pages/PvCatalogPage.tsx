@@ -67,7 +67,7 @@ export default function PvCatalogPage() {
 
   return (
     <PvPublicLayout
-      title="Sản phẩm Hòa Nam"
+      title="Sản phẩm Hoa Nam"
       subtitle={
         <>
           Danh mục sản phẩm đang được công bố. Số lượng là tồn khả dụng của kho

@@ -13,7 +13,7 @@ import type { AuditLog } from "@/modules/audit-logs/types/audit-logs.types";
 
 export function AuditLogsPage() {
   const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(15);
+  const [perPage, setPerPage] = useState(10);
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
   const [sortBy, setSortBy] = useState<string>();
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">();

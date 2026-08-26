@@ -1,13 +1,16 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type Key } from "react";
 import {
   Alert,
+  Card,
   DatePicker,
+  Empty,
   Input,
   Select,
   Space,
   Table,
   Tabs,
   Tag,
+  Typography,
   type TableColumnsType,
 } from "antd";
 import {
@@ -40,6 +43,7 @@ import {
 import { UI_STATE, uiStateProps } from "@/shared/constants/ui-state";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { MvpPageSizeSelector } from "@/shared/components/mvp/MvpListPagination";
+import { mvpRowNumber } from "@/shared/components/mvp/MvpSelectionCell";
 import {
   TableLoadingBanner,
   tableEmptyText,
@@ -53,9 +57,12 @@ import {
   useMvpDefects,
 } from "@/modules/master-data/hooks/use-mvp-master";
 import { fetchPrinterConfigs } from "@/modules/outbound/services/mvpOutboundService";
+import { formatDate, formatDateTime } from "@/shared/utils/format-date";
+
+const { Text } = Typography;
 
 type Raw = Record<string, unknown>;
-type ReportKey =
+type GenericReportKey =
   | "inventory-balance"
   | "xnt"
   | "document-history"
@@ -64,6 +71,9 @@ type ReportKey =
   | "label-log"
   | "warranty"
   | "outbound-by-agency";
+// "defect-sku" tự quản lý truy vấn/render riêng (biểu đồ + bảng), không đi
+// qua pipeline CONFIG/export chung nên tách khỏi GenericReportKey.
+type ReportKey = GenericReportKey | "defect-sku";
 
 type SelectOption = { value: string; label: string };
 
@@ -80,7 +90,7 @@ type ReportConfig = {
   reportCode: string;
 };
 
-const CONFIG: Record<ReportKey, ReportConfig> = {
+const CONFIG: Record<GenericReportKey, ReportConfig> = {
   "inventory-balance": {
     label: "Tồn kho",
     endpoint: API_ENDPOINTS.REPORTS_INVENTORY_BALANCE,
@@ -146,6 +156,9 @@ const CONFIG: Record<ReportKey, ReportConfig> = {
     reportCode: "outbound-by-agency",
   },
 };
+
+const DEFECT_SKU_TAB_KEY = "defect-sku" as const;
+const DEFECT_SKU_TAB_LABEL = "Bệnh lỗi theo SKU";
 
 const MOVEMENT_COLORS: Record<string, string> = {
   OPENING: "default",
@@ -213,6 +226,8 @@ const n = (value: unknown, fallback = 0) => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
 };
+const fmtDate = (value: unknown) => formatDate(text(value, ""));
+const fmtDateTime = (value: unknown) => formatDateTime(text(value, ""));
 
 function rowsOf(data: Raw | undefined, key: "rows" | "lines" = "rows"): Raw[] {
   const value = data?.[key];
@@ -403,13 +418,16 @@ function columnsFor(
                   ? "default"
                   : "error";
             return (
-              <Tag color={color}>
-                {businessLabel(RECONCILE_LABELS, status)}
-              </Tag>
+              <Tag color={color}>{businessLabel(RECONCILE_LABELS, status)}</Tag>
             );
           },
         },
-        { title: "Cập nhật", dataIndex: "updated_at", width: 170 },
+        {
+          title: "Cập nhật",
+          dataIndex: "updated_at",
+          width: 170,
+          render: fmtDateTime,
+        },
       ];
     case "xnt":
       return [
@@ -527,7 +545,12 @@ function columnsFor(
         },
         { title: "Kho", dataIndex: "warehouse_code", width: 100 },
         { title: "Đối tác/Nơi nhận", dataIndex: "counterpart", width: 200 },
-        { title: "Ngày", dataIndex: "document_date", width: 120 },
+        {
+          title: "Ngày",
+          dataIndex: "document_date",
+          width: 120,
+          render: fmtDate,
+        },
         {
           title: "Trạng thái",
           dataIndex: "status",
@@ -536,7 +559,12 @@ function columnsFor(
         },
         { title: "Người tạo", dataIndex: "created_by_name", width: 140 },
         { title: "Người ghi nhận", dataIndex: "posted_by_name", width: 140 },
-        { title: "Thời điểm ghi nhận", dataIndex: "posted_at", width: 170 },
+        {
+          title: "Thời điểm ghi nhận",
+          dataIndex: "posted_at",
+          width: 170,
+          render: fmtDateTime,
+        },
       ];
     case "movement-trace":
       return [
@@ -551,6 +579,7 @@ function columnsFor(
           title: "Thời gian",
           dataIndex: "occurred_at",
           width: 170,
+          render: fmtDateTime,
         },
         {
           title: "Loại",
@@ -692,7 +721,12 @@ function columnsFor(
           ellipsis: true,
           render: (v) => text(v),
         },
-        { title: "Ngày", dataIndex: "outbound_date", width: 120 },
+        {
+          title: "Ngày",
+          dataIndex: "outbound_date",
+          width: 120,
+          render: fmtDate,
+        },
         { title: "Nơi nhận", dataIndex: "recipient", width: 180 },
         {
           title: "Số nhãn",
@@ -764,11 +798,21 @@ function columnsFor(
           align: "right",
           render: fmt,
         },
-        { title: "Lần in gần nhất", dataIndex: "last_attempt_at", width: 170 },
+        {
+          title: "Lần in gần nhất",
+          dataIndex: "last_attempt_at",
+          width: 170,
+          render: fmtDateTime,
+        },
       ];
     case "warranty":
       return [
-        { title: "Ca bảo hành", dataIndex: "case_no", width: 160, fixed: "left" },
+        {
+          title: "Ca bảo hành",
+          dataIndex: "case_no",
+          width: 160,
+          fixed: "left",
+        },
         {
           title: "Nhận diện",
           dataIndex: "identification_status",
@@ -792,9 +836,24 @@ function columnsFor(
           width: 130,
           render: statusTag,
         },
-        { title: "Ngày mua", dataIndex: "purchase_date", width: 130 },
-        { title: "Ngày nhận", dataIndex: "received_at", width: 170 },
-        { title: "Ngày trả khách", dataIndex: "returned_at", width: 170 },
+        {
+          title: "Ngày mua",
+          dataIndex: "purchase_date",
+          width: 130,
+          render: fmtDate,
+        },
+        {
+          title: "Ngày nhận",
+          dataIndex: "received_at",
+          width: 170,
+          render: fmtDateTime,
+        },
+        {
+          title: "Ngày trả khách",
+          dataIndex: "returned_at",
+          width: 170,
+          render: fmtDateTime,
+        },
         {
           title: "Thời gian xử lý",
           dataIndex: "turnaround_days",
@@ -825,7 +884,12 @@ function columnsFor(
           render: (value: unknown) =>
             warrantyPiiText(text(value, ""), canViewPii, "address") || "—",
         },
-        { title: "Cập nhật", dataIndex: "updated_at", width: 170 },
+        {
+          title: "Cập nhật",
+          dataIndex: "updated_at",
+          width: 170,
+          render: fmtDateTime,
+        },
       ];
     case "outbound-by-agency":
       return [
@@ -837,7 +901,12 @@ function columnsFor(
         { title: "Mã SKU", dataIndex: "product_code", width: 130 },
         { title: "Tên SKU", dataIndex: "product_name", width: 200 },
         { title: "Phiếu", dataIndex: "outbound_no", width: 150 },
-        { title: "Ngày", dataIndex: "document_date", width: 120 },
+        {
+          title: "Ngày",
+          dataIndex: "document_date",
+          width: 120,
+          render: fmtDate,
+        },
         {
           title: "SL yêu cầu",
           dataIndex: "required_qty",
@@ -851,6 +920,8 @@ function columnsFor(
           render: fmt,
         },
       ];
+    case "defect-sku":
+      return [];
   }
 }
 
@@ -982,6 +1053,152 @@ function Summary({ report, data }: { report: ReportKey; data?: Raw }) {
   ) : null;
 }
 
+function DefectSkuReport() {
+  const [period, setPeriod] = useState<[Dayjs, Dayjs]>([
+    dayjs().subtract(30, "day"),
+    dayjs(),
+  ]);
+  // REQ-022/P2-04: lọc nhiều bệnh/lỗi cùng lúc — BE defectSkuBreakdown nhận
+  // defect_ids[] (axios mặc định serialize mảng params thành defect_ids[]=...).
+  const [defectIds, setDefectIds] = useState<string[]>([]);
+  const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([]);
+
+  const defectsQuery = useQuery({
+    queryKey: ["gd1", "defects"],
+    queryFn: () =>
+      http.getPage<Raw[]>("/defects", {
+        params: { status: "ACTIVE", per_page: 200 },
+      }),
+  });
+  const defectOptions: SelectOption[] = (
+    Array.isArray(defectsQuery.data?.data) ? defectsQuery.data.data : []
+  ).map((row) => ({
+    value: text(row.defect_id, ""),
+    label: `${text(row.defect_code, "")} · ${text(row.defect_name)}`,
+  }));
+
+  const defectSkuParams = {
+    from_date: period[0].format("YYYY-MM-DD"),
+    to_date: period[1].format("YYYY-MM-DD"),
+    defect_ids: defectIds.length > 0 ? defectIds : undefined,
+  };
+  const query = useQuery({
+    queryKey: ["gd1", "warranty-defect-sku", defectSkuParams],
+    queryFn: () =>
+      http.get<Raw>("/reports/warranty-defect-sku-breakdown", {
+        params: defectSkuParams,
+      }),
+  });
+  const rawRows = query.data?.rows ?? query.data;
+  const rows = Array.isArray(rawRows) ? (rawRows as Raw[]) : [];
+  const maxCount = Math.max(1, ...rows.map((row) => n(row.case_count)));
+
+  const columns: TableColumnsType<Raw> = [
+    { title: "SKU", dataIndex: "sku_code", width: 160 },
+    { title: "Tên SKU", dataIndex: "sku_name", width: 220 },
+    { title: "Mã bệnh/lỗi", dataIndex: "defect_code", width: 150 },
+    { title: "Bệnh/lỗi", dataIndex: "defect_name", width: 230 },
+    {
+      title: "Số case",
+      dataIndex: "case_count",
+      width: 100,
+      align: "right",
+      render: (value) => n(value).toLocaleString("vi-VN"),
+    },
+  ];
+
+  return (
+    <Space orientation="vertical" size={14} style={{ width: "100%" }}>
+      <Card size="small">
+        <Space wrap>
+          <DatePicker.RangePicker
+            value={period}
+            format="DD/MM/YYYY"
+            onChange={(value) => {
+              if (value?.[0] && value?.[1]) setPeriod([value[0], value[1]]);
+            }}
+          />
+          <Select
+            allowClear
+            showSearch
+            mode="multiple"
+            maxTagCount="responsive"
+            optionFilterProp="label"
+            style={{ minWidth: 300 }}
+            placeholder="Bệnh/lỗi (chọn được nhiều)"
+            value={defectIds}
+            options={defectOptions}
+            loading={defectsQuery.isLoading}
+            onChange={setDefectIds}
+          />
+        </Space>
+      </Card>
+
+      {query.isError ? (
+        <ApiErrorAlert
+          error={query.error}
+          title="Không tải được thống kê bệnh/lỗi theo SKU"
+          onRetry={() => query.refetch()}
+        />
+      ) : null}
+
+      <Card size="small" title="Biểu đồ bệnh/lỗi theo SKU">
+        {rows.length === 0 && !query.isLoading ? (
+          <Empty description="Chưa có dữ liệu trong khoảng thời gian đã chọn" />
+        ) : (
+          <Space orientation="vertical" size={10} style={{ width: "100%" }}>
+            {rows.slice(0, 20).map((row) => {
+              const count = n(row.case_count);
+              const percent = Math.max(
+                4,
+                Math.round((count / maxCount) * 100),
+              );
+              return (
+                <div key={`${text(row.sku_id, "")}-${text(row.defect_id, "")}`}>
+                  <Space
+                    style={{ width: "100%", justifyContent: "space-between" }}
+                  >
+                    <Text>
+                      <strong>{text(row.sku_code)}</strong> ·{" "}
+                      {text(row.defect_name)}
+                    </Text>
+                    <Text>{count} case</Text>
+                  </Space>
+                  <div
+                    aria-label={`${count} case`}
+                    style={{
+                      height: 10,
+                      width: `${percent}%`,
+                      maxWidth: "100%",
+                      background: "currentColor",
+                      opacity: 0.35,
+                      borderRadius: 6,
+                    }}
+                  />
+                </div>
+              );
+            })}
+          </Space>
+        )}
+      </Card>
+
+      <Table<Raw>
+        rowKey={(row) => `${text(row.sku_id, "")}-${text(row.defect_id, "")}`}
+        loading={query.isLoading || query.isFetching}
+        columns={columns}
+        dataSource={rows}
+        rowSelection={{
+          selectedRowKeys,
+          onChange: setSelectedRowKeys,
+          fixed: true,
+        }}
+        pagination={{ pageSize: 10, showSizeChanger: false }}
+        scroll={{ x: 860 }}
+      />
+    </Space>
+  );
+}
+
 export default function AlignedReportsPage() {
   const [report, setReport] = useState<ReportKey>("inventory-balance");
   const [period, setPeriod] = useState<[Dayjs, Dayjs]>([
@@ -997,7 +1214,9 @@ export default function AlignedReportsPage() {
   const [actorId, setActorId] = useState<string>();
   const [skuCode, setSkuCode] = useState("");
   const [asOf, setAsOf] = useState<Dayjs | null>(null);
-  const [defectId, setDefectId] = useState<string>();
+  // REQ-022/P2-04: BE /reports/warranty-defects (BaM1ReportController::
+  // warrantyDefects) nhận defect_ids[] — cho lọc nhiều bệnh/lỗi cùng lúc.
+  const [defectIds, setDefectIds] = useState<string[]>([]);
   const [identification, setIdentification] = useState<string>();
   const [movementType, setMovementType] = useState<string>();
   const [docType, setDocType] = useState<"all" | "inbound" | "outbound">("all");
@@ -1006,6 +1225,13 @@ export default function AlignedReportsPage() {
   const [exporting, setExporting] = useState<"xlsx" | "pdf" | null>(null);
   const [exportDenied, setExportDenied] = useState<string | null>(null);
   const [piiReason, setPiiReason] = useState("");
+  const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([]);
+  const [defectSelectedRowKeys, setDefectSelectedRowKeys] = useState<Key[]>(
+    [],
+  );
+  const [agencySelectedRowKeys, setAgencySelectedRowKeys] = useState<Key[]>(
+    [],
+  );
 
   const warehouses = useWarehouseOptions();
   const printers = usePrinterOptions();
@@ -1022,7 +1248,9 @@ export default function AlignedReportsPage() {
   const agencies = useMvpAgencies({ status: "ACTIVE", per_page: 100 });
   const defects = useMvpDefects({ status: "ACTIVE", per_page: 100 });
 
-  const config = CONFIG[report];
+  const isDefectSkuTab = report === DEFECT_SKU_TAB_KEY;
+  const config =
+    CONFIG[(isDefectSkuTab ? "inventory-balance" : report) as GenericReportKey];
   const invalidPeriod = period[0].isAfter(period[1], "day");
   const from = period[0].format("YYYY-MM-DD");
   const to = period[1].format("YYYY-MM-DD");
@@ -1070,7 +1298,9 @@ export default function AlignedReportsPage() {
     }
     if (report === "warranty") {
       if (status) result.status = status;
-      if (defectId) result.defect_id = defectId;
+      // Axios mặc định serialize mảng thành defect_ids[]=a&defect_ids[]=b —
+      // đúng dạng Laravel validate array; export POST gửi nguyên mảng JSON.
+      if (defectIds.length > 0) result.defect_ids = defectIds;
       if (identification) result.identification_status = identification;
       if (keyword.trim()) result.model = keyword.trim();
     }
@@ -1093,7 +1323,7 @@ export default function AlignedReportsPage() {
     actorId,
     skuCode,
     asOf,
-    defectId,
+    defectIds,
     identification,
     movementType,
     docType,
@@ -1104,7 +1334,7 @@ export default function AlignedReportsPage() {
   const query = useQuery({
     queryKey: ["flow06", report, params],
     queryFn: () => http.get<Raw>(config.endpoint, { params }),
-    enabled: !config.dateFilter || !invalidPeriod,
+    enabled: !isDefectSkuTab && (!config.dateFilter || !invalidPeriod),
     placeholderData: (previous) => previous,
   });
 
@@ -1212,19 +1442,27 @@ export default function AlignedReportsPage() {
       ? businessLabel(INVENTORY_STOCK_STATUS_LABELS, value)
       : reportStatusLabel(value);
 
+  const columns = useMemo<TableColumnsType<Raw>>(
+    () => [
+      {
+        title: "STT",
+        key: "__stt",
+        width: 64,
+        fixed: "left",
+        render: (_value: unknown, _row: Raw, index: number) =>
+          mvpRowNumber(page, perPage, index),
+      },
+      ...columnsFor(report, canViewPii),
+    ],
+    [report, canViewPii, page, perPage],
+  );
+
   return (
     <div
       className="hn-mvp-source-screen"
       data-mvp-screen="RPT-01"
       data-testid="wwhn-258-report-screen"
     >
-      <Alert
-        showIcon
-        type="info"
-        style={{ marginBottom: 14 }}
-        title="Luồng 06 · Báo cáo vận hành"
-        description="Dữ liệu được phân trang bởi hệ thống; XLSX/PDF giữ nguyên bộ lọc và chỉ người có quyền xuất báo cáo mới thực hiện được. Mỗi phiếu/lô xuất có đúng 01 nhãn đóng gói."
-      />
 
       <Tabs
         activeKey={report}
@@ -1236,7 +1474,7 @@ export default function AlignedReportsPage() {
           setPrinterId(undefined);
           setActorId(undefined);
           setCategoryId(undefined);
-          setDefectId(undefined);
+          setDefectIds([]);
           setIdentification(undefined);
           setMovementType(undefined);
           setSkuCode("");
@@ -1244,13 +1482,23 @@ export default function AlignedReportsPage() {
           setPiiReason("");
           setExportDenied(null);
           setPage(1);
+          setSelectedRowKeys([]);
+          setDefectSelectedRowKeys([]);
+          setAgencySelectedRowKeys([]);
         }}
-        items={(Object.keys(CONFIG) as ReportKey[]).map((key) => ({
-          key,
-          label: CONFIG[key].label,
-        }))}
+        items={[
+          ...(Object.keys(CONFIG) as GenericReportKey[]).map((key) => ({
+            key,
+            label: CONFIG[key].label,
+          })),
+          { key: DEFECT_SKU_TAB_KEY, label: DEFECT_SKU_TAB_LABEL },
+        ]}
       />
 
+      {isDefectSkuTab ? (
+        <DefectSkuReport />
+      ) : (
+        <>
       <div className="toolbar" style={{ flexWrap: "wrap" }}>
         {config.dateFilter ? (
           <DatePicker.RangePicker
@@ -1451,14 +1699,16 @@ export default function AlignedReportsPage() {
             <Select
               allowClear
               showSearch
+              mode="multiple"
+              maxTagCount="responsive"
               optionFilterProp="label"
-              style={{ width: 210 }}
-              placeholder="Bệnh / lỗi"
-              value={defectId}
+              style={{ minWidth: 210 }}
+              placeholder="Bệnh / lỗi (chọn được nhiều)"
+              value={defectIds}
               loading={defects.isLoading}
               options={defectOptions}
               onChange={(value) => {
-                setDefectId(value);
+                setDefectIds(value);
                 resetPage();
               }}
             />
@@ -1515,6 +1765,13 @@ export default function AlignedReportsPage() {
           />
         ) : null}
 
+        <MvpPageSizeSelector
+          value={perPage}
+          onChange={(value) => {
+            setPerPage(value);
+            setPage(1);
+          }}
+        />
         <div className="spacer" />
         <ActionButton
           module="reports"
@@ -1670,19 +1927,16 @@ export default function AlignedReportsPage() {
         />
       ) : null}
 
-      <MvpPageSizeSelector
-        value={perPage}
-        onChange={(value) => {
-          setPerPage(value);
-          setPage(1);
-        }}
-      />
-
       <TableLoadingBanner loading={query.isLoading || query.isFetching} />
       <Table<Raw>
         rowKey="__rowKey"
         dataSource={rows}
-        columns={columnsFor(report, canViewPii)}
+        columns={columns}
+        rowSelection={{
+          selectedRowKeys,
+          onChange: setSelectedRowKeys,
+          fixed: true,
+        }}
         loading={query.isLoading || query.isFetching}
         scroll={{ x: "max-content" }}
         expandable={
@@ -1720,7 +1974,20 @@ export default function AlignedReportsPage() {
           scroll={{ x: "max-content" }}
           rowKey={(row) => text(row.defect)}
           dataSource={query.data.by_defect as Raw[]}
+          rowSelection={{
+            selectedRowKeys: defectSelectedRowKeys,
+            onChange: setDefectSelectedRowKeys,
+            fixed: true,
+          }}
           columns={[
+            {
+              title: "STT",
+              key: "__stt",
+              width: 64,
+              fixed: "left",
+              render: (_value: unknown, _row: Raw, index: number) =>
+                mvpRowNumber(1, 1, index),
+            },
             { title: "Bệnh / lỗi", dataIndex: "defect" },
             {
               title: "Ca bảo hành",
@@ -1765,7 +2032,20 @@ export default function AlignedReportsPage() {
           scroll={{ x: "max-content" }}
           rowKey={(row) => text(row.agency_code)}
           dataSource={query.data.by_agency as Raw[]}
+          rowSelection={{
+            selectedRowKeys: agencySelectedRowKeys,
+            onChange: setAgencySelectedRowKeys,
+            fixed: true,
+          }}
           columns={[
+            {
+              title: "STT",
+              key: "__stt",
+              width: 64,
+              fixed: "left",
+              render: (_value: unknown, _row: Raw, index: number) =>
+                mvpRowNumber(1, 1, index),
+            },
             { title: "Mã nơi nhận", dataIndex: "agency_code" },
             { title: "Nơi nhận", dataIndex: "agency_name" },
             {
@@ -1789,6 +2069,8 @@ export default function AlignedReportsPage() {
           ]}
         />
       ) : null}
+        </>
+      )}
     </div>
   );
 }

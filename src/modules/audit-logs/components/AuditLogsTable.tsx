@@ -147,7 +147,7 @@ export function AuditLogsTable({
           current={page}
           pageSize={perPage}
           unitName="bản ghi"
-          pageSizeOptions={[10, 15, 20, 50, 100]}
+          pageSizeOptions={[10, 20, 50]}
           onChange={onPaginationChange}
         />
       )}

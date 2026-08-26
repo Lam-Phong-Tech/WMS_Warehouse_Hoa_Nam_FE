@@ -1,8 +1,8 @@
 import { useState } from "react";
 import {
-  Alert,
   Button,
   Card,
+  DatePicker,
   Form,
   Input,
   InputNumber,
@@ -14,6 +14,8 @@ import {
   Typography,
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
+import type { Dayjs } from "dayjs";
+import dayjs from "dayjs";
 import { toast } from "sonner";
 import {
   CheckCircleOutlined,
@@ -46,7 +48,7 @@ type IntakeMode = "manual" | "excel";
 
 type IntakeFormValues = {
   request_no: string;
-  request_date?: string;
+  request_date?: Dayjs;
   agency_id?: string;
   recipient_name: string;
   recipient_address?: string;
@@ -175,7 +177,9 @@ export function OutboundIntakeModal({
       const values = await form.validateFields();
       const rows: OutboundRequestRowInput[] = values.lines.map((line) => ({
         request_no: values.request_no.trim(),
-        request_date: (values.request_date ?? "").trim() || undefined,
+        request_date: values.request_date
+          ? values.request_date.format("YYYY-MM-DD")
+          : undefined,
         customer_name: values.recipient_name.trim(),
         customer_address: (values.recipient_address ?? "").trim(),
         recipient_contact_phone:
@@ -421,19 +425,6 @@ export function OutboundIntakeModal({
     >
       <Space orientation="vertical" size={14} style={{ width: "100%" }}>
         <Space wrap>
-          <Tag color="blue">Tiếp nhận yêu cầu xuất</Tag>
-          <Tag color="blue">Xác nhận và tạo phiếu xuất nháp</Tag>
-          <Tag color="gold">Kiểm soát phiên bản & chống ghi nhận trùng</Tag>
-          <Tag color="green">Không thay đổi tồn ở bước tiếp nhận</Tag>
-        </Space>
-        <Alert
-          type="info"
-          showIcon
-          title="Luồng chuẩn: kiểm tra yêu cầu/Excel → xem lỗi từng dòng → gán SKU/người nhận → xác nhận → tạo phiếu xuất nháp"
-          description="Lỗi dữ liệu bắt buộc sẽ chặn tạo cả lô. Số lượng khả dụng ở màn này chỉ là số liệu tham khảo tại thời điểm xem; hệ thống kiểm tra tồn lại khi quét sản phẩm và khi hoàn tất xuất kho."
-        />
-
-        <Space wrap>
           <Button
             type={mode === "manual" ? "primary" : "default"}
             icon={<EditOutlined />}
@@ -516,8 +507,15 @@ export function OutboundIntakeModal({
                   placeholder="VD: 0901234567"
                 />
               </Form.Item>
-              <Form.Item name="request_date" label="Ngày toa">
-                <Input type="date" aria-label="Ngày toa" />
+              <Form.Item name="request_date" label="Ngày xuất">
+                <DatePicker
+                  style={{ width: "100%" }}
+                  format="DD/MM/YYYY"
+                  aria-label="Ngày toa"
+                  disabledDate={(current) =>
+                    !!current && current > dayjs().endOf("day")
+                  }
+                />
               </Form.Item>
             </div>
 

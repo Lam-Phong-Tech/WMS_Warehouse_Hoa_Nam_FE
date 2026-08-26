@@ -429,7 +429,7 @@ export async function fetchOutboundDocuments(
         ...(params.search ? { keyword: params.search } : {}),
         ...(params.status ? { status: params.status } : {}),
         page: params.page ?? 1,
-        per_page: params.per_page ?? 15,
+        per_page: params.per_page ?? 10,
       },
     },
   );

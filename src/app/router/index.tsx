@@ -26,14 +26,17 @@ const AuditLogsPage = lazy(() =>
     default: m.AuditLogsPage,
   })),
 );
+const NotificationsPage = lazy(
+  () => import("@/modules/notifications/pages/NotificationsPage"),
+);
 const DashboardPage = lazy(() =>
   import("@/modules/dashboard/pages/DashboardPage").then((m) => ({
     default: m.default,
   })),
 );
-const IamUserScreen = lazy(() =>
-  import("@/modules/iam/pages/IamUserScreen").then((m) => ({
-    default: m.IamUserScreen,
+const IamUsersGd1Page = lazy(() =>
+  import("@/modules/iam/pages/IamUsersGd1Page").then((m) => ({
+    default: m.IamUsersGd1Page,
   })),
 );
 const IamRolePermissionScreen = lazy(() =>
@@ -116,9 +119,6 @@ const ProfilePage = lazy(() =>
     default: m.ProfilePage,
   })),
 );
-// WWHN-252 · App PV. SCR-PV-01/02 là route CÔNG KHAI (SRS §3: "Người xem App
-// PV" là actor ẩn danh) nên khai NGOÀI ProtectedRoute; SCR-PV-ADM-01 là màn nội
-// bộ nên nằm trong ProtectedRoute + RequirePermission như mọi màn WMS khác.
 const PvCatalogPage = lazy(() =>
   import("@/modules/pv/pages/PvCatalogPage").then((m) => ({
     default: m.default,
@@ -138,9 +138,8 @@ const PvAdminPage = lazy(() =>
 function withPageLoader(node: ReactNode) {
   return <Suspense fallback={<PageSkeleton />}>{node}</Suspense>;
 }
+
 function routeEl(path: string, node: ReactNode) {
-  // resolveRouteEntryPermission fail-closed: route chưa khai trong
-  // ROUTE_PERMISSIONS nhận sentinel không ai có -> /errors/403.
   return (
     <RequirePermission permission={resolveRouteEntryPermission(path)}>
       {withPageLoader(node)}
@@ -150,9 +149,6 @@ function routeEl(path: string, node: ReactNode) {
 
 export const router = createBrowserRouter([
   { path: ROUTES.LOGIN, element: <LoginPage /> },
-  // App PV công khai: KHÔNG bọc ProtectedRoute/RequirePermission. Nếu đặt vào
-  // trong, khách vãng lai sẽ bị đá sang /login và toàn bộ REQ-SRS-017/018 (mặt
-  // đọc ẩn danh) không tồn tại trên FE.
   { path: ROUTES.PV_CATALOG, element: withPageLoader(<PvCatalogPage />) },
   {
     path: ROUTES.PV_PRODUCT_DETAIL,
@@ -175,19 +171,22 @@ export const router = createBrowserRouter([
             element: routeEl(ROUTES.AUDIT_LOGS, <AuditLogsPage />),
           },
           {
+            path: ROUTES.NOTIFICATIONS,
+            element: routeEl(ROUTES.NOTIFICATIONS, <NotificationsPage />),
+          },
+          {
             path: ROUTES.DASHBOARD,
             element: routeEl(ROUTES.DASHBOARD, <DashboardPage />),
           },
-
           {
             path: ROUTES.IAM_USERS,
-            element: routeEl(ROUTES.IAM_USERS, <IamUserScreen />),
+            element: routeEl(ROUTES.IAM_USERS, <IamUsersGd1Page />),
           },
           {
             path: ROUTES.IAM_USER_CREATE,
             element: routeEl(
               ROUTES.IAM_USER_CREATE,
-              <IamUserScreen openCreateOnMount />,
+              <IamUsersGd1Page openCreateOnMount />,
             ),
           },
           {
@@ -196,13 +195,20 @@ export const router = createBrowserRouter([
           },
           {
             path: ROUTES.MASTER_DATA,
-            element: routeEl(ROUTES.MASTER_DATA, <SkuMasterScreen />),
+            element: routeEl(
+              ROUTES.MASTER_DATA,
+              <div className="hn-mvp-source-screen">
+                <SkuMasterScreen />
+              </div>,
+            ),
           },
           {
             path: ROUTES.SKU_CREATE,
             element: routeEl(
               ROUTES.SKU_CREATE,
-              <SkuMasterScreen openCreateOnMount />,
+              <div className="hn-mvp-source-screen">
+                <SkuMasterScreen openCreateOnMount />
+              </div>,
             ),
           },
           {
@@ -218,31 +224,44 @@ export const router = createBrowserRouter([
           },
           {
             path: ROUTES.AGENCIES,
-            element: routeEl(ROUTES.AGENCIES, <AgencyMasterScreen />),
+            element: routeEl(
+              ROUTES.AGENCIES,
+              <div className="hn-mvp-source-screen">
+                <AgencyMasterScreen />
+              </div>,
+            ),
           },
           {
             path: ROUTES.AGENCY_CREATE,
             element: routeEl(
               ROUTES.AGENCY_CREATE,
-              <AgencyMasterScreen openCreateOnMount />,
+              <div className="hn-mvp-source-screen">
+                <AgencyMasterScreen openCreateOnMount />
+              </div>,
             ),
           },
           {
             path: ROUTES.DEFECTS,
-            element: routeEl(ROUTES.DEFECTS, <DefectMasterScreen />),
+            element: routeEl(
+              ROUTES.DEFECTS,
+              <div className="hn-mvp-source-screen">
+                <DefectMasterScreen />
+              </div>,
+            ),
           },
           {
             path: ROUTES.DEFECT_CREATE,
             element: routeEl(
               ROUTES.DEFECT_CREATE,
-              <DefectMasterScreen openCreateOnMount />,
+              <div className="hn-mvp-source-screen">
+                <DefectMasterScreen openCreateOnMount />
+              </div>,
             ),
           },
           {
             path: ROUTES.SCAN,
             element: routeEl(ROUTES.SCAN, <PhysicalCodesPage />),
           },
-
           {
             path: ROUTES.INBOUND,
             element: routeEl(ROUTES.INBOUND, <InboundPage />),
@@ -271,13 +290,20 @@ export const router = createBrowserRouter([
             path: ROUTES.REPORTS,
             element: routeEl(ROUTES.REPORTS, <ReportsPage />),
           },
-          {
-            path: ROUTES.COMPONENT_CATALOG,
-            element: routeEl(
-              ROUTES.COMPONENT_CATALOG,
-              <ComponentCatalogPage />,
-            ),
-          },
+          // REQ-017: màn demo /component-catalog là công cụ nội bộ cho DEV —
+          // không đăng ký route ở bản production (access.ts + menu.tsx gate
+          // cùng điều kiện để giữ contract menu ↔ ROUTE_PERMISSIONS).
+          ...(import.meta.env.DEV
+            ? [
+                {
+                  path: ROUTES.COMPONENT_CATALOG,
+                  element: routeEl(
+                    ROUTES.COMPONENT_CATALOG,
+                    <ComponentCatalogPage />,
+                  ),
+                },
+              ]
+            : []),
           {
             path: ROUTES.PV_ADMIN,
             element: routeEl(ROUTES.PV_ADMIN, <PvAdminPage />),

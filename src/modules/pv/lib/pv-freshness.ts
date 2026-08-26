@@ -1,4 +1,5 @@
 import type { PvFreshness } from "@/modules/pv/types/pv.types";
+import { formatDateTime } from "@/shared/utils/format-date";
 
 /**
  * WWHN-252 / NFR-SRS-016 + §13.7 (PV cache): read model tồn kho của App PV có
@@ -51,14 +52,6 @@ export function computeFreshness(
 
 export function formatDataAsOf(value: string | undefined): string {
   if (!value) return "—";
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return "—";
-  return parsed.toLocaleString("vi-VN", {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
+  const formatted = formatDateTime(value);
+  return formatted === "-" ? "—" : formatted;
 }

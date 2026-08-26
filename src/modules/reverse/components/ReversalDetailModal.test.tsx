@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { renderWithProviders } from "@/test/test-utils";
 import { cleanupTestState } from "@/test/setup";
 
@@ -105,7 +105,6 @@ describe("ReversalDetailModal (REV-01 lifecycle §6)", () => {
     );
 
     expect(screen.getByText("MOV-ISSUE-000882")).toBeInTheDocument();
-    expect(screen.getByText("SELLABLE")).toBeInTheDocument();
 
     // Bốn cột số của Annex D SCR-REV-01: SL gốc 5 · SL đảo 2 · đã đảo 2 · còn đảo 3.
     // Trước khi sửa contract, original_qty bị BE alias trùng reversal_qty nên cột
@@ -114,6 +113,12 @@ describe("ReversalDetailModal (REV-01 lifecycle §6)", () => {
       .getAllByRole("row")
       .find((candidate) => candidate.textContent?.includes("MOV-ISSUE-000882"));
     expect(row).toBeDefined();
+
+    // i18n: return_condition SELLABLE render qua RETURN_CONDITION_LABELS;
+    // so trong dòng để không đụng option cùng nhãn trong Select xác nhận.
+    expect(
+      within(row as HTMLElement).getByText("Có thể bán/xuất lại"),
+    ).toBeInTheDocument();
 
     const cells = Array.from(row!.children).map((cell) =>
       cell.textContent?.trim(),
@@ -130,7 +135,7 @@ describe("ReversalDetailModal (REV-01 lifecycle §6)", () => {
 
     // BR-REV-06: chưa xác nhận hàng vật lý thì không được Post.
     expect(
-      screen.getByRole("button", { name: /Post reversal/i }),
+      screen.getByRole("button", { name: /Hoàn tất điều chỉnh/i }),
     ).toBeDisabled();
 
     fireEvent.click(
@@ -151,14 +156,13 @@ describe("ReversalDetailModal (REV-01 lifecycle §6)", () => {
     );
 
     const cancelButton = screen.getByRole("button", {
-      name: /Huỷ phiếu DRAFT/i,
+      name: /Hủy phiếu/i,
     });
     expect(cancelButton).toBeDisabled();
 
-    fireEvent.change(
-      screen.getByPlaceholderText("Nhập lý do huỷ phiếu DRAFT..."),
-      { target: { value: "Tạo nhầm phiếu" } },
-    );
+    fireEvent.change(screen.getByPlaceholderText("Nhập lý do hủy phiếu..."), {
+      target: { value: "Tạo nhầm phiếu" },
+    });
 
     await waitFor(() => expect(cancelButton).toBeEnabled());
     fireEvent.click(cancelButton);
@@ -177,13 +181,13 @@ describe("ReversalDetailModal (REV-01 lifecycle §6)", () => {
     );
 
     expect(
-      screen.queryByRole("button", { name: /Post reversal/i }),
+      screen.queryByRole("button", { name: /Hoàn tất điều chỉnh/i }),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: /Huỷ phiếu DRAFT/i }),
+      screen.queryByRole("button", { name: /Hủy phiếu/i }),
     ).not.toBeInTheDocument();
     expect(
-      screen.getByText(/Reversal đã POSTED — append-only/i),
+      screen.getByText("Phiếu điều chỉnh đã hoàn tất"),
     ).toBeInTheDocument();
   });
 
@@ -195,7 +199,7 @@ describe("ReversalDetailModal (REV-01 lifecycle §6)", () => {
     );
 
     expect(
-      screen.queryByRole("button", { name: /Post reversal/i }),
+      screen.queryByRole("button", { name: /Hoàn tất điều chỉnh/i }),
     ).not.toBeInTheDocument();
   });
 });

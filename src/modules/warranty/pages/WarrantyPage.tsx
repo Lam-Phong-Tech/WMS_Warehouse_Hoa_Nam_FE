@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type Key } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Space, Table, Tag, Typography, message } from "antd";
 import type { ColumnsType, TablePaginationConfig } from "antd/es/table";
@@ -18,6 +18,7 @@ import {
 import { CameraScanModal } from "@/shared/components/forms/CameraScanModal";
 import { MvpPageSizeSelector } from "@/shared/components/mvp/MvpListPagination";
 import { resolveApiPagination } from "@/shared/components/mvp/mvp-pagination";
+import { mvpRowNumber } from "@/shared/components/mvp/MvpSelectionCell";
 import { useHasPermission } from "@/shared/components/permission";
 import { useMvpDefects } from "@/modules/master-data/hooks/use-mvp-master";
 import {
@@ -88,11 +89,12 @@ export default function WarrantyPage() {
   >("");
   const [defectId, setDefectId] = useState("");
   const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(15);
+  const [perPage, setPerPage] = useState(10);
   const [intakeOpen, setIntakeOpen] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [componentTarget, setComponentTarget] =
     useState<ComponentIssueTarget | null>(null);
+  const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([]);
 
   const canManage = can("warranty.manage");
   const canViewPii = can("warranty.pii.view");
@@ -121,6 +123,11 @@ export default function WarrantyPage() {
     }, SEARCH_DEBOUNCE_MS);
     return () => window.clearTimeout(timer);
   }, [searchInput]);
+
+  // Bỏ chọn dòng khi trang/bộ lọc đổi — lựa chọn của trang trước không còn áp dụng.
+  useEffect(() => {
+    setSelectedRowKeys([]);
+  }, [page, perPage, search, status, identification, defectId]);
 
   // Deep-link các màn wireframe: ?screen=WAR-02 mở tiếp nhận, ?screen=WAR-03&id=...
   // mở chi tiết, ?screen=COMP-01&id=<caseId> mở xuất linh kiện. URL trở về WAR-01.
@@ -155,6 +162,13 @@ export default function WarrantyPage() {
   };
 
   const columns: ColumnsType<WarrantyCase> = [
+    {
+      title: "STT",
+      key: "stt",
+      width: 60,
+      fixed: "left",
+      render: (_, __, index) => mvpRowNumber(page, perPage, index),
+    },
     {
       title: "Case",
       dataIndex: "case_code",
@@ -208,12 +222,24 @@ export default function WarrantyPage() {
     {
       title: "Bệnh / lỗi",
       key: "defect",
-      width: 200,
-      ellipsis: true,
+      width: 220,
       render: (_, row) =>
-        row.defect !== "-" && row.defect
-          ? row.defect
-          : (row.reported_defect ?? row.defect_code ?? "—"),
+        row.defects?.length ? (
+          <Space wrap size={4}>
+            {row.defects.map((defect) => (
+              <Tag
+                key={defect.defect_id}
+                color={defect.is_primary ? "blue" : undefined}
+              >
+                {defect.defect_name || defect.defect_code}
+              </Tag>
+            ))}
+          </Space>
+        ) : row.defect !== "-" && row.defect ? (
+          row.defect
+        ) : (
+          (row.reported_defect ?? row.defect_code ?? "—")
+        ),
     },
     {
       title: "Ngày nhận",
@@ -267,15 +293,7 @@ export default function WarrantyPage() {
 
   return (
     <div className="warranty-page hn-mvp-source-screen">
-      <div className="toolbar-wrap" style={{ gap: 6 }}>
-        <span className="pill blue">GET/POST /warranty-cases</span>
-        <span className="pill blue">POST /warranty-cases/:id/status</span>
-        <span className="pill blue">POST /warranty-component-issues</span>
-        <span className="pill warn-pill">If-Match · Idempotency-Key</span>
-        <span className="pill ok">
-          Warranty stock-neutral · Component Issue trừ tồn khi Post
-        </span>
-      </div>
+     
 
       {!canViewPii ? (
         <div className="footer-note" style={{ marginBottom: 8 }}>
@@ -360,6 +378,13 @@ export default function WarrantyPage() {
             </option>
           ))}
         </select>
+        <MvpPageSizeSelector
+          value={perPage}
+          onChange={(value) => {
+            setPerPage(value);
+            setPage(1);
+          }}
+        />
         <div className="spacer" />
         {canManage ? (
           <button
@@ -382,14 +407,6 @@ export default function WarrantyPage() {
         </div>
       ) : null}
 
-      <MvpPageSizeSelector
-        value={perPage}
-        onChange={(value) => {
-          setPerPage(value);
-          setPage(1);
-        }}
-      />
-
       <TableLoadingBanner
         loading={listQuery.isLoading || listQuery.isFetching}
       />
@@ -398,6 +415,11 @@ export default function WarrantyPage() {
         columns={columns}
         dataSource={rows}
         loading={listQuery.isLoading || listQuery.isFetching}
+        rowSelection={{
+          selectedRowKeys,
+          onChange: setSelectedRowKeys,
+          type: "checkbox",
+        }}
         onChange={handleTableChange}
         pagination={{
           current: pagination.current,
@@ -415,13 +437,6 @@ export default function WarrantyPage() {
         onRow={(row) => ({ onDoubleClick: () => setDetailId(row.id) })}
         scroll={{ x: "max-content" }}
       />
-
-      <div className="footer-note">
-        Bấm <b>Mở</b> sẽ hiện modal <b>Chi tiết bảo hành</b> (thông tin case,
-        tệp đính kèm, timeline &amp; phiếu xuất linh kiện) ngay trên danh sách —
-        không chuyển trang.
-      </div>
-
       {intakeOpen ? (
         <WarrantyIntakeModal
           open

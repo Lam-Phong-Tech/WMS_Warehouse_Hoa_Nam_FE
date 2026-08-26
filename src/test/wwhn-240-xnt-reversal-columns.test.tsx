@@ -124,9 +124,11 @@ describe("WWHN-240 · tab XNT render đủ cột gross / đã đảo / thuần",
     await openXntTab();
     const row = screen.getByText("PRD-QA19-01").closest('[role="row"]');
     expect(row).not.toBeNull();
-    const cells = Array.from((row as HTMLElement).children).map((cell) =>
-      cell.textContent?.trim(),
-    );
+    const cells = Array.from((row as HTMLElement).children)
+      .map((cell) => cell.textContent?.trim())
+      // 2 cột đầu (checkbox chọn dòng + STT) được thêm cho mọi bảng danh
+      // sách chính 26/08 — không thuộc phạm vi assertion cột reversal.
+      .slice(2);
 
     // Thứ tự cột lá theo columnsFor("xnt"): kho, mã, tên, tồn, đầu kỳ,
     // nhập(gross/đã đảo/thuần), xuất(g/đ/t), xuất LK(g/đ/t), reversal net,
@@ -135,7 +137,8 @@ describe("WWHN-240 · tab XNT render đủ cột gross / đã đảo / thuần",
       "KHO-TONG-HN",
       "PRD-QA19-01",
       "Máy KT-2000",
-      "AVAILABLE",
+      // i18n: stock_status AVAILABLE render qua INVENTORY_STOCK_STATUS_LABELS
+      "Khả dụng",
       "100",
       "21",
       "3",

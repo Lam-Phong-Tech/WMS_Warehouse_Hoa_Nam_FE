@@ -6,11 +6,13 @@ import {
   DatePicker,
   Descriptions,
   Form,
+  Grid,
   Input,
   Modal,
   Popconfirm,
   Select,
   Space,
+  Steps,
   Table,
   Tag,
   Timeline,
@@ -39,8 +41,10 @@ import {
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { useCanAny } from "@/shared/components/permission";
 import { useMvpDefects } from "@/modules/master-data/hooks/use-mvp-master";
+import { formatDate } from "@/shared/utils/format-date";
 import {
   WARRANTY_ATTACHMENT_TYPE_LABELS,
+  WARRANTY_BASELINE_STATUSES,
   WARRANTY_DIAGNOSIS_REQUIRED_TARGETS,
   WARRANTY_NEXT_STATUS,
   WARRANTY_NOTE_REQUIRED_LABELS,
@@ -171,6 +175,25 @@ export function WarrantyDetailModal({
   const noteRequiredLabel = statusValue
     ? WARRANTY_NOTE_REQUIRED_LABELS[statusValue]
     : undefined;
+
+  // GĐ1-REQ-024: thanh tiến trình 5 bước Tiếp nhận → Kiểm tra → Sửa chữa → Hoàn tất
+  // → Trả khách. CANCELLED không phải một bước — hiển thị trạng thái error tại bước
+  // đã đạt trước khi hủy (suy từ warranty_event) để không phá flow timeline.
+  const screens = Grid.useBreakpoint();
+  const stepStatuses = WARRANTY_BASELINE_STATUSES.filter(
+    (status) => status !== "CANCELLED",
+  );
+  const isCancelled = detail?.status === "CANCELLED";
+  const cancelEvent = (eventsQuery.data ?? []).find(
+    (event) => event.to_status === "CANCELLED",
+  );
+  const progressStatus = isCancelled
+    ? (cancelEvent?.from_status ?? "RECEIVED")
+    : detail?.status;
+  const stepIndex = Math.max(
+    0,
+    stepStatuses.indexOf(progressStatus as (typeof stepStatuses)[number]),
+  );
 
   const submitStatus = async () => {
     if (!detail) return;
@@ -395,6 +418,7 @@ export function WarrantyDetailModal({
       dataIndex: "document_date",
       key: "document_date",
       width: 130,
+      render: (document_date: string) => formatDate(document_date),
     },
     {
       title: "Trạng thái",
@@ -449,7 +473,9 @@ export function WarrantyDetailModal({
             onClick={() => {
               if (!detail) return;
               correctForm.setFieldsValue({
-                defect_ids: detail.defect_ids ?? (detail.defect_id ? [detail.defect_id] : []),
+                defect_ids:
+                  detail.defect_ids ??
+                  (detail.defect_id ? [detail.defect_id] : []),
                 estimated_completion_date: detail.estimated_completion_date
                   ? dayjs(detail.estimated_completion_date)
                   : null,
@@ -518,6 +544,37 @@ export function WarrantyDetailModal({
         title="Timeline trạng thái"
         loading={eventsQuery.isLoading}
       >
+        {detail ? (
+          <>
+            <Steps
+              size="small"
+              direction={screens.md ? "horizontal" : "vertical"}
+              status={
+                isCancelled
+                  ? "error"
+                  : stepIndex === stepStatuses.length - 1
+                    ? "finish"
+                    : "process"
+              }
+              current={stepIndex}
+              items={stepStatuses.map((status) => ({
+                title: WARRANTY_STATUS_LABELS[status] ?? status,
+              }))}
+              style={{ marginBottom: 16 }}
+            />
+            {isCancelled ? (
+              <Alert
+                type="error"
+                showIcon
+                title={`Case đã hủy tại bước "${
+                  WARRANTY_STATUS_LABELS[progressStatus ?? "RECEIVED"] ??
+                  progressStatus
+                }". Lý do: ${detail.cancel_reason ?? "—"}`}
+                style={{ marginBottom: 16 }}
+              />
+            ) : null}
+          </>
+        ) : null}
         <Timeline
           items={
             (eventsQuery.data ?? []).length
@@ -533,6 +590,9 @@ export function WarrantyDetailModal({
                       </Typography.Text>
                       <Typography.Text type="secondary">
                         {formatWarrantyDateTime(event.performed_at)}
+                        {event.performed_by && event.performed_by !== "-"
+                          ? ` · ${event.performed_by}`
+                          : ""}
                       </Typography.Text>
                       <Typography.Text>{event.description}</Typography.Text>
                     </Space>
@@ -580,7 +640,7 @@ export function WarrantyDetailModal({
               ) || "—"}
             </Descriptions.Item>
             <Descriptions.Item label="Ngày mua">
-              {detail.purchase_date ?? "—"}
+              {detail.purchase_date ? formatDate(detail.purchase_date) : "—"}
             </Descriptions.Item>
             <Descriptions.Item label="Ngày tiếp nhận">
               {formatWarrantyDateTime(detail.received_at)}
@@ -611,9 +671,24 @@ export function WarrantyDetailModal({
               {detail.item_status ?? "—"}
             </Descriptions.Item>
             <Descriptions.Item label="Bệnh / lỗi (danh mục)">
-              {detail.defect_code
-                ? `${detail.defect_code} · ${detail.defect}`
-                : (detail.defect ?? "—")}
+              {detail.defects?.length ? (
+                <Space wrap size={4}>
+                  {detail.defects.map((defect) => (
+                    <Tag
+                      key={defect.defect_id}
+                      color={defect.is_primary ? "blue" : undefined}
+                    >
+                      {defect.defect_code
+                        ? `${defect.defect_code} · ${defect.defect_name}`
+                        : defect.defect_name}
+                    </Tag>
+                  ))}
+                </Space>
+              ) : detail.defect_code ? (
+                `${detail.defect_code} · ${detail.defect}`
+              ) : (
+                (detail.defect ?? "—")
+              )}
             </Descriptions.Item>
             <Descriptions.Item label="Khách phản ánh" span={2}>
               {detail.reported_defect ?? "—"}
@@ -636,6 +711,11 @@ export function WarrantyDetailModal({
                 {detail.cancel_reason ?? "—"}
               </Descriptions.Item>
             ) : null}
+            <Descriptions.Item label="Dự kiến hoàn thành">
+              {detail.estimated_completion_date
+                ? formatDate(detail.estimated_completion_date)
+                : "—"}
+            </Descriptions.Item>
             <Descriptions.Item label="Hoàn tất sửa">
               {formatWarrantyDateTime(detail.completed_at)}
             </Descriptions.Item>

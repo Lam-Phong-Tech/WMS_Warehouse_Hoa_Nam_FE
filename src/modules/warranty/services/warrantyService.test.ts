@@ -71,7 +71,7 @@ describe("warrantyService", () => {
         params: expect.objectContaining({
           status: "RECEIVED",
           keyword: "BH",
-          per_page: 15,
+          per_page: 10,
         }),
       });
       expect(page.data).toHaveLength(1);

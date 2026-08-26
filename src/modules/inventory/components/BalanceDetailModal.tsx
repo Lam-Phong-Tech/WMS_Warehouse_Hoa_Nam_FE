@@ -23,6 +23,7 @@ import {
 import type { InventoryBalanceRow } from "../services/inventoryService";
 import { useStockMovements, useBalanceSubledger } from "../hooks/use-inventory";
 import type { StockMovementRow } from "../services/inventoryService";
+import { formatDateTime } from "@/shared/utils/format-date";
 
 const numberFormatter = new Intl.NumberFormat("vi-VN");
 
@@ -87,7 +88,12 @@ export function BalanceDetailModal({
         <Typography.Text code>{value || "-"}</Typography.Text>
       ),
     },
-    { title: "Thời gian", dataIndex: "time", width: 150 },
+    {
+      title: "Thời gian",
+      dataIndex: "time",
+      width: 150,
+      render: (time: string) => formatDateTime(time),
+    },
     {
       title: "Loại biến động",
       dataIndex: "type",

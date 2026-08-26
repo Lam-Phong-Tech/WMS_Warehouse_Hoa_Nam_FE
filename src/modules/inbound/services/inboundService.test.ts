@@ -639,7 +639,32 @@ describe("inbound real API contract", () => {
     });
   });
 
-  it("blocks Full Post on FE before calling BE when any line is not fully scanned", async () => {
+  // GĐ1 scan-driven: Post chỉ cần >= 1 đơn vị đã quét (assertHasScannedQuantity);
+  // thiếu/thừa so với chứng từ tham chiếu vẫn Post được, nhưng tổng scanned = 0
+  // thì FE chặn trước khi gọi BE.
+  it("blocks Post on FE before calling BE when nothing has been scanned", async () => {
+    vi.mocked(http.get).mockResolvedValue({
+      id: "DOC-1",
+      doc_no: "PN-001",
+      dst_warehouse_id: "WH-1",
+      status: "SCANNING",
+      version: 5,
+      lines: [
+        { id: "L-1", product_id: "SKU-1", qty_planned: 2, scanned_qty: 0 },
+      ],
+    });
+
+    await expect(
+      postInboundReceipt({
+        documentId: "DOC-1",
+        idempotencyKey: "idem-post-1",
+        ifMatch: 5,
+      }),
+    ).rejects.toMatchObject({ code: "WMS_FE_POST_REQUIRES_SCANNED" });
+    expect(http.postWithMeta).not.toHaveBeenCalled();
+  });
+
+  it("allows Post with a partial scan (scan-driven receipt, no full-scan gate)", async () => {
     vi.mocked(http.get).mockResolvedValue({
       id: "DOC-1",
       doc_no: "PN-001",
@@ -650,6 +675,15 @@ describe("inbound real API contract", () => {
         { id: "L-1", product_id: "SKU-1", qty_planned: 2, scanned_qty: 1 },
       ],
     });
+    vi.mocked(http.postWithMeta).mockResolvedValue({
+      data: {
+        document_id: "DOC-1",
+        status: "POSTED",
+        movement_ids: ["MOV-1"],
+        version: 6,
+      },
+      meta: { request_id: "REQ-1" },
+    });
 
     await expect(
       postInboundReceipt({
@@ -657,8 +691,8 @@ describe("inbound real API contract", () => {
         idempotencyKey: "idem-post-1",
         ifMatch: 5,
       }),
-    ).rejects.toMatchObject({ code: "WMS_FE_POST_REQUIRES_FULL_SCAN" });
-    expect(http.postWithMeta).not.toHaveBeenCalled();
+    ).resolves.toMatchObject({ receiptId: "DOC-1", version: 6 });
+    expect(http.postWithMeta).toHaveBeenCalled();
   });
 
   it("phân loại 412 STALE_VERSION của post-receipt thành reload-rồi-thử-lại (giữ nguyên key)", async () => {

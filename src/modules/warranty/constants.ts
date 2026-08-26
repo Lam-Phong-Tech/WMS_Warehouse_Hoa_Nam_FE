@@ -1,4 +1,5 @@
 import type { WarrantyCaseStatus } from "./types";
+import { formatDateTime } from "@/shared/utils/format-date";
 export {
   ITEM_STATUS_LABELS,
   WARRANTY_EVENT_TYPE_LABELS,
@@ -97,9 +98,8 @@ export const WARRANTY_ATTACHMENT_TYPE_LABELS: Record<string, string> = {
 
 export function formatWarrantyDateTime(value?: string): string {
   if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString("vi-VN");
+  const formatted = formatDateTime(value);
+  return formatted === "-" ? "—" : formatted;
 }
 
 /**

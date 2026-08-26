@@ -3,6 +3,8 @@ import { createJSONStorage, persist } from "zustand/middleware";
 import { cookieStorage } from "@/shared/lib/cookie-storage";
 import { memoryStorage } from "@/shared/lib/memory-storage";
 import { queryClient } from "@/app/providers/query-client";
+import { useNotificationStore } from "@/shared/store/notification.store";
+import { disconnectEcho } from "@/shared/lib/echo";
 import type { User } from "@/shared/types/user";
 import type { AuthContext } from "@/modules/auth/types/auth.types";
 import type { MeContext, MeResponse } from "@/modules/auth/types/me.types";
@@ -124,6 +126,8 @@ export const useAuthStore = create<AuthState>()(
           isProfileLoaded: false,
         });
         queryClient.clear();
+        disconnectEcho();
+        useNotificationStore.getState().reset();
       },
     }),
     {

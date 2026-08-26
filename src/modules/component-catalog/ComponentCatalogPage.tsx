@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type Key } from "react";
 import type { ColumnsType } from "antd/es/table";
 import { Button, Card, Col, Form, Input, Row, Space, Typography } from "antd";
 import { toast } from "sonner";
@@ -57,6 +57,7 @@ const cardStyle = { height: "100%" };
 export default function ComponentCatalogPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [recentCodes, setRecentCodes] = useState(["HN-QR-0001"]);
+  const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([]);
 
   return (
     <Space orientation="vertical" size={20} style={{ width: "100%" }}>
@@ -84,6 +85,11 @@ export default function ComponentCatalogPage() {
             <DataTable<CatalogRow>
               columns={columns}
               dataSource={[]}
+              rowSelection={{
+                type: "checkbox",
+                selectedRowKeys,
+                onChange: setSelectedRowKeys,
+              }}
               serverPagination={{
                 total: 0,
                 current: 1,

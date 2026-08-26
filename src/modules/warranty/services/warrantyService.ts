@@ -148,8 +148,10 @@ function normalizeWarrantyCase(row: RawRecord): WarrantyCase {
   const status = canonicalStatus(row.status);
   const caseDescription = text(row.description ?? row.notes) || undefined;
   const pii = resolveWarrantyPii(row);
-  const expectedCompletionDate =
-    text(row.expected_completion_date ?? row.estimated_completion_date) ||
+  // GĐ1-REQ-010: estimated_completion_date là cột canonical; expected_completion_date
+  // là alias legacy có thể giữ giá trị lỗi thời trên row cũ nên chỉ dùng làm fallback.
+  const estimatedCompletionDate =
+    text(row.estimated_completion_date ?? row.expected_completion_date) ||
     undefined;
 
   return {
@@ -204,8 +206,8 @@ function normalizeWarrantyCase(row: RawRecord): WarrantyCase {
     warehouse_name: text(row.warehouse_name ?? row.scope_name) || undefined,
     received_at: text(row.received_at ?? row.created_at),
     expected_return_at: text(row.expected_return_at) || undefined,
-    expected_completion_date: expectedCompletionDate,
-    estimated_completion_date: expectedCompletionDate,
+    expected_completion_date: estimatedCompletionDate,
+    estimated_completion_date: estimatedCompletionDate,
     completed_at: text(row.completed_at) || undefined,
     returned_at:
       text(
@@ -289,7 +291,7 @@ export async function fetchWarrantyCases(
   assertWarrantyRead("view warranty cases");
   const mappedParams = {
     page: params.page,
-    per_page: params.per_page ?? 15,
+    per_page: params.per_page ?? 10,
     status: params.status ? canonicalStatus(params.status) : undefined,
     identification_status: params.identification_status,
     defect_id: params.defect_id,
@@ -356,8 +358,6 @@ export async function createWarrantyCase(
     defect_id: payload.defect_id || undefined,
     defect_ids: payload.defect_ids,
     defect_codes: payload.defect_codes,
-    expected_completion_date:
-      payload.expected_completion_date ?? payload.estimated_completion_date,
     estimated_completion_date:
       payload.estimated_completion_date ?? payload.expected_completion_date,
     defect_code: payload.defect_code || undefined,
@@ -427,8 +427,6 @@ export async function updateWarrantyCase(
       defect_id: request.defect_id,
       defect_ids: request.defect_ids,
       defect_codes: request.defect_codes,
-      expected_completion_date:
-        request.expected_completion_date ?? request.estimated_completion_date,
       estimated_completion_date:
         request.estimated_completion_date ?? request.expected_completion_date,
       customer_name: request.customer_name,
