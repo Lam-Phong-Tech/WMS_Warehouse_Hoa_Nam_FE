@@ -1,19 +1,21 @@
 {
   "part": 1,
-  "status": "BLOCKED",
-  "status_detail": "Toàn bộ audit artifacts hoàn tất và checkpoint đã tạo. Gate không thể PASS vì điều kiện bắt buộc 'đọc được licensed Vuexy source' không thỏa: placeholder nguồn licensed trong prompt chưa được điền và không tồn tại trên máy. Cần Decision Phase A (A1-A6 trong 09-remediation-architecture-plan.md) để mở Prompt 2.",
+  "status": "PASS",
+  "status_detail": "Audit hoàn tất 100% tại checkpoint a55462c. Blocker BLK-BASELINE-01 được giải toả ngày 2026-08-27 bởi DEC-UI-BASELINE-01 (docs/decision-records/DEC-UI-BASELINE-01.md): baseline = design-language parity theo Vuexy Vuejs demo-1 (số đo live), stack React/Vite + MUI 9 + Emotion; không dùng licensed source, không copy proprietary asset. Điều kiện 'đọc licensed Vuexy source' được authority thay thế chính thức bằng Design System baseline đã phê duyệt.",
   "model": "claude-fable-5",
   "effort": "xhigh",
   "repository": "Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_FE",
   "source_branch": "dev",
   "input_sha": "a908c420663270d783a34fd378689f7940377c85",
   "output_sha": "a55462c83a5d9f1a2cdc828bd63ae522d1753a0a",
-  "worktree_fingerprint": "clean (git status --porcelain rỗng tại input SHA; thay đổi duy nhất của Part 1 là docs/ui/vuexy-sync/** trong output_sha)",
+  "gate_seal_sha": "0fcb372d541355a0306c34d838b510fc302f5142",
+  "decision_record": "docs/decision-records/DEC-UI-BASELINE-01.md",
+  "worktree_fingerprint": "clean (git status --porcelain rỗng tại input SHA; thay đổi của Part 1 chỉ gồm docs/ui/vuexy-sync/** + docs/decision-records/DEC-UI-BASELINE-01.md)",
   "mini_app_repository": "Lam-Phong-Tech/Mini_App_WMS_Hoa_Nam",
   "mini_app_sha": "b9d4d025a935f4c716d7d731c4d253bbaee46365",
-  "live_demo_audited": "https://demos.pixinvent.com/vuexy-vuejs-admin-template/demo-1 (read-only, 2026-08-27, computed styles — evidence: 01-context-readiness.md §4)",
+  "live_demo_audited": "https://demos.pixinvent.com/vuexy-vuejs-admin-template/demo-1 (read-only, 2026-08-27, computed styles — evidence: 01-context-readiness.md §4 + bảng token khoá trong DEC-UI-BASELINE-01)",
   "commands_passed": [],
-  "commands_note": "Part 1 chỉ tạo docs, không đổi code runtime — không yêu cầu quality gate build/test; husky pre-commit (lint-staged/prettier) PASS khi commit checkpoint.",
+  "commands_note": "Part 1 chỉ tạo docs, không đổi code runtime — không yêu cầu quality gate build/test; husky pre-commit (lint-staged/prettier) PASS ở các commit checkpoint.",
   "inventory_coverage": {
     "routes_registered": 33,
     "permission_keys": 62,
@@ -29,15 +31,23 @@
     "hex_literals": "450 occurrences / 110 distinct",
     "token_sources": 11
   },
-  "p0_open": 2,
+  "p0_open": 1,
   "p0_items": [
-    "BLK-BASELINE-01 / RC-01: thiếu licensed Vuexy source + chưa có Decision baseline (BC-01, BC-02, BC-03) — chặn Prompt 2",
-    "SEC-RBAC-01 / RC-07: MainLayout renderMvpScreen (?screen=) bypass RequirePermission (MainLayout.tsx:286-363) — khuyến nghị ticket riêng, không chặn audit"
+    "SEC-RBAC-01 / RC-07: MainLayout renderMvpScreen (?screen=) bypass RequirePermission (MainLayout.tsx:286-363) — theo DEC-UI-BASELINE-01 D4: sửa trong Prompt 2 Phase C, giữ OPEN tới khi đóng bằng evidence. Không phải context blocker của pipeline."
+  ],
+  "p0_closed": [
+    "BLK-BASELINE-01 / RC-01: đóng bởi DEC-UI-BASELINE-01 (D1-D3) ngày 2026-08-27 — đóng bằng quyết định authority có nội dung, không phải đổi severity/gắn owner."
   ],
   "p1_open": 7,
   "p1_items": ["RC-02 dual engine", "RC-03 CSS cascade-order", "RC-04 11 token sources", "RC-05 37 ThemeProvider", "RC-06 shared layer chết/mâu thuẫn", "NAV-01 hai nguồn nav lệch", "NAV-02 thiếu 404 + middleware chết"],
   "p2_open": 6,
   "p2_items": ["CSS-05 dead fallback #6c5ce7", "CSS-13 CSS ngoài chuỗi import", "CSS-14 103+ dead classes", "DEAD-01 layouts/middleware chết", "@ant-design/icons dep chết + Inter/Be Vietnam Pro font thừa", "toast sót 2 file"],
+  "baseline_decisions": {
+    "A1_A2_baseline": "Design-language parity theo Vuexy Vuejs demo-1; stack React/Vite + MUI 9 + Emotion (@emotion/react + @emotion/styled); không licensed source",
+    "A3_token_conflicts": "Theo live demo: error #FF4C51, primary-darken #675DD8, secondary #808390, info #00BAD1 (chấp nhận lệch Mini App hệ X)",
+    "A4_A5_architecture": "Engine MUI 9; retire hệ warm P0 (design-tokens.ts + hoa-nam-wireframe.css + Be Vietnam Pro + Inter)",
+    "A6_sec_rbac_01": "Sửa trong Prompt 2 Phase C"
+  },
   "artifacts": [
     "docs/ui/vuexy-sync/01-context-readiness.md",
     "docs/ui/vuexy-sync/02-baseline-source-matrix.md",
@@ -48,11 +58,11 @@
     "docs/ui/vuexy-sync/07-css-conflict-register.md",
     "docs/ui/vuexy-sync/08-root-cause-analysis.md",
     "docs/ui/vuexy-sync/09-remediation-architecture-plan.md",
-    "docs/ui/vuexy-sync/gates/part-01-gate.json"
+    "docs/ui/vuexy-sync/gates/part-01-gate.json",
+    "docs/decision-records/DEC-UI-BASELINE-01.md"
   ],
-  "blockers": [
-    "BLK-BASELINE-01: licensed Vuexy source không được cung cấp; cần PM/PO quyết định A1 (cung cấp source) hoặc A2/A3 (phê duyệt design-language parity theo hệ X của Mini App + chốt 3 token lệch). Chi tiết: 01-context-readiness.md §5, 02-baseline-source-matrix.md §2."
-  ],
-  "next_file_allowed": "NO — chỉ mở 02_ClaudeCode_Fable5_xhigh_Design_System_Foundation_Remediation.md sau khi Decision Phase A được phê duyệt và gate này được nâng PASS",
-  "completed_at": "2026-08-27T23:26:36+07:00"
+  "blockers": [],
+  "next_file_allowed": "02_ClaudeCode_Fable5_xhigh_Design_System_Foundation_Remediation.md",
+  "completed_at": "2026-08-27T23:26:36+07:00",
+  "gate_updated_at": "2026-08-27 (nâng BLOCKED → PASS sau DEC-UI-BASELINE-01)"
 }
