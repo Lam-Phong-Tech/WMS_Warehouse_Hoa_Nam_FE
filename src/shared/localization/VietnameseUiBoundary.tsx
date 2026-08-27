@@ -78,7 +78,10 @@ export function VietnameseUiBoundary({ children }: { children: ReactNode }) {
           localizeTextNode(mutation.target as Text);
           continue;
         }
-        if (mutation.type === "attributes" && mutation.target instanceof Element) {
+        if (
+          mutation.type === "attributes" &&
+          mutation.target instanceof Element
+        ) {
           localizeAttributes(mutation.target);
           continue;
         }

@@ -13,7 +13,7 @@ import { render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { PermissionGuard } from "@/shared/components/permission/PermissionGuard";
-import { ActionButton } from "@/shared/components/permission/ActionButton";
+import { ActionButton } from "@/shared/components/actions";
 import type { AuthContext } from "@/modules/auth/types/auth.types";
 
 // Bỏ global mock để test permission thật
@@ -155,7 +155,7 @@ describe("PermissionGuard — Component Integration", () => {
         currentContext: null,
       });
       renderWithProviders(
-        <ActionButton module="org_units" action="create">
+        <ActionButton kind="create" module="org_units" action="create">
           Thêm đơn vị
         </ActionButton>,
       );
@@ -195,7 +195,7 @@ describe("ActionButton — Component Integration", () => {
       currentContext: makeContext({ scope_type: "co_so" }),
     });
     renderWithProviders(
-      <ActionButton module="org_units" action="create">
+      <ActionButton kind="create" module="org_units" action="create">
         Thêm đơn vị
       </ActionButton>,
     );
@@ -210,7 +210,7 @@ describe("ActionButton — Component Integration", () => {
       currentContext: makeContext({ scope_type: "phong_ban" }),
     });
     renderWithProviders(
-      <ActionButton module="org_units" action="create">
+      <ActionButton kind="create" module="org_units" action="create">
         Thêm đơn vị
       </ActionButton>,
     );
@@ -222,7 +222,7 @@ describe("ActionButton — Component Integration", () => {
   it("không render (hidden) khi thiếu permission", () => {
     setAuthState({ permissionCodes: ["ORG_VIEW"] });
     renderWithProviders(
-      <ActionButton module="org_units" action="create">
+      <ActionButton kind="create" module="org_units" action="create">
         Thêm đơn vị
       </ActionButton>,
     );

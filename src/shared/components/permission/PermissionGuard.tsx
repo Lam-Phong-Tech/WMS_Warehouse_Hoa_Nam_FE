@@ -5,7 +5,6 @@ import type {
   PermissionMode,
   PermissionAction,
 } from "@/shared/types/permission";
-
 export interface PermissionGuardProps {
   children: ReactNode;
   /** Module name, ví dụ: 'org_units', 'departments'. Bắt buộc nếu dùng `action`, optional nếu dùng `permissionCode` trực tiếp. */
@@ -41,12 +40,16 @@ export interface PermissionGuardProps {
  * ```tsx
  * // Hide mode - ẩn hoàn toàn khi thiếu quyền
  * <PermissionGuard module="org_units" action="create">
- *   <Button>Thêm mới</Button>
+ *   <ActionButton
+  kind="create"
+>Thêm mới</ActionButton>
  * </PermissionGuard>
  *
  * // Disable mode - disable khi thiếu quyền
  * <PermissionGuard module="org_units" action="edit" mode="disable">
- *   <Button>Sửa</Button>
+ *   <ActionButton
+  kind="edit"
+>Sửa</ActionButton>
  * </PermissionGuard>
  *
  * // Special action (scope-aware pattern) — Dùng cho action đặc biệt như
@@ -54,7 +57,9 @@ export interface PermissionGuardProps {
  * // permissionCode riêng để override permission code mặc định.
  * // Pattern: module="org_units" action="delete" permissionCode="ORG_FORCE_DELETE"
  * <PermissionGuard module="org_units" action="delete" permissionCode="ORG_FORCE_DELETE">
- *   <Button>Xóa vĩnh viễn</Button>
+ *   <ActionButton
+  kind="delete"
+>Xóa vĩnh viễn</ActionButton>
  * </PermissionGuard>
  *
  * // Custom permission code KHÔNG kèm `module`/`action` → hook không có đủ
@@ -65,7 +70,7 @@ export interface PermissionGuardProps {
  * // có, chỉ dùng permissionCode-only cho quyền không gắn với 1 module cụ
  * // thể (vd quyền hệ thống không có module tương ứng).
  * <PermissionGuard permissionCode="SOME_SYSTEM_WIDE_PERMISSION">
- *   <Button>Hành động hệ thống</Button>
+ *   <ActionButton kind="settings">Hành động hệ thống</ActionButton>
  * </PermissionGuard>
  * ```
  */

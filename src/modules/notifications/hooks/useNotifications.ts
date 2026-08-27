@@ -1,6 +1,8 @@
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { notificationService } from "@/modules/notifications/services/notificationService";
 import { useNotificationStore } from "@/shared/store/notification.store";
+import { getMutationErrorMessage } from "@/shared/api/api-error";
 import type { NotificationListParams } from "@/modules/notifications/types/notification.types";
 
 const NOTIFICATIONS_KEY = ["notifications"];
@@ -41,6 +43,7 @@ export function useMarkNotificationRead() {
       decrement(Math.max(0, unreadCount - 1));
       queryClient.invalidateQueries({ queryKey: NOTIFICATIONS_KEY });
     },
+    onError: (error) => toast.error(getMutationErrorMessage(error)),
   });
 }
 
@@ -54,5 +57,6 @@ export function useMarkAllNotificationsRead() {
       setUnreadCount(0);
       queryClient.invalidateQueries({ queryKey: NOTIFICATIONS_KEY });
     },
+    onError: (error) => toast.error(getMutationErrorMessage(error)),
   });
 }

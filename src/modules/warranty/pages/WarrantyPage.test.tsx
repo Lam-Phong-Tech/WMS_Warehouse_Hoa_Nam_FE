@@ -108,18 +108,12 @@ describe("WarrantyPage (WAR-01 hub)", () => {
     cleanupTestState();
   });
 
-  it("hiển thị danh sách case với tag TEMP_ONLY và nút tiếp nhận theo quyền", async () => {
+  it("hiển thị danh sách case và nút tiếp nhận theo quyền", async () => {
     renderWithProviders(<WarrantyPage />, ["/warranty"]);
 
     expect(await screen.findByText("BH-0001")).toBeInTheDocument();
     expect(screen.getByText("BH-0002")).toBeInTheDocument();
-    // "TEMP_ONLY" xuất hiện cả ở option filter — tag của row là phần tử ant-tag.
-    expect(
-      screen
-        .getAllByText("TEMP_ONLY")
-        .some((element) => element.className.includes("ant-tag")),
-    ).toBe(true);
-    expect(screen.getByText("TEMP-0002")).toBeInTheDocument();
+    // Chi tiết nhận diện (TEMP_ONLY/mã tạm) đã chuyển hẳn vào modal "Xem chi tiết" — cột list chỉ giữ định danh case.
     expect(
       screen.getByRole("button", { name: /Tiếp nhận bảo hành/ }),
     ).toBeInTheDocument();
@@ -165,7 +159,9 @@ describe("WarrantyPage (WAR-01 hub)", () => {
     // Bộ lọc trạng thái là MUI Select (không còn <select> gốc) — mở menu rồi
     // chọn option thay vì fireEvent.change trực tiếp lên value.
     fireEvent.mouseDown(screen.getByLabelText("Lọc trạng thái bảo hành"));
-    fireEvent.click(await screen.findByRole("option", { name: "Đang kiểm tra" }));
+    fireEvent.click(
+      await screen.findByRole("option", { name: "Đang kiểm tra" }),
+    );
 
     await waitFor(() => {
       expect(fetchWarrantyCases).toHaveBeenCalledWith(

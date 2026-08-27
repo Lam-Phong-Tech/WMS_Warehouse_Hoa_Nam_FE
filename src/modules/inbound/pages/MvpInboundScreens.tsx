@@ -6,13 +6,11 @@ import {
   Alert,
   Autocomplete,
   Box,
-  Button,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   Grid,
-  IconButton,
   MenuItem,
   Stack,
   TextField,
@@ -22,15 +20,17 @@ import {
 import { muiTheme } from "@/app/mui-theme";
 import { toast } from "sonner";
 import {
-  CameraOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
-  CloseOutlined,
-  DeleteOutlined,
   InboxOutlined,
-  ScanOutlined,
 } from "@/shared/components/icons";
-import { getApiErrorMessage, getErrorRequestId, normalizeError } from "@/shared/api/api-error";
+import {
+  getApiErrorMessage,
+  getErrorRequestId,
+  normalizeError,
+} from "@/shared/api/api-error";
+import { guardBackdropClose } from "@/shared/utils/dialogGuard";
+import { useDialogExit } from "@/shared/utils/useDialogExit";
 import {
   classifyConcurrencyError,
   isRetryableAfterReload,
@@ -48,6 +48,7 @@ import {
   businessLabel,
 } from "@/shared/constants/business-labels";
 import { ScanInput } from "@/shared/components/forms/ScanInput";
+import { mvpRowNumber } from "@/shared/components/mvp/MvpSelectionCell";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { useMvpSkus } from "@/modules/master-data/hooks/use-mvp-master";
 import type { SkuRecord } from "@/modules/master-data/types/mvp-master.types";
@@ -70,6 +71,7 @@ import type {
   InboundScanEntry,
   ReceiptEvidence,
 } from "@/modules/inbound/types";
+import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 
 type BarcodeResult = { rawValue?: string };
 type BarcodeDetectorInstance = {
@@ -102,10 +104,22 @@ type ScanLogRow = {
 };
 
 const AUTO_LINE = "__AUTO__";
+// STT (số thứ tự) cần cộng theo trang hiện tại — page size cố định cho 2 bảng
+// phân trang trong modal quét (mã đã quét / diễn biến quét phiên).
+const SCAN_ENTRY_PAGE_SIZE = 10;
+const SCAN_LOG_PAGE_SIZE = 8;
 
 function StatCard({ label, value }: { label: string; value: number }) {
   return (
-    <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: 2, p: 1.5, height: "100%" }}>
+    <Box
+      sx={{
+        border: "1px solid",
+        borderColor: "divider",
+        borderRadius: 2,
+        p: 1.5,
+        height: "100%",
+      }}
+    >
       <Typography variant="caption" color="text.secondary">
         {label}
       </Typography>
@@ -277,7 +291,12 @@ function CameraScanModal({
 
   return (
     <ThemeProvider theme={muiTheme}>
-      <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+      <Dialog
+        open={open}
+        onClose={guardBackdropClose(onClose)}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle>{title}</DialogTitle>
         <DialogContent dividers>
           {cameraError ? (
@@ -310,7 +329,9 @@ function CameraScanModal({
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={onClose}>Đóng / nhập tay</Button>
+          <ActionButton kind="close" onClick={onClose}>
+            Đóng / nhập tay
+          </ActionButton>
         </DialogActions>
       </Dialog>
     </ThemeProvider>
@@ -334,6 +355,7 @@ export function InboundScanModal({
   onClose,
   onChanged,
 }: InboundScanModalProps) {
+  const dialog = useDialogExit(onClose);
   const detailQuery = useInboundDetail(documentId);
   const skuQuery = useMvpSkus({ status: "ACTIVE", per_page: 100 });
   const scanEntriesQuery = useInboundScanEntries(documentId, "ALL");
@@ -357,6 +379,8 @@ export function InboundScanModal({
     useState<ReceiptEvidence | null>(null);
   const [cameraTarget, setCameraTarget] = useState<"box" | "code" | null>(null);
   const [activeCarton, setActiveCarton] = useState<ActiveCarton | null>(null);
+  const [scanEntryPage, setScanEntryPage] = useState(1);
+  const [scanLogPage, setScanLogPage] = useState(1);
   const postKeyRef = useRef<string | null>(null);
   const scanKeyRef = useRef<{ key: string; fingerprint: string } | null>(null);
   const canScan = useInboundPermission(P.INBOUND_SCAN);
@@ -749,7 +773,7 @@ export function InboundScanModal({
       toast.success("Đã hủy phiếu nhập. Không phát sinh biến động tồn kho.");
       setCancelOpen(false);
       onChanged?.();
-      onClose();
+      dialog.close();
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Không hủy được phiếu nhập."));
       await detailQuery.refetch();
@@ -758,6 +782,13 @@ export function InboundScanModal({
   };
 
   const lineColumns: ColumnsType<InboundLine> = [
+    {
+      title: "STT",
+      key: "stt",
+      width: 56,
+      align: "center",
+      render: (_, __, index) => index + 1,
+    },
     {
       title: "SKU",
       key: "sku",
@@ -796,6 +827,14 @@ export function InboundScanModal({
   ];
 
   const scanEntryColumns: ColumnsType<InboundScanEntry> = [
+    {
+      title: "STT",
+      key: "stt",
+      width: 56,
+      align: "center",
+      render: (_, __, index) =>
+        mvpRowNumber(scanEntryPage, SCAN_ENTRY_PAGE_SIZE, index),
+    },
     {
       title: "Mã",
       key: "code",
@@ -864,26 +903,31 @@ export function InboundScanModal({
       ),
     },
     {
-      title: "",
+      title: "Hành động",
       key: "actions",
       width: 110,
       render: (_, entry) =>
         entry.status === "ACTIVE" && canScan && isMutable ? (
-          <Button
-            color="error"
-            variant="text"
-            size="small"
-            startIcon={<DeleteOutlined />}
+          <ActionButton
+            kind="delete"
             disabled={working}
             onClick={() => void handleUnscan(entry)}
           >
             Gỡ mã
-          </Button>
+          </ActionButton>
         ) : null,
     },
   ];
 
   const scanLogColumns: ColumnsType<ScanLogRow> = [
+    {
+      title: "STT",
+      key: "stt",
+      width: 56,
+      align: "center",
+      render: (_, __, index) =>
+        mvpRowNumber(scanLogPage, SCAN_LOG_PAGE_SIZE, index),
+    },
     { title: "Mã", dataIndex: "code", width: 220 },
     {
       title: "Kết quả",
@@ -908,56 +952,76 @@ export function InboundScanModal({
 
   return (
     <ThemeProvider theme={muiTheme}>
-      <Dialog
-        open
-        onClose={() => {
-          if (working) return;
-          onClose();
-        }}
-        maxWidth="lg"
-        fullWidth
-      >
+      <Dialog {...dialog.dialogProps} maxWidth="lg" fullWidth>
         <DialogTitle sx={{ pr: 6, position: "relative" }}>
           {detail
             ? `Quét & hoàn tất nhập kho · ${detail.document.code || documentId}`
             : "Quét & hoàn tất nhập kho"}
-          <IconButton
-            aria-label="Đóng"
-            onClick={onClose}
+          <ActionIconButton
+            kind="close"
+            label="Đóng"
+            onClick={dialog.close}
             disabled={working}
             sx={{ position: "absolute", right: 10, top: 8 }}
-          >
-            <CloseOutlined style={{ fontSize: 15 }} />
-          </IconButton>
+          />
         </DialogTitle>
         <DialogContent dividers>
           {detailQuery.isError ? (
             <Alert severity="error" sx={{ mb: 2 }}>
               <Typography sx={{ fontWeight: 700 }}>
-                {getApiErrorMessage(detailQuery.error, "Không tải được phiếu nhập.")}
+                {getApiErrorMessage(
+                  detailQuery.error,
+                  "Không tải được phiếu nhập.",
+                )}
               </Typography>
-              <Typography variant="body2">{errorDescription(detailQuery.error)}</Typography>
+              <Typography variant="body2">
+                {errorDescription(detailQuery.error)}
+              </Typography>
             </Alert>
           ) : null}
 
           {detail ? (
             <>
-              <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: 2, p: 2, mb: 2 }}>
+              <Box
+                sx={{
+                  border: "1px solid",
+                  borderColor: "divider",
+                  borderRadius: 2,
+                  p: 2,
+                  mb: 2,
+                }}
+              >
                 <Grid container spacing={2}>
                   <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ display: "block" }}
+                    >
                       Phiếu
                     </Typography>
-                    <Typography variant="body2">{detail.document.code || documentId}</Typography>
+                    <Typography variant="body2">
+                      {detail.document.code || documentId}
+                    </Typography>
                   </Grid>
                   <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ display: "block" }}
+                    >
                       Nguồn
                     </Typography>
-                    <Typography variant="body2">{detail.document.source || "-"}</Typography>
+                    <Typography variant="body2">
+                      {detail.document.source || "-"}
+                    </Typography>
                   </Grid>
                   <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ display: "block" }}
+                    >
                       Trạng thái
                     </Typography>
                     <Tag
@@ -971,14 +1035,23 @@ export function InboundScanModal({
                               : "warning"
                       }
                     >
-                      {businessLabel(INBOUND_STATUS_LABELS, detail.document.status)}
+                      {businessLabel(
+                        INBOUND_STATUS_LABELS,
+                        detail.document.status,
+                      )}
                     </Tag>
                   </Grid>
                   <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ display: "block" }}
+                    >
                       Phiên bản dữ liệu
                     </Typography>
-                    <Typography variant="body2">{scanVersion ?? detail.document.version}</Typography>
+                    <Typography variant="body2">
+                      {scanVersion ?? detail.document.version}
+                    </Typography>
                   </Grid>
                 </Grid>
               </Box>
@@ -988,196 +1061,273 @@ export function InboundScanModal({
                   <StatCard label="Mã hợp lệ" value={totalScanned} />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                  <StatCard label="Dòng SKU thực nhận" value={detail.lines.length} />
+                  <StatCard
+                    label="Dòng SKU thực nhận"
+                    value={detail.lines.length}
+                  />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                   <StatCard label="Mã đã gỡ" value={removedEntryCount} />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                  <StatCard label="Mã trùng / lỗi (phiên)" value={sessionDuplicateCount + sessionErrorCount} />
+                  <StatCard
+                    label="Mã trùng / lỗi (phiên)"
+                    value={sessionDuplicateCount + sessionErrorCount}
+                  />
                 </Grid>
               </Grid>
 
-              <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: 2, p: 2, mb: 2 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
-                  Hàng thực nhận đã ghi nhận
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {hasScanned
-                    ? `Đã ghi nhận ${totalScanned} đơn vị trên ${detail.lines.length} dòng SKU từ quét/đếm thực tế. Số lượng nhập kho lấy theo hàng thực nhận — thiếu/thừa so với chứng từ vận chuyển vẫn ghi nhận nhập được.`
-                    : "Chưa ghi nhận đơn vị nào. Quét mã sản phẩm hoặc chọn SKU linh kiện theo hộp để bắt đầu; dòng phiếu sẽ tự được tạo theo hàng thực nhận."}
-                </Typography>
-              </Box>
-
               {isMutable ? (
-                <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: 2, p: 2, mb: 2 }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5 }}>
+                <Box
+                  sx={{
+                    border: "1px solid",
+                    borderColor: "divider",
+                    borderRadius: 2,
+                    p: 2,
+                    mb: 2,
+                  }}
+                >
+                  <Typography
+                    variant="subtitle2"
+                    sx={{ fontWeight: 700, mb: 1.5 }}
+                  >
                     Ghi nhận mã vạch / QR / hộp
                   </Typography>
                   {!isComponent && activeCarton ? (
-                    <Alert severity="info" icon={<InboxOutlined />} sx={{ mb: 1.5 }}>
+                    <Alert
+                      severity="info"
+                      icon={<InboxOutlined />}
+                      sx={{ mb: 1.5 }}
+                    >
                       <Typography sx={{ fontWeight: 700 }}>
                         {`Thùng đang quét: ${activeCarton.code}`}
                       </Typography>
                       <Typography variant="body2">
-                        Đã quét <strong>{activeCartonScannedQty}</strong> máy vào
-                        thùng này. Sản phẩm quét tiếp theo sẽ được gắn vào thùng{" "}
-                        {activeCarton.code}.
+                        Đã quét <strong>{activeCartonScannedQty}</strong> máy
+                        vào thùng này. Sản phẩm quét tiếp theo sẽ được gắn vào
+                        thùng {activeCarton.code}.
                       </Typography>
-                      <Button
-                        variant="contained"
-                        size="small"
+                      <ActionButton
+                        kind="scan"
                         sx={{ mt: 1 }}
-                        startIcon={<CheckCircleOutlined />}
                         disabled={!canScan || working}
                         onClick={() => void handleCompleteCarton()}
                       >
-                        {completeCartonMutation.isPending ? "Đang xử lý..." : "Đã quét xong thùng"}
-                      </Button>
+                        {completeCartonMutation.isPending
+                          ? "Đang xử lý..."
+                          : "Đã quét xong thùng"}
+                      </ActionButton>
                     </Alert>
                   ) : null}
 
-                  <Box sx={{ mb: 1.5 }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.5 }}>
-                      Dòng nhận
-                    </Typography>
-                    <TextField
-                      select
-                      fullWidth
-                      value={lineId}
-                      disabled={!canScan || busy}
-                      onChange={(event) => setLineId(event.target.value)}
-                    >
-                      <MenuItem value={AUTO_LINE}>
-                        Tự động theo QR (sản phẩm — hệ thống tự đối chiếu SKU)
-                      </MenuItem>
-                      {detail.lines.map((line) => {
-                        const sku = skuById.get(line.productId);
-                        return (
-                          <MenuItem key={line.id} value={line.id}>
-                            {`${sku?.sku_code ?? line.productId} · đã quét ${line.scanned}`}
-                          </MenuItem>
-                        );
-                      })}
-                    </TextField>
-                  </Box>
-
-                  <Box sx={{ mb: 1.5 }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.5 }}>
-                      Nhận linh kiện theo hộp — chọn SKU linh kiện thực nhận (dòng
-                      phiếu tự tạo, không nhập số lượng dự kiến)
-                    </Typography>
-                    <Stack direction="row" spacing={1}>
-                      <Autocomplete
-                        sx={{ flex: 1 }}
-                        options={componentSkuAutocompleteOptions}
-                        value={
-                          componentSkuAutocompleteOptions.find(
-                            (option) => option.value === componentSkuId,
-                          ) ?? null
-                        }
-                        disabled={!canScan || busy}
-                        getOptionLabel={(option) => option.label}
-                        isOptionEqualToValue={(option, value) => option.value === value.value}
-                        onChange={(_event, option) => setComponentSkuId(option?.value ?? undefined)}
-                        renderInput={(params) => (
-                          <TextField {...params} placeholder="Chọn SKU linh kiện" />
-                        )}
-                      />
-                      <Button
-                        variant="outlined"
-                        disabled={!canScan || busy || !componentSkuId}
-                        onClick={() => void handleAddComponentLine()}
+                  {/*
+                   * Vùng nhập xếp lưới 2 cột. Panel này chiếm trọn bề ngang modal
+                   * (maxWidth="lg" ≈ 1200px); xếp dọc 1 cột thì mỗi ô kéo dài cả
+                   * nghìn pixel — vừa trống trải vừa bắt mắt rê xa. Ô quét mã là
+                   * đường chính nên vẫn chiếm trọn hàng (gridColumn 1 / -1).
+                   */}
+                  <Box
+                    sx={{
+                      display: "grid",
+                      gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+                      columnGap: 2,
+                      rowGap: 1.5,
+                      alignItems: "start",
+                      mb: 1.5,
+                    }}
+                  >
+                    <Box sx={{ minWidth: 0 }}>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ display: "block", mb: 0.5 }}
                       >
-                        {ensureComponentMutation.isPending ? "Đang thêm..." : "Thêm dòng linh kiện"}
-                      </Button>
-                    </Stack>
-                  </Box>
+                        Dòng nhận
+                      </Typography>
+                      <TextField
+                        select
+                        fullWidth
+                        value={lineId}
+                        disabled={!canScan || busy}
+                        onChange={(event) => setLineId(event.target.value)}
+                      >
+                        <MenuItem value={AUTO_LINE}>
+                          Tự động theo QR (sản phẩm — hệ thống tự đối chiếu SKU)
+                        </MenuItem>
+                        {detail.lines.map((line) => {
+                          const sku = skuById.get(line.productId);
+                          return (
+                            <MenuItem key={line.id} value={line.id}>
+                              {`${sku?.sku_code ?? line.productId} · đã quét ${line.scanned}`}
+                            </MenuItem>
+                          );
+                        })}
+                      </TextField>
+                    </Box>
 
-                  {isComponent ? (
-                    <Box sx={{ mb: 1.5 }}>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.5 }}>
-                        Hộp *
+                    <Box sx={{ minWidth: 0 }}>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ display: "block", mb: 0.5 }}
+                      >
+                        Nhận linh kiện theo hộp — chọn SKU linh kiện thực nhận
+                        (dòng phiếu tự tạo, không nhập số lượng dự kiến)
                       </Typography>
                       <Stack direction="row" spacing={1}>
-                        <TextField
-                          fullWidth
-                          value={boxCode}
+                        <Autocomplete
+                          sx={{ flex: 1 }}
+                          options={componentSkuAutocompleteOptions}
+                          value={
+                            componentSkuAutocompleteOptions.find(
+                              (option) => option.value === componentSkuId,
+                            ) ?? null
+                          }
                           disabled={!canScan || busy}
-                          placeholder="Quét / nhập hộp chứa đúng một SKU linh kiện"
-                          onChange={(event) => setBoxCode(event.target.value)}
-                          slotProps={{ htmlInput: { maxLength: 120 } }}
+                          getOptionLabel={(option) => option.label}
+                          isOptionEqualToValue={(option, value) =>
+                            option.value === value.value
+                          }
+                          onChange={(_event, option) =>
+                            setComponentSkuId(option?.value ?? undefined)
+                          }
+                          renderInput={(params) => (
+                            <TextField
+                              {...params}
+                              label="Chọn SKU linh kiện"
+                              placeholder="Chọn SKU linh kiện"
+                            />
+                          )}
                         />
-                        <Button
-                          variant="outlined"
-                          startIcon={<CameraOutlined />}
+                        <ActionButton
+                          kind="create"
+                          disabled={!canScan || busy || !componentSkuId}
+                          onClick={() => void handleAddComponentLine()}
+                        >
+                          {ensureComponentMutation.isPending
+                            ? "Đang thêm..."
+                            : "Thêm dòng linh kiện"}
+                        </ActionButton>
+                      </Stack>
+                    </Box>
+
+                    {isComponent ? (
+                      <Box
+                        sx={{
+                          minWidth: 0,
+                          gridColumn: {
+                            xs: "auto",
+                            md: isSerialTracked ? "1 / -1" : "auto",
+                          },
+                        }}
+                      >
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ display: "block", mb: 0.5 }}
+                        >
+                          Hộp *
+                        </Typography>
+                        <Stack direction="row" spacing={1}>
+                          <TextField
+                            fullWidth
+                            value={boxCode}
+                            disabled={!canScan || busy}
+                            placeholder="Quét / nhập hộp chứa đúng một SKU linh kiện"
+                            onChange={(event) => setBoxCode(event.target.value)}
+                            slotProps={{ htmlInput: { maxLength: 120 } }}
+                          />
+                          <ActionButton
+                            kind="camera"
+                            disabled={!canScan || busy}
+                            onClick={() => setCameraTarget("box")}
+                            sx={{ flexShrink: 0 }}
+                          >
+                            Quét bằng camera
+                          </ActionButton>
+                        </Stack>
+                      </Box>
+                    ) : null}
+
+                    {/* Đi liền ô Hộp: cùng mô tả kiện đang nhận, và ghép cặp 2 ô
+                        này giúp lưới không hở nửa hàng trống. */}
+                    {isComponent && !isSerialTracked ? (
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ display: "block", mb: 0.5 }}
+                        >
+                          Số lượng lần nhận *
+                        </Typography>
+                        <TextField
+                          type="number"
+                          value={quantity}
+                          onChange={(event) =>
+                            setQuantity(Number(event.target.value) || 1)
+                          }
                           disabled={!canScan || busy}
-                          onClick={() => setCameraTarget("box")}
+                          sx={{ width: "100%", maxWidth: 220 }}
+                          slotProps={{ htmlInput: { min: 1 } }}
+                        />
+                      </Box>
+                    ) : null}
+
+                    <Box
+                      sx={{
+                        minWidth: 0,
+                        gridColumn: { xs: "auto", md: "1 / -1" },
+                      }}
+                    >
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ display: "block", mb: 0.5 }}
+                      >
+                        {isComponent && !isSerialTracked
+                          ? "Mã vạch / số sê-ri (không bắt buộc với linh kiện nhập theo số lượng)"
+                          : "Mã vạch / Số sê-ri *"}
+                      </Typography>
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        sx={{ alignItems: "flex-start" }}
+                      >
+                        <Box sx={{ flex: 1 }}>
+                          <ScanInput
+                            value={scanCode}
+                            size="middle"
+                            disabled={!canScan || busy}
+                            placeholder={
+                              isSerialTracked
+                                ? "Quét số sê-ri / mã vạch"
+                                : "Quét mã vạch/QR hoặc nhập tay"
+                            }
+                            onChange={setScanCode}
+                            onScan={(code) => void handleScan(code)}
+                          />
+                        </Box>
+                        <ActionButton
+                          kind="camera"
+                          disabled={!canScan || busy}
+                          onClick={() => setCameraTarget("code")}
                           sx={{ flexShrink: 0 }}
                         >
                           Quét bằng camera
-                        </Button>
+                        </ActionButton>
                       </Stack>
                     </Box>
-                  ) : null}
-
-                  <Box sx={{ mb: 1.5 }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.5 }}>
-                      {isComponent && !isSerialTracked
-                        ? "Mã vạch / số sê-ri (không bắt buộc với linh kiện nhập theo số lượng)"
-                        : "Mã vạch / Số sê-ri *"}
-                    </Typography>
-                    <Stack direction="row" spacing={1} sx={{ alignItems: "flex-start" }}>
-                      <Box sx={{ flex: 1 }}>
-                        <ScanInput
-                          value={scanCode}
-                          size="middle"
-                          disabled={!canScan || busy}
-                          placeholder={
-                            isSerialTracked
-                              ? "Quét số sê-ri / mã vạch"
-                              : "Quét mã vạch/QR hoặc nhập tay"
-                          }
-                          onChange={setScanCode}
-                          onScan={(code) => void handleScan(code)}
-                        />
-                      </Box>
-                      <Button
-                        variant="outlined"
-                        startIcon={<CameraOutlined />}
-                        disabled={!canScan || busy}
-                        onClick={() => setCameraTarget("code")}
-                        sx={{ flexShrink: 0 }}
-                      >
-                        Quét bằng camera
-                      </Button>
-                    </Stack>
                   </Box>
 
-                  {isComponent && !isSerialTracked ? (
-                    <Box sx={{ mb: 1.5 }}>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.5 }}>
-                        Số lượng lần nhận *
-                      </Typography>
-                      <TextField
-                        type="number"
-                        value={quantity}
-                        onChange={(event) => setQuantity(Number(event.target.value) || 1)}
-                        disabled={!canScan || busy}
-                        sx={{ width: 180 }}
-                        slotProps={{ htmlInput: { min: 1 } }}
-                      />
-                    </Box>
-                  ) : null}
-
-                  <Button
-                    variant="contained"
-                    startIcon={<ScanOutlined />}
-                    disabled={!canScan || busy || (lineId !== AUTO_LINE && !selectedSku)}
+                  <ActionButton
+                    kind="scan"
+                    disabled={
+                      !canScan || busy || (lineId !== AUTO_LINE && !selectedSku)
+                    }
                     onClick={() => void handleScan()}
                   >
                     {busy ? "Đang xử lý..." : "Ghi nhận quét"}
-                  </Button>
+                  </ActionButton>
 
                   {selectedLine ? (
                     <Alert severity="info" sx={{ mt: 1.5 }}>
@@ -1194,7 +1344,9 @@ export function InboundScanModal({
                 </Box>
               ) : (
                 <Alert
-                  severity={detail.document.status === "POSTED" ? "success" : "info"}
+                  severity={
+                    detail.document.status === "POSTED" ? "success" : "info"
+                  }
                   sx={{ mb: 2 }}
                 >
                   <Typography sx={{ fontWeight: 700 }}>
@@ -1210,7 +1362,15 @@ export function InboundScanModal({
                 </Alert>
               )}
 
-              <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: 2, p: 2, mt: 2 }}>
+              <Box
+                sx={{
+                  border: "1px solid",
+                  borderColor: "divider",
+                  borderRadius: 2,
+                  p: 2,
+                  mt: 2,
+                }}
+              >
                 <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
                   Hàng thực nhận theo SKU
                 </Typography>
@@ -1220,7 +1380,7 @@ export function InboundScanModal({
                   columns={lineColumns}
                   dataSource={detail.lines}
                   pagination={false}
-                  scroll={{ x: 920 }}
+                  scroll={{ x: 920, y: 260 }}
                   expandable={{
                     rowExpandable: (line) =>
                       activeEntries.some((entry) => entry.lineId === line.id),
@@ -1229,9 +1389,16 @@ export function InboundScanModal({
                         (entry) => entry.lineId === line.id,
                       );
                       return (
-                        <Stack direction="row" spacing={0.5} sx={{ flexWrap: "wrap", rowGap: 0.5 }}>
+                        <Stack
+                          direction="row"
+                          spacing={0.5}
+                          sx={{ flexWrap: "wrap", rowGap: 0.5 }}
+                        >
                           {lineEntries.map((entry) => (
-                            <Tag key={entry.id} style={{ fontFamily: "monospace" }}>
+                            <Tag
+                              key={entry.id}
+                              style={{ fontFamily: "monospace" }}
+                            >
                               {entry.itemCode ||
                                 entry.serialNumber ||
                                 entry.candidateItemUnique ||
@@ -1247,11 +1414,23 @@ export function InboundScanModal({
                 />
               </Box>
 
-              <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: 2, p: 2, mt: 2 }}>
+              <Box
+                sx={{
+                  border: "1px solid",
+                  borderColor: "divider",
+                  borderRadius: 2,
+                  p: 2,
+                  mt: 2,
+                }}
+              >
                 <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
                   Mã đã quét của phiếu
                 </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1 }}>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: "block", mb: 1 }}
+                >
                   {`${activeEntries.length} hợp lệ${
                     removedEntryCount ? ` · ${removedEntryCount} đã gỡ` : ""
                   }`}
@@ -1275,8 +1454,13 @@ export function InboundScanModal({
                     columns={scanEntryColumns}
                     dataSource={scanEntries}
                     loading={scanEntriesQuery.isLoading}
-                    pagination={{ pageSize: 10, hideOnSinglePage: true }}
-                    scroll={{ x: 900 }}
+                    pagination={{
+                      current: scanEntryPage,
+                      pageSize: SCAN_ENTRY_PAGE_SIZE,
+                      hideOnSinglePage: true,
+                      onChange: setScanEntryPage,
+                    }}
+                    scroll={{ x: 1020, y: 260 }}
                     locale={{
                       emptyText:
                         "Chưa ghi nhận mã nào. Quét mã vạch/QR hoặc đăng ký hộp để bắt đầu.",
@@ -1286,8 +1470,19 @@ export function InboundScanModal({
               </Box>
 
               {scanLog.length ? (
-                <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: 2, p: 2, mt: 2 }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+                <Box
+                  sx={{
+                    border: "1px solid",
+                    borderColor: "divider",
+                    borderRadius: 2,
+                    p: 2,
+                    mt: 2,
+                  }}
+                >
+                  <Typography
+                    variant="subtitle2"
+                    sx={{ fontWeight: 700, mb: 1 }}
+                  >
                     Diễn biến quét trong phiên thao tác
                   </Typography>
                   <Table<ScanLogRow>
@@ -1295,46 +1490,52 @@ export function InboundScanModal({
                     rowKey="key"
                     columns={scanLogColumns}
                     dataSource={scanLog}
-                    pagination={{ pageSize: 8, hideOnSinglePage: true }}
-                    scroll={{ x: "max-content" }}
+                    pagination={{
+                      current: scanLogPage,
+                      pageSize: SCAN_LOG_PAGE_SIZE,
+                      hideOnSinglePage: true,
+                      onChange: setScanLogPage,
+                    }}
+                    scroll={{ x: "max-content", y: 260 }}
                   />
                 </Box>
               ) : null}
 
               {receiptEvidence ? (
                 <Alert severity="success" sx={{ mt: 2 }}>
-                  <Typography sx={{ fontWeight: 700 }}>Kết quả hoàn tất nhập kho</Typography>
+                  <Typography sx={{ fontWeight: 700 }}>
+                    Kết quả hoàn tất nhập kho
+                  </Typography>
                   <Typography variant="body2">
                     Mã yêu cầu: <strong>{receiptEvidence.requestId}</strong>
                   </Typography>
                   <Typography variant="body2">
                     Biến động tồn kho: {receiptEvidence.movementRefs.join(", ")}
                   </Typography>
-                  <Typography variant="body2">Phiếu nhập: {receiptEvidence.receiptId}</Typography>
+                  <Typography variant="body2">
+                    Phiếu nhập: {receiptEvidence.receiptId}
+                  </Typography>
                 </Alert>
               ) : null}
             </>
           ) : null}
         </DialogContent>
         <DialogActions>
-          <Button startIcon={<CloseOutlined />} disabled={working} onClick={onClose}>
+          <ActionButton kind="close" disabled={working} onClick={dialog.close}>
             Đóng
-          </Button>
+          </ActionButton>
           {detail && canCancel && isMutable ? (
-            <Button
-              color="error"
-              variant="outlined"
-              startIcon={<CloseCircleOutlined />}
+            <ActionButton
+              kind="cancel"
               disabled={working}
               onClick={() => setCancelOpen(true)}
             >
               Hủy phiếu
-            </Button>
+            </ActionButton>
           ) : null}
           {detail && isMutable ? (
-            <Button
-              variant="contained"
-              startIcon={<CheckCircleOutlined />}
+            <ActionButton
+              kind="confirm"
               disabled={
                 !canPost ||
                 !hasScanned ||
@@ -1344,7 +1545,7 @@ export function InboundScanModal({
               onClick={() => void handlePost()}
             >
               {postMutation.isPending ? "Đang xử lý..." : "Ghi nhận nhập"}
-            </Button>
+            </ActionButton>
           ) : null}
         </DialogActions>
       </Dialog>
@@ -1367,7 +1568,7 @@ export function InboundScanModal({
 
       <Dialog
         open={cancelOpen}
-        onClose={() => !cancelMutation.isPending && setCancelOpen(false)}
+        onClose={guardBackdropClose(() => setCancelOpen(false))}
         maxWidth="xs"
         fullWidth
       >
@@ -1379,9 +1580,8 @@ export function InboundScanModal({
                 Hủy là trạng thái kết thúc và không làm thay đổi tồn kho
               </Typography>
               <Typography variant="body2">
-                Phiếu đã hủy không thể tiếp tục quét hoặc hoàn tất nhập kho.
-                Nếu cần làm lại, hãy tạo phiếu mới để bảo toàn lịch sử thao
-                tác.
+                Phiếu đã hủy không thể tiếp tục quét hoặc hoàn tất nhập kho. Nếu
+                cần làm lại, hãy tạo phiếu mới để bảo toàn lịch sử thao tác.
               </Typography>
             </Alert>
             <TextField
@@ -1390,6 +1590,7 @@ export function InboundScanModal({
               minRows={4}
               value={cancelReason}
               onChange={(event) => setCancelReason(event.target.value)}
+              label="Lý do hủy (bắt buộc)"
               placeholder="Lý do hủy bắt buộc"
               slotProps={{ htmlInput: { maxLength: 1000 } }}
               helperText={`${cancelReason.length}/1000`}
@@ -1397,17 +1598,20 @@ export function InboundScanModal({
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setCancelOpen(false)} disabled={cancelMutation.isPending}>
+          <ActionButton
+            kind="back"
+            onClick={() => setCancelOpen(false)}
+            disabled={cancelMutation.isPending}
+          >
             Quay lại
-          </Button>
-          <Button
-            color="error"
-            variant="contained"
+          </ActionButton>
+          <ActionButton
+            kind="confirm"
             disabled={!cancelReason.trim() || cancelMutation.isPending}
             onClick={() => void handleCancel()}
           >
             {cancelMutation.isPending ? "Đang hủy..." : "Xác nhận hủy"}
-          </Button>
+          </ActionButton>
         </DialogActions>
       </Dialog>
     </ThemeProvider>
@@ -1423,7 +1627,14 @@ export function InboundSourceScreen({
 }) {
   return (
     <ThemeProvider theme={muiTheme}>
-      <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: 2, p: 2 }}>
+      <Box
+        sx={{
+          border: "1px solid",
+          borderColor: "divider",
+          borderRadius: 2,
+          p: 2,
+        }}
+      >
         {screenId === "IN-03"
           ? "Quét & hoàn tất nhập kho được mở từ Danh sách phiếu nhập dưới dạng cửa sổ thao tác."
           : "IN-01/IN-02 được quản lý trong Danh sách phiếu nhập."}

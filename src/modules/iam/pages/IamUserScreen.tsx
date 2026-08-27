@@ -1,19 +1,24 @@
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 import {
   Accordion,
   AccordionDetails,
   AccordionSummary,
   Alert,
   Box,
-  Button,
   Chip,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   FormControl,
+  FormHelperText,
   Grid,
-  IconButton,
   InputLabel,
   MenuItem,
   Select,
@@ -29,20 +34,15 @@ import {
 } from "@mui/material";
 import { muiTheme } from "@/app/mui-theme";
 import {
-  CloseOutlined,
-  EditOutlined,
-  EyeOutlined,
-  ReloadOutlined,
-  SaveOutlined,
-  UserAddOutlined,
-} from "@/shared/components/icons";
-import { ACTION_ICON_COLORS } from "@/shared/theme/actionIconColors";
-import {
   useCreateIamUser,
+  useGrantIamUserPermission,
   useIamDepartments,
+  useIamPermissions,
   useIamRoles,
   useIamScopeWarehouses,
+  useIamUserPermissionOverrides,
   useIamUsers,
+  useRevokeIamUserPermission,
   useUpdateIamUser,
 } from "@/modules/iam/hooks/use-iam";
 import type {
@@ -54,6 +54,7 @@ import type {
 import {
   getApiErrorMessage,
   getMutationErrorMessage,
+  resolveFormErrors,
 } from "@/shared/api/api-error";
 import { MvpPaginationFooter } from "@/shared/components/mvp/MvpListPagination";
 import {
@@ -64,6 +65,8 @@ import {
   MvpSelectionCheckbox,
   mvpRowNumber,
 } from "@/shared/components/mvp/MvpSelectionCell";
+import { SortableTh } from "@/shared/components/data-display/SortableTh";
+import { useClientSort } from "@/shared/components/data-display/useClientSort";
 import {
   IAM_SCOPE_TYPE_LABELS,
   IAM_USER_STATUS_LABELS,
@@ -72,6 +75,8 @@ import {
 import { useRowSelection } from "@/shared/hooks/useRowSelection";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { formatDate, formatDateTime } from "@/shared/utils/format-date";
+import { guardBackdropClose } from "@/shared/utils/dialogGuard";
+import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 
 /**
  * Toolbar filter cần nhỏ gọn hơn field trong form (theo yêu cầu người dùng) —
@@ -116,6 +121,8 @@ type UserFormState = {
   effectiveTo: string;
   status: IamUserStatus;
   password: string;
+  /** Yêu cầu nghiệp vụ: mọi lần sửa vai trò/quyền phải ghi lại lý do để truy vết. */
+  reason: string;
 };
 
 const EMPTY_FORM: UserFormState = {
@@ -130,7 +137,24 @@ const EMPTY_FORM: UserFormState = {
   effectiveTo: "",
   status: "ACTIVE",
   password: "",
+  reason: "",
 };
+
+/**
+ * Các ô nhập có chỗ hiển thị lỗi riêng (`error` + `helperText`) trong modal.
+ * Lỗi server thuộc field nằm ngoài danh sách này sẽ rơi về banner tổng —
+ * xem `resolveFormErrors`. Tên field ở dạng camelCase vì `extractFieldErrors`
+ * đã chuyển snake_case của BE (`display_name`) sang camelCase (`displayName`).
+ */
+const USER_FORM_FIELDS = [
+  "displayName",
+  "username",
+  "phone",
+  "email",
+  "roleId",
+  "password",
+  "reason",
+] as const satisfies readonly (keyof UserFormState)[];
 
 function statusLabel(status: IamUserStatus) {
   return businessLabel(IAM_USER_STATUS_LABELS, status);
@@ -182,7 +206,11 @@ function formatLastLogin(value?: string | null) {
 function DetailField({ label, value }: { label: string; value: ReactNode }) {
   return (
     <Grid size={{ xs: 12, md: 6 }}>
-      <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+      <Typography
+        variant="caption"
+        color="text.secondary"
+        sx={{ display: "block" }}
+      >
         {label}
       </Typography>
       <Typography variant="body2" component="div">
@@ -195,7 +223,13 @@ function DetailField({ label, value }: { label: string; value: ReactNode }) {
 /** Icon mở rộng cho Accordion — SVG cục bộ, tránh thêm dependency @mui/icons-material. */
 function ChevronDownIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+    >
       <path
         d="M6 9l6 6 6-6"
         stroke="currentColor"
@@ -231,7 +265,17 @@ export function IamUserScreen({
   const [editingUser, setEditingUser] = useState<IamUser | null>(null);
   const [formState, setFormState] = useState<UserFormState>(EMPTY_FORM);
   const [formError, setFormError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [viewingUser, setViewingUser] = useState<IamUser | null>(null);
+  const [isGrantModalOpen, setIsGrantModalOpen] = useState(false);
+  const [grantPermissionId, setGrantPermissionId] = useState("");
+  const [grantReason, setGrantReason] = useState("");
+  const [grantError, setGrantError] = useState("");
+  const [revokingPermissionId, setRevokingPermissionId] = useState<
+    string | null
+  >(null);
+  const [revokeReason, setRevokeReason] = useState("");
+  const [revokeError, setRevokeError] = useState("");
 
   const usersQuery = useIamUsers({
     keyword: search.trim(),
@@ -244,8 +288,16 @@ export function IamUserScreen({
   const rolesQuery = useIamRoles({ per_page: 100 });
   const departmentsQuery = useIamDepartments({ status: "ACTIVE" });
   const warehousesQuery = useIamScopeWarehouses();
+  const permissionsQuery = useIamPermissions({ per_page: 200 });
   const createUser = useCreateIamUser();
   const updateUser = useUpdateIamUser();
+  const overridesQuery = useIamUserPermissionOverrides(viewingUser?.user_id);
+  const grantPermission = useGrantIamUserPermission();
+  const revokePermission = useRevokeIamUserPermission();
+  const overrides = useMemo(
+    () => overridesQuery.data ?? [],
+    [overridesQuery.data],
+  );
 
   const warehouses = useMemo(
     () =>
@@ -302,10 +354,20 @@ export function IamUserScreen({
     ? roleFilteredUsers.slice((page - 1) * perPage, page * perPage)
     : users;
 
-  const rowSelection = useRowSelection(
-    displayedUsers,
-    (user) => user.user_id,
-  );
+  const rowSelection = useRowSelection(displayedUsers, (user) => user.user_id);
+
+  const {
+    sortedRows: sortedUsers,
+    sortState,
+    requestSort,
+  } = useClientSort(displayedUsers, {
+    name: (user) => user.display_name,
+    department: (user) => departmentLabel(user),
+    role: (user) => user.roles?.[0]?.role_name,
+    scope: (user) => scopeLabel(user.roles?.[0], warehouseNames),
+    status: (user) => user.status,
+    lastLogin: (user) => user.last_login_at ?? undefined,
+  });
 
   const selectedRole = useMemo(
     () => roles.find((role) => role.role_id === formState.roleId),
@@ -332,8 +394,83 @@ export function IamUserScreen({
         [];
       permissions.forEach((permission) => keys.add(permission.permission_key));
     });
+    // Yêu cầu #2/#4: quyền cấp riêng cộng thêm vào quyền theo role, nên "Quyền
+    // hiệu lực" hiển thị ở đây phải là hợp của cả hai, không chỉ quyền theo role.
+    overrides.forEach((override) => keys.add(override.permission_key));
     return [...keys].sort((a, b) => a.localeCompare(b));
-  }, [viewingUser, roles]);
+  }, [viewingUser, roles, overrides]);
+
+  const grantablePermissions = useMemo(() => {
+    const grantedIds = new Set(overrides.map((o) => o.permission_id));
+    return (permissionsQuery.data ?? []).filter(
+      (permission) => !grantedIds.has(permission.permission_id),
+    );
+  }, [permissionsQuery.data, overrides]);
+
+  const openGrantModal = () => {
+    setGrantPermissionId("");
+    setGrantReason("");
+    setGrantError("");
+    setIsGrantModalOpen(true);
+  };
+
+  const closeGrantModal = () => {
+    if (grantPermission.isPending) return;
+    setIsGrantModalOpen(false);
+  };
+
+  const submitGrantPermission = async () => {
+    if (!viewingUser) return;
+    if (!grantPermissionId) {
+      setGrantError("Vui lòng chọn quyền cần cấp.");
+      return;
+    }
+    if (grantReason.trim().length < 5) {
+      setGrantError("Vui lòng nhập lý do (tối thiểu 5 ký tự).");
+      return;
+    }
+    try {
+      await grantPermission.mutateAsync({
+        userId: viewingUser.user_id,
+        payload: {
+          permission_id: grantPermissionId,
+          reason: grantReason.trim(),
+        },
+      });
+      setIsGrantModalOpen(false);
+    } catch (error) {
+      setGrantError(getMutationErrorMessage(error));
+    }
+  };
+
+  const openRevokeConfirm = (permissionId: string) => {
+    setRevokingPermissionId(permissionId);
+    setRevokeReason("");
+    setRevokeError("");
+  };
+
+  const closeRevokeConfirm = () => {
+    if (revokePermission.isPending) return;
+    setRevokingPermissionId(null);
+  };
+
+  const submitRevokePermission = async () => {
+    if (!viewingUser || !revokingPermissionId) return;
+    if (revokeReason.trim().length < 5) {
+      setRevokeError("Vui lòng nhập lý do (tối thiểu 5 ký tự).");
+      return;
+    }
+    try {
+      await revokePermission.mutateAsync({
+        userId: viewingUser.user_id,
+        permissionId: revokingPermissionId,
+        reason: revokeReason.trim(),
+      });
+      setRevokingPermissionId(null);
+    } catch (error) {
+      setRevokeError(getMutationErrorMessage(error));
+    }
+  };
 
   const resetForm = () => {
     setFormState({
@@ -347,6 +484,7 @@ export function IamUserScreen({
     setEditingUser(null);
     resetForm();
     setFormError("");
+    setFieldErrors({});
     setIsModalOpen(true);
   };
 
@@ -359,6 +497,7 @@ export function IamUserScreen({
       roleId: defaultRoleId,
     });
     setFormError("");
+    setFieldErrors({});
     setIsModalOpen(true);
   }, [canManageUsers, openCreateOnMount, defaultRoleId]);
 
@@ -383,8 +522,10 @@ export function IamUserScreen({
       effectiveTo: primaryRole?.pivot?.effective_to?.slice(0, 10) ?? "",
       status: user.status,
       password: "",
+      reason: "",
     });
     setFormError("");
+    setFieldErrors({});
     setIsModalOpen(true);
   };
 
@@ -401,6 +542,7 @@ export function IamUserScreen({
     setIsModalOpen(false);
     setEditingUser(null);
     setFormError("");
+    setFieldErrors({});
   };
 
   const updateField = <K extends keyof UserFormState>(
@@ -408,36 +550,59 @@ export function IamUserScreen({
     value: UserFormState[K],
   ) => {
     setFormState((current) => ({ ...current, [key]: value }));
+    setFieldErrors((current) => {
+      if (!current[key]) return current;
+      const next = { ...current };
+      delete next[key];
+      return next;
+    });
+  };
+
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+    const displayName = formState.displayName.trim();
+    const username = formState.username.trim();
+    const phone = formState.phone.trim();
+    const password = formState.password;
+
+    if (!displayName) {
+      errors.displayName = "Vui lòng nhập họ và tên.";
+    }
+    if (!username) {
+      errors.username = "Vui lòng nhập tên đăng nhập.";
+    }
+    if (!formState.roleId) {
+      errors.roleId = "Vui lòng chọn vai trò.";
+    }
+    if (!editingUser && password.length < 8) {
+      const passwordTooShortMessage = "Mật khẩu tạm phải có ít nhất 8 ký tự.";
+      errors.password = passwordTooShortMessage;
+    } else if (editingUser && password && password.length < 8) {
+      const passwordTooShortMessage = "Mật khẩu đặt lại phải có ít nhất 8 ký tự.";
+      errors.password = passwordTooShortMessage;
+    }
+    if (phone && !/^0\d{9}$/.test(phone)) {
+      errors.phone =
+        "Số điện thoại phải gồm đúng 10 chữ số và bắt đầu bằng số 0.";
+    }
+    if (formState.reason.trim().length < 5) {
+      errors.reason =
+        "Vui lòng nhập lý do (tối thiểu 5 ký tự) để lưu vết thay đổi.";
+    }
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setFormError("");
+    if (!validateForm()) return;
 
     const displayName = formState.displayName.trim();
     const username = formState.username.trim().toLowerCase();
     const email = formState.email.trim();
     const phone = formState.phone.trim();
     const password = formState.password;
-
-    if (!displayName || !username || !formState.roleId) {
-      setFormError("Vui lòng nhập đầy đủ họ tên, tên đăng nhập và vai trò.");
-      return;
-    }
-    if (!editingUser && password.length < 8) {
-      setFormError("Mật khẩu tạm phải có ít nhất 8 ký tự.");
-      return;
-    }
-    if (editingUser && password && password.length < 8) {
-      setFormError("Mật khẩu đặt lại phải có ít nhất 8 ký tự.");
-      return;
-    }
-    if (phone && !/^0\d{9}$/.test(phone)) {
-      setFormError(
-        "Số điện thoại phải gồm đúng 10 chữ số và bắt đầu bằng số 0.",
-      );
-      return;
-    }
 
     const basePayload = {
       display_name: displayName,
@@ -457,12 +622,14 @@ export function IamUserScreen({
       effective_to: formState.effectiveTo || null,
     };
     const currentRole = editingUser?.roles?.[0];
+    const reason = formState.reason.trim();
 
     try {
       if (editingUser) {
         await updateUser.mutateAsync({
           userId: editingUser.user_id,
           assignment,
+          reason,
           currentAssignment: currentRole
             ? {
                 role_id: currentRole.role_id,
@@ -481,6 +648,7 @@ export function IamUserScreen({
       } else {
         await createUser.mutateAsync({
           assignment,
+          reason,
           payload: {
             ...basePayload,
             password,
@@ -490,7 +658,15 @@ export function IamUserScreen({
       setIsModalOpen(false);
       setEditingUser(null);
     } catch (error) {
-      setFormError(getMutationErrorMessage(error));
+      // Lỗi nào gắn được vào ô nhập thì hiện ngay dưới ô đó (vd email trùng),
+      // banner chỉ giữ phần không thuộc ô nào — trước đây mọi lỗi đều bị dồn
+      // vào banner nên người dùng chỉ thấy "Dữ liệu gửi lên không hợp lệ".
+      const { fieldErrors: serverFieldErrors, message } = resolveFormErrors(
+        error,
+        USER_FORM_FIELDS,
+      );
+      setFieldErrors((current) => ({ ...current, ...serverFieldErrors }));
+      setFormError(message ?? "");
     }
   };
 
@@ -597,16 +773,22 @@ export function IamUserScreen({
               </MenuItem>
             ))}
           </Select>
+          {/* Tổng số dòng đặt ngay trong toolbar (cạnh bộ lọc/số dòng mỗi trang) để
+           * dễ thấy — thay vì chỉ hiện ở MvpPaginationFooter tít dưới bảng dài. */}
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ whiteSpace: "nowrap" }}
+          ></Typography>
           <div className="spacer" />
           {canManageUsers ? (
-            <Button
-              variant="contained"
+            <ActionButton
+              kind="create"
               onClick={openCreate}
               disabled={rolesQuery.isLoading || roles.length === 0}
-              startIcon={<UserAddOutlined />}
             >
               Thêm người dùng
-            </Button>
+            </ActionButton>
           ) : null}
         </div>
 
@@ -615,16 +797,9 @@ export function IamUserScreen({
             severity="error"
             sx={{ marginBottom: "14px" }}
             action={
-              <Button
-                size="small"
-                color="inherit"
-                onClick={() => usersQuery.refetch()}
-                startIcon={
-                  <ReloadOutlined style={{ color: ACTION_ICON_COLORS.sync }} />
-                }
-              >
+              <ActionButton kind="refresh" onClick={() => usersQuery.refetch()}>
                 Thử lại
-              </Button>
+              </ActionButton>
             }
           >
             {listError}
@@ -649,12 +824,44 @@ export function IamUserScreen({
                   />
                 </th>
                 <th className="stt-col">STT</th>
-                <th>Người dùng</th>
-                <th>Phòng ban</th>
-                <th>Vai trò</th>
-                <th>Phạm vi</th>
-                <th>Trạng thái</th>
-                <th>Đăng nhập cuối</th>
+                <SortableTh
+                  label="Người dùng"
+                  sortKey="name"
+                  sortState={sortState}
+                  onSort={requestSort}
+                />
+                <SortableTh
+                  label="Phòng ban"
+                  sortKey="department"
+                  sortState={sortState}
+                  onSort={requestSort}
+                />
+                <SortableTh
+                  label="Vai trò"
+                  sortKey="role"
+                  sortState={sortState}
+                  onSort={requestSort}
+                />
+                <SortableTh
+                  label="Phạm vi"
+                  sortKey="scope"
+                  sortState={sortState}
+                  onSort={requestSort}
+                />
+                <SortableTh
+                  label="Trạng thái"
+                  sortKey="status"
+                  sortState={sortState}
+                  onSort={requestSort}
+                  sortType="value"
+                />
+                <SortableTh
+                  label="Đăng nhập cuối"
+                  sortKey="lastLogin"
+                  sortState={sortState}
+                  onSort={requestSort}
+                  sortType="value"
+                />
                 <th aria-label="Hành động" />
               </tr>
             </thead>
@@ -665,8 +872,8 @@ export function IamUserScreen({
                     <span className="muted">Đang tải dữ liệu...</span>
                   </td>
                 </tr>
-              ) : displayedUsers.length > 0 ? (
-                displayedUsers.map((user, index) => {
+              ) : sortedUsers.length > 0 ? (
+                sortedUsers.map((user, index) => {
                   const primaryRole = user.roles?.[0];
                   return (
                     <tr key={user.user_id}>
@@ -698,29 +905,19 @@ export function IamUserScreen({
                       <td>{formatLastLogin(user.last_login_at)}</td>
                       <td>
                         <Stack direction="row" spacing={1}>
-                          <Button
-                            size="small"
+                          <ActionButton
+                            kind="view"
                             onClick={() => openView(user)}
-                            startIcon={
-                              <EyeOutlined
-                                style={{ color: ACTION_ICON_COLORS.view }}
-                              />
-                            }
                           >
                             Xem
-                          </Button>
+                          </ActionButton>
                           {canManageUsers ? (
-                            <Button
-                              size="small"
+                            <ActionButton
+                              kind="edit"
                               onClick={() => openEdit(user)}
-                              startIcon={
-                                <EditOutlined
-                                  style={{ color: ACTION_ICON_COLORS.edit }}
-                                />
-                              }
                             >
                               Sửa
-                            </Button>
+                            </ActionButton>
                           ) : null}
                         </Stack>
                       </td>
@@ -750,22 +947,21 @@ export function IamUserScreen({
 
         <Dialog
           open={isModalOpen}
-          onClose={closeModal}
+          onClose={guardBackdropClose(closeModal)}
           maxWidth="md"
           fullWidth
         >
           <DialogTitle sx={{ pr: 6, position: "relative" }}>
             {editingUser ? "Sửa người dùng" : "Thêm người dùng"}
-            <IconButton
-              aria-label="Đóng"
+            <ActionIconButton
+              kind="close"
+              label="Đóng"
               onClick={closeModal}
               disabled={isSaving}
               sx={{ position: "absolute", right: 10, top: 8 }}
-            >
-              <CloseOutlined style={{ fontSize: 15 }} />
-            </IconButton>
+            />
           </DialogTitle>
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} noValidate>
             <DialogContent dividers>
               {formError ? (
                 <Alert severity="error" sx={{ marginBottom: "14px" }}>
@@ -784,7 +980,10 @@ export function IamUserScreen({
                       height: "100%",
                     }}
                   >
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2 }}>
+                    <Typography
+                      variant="subtitle2"
+                      sx={{ fontWeight: 700, mb: 2 }}
+                    >
                       Thông tin tài khoản
                     </Typography>
                     <Stack spacing={2}>
@@ -800,6 +999,8 @@ export function IamUserScreen({
                         }
                         autoFocus
                         disabled={isSaving}
+                        error={Boolean(fieldErrors.displayName)}
+                        helperText={fieldErrors.displayName}
                       />
                       <TextField
                         id="iam-username"
@@ -813,6 +1014,8 @@ export function IamUserScreen({
                         }
                         autoComplete="off"
                         disabled={isSaving}
+                        error={Boolean(fieldErrors.username)}
+                        helperText={fieldErrors.username}
                       />
                       <TextField
                         id="iam-phone"
@@ -827,6 +1030,8 @@ export function IamUserScreen({
                           )
                         }
                         disabled={isSaving}
+                        error={Boolean(fieldErrors.phone)}
+                        helperText={fieldErrors.phone}
                         slotProps={{
                           htmlInput: { inputMode: "numeric", maxLength: 10 },
                         }}
@@ -843,6 +1048,8 @@ export function IamUserScreen({
                         }
                         autoComplete="off"
                         disabled={isSaving}
+                        error={Boolean(fieldErrors.email)}
+                        helperText={fieldErrors.email}
                       />
                       <FormControl
                         fullWidth
@@ -929,7 +1136,10 @@ export function IamUserScreen({
                       height: "100%",
                     }}
                   >
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2 }}>
+                    <Typography
+                      variant="subtitle2"
+                      sx={{ fontWeight: 700, mb: 2 }}
+                    >
                       Phân quyền
                     </Typography>
                     <Stack spacing={2}>
@@ -938,13 +1148,12 @@ export function IamUserScreen({
                           fullWidth
                           size="small"
                           required
+                          error={Boolean(fieldErrors.roleId)}
                           disabled={
                             isSaving || roles.length === 0 || isEditingSelf
                           }
                         >
-                          <InputLabel id="iam-role-label">
-                            Vai trò
-                          </InputLabel>
+                          <InputLabel id="iam-role-label">Vai trò</InputLabel>
                           <Select
                             id="iam-role"
                             labelId="iam-role-label"
@@ -961,6 +1170,11 @@ export function IamUserScreen({
                               </MenuItem>
                             ))}
                           </Select>
+                          {fieldErrors.roleId ? (
+                            <FormHelperText>
+                              {fieldErrors.roleId}
+                            </FormHelperText>
+                          ) : null}
                         </FormControl>
                         {isEditingSelf ? (
                           <Typography
@@ -1008,8 +1222,8 @@ export function IamUserScreen({
                           color="text.secondary"
                           sx={{ display: "block", mt: 0.75 }}
                         >
-                          Phạm vi được gán tường minh theo kho. Loại phạm vi
-                          của vai trò đang chọn:{" "}
+                          Phạm vi được gán tường minh theo kho. Loại phạm vi của
+                          vai trò đang chọn:{" "}
                           {scopeTypeLabel(selectedRole?.scope_type)}.
                         </Typography>
                       </div>
@@ -1068,6 +1282,28 @@ export function IamUserScreen({
                             : "Tối thiểu 8 ký tự"
                         }
                         disabled={isSaving}
+                        error={Boolean(fieldErrors.password)}
+                        helperText={fieldErrors.password}
+                      />
+                      <TextField
+                        id="iam-reason"
+                        label="Lý do cập nhật"
+                        required
+                        multiline
+                        minRows={2}
+                        fullWidth
+                        size="small"
+                        value={formState.reason}
+                        onChange={(event) =>
+                          updateField("reason", event.target.value)
+                        }
+                        placeholder="Vd: Điều chuyển nhân sự sang phòng ban khác"
+                        disabled={isSaving}
+                        error={Boolean(fieldErrors.reason)}
+                        helperText={
+                          fieldErrors.reason ??
+                          "Bắt buộc — dùng để truy vết lịch sử thay đổi quyền/vai trò."
+                        }
                       />
                       {editingUser ? (
                         <Box>
@@ -1095,8 +1331,8 @@ export function IamUserScreen({
                             color="text.secondary"
                             sx={{ display: "block", mt: 0.75 }}
                           >
-                            Hệ thống dùng phiên bản hiện tại để ngăn ghi đè
-                            khi có thay đổi đồng thời.
+                            Hệ thống dùng phiên bản hiện tại để ngăn ghi đè khi
+                            có thay đổi đồng thời.
                           </Typography>
                         </Box>
                       ) : null}
@@ -1106,23 +1342,20 @@ export function IamUserScreen({
               </Grid>
             </DialogContent>
             <DialogActions>
-              <Button
+              <ActionButton
+                kind="cancel"
                 onClick={closeModal}
                 disabled={isSaving}
-                startIcon={
-                  <CloseOutlined style={{ color: ACTION_ICON_COLORS.neutral }} />
-                }
               >
                 Hủy
-              </Button>
-              <Button
-                type="submit"
-                variant="contained"
+              </ActionButton>
+              <ActionButton
+                kind="save"
                 disabled={isSaving || !formState.roleId}
-                startIcon={<SaveOutlined />}
+                type="submit"
               >
                 {isSaving ? "Đang lưu..." : "Lưu người dùng"}
-              </Button>
+              </ActionButton>
             </DialogActions>
           </form>
         </Dialog>
@@ -1136,13 +1369,12 @@ export function IamUserScreen({
         >
           <DialogTitle sx={{ pr: 6, position: "relative" }}>
             Chi tiết người dùng
-            <IconButton
-              aria-label="Đóng"
+            <ActionIconButton
+              kind="close"
+              label="Đóng"
               onClick={closeView}
               sx={{ position: "absolute", right: 10, top: 8 }}
-            >
-              <CloseOutlined style={{ fontSize: 15 }} />
-            </IconButton>
+            />
           </DialogTitle>
           <DialogContent dividers>
             {viewingUser ? (
@@ -1168,7 +1400,10 @@ export function IamUserScreen({
                       label="Số điện thoại"
                       value={viewingUser.phone || "—"}
                     />
-                    <DetailField label="Email" value={viewingUser.email || "—"} />
+                    <DetailField
+                      label="Email"
+                      value={viewingUser.email || "—"}
+                    />
                     <DetailField
                       label="Phòng ban"
                       value={departmentLabel(viewingUser)}
@@ -1195,7 +1430,10 @@ export function IamUserScreen({
                 </Box>
 
                 <Box>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+                  <Typography
+                    variant="subtitle2"
+                    sx={{ fontWeight: 700, mb: 1 }}
+                  >
                     Vai trò &amp; phạm vi ({viewingUser.roles?.length ?? 0})
                   </Typography>
                   {viewingUser.roles && viewingUser.roles.length > 0 ? (
@@ -1219,7 +1457,10 @@ export function IamUserScreen({
                           {viewingUser.roles.map((role) => (
                             <TableRow key={role.role_id}>
                               <TableCell>
-                                <Stack spacing={0.5} sx={{ alignItems: "flex-start" }}>
+                                <Stack
+                                  spacing={0.5}
+                                  sx={{ alignItems: "flex-start" }}
+                                >
                                   <Typography variant="body2">
                                     {role.role_name}
                                   </Typography>
@@ -1229,8 +1470,12 @@ export function IamUserScreen({
                                   />
                                 </Stack>
                               </TableCell>
-                              <TableCell>{scopeLabel(role, warehouseNames)}</TableCell>
-                              <TableCell>{effectiveWindowLabel(role.pivot)}</TableCell>
+                              <TableCell>
+                                {scopeLabel(role, warehouseNames)}
+                              </TableCell>
+                              <TableCell>
+                                {effectiveWindowLabel(role.pivot)}
+                              </TableCell>
                             </TableRow>
                           ))}
                         </TableBody>
@@ -1239,6 +1484,92 @@ export function IamUserScreen({
                   ) : (
                     <Typography variant="body2" color="text.secondary">
                       Chưa gán vai trò nào.
+                    </Typography>
+                  )}
+                </Box>
+
+                <Box>
+                  <Stack
+                    direction="row"
+                    sx={{
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      mb: 1,
+                    }}
+                  >
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                      Quyền cấp riêng ({overrides.length})
+                    </Typography>
+                    {canManageUsers ? (
+                      <ActionButton kind="grant" onClick={openGrantModal}>
+                        + Cấp quyền
+                      </ActionButton>
+                    ) : null}
+                  </Stack>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ display: "block", mb: 1 }}
+                  >
+                    Quyền cấp riêng chỉ CỘNG THÊM vào quyền theo vai trò, không
+                    thu hồi quyền của vai trò.
+                  </Typography>
+                  {overrides.length > 0 ? (
+                    <Box
+                      sx={{
+                        border: "1px solid",
+                        borderColor: "divider",
+                        borderRadius: 2,
+                        overflow: "hidden",
+                      }}
+                    >
+                      <Table size="small">
+                        <TableHead>
+                          <TableRow>
+                            <TableCell>Quyền</TableCell>
+                            <TableCell>Cấp lúc</TableCell>
+                            <TableCell align="right">Hành động</TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {overrides.map((override) => (
+                            <TableRow key={override.user_permission_id}>
+                              <TableCell>
+                                <Stack spacing={0.25}>
+                                  <Typography variant="body2">
+                                    {override.permission_name}
+                                  </Typography>
+                                  <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                  >
+                                    {override.permission_key}
+                                  </Typography>
+                                </Stack>
+                              </TableCell>
+                              <TableCell>
+                                {formatDateTime(override.granted_at)}
+                              </TableCell>
+                              <TableCell align="right">
+                                {canManageUsers ? (
+                                  <ActionButton
+                                    kind="revoke"
+                                    onClick={() =>
+                                      openRevokeConfirm(override.permission_id)
+                                    }
+                                  >
+                                    Thu hồi
+                                  </ActionButton>
+                                ) : null}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </Box>
+                  ) : (
+                    <Typography variant="body2" color="text.secondary">
+                      Chưa cấp quyền riêng nào.
                     </Typography>
                   )}
                 </Box>
@@ -1266,7 +1597,11 @@ export function IamUserScreen({
                         sx={{ flexWrap: "wrap" }}
                       >
                         {effectivePermissionKeys.map((permissionKey) => (
-                          <Chip key={permissionKey} label={permissionKey} size="small" />
+                          <Chip
+                            key={permissionKey}
+                            label={permissionKey}
+                            size="small"
+                          />
                         ))}
                       </Stack>
                     ) : (
@@ -1279,6 +1614,109 @@ export function IamUserScreen({
               </Stack>
             ) : null}
           </DialogContent>
+        </Dialog>
+
+        <Dialog
+          open={isGrantModalOpen}
+          onClose={closeGrantModal}
+          maxWidth="xs"
+          fullWidth
+        >
+          <DialogTitle>Cấp quyền riêng cho người dùng</DialogTitle>
+          <DialogContent dividers>
+            <Stack spacing={2} sx={{ mt: 0.5 }}>
+              {grantError ? <Alert severity="error">{grantError}</Alert> : null}
+              <FormControl fullWidth size="small">
+                <InputLabel id="grant-permission-label">Quyền</InputLabel>
+                <Select
+                  labelId="grant-permission-label"
+                  label="Quyền"
+                  value={grantPermissionId}
+                  onChange={(event) => setGrantPermissionId(event.target.value)}
+                >
+                  <MenuItem value="">Chọn quyền</MenuItem>
+                  {grantablePermissions.map((permission) => (
+                    <MenuItem
+                      key={permission.permission_id}
+                      value={permission.permission_id}
+                    >
+                      {permission.permission_name} ({permission.permission_key})
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <TextField
+                label="Lý do"
+                required
+                multiline
+                minRows={2}
+                fullWidth
+                size="small"
+                value={grantReason}
+                onChange={(event) => setGrantReason(event.target.value)}
+                placeholder="Vd: Hỗ trợ tạm thời cho dự án X"
+              />
+            </Stack>
+          </DialogContent>
+          <DialogActions>
+            <ActionButton
+              kind="cancel"
+              onClick={closeGrantModal}
+              disabled={grantPermission.isPending}
+            >
+              Hủy
+            </ActionButton>
+            <ActionButton
+              kind="grant"
+              onClick={submitGrantPermission}
+              disabled={grantPermission.isPending}
+            >
+              Cấp quyền
+            </ActionButton>
+          </DialogActions>
+        </Dialog>
+
+        <Dialog
+          open={Boolean(revokingPermissionId)}
+          onClose={closeRevokeConfirm}
+          maxWidth="xs"
+          fullWidth
+        >
+          <DialogTitle>Thu hồi quyền cấp riêng</DialogTitle>
+          <DialogContent dividers>
+            <Stack spacing={2} sx={{ mt: 0.5 }}>
+              {revokeError ? (
+                <Alert severity="error">{revokeError}</Alert>
+              ) : null}
+              <TextField
+                label="Lý do"
+                required
+                multiline
+                minRows={2}
+                fullWidth
+                size="small"
+                value={revokeReason}
+                onChange={(event) => setRevokeReason(event.target.value)}
+                placeholder="Vd: Kết thúc dự án X, thu hồi quyền tạm thời"
+              />
+            </Stack>
+          </DialogContent>
+          <DialogActions>
+            <ActionButton
+              kind="cancel"
+              onClick={closeRevokeConfirm}
+              disabled={revokePermission.isPending}
+            >
+              Hủy
+            </ActionButton>
+            <ActionButton
+              kind="revoke"
+              onClick={submitRevokePermission}
+              disabled={revokePermission.isPending}
+            >
+              Thu hồi
+            </ActionButton>
+          </DialogActions>
         </Dialog>
       </div>
     </ThemeProvider>

@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import { Drawer, Skeleton } from "antd";
-
 export interface DetailDrawerProps {
   /** Whether the drawer is visible */
   open: boolean;
@@ -37,7 +36,10 @@ export interface DetailDrawerProps {
  *   title="Chi tiết phòng ban"
  *   onClose={onClose}
  *   loading={loading}
- *   extra={<Button onClick={onEdit}>Chỉnh sửa</Button>}
+ *   extra={<ActionButton
+  kind="edit"
+  onClick={onEdit}
+>Chỉnh sửa</ActionButton>}
  * >
  *   <Descriptions>
  *     <Descriptions.Item label="Mã">DEP-001</Descriptions.Item>

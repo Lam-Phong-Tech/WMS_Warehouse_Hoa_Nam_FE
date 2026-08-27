@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import { Button } from "antd";
 import { UI_STATE, uiStateProps } from "@/shared/constants/ui-state";
+import { ActionButton } from "@/shared/components/actions";
 
 export interface ErrorStateProps {
   /** Tiêu đề lỗi. */
@@ -84,19 +84,9 @@ export function ErrorState({
           {description}
         </div>
         {onRetry && (
-          <Button
-            onClick={onRetry}
-            style={{
-              height: 30,
-              padding: "0 13px",
-              border: "1.5px solid #2b2b2b",
-              borderRadius: 3,
-              fontWeight: 600,
-              fontSize: 12.5,
-            }}
-          >
+          <ActionButton kind="refresh" onClick={onRetry}>
             {retryLabel}
-          </Button>
+          </ActionButton>
         )}
         {children && <div style={{ marginTop: 12 }}>{children}</div>}
       </div>

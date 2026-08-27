@@ -234,3 +234,17 @@ export const AUDIT_ACTION_LABELS = {
   ARCHIVE: "Lưu trữ",
   RESTORE: "Khôi phục",
 } as const;
+
+/**
+ * Nhãn phân hệ hiển thị trên bảng/dropdown lọc Nhật ký hệ thống — đúng 5
+ * luồng theo yêu cầu vận hành mục 6 (hệ thống & danh mục, nhập kho, xuất kho,
+ * bảo hành, kiểm kê/đối soát), khớp giá trị thật BE ghi vào cột `module`
+ * (Modules\AuditLog\app\Services\AuditLogger::MODULE_*, BE repo).
+ */
+export const AUDIT_MODULE_LABELS: Record<string, string> = {
+  SYSTEM: "Hệ thống & danh mục",
+  INBOUND: "Nhập kho",
+  OUTBOUND: "Xuất kho",
+  WARRANTY: "Bảo hành",
+  STOCKTAKE: "Tồn kho & kiểm soát",
+};

@@ -21,8 +21,13 @@ export const ROUTE_PERMISSIONS: Record<string, string | string[] | undefined> =
     [ROUTES.AGENCY_CREATE]: [P.AGENCY_MANAGE],
     [ROUTES.DEFECTS]: [P.DEFECT_VIEW, P.DEFECT_MANAGE],
     [ROUTES.DEFECT_CREATE]: [P.DEFECT_MANAGE],
-    // BE cấp scan.execute cho WAREHOUSE_STAFF và chấp nhận scan.execute|scan.classify.
-    [ROUTES.SCAN]: [P.INVENTORY_TRACE, P.SCAN_EXECUTE, P.SCAN_CLASSIFY],
+    // Gate theo đúng API mà màn hình thực sự gọi, không theo tên màn.
+    // SCR-SCAN-01 có 3 tab: Mã vật lý (GET /physical-codes -> inventory.trace),
+    // Lô quét và Sự kiện quét (GET /scan/batches, /scan/events -> inventory.view).
+    // scan.execute/scan.classify chỉ mở POST /scan/classify — KHÔNG mở tab nào ở
+    // đây. Để chúng trong danh sách vào màn khiến một vai chỉ có scan.execute vào
+    // được nhưng cả ba tab đều 403; đó là lệch FE↔BE, không phải phân quyền.
+    [ROUTES.SCAN]: [P.INVENTORY_TRACE, P.INVENTORY_VIEW],
 
     [ROUTES.INBOUND]: [
       P.INBOUND_VIEW,
@@ -39,9 +44,11 @@ export const ROUTE_PERMISSIONS: Record<string, string | string[] | undefined> =
       P.CONTAINER_MANAGE,
     ],
 
+    // P.OUTBOUND_CREATE đã gỡ khỏi danh sách: mã `outbound.create` bị BE thu hồi
+    // 27/08 vì không route nào đọc tới, nên không còn ai khớp được. Quyền vào màn
+    // xuất kho vẫn đủ rộng nhờ các mã còn lại.
     [ROUTES.OUTBOUND]: [
       P.OUTBOUND_VIEW,
-      P.OUTBOUND_CREATE,
       P.OUTBOUND_SCAN,
       P.OUTBOUND_POST,
       P.OUTBOUND_IMPORT,

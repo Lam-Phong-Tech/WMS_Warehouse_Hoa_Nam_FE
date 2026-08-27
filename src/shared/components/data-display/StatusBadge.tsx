@@ -1,4 +1,4 @@
-import { Tag } from "antd";
+import { Chip } from "@mui/material";
 
 export interface StatusBadgeProps {
   /** Trạng thái hoạt động (true) hay ngừng (false). */
@@ -8,7 +8,7 @@ export interface StatusBadgeProps {
 }
 
 /**
- * Badge trạng thái hoạt động/ngừng — gom pattern `active ? <Tag green> : <Tag>`
+ * Badge trạng thái hoạt động/ngừng — gom pattern `active ? <Chip success> : <Chip>`
  * lặp ở nhiều bảng (org-units, departments, positions, employees...).
  */
 export function StatusBadge({
@@ -17,8 +17,8 @@ export function StatusBadge({
   inactiveLabel = "Ngừng",
 }: StatusBadgeProps) {
   return active ? (
-    <Tag color="green">{activeLabel}</Tag>
+    <Chip label={activeLabel} color="success" size="small" />
   ) : (
-    <Tag>{inactiveLabel}</Tag>
+    <Chip label={inactiveLabel} size="small" />
   );
 }

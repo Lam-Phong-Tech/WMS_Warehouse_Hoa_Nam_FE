@@ -24,16 +24,42 @@ function getErrorCode(body: ApiErrorResponse | undefined): string | undefined {
   return body?.error_code ?? body?.error?.code;
 }
 
+/**
+ * Câu tổng chung chung của BE cho lỗi nhập liệu: đúng về mặt kỹ thuật nhưng
+ * không nói được người dùng đã sai ở đâu. Khi response kèm theo `errors` chi
+ * tiết theo từng trường, các câu này phải nhường chỗ cho chi tiết đó.
+ */
+const GENERIC_VALIDATION_MESSAGES = new Set([
+  "Dữ liệu gửi lên không hợp lệ.",
+  "Dữ liệu đầu vào không hợp lệ.",
+  "Dữ liệu không hợp lệ.",
+  "Dữ liệu không đáp ứng quy tắc nghiệp vụ.",
+  "Yêu cầu không hợp lệ.",
+  "Không thể thực hiện yêu cầu do dữ liệu hoặc trạng thái hiện tại không hợp lệ.",
+  "The given data was invalid.",
+  "Validation failed.",
+]);
+
+function isGenericValidationMessage(message?: string): boolean {
+  return !!message && GENERIC_VALIDATION_MESSAGES.has(message.trim());
+}
+
+/**
+ * Ghép các lỗi theo từng trường thành một câu đọc được.
+ *
+ * KHÔNG kèm tên trường thô (`email: ...`): tên đó là khoá kỹ thuật snake_case
+ * của API, người dùng cuối không hiểu. Message của BE đã tự mở đầu bằng nhãn
+ * tiếng Việt của chính trường đó (xem lang/vi/validation.php — mọi câu đều
+ * dạng ":Attribute ..."), nên nối thẳng là đủ ngữ cảnh và đọc tự nhiên hơn.
+ */
 function formatFieldErrors(
   errors?: Record<string, string[] | string>,
 ): string | undefined {
   if (!errors || Object.keys(errors).length === 0) return undefined;
-  return Object.entries(errors)
-    .map(
-      ([field, message]) =>
-        `${field}: ${Array.isArray(message) ? message[0] : String(message)}`,
-    )
-    .join("; ");
+  const messages = Object.values(errors)
+    .map((message) => (Array.isArray(message) ? message[0] : String(message)))
+    .filter((message) => message.trim() !== "");
+  return messages.length > 0 ? messages.join(" ") : undefined;
 }
 
 /** Lỗi validation theo field — đọc `errors` (flat) trước, fallback `error.details` (nested). */
@@ -332,6 +358,20 @@ export function getApiErrorMessage(
 ): string {
   const data = getResponseData(error);
   if (data) {
+    // Lỗi nhập liệu: `errors` nói chính xác trường nào sai và sai thế nào, còn
+    // `message` chỉ là câu tổng ("Dữ liệu gửi lên không hợp lệ."). Ưu tiên chi
+    // tiết trước — trước đây `message` được trả về vô điều kiện nên phần
+    // `errors` không bao giờ tới được người dùng, mọi lỗi nhập liệu trên toàn
+    // hệ thống đều hiện đúng một câu chung chung.
+    const fieldErrors = formatFieldErrors(getFieldErrors(data));
+    if (fieldErrors) {
+      // Message nghiệp vụ cụ thể (vd "Không đủ tồn để xuất") vẫn phải giữ:
+      // nó mang thông tin mà chi tiết theo trường không có.
+      return isGenericValidationMessage(data.message) || !data.message
+        ? fieldErrors
+        : `${data.message} ${fieldErrors}`;
+    }
+
     // BE (ApiError::abort / ApiConventionMiddleware) luôn gửi kèm cả `message`
     // (câu tiếng Việt thân thiện) và `error_code` (mã SCREAMING_SNAKE_CASE
     // dùng để so sánh bằng code, không phải để hiển thị). Phải ưu tiên message
@@ -339,11 +379,10 @@ export function getApiErrorMessage(
     // thích — vì error_code hầu như luôn có mặt trên mọi response lỗi.
     if (data.message) return data.message;
 
-    const fieldErrors = formatFieldErrors(getFieldErrors(data));
-    if (fieldErrors) return fieldErrors;
-
-    const errorCode = getErrorCode(data);
-    if (errorCode) return errorCode;
+    // Không fallback về `error_code` (vd "VALIDATION_ERROR") — đó là mã kỹ
+    // thuật để so sánh bằng code, không phải câu dành cho người dùng cuối.
+    // Nếu BE lỡ không kèm `message`, rơi xuống các fallback thân thiện phía
+    // dưới thay vì lộ mã thô ra UI.
   }
 
   if (
@@ -450,6 +489,74 @@ export function extractFieldErrorsRaw(
     result[field] = Array.isArray(msgs) ? msgs[0] : String(msgs);
   }
   return Object.keys(result).length > 0 ? result : null;
+}
+
+/**
+ * Chia lỗi từ server thành hai phần cho các form dựng tay bằng MUI + `useState`
+ * (phần lớn màn nghiệp vụ của dự án, không đi qua react-hook-form nên không
+ * dùng được `applyServerErrors`):
+ *
+ *  - `fieldErrors`: những lỗi gắn được vào một ô nhập cụ thể trên form, để hiện
+ *    ngay dưới ô đó (`error` + `helperText`);
+ *  - `message`: phần còn lại — lỗi của field form không có ô tương ứng, hoặc
+ *    lỗi nghiệp vụ chung — để hiện ở banner. `null` khi mọi lỗi đã gắn hết vào
+ *    field, lúc đó banner phải ẩn đi thay vì lặp lại thông tin.
+ *
+ * Không truyền `formFields` thì mọi lỗi field đều trả về trong `fieldErrors`.
+ *
+ * @example
+ * ```tsx
+ * catch (error) {
+ *   const { fieldErrors, message } = resolveFormErrors(error, ["email", "username"]);
+ *   setFieldErrors((current) => ({ ...current, ...fieldErrors }));
+ *   setFormError(message ?? "");
+ * }
+ * ```
+ */
+export function resolveFormErrors(
+  error: unknown,
+  formFields?: readonly string[],
+): { fieldErrors: Record<string, string>; message: string | null } {
+  const extracted = extractFieldErrorsRaw(error);
+  if (!extracted) {
+    return { fieldErrors: {}, message: getMutationErrorMessage(error) };
+  }
+
+  const supported = formFields ? new Set(formFields) : null;
+  const fieldErrors: Record<string, string> = {};
+  const leftovers: string[] = [];
+
+  for (const [serverField, message] of Object.entries(extracted)) {
+    if (!message) continue;
+
+    // Các form trong dự án đặt tên state không thống nhất: màn IAM dùng
+    // camelCase (`displayName`), màn PV/master-data dùng thẳng tên field của BE
+    // (`industry_id`). Thử cả hai biến thể rồi lấy cái form thật sự có ô hiển
+    // thị — nếu chỉ thử một kiểu thì nửa số màn sẽ nuốt mất lỗi trong im lặng.
+    const camelField = FIELD_MAP[serverField] ?? snakeToCamel(serverField);
+    const matched = !supported
+      ? camelField
+      : supported.has(serverField)
+        ? serverField
+        : supported.has(camelField)
+          ? camelField
+          : null;
+
+    if (matched) {
+      fieldErrors[matched] = message;
+    } else {
+      leftovers.push(message);
+    }
+  }
+
+  if (Object.keys(fieldErrors).length === 0) {
+    return { fieldErrors: {}, message: getMutationErrorMessage(error) };
+  }
+
+  return {
+    fieldErrors,
+    message: leftovers.length > 0 ? leftovers.join(" ") : null,
+  };
 }
 
 /** Gom lỗi về một shape thống nhất (dùng khi cần status/code, không chỉ message). */

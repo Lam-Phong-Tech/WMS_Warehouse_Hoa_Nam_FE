@@ -3,12 +3,10 @@ import { Table, Tag, Typography as AntTypography } from "antd";
 import {
   Alert,
   Box,
-  Button as MuiButton,
   Dialog,
   DialogContent,
   DialogTitle,
   Grid,
-  IconButton,
   Stack,
   TextField,
   ThemeProvider,
@@ -16,16 +14,15 @@ import {
 } from "@mui/material";
 import { muiTheme } from "@/app/mui-theme";
 import { useQuery } from "@tanstack/react-query";
-import {
-  CameraOutlined,
-  CloseOutlined,
-  SearchOutlined,
-} from "@/shared/components/icons";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { getApiErrorMessage } from "@/shared/api/api-error";
 import { CameraScanModal } from "@/shared/components/forms/CameraScanModal";
 import { classifyScanCodes } from "@/modules/scan/services/scanService";
 import { fetchWarehouses } from "@/modules/master-data/services/warehouse.service";
+import {
+  WARRANTY_STATUS_COLORS,
+  WARRANTY_STATUS_LABELS,
+} from "@/modules/warranty/constants";
 import {
   CONTAINER_TYPE_LABELS,
   INBOUND_STATUS_LABELS,
@@ -46,6 +43,8 @@ import {
   useStockMovementTrace,
   usePhysicalCodeTrace,
 } from "../hooks/use-inventory";
+import { useDialogExit } from "@/shared/utils/useDialogExit";
+import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 
 interface Props {
   movementId: string | null;
@@ -64,7 +63,10 @@ function text(value: unknown, fallback = "-"): string {
   return value === undefined || value === null ? fallback : String(value);
 }
 
-function nested(obj: RawRecord | undefined, key: string): RawRecord | undefined {
+function nested(
+  obj: RawRecord | undefined,
+  key: string,
+): RawRecord | undefined {
   const value = obj?.[key];
   return value && typeof value === "object" && !Array.isArray(value)
     ? (value as RawRecord)
@@ -92,7 +94,11 @@ function withRowKey(row: RawRecord, rowKey: string) {
 function DetailField({ label, value }: { label: string; value: ReactNode }) {
   return (
     <Grid size={{ xs: 12, md: 6 }}>
-      <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+      <Typography
+        variant="caption"
+        color="text.secondary"
+        sx={{ display: "block" }}
+      >
         {label}
       </Typography>
       <Typography variant="body2" component="div">
@@ -138,6 +144,7 @@ function SectionLabel({ children }: { children: ReactNode }) {
 
 /** TRACE-01 · Truy vết mã vật lý, biến động tồn và chứng từ nguồn. */
 export function TraceModal({ movementId, onClose }: Props) {
+  const dialog = useDialogExit(onClose);
   const [lookupCode, setLookupCode] = useState("");
   const [submittedCode, setSubmittedCode] = useState<string | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
@@ -191,30 +198,31 @@ export function TraceModal({ movementId, onClose }: Props) {
     }
   };
 
-  const resolvedObject = codeTrace?.resolved_object as RawRecord | null | undefined;
+  const resolvedObject = codeTrace?.resolved_object as
+    | RawRecord
+    | null
+    | undefined;
   const physicalCode = codeTrace?.physical_code as RawRecord | null | undefined;
 
   return (
     <ThemeProvider theme={muiTheme}>
-      <Dialog
-        open
-        onClose={onClose}
-        maxWidth="lg"
-        fullWidth
-      >
+      <Dialog {...dialog.dialogProps} maxWidth="lg" fullWidth>
         <DialogTitle sx={{ pr: 6, position: "relative" }}>
           Truy vết chứng từ nguồn
-          <IconButton
-            aria-label="Đóng"
-            onClick={onClose}
+          <ActionIconButton
+            kind="close"
+            label="Đóng"
+            onClick={dialog.close}
             sx={{ position: "absolute", right: 10, top: 8 }}
-          >
-            <CloseOutlined style={{ fontSize: 15 }} />
-          </IconButton>
+          />
         </DialogTitle>
         <DialogContent dividers>
           <Stack spacing={2}>
-            <Stack direction="row" spacing={1.5} sx={{ flexWrap: "wrap", rowGap: 1.5 }}>
+            <Stack
+              direction="row"
+              spacing={1.5}
+              sx={{ flexWrap: "wrap", rowGap: 1.5 }}
+            >
               <TextField
                 placeholder="Mã sản phẩm / Số sê-ri / Hộp / Khay / SKU / Mã vạch / QR / RFID..."
                 value={lookupCode}
@@ -225,22 +233,20 @@ export function TraceModal({ movementId, onClose }: Props) {
                 }}
                 sx={{ flex: 1, minWidth: 280 }}
               />
-              <MuiButton
-                variant="outlined"
+              <ActionButton
+                kind="camera"
                 aria-label="Quét camera để truy vết"
                 onClick={() => setCameraOpen(true)}
-                startIcon={<CameraOutlined />}
               >
                 Quét camera
-              </MuiButton>
-              <MuiButton
-                variant="contained"
+              </ActionButton>
+              <ActionButton
+                kind="search"
                 disabled={!lookupCode.trim()}
                 onClick={handleLookup}
-                startIcon={<SearchOutlined />}
               >
                 Tra cứu
-              </MuiButton>
+              </ActionButton>
             </Stack>
 
             <CameraScanModal
@@ -270,7 +276,11 @@ export function TraceModal({ movementId, onClose }: Props) {
             ) : null}
 
             {physicalCodeQuery.isLoading ? (
-              <Typography variant="body2" color="text.secondary" sx={{ textAlign: "center", py: 2 }}>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ textAlign: "center", py: 2 }}
+              >
                 Đang tra cứu mã vật lý...
               </Typography>
             ) : null}
@@ -495,7 +505,9 @@ export function TraceModal({ movementId, onClose }: Props) {
                           width: 100,
                           align: "right",
                           render: (_, row) => {
-                            const qty = Number(row.qty_delta ?? row.quantity ?? 0);
+                            const qty = Number(
+                              row.qty_delta ?? row.quantity ?? 0,
+                            );
                             return (
                               <AntTypography.Text
                                 style={{
@@ -514,7 +526,9 @@ export function TraceModal({ movementId, onClose }: Props) {
                           title: "Chứng từ",
                           width: 130,
                           render: (_, row) => (
-                            <AntTypography.Text code>{text(row.doc_no)}</AntTypography.Text>
+                            <AntTypography.Text code>
+                              {text(row.doc_no)}
+                            </AntTypography.Text>
                           ),
                         },
                         {
@@ -525,6 +539,87 @@ export function TraceModal({ movementId, onClose }: Props) {
                         },
                       ]}
                     />
+                  </div>
+                ) : null}
+
+                {(codeTrace.warranty_history ?? []).length > 0 ? (
+                  <div>
+                    <SectionLabel>
+                      {`Lịch sử bảo hành (${codeTrace.warranty_history.length})`}
+                    </SectionLabel>
+                    <Stack spacing={1.5}>
+                      {codeTrace.warranty_history.map((wc, index) => {
+                        const events = Array.isArray(wc.events)
+                          ? (wc.events as RawRecord[])
+                          : [];
+                        return (
+                          <Box
+                            key={text(wc.warranty_case_id, String(index))}
+                            sx={{
+                              border: "1px solid",
+                              borderColor: "divider",
+                              borderRadius: 2,
+                              p: 1.5,
+                            }}
+                          >
+                            <Stack
+                              direction="row"
+                              spacing={1}
+                              sx={{ alignItems: "center", flexWrap: "wrap" }}
+                            >
+                              <AntTypography.Text code copyable>
+                                {text(wc.warranty_case_code)}
+                              </AntTypography.Text>
+                              <Tag
+                                color={
+                                  WARRANTY_STATUS_COLORS[text(wc.status, "")] ??
+                                  "default"
+                                }
+                              >
+                                {WARRANTY_STATUS_LABELS[text(wc.status, "")] ??
+                                  "Trạng thái khác"}
+                              </Tag>
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
+                                {text(wc.received_at)}
+                              </Typography>
+                            </Stack>
+                            <Grid container spacing={1.5} sx={{ mt: 0.5 }}>
+                              <DetailField
+                                label="Khách hàng"
+                                value={`${text(wc.customer_name)} · ${text(wc.customer_phone)}`}
+                              />
+                              <DetailField
+                                label="Lỗi/bệnh"
+                                value={text(
+                                  wc.defect_name ?? wc.confirmed_defect,
+                                )}
+                              />
+                            </Grid>
+                            {events.length > 0 ? (
+                              <Stack spacing={0.5} sx={{ mt: 1 }}>
+                                {events.map((event, eventIndex) => (
+                                  <Typography
+                                    key={text(
+                                      event.warranty_event_id,
+                                      String(eventIndex),
+                                    )}
+                                    variant="caption"
+                                    color="text.secondary"
+                                  >
+                                    {text(event.event_at)} —{" "}
+                                    {text(event.to_status ?? event.event_type)}
+                                    {event.note ? ` (${text(event.note)})` : ""}
+                                  </Typography>
+                                ))}
+                              </Stack>
+                            ) : null}
+                          </Box>
+                        );
+                      })}
+                    </Stack>
                   </div>
                 ) : null}
               </>
@@ -544,7 +639,9 @@ export function TraceModal({ movementId, onClose }: Props) {
                   label="Mã biến động"
                   value={
                     <AntTypography.Text code copyable>
-                      {text(movement.movement_no ?? movement.code ?? movement.id)}
+                      {text(
+                        movement.movement_no ?? movement.code ?? movement.id,
+                      )}
                     </AntTypography.Text>
                   }
                 />
@@ -562,7 +659,10 @@ export function TraceModal({ movementId, onClose }: Props) {
                     <Tag>
                       {businessLabel(
                         MOVEMENT_TYPE_LABELS,
-                        text(movement.movement_type ?? movement.source_type, ""),
+                        text(
+                          movement.movement_type ?? movement.source_type,
+                          "",
+                        ),
                         "Biến động khác",
                       )}
                     </Tag>
@@ -594,7 +694,9 @@ export function TraceModal({ movementId, onClose }: Props) {
                     <AntTypography.Text
                       style={{
                         color:
-                          Number(movement.qty_change ?? movement.quantity ?? 0) >= 0
+                          Number(
+                            movement.qty_change ?? movement.quantity ?? 0,
+                          ) >= 0
                             ? "#237804"
                             : "#cf1322",
                         fontWeight: 600,
@@ -635,7 +737,11 @@ export function TraceModal({ movementId, onClose }: Props) {
             ) : null}
 
             {traceQuery.isLoading ? (
-              <Typography variant="body2" color="text.secondary" sx={{ textAlign: "center", py: 2 }}>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ textAlign: "center", py: 2 }}
+              >
                 Đang tải dữ liệu truy vết...
               </Typography>
             ) : null}
@@ -680,8 +786,14 @@ export function TraceModal({ movementId, onClose }: Props) {
                       </Tag>
                     }
                   />
-                  <DetailField label="Thời điểm ghi nhận" value={trace.postedAt || "-"} />
-                  <DetailField label="Người thao tác" value={trace.actor || "-"} />
+                  <DetailField
+                    label="Thời điểm ghi nhận"
+                    value={trace.postedAt || "-"}
+                  />
+                  <DetailField
+                    label="Người thao tác"
+                    value={trace.actor || "-"}
+                  />
                   <DetailField
                     label="Mã yêu cầu kỹ thuật"
                     value={
@@ -752,7 +864,9 @@ export function TraceModal({ movementId, onClose }: Props) {
                           title: "Trạng thái",
                           width: 130,
                           render: (_, row) => (
-                            <Tag>{statusLabel(row.status ?? row.line_status)}</Tag>
+                            <Tag>
+                              {statusLabel(row.status ?? row.line_status)}
+                            </Tag>
                           ),
                         },
                       ]}
@@ -776,7 +890,9 @@ export function TraceModal({ movementId, onClose }: Props) {
                     />
                     <DetailField
                       label="Số lượng gốc"
-                      value={trace.netEffect.originalQty.toLocaleString("vi-VN")}
+                      value={trace.netEffect.originalQty.toLocaleString(
+                        "vi-VN",
+                      )}
                     />
                     <DetailField
                       label="Đã điều chỉnh"
@@ -802,13 +918,17 @@ export function TraceModal({ movementId, onClose }: Props) {
                     />
                     <DetailField
                       label="Tác động ròng"
-                      value={trace.netEffect.netQtyDelta.toLocaleString("vi-VN")}
+                      value={trace.netEffect.netQtyDelta.toLocaleString(
+                        "vi-VN",
+                      )}
                     />
                     <DetailField
                       label="Trạng thái"
                       value={
                         <Tag
-                          color={trace.netEffect.fullyReversed ? "error" : "success"}
+                          color={
+                            trace.netEffect.fullyReversed ? "error" : "success"
+                          }
                         >
                           {trace.netEffect.fullyReversed
                             ? "Đã điều chỉnh toàn bộ"
@@ -824,7 +944,12 @@ export function TraceModal({ movementId, onClose }: Props) {
                     <SectionLabel>
                       {`Chuỗi điều chỉnh (${(trace.chain ?? []).length} bút toán)`}
                       {trace.chainTruncated ? (
-                        <Typography component="span" variant="caption" color="error.main" sx={{ ml: 1 }}>
+                        <Typography
+                          component="span"
+                          variant="caption"
+                          color="error.main"
+                          sx={{ ml: 1 }}
+                        >
                           · chuỗi quá dài, đã rút gọn
                         </Typography>
                       ) : null}
@@ -840,7 +965,9 @@ export function TraceModal({ movementId, onClose }: Props) {
                           title: "Vai trò",
                           width: 140,
                           render: (_, row) => (
-                            <Tag color={row.role === "ORIGINAL" ? "blue" : "red"}>
+                            <Tag
+                              color={row.role === "ORIGINAL" ? "blue" : "red"}
+                            >
                               {businessLabel(
                                 MOVEMENT_ROLE_LABELS,
                                 row.role,
@@ -879,7 +1006,8 @@ export function TraceModal({ movementId, onClose }: Props) {
                           render: (_, row) => (
                             <AntTypography.Text
                               style={{
-                                color: row.qty_delta >= 0 ? "#237804" : "#cf1322",
+                                color:
+                                  row.qty_delta >= 0 ? "#237804" : "#cf1322",
                                 fontWeight: 600,
                               }}
                             >

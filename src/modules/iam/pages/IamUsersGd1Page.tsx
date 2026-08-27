@@ -1,4 +1,10 @@
-import { Tabs } from "antd";
+import { useState } from "react";
+import { Tab, Tabs, ThemeProvider } from "@mui/material";
+import { muiTheme } from "@/app/mui-theme";
+import {
+  SafetyCertificateOutlined,
+  UserOutlined,
+} from "@/shared/components/icons";
 import { IamRolePermissionScreen } from "@/modules/iam/pages/IamRolePermissionScreen";
 import { IamUserScreen } from "@/modules/iam/pages/IamUserScreen";
 import { useCan } from "@/shared/components/permission";
@@ -11,28 +17,40 @@ export interface IamUsersGd1PageProps {
 export function IamUsersGd1Page({ openCreateOnMount }: IamUsersGd1PageProps) {
   const canViewRoles = useCan(P.IAM_ROLE_VIEW);
   const canManageRoles = useCan(P.IAM_ROLE_MANAGE);
+  const showRolesTab = canViewRoles || canManageRoles;
+  const [tab, setTab] = useState<"users" | "roles">("users");
+  const activeTab = tab === "roles" && !showRolesTab ? "users" : tab;
 
   return (
-    <Tabs
-      defaultActiveKey="users"
-      items={[
-        {
-          key: "users",
-          label: "Người dùng & phân quyền",
-          children: <IamUserScreen openCreateOnMount={openCreateOnMount} />,
-        },
-        // Gộp màn /system/roles vào đây theo yêu cầu quy hoạch chung; route
-        // cũ vẫn giữ cho deep-link. Tab ẩn với tài khoản không có quyền role.
-        ...(canViewRoles || canManageRoles
-          ? [
-              {
-                key: "roles",
-                label: "Vai trò & ma trận quyền",
-                children: <IamRolePermissionScreen />,
-              },
-            ]
-          : []),
-      ]}
-    />
+    <ThemeProvider theme={muiTheme}>
+      <Tabs
+        value={activeTab}
+        onChange={(_event, value: "users" | "roles") => setTab(value)}
+        sx={{ marginBottom: 2 }}
+      >
+        <Tab
+          value="users"
+          icon={<UserOutlined style={{ fontSize: 15 }} />}
+          iconPosition="start"
+          label="Người dùng & phân quyền"
+          sx={{ minHeight: 40, textTransform: "none" }}
+        />
+        {showRolesTab ? (
+          <Tab
+            value="roles"
+            icon={<SafetyCertificateOutlined style={{ fontSize: 15 }} />}
+            iconPosition="start"
+            label="Vai trò & ma trận quyền"
+            sx={{ minHeight: 40, textTransform: "none" }}
+          />
+        ) : null}
+      </Tabs>
+
+      {activeTab === "users" ? (
+        <IamUserScreen openCreateOnMount={openCreateOnMount} />
+      ) : (
+        <IamRolePermissionScreen />
+      )}
+    </ThemeProvider>
   );
 }

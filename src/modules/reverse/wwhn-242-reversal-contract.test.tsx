@@ -121,9 +121,7 @@ function mockDetailHooks() {
  * within() để chắc chắn bấm đúng nút đó (không phụ thuộc thứ tự DOM).
  */
 async function clickPostAndConfirm() {
-  fireEvent.click(
-    screen.getByRole("button", { name: /Hoàn tất điều chỉnh/i }),
-  );
+  fireEvent.click(screen.getByRole("button", { name: /Hoàn tất điều chỉnh/i }));
   const confirmDialog = await screen.findByRole("dialog", {
     name: /Hoàn tất phiếu điều chỉnh tồn kho/i,
   });

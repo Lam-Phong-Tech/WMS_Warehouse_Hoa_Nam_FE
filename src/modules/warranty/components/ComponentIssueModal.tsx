@@ -4,13 +4,11 @@ import type { TableProps } from "antd";
 import {
   Alert,
   Box,
-  Button,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   Grid,
-  IconButton,
   MenuItem,
   Stack,
   TextField,
@@ -18,18 +16,17 @@ import {
   Typography,
 } from "@mui/material";
 import { muiTheme } from "@/app/mui-theme";
-import { toast } from "sonner";
 import {
-  CameraOutlined,
-  CheckCircleOutlined,
-  CloseOutlined,
-  DeleteOutlined,
-  PlusOutlined,
-  StopOutlined,
-} from "@/shared/components/icons";
+  AnimatedList,
+  AnimatedListItem,
+} from "@/shared/components/motion/AnimatedList";
+import { createRowKey } from "@/shared/components/motion/row-key";
+import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { getApiErrorMessage, getErrorRequestId } from "@/shared/api/api-error";
+import { guardBackdropClose } from "@/shared/utils/dialogGuard";
+import { useDialogExit } from "@/shared/utils/useDialogExit";
 import { CameraScanModal } from "@/shared/components/forms/CameraScanModal";
 import { ScanInput } from "@/shared/components/forms/ScanInput";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
@@ -49,10 +46,17 @@ import type {
   ComponentIssueLine,
   ComponentIssueStatus,
 } from "@/modules/warranty/services/componentIssueService";
+import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 
 interface DraftLineValue {
+  /** Danh tính ổn định của dòng (xem createRowKey) — không gửi lên API. */
+  key: string;
   sku_id: string;
   required_qty: number | null;
+}
+
+function emptyDraftLine(): DraftLineValue {
+  return { key: createRowKey("comp-line"), sku_id: "", required_qty: null };
 }
 
 interface ComponentIssueModalProps {
@@ -94,6 +98,7 @@ export function ComponentIssueModal({
   onClose,
   onChanged,
 }: ComponentIssueModalProps) {
+  const dialog = useDialogExit(onClose);
   const canIssue = useCanAny(["warranty.component_issue"]);
   const [documentId, setDocumentId] = useState<string | null>(
     initialDocumentId ?? null,
@@ -107,11 +112,13 @@ export function ComponentIssueModal({
   const [recentCodes, setRecentCodes] = useState<string[]>([]);
   const [postConfirmOpen, setPostConfirmOpen] = useState(false);
 
-  const [draftLines, setDraftLines] = useState<DraftLineValue[]>([
-    { sku_id: "", required_qty: null },
+  const [draftLines, setDraftLines] = useState<DraftLineValue[]>(() => [
+    emptyDraftLine(),
   ]);
   const [draftNote, setDraftNote] = useState("");
-  const [draftError, setDraftError] = useState<string | null>(null);
+  const [lineErrors, setLineErrors] = useState<
+    Record<number, { sku_id?: string; required_qty?: string }>
+  >({});
 
   const detailQuery = useComponentIssueDetail(documentId);
   const detail = detailQuery.data;
@@ -128,10 +135,16 @@ export function ComponentIssueModal({
     status: "ACTIVE",
     per_page: 100,
   });
-  const skuOptions = (skusQuery.data?.data ?? []).map((sku) => ({
-    value: sku.sku_id,
-    label: `${sku.sku_code} · ${sku.sku_name}`,
-  }));
+  // Giữ nguyên tham chiếu mảng options giữa các lần render (mỗi ký tự gõ vào
+  // form đều render lại cả modal) để danh sách chọn SKU không phải dựng lại.
+  const skuOptions = useMemo(
+    () =>
+      (skusQuery.data?.data ?? []).map((sku) => ({
+        value: sku.sku_id,
+        label: `${sku.sku_code} · ${sku.sku_name}`,
+      })),
+    [skusQuery.data],
+  );
 
   const createMutation = useCreateComponentIssue();
   const scanMutation = useScanComponentIssue();
@@ -162,20 +175,43 @@ export function ComponentIssueModal({
     setDraftLines((current) =>
       current.map((line, i) => (i === index ? { ...line, ...patch } : line)),
     );
+    if (lineErrors[index]) {
+      setLineErrors((current) => {
+        const next = { ...current };
+        const lineError = { ...next[index] };
+        if (patch.sku_id !== undefined) delete lineError.sku_id;
+        if (patch.required_qty !== undefined) delete lineError.required_qty;
+        if (Object.keys(lineError).length > 0) {
+          next[index] = lineError;
+        } else {
+          delete next[index];
+        }
+        return next;
+      });
+    }
+  };
+
+  const validateDraftLines = (): boolean => {
+    const errors: Record<number, { sku_id?: string; required_qty?: string }> =
+      {};
+    draftLines.forEach((line, index) => {
+      const lineError: { sku_id?: string; required_qty?: string } = {};
+      if (!line.sku_id) {
+        lineError.sku_id = "Chọn linh kiện.";
+      }
+      if (!line.required_qty || line.required_qty < 1) {
+        lineError.required_qty = "Nhập số lượng.";
+      }
+      if (Object.keys(lineError).length > 0) {
+        errors[index] = lineError;
+      }
+    });
+    setLineErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleCreate = async () => {
-    for (const line of draftLines) {
-      if (!line.sku_id) {
-        setDraftError("Chọn linh kiện.");
-        return;
-      }
-      if (!line.required_qty || line.required_qty < 1) {
-        setDraftError("Nhập số lượng.");
-        return;
-      }
-    }
-    setDraftError(null);
+    if (!validateDraftLines()) return;
     if (!warehouse?.id) {
       toast.error("Chưa xác định được kho tổng ACTIVE.");
       return;
@@ -286,7 +322,9 @@ export function ComponentIssueModal({
       render: (_, line) => (
         <Stack spacing={0}>
           <AntTypography.Text strong>{line.sku_code}</AntTypography.Text>
-          <AntTypography.Text type="secondary">{line.sku_name}</AntTypography.Text>
+          <AntTypography.Text type="secondary">
+            {line.sku_name}
+          </AntTypography.Text>
         </Stack>
       ),
     },
@@ -326,30 +364,24 @@ export function ComponentIssueModal({
 
   return (
     <ThemeProvider theme={muiTheme}>
-      <Dialog
-        open
-        onClose={onClose}
-        maxWidth="md"
-        fullWidth
-      >
+      <Dialog {...dialog.dialogProps} maxWidth="md" fullWidth>
         <DialogTitle sx={{ pr: 6, position: "relative" }}>
           {documentId
             ? `Phiếu xuất linh kiện ${detail?.component_issue_no ?? ""}`
             : `Xuất linh kiện cho case ${caseCode ?? caseId}`}
-          <IconButton
-            aria-label="Đóng"
-            onClick={onClose}
+          <ActionIconButton
+            kind="close"
+            label="Đóng"
+            onClick={dialog.close}
             sx={{ position: "absolute", right: 10, top: 8 }}
-          >
-            <CloseOutlined style={{ fontSize: 15 }} />
-          </IconButton>
+          />
         </DialogTitle>
         <DialogContent dividers>
           <Stack spacing={2}>
             {!caseActive && !documentId ? (
               <Alert severity="error">
-                Warranty case không còn active (RETURNED/CANCELLED) — không
-                được tạo phiếu xuất linh kiện.
+                Warranty case không còn active (RETURNED/CANCELLED) — không được
+                tạo phiếu xuất linh kiện.
               </Alert>
             ) : null}
 
@@ -360,11 +392,14 @@ export function ComponentIssueModal({
                   và bắt buộc gắn với warranty case đang hoạt động. Tạo DRAFT
                   chưa trừ tồn.
                 </Alert>
-                {draftError ? <Alert severity="error">{draftError}</Alert> : null}
 
                 <Grid container spacing={2}>
                   <Grid size={{ xs: 12, sm: 6 }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ display: "block" }}
+                    >
                       Kho xuất
                     </Typography>
                     <Typography variant="body2">
@@ -378,79 +413,93 @@ export function ComponentIssueModal({
                     </Typography>
                   </Grid>
                   <Grid size={{ xs: 12, sm: 6 }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ display: "block" }}
+                    >
                       Warranty case
                     </Typography>
-                    <Typography variant="body2">{caseCode ?? caseId}</Typography>
+                    <Typography variant="body2">
+                      {caseCode ?? caseId}
+                    </Typography>
                   </Grid>
                 </Grid>
 
                 <Stack spacing={1.25}>
-                  {draftLines.map((line, index) => (
-                    <Stack
-                      key={`line-${index}`}
-                      direction="row"
-                      spacing={1.5}
-                      sx={{ alignItems: "flex-start", flexWrap: "wrap", rowGap: 1 }}
-                    >
-                      <TextField
-                        select
-                        required
-                        label="SKU linh kiện (COMPONENT)"
-                        placeholder="Chọn SKU linh kiện (COMPONENT)"
-                        value={line.sku_id}
-                        onChange={(event) =>
-                          updateDraftLine(index, { sku_id: event.target.value })
-                        }
-                        sx={{ minWidth: 360 }}
-                      >
-                        {skuOptions.map((option) => (
-                          <MenuItem key={option.value} value={option.value}>
-                            {option.label}
-                          </MenuItem>
-                        ))}
-                      </TextField>
-                      <TextField
-                        required
-                        type="number"
-                        label="SL cần"
-                        value={line.required_qty ?? ""}
-                        onChange={(event) =>
-                          updateDraftLine(index, {
-                            required_qty: event.target.value
-                              ? Number(event.target.value)
-                              : null,
-                          })
-                        }
-                        sx={{ width: 130 }}
-                        slotProps={{ htmlInput: { min: 1 } }}
-                      />
-                      <IconButton
-                        color="error"
-                        disabled={draftLines.length <= 1}
-                        onClick={() =>
-                          setDraftLines((current) =>
-                            current.filter((_, i) => i !== index),
-                          )
-                        }
-                        sx={{ mt: "6px" }}
-                      >
-                        <DeleteOutlined />
-                      </IconButton>
-                    </Stack>
-                  ))}
-                  <Button
-                    variant="outlined"
-                    startIcon={<PlusOutlined />}
+                  {/* Thêm/xóa dòng linh kiện chạy hiệu ứng trượt-mở/thu-gọn. */}
+                  <AnimatedList>
+                    {draftLines.map((line, index) => (
+                      <AnimatedListItem key={line.key} gap={10}>
+                        <Stack
+                          direction="row"
+                          spacing={1.5}
+                          sx={{
+                            alignItems: "flex-start",
+                            flexWrap: "wrap",
+                            rowGap: 1,
+                          }}
+                        >
+                          <TextField
+                            select
+                            required
+                            label="SKU linh kiện (COMPONENT)"
+                            placeholder="Chọn SKU linh kiện (COMPONENT)"
+                            value={line.sku_id}
+                            onChange={(event) =>
+                              updateDraftLine(index, {
+                                sku_id: event.target.value,
+                              })
+                            }
+                            error={Boolean(lineErrors[index]?.sku_id)}
+                            helperText={lineErrors[index]?.sku_id}
+                            sx={{ minWidth: 360 }}
+                          >
+                            {skuOptions.map((option) => (
+                              <MenuItem key={option.value} value={option.value}>
+                                {option.label}
+                              </MenuItem>
+                            ))}
+                          </TextField>
+                          <TextField
+                            required
+                            type="number"
+                            label="SL cần"
+                            value={line.required_qty ?? ""}
+                            onChange={(event) =>
+                              updateDraftLine(index, {
+                                required_qty: event.target.value
+                                  ? Number(event.target.value)
+                                  : null,
+                              })
+                            }
+                            error={Boolean(lineErrors[index]?.required_qty)}
+                            helperText={lineErrors[index]?.required_qty}
+                            sx={{ width: 130 }}
+                            slotProps={{ htmlInput: { min: 1 } }}
+                          />
+                          <ActionIconButton
+                            kind="delete"
+                            disabled={draftLines.length <= 1}
+                            onClick={() =>
+                              setDraftLines((current) =>
+                                current.filter((_, i) => i !== index),
+                              )
+                            }
+                            sx={{ mt: "6px" }}
+                          />
+                        </Stack>
+                      </AnimatedListItem>
+                    ))}
+                  </AnimatedList>
+                  <ActionButton
+                    kind="create"
                     onClick={() =>
-                      setDraftLines((current) => [
-                        ...current,
-                        { sku_id: "", required_qty: null },
-                      ])
+                      setDraftLines((current) => [...current, emptyDraftLine()])
                     }
                   >
                     Thêm dòng linh kiện
-                  </Button>
+                  </ActionButton>
                 </Stack>
 
                 <TextField
@@ -472,10 +521,21 @@ export function ComponentIssueModal({
                 />
                 {detail ? (
                   <Stack spacing={1.5}>
-                    <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: 2, p: 2 }}>
+                    <Box
+                      sx={{
+                        border: "1px solid",
+                        borderColor: "divider",
+                        borderRadius: 2,
+                        p: 2,
+                      }}
+                    >
                       <Grid container spacing={2}>
                         <Grid size={{ xs: 12, md: 4 }}>
-                          <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{ display: "block" }}
+                          >
                             Trạng thái
                           </Typography>
                           <Tag color={STATUS_TAG[detail.status].color}>
@@ -483,13 +543,21 @@ export function ComponentIssueModal({
                           </Tag>
                         </Grid>
                         <Grid size={{ xs: 12, md: 4 }}>
-                          <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{ display: "block" }}
+                          >
                             Mục đích
                           </Typography>
                           <Tag color="blue">WARRANTY</Tag>
                         </Grid>
                         <Grid size={{ xs: 12, md: 4 }}>
-                          <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{ display: "block" }}
+                          >
                             Ngày chứng từ
                           </Typography>
                           <Typography variant="body2">
@@ -518,7 +586,9 @@ export function ComponentIssueModal({
                       size="small"
                       pagination={false}
                       rowClassName={(line) =>
-                        line.id === selectedLineId ? "ant-table-row-selected" : ""
+                        line.id === selectedLineId
+                          ? "ant-table-row-selected"
+                          : ""
                       }
                       onRow={(line) => ({
                         onClick: () => setSelectedLineId(line.id),
@@ -527,13 +597,32 @@ export function ComponentIssueModal({
                     />
 
                     {isOpenDocument ? (
-                      <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: 2, p: 1.5 }}>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+                      <Box
+                        sx={{
+                          border: "1px solid",
+                          borderColor: "divider",
+                          borderRadius: 2,
+                          p: 1.5,
+                        }}
+                      >
+                        <Typography
+                          variant="subtitle2"
+                          sx={{ fontWeight: 700, mb: 1 }}
+                        >
                           Quét serial linh kiện hoặc box + số lượng
                         </Typography>
-                        <Stack direction="row" spacing={1} sx={{ alignItems: "flex-start", flexWrap: "wrap", rowGap: 1 }}>
+                        <Stack
+                          direction="row"
+                          spacing={1}
+                          sx={{
+                            alignItems: "flex-start",
+                            flexWrap: "wrap",
+                            rowGap: 1,
+                          }}
+                        >
                           <TextField
                             type="number"
+                            label="Số lượng quét"
                             value={scanQuantity}
                             onChange={(event) =>
                               setScanQuantity(Number(event.target.value) || 1)
@@ -550,18 +639,21 @@ export function ComponentIssueModal({
                               onScan={handleScan}
                             />
                           </Box>
-                          <Button
-                            variant="outlined"
-                            startIcon={<CameraOutlined />}
+                          <ActionButton
+                            kind="camera"
                             onClick={() => setCameraOpen(true)}
                           >
                             Camera
-                          </Button>
+                          </ActionButton>
                         </Stack>
-                        <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 1 }}>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ display: "block", mt: 1 }}
+                        >
                           Serial item bắt buộc số lượng 1; box (SKU không
-                          serial) nhập số lượng cần lấy. Quét chỉ ghi nhận,
-                          chưa trừ tồn cho đến khi Post.
+                          serial) nhập số lượng cần lấy. Quét chỉ ghi nhận, chưa
+                          trừ tồn cho đến khi Post.
                         </Typography>
                       </Box>
                     ) : null}
@@ -571,35 +663,48 @@ export function ComponentIssueModal({
             )}
           </Stack>
 
-          <Dialog open={cancelOpen} onClose={() => setCancelOpen(false)} maxWidth="xs" fullWidth>
+          <Dialog
+            open={cancelOpen}
+            onClose={guardBackdropClose(() => setCancelOpen(false))}
+            maxWidth="xs"
+            fullWidth
+          >
             <DialogTitle>Hủy phiếu xuất linh kiện</DialogTitle>
             <DialogContent dividers>
               <TextField
                 fullWidth
                 multiline
                 minRows={3}
-                placeholder="Lý do hủy (bắt buộc)"
+                label="Lý do hủy (bắt buộc)"
                 value={cancelReason}
                 onChange={(event) => setCancelReason(event.target.value)}
                 slotProps={{ htmlInput: { maxLength: 2000 } }}
               />
             </DialogContent>
             <DialogActions>
-              <Button onClick={() => setCancelOpen(false)} disabled={cancelMutation.isPending}>
+              <ActionButton
+                kind="back"
+                onClick={() => setCancelOpen(false)}
+                disabled={cancelMutation.isPending}
+              >
                 Quay lại
-              </Button>
-              <Button
-                color="error"
-                variant="contained"
+              </ActionButton>
+              <ActionButton
+                kind="confirm"
                 onClick={() => void handleCancel()}
                 disabled={cancelMutation.isPending}
               >
                 Xác nhận hủy
-              </Button>
+              </ActionButton>
             </DialogActions>
           </Dialog>
 
-          <Dialog open={postConfirmOpen} onClose={() => setPostConfirmOpen(false)} maxWidth="xs" fullWidth>
+          <Dialog
+            open={postConfirmOpen}
+            onClose={() => setPostConfirmOpen(false)}
+            maxWidth="xs"
+            fullWidth
+          >
             <DialogTitle>Full Post phiếu xuất linh kiện?</DialogTitle>
             <DialogContent dividers>
               <Typography variant="body2">
@@ -608,16 +713,20 @@ export function ComponentIssueModal({
               </Typography>
             </DialogContent>
             <DialogActions>
-              <Button onClick={() => setPostConfirmOpen(false)} disabled={postMutation.isPending}>
+              <ActionButton
+                kind="view"
+                onClick={() => setPostConfirmOpen(false)}
+                disabled={postMutation.isPending}
+              >
                 Xem lại
-              </Button>
-              <Button
-                variant="contained"
+              </ActionButton>
+              <ActionButton
+                kind="send"
                 onClick={() => void handlePost()}
                 disabled={postMutation.isPending}
               >
                 Post
-              </Button>
+              </ActionButton>
             </DialogActions>
           </Dialog>
 
@@ -632,37 +741,37 @@ export function ComponentIssueModal({
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={onClose}>Đóng</Button>
+          <ActionButton kind="close" onClick={dialog.close}>
+            Đóng
+          </ActionButton>
           {documentId && isOpenDocument ? (
             <>
-              <Button
-                color="error"
-                variant="outlined"
-                startIcon={<StopOutlined />}
+              <ActionButton
+                kind="deactivate"
                 disabled={!canIssue || cancelMutation.isPending}
                 onClick={() => setCancelOpen(true)}
               >
                 Hủy phiếu
-              </Button>
-              <Button
-                variant="contained"
-                startIcon={<CheckCircleOutlined />}
-                disabled={!canIssue || !allLinesComplete || postMutation.isPending}
+              </ActionButton>
+              <ActionButton
+                kind="approve"
+                disabled={
+                  !canIssue || !allLinesComplete || postMutation.isPending
+                }
                 onClick={() => setPostConfirmOpen(true)}
               >
                 Full Post (trừ tồn)
-              </Button>
+              </ActionButton>
             </>
           ) : null}
           {!documentId ? (
-            <Button
-              variant="contained"
-              startIcon={<PlusOutlined />}
+            <ActionButton
+              kind="create"
               disabled={!canIssue || !caseActive || createMutation.isPending}
               onClick={() => void handleCreate()}
             >
               {createMutation.isPending ? "Đang tạo..." : "Tạo phiếu DRAFT"}
-            </Button>
+            </ActionButton>
           ) : null}
         </DialogActions>
       </Dialog>

@@ -2,11 +2,15 @@ import { http } from "@/shared/api/http";
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import type {
   ChangePasswordRequest,
+  ForgotPasswordRequest,
   LoginRequest,
   LoginResponse,
   RefreshResponse,
+  ResetPasswordRequest,
   SwitchContextRequest,
   SwitchContextResponse,
+  VerifyOtpRequest,
+  VerifyOtpResponse,
 } from "@/modules/auth/types/auth.types";
 import type { MeContext, MeResponse } from "@/modules/auth/types/me.types";
 import type { User, UserRoleAssignment } from "@/shared/types/user";
@@ -299,6 +303,26 @@ export const authService = {
 
   changePassword(data: ChangePasswordRequest) {
     return http.post<null>(API_ENDPOINTS.CHANGE_PASSWORD, data);
+  },
+
+  /** Cũng dùng để "Gửi lại mã" — gọi lại chính request này, BE không có endpoint resend riêng. */
+  forgotPassword(data: ForgotPasswordRequest) {
+    return http.post<null>(API_ENDPOINTS.FORGOT_PASSWORD, data);
+  },
+
+  async verifyOtp(data: VerifyOtpRequest) {
+    const response = await http.post<VerifyOtpResponse>(
+      API_ENDPOINTS.VERIFY_OTP,
+      data,
+    );
+    return {
+      ...response,
+      reset_token: requireNonEmptyString(response.reset_token, "reset_token"),
+    };
+  },
+
+  resetPassword(data: ResetPasswordRequest) {
+    return http.post<null>(API_ENDPOINTS.RESET_PASSWORD, data);
   },
 };
 

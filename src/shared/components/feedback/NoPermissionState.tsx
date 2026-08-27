@@ -1,12 +1,9 @@
-import {
-  ArrowLeftOutlined,
-  HomeOutlined,
-  LockOutlined,
-} from "@/shared/components/icons";
-import { Button, Result, Space, Typography } from "antd";
+import { LockOutlined } from "@/shared/components/icons";
+import { Result, Space, Typography } from "antd";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "@/shared/constants/routes";
 import { UI_STATE, uiStateProps } from "@/shared/constants/ui-state";
+import { ActionButton } from "@/shared/components/actions";
 
 const { Paragraph } = Typography;
 
@@ -90,17 +87,13 @@ export function NoPermissionState({
               {description}
             </Paragraph>
             <Space>
-              <Button
-                type="primary"
-                icon={<ArrowLeftOutlined />}
-                onClick={handleAction}
-              >
+              <ActionButton kind="back" onClick={handleAction}>
                 {actionText}
-              </Button>
+              </ActionButton>
               {showHomeButton && (
-                <Button icon={<HomeOutlined />} onClick={handleGoHome}>
+                <ActionButton kind="back" onClick={handleGoHome}>
                   Về trang chủ
-                </Button>
+                </ActionButton>
               )}
             </Space>
           </Space>

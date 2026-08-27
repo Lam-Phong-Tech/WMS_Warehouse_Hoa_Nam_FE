@@ -12,10 +12,17 @@ describe("Flow 06 Packing Label alignment", () => {
       "AlignedMvpOutboundPage",
     );
     const page = read("src/modules/outbound/pages/AlignedMvpOutboundPage.tsx");
-    expect(page).toContain("Packing Label độc lập sau Post");
-    expect(page).toContain("RFID tùy chọn");
-    expect(page).toContain("Chỉ Ghi nhận xuất kho mới trừ tồn");
     expect(page).not.toContain("Nhãn từng Item");
+
+    // Ghi chú nghiệp vụ (Post là điều kiện duy nhất trừ tồn, RFID tùy chọn)
+    // hiển thị đúng ngữ cảnh trong modal chi tiết, không phải banner chung
+    // trên trang danh sách.
+    const modal = read(
+      "src/modules/outbound/components/AlignedOutboundDetailModal.tsx",
+    );
+    expect(modal).toContain("Tồn kho đã được trừ");
+    expect(modal).toContain("RFID (tùy chọn)");
+    expect(modal).toContain("không phải điều kiện để ghi nhận xuất kho");
   });
 
   it("does not include RFID or label state in the FE post readiness gate", () => {
@@ -111,7 +118,9 @@ describe("Flow 06 Packing Label alignment", () => {
     expect(intake).toContain("recipient_contact_phone");
     expect(intake).toContain("request_date");
     // Line mapping SKU + override người nhận thực hiện ở bước xác nhận toa.
-    expect(intake).toContain("gán SKU/người nhận → xác nhận");
+    expect(intake).toContain(
+      "gán SKU/số lượng hoặc sửa người nhận rồi xác nhận lại",
+    );
     expect(intake).toContain("Ghi đè người nhận khi xác nhận");
   });
 });

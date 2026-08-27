@@ -95,9 +95,22 @@ describe("AlignedMvpOutboundPage RBAC gating (OUT-01, WWHN-209)", () => {
     renderWithProviders(<AlignedMvpOutboundPage />);
     await screen.findByText("PX-20260820-0001");
 
-    expect(permissionMocks.can).toHaveBeenCalledWith("outbound.import");
-    expect(permissionMocks.can).toHaveBeenCalledWith("outbound.scan");
-    expect(permissionMocks.can).not.toHaveBeenCalledWith("outbound.create");
+    // Siết 27/08: BE mở nhóm yêu cầu xuất bằng OR
+    // (`outbound.request.import|outbound.import`, `outbound.request.manual_create|outbound.import`).
+    // Hỏi mỗi `outbound.import` là chặt hơn backend và ẩn nút với WAREHOUSE_STAFF —
+    // vai được cấp đủ outbound.request.* nhưng không có outbound.import.
+    // `can` giờ được gọi qua Array.some nên nhận (code, index, array) — so khớp
+    // theo đối số ĐẦU TIÊN thay vì toàn bộ danh sách đối số.
+    const askedCodes = permissionMocks.can.mock.calls.map(([code]) => code);
+    expect(askedCodes).toEqual(
+      expect.arrayContaining([
+        "outbound.request.import",
+        "outbound.import",
+        "outbound.request.manual_create",
+        "outbound.scan",
+      ]),
+    );
+    expect(askedCodes).not.toContain("outbound.create");
   });
 
   it("chỉ outbound.view: không có nút tiếp nhận, mọi hàng đều read-only 'Xem'", async () => {

@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import type { SorterResult } from "antd/es/table/interface";
 import type { TableColumnsType } from "antd";
+import { renderSortIcon } from "./renderSortIcon";
 
 type SortState = { key?: React.Key; order?: "ascend" | "descend" };
 
@@ -29,7 +30,8 @@ export type ColumnWithSortType<T> = Array<
  * - Cột số/ngày (`sortType: 'value'`): "Nhấp để sắp xếp theo Ngày sinh tăng dần"
  *   → "...giảm dần" → "Nhấp để bỏ sắp xếp Ngày sinh".
  *
- * Chỉ áp dụng cho cột có `sorter` VÀ `title` là chuỗi (bỏ qua cột title dạng
+ * Icon sắp xếp (`renderSortIcon`) áp dụng cho MỌI cột có `sorter`. Riêng
+ * tooltip text chỉ áp dụng khi `title` là chuỗi (bỏ qua cột title dạng
  * ReactNode tuỳ biến vì không có tên rõ ràng để nhét vào câu tooltip).
  * Dùng chung cho cả `DataTable` lẫn `<Table>` thô: gọi hook, dùng
  * `columns` trả về để render, và gọi `onSorterChange(sorter)` trong
@@ -53,8 +55,16 @@ export function useSortTooltipColumns<T>(
   const columnsWithTooltip = useMemo(() => {
     if (!columns) return columns;
     return (columns as ColumnWithSortType<T>).map((col) => {
-      if (!("sorter" in col) || !col.sorter || typeof col.title !== "string") {
+      if (!("sorter" in col) || !col.sorter) {
         return col;
+      }
+      // Icon lên/xuống dùng chung với SortableTh (bảng HTML thô), thay icon
+      // gốc @ant-design/icons của antd Table để mọi bảng trong app cùng một
+      // bộ icon sắp xếp — áp dụng cho mọi cột có sorter, kể cả cột title
+      // dạng ReactNode (không có tên rõ ràng để viết tooltip bên dưới).
+      const withIcon = { ...col, sortIcon: col.sortIcon ?? renderSortIcon };
+      if (typeof col.title !== "string") {
+        return withIcon;
       }
       const label = col.title;
       const key = col.key ?? ("dataIndex" in col ? col.dataIndex : undefined);
@@ -71,7 +81,17 @@ export function useSortTooltipColumns<T>(
             ? `Nhấp để bỏ sắp xếp ${label}`
             : `Nhấp để sắp xếp theo ${label} ${asc}`;
 
-      return { ...col, showSorterTooltip: { title: text } };
+      return {
+        ...withIcon,
+        // whiteSpace/maxWidth cố định để tooltip luôn hiện 1 dòng, không tự
+        // xuống dòng theo độ dài tên cột (tên cột dài như "Phiếu nhập" từng
+        // bị antd wrap thành 2 dòng trong khi cột tên ngắn như "Loại" thì
+        // không, khiến giao diện sắp xếp trông không đồng bộ giữa các trang).
+        showSorterTooltip: {
+          title: text,
+          styles: { container: { whiteSpace: "nowrap", maxWidth: "none" } },
+        },
+      };
     });
   }, [columns, sortState]);
 

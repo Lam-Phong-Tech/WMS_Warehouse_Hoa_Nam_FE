@@ -19,10 +19,7 @@ vi.mock("@/shared/api/axios", () => ({
   },
 }));
 
-import {
-  http,
-  normalizeMultipartBooleanFields,
-} from "@/shared/api/http";
+import { http, normalizeMultipartBooleanFields } from "@/shared/api/http";
 
 describe("http unwrap hardening", () => {
   beforeEach(() => {
@@ -107,9 +104,11 @@ describe("multipart boolean transport contract", () => {
       data: { success: true, data: { ok: true } },
     });
 
-    await expect(http.post("/api/v1/skus/import-excel", body)).resolves.toEqual({
-      ok: true,
-    });
+    await expect(http.post("/api/v1/skus/import-excel", body)).resolves.toEqual(
+      {
+        ok: true,
+      },
+    );
 
     const sentBody = postMock.mock.calls[0]?.[1] as FormData;
     expect(sentBody.get("update_existing")).toBe("1");

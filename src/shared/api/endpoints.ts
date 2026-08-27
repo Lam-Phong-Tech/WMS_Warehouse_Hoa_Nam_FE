@@ -5,6 +5,9 @@ export const API_ENDPOINTS = {
   SWITCH_CONTEXT: "/auth/switch-context",
   REFRESH: "/auth/refresh",
   CHANGE_PASSWORD: "/auth/change-password",
+  FORGOT_PASSWORD: "/auth/forgot-password",
+  VERIFY_OTP: "/auth/verify-otp",
+  RESET_PASSWORD: "/auth/reset-password",
   USERS: "/users",
   ROLES: "/roles",
   PERMISSIONS: "/permissions",
@@ -213,6 +216,18 @@ export const API_ENDPOINTS = {
   REVERSAL_POST: "/reversal-documents/:id/post",
   REVERSAL_CANCEL: "/reversal-documents/:id/cancel",
   REVERSAL_MOVEMENT_LOOKUP: "/stock-movements/reversible",
+
+  // "Chứng từ nhập/xuất/hoàn trả": ảnh/scan/PDF đính kèm phiếu nhập, phiếu xuất,
+  // hoàn trả/điều chỉnh (Modules\Warehouse\Http\Controllers\DocumentAttachmentController,
+  // bảng document_attachments dùng chung cho cả 3 loại — cùng khuôn warranty
+  // attachments bên dưới).
+  INBOUND_DOCUMENT_ATTACHMENTS: "/inbound-documents/:id/attachments",
+  OUTBOUND_DOCUMENT_ATTACHMENTS: "/outbound-documents/:id/attachments",
+  REVERSAL_DOCUMENT_ATTACHMENTS: "/reversal-documents/:id/attachments",
+  DOCUMENT_ATTACHMENT_DOWNLOAD: "/document-attachments/:id/download",
+  DOCUMENT_ATTACHMENT: "/document-attachments/:id",
+  DOCUMENT_ATTACHMENT_PENDING_EVIDENCE:
+    "/document-attachments/pending-evidence",
 
   WARRANTY_CASES: "/warranty-cases",
   WARRANTY_CASE: "/warranty-cases/:id",

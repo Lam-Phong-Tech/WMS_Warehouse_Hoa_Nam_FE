@@ -1,6 +1,18 @@
-import { Dropdown, Button } from "antd";
-import type { MenuProps } from "antd";
-import { EditOutlined } from "@/shared/components/icons";
+import { useState } from "react";
+import {
+  ListItemIcon,
+  ListItemText,
+  Menu,
+  MenuItem,
+  ThemeProvider,
+} from "@mui/material";
+import { muiTheme } from "@/app/mui-theme";
+import {
+  ACTION_KINDS,
+  ActionIconButton,
+  actionIcon,
+  type ActionKind,
+} from "@/shared/components/actions";
 import type { ReactNode } from "react";
 import {
   usePermissionState,
@@ -14,8 +26,15 @@ import { hasScopeForAction } from "@/shared/types/permission.scope";
 
 export interface ActionItem {
   key: string;
+  /**
+   * Hanh dong chuan - quyet dinh icon + mau + nhan mac dinh, giong
+   * ActionButton. Uu tien dung thay cho `icon` thu cong de muc trong menu
+   * khong lech voi nut ngoai bang.
+   */
+  kind?: ActionKind;
+  /** Icon tu khai - chi dung khi hanh dong chua co `kind` tuong ung. */
   icon?: ReactNode;
-  label: ReactNode;
+  label?: ReactNode;
   danger?: boolean;
   disabled?: boolean;
   loading?: boolean;
@@ -36,9 +55,8 @@ export interface ActionItem {
 
 export interface ActionDropdownProps {
   items: ActionItem[];
-  /** Tooltip text */
+  /** Tooltip + aria-label cho nút mở menu. */
   tooltip?: string;
-  icon?: ReactNode;
   disabled?: boolean;
 }
 
@@ -52,15 +70,20 @@ export interface ActionDropdownProps {
  * hiển thị action mà user không có quyền. Việc resolve permission code và kiểm tra
  * quyền dùng HÀM THUẦN (getPermissionCode, hasPermission) trên state đã lấy từ
  * usePermissionState() — gọi hook ĐÚNG 1 LẦN, không gọi trong vòng lặp.
+ *
+ * Bọc ThemeProvider cục bộ (thay vì trông cậy theme của trang cha) vì component
+ * này thường được render bên trong ô của bảng antd (Table column render) — cây
+ * render đó không chắc nằm trong 1 ThemeProvider MUI nào của trang cha.
  */
 export function ActionDropdown({
   items,
   tooltip = "Thao tác",
-  icon = <EditOutlined />,
   disabled = false,
 }: ActionDropdownProps) {
   // Hook được gọi ĐÚNG 1 LẦN (không điều kiện, không trong loop)
   const state = usePermissionState();
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const open = Boolean(anchorEl);
 
   // Lọc items: chỉ giữ những item không có permission/module-action hoặc user có quyền.
   // Resolve code bằng hàm thuần (KHÔNG PHẢI HOOK) → tuân thủ Rules of Hooks.
@@ -85,32 +108,47 @@ export function ActionDropdown({
     return true;
   });
 
-  const menuItems: MenuProps["items"] = visibleItems.map((item) => ({
-    key: item.key,
-    icon: item.icon,
-    label: item.label,
-    danger: item.danger,
-    disabled: item.disabled || item.loading,
-    onClick: item.onClick,
-  }));
-
   // Nếu không còn item nào sau khi lọc, ẩn hoàn toàn dropdown
   if (visibleItems.length === 0) return null;
 
+  const handleClose = () => setAnchorEl(null);
+
   return (
-    <Dropdown
-      menu={{ items: menuItems }}
-      trigger={["click"]}
-      placement="bottomRight"
-      disabled={disabled}
-    >
-      <Button
-        type="text"
-        size="small"
-        icon={icon}
-        title={tooltip}
+    <ThemeProvider theme={muiTheme}>
+      <ActionIconButton
+        kind="more"
+        label={tooltip}
         disabled={disabled}
+        onClick={(e) => setAnchorEl(e.currentTarget)}
       />
-    </Dropdown>
+      <Menu
+        anchorEl={anchorEl}
+        open={open}
+        onClose={handleClose}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+        transformOrigin={{ vertical: "top", horizontal: "right" }}
+      >
+        {visibleItems.map((item) => (
+          <MenuItem
+            key={item.key}
+            disabled={item.disabled || item.loading}
+            sx={item.danger ? { color: "error.main" } : undefined}
+            onClick={() => {
+              handleClose();
+              item.onClick();
+            }}
+          >
+            {(item.kind || item.icon) && (
+              <ListItemIcon sx={{ color: "inherit" }}>
+                {item.kind ? actionIcon(item.kind) : item.icon}
+              </ListItemIcon>
+            )}
+            <ListItemText>
+              {item.label ?? (item.kind ? ACTION_KINDS[item.kind].label : null)}
+            </ListItemText>
+          </MenuItem>
+        ))}
+      </Menu>
+    </ThemeProvider>
   );
 }

@@ -140,13 +140,28 @@ describe("InventoryPage (INV-01 hub)", () => {
     expect(within(row as HTMLElement).getByText("Khớp")).toBeInTheDocument();
   });
 
+  it("cho chọn nhiều dòng tồn kho bằng checkbox (chọn tất cả trong trang)", async () => {
+    renderWithProviders(<InventoryPage />);
+    await screen.findByText("SKU-001");
+
+    const selectAll = screen.getByRole("checkbox", {
+      name: "Chọn tất cả dòng trong trang",
+    });
+    fireEvent.click(selectAll);
+
+    expect(
+      screen.getByRole("checkbox", { name: "Chọn dòng tồn kho SKU SKU-001" }),
+    ).toBeChecked();
+    expect(screen.getByText("Đã chọn 1 dòng")).toBeInTheDocument();
+  });
+
   it("chuyển tab Lịch sử biến động hiển thị movement", async () => {
     renderWithProviders(<InventoryPage />);
     await screen.findByText("SKU-001");
 
     fireEvent.click(screen.getByRole("tab", { name: /Lịch sử biến động/ }));
 
-    expect(await screen.findByText("MV-0001")).toBeInTheDocument();
+    expect(await screen.findByText("SKU-MV-001")).toBeInTheDocument();
   });
 
   it("bấm Mở mở BalanceDetailModal chi tiết đúng dòng", async () => {
@@ -166,11 +181,9 @@ describe("InventoryPage (INV-01 hub)", () => {
     await screen.findByText("SKU-001");
 
     fireEvent.click(screen.getByRole("tab", { name: /Lịch sử biến động/ }));
-    await screen.findByText("MV-0001");
+    await screen.findByText("SKU-MV-001");
 
-    expect(
-      screen.getByRole("button", { name: /^Truy vết$/ }),
-    ).toBeDisabled();
+    expect(screen.getByRole("button", { name: /^Truy vết$/ })).toBeDisabled();
     // Không có quyền trace thì cũng không hiện nút "Truy vết mã" toolbar.
     expect(screen.queryByText("Truy vết mã")).not.toBeInTheDocument();
   });
@@ -181,7 +194,7 @@ describe("InventoryPage (INV-01 hub)", () => {
     await screen.findByText("SKU-001");
 
     fireEvent.click(screen.getByRole("tab", { name: /Lịch sử biến động/ }));
-    await screen.findByText("MV-0001");
+    await screen.findByText("SKU-MV-001");
 
     const traceButton = screen.getByRole("button", { name: /^Truy vết$/ });
     expect(traceButton).toBeEnabled();

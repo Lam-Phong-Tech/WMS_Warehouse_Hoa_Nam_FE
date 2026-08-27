@@ -1,12 +1,10 @@
-import type { ButtonProps } from "antd";
-import { Button } from "antd";
-import { CloseOutlined, SaveOutlined } from "@/shared/components/icons";
 import {
-  ACCENT_COLORS,
-  FONT_FAMILY,
-  NEUTRAL_COLORS,
-} from "@/shared/design-tokens";
-import { ACTION_ICON_COLORS } from "@/shared/theme/actionIconColors";
+  ActionButton,
+  type ActionButtonProps,
+} from "@/shared/components/actions";
+
+/** Prop bổ sung cho từng nút, KHÔNG cho ghi đè `kind` để giữ chuẩn icon/màu. */
+export type FormActionButtonProps = Omit<ActionButtonProps, "kind" | "onClick">;
 
 export interface FormActionsProps {
   onOk: () => void;
@@ -16,33 +14,15 @@ export interface FormActionsProps {
   cancelText?: string;
   showOk?: boolean;
   showCancel?: boolean;
-  okButtonProps?: ButtonProps;
-  cancelButtonProps?: ButtonProps;
+  okButtonProps?: FormActionButtonProps;
+  cancelButtonProps?: FormActionButtonProps;
 }
 
-const cancelStyle = {
-  height: 38,
-  padding: "0 18px",
-  border: `1.5px solid ${NEUTRAL_COLORS.ink}`,
-  borderRadius: 3,
-  background: NEUTRAL_COLORS.paper,
-  color: NEUTRAL_COLORS.ink,
-  fontSize: 14,
-  fontFamily: FONT_FAMILY,
-};
-
-const okStyle = {
-  height: 38,
-  padding: "0 22px",
-  background: ACCENT_COLORS.accent,
-  fontSize: 15,
-  fontWeight: 700,
-  fontFamily: FONT_FAMILY,
-};
-
 /**
- * Hàng nút Hủy/Lưu theo §6.5 (Button) của Design System Module 1 — dùng chung
- * cho `FormDrawer`/`FormModal`/`FormPage` thay vì mỗi nơi tự vẽ style JSX.
+ * Hàng nút Hủy/Lưu dùng chung cho `FormDrawer`/`FormModal`/`FormPage`.
+ *
+ * Hình thức lấy nguyên từ `<ActionButton />` (nền phẳng, icon tô màu theo
+ * nghiệp vụ) — KHÔNG tự vẽ style riêng nữa, để mọi form trong dự án giống nhau.
  */
 export function FormActions({
   onOk,
@@ -62,27 +42,19 @@ export function FormActions({
       style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}
     >
       {showCancel && (
-        <Button
-          icon={<CloseOutlined style={{ color: ACTION_ICON_COLORS.neutral }} />}
-          onClick={onCancel}
-          style={cancelStyle}
-          {...cancelButtonProps}
-        >
+        <ActionButton kind="cancel" onClick={onCancel} {...cancelButtonProps}>
           {cancelText}
-        </Button>
+        </ActionButton>
       )}
       {showOk && (
-        <Button
-          type="primary"
-          icon={<SaveOutlined />}
+        <ActionButton
+          kind="save"
           onClick={onOk}
           loading={loading}
-          className={loading ? "ant-btn-loading" : undefined}
-          style={okStyle}
           {...okButtonProps}
         >
           {okText}
-        </Button>
+        </ActionButton>
       )}
     </div>
   );

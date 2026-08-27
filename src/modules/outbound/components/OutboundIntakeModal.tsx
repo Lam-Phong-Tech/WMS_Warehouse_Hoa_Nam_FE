@@ -5,13 +5,11 @@ import {
   Alert,
   Autocomplete,
   Box,
-  Button,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   Grid,
-  IconButton,
   Stack,
   TextField,
   ThemeProvider,
@@ -20,16 +18,6 @@ import {
 import { muiTheme } from "@/app/mui-theme";
 import dayjs from "dayjs";
 import { toast } from "sonner";
-import {
-  CheckCircleOutlined,
-  CloseOutlined,
-  DeleteOutlined,
-  EditOutlined,
-  EyeOutlined,
-  FileExcelOutlined,
-  PlusOutlined,
-  UploadOutlined,
-} from "@/shared/components/icons";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { getApiErrorMessage } from "@/shared/api/api-error";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
@@ -38,6 +26,7 @@ import {
   useMvpSkus,
 } from "@/modules/master-data/hooks/use-mvp-master";
 import type { AgencyRecord } from "@/modules/master-data/types/mvp-master.types";
+import { useDialogExit } from "@/shared/utils/useDialogExit";
 import {
   consumeOutboundImport,
   fetchAvailableQtyBySku,
@@ -46,6 +35,7 @@ import {
   type OutboundImportResult,
   type OutboundRequestRowInput,
 } from "@/modules/outbound/services/mvpOutboundService";
+import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 
 type IntakeMode = "manual" | "excel";
 
@@ -104,6 +94,7 @@ export function OutboundIntakeModal({
   onClose,
   onConsumed,
 }: OutboundIntakeModalProps) {
+  const dialog = useDialogExit(onClose);
   const [mode, setMode] = useState<IntakeMode>("manual");
   const [file, setFile] = useState<File | null>(null);
   const [fileInputKey, setFileInputKey] = useState(0);
@@ -192,7 +183,7 @@ export function OutboundIntakeModal({
 
   const close = () => {
     resetAll();
-    onClose();
+    dialog.close();
   };
 
   const validateManualMutation = useMutation({
@@ -295,7 +286,10 @@ export function OutboundIntakeModal({
         preview.id,
         makeKey("confirm-outbound"),
         preview.version,
-        { ...(consumeLines.length ? { lines: consumeLines } : {}), ...recipient },
+        {
+          ...(consumeLines.length ? { lines: consumeLines } : {}),
+          ...recipient,
+        },
       );
     },
     onSuccess: (result) => {
@@ -419,7 +413,11 @@ export function OutboundIntakeModal({
         }
         const required = rowRequiredQty(row);
         return (
-          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", justifyContent: "flex-end" }}>
+          <Stack
+            direction="row"
+            spacing={0.5}
+            sx={{ alignItems: "center", justifyContent: "flex-end" }}
+          >
             <span>{available}</span>
             {row.errors.length === 0 ? (
               <Tag color={available >= required ? "success" : "warning"}>
@@ -463,44 +461,42 @@ export function OutboundIntakeModal({
   return (
     <ThemeProvider theme={muiTheme}>
       <Dialog
-        open={open}
+        {...dialog.dialogProps}
+        open={open && dialog.open}
         onClose={close}
         maxWidth="lg"
         fullWidth
       >
         <DialogTitle sx={{ pr: 6, position: "relative" }}>
           OUT-REQ-01 · Tiếp nhận phiếu yêu cầu xuất
-          <IconButton
-            aria-label="Đóng"
+          <ActionIconButton
+            kind="close"
+            label="Đóng"
             onClick={close}
             sx={{ position: "absolute", right: 10, top: 8 }}
-          >
-            <CloseOutlined style={{ fontSize: 15 }} />
-          </IconButton>
+          />
         </DialogTitle>
         <DialogContent dividers>
           <Stack spacing={2}>
             <Stack direction="row" spacing={1.5}>
-              <Button
-                variant={mode === "manual" ? "contained" : "outlined"}
-                startIcon={<EditOutlined />}
+              <ActionButton
+                kind="edit"
                 onClick={() => {
                   setMode("manual");
                   setPreview(null);
                 }}
               >
                 Nhập tay
-              </Button>
-              <Button
-                variant={mode === "excel" ? "contained" : "outlined"}
-                startIcon={<FileExcelOutlined />}
+              </ActionButton>
+              <ActionButton
+                kind="import"
                 onClick={() => {
                   setMode("excel");
                   setPreview(null);
                 }}
               >
                 Nhập từ Excel
-              </Button>
+              </ActionButton>
             </Stack>
 
             {mode === "manual" ? (
@@ -556,7 +552,9 @@ export function OutboundIntakeModal({
                       fullWidth
                       label="Địa chỉ nhận"
                       value={recipientAddress}
-                      onChange={(event) => setRecipientAddress(event.target.value)}
+                      onChange={(event) =>
+                        setRecipientAddress(event.target.value)
+                      }
                       slotProps={{ htmlInput: { maxLength: 1000 } }}
                     />
                   </Grid>
@@ -571,13 +569,19 @@ export function OutboundIntakeModal({
                           event.target.value.replace(/\D/g, "").slice(0, 10),
                         )
                       }
-                      error={Boolean(recipientPhone) && !/^0\d{9}$/.test(recipientPhone)}
+                      error={
+                        Boolean(recipientPhone) &&
+                        !/^0\d{9}$/.test(recipientPhone)
+                      }
                       helperText={
-                        Boolean(recipientPhone) && !/^0\d{9}$/.test(recipientPhone)
+                        Boolean(recipientPhone) &&
+                        !/^0\d{9}$/.test(recipientPhone)
                           ? "Số điện thoại phải gồm đúng 10 chữ số và bắt đầu bằng số 0."
                           : undefined
                       }
-                      slotProps={{ htmlInput: { maxLength: 10, inputMode: "numeric" } }}
+                      slotProps={{
+                        htmlInput: { maxLength: 10, inputMode: "numeric" },
+                      }}
                     />
                   </Grid>
                   <Grid size={{ xs: 12, md: 6 }}>
@@ -602,7 +606,11 @@ export function OutboundIntakeModal({
                       key={`line-${index}`}
                       direction="row"
                       spacing={1.5}
-                      sx={{ alignItems: "flex-start", flexWrap: "wrap", rowGap: 1 }}
+                      sx={{
+                        alignItems: "flex-start",
+                        flexWrap: "wrap",
+                        rowGap: 1,
+                      }}
                     >
                       <Autocomplete
                         options={skuOptions}
@@ -644,10 +652,8 @@ export function OutboundIntakeModal({
                         sx={{ width: 130 }}
                         slotProps={{ htmlInput: { min: 1, step: 1 } }}
                       />
-                      <Button
-                        color="error"
-                        variant="outlined"
-                        startIcon={<DeleteOutlined />}
+                      <ActionButton
+                        kind="delete"
                         disabled={lines.length === 1}
                         onClick={() =>
                           setLines((current) =>
@@ -657,13 +663,12 @@ export function OutboundIntakeModal({
                         sx={{ mt: "8px" }}
                       >
                         Xóa dòng
-                      </Button>
+                      </ActionButton>
                     </Stack>
                   ))}
                   <Box>
-                    <Button
-                      variant="outlined"
-                      startIcon={<PlusOutlined />}
+                    <ActionButton
+                      kind="create"
                       onClick={() =>
                         setLines((current) => [
                           ...current,
@@ -672,19 +677,24 @@ export function OutboundIntakeModal({
                       }
                     >
                       Thêm dòng SKU
-                    </Button>
+                    </ActionButton>
                   </Box>
                 </Stack>
 
-                <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", flexWrap: "wrap", rowGap: 1 }}>
-                  <Button
-                    variant="contained"
-                    startIcon={<EyeOutlined />}
+                <Stack
+                  direction="row"
+                  spacing={1.5}
+                  sx={{ alignItems: "center", flexWrap: "wrap", rowGap: 1 }}
+                >
+                  <ActionButton
+                    kind="view"
                     disabled={!canImport || validateManualMutation.isPending}
                     onClick={() => validateManualMutation.mutate()}
                   >
-                    {validateManualMutation.isPending ? "Đang kiểm tra..." : "Kiểm tra & xem trước"}
-                  </Button>
+                    {validateManualMutation.isPending
+                      ? "Đang kiểm tra..."
+                      : "Kiểm tra & xem trước"}
+                  </ActionButton>
                   <Typography variant="body2" color="text.secondary">
                     Người nhận bắt buộc; địa chỉ/SĐT/ngày toa tùy chọn theo quy
                     định hiện hành — thiếu thì nhãn đóng gói để trống trường
@@ -713,14 +723,17 @@ export function OutboundIntakeModal({
                   lý ở bảng xem trước trước khi xác nhận.
                 </Typography>
                 <Box>
-                  <Button
-                    variant="contained"
-                    startIcon={<UploadOutlined />}
-                    disabled={!canImport || !file || validateFileMutation.isPending}
+                  <ActionButton
+                    kind="upload"
+                    disabled={
+                      !canImport || !file || validateFileMutation.isPending
+                    }
                     onClick={() => validateFileMutation.mutate()}
                   >
-                    {validateFileMutation.isPending ? "Đang tải lên..." : "Tải lên & xem trước"}
-                  </Button>
+                    {validateFileMutation.isPending
+                      ? "Đang tải lên..."
+                      : "Tải lên & xem trước"}
+                  </ActionButton>
                 </Box>
                 <ApiErrorAlert
                   error={validateFileMutation.error}
@@ -730,22 +743,42 @@ export function OutboundIntakeModal({
             )}
 
             {preview ? (
-              <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: 2, p: 2 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5 }}>
+              <Box
+                sx={{
+                  border: "1px solid",
+                  borderColor: "divider",
+                  borderRadius: 2,
+                  p: 2,
+                }}
+              >
+                <Typography
+                  variant="subtitle2"
+                  sx={{ fontWeight: 700, mb: 1.5 }}
+                >
                   {`Kết quả xem trước · ${preview.importNo || preview.id}`}
                 </Typography>
                 <Stack spacing={1.5}>
-                  <Stack direction="row" spacing={1.5} sx={{ flexWrap: "wrap", rowGap: 1, alignItems: "center" }}>
-                    <Tag color={IMPORT_STATUS_COLOR[preview.status] ?? "default"}>
+                  <Stack
+                    direction="row"
+                    spacing={1.5}
+                    sx={{ flexWrap: "wrap", rowGap: 1, alignItems: "center" }}
+                  >
+                    <Tag
+                      color={IMPORT_STATUS_COLOR[preview.status] ?? "default"}
+                    >
                       {IMPORT_STATUS_LABEL[preview.status] ?? "Chưa xác định"}
                     </Tag>
-                    <Typography variant="body2">Tổng: {preview.totalRows}</Typography>
+                    <Typography variant="body2">
+                      Tổng: {preview.totalRows}
+                    </Typography>
                     <Typography variant="body2" color="success.main">
                       Hợp lệ dữ liệu: {preview.validRows}
                     </Typography>
                     <Typography
                       variant="body2"
-                      color={preview.errorRows > 0 ? "error.main" : "text.primary"}
+                      color={
+                        preview.errorRows > 0 ? "error.main" : "text.primary"
+                      }
                     >
                       Lỗi dữ liệu: {preview.errorRows}
                     </Typography>
@@ -764,11 +797,25 @@ export function OutboundIntakeModal({
                     locale={{ emptyText: "Không có dòng dữ liệu nào" }}
                   />
 
-                  <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: 2, p: 1.5 }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+                  <Box
+                    sx={{
+                      border: "1px solid",
+                      borderColor: "divider",
+                      borderRadius: 2,
+                      p: 1.5,
+                    }}
+                  >
+                    <Typography
+                      variant="subtitle2"
+                      sx={{ fontWeight: 700, mb: 1 }}
+                    >
                       Ghi đè người nhận khi xác nhận (tùy chọn)
                     </Typography>
-                    <Stack direction="row" spacing={1.5} sx={{ flexWrap: "wrap", rowGap: 1.5 }}>
+                    <Stack
+                      direction="row"
+                      spacing={1.5}
+                      sx={{ flexWrap: "wrap", rowGap: 1.5 }}
+                    >
                       <TextField
                         label="Người nhận"
                         sx={{ width: 240 }}
@@ -802,7 +849,9 @@ export function OutboundIntakeModal({
                             ? undefined
                             : "Số điện thoại phải gồm đúng 10 chữ số và bắt đầu bằng số 0."
                         }
-                        slotProps={{ htmlInput: { maxLength: 10, inputMode: "numeric" } }}
+                        slotProps={{
+                          htmlInput: { maxLength: 10, inputMode: "numeric" },
+                        }}
                         value={recipientOverride.receiver_contact_phone}
                         onChange={(event) =>
                           setRecipientOverride((current) => ({
@@ -816,15 +865,20 @@ export function OutboundIntakeModal({
                     </Stack>
                   </Box>
 
-                  <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", flexWrap: "wrap", rowGap: 1 }}>
-                    <Button
-                      variant="contained"
-                      startIcon={<CheckCircleOutlined />}
+                  <Stack
+                    direction="row"
+                    spacing={1.5}
+                    sx={{ alignItems: "center", flexWrap: "wrap", rowGap: 1 }}
+                  >
+                    <ActionButton
+                      kind="confirm"
                       disabled={!consumable || consumeMutation.isPending}
                       onClick={() => consumeMutation.mutate()}
                     >
-                      {consumeMutation.isPending ? "Đang xử lý..." : "Xác nhận & tạo phiếu xuất nháp"}
-                    </Button>
+                      {consumeMutation.isPending
+                        ? "Đang xử lý..."
+                        : "Xác nhận & tạo phiếu xuất nháp"}
+                    </ActionButton>
                     {!consumable ? (
                       <Typography variant="body2" color="text.secondary">
                         {!canImport
@@ -843,7 +897,9 @@ export function OutboundIntakeModal({
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={close}>Đóng</Button>
+          <ActionButton kind="close" onClick={close}>
+            Đóng
+          </ActionButton>
         </DialogActions>
       </Dialog>
     </ThemeProvider>

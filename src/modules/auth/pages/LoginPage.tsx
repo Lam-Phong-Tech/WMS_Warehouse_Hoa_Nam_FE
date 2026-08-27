@@ -1,8 +1,9 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Alert, Button, Form, Spin, Typography } from "antd";
+import { Alert, Form, Spin, Typography } from "antd";
 import { LockOutlined, UserOutlined } from "@/shared/components/icons";
 import { isAxiosError } from "axios";
+import { Link } from "react-router-dom";
 import { useLogin } from "@/modules/auth/hooks/use-login";
 import {
   loginSchema,
@@ -11,6 +12,8 @@ import {
 } from "@/modules/auth/schemas/login.schema";
 import { FormInput } from "@/shared/components/forms";
 import { OFFLINE_MUTATION_CODE } from "@/shared/pwa/offline-policy";
+import { ROUTES } from "@/shared/constants/routes";
+import { ActionButton } from "@/shared/components/actions";
 
 function getLoginErrorMessage(error: unknown): string {
   if (isAxiosError(error)) {
@@ -124,8 +127,8 @@ export function LoginPage() {
               <FormInput
                 control={control}
                 name="identifier"
-                label="Email hoặc tên đăng nhập"
-                placeholder="admin@gmail.com hoặc admin"
+                label="Đăng nhập bằng Gmail"
+                placeholder="your@gmail.com"
                 prefix={<UserOutlined style={{ color: "#8c887e" }} />}
                 autoFocus
                 disabled={isSubmitting}
@@ -141,16 +144,20 @@ export function LoginPage() {
                 disabled={isSubmitting}
               />
 
-              <Button
+              <div style={{ textAlign: "right", marginBottom: 14 }}>
+                <Link to={ROUTES.FORGOT_PASSWORD}>Quên mật khẩu?</Link>
+              </div>
+
+              <ActionButton
+                kind="login"
                 className="hn-login-submit"
-                type="primary"
-                htmlType="submit"
-                block
                 loading={login.isPending}
                 disabled={isSubmitting}
+                type="submit"
+                fullWidth
               >
                 Đăng nhập
-              </Button>
+              </ActionButton>
             </Form>
           </div>
         </div>

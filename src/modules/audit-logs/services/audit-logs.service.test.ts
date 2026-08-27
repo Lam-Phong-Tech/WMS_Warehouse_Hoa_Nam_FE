@@ -6,10 +6,10 @@ vi.mock("@/shared/api/http", () => ({
   },
 }));
 
-// BE thật cho GET /audit-logs chỉ nhận `page`/`limit`/`q`/`user_id`/`action`/
-// `module` (xác nhận qua Swagger thật + gọi trực tiếp endpoint,
-// `?page=1&limit=15`) — trước đây FE gửi `per_page`/`search` sai tên, khiến
-// BE bỏ qua và luôn trả về page size mặc định bất kể user chọn gì.
+// BE thật cho GET /audit-logs (đọc trực tiếp AuditLogController::index() +
+// xác nhận qua Swagger sống astrodev.test8.io.vn) chỉ nhận `page`/`per_page`/
+// `q`/`user_id`/`action`/`module` — bản test trước gửi `limit` (sai tên) nên
+// BE luôn bỏ qua và trả về page size mặc định (10) bất kể user chọn gì.
 describe("auditLogService.getAuditLogs", () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let http: any;
@@ -33,12 +33,12 @@ describe("auditLogService.getAuditLogs", () => {
   // có field .data/.meta → luôn hiện "Chưa có audit log" dù BE có dữ liệu.
   it("dùng http.getPage() để giữ lại meta phân trang (không dùng http.get())", async () => {
     await auditLogService.getAuditLogs({ page: 1, limit: 15 });
-    expect(http.getPage).toHaveBeenCalledWith("/audit-logs?page=1&limit=15");
+    expect(http.getPage).toHaveBeenCalledWith("/audit-logs?page=1&per_page=15");
   });
 
-  it("gửi `limit` (không phải `per_page`) cho tham số kích thước trang", async () => {
+  it("gửi `per_page` (không phải `limit`) cho tham số kích thước trang", async () => {
     await auditLogService.getAuditLogs({ page: 2, limit: 50 });
-    expect(http.getPage).toHaveBeenCalledWith("/audit-logs?page=2&limit=50");
+    expect(http.getPage).toHaveBeenCalledWith("/audit-logs?page=2&per_page=50");
   });
 
   it("gửi `q` (không phải `search`) cho tìm kiếm theo mô tả", async () => {
@@ -48,16 +48,16 @@ describe("auditLogService.getAuditLogs", () => {
     );
   });
 
-  it("gửi user_id/action/module đúng tên param", async () => {
+  it("gửi user_id/action/module đúng tên param — user_id là UUID string", async () => {
     await auditLogService.getAuditLogs({
-      user_id: 1,
+      user_id: "5f6b9b3a-6b8e-4f2a-9c3e-2c0a0f6a1b2c",
       action: "DELETE",
-      module: "Departments",
+      module: "WARRANTY",
     });
     const calledUrl = vi.mocked(http.getPage).mock.calls[0][0];
-    expect(calledUrl).toContain("user_id=1");
+    expect(calledUrl).toContain("user_id=5f6b9b3a-6b8e-4f2a-9c3e-2c0a0f6a1b2c");
     expect(calledUrl).toContain("action=DELETE");
-    expect(calledUrl).toContain("module=Departments");
+    expect(calledUrl).toContain("module=WARRANTY");
   });
 
   it("không truyền filter nào → gọi endpoint không query string", async () => {

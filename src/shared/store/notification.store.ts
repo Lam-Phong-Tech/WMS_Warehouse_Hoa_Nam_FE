@@ -24,5 +24,6 @@ export const useNotificationStore = create<NotificationState>((set) => ({
   increment: () => set((state) => ({ unreadCount: state.unreadCount + 1 })),
   setConnected: (connected) => set({ isConnected: connected }),
   setDropdownOpen: (open) => set({ isDropdownOpen: open }),
-  reset: () => set({ unreadCount: 0, isConnected: false, isDropdownOpen: false }),
+  reset: () =>
+    set({ unreadCount: 0, isConnected: false, isDropdownOpen: false }),
 }));

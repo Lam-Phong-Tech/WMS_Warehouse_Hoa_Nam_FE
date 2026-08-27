@@ -1,6 +1,14 @@
 /**
- * Audit Log types theo backend response
- * Endpoint: GET /api/v1/audit-logs
+ * Audit Log types theo backend response thật (Modules/AuditLog, BE repo).
+ * Endpoint: GET /api/v1/audit-logs — xem AuditLogController::index()/myHistory().
+ *
+ * LƯU Ý: bản trước của file này liệt kê `auditable_type`/`auditable_id`/
+ * `old_values`/`new_values`/`user_agent`/`detail` — các field đó CHƯA BAO GIỜ
+ * tồn tại ở BE (đã đọc thẳng AuditLogController/AuditLogRepository/AuditLog
+ * model để xác nhận), khiến trang Nhật ký hệ thống luôn hiện dữ liệu trống dù
+ * BE có bản ghi thật. Type dưới đây khớp đúng cột thật trên bảng `audit_log`
+ * (+ 2 cột mới `module`/`ip_address` và accessor `description`, xem migration
+ * 2026_08_27_130000_add_module_and_ip_address_to_audit_log).
  */
 
 export type AuditAction =
@@ -12,63 +20,66 @@ export type AuditAction =
   | "SUBMIT"
   | "CANCEL"
   | "ARCHIVE"
-  | "RESTORE";
+  | "RESTORE"
+  | string;
 
-export interface AuditUser {
-  id: number;
+/** Đúng 5 luồng theo yêu cầu vận hành mục 6 — xem AuditLogger::MODULE_*. */
+export type AuditModule =
+  | "SYSTEM"
+  | "INBOUND"
+  | "OUTBOUND"
+  | "WARRANTY"
+  | "STOCKTAKE";
+
+/** Quan hệ `actor` (Modules\Auth\Models\User) — password_hash luôn bị ẩn ở BE. */
+export interface AuditActor {
+  user_id: string;
+  username: string;
+  display_name: string;
   email: string;
-  status: number;
-  deleted_at: string | null;
+  phone: string | null;
+  department_id: string | null;
+  status: string;
   created_at: string;
   updated_at: string;
-  password_change_required: boolean;
+  deleted_at: string | null;
 }
 
 export interface AuditLog {
-  id: number;
-  user_id: number;
+  id: string;
+  actor_id: string | null;
+  actor: AuditActor | null;
   action: AuditAction;
-  object_type: string | null;
-  object_id: number | null;
-  detail: string | null;
-  ip_address: string;
-  created_at: string;
-  module: string;
-  auditable_type: string;
-  auditable_id: number;
-  old_values: Record<string, unknown> | null;
-  new_values: Record<string, unknown> | null;
+  object_type: string;
+  object_id: string | null;
+  module: AuditModule;
+  reason: string | null;
+  /** Accessor phía BE: `reason` nếu có, ngược lại tự tổng hợp "{action} {object_type} #{object_id}". */
   description: string;
-  user_agent: string | null;
-  user: AuditUser;
+  request_id: string | null;
+  result: "SUCCESS" | "FAILED" | "DENIED" | null;
+  error_code: string | null;
+  ip_address: string | null;
+  before_data: Record<string, unknown> | null;
+  after_data: Record<string, unknown> | null;
+  created_at: string;
 }
 
 /**
- * Filter thật BE hỗ trợ cho `GET /audit-logs` — đã xác nhận qua Swagger thật
- * (`https://astrodev.test8.io.vn/docs?api-docs.json`, tag "15. Audit Log") và
- * gọi trực tiếp endpoint: chỉ nhận `page`, `limit` (KHÔNG phải `per_page`),
- * `q` (KHÔNG phải `search`), `user_id`, `action`, `module`. Không có
- * `auditable_type`/`auditable_id`/`start_date`/`end_date` — các field này đã
- * bị xoá khỏi type vì UI cũng chưa có chỗ nào gửi (aspirational, không có
- * evidence BE hỗ trợ).
+ * Filter thật BE hỗ trợ cho `GET /audit-logs`: `page`, `per_page` (KHÔNG phải
+ * `limit`), `q` (tìm theo reason/object_type/object_id), `user_id` (= actor_id,
+ * UUID string — KHÔNG phải số), `action`, `module`.
  */
 export interface AuditLogFilters {
   page?: number;
+  /** Gửi lên BE dưới tên `per_page` — xem audit-logs.service.ts. */
   limit?: number;
-  module?: string;
+  module?: AuditModule;
   action?: AuditAction;
-  user_id?: number;
-  /** Tìm theo mô tả (BE: `q`). */
+  /** actor_id — UUID string, không phải số. */
+  user_id?: string;
+  /** Tìm theo mô tả/lý do (BE: `q`). */
   q?: string;
-  /** Trường sắp xếp phía backend (chỉ cột trực tiếp trên audit_logs, vd created_at). */
   sort_by?: string;
   sort_order?: "asc" | "desc";
-}
-
-export interface AuditLogDetail extends AuditLog {
-  // Extends base AuditLog with additional computed fields
-  formatted_created_at: string;
-  action_label: string;
-  module_label: string;
-  changes_summary: string | null;
 }

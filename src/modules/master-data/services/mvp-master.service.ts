@@ -77,6 +77,10 @@ function canonicalSkuPayload(payload: SkuPayload) {
     body[key] = value?.trim() ? value.trim() : null;
   }
 
+  // GĐ1 Dashboard "tồn dưới/vượt định mức": null = chưa đặt, không cảnh báo.
+  if (payload.min_stock !== undefined) body.min_stock = payload.min_stock;
+  if (payload.max_stock !== undefined) body.max_stock = payload.max_stock;
+
   return body;
 }
 

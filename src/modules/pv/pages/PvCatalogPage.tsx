@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Button, Input, Select, Switch } from "antd";
+import { Input, Select, Switch } from "antd";
 import { PvErrorState } from "@/modules/pv/components/PvErrorState";
 import { PvFreshnessIndicator } from "@/modules/pv/components/PvFreshness";
 import { PvProductCard } from "@/modules/pv/components/PvProductCard";
@@ -13,6 +13,7 @@ import {
 import type { PvProductQuery } from "@/modules/pv/types/pv.types";
 import { EmptyState } from "@/shared/components/data-display/EmptyState";
 import { LoadingState } from "@/shared/components/data-display/LoadingState";
+import { ActionButton } from "@/shared/components/actions";
 
 const PER_PAGE = 12;
 
@@ -100,6 +101,7 @@ export default function PvCatalogPage() {
           allowClear
           defaultValue={keywordParam}
           placeholder="Tìm theo tên hoặc mã sản phẩm"
+          aria-label="Tìm sản phẩm"
           data-testid="pv-search-input"
           onSearch={(value) => patchParams({ keyword: value.trim() || null })}
         />
@@ -107,6 +109,7 @@ export default function PvCatalogPage() {
           allowClear
           value={industryId || undefined}
           placeholder="Lọc theo ngành nghề"
+          aria-label="Lọc theo ngành nghề"
           data-testid="pv-industry-filter"
           loading={industries.isLoading}
           options={(industries.data?.data ?? []).map((industry) => ({
@@ -182,7 +185,8 @@ export default function PvCatalogPage() {
           }
         >
           {hasFilter ? (
-            <Button
+            <ActionButton
+              kind="reset"
               data-testid="pv-clear-filters"
               onClick={() =>
                 patchParams({
@@ -193,7 +197,7 @@ export default function PvCatalogPage() {
               }
             >
               Xoá bộ lọc
-            </Button>
+            </ActionButton>
           ) : null}
         </EmptyState>
       ) : (
@@ -223,23 +227,25 @@ export default function PvCatalogPage() {
               flexWrap: "wrap",
             }}
           >
-            <Button
+            <ActionButton
+              kind="back"
               disabled={page <= 1}
               data-testid="pv-prev-page"
               onClick={() => patchParams({ page: String(page - 1) })}
             >
               ← Trang trước
-            </Button>
+            </ActionButton>
             <span style={{ fontSize: 13, color: "#57534a" }}>
               Trang {page}/{lastPage} · {total} sản phẩm
             </span>
-            <Button
+            <ActionButton
+              kind="next"
               disabled={page >= lastPage}
               data-testid="pv-next-page"
               onClick={() => patchParams({ page: String(page + 1) })}
             >
               Trang sau →
-            </Button>
+            </ActionButton>
           </nav>
         </>
       )}

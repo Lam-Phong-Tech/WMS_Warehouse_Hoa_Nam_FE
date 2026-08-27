@@ -14,9 +14,7 @@ describe("translateUserFacingText", () => {
       "Sản phẩm mới · chờ ghi nhận",
     );
     expect(
-      translateUserFacingText(
-        "Scan đủ → Preview Packing Label → Post Issue",
-      ),
+      translateUserFacingText("Scan đủ → Preview Packing Label → Post Issue"),
     ).toBe("Quét đủ → Xem trước Nhãn đóng gói → Hoàn tất xuất kho");
   });
 
@@ -31,9 +29,9 @@ describe("translateUserFacingText", () => {
     ).toBe(
       "Phiếu đã xuất kho không được chỉnh sửa trực tiếp; sửa sai dùng Điều chỉnh tồn kho.",
     );
-    expect(
-      translateUserFacingText("RFID mapping là stock-neutral."),
-    ).toBe("Việc gán RFID không làm thay đổi tồn kho.");
+    expect(translateUserFacingText("RFID mapping là stock-neutral.")).toBe(
+      "Việc gán RFID không làm thay đổi tồn kho.",
+    );
   });
 
   it("localizes raw business states without changing contract values in code", () => {
@@ -86,6 +84,8 @@ describe("translateUserFacingText", () => {
   it("keeps approved technical identifiers that users may legitimately need", () => {
     expect(translateUserFacingText("SKU · QR · RFID")).toBe("SKU · QR · RFID");
     expect(translateUserFacingText("sku.manage")).toBe("sku.manage");
-    expect(translateUserFacingText("published_to_app")).toBe("published_to_app");
+    expect(translateUserFacingText("published_to_app")).toBe(
+      "published_to_app",
+    );
   });
 });

@@ -3,28 +3,29 @@ import { Table } from "antd";
 import {
   Alert,
   Box,
-  Button,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   FormControl,
   Grid,
-  IconButton,
   InputLabel,
   MenuItem,
   Select,
   Stack,
   TextField,
   ThemeProvider,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
 import { muiTheme } from "@/app/mui-theme";
-import { CloseOutlined, CopyOutlined } from "@/shared/components/icons";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { getApiErrorMessage, normalizeError } from "@/shared/api/api-error";
 import { useHasPermission } from "@/shared/components/permission";
+import { DocumentAttachmentsPanel } from "@/shared/components/DocumentAttachmentsPanel";
+import { fetchDocumentAttachments } from "@/shared/api/documentAttachmentService";
 import {
   RETURN_CONDITION_LABELS,
   SOURCE_DOCUMENT_TYPE_LABELS,
@@ -41,6 +42,8 @@ import { ReversalStatusTag } from "./ReversalStatusTag";
 import type { ReversalLine, ReversalReturnCondition } from "../types";
 import { formatDateTime } from "@/shared/utils/format-date";
 import type { ReactNode } from "react";
+import { useDialogExit } from "@/shared/utils/useDialogExit";
+import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 
 const numberFormatter = new Intl.NumberFormat("vi-VN");
 
@@ -64,8 +67,12 @@ const RETURN_CONDITION_OPTIONS: Array<{
 /** Cặp nhãn/giá trị trong Dialog chi tiết (thay antd Descriptions.Item). */
 function DetailField({ label, value }: { label: string; value: ReactNode }) {
   return (
-    <Grid size={{ xs: 12, md: 6 }}>
-      <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+    <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+      <Typography
+        variant="caption"
+        color="text.secondary"
+        sx={{ display: "block" }}
+      >
         {label}
       </Typography>
       <Typography variant="body2" component="div">
@@ -81,6 +88,7 @@ interface Props {
 }
 
 export function ReversalDetailModal({ documentId, onClose }: Props) {
+  const dialog = useDialogExit(onClose);
   const can = useHasPermission();
   const canPost = can("inventory.reversal.post");
 
@@ -92,6 +100,16 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
 
   const doc = docQuery.data;
   const lines = linesQuery.data ?? [];
+
+  // "Chứng từ nhập/xuất/hoàn trả": REVERSAL luôn bắt buộc chứng từ trước khi
+  // Post (DocumentEvidenceGuard) — cache dùng chung queryKey với
+  // DocumentAttachmentsPanel bên dưới nên không tốn thêm request.
+  const attachmentsQuery = useQuery({
+    queryKey: ["document-attachments", "REVERSAL", documentId],
+    queryFn: () => fetchDocumentAttachments("REVERSAL", documentId),
+    enabled: Boolean(documentId),
+  });
+  const evidenceProvided = attachmentsQuery.data?.evidenceStatus === "PROVIDED";
 
   const [returnCondition, setReturnCondition] =
     useState<ReversalReturnCondition>("SELLABLE");
@@ -193,16 +211,15 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
 
   return (
     <ThemeProvider theme={muiTheme}>
-      <Dialog open onClose={onClose} maxWidth="md" fullWidth>
+      <Dialog {...dialog.dialogProps} maxWidth="lg" fullWidth>
         <DialogTitle sx={{ pr: 6, position: "relative" }}>
           {`Chi tiết phiếu điều chỉnh — ${doc?.reversal_code ?? documentId}`}
-          <IconButton
-            aria-label="Đóng"
-            onClick={onClose}
+          <ActionIconButton
+            kind="close"
+            label="Đóng"
+            onClick={dialog.close}
             sx={{ position: "absolute", right: 10, top: 8 }}
-          >
-            <CloseOutlined style={{ fontSize: 15 }} />
-          </IconButton>
+          />
         </DialogTitle>
         <DialogContent dividers>
           <Stack spacing={2}>
@@ -228,8 +245,15 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
             ) : null}
 
             {staleRecovered ? (
-              <Alert severity="warning" role="status" data-testid="reversal-stale-version-notice">
-                <Typography component="strong" sx={{ fontWeight: 700, display: "block" }}>
+              <Alert
+                severity="warning"
+                role="status"
+                data-testid="reversal-stale-version-notice"
+              >
+                <Typography
+                  component="strong"
+                  sx={{ fontWeight: 700, display: "block" }}
+                >
                   Phiếu đã được cập nhật ở phiên khác
                 </Typography>
                 <Typography variant="body2">
@@ -241,7 +265,11 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
             ) : null}
 
             {docQuery.isLoading ? (
-              <Typography variant="body2" color="text.secondary" sx={{ textAlign: "center", py: 3 }}>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ textAlign: "center", py: 3 }}
+              >
                 Đang tải chi tiết...
               </Typography>
             ) : null}
@@ -260,11 +288,17 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
                     <DetailField
                       label="Mã điều chỉnh"
                       value={
-                        <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
+                        <Stack
+                          direction="row"
+                          spacing={0.5}
+                          sx={{ alignItems: "center" }}
+                        >
                           <span>{doc.reversal_code}</span>
-                          <IconButton size="small" aria-label="Sao chép mã điều chỉnh" onClick={copyCode}>
-                            <CopyOutlined style={{ fontSize: 14 }} />
-                          </IconButton>
+                          <ActionIconButton
+                            kind="copy"
+                            label="Sao chép mã điều chỉnh"
+                            onClick={copyCode}
+                          />
                         </Stack>
                       }
                     />
@@ -280,7 +314,11 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
                     <DetailField
                       label="Chứng từ gốc"
                       value={
-                        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+                        <Stack
+                          direction="row"
+                          spacing={1}
+                          sx={{ alignItems: "center" }}
+                        >
                           <span>{doc.reference_document_code}</span>
                           <Box
                             component="span"
@@ -333,7 +371,10 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
                       label="Tổng dòng / số lượng"
                       value={`${doc.total_lines} dòng · ${qty(doc.total_qty)}`}
                     />
-                    <DetailField label="Ngày tạo" value={formatDateTime(doc.created_at)} />
+                    <DetailField
+                      label="Ngày tạo"
+                      value={formatDateTime(doc.created_at)}
+                    />
                     <DetailField label="Người tạo" value={doc.created_by} />
                     <DetailField
                       label="Thời điểm hoàn tất / người thực hiện"
@@ -350,9 +391,27 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
                   </Grid>
                 </Box>
 
+                <Box
+                  sx={{
+                    border: "1px solid",
+                    borderColor: "divider",
+                    borderRadius: 2,
+                    p: 2,
+                  }}
+                >
+                  <DocumentAttachmentsPanel
+                    documentType="REVERSAL"
+                    documentId={doc.id}
+                    disabled={doc.status !== "DRAFT"}
+                  />
+                </Box>
+
                 {doc.status === "POSTED" ? (
                   <Alert severity="success">
-                    <Typography component="strong" sx={{ fontWeight: 700, display: "block" }}>
+                    <Typography
+                      component="strong"
+                      sx={{ fontWeight: 700, display: "block" }}
+                    >
                       Phiếu điều chỉnh đã hoàn tất
                     </Typography>
                     <Typography variant="body2">
@@ -373,7 +432,10 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
                       p: 2,
                     }}
                   >
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5 }}>
+                    <Typography
+                      variant="subtitle2"
+                      sx={{ fontWeight: 700, mb: 1.5 }}
+                    >
                       Các bước xử lý phiếu điều chỉnh
                     </Typography>
 
@@ -381,7 +443,12 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
                       <Stack
                         direction="row"
                         spacing={2}
-                        sx={{ alignItems: "flex-end", flexWrap: "wrap", mb: 1.5, rowGap: 1.5 }}
+                        sx={{
+                          alignItems: "flex-end",
+                          flexWrap: "wrap",
+                          mb: 1.5,
+                          rowGap: 1.5,
+                        }}
                       >
                         <FormControl size="small" sx={{ minWidth: 320 }}>
                           <InputLabel id="reversal-return-condition-label">
@@ -393,7 +460,9 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
                             label="Tình trạng hàng trả về"
                             value={returnCondition}
                             onChange={(event) =>
-                              setReturnCondition(event.target.value as ReversalReturnCondition)
+                              setReturnCondition(
+                                event.target.value as ReversalReturnCondition,
+                              )
                             }
                           >
                             {RETURN_CONDITION_OPTIONS.map((option) => (
@@ -403,17 +472,20 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
                             ))}
                           </Select>
                         </FormControl>
-                        <Button
-                          variant="contained"
+                        <ActionButton
+                          kind="confirm"
                           disabled={busy}
                           onClick={() => void handleConfirm()}
                         >
                           Xác nhận hàng vật lý đã về
-                        </Button>
+                        </ActionButton>
                       </Stack>
                     ) : (
                       <Alert severity="info" sx={{ mb: 1.5 }}>
-                        <Typography component="strong" sx={{ fontWeight: 700, display: "block" }}>
+                        <Typography
+                          component="strong"
+                          sx={{ fontWeight: 700, display: "block" }}
+                        >
                           Đã đủ điều kiện hoàn tất
                         </Typography>
                         <Typography variant="body2">
@@ -423,29 +495,51 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
                       </Alert>
                     )}
 
-                    <Stack direction="row" spacing={2} sx={{ alignItems: "flex-end", flexWrap: "wrap", rowGap: 1.5 }}>
-                      <Button
-                        variant="contained"
-                        color="error"
-                        disabled={busy || pendingReturn}
-                        onClick={() => setPostConfirmOpen(true)}
+                    <Stack
+                      direction="row"
+                      spacing={2}
+                      sx={{
+                        alignItems: "flex-end",
+                        flexWrap: "wrap",
+                        rowGap: 1.5,
+                      }}
+                    >
+                      <Tooltip
+                        title={
+                          !pendingReturn && !evidenceProvided
+                            ? "Phải đính kèm ít nhất 1 chứng từ trước khi hoàn tất điều chỉnh."
+                            : ""
+                        }
                       >
-                        Hoàn tất điều chỉnh
-                      </Button>
+                        <span>
+                          <ActionButton
+                            kind="complete"
+                            disabled={
+                              busy || pendingReturn || !evidenceProvided
+                            }
+                            onClick={() => setPostConfirmOpen(true)}
+                          >
+                            Hoàn tất điều chỉnh
+                          </ActionButton>
+                        </span>
+                      </Tooltip>
                       <TextField
                         label="Lý do hủy (tối thiểu 5 ký tự)"
                         size="small"
                         value={cancelReason}
                         placeholder="Nhập lý do hủy phiếu..."
-                        onChange={(event) => setCancelReason(event.target.value)}
+                        onChange={(event) =>
+                          setCancelReason(event.target.value)
+                        }
                         sx={{ minWidth: 320 }}
                       />
-                      <Button
+                      <ActionButton
+                        kind="cancel"
                         disabled={busy || cancelReason.trim().length < 5}
                         onClick={() => void handleCancel()}
                       >
                         Hủy phiếu
-                      </Button>
+                      </ActionButton>
                     </Stack>
                   </Box>
                 ) : null}
@@ -473,7 +567,12 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
                 scroll={{ x: "max-content" }}
                 locale={{ emptyText: "Chưa có dòng điều chỉnh" }}
                 columns={[
-                  { title: "#", dataIndex: "line_no", width: 50 },
+                  {
+                    title: "#",
+                    dataIndex: "line_no",
+                    width: 50,
+                    align: "center",
+                  },
                   { title: "SKU", dataIndex: "sku", width: 140 },
                   { title: "Tên", dataIndex: "sku_name", width: 170 },
                   {
@@ -522,7 +621,11 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
                     width: 160,
                     render: (value: string | undefined) =>
                       value
-                        ? businessLabel(RETURN_CONDITION_LABELS, value, "Tình trạng khác")
+                        ? businessLabel(
+                            RETURN_CONDITION_LABELS,
+                            value,
+                            "Tình trạng khác",
+                          )
                         : "-",
                   },
                   {
@@ -540,27 +643,35 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={postConfirmOpen} onClose={() => setPostConfirmOpen(false)} maxWidth="xs" fullWidth>
+      <Dialog
+        open={postConfirmOpen}
+        onClose={() => setPostConfirmOpen(false)}
+        maxWidth="xs"
+        fullWidth
+      >
         <DialogTitle>Hoàn tất phiếu điều chỉnh tồn kho?</DialogTitle>
         <DialogContent>
           <Typography variant="body2">
             Đây là bước làm phát sinh giao dịch đối ứng và thay đổi tồn kho.
-            Giao dịch gốc vẫn được giữ nguyên. Nếu cần điều chỉnh tiếp, phải
-            tạo phiếu điều chỉnh mới.
+            Giao dịch gốc vẫn được giữ nguyên. Nếu cần điều chỉnh tiếp, phải tạo
+            phiếu điều chỉnh mới.
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setPostConfirmOpen(false)} disabled={postBusy}>
+          <ActionButton
+            kind="refresh"
+            onClick={() => setPostConfirmOpen(false)}
+            disabled={postBusy}
+          >
             Kiểm tra lại
-          </Button>
-          <Button
-            variant="contained"
-            color="error"
+          </ActionButton>
+          <ActionButton
+            kind="complete"
             onClick={() => void handlePost()}
             disabled={postBusy}
           >
             {postBusy ? "Đang xử lý..." : "Hoàn tất điều chỉnh"}
-          </Button>
+          </ActionButton>
         </DialogActions>
       </Dialog>
     </ThemeProvider>

@@ -1,5 +1,5 @@
 import { Link, useParams } from "react-router-dom";
-import { Button, Descriptions, Tag } from "antd";
+import { Descriptions, Tag } from "antd";
 import { PvErrorState } from "@/modules/pv/components/PvErrorState";
 import { PvFreshnessIndicator } from "@/modules/pv/components/PvFreshness";
 import { PvProductCard } from "@/modules/pv/components/PvProductCard";
@@ -9,6 +9,7 @@ import { EmptyState } from "@/shared/components/data-display/EmptyState";
 import { LoadingState } from "@/shared/components/data-display/LoadingState";
 import { ROUTES } from "@/shared/constants/routes";
 import type { PublicApiError } from "@/shared/api/public-http";
+import { ActionButton } from "@/shared/components/actions";
 
 /**
  * WWHN-252 — SCR-PV-02 (PV product detail).
@@ -59,7 +60,7 @@ export default function PvProductDetailPage() {
           description="Sản phẩm không tồn tại hoặc hiện chưa được công bố."
         >
           <Link to={ROUTES.PV_CATALOG}>
-            <Button>Xem danh mục sản phẩm</Button>
+            <ActionButton kind="view">Xem danh mục sản phẩm</ActionButton>
           </Link>
         </EmptyState>
       ) : product.isError ? (

@@ -1,4 +1,6 @@
 import { Pagination } from "antd";
+import { MenuItem, Select, ThemeProvider } from "@mui/material";
+import { muiTheme } from "@/app/mui-theme";
 import { MVP_PAGE_SIZE_OPTIONS } from "@/shared/components/mvp/mvp-pagination";
 
 interface PageSizeSelectorProps {
@@ -19,7 +21,8 @@ export function MvpPageSizeSelector({
   onChange,
 }: PageSizeSelectorProps) {
   // Giá trị hiện tại (vd: per_page=15 do BE trả về) có thể không nằm trong
-  // các mốc chuẩn — vẫn phải liệt kê để <select> hiển thị đúng lựa chọn.
+  // các mốc chuẩn — vẫn phải liệt kê để Select hiển thị đúng lựa chọn hiện tại
+  // (Select của MUI cảnh báo và hiện rỗng nếu value không khớp MenuItem nào).
   const options = MVP_PAGE_SIZE_OPTIONS.includes(
     value as (typeof MVP_PAGE_SIZE_OPTIONS)[number],
   )
@@ -27,22 +30,29 @@ export function MvpPageSizeSelector({
     : [...MVP_PAGE_SIZE_OPTIONS, value].sort((a, b) => a - b);
 
   return (
-    <div className="table-page-size">
-      {/* select thường (không phải antd) để cùng chiều cao với các bộ lọc
-       * Loại/Hãng/Trạng thái bên cạnh — đều dùng chung class "select". */}
-      <select
-        className="select"
-        value={value}
-        aria-label="Số dòng mỗi trang"
-        onChange={(event) => onChange(Number(event.target.value))}
-      >
-        {options.map((size) => (
-          <option key={size} value={size}>
-            {size} / trang
-          </option>
-        ))}
-      </select>
-    </div>
+    // Trước đây là <select> thuần (cho khớp chiều cao với các bộ lọc cũ cùng
+    // class "select"). Các bộ lọc đó nay đã chuyển hết sang MUI/antd, nên ô này
+    // thành thứ duy nhất còn bung menu theo kiểu hệ điều hành: phông, màu bôi
+    // đen và tốc độ đều lệch phần còn lại của app. Đổi sang Select của MUI để
+    // menu ăn theme và có hiệu ứng như mọi dropdown khác.
+    // ThemeProvider đặt ngay tại đây vì component này còn được dùng ở màn chưa
+    // bọc theme (IamRolePermissionScreen) — lồng ThemeProvider là vô hại.
+    <ThemeProvider theme={muiTheme}>
+      <div className="table-page-size">
+        <Select
+          value={value}
+          sx={{ width: 130 }}
+          inputProps={{ "aria-label": "Số dòng mỗi trang" }}
+          onChange={(event) => onChange(Number(event.target.value))}
+        >
+          {options.map((size) => (
+            <MenuItem key={size} value={size}>
+              {size} / trang
+            </MenuItem>
+          ))}
+        </Select>
+      </div>
+    </ThemeProvider>
   );
 }
 

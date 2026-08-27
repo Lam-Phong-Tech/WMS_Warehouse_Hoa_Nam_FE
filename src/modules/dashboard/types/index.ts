@@ -45,4 +45,35 @@ export interface DashboardKPI {
   reconciliation_warning_count: number;
   /** Mẫu tối đa 50 dòng reconciliation_status=MISMATCH tại thời điểm gọi. */
   reconciliation_warnings: ReconciliationWarning[];
+  /**
+   * GĐ1 (2026-08-27): "tồn dưới định mức" — SKU có min_stock đã đặt và tổng
+   * available_qty (CỘNG DỒN MỌI KHO, không theo warehouse data-scope vì định
+   * mức là theo SKU toàn hệ thống) < min_stock. SKU chưa đặt min_stock không tính.
+   */
+  below_min_stock_count: number;
+  below_min_stock_skus: DashboardStockThresholdSku[];
+  /** "Tồn vượt định mức" — cùng quy ước trên, theo max_stock. */
+  above_max_stock_count: number;
+  above_max_stock_skus: DashboardStockThresholdSku[];
+  /**
+   * GĐ1 (2026-08-27): chuỗi theo ngày trong [period.from_date, period.to_date],
+   * cùng data_scope/warehouse filter như các KPI trên. warranty_received_count
+   * KHÔNG lọc theo kho (cùng lý do warranty_cases_by_status ở trên).
+   */
+  daily: DashboardDailyPoint[];
+}
+
+export interface DashboardDailyPoint {
+  date: string;
+  receipt_qty: number;
+  issue_qty: number;
+  warranty_received_count: number;
+}
+
+export interface DashboardStockThresholdSku {
+  sku_code: string;
+  sku_name: string;
+  available_qty: number;
+  min_stock?: number;
+  max_stock?: number;
 }

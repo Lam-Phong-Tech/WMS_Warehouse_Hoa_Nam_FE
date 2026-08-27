@@ -25,20 +25,20 @@ describe("api-error", () => {
     expect(getApiErrorMessage(error)).toBe("Lỗi từ BE");
   });
 
-  it("should extract error_code", () => {
+  it("should not leak error_code as the user-facing message", () => {
     const error = createMockAxiosError({
       status: 400,
       data: { error_code: "VALIDATION_ERROR" },
     });
-    expect(getApiErrorMessage(error)).toBe("VALIDATION_ERROR");
+    expect(getApiErrorMessage(error)).toBe("Máy chủ trả về lỗi (400).");
   });
 
-  it("should extract nested error.code", () => {
+  it("should not leak nested error.code as the user-facing message", () => {
     const error = createMockAxiosError({
       status: 500,
       data: { error: { code: "INTERNAL_ERROR" } },
     });
-    expect(getApiErrorMessage(error)).toBe("INTERNAL_ERROR");
+    expect(getApiErrorMessage(error)).toBe("Lỗi hệ thống");
   });
 
   it("should extract field errors", () => {
@@ -51,8 +51,38 @@ describe("api-error", () => {
         },
       },
     });
+    // Không kèm tên trường thô (`email:`): message BE đã tự mở đầu bằng nhãn
+    // tiếng Việt của trường đó.
     expect(getApiErrorMessage(error)).toBe(
-      "email: Email không hợp lệ; password: Mật khẩu quá ngắn",
+      "Email không hợp lệ Mật khẩu quá ngắn",
+    );
+  });
+
+  it("chi tiết theo trường thay thế câu tổng chung chung", () => {
+    const error = createMockAxiosError({
+      status: 422,
+      data: {
+        message: "Dữ liệu gửi lên không hợp lệ.",
+        errors: {
+          email: ["Email này đã được dùng cho một tài khoản khác."],
+        },
+      },
+    });
+    expect(getApiErrorMessage(error)).toBe(
+      "Email này đã được dùng cho một tài khoản khác.",
+    );
+  });
+
+  it("message nghiệp vụ cụ thể vẫn được giữ cùng chi tiết theo trường", () => {
+    const error = createMockAxiosError({
+      status: 422,
+      data: {
+        message: "Không đủ tồn để xuất kho.",
+        errors: { quantity: ["Số lượng không được lớn hơn 5."] },
+      },
+    });
+    expect(getApiErrorMessage(error)).toBe(
+      "Không đủ tồn để xuất kho. Số lượng không được lớn hơn 5.",
     );
   });
 

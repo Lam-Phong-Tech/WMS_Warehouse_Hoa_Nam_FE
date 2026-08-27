@@ -1,16 +1,25 @@
-import { Button, Space, Typography, Tag } from "antd";
-import { EyeOutlined } from "@/shared/components/icons";
-import { ACTION_ICON_COLORS } from "@/shared/theme/actionIconColors";
-import { DataTable, TopPagination } from "@/shared/components";
-import type { ColumnWithSortType } from "@/shared/components";
+import { useState } from "react";
+import { Tag } from "antd";
+import { Stack, Typography } from "@mui/material";
+import {
+  ResponsiveDataTable,
+  type ResponsiveTableColumn,
+} from "@/shared/components/data-display/ResponsiveDataTable";
+import type { ClientSortState } from "@/shared/components/data-display/useClientSort";
+import { tableEmptyText } from "@/shared/components/feedback/BusinessState";
+import {
+  MvpSelectionCheckbox,
+  mvpRowNumber,
+} from "@/shared/components/mvp/MvpSelectionCell";
+import type { RowSelectionState } from "@/shared/hooks/useRowSelection";
 import type { AuditLog } from "../types/audit-logs.types";
 import { formatDateTime } from "@/shared/utils/format-date";
 import {
   AUDIT_ACTION_LABELS,
+  AUDIT_MODULE_LABELS,
   businessLabel,
 } from "@/shared/constants/business-labels";
-
-const { Text } = Typography;
+import { ActionButton } from "@/shared/components/actions";
 
 const ACTION_COLOR: Record<string, string> = {
   CREATE: "green",
@@ -24,155 +33,235 @@ const ACTION_COLOR: Record<string, string> = {
   RESTORE: "lime",
 };
 
-const MODULE_LABELS: Record<string, string> = {
-  Employees: "Nhân sự",
-  User: "Người dùng",
-  order: "Đơn hàng",
-  OrgUnits: "Đơn vị",
-  Departments: "Phòng ban",
-  Roles: "Vai trò",
-  Warehouse: "Kho",
-  Inventory: "Tồn kho",
-  Warranty: "Bảo hành",
-  Auth: "Tài khoản & đăng nhập",
-};
+/**
+ * UUID đối tượng dài 36 ký tự: in nguyên vào ô bảng thì cột tự xuống 6 dòng và
+ * đẩy các cột sau (kể cả nút Xem) ra ngoài màn hình. Rút gọn ở bảng, giá trị
+ * đầy đủ nằm ở tooltip và ở Dialog "Chi tiết nhật ký hệ thống".
+ */
+function shortAuditId(value: string): string {
+  return value.length > 14 ? `${value.slice(0, 8)}…${value.slice(-4)}` : value;
+}
 
 export interface AuditLogsTableProps {
   data: AuditLog[];
   loading?: boolean;
+  /** Lỗi tải danh sách — quyết định câu chữ dòng trống (xem `tableEmptyText`). */
+  error?: unknown;
+  /** Trang/số dòng hiện tại để STT chạy liên tục giữa các trang. */
+  page: number;
+  perPage: number;
+  selection: RowSelectionState;
   onView?: (auditLog: AuditLog) => void;
-  page?: number;
-  perPage?: number;
-  total?: number;
-  onPaginationChange?: (page: number, pageSize: number) => void;
-  /** Sắp xếp server-side (chỉ áp dụng cột trực tiếp: thời gian). */
+  /**
+   * Sắp xếp server-side (thời gian, hành động, phân hệ, đối tượng, IP — BE
+   * nhận sort_by/sort_order, xem AuditLogsPage/use-audit-logs). Bấm header cột
+   * gọi callback này qua `sortState`/`onSortChange` (có kiểm soát) của
+   * `ResponsiveDataTable` — cùng chu kỳ 3 trạng thái (chưa sort → tăng dần →
+   * giảm dần → bỏ sort) như trước.
+   */
   onSortChange?: (field?: string, order?: "asc" | "desc") => void;
 }
 
 export function AuditLogsTable({
   data,
   loading,
+  error,
+  page,
+  perPage,
+  selection,
   onView,
-  page = 1,
-  perPage = 15,
-  total = 0,
-  onPaginationChange,
   onSortChange,
 }: AuditLogsTableProps) {
-  const columns: ColumnWithSortType<AuditLog> = [
+  const [sortState, setSortState] = useState<ClientSortState>({
+    direction: undefined,
+  });
+
+  const handleSortChange = (key: string) => {
+    setSortState((prev) => {
+      const next: ClientSortState =
+        prev.key !== key
+          ? { key, direction: "asc" }
+          : prev.direction === "asc"
+            ? { key, direction: "desc" }
+            : { key: undefined, direction: undefined };
+      onSortChange?.(next.key, next.direction);
+      return next;
+    });
+  };
+
+  const columns: ResponsiveTableColumn<AuditLog>[] = [
     {
-      title: "Thời gian",
-      dataIndex: "created_at",
-      key: "created_at",
-      width: 180,
-      sorter: true,
-      render: (created_at: string) => <Text>{formatDateTime(created_at)}</Text>,
+      key: "select",
+      // Ô chọn nằm trong dòng bấm-để-xem-chi-tiết: chặn nổi bọt để tick checkbox
+      // không mở luôn Dialog chi tiết.
+      header: (
+        <MvpSelectionCheckbox
+          checked={selection.isAllSelected}
+          indeterminate={selection.isIndeterminate}
+          onChange={selection.toggleAll}
+          ariaLabel="Chọn tất cả nhật ký trong trang"
+        />
+      ),
+      width: 44,
+      align: "center",
+      hideOnMobile: true,
+      render: (row) => (
+        <span role="presentation" onClick={(event) => event.stopPropagation()}>
+          <MvpSelectionCheckbox
+            checked={selection.isSelected(row.id)}
+            onChange={(checked) => selection.toggleOne(row.id, checked)}
+            ariaLabel={`Chọn nhật ký ${formatDateTime(row.created_at)}`}
+          />
+        </span>
+      ),
     },
     {
-      title: "Hành động",
-      dataIndex: "action",
+      key: "stt",
+      header: "STT",
+      width: 56,
+      align: "center",
+      hideOnMobile: true,
+      render: (row) =>
+        mvpRowNumber(
+          page,
+          perPage,
+          data.findIndex((item) => item.id === row.id),
+        ),
+    },
+    {
+      key: "created_at",
+      header: "Thời gian",
+      width: 150,
+      sortable: true,
+      render: (row) => (
+        <Typography variant="body2" sx={{ whiteSpace: "nowrap" }}>
+          {formatDateTime(row.created_at)}
+        </Typography>
+      ),
+    },
+    {
       key: "action",
-      width: 190,
-      render: (action: string) => (
-        <Tag color={ACTION_COLOR[action] ?? "default"}>
-          {businessLabel(AUDIT_ACTION_LABELS, action, "Hành động khác")}
+      header: "Hành động",
+      width: 170,
+      sortable: true,
+      render: (row) => (
+        <Tag color={ACTION_COLOR[row.action] ?? "default"}>
+          {businessLabel(AUDIT_ACTION_LABELS, row.action, "Hành động khác")}
         </Tag>
       ),
     },
     {
-      title: "Phân hệ",
-      dataIndex: "module",
       key: "module",
-      width: 160,
-      render: (module: string) => (
-        <Text>{MODULE_LABELS[module] || "Phân hệ khác"}</Text>
+      header: "Phân hệ",
+      width: 150,
+      sortable: true,
+      render: (row) => (
+        <Typography variant="body2">
+          {AUDIT_MODULE_LABELS[row.module] || "Phân hệ khác"}
+        </Typography>
       ),
     },
     {
-      title: "Đối tượng",
-      dataIndex: "auditable_type",
-      key: "auditable_type",
+      key: "object_type",
+      header: "Đối tượng",
       width: 180,
-      render: (_auditableType: string, record: AuditLog) => (
-        <Text>Mã #{record.auditable_id}</Text>
+      hideOnMobile: true,
+      sortable: true,
+      render: (row) => (
+        <Stack spacing={0} sx={{ minWidth: 0 }}>
+          <Typography variant="body2" noWrap>
+            {row.object_type || "—"}
+          </Typography>
+          {row.object_id ? (
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              noWrap
+              title={row.object_id}
+              sx={{ fontSize: 11 }}
+            >
+              {`#${shortAuditId(row.object_id)}`}
+            </Typography>
+          ) : null}
+        </Stack>
       ),
     },
     {
-      title: "Người thực hiện",
-      dataIndex: "user",
-      key: "user_email",
-      width: 200,
-      render: (user: AuditLog["user"]) => (
-        <Text copyable>{user?.email || "Không có"}</Text>
-      ),
+      key: "actor_email",
+      header: "Người thực hiện",
+      width: 190,
+      render: (row) => {
+        const actor = row.actor?.email || row.actor?.display_name || "Hệ thống";
+        return (
+          <Typography variant="body2" noWrap title={actor}>
+            {actor}
+          </Typography>
+        );
+      },
     },
     {
-      title: "Địa chỉ IP",
-      dataIndex: "ip_address",
       key: "ip_address",
-      width: 140,
-      render: (ip_address: string) => <Text copyable>{ip_address}</Text>,
+      header: "Địa chỉ IP",
+      width: 130,
+      hideOnMobile: true,
+      sortable: true,
+      render: (row) => (
+        <Typography variant="body2" sx={{ whiteSpace: "nowrap" }}>
+          {row.ip_address || "—"}
+        </Typography>
+      ),
     },
     {
-      title: "Mô tả",
-      dataIndex: "description",
       key: "description",
-      ellipsis: true,
-      render: (description: string) => <Text ellipsis>{description}</Text>,
-    },
-    {
-      title: "Thao tác",
-      key: "actions",
-      width: 100,
-      align: "right",
-      render: (_, record) => (
-        <Space>
-          {onView && (
-            <Button
-              size="small"
-              icon={
-                <EyeOutlined style={{ color: ACTION_ICON_COLORS.view }} />
-              }
-              aria-label="Xem chi tiết nhật ký"
-              onClick={() => onView(record)}
-            />
-          )}
-        </Space>
+      header: "Mô tả",
+      // Mô tả audit log thường kèm UUID nên rất dài; để nguyên thì ô nở hết cỡ
+      // và đẩy cả bảng tràn ngang, buộc người xem phải kéo thanh cuộn. Chặn trần
+      // bề rộng rồi cắt bằng "…" — nội dung đầy đủ vẫn có ở tooltip và ở Dialog
+      // chi tiết. KHÔNG đặt `width` cho cột: cột cố định càng làm bảng rộng thêm.
+      render: (row) => (
+        <Typography
+          variant="body2"
+          title={row.description}
+          sx={{
+            maxWidth: 260,
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          }}
+        >
+          {row.description}
+        </Typography>
       ),
     },
   ];
 
   return (
-    <>
-      {onPaginationChange && (
-        <TopPagination
-          total={total}
-          current={page}
-          pageSize={perPage}
-          unitName="bản ghi"
-          pageSizeOptions={[10, 20, 50]}
-          onChange={onPaginationChange}
-        />
+    <ResponsiveDataTable<AuditLog>
+      columns={columns}
+      rows={data}
+      rowKey={(row) => row.id}
+      loading={loading}
+      emptyText={tableEmptyText(
+        error ?? null,
+        "Không có nhật ký nào theo bộ lọc hiện tại",
       )}
-      <DataTable<AuditLog>
-        columns={columns}
-        dataSource={data}
-        loading={loading}
-        pagination={false}
-        rowKey="id"
-        onChange={(_pagination, _filters, sorter) => {
-          if (!onSortChange) return;
-          const s = Array.isArray(sorter) ? sorter[0] : sorter;
-          const field = s?.order ? (s.field as string) : undefined;
-          const order =
-            s?.order === "ascend"
-              ? "asc"
-              : s?.order === "descend"
-                ? "desc"
-                : undefined;
-          onSortChange(field, order);
-        }}
-      />
-    </>
+      sortState={onSortChange ? sortState : undefined}
+      onSortChange={onSortChange ? handleSortChange : undefined}
+      onRowClick={onView}
+      renderRowActions={
+        onView
+          ? (row) => (
+              <ActionButton
+                kind="view"
+                sx={{ whiteSpace: "nowrap" }}
+                aria-label="Xem chi tiết nhật ký"
+                onClick={() => onView(row)}
+              >
+                Xem
+              </ActionButton>
+            )
+          : undefined
+      }
+    />
   );
 }

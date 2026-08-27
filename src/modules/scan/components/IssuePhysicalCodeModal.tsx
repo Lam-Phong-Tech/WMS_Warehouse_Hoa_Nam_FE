@@ -4,7 +4,6 @@ import { Tag } from "antd";
 import {
   Alert,
   Autocomplete,
-  Button,
   Dialog,
   DialogActions,
   DialogContent,
@@ -18,7 +17,8 @@ import {
 import { muiTheme } from "@/app/mui-theme";
 import { toast } from "sonner";
 import { useMvpSkus } from "@/modules/master-data/hooks/use-mvp-master";
-import { getApiErrorMessage } from "@/shared/api/api-error";
+import { getApiErrorMessage, resolveFormErrors } from "@/shared/api/api-error";
+import { guardBackdropClose } from "@/shared/utils/dialogGuard";
 import {
   ITEM_STATUS_LABELS,
   MASTER_STATUS_LABELS,
@@ -30,6 +30,7 @@ import type {
   IssuePhysicalCodeCarrierType,
 } from "../types";
 import type { ReactNode } from "react";
+import { ActionButton } from "@/shared/components/actions";
 
 interface IssuePhysicalCodeModalProps {
   open: boolean;
@@ -49,10 +50,28 @@ function carrierLabel(value: IssuePhysicalCodeCarrierType) {
   return value === "BARCODE" ? "Mã vạch" : "QR";
 }
 
+/**
+ * Các trường có ô hiển thị lỗi riêng trên form (`error` + `helperText`).
+ * Tên đã trùng với tên trường payload sau khi đổi sang camelCase
+ * (`sku_id`/`carrier_type`/`code_value`/`serial_number`), nên lỗi server gắn
+ * thẳng được vào ô. CHỈ liệt kê ô thật sự có chỗ hiện lỗi — liệt kê dư sẽ làm
+ * lỗi biến mất im lặng thay vì rơi xuống toast.
+ */
+const ISSUE_FORM_FIELDS = [
+  "skuId",
+  "carrierType",
+  "codeValue",
+  "serialNumber",
+] as const;
+
 function DetailField({ label, value }: { label: string; value: ReactNode }) {
   return (
-    <Grid size={12}>
-      <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+    <Grid size={{ xs: 12, sm: 6 }}>
+      <Typography
+        variant="caption"
+        color="text.secondary"
+        sx={{ display: "block" }}
+      >
         {label}
       </Typography>
       <Typography variant="body2" component="div">
@@ -72,7 +91,7 @@ export function IssuePhysicalCodeModal({
     useState<IssuePhysicalCodeCarrierType>("QR");
   const [codeValue, setCodeValue] = useState("");
   const [serialNumber, setSerialNumber] = useState("");
-  const [formError, setFormError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const queryClient = useQueryClient();
 
   const skuQuery = useMvpSkus({
@@ -111,7 +130,22 @@ export function IssuePhysicalCodeModal({
       resetForm();
     },
     onError: (error: unknown) => {
-      toast.error(getApiErrorMessage(error, "Không thể tạo mã vật lý mới."));
+      // Lỗi nhập liệu từ server hiện ngay dưới ô sai; `message` chỉ còn phần
+      // không gắn được vào ô nào — `null` nghĩa là đã gắn hết, lúc đó bỏ toast
+      // tổng đi thay vì lặp lại câu chung chung.
+      const { fieldErrors: serverFieldErrors, message } = resolveFormErrors(
+        error,
+        ISSUE_FORM_FIELDS,
+      );
+      const hasFieldErrors = Object.keys(serverFieldErrors).length > 0;
+      setFieldErrors((current) => ({ ...current, ...serverFieldErrors }));
+      if (message !== null) {
+        toast.error(
+          hasFieldErrors
+            ? message
+            : getApiErrorMessage(error, "Không thể tạo mã vật lý mới."),
+        );
+      }
     },
   });
 
@@ -120,7 +154,7 @@ export function IssuePhysicalCodeModal({
     setCarrierType("QR");
     setCodeValue("");
     setSerialNumber("");
-    setFormError(null);
+    setFieldErrors({});
   };
 
   const handleClose = () => {
@@ -130,20 +164,23 @@ export function IssuePhysicalCodeModal({
     onClose();
   };
 
-  const handleSubmit = () => {
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
     if (!skuId) {
-      setFormError("Vui lòng chọn SKU");
-      return;
+      errors.skuId = "Vui lòng chọn SKU";
     }
     if (codeValue.length > 200) {
-      setFormError("Giá trị mã tối đa 200 ký tự");
-      return;
+      errors.codeValue = "Giá trị mã tối đa 200 ký tự";
     }
     if (serialNumber.length > 100) {
-      setFormError("Số sê-ri tối đa 100 ký tự");
-      return;
+      errors.serialNumber = "Số sê-ri tối đa 100 ký tự";
     }
-    setFormError(null);
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSubmit = () => {
+    if (!validateForm() || !skuId) return;
     issueMutation.mutate({
       sku_id: skuId,
       carrier_type: carrierType,
@@ -158,7 +195,12 @@ export function IssuePhysicalCodeModal({
 
   return (
     <ThemeProvider theme={muiTheme}>
-      <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+      <Dialog
+        open={open}
+        onClose={guardBackdropClose(handleClose)}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle>Tạo mã vật lý mới</DialogTitle>
         <DialogContent dividers>
           <Alert severity="info" sx={{ mb: 2 }}>
@@ -166,9 +208,9 @@ export function IssuePhysicalCodeModal({
               Tạo mã không làm thay đổi tồn kho
             </Typography>
             <Typography variant="body2">
-              Hệ thống tạo một sản phẩm cụ thể kèm mã vật lý mới. Thao tác
-              này chỉ tạo thông tin nhận diện, chưa làm tăng hoặc giảm tồn
-              kho. Chỉ áp dụng cho SKU sản phẩm có quản lý số sê-ri.
+              Hệ thống tạo một sản phẩm cụ thể kèm mã vật lý mới. Thao tác này
+              chỉ tạo thông tin nhận diện, chưa làm tăng hoặc giảm tồn kho. Chỉ
+              áp dụng cho SKU sản phẩm có quản lý số sê-ri.
             </Typography>
           </Alert>
 
@@ -203,11 +245,6 @@ export function IssuePhysicalCodeModal({
             </Grid>
           ) : (
             <Grid container spacing={2}>
-              {formError ? (
-                <Grid size={12}>
-                  <Alert severity="error">{formError}</Alert>
-                </Grid>
-              ) : null}
               <Grid size={12}>
                 <Autocomplete
                   options={skuOptions}
@@ -222,29 +259,46 @@ export function IssuePhysicalCodeModal({
                       ? "Đang tải..."
                       : "Không có SKU sản phẩm đang sử dụng và có quản lý số sê-ri"
                   }
-                  onChange={(_event, option) => setSkuId(option?.value ?? null)}
+                  onChange={(_event, option) => {
+                    setSkuId(option?.value ?? null);
+                    if (fieldErrors.skuId) {
+                      setFieldErrors((current) => ({ ...current, skuId: "" }));
+                    }
+                  }}
                   renderInput={(params) => (
                     <TextField
                       {...params}
                       required
                       label="SKU sản phẩm có quản lý số sê-ri"
                       placeholder="Chọn SKU..."
+                      error={Boolean(fieldErrors.skuId)}
+                      helperText={fieldErrors.skuId}
                     />
                   )}
                 />
               </Grid>
-              <Grid size={12}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   select
                   required
                   fullWidth
                   label="Hình thức mã"
                   value={carrierType}
-                  onChange={(event) =>
+                  onChange={(event) => {
                     setCarrierType(
                       event.target.value as IssuePhysicalCodeCarrierType,
-                    )
-                  }
+                    );
+                    if (fieldErrors.carrierType) {
+                      setFieldErrors((current) => ({
+                        ...current,
+                        carrierType: "",
+                      }));
+                    }
+                  }}
+                  // Trường bắt buộc gửi lên server nên phải có chỗ hiện lỗi
+                  // riêng, nếu không lỗi của nó chỉ còn đường rơi vào toast.
+                  error={Boolean(fieldErrors.carrierType)}
+                  helperText={fieldErrors.carrierType}
                 >
                   {CARRIER_OPTIONS.map((option) => (
                     <MenuItem key={option.value} value={option.value}>
@@ -253,13 +307,23 @@ export function IssuePhysicalCodeModal({
                   ))}
                 </TextField>
               </Grid>
-              <Grid size={12}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   fullWidth
                   label="Giá trị mã (bỏ trống để hệ thống tự sinh)"
                   placeholder="Ví dụ: SP-0001-20260822-AB12"
                   value={codeValue}
-                  onChange={(event) => setCodeValue(event.target.value)}
+                  onChange={(event) => {
+                    setCodeValue(event.target.value);
+                    if (fieldErrors.codeValue) {
+                      setFieldErrors((current) => ({
+                        ...current,
+                        codeValue: "",
+                      }));
+                    }
+                  }}
+                  error={Boolean(fieldErrors.codeValue)}
+                  helperText={fieldErrors.codeValue}
                   slotProps={{ htmlInput: { maxLength: 200 } }}
                 />
               </Grid>
@@ -269,7 +333,17 @@ export function IssuePhysicalCodeModal({
                   label="Số sê-ri (bỏ trống để hệ thống tự sinh)"
                   placeholder="Ví dụ: SN-SP-0001-8F3C1A2B"
                   value={serialNumber}
-                  onChange={(event) => setSerialNumber(event.target.value)}
+                  onChange={(event) => {
+                    setSerialNumber(event.target.value);
+                    if (fieldErrors.serialNumber) {
+                      setFieldErrors((current) => ({
+                        ...current,
+                        serialNumber: "",
+                      }));
+                    }
+                  }}
+                  error={Boolean(fieldErrors.serialNumber)}
+                  helperText={fieldErrors.serialNumber}
                   slotProps={{ htmlInput: { maxLength: 100 } }}
                 />
               </Grid>
@@ -278,21 +352,25 @@ export function IssuePhysicalCodeModal({
         </DialogContent>
         <DialogActions>
           {result ? (
-            <Button variant="contained" onClick={handleClose}>
+            <ActionButton kind="close" onClick={handleClose}>
               Đóng
-            </Button>
+            </ActionButton>
           ) : (
             <>
-              <Button onClick={handleClose} disabled={issueMutation.isPending}>
+              <ActionButton
+                kind="cancel"
+                onClick={handleClose}
+                disabled={issueMutation.isPending}
+              >
                 Hủy
-              </Button>
-              <Button
-                variant="contained"
+              </ActionButton>
+              <ActionButton
+                kind="create"
                 onClick={handleSubmit}
                 disabled={issueMutation.isPending}
               >
                 {issueMutation.isPending ? "Đang tạo..." : "Tạo mã"}
-              </Button>
+              </ActionButton>
             </>
           )}
         </DialogActions>

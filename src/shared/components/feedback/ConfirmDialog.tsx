@@ -34,6 +34,7 @@ export function confirmDialog({
     okText,
     cancelText,
     okButtonProps: danger ? { danger: true } : undefined,
+    mask: { closable: true },
     onOk,
     onCancel,
   });

@@ -2,12 +2,15 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   AppstoreOutlined,
+  AuditOutlined,
   BarChartOutlined,
   DownOutlined,
   FileTextOutlined,
   FundOutlined,
   HomeOutlined,
   InboxOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
   ProfileOutlined,
   RightOutlined,
   RollbackOutlined,
@@ -50,21 +53,13 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    name: "Hệ thống & danh mục",
+    name: "Danh mục",
     icon: <SettingOutlined />,
     items: [
       {
-        // Gộp cả tab "Vai trò & ma trận quyền" và "Phòng ban" bên trong
-        // (IamUsersGd1Page); route /system/roles vẫn sống cho deep-link.
-        screen: "IAM-01",
-        path: ROUTES.IAM_USERS,
-        label: "Danh sách người dùng & phân quyền",
-        icon: <TeamOutlined />,
-      },
-      {
         screen: "MST-01",
         path: ROUTES.MASTER_DATA,
-        label: "Danh sách SKU / Danh mục sản phẩm",
+        label: "Danh sách SKU",
         icon: <ProfileOutlined />,
       },
       {
@@ -74,13 +69,6 @@ const NAV_GROUPS: NavGroup[] = [
         path: ROUTES.CATALOG_MASTER,
         label: "Danh mục sản phẩm",
         icon: <AppstoreOutlined />,
-      },
-      {
-        // SCR-WH-01 (REQ-SRS-001): cấu hình đúng 01 kho tổng.
-        screen: "WH-01",
-        path: ROUTES.WAREHOUSE_CONFIG,
-        label: "Cấu hình kho",
-        icon: <HomeOutlined />,
       },
       {
         screen: "AGY-01",
@@ -172,6 +160,37 @@ const NAV_GROUPS: NavGroup[] = [
       },
     ],
   },
+  {
+    name: "Hệ thống",
+    icon: <SettingOutlined />,
+    items: [
+      {
+        // Gộp cả tab "Vai trò & ma trận quyền" và "Phòng ban" bên trong
+        // (IamUsersGd1Page); route /system/roles vẫn sống cho deep-link.
+        screen: "IAM-01",
+        path: ROUTES.IAM_USERS,
+        label: "Danh sách người dùng & phân quyền",
+        icon: <TeamOutlined />,
+      },
+      {
+        // SCR-WH-01 (REQ-SRS-001): cấu hình đúng 01 kho tổng.
+        screen: "WH-01",
+        path: ROUTES.WAREHOUSE_CONFIG,
+        label: "Cấu hình kho",
+        icon: <HomeOutlined />,
+      },
+      {
+        // AUDIT-01: route + quyền audit_log.view đã có sẵn từ trước nhưng
+        // chưa từng được liệt kê trong NAV_GROUPS (mảng menu.tsx tương ứng
+        // chỉ dùng cho breadcrumb, không phải sidebar thật) nên mục này vô
+        // hình với mọi user kể cả admin.
+        screen: "AUDIT-01",
+        path: ROUTES.AUDIT_LOGS,
+        label: "Nhật ký hệ thống",
+        icon: <AuditOutlined />,
+      },
+    ],
+  },
 ];
 
 const DEFAULT_SCREEN_BY_PATH: Record<string, string> = {
@@ -190,6 +209,7 @@ const DEFAULT_SCREEN_BY_PATH: Record<string, string> = {
   [ROUTES.SCAN]: "TRACE-01",
   [ROUTES.REVERSE]: "REV-00",
   [ROUTES.REPORTS]: "RPT-01",
+  [ROUTES.AUDIT_LOGS]: "AUDIT-01",
 };
 
 const MODAL_PARENT_SCREEN: Record<string, string> = {
@@ -229,9 +249,15 @@ export interface SideNavProps {
   collapsed?: boolean;
   /** Yêu cầu mở lại thanh bên đầy đủ (gọi khi bấm icon nhóm lúc đang thu gọn). */
   onExpand?: () => void;
+  /** Đảo trạng thái thu gọn — nút đóng/mở nằm ngay trong thanh bên, cạnh tên hệ thống. */
+  onToggle?: () => void;
 }
 
-export function SideNav({ collapsed = false, onExpand }: SideNavProps) {
+export function SideNav({
+  collapsed = false,
+  onExpand,
+  onToggle,
+}: SideNavProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const permissionCodes = useAuthStore((state) => state.permissionCodes);
@@ -299,6 +325,18 @@ export function SideNav({ collapsed = false, onExpand }: SideNavProps) {
         <div className="hn-mvp-brand-copy">
           <h1>Hoa Nam WMS</h1>
         </div>
+        {onToggle ? (
+          <button
+            type="button"
+            className="hn-mvp-aside-toggle"
+            onClick={onToggle}
+            aria-label={collapsed ? "Hiện menu" : "Ẩn menu"}
+            aria-pressed={collapsed}
+            title={collapsed ? "Hiện menu" : "Ẩn menu"}
+          >
+            {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+          </button>
+        ) : null}
       </div>
 
       {NAV_GROUPS.map((group) => {
@@ -320,9 +358,7 @@ export function SideNav({ collapsed = false, onExpand }: SideNavProps) {
                 {open ? <DownOutlined /> : <RightOutlined />}
               </span>
             </button>
-            <div
-              className={`hn-mvp-group-items${open ? "" : " is-collapsed"}`}
-            >
+            <div className={`hn-mvp-group-items${open ? "" : " is-collapsed"}`}>
               <div className="hn-mvp-group-items-inner">
                 {visibleItems.map((item) => {
                   const active =
@@ -339,9 +375,7 @@ export function SideNav({ collapsed = false, onExpand }: SideNavProps) {
                       }
                     >
                       <span className="hn-mvp-nav-btn-icon">{item.icon}</span>
-                      <span className="hn-mvp-nav-btn-label">
-                        {item.label}
-                      </span>
+                      <span className="hn-mvp-nav-btn-label">{item.label}</span>
                     </button>
                   );
                 })}

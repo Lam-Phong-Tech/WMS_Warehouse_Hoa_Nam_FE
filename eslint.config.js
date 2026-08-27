@@ -14,6 +14,9 @@ import { defineConfig, globalIgnores } from 'eslint/config'
 // trực tiếp; mọi nơi khác phải import qua 2 barrel trên (xem P2.1 review).
 const PERMISSION_INTERNAL_FILES = [
   'src/shared/components/permission/**',
+  // ActionButton chuan (nut hanh dong toan du an) tu kiem tra quyen + scope nen
+  // duoc phep dung truc tiep util permission, giong cac file permission-internal.
+  'src/shared/components/actions/**',
   'src/shared/hooks/usePermission.ts',
   'src/modules/auth/utils/permission.ts',
   'src/modules/auth/components/Can.tsx',

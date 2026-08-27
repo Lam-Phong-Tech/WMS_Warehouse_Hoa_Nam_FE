@@ -1,6 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
 import { Space } from "antd";
-
 export interface FilterBarProps {
   /** Ô lọc (trái): SearchInput, Select, DatePicker... */
   children: ReactNode;
@@ -15,7 +14,9 @@ export interface FilterBarProps {
  * Layout: filters bên trái, actions bên phải, wrap tự động trên màn nhỏ.
  *
  * ```tsx
- * <FilterBar actions={<Button type="primary">Thêm mới</Button>}>
+ * <FilterBar actions={<ActionButton
+  kind="create"
+>Thêm mới</ActionButton>}>
  *   <SearchInput ... />
  *   <Select ... />
  * </FilterBar>

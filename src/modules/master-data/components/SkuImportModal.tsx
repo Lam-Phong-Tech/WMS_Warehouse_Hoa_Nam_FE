@@ -4,12 +4,10 @@ import type { ColumnsType } from "antd/es/table";
 import {
   Alert,
   Box,
-  Button,
   Chip,
   Dialog,
   DialogContent,
   DialogTitle,
-  IconButton,
   Stack,
   Switch,
   ThemeProvider,
@@ -17,13 +15,6 @@ import {
 } from "@mui/material";
 import { muiTheme } from "@/app/mui-theme";
 import { toast } from "sonner";
-import {
-  CloseOutlined,
-  DownloadOutlined,
-  EyeOutlined,
-  ReloadOutlined,
-  UploadOutlined,
-} from "@/shared/components/icons";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   getApiErrorMessage,
@@ -31,6 +22,7 @@ import {
   normalizeError,
 } from "@/shared/api/api-error";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
+import { useDialogExit } from "@/shared/utils/useDialogExit";
 import {
   downloadSkuImportErrorFile,
   downloadSkuImportTemplate,
@@ -46,7 +38,7 @@ import {
 } from "@/modules/master-data/services/sku-import.service";
 import { sha256OfFile } from "@/shared/utils/file-digest";
 import { formatDateTime } from "@/shared/utils/format-date";
-import { ACTION_ICON_COLORS } from "@/shared/theme/actionIconColors";
+import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 
 interface SkuImportModalProps {
   open: boolean;
@@ -156,7 +148,11 @@ function ResultSummary({
   label: string;
 }) {
   return (
-    <Stack direction="row" spacing={1.5} sx={{ flexWrap: "wrap", rowGap: 1, alignItems: "center" }}>
+    <Stack
+      direction="row"
+      spacing={1.5}
+      sx={{ flexWrap: "wrap", rowGap: 1, alignItems: "center" }}
+    >
       <Chip label={label} color="primary" size="small" />
       <Typography variant="body2">Tổng: {result.totalRows}</Typography>
       <Typography variant="body2" color="success.main">
@@ -179,8 +175,12 @@ function ResultSummary({
         </>
       ) : (
         <>
-          <Typography variant="body2">Đã tạo mới: {result.insertedRows}</Typography>
-          <Typography variant="body2">Đã cập nhật: {result.updatedRows}</Typography>
+          <Typography variant="body2">
+            Đã tạo mới: {result.insertedRows}
+          </Typography>
+          <Typography variant="body2">
+            Đã cập nhật: {result.updatedRows}
+          </Typography>
         </>
       )}
     </Stack>
@@ -241,14 +241,13 @@ function SkuImportErrorFilePanel({
 
   return (
     <Stack spacing={0.75} sx={{ alignItems: "flex-start" }}>
-      <Button
-        variant="outlined"
-        startIcon={<DownloadOutlined style={{ color: ACTION_ICON_COLORS.download }} />}
+      <ActionButton
+        kind="download"
         disabled={downloadMutation.isPending}
         onClick={() => downloadMutation.mutate()}
       >
         {downloadMutation.isPending ? "Đang tải..." : "Tải tệp lỗi"}
-      </Button>
+      </ActionButton>
       <Typography variant="body2" color="text.secondary">
         Tệp chứa số dòng, trường dữ liệu, loại lỗi, nội dung lỗi và giá trị bị
         từ chối{formatExpiry(expiresAt)}.
@@ -271,6 +270,7 @@ export function SkuImportModal({
   onClose,
   onImported,
 }: SkuImportModalProps) {
+  const dialog = useDialogExit(onClose);
   const [file, setFile] = useState<File | null>(null);
   const [fileInputKey, setFileInputKey] = useState(0);
   const [updateExisting, setUpdateExisting] = useState(false);
@@ -503,26 +503,26 @@ export function SkuImportModal({
   const close = () => {
     if (previewMutation.isPending || commitMutation.isPending) return;
     resetAll();
-    onClose();
+    dialog.close();
   };
 
   return (
     <ThemeProvider theme={muiTheme}>
       <Dialog
-        open={open}
+        {...dialog.dialogProps}
+        open={open && dialog.open}
         onClose={close}
         maxWidth="md"
         fullWidth
       >
         <DialogTitle sx={{ pr: 6, position: "relative" }}>
           Nhập danh sách SKU từ Excel
-          <IconButton
-            aria-label="Đóng"
+          <ActionIconButton
+            kind="close"
+            label="Đóng"
             onClick={close}
             sx={{ position: "absolute", right: 10, top: 8 }}
-          >
-            <CloseOutlined style={{ fontSize: 15 }} />
-          </IconButton>
+          />
         </DialogTitle>
         <DialogContent dividers>
           <Stack spacing={1.75}>
@@ -535,7 +535,11 @@ export function SkuImportModal({
               </Typography>
             </Alert>
 
-            <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap", rowGap: 1.5, alignItems: "center" }}>
+            <Stack
+              direction="row"
+              spacing={2}
+              sx={{ flexWrap: "wrap", rowGap: 1.5, alignItems: "center" }}
+            >
               <input
                 key={fileInputKey}
                 type="file"
@@ -546,32 +550,39 @@ export function SkuImportModal({
                   invalidatePreview();
                 }}
               />
-              <Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>
+              <Stack
+                direction="row"
+                spacing={0.75}
+                sx={{ alignItems: "center" }}
+              >
                 <Switch
                   checked={updateExisting}
                   onChange={(event) => {
                     setUpdateExisting(event.target.checked);
                     invalidatePreview();
                   }}
-                  slotProps={{ input: { "aria-label": "Cho phép cập nhật SKU đã tồn tại" } }}
+                  slotProps={{
+                    input: { "aria-label": "Cho phép cập nhật SKU đã tồn tại" },
+                  }}
                 />
-                <Typography variant="body2">Cho phép cập nhật SKU đã tồn tại</Typography>
+                <Typography variant="body2">
+                  Cho phép cập nhật SKU đã tồn tại
+                </Typography>
               </Stack>
-              <Button
-                variant="outlined"
-                startIcon={<DownloadOutlined style={{ color: ACTION_ICON_COLORS.download }} />}
+              <ActionButton
+                kind="download"
                 disabled={templateMutation.isPending}
                 onClick={() => templateMutation.mutate()}
               >
                 {templateMutation.isPending ? "Đang tải..." : "Tải tệp mẫu"}
-              </Button>
+              </ActionButton>
             </Stack>
 
             <Typography variant="body2" color="text.secondary">
-              Tệp cần có tối thiểu cột mã SKU và tên SKU. Các thông tin còn lại như
-              đơn vị tính, loại SKU, hãng, nhóm hàng, mẫu sản phẩm, nguồn điện, quy
-              cách đóng gói, phiên bản sản phẩm, trạng thái và chế độ quản lý số
-              sê-ri có thể khai báo thêm theo tệp mẫu.
+              Tệp cần có tối thiểu cột mã SKU và tên SKU. Các thông tin còn lại
+              như đơn vị tính, loại SKU, hãng, nhóm hàng, mẫu sản phẩm, nguồn
+              điện, quy cách đóng gói, phiên bản sản phẩm, trạng thái và chế độ
+              quản lý số sê-ri có thể khai báo thêm theo tệp mẫu.
             </Typography>
 
             {!canImport ? (
@@ -583,10 +594,13 @@ export function SkuImportModal({
             {digestError ? <Alert severity="error">{digestError}</Alert> : null}
 
             <Stack spacing={1}>
-              <Stack direction="row" spacing={1.5} sx={{ flexWrap: "wrap", rowGap: 1, alignItems: "center" }}>
-                <Button
-                  variant="outlined"
-                  startIcon={<EyeOutlined style={{ color: ACTION_ICON_COLORS.view }} />}
+              <Stack
+                direction="row"
+                spacing={1.5}
+                sx={{ flexWrap: "wrap", rowGap: 1, alignItems: "center" }}
+              >
+                <ActionButton
+                  kind="view"
                   disabled={
                     !canImport ||
                     !fileSha256 ||
@@ -602,10 +616,9 @@ export function SkuImportModal({
                   {previewMutation.isPending || digestPending
                     ? "Đang kiểm tra..."
                     : "Kiểm tra trước"}
-                </Button>
-                <Button
-                  variant="contained"
-                  startIcon={<UploadOutlined />}
+                </ActionButton>
+                <ActionButton
+                  kind="upload"
                   disabled={!canCommit}
                   onClick={() => {
                     const payload = currentPayload();
@@ -613,7 +626,7 @@ export function SkuImportModal({
                   }}
                 >
                   {commitMutation.isPending ? "Đang nhập..." : "Nhập dữ liệu"}
-                </Button>
+                </ActionButton>
               </Stack>
 
               {digestPending ? (
@@ -622,8 +635,8 @@ export function SkuImportModal({
                 </Typography>
               ) : previewSignature !== "" && !previewMatchesCurrentPayload ? (
                 <Typography variant="body2" color="text.secondary">
-                  Tệp hoặc lựa chọn cập nhật đã thay đổi sau lần kiểm tra trước. Hãy
-                  kiểm tra lại trước khi nhập dữ liệu.
+                  Tệp hoặc lựa chọn cập nhật đã thay đổi sau lần kiểm tra trước.
+                  Hãy kiểm tra lại trước khi nhập dữ liệu.
                 </Typography>
               ) : !previewResult ? (
                 <Typography variant="body2" color="text.secondary">
@@ -654,9 +667,9 @@ export function SkuImportModal({
                     </Typography>
                     <Typography variant="body2">
                       Nội dung tệp và lựa chọn cập nhật giống một lần nhập gần
-                      đây, nên hệ thống không tạo hoặc cập nhật SKU lần nữa.
-                      Nếu muốn thay đổi cách xử lý SKU đã tồn tại, hãy đổi lựa
-                      chọn rồi kiểm tra lại.
+                      đây, nên hệ thống không tạo hoặc cập nhật SKU lần nữa. Nếu
+                      muốn thay đổi cách xử lý SKU đã tồn tại, hãy đổi lựa chọn
+                      rồi kiểm tra lại.
                     </Typography>
                   </Alert>
                 ) : null}
@@ -664,7 +677,9 @@ export function SkuImportModal({
                 {activeResult.rowErrors.length > 0 ? (
                   <Box>
                     <Table<SkuImportRowError>
-                      rowKey={(row, index) => `${row.row}-${row.field}-${index}`}
+                      rowKey={(row, index) =>
+                        `${row.row}-${row.field}-${index}`
+                      }
                       size="small"
                       dataSource={activeResult.rowErrors}
                       columns={ROW_ERROR_COLUMNS}
@@ -689,23 +704,25 @@ export function SkuImportModal({
               </Stack>
             ) : null}
 
-            <Stack direction="row" spacing={1.5} sx={{ justifyContent: "flex-end" }}>
-              <Button
-                variant="outlined"
-                startIcon={<ReloadOutlined style={{ color: ACTION_ICON_COLORS.sync }} />}
+            <Stack
+              direction="row"
+              spacing={1.5}
+              sx={{ justifyContent: "flex-end" }}
+            >
+              <ActionButton
+                kind="reset"
                 disabled={previewMutation.isPending || commitMutation.isPending}
                 onClick={resetAll}
               >
                 Làm lại
-              </Button>
-              <Button
-                variant="outlined"
-                startIcon={<CloseOutlined style={{ color: ACTION_ICON_COLORS.neutral }} />}
+              </ActionButton>
+              <ActionButton
+                kind="close"
                 disabled={previewMutation.isPending || commitMutation.isPending}
                 onClick={close}
               >
                 Đóng
-              </Button>
+              </ActionButton>
             </Stack>
           </Stack>
         </DialogContent>

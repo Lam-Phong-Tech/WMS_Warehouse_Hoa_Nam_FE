@@ -1,4 +1,4 @@
-import { Select } from "antd";
+import { MenuItem, Select } from "@mui/material";
 
 export interface PageSizeSelectorProps {
   /** Trang hiện tại (bắt đầu từ 1) */
@@ -20,15 +20,16 @@ export function PageSizeSelector({
 }: PageSizeSelectorProps) {
   return (
     <Select
-      size="small"
       value={pageSize}
-      style={{ width: 110 }}
-      showSearch={false}
-      options={pageSizeOptions.map((size) => ({
-        value: size,
-        label: `${size} / trang`,
-      }))}
-      onChange={(newPageSize) => onChange(current, newPageSize)}
-    />
+      sx={{ width: 110 }}
+      inputProps={{ "aria-label": "Số bản ghi mỗi trang" }}
+      onChange={(event) => onChange(current, Number(event.target.value))}
+    >
+      {pageSizeOptions.map((size) => (
+        <MenuItem key={size} value={size}>
+          {size} / trang
+        </MenuItem>
+      ))}
+    </Select>
   );
 }

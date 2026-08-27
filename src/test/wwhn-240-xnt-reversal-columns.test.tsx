@@ -133,6 +133,7 @@ describe("WWHN-240 · tab XNT render đủ cột gross / đã đảo / thuần",
     // Thứ tự cột lá theo columnsFor("xnt"): kho, mã, tên, tồn, đầu kỳ,
     // nhập(gross/đã đảo/thuần), xuất(g/đ/t), xuất LK(g/đ/t), reversal net,
     // cuối kỳ. Mỗi giá trị fixture là duy nhất nên mọi hoán vị/mất cột đều đỏ.
+    // Ô "Xem" cuối dòng là cột Thao tác chung của mọi báo cáo (mở modal chi tiết).
     expect(cells).toEqual([
       "KHO-TONG-HN",
       "PRD-QA19-01",
@@ -151,6 +152,7 @@ describe("WWHN-240 · tab XNT render đủ cột gross / đã đảo / thuần",
       "7",
       "-2",
       "61",
+      "Xem",
     ]);
   });
 

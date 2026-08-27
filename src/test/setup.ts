@@ -1103,9 +1103,9 @@ vi.mock("@/app/router/access", () => ({
       "inbound.post",
     ],
     "/putaway": ["container.view", "container.manage"],
+    // "outbound.create" đã gỡ: BE thu hồi mã này 27/08 (không route nào đọc tới).
     "/outbound": [
       "outbound.view",
-      "outbound.create",
       "outbound.scan",
       "outbound.post",
       "outbound.import",

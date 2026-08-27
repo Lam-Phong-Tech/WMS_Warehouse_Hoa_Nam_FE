@@ -2,6 +2,7 @@ import { type ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { Loading } from "@/shared/components/feedback/Loading";
 import { ROUTES } from "@/shared/constants/routes";
+import { hasAnyWmsPermission } from "@/shared/constants/wms-permissions";
 import { useAuthStore } from "@/shared/store/auth.store";
 
 interface Props {
@@ -33,7 +34,12 @@ export function RequirePermission({ permission, children }: Props) {
 
   if (!isProfileLoaded) return <Loading />;
 
-  const canEnter = required.some((code) => permissionCodes.includes(code));
+  // Dùng chung hasAnyWmsPermission với SideNav và useHasPermission thay vì tự
+  // `includes()`: trước đây route guard là nơi DUY NHẤT so khớp mã thô, không đi
+  // qua canonicalizeWmsPermission. Một mã alias (vd `scan.outbound` -> `outbound.scan`)
+  // vì thế cho kết quả KHÁC nhau giữa menu (hiện mục), nút hành động (hiện nút) và
+  // route guard (đá về /errors/403) — người dùng thấy mục menu rồi bị chặn ngay khi bấm.
+  const canEnter = hasAnyWmsPermission(permissionCodes, required, isSuperAdmin);
   if (!canEnter) {
     if (location.pathname === ROUTES.NO_PERMISSION) return null;
     return (

@@ -1,17 +1,13 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-import { useCallback, useEffect, useState, type Key } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { Alert, Input, Pagination, Select, Space, Tag, Typography } from "antd";
+import { Tab, Tabs, ThemeProvider } from "@mui/material";
+import { muiTheme } from "@/app/mui-theme";
 import {
-  Alert,
-  Button,
-  Input,
-  Select,
-  Space,
-  Table,
-  Tabs,
-  Tag,
-  Typography,
-} from "antd";
-import { BarcodeOutlined } from "@/shared/components/icons";
+  HistoryOutlined,
+  ScanOutlined,
+  UnorderedListOutlined,
+} from "@/shared/components/icons";
 import { useQuery } from "@tanstack/react-query";
 import { getApiErrorMessage } from "@/shared/api/api-error";
 import {
@@ -41,6 +37,10 @@ import { IssuePhysicalCodeModal } from "../components/IssuePhysicalCodeModal";
 import { useCan } from "@/shared/components/permission";
 import { WMS_PERMISSION_CATALOG } from "@/shared/constants/wms-permissions";
 import { formatDateTime } from "@/shared/utils/format-date";
+import {
+  ResponsiveDataTable,
+  type ResponsiveTableColumn,
+} from "@/shared/components/data-display/ResponsiveDataTable";
 import type {
   PhysicalCode,
   ScanBatch,
@@ -49,6 +49,7 @@ import type {
   ScanContext,
   ScanEvent,
 } from "../types";
+import { ActionButton } from "@/shared/components/actions";
 
 const stateColorMap: Record<ScanCodeState, string> = {
   waiting: "default",
@@ -68,6 +69,23 @@ const CARRIER_LABELS: Record<string, string> = {
   QR: "QR",
   BARCODE: "Mã vạch",
   RFID: "RFID",
+};
+
+// Màu Tag trạng thái: hoàn tất/hợp lệ = xanh lá, lỗi/không hợp lệ = đỏ,
+// cảnh báo/chưa hoàn tất = cam vàng — theo quy ước chung của dự án.
+const SCAN_RESULT_COLOR: Record<string, string> = {
+  VALID: "success",
+  DUPLICATE: "warning",
+  UNKNOWN: "error",
+  INVALID: "error",
+};
+
+const SCAN_BATCH_STATUS_COLOR: Record<string, string> = {
+  OPEN: "processing",
+  CLASSIFIED: "warning",
+  PARTIALLY_POSTED: "warning",
+  CLOSED: "success",
+  CANCELLED: "error",
 };
 
 const SCAN_CONTEXT_OPTIONS: Array<{ value: ScanContext; label: string }> = [
@@ -92,16 +110,13 @@ export default function PhysicalCodesPage() {
   const [events, setEvents] = useState<ScanEvent[]>([]);
   const [codePage, setCodePage] = useState(1);
   const [codePerPage, setCodePerPage] = useState(10);
+  const [codeSearch, setCodeSearch] = useState("");
   const [batchPage, setBatchPage] = useState(1);
   const [batchPerPage, setBatchPerPage] = useState(10);
+  const [batchSearch, setBatchSearch] = useState("");
   const [eventPage, setEventPage] = useState(1);
   const [eventPerPage, setEventPerPage] = useState(10);
-  const [codeSelectedRowKeys, setCodeSelectedRowKeys] = useState<Key[]>([]);
-  const [classifySelectedRowKeys, setClassifySelectedRowKeys] = useState<
-    Key[]
-  >([]);
-  const [batchSelectedRowKeys, setBatchSelectedRowKeys] = useState<Key[]>([]);
-  const [eventSelectedRowKeys, setEventSelectedRowKeys] = useState<Key[]>([]);
+  const [eventSearch, setEventSearch] = useState("");
   const [batchMeta, setBatchMeta] = useState<ApiMeta>({});
   const [eventMeta, setEventMeta] = useState<ApiMeta>({});
   const [scanValue, setScanValue] = useState("");
@@ -143,6 +158,29 @@ export default function PhysicalCodesPage() {
     pageSize: eventPerPage,
     rowCount: events.length,
   });
+
+  // Lọc hiển thị phía client trên dữ liệu trang hiện tại — không phát sinh
+  // tham số API mới, chỉ để bảng tra cứu có ô lọc theo yêu cầu UX (tiêu chí 3).
+  const normalizedCodeSearch = codeSearch.trim().toLowerCase();
+  const filteredCodes = normalizedCodeSearch
+    ? codes.filter((row) =>
+        (row.code_value ?? "").toLowerCase().includes(normalizedCodeSearch),
+      )
+    : codes;
+
+  const normalizedBatchSearch = batchSearch.trim().toLowerCase();
+  const filteredBatches = normalizedBatchSearch
+    ? batches.filter((row) =>
+        (row.batch_no ?? "").toLowerCase().includes(normalizedBatchSearch),
+      )
+    : batches;
+
+  const normalizedEventSearch = eventSearch.trim().toLowerCase();
+  const filteredEvents = normalizedEventSearch
+    ? events.filter((row) =>
+        (row.code_value ?? "").toLowerCase().includes(normalizedEventSearch),
+      )
+    : events;
 
   useEffect(() => {
     let cancelled = false;
@@ -243,483 +281,565 @@ export default function PhysicalCodesPage() {
     }
   }, [scanContext, scanValue, warehouseId]);
 
+  const codeColumns: ResponsiveTableColumn<PhysicalCode>[] = [
+    {
+      key: "stt",
+      header: "STT",
+      width: 60,
+      align: "center",
+      hideOnMobile: true,
+      render: (row) =>
+        (codePage - 1) * codePerPage + filteredCodes.indexOf(row) + 1,
+    },
+    {
+      key: "code_value",
+      header: "Giá trị mã",
+      sortAccessor: (row) => row.code_value,
+      render: (row) => row.code_value,
+    },
+    {
+      key: "code_type",
+      header: "Loại mã",
+      sortType: "value",
+      sortAccessor: (row) => row.code_type,
+      hideOnMobile: true,
+      render: (row) => (
+        <Tag>{CARRIER_LABELS[row.code_type] ?? "Loại mã khác"}</Tag>
+      ),
+    },
+    {
+      key: "carrier_type",
+      header: "Hình thức mã",
+      sortType: "value",
+      sortAccessor: (row) => row.carrier_type,
+      hideOnMobile: true,
+      render: (row) => CARRIER_LABELS[row.carrier_type] ?? "Hình thức khác",
+    },
+    {
+      key: "target_type",
+      header: "Đối tượng gắn mã",
+      sortType: "value",
+      sortAccessor: (row) => row.target_type,
+      render: (row) =>
+        businessLabel(
+          SCAN_CLASSIFICATION_LABELS,
+          row.target_type,
+          "Đối tượng khác",
+        ),
+    },
+    {
+      key: "target",
+      header: "SKU / vật chứa",
+      sortAccessor: (row) => row.sku_code || row.container_code || "",
+      render: (row) => row.sku_code || row.container_code || "—",
+    },
+    {
+      key: "status",
+      header: "Trạng thái",
+      sortType: "value",
+      sortAccessor: (row) => row.status,
+      render: (row) => (
+        <Tag color={row.status === "ACTIVE" ? "success" : "default"}>
+          {businessLabel(MASTER_STATUS_LABELS, row.status, "Trạng thái khác")}
+        </Tag>
+      ),
+    },
+    {
+      key: "location_hint",
+      header: "Vị trí gợi ý",
+      sortAccessor: (row) => row.location_hint ?? "",
+      render: (row) => row.location_hint ?? "—",
+    },
+  ];
+
+  const classifyColumns: ResponsiveTableColumn<ScanClassifyResponse>[] = [
+    {
+      key: "stt",
+      header: "STT",
+      width: 60,
+      align: "center",
+      hideOnMobile: true,
+      render: () => 1,
+    },
+    {
+      key: "raw_code",
+      header: "Mã",
+      sortAccessor: (row) => row.raw_code,
+      render: (row) => row.raw_code,
+    },
+    {
+      key: "context",
+      header: "Ngữ cảnh sử dụng",
+      sortType: "value",
+      sortAccessor: (row) => row.context,
+      render: (row) =>
+        businessLabel(SCAN_CONTEXT_LABELS, row.context, "Ngữ cảnh khác"),
+    },
+    {
+      key: "classification",
+      header: "Nhận diện là",
+      sortType: "value",
+      sortAccessor: (row) => row.classification,
+      render: (row) => (
+        <Tag>
+          {businessLabel(
+            SCAN_CLASSIFICATION_LABELS,
+            row.classification,
+            "Đối tượng khác",
+          )}
+        </Tag>
+      ),
+    },
+    {
+      key: "stock_status",
+      header: "Trạng thái tồn",
+      sortType: "value",
+      sortAccessor: (row) => row.stock_status,
+      render: (row) => (
+        <Tag color={row.stock_status === "AVAILABLE" ? "success" : "warning"}>
+          {businessLabel(
+            INVENTORY_STOCK_STATUS_LABELS,
+            row.stock_status,
+            "Trạng thái khác",
+          )}
+        </Tag>
+      ),
+    },
+    {
+      key: "current_location",
+      header: "Kho hiện tại",
+      sortAccessor: (row) =>
+        `${row.current_location.warehouse_code} — ${row.current_location.warehouse_name}`,
+      render: (row) =>
+        `${row.current_location.warehouse_code} — ${row.current_location.warehouse_name}`,
+    },
+    {
+      key: "stock_effect",
+      header: "Ảnh hưởng tồn kho",
+      render: () => <Tag color="success">Không thay đổi tồn</Tag>,
+    },
+  ];
+
+  const batchColumns: ResponsiveTableColumn<ScanBatch>[] = [
+    {
+      key: "stt",
+      header: "STT",
+      width: 60,
+      align: "center",
+      hideOnMobile: true,
+      render: (row) =>
+        (batchPagination.current - 1) * batchPerPage +
+        filteredBatches.indexOf(row) +
+        1,
+    },
+    {
+      key: "batch_no",
+      header: "Lô",
+      sortAccessor: (row) => row.batch_no,
+      render: (row) => row.batch_no,
+    },
+    {
+      key: "source_type",
+      header: "Nguồn quét",
+      sortType: "value",
+      sortAccessor: (row) => row.source_type,
+      render: (row) =>
+        businessLabel(SCAN_CONTEXT_LABELS, row.source_type, "Nguồn khác"),
+    },
+    {
+      key: "status",
+      header: "Trạng thái",
+      sortType: "value",
+      sortAccessor: (row) => row.status,
+      render: (row) => (
+        <Tag color={SCAN_BATCH_STATUS_COLOR[row.status] ?? "default"}>
+          {businessLabel(
+            SCAN_BATCH_STATUS_LABELS,
+            row.status,
+            "Trạng thái khác",
+          )}
+        </Tag>
+      ),
+    },
+    {
+      key: "valid_count",
+      header: "Hợp lệ",
+      align: "right",
+      sortType: "value",
+      sortAccessor: (row) => row.valid_count,
+      render: (row) => row.valid_count,
+    },
+    {
+      key: "duplicate_count",
+      header: "Đã quét trước đó",
+      align: "right",
+      sortType: "value",
+      sortAccessor: (row) => row.duplicate_count,
+      hideOnMobile: true,
+      render: (row) => row.duplicate_count,
+    },
+    {
+      key: "unknown_count",
+      header: "Không nhận diện",
+      align: "right",
+      sortType: "value",
+      sortAccessor: (row) => row.unknown_count,
+      hideOnMobile: true,
+      render: (row) => row.unknown_count,
+    },
+    {
+      key: "invalid_count",
+      header: "Không hợp lệ",
+      align: "right",
+      sortType: "value",
+      sortAccessor: (row) => row.invalid_count,
+      render: (row) => row.invalid_count,
+    },
+  ];
+
+  const eventColumns: ResponsiveTableColumn<ScanEvent>[] = [
+    {
+      key: "stt",
+      header: "STT",
+      width: 60,
+      align: "center",
+      hideOnMobile: true,
+      render: (row) =>
+        (eventPagination.current - 1) * eventPerPage +
+        filteredEvents.indexOf(row) +
+        1,
+    },
+    {
+      key: "code_value",
+      header: "Mã",
+      sortAccessor: (row) => row.code_value,
+      render: (row) => row.code_value,
+    },
+    {
+      key: "code_type",
+      header: "Loại mã",
+      sortType: "value",
+      sortAccessor: (row) => row.code_type,
+      render: (row) => CARRIER_LABELS[row.code_type] ?? "Loại mã khác",
+    },
+    {
+      key: "status",
+      header: "Kết quả",
+      sortType: "value",
+      sortAccessor: (row) => row.status,
+      render: (row) => (
+        <Tag color={SCAN_RESULT_COLOR[row.status] ?? "default"}>
+          {businessLabel(SCAN_RESULT_LABELS, row.status, "Kết quả khác")}
+        </Tag>
+      ),
+    },
+    {
+      key: "scanned_at",
+      header: "Thời gian quét",
+      sortType: "value",
+      sortAccessor: (row) => new Date(row.scanned_at),
+      render: (row) => formatDateTime(row.scanned_at),
+    },
+  ];
+
   return (
     <div style={{ padding: 24 }}>
-      <Tabs
-        activeKey={activeTab}
-        onChange={(key) => {
-          setActiveTab(key);
-          setClassifyResult(null);
-          setClassifyState("waiting");
-          setClassifyMessage("");
-        }}
-        items={[
-          {
-            key: "list",
-            label: "Danh sách mã vật lý",
-            children: (
-              <>
-                <Space wrap style={{ marginBottom: 16 }}>
-                  <Input.Search
-                    placeholder="Giá trị mã..."
-                    style={{ width: 285 }}
-                  />
-                  <MvpPageSizeSelector
-                    value={codePerPage}
-                    onChange={(value) => {
-                      setCodePerPage(value);
-                      setCodePage(1);
-                    }}
-                  />
-                  <div style={{ flex: 1 }} />
-                  <Button
-                    type="primary"
-                    icon={<BarcodeOutlined />}
-                    disabled={!canCreatePhysicalCode}
-                    onClick={() => setIssueModalOpen(true)}
-                  >
-                    Tạo mã vật lý
-                  </Button>
-                </Space>
-                <InlineApiError
-                  error={listError}
-                  title="Không thể tải danh sách mã vật lý"
-                  onRetry={() => setReloadKey((value) => value + 1)}
-                />
-                <Table
-                  dataSource={codes}
-                  rowKey="id"
-                  loading={loading}
-                  rowSelection={{
-                    type: "checkbox",
-                    selectedRowKeys: codeSelectedRowKeys,
-                    onChange: setCodeSelectedRowKeys,
-                  }}
-                  pagination={{
-                    current: codePage,
-                    pageSize: codePerPage,
-                    total: codes.length,
-                    showSizeChanger: false,
-                    showTotal: (total) => `Tổng ${total} mã vật lý`,
-                    onChange: setCodePage,
-                  }}
-                  scroll={{ x: "max-content" }}
-                  locale={{ emptyText: tableEmptyText(listError) }}
-                  columns={[
-                    {
-                      title: "STT",
-                      key: "stt",
-                      width: 60,
-                      render: (_: unknown, __: PhysicalCode, index: number) =>
-                        (codePage - 1) * codePerPage + index + 1,
-                    },
-                    {
-                      title: "Giá trị mã",
-                      dataIndex: "code_value",
-                      key: "code_value",
-                    },
-                    {
-                      title: "Loại mã",
-                      dataIndex: "code_type",
-                      key: "code_type",
-                      render: (value: string) => (
-                        <Tag>{CARRIER_LABELS[value] ?? "Loại mã khác"}</Tag>
-                      ),
-                    },
-                    {
-                      title: "Hình thức mã",
-                      dataIndex: "carrier_type",
-                      key: "carrier_type",
-                      render: (value: string) =>
-                        CARRIER_LABELS[value] ?? "Hình thức khác",
-                    },
-                    {
-                      title: "Đối tượng gắn mã",
-                      dataIndex: "target_type",
-                      key: "target_type",
-                      render: (value: string) =>
-                        businessLabel(
-                          SCAN_CLASSIFICATION_LABELS,
-                          value,
-                          "Đối tượng khác",
-                        ),
-                    },
-                    {
-                      title: "SKU / vật chứa",
-                      key: "target",
-                      render: (_: unknown, row: PhysicalCode) =>
-                        row.sku_code || row.container_code || "—",
-                    },
-                    {
-                      title: "Trạng thái",
-                      dataIndex: "status",
-                      key: "status",
-                      render: (value: string) => (
-                        <Tag color={value === "ACTIVE" ? "success" : "default"}>
-                          {businessLabel(
-                            MASTER_STATUS_LABELS,
-                            value,
-                            "Trạng thái khác",
-                          )}
-                        </Tag>
-                      ),
-                    },
-                    {
-                      title: "Vị trí gợi ý",
-                      dataIndex: "location_hint",
-                      key: "location_hint",
-                    },
-                  ]}
-                />
-              </>
-            ),
-          },
-          {
-            key: "classify",
-            label: "Nhận diện mã quét",
-            children: (
-              <>
-                <Alert
-                  type="info"
-                  showIcon
-                  title="Tra cứu mã an toàn"
-                  description="Nhận diện mã chỉ dùng để tra cứu thông tin. Thao tác này không làm tăng, giảm hoặc thay đổi tồn kho."
-                  style={{ marginBottom: 16 }}
-                />
-                <Space wrap style={{ marginBottom: 16 }}>
-                  <Select
-                    placeholder="Chọn kho"
-                    value={warehouseId || undefined}
-                    loading={warehousesQuery.isLoading}
-                    style={{ width: 250 }}
-                    onChange={setWarehouseId}
-                    options={warehouses.map((row) => ({
-                      value: String(row.id ?? ""),
-                      label: warehouseLabel(row),
-                    }))}
-                  />
-                  <Select<ScanContext>
-                    value={scanContext}
-                    onChange={setScanContext}
-                    options={SCAN_CONTEXT_OPTIONS}
-                    style={{ width: 220 }}
-                  />
-                  <Input.Search
-                    placeholder="Quét hoặc nhập mã..."
-                    value={scanValue}
-                    onChange={(event) => setScanValue(event.target.value)}
-                    onSearch={submitScan}
-                    style={{ width: 360 }}
-                    enterButton="Nhận diện"
-                    disabled={!warehouseId.trim()}
-                  />
-                  <Button
-                    type="primary"
-                    onClick={submitScan}
-                    loading={loading && classifyState === "scanned"}
-                    disabled={!scanValue.trim() || !warehouseId.trim()}
-                    icon={<BarcodeOutlined />}
-                  >
-                    Nhận diện mã
-                  </Button>
-                </Space>
+      <ThemeProvider theme={muiTheme}>
+        <Tabs
+          value={activeTab}
+          onChange={(_event, value: string) => {
+            setActiveTab(value);
+            setClassifyResult(null);
+            setClassifyState("waiting");
+            setClassifyMessage("");
+          }}
+          sx={{ marginBottom: 2 }}
+        >
+          <Tab
+            value="list"
+            icon={<UnorderedListOutlined style={{ fontSize: 15 }} />}
+            iconPosition="start"
+            label="Danh sách mã vật lý"
+            sx={{ minHeight: 40, textTransform: "none" }}
+          />
+          <Tab
+            value="classify"
+            icon={<ScanOutlined style={{ fontSize: 15 }} />}
+            iconPosition="start"
+            label="Nhận diện mã quét"
+            sx={{ minHeight: 40, textTransform: "none" }}
+          />
+          <Tab
+            value="history"
+            icon={<HistoryOutlined style={{ fontSize: 15 }} />}
+            iconPosition="start"
+            label="Lịch sử quét"
+            sx={{ minHeight: 40, textTransform: "none" }}
+          />
+        </Tabs>
+      </ThemeProvider>
 
-                {classifyState !== "waiting" && classifyState !== "scanned" && (
-                  <Alert
-                    type={classifyState === "success" ? "success" : "error"}
-                    title={
-                      <Space wrap>
-                        <Typography.Text strong>Kết quả:</Typography.Text>
-                        <Tag color={stateColorMap[classifyState]}>
-                          {STATE_LABELS[classifyState]}
-                        </Tag>
-                        <Typography.Text>{classifyMessage}</Typography.Text>
-                      </Space>
-                    }
-                    showIcon
-                    style={{ marginBottom: 16 }}
-                  />
-                )}
+      {activeTab === "list" && (
+        <>
+          <Space wrap style={{ marginBottom: 16 }}>
+            <Input.Search
+              placeholder="Giá trị mã..."
+              aria-label="Giá trị mã"
+              style={{ width: 285 }}
+              value={codeSearch}
+              allowClear
+              onChange={(event) => setCodeSearch(event.target.value)}
+            />
+            <MvpPageSizeSelector
+              value={codePerPage}
+              onChange={(value) => {
+                setCodePerPage(value);
+                setCodePage(1);
+              }}
+            />
+            <div style={{ flex: 1 }} />
+            <ActionButton
+              kind="barcode"
+              disabled={!canCreatePhysicalCode}
+              onClick={() => setIssueModalOpen(true)}
+            >
+              Tạo mã vật lý
+            </ActionButton>
+          </Space>
+          <InlineApiError
+            error={listError}
+            title="Không thể tải danh sách mã vật lý"
+            onRetry={() => setReloadKey((value) => value + 1)}
+          />
+          <ResponsiveDataTable
+            columns={codeColumns}
+            rows={filteredCodes}
+            rowKey={(row) => row.id}
+            loading={loading}
+            emptyText={tableEmptyText(listError)}
+          />
+          <div
+            style={{
+              marginTop: 16,
+              display: "flex",
+              justifyContent: "flex-end",
+            }}
+          >
+            <Pagination
+              current={codePage}
+              pageSize={codePerPage}
+              total={filteredCodes.length}
+              showSizeChanger={false}
+              showTotal={(total) => `Tổng ${total} mã vật lý`}
+              onChange={setCodePage}
+            />
+          </div>
+        </>
+      )}
 
-                {loading && classifyState === "scanned" && (
-                  <Alert
-                    type="info"
-                    title="Đang nhận diện mã..."
-                    showIcon
-                    style={{ marginBottom: 16 }}
-                  />
-                )}
+      {activeTab === "classify" && (
+        <>
+          <Alert
+            type="info"
+            showIcon
+            title="Tra cứu mã an toàn"
+            description="Nhận diện mã chỉ dùng để tra cứu thông tin. Thao tác này không làm tăng, giảm hoặc thay đổi tồn kho."
+            style={{ marginBottom: 16 }}
+          />
+          <Space wrap style={{ marginBottom: 16 }}>
+            <Select
+              placeholder="Chọn kho"
+              aria-label="Chọn kho"
+              value={warehouseId || undefined}
+              loading={warehousesQuery.isLoading}
+              style={{ width: 250 }}
+              onChange={setWarehouseId}
+              options={warehouses.map((row) => ({
+                value: String(row.id ?? ""),
+                label: warehouseLabel(row),
+              }))}
+            />
+            <Select<ScanContext>
+              value={scanContext}
+              onChange={setScanContext}
+              options={SCAN_CONTEXT_OPTIONS}
+              style={{ width: 220 }}
+            />
+            <Input.Search
+              placeholder="Quét hoặc nhập mã..."
+              aria-label="Quét hoặc nhập mã"
+              value={scanValue}
+              onChange={(event) => setScanValue(event.target.value)}
+              onSearch={submitScan}
+              style={{ width: 360 }}
+              enterButton="Nhận diện"
+              disabled={!warehouseId.trim()}
+            />
+            <ActionButton
+              kind="barcode"
+              onClick={submitScan}
+              loading={loading && classifyState === "scanned"}
+              disabled={!scanValue.trim() || !warehouseId.trim()}
+            >
+              Nhận diện mã
+            </ActionButton>
+          </Space>
 
-                {classifyResult && (
-                  <Table
-                    dataSource={[classifyResult]}
-                    rowKey="raw_code"
-                    rowSelection={{
-                      type: "checkbox",
-                      selectedRowKeys: classifySelectedRowKeys,
-                      onChange: setClassifySelectedRowKeys,
-                    }}
-                    pagination={false}
-                    size="small"
-                    scroll={{ x: "max-content" }}
-                    columns={[
-                      {
-                        title: "STT",
-                        key: "stt",
-                        width: 60,
-                        render: (
-                          _: unknown,
-                          __: ScanClassifyResponse,
-                          index: number,
-                        ) => index + 1,
-                      },
-                      {
-                        title: "Mã",
-                        dataIndex: "raw_code",
-                        key: "raw_code",
-                      },
-                      {
-                        title: "Ngữ cảnh sử dụng",
-                        dataIndex: "context",
-                        key: "context",
-                        render: (value: string) =>
-                          businessLabel(
-                            SCAN_CONTEXT_LABELS,
-                            value,
-                            "Ngữ cảnh khác",
-                          ),
-                      },
-                      {
-                        title: "Nhận diện là",
-                        dataIndex: "classification",
-                        key: "classification",
-                        render: (value: string) => (
-                          <Tag>
-                            {businessLabel(
-                              SCAN_CLASSIFICATION_LABELS,
-                              value,
-                              "Đối tượng khác",
-                            )}
-                          </Tag>
-                        ),
-                      },
-                      {
-                        title: "Trạng thái tồn",
-                        dataIndex: "stock_status",
-                        key: "stock_status",
-                        render: (value: string) =>
-                          businessLabel(
-                            INVENTORY_STOCK_STATUS_LABELS,
-                            value,
-                            "Trạng thái khác",
-                          ),
-                      },
-                      {
-                        title: "Kho hiện tại",
-                        dataIndex: "current_location",
-                        key: "current_location",
-                        render: (
-                          location: ScanClassifyResponse["current_location"],
-                        ) =>
-                          `${location.warehouse_code} — ${location.warehouse_name}`,
-                      },
-                      {
-                        title: "Ảnh hưởng tồn kho",
-                        key: "stock_effect",
-                        render: () => (
-                          <Tag color="success">Không thay đổi tồn</Tag>
-                        ),
-                      },
-                    ]}
-                  />
-                )}
-              </>
-            ),
-          },
-          {
-            key: "history",
-            label: "Lịch sử quét",
-            children: (
-              <>
-                <InlineApiError
-                  error={historyError}
-                  title="Không thể tải lịch sử quét"
-                  onRetry={() => setReloadKey((value) => value + 1)}
-                />
-                <Space
-                  wrap
-                  style={{
-                    marginBottom: 8,
-                    width: "100%",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <Typography.Text strong>Lô quét</Typography.Text>
-                  <MvpPageSizeSelector
-                    value={batchPerPage}
-                    onChange={(value) => {
-                      setBatchPerPage(value);
-                      setBatchPage(1);
-                    }}
-                  />
+          {classifyState !== "waiting" && classifyState !== "scanned" && (
+            <Alert
+              type={classifyState === "success" ? "success" : "error"}
+              title={
+                <Space wrap>
+                  <Typography.Text strong>Kết quả:</Typography.Text>
+                  <Tag color={stateColorMap[classifyState]}>
+                    {STATE_LABELS[classifyState]}
+                  </Tag>
+                  <Typography.Text>{classifyMessage}</Typography.Text>
                 </Space>
-                <Table
-                  dataSource={batches}
-                  rowKey="id"
-                  loading={loading}
-                  rowSelection={{
-                    type: "checkbox",
-                    selectedRowKeys: batchSelectedRowKeys,
-                    onChange: setBatchSelectedRowKeys,
-                  }}
-                  pagination={{
-                    current: batchPagination.current,
-                    pageSize: batchPerPage,
-                    total: batchPagination.total,
-                    showSizeChanger: false,
-                    showTotal: (total) => `Tổng ${total} lô quét`,
-                    onChange: setBatchPage,
-                  }}
-                  style={{ marginBottom: 16 }}
-                  scroll={{ x: "max-content" }}
-                  locale={{ emptyText: tableEmptyText(historyError) }}
-                  columns={[
-                    {
-                      title: "STT",
-                      key: "stt",
-                      width: 60,
-                      render: (_: unknown, __: ScanBatch, index: number) =>
-                        (batchPagination.current - 1) * batchPerPage +
-                        index +
-                        1,
-                    },
-                    { title: "Lô", dataIndex: "batch_no", key: "batch_no" },
-                    {
-                      title: "Nguồn quét",
-                      dataIndex: "source_type",
-                      key: "source_type",
-                      render: (value: string) =>
-                        businessLabel(SCAN_CONTEXT_LABELS, value, "Nguồn khác"),
-                    },
-                    {
-                      title: "Trạng thái",
-                      dataIndex: "status",
-                      key: "status",
-                      render: (value: string) => (
-                        <Tag>
-                          {businessLabel(
-                            SCAN_BATCH_STATUS_LABELS,
-                            value,
-                            "Trạng thái khác",
-                          )}
-                        </Tag>
-                      ),
-                    },
-                    {
-                      title: "Hợp lệ",
-                      dataIndex: "valid_count",
-                      key: "valid_count",
-                    },
-                    {
-                      title: "Đã quét trước đó",
-                      dataIndex: "duplicate_count",
-                      key: "duplicate_count",
-                    },
-                    {
-                      title: "Không nhận diện",
-                      dataIndex: "unknown_count",
-                      key: "unknown_count",
-                    },
-                    {
-                      title: "Không hợp lệ",
-                      dataIndex: "invalid_count",
-                      key: "invalid_count",
-                    },
-                  ]}
-                />
+              }
+              showIcon
+              style={{ marginBottom: 16 }}
+            />
+          )}
 
-                <Space
-                  wrap
-                  style={{
-                    marginBottom: 8,
-                    width: "100%",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <Typography.Text strong>Sự kiện quét</Typography.Text>
-                  <MvpPageSizeSelector
-                    value={eventPerPage}
-                    onChange={(value) => {
-                      setEventPerPage(value);
-                      setEventPage(1);
-                    }}
-                  />
-                </Space>
-                <Table
-                  dataSource={events}
-                  rowKey="id"
-                  loading={loading}
-                  rowSelection={{
-                    type: "checkbox",
-                    selectedRowKeys: eventSelectedRowKeys,
-                    onChange: setEventSelectedRowKeys,
-                  }}
-                  pagination={{
-                    current: eventPagination.current,
-                    pageSize: eventPerPage,
-                    total: eventPagination.total,
-                    showSizeChanger: false,
-                    showTotal: (total) => `Tổng ${total} sự kiện`,
-                    onChange: setEventPage,
-                  }}
-                  scroll={{ x: "max-content" }}
-                  locale={{ emptyText: tableEmptyText(historyError) }}
-                  columns={[
-                    {
-                      title: "STT",
-                      key: "stt",
-                      width: 60,
-                      render: (_: unknown, __: ScanEvent, index: number) =>
-                        (eventPagination.current - 1) * eventPerPage +
-                        index +
-                        1,
-                    },
-                    { title: "Mã", dataIndex: "code_value", key: "code_value" },
-                    {
-                      title: "Loại mã",
-                      dataIndex: "code_type",
-                      key: "code_type",
-                      render: (value: string) =>
-                        CARRIER_LABELS[value] ?? "Loại mã khác",
-                    },
-                    {
-                      title: "Kết quả",
-                      dataIndex: "status",
-                      key: "status",
-                      render: (value: string) => (
-                        <Tag>
-                          {businessLabel(
-                            SCAN_RESULT_LABELS,
-                            value,
-                            "Kết quả khác",
-                          )}
-                        </Tag>
-                      ),
-                    },
-                    {
-                      title: "Thời gian quét",
-                      dataIndex: "scanned_at",
-                      key: "scanned_at",
-                      render: (scanned_at: string) =>
-                        formatDateTime(scanned_at),
-                    },
-                  ]}
-                />
-              </>
-            ),
-          },
-        ]}
-      />
+          {loading && classifyState === "scanned" && (
+            <Alert
+              type="info"
+              title="Đang nhận diện mã..."
+              showIcon
+              style={{ marginBottom: 16 }}
+            />
+          )}
+
+          {classifyResult && (
+            <ResponsiveDataTable
+              columns={classifyColumns}
+              rows={[classifyResult]}
+              rowKey={(row) => row.raw_code}
+            />
+          )}
+        </>
+      )}
+
+      {activeTab === "history" && (
+        <>
+          <InlineApiError
+            error={historyError}
+            title="Không thể tải lịch sử quét"
+            onRetry={() => setReloadKey((value) => value + 1)}
+          />
+          <Space
+            wrap
+            style={{
+              marginBottom: 8,
+              width: "100%",
+              justifyContent: "space-between",
+            }}
+          >
+            <Space wrap>
+              <Typography.Text strong>Lô quét</Typography.Text>
+              <Input.Search
+                placeholder="Tìm theo số lô..."
+                aria-label="Tìm theo số lô"
+                style={{ width: 220 }}
+                value={batchSearch}
+                allowClear
+                onChange={(event) => setBatchSearch(event.target.value)}
+              />
+            </Space>
+            <MvpPageSizeSelector
+              value={batchPerPage}
+              onChange={(value) => {
+                setBatchPerPage(value);
+                setBatchPage(1);
+              }}
+            />
+          </Space>
+          <ResponsiveDataTable
+            columns={batchColumns}
+            rows={filteredBatches}
+            rowKey={(row) => row.id}
+            loading={loading}
+            emptyText={tableEmptyText(historyError)}
+          />
+          <div
+            style={{
+              marginTop: 16,
+              marginBottom: 16,
+              display: "flex",
+              justifyContent: "flex-end",
+            }}
+          >
+            <Pagination
+              current={batchPagination.current}
+              pageSize={batchPerPage}
+              total={
+                normalizedBatchSearch
+                  ? filteredBatches.length
+                  : batchPagination.total
+              }
+              showSizeChanger={false}
+              showTotal={(total) => `Tổng ${total} lô quét`}
+              onChange={setBatchPage}
+            />
+          </div>
+
+          <Space
+            wrap
+            style={{
+              marginBottom: 8,
+              width: "100%",
+              justifyContent: "space-between",
+            }}
+          >
+            <Space wrap>
+              <Typography.Text strong>Sự kiện quét</Typography.Text>
+              <Input.Search
+                placeholder="Tìm theo mã..."
+                aria-label="Tìm theo mã sự kiện quét"
+                style={{ width: 220 }}
+                value={eventSearch}
+                allowClear
+                onChange={(event) => setEventSearch(event.target.value)}
+              />
+            </Space>
+            <MvpPageSizeSelector
+              value={eventPerPage}
+              onChange={(value) => {
+                setEventPerPage(value);
+                setEventPage(1);
+              }}
+            />
+          </Space>
+          <ResponsiveDataTable
+            columns={eventColumns}
+            rows={filteredEvents}
+            rowKey={(row) => row.id}
+            loading={loading}
+            emptyText={tableEmptyText(historyError)}
+          />
+          <div
+            style={{
+              marginTop: 16,
+              display: "flex",
+              justifyContent: "flex-end",
+            }}
+          >
+            <Pagination
+              current={eventPagination.current}
+              pageSize={eventPerPage}
+              total={
+                normalizedEventSearch
+                  ? filteredEvents.length
+                  : eventPagination.total
+              }
+              showSizeChanger={false}
+              showTotal={(total) => `Tổng ${total} sự kiện`}
+              onChange={setEventPage}
+            />
+          </div>
+        </>
+      )}
 
       <IssuePhysicalCodeModal
         open={issueModalOpen}

@@ -8,7 +8,10 @@ import {
   getIamPermissions,
   getIamRole,
   getIamRoles,
+  getIamUserPermissionOverrides,
   getIamUsers,
+  grantIamUserPermission,
+  revokeIamUserPermission,
   syncIamRolePermissions,
   updateIamRole,
   updateIamUserWithRole,
@@ -17,6 +20,7 @@ import { fetchWarehouses } from "@/modules/master-data/services/warehouse.servic
 import { getMutationErrorMessage } from "@/shared/api/api-error";
 import type {
   IamDepartmentListParams,
+  IamGrantUserPermissionPayload,
   IamPermissionListParams,
   IamRoleListParams,
   IamRolePayload,
@@ -160,10 +164,16 @@ export function useSyncIamRolePermissions() {
     mutationFn: ({
       roleId,
       permissionIds,
+      reason,
     }: {
       roleId: string;
       permissionIds: string[];
-    }) => syncIamRolePermissions(roleId, { permission_ids: permissionIds }),
+      reason: string;
+    }) =>
+      syncIamRolePermissions(roleId, {
+        permission_ids: permissionIds,
+        reason,
+      }),
     onSuccess: () => {
       toast.success("Đã áp dụng ma trận quyền");
       void invalidateIam(queryClient);
@@ -178,10 +188,12 @@ export function useCreateIamUser() {
     mutationFn: ({
       payload,
       assignment,
+      reason,
     }: {
       payload: IamUserPayload;
       assignment: IamUserRoleAssignment;
-    }) => createIamUserWithRole(payload, assignment),
+      reason: string;
+    }) => createIamUserWithRole(payload, assignment, reason),
     onSuccess: () => {
       toast.success("Đã thêm người dùng");
       void invalidateIam(queryClient);
@@ -199,13 +211,22 @@ export function useUpdateIamUser() {
       userId,
       payload,
       assignment,
+      reason,
       currentAssignment,
     }: {
       userId: string;
       payload: IamUserUpdatePayload;
       assignment: IamUserRoleAssignment;
+      reason: string;
       currentAssignment?: IamUserRoleAssignment;
-    }) => updateIamUserWithRole(userId, payload, assignment, currentAssignment),
+    }) =>
+      updateIamUserWithRole(
+        userId,
+        payload,
+        assignment,
+        reason,
+        currentAssignment,
+      ),
     onSuccess: () => {
       toast.success("Đã cập nhật người dùng");
       void invalidateIam(queryClient);
@@ -213,5 +234,52 @@ export function useUpdateIamUser() {
     onError: (error) => {
       toast.error(getMutationErrorMessage(error));
     },
+  });
+}
+
+/** Danh sách quyền cấp riêng (ngoài role) của 1 tài khoản. */
+export function useIamUserPermissionOverrides(userId?: string) {
+  return useQuery({
+    queryKey: [...iamKeys.all, "user-permission-overrides", userId],
+    queryFn: () => getIamUserPermissionOverrides(userId as string),
+    enabled: Boolean(userId),
+  });
+}
+
+export function useGrantIamUserPermission() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      userId,
+      payload,
+    }: {
+      userId: string;
+      payload: IamGrantUserPermissionPayload;
+    }) => grantIamUserPermission(userId, payload),
+    onSuccess: () => {
+      toast.success("Đã cấp quyền riêng cho người dùng");
+      void invalidateIam(queryClient);
+    },
+    onError: (error) => toast.error(getMutationErrorMessage(error)),
+  });
+}
+
+export function useRevokeIamUserPermission() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      userId,
+      permissionId,
+      reason,
+    }: {
+      userId: string;
+      permissionId: string;
+      reason: string;
+    }) => revokeIamUserPermission(userId, permissionId, { reason }),
+    onSuccess: () => {
+      toast.success("Đã thu hồi quyền cấp riêng");
+      void invalidateIam(queryClient);
+    },
+    onError: (error) => toast.error(getMutationErrorMessage(error)),
   });
 }

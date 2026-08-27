@@ -40,7 +40,9 @@ describe("SideNav RBAC filtering", () => {
   it("shows list entry points when the user has matching WMS permissions", () => {
     withPermissions([
       "inbound.create",
-      "outbound.create",
+      // "outbound.view" thay cho "outbound.create": mã cũ bị BE thu hồi 27/08 nên
+      // fixture cấp nó sẽ không mở được mục menu nào nữa.
+      "outbound.view",
       "inventory.view",
       "report.view",
     ]);

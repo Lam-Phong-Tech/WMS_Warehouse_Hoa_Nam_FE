@@ -9,7 +9,6 @@ import {
   getPermissionCode,
 } from "@/shared/types/permission";
 import { hasScopeForAction } from "@/shared/types/permission.scope";
-
 export interface CanProps {
   /** Mã quyền cần có để hiển thị children (cách cũ). */
   permission?: string;
@@ -32,14 +31,18 @@ export interface CanProps {
  * Usage (cách cũ - permission code trực tiếp):
  * ```tsx
  * <Can permission="ORG_CREATE">
- *   <Button>Thêm mới</Button>
+ *   <ActionButton
+  kind="create"
+>Thêm mới</ActionButton>
  * </Can>
  * ```
  *
  * Usage (cách mới - action + module):
  * ```tsx
  * <Can module="org_units" action="create">
- *   <Button>Thêm mới</Button>
+ *   <ActionButton
+  kind="create"
+>Thêm mới</ActionButton>
  * </Can>
  * ```
  *

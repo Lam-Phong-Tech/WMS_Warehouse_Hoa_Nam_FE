@@ -3,8 +3,10 @@ import { http } from "@/shared/api/http";
 import type {
   IamDepartment,
   IamDepartmentListParams,
+  IamGrantUserPermissionPayload,
   IamPermission,
   IamPermissionListParams,
+  IamRevokeUserPermissionPayload,
   IamRole,
   IamRoleListParams,
   IamRolePayload,
@@ -13,6 +15,7 @@ import type {
   IamUser,
   IamUserListParams,
   IamUserPayload,
+  IamUserPermissionOverride,
   IamUserRoleAssignment,
   IamUserUpdatePayload,
 } from "@/modules/iam/types/iam.types";
@@ -106,6 +109,35 @@ export function syncIamRolePermissions(
   );
 }
 
+export function getIamUserPermissionOverrides(
+  userId: string,
+): Promise<IamUserPermissionOverride[]> {
+  return http.get<IamUserPermissionOverride[]>(
+    `${API_ENDPOINTS.USERS}/${userId}/permissions`,
+  );
+}
+
+export function grantIamUserPermission(
+  userId: string,
+  payload: IamGrantUserPermissionPayload,
+): Promise<IamUserPermissionOverride[]> {
+  return http.post<IamUserPermissionOverride[]>(
+    `${API_ENDPOINTS.USERS}/${userId}/permissions`,
+    payload,
+  );
+}
+
+export function revokeIamUserPermission(
+  userId: string,
+  permissionId: string,
+  payload: IamRevokeUserPermissionPayload,
+): Promise<IamUserPermissionOverride[]> {
+  return http.delete<IamUserPermissionOverride[]>(
+    `${API_ENDPOINTS.USERS}/${userId}/permissions/${permissionId}`,
+    { data: payload },
+  );
+}
+
 export function createIamUser(payload: IamUserPayload): Promise<IamUser> {
   return http.post<IamUser>(API_ENDPOINTS.USERS, payload);
 }
@@ -131,6 +163,7 @@ export function updateIamUser(
 export function assignIamUserRole(
   userId: string,
   assignment: IamUserRoleAssignment,
+  reason: string,
 ): Promise<IamUser> {
   return http.post<IamUser>(`${API_ENDPOINTS.USERS}/${userId}/roles`, {
     roles: [
@@ -141,21 +174,24 @@ export function assignIamUserRole(
         effective_to: assignment.effective_to || null,
       },
     ],
+    reason,
   });
 }
 
 export async function createIamUserWithRole(
   payload: IamUserPayload,
   assignment: IamUserRoleAssignment,
+  reason: string,
 ): Promise<IamUser> {
   const created = await createIamUser(payload);
-  return assignIamUserRole(created.user_id, assignment);
+  return assignIamUserRole(created.user_id, assignment, reason);
 }
 
 export async function updateIamUserWithRole(
   userId: string,
   payload: IamUserUpdatePayload,
   assignment: IamUserRoleAssignment,
+  reason: string,
   current?: IamUserRoleAssignment,
 ): Promise<IamUser> {
   const updated = await updateIamUser(userId, payload);
@@ -171,5 +207,5 @@ export async function updateIamUserWithRole(
   if (unchanged) {
     return updated;
   }
-  return assignIamUserRole(userId, assignment);
+  return assignIamUserRole(userId, assignment, reason);
 }

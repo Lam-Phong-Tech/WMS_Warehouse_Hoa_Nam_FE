@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { ButtonProps } from "antd";
+import type { FormActionButtonProps } from "@/shared/components/feedback/FormActions";
 import { Form, Typography } from "antd";
 import { CARD_SHADOW, NEUTRAL_COLORS, RADIUS } from "@/shared/design-tokens";
 import { FormActions } from "./FormActions";
@@ -14,8 +14,8 @@ export interface FormPageProps {
   cancelText?: string;
   showOk?: boolean;
   showCancel?: boolean;
-  okButtonProps?: ButtonProps;
-  cancelButtonProps?: ButtonProps;
+  okButtonProps?: FormActionButtonProps;
+  cancelButtonProps?: FormActionButtonProps;
   /** Nội dung phụ dưới tiêu đề (vd breadcrumb, mô tả ngắn). */
   extra?: ReactNode;
   children: ReactNode;

@@ -543,7 +543,9 @@ describe("SkuImportModal — vân tay nội dung và ca đua preview (FE331-P1-0
 
     await waitFor(() =>
       expect(
-        screen.getByText(/Cần kiểm tra tệp và xử lý hết lỗi trước khi nhập dữ liệu/),
+        screen.getByText(
+          /Cần kiểm tra tệp và xử lý hết lỗi trước khi nhập dữ liệu/,
+        ),
       ).toBeInTheDocument(),
     );
     // Bằng chứng quan trọng nhất: KHÔNG có request commit nào được gửi đi.
@@ -604,7 +606,9 @@ describe("SkuImportModal — vân tay nội dung và ca đua preview (FE331-P1-0
     );
     await waitFor(() => expect(commitButton()).toBeDisabled());
     expect(
-      screen.getByText(/Cần kiểm tra tệp và xử lý hết lỗi trước khi nhập dữ liệu/),
+      screen.getByText(
+        /Cần kiểm tra tệp và xử lý hết lỗi trước khi nhập dữ liệu/,
+      ),
     ).toBeInTheDocument();
   });
 });

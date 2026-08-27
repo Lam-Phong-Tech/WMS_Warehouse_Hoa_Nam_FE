@@ -84,6 +84,15 @@ async function openWarrantyTab() {
   return screen.findByText("BH-0001");
 }
 
+/** Mở modal "Chi tiết" của dòng đầu tiên bằng nút Xem ở cột Thao tác. */
+async function openRowDetail() {
+  const viewButtons = await screen.findAllByRole("button", {
+    name: /Xem chi tiết dòng báo cáo/i,
+  });
+  fireEvent.click(viewButtons[0]);
+  return screen.findByRole("dialog");
+}
+
 describe("WWHN-258 · báo cáo bảo hành — gate PII theo quyền", () => {
   beforeEach(() => {
     vi.mocked(http.get).mockReset();
@@ -91,11 +100,31 @@ describe("WWHN-258 · báo cáo bảo hành — gate PII theo quyền", () => {
     vi.mocked(http.post).mockReset();
     vi.mocked(http.downloadFile).mockReset();
 
-    vi.mocked(http.get).mockResolvedValue(warrantyPayload());
+    // Checklist "Hiệu năng và triển khai" 27/08: POST /reports/export giờ chỉ trả job
+    // PENDING; FE poll GET /reports/export/{id} tới khi READY rồi mới tải. http.get bị
+    // dùng chung cho cả data báo cáo lẫn poll job nên phải phân nhánh theo URL.
+    vi.mocked(http.get).mockImplementation(async (url: unknown) => {
+      if (typeof url === "string" && url.startsWith("/reports/export/")) {
+        return {
+          export_job_id: "wwhn258-job-1",
+          status: "READY",
+          row_count: 1,
+          download_url: "/api/v1/reports/export/wwhn258-job-1/download",
+          error_message: null,
+        };
+      }
+      return warrantyPayload();
+    });
     vi.mocked(http.getPage).mockResolvedValue({ data: [], meta: {} });
     vi.mocked(http.post).mockResolvedValue({
-      download_url: "/api/v1/reports/warranty-defects/export-excel",
-      row_count: 1,
+      export_job_id: "wwhn258-job-1",
+      report_code: "warranty-defects",
+      format: "xlsx",
+      status: "PENDING",
+      row_count: null,
+      status_url: "/api/v1/reports/export/wwhn258-job-1",
+      download_url: null,
+      requested_at: "2026-08-19T12:00:00Z",
     });
     vi.mocked(http.downloadFile).mockResolvedValue({
       blob: new Blob(["x"]),
@@ -132,18 +161,26 @@ describe("WWHN-258 · báo cáo bảo hành — gate PII theo quyền", () => {
     ).toBeInTheDocument();
   });
 
-  it("thiếu warranty.pii.view: cột khách hàng bị mask dù BE trả PII thô", async () => {
+  it("thiếu warranty.pii.view: khách hàng bị mask ở cả bảng lẫn modal chi tiết", async () => {
     grant(["report.view", ...EXPORT_CODES]);
     await openWarrantyTab();
 
+    // Ngoài bảng: không lộ PII thô.
+    expect(screen.queryByText("Nguyễn Văn A")).not.toBeInTheDocument();
+    expect(screen.queryByText("0901234567")).not.toBeInTheDocument();
+
+    // Cột PII nay nằm trong modal chi tiết (bảng chỉ giữ cột thiết yếu để không
+    // phải kéo ngang) — mask phải giữ nguyên hiệu lực ở đó.
+    await openRowDetail();
     expect(screen.queryByText("Nguyễn Văn A")).not.toBeInTheDocument();
     expect(screen.queryByText("0901234567")).not.toBeInTheDocument();
     expect(screen.getByText("*******567")).toBeInTheDocument();
   });
 
-  it("có warranty.pii.view: cột khách hàng hiển thị đầy đủ", async () => {
+  it("có warranty.pii.view: modal chi tiết hiển thị khách hàng đầy đủ", async () => {
     grant(["report.view", ...EXPORT_CODES, "warranty.pii.view"]);
     await openWarrantyTab();
+    await openRowDetail();
 
     expect(screen.getByText("Nguyễn Văn A")).toBeInTheDocument();
     expect(screen.getByText("0901234567")).toBeInTheDocument();

@@ -1591,6 +1591,18 @@ antd@^6.4.5:
     scroll-into-view-if-needed "^3.1.0"
     throttle-debounce "^5.0.2"
 
+apex-commons@^0.5.0:
+  version "0.5.0"
+  resolved "https://registry.yarnpkg.com/apex-commons/-/apex-commons-0.5.0.tgz#de0a38b1c9d15fa13eac26097305a219020bc525"
+  integrity sha512-xz83SgPREE1wGtoflvxjwJtcjzl5bKTz2/bDxWCZNL6QVjUNE47kMg/1Zqt0bSh6eOnmFCWlTDc3RU8o85N+wg==
+
+apexcharts@^7.0.0:
+  version "7.0.0"
+  resolved "https://registry.yarnpkg.com/apexcharts/-/apexcharts-7.0.0.tgz#4b3137851ab60c17354559baca75c64434b0b187"
+  integrity sha512-wX0LP5WajZXIAvQpCcDMVOlBUhlfhzUmEaKxPkUs54WFm0/GBbEyYCpw4G6iK7W5nU/R+kRzk+NHQSWlmp0qCA==
+  dependencies:
+    apex-commons "^0.5.0"
+
 aria-query@5.3.0:
   version "5.3.0"
   resolved "https://registry.npmjs.org/aria-query/-/aria-query-5.3.0.tgz"
@@ -3162,6 +3174,13 @@ pusher-js@^8.6.0:
   integrity sha512-wShJPfCS/kYkCBVzVW67wa9cnQIgHTszEK2XHNrFkOgGruuGw081aERAxfRjfdFU+WcIt8x6dvbwkTW4iZuQ8Q==
   dependencies:
     tweetnacl "^1.0.3"
+
+react-apexcharts@^2.1.1:
+  version "2.1.1"
+  resolved "https://registry.yarnpkg.com/react-apexcharts/-/react-apexcharts-2.1.1.tgz#63c141072e64c03b3e07201b36264e4e4001f745"
+  integrity sha512-aV25n+1ZdAzRG0KhODVC48K8WbhMKBAr3yWSeaaBqM1ySn22kSSKblsNCUvlwegsT+cdMLuOrK9xGZb+IK+OkQ==
+  dependencies:
+    prop-types "^15.8.1"
 
 react-dom@^19.2.6:
   version "19.2.7"

@@ -14,6 +14,15 @@ export interface IamPermission {
   permission_name: string;
   scope_type?: IamRoleScopeType | null;
   status: IamRoleStatus;
+  /**
+   * BE tính từ chính bảng route lúc chạy (Modules/Auth/app/Support/PermissionEnforcementMap):
+   * `false` = mã còn trong danh mục nhưng KHÔNG cổng nào đọc tới, tick vào ma trận
+   * IAM-01 không cấp thêm gì. Optional để không vỡ với BE cũ hơn — thiếu trường thì
+   * coi như còn hiệu lực.
+   */
+  is_enforced?: boolean;
+  /** Mã canonical thay thế cho một mã đã ngừng hiệu lực (null nếu không phải mã cũ). */
+  replaced_by?: string | null;
 }
 
 export interface IamRole {
@@ -121,4 +130,24 @@ export type IamRoleUpdatePayload = Partial<IamRolePayload>;
 
 export interface IamSyncRolePermissionsPayload {
   permission_ids: string[];
+  reason: string;
+}
+
+/** Quyền cấp riêng cho 1 tài khoản, cộng thêm vào quyền theo role (chỉ cấp thêm, không thu hồi quyền của role). */
+export interface IamUserPermissionOverride {
+  user_permission_id: string;
+  permission_id: string;
+  permission_key: string;
+  permission_name: string;
+  granted_by?: string | null;
+  granted_at?: string | null;
+}
+
+export interface IamGrantUserPermissionPayload {
+  permission_id: string;
+  reason: string;
+}
+
+export interface IamRevokeUserPermissionPayload {
+  reason: string;
 }

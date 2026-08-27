@@ -62,9 +62,8 @@ export type InventoryBalanceRow = {
   /**
    * WWHN-191: ledger-authoritative total (sum of stock_movements.qty_delta) and the
    * signed diff against on_hand_qty — the actual "đối soát" evidence behind `reconcile`.
-   * Kept as raw pass-through fields (not yet rendered in InventoryPage's table) so callers
-   * needing the numbers don't have to re-derive them; whether/where to surface them in the
-   * UI is an FE/UX decision pending FE lead confirmation (see WWHN-191 evidence).
+   * Now rendered in InventoryPage's balance table as "Tồn theo sổ cái" / "Chênh lệch",
+   * sitting right before the "Đối soát" tag they justify (see WWHN-191 evidence).
    */
   ledgerTotal: number;
   variance: number;
@@ -173,6 +172,13 @@ export type PhysicalCodeTraceResult = {
   resolved_object: RawRecord | null;
   movements: RawRecord[];
   container_items: RawRecord[];
+  /**
+   * Mục 6 (vòng đời sản phẩm): lịch sử bảo hành của CÙNG item (nối tiếp
+   * `movements` nhập/xuất/điều chỉnh) — chỉ có khi resolved_type === "ITEM".
+   * customer_name/customer_phone đã bị BE mask sẵn nếu actor thiếu
+   * warranty.pii.view (StockMovementController::traceWarrantyHistory).
+   */
+  warranty_history: RawRecord[];
 };
 
 export type SubledgerResult = {

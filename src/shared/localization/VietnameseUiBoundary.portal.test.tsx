@@ -78,7 +78,9 @@ describe("VietnameseUiBoundary", () => {
       "Tool Box Item Pro",
     );
     await waitFor(() =>
-      expect(screen.getByTestId("raw-status")).toHaveTextContent("Chờ kiểm tra"),
+      expect(screen.getByTestId("raw-status")).toHaveTextContent(
+        "Chờ kiểm tra",
+      ),
     );
     await waitFor(() =>
       expect(screen.getByTestId("status-tag")).toHaveTextContent(

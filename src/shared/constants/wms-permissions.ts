@@ -16,7 +16,9 @@ export const WMS_PERMISSION_CATALOG = {
   CATALOG_MANAGE: "catalog.manage",
   WAREHOUSE_VIEW: "warehouse.view",
   WAREHOUSE_MANAGE: "warehouse.manage",
-  MASTER_MANAGE: "master.manage",
+  // MASTER_MANAGE ("master.manage") đã gỡ: BE thu hồi mã này 27/08 vì không route
+  // nào đọc tới (cổng thật của master dữ liệu là catalog.view/catalog.manage).
+  // Giữ hằng số ở đây chỉ tạo ra một mã không bao giờ khớp với ai.
   SKU_VIEW: "sku.view",
   SKU_MANAGE: "sku.manage",
   AGENCY_VIEW: "agency.view",
@@ -36,7 +38,13 @@ export const WMS_PERMISSION_CATALOG = {
    * scan.classify) nên FE bắt buộc phải nhận cả hai.
    */
   SCAN_EXECUTE: "scan.execute",
-  // Legacy compatibility values retained for older evidence/service shims.
+  /**
+   * NGỪNG HIỆU LỰC — giữ lại vì hợp đồng WWHN-180 còn ghim ba mã này ACTIVE trong
+   * danh mục BE (WmsPermissionCompatibilitySeeder), nhưng KHÔNG route nào đọc tới.
+   * `GET /permissions` nay trả kèm `is_enforced=false` + `replaced_by` cho chúng.
+   * Không dùng để gate bất cứ thứ gì mới: cổng thật là inbound.scan / outbound.scan
+   * / warranty.view — xem PermissionEnforcementMap::DEPRECATED bên BE.
+   */
   SCAN_INBOUND: "scan.inbound",
   SCAN_OUTBOUND: "outbound.scan",
   SCAN_WARRANTY: "scan.warranty",
@@ -53,7 +61,9 @@ export const WMS_PERMISSION_CATALOG = {
   PUTAWAY_VIEW: "putaway.view",
   PUTAWAY_MANAGE: "putaway.manage",
   OUTBOUND_VIEW: "outbound.view",
-  OUTBOUND_CREATE: "outbound.create",
+  // OUTBOUND_CREATE ("outbound.create") đã gỡ: §8.1 bỏ POST /outbound-documents
+  // trực tiếp từ lâu (phiếu xuất chỉ sinh khi Confirm yêu cầu xuất), BE thu hồi mã
+  // này 27/08. Vai tạo yêu cầu xuất dùng nhóm outbound.request.*.
   OUTBOUND_SCAN: "outbound.scan",
   OUTBOUND_POST: "outbound.post",
   OUTBOUND_CANCEL: "outbound.cancel",
@@ -164,16 +174,30 @@ export const WMS_ACTION_PERMISSIONS = {
     WMS_PERMISSION_CATALOG.PUTAWAY_MANAGE,
     WMS_PERMISSION_CATALOG.CONTAINER_VIEW,
   ],
+  // Cả ba route nhóm yêu cầu xuất ở BE đều nhận `<mã chuyên biệt>|outbound.import`
+  // (Modules/Warehouse/routes/api.php). Bỏ sót outbound.import ở đây khiến FE
+  // chặt hơn backend và ẩn nút với người thực ra có quyền.
   OUTBOUND_REQUEST_IMPORT: [
     WMS_PERMISSION_CATALOG.OUTBOUND_REQUEST_IMPORT,
     WMS_PERMISSION_CATALOG.OUTBOUND_IMPORT,
   ],
-  OUTBOUND_REQUEST_CONFIRM: [WMS_PERMISSION_CATALOG.OUTBOUND_REQUEST_CONFIRM],
+  OUTBOUND_REQUEST_CONFIRM: [
+    WMS_PERMISSION_CATALOG.OUTBOUND_REQUEST_CONFIRM,
+    WMS_PERMISSION_CATALOG.OUTBOUND_IMPORT,
+  ],
   OUTBOUND_REQUEST_MANUAL_CREATE: [
     WMS_PERMISSION_CATALOG.OUTBOUND_REQUEST_MANUAL_CREATE,
+    WMS_PERMISSION_CATALOG.OUTBOUND_IMPORT,
   ],
-  PACKING_LABEL_PREVIEW: [WMS_PERMISSION_CATALOG.PACKING_LABEL_PREVIEW],
-  PACKING_LABEL_READY: [WMS_PERMISSION_CATALOG.PACKING_LABEL_READY],
+  // Tương tự: route preview/ready nhãn nhận `packing_label.*|label.print`.
+  PACKING_LABEL_PREVIEW: [
+    WMS_PERMISSION_CATALOG.PACKING_LABEL_PREVIEW,
+    WMS_PERMISSION_CATALOG.LABEL_PRINT,
+  ],
+  PACKING_LABEL_READY: [
+    WMS_PERMISSION_CATALOG.PACKING_LABEL_READY,
+    WMS_PERMISSION_CATALOG.LABEL_PRINT,
+  ],
   PACKING_LABEL_PRINT: [
     WMS_PERMISSION_CATALOG.PACKING_LABEL_PRINT,
     WMS_PERMISSION_CATALOG.LABEL_PRINT,

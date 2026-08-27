@@ -7,14 +7,11 @@ import {
   DialogContent,
   DialogTitle,
   Grid,
-  IconButton,
   Stack,
   ThemeProvider,
   Typography,
 } from "@mui/material";
 import { muiTheme } from "@/app/mui-theme";
-import { CloseOutlined, HistoryOutlined } from "@/shared/components/icons";
-import { ACTION_ICON_COLORS } from "@/shared/theme/actionIconColors";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import {
   CONTAINER_TYPE_LABELS,
@@ -30,6 +27,8 @@ import type { InventoryBalanceRow } from "../services/inventoryService";
 import { useStockMovements, useBalanceSubledger } from "../hooks/use-inventory";
 import type { StockMovementRow } from "../services/inventoryService";
 import { formatDateTime } from "@/shared/utils/format-date";
+import { useDialogExit } from "@/shared/utils/useDialogExit";
+import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 
 const numberFormatter = new Intl.NumberFormat("vi-VN");
 
@@ -68,7 +67,11 @@ function itemConditionLabel(value: unknown): string {
 function DetailField({ label, value }: { label: string; value: ReactNode }) {
   return (
     <Grid size={{ xs: 12, md: 6 }}>
-      <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+      <Typography
+        variant="caption"
+        color="text.secondary"
+        sx={{ display: "block" }}
+      >
         {label}
       </Typography>
       <Typography variant="body2" component="div">
@@ -90,7 +93,11 @@ function StatBox({ label, value }: { label: string; value: ReactNode }) {
         minWidth: 110,
       }}
     >
-      <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+      <Typography
+        variant="caption"
+        color="text.secondary"
+        sx={{ display: "block" }}
+      >
         {label}
       </Typography>
       <Typography variant="h6">{value}</Typography>
@@ -109,6 +116,7 @@ export function BalanceDetailModal({
   onClose,
   onTraceMovement,
 }: Props) {
+  const dialog = useDialogExit(onClose);
   const movementsQuery = useStockMovements({
     search: balance.sku,
     per_page: 10,
@@ -138,7 +146,9 @@ export function BalanceDetailModal({
       dataIndex: "type",
       width: 150,
       render: (value: string) => (
-        <Tag>{businessLabel(MOVEMENT_TYPE_LABELS, value, "Biến động khác")}</Tag>
+        <Tag>
+          {businessLabel(MOVEMENT_TYPE_LABELS, value, "Biến động khác")}
+        </Tag>
       ),
     },
     {
@@ -184,16 +194,13 @@ export function BalanceDetailModal({
       fixed: "right",
       render: (_, row) =>
         onTraceMovement ? (
-          <button
-            className="btn small"
-            type="button"
+          <ActionButton
+            kind="history"
+            sx={{ whiteSpace: "nowrap" }}
             onClick={() => onTraceMovement(String(row.id))}
           >
-            <HistoryOutlined
-              style={{ marginRight: 4, color: ACTION_ICON_COLORS.view }}
-            />
             Truy vết
-          </button>
+          </ActionButton>
         ) : null,
     },
   ];
@@ -236,7 +243,9 @@ export function BalanceDetailModal({
       width: 140,
       render: (_, row) =>
         row.physical_code ? (
-          <AntTypography.Text code>{text(row.physical_code)}</AntTypography.Text>
+          <AntTypography.Text code>
+            {text(row.physical_code)}
+          </AntTypography.Text>
         ) : (
           <AntTypography.Text type="secondary">-</AntTypography.Text>
         ),
@@ -307,21 +316,15 @@ export function BalanceDetailModal({
 
   return (
     <ThemeProvider theme={muiTheme}>
-      <Dialog
-        open
-        onClose={onClose}
-        maxWidth="lg"
-        fullWidth
-      >
+      <Dialog {...dialog.dialogProps} maxWidth="lg" fullWidth>
         <DialogTitle sx={{ pr: 6, position: "relative" }}>
           {`Chi tiết tồn kho — ${balance.sku}`}
-          <IconButton
-            aria-label="Đóng"
-            onClick={onClose}
+          <ActionIconButton
+            kind="close"
+            label="Đóng"
+            onClick={dialog.close}
             sx={{ position: "absolute", right: 10, top: 8 }}
-          >
-            <CloseOutlined style={{ fontSize: 15 }} />
-          </IconButton>
+          />
         </DialogTitle>
         <DialogContent dividers>
           <Stack spacing={2}>
@@ -365,7 +368,11 @@ export function BalanceDetailModal({
                 <DetailField
                   label="Đối soát"
                   value={
-                    <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      sx={{ alignItems: "center" }}
+                    >
                       <Tag color={reconcileColor(balance.reconcile)}>
                         {businessLabel(
                           RECONCILE_STATUS_LABELS,
@@ -400,10 +407,23 @@ export function BalanceDetailModal({
               </Grid>
             </Box>
 
-            <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap", rowGap: 2 }}>
-              <StatBox label="Khả dụng" value={formatQty(balance.available, balance.uom)} />
-              <StatBox label="Tồn hiện có" value={formatQty(balance.onHand, balance.uom)} />
-              <StatBox label="Số sản phẩm" value={formatQty(balance.serialQty)} />
+            <Stack
+              direction="row"
+              spacing={2}
+              sx={{ flexWrap: "wrap", rowGap: 2 }}
+            >
+              <StatBox
+                label="Khả dụng"
+                value={formatQty(balance.available, balance.uom)}
+              />
+              <StatBox
+                label="Tồn hiện có"
+                value={formatQty(balance.onHand, balance.uom)}
+              />
+              <StatBox
+                label="Số sản phẩm"
+                value={formatQty(balance.serialQty)}
+              />
               <StatBox label="Số hộp" value={formatQty(balance.boxQty)} />
             </Stack>
 

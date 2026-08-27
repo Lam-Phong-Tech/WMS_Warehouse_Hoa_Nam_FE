@@ -1,0 +1,433 @@
+/* =========================================================================
+   hn-motion.css — LỚP CHUYỂN ĐỘNG TOÀN CỤC (global motion layer)
+   -------------------------------------------------------------------------
+   Mục tiêu: mọi thao tác trên web đều "mượt" thay vì nhảy giật (hover, focus,
+   bấm nút, mở/đóng modal-drawer-dropdown, thêm/xóa dòng, đổi trang, sắp xếp
+   bảng, thu gọn sidebar...).
+
+   NGUYÊN TẮC KỸ THUẬT (để mượt thật, không chỉ "có animation"):
+   1. Chỉ animate `transform` + `opacity` + màu/viền/bóng — KHÔNG animate
+      width/height/top/left của phần tử lớn (gây reflow toàn trang → giật).
+   2. Liệt kê `transition-property` tường minh, KHÔNG dùng `transition: all`
+      (all sẽ vô tình animate cả layout property khi component đổi class).
+   3. Thời lượng ngắn (140–260ms). Dài hơn 300ms người dùng cảm thấy "ì".
+   4. Tôn trọng `prefers-reduced-motion` — tắt sạch ở cuối file.
+
+   VỊ TRÍ IMPORT: file này import SAU CÙNG trong src/main.tsx (sau
+   hn-responsive.css). Nó chỉ khai báo transition/animation nên không tranh
+   chấp layout với các file trước; đứng cuối để chắc chắn thắng cascade khi
+   một file cũ lỡ đặt transition riêng.
+   ========================================================================= */
+
+:root {
+  /* Đường cong chuyển động — dùng chung cho CSS lẫn theme MUI/antd
+     (xem src/shared/components/motion/motion-tokens.ts để lấy cùng giá trị ở TS). */
+  --hn-ease: cubic-bezier(0.4, 0, 0.2, 1); /* standard — đa số trường hợp */
+  --hn-ease-out: cubic-bezier(0.16, 1, 0.3, 1); /* xuất hiện: nhanh → chậm */
+  --hn-ease-in: cubic-bezier(0.4, 0, 1, 1); /* biến mất: chậm → nhanh */
+  --hn-ease-spring: cubic-bezier(0.34, 1.32, 0.64, 1); /* nảy nhẹ, dùng ít */
+
+  --hn-dur-instant: 90ms; /* đổi màu chữ/icon */
+  --hn-dur-fast: 140ms; /* hover/focus control nhỏ */
+  --hn-dur: 200ms; /* mặc định */
+  --hn-dur-slow: 280ms; /* modal/drawer/khối lớn */
+
+  /* Bộ transition dựng sẵn để tái sử dụng */
+  --hn-t-color:
+    color var(--hn-dur-instant) var(--hn-ease),
+    background-color var(--hn-dur-fast) var(--hn-ease),
+    border-color var(--hn-dur-fast) var(--hn-ease);
+  --hn-t-control:
+    color var(--hn-dur-instant) var(--hn-ease),
+    background-color var(--hn-dur-fast) var(--hn-ease),
+    border-color var(--hn-dur-fast) var(--hn-ease),
+    box-shadow var(--hn-dur-fast) var(--hn-ease),
+    transform var(--hn-dur-fast) var(--hn-ease),
+    opacity var(--hn-dur-fast) var(--hn-ease);
+}
+
+/* =========================================================================
+   1. NỀN CHUNG
+   ========================================================================= */
+
+html {
+  /* Nhấn phân trang/anchor/scrollIntoView đều trôi mượt thay vì nhảy phịch. */
+  scroll-behavior: smooth;
+}
+
+body {
+  /* Bỏ ô sáng xanh khi chạm trên mobile — nguồn gốc cảm giác "giật" khi tap. */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Viền focus bàn phím hiện ra mềm mại (a11y vẫn giữ nguyên). */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--primary, #2563eb);
+  outline-offset: 2px;
+  transition: outline-offset var(--hn-dur-fast) var(--hn-ease-out);
+}
+
+/* Ảnh/icon không kéo-thả lệch khi bấm giữ. */
+img,
+svg {
+  -webkit-user-drag: none;
+}
+
+/* =========================================================================
+   2. VỎ ỨNG DỤNG TỰ VIẾT (.hn-*)
+   ========================================================================= */
+
+/* Sidebar: width/padding đã có transition sẵn ở hn-wms-mvp-exact.css.
+   Ở đây đồng bộ lại thời lượng với phần main để 2 bên chạy khớp nhau,
+   tránh cảm giác nội dung "đuổi theo" sidebar. */
+.hn-mvp-aside {
+  transition:
+    width var(--hn-dur-slow) var(--hn-ease),
+    padding var(--hn-dur-slow) var(--hn-ease);
+}
+.hn-mvp-main {
+  transition: margin-left var(--hn-dur-slow) var(--hn-ease);
+}
+
+/* Chữ/nhãn trong sidebar mờ dần khi thu gọn thay vì biến mất đột ngột. */
+.hn-mvp-brand-copy,
+.hn-mvp-nav-btn-label,
+.hn-mvp-group-label {
+  transition: opacity var(--hn-dur-fast) var(--hn-ease);
+}
+
+.hn-mvp-nav-btn,
+.hn-mvp-group,
+.hn-mvp-aside-toggle {
+  transition: var(--hn-t-control);
+}
+.hn-mvp-nav-btn:active,
+.hn-mvp-group:active,
+.hn-mvp-aside-toggle:active {
+  /* Phản hồi bấm tức thì — cảm giác nút "lún" xuống. */
+  transform: scale(0.97);
+  transition-duration: var(--hn-dur-instant);
+}
+.hn-mvp-nav-btn-icon,
+.hn-mvp-group-icon {
+  transition:
+    color var(--hn-dur-instant) var(--hn-ease),
+    transform var(--hn-dur-fast) var(--hn-ease-out);
+}
+.hn-mvp-nav-btn:hover .hn-mvp-nav-btn-icon {
+  transform: translateX(2px);
+}
+
+/* Thẻ/khối nội dung: nhấc nhẹ khi rê chuột. */
+.hn-card,
+.hn-stat {
+  transition:
+    box-shadow var(--hn-dur) var(--hn-ease),
+    border-color var(--hn-dur-fast) var(--hn-ease),
+    transform var(--hn-dur) var(--hn-ease-out);
+}
+.hn-card:hover,
+.hn-stat:hover {
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+  transform: translateY(-2px);
+}
+
+.hn-pill,
+.hn-node,
+.hn-value {
+  transition: var(--hn-t-color);
+}
+
+/* Thanh tiến trình chạy mượt thay vì nhảy nấc. */
+.hn-progress span {
+  transition: width var(--hn-dur-slow) var(--hn-ease-out);
+}
+
+/* Khối màn hình chính: đổi route thì .hn-page-transition bên dưới lo phần
+   hiện ra; ở đây chỉ làm mượt bóng đổ khi khối đổi trạng thái. */
+.hn-mvp-screen {
+  transition: box-shadow var(--hn-dur) var(--hn-ease);
+}
+
+/* =========================================================================
+   3. ANT DESIGN
+   ========================================================================= */
+
+.ant-btn {
+  transition: var(--hn-t-control) !important;
+}
+.ant-btn:not(:disabled):hover {
+  transform: translateY(-1px);
+}
+.ant-btn:not(:disabled):active {
+  transform: translateY(0) scale(0.98);
+  transition-duration: var(--hn-dur-instant) !important;
+}
+.ant-btn .anticon,
+.ant-btn [class^="fi-"] {
+  transition: transform var(--hn-dur-fast) var(--hn-ease-out);
+}
+
+.ant-input,
+.ant-input-affix-wrapper,
+.ant-input-number,
+.ant-picker,
+.ant-select-selector,
+.ant-checkbox-inner,
+.ant-radio-inner,
+.ant-switch {
+  transition: var(--hn-t-control) !important;
+}
+
+/* Mũi tên select xoay khi mở dropdown. */
+.ant-select-arrow,
+.ant-picker-suffix {
+  transition: transform var(--hn-dur-fast) var(--hn-ease);
+}
+.ant-select-open .ant-select-arrow {
+  transform: rotate(180deg);
+}
+
+.ant-tag,
+.ant-badge-count {
+  transition: var(--hn-t-color);
+}
+
+.ant-card {
+  transition:
+    box-shadow var(--hn-dur) var(--hn-ease),
+    border-color var(--hn-dur-fast) var(--hn-ease),
+    transform var(--hn-dur) var(--hn-ease-out) !important;
+}
+.ant-card:hover {
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08) !important;
+}
+
+/* Bảng: dòng đổi nền mượt khi rê chuột, ô sắp xếp/lọc phản hồi mềm. */
+.ant-table-wrapper .ant-table-tbody > tr > td {
+  transition: background-color var(--hn-dur-fast) var(--hn-ease) !important;
+}
+.ant-table-wrapper .ant-table-thead > tr > th {
+  transition: background-color var(--hn-dur-fast) var(--hn-ease) !important;
+}
+.ant-table-column-sorter,
+.ant-table-filter-trigger {
+  transition:
+    color var(--hn-dur-fast) var(--hn-ease),
+    transform var(--hn-dur-fast) var(--hn-ease-out);
+}
+
+/* CỐ Ý KHÔNG animate từng dòng bảng: bảng 50–100 dòng chạy 100 animation
+   cùng lúc chính là thứ gây giật mà ta đang muốn diệt. Cả bảng fade 1 lần
+   (qua .hn-page-transition / .hn-fade-in ở cấp khối) đủ mượt và rẻ hơn nhiều. */
+
+.ant-pagination .ant-pagination-item,
+.ant-pagination .ant-pagination-prev button,
+.ant-pagination .ant-pagination-next button {
+  transition: var(--hn-t-control) !important;
+}
+.ant-pagination .ant-pagination-item:hover {
+  transform: translateY(-1px);
+}
+
+.ant-tabs .ant-tabs-tab {
+  transition: var(--hn-t-color) !important;
+}
+.ant-tabs .ant-tabs-ink-bar {
+  transition:
+    left var(--hn-dur) var(--hn-ease),
+    width var(--hn-dur) var(--hn-ease),
+    transform var(--hn-dur) var(--hn-ease) !important;
+}
+/* Nội dung tab hiện dần khi chuyển tab. */
+.ant-tabs .ant-tabs-tabpane-active {
+  animation: hn-fade-in-up var(--hn-dur) var(--hn-ease-out) backwards;
+}
+
+.ant-menu-item,
+.ant-menu-submenu-title,
+.ant-dropdown-menu-item {
+  transition: var(--hn-t-color) !important;
+}
+
+.ant-alert,
+.ant-empty {
+  animation: hn-fade-in var(--hn-dur) var(--hn-ease-out) backwards;
+}
+
+.ant-collapse-header,
+.ant-collapse-arrow {
+  transition: var(--hn-t-color);
+}
+
+/* Modal/Drawer: antd tự có motion — chỉ chỉnh cho êm và đồng bộ thời lượng. */
+.ant-modal-mask,
+.ant-drawer-mask {
+  transition: opacity var(--hn-dur-slow) var(--hn-ease) !important;
+}
+.ant-modal .ant-modal-content {
+  transition: box-shadow var(--hn-dur) var(--hn-ease) !important;
+}
+
+/* Tooltip/Popover hiện mềm. */
+.ant-tooltip,
+.ant-popover {
+  animation-duration: var(--hn-dur-fast) !important;
+}
+
+/* Spin/loading: giữ nguyên vòng quay của antd nhưng lớp phủ mờ dần. */
+.ant-spin-blur {
+  transition: opacity var(--hn-dur) var(--hn-ease);
+}
+
+/* Banner PWA (ngoại tuyến / có bản mới) nằm ngoài app shell nên không đi qua
+   theme MUI/antd — cho nó trượt vào và có phản hồi bấm như các nút khác. */
+.wms-pwa-status {
+  animation: hn-fade-in-down var(--hn-dur-slow) var(--hn-ease-out) backwards;
+}
+.wms-pwa-status button {
+  transition: var(--hn-t-control);
+}
+.wms-pwa-status button:active {
+  transform: scale(0.97);
+  transition-duration: var(--hn-dur-instant);
+}
+
+/* =========================================================================
+   4. MUI (các màn đã chuyển sang Vuexy/MUI)
+   -------------------------------------------------------------------------
+   CỐ Ý ĐỂ TRỐNG phần lớn: chuyển động của MUI khai báo trong theme
+   (src/app/mui-theme.ts). Lý do — emotion chèn <style> vào <head> lúc chạy,
+   không có thứ tự cố định so với file CSS này, nên cùng một selector khai ở
+   hai nơi sẽ "ai thắng tùy lúc". Một nguồn duy nhất = kết quả đoán trước được.
+
+   Chỉ giữ lại ở đây phần bám vào class runtime của Collapse mà theme không
+   diễn đạt gọn được.
+   ========================================================================= */
+
+/* Dòng SKU/linh kiện thêm-xóa dùng MUI Collapse (AnimatedList): khi mở xong
+   phải bỏ overflow ẩn, nếu không dropdown/tooltip trong dòng bị cắt cụt. */
+.hn-animated-row.MuiCollapse-entered {
+  overflow: visible;
+}
+.hn-animated-row .MuiCollapse-wrapperInner {
+  min-width: 0;
+}
+
+/* =========================================================================
+   5. LỚP TIỆN ÍCH + KEYFRAMES
+   ========================================================================= */
+
+@keyframes hn-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes hn-fade-in-up {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes hn-fade-in-down {
+  from {
+    opacity: 0;
+    transform: translate3d(0, -8px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes hn-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes hn-pulse-once {
+  0% {
+    box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.28);
+  }
+  100% {
+    box-shadow: 0 0 0 10px rgba(37, 99, 235, 0);
+  }
+}
+
+/* Dùng trực tiếp trong JSX khi cần: className="hn-fade-in" ... */
+.hn-fade-in {
+  animation: hn-fade-in var(--hn-dur) var(--hn-ease-out) backwards;
+}
+.hn-fade-in-up {
+  animation: hn-fade-in-up var(--hn-dur) var(--hn-ease-out) backwards;
+}
+.hn-scale-in {
+  animation: hn-scale-in var(--hn-dur) var(--hn-ease-out) backwards;
+}
+.hn-highlight-once {
+  animation: hn-pulse-once 900ms var(--hn-ease-out) backwards;
+}
+
+/* Chuyển trang: nội dung route mới hiện lên thay vì "chớp" một cái.
+   Gắn ở <section class="hn-mvp-screen"> trong MainLayout, chạy lại nhờ đổi key. */
+.hn-page-transition {
+  animation: hn-fade-in-up var(--hn-dur-slow) var(--hn-ease-out) backwards;
+}
+
+/* Xếp lớp trễ cho danh sách tĩnh: cha thêm .hn-stagger, con hiện lần lượt. */
+.hn-stagger > * {
+  animation: hn-fade-in-up var(--hn-dur) var(--hn-ease-out) backwards;
+}
+.hn-stagger > *:nth-child(1) {
+  animation-delay: 0ms;
+}
+.hn-stagger > *:nth-child(2) {
+  animation-delay: 40ms;
+}
+.hn-stagger > *:nth-child(3) {
+  animation-delay: 80ms;
+}
+.hn-stagger > *:nth-child(4) {
+  animation-delay: 120ms;
+}
+.hn-stagger > *:nth-child(5) {
+  animation-delay: 160ms;
+}
+.hn-stagger > *:nth-child(n + 6) {
+  animation-delay: 200ms;
+}
+
+/* =========================================================================
+   6. TÔN TRỌNG NGƯỜI DÙNG TẮT HIỆU ỨNG
+   Bắt buộc: một số người bị chóng mặt vì chuyển động, và trình duyệt/OS có
+   công tắc riêng. Khi bật, mọi thứ trở lại tức thì (không phá vỡ chức năng).
+   ========================================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+}

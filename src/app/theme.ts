@@ -62,6 +62,16 @@ export const themeConfig: ThemeConfig = {
     fontSize: 14,
     lineHeight: 1.5,
     fontFamily: "Arial, Helvetica, sans-serif",
+    // --- Chuyển động ---------------------------------------------------
+    // Cùng bộ số với biến CSS trong src/styles/hn-motion.css và với
+    // `transitions` của muiTheme, để 3 hệ (antd · MUI · CSS tự viết) đóng/mở
+    // cùng nhịp. Trước đây mỗi hệ chạy thời lượng mặc định riêng nên modal
+    // antd và dialog MUI trên cùng một màn hình cảm giác "hai tốc độ".
+    motionDurationFast: "0.14s",
+    motionDurationMid: "0.2s",
+    motionDurationSlow: "0.28s",
+    motionEaseInOut: "cubic-bezier(0.4, 0, 0.2, 1)",
+    motionEaseOut: "cubic-bezier(0.16, 1, 0.3, 1)",
   },
   components: {
     Layout: {

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState, type ReactElement } from "react";
 import { isAxiosError } from "axios";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
@@ -9,10 +9,8 @@ import {
   Card,
   CardContent,
   Chip,
-  LinearProgress,
   Paper,
   Stack,
-  TextField,
   ThemeProvider,
   Typography,
 } from "@mui/material";
@@ -22,7 +20,29 @@ import { useAuthStore } from "@/shared/store/auth.store";
 import { fetchDashboardKPI } from "../services/dashboardService";
 import type { DashboardKPI, DashboardQuery } from "../types";
 import { formatDate } from "@/shared/utils/format-date";
+import {
+  DASHBOARD_PERIOD_PRESETS,
+  getPresetRange,
+  type DashboardPeriodPreset,
+} from "@/shared/utils/date-presets";
+import { BarChart } from "@/shared/components/charts/BarChart";
+import { DonutChart } from "@/shared/components/charts/DonutChart";
+import { HorizontalBarChart } from "@/shared/components/charts/HorizontalBarChart";
+import { AreaChart } from "@/shared/components/charts/AreaChart";
+import { CHART_COLORS } from "@/shared/components/charts/chart-theme";
+import {
+  StockOutlined,
+  ImportOutlined,
+  ExportOutlined,
+  ToolOutlined,
+  SwapOutlined,
+} from "@/shared/components/icons";
+import { http } from "@/shared/api/http";
+import { API_ENDPOINTS } from "@/shared/api/endpoints";
+import { DashboardActionItems } from "../components/DashboardActionItems";
+import { DashboardRecentActivity } from "../components/DashboardRecentActivity";
 import "./DashboardPage.css";
+import { ActionButton } from "@/shared/components/actions";
 
 type FlowNode = {
   label: string;
@@ -126,14 +146,35 @@ function DashboardMetricCard({
   label,
   value,
   note,
+  icon,
+  color,
 }: {
   label: string;
   value: number;
   note: string;
+  icon: ReactElement;
+  color: string;
 }) {
   return (
     <Card variant="outlined" sx={{ borderRadius: 2, minWidth: 0 }}>
-      <CardContent sx={{ display: "grid", gap: 0.75, "&:last-child": { pb: 2 } }}>
+      <CardContent
+        sx={{ display: "grid", gap: 0.75, "&:last-child": { pb: 2 } }}
+      >
+        <Box
+          sx={{
+            width: 36,
+            height: 36,
+            borderRadius: 2,
+            display: "grid",
+            placeItems: "center",
+            fontSize: 18,
+            color,
+            bgcolor: `${color}1a`,
+          }}
+          aria-hidden="true"
+        >
+          {icon}
+        </Box>
         <Typography variant="body2" sx={{ fontWeight: 700 }}>
           {label}
         </Typography>
@@ -191,17 +232,20 @@ export default function DashboardPage() {
   const canViewReport =
     !isProfileLoaded || isSuperAdmin || permissionCodes.includes("report.view");
 
-  const [appliedQuery, setAppliedQuery] = useState<DashboardQuery>({});
-  const [draftFrom, setDraftFrom] = useState("");
-  const [draftTo, setDraftTo] = useState("");
-  const [datesInitialized, setDatesInitialized] = useState(false);
+  // BA (2026-08-27): Dashboard chỉ nắm nhanh tình hình theo kỳ preset — xem chi
+  // tiết theo ngày/tháng/khoảng ngày tuỳ ý thuộc về Báo cáo, không phải Dashboard.
+  const [preset, setPreset] = useState<DashboardPeriodPreset>("today");
+  const appliedQuery: DashboardQuery = useMemo(
+    () => getPresetRange(preset),
+    [preset],
+  );
 
   const dashboardQuery = useQuery({
     queryKey: [
       "dashboard",
       "quick",
-      appliedQuery.from_date ?? "server-default",
-      appliedQuery.to_date ?? "server-default",
+      appliedQuery.from_date,
+      appliedQuery.to_date,
     ],
     queryFn: () => fetchDashboardKPI(appliedQuery),
     enabled: canViewReport,
@@ -213,22 +257,32 @@ export default function DashboardPage() {
     },
   });
 
-  useEffect(() => {
-    if (!dashboardQuery.data || datesInitialized) return;
-    setDraftFrom(dashboardQuery.data.period.from_date);
-    setDraftTo(dashboardQuery.data.period.to_date);
-    setDatesInitialized(true);
-  }, [dashboardQuery.data, datesInitialized]);
-
-  const filterError = useMemo(() => {
-    if (Boolean(draftFrom) !== Boolean(draftTo)) {
-      return "Cần nhập đủ cả Từ ngày và Đến ngày.";
-    }
-    if (draftFrom && draftTo && draftTo < draftFrom) {
-      return "Đến ngày phải lớn hơn hoặc bằng Từ ngày.";
-    }
-    return null;
-  }, [draftFrom, draftTo]);
+  const topDefectsQuery = useQuery({
+    queryKey: [
+      "dashboard",
+      "top-defects",
+      dashboardQuery.data?.period.from_date,
+      dashboardQuery.data?.period.to_date,
+    ],
+    queryFn: () =>
+      http.get<{ by_defect?: Array<{ defect: unknown; total: unknown }> }>(
+        API_ENDPOINTS.REPORTS_WARRANTY_DEFECTS,
+        {
+          params: {
+            from_date: dashboardQuery.data?.period.from_date,
+            to_date: dashboardQuery.data?.period.to_date,
+          },
+        },
+      ),
+    enabled: canViewReport && Boolean(dashboardQuery.data),
+    staleTime: 60_000,
+  });
+  const topDefects = (topDefectsQuery.data?.by_defect ?? [])
+    .map((row) => ({
+      label: String(row.defect ?? ""),
+      value: Number(row.total ?? 0),
+    }))
+    .filter((row) => row.label && row.value > 0);
 
   const flowMetrics = useMemo<FlowMetric[]>(() => {
     if (!dashboardQuery.data) return [];
@@ -256,11 +310,6 @@ export default function DashboardPage() {
     ];
   }, [dashboardQuery.data]);
 
-  const maxFlowValue = Math.max(
-    1,
-    ...flowMetrics.map((metric) => Math.abs(metric.value)),
-  );
-
   const flowChartLabel = useMemo(() => {
     if (!dashboardQuery.data) return "";
     const series = flowMetrics
@@ -269,23 +318,13 @@ export default function DashboardPage() {
     return `Biểu đồ luồng kho từ ${formatDate(dashboardQuery.data.period.from_date)} đến ${formatDate(dashboardQuery.data.period.to_date)}: ${series}`;
   }, [dashboardQuery.data, flowMetrics]);
 
-  const applyFilter = () => {
-    if (filterError) return;
-    setAppliedQuery(
-      draftFrom && draftTo ? { from_date: draftFrom, to_date: draftTo } : {},
-    );
-  };
-
-  const resetFilter = () => {
-    setDraftFrom("");
-    setDraftTo("");
-    setDatesInitialized(false);
-    setAppliedQuery({});
-  };
-
   const status = getHttpStatus(dashboardQuery.error);
   const data = dashboardQuery.data;
   const empty = data ? isDashboardEmpty(data) : false;
+  // ?? [] phòng thủ cho response cache cũ (client) từ trước khi field này tồn
+  // tại — kiểu DashboardKPI khai daily là bắt buộc, nhưng dữ liệu cache cũ có
+  // thể chưa có field này.
+  const dailyPoints = data?.daily ?? [];
   const warrantyEntries = data
     ? Object.entries(data.warranty_cases_by_status).sort(([a], [b]) =>
         a.localeCompare(b),
@@ -312,53 +351,31 @@ export default function DashboardPage() {
 
           <Stack
             direction="row"
-            spacing={2}
-            sx={{ mt: 2.5, flexWrap: "wrap", alignItems: "flex-start" }}
+            spacing={1}
+            role="group"
+            aria-label="Chọn kỳ xem nhanh"
+            sx={{ mt: 2.5, flexWrap: "wrap" }}
           >
-            <TextField
-              label="Từ ngày"
-              type="date"
-              value={draftFrom}
-              onChange={(event) => setDraftFrom(event.target.value)}
-              disabled={dashboardQuery.isFetching || !canViewReport}
-              helperText="Định dạng: ngày/tháng/năm"
-              slotProps={{ inputLabel: { shrink: true } }}
-            />
-            <TextField
-              label="Đến ngày"
-              type="date"
-              value={draftTo}
-              onChange={(event) => setDraftTo(event.target.value)}
-              disabled={dashboardQuery.isFetching || !canViewReport}
-              helperText="Định dạng: ngày/tháng/năm"
-              slotProps={{ inputLabel: { shrink: true } }}
-            />
-            <Stack direction="row" spacing={1} sx={{ mt: "8px" }}>
+            {DASHBOARD_PERIOD_PRESETS.map((option) => (
               <Button
-                variant="contained"
-                onClick={applyFilter}
-                disabled={
-                  Boolean(filterError) ||
-                  dashboardQuery.isFetching ||
-                  !canViewReport
-                }
+                key={option.value}
+                variant={preset === option.value ? "contained" : "outlined"}
+                onClick={() => setPreset(option.value)}
+                disabled={!canViewReport}
               >
-                {dashboardQuery.isFetching ? "Đang tải…" : "Áp dụng"}
+                {option.label}
               </Button>
-              <Button
-                variant="outlined"
-                onClick={resetFilter}
-                disabled={dashboardQuery.isFetching || !canViewReport}
+            ))}
+            {dashboardQuery.isFetching ? (
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ alignSelf: "center", ml: 1 }}
               >
-                Đặt lại
-              </Button>
-            </Stack>
+                Đang tải…
+              </Typography>
+            ) : null}
           </Stack>
-          {filterError ? (
-            <Alert severity="error" sx={{ mt: 2 }}>
-              {filterError}
-            </Alert>
-          ) : null}
           <Typography
             variant="caption"
             color="text.secondary"
@@ -370,8 +387,8 @@ export default function DashboardPage() {
               borderColor: "divider",
             }}
           >
-            Dữ liệu được tổng hợp theo múi giờ Việt Nam. Khi không chọn khoảng
-            ngày, hệ thống hiển thị 30 ngày gần nhất.
+            Dữ liệu được tổng hợp theo múi giờ Việt Nam. Cần xem chi tiết theo
+            ngày/tháng/khoảng ngày tuỳ ý — vào mục Báo cáo.
           </Typography>
         </Paper>
 
@@ -407,15 +424,13 @@ export default function DashboardPage() {
                 : "Hệ thống không hiển thị dữ liệu cũ khi việc tải dữ liệu thất bại."
             }
             action={
-              <Button
-                size="small"
-                variant="outlined"
-                color="error"
+              <ActionButton
+                kind="refresh"
                 onClick={() => dashboardQuery.refetch()}
                 disabled={dashboardQuery.isFetching}
               >
                 Thử lại
-              </Button>
+              </ActionButton>
             }
           />
         ) : null}
@@ -437,18 +452,30 @@ export default function DashboardPage() {
                   <Typography variant="h6" id="dashboard-kpi-title">
                     Chỉ số vận hành
                   </Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ display: "block" }}
+                  >
                     Kỳ thống kê: {formatDate(data.period.from_date)} →{" "}
                     {formatDate(data.period.to_date)}
                   </Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ display: "block" }}
+                  >
                     Phạm vi dữ liệu:{" "}
                     {data.data_scope === "GLOBAL"
                       ? "Toàn hệ thống"
                       : `Theo ${data.scope_warehouse_ids?.length ?? 0} kho bạn được phân quyền`}
                   </Typography>
                 </Box>
-                <Chip label="Dữ liệu hệ thống" size="small" variant="outlined" />
+                <Chip
+                  label="Dữ liệu hệ thống"
+                  size="small"
+                  variant="outlined"
+                />
               </Box>
 
               <Box className="hn-dashboard-kpi-grid">
@@ -456,26 +483,36 @@ export default function DashboardPage() {
                   label="Tồn khả dụng"
                   value={data.available_qty}
                   note="Số lượng hiện có thể sử dụng"
+                  icon={<StockOutlined />}
+                  color={CHART_COLORS.primary}
                 />
                 <DashboardMetricCard
                   label="Nhập kho"
                   value={data.receipt_qty}
                   note="Tổng số lượng đã ghi nhận nhập trong kỳ"
+                  icon={<ImportOutlined />}
+                  color={CHART_COLORS.success}
                 />
                 <DashboardMetricCard
                   label="Xuất kho"
                   value={data.issue_qty}
                   note="Tổng số lượng đã ghi nhận xuất trong kỳ"
+                  icon={<ExportOutlined />}
+                  color={CHART_COLORS.warning}
                 />
                 <DashboardMetricCard
                   label="Xuất linh kiện"
                   value={data.component_issue_qty}
                   note="Tổng linh kiện đã xuất trong kỳ"
+                  icon={<ToolOutlined />}
+                  color={CHART_COLORS.info}
                 />
                 <DashboardMetricCard
                   label="Điều chỉnh tồn (ròng)"
                   value={data.reversal_net}
                   note="Chênh lệch tăng/giảm tồn do điều chỉnh trong kỳ"
+                  icon={<SwapOutlined />}
+                  color={CHART_COLORS.violet}
                 />
               </Box>
             </Box>
@@ -496,37 +533,25 @@ export default function DashboardPage() {
                   <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
                     Biểu đồ luồng kho trong kỳ
                   </Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ display: "block" }}
+                  >
                     So sánh quy mô nhập, xuất, xuất linh kiện và điều chỉnh tồn.
                   </Typography>
-                  <Box
-                    role="img"
-                    aria-label={flowChartLabel}
-                    sx={{ display: "grid", gap: 1.5, mt: 2 }}
-                  >
-                    {flowMetrics.map((metric) => (
-                      <Box
-                        key={metric.key}
-                        sx={{
-                          display: "grid",
-                          gridTemplateColumns: "minmax(0, 130px) minmax(0, 1fr) auto",
-                          gap: 1.25,
-                          alignItems: "center",
-                        }}
-                      >
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                          {metric.label}
-                        </Typography>
-                        <LinearProgress
-                          variant="determinate"
-                          value={(Math.abs(metric.value) / maxFlowValue) * 100}
-                          sx={{ height: 10, borderRadius: 999 }}
-                        />
-                        <Typography sx={{ fontWeight: 700 }}>
-                          {formatNumber(metric.value)}
-                        </Typography>
-                      </Box>
-                    ))}
+                  <Box role="img" aria-label={flowChartLabel} sx={{ mt: 2 }}>
+                    <BarChart
+                      categories={flowMetrics.map((metric) => metric.label)}
+                      series={[
+                        {
+                          name: "Giá trị",
+                          data: flowMetrics.map((metric) => metric.value),
+                        },
+                      ]}
+                      distributed
+                      valueFormatter={formatNumber}
+                    />
                   </Box>
                 </Card>
 
@@ -534,7 +559,11 @@ export default function DashboardPage() {
                   <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
                     Bảo hành theo trạng thái
                   </Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ display: "block" }}
+                  >
                     Tổng hợp các ca bảo hành hiện có trong hệ thống.
                   </Typography>
                   {data.data_scope === "WAREHOUSE_SCOPED" ? (
@@ -555,38 +584,68 @@ export default function DashboardPage() {
                     </Box>
                   ) : null}
                   {warrantyEntries.length === 0 ? (
-                    <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ mt: 2 }}
+                    >
                       Chưa có ca bảo hành.
                     </Typography>
                   ) : (
-                    <Stack spacing={1} sx={{ mt: 2 }}>
-                      {warrantyEntries.map(([warrantyStatus, count]) => (
-                        <Stack
-                          key={warrantyStatus}
-                          direction="row"
-                          sx={{
-                            justifyContent: "space-between",
-                            borderBottom: "1px solid",
-                            borderColor: "divider",
-                            pb: 1,
-                          }}
-                        >
-                          <Typography
-                            variant="body2"
+                    <Box
+                      sx={{
+                        display: "grid",
+                        gridTemplateColumns: { xs: "1fr", sm: "1fr auto" },
+                        gap: 2,
+                        alignItems: "center",
+                        mt: 2,
+                      }}
+                    >
+                      <Stack spacing={1}>
+                        {warrantyEntries.map(([warrantyStatus, count]) => (
+                          <Stack
+                            key={warrantyStatus}
+                            direction="row"
                             sx={{
-                              textTransform: "lowercase",
-                              "&::first-letter": { textTransform: "uppercase" },
+                              justifyContent: "space-between",
+                              borderBottom: "1px solid",
+                              borderColor: "divider",
+                              pb: 1,
                             }}
                           >
-                            {WARRANTY_STATUS_LABELS[warrantyStatus] ??
-                              warrantyStatus.replaceAll("_", " ")}
-                          </Typography>
-                          <Typography sx={{ fontWeight: 700 }}>
-                            {formatNumber(count)}
-                          </Typography>
-                        </Stack>
-                      ))}
-                    </Stack>
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                textTransform: "lowercase",
+                                "&::first-letter": {
+                                  textTransform: "uppercase",
+                                },
+                              }}
+                            >
+                              {WARRANTY_STATUS_LABELS[warrantyStatus] ??
+                                warrantyStatus.replaceAll("_", " ")}
+                            </Typography>
+                            <Typography sx={{ fontWeight: 700 }}>
+                              {formatNumber(count)}
+                            </Typography>
+                          </Stack>
+                        ))}
+                      </Stack>
+                      <Box sx={{ width: { xs: "100%", sm: 220 } }}>
+                        <DonutChart
+                          items={warrantyEntries.map(
+                            ([warrantyStatus, count]) => ({
+                              label:
+                                WARRANTY_STATUS_LABELS[warrantyStatus] ??
+                                warrantyStatus.replaceAll("_", " "),
+                              value: count,
+                            }),
+                          )}
+                          centerLabel="Tổng ca"
+                          valueFormatter={formatNumber}
+                        />
+                      </Box>
+                    </Box>
                   )}
                 </Card>
 
@@ -594,16 +653,184 @@ export default function DashboardPage() {
                   <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
                     Đối soát tồn kho
                   </Typography>
-                  <Typography sx={{ display: "block", mt: 1.5, mb: 0.5, fontSize: 24, fontWeight: 700 }}>
+                  <Typography
+                    sx={{
+                      display: "block",
+                      mt: 1.5,
+                      mb: 0.5,
+                      fontSize: 24,
+                      fontWeight: 700,
+                    }}
+                  >
                     {formatNumber(data.reconciliation_warning_count)} cảnh báo
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    Số trường hợp chênh lệch cần kiểm tra tại thời điểm hiện tại.
+                    Số trường hợp chênh lệch cần kiểm tra tại thời điểm hiện
+                    tại.
                   </Typography>
                 </Card>
+
+                <Card
+                  variant="outlined"
+                  onClick={() => navigate(ROUTES.MASTER_DATA)}
+                  sx={{ p: 2, borderRadius: 2, cursor: "pointer" }}
+                >
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                    Tồn dưới định mức
+                  </Typography>
+                  <Typography
+                    sx={{
+                      display: "block",
+                      mt: 1.5,
+                      mb: 0.5,
+                      fontSize: 24,
+                      fontWeight: 700,
+                    }}
+                  >
+                    {formatNumber(data.below_min_stock_count)} SKU
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    SKU có định mức tối thiểu và tổng tồn khả dụng (mọi kho)
+                    thấp hơn định mức.
+                  </Typography>
+                </Card>
+
+                <Card
+                  variant="outlined"
+                  onClick={() => navigate(ROUTES.MASTER_DATA)}
+                  sx={{ p: 2, borderRadius: 2, cursor: "pointer" }}
+                >
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                    Tồn vượt định mức
+                  </Typography>
+                  <Typography
+                    sx={{
+                      display: "block",
+                      mt: 1.5,
+                      mb: 0.5,
+                      fontSize: 24,
+                      fontWeight: 700,
+                    }}
+                  >
+                    {formatNumber(data.above_max_stock_count)} SKU
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    SKU có định mức tối đa và tổng tồn khả dụng (mọi kho) cao
+                    hơn định mức.
+                  </Typography>
+                </Card>
+
+                {dailyPoints.length > 0 ? (
+                  <Card
+                    variant="outlined"
+                    sx={{ p: 2, borderRadius: 2, gridColumn: "1 / -1" }}
+                  >
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                      Nhập / Xuất theo ngày
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ display: "block" }}
+                    >
+                      So sánh lượng hàng nhập và xuất theo từng ngày trong kỳ
+                      đang xem.
+                    </Typography>
+                    <Box sx={{ mt: 1.5 }}>
+                      <BarChart
+                        categories={dailyPoints.map((point) =>
+                          formatDate(point.date),
+                        )}
+                        series={[
+                          {
+                            name: "Nhập",
+                            data: dailyPoints.map((point) => point.receipt_qty),
+                            color: CHART_COLORS.primary,
+                          },
+                          {
+                            name: "Xuất",
+                            data: dailyPoints.map((point) => point.issue_qty),
+                            color: CHART_COLORS.warning,
+                          },
+                        ]}
+                        valueFormatter={formatNumber}
+                      />
+                    </Box>
+                  </Card>
+                ) : null}
+
+                {dailyPoints.length > 0 ? (
+                  <Card
+                    variant="outlined"
+                    sx={{ p: 2, borderRadius: 2, gridColumn: "1 / -1" }}
+                  >
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                      Xu hướng bảo hành
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ display: "block" }}
+                    >
+                      Số ca bảo hành mới tiếp nhận theo từng ngày trong kỳ đang
+                      xem.
+                    </Typography>
+                    <Box sx={{ mt: 1.5 }}>
+                      <AreaChart
+                        categories={dailyPoints.map((point) =>
+                          formatDate(point.date),
+                        )}
+                        data={dailyPoints.map(
+                          (point) => point.warranty_received_count,
+                        )}
+                        name="Ca tiếp nhận"
+                        color={CHART_COLORS.danger}
+                        valueFormatter={formatNumber}
+                      />
+                    </Box>
+                  </Card>
+                ) : null}
+
+                {topDefects.length > 0 ? (
+                  <Card
+                    variant="outlined"
+                    sx={{ p: 2, borderRadius: 2, gridColumn: "1 / -1" }}
+                  >
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                      Top bệnh/lỗi thường gặp
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ display: "block" }}
+                    >
+                      Số ca bảo hành theo từng bệnh/lỗi trong kỳ đang xem.
+                    </Typography>
+                    <Box sx={{ mt: 1.5 }}>
+                      <HorizontalBarChart
+                        items={topDefects}
+                        limit={8}
+                        valueFormatter={formatNumber}
+                      />
+                    </Box>
+                  </Card>
+                ) : null}
               </Box>
             )}
           </>
+        ) : null}
+
+        {data ? (
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+              gap: 2,
+            }}
+          >
+            <DashboardActionItems />
+            <DashboardRecentActivity />
+          </Box>
         ) : null}
 
         <Box component="section" aria-labelledby="workflow-title">
@@ -618,7 +845,12 @@ export default function DashboardPage() {
                 spacing={1}
                 sx={{ flexWrap: "wrap", alignItems: "center" }}
               >
-                <Chip label={lane.label} size="small" color="primary" variant="outlined" />
+                <Chip
+                  label={lane.label}
+                  size="small"
+                  color="primary"
+                  variant="outlined"
+                />
                 {lane.nodes.map((node, index) => (
                   <Stack
                     key={`${lane.label}-${node.label}`}
@@ -627,7 +859,11 @@ export default function DashboardPage() {
                     sx={{ alignItems: "center" }}
                   >
                     {index > 0 ? (
-                      <Typography component="span" aria-hidden="true" color="text.secondary">
+                      <Typography
+                        component="span"
+                        aria-hidden="true"
+                        color="text.secondary"
+                      >
                         →
                       </Typography>
                     ) : null}

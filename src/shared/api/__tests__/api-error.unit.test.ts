@@ -19,20 +19,23 @@ describe("api-error.unit", () => {
     expect(getApiErrorMessage(error)).toBe("Lỗi từ BE");
   });
 
-  it("should extract error_code", () => {
+  // `error_code`/`error.code` là mã kỹ thuật để so sánh bằng code, không phải
+  // câu cho người dùng đọc — xem chú thích trong getApiErrorMessage. Hai test
+  // dưới đây từng kỳ vọng ngược lại (lộ mã thô ra UI) và đã đỏ từ trước.
+  it("should not leak error_code as the user-facing message", () => {
     const error = createMockAxiosError({
       status: 400,
       data: { error_code: "VALIDATION_ERROR" },
     });
-    expect(getApiErrorMessage(error)).toBe("VALIDATION_ERROR");
+    expect(getApiErrorMessage(error)).toBe("Máy chủ trả về lỗi (400).");
   });
 
-  it("should extract nested error.code", () => {
+  it("should not leak nested error.code as the user-facing message", () => {
     const error = createMockAxiosError({
       status: 500,
       data: { error: { code: "INTERNAL_ERROR" } },
     });
-    expect(getApiErrorMessage(error)).toBe("INTERNAL_ERROR");
+    expect(getApiErrorMessage(error)).toBe("Lỗi hệ thống");
   });
 
   it("should extract field errors", () => {
@@ -45,8 +48,10 @@ describe("api-error.unit", () => {
         },
       },
     });
+    // Không kèm tên trường thô (`email:`) — message của BE đã tự mở đầu bằng
+    // nhãn tiếng Việt của chính trường đó.
     expect(getApiErrorMessage(error)).toBe(
-      "email: Email không hợp lệ; password: Mật khẩu quá ngắn",
+      "Email không hợp lệ Mật khẩu quá ngắn",
     );
   });
 

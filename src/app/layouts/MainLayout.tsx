@@ -1,6 +1,5 @@
 import { lazy, Suspense, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
-import { MenuFoldOutlined, MenuUnfoldOutlined } from "@/shared/components/icons";
 import { SideNav } from "@/app/layouts/SideNav";
 import { UserMenu } from "@/app/layouts/UserMenu";
 import { AppBreadcrumb } from "@/app/layouts/AppBreadcrumb";
@@ -99,7 +98,7 @@ const MVP_SCREEN_META: Record<string, ScreenMeta> = {
       "Danh sách người dùng, vai trò, phạm vi dữ liệu và trạng thái.",
   },
   "MST-01": {
-    title: "Danh sách SKU / Danh mục sản phẩm",
+    title: "Danh sách SKU",
     description: "Danh sách SKU và thao tác chỉnh sửa dữ liệu sản phẩm.",
   },
   "AGY-01": {
@@ -229,7 +228,7 @@ const ROUTE_META: Record<string, ScreenMeta> = {
       "Quản trị mẫu vai trò và quyền sử dụng theo quy tắc phân quyền hiện hành.",
   },
   [ROUTES.AUDIT_LOGS]: {
-    title: "Nhật ký kiểm tra",
+    title: "Nhật ký hệ thống",
     description: "Theo dõi lịch sử thao tác và thay đổi trong hệ thống.",
   },
   [ROUTES.PROFILE]: {
@@ -404,21 +403,17 @@ export function MainLayout() {
       className={`hn-mvp-app${sidebarCollapsed ? " is-sidebar-collapsed" : ""}`}
     >
       <aside className="hn-mvp-aside">
-        <SideNav collapsed={sidebarCollapsed} onExpand={expandSidebar} />
+        <SideNav
+          collapsed={sidebarCollapsed}
+          onExpand={expandSidebar}
+          onToggle={toggleSidebar}
+        />
       </aside>
       <main className="hn-mvp-main">
         <header className="hn-mvp-header">
           <div className="hn-mvp-header-left">
-            <button
-              type="button"
-              className="hn-mvp-sidebar-toggle"
-              onClick={toggleSidebar}
-              aria-label={sidebarCollapsed ? "Hiện menu" : "Ẩn menu"}
-              aria-pressed={sidebarCollapsed}
-              title={sidebarCollapsed ? "Hiện menu" : "Ẩn menu"}
-            >
-              {sidebarCollapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-            </button>
+            {/* Nút đóng/mở thanh bên đã chuyển vào trong sidebar (cạnh "Hoa Nam WMS")
+                nên header chỉ còn tiêu đề màn hình. */}
             <div className="hn-mvp-title">
               <h2>{meta.title}</h2>
               <p>{meta.description}</p>
@@ -431,7 +426,21 @@ export function MainLayout() {
         </header>
         <div className="hn-mvp-content">
           <AppBreadcrumb />
-          <section className="hn-mvp-screen">
+          {/*
+           * key đổi theo màn hình đang xem → React dựng lại node → animation CSS
+           * .hn-page-transition (hn-motion.css) chạy lại, nội dung route mới hiện
+           * lên mềm thay vì "chớp" một cái. CỐ Ý không bọc thêm thẻ div: lớp
+           * hn-wms-page-normalize.css bám vào các selector ".hn-mvp-screen > ..."
+           * nên thêm 1 tầng DOM là vỡ bố cục toàn bộ trang nghiệp vụ.
+           * CỐ Ý không đưa location.search vào key: 7 trang đang giữ bộ lọc/
+           * phân trang trên query string, key đổi theo search sẽ remount và
+           * mất state mỗi lần lọc. Chỉ pathname + tham số ?screen= (vốn dùng để
+           * đổi hẳn màn MVP) mới tính là "đổi màn hình".
+           */}
+          <section
+            key={`${location.pathname}|${requestedScreen ?? ""}`}
+            className="hn-mvp-screen hn-page-transition"
+          >
             {sourceScreen ? (
               <Suspense fallback={<Loading />}>
                 {renderMvpScreen(sourceScreen, requestedScreen)}

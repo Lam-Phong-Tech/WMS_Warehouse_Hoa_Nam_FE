@@ -60,6 +60,10 @@ export interface SkuRecord {
   published_to_app?: boolean;
   /** ERD bảng 16 skus.version — dùng cho If-Match. */
   version: number;
+  /** GĐ1 Dashboard "tồn dưới/vượt định mức" — theo SKU, toàn hệ thống (không
+   * theo kho). null/undefined = chưa đặt định mức, không tính cảnh báo. */
+  min_stock?: number | null;
+  max_stock?: number | null;
 }
 
 export interface SkuPayload {
@@ -77,6 +81,8 @@ export interface SkuPayload {
   is_serial_tracked: boolean;
   status: MasterStatus;
   published_to_app?: boolean;
+  min_stock?: number | null;
+  max_stock?: number | null;
 }
 
 export interface AgencyRecord {

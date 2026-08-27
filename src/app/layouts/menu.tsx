@@ -48,21 +48,9 @@ export const MENU: AppMenuItem[] = [
   },
   {
     key: "foundation",
-    label: "Hệ thống & danh mục",
+    label: "Danh mục",
     icon: <SettingOutlined />,
     children: [
-      {
-        key: ROUTES.IAM_USERS,
-        label: "Người dùng",
-        icon: <TeamOutlined />,
-        permission: ROUTE_PERMISSIONS[ROUTES.IAM_USERS],
-      },
-      {
-        key: ROUTES.IAM_ROLES,
-        label: "Vai trò & phân quyền",
-        icon: <SafetyCertificateOutlined />,
-        permission: ROUTE_PERMISSIONS[ROUTES.IAM_ROLES],
-      },
       {
         key: ROUTES.MASTER_DATA,
         label: "SKU / Danh mục sản phẩm",
@@ -74,12 +62,6 @@ export const MENU: AppMenuItem[] = [
         label: "Danh mục sản phẩm",
         icon: <AppstoreOutlined />,
         permission: ROUTE_PERMISSIONS[ROUTES.CATALOG_MASTER],
-      },
-      {
-        key: ROUTES.WAREHOUSE_CONFIG,
-        label: "Cấu hình kho",
-        icon: <HomeOutlined />,
-        permission: ROUTE_PERMISSIONS[ROUTES.WAREHOUSE_CONFIG],
       },
       {
         key: ROUTES.AGENCIES,
@@ -122,7 +104,7 @@ export const MENU: AppMenuItem[] = [
   },
   {
     key: "outbound-group",
-    label: "03 · Xuất kho",
+    label: "Xuất kho",
     icon: <StockOutlined />,
     children: [
       {
@@ -135,7 +117,7 @@ export const MENU: AppMenuItem[] = [
   },
   {
     key: "warranty-group",
-    label: "04 · Bảo hành & linh kiện",
+    label: "Bảo hành & linh kiện",
     icon: <ToolOutlined />,
     children: [
       {
@@ -177,8 +159,36 @@ export const MENU: AppMenuItem[] = [
     icon: <SettingOutlined />,
     children: [
       {
+        key: ROUTES.IAM_USERS,
+        label: "Người dùng",
+        icon: <TeamOutlined />,
+        permission: ROUTE_PERMISSIONS[ROUTES.IAM_USERS],
+      },
+      {
+        key: ROUTES.IAM_ROLES,
+        label: "Vai trò & phân quyền",
+        icon: <SafetyCertificateOutlined />,
+        permission: ROUTE_PERMISSIONS[ROUTES.IAM_ROLES],
+      },
+      {
+        key: ROUTES.WAREHOUSE_CONFIG,
+        label: "Cấu hình kho",
+        icon: <HomeOutlined />,
+        permission: ROUTE_PERMISSIONS[ROUTES.WAREHOUSE_CONFIG],
+      },
+      {
+        // SCR-PV-ADM-01 trước đây có route + gate quyền nhưng KHÔNG có lối vào nào
+        // trong menu: người được cấp pv.master.manage/pv.publish chỉ tới được màn
+        // này nếu tự gõ URL. Phân quyền đúng mà không có cửa vào thì trên thực tế
+        // vẫn là không dùng được.
+        key: ROUTES.PV_ADMIN,
+        label: "Quản trị App PV",
+        icon: <AppstoreOutlined />,
+        permission: ROUTE_PERMISSIONS[ROUTES.PV_ADMIN],
+      },
+      {
         key: ROUTES.AUDIT_LOGS,
-        label: "Nhật ký kiểm tra",
+        label: "Nhật ký hệ thống",
         icon: <AuditOutlined />,
         permission: ROUTE_PERMISSIONS[ROUTES.AUDIT_LOGS],
       },

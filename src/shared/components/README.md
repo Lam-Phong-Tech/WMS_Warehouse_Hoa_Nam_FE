@@ -9,8 +9,8 @@ Bộ component dùng chung cho mọi module. **Không chứa logic nghiệp vụ
 Luôn import qua **barrel**, không trỏ thẳng vào từng file — tránh đường dẫn dài và copy UI vào page:
 
 ```tsx
-import { PageHeader, DataTable, StatusBadge } from '@/shared/components';
-import { FormInput, FormSelect } from '@/shared/components/forms';
+import { PageHeader, DataTable, StatusBadge } from "@/shared/components";
+import { FormInput, FormSelect } from "@/shared/components/forms";
 ```
 
 - `@/shared/components` — mọi component + type props (`export *` cả nhóm `forms`).
@@ -60,7 +60,7 @@ Tất cả shared component nên tuân theo một interface props chung để d�
 Example import:
 
 ```tsx
-import { CommonProps } from '@/shared/components';
+import { CommonProps } from "@/shared/components";
 
 type MyButtonProps = CommonProps & { onClick?: () => void };
 ```

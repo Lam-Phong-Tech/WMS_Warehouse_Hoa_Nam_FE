@@ -10,9 +10,9 @@
  * context (useDataScope) nằm ở entry point riêng: `@/lib/permissions`.
  */
 export { PermissionGuard } from "./PermissionGuard";
-export { ActionButton } from "./ActionButton";
+export { ActionButton } from "@/shared/components/actions";
 export type { PermissionGuardProps } from "./PermissionGuard";
-export type { ActionButtonProps } from "./ActionButton";
+export type { ActionButtonProps } from "@/shared/components/actions";
 
 // Re-export row-level scope helpers
 export {

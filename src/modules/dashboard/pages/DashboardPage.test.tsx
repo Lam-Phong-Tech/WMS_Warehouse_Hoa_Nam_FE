@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import dayjs from "dayjs";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { fetchDashboardKPI } from "../services/dashboardService";
 import type { DashboardKPI } from "../types";
@@ -9,6 +10,45 @@ import DashboardPage from "./DashboardPage";
 
 vi.mock("../services/dashboardService", () => ({
   fetchDashboardKPI: vi.fn(),
+}));
+
+// jsdom không đo được kích thước SVG (getBBox/getComputedTextLength) nên
+// ApexCharts render với width:0 và không có data-label nào xuất hiện trong
+// DOM — chart vẫn hoạt động đúng ở trình duyệt thật, chỉ riêng jsdom là
+// không vẽ được. Stub tối thiểu này chỉ render lại các giá trị số (series)
+// thành text để giữ nguyên assertion cũ (getByText("300")...), không mock
+// toàn cục để các test khác vẫn dùng ApexCharts thật nếu cần. Chỉ render khi
+// dataLabels.enabled không phải false, đúng với việc DonutChart tắt
+// dataLabels (giá trị thật chỉ hiện trong tooltip khi hover) — tránh trùng
+// text với danh sách trạng thái bảo hành vẫn hiển thị song song.
+vi.mock("react-apexcharts", () => ({
+  default: ({
+    series,
+    options,
+  }: {
+    series: unknown;
+    options?: { dataLabels?: { enabled?: boolean } };
+  }) => {
+    if (options?.dataLabels?.enabled === false) {
+      return <div data-testid="apex-chart-stub" />;
+    }
+    const values = Array.isArray(series)
+      ? series.flatMap((entry) =>
+          typeof entry === "number"
+            ? [entry]
+            : Array.isArray((entry as { data?: unknown[] })?.data)
+              ? (entry as { data: unknown[] }).data
+              : [],
+        )
+      : [];
+    return (
+      <div data-testid="apex-chart-stub">
+        {values.map((value, index) => (
+          <span key={index}>{String(value)}</span>
+        ))}
+      </div>
+    );
+  },
 }));
 
 const mockedFetchDashboardKPI = vi.mocked(fetchDashboardKPI);
@@ -25,6 +65,24 @@ const populatedDashboard: DashboardKPI = {
   warranty_cases_by_status: { CHECKING: 3, COMPLETED: 7 },
   reconciliation_warning_count: 1,
   reconciliation_warnings: [{ product_id: "p-1" }],
+  below_min_stock_count: 0,
+  below_min_stock_skus: [],
+  above_max_stock_count: 0,
+  above_max_stock_skus: [],
+  daily: [
+    {
+      date: "2026-08-17",
+      receipt_qty: 150,
+      issue_qty: 60,
+      warranty_received_count: 1,
+    },
+    {
+      date: "2026-08-18",
+      receipt_qty: 150,
+      issue_qty: 60,
+      warranty_received_count: 2,
+    },
+  ],
 };
 
 const emptyDashboard: DashboardKPI = {
@@ -39,6 +97,11 @@ const emptyDashboard: DashboardKPI = {
   warranty_cases_by_status: {},
   reconciliation_warning_count: 0,
   reconciliation_warnings: [],
+  below_min_stock_count: 0,
+  below_min_stock_skus: [],
+  above_max_stock_count: 0,
+  above_max_stock_skus: [],
+  daily: [],
 };
 
 function renderDashboard() {
@@ -97,7 +160,13 @@ describe("DashboardPage / WWHN-327", () => {
     expect(within(chartRegion).getByText("3")).toBeInTheDocument();
     expect(within(chartRegion).getByText("7")).toBeInTheDocument();
     expect(within(chartRegion).getByText("1 cảnh báo")).toBeInTheDocument();
-    expect(mockedFetchDashboardKPI).toHaveBeenCalledWith({});
+    // BA (2026-08-27): Dashboard mặc định preset "Hôm nay", không còn gọi
+    // trống {} để BE tự áp 30 ngày gần nhất — luôn gửi kèm from_date/to_date.
+    const today = dayjs().format("YYYY-MM-DD");
+    expect(mockedFetchDashboardKPI).toHaveBeenCalledWith({
+      from_date: today,
+      to_date: today,
+    });
   });
 
   it("renders an explicit empty state instead of fabricated chart data", async () => {
@@ -176,7 +245,9 @@ describe("DashboardPage / WWHN-327", () => {
     renderDashboard();
 
     const exception = await screen.findByRole("note");
-    expect(exception).toHaveTextContent(/bảo hành được tổng hợp toàn hệ thống/i);
+    expect(exception).toHaveTextContent(
+      /bảo hành được tổng hợp toàn hệ thống/i,
+    );
     expect(exception).toHaveTextContent(/không giới hạn theo kho/i);
   });
 

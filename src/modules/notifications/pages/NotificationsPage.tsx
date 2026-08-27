@@ -1,8 +1,7 @@
 import { useState } from "react";
-import { Button, Card, List, Typography } from "antd";
-import { CheckOutlined } from "@/shared/components/icons";
+import { Card, List, Typography } from "antd";
 import { PageHeader, EmptyState, LoadingState } from "@/shared/components";
-import { ACTION_ICON_COLORS } from "@/shared/theme/actionIconColors";
+import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { StatusTag } from "@/shared/components/data-display/StatusTag";
 import {
   useMarkAllNotificationsRead,
@@ -13,13 +12,17 @@ import { useNotificationStore } from "@/shared/store/notification.store";
 import { NOTIFICATION_SEVERITY_COLOR } from "@/modules/notifications/constants/notification.constants";
 import { NOTIFICATION_SEVERITY_LABELS } from "@/shared/constants/business-labels";
 import { formatDateTime } from "@/shared/utils/format-date";
+import { NotificationDetailModal } from "@/modules/notifications/components/NotificationDetailModal";
+import type { NotificationItem } from "@/modules/notifications/types/notification.types";
+import { ActionButton } from "@/shared/components/actions";
 
 export default function NotificationsPage() {
   const [page, setPage] = useState(1);
   const perPage = 15;
   const unreadCount = useNotificationStore((s) => s.unreadCount);
+  const [selected, setSelected] = useState<NotificationItem | null>(null);
 
-  const { data, isLoading } = useNotificationsQuery({
+  const { data, isLoading, isError, error, refetch } = useNotificationsQuery({
     page,
     per_page: perPage,
   });
@@ -35,18 +38,24 @@ export default function NotificationsPage() {
         title="Thông báo"
         subtitle="Toàn bộ thông báo hệ thống liên quan tới bạn — nhập/xuất kho, bảo hành, tài khoản, bảo mật."
         extra={
-          <Button
-            icon={<CheckOutlined style={{ color: ACTION_ICON_COLORS.success }} />}
+          <ActionButton
+            kind="confirm"
             disabled={unreadCount === 0 || markAllRead.isPending}
             onClick={() => markAllRead.mutate()}
           >
             Đánh dấu tất cả đã đọc
-          </Button>
+          </ActionButton>
         }
       />
 
       <Card variant="borderless">
-        {isLoading && items.length === 0 ? (
+        {isError ? (
+          <ApiErrorAlert
+            error={error}
+            title="Không tải được thông báo"
+            onRetry={() => void refetch()}
+          />
+        ) : isLoading && items.length === 0 ? (
           <LoadingState tip="Đang tải thông báo..." minHeight={320} />
         ) : !isLoading && items.length === 0 ? (
           <EmptyState
@@ -68,10 +77,11 @@ export default function NotificationsPage() {
                 style={{
                   background: item.read_at ? "transparent" : "#f4f8ff",
                   padding: "12px 16px",
-                  cursor: item.read_at ? "default" : "pointer",
+                  cursor: "pointer",
                 }}
                 onClick={() => {
                   if (!item.read_at) markRead.mutate(item.id);
+                  setSelected(item);
                 }}
               >
                 <div style={{ width: "100%" }}>
@@ -104,6 +114,11 @@ export default function NotificationsPage() {
           />
         )}
       </Card>
+
+      <NotificationDetailModal
+        item={selected}
+        onClose={() => setSelected(null)}
+      />
     </div>
   );
 }

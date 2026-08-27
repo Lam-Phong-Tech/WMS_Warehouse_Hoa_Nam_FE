@@ -514,7 +514,8 @@ export async function issueItemPhysicalCode(
   const codeValue = request.code_value?.trim() || undefined;
   const serialNumber = request.serial_number?.trim() || undefined;
   const idempotencyKey = requireIdempotencyKeyHeader(
-    request.idempotencyKey ?? makeIdempotencyKey(`physical-code-issue-${skuId}`),
+    request.idempotencyKey ??
+      makeIdempotencyKey(`physical-code-issue-${skuId}`),
   )["Idempotency-Key"];
 
   const result = await http.post<unknown>(

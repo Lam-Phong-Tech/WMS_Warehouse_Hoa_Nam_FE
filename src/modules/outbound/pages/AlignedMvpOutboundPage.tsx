@@ -1,11 +1,9 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-import { useEffect, useState, type Key } from "react";
-import { Progress, Table, Tag, type TablePaginationConfig } from "antd";
-import { Button as MuiButton, MenuItem, Select, TextField, ThemeProvider } from "@mui/material";
+import { useEffect, useState } from "react";
+import dayjs from "dayjs";
+import { Progress, Tag } from "antd";
+import { Box, MenuItem, Select, TextField, ThemeProvider } from "@mui/material";
 import { muiTheme } from "@/app/mui-theme";
-import { EyeOutlined, PlusOutlined, ScanOutlined } from "@/shared/components/icons";
-import type { ColumnsType } from "antd/es/table";
-import { ACTION_ICON_COLORS } from "@/shared/theme/actionIconColors";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
@@ -18,11 +16,19 @@ import {
   resolveApiPagination,
 } from "@/shared/components/mvp/mvp-pagination";
 import { useHasPermission } from "@/shared/components/permission";
+import { WMS_ACTION_PERMISSIONS } from "@/shared/constants/wms-permissions";
+import { mvpRowNumber } from "@/shared/components/mvp/MvpSelectionCell";
 import {
   OUTBOUND_STATUS_LABELS,
   businessLabel,
 } from "@/shared/constants/business-labels";
 import { useOverlayBackDismiss } from "@/shared/hooks/useOverlayBackDismiss";
+import { useRowSelection } from "@/shared/hooks/useRowSelection";
+import {
+  ResponsiveDataTable,
+  type ResponsiveTableColumn,
+} from "@/shared/components/data-display/ResponsiveDataTable";
+import { TopPagination } from "@/shared/components/data-display/TopPagination";
 import { AlignedOutboundDetailModal } from "@/modules/outbound/components/AlignedOutboundDetailModal";
 import { OutboundIntakeModal } from "@/modules/outbound/components/OutboundIntakeModal";
 import {
@@ -30,6 +36,7 @@ import {
   type OutboundDocumentRecord,
   type OutboundStatus,
 } from "@/modules/outbound/services/alignedOutboundService";
+import { ActionButton } from "@/shared/components/actions";
 
 const SEARCH_DEBOUNCE_MS = 250;
 
@@ -72,9 +79,15 @@ export default function AlignedMvpOutboundPage() {
   const [perPage, setPerPage] = useState(10);
   const [intakeOpen, setIntakeOpen] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
-  const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([]);
 
-  const canImport = can("outbound.import");
+  // BE mở nhóm yêu cầu xuất bằng OR: `outbound.request.import|outbound.import`,
+  // `outbound.request.manual_create|outbound.import`. Gate FE chỉ bằng
+  // `outbound.import` là chặt HƠN backend — WAREHOUSE_STAFF được cấp đủ bộ
+  // outbound.request.* nhưng KHÔNG có outbound.import, nên nút "Nhập yêu cầu
+  // xuất" bị ẩn mất dù API hoàn toàn cho phép. Khớp đúng bộ mã của route.
+  const canImport =
+    WMS_ACTION_PERMISSIONS.OUTBOUND_REQUEST_IMPORT.some(can) ||
+    WMS_ACTION_PERMISSIONS.OUTBOUND_REQUEST_MANUAL_CREATE.some(can);
   const canScan = can("outbound.scan");
 
   const listQuery = useQuery({
@@ -89,6 +102,7 @@ export default function AlignedMvpOutboundPage() {
   });
 
   const rows = listQuery.data?.data ?? [];
+  const rowSelection = useRowSelection(rows, (row) => row.id);
   const pagination = resolveApiPagination(listQuery.data?.meta, {
     page,
     pageSize: perPage,
@@ -127,139 +141,140 @@ export default function AlignedMvpOutboundPage() {
   };
   useOverlayBackDismiss(overlayOpen, closeOverlays, "OUT-01-overlay");
 
-  const columns: ColumnsType<OutboundDocumentRecord> = [
+  const columns: ResponsiveTableColumn<OutboundDocumentRecord>[] = [
     {
-      title: "STT",
       key: "stt",
-      width: 60,
-      fixed: "left",
-      render: (_: unknown, __: OutboundDocumentRecord, index: number) =>
-        (page - 1) * perPage + index + 1,
+      header: "STT",
+      align: "center",
+      width: 48,
+      hideOnMobile: true,
+      render: (row) => mvpRowNumber(page, perPage, rows.indexOf(row)),
     },
     {
-      title: "Phiếu xuất",
-      dataIndex: "code",
       key: "code",
+      header: "Phiếu xuất",
       width: 190,
-      fixed: "left",
-      render: (value: string, row) => <strong>{value || row.id}</strong>,
+      sortAccessor: (row) => row.code || row.id,
+      render: (row) => <strong>{row.code || row.id}</strong>,
     },
     {
-      title: "Yêu cầu xuất",
-      dataIndex: "outboundRequestId",
       key: "request",
+      header: "Yêu cầu xuất",
       width: 150,
-      render: (value: string | null | undefined) =>
-        value ? (
+      hideOnMobile: true,
+      sortAccessor: (row) => row.outboundRequestId ?? "",
+      render: (row) => {
+        const value = row.outboundRequestId;
+        return value ? (
           <span title={value}>
             {value.length > 12 ? `${value.slice(0, 8)}…` : value}
           </span>
         ) : (
           <Tag color="error">Thiếu yêu cầu xuất</Tag>
-        ),
+        );
+      },
     },
     {
-      title: "Người nhận",
-      dataIndex: "recipientName",
       key: "recipientName",
+      header: "Người nhận",
       width: 190,
+      sortAccessor: (row) => row.recipientName,
+      render: (row) => row.recipientName,
     },
     {
-      title: "Đối chiếu",
+      key: "date",
+      header: "Ngày tạo",
+      width: 150,
+      hideOnMobile: true,
+      sortType: "value",
+      sortAccessor: (row) => row.date || "",
+      render: (row) => {
+        if (!row.date) return "-";
+        const parsed = dayjs(row.date);
+        // Ngày-tháng-năm giờ theo cách đọc của người dùng Việt (22-09-2026 12:00),
+        // cùng chuẩn với cột Ngày tạo bên Danh sách phiếu nhập.
+        return parsed.isValid() ? parsed.format("DD-MM-YYYY HH:mm") : row.date;
+      },
+    },
+    {
+      key: "note",
+      header: "Ghi chú",
+      width: 200,
+      hideOnMobile: true,
+      sortAccessor: (row) => row.note || "",
+      render: (row) => row.note || "-",
+    },
+    {
       key: "match",
+      header: "Đối chiếu",
       width: 190,
-      render: (_, row) => {
+      sortType: "value",
+      sortAccessor: (row) =>
+        row.expected > 0 ? row.scanned / row.expected : 0,
+      render: (row) => {
         const percent =
           row.expected > 0
             ? Math.min(100, Math.round((row.scanned / row.expected) * 100))
             : 0;
         return (
-          <div style={{ minWidth: 150 }}>
+          // Bảng của ResponsiveDataTable rộng 100% và bóp cột khi tổng bề rộng
+          // vượt khung, nên nội dung ô PHẢI co lại theo cột. `minWidth` cứng ở
+          // đây từng làm thanh đối chiếu tràn sang đè lên cột "Trạng thái".
+          // Flex + minWidth:0 cho thanh co lại, số đếm giữ nguyên không xuống dòng.
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+              minWidth: 0,
+            }}
+          >
             <Progress
               percent={percent}
               size="small"
+              // Tắt chữ % có sẵn của antd: nó lặp lại thông tin của số đếm bên
+              // cạnh mà lại chiếm ~2.5em chiều ngang — chính phần thừa đó đẩy
+              // nội dung tràn khỏi ô.
+              showInfo={false}
               status={row.status === "POSTED" ? "success" : "normal"}
+              style={{ flex: 1, minWidth: 48, margin: 0, lineHeight: 1 }}
             />
-            <span style={{ fontSize: 12 }}>
-              {row.scanned} / {row.expected}
-            </span>
-          </div>
+            <Box
+              component="span"
+              sx={{ fontSize: 12, whiteSpace: "nowrap", flex: "none" }}
+            >
+              {row.scanned}/{row.expected}
+            </Box>
+          </Box>
         );
       },
     },
     {
-      title: "Nhãn đóng gói",
-      key: "label",
-      width: 180,
-      render: (_, row) => {
-        const printed = row.labelPrintedCount ?? 0;
-        if (printed >= 1) return <Tag color="success">Đã in</Tag>;
-        return row.status === "POSTED" ? (
-          <Tag color="warning">Chờ xử lý sau xuất kho</Tag>
-        ) : (
-          <Tag>Chưa tới bước nhãn</Tag>
-        );
-      },
-    },
-    {
-      title: "RFID",
-      key: "rfid",
-      width: 150,
-      render: (_, row) => (
-        <Tag
-          color={
-            row.rfidMappedCount && row.rfidMappedCount > 0 ? "blue" : "default"
-          }
-        >
-          Tùy chọn · {row.rfidMappedCount ?? 0}
-        </Tag>
-      ),
-    },
-    {
-      title: "Trạng thái",
-      dataIndex: "status",
       key: "status",
+      header: "Trạng thái",
       width: 170,
-      render: (value: OutboundStatus) => (
-        <Tag color={STATUS_COLOR[value]}>
-          {businessLabel(OUTBOUND_STATUS_LABELS, value, "Chưa xác định")}
+      sortType: "value",
+      sortAccessor: (row) => row.status,
+      render: (row) => (
+        <Tag color={STATUS_COLOR[row.status]}>
+          {businessLabel(OUTBOUND_STATUS_LABELS, row.status, "Chưa xác định")}
         </Tag>
       ),
-    },
-    {
-      title: "Cập nhật",
-      key: "updatedAt",
-      width: 170,
-      render: (_, row) => row.updatedAt ?? row.date ?? "-",
-    },
-    {
-      title: "Hành động",
-      key: "actions",
-      width: 130,
-      fixed: "right",
-      render: (_, row) => {
-        const mutable = row.status === "DRAFT" || row.status === "SCANNING";
-        return (
-          <button
-            className="btn small"
-            type="button"
-            onClick={() => setDetailId(row.id)}
-          >
-            {mutable && canScan ? (
-              <ScanOutlined
-                style={{ marginRight: 4, color: ACTION_ICON_COLORS.sync }}
-              />
-            ) : (
-              <EyeOutlined
-                style={{ marginRight: 4, color: ACTION_ICON_COLORS.view }}
-              />
-            )}
-            {mutable && canScan ? "Mở" : "Xem"}
-          </button>
-        );
-      },
     },
   ];
+
+  const renderRowActions = (row: OutboundDocumentRecord) => {
+    const mutable = row.status === "DRAFT" || row.status === "SCANNING";
+    return (
+      <ActionButton
+        kind="view"
+        sx={{ whiteSpace: "nowrap" }}
+        onClick={() => setDetailId(row.id)}
+      >
+        {mutable && canScan ? "Mở" : "Xem"}
+      </ActionButton>
+    );
+  };
 
   const refreshAll = () =>
     void queryClient.invalidateQueries({ queryKey: ["mvp-outbound"] });
@@ -273,117 +288,110 @@ export default function AlignedMvpOutboundPage() {
   return (
     <ThemeProvider theme={muiTheme}>
       <div className="outbound-page hn-mvp-source-screen">
-      <div className="toolbar">
-        <TextField
-          value={searchInput}
-          placeholder="Tìm mã phiếu xuất / ghi chú..."
-          slotProps={{ htmlInput: { "aria-label": "Tìm phiếu xuất" } }}
-          onChange={(event) => setSearchInput(event.target.value)}
-          sx={{ minWidth: 220, ...TOOLBAR_SX }}
-        />
-        <Select
-          displayEmpty
-          value={status}
-          inputProps={{ "aria-label": "Lọc trạng thái phiếu xuất" }}
-          onChange={(event) => {
-            setStatus(event.target.value as OutboundStatus | "");
-            setPage(1);
-          }}
-          sx={{ minWidth: 168, ...TOOLBAR_SX }}
-        >
-          <MenuItem value="">Trạng thái: Tất cả</MenuItem>
-          {STATUS_OPTIONS.map((option) => (
-            <MenuItem key={option.value} value={option.value}>
-              {option.label}
-            </MenuItem>
-          ))}
-        </Select>
-        <Select
-          value={perPage}
-          inputProps={{ "aria-label": "Số dòng mỗi trang" }}
-          onChange={(event) => {
-            setPerPage(Number(event.target.value));
-            setPage(1);
-          }}
-          sx={{ minWidth: 100, ...TOOLBAR_SX }}
-        >
-          {perPageOptions.map((size) => (
-            <MenuItem key={size} value={size}>
-              {size} / trang
-            </MenuItem>
-          ))}
-        </Select>
-        <div className="spacer" />
-        {canImport ? (
-          <MuiButton
-            variant="contained"
-            onClick={() => setIntakeOpen(true)}
-            startIcon={<PlusOutlined />}
-          >
-            Tiếp nhận yêu cầu xuất
-          </MuiButton>
-        ) : null}
-      </div>
-
-      {listQuery.isError ? (
-        <div style={{ marginBottom: 14 }}>
-          <ApiErrorAlert
-            error={listQuery.error}
-            title="Không tải được danh sách phiếu xuất"
-            onRetry={() => listQuery.refetch()}
+        <div className="toolbar">
+          <TextField
+            value={searchInput}
+            placeholder="Tìm mã phiếu xuất / ghi chú..."
+            slotProps={{ htmlInput: { "aria-label": "Tìm phiếu xuất" } }}
+            onChange={(event) => setSearchInput(event.target.value)}
+            sx={{ minWidth: 220, ...TOOLBAR_SX }}
           />
+          <Select
+            displayEmpty
+            value={status}
+            inputProps={{ "aria-label": "Lọc trạng thái phiếu xuất" }}
+            onChange={(event) => {
+              setStatus(event.target.value as OutboundStatus | "");
+              setPage(1);
+            }}
+            sx={{ minWidth: 168, ...TOOLBAR_SX }}
+          >
+            <MenuItem value="">Trạng thái: Tất cả</MenuItem>
+            {STATUS_OPTIONS.map((option) => (
+              <MenuItem key={option.value} value={option.value}>
+                {option.label}
+              </MenuItem>
+            ))}
+          </Select>
+          <Select
+            value={perPage}
+            inputProps={{ "aria-label": "Số dòng mỗi trang" }}
+            onChange={(event) => {
+              setPerPage(Number(event.target.value));
+              setPage(1);
+            }}
+            sx={{ minWidth: 100, ...TOOLBAR_SX }}
+          >
+            {perPageOptions.map((size) => (
+              <MenuItem key={size} value={size}>
+                {size} / trang
+              </MenuItem>
+            ))}
+          </Select>
+          <div className="spacer" />
+          {canImport ? (
+            <ActionButton kind="create" onClick={() => setIntakeOpen(true)}>
+              Tiếp nhận yêu cầu xuất
+            </ActionButton>
+          ) : null}
         </div>
-      ) : null}
 
-      <TableLoadingBanner
-        loading={listQuery.isLoading || listQuery.isFetching}
-      />
-      <Table<OutboundDocumentRecord>
-        rowKey="id"
-        columns={columns}
-        dataSource={rows}
-        rowSelection={{
-          selectedRowKeys,
-          onChange: setSelectedRowKeys,
-        }}
-        loading={listQuery.isLoading || listQuery.isFetching}
-        onChange={(next: TablePaginationConfig) => setPage(next.current ?? 1)}
-        pagination={{
-          current: pagination.current,
-          pageSize: perPage,
-          total: pagination.total,
-          showSizeChanger: false,
-          showTotal: (count) => `Tổng ${count} phiếu xuất`,
-        }}
-        locale={{
-          emptyText: tableEmptyText(
+        {listQuery.isError ? (
+          <div style={{ marginBottom: 14 }}>
+            <ApiErrorAlert
+              error={listQuery.error}
+              title="Không tải được danh sách phiếu xuất"
+              onRetry={() => listQuery.refetch()}
+            />
+          </div>
+        ) : null}
+
+        <TableLoadingBanner
+          loading={listQuery.isLoading || listQuery.isFetching}
+        />
+        <ResponsiveDataTable<OutboundDocumentRecord>
+          columns={columns}
+          rows={rows}
+          rowKey={(row) => row.id}
+          rowSelection={rowSelection}
+          selectionLabel={(row) => `Chọn phiếu xuất ${row.code || row.id}`}
+          loading={listQuery.isLoading || listQuery.isFetching}
+          emptyText={tableEmptyText(
             listQuery.isError ? listQuery.error : null,
             "Chưa có phiếu xuất phù hợp",
-          ),
-        }}
-        scroll={{ x: "max-content" }}
-      />
-
-      {intakeOpen ? (
-        <OutboundIntakeModal
-          open
-          canImport={canImport}
-          onClose={() => setIntakeOpen(false)}
-          onConsumed={(documentIds) => {
-            setIntakeOpen(false);
-            refreshAll();
-            if (documentIds[0]) setDetailId(documentIds[0]);
-          }}
+          )}
+          renderRowActions={renderRowActions}
         />
-      ) : null}
-
-      {detailId ? (
-        <AlignedOutboundDetailModal
-          documentId={detailId}
-          onClose={() => setDetailId(null)}
-          onChanged={refreshAll}
+        <TopPagination
+          total={pagination.total}
+          current={pagination.current}
+          pageSize={perPage}
+          unitName="phiếu xuất"
+          showSizeChanger={false}
+          placement="bottom"
+          onChange={(nextPage) => setPage(nextPage)}
         />
-      ) : null}
+
+        {intakeOpen ? (
+          <OutboundIntakeModal
+            open
+            canImport={canImport}
+            onClose={() => setIntakeOpen(false)}
+            onConsumed={(documentIds) => {
+              setIntakeOpen(false);
+              refreshAll();
+              if (documentIds[0]) setDetailId(documentIds[0]);
+            }}
+          />
+        ) : null}
+
+        {detailId ? (
+          <AlignedOutboundDetailModal
+            documentId={detailId}
+            onClose={() => setDetailId(null)}
+            onChanged={refreshAll}
+          />
+        ) : null}
       </div>
     </ThemeProvider>
   );

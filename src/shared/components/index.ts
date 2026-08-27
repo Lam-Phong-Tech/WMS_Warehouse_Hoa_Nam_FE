@@ -41,6 +41,11 @@ export {
 export { SearchInput, type SearchInputProps } from "./data-display/SearchInput";
 export { FilterBar, type FilterBarProps } from "./data-display/FilterBar";
 export {
+  ResponsiveDataTable,
+  type ResponsiveDataTableProps,
+  type ResponsiveTableColumn,
+} from "./data-display/ResponsiveDataTable";
+export {
   useSortTooltipColumns,
   type ColumnWithSortType,
 } from "./data-display/useSortTooltipColumns";
@@ -110,13 +115,41 @@ export { ErrorState, type ErrorStateProps } from "./ui-states/ErrorState";
 // permission/ — kiểm soát quyền truy cập
 export { PermissionGuard } from "./permission/PermissionGuard";
 export type { PermissionGuardProps } from "./permission/PermissionGuard";
-export { ActionButton } from "./permission/ActionButton";
-export type { ActionButtonProps } from "./permission/ActionButton";
 
 // navigation/ — điều hướng
 export { MenuItem, type MenuItemProps } from "./navigation/MenuItem";
 export { Pagination, type PaginationProps } from "./navigation/Pagination";
 export { Tabs, type TabsProps } from "./navigation/Tabs";
+
+// motion/ — chuyển động dùng chung (thêm/xóa dòng, token thời lượng)
+export {
+  AnimatedList,
+  AnimatedListItem,
+  type AnimatedListProps,
+  type AnimatedListItemProps,
+} from "./motion/AnimatedList";
+export { createRowKey } from "./motion/row-key";
+export { useReducedMotion } from "./motion/useReducedMotion";
+export {
+  MOTION_DURATION,
+  MOTION_EASING,
+  MOTION_ENABLED,
+  motionDuration,
+} from "./motion/motion-tokens";
+
+// actions/ — nút thao tác chuẩn (icon + nhãn, màu theo nghiệp vụ)
+export {
+  ActionButton,
+  type ActionButtonProps,
+  ActionIconButton,
+  type ActionIconButtonProps,
+  ActionGroup,
+  type ActionGroupProps,
+  ACTION_KINDS,
+  actionColor,
+  actionIcon,
+  type ActionKind,
+} from "./actions";
 
 // cards/ — thẻ thông tin
 export { StatCard, type StatCardProps } from "./cards/StatCard";

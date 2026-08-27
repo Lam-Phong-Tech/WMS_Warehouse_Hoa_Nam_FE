@@ -1,8 +1,23 @@
-import { Avatar, Card, Descriptions, Space, Tag } from "antd";
+import { useQuery } from "@tanstack/react-query";
+import { Avatar, Card, Descriptions, Empty, Space, Table, Tag } from "antd";
 import { UserOutlined } from "@/shared/components/icons";
 import { PageHeader } from "@/shared/components";
 import { BRAND } from "@/app/theme";
 import { useAuthStore } from "@/shared/store/auth.store";
+import { auditLogService } from "@/modules/audit-logs/services/audit-logs.service";
+import { formatDateTime } from "@/shared/utils/format-date";
+
+const PERMISSION_HISTORY_ACTION_LABELS: Record<string, string> = {
+  CREATE: "Tạo tài khoản",
+  UPDATE: "Cập nhật thông tin",
+  ASSIGN_ROLES: "Gán vai trò",
+  GRANT_USER_PERMISSION: "Cấp quyền riêng",
+  REVOKE_USER_PERMISSION: "Thu hồi quyền riêng",
+};
+
+function permissionHistoryActionLabel(action: string): string {
+  return PERMISSION_HISTORY_ACTION_LABELS[action] ?? action;
+}
 
 function statusLabel(status?: string) {
   if (status === "ACTIVE") return "Đang hoạt động";
@@ -45,6 +60,13 @@ export function ProfilePage() {
   const code = profile?.code ?? user?.code;
   const phone = profile?.phone ?? user?.phone;
   const status = profile?.status ?? user?.status;
+
+  /** Yêu cầu #6: lịch sử thay đổi quyền/vai trò/thông tin TRÊN chính tài khoản mình. */
+  const historyQuery = useQuery({
+    queryKey: ["audit-logs", "me"],
+    queryFn: () => auditLogService.getMyPermissionHistory({ per_page: 20 }),
+  });
+  const historyRows = historyQuery.data?.data ?? [];
 
   return (
     <div>
@@ -122,6 +144,48 @@ export function ProfilePage() {
             {permissionCodes.length}
           </Descriptions.Item>
         </Descriptions>
+      </Card>
+
+      <Card
+        title="Lịch sử thay đổi quyền/vai trò trên tài khoản của tôi"
+        style={{ marginTop: 16 }}
+      >
+        <Table
+          rowKey="id"
+          size="small"
+          loading={historyQuery.isLoading}
+          dataSource={historyRows}
+          pagination={false}
+          locale={{
+            emptyText: (
+              <Empty description="Chưa có thay đổi nào được ghi nhận." />
+            ),
+          }}
+          columns={[
+            {
+              title: "Thời gian",
+              dataIndex: "created_at",
+              key: "created_at",
+              width: 170,
+              render: (value: string) => formatDateTime(value),
+            },
+            {
+              title: "Hành động",
+              dataIndex: "action",
+              key: "action",
+              width: 180,
+              render: (value: string) => (
+                <Tag>{permissionHistoryActionLabel(value)}</Tag>
+              ),
+            },
+            {
+              title: "Lý do",
+              dataIndex: "reason",
+              key: "reason",
+              render: (value: string | null) => value || "—",
+            },
+          ]}
+        />
       </Card>
     </div>
   );

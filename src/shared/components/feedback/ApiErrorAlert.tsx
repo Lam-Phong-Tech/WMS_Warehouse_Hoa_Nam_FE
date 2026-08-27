@@ -1,15 +1,14 @@
 import type { CSSProperties } from "react";
-import { Alert, Button } from "antd";
-import { ReloadOutlined } from "@/shared/components/icons";
+import { Alert } from "antd";
 import {
   getApiErrorMessage,
   getErrorRequestId,
   isNoPermissionError,
   normalizeError,
 } from "@/shared/api/api-error";
-import { ACTION_ICON_COLORS } from "@/shared/theme/actionIconColors";
 import { UI_STATE, uiStateProps } from "@/shared/constants/ui-state";
 import { NoPermissionState } from "./NoPermissionState";
+import { ActionButton } from "@/shared/components/actions";
 
 export interface ApiErrorAlertProps {
   /** Lỗi bất kỳ (axios / Error / unknown). Falsy → không render gì. */
@@ -108,13 +107,9 @@ export function ApiErrorAlert({
         }
         action={
           onRetry ? (
-            <Button
-              size="small"
-              icon={<ReloadOutlined style={{ color: ACTION_ICON_COLORS.sync }} />}
-              onClick={onRetry}
-            >
+            <ActionButton kind="refresh" onClick={onRetry}>
               Thử lại
-            </Button>
+            </ActionButton>
           ) : undefined
         }
       />

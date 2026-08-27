@@ -13,7 +13,9 @@ export type FlaticonIconProps = HTMLAttributes<HTMLElement>;
 
 function createFlaticonIcon(slug: string) {
   function FlaticonIcon({ className, ...rest }: FlaticonIconProps) {
-    const classes = className ? `fi fi-rr-${slug} ${className}` : `fi fi-rr-${slug}`;
+    const classes = className
+      ? `fi fi-rr-${slug} ${className}`
+      : `fi fi-rr-${slug}`;
     return <i className={classes} aria-hidden="true" {...rest} />;
   }
   FlaticonIcon.displayName = `FlaticonIcon(${slug})`;
@@ -104,3 +106,11 @@ export const WarningOutlined = createFlaticonIcon("triangle-warning");
 export const WifiOutlined = createFlaticonIcon("wifi");
 export const ZoomInOutlined = createFlaticonIcon("zoom-in");
 export const ZoomOutOutlined = createFlaticonIcon("zoom-out");
+export const FilterOutlined = createFlaticonIcon("filter");
+export const UnlockOutlined = createFlaticonIcon("unlock");
+export const MinusOutlined = createFlaticonIcon("minus");
+export const LinkOutlined = createFlaticonIcon("link");
+export const SortAscendingOutlined = createFlaticonIcon("caret-up");
+export const SortDescendingOutlined = createFlaticonIcon("caret-down");
+export const SortOutlined = createFlaticonIcon("sort");
+export const ThunderboltOutlined = createFlaticonIcon("bolt");

@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   Alert,
-  Button,
   Card,
   Checkbox,
   Col,
@@ -20,15 +19,6 @@ import {
   Typography,
 } from "antd";
 import {
-  CheckCircleOutlined,
-  DeleteOutlined,
-  EditOutlined,
-  SaveOutlined,
-  StopOutlined,
-  UndoOutlined,
-} from "@/shared/components/icons";
-import { ACTION_ICON_COLORS } from "@/shared/theme/actionIconColors";
-import {
   useDeleteIamRole,
   useIamPermissions,
   useIamRolesPage,
@@ -44,13 +34,16 @@ import type {
   IamRoleStatus,
 } from "@/modules/iam/types/iam.types";
 import { MvpPageSizeSelector } from "@/shared/components/mvp/MvpListPagination";
+import { mvpRowNumber } from "@/shared/components/mvp/MvpSelectionCell";
 import { resolveApiPagination } from "@/shared/components/mvp/mvp-pagination";
 import { useCan } from "@/shared/components/permission";
 import { WMS_PERMISSION_CATALOG as P } from "@/shared/constants/wms-permissions";
+import { useAuthStore } from "@/shared/store/auth.store";
 import {
   IAM_ROLE_STATUS_LABELS,
   businessLabel,
 } from "@/shared/constants/business-labels";
+import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 
 interface RoleFormValues {
   role_code: string;
@@ -135,6 +128,8 @@ export function IamRolePermissionScreen() {
 
   const canManageRoles = useCan(P.IAM_ROLE_MANAGE);
   const canViewPermissions = useCan(P.IAM_PERMISSION_VIEW);
+  const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
+  const ownPermissionCodes = useAuthStore((state) => state.permissionCodes);
 
   const rolesQuery = useIamRolesPage({
     keyword: keyword || undefined,
@@ -187,10 +182,17 @@ export function IamRolePermissionScreen() {
 
   const groupedPermissions = useMemo(() => {
     const groups = new Map<string, IamPermission[]>();
-    permissions.forEach((permission) => {
-      const group = permissionGroup(permission);
-      groups.set(group, [...(groups.get(group) ?? []), permission]);
-    });
+    permissions
+      // Quyền đã thu hồi (status=INACTIVE) không còn gán được — BE trả 422 nếu cố
+      // gán (AssignRolePermissionRequest kiểm status). Bày chúng ra ma trận chỉ
+      // làm nhiễu và mời người dùng tick vào một ô không có tác dụng. Mã ngừng
+      // hiệu lực nhưng vẫn ACTIVE theo hợp đồng WWHN-180 thì VẪN hiện, kèm nhãn
+      // "Ngừng hiệu lực" và ô tick bị khoá.
+      .filter((permission) => permission.status === "ACTIVE")
+      .forEach((permission) => {
+        const group = permissionGroup(permission);
+        groups.set(group, [...(groups.get(group) ?? []), permission]);
+      });
     return [...groups.entries()].sort(([a], [b]) => a.localeCompare(b, "vi"));
   }, [permissions]);
 
@@ -250,7 +252,11 @@ export function IamRolePermissionScreen() {
     );
   };
 
-  const savePermissions = async () => {
+  const [isReasonModalOpen, setIsReasonModalOpen] = useState(false);
+  const [permissionReason, setPermissionReason] = useState("");
+  const [permissionReasonError, setPermissionReasonError] = useState("");
+
+  const requestSavePermissions = () => {
     if (!selectedRole) return;
     if (isSystemRole(selectedRole)) {
       toast.warning(
@@ -258,11 +264,24 @@ export function IamRolePermissionScreen() {
       );
       return;
     }
+    setPermissionReason("");
+    setPermissionReasonError("");
+    setIsReasonModalOpen(true);
+  };
+
+  const savePermissions = async () => {
+    if (!selectedRole) return;
+    if (permissionReason.trim().length < 5) {
+      setPermissionReasonError("Vui lòng nhập lý do (tối thiểu 5 ký tự).");
+      return;
+    }
     await syncPermissions.mutateAsync({
       roleId: selectedRole.role_id,
       permissionIds: [...new Set(checkedIds)].sort(),
+      reason: permissionReason.trim(),
     });
     toast.success("Đã cập nhật ma trận quyền cho vai trò.");
+    setIsReasonModalOpen(false);
   };
 
   const resetMatrix = () => {
@@ -298,10 +317,26 @@ export function IamRolePermissionScreen() {
   const matrixEditable =
     canManageRoles && Boolean(selectedRole) && !isSystemRole(selectedRole);
 
-  const renderRoleCard = (role: IamRole) => {
+  /**
+   * SCR-IAM-02 — không khuếch đại đặc quyền: BE chỉ cho cấp/thu hồi những quyền
+   * mà chính người thao tác đang có (PermissionDelegation). Nếu UI vẫn cho tick
+   * mọi ô rồi mới nhận 403 khi bấm Lưu, người dùng không hiểu vì sao — và tệ hơn,
+   * cả lần lưu hợp lệ cũng hỏng theo vì request là "thay thế toàn bộ tập quyền".
+   * Khoá đúng những ô nằm ngoài phạm vi ngay tại đây để hai bên nói cùng một luật.
+   */
+  const delegatablePermissionKeys = useMemo(
+    () => new Set(isSuperAdmin ? [] : ownPermissionCodes),
+    [isSuperAdmin, ownPermissionCodes],
+  );
+  const canDelegate = (permissionKey: string): boolean =>
+    isSuperAdmin || delegatablePermissionKeys.has(permissionKey);
+
+  const renderRoleCard = (role: IamRole, index: number) => {
     const selected = role.role_id === selectedRoleId;
     const memberCount = memberCountByRole.get(role.role_id) ?? 0;
     const active = role.status === "ACTIVE";
+    // STT theo trang hiện tại — giúp đối chiếu vị trí vai trò khi danh sách dài/phân trang.
+    const stt = mvpRowNumber(rolePage, rolePerPage, index);
     return (
       <div
         key={role.role_id}
@@ -328,9 +363,18 @@ export function IamRolePermissionScreen() {
         }}
       >
         <Space orientation="vertical" size={2} style={{ minWidth: 0 }}>
-          <Typography.Text strong>{role.role_name}</Typography.Text>
-          <Tag color={active ? "success" : "default"} style={{ margin: 0 }}>
-            {businessLabel(IAM_ROLE_STATUS_LABELS, role.status, "Trạng thái khác")}
+          <Typography.Text strong>
+            <Typography.Text type="secondary" style={{ marginRight: 6 }}>
+              {stt}.
+            </Typography.Text>
+            {role.role_name}
+          </Typography.Text>
+          <Tag color={active ? "success" : "warning"} style={{ margin: 0 }}>
+            {businessLabel(
+              IAM_ROLE_STATUS_LABELS,
+              role.status,
+              "Trạng thái khác",
+            )}
           </Tag>
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
             <Typography.Text code style={{ fontSize: 11 }}>
@@ -341,16 +385,9 @@ export function IamRolePermissionScreen() {
         </Space>
         {canManageRoles && !isSystemRole(role) && (
           <Space size={2} align="start">
-            <Button
-              type="text"
-              size="small"
-              title="Sửa vai trò"
-              icon={
-                <EditOutlined
-                  style={{ fontSize: 15, color: ACTION_ICON_COLORS.edit }}
-                />
-              }
-              aria-label={`Sửa ${role.role_name}`}
+            <ActionIconButton
+              kind="edit"
+              label={`Sửa ${role.role_name}`}
               onClick={(event) => {
                 event.stopPropagation();
                 openEdit(role);
@@ -367,24 +404,9 @@ export function IamRolePermissionScreen() {
               cancelText="Hủy"
               onConfirm={() => toggleRoleStatus(role)}
             >
-              <Button
-                type="text"
-                size="small"
-                danger={active}
-                title={active ? "Vô hiệu hóa vai trò" : "Kích hoạt lại vai trò"}
-                icon={
-                  active ? (
-                    <StopOutlined style={{ fontSize: 15 }} />
-                  ) : (
-                    <CheckCircleOutlined
-                      style={{
-                        fontSize: 15,
-                        color: ACTION_ICON_COLORS.success,
-                      }}
-                    />
-                  )
-                }
-                aria-label={
+              <ActionIconButton
+                kind={active ? "deactivate" : "activate"}
+                label={
                   active
                     ? `Vô hiệu hóa ${role.role_name}`
                     : `Kích hoạt ${role.role_name}`
@@ -399,13 +421,9 @@ export function IamRolePermissionScreen() {
               cancelText="Hủy"
               onConfirm={() => deleteRole.mutateAsync(role.role_id)}
             >
-              <Button
-                danger
-                type="text"
-                size="small"
-                title="Xóa vai trò"
-                icon={<DeleteOutlined style={{ fontSize: 15 }} />}
-                aria-label={`Xóa ${role.role_name}`}
+              <ActionIconButton
+                kind="delete"
+                label={`Xóa ${role.role_name}`}
                 onClick={(event) => event.stopPropagation()}
               />
             </Popconfirm>
@@ -424,6 +442,7 @@ export function IamRolePermissionScreen() {
               <Input.Search
                 allowClear
                 placeholder="Tìm vai trò..."
+                aria-label="Tìm vai trò"
                 value={keyword}
                 onChange={(event) => {
                   setKeyword(event.target.value);
@@ -437,15 +456,8 @@ export function IamRolePermissionScreen() {
                   setRolePage(1);
                 }}
               />
-              {rolesQuery.isLoading ? (
-                <div style={{ textAlign: "center", padding: 32 }}>
-                  <Spin />
-                </div>
-              ) : roles.length === 0 ? (
-                <Empty description="Chưa có vai trò nào." />
-              ) : (
-                <div>{roles.map(renderRoleCard)}</div>
-              )}
+              {/* Tổng số + điều hướng trang đặt ngay cạnh ô tìm kiếm/số dòng mỗi
+               * trang (thay vì tách rời xuống dưới danh sách vai trò dài) để dễ tìm. */}
               <Row justify="space-between" align="middle">
                 <Typography.Text type="secondary">
                   Tổng {rolePagination.total} vai trò
@@ -459,6 +471,17 @@ export function IamRolePermissionScreen() {
                   onChange={setRolePage}
                 />
               </Row>
+              {rolesQuery.isLoading ? (
+                <div style={{ textAlign: "center", padding: 32 }}>
+                  <Spin />
+                </div>
+              ) : roles.length === 0 ? (
+                <Empty description="Chưa có vai trò nào." />
+              ) : (
+                <div>
+                  {roles.map((role, index) => renderRoleCard(role, index))}
+                </div>
+              )}
             </Space>
           </Card>
         </Col>
@@ -478,26 +501,21 @@ export function IamRolePermissionScreen() {
             extra={
               matrixEditable ? (
                 <Space size={8}>
-                  <Button
-                    icon={
-                      <UndoOutlined
-                        style={{ color: ACTION_ICON_COLORS.sync }}
-                      />
-                    }
+                  <ActionButton
+                    kind="undo"
                     disabled={!permissionsChanged}
                     onClick={resetMatrix}
                   >
                     Hoàn tác
-                  </Button>
-                  <Button
-                    type="primary"
-                    icon={<SaveOutlined />}
+                  </ActionButton>
+                  <ActionButton
+                    kind="save"
                     disabled={!permissionsChanged}
                     loading={syncPermissions.isPending}
-                    onClick={savePermissions}
+                    onClick={requestSavePermissions}
                   >
                     Lưu ma trận
-                  </Button>
+                  </ActionButton>
                 </Space>
               ) : null
             }
@@ -584,6 +602,13 @@ export function IamRolePermissionScreen() {
                           const checked = checkedIds.includes(
                             permission.permission_id,
                           );
+                          const delegatable = canDelegate(
+                            permission.permission_key,
+                          );
+                          // `is_enforced` do BE tính từ chính bảng route lúc chạy
+                          // (PermissionEnforcementMap). Khi thiếu trường này —
+                          // BE cũ hơn — coi như còn hiệu lực để không bôi đỏ oan.
+                          const retired = permission.is_enforced === false;
                           return (
                             <Col
                               xs={24}
@@ -602,7 +627,16 @@ export function IamRolePermissionScreen() {
                               >
                                 <Checkbox
                                   checked={checked}
-                                  disabled={!matrixEditable}
+                                  disabled={
+                                    !matrixEditable || !delegatable || retired
+                                  }
+                                  title={
+                                    retired
+                                      ? "Mã quyền cũ, không còn cổng nào đọc tới — tick vào không cấp thêm gì."
+                                      : !delegatable
+                                        ? "Bạn không thể cấp hoặc thu hồi quyền mà chính bạn không có."
+                                        : undefined
+                                  }
                                   onChange={(event) => {
                                     const next = new Set(checkedIds);
                                     if (event.target.checked)
@@ -612,7 +646,10 @@ export function IamRolePermissionScreen() {
                                   }}
                                 >
                                   <Space orientation="vertical" size={0}>
-                                    <Typography.Text>
+                                    <Typography.Text
+                                      delete={retired}
+                                      type={retired ? "secondary" : undefined}
+                                    >
                                       {permissionLabel(permission)}
                                     </Typography.Text>
                                     <Typography.Text
@@ -622,6 +659,16 @@ export function IamRolePermissionScreen() {
                                     >
                                       {permission.permission_key}
                                     </Typography.Text>
+                                    {retired ? (
+                                      <Typography.Text
+                                        type="warning"
+                                        style={{ fontSize: 11 }}
+                                      >
+                                        {permission.replaced_by
+                                          ? `Ngừng hiệu lực — dùng ${permission.replaced_by}`
+                                          : "Ngừng hiệu lực"}
+                                      </Typography.Text>
+                                    ) : null}
                                   </Space>
                                 </Checkbox>
                               </div>
@@ -699,6 +746,35 @@ export function IamRolePermissionScreen() {
             />
           </Form.Item>
         </Form>
+      </Modal>
+
+      <Modal
+        title="Xác nhận thay đổi ma trận quyền"
+        open={isReasonModalOpen}
+        onCancel={() => setIsReasonModalOpen(false)}
+        onOk={savePermissions}
+        okText="Lưu ma trận"
+        cancelText="Hủy"
+        confirmLoading={syncPermissions.isPending}
+      >
+        <Typography.Paragraph type="secondary">
+          Vui lòng nhập lý do thay đổi ma trận quyền của vai trò{" "}
+          <strong>{selectedRole?.role_name}</strong> để lưu vết audit.
+        </Typography.Paragraph>
+        <Input.TextArea
+          rows={3}
+          value={permissionReason}
+          onChange={(event) => {
+            setPermissionReason(event.target.value);
+            setPermissionReasonError("");
+          }}
+          placeholder="Vd: Bổ sung quyền theo yêu cầu nghiệp vụ phòng Kho"
+        />
+        {permissionReasonError ? (
+          <Typography.Text type="danger">
+            {permissionReasonError}
+          </Typography.Text>
+        ) : null}
       </Modal>
     </Space>
   );

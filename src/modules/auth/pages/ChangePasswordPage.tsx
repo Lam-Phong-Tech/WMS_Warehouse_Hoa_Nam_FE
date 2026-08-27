@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Alert, Button, Form, Spin, Typography } from "antd";
+import { Alert, Form, Spin, Typography } from "antd";
 import { LockOutlined } from "@/shared/components/icons";
 import { Navigate } from "react-router-dom";
 import { isAxiosError } from "axios";
@@ -13,6 +13,7 @@ import {
 import { FormInput } from "@/shared/components/forms";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { ROUTES } from "@/shared/constants/routes";
+import { ActionButton } from "@/shared/components/actions";
 
 export function ChangePasswordPage() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -146,16 +147,16 @@ export function ChangePasswordPage() {
                 disabled={changePassword.isPending}
               />
 
-              <Button
+              <ActionButton
+                kind="password"
                 className="hn-login-submit"
-                type="primary"
-                htmlType="submit"
-                block
                 loading={changePassword.isPending}
                 disabled={changePassword.isPending}
+                type="submit"
+                fullWidth
               >
                 Đổi mật khẩu
-              </Button>
+              </ActionButton>
             </Form>
 
             <div className="hn-login-note">

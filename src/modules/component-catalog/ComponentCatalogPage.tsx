@@ -1,6 +1,6 @@
 import { useState, type Key } from "react";
 import type { ColumnsType } from "antd/es/table";
-import { Button, Card, Col, Form, Input, Row, Space, Typography } from "antd";
+import { Card, Col, Form, Input, Row, Space, Typography } from "antd";
 import { toast } from "sonner";
 import {
   ApiErrorAlert,
@@ -17,6 +17,7 @@ import {
   StatusTag,
   SubmitButton,
 } from "@/shared/components";
+import { ActionButton } from "@/shared/components/actions";
 
 interface CatalogRow {
   id: string;
@@ -66,22 +67,31 @@ export default function ComponentCatalogPage() {
         subtitle="Màn nội bộ để kiểm tra các trạng thái giao diện dùng chung."
         extra={
           <Space wrap>
-            <Button onClick={() => toast.success("Thông báo thành công đã sẵn sàng")}>
+            <ActionButton
+              kind="confirm"
+              onClick={() => toast.success("Thông báo thành công đã sẵn sàng")}
+            >
               Thử thông báo thành công
-            </Button>
-            <Button danger onClick={() => toast.error("Thông báo lỗi đã sẵn sàng")}>
+            </ActionButton>
+            <ActionButton
+              kind="reject"
+              onClick={() => toast.error("Thông báo lỗi đã sẵn sàng")}
+            >
               Thử thông báo lỗi
-            </Button>
-            <Button type="primary" onClick={() => setModalOpen(true)}>
+            </ActionButton>
+            <ActionButton kind="view" onClick={() => setModalOpen(true)}>
               Mở biểu mẫu
-            </Button>
+            </ActionButton>
           </Space>
         }
       />
 
       <Row gutter={[16, 16]}>
         <Col xs={24} xl={14}>
-          <Card title="Bảng dữ liệu, trạng thái và phân trang" style={cardStyle}>
+          <Card
+            title="Bảng dữ liệu, trạng thái và phân trang"
+            style={cardStyle}
+          >
             <DataTable<CatalogRow>
               columns={columns}
               dataSource={[]}
@@ -171,7 +181,7 @@ export default function ComponentCatalogPage() {
           <Card title="Xác nhận và hành động bị khóa" style={cardStyle}>
             <Space wrap>
               <ConfirmButton
-                danger
+                kind="confirm"
                 title="Xác nhận thao tác"
                 description="Dùng xác nhận trước các thao tác có rủi ro."
                 onConfirm={() => toast.success("Đã xác nhận thao tác")}

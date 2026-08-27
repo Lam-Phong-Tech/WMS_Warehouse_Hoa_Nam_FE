@@ -111,12 +111,22 @@ describe("WarrantyDetailModal (WAR-03)", () => {
       />,
     );
 
+    // Tab mặc định "Tổng quan": thông tin case + cảnh báo PII/mã tạm.
     expect(await screen.findByText("BH-0001")).toBeInTheDocument();
     expect(screen.getByText(/warranty.pii.view/)).toBeInTheDocument();
     expect(screen.getByText(/Mã tạm: TEMP-0001/)).toBeInTheDocument();
     expect(document.body.textContent).toContain("Chết mạch nguồn");
     expect(document.body.textContent).toContain("Pin 20V, sạc");
-    expect(await screen.findByText("mat-truoc.jpg")).toBeInTheDocument();
+
+    // Ảnh/tệp nằm ở tab riêng, hiển thị dạng thư viện ảnh: tên tệp thô không in
+    // ra UI nữa, chỉ còn ở nhãn trợ năng / tooltip của ô ảnh.
+    fireEvent.click(screen.getByRole("tab", { name: /Ảnh & video/ }));
+    expect(
+      await screen.findByRole("button", { name: "Xem ảnh mat-truoc.jpg" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("mat-truoc.jpg")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("tab", { name: /Linh kiện/ }));
     expect(await screen.findByText("CI-0001")).toBeInTheDocument();
   });
 
@@ -139,7 +149,8 @@ describe("WarrantyDetailModal (WAR-03)", () => {
       documentId: null,
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "CI-0001" }));
+    fireEvent.click(screen.getByRole("tab", { name: /Linh kiện/ }));
+    fireEvent.click(await screen.findByRole("button", { name: "CI-0001" }));
     expect(onOpenComponentIssue).toHaveBeenLastCalledWith(
       expect.objectContaining({ caseId: "wc-1", documentId: "ci-1" }),
     );

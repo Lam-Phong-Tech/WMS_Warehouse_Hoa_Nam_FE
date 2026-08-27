@@ -10,6 +10,8 @@ export interface NotificationItem {
   source_module: string;
   subject_type: string | null;
   subject_id: string | null;
+  actor_id: string | null;
+  actor_name: string | null;
   payload: Record<string, unknown> | null;
   read_at: string | null;
   created_at: string;

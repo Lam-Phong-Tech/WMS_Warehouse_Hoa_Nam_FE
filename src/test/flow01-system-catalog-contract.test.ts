@@ -151,12 +151,16 @@ describe("Luồng 01 · hợp đồng API hệ thống & danh mục", () => {
   it("gán vai trò gửi roles[] kèm scope_ref và cửa sổ hiệu lực", async () => {
     mocked.post.mockResolvedValue({ user_id: "user-1" });
 
-    await assignIamUserRole("user-1", {
-      role_id: "role-1",
-      scope_ref: "wh-1",
-      effective_from: "2026-08-17",
-      effective_to: null,
-    });
+    await assignIamUserRole(
+      "user-1",
+      {
+        role_id: "role-1",
+        scope_ref: "wh-1",
+        effective_from: "2026-08-17",
+        effective_to: null,
+      },
+      "Test reason for audit",
+    );
 
     const [url, body] = mocked.post.mock.calls[0];
     expect(url).toBe("/users/user-1/roles");
@@ -169,13 +173,18 @@ describe("Luồng 01 · hợp đồng API hệ thống & danh mục", () => {
           effective_to: null,
         },
       ],
+      reason: "Test reason for audit",
     });
   });
 
   it("scope_ref rỗng gửi null (toàn hệ thống) thay vì chuỗi rỗng", async () => {
     mocked.post.mockResolvedValue({ user_id: "user-1" });
 
-    await assignIamUserRole("user-1", { role_id: "role-1", scope_ref: "" });
+    await assignIamUserRole(
+      "user-1",
+      { role_id: "role-1", scope_ref: "" },
+      "Test reason for audit",
+    );
 
     expect(mocked.post.mock.calls[0][1].roles[0].scope_ref).toBeNull();
   });

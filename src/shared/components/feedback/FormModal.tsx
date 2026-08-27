@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
-import type { ButtonProps } from "antd";
-import { Button, Form, Modal } from "antd";
+import type { FormActionButtonProps } from "@/shared/components/feedback/FormActions";
+import { ActionButton } from "@/shared/components/actions";
+import { Form, Modal } from "antd";
 
 export interface FormModalProps {
   open: boolean;
@@ -28,7 +29,7 @@ export interface FormModalProps {
   afterClose?: () => void;
   children: ReactNode;
   /** Custom props for the OK button */
-  okButtonProps?: ButtonProps;
+  okButtonProps?: FormActionButtonProps;
 }
 
 /**
@@ -72,15 +73,17 @@ export function FormModal({
       }}
       footer={
         <div className="hn-modal-footer-actions">
-          <Button onClick={onCancel}>{cancelText}</Button>
-          <Button
-            type="primary"
+          <ActionButton kind="cancel" onClick={onCancel}>
+            {cancelText}
+          </ActionButton>
+          <ActionButton
+            kind="save"
             loading={loading}
             onClick={onOk}
             {...okButtonProps}
           >
             {okText}
-          </Button>
+          </ActionButton>
         </div>
       }
     >

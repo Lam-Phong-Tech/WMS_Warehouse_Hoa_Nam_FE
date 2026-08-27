@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
-import { Button, Result } from "antd";
+import { Result } from "antd";
+import { ActionButton } from "@/shared/components/actions";
 
 export interface ErrorBoundaryProps {
   children: ReactNode;
@@ -39,9 +40,9 @@ export class ErrorBoundary extends Component<
           title="Đã xảy ra lỗi"
           subTitle="Có lỗi không mong muốn. Vui lòng thử tải lại trang."
           extra={
-            <Button type="primary" onClick={this.handleReload}>
+            <ActionButton kind="refresh" onClick={this.handleReload}>
               Tải lại trang
-            </Button>
+            </ActionButton>
           }
         />
       );

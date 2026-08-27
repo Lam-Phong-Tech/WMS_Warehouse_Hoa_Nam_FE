@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { ButtonProps } from "antd";
+import type { FormActionButtonProps } from "@/shared/components/feedback/FormActions";
 import { Drawer, Form } from "antd";
 import { FormActions } from "./FormActions";
 
@@ -33,9 +33,9 @@ export interface FormDrawerProps {
   /** Whether to show the OK button */
   showOk?: boolean;
   /** Custom props for the OK button */
-  okButtonProps?: ButtonProps;
+  okButtonProps?: FormActionButtonProps;
   /** Custom props for the cancel button */
-  cancelButtonProps?: ButtonProps;
+  cancelButtonProps?: FormActionButtonProps;
   /** Extra content to render at the top of the drawer */
   extra?: ReactNode;
   /** Footer content - if not provided, default footer with OK/Cancel will be shown */

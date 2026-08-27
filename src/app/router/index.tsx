@@ -16,6 +16,11 @@ const ChangePasswordPage = lazy(() =>
     default: m.ChangePasswordPage,
   })),
 );
+const ForgotPasswordPage = lazy(() =>
+  import("@/modules/auth/pages/ForgotPasswordPage").then((m) => ({
+    default: m.ForgotPasswordPage,
+  })),
+);
 const NoPermissionPage = lazy(() =>
   import("@/modules/errors/pages/NoPermissionPage").then((m) => ({
     default: m.NoPermissionPage,
@@ -157,6 +162,10 @@ export const router = createBrowserRouter([
   {
     path: ROUTES.CHANGE_PASSWORD,
     element: withPageLoader(<ChangePasswordPage />),
+  },
+  {
+    path: ROUTES.FORGOT_PASSWORD,
+    element: withPageLoader(<ForgotPasswordPage />),
   },
   {
     element: <ProtectedRoute />,

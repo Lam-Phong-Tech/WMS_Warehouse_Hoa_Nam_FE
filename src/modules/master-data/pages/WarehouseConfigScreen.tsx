@@ -3,7 +3,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Alert,
   Box,
-  Button,
   Card,
   Chip,
   Dialog,
@@ -11,6 +10,7 @@ import {
   DialogContent,
   DialogTitle,
   FormControl,
+  FormHelperText,
   Grid,
   InputLabel,
   MenuItem,
@@ -22,7 +22,6 @@ import {
   Typography,
 } from "@mui/material";
 import { muiTheme } from "@/app/mui-theme";
-import { SaveOutlined } from "@/shared/components/icons";
 import {
   fetchWarehouse,
   fetchWarehouses,
@@ -33,10 +32,12 @@ import {
   getApiErrorMessage,
   isForbiddenErrorCode,
   normalizeError,
+  resolveFormErrors,
 } from "@/shared/api/api-error";
 import { useCan } from "@/shared/components/permission";
 import { WMS_PERMISSION_CATALOG as P } from "@/shared/constants/wms-permissions";
 import { formatDateTime } from "@/shared/utils/format-date";
+import { ActionButton } from "@/shared/components/actions";
 
 interface WarehouseRecord {
   id: string;
@@ -55,6 +56,21 @@ interface WarehouseFormValues {
   phone?: string;
   status: MasterStatus;
 }
+
+/**
+ * Các ô nhập có chỗ hiển thị lỗi riêng (`error` + `helperText`) trên form.
+ * Lỗi server thuộc field ngoài danh sách này rơi về banner tổng — xem
+ * `resolveFormErrors`. Khoá bên trái là tên camelCase mà `extractFieldErrors`
+ * trả về, giá trị bên phải là tên field mà `fieldErrors` của form này đang
+ * dùng; thiếu bước map lại thì lỗi sẽ không khớp ô nào và biến mất.
+ */
+const WAREHOUSE_FORM_FIELDS = {
+  name: "name",
+  address: "address",
+  contactPerson: "contact_person",
+  phone: "phone",
+  status: "status",
+} as const satisfies Record<string, keyof WarehouseFormValues>;
 
 const STATUS_OPTIONS: Array<{ value: MasterStatus; label: string }> = [
   { value: "ACTIVE", label: "Đang hoạt động" },
@@ -89,20 +105,26 @@ function saveErrorMessage(error: unknown): string {
   return getApiErrorMessage(error, "Không lưu được cấu hình kho.");
 }
 
-function validateForm(values: WarehouseFormValues): string {
+function validateForm(values: WarehouseFormValues): Record<string, string> {
+  const errors: Record<string, string> = {};
   const name = values.name.trim();
-  if (!name) return "Nhập tên kho.";
-  if (name.length > 200) return "Tên kho tối đa 200 ký tự.";
-  if (!values.status) return "Chọn trạng thái.";
-  if ((values.address ?? "").length > 500) return "Địa chỉ tối đa 500 ký tự.";
-  if ((values.contact_person ?? "").length > 200)
-    return "Người liên hệ tối đa 200 ký tự.";
-  const phone = values.phone ?? "";
-  if (phone.length > 30) return "Số điện thoại tối đa 30 ký tự.";
-  if (phone && !/^0\d{9}$/.test(phone)) {
-    return "Số điện thoại phải gồm đúng 10 chữ số và bắt đầu bằng số 0.";
+  if (!name) errors.name = "Nhập tên kho.";
+  else if (name.length > 200) errors.name = "Tên kho tối đa 200 ký tự.";
+  if (!values.status) errors.status = "Chọn trạng thái.";
+  if ((values.address ?? "").length > 500) {
+    errors.address = "Địa chỉ tối đa 500 ký tự.";
   }
-  return "";
+  if ((values.contact_person ?? "").length > 200) {
+    errors.contact_person = "Người liên hệ tối đa 200 ký tự.";
+  }
+  const phone = values.phone ?? "";
+  if (phone.length > 30) {
+    errors.phone = "Số điện thoại tối đa 30 ký tự.";
+  } else if (phone && !/^0\d{9}$/.test(phone)) {
+    errors.phone =
+      "Số điện thoại phải gồm đúng 10 chữ số và bắt đầu bằng số 0.";
+  }
+  return errors;
 }
 
 export function WarehouseConfigScreen() {
@@ -111,6 +133,7 @@ export function WarehouseConfigScreen() {
 
   const [selectedId, setSelectedId] = useState("");
   const [saveError, setSaveError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [savedAt, setSavedAt] = useState("");
   const [formValues, setFormValues] = useState<WarehouseFormValues>({
     name: "",
@@ -178,16 +201,39 @@ export function WarehouseConfigScreen() {
       ...formValues,
       name: formValues.name.trim(),
     };
-    const validationError = validateForm(values);
-    if (validationError) {
-      setSaveError(validationError);
+    const errors = validateForm(values);
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
       return;
     }
+    setFieldErrors({});
     try {
       await saveMutation.mutateAsync(values);
       setSavedAt(formatDateTime(new Date().toISOString()));
     } catch (error) {
-      setSaveError(saveErrorMessage(error));
+      // Lỗi nào gắn được vào ô nhập thì hiện ngay dưới ô đó (vd tên kho quá
+      // dài), banner chỉ giữ phần không thuộc ô nào — trước đây mọi lỗi đều bị
+      // dồn vào banner nên người dùng chỉ thấy câu tổng chung chung.
+      const { fieldErrors: serverFieldErrors, message } = resolveFormErrors(
+        error,
+        Object.keys(WAREHOUSE_FORM_FIELDS),
+      );
+      if (Object.keys(serverFieldErrors).length === 0) {
+        // Không có lỗi nào theo trường: giữ nguyên các thông điệp nghiệp vụ
+        // riêng của màn này (chỉ một kho hoạt động, ngoài phạm vi dữ liệu...).
+        setSaveError(saveErrorMessage(error));
+        return;
+      }
+      setFieldErrors((current) => ({
+        ...current,
+        ...Object.fromEntries(
+          Object.entries(serverFieldErrors).map(([field, msg]) => [
+            WAREHOUSE_FORM_FIELDS[field as keyof typeof WAREHOUSE_FORM_FIELDS],
+            msg,
+          ]),
+        ),
+      }));
+      setSaveError(message ?? "");
     }
   };
 
@@ -220,26 +266,28 @@ export function WarehouseConfigScreen() {
 
   return (
     <ThemeProvider theme={muiTheme}>
-      <Stack spacing={2}>
+      <Stack spacing={2} sx={{ maxWidth: 880, mx: "auto", width: "100%" }}>
         <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
-          <Button
-            variant="contained"
+          <ActionButton
+            kind="save"
             onClick={() => void handleSubmit()}
             disabled={!canManage || !resolvedId || saveMutation.isPending}
-            startIcon={<SaveOutlined />}
           >
             {saveMutation.isPending ? "Đang lưu..." : "Lưu cấu hình"}
-          </Button>
+          </ActionButton>
         </Box>
 
         <Alert severity="info">
-          <Typography component="strong" sx={{ fontWeight: 700, display: "block" }}>
+          <Typography
+            component="strong"
+            sx={{ fontWeight: 700, display: "block" }}
+          >
             Hệ thống sử dụng một kho tổng
           </Typography>
           <Typography variant="body2">
             Trong phạm vi hiện tại, hệ thống vận hành một kho tổng. Người dùng
-            chỉ xem và cập nhật thông tin kho; không tạo hoặc xóa kho trực
-            tiếp tại màn hình này.
+            chỉ xem và cập nhật thông tin kho; không tạo hoặc xóa kho trực tiếp
+            tại màn hình này.
           </Typography>
         </Alert>
 
@@ -248,7 +296,10 @@ export function WarehouseConfigScreen() {
         {saveError ? <Alert severity="error">{saveError}</Alert> : null}
         {savedAt ? (
           <Alert severity="success">
-            <Typography component="strong" sx={{ fontWeight: 700, display: "block" }}>
+            <Typography
+              component="strong"
+              sx={{ fontWeight: 700, display: "block" }}
+            >
               Đã lưu cấu hình kho
             </Typography>
             <Typography variant="body2">Cập nhật lúc {savedAt}.</Typography>
@@ -257,19 +308,24 @@ export function WarehouseConfigScreen() {
 
         {!listQuery.isLoading && warehouses.length === 0 && !listError ? (
           <Alert severity="warning">
-            <Typography component="strong" sx={{ fontWeight: 700, display: "block" }}>
+            <Typography
+              component="strong"
+              sx={{ fontWeight: 700, display: "block" }}
+            >
               Chưa có kho tổng trong hệ thống
             </Typography>
             <Typography variant="body2">
-              Liên hệ quản trị hệ thống để khởi tạo kho tổng trước khi cấu
-              hình.
+              Liên hệ quản trị hệ thống để khởi tạo kho tổng trước khi cấu hình.
             </Typography>
           </Alert>
         ) : null}
 
         {warehouses.length > 1 ? (
           <Alert severity="warning">
-            <Typography component="strong" sx={{ fontWeight: 700, display: "block" }}>
+            <Typography
+              component="strong"
+              sx={{ fontWeight: 700, display: "block" }}
+            >
               Đang có {warehouses.length} kho trong dữ liệu
             </Typography>
             <Typography variant="body2">
@@ -308,6 +364,7 @@ export function WarehouseConfigScreen() {
                           setSelectedId(event.target.value);
                           setSaveError("");
                           setSavedAt("");
+                          setFieldErrors({});
                         }}
                       >
                         {warehouses.map((row) => (
@@ -332,13 +389,21 @@ export function WarehouseConfigScreen() {
               >
                 <Grid container spacing={2}>
                   <Grid size={{ xs: 12, md: 6 }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ display: "block" }}
+                    >
                       Mã kho
                     </Typography>
                     <Typography variant="body2">{warehouse.code}</Typography>
                   </Grid>
                   <Grid size={{ xs: 12, md: 6 }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ display: "block" }}
+                    >
                       Trạng thái hiện tại
                     </Typography>
                     <Chip
@@ -347,7 +412,9 @@ export function WarehouseConfigScreen() {
                           ? "Đang hoạt động"
                           : "Ngừng hoạt động"
                       }
-                      color={warehouse.status === "ACTIVE" ? "success" : "default"}
+                      color={
+                        warehouse.status === "ACTIVE" ? "success" : "warning"
+                      }
                       size="small"
                     />
                   </Grid>
@@ -363,26 +430,43 @@ export function WarehouseConfigScreen() {
                     fullWidth
                     placeholder="Kho tổng Hoa Nam"
                     value={formValues.name}
-                    onChange={(event) =>
-                      setFormValues((current) => ({ ...current, name: event.target.value }))
-                    }
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      setFormValues((current) => ({ ...current, name: value }));
+                      setFieldErrors((current) =>
+                        current.name ? { ...current, name: "" } : current,
+                      );
+                    }}
                     disabled={fieldsDisabled}
+                    error={Boolean(fieldErrors.name)}
+                    helperText={fieldErrors.name}
                   />
                 </Grid>
                 <Grid size={{ xs: 12, md: 6 }}>
-                  <FormControl fullWidth required disabled={fieldsDisabled}>
-                    <InputLabel id="warehouse-status-label">Trạng thái</InputLabel>
+                  <FormControl
+                    fullWidth
+                    required
+                    disabled={fieldsDisabled}
+                    error={Boolean(fieldErrors.status)}
+                  >
+                    <InputLabel id="warehouse-status-label">
+                      Trạng thái
+                    </InputLabel>
                     <Select
                       id="warehouse-status"
                       labelId="warehouse-status-label"
                       label="Trạng thái"
                       value={formValues.status}
-                      onChange={(event) =>
+                      onChange={(event) => {
+                        const value = event.target.value as MasterStatus;
                         setFormValues((current) => ({
                           ...current,
-                          status: event.target.value as MasterStatus,
-                        }))
-                      }
+                          status: value,
+                        }));
+                        setFieldErrors((current) =>
+                          current.status ? { ...current, status: "" } : current,
+                        );
+                      }}
                     >
                       {STATUS_OPTIONS.map((option) => (
                         <MenuItem key={option.value} value={option.value}>
@@ -390,6 +474,9 @@ export function WarehouseConfigScreen() {
                         </MenuItem>
                       ))}
                     </Select>
+                    {fieldErrors.status ? (
+                      <FormHelperText>{fieldErrors.status}</FormHelperText>
+                    ) : null}
                   </FormControl>
                 </Grid>
                 <Grid size={12}>
@@ -400,13 +487,19 @@ export function WarehouseConfigScreen() {
                     multiline
                     minRows={2}
                     value={formValues.address ?? ""}
-                    onChange={(event) =>
+                    onChange={(event) => {
+                      const value = event.target.value;
                       setFormValues((current) => ({
                         ...current,
-                        address: event.target.value,
-                      }))
-                    }
+                        address: value,
+                      }));
+                      setFieldErrors((current) =>
+                        current.address ? { ...current, address: "" } : current,
+                      );
+                    }}
                     disabled={fieldsDisabled}
+                    error={Boolean(fieldErrors.address)}
+                    helperText={fieldErrors.address}
                     slotProps={{ htmlInput: { maxLength: 500 } }}
                   />
                 </Grid>
@@ -416,13 +509,21 @@ export function WarehouseConfigScreen() {
                     label="Người liên hệ"
                     fullWidth
                     value={formValues.contact_person ?? ""}
-                    onChange={(event) =>
+                    onChange={(event) => {
+                      const value = event.target.value;
                       setFormValues((current) => ({
                         ...current,
-                        contact_person: event.target.value,
-                      }))
-                    }
+                        contact_person: value,
+                      }));
+                      setFieldErrors((current) =>
+                        current.contact_person
+                          ? { ...current, contact_person: "" }
+                          : current,
+                      );
+                    }}
                     disabled={fieldsDisabled}
+                    error={Boolean(fieldErrors.contact_person)}
+                    helperText={fieldErrors.contact_person}
                     slotProps={{ htmlInput: { maxLength: 200 } }}
                   />
                 </Grid>
@@ -432,20 +533,34 @@ export function WarehouseConfigScreen() {
                     label="Số điện thoại"
                     fullWidth
                     value={formValues.phone ?? ""}
-                    onChange={(event) =>
+                    onChange={(event) => {
+                      const value = event.target.value
+                        .replace(/\D/g, "")
+                        .slice(0, 10);
                       setFormValues((current) => ({
                         ...current,
-                        phone: event.target.value.replace(/\D/g, "").slice(0, 10),
-                      }))
-                    }
+                        phone: value,
+                      }));
+                      setFieldErrors((current) =>
+                        current.phone ? { ...current, phone: "" } : current,
+                      );
+                    }}
                     disabled={fieldsDisabled}
-                    slotProps={{ htmlInput: { inputMode: "numeric", maxLength: 10 } }}
+                    error={Boolean(fieldErrors.phone)}
+                    helperText={fieldErrors.phone}
+                    slotProps={{
+                      htmlInput: { inputMode: "numeric", maxLength: 10 },
+                    }}
                   />
                 </Grid>
               </Grid>
 
               {!canManage ? (
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mt: 2 }}
+                >
                   Tài khoản hiện tại chỉ có quyền xem nên không thể sửa cấu hình
                   kho.
                 </Typography>
@@ -454,7 +569,12 @@ export function WarehouseConfigScreen() {
           )}
         </Card>
 
-        <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)} maxWidth="xs" fullWidth>
+        <Dialog
+          open={confirmOpen}
+          onClose={() => setConfirmOpen(false)}
+          maxWidth="xs"
+          fullWidth
+        >
           <DialogTitle>Đổi trạng thái kho?</DialogTitle>
           <DialogContent>
             <Typography variant="body2">
@@ -463,10 +583,15 @@ export function WarehouseConfigScreen() {
             </Typography>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setConfirmOpen(false)}>Hủy</Button>
-            <Button variant="contained" onClick={() => void confirmStatusChange()}>
+            <ActionButton kind="cancel" onClick={() => setConfirmOpen(false)}>
+              Hủy
+            </ActionButton>
+            <ActionButton
+              kind="confirm"
+              onClick={() => void confirmStatusChange()}
+            >
               Đồng ý
-            </Button>
+            </ActionButton>
           </DialogActions>
         </Dialog>
       </Stack>

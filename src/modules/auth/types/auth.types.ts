@@ -44,6 +44,30 @@ export interface ChangePasswordRequest {
   new_password_confirmation: string;
 }
 
+/** POST /auth/forgot-password — luôn trả message chung, không tiết lộ email có tồn tại hay không. */
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+/** POST /auth/verify-otp */
+export interface VerifyOtpRequest {
+  email: string;
+  otp: string;
+}
+
+export interface VerifyOtpResponse {
+  reset_token: string;
+  expires_in: number;
+}
+
+/** POST /auth/reset-password — dùng reset_token trả về từ verify-otp. */
+export interface ResetPasswordRequest {
+  email: string;
+  reset_token: string;
+  new_password: string;
+  new_password_confirmation: string;
+}
+
 /** Payload thật của POST /api/v1/auth/switch-context trên BE m1. */
 export interface SwitchContextRequest {
   context_type?: string | null;

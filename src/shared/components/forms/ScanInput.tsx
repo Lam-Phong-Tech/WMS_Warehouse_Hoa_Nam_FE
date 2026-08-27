@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Button, Input, Typography } from "antd";
+import { Input, Typography } from "antd";
 import type { InputRef } from "antd";
 import { BarcodeOutlined } from "@/shared/components/icons";
+import { ActionButton } from "@/shared/components/actions";
 
 export interface ScanInputProps {
   value?: string;
@@ -93,14 +94,13 @@ export function ScanInput({
         size={size}
         prefix={<BarcodeOutlined aria-hidden="true" />}
         suffix={
-          <Button
-            type="primary"
-            size={size}
+          <ActionButton
+            kind="scan"
             disabled={disabled}
             onClick={() => submit(currentValue)}
           >
             Scan
-          </Button>
+          </ActionButton>
         }
         status={helpText ? "error" : undefined}
         onChange={(event) => setValue(event.target.value)}

@@ -75,6 +75,20 @@ vi.mock("@/modules/iam/hooks/use-iam", () => ({
   }),
   useCreateIamUser: mutation,
   useUpdateIamUser: mutation,
+  // Quyền cấp riêng theo tài khoản (yêu cầu #2/#4) — không dùng trong các test
+  // hiện có nên trả dữ liệu rỗng/no-op là đủ.
+  useIamPermissions: () => ({
+    data: [],
+    isLoading: false,
+    error: null,
+  }),
+  useIamUserPermissionOverrides: () => ({
+    data: [],
+    isLoading: false,
+    error: null,
+  }),
+  useGrantIamUserPermission: mutation,
+  useRevokeIamUserPermission: mutation,
 }));
 
 describe("IamUserScreen", () => {

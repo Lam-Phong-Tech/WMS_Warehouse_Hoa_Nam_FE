@@ -4,14 +4,12 @@ import {
   Alert,
   Autocomplete,
   Box,
-  Button,
   Chip,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   Grid,
-  IconButton,
   Stack,
   TextField,
   ThemeProvider,
@@ -22,20 +20,14 @@ import {
 import { muiTheme } from "@/app/mui-theme";
 import { toast } from "sonner";
 import dayjs from "dayjs";
-import {
-  CameraOutlined,
-  CloseOutlined,
-  DeleteOutlined,
-  PlayCircleOutlined,
-  SaveOutlined,
-  UploadOutlined,
-} from "@/shared/components/icons";
+import { DeleteOutlined, PlayCircleOutlined } from "@/shared/components/icons";
 import {
   extractFieldErrorsRaw,
   getApiErrorMessage,
   getErrorRequestId,
 } from "@/shared/api/api-error";
 import { ACTION_ICON_COLORS } from "@/shared/theme/actionIconColors";
+import { useDialogExit } from "@/shared/utils/useDialogExit";
 import { CameraScanModal } from "@/shared/components/forms/CameraScanModal";
 import { ScanInput } from "@/shared/components/forms/ScanInput";
 import { useMvpDefects } from "@/modules/master-data/hooks/use-mvp-master";
@@ -49,6 +41,7 @@ import type {
   WarrantyCase,
   WarrantyIdentificationType,
 } from "@/modules/warranty/types";
+import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 
 // Annex D SCR-WAR-01 field `images`: jpg/png/webp; <=10 files; <=10MB/file.
 const MAX_INTAKE_IMAGES = 10;
@@ -100,6 +93,7 @@ export function WarrantyIntakeModal({
   onClose,
   onCreated,
 }: WarrantyIntakeModalProps) {
+  const dialog = useDialogExit(onClose);
   const [identificationType, setIdentificationType] =
     useState<WarrantyIdentificationType>("IDENTIFIED");
   const [itemCode, setItemCode] = useState("");
@@ -376,49 +370,59 @@ export function WarrantyIntakeModal({
   return (
     <ThemeProvider theme={muiTheme}>
       <Dialog
-        open={open}
-        onClose={onClose}
+        {...dialog.dialogProps}
+        open={open && dialog.open}
         maxWidth="md"
         fullWidth
       >
         <DialogTitle sx={{ pr: 6, position: "relative" }}>
           Tiếp nhận bảo hành
-          <IconButton
-            aria-label="Đóng"
-            onClick={onClose}
+          <ActionIconButton
+            kind="close"
+            label="Đóng"
+            onClick={dialog.close}
             sx={{ position: "absolute", right: 10, top: 8 }}
-          >
-            <CloseOutlined style={{ fontSize: 15 }} />
-          </IconButton>
+          />
         </DialogTitle>
         <DialogContent dividers>
           <Stack spacing={2}>
             {formError ? <Alert severity="error">{formError}</Alert> : null}
 
             <Box>
-              <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.5 }}>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ display: "block", mb: 0.5 }}
+              >
                 Loại tiếp nhận *
               </Typography>
               <ToggleButtonGroup
                 exclusive
                 value={identificationType}
-                onChange={(_event, value: WarrantyIdentificationType | null) => {
+                onChange={(
+                  _event,
+                  value: WarrantyIdentificationType | null,
+                ) => {
                   if (value) setIdentificationType(value);
                 }}
                 size="small"
                 color="primary"
               >
-                <ToggleButton value="IDENTIFIED">Có mã máy (IDENTIFIED)</ToggleButton>
-                <ToggleButton value="TEMP_ONLY">Mất mã (TEMP_ONLY)</ToggleButton>
+                <ToggleButton value="IDENTIFIED">
+                  Có mã máy (IDENTIFIED)
+                </ToggleButton>
+                <ToggleButton value="TEMP_ONLY">
+                  Mất mã (TEMP_ONLY)
+                </ToggleButton>
               </ToggleButtonGroup>
             </Box>
 
             {identificationType === "TEMP_ONLY" ? (
               <>
                 <Alert severity="warning">
-                  Case TEMP_ONLY không liên kết item gốc, không xác nhận lịch
-                  sử bán hàng (NOT_TRACEABLE) và không sinh stock movement. Mã
-                  tạm sẽ do hệ thống sinh sau khi lưu.
+                  Case TEMP_ONLY không liên kết item gốc, không xác nhận lịch sử
+                  bán hàng (NOT_TRACEABLE) và không sinh stock movement. Mã tạm
+                  sẽ do hệ thống sinh sau khi lưu.
                 </Alert>
                 <TextField
                   required
@@ -447,10 +451,18 @@ export function WarrantyIntakeModal({
               </>
             ) : (
               <Box>
-                <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.5 }}>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: "block", mb: 0.5 }}
+                >
                   Mã máy / serial / barcode item *
                 </Typography>
-                <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap", rowGap: 1 }}>
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  sx={{ flexWrap: "wrap", rowGap: 1 }}
+                >
                   <Box sx={{ flex: 1, minWidth: 240 }}>
                     <ScanInput
                       value={itemCode}
@@ -467,22 +479,27 @@ export function WarrantyIntakeModal({
                       onScan={(code) => void resolveScannedCode(code)}
                     />
                   </Box>
-                  <Button
-                    variant="outlined"
-                    startIcon={<CameraOutlined style={{ color: ACTION_ICON_COLORS.sync }} />}
+                  <ActionButton
+                    kind="camera"
                     onClick={() => setCameraOpen(true)}
                   >
                     Camera
-                  </Button>
+                  </ActionButton>
                 </Stack>
-                <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.5 }}>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: "block", mt: 0.5 }}
+                >
                   Item phải đã xuất cho khách (ISSUED hoặc RETURNED_TO_CUSTOMER)
                   và chưa có case bảo hành đang hoạt động.
                 </Typography>
                 {resolvedItem ? (
                   <Alert severity="success" sx={{ mt: 1 }}>
                     {`Đã nhận diện item${
-                      resolvedItem.skuCode ? ` · SKU ${resolvedItem.skuCode}` : ""
+                      resolvedItem.skuCode
+                        ? ` · SKU ${resolvedItem.skuCode}`
+                        : ""
                     }${resolvedItem.itemUnique ? ` · ${resolvedItem.itemUnique}` : ""}${
                       resolvedItem.objectStatus
                         ? ` · trạng thái ${resolvedItem.objectStatus}`
@@ -495,8 +512,8 @@ export function WarrantyIntakeModal({
                     <Typography variant="body2">{resolveError}</Typography>
                     <Typography variant="caption">
                       Nếu QR hỏng hoặc item không định danh được, chuyển sang
-                      tab "Mất mã (TEMP_ONLY)" — hệ thống không tự suy đoán
-                      liên kết item.
+                      tab "Mất mã (TEMP_ONLY)" — hệ thống không tự suy đoán liên
+                      kết item.
                     </Typography>
                   </Alert>
                 ) : null}
@@ -525,13 +542,17 @@ export function WarrantyIntakeModal({
                       event.target.value.replace(/\D/g, "").slice(0, 10),
                     )
                   }
-                  error={Boolean(customerPhone) && !/^0\d{9}$/.test(customerPhone)}
+                  error={
+                    Boolean(customerPhone) && !/^0\d{9}$/.test(customerPhone)
+                  }
                   helperText={
                     Boolean(customerPhone) && !/^0\d{9}$/.test(customerPhone)
                       ? "Số điện thoại phải đủ 10 chữ số và bắt đầu bằng số 0."
                       : undefined
                   }
-                  slotProps={{ htmlInput: { maxLength: 10, inputMode: "numeric" } }}
+                  slotProps={{
+                    htmlInput: { maxLength: 10, inputMode: "numeric" },
+                  }}
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 8 }}>
@@ -587,7 +608,9 @@ export function WarrantyIntakeModal({
                   label="Phụ kiện đi kèm"
                   placeholder="VD: Pin 20V, sạc, hộp"
                   value={accessoriesReceived}
-                  onChange={(event) => setAccessoriesReceived(event.target.value)}
+                  onChange={(event) =>
+                    setAccessoriesReceived(event.target.value)
+                  }
                   slotProps={{ htmlInput: { maxLength: 1000 } }}
                 />
               </Grid>
@@ -621,11 +644,19 @@ export function WarrantyIntakeModal({
               <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
                 {`Ảnh đính kèm (${imageFiles.length}/${MAX_INTAKE_IMAGES})`}
               </Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1 }}>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ display: "block", mb: 1 }}
+              >
                 JPG/PNG/WEBP, tối đa 10 ảnh, mỗi ảnh ≤ 10MB. Ảnh được tải lên
                 sau khi case bảo hành được tạo.
               </Typography>
-              <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap", rowGap: 1 }}>
+              <Stack
+                direction="row"
+                spacing={1}
+                sx={{ flexWrap: "wrap", rowGap: 1 }}
+              >
                 {imageFiles.map((file, index) => (
                   <Chip
                     key={`${file.name}-${index}`}
@@ -640,12 +671,10 @@ export function WarrantyIntakeModal({
                 ))}
               </Stack>
               {imageFiles.length < MAX_INTAKE_IMAGES ? (
-                <Button
+                <ActionButton
+                  kind="upload"
                   component="label"
-                  variant="outlined"
-                  size="small"
                   disabled={busy}
-                  startIcon={<UploadOutlined style={{ color: ACTION_ICON_COLORS.upload }} />}
                   sx={{ mt: 1 }}
                 >
                   Tải ảnh
@@ -659,7 +688,7 @@ export function WarrantyIntakeModal({
                       event.target.value = "";
                     }}
                   />
-                </Button>
+                </ActionButton>
               ) : null}
             </Box>
 
@@ -667,11 +696,19 @@ export function WarrantyIntakeModal({
               <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
                 {`Video đính kèm (${videoFiles.length}/${MAX_INTAKE_VIDEOS})`}
               </Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1 }}>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ display: "block", mb: 1 }}
+              >
                 MP4/MOV/WEBM, tối đa 2 video, mỗi video ≤ 300MB và ≤ 5 phút.
                 Video được tải lên sau khi case bảo hành được tạo.
               </Typography>
-              <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap", rowGap: 1, mb: 1 }}>
+              <Stack
+                direction="row"
+                spacing={1}
+                sx={{ flexWrap: "wrap", rowGap: 1, mb: 1 }}
+              >
                 {videoFiles.map((file, index) => (
                   <Chip
                     key={`${file.name}-${index}`}
@@ -707,12 +744,15 @@ export function WarrantyIntakeModal({
                     opacity: busy ? 0.6 : 1,
                   }}
                 >
-                  <PlayCircleOutlined style={{ color: ACTION_ICON_COLORS.upload, fontSize: 24 }} />
+                  <PlayCircleOutlined
+                    style={{ color: ACTION_ICON_COLORS.upload, fontSize: 24 }}
+                  />
                   <Typography variant="body2">
                     Kéo thả video vào đây hoặc bấm để chọn
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    Tối đa {MAX_INTAKE_VIDEOS} video, mỗi video ≤ 300MB, ≤ 5 phút.
+                    Tối đa {MAX_INTAKE_VIDEOS} video, mỗi video ≤ 300MB, ≤ 5
+                    phút.
                   </Typography>
                   <input
                     type="file"
@@ -743,17 +783,16 @@ export function WarrantyIntakeModal({
           />
         </DialogContent>
         <DialogActions>
-          <Button startIcon={<CloseOutlined />} onClick={onClose} disabled={busy}>
+          <ActionButton kind="cancel" onClick={dialog.close} disabled={busy}>
             Hủy
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<SaveOutlined />}
+          </ActionButton>
+          <ActionButton
+            kind="save"
             disabled={busy}
             onClick={() => void submit()}
           >
             {busy ? "Đang lưu..." : "Lưu tiếp nhận"}
-          </Button>
+          </ActionButton>
         </DialogActions>
       </Dialog>
     </ThemeProvider>

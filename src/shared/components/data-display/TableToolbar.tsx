@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import { FilterBar } from "./FilterBar";
 import { SearchInput } from "./SearchInput";
-
 export interface TableToolbarProps {
   /** Search placeholder text */
   searchPlaceholder?: string;
@@ -36,8 +35,12 @@ export interface TableToolbarProps {
  *   }
  *   actions={
  *     <>
- *       <Button>Export</Button>
- *       <Button type="primary">+ Nhân sự</Button>
+ *       <ActionButton
+  kind="export"
+>Export</ActionButton>
+ *       <ActionButton
+  kind="create"
+>+ Nhân sự</ActionButton>
  *     </>
  *   }
  * />

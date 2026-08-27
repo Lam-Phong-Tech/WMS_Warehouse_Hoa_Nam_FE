@@ -37,9 +37,12 @@ const EXPECTED_EXACT_LABELS: ReadonlyArray<readonly [string, string]> = [
 ];
 
 describe("VietnameseUiBoundary full localization checklist", () => {
-  it.each(EXPECTED_EXACT_LABELS)("maps %s to Vietnamese", (source, expected) => {
-    expect(translateUserFacingText(source)).toBe(expected);
-  });
+  it.each(EXPECTED_EXACT_LABELS)(
+    "maps %s to Vietnamese",
+    (source, expected) => {
+      expect(translateUserFacingText(source)).toBe(expected);
+    },
+  );
 
   it("covers the original P0/P1 workflow terminology", () => {
     expect(translateUserFacingText("Quét & Full Post Receipt")).toBe(
@@ -51,9 +54,7 @@ describe("VietnameseUiBoundary full localization checklist", () => {
     expect(translateUserFacingText("Movement / Trace")).toBe(
       "Biến động / Truy vết",
     );
-    expect(translateUserFacingText("Product Master")).toBe(
-      "Danh mục sản phẩm",
-    );
+    expect(translateUserFacingText("Product Master")).toBe("Danh mục sản phẩm");
     expect(translateUserFacingText("System scope")).toBe("Toàn hệ thống");
     expect(translateUserFacingText("runtime")).toBe("khi vận hành");
   });
@@ -74,6 +75,8 @@ describe("VietnameseUiBoundary full localization checklist", () => {
     expect(translateUserFacingText("SKU · QR · RFID")).toBe("SKU · QR · RFID");
     expect(translateUserFacingText("sku.manage")).toBe("sku.manage");
     expect(translateUserFacingText("inbound.post")).toBe("inbound.post");
-    expect(translateUserFacingText("published_to_app")).toBe("published_to_app");
+    expect(translateUserFacingText("published_to_app")).toBe(
+      "published_to_app",
+    );
   });
 });

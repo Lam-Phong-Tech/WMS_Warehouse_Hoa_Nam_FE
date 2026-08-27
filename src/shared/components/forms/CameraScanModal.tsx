@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Alert, Button, Modal } from "antd";
-import { CloseOutlined } from "@/shared/components/icons";
+import { Alert, Modal } from "antd";
+import { ActionButton } from "@/shared/components/actions";
 
 type BarcodeResult = { rawValue?: string };
 type BarcodeDetectorInstance = {
@@ -162,13 +162,12 @@ export function CameraScanModal({
       open={open}
       onCancel={onClose}
       footer={
-        <Button icon={<CloseOutlined />} onClick={onClose}>
+        <ActionButton kind="close" onClick={onClose}>
           Đóng / nhập tay
-        </Button>
+        </ActionButton>
       }
       destroyOnHidden
       centered
-      mask={{ closable: false }}
     >
       {cameraError ? (
         <Alert type="warning" showIcon title={cameraError} />

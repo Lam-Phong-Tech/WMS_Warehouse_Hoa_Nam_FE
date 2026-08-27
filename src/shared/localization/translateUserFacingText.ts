@@ -182,14 +182,23 @@ const INLINE_TOKEN_LABELS: Readonly<Record<string, string>> = {
 };
 
 const PHRASE_REPLACEMENTS: ReadonlyArray<readonly [RegExp, string]> = [
-  [/timeout of [0-9]+ms exceeded/gi, "Yêu cầu quá thời gian, vui lòng thử lại."],
+  [
+    /timeout of [0-9]+ms exceeded/gi,
+    "Yêu cầu quá thời gian, vui lòng thử lại.",
+  ],
   [/Packing Label chưa PRINTED/gi, "Nhãn đóng gói chưa được in"],
-  [/Phiếu POSTED là bất biến/gi, "Phiếu đã xuất kho không được chỉnh sửa trực tiếp"],
+  [
+    /Phiếu POSTED là bất biến/gi,
+    "Phiếu đã xuất kho không được chỉnh sửa trực tiếp",
+  ],
   [/Đã Preview Packing Label/gi, "Đã xem trước nhãn đóng gói"],
   [/Đã Ready\b/gi, "Đã sẵn sàng"],
   [/được Post trước đó/gi, "được hoàn tất trước đó"],
   [/full match/gi, "đối chiếu đủ"],
-  [/RFID mapping là stock-neutral/gi, "Việc gán RFID không làm thay đổi tồn kho"],
+  [
+    /RFID mapping là stock-neutral/gi,
+    "Việc gán RFID không làm thay đổi tồn kho",
+  ],
   [/không có tag/gi, "không có thẻ RFID"],
   [/có tag/gi, "có thẻ RFID"],
   [/BarcodeDetector/gi, "tính năng đọc mã vạch/QR"],

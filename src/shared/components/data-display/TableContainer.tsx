@@ -1,8 +1,9 @@
 import type { ReactNode } from "react";
-import { Card, Button, Skeleton } from "antd";
+import { Card, Skeleton } from "antd";
 import { TableToolbar } from "./TableToolbar";
 import { EmptyState } from "./EmptyState";
 import { ApiErrorAlert } from "../feedback/ApiErrorAlert";
+import { ActionButton } from "@/shared/components/actions";
 
 /**
  * Toolbar config object (dùng với TableToolbar component).
@@ -96,7 +97,9 @@ function isToolbarConfig(
  *     searchValue: search,
  *     onSearchChange: setSearch,
  *     filters: <Select placeholder="Chi nhánh" />,
- *     actions: <Button type="primary">+ Thêm</Button>,
+ *     actions: <ActionButton
+  kind="create"
+>+ Thêm</ActionButton>,
  *   }}
  * >
  *   <DataTable ... />
@@ -239,9 +242,13 @@ export function FilteredEmptyState({
       }
     >
       {onClearFilters && (
-        <Button style={{ marginTop: 12 }} onClick={onClearFilters}>
+        <ActionButton
+          kind="reset"
+          style={{ marginTop: 12 }}
+          onClick={onClearFilters}
+        >
           Xóa bộ lọc
-        </Button>
+        </ActionButton>
       )}
     </EmptyState>
   );

@@ -1,9 +1,11 @@
 import { App as AntdApp, ConfigProvider } from "antd";
+import { ThemeProvider as MuiThemeProvider } from "@mui/material/styles";
 import viVN from "antd/locale/vi_VN";
 import type { ReactNode } from "react";
 import { Toaster } from "sonner";
 import { QueryProvider } from "@/app/providers/query-provider";
 import { themeConfig } from "@/app/theme";
+import { muiTheme } from "@/app/mui-theme";
 import { ErrorBoundary } from "@/shared/components/feedback/ErrorBoundary";
 
 const locale = {
@@ -30,23 +32,25 @@ export interface AppProvidersProps {
 export function AppProviders({ children }: AppProvidersProps) {
   return (
     <QueryProvider>
-      <ConfigProvider theme={themeConfig} locale={locale}>
-        <AntdApp>
-          <ErrorBoundary>
-            <Toaster
-              position="top-right"
-              richColors
-              closeButton
-              expand
-              gap={12}
-              visibleToasts={5}
-              swipeDirections={["bottom"]}
-              className="app-toaster"
-            />
-            {children}
-          </ErrorBoundary>
-        </AntdApp>
-      </ConfigProvider>
+      <MuiThemeProvider theme={muiTheme}>
+        <ConfigProvider theme={themeConfig} locale={locale}>
+          <AntdApp>
+            <ErrorBoundary>
+              <Toaster
+                position="top-right"
+                richColors
+                closeButton
+                expand
+                gap={12}
+                visibleToasts={5}
+                swipeDirections={["bottom"]}
+                className="app-toaster"
+              />
+              {children}
+            </ErrorBoundary>
+          </AntdApp>
+        </ConfigProvider>
+      </MuiThemeProvider>
     </QueryProvider>
   );
 }

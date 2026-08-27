@@ -3,7 +3,6 @@ import { InputNumber, Select as AntSelect, Table, Tag } from "antd";
 import {
   Alert,
   Box,
-  Button,
   Checkbox,
   Dialog,
   DialogActions,
@@ -12,7 +11,6 @@ import {
   FormControl,
   FormControlLabel,
   Grid,
-  IconButton,
   InputLabel,
   MenuItem,
   Select,
@@ -23,7 +21,6 @@ import {
 } from "@mui/material";
 import { toast } from "sonner";
 import { muiTheme } from "@/app/mui-theme";
-import { CloseOutlined, RollbackOutlined } from "@/shared/components/icons";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { getApiErrorMessage, normalizeError } from "@/shared/api/api-error";
 import {
@@ -44,6 +41,8 @@ import type {
 } from "../types";
 import { isStockRestoringMovement } from "../types";
 import { formatDateTime } from "@/shared/utils/format-date";
+import { useDialogExit } from "@/shared/utils/useDialogExit";
+import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 
 const RETURN_CONDITION_OPTIONS: Array<{
   value: ReversalReturnCondition;
@@ -71,10 +70,11 @@ function qty(value?: number) {
 
 interface Props {
   onClose: () => void;
-  onCreated: (reversalCode: string) => void;
+  onCreated: (reversalCode: string, reversalId: string) => void;
 }
 
 export function ReversalCreateModal({ onClose, onCreated }: Props) {
+  const dialog = useDialogExit(onClose);
   const [search, setSearch] = useState("");
   const [selectedMovement, setSelectedMovement] =
     useState<ReversibleMovement>();
@@ -171,8 +171,7 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
       reference_document_id:
         selectedMovement.source_document_id || selectedMovement.id,
       reference_document_type:
-        selectedMovement.source_document_type ||
-        selectedMovement.movement_type,
+        selectedMovement.source_document_type || selectedMovement.movement_type,
       reference_version: selectedMovement.version,
       reason,
       ...(isIssueReversal
@@ -182,7 +181,13 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
           }
         : {}),
       lines: selectedLines.flatMap(
-        ({ sku, reversal_qty, reason: lineReason, is_serial_tracked, item_ids }) =>
+        ({
+          sku,
+          reversal_qty,
+          reason: lineReason,
+          is_serial_tracked,
+          item_ids,
+        }) =>
           is_serial_tracked
             ? item_ids.map((item_id) => ({
                 sku,
@@ -196,9 +201,14 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
     };
     try {
       const created = await createMutation.mutateAsync(payload);
-      toast.success(`Đã tạo phiếu điều chỉnh ${created.reversal_code}`);
+      // "Chứng từ nhập/xuất/hoàn trả": phiếu điều chỉnh luôn dừng ở DRAFT sau khi
+      // tạo — phải đính kèm chứng từ rồi bấm Hoàn tất điều chỉnh mới thật sự ghi
+      // tồn kho (DocumentEvidenceGuard bắt buộc REVERSAL có chứng từ trước Post).
+      toast.success(
+        `Đã tạo phiếu điều chỉnh ${created.reversal_code} (nháp) — hãy đính kèm chứng từ rồi bấm Hoàn tất điều chỉnh.`,
+      );
       setSubmitConfirmOpen(false);
-      onCreated(created.reversal_code);
+      onCreated(created.reversal_code, created.id);
     } catch (submitError) {
       const normalized = normalizeError(submitError);
       toast.error(
@@ -218,34 +228,38 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
 
   return (
     <ThemeProvider theme={muiTheme}>
-      <Dialog open onClose={onClose} maxWidth="lg" fullWidth>
+      <Dialog {...dialog.dialogProps} maxWidth="lg" fullWidth>
         <DialogTitle sx={{ pr: 6, position: "relative" }}>
           Tạo phiếu điều chỉnh tồn kho
-          <IconButton
-            aria-label="Đóng"
-            onClick={onClose}
+          <ActionIconButton
+            kind="close"
+            label="Đóng"
+            onClick={dialog.close}
             sx={{ position: "absolute", right: 10, top: 8 }}
-          >
-            <CloseOutlined style={{ fontSize: 15 }} />
-          </IconButton>
+          />
         </DialogTitle>
         <DialogContent dividers>
           <Stack spacing={2}>
             <Alert severity="info">
-              <Typography component="strong" sx={{ fontWeight: 700, display: "block" }}>
+              <Typography
+                component="strong"
+                sx={{ fontWeight: 700, display: "block" }}
+              >
                 Giao dịch gốc luôn được giữ nguyên
               </Typography>
               <Typography variant="body2">
                 Hệ thống tạo một giao dịch điều chỉnh đối ứng thay vì sửa hoặc
-                xóa giao dịch gốc. Các giới hạn số lượng và điều kiện phụ
-                thuộc được kiểm tra tự động trước khi ghi nhận.
+                xóa giao dịch gốc. Các giới hạn số lượng và điều kiện phụ thuộc
+                được kiểm tra tự động trước khi ghi nhận.
               </Typography>
             </Alert>
 
             <TextField
               value={search}
               placeholder="Tìm mã biến động / chứng từ gốc..."
-              slotProps={{ htmlInput: { "aria-label": "Tìm giao dịch có thể điều chỉnh" } }}
+              slotProps={{
+                htmlInput: { "aria-label": "Tìm giao dịch có thể điều chỉnh" },
+              }}
               onChange={(event) => setSearch(event.target.value)}
               fullWidth
               size="small"
@@ -268,7 +282,9 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
               scroll={{ x: "max-content" }}
               locale={{ emptyText: "Chưa có giao dịch nào có thể điều chỉnh" }}
               rowClassName={(record) =>
-                record.id === selectedMovement?.id ? "ant-table-row-selected" : ""
+                record.id === selectedMovement?.id
+                  ? "ant-table-row-selected"
+                  : ""
               }
               onRow={(record) => ({
                 onClick: () => handleSelectMovement(record),
@@ -285,14 +301,20 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
                   dataIndex: "movement_type",
                   width: 170,
                   render: (value: string) =>
-                    businessLabel(MOVEMENT_TYPE_LABELS, value, "Biến động khác"),
+                    businessLabel(
+                      MOVEMENT_TYPE_LABELS,
+                      value,
+                      "Biến động khác",
+                    ),
                 },
                 {
                   title: "Chứng từ gốc",
                   width: 180,
                   render: (_: unknown, row: ReversibleMovement) => (
                     <Stack spacing={0}>
-                      <span>{row.source_document_code || row.source_document_id}</span>
+                      <span>
+                        {row.source_document_code || row.source_document_id}
+                      </span>
                       <Typography variant="caption" color="text.secondary">
                         {businessLabel(
                           SOURCE_DOCUMENT_TYPE_LABELS,
@@ -321,8 +343,12 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
                         py: 0.25,
                         borderRadius: 1,
                         fontSize: 12,
-                        color: row.dependency_guard ? "error.main" : "success.main",
-                        bgcolor: row.dependency_guard ? "error.50" : "success.50",
+                        color: row.dependency_guard
+                          ? "error.main"
+                          : "success.main",
+                        bgcolor: row.dependency_guard
+                          ? "error.50"
+                          : "success.50",
                       }}
                     >
                       {row.dependency_guard
@@ -344,13 +370,20 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
                   p: 2,
                 }}
               >
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5 }}>
+                <Typography
+                  variant="subtitle2"
+                  sx={{ fontWeight: 700, mb: 1.5 }}
+                >
                   Điều chỉnh từ {selectedMovement.movement_code}
                 </Typography>
 
                 <Grid container spacing={2} sx={{ mb: 1.5 }}>
                   <Grid size={{ xs: 12, md: 6 }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ display: "block" }}
+                    >
                       Chứng từ nguồn
                     </Typography>
                     <Typography variant="body2">
@@ -359,31 +392,46 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
                         selectedMovement.source_document_type,
                         "Chứng từ khác",
                       )}{" "}
-                      · {selectedMovement.source_document_code || selectedMovement.source_document_id}
+                      ·{" "}
+                      {selectedMovement.source_document_code ||
+                        selectedMovement.source_document_id}
                     </Typography>
                   </Grid>
                   <Grid size={{ xs: 12, md: 6 }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ display: "block" }}
+                    >
                       Khả năng điều chỉnh
                     </Typography>
                     <Typography
                       variant="body2"
-                      sx={{ color: selectedMovement.can_reverse ? "success.main" : "error.main" }}
+                      sx={{
+                        color: selectedMovement.can_reverse
+                          ? "success.main"
+                          : "error.main",
+                      }}
                     >
-                      {selectedMovement.can_reverse ? "Có thể điều chỉnh" : "Đang bị chặn"}
+                      {selectedMovement.can_reverse
+                        ? "Có thể điều chỉnh"
+                        : "Đang bị chặn"}
                     </Typography>
                   </Grid>
                 </Grid>
 
                 {selectedMovement.dependency_guard ? (
                   <Alert severity="warning" sx={{ mb: 1.5 }}>
-                    <Typography component="strong" sx={{ fontWeight: 700, display: "block" }}>
+                    <Typography
+                      component="strong"
+                      sx={{ fontWeight: 700, display: "block" }}
+                    >
                       Còn nghiệp vụ phụ thuộc
                     </Typography>
                     <Typography variant="body2">
-                      Giao dịch này chưa thể điều chỉnh ngay vì còn dữ liệu
-                      hoặc nghiệp vụ phát sinh sau đó. Cần xử lý các nghiệp vụ
-                      liên quan theo thứ tự ngược trước.
+                      Giao dịch này chưa thể điều chỉnh ngay vì còn dữ liệu hoặc
+                      nghiệp vụ phát sinh sau đó. Cần xử lý các nghiệp vụ liên
+                      quan theo thứ tự ngược trước.
                     </Typography>
                   </Alert>
                 ) : null}
@@ -419,7 +467,9 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
                           required
                           value={returnCondition}
                           onChange={(event) =>
-                            setReturnCondition(event.target.value as ReversalReturnCondition)
+                            setReturnCondition(
+                              event.target.value as ReversalReturnCondition,
+                            )
                           }
                         >
                           {RETURN_CONDITION_OPTIONS.map((option) => (
@@ -428,7 +478,11 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
                             </MenuItem>
                           ))}
                         </Select>
-                        <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ mt: 0.5 }}
+                        >
                           Chỉ hàng có thể bán/xuất lại mới được cộng trở lại số
                           lượng khả dụng. Hàng lỗi hoặc không thể bán/xuất vẫn
                           được ghi nhận nhưng không cộng vào tồn khả dụng.
@@ -439,13 +493,19 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
                           control={
                             <Checkbox
                               checked={physicalConfirmed}
-                              onChange={(event) => setPhysicalConfirmed(event.target.checked)}
+                              onChange={(event) =>
+                                setPhysicalConfirmed(event.target.checked)
+                              }
                             />
                           }
                           label="Xác nhận hàng vật lý đã quay lại kho"
                         />
                         {!physicalConfirmed ? (
-                          <Typography variant="caption" color="warning.main" sx={{ display: "block" }}>
+                          <Typography
+                            variant="caption"
+                            color="warning.main"
+                            sx={{ display: "block" }}
+                          >
                             Chỉ được hoàn tất điều chỉnh xuất kho khi hàng vật
                             lý đã quay lại kho.
                           </Typography>
@@ -484,7 +544,9 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
                         dataIndex: "reversible_qty",
                         width: 150,
                         align: "right",
-                        render: (value: number) => <strong>{qty(value)}</strong>,
+                        render: (value: number) => (
+                          <strong>{qty(value)}</strong>
+                        ),
                       },
                       {
                         title: "Số lượng điều chỉnh",
@@ -570,13 +632,20 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
                 ) : null}
 
                 {missingReferenceVersion ? (
-                  <Alert severity="error" sx={{ mt: 1.5 }} data-testid="reversal-missing-version">
-                    <Typography component="strong" sx={{ fontWeight: 700, display: "block" }}>
+                  <Alert
+                    severity="error"
+                    sx={{ mt: 1.5 }}
+                    data-testid="reversal-missing-version"
+                  >
+                    <Typography
+                      component="strong"
+                      sx={{ fontWeight: 700, display: "block" }}
+                    >
                       Dữ liệu chứng từ gốc chưa đủ để tạo phiếu điều chỉnh
                     </Typography>
                     <Typography variant="body2">
-                      Hãy làm mới danh sách và chọn lại giao dịch trước khi
-                      tiếp tục.
+                      Hãy làm mới danh sách và chọn lại giao dịch trước khi tiếp
+                      tục.
                     </Typography>
                   </Alert>
                 ) : null}
@@ -585,7 +654,10 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
                   severity={selectedMovement.can_reverse ? "success" : "error"}
                   sx={{ mt: 1.5 }}
                 >
-                  <Typography component="strong" sx={{ fontWeight: 700, display: "block" }}>
+                  <Typography
+                    component="strong"
+                    sx={{ fontWeight: 700, display: "block" }}
+                  >
                     {selectedMovement.can_reverse
                       ? `Kiểm tra phụ thuộc: Đạt · tổng số lượng có thể điều chỉnh = ${qty(
                           selectedMovement.lines.reduce(
@@ -606,21 +678,35 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
                   </Typography>
                 </Alert>
 
-                <Stack direction="row" spacing={2} sx={{ mt: 2, alignItems: "center", flexWrap: "wrap", rowGap: 1.5 }}>
+                <Stack
+                  direction="row"
+                  spacing={2}
+                  sx={{
+                    mt: 2,
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                    rowGap: 1.5,
+                  }}
+                >
                   <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ display: "block" }}
+                    >
                       Tổng số lượng điều chỉnh
                     </Typography>
                     <Typography variant="h6">{qty(totalQty)}</Typography>
                   </Box>
-                  <Button
-                    variant="contained"
+                  <ActionButton
+                    kind="create"
                     disabled={!canSubmit || createMutation.isPending}
                     onClick={() => setSubmitConfirmOpen(true)}
-                    startIcon={<RollbackOutlined />}
                   >
-                    {createMutation.isPending ? "Đang tạo..." : "Tạo phiếu điều chỉnh"}
-                  </Button>
+                    {createMutation.isPending
+                      ? "Đang tạo..."
+                      : "Tạo phiếu điều chỉnh"}
+                  </ActionButton>
                 </Stack>
               </Box>
             ) : (
@@ -633,7 +719,12 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={submitConfirmOpen} onClose={() => setSubmitConfirmOpen(false)} maxWidth="xs" fullWidth>
+      <Dialog
+        open={submitConfirmOpen}
+        onClose={() => setSubmitConfirmOpen(false)}
+        maxWidth="xs"
+        fullWidth
+      >
         <DialogTitle>Tạo phiếu điều chỉnh tồn kho?</DialogTitle>
         <DialogContent>
           <Stack spacing={1}>
@@ -649,7 +740,11 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
               <Typography variant="body2">
                 Tình trạng hàng trả về:{" "}
                 <strong>
-                  {businessLabel(RETURN_CONDITION_LABELS, returnCondition, "Chưa xác định")}
+                  {businessLabel(
+                    RETURN_CONDITION_LABELS,
+                    returnCondition,
+                    "Chưa xác định",
+                  )}
                 </strong>
                 . Đã xác nhận hàng vật lý quay lại kho.
               </Typography>
@@ -657,12 +752,20 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setSubmitConfirmOpen(false)} disabled={submitBusy}>
+          <ActionButton
+            kind="refresh"
+            onClick={() => setSubmitConfirmOpen(false)}
+            disabled={submitBusy}
+          >
             Kiểm tra lại
-          </Button>
-          <Button variant="contained" onClick={() => void doSubmit()} disabled={submitBusy}>
+          </ActionButton>
+          <ActionButton
+            kind="create"
+            onClick={() => void doSubmit()}
+            disabled={submitBusy}
+          >
             {submitBusy ? "Đang tạo..." : "Tạo phiếu điều chỉnh"}
-          </Button>
+          </ActionButton>
         </DialogActions>
       </Dialog>
     </ThemeProvider>

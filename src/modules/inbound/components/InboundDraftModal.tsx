@@ -2,21 +2,24 @@ import { useEffect, useRef, useState } from "react";
 import {
   Alert,
   Autocomplete,
-  Button,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   Grid,
-  IconButton,
   TextField,
   ThemeProvider,
 } from "@mui/material";
-import { CloseOutlined, SaveOutlined } from "@/shared/components/icons";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { muiTheme } from "@/app/mui-theme";
-import { getApiErrorMessage, normalizeError } from "@/shared/api/api-error";
+import {
+  getApiErrorMessage,
+  normalizeError,
+  resolveFormErrors,
+} from "@/shared/api/api-error";
+import { useDialogExit } from "@/shared/utils/useDialogExit";
+import { DocumentAttachmentsPanel } from "@/shared/components/DocumentAttachmentsPanel";
 import {
   hasAnyWmsPermission,
   WMS_PERMISSION_CATALOG as P,
@@ -32,6 +35,7 @@ import type {
   CreateInboundPayload,
   UpdateInboundPayload,
 } from "@/modules/inbound/types";
+import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 
 interface FormValues {
   warehouseId: string;
@@ -70,6 +74,29 @@ const EMPTY_FORM: FormValues = {
 };
 
 /**
+ * Nối tên trường của server về đúng ô nhập trên form.
+ *
+ * Server báo lỗi theo tên trường của payload (`doc_date`, `dst_warehouse_id`,
+ * `source_reference` — đã được chuyển sang camelCase), còn form đặt tên riêng
+ * (`documentDate`, `warehouseId`, `sourceName`). Thiếu bảng nối này thì lỗi
+ * server rơi vào khoá không ô nào đọc và biến mất im lặng.
+ *
+ * CHỈ liệt kê trường thực sự có `error` + `helperText` trên form — liệt kê dư
+ * cũng là nuốt lỗi.
+ */
+const SERVER_FIELD_TO_FORM_FIELD: Record<string, keyof FormValues> = {
+  docDate: "documentDate",
+  documentDate: "documentDate",
+  dstWarehouseId: "warehouseId",
+  warehouseId: "warehouseId",
+  sourceReference: "sourceName",
+  sourceName: "sourceName",
+  note: "note",
+};
+
+const SERVER_ERROR_FIELDS = Object.keys(SERVER_FIELD_TO_FORM_FIELD);
+
+/**
  * GĐ1 IN-02 — create/edit only the receipt header.
  * SKU and quantity are never entered here; scan is the authoritative source.
  */
@@ -78,8 +105,9 @@ export function InboundDraftModal({
   onClose,
   onSaved,
 }: InboundDraftModalProps) {
+  const dialog = useDialogExit(onClose);
   const [formValues, setFormValues] = useState<FormValues>(EMPTY_FORM);
-  const [formError, setFormError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const initializedRef = useRef<string | null>(null);
   const detailQuery = useInboundDetail(documentId);
   const warehousesQuery = useQuery({
@@ -105,6 +133,7 @@ export function InboundDraftModal({
         sourceName: "",
         note: "",
       });
+      setFieldErrors({});
       return;
     }
     if (!detail || initializedRef.current === documentId) return;
@@ -114,6 +143,7 @@ export function InboundDraftModal({
       sourceName: detail.document.source === "-" ? "" : detail.document.source,
       note: detail.document.note ?? "",
     });
+    setFieldErrors({});
     initializedRef.current = documentId;
   }, [detail, documentId, warehousesQuery.data]);
 
@@ -127,19 +157,24 @@ export function InboundDraftModal({
     },
   );
   const selectedWarehouseOption =
-    warehouseOptions.find((option) => option.value === formValues.warehouseId) ??
-    null;
+    warehouseOptions.find(
+      (option) => option.value === formValues.warehouseId,
+    ) ?? null;
 
-  const handleSave = async () => {
-    setFormError("");
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
     if (!formValues.documentDate) {
-      setFormError("Chọn ngày chứng từ.");
-      return;
+      errors.documentDate = "Chọn ngày chứng từ.";
     }
     if (!documentId && !formValues.warehouseId) {
-      setFormError("Chọn kho nhận.");
-      return;
+      errors.warehouseId = "Chọn kho nhận.";
     }
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSave = async () => {
+    if (!validateForm()) return;
     if (!canCreate || !mutable) return;
     try {
       if (documentId) {
@@ -171,8 +206,32 @@ export function InboundDraftModal({
       );
       onSaved(created.id);
     } catch (error) {
-      toast.error(getApiErrorMessage(error, "Không lưu được phiếu nhập."));
-      if (documentId) {
+      // Lỗi nhập liệu từ server phải hiện ngay dưới ô sai, không dồn hết vào
+      // một câu tổng chung chung; `message` là phần còn lại không gắn được vào
+      // ô nào, `null` nghĩa là đã gắn hết nên không cần toast tổng nữa.
+      const { fieldErrors: serverFieldErrors, message } = resolveFormErrors(
+        error,
+        SERVER_ERROR_FIELDS,
+      );
+      const mappedErrors: Record<string, string> = {};
+      for (const [field, fieldMessage] of Object.entries(serverFieldErrors)) {
+        mappedErrors[SERVER_FIELD_TO_FORM_FIELD[field]] = fieldMessage;
+      }
+      const hasFieldErrors = Object.keys(mappedErrors).length > 0;
+      setFieldErrors((current) => ({ ...current, ...mappedErrors }));
+
+      if (message !== null) {
+        toast.error(
+          hasFieldErrors
+            ? message
+            : getApiErrorMessage(error, "Không lưu được phiếu nhập."),
+        );
+      }
+
+      // Nạp lại phiếu để lấy version mới (vd 412 STALE_VERSION). Bỏ qua khi là
+      // lỗi nhập liệu: refetch sẽ ghi đè form từ server và xoá sạch fieldErrors
+      // vừa gắn, người dùng mất cả nội dung đang sửa lẫn chỗ báo sai.
+      if (documentId && !hasFieldErrors) {
         initializedRef.current = null;
         await detailQuery.refetch();
       }
@@ -181,23 +240,22 @@ export function InboundDraftModal({
 
   return (
     <ThemeProvider theme={muiTheme}>
-      <Dialog open onClose={onClose} maxWidth="sm" fullWidth>
+      <Dialog {...dialog.dialogProps} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ pr: 6, position: "relative" }}>
           {documentId ? "Thông tin phiếu nhập" : "Tạo phiếu nhập"}
-          <IconButton
-            aria-label="Đóng"
-            onClick={onClose}
+          <ActionIconButton
+            kind="close"
+            label="Đóng"
+            onClick={dialog.close}
             disabled={saving}
             sx={{ position: "absolute", right: 10, top: 8 }}
-          >
-            <CloseOutlined style={{ fontSize: 15 }} />
-          </IconButton>
+          />
         </DialogTitle>
         <DialogContent dividers>
           <Alert severity="info" sx={{ mb: 2 }}>
             Không nhập SKU hoặc số lượng dự kiến. Sau khi tạo phiếu, quét
-            QR/Barcode sản phẩm; hệ thống tự nhận SKU, tự cộng số lượng theo
-            SKU và chỉ tăng tồn khi bấm Ghi nhận nhập.
+            QR/Barcode sản phẩm; hệ thống tự nhận SKU, tự cộng số lượng theo SKU
+            và chỉ tăng tồn khi bấm Ghi nhận nhập.
           </Alert>
 
           {detailQuery.isError ? (
@@ -209,19 +267,16 @@ export function InboundDraftModal({
               }
               sx={{ mb: 2 }}
             >
-              {getApiErrorMessage(detailQuery.error, "Không tải được phiếu nhập.")}
+              {getApiErrorMessage(
+                detailQuery.error,
+                "Không tải được phiếu nhập.",
+              )}
             </Alert>
           ) : null}
 
           {documentId && !mutable ? (
             <Alert severity="info" sx={{ mb: 2 }}>
               Phiếu đã kết thúc và chỉ được xem
-            </Alert>
-          ) : null}
-
-          {formError ? (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {formError}
             </Alert>
           ) : null}
 
@@ -234,33 +289,57 @@ export function InboundDraftModal({
                 required
                 fullWidth
                 value={formValues.documentDate}
-                onChange={(event) =>
+                onChange={(event) => {
                   setFormValues((current) => ({
                     ...current,
                     documentDate: event.target.value,
-                  }))
-                }
+                  }));
+                  if (fieldErrors.documentDate) {
+                    setFieldErrors((current) => ({
+                      ...current,
+                      documentDate: "",
+                    }));
+                  }
+                }}
                 disabled={!mutable}
                 slotProps={{ inputLabel: { shrink: true } }}
-                helperText="Định dạng: ngày/tháng/năm"
+                error={Boolean(fieldErrors.documentDate)}
+                helperText={
+                  fieldErrors.documentDate || "Định dạng: ngày/tháng/năm"
+                }
               />
             </Grid>
             <Grid size={{ xs: 12, md: 6 }}>
               <Autocomplete
                 options={warehouseOptions}
                 getOptionLabel={(option) => option.label}
-                isOptionEqualToValue={(option, value) => option.value === value.value}
+                isOptionEqualToValue={(option, value) =>
+                  option.value === value.value
+                }
                 value={selectedWarehouseOption}
-                onChange={(_event, newValue) =>
+                onChange={(_event, newValue) => {
                   setFormValues((current) => ({
                     ...current,
                     warehouseId: newValue?.value ?? "",
-                  }))
-                }
+                  }));
+                  if (fieldErrors.warehouseId) {
+                    setFieldErrors((current) => ({
+                      ...current,
+                      warehouseId: "",
+                    }));
+                  }
+                }}
                 loading={warehousesQuery.isLoading}
                 disabled={!mutable || Boolean(documentId)}
                 renderInput={(params) => (
-                  <TextField {...params} label="Kho nhận" required placeholder="Chọn kho nhận" />
+                  <TextField
+                    {...params}
+                    label="Kho nhận"
+                    required
+                    placeholder="Chọn kho nhận"
+                    error={Boolean(fieldErrors.warehouseId)}
+                    helperText={fieldErrors.warehouseId}
+                  />
                 )}
               />
             </Grid>
@@ -271,14 +350,22 @@ export function InboundDraftModal({
                 fullWidth
                 placeholder="Chứng từ vận chuyển / nhà cung cấp (tùy chọn)"
                 value={formValues.sourceName}
-                onChange={(event) =>
+                onChange={(event) => {
                   setFormValues((current) => ({
                     ...current,
                     sourceName: event.target.value,
-                  }))
-                }
+                  }));
+                  if (fieldErrors.sourceName) {
+                    setFieldErrors((current) => ({
+                      ...current,
+                      sourceName: "",
+                    }));
+                  }
+                }}
                 disabled={!mutable}
                 slotProps={{ htmlInput: { maxLength: 200 } }}
+                error={Boolean(fieldErrors.sourceName)}
+                helperText={fieldErrors.sourceName}
               />
             </Grid>
             <Grid size={12}>
@@ -289,30 +376,49 @@ export function InboundDraftModal({
                 multiline
                 minRows={3}
                 value={formValues.note}
-                onChange={(event) =>
+                onChange={(event) => {
                   setFormValues((current) => ({
                     ...current,
                     note: event.target.value,
-                  }))
-                }
+                  }));
+                  if (fieldErrors.note) {
+                    setFieldErrors((current) => ({ ...current, note: "" }));
+                  }
+                }}
                 disabled={!mutable}
-                helperText={`${formValues.note.length}/1000`}
+                // Lỗi server (vd quá độ dài) chiếm chỗ helperText đếm ký tự —
+                // báo sai ở đâu quan trọng hơn số ký tự còn lại.
+                error={Boolean(fieldErrors.note)}
+                helperText={
+                  fieldErrors.note || `${formValues.note.length}/1000`
+                }
                 slotProps={{ htmlInput: { maxLength: 1000 } }}
               />
             </Grid>
           </Grid>
+
+          {documentId ? (
+            <Grid size={12} sx={{ mt: 2 }}>
+              <DocumentAttachmentsPanel
+                documentType="INBOUND"
+                documentId={documentId}
+                disabled={!mutable}
+              />
+            </Grid>
+          ) : null}
         </DialogContent>
         <DialogActions>
-          <Button onClick={onClose}>Đóng</Button>
+          <ActionButton kind="close" onClick={dialog.close}>
+            Đóng
+          </ActionButton>
           {mutable && canCreate ? (
-            <Button
-              variant="contained"
+            <ActionButton
+              kind="save"
               onClick={() => void handleSave()}
               disabled={saving}
-              startIcon={<SaveOutlined />}
             >
               {documentId ? "Lưu thông tin" : "Tạo phiếu & quét hàng"}
-            </Button>
+            </ActionButton>
           ) : null}
         </DialogActions>
       </Dialog>

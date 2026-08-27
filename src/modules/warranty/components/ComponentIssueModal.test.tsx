@@ -225,9 +225,7 @@ describe("ComponentIssueModal (COMP-01)", () => {
     );
 
     fireEvent.click(await screen.findByRole("button", { name: /Hủy phiếu/ }));
-    const reasonInput = await screen.findByPlaceholderText(
-      "Lý do hủy (bắt buộc)",
-    );
+    const reasonInput = await screen.findByLabelText("Lý do hủy (bắt buộc)");
 
     // Chưa nhập lý do → không gọi API.
     fireEvent.click(screen.getByRole("button", { name: "Xác nhận hủy" }));

@@ -1,22 +1,13 @@
-import { useEffect, useState, type Key } from "react";
-import {
-  Button,
-  Space,
-  Table,
-  Tag,
-  type TablePaginationConfig,
-} from "antd";
-import { Button as MuiButton, MenuItem, Select, TextField, ThemeProvider } from "@mui/material";
+import { useEffect, useState } from "react";
+import dayjs from "dayjs";
+import { Space, Tag } from "antd";
+import { MenuItem, Select, TextField, ThemeProvider } from "@mui/material";
 import { muiTheme } from "@/app/mui-theme";
 import {
-  EditOutlined,
-  EyeOutlined,
-  PlusOutlined,
-  ScanOutlined,
-} from "@/shared/components/icons";
-import type { ColumnsType } from "antd/es/table";
+  ResponsiveDataTable,
+  type ResponsiveTableColumn,
+} from "@/shared/components/data-display/ResponsiveDataTable";
 import { useSearchParams } from "react-router-dom";
-import { ACTION_ICON_COLORS } from "@/shared/theme/actionIconColors";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import {
   TableLoadingBanner,
@@ -24,6 +15,7 @@ import {
 } from "@/shared/components/feedback/BusinessState";
 import { mvpRowNumber } from "@/shared/components/mvp/MvpSelectionCell";
 import { MVP_PAGE_SIZE_OPTIONS } from "@/shared/components/mvp/mvp-pagination";
+import { MvpPaginationFooter } from "@/shared/components/mvp/MvpListPagination";
 import {
   hasAnyWmsPermission,
   WMS_PERMISSION_CATALOG as P,
@@ -33,11 +25,13 @@ import {
   businessLabel,
 } from "@/shared/constants/business-labels";
 import { useOverlayBackDismiss } from "@/shared/hooks/useOverlayBackDismiss";
+import { useRowSelection } from "@/shared/hooks/useRowSelection";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { InboundDraftModal } from "@/modules/inbound/components/InboundDraftModal";
 import { useInboundDocuments } from "@/modules/inbound/hooks/use-inbound";
 import { InboundScanModal } from "@/modules/inbound/pages/MvpInboundScreens";
 import type { InboundDocument } from "@/modules/inbound/types";
+import { ActionButton } from "@/shared/components/actions";
 
 const STATUS_OPTIONS = Object.entries(INBOUND_STATUS_LABELS).map(
   ([value, label]) => ({
@@ -90,7 +84,6 @@ function InboundListScreen() {
   const [draftOpen, setDraftOpen] = useState(false);
   const [draftDocumentId, setDraftDocumentId] = useState<string | null>(null);
   const [scanDocumentId, setScanDocumentId] = useState<string | null>(null);
-  const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([]);
 
   const canCreate = useInboundPermission(P.INBOUND_CREATE);
   const canScan = useInboundPermission(P.INBOUND_SCAN);
@@ -101,6 +94,7 @@ function InboundListScreen() {
     per_page: perPage,
   });
   const rows = query.data?.data ?? [];
+  const rowSelection = useRowSelection(rows, (row) => row.id);
   const meta = query.data?.meta;
   const total = Number(meta?.total ?? rows.length);
 
@@ -149,99 +143,113 @@ function InboundListScreen() {
     "IN-01-overlay",
   );
 
-  const columns: ColumnsType<InboundDocument> = [
+  const columns: ResponsiveTableColumn<InboundDocument>[] = [
     {
-      title: "STT",
       key: "stt",
-      className: "stt-col",
-      width: 48,
+      header: "STT",
       align: "center",
-      fixed: "left",
-      render: (_value, _row, index) => mvpRowNumber(page, perPage, index),
+      width: 48,
+      hideOnMobile: true,
+      render: (row) =>
+        mvpRowNumber(
+          page,
+          perPage,
+          rows.findIndex((item) => item.id === row.id),
+        ),
     },
     {
-      title: "Phiếu nhập",
-      dataIndex: "code",
       key: "code",
+      header: "Phiếu nhập",
       width: 180,
-      fixed: "left",
-      render: (value: string, row) => <strong>{value || row.id}</strong>,
+      sortAccessor: (row) => row.code || row.id,
+      render: (row) => <strong>{row.code || row.id}</strong>,
     },
     {
-      title: "Nguồn / tham chiếu",
-      dataIndex: "source",
       key: "source",
+      header: "Nguồn / tham chiếu",
       width: 220,
-      render: (value: string) => value || "-",
+      sortAccessor: (row) => row.source || "",
+      render: (row) => row.source || "-",
     },
     {
-      title: "Số lượng đã quét",
-      dataIndex: "scanned",
+      key: "date",
+      header: "Ngày tạo",
+      width: 150,
+      hideOnMobile: true,
+      sortType: "value",
+      sortAccessor: (row) => row.date || "",
+      render: (row) => {
+        if (!row.date) return "-";
+        const parsed = dayjs(row.date);
+        // Ngày-tháng-năm giờ theo cách đọc của người dùng Việt (22-09-2026 12:00),
+        // ngày/tháng đệm số 0 cho các dòng thẳng cột nhau.
+        return parsed.isValid() ? parsed.format("DD-MM-YYYY HH:mm") : row.date;
+      },
+    },
+    {
+      key: "note",
+      header: "Ghi chú",
+      width: 200,
+      hideOnMobile: true,
+      sortAccessor: (row) => row.note || "",
+      render: (row) => row.note || "-",
+    },
+    {
       key: "scanned",
+      header: "Số lượng đã quét",
       width: 150,
       align: "right",
-      render: (value: number) => value.toLocaleString("vi-VN"),
+      sortType: "value",
+      sortAccessor: (row) => row.scanned,
+      render: (row) => row.scanned.toLocaleString("vi-VN"),
     },
     {
-      title: "Trạng thái",
-      dataIndex: "status",
+      key: "status",
+      header: "Trạng thái",
       width: 160,
-      render: statusTag,
+      sortType: "value",
+      sortAccessor: (row) => row.status,
+      render: (row) => statusTag(row.status),
     },
     {
-      title: "Cập nhật",
       key: "updatedAt",
+      header: "Cập nhật",
       width: 180,
-      render: (_, row) => row.updatedAt ?? row.date ?? "-",
-    },
-    {
-      title: "Hành động",
-      key: "actions",
-      width: 230,
-      fixed: "right",
-      render: (_, row) => {
-        const mutable = row.status === "DRAFT" || row.status === "SCANNING";
-        return (
-          <Space size={4} wrap>
-            <Button
-              type="link"
-              size="small"
-              icon={
-                mutable && canScan ? (
-                  <ScanOutlined style={{ color: ACTION_ICON_COLORS.sync }} />
-                ) : (
-                  <EyeOutlined style={{ color: ACTION_ICON_COLORS.view }} />
-                )
-              }
-              onClick={() => setScanDocumentId(row.id)}
-            >
-              {mutable && canScan
-                ? row.status === "DRAFT"
-                  ? "Bắt đầu quét"
-                  : "Tiếp tục quét"
-                : "Xem"}
-            </Button>
-            {canCreate && mutable ? (
-              <Button
-                type="link"
-                size="small"
-                icon={<EditOutlined style={{ color: ACTION_ICON_COLORS.edit }} />}
-                onClick={() => {
-                  setDraftDocumentId(row.id);
-                  setDraftOpen(true);
-                }}
-              >
-                Sửa thông tin
-              </Button>
-            ) : null}
-          </Space>
-        );
+      sortType: "value",
+      sortAccessor: (row) => row.updatedAt ?? row.date ?? "",
+      render: (row) => {
+        const value = row.updatedAt ?? row.date;
+        if (!value) return "-";
+        const parsed = dayjs(value);
+        return parsed.isValid() ? parsed.format("DD-MM-YYYY HH:mm") : value;
       },
     },
   ];
 
-  const handleTableChange = (pagination: TablePaginationConfig) => {
-    setPage(pagination.current ?? 1);
+  const renderRowActions = (row: InboundDocument) => {
+    const mutable = row.status === "DRAFT" || row.status === "SCANNING";
+    return (
+      <Space size={4} wrap>
+        <ActionButton kind="scan" onClick={() => setScanDocumentId(row.id)}>
+          {mutable && canScan
+            ? row.status === "DRAFT"
+              ? "Bắt đầu quét"
+              : "Tiếp tục quét"
+            : "Xem"}
+        </ActionButton>
+        {canCreate && mutable ? (
+          <ActionButton
+            kind="edit"
+            onClick={() => {
+              setDraftDocumentId(row.id);
+              setDraftOpen(true);
+            }}
+          >
+            Sửa thông tin
+          </ActionButton>
+        ) : null}
+      </Space>
+    );
   };
 
   const perPageOptions = MVP_PAGE_SIZE_OPTIONS.includes(
@@ -253,113 +261,107 @@ function InboundListScreen() {
   return (
     <ThemeProvider theme={muiTheme}>
       <div className="inbound-page hn-mvp-source-screen">
-      <div className="toolbar">
-        <TextField
-          value={searchInput}
-          placeholder="Tìm mã phiếu / nguồn nhập..."
-          slotProps={{ htmlInput: { "aria-label": "Tìm phiếu nhập" } }}
-          onChange={(event) => setSearchInput(event.target.value)}
-          sx={{ minWidth: 220, ...TOOLBAR_SX }}
-        />
-        <Select
-          displayEmpty
-          value={status ?? ""}
-          inputProps={{ "aria-label": "Lọc trạng thái phiếu nhập" }}
-          onChange={(event) => {
-            setStatus(event.target.value || undefined);
-            setPage(1);
-          }}
-          sx={{ minWidth: 168, ...TOOLBAR_SX }}
-        >
-          <MenuItem value="">Trạng thái: Tất cả</MenuItem>
-          {STATUS_OPTIONS.map((option) => (
-            <MenuItem key={option.value} value={option.value}>
-              {option.label}
-            </MenuItem>
-          ))}
-        </Select>
-        <Select
-          value={perPage}
-          inputProps={{ "aria-label": "Số dòng mỗi trang" }}
-          onChange={(event) => {
-            setPerPage(Number(event.target.value));
-            setPage(1);
-          }}
-          sx={{ minWidth: 100, ...TOOLBAR_SX }}
-        >
-          {perPageOptions.map((size) => (
-            <MenuItem key={size} value={size}>
-              {size} / trang
-            </MenuItem>
-          ))}
-        </Select>
-        <div className="spacer" />
-        {canCreate ? (
-          <MuiButton
-            variant="contained"
-            onClick={() => {
-              setDraftDocumentId(null);
-              setDraftOpen(true);
-            }}
-            startIcon={<PlusOutlined />}
-          >
-            Tạo phiếu nhập
-          </MuiButton>
-        ) : null}
-      </div>
-
-      {query.isError ? (
-        <div style={{ marginBottom: 14 }}>
-          <ApiErrorAlert
-            error={query.error}
-            title="Không tải được danh sách phiếu nhập."
-            onRetry={() => query.refetch()}
+        <div className="toolbar">
+          <TextField
+            value={searchInput}
+            placeholder="Tìm mã phiếu / nguồn nhập..."
+            slotProps={{ htmlInput: { "aria-label": "Tìm phiếu nhập" } }}
+            onChange={(event) => setSearchInput(event.target.value)}
+            sx={{ minWidth: 220, ...TOOLBAR_SX }}
           />
+          <Select
+            displayEmpty
+            value={status ?? ""}
+            inputProps={{ "aria-label": "Lọc trạng thái phiếu nhập" }}
+            onChange={(event) => {
+              setStatus(event.target.value || undefined);
+              setPage(1);
+            }}
+            sx={{ minWidth: 168, ...TOOLBAR_SX }}
+          >
+            <MenuItem value="">Trạng thái: Tất cả</MenuItem>
+            {STATUS_OPTIONS.map((option) => (
+              <MenuItem key={option.value} value={option.value}>
+                {option.label}
+              </MenuItem>
+            ))}
+          </Select>
+          <Select
+            value={perPage}
+            inputProps={{ "aria-label": "Số dòng mỗi trang" }}
+            onChange={(event) => {
+              setPerPage(Number(event.target.value));
+              setPage(1);
+            }}
+            sx={{ minWidth: 100, ...TOOLBAR_SX }}
+          >
+            {perPageOptions.map((size) => (
+              <MenuItem key={size} value={size}>
+                {size} / trang
+              </MenuItem>
+            ))}
+          </Select>
+          <div className="spacer" />
+          {canCreate ? (
+            <ActionButton
+              kind="create"
+              onClick={() => {
+                setDraftDocumentId(null);
+                setDraftOpen(true);
+              }}
+            >
+              Tạo phiếu nhập
+            </ActionButton>
+          ) : null}
         </div>
-      ) : null}
 
-      <TableLoadingBanner loading={query.isLoading || query.isFetching} />
-      <Table<InboundDocument>
-        rowKey="id"
-        columns={columns}
-        dataSource={rows}
-        rowSelection={{
-          selectedRowKeys,
-          onChange: setSelectedRowKeys,
-        }}
-        loading={query.isLoading || query.isFetching}
-        onChange={handleTableChange}
-        pagination={{
-          current: Number(meta?.current_page ?? page),
-          pageSize: perPage,
-          total,
-          showSizeChanger: false,
-          showTotal: (count) => `Tổng ${count} phiếu nhập`,
-        }}
-        locale={{
-          emptyText: tableEmptyText(
+        {query.isError ? (
+          <div style={{ marginBottom: 14 }}>
+            <ApiErrorAlert
+              error={query.error}
+              title="Không tải được danh sách phiếu nhập."
+              onRetry={() => query.refetch()}
+            />
+          </div>
+        ) : null}
+
+        <TableLoadingBanner loading={query.isLoading || query.isFetching} />
+        <ResponsiveDataTable<InboundDocument>
+          columns={columns}
+          rows={rows}
+          rowKey={(row) => row.id}
+          rowSelection={rowSelection}
+          selectionLabel={(row) => `Chọn phiếu nhập ${row.code || row.id}`}
+          loading={query.isLoading || query.isFetching}
+          renderRowActions={renderRowActions}
+          emptyText={tableEmptyText(
             query.isError ? query.error : null,
             "Chưa có phiếu nhập phù hợp",
-          ),
-        }}
-        scroll={{ x: "max-content" }}
-      />
-
-      {draftOpen ? (
-        <InboundDraftModal
-          documentId={draftDocumentId}
-          onClose={closeDraftModal}
-          onSaved={handleSaved}
+          )}
         />
-      ) : null}
-
-      {scanDocumentId ? (
-        <InboundScanModal
-          documentId={scanDocumentId}
-          onClose={() => setScanDocumentId(null)}
-          onChanged={() => void query.refetch()}
+        <MvpPaginationFooter
+          current={Number(meta?.current_page ?? page)}
+          pageSize={perPage}
+          total={total}
+          itemLabel="phiếu nhập"
+          onChange={setPage}
         />
-      ) : null}
+
+        {draftOpen ? (
+          <InboundDraftModal
+            documentId={draftDocumentId}
+            onClose={closeDraftModal}
+            onSaved={handleSaved}
+          />
+        ) : null}
+
+        {scanDocumentId ? (
+          <InboundScanModal
+            documentId={scanDocumentId}
+            onClose={() => setScanDocumentId(null)}
+            onChanged={() => void query.refetch()}
+          />
+        ) : null}
       </div>
     </ThemeProvider>
   );

@@ -1,10 +1,13 @@
 import type { ReactNode } from "react";
-import { Button, Popconfirm } from "antd";
-import type { ButtonProps } from "antd";
+import { Popconfirm } from "antd";
 import { UI_STATE, uiStateProps } from "@/shared/constants/ui-state";
+import {
+  ActionButton,
+  type ActionButtonProps,
+} from "@/shared/components/actions";
 
 export interface ConfirmButtonProps extends Omit<
-  ButtonProps,
+  ActionButtonProps,
   "onClick" | "title"
 > {
   /** Gọi khi người dùng xác nhận. */
@@ -19,7 +22,12 @@ export interface ConfirmButtonProps extends Omit<
   "aria-label"?: string;
 }
 
-/** Nút kèm hộp xác nhận (dùng cho xoá / hành động nguy hiểm). */
+/**
+ * Nút kèm hộp xác nhận (dùng cho xoá / hành động nguy hiểm).
+ *
+ * Nút hiển thị là `<ActionButton />` chuẩn — caller bắt buộc khai `kind`
+ * (thường là `"delete"`) để icon và màu khớp với phần còn lại của dự án.
+ */
 export function ConfirmButton({
   onConfirm,
   title = "Bạn chắc chắn?",
@@ -39,7 +47,7 @@ export function ConfirmButton({
       okButtonProps={{ loading }}
       onConfirm={onConfirm}
     >
-      <Button {...buttonProps}>{children}</Button>
+      <ActionButton {...buttonProps}>{children}</ActionButton>
     </Popconfirm>
   );
 }

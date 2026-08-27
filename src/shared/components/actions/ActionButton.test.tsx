@@ -10,7 +10,7 @@ describe("ActionButton", () => {
 
   it('mode="hide" (mặc định): không render gì khi thiếu quyền', () => {
     render(
-      <ActionButton module="org_units" action="create">
+      <ActionButton kind="create" module="org_units" action="create">
         Thêm mới
       </ActionButton>,
     );
@@ -20,7 +20,7 @@ describe("ActionButton", () => {
   it('mode="hide": render button khi có quyền', () => {
     useAuthStore.setState({ permissionCodes: ["ORG_CREATE"] });
     render(
-      <ActionButton module="org_units" action="create">
+      <ActionButton kind="create" module="org_units" action="create">
         Thêm mới
       </ActionButton>,
     );
@@ -29,7 +29,7 @@ describe("ActionButton", () => {
 
   it('mode="disable": render button disabled + tooltip mặc định khi thiếu quyền', () => {
     render(
-      <ActionButton module="org_units" action="edit" mode="disable">
+      <ActionButton kind="edit" module="org_units" action="edit" mode="disable">
         Sửa
       </ActionButton>,
     );
@@ -44,6 +44,7 @@ describe("ActionButton", () => {
   it('mode="disable": custom disabledTooltip', () => {
     render(
       <ActionButton
+        kind="delete"
         module="org_units"
         action="delete"
         mode="disable"
@@ -59,7 +60,7 @@ describe("ActionButton", () => {
   it('mode="disable": không có title khi button enabled (có quyền)', () => {
     useAuthStore.setState({ permissionCodes: ["ORG_EDIT"] });
     render(
-      <ActionButton module="org_units" action="edit" mode="disable">
+      <ActionButton kind="edit" module="org_units" action="edit" mode="disable">
         Sửa
       </ActionButton>,
     );
@@ -72,6 +73,7 @@ describe("ActionButton", () => {
     useAuthStore.setState({ permissionCodes: ["ORG_FORCE_DELETE"] });
     render(
       <ActionButton
+        kind="delete"
         module="org_units"
         action="delete"
         permissionCode="ORG_FORCE_DELETE"
@@ -87,7 +89,12 @@ describe("ActionButton", () => {
   it("super admin: luôn render/enable dù không có permissionCodes", () => {
     useAuthStore.setState({ permissionCodes: [], isSuperAdmin: true });
     render(
-      <ActionButton module="org_units" action="create" mode="disable">
+      <ActionButton
+        kind="create"
+        module="org_units"
+        action="create"
+        mode="disable"
+      >
         Thêm mới
       </ActionButton>,
     );
@@ -97,7 +104,13 @@ describe("ActionButton", () => {
   it("keeps caller disabled state even when permission passes", () => {
     useAuthStore.setState({ permissionCodes: ["REPORT_EXPORT"] });
     render(
-      <ActionButton module="reports" action="export" mode="disable" disabled>
+      <ActionButton
+        kind="export"
+        module="reports"
+        action="export"
+        mode="disable"
+        disabled
+      >
         Export
       </ActionButton>,
     );

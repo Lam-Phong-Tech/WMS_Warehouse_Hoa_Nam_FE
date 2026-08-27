@@ -35,8 +35,11 @@ describe("FormPage", () => {
         <div>content</div>
       </FormPage>,
     );
+    // Nút hành động chuẩn dùng MUI: trạng thái loading = class MuiButton-loading
+    // và nút bị khoá (thay cho class antd "ant-btn-loading" của giao diện cũ).
     const okButton = screen.getByRole("button", { name: "Lưu" });
-    expect(okButton).toHaveClass("ant-btn-loading");
+    expect(okButton).toHaveClass("MuiButton-loading");
+    expect(okButton).toBeDisabled();
   });
 
   it("showOk=false ẩn nút Lưu", () => {
