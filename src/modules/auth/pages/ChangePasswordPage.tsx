@@ -2,7 +2,6 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Alert, Form, Spin, Typography } from "antd";
-import { LockOutlined } from "@/shared/components/icons";
 import { Navigate } from "react-router-dom";
 import { isAxiosError } from "axios";
 import { useChangePassword } from "@/modules/auth/hooks/use-change-password";
@@ -10,7 +9,7 @@ import {
   changePasswordSchema,
   type ChangePasswordFormValues,
 } from "@/modules/auth/schemas/change-password.schema";
-import { FormInput } from "@/shared/components/forms";
+import { UiFormText } from "@/shared/ui";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { ROUTES } from "@/shared/constants/routes";
 import { ActionButton } from "@/shared/components/actions";
@@ -116,34 +115,34 @@ export function ChangePasswordPage() {
               requiredMark={false}
               noValidate
             >
-              <FormInput
+              <UiFormText
                 control={control}
                 name="currentPassword"
                 label="Mật khẩu hiện tại"
                 placeholder="Nhập mật khẩu hiện tại"
-                prefix={<LockOutlined style={{ color: "#8c887e" }} />}
-                password
+                startIcon="lock"
+                type="password"
                 autoFocus
                 disabled={changePassword.isPending}
               />
 
-              <FormInput
+              <UiFormText
                 control={control}
                 name="newPassword"
                 label="Mật khẩu mới"
                 placeholder="Tối thiểu 8 ký tự"
-                prefix={<LockOutlined style={{ color: "#8c887e" }} />}
-                password
+                startIcon="lock"
+                type="password"
                 disabled={changePassword.isPending}
               />
 
-              <FormInput
+              <UiFormText
                 control={control}
                 name="newPasswordConfirmation"
                 label="Xác nhận mật khẩu mới"
                 placeholder="Nhập lại mật khẩu mới"
-                prefix={<LockOutlined style={{ color: "#8c887e" }} />}
-                password
+                startIcon="lock"
+                type="password"
                 disabled={changePassword.isPending}
               />
 

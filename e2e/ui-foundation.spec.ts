@@ -122,11 +122,8 @@ test("computed styles khớp baseline DEC-UI-BASELINE-01", async ({ page }) => {
   expect(btnStyle.fontWeight).toBe("500");
   expect(btnStyle.fontFamily).toContain("Public Sans");
 
-  // TextField: radius 6 + chữ 15
-  const input = page
-    .getByTestId("field-default")
-    .locator("input")
-    .first();
+  // TextField (UiFormText trong FormsSection): radius 6 + chữ 15
+  const input = page.getByTestId("form-text");
   const inputStyle = await input.evaluate((el) => {
     const root = el.closest(".MuiOutlinedInput-root") as HTMLElement;
     const rs = getComputedStyle(root);
@@ -143,7 +140,7 @@ test("computed styles khớp baseline DEC-UI-BASELINE-01", async ({ page }) => {
   expect(Math.round(inputStyle.height)).toBeLessThanOrEqual(40);
 
   // Status badge success: nền soft + chữ successText
-  const badge = page.getByText("ĐÃ DUYỆT");
+  const badge = page.getByText("ĐÃ DUYỆT").first();
   const badgeStyle = await badge.evaluate((el) => {
     const chip = el.closest(".MuiChip-root") as HTMLElement;
     const s = getComputedStyle(chip);
@@ -168,10 +165,99 @@ test("dialog mở đúng radius/motion contract rồi đóng sạch", async ({ p
   await expect(paper).toHaveCount(0, { timeout: 5_000 });
 });
 
-test("visual golden — foundation catalog", async ({ page }) => {
+test("Part 3 — computed styles component mới khớp token", async ({ page }) => {
+  await gotoFoundation(page);
+
+  // UiAlert success: nền soft 16% + chữ successText
+  const alert = page
+    .getByRole("alert")
+    .filter({ hasText: "Phiếu XK-2026-000123 đã trừ tồn thành công." });
+  await expect(alert).toHaveCSS("background-color", "rgba(40, 199, 111, 0.16)");
+
+  // UiKpiCard: giá trị dùng thang KPI 22px/600
+  const kpiValue = page.getByText("312", { exact: true });
+  const kpiStyle = await kpiValue.evaluate((el) => {
+    const s = getComputedStyle(el);
+    return { fontSize: s.fontSize, fontWeight: s.fontWeight };
+  });
+  expect(kpiStyle.fontSize).toBe("22px");
+  expect(kpiStyle.fontWeight).toBe("600");
+
+  // UiPagination: nav có accessible name
+  await expect(
+    page.getByRole("navigation", { name: "Phân trang" }),
+  ).toBeVisible();
+
+  // Layout demo: item nav active nền primary + chữ trắng (Vuexy sáng)
+  const activeItem = page
+    .getByTestId("layout-demo")
+    .getByRole("button", { name: "Bảng điều khiển" });
+  await expect(activeItem).toHaveCSS(
+    "background-color",
+    "rgb(115, 103, 240)",
+  );
+  await expect(activeItem).toHaveCSS("color", "rgb(255, 255, 255)");
+
+  // Forms: field lỗi fixture hiển thị message
+  await expect(
+    page.getByText("Số lượng phải lớn hơn 0 (request_id: 9f2c-fixture)."),
+  ).toBeVisible();
+});
+
+test("Part 3 — keyboard focus ring token trên sidebar nav", async ({ page }) => {
+  await gotoFoundation(page);
+  const firstNavItem = page
+    .getByTestId("layout-demo")
+    .getByRole("button", { name: "Bảng điều khiển" });
+  await firstNavItem.focus();
+  await page.keyboard.press("Tab");
+  // chờ transition box-shadow (fast 140ms) chạy xong rồi mới đo
+  await page.waitForTimeout(300);
+  const focusedShadow = await page.evaluate(() => {
+    const el = document.activeElement as HTMLElement;
+    return {
+      label: el?.textContent ?? el?.getAttribute("aria-label") ?? "",
+      shadow: getComputedStyle(el).boxShadow,
+    };
+  });
+  // Phần tử nhận focus kế tiếp trong sidebar phải mang focus ring token
+  // (0 0 0 3px rgba(115,103,240,0.22)) khi focus-visible bằng bàn phím.
+  expect(focusedShadow.shadow).toContain("rgba(115, 103, 240, 0.22)");
+});
+
+const SWEEP_VIEWPORTS = [320, 375, 390, 430, 768, 1024, 1280, 1440];
+
+test("Part 3 — responsive sweep catalog: không tràn ngang ở 8 viewport", async ({
+  page,
+}) => {
+  await gotoFoundation(page);
+  for (const width of SWEEP_VIEWPORTS) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.waitForTimeout(250);
+    const overflow = await page.evaluate(() => ({
+      scrollWidth: document.documentElement.scrollWidth,
+      clientWidth: document.documentElement.clientWidth,
+    }));
+    expect(
+      overflow.scrollWidth,
+      `viewport ${width}px bị tràn ngang`,
+    ).toBeLessThanOrEqual(overflow.clientWidth + 1);
+  }
+});
+
+test("visual golden — foundation catalog (desktop 1280)", async ({ page }) => {
   await gotoFoundation(page);
   await expect(page.getByTestId("ui-foundation-root")).toHaveScreenshot(
     "ui-foundation-catalog.png",
+    { maxDiffPixelRatio: 0.02, animations: "disabled" },
+  );
+});
+
+test("visual golden — foundation catalog (mobile 375)", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 900 });
+  await gotoFoundation(page);
+  await expect(page.getByTestId("ui-foundation-root")).toHaveScreenshot(
+    "ui-foundation-catalog-mobile.png",
     { maxDiffPixelRatio: 0.02, animations: "disabled" },
   );
 });

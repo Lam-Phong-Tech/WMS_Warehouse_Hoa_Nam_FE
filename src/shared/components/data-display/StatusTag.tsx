@@ -1,7 +1,12 @@
-import { Chip } from "@mui/material";
 import type { ChipProps } from "@mui/material";
+import { UiStatusBadge, type UiStatusTone } from "@/shared/ui";
 import { UNKNOWN_BUSINESS_LABEL } from "@/shared/constants/business-labels";
 
+/**
+ * @deprecated compatibility adapter — dùng UiStatusBadge cho code mới.
+ * Giữ nguyên public API (status/colorMap/labelMap/unknownLabel); phần render
+ * đã chuyển sang UiStatusBadge (soft-tint Vuexy) thay cho preset màu antd cũ.
+ */
 export interface StatusTagProps extends Omit<
   ChipProps,
   "color" | "children" | "label"
@@ -16,34 +21,27 @@ export interface StatusTagProps extends Omit<
   unknownLabel?: string;
 }
 
-// antd Tag color preset -> màu semantic MUI Chip (Chip.color chỉ nhận 1 tập cố định,
-// khác antd Tag nhận preset name tuỳ ý hoặc hex).
-const SEMANTIC_COLOR: Partial<Record<string, ChipProps["color"]>> = {
+// Ngữ nghĩa preset antd cũ → tone của UiStatusBadge. Các preset không nằm
+// trong bảng (hex/tên màu CSS tuỳ ý) fail-safe về neutral — không còn render
+// màu tự do ngoài hệ token.
+const COLOR_TO_TONE: Record<string, UiStatusTone> = {
   success: "success",
-  processing: "info",
+  green: "success",
+  lime: "success",
   error: "error",
+  red: "error",
+  volcano: "error",
+  magenta: "error",
   warning: "warning",
-  default: "default",
+  gold: "warning",
+  orange: "warning",
+  processing: "info",
+  blue: "info",
+  geekblue: "info",
+  cyan: "info",
+  default: "neutral",
+  purple: "primary",
 };
-
-// 2 preset antd không phải tên màu CSS hợp lệ -> quy đổi hex tương đương.
-// Mọi preset còn lại (blue/gold/red/purple/cyan/green/orange/magenta/lime...)
-// đã là tên màu CSS chuẩn nên dùng thẳng được, không cần map.
-const PRESET_TO_CSS_COLOR: Partial<Record<string, string>> = {
-  volcano: "#fa541c",
-  geekblue: "#2f54eb",
-};
-
-function resolveChipAppearance(color: string): {
-  muiColor: ChipProps["color"];
-  variant?: ChipProps["variant"];
-  borderColor?: string;
-} {
-  const semantic = SEMANTIC_COLOR[color];
-  if (semantic) return { muiColor: semantic };
-  const cssColor = PRESET_TO_CSS_COLOR[color] ?? color;
-  return { muiColor: "default", variant: "outlined", borderColor: cssColor };
-}
 
 const DEFAULT_BOOL_COLOR: Record<string, string> = {
   true: "success",
@@ -59,13 +57,15 @@ const DEFAULT_BOOL_LABEL: Record<string, string> = {
  * Tag trạng thái dùng chung. Với string enum, caller nên truyền labelMap theo domain.
  * Nếu enum mới chưa được map, component hiển thị nhãn an toàn thay vì làm lộ raw
  * contract tiếng Anh lên giao diện operator.
+ *
+ * @deprecated compatibility adapter — dùng UiStatusBadge cho code mới.
  */
 export function StatusTag({
   status,
   colorMap,
   labelMap,
   unknownLabel = UNKNOWN_BUSINESS_LABEL,
-  variant,
+  variant: _variant, // giữ trong API cũ; UiStatusBadge chỉ có một kiểu soft-tint
   sx,
   ...chipProps
 }: StatusTagProps) {
@@ -87,23 +87,11 @@ export function StatusTag({
   const label =
     mappedLabel ?? (typeof status === "number" ? String(status) : unknownLabel);
 
-  const appearance = resolveChipAppearance(color);
-
   return (
-    <Chip
+    <UiStatusBadge
+      tone={COLOR_TO_TONE[color] ?? "neutral"}
       label={label}
-      color={appearance.muiColor}
-      variant={variant ?? appearance.variant}
-      size="small"
-      sx={
-        appearance.borderColor
-          ? {
-              color: appearance.borderColor,
-              borderColor: appearance.borderColor,
-              ...sx,
-            }
-          : sx
-      }
+      sx={sx}
       {...chipProps}
     />
   );

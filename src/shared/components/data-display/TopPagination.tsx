@@ -1,6 +1,5 @@
-import { Pagination, Typography } from "antd";
-
-const { Text } = Typography;
+import { UiText } from "@/shared/ui";
+import { UiPagination } from "@/shared/ui/components/UiPagination";
 
 export interface TopPaginationProps {
   /** Tổng số bản ghi */
@@ -25,6 +24,10 @@ export interface TopPaginationProps {
  * Thanh phân trang ở phía trên bảng: tổng số bản ghi, nút chuyển trang
  * (Prev/Next/số trang) và dropdown chọn số bản ghi/trang. Dùng cho
  * server-side pagination — `onChange` nhận cả page lẫn pageSize mới.
+ *
+ * @deprecated compatibility adapter — dùng UiPagination cho code mới.
+ * Public API giữ nguyên; phần render đã chuyển từ antd Pagination sang
+ * UiPagination (label tổng render riêng để giữ `unitName`).
  */
 export function TopPagination({
   total,
@@ -36,6 +39,13 @@ export function TopPagination({
   placement = "top",
   showSizeChanger = true,
 }: TopPaginationProps) {
+  // Đổi cỡ trang: kẹp lại trang hiện tại theo số trang mới (cùng ngữ nghĩa
+  // onShowSizeChange của antd cũ — caller nhận (page đã kẹp, pageSize mới)).
+  const handlePageSizeChange = (nextSize: number) => {
+    const nextMax = Math.max(1, Math.ceil(total / Math.max(1, nextSize)));
+    onChange(Math.min(Math.max(1, current), nextMax), nextSize);
+  };
+
   return (
     <div
       style={{
@@ -47,18 +57,17 @@ export function TopPagination({
         ...(placement === "bottom" ? { marginTop: 12 } : { marginBottom: 12 }),
       }}
     >
-      <Text type="secondary">
+      <UiText variant="secondary">
         Tổng {total} {unitName}
-      </Text>
-      <Pagination
-        size="small"
-        total={total}
-        current={current}
+      </UiText>
+      <UiPagination
+        page={current}
         pageSize={pageSize}
-        showSizeChanger={showSizeChanger}
+        total={total}
+        showTotal={false}
         pageSizeOptions={pageSizeOptions}
-        onChange={onChange}
-        onShowSizeChange={onChange}
+        onPageChange={(nextPage) => onChange(nextPage, pageSize)}
+        onPageSizeChange={showSizeChanger ? handlePageSizeChange : undefined}
       />
     </div>
   );

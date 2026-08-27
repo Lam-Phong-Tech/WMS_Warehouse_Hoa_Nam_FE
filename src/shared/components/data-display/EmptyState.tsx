@@ -1,5 +1,8 @@
+/**
+ * Nội bộ render bằng design-system foundation (Part 3) — public API giữ nguyên.
+ */
 import type { ReactNode } from "react";
-import { Empty } from "antd";
+import { UiStateSurface } from "@/shared/ui";
 import { UI_STATE, uiStateProps } from "@/shared/constants/ui-state";
 
 export interface EmptyStateProps {
@@ -18,34 +21,22 @@ export function EmptyState({
   children,
   testId,
 }: EmptyStateProps) {
-  const descriptionNode = title ? (
-    <div
-      style={{
-        display: "grid",
-        gap: 8,
-        justifyItems: "center",
-        maxWidth: 360,
-        textAlign: "center",
-      }}
-    >
-      <div style={{ fontWeight: 600, fontSize: 16 }}>{title}</div>
-      <div style={{ color: "#666", fontSize: 14 }}>{description}</div>
-    </div>
-  ) : (
-    description
-  );
-
-  // antd v6 không forward thuộc tính lạ xuống DOM của Empty, nên test hook
-  // phải nằm trên phần tử bọc do FE tự kiểm soát.
+  // Test hook nằm trên phần tử bọc do FE tự kiểm soát (UiStateSurface không
+  // nhận data-attribute) — giữ nguyên hợp đồng WWHN-268.
   return (
     <div {...uiStateProps(UI_STATE.EMPTY, testId)}>
-      <Empty
-        image={Empty.PRESENTED_IMAGE_SIMPLE}
-        description={descriptionNode}
-        style={{ padding: "32px 0" }}
-      >
-        {children}
-      </Empty>
+      {title != null ? (
+        <UiStateSurface
+          kind="empty"
+          title={title}
+          description={description}
+          action={children}
+        />
+      ) : (
+        // Không có title: mô tả (mặc định "Không có dữ liệu") là dòng chính —
+        // giữ nguyên từng ký tự text hiển thị như bản antd Empty cũ.
+        <UiStateSurface kind="empty" title={description} action={children} />
+      )}
     </div>
   );
 }

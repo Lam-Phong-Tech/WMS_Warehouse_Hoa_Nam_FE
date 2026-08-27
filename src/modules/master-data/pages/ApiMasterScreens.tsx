@@ -6,7 +6,7 @@ import {
   type FormEvent,
   type ReactNode,
 } from "react";
-import { Modal, Tag } from "antd";
+import { Tag } from "antd";
 import {
   Alert,
   Box,
@@ -92,6 +92,7 @@ import { SortableTh } from "@/shared/components/data-display/SortableTh";
 import { useClientSort } from "@/shared/components/data-display/useClientSort";
 import { guardBackdropClose } from "@/shared/utils/dialogGuard";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
+import { useUiConfirm } from "@/shared/ui";
 
 const STATUS_OPTIONS: Array<{ value: MasterStatus; label: string }> = [
   { value: "ACTIVE", label: "Đang sử dụng" },
@@ -112,27 +113,8 @@ function useCanManage(permission: string | string[]) {
   return hasAnyWmsPermission(permissionCodes, required, isSuperAdmin);
 }
 
-function confirmAction({
-  title,
-  content,
-  okText,
-}: {
-  title: string;
-  content: string;
-  okText: string;
-}): Promise<boolean> {
-  return new Promise((resolve) => {
-    Modal.confirm({
-      title,
-      content,
-      okText,
-      cancelText: "Hủy",
-      mask: { closable: true },
-      onOk: () => resolve(true),
-      onCancel: () => resolve(false),
-    });
-  });
-}
+// confirmAction cấp module (antd Modal.confirm) đã thay bằng useUiConfirm
+// trong từng screen (Part 3) — cùng promise-contract, render UiConfirmDialog.
 
 function statusClass(status: MasterStatus) {
   return status === "ACTIVE" ? "pill ok" : "pill warn-pill";
@@ -364,6 +346,7 @@ function SkuCatalogSelect({
 
 export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   const canManage = useCanManage("sku.manage");
+  const { confirm: confirmAction, confirmDialog } = useUiConfirm();
   const canPublish = useCanManage(WMS_PERMISSION_CATALOG.PV_PUBLISH);
   const [keyword, setKeyword] = useState("");
   const [status, setStatus] = useState<MasterStatus | "">("");
@@ -458,7 +441,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
       content: willPublish
         ? `SKU ${skuCode} sẽ hiển thị trên ứng dụng phân vùng.`
         : `SKU ${skuCode} sẽ không còn hiển thị trên ứng dụng phân vùng.`,
-      okText: willPublish ? "Đưa lên ứng dụng" : "Gỡ khỏi ứng dụng",
+      confirmText: willPublish ? "Đưa lên ứng dụng" : "Gỡ khỏi ứng dụng",
     });
     if (!confirmed) return;
 
@@ -580,7 +563,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
         title: "Ngừng sử dụng SKU?",
         content:
           "SKU sẽ không còn được chọn cho phiếu mới và sẽ bị gỡ khỏi ứng dụng phân vùng. Lịch sử chứng từ giữ nguyên.",
-        okText: "Ngừng sử dụng",
+        confirmText: "Ngừng sử dụng",
       });
       if (!confirmed) return;
     }
@@ -652,6 +635,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   return (
     <>
       <div className="hn-mvp-source-screen" data-mvp-screen="MST-01">
+        {confirmDialog}
         <div className="toolbar">
           <TextField
             value={keyword}
@@ -1538,6 +1522,7 @@ const AGENCY_FORM_FIELDS = {
 
 export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   const canManage = useCanManage("agency.manage");
+  const { confirm: confirmAction, confirmDialog } = useUiConfirm();
   const [keyword, setKeyword] = useState("");
   const [status, setStatus] = useState<MasterStatus | "">("");
   const [recipientType, setRecipientType] = useState<RecipientType | "">("");
@@ -1661,7 +1646,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
         title: "Ngừng sử dụng nơi nhận?",
         content:
           "Nơi nhận sẽ không còn được chọn cho chứng từ mới. Chứng từ đã lập giữ nguyên.",
-        okText: "Ngừng sử dụng",
+        confirmText: "Ngừng sử dụng",
       });
       if (!confirmed) return;
     }
@@ -1711,6 +1696,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   return (
     <>
       <div className="hn-mvp-source-screen" data-mvp-screen="AGY-01">
+        {confirmDialog}
         <div className="toolbar">
           <TextField
             value={keyword}
@@ -2213,6 +2199,7 @@ const DEFECT_FORM_FIELDS = {
 
 export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   const canManage = useCanManage("defect.manage");
+  const { confirm: confirmAction, confirmDialog } = useUiConfirm();
   const [keyword, setKeyword] = useState("");
   const [status, setStatus] = useState<MasterStatus | "">("");
   const [page, setPage] = useState(1);
@@ -2306,7 +2293,7 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
         title: "Ngừng sử dụng lỗi / bệnh?",
         content:
           "Lỗi / bệnh sẽ không còn được chọn cho hồ sơ bảo hành mới. Hồ sơ đã gán giữ nguyên.",
-        okText: "Ngừng sử dụng",
+        confirmText: "Ngừng sử dụng",
       });
       if (!confirmed) return;
     }
@@ -2356,6 +2343,7 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   return (
     <>
       <div className="hn-mvp-source-screen" data-mvp-screen="DEF-01">
+        {confirmDialog}
         <div className="toolbar">
           <TextField
             value={keyword}

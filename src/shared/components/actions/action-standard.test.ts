@@ -20,8 +20,6 @@ const SRC = path.resolve(__dirname, "../../..");
  * được giữ nguyên dạng nút gốc. Thêm mục mới vào đây phải có lý do rõ ràng.
  */
 const RAW_BUTTON_ALLOWLIST = new Set([
-  // Nút bật/tắt menu điều hướng — thuộc khung layout, không phải thao tác dữ liệu.
-  "app/layouts/AppHeader.tsx",
   // Chuông thông báo — là điểm neo của popover, không mang nhãn hành động.
   "modules/notifications/components/NotificationBell.tsx",
   // Bộ chọn kỳ + sơ đồ luồng: cần giữ trạng thái "đang chọn" (contained/outlined),

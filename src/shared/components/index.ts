@@ -1,24 +1,17 @@
 /**
- * Barrel cho toàn bộ shared components, gom theo nhóm chức năng.
- * Điểm import DUY NHẤT để màn nghiệp vụ dùng nhất quán, tránh copy UI vào page:
+ * Barrel cho shared components LEGACY/ADAPTER còn hoạt động sau Part 3.
  *
- *   import { PageHeader, DataTable, FormModal, StatCard } from '@/shared/components';
- *   import { FormInput, TextField } from '@/shared/components/forms';
- *
- * Cấu trúc thư mục theo taxonomy:
- *   layout/ · forms/ · data-display/ · feedback/ · navigation/ · cards/
- * Quy ước: file PascalCase, mỗi component export kèm `<Tên>Props`.
+ * BỀ MẶT CANONICAL của design system là `@/shared/ui` (tokens/theme/foundation/
+ * forms/layout) — code MỚI import từ đó. Các component dưới đây thuộc 2 nhóm:
+ *  1. ADAPTER-CANONICAL: API giữ nguyên, ruột đã render bằng foundation
+ *     (EmptyState, LoadingState, ErrorState, NoPermissionState, ApiErrorAlert,
+ *     Loading, PageSkeleton, StatusTag, TopPagination…).
+ *  2. ADAPTER antd chờ Part 4 (DataTable, FilterBar, ScanInput, PageHeader…) —
+ *     consumer bị đóng băng bằng guard `deprecated-components`
+ *     (docs/ui/vuexy-sync/allowlists/deprecated-components.json).
  */
 
-// layout/ — khung bố cục
-export { AppShell, type AppShellProps } from "./layout/AppShell";
-export { Sidebar, type SidebarProps } from "./layout/Sidebar";
-export { Header, type HeaderProps } from "./layout/Header";
-export {
-  Breadcrumb,
-  type BreadcrumbProps,
-  type BreadcrumbItemType,
-} from "./layout/Breadcrumb";
+// layout/ — chỉ còn PageHeader (adapter, consumer đóng băng)
 export { PageHeader, type PageHeaderProps } from "./layout/PageHeader";
 
 // data-display/ — hiển thị dữ liệu
@@ -28,7 +21,6 @@ export {
   type ServerPagination,
 } from "./data-display/DataTable";
 export { EmptyState, type EmptyStateProps } from "./data-display/EmptyState";
-export { StatusBadge, type StatusBadgeProps } from "./data-display/StatusBadge";
 export { StatusTag, type StatusTagProps } from "./data-display/StatusTag";
 export {
   EMPLOYEE_STATUS_COLOR_MAP,
@@ -58,43 +50,13 @@ export {
   TopPagination,
   type TopPaginationProps,
 } from "./data-display/TopPagination";
-export {
-  PageSizeSelector,
-  type PageSizeSelectorProps,
-} from "./data-display/PageSizeSelector";
-export {
-  TableToolbar,
-  type TableToolbarProps,
-} from "./data-display/TableToolbar";
-export {
-  TableContainer,
-  FilteredEmptyState,
-  type TableContainerProps,
-} from "./data-display/TableContainer";
 
-// feedback/ — trạng thái, lỗi, modal
+// feedback/ — trạng thái, lỗi
 export { Loading } from "./feedback/Loading";
-export { Modal, type ModalProps } from "./feedback/Modal";
-export { FormModal, type FormModalProps } from "./feedback/FormModal";
-export { FormDrawer, type FormDrawerProps } from "./feedback/FormDrawer";
-export { DetailDrawer, type DetailDrawerProps } from "./feedback/DetailDrawer";
-export { FormPage, type FormPageProps } from "./feedback/FormPage";
-export { FormSection, type FormSectionProps } from "./feedback/FormSection";
-export { FormActions, type FormActionsProps } from "./feedback/FormActions";
-export {
-  ConfirmButton,
-  type ConfirmButtonProps,
-} from "./feedback/ConfirmButton";
-export {
-  confirmDialog,
-  type ConfirmDialogOptions,
-} from "./feedback/ConfirmDialog";
-export { Alert, type AlertProps } from "./feedback/Alert";
 export {
   ApiErrorAlert,
   type ApiErrorAlertProps,
 } from "./feedback/ApiErrorAlert";
-export { FieldError, type FieldErrorProps } from "./feedback/FieldError";
 export {
   ErrorBoundary,
   type ErrorBoundaryProps,
@@ -107,21 +69,15 @@ export {
 export { NoPermissionState } from "./feedback/NoPermissionState";
 export type { NoPermissionStateProps } from "./feedback/NoPermissionState";
 
-// ui-states/ - page-level loading, empty, error, and placeholders
+// ui-states/ - page-level loading, empty, error
 export { PageSkeleton } from "./ui-states/PageSkeleton";
-export { PlaceholderPage } from "./ui-states/PlaceholderPage";
 export { ErrorState, type ErrorStateProps } from "./ui-states/ErrorState";
 
 // permission/ — kiểm soát quyền truy cập
 export { PermissionGuard } from "./permission/PermissionGuard";
 export type { PermissionGuardProps } from "./permission/PermissionGuard";
 
-// navigation/ — điều hướng
-export { MenuItem, type MenuItemProps } from "./navigation/MenuItem";
-export { Pagination, type PaginationProps } from "./navigation/Pagination";
-export { Tabs, type TabsProps } from "./navigation/Tabs";
-
-// motion/ — chuyển động dùng chung (thêm/xóa dòng, token thời lượng)
+// motion/ — chuyển động dùng chung (token là mirror của @/shared/ui/tokens)
 export {
   AnimatedList,
   AnimatedListItem,
@@ -151,10 +107,6 @@ export {
   type ActionKind,
 } from "./actions";
 
-// cards/ — thẻ thông tin
-export { StatCard, type StatCardProps } from "./cards/StatCard";
-export { InfoCard, type InfoCardProps } from "./cards/InfoCard";
-
-// forms/ — field nhập liệu (cũng có barrel riêng tại './forms')
+// forms/ — chỉ còn scan components (xem ./forms/index.ts)
 export * from "./forms";
 export { type CommonProps, type FieldProps } from "./lib/common-props";

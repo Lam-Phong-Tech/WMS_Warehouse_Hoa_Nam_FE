@@ -1,27 +1,11 @@
 /**
- * Barrel cho nhóm Form field (react-hook-form + antd).
- * Import gọn: `import { FormInput, TextField } from '@/shared/components/forms'`.
+ * Barrel nhóm form legacy — sau Part 3 CHỈ còn 2 component scan (adapter antd,
+ * giữ nguyên hành vi scan-focus theo SRS Annex D; hợp nhất tiếp ở Part 4).
  *
- * Mọi field xây trên `FormField` (Controller + Form.Item) nên lỗi validation
- * tự hiển thị. Quy ước props: luôn có `control` + `name` (+ `label`).
- * Có hai bộ tên: `Form*` (gốc) và tên theo taxonomy (`TextField`…) là alias.
+ * Lớp field nhập liệu canonical nằm ở `@/shared/ui` (UiFormText, UiFormSelect,
+ * UiFormNumber, UiFormDate, UiFormCheckbox, UiFormRadioGroup, UiFormSwitch,
+ * UiFormAutocomplete) — bộ FormInput/TextField/SelectField antd cũ đã xoá
+ * (consumer cuối là 3 trang auth, đã migrate trong Part 3).
  */
-export { FormField, type FormFieldProps } from "./FormField";
-export { FormInput, type FormInputProps } from "./FormInput";
-export { FormSelect, type FormSelectProps } from "./FormSelect";
-export { FormNumber, type FormNumberProps } from "./FormNumber";
-export { FormDatePicker, type FormDatePickerProps } from "./FormDatePicker";
-export { FormSwitch, type FormSwitchProps } from "./FormSwitch";
-export { FormTextarea, type FormTextareaProps } from "./FormTextarea";
-export {
-  FormAutocomplete,
-  type FormAutocompleteProps,
-} from "./FormAutocomplete";
 export { ScanInput, type ScanInputProps } from "./ScanInput";
-
-// Alias theo taxonomy chung + nút submit
-export { TextField, type TextFieldProps } from "./TextField";
-export { SelectField, type SelectFieldProps } from "./SelectField";
-export { DateField, type DateFieldProps } from "./DateField";
-export { FormError, type FormErrorProps } from "./FormError";
-export { SubmitButton, type SubmitButtonProps } from "./SubmitButton";
+export { CameraScanModal } from "./CameraScanModal";

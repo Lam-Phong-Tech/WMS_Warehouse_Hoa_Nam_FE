@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Alert, Form, Spin, Typography } from "antd";
-import { LockOutlined, UserOutlined } from "@/shared/components/icons";
 import { Link } from "react-router-dom";
 import { isAxiosError } from "axios";
 import { useForgotPassword } from "@/modules/auth/hooks/use-forgot-password";
@@ -16,7 +15,7 @@ import {
   type OtpFormValues,
   type ResetPasswordFormValues,
 } from "@/modules/auth/schemas/forgot-password.schema";
-import { FormInput } from "@/shared/components/forms";
+import { UiFormText } from "@/shared/ui";
 import { ROUTES } from "@/shared/constants/routes";
 import { ActionButton } from "@/shared/components/actions";
 
@@ -186,12 +185,12 @@ export function ForgotPasswordPage() {
                 requiredMark={false}
                 noValidate
               >
-                <FormInput
+                <UiFormText
                   control={emailForm.control}
                   name="email"
                   label="Email"
                   placeholder="your@gmail.com"
-                  prefix={<UserOutlined style={{ color: "#8c887e" }} />}
+                  startIcon="user"
                   autoFocus
                   disabled={forgotPassword.isPending}
                 />
@@ -232,12 +231,12 @@ export function ForgotPasswordPage() {
                   />
                 )}
 
-                <FormInput
+                <UiFormText
                   control={otpForm.control}
                   name="otp"
                   label="Mã OTP"
                   placeholder="Nhập 6 chữ số"
-                  prefix={<LockOutlined style={{ color: "#8c887e" }} />}
+                  startIcon="lock"
                   numericOnly
                   maxLength={6}
                   autoFocus
@@ -296,24 +295,24 @@ export function ForgotPasswordPage() {
                   />
                 )}
 
-                <FormInput
+                <UiFormText
                   control={passwordForm.control}
                   name="newPassword"
                   label="Mật khẩu mới"
                   placeholder="Tối thiểu 8 ký tự"
-                  prefix={<LockOutlined style={{ color: "#8c887e" }} />}
-                  password
+                  startIcon="lock"
+                  type="password"
                   autoFocus
                   disabled={resetPassword.isPending}
                 />
 
-                <FormInput
+                <UiFormText
                   control={passwordForm.control}
                   name="newPasswordConfirmation"
                   label="Xác nhận mật khẩu mới"
                   placeholder="Nhập lại mật khẩu mới"
-                  prefix={<LockOutlined style={{ color: "#8c887e" }} />}
-                  password
+                  startIcon="lock"
+                  type="password"
                   disabled={resetPassword.isPending}
                 />
 

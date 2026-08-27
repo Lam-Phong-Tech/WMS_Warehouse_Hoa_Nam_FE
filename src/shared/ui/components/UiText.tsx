@@ -41,10 +41,12 @@ const VARIANT_SX = {
   },
 } as const;
 
-const VARIANT_ELEMENT: Record<UiTextVariant, "h1" | "h2" | "p" | "span"> = {
+// body dùng "div" thay vì "p": description của state surface nhận ReactNode
+// tuỳ ý (có thể chứa block element) — <p> chứa <div> là invalid DOM nesting.
+const VARIANT_ELEMENT: Record<UiTextVariant, "h1" | "h2" | "div" | "span"> = {
   pageTitle: "h1",
   cardTitle: "h2",
-  body: "p",
+  body: "div",
   secondary: "span",
   caption: "span",
 };

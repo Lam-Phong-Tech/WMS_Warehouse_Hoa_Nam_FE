@@ -1,7 +1,6 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Alert, Form, Spin, Typography } from "antd";
-import { LockOutlined, UserOutlined } from "@/shared/components/icons";
 import { isAxiosError } from "axios";
 import { Link } from "react-router-dom";
 import { useLogin } from "@/modules/auth/hooks/use-login";
@@ -10,7 +9,7 @@ import {
   toLoginRequest,
   type LoginFormValues,
 } from "@/modules/auth/schemas/login.schema";
-import { FormInput } from "@/shared/components/forms";
+import { UiFormText } from "@/shared/ui";
 import { OFFLINE_MUTATION_CODE } from "@/shared/pwa/offline-policy";
 import { ROUTES } from "@/shared/constants/routes";
 import { ActionButton } from "@/shared/components/actions";
@@ -124,23 +123,23 @@ export function LoginPage() {
               requiredMark={false}
               noValidate
             >
-              <FormInput
+              <UiFormText
                 control={control}
                 name="identifier"
                 label="Đăng nhập bằng Gmail"
                 placeholder="your@gmail.com"
-                prefix={<UserOutlined style={{ color: "#8c887e" }} />}
+                startIcon="user"
                 autoFocus
                 disabled={isSubmitting}
               />
 
-              <FormInput
+              <UiFormText
                 control={control}
                 name="password"
                 label="Mật khẩu"
                 placeholder="Nhập mật khẩu"
-                prefix={<LockOutlined style={{ color: "#8c887e" }} />}
-                password
+                startIcon="lock"
+                type="password"
                 disabled={isSubmitting}
               />
 

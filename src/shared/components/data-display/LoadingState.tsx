@@ -1,4 +1,7 @@
-import { Spin } from "antd";
+/**
+ * Nội bộ render bằng design-system foundation (Part 3) — public API giữ nguyên.
+ */
+import { UiStateSurface } from "@/shared/ui";
 import { UI_STATE, uiStateProps } from "@/shared/constants/ui-state";
 
 export interface LoadingStateProps {
@@ -33,9 +36,7 @@ export function LoadingState({
         minHeight,
       }}
     >
-      <Spin description={tip}>
-        <div style={{ padding: 8 }} />
-      </Spin>
+      <UiStateSurface kind="loading" title={tip} />
     </div>
   );
 }

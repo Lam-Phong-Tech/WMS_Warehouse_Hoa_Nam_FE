@@ -1,5 +1,6 @@
+/** Nội bộ render bằng design-system foundation (Part 3) — public API giữ nguyên. */
 import { Component, type ErrorInfo, type ReactNode } from "react";
-import { Result } from "antd";
+import { UiStateSurface } from "@/shared/ui";
 import { ActionButton } from "@/shared/components/actions";
 
 export interface ErrorBoundaryProps {
@@ -35,11 +36,11 @@ export class ErrorBoundary extends Component<
   render() {
     if (this.state.hasError) {
       return (
-        <Result
-          status="error"
+        <UiStateSurface
+          kind="error"
           title="Đã xảy ra lỗi"
-          subTitle="Có lỗi không mong muốn. Vui lòng thử tải lại trang."
-          extra={
+          description="Có lỗi không mong muốn. Vui lòng thử tải lại trang."
+          action={
             <ActionButton kind="refresh" onClick={this.handleReload}>
               Tải lại trang
             </ActionButton>

@@ -1,11 +1,12 @@
-import { LockOutlined } from "@/shared/components/icons";
-import { Result, Space, Typography } from "antd";
+/**
+ * Nội bộ render bằng design-system foundation (Part 3) — public API giữ nguyên.
+ */
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "@/shared/constants/routes";
 import { UI_STATE, uiStateProps } from "@/shared/constants/ui-state";
 import { ActionButton } from "@/shared/components/actions";
-
-const { Paragraph } = Typography;
+import { UiStateSurface } from "@/shared/ui";
+import { SPACING } from "@/shared/ui/tokens";
 
 /**
  * Reusable "No Permission" state component for 403 errors.
@@ -67,36 +68,31 @@ export function NoPermissionState({
         alignItems: "center",
         justifyContent: "center",
         minHeight: compact ? undefined : "400px",
-        padding: compact ? "24px 0" : 24,
+        padding: compact ? `${SPACING.xl}px 0` : SPACING.xl,
       }}
     >
-      <Result
-        icon={
-          <LockOutlined
-            style={{ color: "#faad14", fontSize: compact ? 40 : 64 }}
-          />
-        }
-        title={
-          <Typography.Title level={compact ? 4 : 3} style={{ marginTop: 16 }}>
-            {title}
-          </Typography.Title>
-        }
-        extra={
-          <Space orientation="vertical" size="middle" style={{ marginTop: 24 }}>
-            <Paragraph type="secondary" style={{ maxWidth: 400 }}>
-              {description}
-            </Paragraph>
-            <Space>
-              <ActionButton kind="back" onClick={handleAction}>
-                {actionText}
+      <UiStateSurface
+        kind="no-permission"
+        title={title}
+        description={description}
+        action={
+          <div
+            style={{
+              display: "flex",
+              gap: SPACING.sm,
+              justifyContent: "center",
+              flexWrap: "wrap",
+            }}
+          >
+            <ActionButton kind="back" onClick={handleAction}>
+              {actionText}
+            </ActionButton>
+            {showHomeButton && (
+              <ActionButton kind="back" onClick={handleGoHome}>
+                Về trang chủ
               </ActionButton>
-              {showHomeButton && (
-                <ActionButton kind="back" onClick={handleGoHome}>
-                  Về trang chủ
-                </ActionButton>
-              )}
-            </Space>
-          </Space>
+            )}
+          </div>
         }
       />
     </div>

@@ -12,6 +12,7 @@ export interface PageSizeSelectorProps {
 }
 
 /** Dropdown chọn số bản ghi/trang, hiển thị độc lập (vd: phía trên bảng, tách khỏi thanh phân trang ở dưới). */
+/** @deprecated internal của DataTable (adapter antd, freeze tới Part 4) — canonical: UiPagination. */
 export function PageSizeSelector({
   current,
   pageSize,

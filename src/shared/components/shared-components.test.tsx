@@ -1,13 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import {
-  PageHeader,
-  AppShell,
-  EmptyState,
-  ScanInput,
-  StatusBadge,
-  StatCard,
-} from "@/shared/components";
+import { PageHeader, EmptyState, ScanInput } from "@/shared/components";
 import userEvent from "@testing-library/user-event";
 
 describe("PageHeader", () => {
@@ -29,56 +22,10 @@ describe("PageHeader", () => {
   });
 });
 
-describe("AppShell", () => {
-  it("renders reusable frame slots and body wrapper", () => {
-    render(
-      <AppShell
-        sider={<nav>Menu</nav>}
-        header={<header>Header</header>}
-        breadcrumb={<div>Breadcrumb</div>}
-        footer={<footer>Footer</footer>}
-        bodyStyle={{ minHeight: 120 }}
-      >
-        <main>Page body</main>
-      </AppShell>,
-    );
-
-    expect(screen.getByText("Menu")).toBeInTheDocument();
-    expect(screen.getByText("Header")).toBeInTheDocument();
-    expect(screen.getByText("Breadcrumb")).toBeInTheDocument();
-    expect(screen.getByText("Page body")).toBeInTheDocument();
-    expect(screen.getByText("Footer")).toBeInTheDocument();
-  });
-});
-
 describe("EmptyState", () => {
   it("hiển thị mô tả mặc định khi rỗng", () => {
     render(<EmptyState />);
     expect(screen.getByText(/không có dữ liệu/i)).toBeInTheDocument();
-  });
-});
-
-describe("StatusBadge", () => {
-  it("hiển thị nhãn theo trạng thái active", () => {
-    const { rerender } = render(<StatusBadge active />);
-    expect(screen.getByText(/hoạt động/i)).toBeInTheDocument();
-    rerender(<StatusBadge active={false} />);
-    expect(screen.getByText(/ngừng/i)).toBeInTheDocument();
-  });
-});
-
-describe("StatCard", () => {
-  it("hiển thị tiêu đề và số liệu (định dạng vi-VN)", () => {
-    render(
-      <StatCard
-        title="Nhân viên"
-        value={1234}
-        icon={<span>i</span>}
-        color="#000"
-      />,
-    );
-    expect(screen.getByText(/nhân viên/i)).toBeInTheDocument();
-    expect(screen.getByText("1.234")).toBeInTheDocument();
   });
 });
 

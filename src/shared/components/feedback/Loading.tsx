@@ -1,4 +1,9 @@
-import { Spin } from "antd";
+/**
+ * Nội bộ render bằng design-system foundation (Part 3) — public API giữ nguyên.
+ */
+import CircularProgress from "@mui/material/CircularProgress";
+import { SEMANTIC_LIGHT, Z_INDEX } from "@/shared/ui/tokens";
+
 import { UI_STATE, uiStateProps } from "@/shared/constants/ui-state";
 
 /**
@@ -14,17 +19,20 @@ export function Loading() {
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(255,255,255,0.6)",
+        // Màn trắng mờ trên nền hiện tại (không có token white-alpha riêng).
+        background: "rgba(255, 255, 255, 0.6)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         flexDirection: "column",
         backdropFilter: "blur(4px)",
-        zIndex: 9999,
+        zIndex: Z_INDEX.blockingLoading,
       }}
     >
-      <Spin size="large" />
-      <div style={{ marginTop: 10, color: "#555" }}>Đang tải...</div>
+      <CircularProgress size={40} />
+      <div style={{ marginTop: 10, color: SEMANTIC_LIGHT.textMedium }}>
+        Đang tải...
+      </div>
     </div>
   );
 }

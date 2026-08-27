@@ -1,5 +1,9 @@
+/**
+ * Nội bộ render bằng design-system foundation (Part 3) — public API giữ nguyên.
+ */
 import type { CSSProperties } from "react";
-import { Alert } from "antd";
+import Alert from "@mui/material/Alert";
+import AlertTitle from "@mui/material/AlertTitle";
 import {
   getApiErrorMessage,
   getErrorRequestId,
@@ -84,27 +88,13 @@ export function ApiErrorAlert({
     ? Object.values(errors).flatMap((v) => (Array.isArray(v) ? v : [v]))
     : [];
 
-  // antd v6 không forward thuộc tính lạ xuống DOM của Alert, nên test hook
-  // phải nằm trên phần tử bọc do FE tự kiểm soát.
+  // Test hook nằm trên phần tử bọc do FE tự kiểm soát; `role="alert"` do MUI
+  // Alert tự phát (mặc định) — không lặp ở wrapper để tránh 2 alert lồng nhau.
   return (
-    <div {...uiStateProps(UI_STATE.ERROR, testId)} role="alert">
+    <div {...uiStateProps(UI_STATE.ERROR, testId)}>
       <Alert
-        type="error"
-        showIcon
+        severity="error"
         style={style}
-        title={title}
-        description={
-          <>
-            <div>{message}</div>
-            {fieldMessages.length > 0 && (
-              <ul style={{ margin: "4px 0 0", paddingLeft: 18 }}>
-                {fieldMessages.map((m, i) => (
-                  <li key={i}>{m}</li>
-                ))}
-              </ul>
-            )}
-          </>
-        }
         action={
           onRetry ? (
             <ActionButton kind="refresh" onClick={onRetry}>
@@ -112,7 +102,17 @@ export function ApiErrorAlert({
             </ActionButton>
           ) : undefined
         }
-      />
+      >
+        <AlertTitle>{title}</AlertTitle>
+        <div>{message}</div>
+        {fieldMessages.length > 0 && (
+          <ul style={{ margin: "4px 0 0", paddingLeft: 18 }}>
+            {fieldMessages.map((m, i) => (
+              <li key={i}>{m}</li>
+            ))}
+          </ul>
+        )}
+      </Alert>
     </div>
   );
 }

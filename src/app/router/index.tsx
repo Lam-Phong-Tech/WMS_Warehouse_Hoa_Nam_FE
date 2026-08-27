@@ -114,11 +114,6 @@ const ReportsPage = lazy(() =>
     default: m.default,
   })),
 );
-const ComponentCatalogPage = lazy(() =>
-  import("@/modules/component-catalog/ComponentCatalogPage").then((m) => ({
-    default: m.default,
-  })),
-);
 const FoundationCatalogPage = lazy(() =>
   import("@/shared/ui/catalog/FoundationCatalogPage").then((m) => ({
     default: m.default,
@@ -309,16 +304,14 @@ export const router = createBrowserRouter([
           // cùng điều kiện để giữ contract menu ↔ ROUTE_PERMISSIONS).
           ...(import.meta.env.DEV
             ? [
+                // Part 3 Vuexy sync: catalog antd cũ đã xoá — /component-catalog
+                // (REQ-017, công cụ BA/QA) redirect về golden catalog canonical.
                 {
                   path: ROUTES.COMPONENT_CATALOG,
-                  element: routeEl(
-                    ROUTES.COMPONENT_CATALOG,
-                    <ComponentCatalogPage />,
-                  ),
+                  element: <Navigate to={ROUTES.UI_FOUNDATION} replace />,
                 },
-                // Part 2 Vuexy sync: golden catalog của design-system foundation
-                // (docs/ui/vuexy-sync/10-design-system-adr.md) — DEV-only như
-                // /component-catalog.
+                // Golden catalog của design system (docs/ui/vuexy-sync/10) —
+                // DEV-only, dùng đúng production exports.
                 {
                   path: ROUTES.UI_FOUNDATION,
                   element: routeEl(

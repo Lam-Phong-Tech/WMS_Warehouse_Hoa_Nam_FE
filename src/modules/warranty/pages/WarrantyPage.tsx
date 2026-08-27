@@ -1,7 +1,8 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Pagination, Space, Tag, Typography, message } from "antd";
+import { Pagination, Space, Tag, Typography } from "antd";
+import { toast } from "sonner";
 import {
   MenuItem,
   Select,
@@ -140,7 +141,7 @@ export default function WarrantyPage() {
       if (id) {
         setComponentTarget({ caseId: id, caseActive: true, documentId: null });
       } else {
-        message.info(
+        toast.info(
           "Chọn một case bảo hành trong danh sách rồi bấm “Xuất linh kiện”.",
         );
       }

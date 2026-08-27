@@ -1,5 +1,5 @@
-import { Pagination } from "antd";
 import { MenuItem, Select } from "@mui/material";
+import { UiPagination } from "@/shared/ui/components/UiPagination";
 import { MVP_PAGE_SIZE_OPTIONS } from "@/shared/components/mvp/mvp-pagination";
 
 interface PageSizeSelectorProps {
@@ -15,6 +15,10 @@ interface PaginationFooterProps {
   onChange: (page: number) => void;
 }
 
+/**
+ * @deprecated compatibility adapter — dùng UiPagination (có Select cỡ trang
+ * tích hợp) cho code mới.
+ */
 export function MvpPageSizeSelector({
   value,
   onChange,
@@ -52,6 +56,11 @@ export function MvpPageSizeSelector({
   );
 }
 
+/**
+ * @deprecated compatibility adapter — dùng UiPagination cho code mới.
+ * Public API giữ nguyên (Tổng {total} {itemLabel} + nút chuyển trang); phần
+ * render đã chuyển từ antd Pagination sang UiPagination.
+ */
 export function MvpPaginationFooter({
   current,
   pageSize,
@@ -67,13 +76,12 @@ export function MvpPaginationFooter({
       <span>
         Tổng {total} {itemLabel}
       </span>
-      <Pagination
-        current={safeCurrent}
+      <UiPagination
+        page={safeCurrent}
         pageSize={pageSize}
         total={total}
-        showSizeChanger={false}
-        hideOnSinglePage={false}
-        onChange={onChange}
+        showTotal={false}
+        onPageChange={onChange}
       />
     </div>
   );

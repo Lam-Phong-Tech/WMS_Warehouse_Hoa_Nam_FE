@@ -1,0 +1,88 @@
+{
+  "meta": {
+    "owner": "FE1 Team",
+    "reason": "Part 3: các compatibility adapter có bản canonical cạnh tranh — consumer bị ĐÓNG BĂNG (chỉ được GIẢM khi migrate ở Part 4, không thêm mới). Enforce: src/test/ui-foundation/deprecated-components.test.ts.",
+    "deadline": "Part 4 (Full WebApp Migration) — mục tiêu mọi danh sách về rỗng rồi xoá component",
+    "generated_by": "grep import theo tên, 2026-08-28"
+  },
+  "components": {
+    "StatusTag": {
+      "canonical": "UiStatusBadge (@/shared/ui)",
+      "consumers": [
+        "src/modules/notifications/components/NotificationBell.tsx",
+        "src/modules/notifications/components/NotificationDetailModal.tsx",
+        "src/modules/notifications/pages/NotificationsPage.tsx"
+      ]
+    },
+    "TopPagination": {
+      "canonical": "UiPagination (@/shared/ui)",
+      "consumers": [
+        "src/modules/outbound/pages/AlignedMvpOutboundPage.tsx",
+        "src/modules/reports/pages/Gd1ScopeReports.tsx",
+        "src/modules/reverse/pages/ReversalPage.tsx"
+      ]
+    },
+    "DataTable": {
+      "canonical": "ResponsiveDataTable (@/shared/components) — antd Table adapter freeze",
+      "consumers": [
+        "src/modules/master-data/pages/CatalogMasterScreen.tsx",
+        "src/modules/putaway/pages/MvpPutawayPage.tsx",
+        "src/modules/pv/pages/PvAdminPage.tsx",
+        "src/modules/reports/pages/Gd1ScopeReports.tsx"
+      ]
+    },
+    "useSortTooltipColumns": {
+      "canonical": "SortableTh/useClientSort (family ResponsiveDataTable)",
+      "consumers": ["src/modules/reports/pages/AlignedReportsPage.tsx"]
+    },
+    "PageHeader": {
+      "canonical": "UiPageContainer (@/shared/ui)",
+      "consumers": [
+        "src/modules/auth/pages/ProfilePage.tsx",
+        "src/modules/notifications/pages/NotificationsPage.tsx"
+      ]
+    },
+    "MvpPaginationFooter": {
+      "canonical": "UiPagination (@/shared/ui)",
+      "consumers": [
+        "src/modules/iam/pages/IamUserScreen.tsx",
+        "src/modules/inbound/pages/InboundPage.tsx",
+        "src/modules/master-data/pages/ApiMasterScreens.tsx"
+      ]
+    },
+    "MvpPageSizeSelector": {
+      "canonical": "UiPagination (@/shared/ui)",
+      "consumers": [
+        "src/modules/iam/pages/IamRolePermissionScreen.tsx",
+        "src/modules/reports/pages/AlignedReportsPage.tsx",
+        "src/modules/scan/pages/PhysicalCodesPage.tsx"
+      ]
+    },
+    "ReportKpiCard": {
+      "canonical": "UiKpiCard (@/shared/ui)",
+      "consumers": [
+        "src/modules/reports/pages/AlignedReportsPage.tsx",
+        "src/modules/reports/pages/Gd1ScopeReports.tsx"
+      ]
+    },
+    "ReportKpiGrid": {
+      "canonical": "UiKpiCard + Grid (@/shared/ui)",
+      "consumers": [
+        "src/modules/reports/pages/AlignedReportsPage.tsx",
+        "src/modules/reports/pages/Gd1ScopeReports.tsx"
+      ]
+    },
+    "AppBreadcrumb": {
+      "canonical": "UiBreadcrumb (@/shared/ui/layout)",
+      "consumers": ["src/app/layouts/MainLayout.tsx"]
+    },
+    "SubmitButton": {
+      "canonical": "UiButton type=submit / ActionButton",
+      "consumers": []
+    },
+    "PageSizeSelector": {
+      "canonical": "UiPagination — internal-only của DataTable",
+      "consumers": []
+    }
+  }
+}

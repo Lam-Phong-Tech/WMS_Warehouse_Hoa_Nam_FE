@@ -10,6 +10,7 @@ import Drawer from "@mui/material/Drawer";
 import Box from "@mui/material/Box";
 import type { DialogProps } from "@mui/material/Dialog";
 import type { DrawerProps } from "@mui/material/Drawer";
+import { useId } from "react";
 import type { ReactNode } from "react";
 import { COMPONENT_TOKENS as C } from "@/shared/ui/tokens";
 import { UiText } from "./UiText";
@@ -21,9 +22,17 @@ export interface UiDialogProps extends Omit<DialogProps, "title"> {
 }
 
 export function UiDialog({ title, actions, children, ...rest }: UiDialogProps) {
+  // Auto aria-labelledby: dialog lấy tên accessible từ DialogTitle khi có
+  // title (caller vẫn override được qua props vì {...rest} spread sau).
+  const titleId = useId();
   return (
-    <Dialog fullWidth maxWidth="sm" {...rest}>
-      {title ? <DialogTitle>{title}</DialogTitle> : null}
+    <Dialog
+      fullWidth
+      maxWidth="sm"
+      aria-labelledby={title ? titleId : undefined}
+      {...rest}
+    >
+      {title ? <DialogTitle id={titleId}>{title}</DialogTitle> : null}
       <DialogContent>{children}</DialogContent>
       {actions ? (
         <DialogActions sx={{ px: 2.5, pb: 2 }}>{actions}</DialogActions>

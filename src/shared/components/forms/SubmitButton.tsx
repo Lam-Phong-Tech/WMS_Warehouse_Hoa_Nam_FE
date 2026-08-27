@@ -13,6 +13,7 @@ export interface SubmitButtonProps extends Omit<
 }
 
 /** Nút gửi form (`type="submit"`) — nhãn mặc định "Lưu", icon/màu theo chuẩn. */
+/** @deprecated compat: chỉ còn phục vụ hợp đồng WWHN-268 (ui-state.test) — dùng ActionButton/UiButton cho code mới. */
 export function SubmitButton({ children = "Lưu", ...rest }: SubmitButtonProps) {
   // WWHN-268: nút bị chặn (disabled hoặc đang gửi) phải nhận diện được bằng
   // selector ổn định để QA2 chụp bằng chứng trạng thái "disabled".
