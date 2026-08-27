@@ -6,9 +6,7 @@ import {
   ListItemText,
   Menu,
   MenuItem,
-  ThemeProvider,
 } from "@mui/material";
-import { muiTheme } from "@/app/mui-theme";
 import {
   LogoutOutlined,
   UserOutlined,
@@ -59,7 +57,7 @@ export function UserMenu({ compact = false }: Props) {
   };
 
   return (
-    <ThemeProvider theme={muiTheme}>
+    <>
       <Space
         style={layoutStyles.userMenuClickable}
         tabIndex={0}
@@ -156,6 +154,6 @@ export function UserMenu({ compact = false }: Props) {
           <ListItemText>Đăng xuất</ListItemText>
         </MenuItem>
       </Menu>
-    </ThemeProvider>
+    </>
   );
 }

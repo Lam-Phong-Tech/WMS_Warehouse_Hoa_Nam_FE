@@ -1,6 +1,5 @@
 :root {
-  font-family:
-    "Inter", system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--wms-font-family);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -65,23 +64,23 @@ body,
 }
 .ant-message-notice-content-success {
   background: rgba(82, 196, 26, 0.08);
-  border: 1px solid #b7eb8f;
-  color: #389e0d;
+  border: 1px solid var(--wms-success);
+  color: var(--wms-success-text);
 }
 .ant-message-notice-content-error {
   background: rgba(255, 77, 79, 0.08);
-  border: 1px solid #ffa39e;
-  color: #cf1322;
+  border: 1px solid var(--wms-error);
+  color: var(--wms-error-text);
 }
 .ant-message-notice-content-warning {
   background: rgba(250, 173, 20, 0.08);
-  border: 1px solid #ffd591;
-  color: #d48806;
+  border: 1px solid var(--wms-warning);
+  color: var(--wms-warning-text);
 }
 .ant-message-notice-content-info {
   background: rgba(24, 144, 255, 0.08);
-  border: 1px solid #91d5ff;
-  color: #096dd9;
+  border: 1px solid var(--wms-info);
+  color: var(--wms-info-text);
 }
 .ant-message-notice-content .ant-message-notice-content {
   background: transparent;
@@ -217,7 +216,7 @@ body,
 }
 
 .hn-sortable-th:hover {
-  color: var(--primary, #6c5ce7);
+  color: var(--wms-primary);
 }
 
 .hn-sort-icon-stack {
@@ -233,11 +232,11 @@ body,
 
 .hn-sortable-th__icon {
   font-size: 10px;
-  color: #b0b7c3;
+  color: var(--wms-text-disabled);
 }
 
 .hn-sortable-th__icon--active {
-  color: var(--primary, #6c5ce7);
+  color: var(--wms-primary);
 }
 
 .hn-form-actions,
@@ -278,14 +277,14 @@ body,
 
 .master-data-page .page-heading h1 {
   margin: 0;
-  color: #152033;
+  color: var(--wms-text-high);
   font-size: 28px;
   font-weight: 700;
 }
 
 .master-data-page .page-heading p {
   margin: 4px 0 0;
-  color: #64748b;
+  color: var(--wms-text-medium);
 }
 
 .master-data-page .trace-alert,

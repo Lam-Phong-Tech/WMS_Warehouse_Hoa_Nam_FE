@@ -14,13 +14,11 @@ import {
   Select,
   Stack,
   TextField,
-  ThemeProvider,
   Tooltip,
   Typography,
 } from "@mui/material";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
-import { muiTheme } from "@/app/mui-theme";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { getApiErrorMessage, normalizeError } from "@/shared/api/api-error";
 import { useHasPermission } from "@/shared/components/permission";
@@ -210,7 +208,7 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
   };
 
   return (
-    <ThemeProvider theme={muiTheme}>
+    <>
       <Dialog {...dialog.dialogProps} maxWidth="lg" fullWidth>
         <DialogTitle sx={{ pr: 6, position: "relative" }}>
           {`Chi tiết phiếu điều chỉnh — ${doc?.reversal_code ?? documentId}`}
@@ -648,8 +646,13 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
         onClose={() => setPostConfirmOpen(false)}
         maxWidth="xs"
         fullWidth
+        // MUI Dialog không tự nối accessible name — thiếu aria-labelledby thì
+        // screen reader (và query role "dialog" theo name) không đọc được tiêu đề.
+        aria-labelledby="reversal-post-confirm-title"
       >
-        <DialogTitle>Hoàn tất phiếu điều chỉnh tồn kho?</DialogTitle>
+        <DialogTitle id="reversal-post-confirm-title">
+          Hoàn tất phiếu điều chỉnh tồn kho?
+        </DialogTitle>
         <DialogContent>
           <Typography variant="body2">
             Đây là bước làm phát sinh giao dịch đối ứng và thay đổi tồn kho.
@@ -674,6 +677,6 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
           </ActionButton>
         </DialogActions>
       </Dialog>
-    </ThemeProvider>
+    </>
   );
 }

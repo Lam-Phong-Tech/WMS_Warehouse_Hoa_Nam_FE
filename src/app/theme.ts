@@ -1,124 +1,81 @@
-import type { SizeType } from "antd/es/config-provider/SizeContext";
-import type { ThemeConfig } from "antd";
-
 /**
- * Source of truth: HN_WMS_Wireframe_MVP.html supplied by BA.
- * Keep these values in lock-step with the HTML variables so Ant Design
- * controls render with the same palette, radius and typography.
+ * @deprecated SHIM tương thích — nguồn token thật là `@/shared/ui/tokens`,
+ * antd theme thật là `@/shared/ui/theme/antd-adapter`.
+ *
+ * `BRAND`/`DESIGN_TOKENS` từng là token source của hệ "cool MVP" (BA wireframe,
+ * #2563eb/Arial). Theo DEC-UI-BASELINE-01, mọi giá trị ở đây đã được RE-POINT
+ * về canonical Vuexy tokens để consumer cũ đổi diện mạo theo mà không phải sửa
+ * đồng loạt trong Part 2. KHÔNG thêm consumer mới (guard: `yarn ui:tokens`);
+ * consumer hiện có sẽ migrate về `@/shared/ui/tokens` trong Part 3 rồi xoá file.
  */
+import type { SizeType } from "antd/es/config-provider/SizeContext";
+import {
+  COMPONENT_TOKENS,
+  LEGACY_SHELL,
+  RADIUS,
+  SEMANTIC_LIGHT as S,
+  SPACING,
+  TYPOGRAPHY,
+} from "@/shared/ui/tokens";
+import { antdTheme } from "@/shared/ui/theme/antd-adapter";
+
+/** @deprecated đọc `SEMANTIC_LIGHT` từ `@/shared/ui/tokens` */
 export const BRAND = {
-  primary: "#2563eb",
-  primaryHover: "#1d4ed8",
-  canvas: "#f5f7fb",
-  paper: "#ffffff",
-  paperAlt: "#f8fafc",
-  ink: "#1f2937",
-  inkSecondary: "#1f2937",
-  muted: "#6b7280",
-  border: "#d8dfeb",
-  divider: "#d8dfeb",
-  tableHead: "#f8fafc",
-  accentBg: "#dbeafe",
-  accentBorder: "#60a5fa",
-  success: "#16a34a",
-  warning: "#d97706",
-  danger: "#dc2626",
-  siderBg: "#0f172a",
-  siderHover: "#111f3d",
-  siderText: "#e5e7eb",
-  siderMuted: "#94a3b8",
-  siderSelected: "#1d4ed8",
-  siderSelectedBorder: "#60a5fa",
-  headerBg: "#f5f7fb",
+  primary: S.primary,
+  primaryHover: S.primaryDark,
+  canvas: S.bgCanvas,
+  paper: S.bgSurface,
+  paperAlt: S.bgSubtle,
+  ink: S.textHigh,
+  inkSecondary: S.textHigh,
+  muted: S.textMedium,
+  border: S.borderInput,
+  divider: S.divider,
+  tableHead: S.bgSubtle,
+  accentBg: S.primarySoft,
+  accentBorder: S.primaryLight,
+  success: S.success,
+  warning: S.warning,
+  danger: S.error,
+  siderBg: LEGACY_SHELL.siderBg,
+  siderHover: LEGACY_SHELL.siderHover,
+  siderText: LEGACY_SHELL.siderText,
+  siderMuted: LEGACY_SHELL.siderMuted,
+  siderSelected: S.primary,
+  siderSelectedBorder: S.primaryLight,
+  headerBg: S.bgCanvas,
 } as const;
 
+/** @deprecated đọc `COMPONENT_TOKENS`/`SPACING`/`RADIUS` từ `@/shared/ui/tokens` */
 export const DESIGN_TOKENS = {
-  spacing: { xs: 4, sm: 8, md: 12, lg: 14, xl: 18, xxl: 24 },
-  radius: { sm: 10, md: 12, lg: 16 },
+  spacing: {
+    xs: SPACING.xs,
+    sm: SPACING.sm,
+    md: SPACING.md,
+    lg: SPACING.lg,
+    xl: SPACING.xl,
+    xxl: SPACING.xxl,
+  },
+  radius: { sm: RADIUS.control, md: RADIUS.card, lg: RADIUS.sheet },
   table: { size: "middle" as SizeType },
   typography: {
-    pageTitle: { fontSize: 24, fontWeight: 700, lineHeight: 1.2 },
-    sectionTitle: { fontSize: 15, fontWeight: 700 },
-    body: { fontSize: 14, lineHeight: 1.5 },
+    pageTitle: {
+      fontSize: TYPOGRAPHY.heading.fontSize,
+      fontWeight: 700,
+      lineHeight: 1.2,
+    },
+    sectionTitle: {
+      fontSize: TYPOGRAPHY.cardTitle.fontSize,
+      fontWeight: TYPOGRAPHY.cardTitle.fontWeight,
+    },
+    body: {
+      fontSize: TYPOGRAPHY.fontSizeBody,
+      lineHeight: TYPOGRAPHY.lineHeightBody,
+    },
     caption: { fontSize: 12 },
   },
+  button: COMPONENT_TOKENS.button,
 } as const;
 
-export const themeConfig: ThemeConfig = {
-  token: {
-    colorPrimary: BRAND.primary,
-    colorLink: BRAND.primary,
-    colorSuccess: BRAND.success,
-    colorWarning: BRAND.warning,
-    colorError: BRAND.danger,
-    colorBgLayout: BRAND.canvas,
-    colorBgContainer: BRAND.paper,
-    colorText: BRAND.ink,
-    colorTextSecondary: BRAND.muted,
-    colorBorder: BRAND.border,
-    colorBorderSecondary: BRAND.divider,
-    borderRadius: 10,
-    controlHeight: 36,
-    fontSize: 14,
-    lineHeight: 1.5,
-    fontFamily: "Arial, Helvetica, sans-serif",
-    // --- Chuyển động ---------------------------------------------------
-    // Cùng bộ số với biến CSS trong src/styles/hn-motion.css và với
-    // `transitions` của muiTheme, để 3 hệ (antd · MUI · CSS tự viết) đóng/mở
-    // cùng nhịp. Trước đây mỗi hệ chạy thời lượng mặc định riêng nên modal
-    // antd và dialog MUI trên cùng một màn hình cảm giác "hai tốc độ".
-    motionDurationFast: "0.14s",
-    motionDurationMid: "0.2s",
-    motionDurationSlow: "0.28s",
-    motionEaseInOut: "cubic-bezier(0.4, 0, 0.2, 1)",
-    motionEaseOut: "cubic-bezier(0.16, 1, 0.3, 1)",
-  },
-  components: {
-    Layout: {
-      bodyBg: BRAND.canvas,
-      siderBg: BRAND.siderBg,
-      headerBg: BRAND.canvas,
-    },
-    Menu: {
-      darkItemBg: BRAND.siderBg,
-      darkSubMenuItemBg: BRAND.siderBg,
-      darkItemColor: BRAND.siderText,
-      darkItemHoverBg: BRAND.siderHover,
-      darkItemSelectedBg: BRAND.siderSelected,
-      darkItemSelectedColor: "#ffffff",
-      itemBorderRadius: 10,
-      itemMarginInline: 0,
-      itemMarginBlock: 3,
-    },
-    Card: {
-      borderRadiusLG: 14,
-    },
-    Button: {
-      controlHeight: 36,
-      borderRadius: 10,
-      fontWeight: 600,
-    },
-    Input: {
-      controlHeight: 36,
-      borderRadius: 10,
-    },
-    Select: {
-      controlHeight: 36,
-      borderRadius: 10,
-    },
-    Table: {
-      headerBg: BRAND.paperAlt,
-      headerColor: BRAND.ink,
-      borderColor: BRAND.border,
-      cellPaddingBlock: 10,
-      cellPaddingInline: 10,
-      fontSize: 13,
-    },
-    Modal: {
-      borderRadiusLG: 16,
-    },
-    Drawer: {
-      borderRadiusLG: 16,
-    },
-  },
-};
+/** @deprecated import `antdTheme` từ `@/shared/ui/theme` */
+export const themeConfig = antdTheme;

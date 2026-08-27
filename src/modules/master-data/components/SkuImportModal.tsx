@@ -10,10 +10,8 @@ import {
   DialogTitle,
   Stack,
   Switch,
-  ThemeProvider,
   Typography,
 } from "@mui/material";
-import { muiTheme } from "@/app/mui-theme";
 import { toast } from "sonner";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
@@ -507,7 +505,7 @@ export function SkuImportModal({
   };
 
   return (
-    <ThemeProvider theme={muiTheme}>
+    <>
       <Dialog
         {...dialog.dialogProps}
         open={open && dialog.open}
@@ -727,6 +725,6 @@ export function SkuImportModal({
           </Stack>
         </DialogContent>
       </Dialog>
-    </ThemeProvider>
+    </>
   );
 }

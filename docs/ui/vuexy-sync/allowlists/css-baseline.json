@@ -1,0 +1,27 @@
+{
+  "meta": {
+    "owner": "FE1 Team",
+    "reason": "Hiện trạng CSS cục bộ + !important sau Part 2. Ratchet: !important chỉ được GIẢM; không thêm CSS import ngoài entrypoint.",
+    "deadline": "Part 3-4 — rút các lớp wireframe/exact/normalize theo 09-remediation §Phase C",
+    "generated_by": "scripts/check-ui-styles.mjs --update-baseline"
+  },
+  "cssImports": {
+    "src/modules/dashboard/pages/DashboardPage.tsx": [
+      "./DashboardPage.css"
+    ],
+    "src/shared/pwa/PwaStatus.tsx": [
+      "./pwa-status.css"
+    ]
+  },
+  "important": {
+    "src/index.css": 6,
+    "src/modules/dashboard/pages/DashboardPage.css": 1,
+    "src/styles/hn-motion.css": 18,
+    "src/styles/hn-responsive.css": 10,
+    "src/styles/hn-wms-mvp-exact.css": 132,
+    "src/styles/hn-wms-page-normalize.css": 63,
+    "src/styles/hn-wms-sidebar-account.css": 10,
+    "src/styles/hoa-nam-ant-overrides.css": 9,
+    "src/styles/hoa-nam-wireframe.css": 30
+  }
+}

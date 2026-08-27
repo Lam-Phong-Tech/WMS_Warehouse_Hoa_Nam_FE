@@ -25,6 +25,16 @@ vi.mock("@/shared/components/permission", () => ({
   useHasPermission: () => permissionMocks.can,
 }));
 
+// a908c42 thêm gate "phải đính kèm >=1 chứng từ mới được Hoàn tất điều chỉnh"
+// (evidenceProvided đọc từ fetchDocumentAttachments). Mock PROVIDED để test
+// contract 409/412/428 đi tiếp tới bước Post như nghiệp vụ thật.
+vi.mock("@/shared/api/documentAttachmentService", () => ({
+  fetchDocumentAttachments: vi.fn().mockResolvedValue({
+    evidenceStatus: "PROVIDED",
+    attachments: [],
+  }),
+}));
+
 vi.mock("@/modules/reverse/hooks/use-reversal", () => ({
   useReversalDocument: vi.fn(),
   useReversalLines: vi.fn(),
@@ -121,7 +131,14 @@ function mockDetailHooks() {
  * within() để chắc chắn bấm đúng nút đó (không phụ thuộc thứ tự DOM).
  */
 async function clickPostAndConfirm() {
-  fireEvent.click(screen.getByRole("button", { name: /Hoàn tất điều chỉnh/i }));
+  // a908c42 thêm DocumentEvidenceGuard: nút Post bị disabled cho tới khi query
+  // attachments trả evidenceStatus=PROVIDED (mock ở đầu file) — phải chờ nút
+  // enabled rồi mới bấm, đúng trình tự nghiệp vụ mới.
+  const postButton = await screen.findByRole("button", {
+    name: /Hoàn tất điều chỉnh/i,
+  });
+  await waitFor(() => expect(postButton).toBeEnabled());
+  fireEvent.click(postButton);
   const confirmDialog = await screen.findByRole("dialog", {
     name: /Hoàn tất phiếu điều chỉnh tồn kho/i,
   });

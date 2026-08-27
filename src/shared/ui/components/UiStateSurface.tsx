@@ -1,0 +1,77 @@
+/**
+ * Foundation state surfaces — Loading / Empty / Error / NoPermission theo một
+ * khuôn: icon + tiêu đề + mô tả + hành động (spec X §4: skeleton/empty/error
+ * chuẩn; hợp đồng SRS Annex D: error phải hiển thị được request_id qua
+ * description, hành động retry rõ ràng).
+ */
+import Box from "@mui/material/Box";
+import CircularProgress from "@mui/material/CircularProgress";
+import type { ReactNode } from "react";
+import { SEMANTIC_LIGHT as S, SPACING } from "@/shared/ui/tokens";
+import { UiIcon } from "./UiIcon";
+import { UiText } from "./UiText";
+
+export type UiStateKind = "loading" | "empty" | "error" | "no-permission";
+
+const STATE_PRESET: Record<
+  UiStateKind,
+  { icon: string | null; color: string; defaultTitle: string }
+> = {
+  loading: { icon: null, color: S.primary, defaultTitle: "Đang tải dữ liệu…" },
+  empty: {
+    icon: "inbox",
+    color: S.textDisabled,
+    defaultTitle: "Chưa có dữ liệu",
+  },
+  error: {
+    icon: "cross-circle",
+    color: S.error,
+    defaultTitle: "Đã xảy ra lỗi",
+  },
+  "no-permission": {
+    icon: "lock",
+    color: S.warning,
+    defaultTitle: "Bạn không có quyền truy cập nội dung này",
+  },
+};
+
+export interface UiStateSurfaceProps {
+  kind: UiStateKind;
+  title?: ReactNode;
+  /** Mô tả phụ — với kind="error" nên kèm request_id (hợp đồng Annex D). */
+  description?: ReactNode;
+  /** Hành động (vd nút Thử lại) — render dưới mô tả. */
+  action?: ReactNode;
+}
+
+export function UiStateSurface({
+  kind,
+  title,
+  description,
+  action,
+}: UiStateSurfaceProps) {
+  const preset = STATE_PRESET[kind];
+  return (
+    <Box
+      role={kind === "error" ? "alert" : "status"}
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: `${SPACING.sm}px`,
+        padding: `${SPACING.xxl}px`,
+        textAlign: "center",
+      }}
+    >
+      {kind === "loading" ? (
+        <CircularProgress size={28} />
+      ) : preset.icon ? (
+        <UiIcon name={preset.icon} size="lg" color={preset.color} />
+      ) : null}
+      <UiText variant="cardTitle">{title ?? preset.defaultTitle}</UiText>
+      {description ? <UiText variant="body">{description}</UiText> : null}
+      {action ?? null}
+    </Box>
+  );
+}

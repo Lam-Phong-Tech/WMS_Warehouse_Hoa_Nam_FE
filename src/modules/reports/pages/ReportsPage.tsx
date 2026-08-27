@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { Tab, Tabs, ThemeProvider } from "@mui/material";
-import { muiTheme } from "@/app/mui-theme";
+import { Tab, Tabs } from "@mui/material";
 import { ApartmentOutlined, BarChartOutlined } from "@/shared/components/icons";
 import AlignedReportsPage from "@/modules/reports/pages/AlignedReportsPage";
 import Gd1ScopeReports from "@/modules/reports/pages/Gd1ScopeReports";
@@ -9,7 +8,7 @@ export default function ReportsPage() {
   const [tab, setTab] = useState<"gd1" | "operations">("gd1");
 
   return (
-    <ThemeProvider theme={muiTheme}>
+    <>
       <Tabs
         value={tab}
         onChange={(_event, value: "gd1" | "operations") => setTab(value)}
@@ -32,6 +31,6 @@ export default function ReportsPage() {
       </Tabs>
 
       {tab === "gd1" ? <Gd1ScopeReports /> : <AlignedReportsPage />}
-    </ThemeProvider>
+    </>
   );
 }

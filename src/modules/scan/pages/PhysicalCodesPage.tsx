@@ -1,8 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useCallback, useEffect, useState } from "react";
 import { Alert, Input, Pagination, Select, Space, Tag, Typography } from "antd";
-import { Tab, Tabs, ThemeProvider } from "@mui/material";
-import { muiTheme } from "@/app/mui-theme";
+import { Tab, Tabs } from "@mui/material";
 import {
   HistoryOutlined,
   ScanOutlined,
@@ -544,7 +543,7 @@ export default function PhysicalCodesPage() {
 
   return (
     <div style={{ padding: 24 }}>
-      <ThemeProvider theme={muiTheme}>
+      <>
         <Tabs
           value={activeTab}
           onChange={(_event, value: string) => {
@@ -577,7 +576,7 @@ export default function PhysicalCodesPage() {
             sx={{ minHeight: 40, textTransform: "none" }}
           />
         </Tabs>
-      </ThemeProvider>
+      </>
 
       {activeTab === "list" && (
         <>

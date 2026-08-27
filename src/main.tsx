@@ -5,6 +5,10 @@ import { AppProviders } from "./app/providers/AppProviders";
 import { bootstrapAuth } from "./app/bootstrap-auth";
 import { registerPwa } from "./shared/pwa/register-pwa";
 import "@flaticon/flaticon-uicons/css/regular/rounded.css";
+// Canonical design tokens (DEC-UI-BASELINE-01) — PHẢI đứng trước mọi CSS khác:
+// các file legacy bên dưới chỉ alias biến của lớp này. Đây là entrypoint CSS
+// global DUY NHẤT của dự án (guard: yarn ui:styles).
+import "./shared/ui/tokens/css-vars.css";
 import "./index.css";
 import "./styles/hoa-nam-wireframe.css";
 import "./styles/hoa-nam-ant-overrides.css";

@@ -77,7 +77,10 @@ describe("ForgotPasswordPage", () => {
 
     await screen.findByLabelText(/^mật khẩu mới$/i);
 
-    await user.type(screen.getByLabelText(/^mật khẩu mới$/i), NEW_PASSWORD_INPUT);
+    await user.type(
+      screen.getByLabelText(/^mật khẩu mới$/i),
+      NEW_PASSWORD_INPUT,
+    );
     await user.type(
       screen.getByLabelText(/xác nhận mật khẩu mới/i),
       NEW_PASSWORD_INPUT,

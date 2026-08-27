@@ -12,10 +12,8 @@ import {
   MenuItem,
   Stack,
   TextField,
-  ThemeProvider,
   Typography,
 } from "@mui/material";
-import { muiTheme } from "@/app/mui-theme";
 import type { ColumnsType } from "antd/es/table";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -558,18 +556,18 @@ export function AlignedOutboundDetailModal({
 
   if (detailQuery.isLoading) {
     return (
-      <ThemeProvider theme={muiTheme}>
+      <>
         <Dialog {...dialog.dialogProps} maxWidth="sm" fullWidth>
           <DialogTitle>Chi tiết phiếu xuất</DialogTitle>
           <DialogContent dividers>Đang tải...</DialogContent>
         </Dialog>
-      </ThemeProvider>
+      </>
     );
   }
 
   if (detailQuery.isError || !detail || !doc) {
     return (
-      <ThemeProvider theme={muiTheme}>
+      <>
         <Dialog {...dialog.dialogProps} maxWidth="sm" fullWidth>
           <DialogTitle>Chi tiết phiếu xuất</DialogTitle>
           <DialogContent dividers>
@@ -581,12 +579,12 @@ export function AlignedOutboundDetailModal({
             </Alert>
           </DialogContent>
         </Dialog>
-      </ThemeProvider>
+      </>
     );
   }
 
   return (
-    <ThemeProvider theme={muiTheme}>
+    <>
       <Dialog {...dialog.dialogProps} maxWidth="lg" fullWidth>
         <DialogTitle sx={{ pr: 6, position: "relative" }}>
           Chi tiết phiếu xuất
@@ -1121,6 +1119,6 @@ export function AlignedOutboundDetailModal({
           </Dialog>
         </DialogContent>
       </Dialog>
-    </ThemeProvider>
+    </>
   );
 }

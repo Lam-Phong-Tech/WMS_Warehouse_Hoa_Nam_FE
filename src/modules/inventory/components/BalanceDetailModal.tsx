@@ -8,10 +8,8 @@ import {
   DialogTitle,
   Grid,
   Stack,
-  ThemeProvider,
   Typography,
 } from "@mui/material";
-import { muiTheme } from "@/app/mui-theme";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import {
   CONTAINER_TYPE_LABELS,
@@ -315,7 +313,7 @@ export function BalanceDetailModal({
   ];
 
   return (
-    <ThemeProvider theme={muiTheme}>
+    <>
       <Dialog {...dialog.dialogProps} maxWidth="lg" fullWidth>
         <DialogTitle sx={{ pr: 6, position: "relative" }}>
           {`Chi tiết tồn kho — ${balance.sku}`}
@@ -485,6 +483,6 @@ export function BalanceDetailModal({
           </Stack>
         </DialogContent>
       </Dialog>
-    </ThemeProvider>
+    </>
   );
 }

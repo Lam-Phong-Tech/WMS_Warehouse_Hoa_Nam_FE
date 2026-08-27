@@ -12,10 +12,8 @@ import {
   MenuItem,
   Stack,
   TextField,
-  ThemeProvider,
   Typography,
 } from "@mui/material";
-import { muiTheme } from "@/app/mui-theme";
 import {
   AnimatedList,
   AnimatedListItem,
@@ -363,7 +361,7 @@ export function ComponentIssueModal({
   ];
 
   return (
-    <ThemeProvider theme={muiTheme}>
+    <>
       <Dialog {...dialog.dialogProps} maxWidth="md" fullWidth>
         <DialogTitle sx={{ pr: 6, position: "relative" }}>
           {documentId
@@ -775,7 +773,7 @@ export function ComponentIssueModal({
           ) : null}
         </DialogActions>
       </Dialog>
-    </ThemeProvider>
+    </>
   );
 }
 

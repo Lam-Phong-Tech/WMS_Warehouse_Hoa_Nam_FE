@@ -2,8 +2,7 @@
 import { useEffect, useState } from "react";
 import dayjs from "dayjs";
 import { Progress, Tag } from "antd";
-import { Box, MenuItem, Select, TextField, ThemeProvider } from "@mui/material";
-import { muiTheme } from "@/app/mui-theme";
+import { Box, MenuItem, Select, TextField } from "@mui/material";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
@@ -286,7 +285,7 @@ export default function AlignedMvpOutboundPage() {
     : [...MVP_PAGE_SIZE_OPTIONS, perPage].sort((a, b) => a - b);
 
   return (
-    <ThemeProvider theme={muiTheme}>
+    <>
       <div className="outbound-page hn-mvp-source-screen">
         <div className="toolbar">
           <TextField
@@ -393,6 +392,6 @@ export default function AlignedMvpOutboundPage() {
           />
         ) : null}
       </div>
-    </ThemeProvider>
+    </>
   );
 }

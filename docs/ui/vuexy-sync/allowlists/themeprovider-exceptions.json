@@ -1,0 +1,9 @@
+{
+  "meta": {
+    "owner": "FE1 Team",
+    "reason": "Ngoại lệ mount <ThemeProvider> ngoài composition root (src/shared/ui/theme/AppThemeProvider.tsx). Sau Part 2 KHÔNG còn ngoại lệ production nào — 36 re-wrap đã gỡ (RC-05). File *.test.* được guard bỏ qua mặc định (test render cô lập).",
+    "deadline": "Giữ rỗng — thêm mục mới cần review Tech Lead",
+    "generated_by": "tay, Part 2 Vuexy sync"
+  },
+  "files": []
+}

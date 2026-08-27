@@ -1,46 +1,40 @@
-@import url("https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap");
-
 :root {
-  --hn-canvas: #e7e5df;
+  --hn-canvas: var(--wms-bg-canvas);
   --hn-paper: #ffffff;
-  --hn-paper-alt: #fcfbf8;
-  --hn-ink: #2b2b2b;
-  --hn-ink-2: #4a463e;
-  --hn-muted: #7a766c;
-  --hn-muted-2: #8c887e;
-  --hn-border: #b9b6ad;
-  --hn-divider: #d8d5cc;
-  --hn-soft: #e3e0d8;
-  --hn-row: #ece9e1;
-  --hn-table-head: #f3f1ea;
-  --hn-accent: #356fa3;
-  --hn-accent-bg: #eaf1f8;
-  --hn-accent-border: #bcd2e6;
-  --hn-green: #3c6e4f;
-  --hn-green-bg: #dceadf;
-  --hn-green-border: #9cc3a8;
-  --hn-yellow: #8a6d1f;
-  --hn-yellow-bg: #f6eed6;
-  --hn-yellow-border: #d9c489;
-  --hn-red: #b94a48;
-  --hn-red-bg: #fbe7e6;
-  --hn-red-border: #d8a9a6;
-  --hn-gray: #6b675e;
-  --hn-gray-bg: #eceae6;
-  --hn-gray-border: #c9c5bb;
-  --hn-note-bg: #fff4cf;
-  --hn-note-border: #c9a227;
-  --hn-note-ink: #6b5a12;
+  --hn-paper-alt: var(--wms-bg-surface);
+  --hn-ink: var(--wms-text-strong);
+  --hn-ink-2: var(--wms-text-high);
+  --hn-muted: var(--wms-text-medium);
+  --hn-muted-2: var(--wms-text-medium);
+  --hn-border: var(--wms-border-input);
+  --hn-divider: var(--wms-border);
+  --hn-soft: var(--wms-grey-200);
+  --hn-row: var(--wms-grey-200);
+  --hn-table-head: var(--wms-bg-subtle);
+  --hn-accent: var(--wms-primary);
+  --hn-accent-bg: var(--wms-primary-soft);
+  --hn-accent-border: var(--wms-primary-light);
+  --hn-green: var(--wms-success-text);
+  --hn-green-bg: var(--wms-success-soft);
+  --hn-green-border: var(--wms-success);
+  --hn-yellow: var(--wms-warning-text);
+  --hn-yellow-bg: var(--wms-warning-soft);
+  --hn-yellow-border: var(--wms-warning);
+  --hn-red: var(--wms-error-text);
+  --hn-red-bg: var(--wms-error-soft);
+  --hn-red-border: var(--wms-error);
+  --hn-gray: var(--wms-text-medium);
+  --hn-gray-bg: var(--wms-grey-200);
+  --hn-gray-border: var(--wms-grey-300);
+  --hn-note-bg: var(--wms-warning-soft);
+  --hn-note-border: var(--wms-warning);
+  --hn-note-ink: var(--wms-warning-text);
 }
 
 html,
 body,
 #root {
-  font-family:
-    "Be Vietnam Pro",
-    system-ui,
-    -apple-system,
-    sans-serif;
+  font-family: var(--wms-font-family);
   color: var(--hn-ink);
   background: var(--hn-canvas);
 }
@@ -70,8 +64,8 @@ body {
 }
 
 .ant-btn-primary:not(:disabled):hover {
-  border-color: #2d638f !important;
-  background: #2d638f !important;
+  border-color: var(--wms-primary-dark) !important;
+  background: var(--wms-primary-dark) !important;
 }
 
 .ant-input,
@@ -221,7 +215,7 @@ body {
   gap: 7px;
   padding: 9px 16px;
   border-bottom: 1px dashed var(--hn-soft);
-  background: #fbfaf7;
+  background: var(--wms-bg-surface);
 }
 
 .hn-label-mini {
@@ -243,8 +237,8 @@ body {
 
 .hn-chip--api {
   border-color: var(--hn-accent-border);
-  background: #eef5fb;
-  color: #2d638f;
+  background: var(--wms-primary-soft);
+  color: var(--wms-primary-dark);
 }
 
 .hn-chip--rule {
@@ -256,7 +250,7 @@ body {
 .hn-chip--tc {
   border-color: var(--hn-gray-border);
   background: var(--hn-gray-bg);
-  color: #5e5a52;
+  color: var(--wms-text-medium);
 }
 
 .hn-wire-section-body {
@@ -487,7 +481,7 @@ body {
   place-items: center;
   padding: 32px 20px;
   background:
-    radial-gradient(circle at 1px 1px, #d8d5cc 1px, transparent 1px),
+    radial-gradient(circle at 1px 1px, var(--wms-border) 1px, transparent 1px),
     var(--hn-canvas);
   background-size: 18px 18px;
 }

@@ -25,10 +25,8 @@ import {
   Select,
   Stack,
   TextField,
-  ThemeProvider,
   Typography,
 } from "@mui/material";
-import { muiTheme } from "@/app/mui-theme";
 import { toast } from "sonner";
 import { SkuImportModal } from "@/modules/master-data/components/SkuImportModal";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
@@ -652,7 +650,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
     : [...MVP_PAGE_SIZE_OPTIONS, perPage].sort((a, b) => a - b);
 
   return (
-    <ThemeProvider theme={muiTheme}>
+    <>
       <div className="hn-mvp-source-screen" data-mvp-screen="MST-01">
         <div className="toolbar">
           <TextField
@@ -1494,7 +1492,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           </form>
         </Dialog>
       </div>
-    </ThemeProvider>
+    </>
   );
 }
 
@@ -1711,7 +1709,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
     : [...MVP_PAGE_SIZE_OPTIONS, perPage].sort((a, b) => a - b);
 
   return (
-    <ThemeProvider theme={muiTheme}>
+    <>
       <div className="hn-mvp-source-screen" data-mvp-screen="AGY-01">
         <div className="toolbar">
           <TextField
@@ -2187,7 +2185,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           </form>
         </Dialog>
       </div>
-    </ThemeProvider>
+    </>
   );
 }
 
@@ -2356,7 +2354,7 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
     : [...MVP_PAGE_SIZE_OPTIONS, perPage].sort((a, b) => a - b);
 
   return (
-    <ThemeProvider theme={muiTheme}>
+    <>
       <div className="hn-mvp-source-screen" data-mvp-screen="DEF-01">
         <div className="toolbar">
           <TextField
@@ -2656,6 +2654,6 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           </form>
         </Dialog>
       </div>
-    </ThemeProvider>
+    </>
   );
 }

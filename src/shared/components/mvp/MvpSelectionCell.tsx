@@ -46,6 +46,8 @@ export function MvpSelectionCheckbox({
 }
 
 /** STT (số thứ tự) tính theo trang hiện tại, tô màu xoay vòng 5 màu khớp mẫu thiết kế. */
+// Helper thuần đi kèm cell; 12+ màn đang import từ path này (di dời Part 3).
+// eslint-disable-next-line react-refresh/only-export-components
 export function mvpRowNumber(page: number, perPage: number, index: number) {
   return (page - 1) * perPage + index + 1;
 }

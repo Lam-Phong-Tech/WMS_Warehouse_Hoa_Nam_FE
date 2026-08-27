@@ -1,18 +1,18 @@
-import { BRAND } from "@/app/theme";
+import { SEMANTIC_LIGHT as S, TYPOGRAPHY } from "@/shared/ui/tokens";
 
 /**
- * Bảng màu chart suy ra từ BRAND (src/app/theme.ts) để đồng bộ với UI hiện có
- * (antd + MUI đều map từ BRAND). Chỉ thêm 2 tông bổ trợ (info/violet) không có
- * sẵn trong BRAND, dùng khi cần nhiều hơn 4 nhóm màu (categorical).
+ * Bảng màu chart lấy từ canonical tokens (@/shared/ui/tokens) — cùng nguồn với
+ * antd/MUI adapter để chart đồng bộ UI. `violet` là tông mở rộng cho
+ * categorical >6 nhóm, dùng primary-dark cùng dải tím Vuexy.
  */
 export const CHART_COLORS = {
-  primary: BRAND.primary,
-  secondary: BRAND.accentBorder,
-  success: BRAND.success,
-  warning: BRAND.warning,
-  danger: BRAND.danger,
-  info: "#0891b2",
-  violet: "#7c3aed",
+  primary: S.primary,
+  secondary: S.secondary,
+  success: S.success,
+  warning: S.warning,
+  danger: S.error,
+  info: S.info,
+  violet: S.primaryDark,
 } as const;
 
 export const CATEGORICAL_PALETTE: string[] = [
@@ -25,16 +25,16 @@ export const CATEGORICAL_PALETTE: string[] = [
   CHART_COLORS.secondary,
 ];
 
-export const CHART_FONT_FAMILY = "Arial, Helvetica, sans-serif";
+export const CHART_FONT_FAMILY = TYPOGRAPHY.fontFamily;
 
 export const baseChartOptions = {
   chart: {
     fontFamily: CHART_FONT_FAMILY,
     toolbar: { show: false },
-    foreColor: BRAND.muted,
+    foreColor: S.textMedium,
   },
   grid: {
-    borderColor: BRAND.divider,
+    borderColor: S.divider,
     strokeDashArray: 4,
   },
   tooltip: {

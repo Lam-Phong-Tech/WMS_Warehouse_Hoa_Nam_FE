@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import dayjs from "dayjs";
 import { Space, Tag } from "antd";
-import { MenuItem, Select, TextField, ThemeProvider } from "@mui/material";
-import { muiTheme } from "@/app/mui-theme";
+import { MenuItem, Select, TextField } from "@mui/material";
 import {
   ResponsiveDataTable,
   type ResponsiveTableColumn,
@@ -259,111 +258,109 @@ function InboundListScreen() {
     : [...MVP_PAGE_SIZE_OPTIONS, perPage].sort((a, b) => a - b);
 
   return (
-    <ThemeProvider theme={muiTheme}>
-      <div className="inbound-page hn-mvp-source-screen">
-        <div className="toolbar">
-          <TextField
-            value={searchInput}
-            placeholder="Tìm mã phiếu / nguồn nhập..."
-            slotProps={{ htmlInput: { "aria-label": "Tìm phiếu nhập" } }}
-            onChange={(event) => setSearchInput(event.target.value)}
-            sx={{ minWidth: 220, ...TOOLBAR_SX }}
-          />
-          <Select
-            displayEmpty
-            value={status ?? ""}
-            inputProps={{ "aria-label": "Lọc trạng thái phiếu nhập" }}
-            onChange={(event) => {
-              setStatus(event.target.value || undefined);
-              setPage(1);
-            }}
-            sx={{ minWidth: 168, ...TOOLBAR_SX }}
-          >
-            <MenuItem value="">Trạng thái: Tất cả</MenuItem>
-            {STATUS_OPTIONS.map((option) => (
-              <MenuItem key={option.value} value={option.value}>
-                {option.label}
-              </MenuItem>
-            ))}
-          </Select>
-          <Select
-            value={perPage}
-            inputProps={{ "aria-label": "Số dòng mỗi trang" }}
-            onChange={(event) => {
-              setPerPage(Number(event.target.value));
-              setPage(1);
-            }}
-            sx={{ minWidth: 100, ...TOOLBAR_SX }}
-          >
-            {perPageOptions.map((size) => (
-              <MenuItem key={size} value={size}>
-                {size} / trang
-              </MenuItem>
-            ))}
-          </Select>
-          <div className="spacer" />
-          {canCreate ? (
-            <ActionButton
-              kind="create"
-              onClick={() => {
-                setDraftDocumentId(null);
-                setDraftOpen(true);
-              }}
-            >
-              Tạo phiếu nhập
-            </ActionButton>
-          ) : null}
-        </div>
-
-        {query.isError ? (
-          <div style={{ marginBottom: 14 }}>
-            <ApiErrorAlert
-              error={query.error}
-              title="Không tải được danh sách phiếu nhập."
-              onRetry={() => query.refetch()}
-            />
-          </div>
-        ) : null}
-
-        <TableLoadingBanner loading={query.isLoading || query.isFetching} />
-        <ResponsiveDataTable<InboundDocument>
-          columns={columns}
-          rows={rows}
-          rowKey={(row) => row.id}
-          rowSelection={rowSelection}
-          selectionLabel={(row) => `Chọn phiếu nhập ${row.code || row.id}`}
-          loading={query.isLoading || query.isFetching}
-          renderRowActions={renderRowActions}
-          emptyText={tableEmptyText(
-            query.isError ? query.error : null,
-            "Chưa có phiếu nhập phù hợp",
-          )}
+    <div className="inbound-page hn-mvp-source-screen">
+      <div className="toolbar">
+        <TextField
+          value={searchInput}
+          placeholder="Tìm mã phiếu / nguồn nhập..."
+          slotProps={{ htmlInput: { "aria-label": "Tìm phiếu nhập" } }}
+          onChange={(event) => setSearchInput(event.target.value)}
+          sx={{ minWidth: 220, ...TOOLBAR_SX }}
         />
-        <MvpPaginationFooter
-          current={Number(meta?.current_page ?? page)}
-          pageSize={perPage}
-          total={total}
-          itemLabel="phiếu nhập"
-          onChange={setPage}
-        />
-
-        {draftOpen ? (
-          <InboundDraftModal
-            documentId={draftDocumentId}
-            onClose={closeDraftModal}
-            onSaved={handleSaved}
-          />
-        ) : null}
-
-        {scanDocumentId ? (
-          <InboundScanModal
-            documentId={scanDocumentId}
-            onClose={() => setScanDocumentId(null)}
-            onChanged={() => void query.refetch()}
-          />
+        <Select
+          displayEmpty
+          value={status ?? ""}
+          inputProps={{ "aria-label": "Lọc trạng thái phiếu nhập" }}
+          onChange={(event) => {
+            setStatus(event.target.value || undefined);
+            setPage(1);
+          }}
+          sx={{ minWidth: 168, ...TOOLBAR_SX }}
+        >
+          <MenuItem value="">Trạng thái: Tất cả</MenuItem>
+          {STATUS_OPTIONS.map((option) => (
+            <MenuItem key={option.value} value={option.value}>
+              {option.label}
+            </MenuItem>
+          ))}
+        </Select>
+        <Select
+          value={perPage}
+          inputProps={{ "aria-label": "Số dòng mỗi trang" }}
+          onChange={(event) => {
+            setPerPage(Number(event.target.value));
+            setPage(1);
+          }}
+          sx={{ minWidth: 100, ...TOOLBAR_SX }}
+        >
+          {perPageOptions.map((size) => (
+            <MenuItem key={size} value={size}>
+              {size} / trang
+            </MenuItem>
+          ))}
+        </Select>
+        <div className="spacer" />
+        {canCreate ? (
+          <ActionButton
+            kind="create"
+            onClick={() => {
+              setDraftDocumentId(null);
+              setDraftOpen(true);
+            }}
+          >
+            Tạo phiếu nhập
+          </ActionButton>
         ) : null}
       </div>
-    </ThemeProvider>
+
+      {query.isError ? (
+        <div style={{ marginBottom: 14 }}>
+          <ApiErrorAlert
+            error={query.error}
+            title="Không tải được danh sách phiếu nhập."
+            onRetry={() => query.refetch()}
+          />
+        </div>
+      ) : null}
+
+      <TableLoadingBanner loading={query.isLoading || query.isFetching} />
+      <ResponsiveDataTable<InboundDocument>
+        columns={columns}
+        rows={rows}
+        rowKey={(row) => row.id}
+        rowSelection={rowSelection}
+        selectionLabel={(row) => `Chọn phiếu nhập ${row.code || row.id}`}
+        loading={query.isLoading || query.isFetching}
+        renderRowActions={renderRowActions}
+        emptyText={tableEmptyText(
+          query.isError ? query.error : null,
+          "Chưa có phiếu nhập phù hợp",
+        )}
+      />
+      <MvpPaginationFooter
+        current={Number(meta?.current_page ?? page)}
+        pageSize={perPage}
+        total={total}
+        itemLabel="phiếu nhập"
+        onChange={setPage}
+      />
+
+      {draftOpen ? (
+        <InboundDraftModal
+          documentId={draftDocumentId}
+          onClose={closeDraftModal}
+          onSaved={handleSaved}
+        />
+      ) : null}
+
+      {scanDocumentId ? (
+        <InboundScanModal
+          documentId={scanDocumentId}
+          onClose={() => setScanDocumentId(null)}
+          onChanged={() => void query.refetch()}
+        />
+      ) : null}
+    </div>
   );
 }
 

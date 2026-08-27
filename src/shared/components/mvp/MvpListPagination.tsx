@@ -1,6 +1,5 @@
 import { Pagination } from "antd";
-import { MenuItem, Select, ThemeProvider } from "@mui/material";
-import { muiTheme } from "@/app/mui-theme";
+import { MenuItem, Select } from "@mui/material";
 import { MVP_PAGE_SIZE_OPTIONS } from "@/shared/components/mvp/mvp-pagination";
 
 interface PageSizeSelectorProps {
@@ -35,24 +34,21 @@ export function MvpPageSizeSelector({
     // thành thứ duy nhất còn bung menu theo kiểu hệ điều hành: phông, màu bôi
     // đen và tốc độ đều lệch phần còn lại của app. Đổi sang Select của MUI để
     // menu ăn theme và có hiệu ứng như mọi dropdown khác.
-    // ThemeProvider đặt ngay tại đây vì component này còn được dùng ở màn chưa
-    // bọc theme (IamRolePermissionScreen) — lồng ThemeProvider là vô hại.
-    <ThemeProvider theme={muiTheme}>
-      <div className="table-page-size">
-        <Select
-          value={value}
-          sx={{ width: 130 }}
-          inputProps={{ "aria-label": "Số dòng mỗi trang" }}
-          onChange={(event) => onChange(Number(event.target.value))}
-        >
-          {options.map((size) => (
-            <MenuItem key={size} value={size}>
-              {size} / trang
-            </MenuItem>
-          ))}
-        </Select>
-      </div>
-    </ThemeProvider>
+    // Theme lấy từ AppThemeProvider ở composition root — context xuyên qua portal.
+    <div className="table-page-size">
+      <Select
+        value={value}
+        sx={{ width: 130 }}
+        inputProps={{ "aria-label": "Số dòng mỗi trang" }}
+        onChange={(event) => onChange(Number(event.target.value))}
+      >
+        {options.map((size) => (
+          <MenuItem key={size} value={size}>
+            {size} / trang
+          </MenuItem>
+        ))}
+      </Select>
+    </div>
   );
 }
 

@@ -1,31 +1,15 @@
 /**
- * Token chuyển động dùng chung cho TOÀN dự án.
+ * Token chuyển động dùng chung cho TOÀN dự án — MIRROR của canonical source
+ * `@/shared/ui/tokens` (primitives.MOTION). Giữ path này vì nhiều consumer
+ * (mui-adapter, AnimatedList, hn-motion.css đối chiếu) đã trỏ vào đây.
  *
- * Đây là bản TypeScript của các biến CSS trong src/styles/hn-motion.css —
- * hai nơi PHẢI cùng giá trị để hiệu ứng của MUI (chạy bằng JS: Dialog, Menu,
- * Collapse, Fade...) khớp nhịp với hiệu ứng của CSS/antd. Sửa ở đây thì sửa
- * luôn hn-motion.css và ngược lại.
+ * hn-motion.css phải cùng giá trị — parity test:
+ * src/test/ui-foundation/token-css-parity.test.ts.
  */
+import { MOTION } from "@/shared/ui/tokens";
 
-export const MOTION_DURATION = {
-  /** Đổi màu chữ/icon — gần như tức thì nhưng không "cứng". */
-  instant: 90,
-  /** Hover/focus của control nhỏ. */
-  fast: 140,
-  /** Mặc định cho đa số chuyển động. */
-  normal: 200,
-  /** Modal/drawer/khối lớn xuất hiện. */
-  slow: 280,
-} as const;
-
-export const MOTION_EASING = {
-  /** Standard — dùng cho phần lớn trường hợp (đối xứng vào/ra). */
-  standard: "cubic-bezier(0.4, 0, 0.2, 1)",
-  /** Xuất hiện: bung nhanh rồi hãm lại — cảm giác "đáp xuống" mượt. */
-  out: "cubic-bezier(0.16, 1, 0.3, 1)",
-  /** Biến mất: rời đi dứt khoát. */
-  in: "cubic-bezier(0.4, 0, 1, 1)",
-} as const;
+export const MOTION_DURATION = MOTION.duration;
+export const MOTION_EASING = MOTION.easing;
 
 /**
  * Chuyển động có được bật hay không.

@@ -16,11 +16,9 @@ import {
   Tab,
   Tabs,
   TextField,
-  ThemeProvider,
   Typography,
 } from "@mui/material";
 import { toast } from "sonner";
-import { muiTheme } from "@/app/mui-theme";
 import {
   AppstoreOutlined,
   FileTextOutlined,
@@ -486,7 +484,7 @@ export function CatalogMasterScreen() {
     brandOptions.find((option) => option.value === formValues.brand_id) ?? null;
 
   return (
-    <ThemeProvider theme={muiTheme}>
+    <>
       <Stack spacing={2}>
         <Card variant="outlined" sx={{ borderRadius: 2 }}>
           <Box
@@ -826,6 +824,6 @@ export function CatalogMasterScreen() {
           </DialogActions>
         </Dialog>
       </Stack>
-    </ThemeProvider>
+    </>
   );
 }

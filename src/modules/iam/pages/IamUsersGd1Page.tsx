@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { Tab, Tabs, ThemeProvider } from "@mui/material";
-import { muiTheme } from "@/app/mui-theme";
+import { Tab, Tabs } from "@mui/material";
 import {
   SafetyCertificateOutlined,
   UserOutlined,
@@ -22,7 +21,7 @@ export function IamUsersGd1Page({ openCreateOnMount }: IamUsersGd1PageProps) {
   const activeTab = tab === "roles" && !showRolesTab ? "users" : tab;
 
   return (
-    <ThemeProvider theme={muiTheme}>
+    <>
       <Tabs
         value={activeTab}
         onChange={(_event, value: "users" | "roles") => setTab(value)}
@@ -51,6 +50,6 @@ export function IamUsersGd1Page({ openCreateOnMount }: IamUsersGd1PageProps) {
       ) : (
         <IamRolePermissionScreen />
       )}
-    </ThemeProvider>
+    </>
   );
 }

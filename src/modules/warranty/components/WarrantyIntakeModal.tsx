@@ -12,12 +12,10 @@ import {
   Grid,
   Stack,
   TextField,
-  ThemeProvider,
   ToggleButton,
   ToggleButtonGroup,
   Typography,
 } from "@mui/material";
-import { muiTheme } from "@/app/mui-theme";
 import { toast } from "sonner";
 import dayjs from "dayjs";
 import { DeleteOutlined, PlayCircleOutlined } from "@/shared/components/icons";
@@ -368,7 +366,7 @@ export function WarrantyIntakeModal({
   const busy = createMutation.isPending || uploadMutation.isPending;
 
   return (
-    <ThemeProvider theme={muiTheme}>
+    <>
       <Dialog
         {...dialog.dialogProps}
         open={open && dialog.open}
@@ -795,6 +793,6 @@ export function WarrantyIntakeModal({
           </ActionButton>
         </DialogActions>
       </Dialog>
-    </ThemeProvider>
+    </>
   );
 }

@@ -16,11 +16,9 @@ import {
   Select,
   Stack,
   TextField,
-  ThemeProvider,
   Typography,
 } from "@mui/material";
 import { toast } from "sonner";
-import { muiTheme } from "@/app/mui-theme";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { getApiErrorMessage, normalizeError } from "@/shared/api/api-error";
 import {
@@ -227,7 +225,7 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
   }
 
   return (
-    <ThemeProvider theme={muiTheme}>
+    <>
       <Dialog {...dialog.dialogProps} maxWidth="lg" fullWidth>
         <DialogTitle sx={{ pr: 6, position: "relative" }}>
           Tạo phiếu điều chỉnh tồn kho
@@ -768,6 +766,6 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
           </ActionButton>
         </DialogActions>
       </Dialog>
-    </ThemeProvider>
+    </>
   );
 }

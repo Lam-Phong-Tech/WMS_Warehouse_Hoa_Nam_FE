@@ -14,10 +14,8 @@ import {
   MenuItem,
   Stack,
   TextField,
-  ThemeProvider,
   Typography,
 } from "@mui/material";
-import { muiTheme } from "@/app/mui-theme";
 import { toast } from "sonner";
 import {
   CheckCircleOutlined,
@@ -290,7 +288,7 @@ function CameraScanModal({
   }, [open]);
 
   return (
-    <ThemeProvider theme={muiTheme}>
+    <>
       <Dialog
         open={open}
         onClose={guardBackdropClose(onClose)}
@@ -334,7 +332,7 @@ function CameraScanModal({
           </ActionButton>
         </DialogActions>
       </Dialog>
-    </ThemeProvider>
+    </>
   );
 }
 
@@ -951,7 +949,7 @@ export function InboundScanModal({
   }));
 
   return (
-    <ThemeProvider theme={muiTheme}>
+    <>
       <Dialog {...dialog.dialogProps} maxWidth="lg" fullWidth>
         <DialogTitle sx={{ pr: 6, position: "relative" }}>
           {detail
@@ -1614,7 +1612,7 @@ export function InboundScanModal({
           </ActionButton>
         </DialogActions>
       </Dialog>
-    </ThemeProvider>
+    </>
   );
 }
 
@@ -1626,7 +1624,7 @@ export function InboundSourceScreen({
   screenId: LegacyScreenId;
 }) {
   return (
-    <ThemeProvider theme={muiTheme}>
+    <>
       <Box
         sx={{
           border: "1px solid",
@@ -1639,6 +1637,6 @@ export function InboundSourceScreen({
           ? "Quét & hoàn tất nhập kho được mở từ Danh sách phiếu nhập dưới dạng cửa sổ thao tác."
           : "IN-01/IN-02 được quản lý trong Danh sách phiếu nhập."}
       </Box>
-    </ThemeProvider>
+    </>
   );
 }

@@ -134,7 +134,9 @@ describe("WarrantyPage (WAR-01 hub)", () => {
   it("bấm Mở mở modal chi tiết đúng case (WAR-03)", async () => {
     renderWithProviders(<WarrantyPage />, ["/warranty"]);
 
-    const openButtons = await screen.findAllByRole("button", { name: /Mở/ });
+    // a908c42 chuẩn hoá hành động dòng thành ActionButton kind="edit" nhãn "Sửa"
+    // (trước là "Mở") — test cập nhật theo UI đã duyệt.
+    const openButtons = await screen.findAllByRole("button", { name: /Sửa/ });
     fireEvent.click(openButtons[0]);
 
     expect(await screen.findByTestId("detail-modal")).toHaveTextContent("wc-1");

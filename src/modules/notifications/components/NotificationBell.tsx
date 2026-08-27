@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Badge, Button, Empty, List, Spin, Typography } from "antd";
-import { Box, Popover, ThemeProvider } from "@mui/material";
-import { muiTheme } from "@/app/mui-theme";
+import { Box, Popover } from "@mui/material";
 import { BellOutlined } from "@/shared/components/icons";
 import { useNavigate } from "react-router-dom";
 import { layoutStyles } from "@/app/layouts/layout.styles";
@@ -53,7 +52,7 @@ export function NotificationBell() {
   };
 
   return (
-    <ThemeProvider theme={muiTheme}>
+    <>
       <>
         <Badge count={unreadCount} size="small" offset={[-2, 4]}>
           <Button
@@ -197,6 +196,6 @@ export function NotificationBell() {
           onNavigate={() => handleClose()}
         />
       </>
-    </ThemeProvider>
+    </>
   );
 }

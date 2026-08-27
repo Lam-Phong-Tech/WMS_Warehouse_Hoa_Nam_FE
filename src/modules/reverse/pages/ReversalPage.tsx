@@ -6,10 +6,8 @@ import {
   MenuItem,
   Select,
   TextField,
-  ThemeProvider,
   Typography as MuiTypography,
 } from "@mui/material";
-import { muiTheme } from "@/app/mui-theme";
 import {
   ResponsiveDataTable,
   type ResponsiveTableColumn,
@@ -226,7 +224,7 @@ export default function ReversalPage() {
     : [...MVP_PAGE_SIZE_OPTIONS, perPage].sort((a, b) => a - b);
 
   return (
-    <ThemeProvider theme={muiTheme}>
+    <>
       <div className="reversal-page hn-mvp-source-screen">
         {!canPost ? (
           <div
@@ -374,6 +372,6 @@ export default function ReversalPage() {
           />
         ) : null}
       </div>
-    </ThemeProvider>
+    </>
   );
 }

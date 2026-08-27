@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import type { FormActionButtonProps } from "@/shared/components/feedback/FormActions";
 import { Form, Typography } from "antd";
-import { CARD_SHADOW, NEUTRAL_COLORS, RADIUS } from "@/shared/design-tokens";
+import { COMPONENT_TOKENS, SEMANTIC_LIGHT } from "@/shared/ui/tokens";
 import { FormActions } from "./FormActions";
 
 export interface FormPageProps {
@@ -55,17 +55,17 @@ export function FormPage({
   return (
     <div
       style={{
-        background: NEUTRAL_COLORS.paper,
-        border: `2px solid ${NEUTRAL_COLORS.ink}`,
-        borderRadius: RADIUS.card,
-        boxShadow: CARD_SHADOW,
-        padding: 22,
+        background: SEMANTIC_LIGHT.bgSurface,
+        border: `1px solid ${SEMANTIC_LIGHT.border}`,
+        borderRadius: COMPONENT_TOKENS.card.radius,
+        boxShadow: COMPONENT_TOKENS.card.shadow,
+        padding: COMPONENT_TOKENS.card.paddingDesktop,
       }}
     >
       <div style={{ marginBottom: 16 }}>
         <Typography.Title
           level={4}
-          style={{ margin: 0, color: NEUTRAL_COLORS.ink }}
+          style={{ margin: 0, color: SEMANTIC_LIGHT.textHigh }}
         >
           {title}
         </Typography.Title>

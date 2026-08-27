@@ -7,11 +7,9 @@ import {
   DialogTitle,
   Grid,
   Stack,
-  ThemeProvider,
   Typography,
 } from "@mui/material";
 import { toast } from "sonner";
-import { muiTheme } from "@/app/mui-theme";
 import type { AuditLog } from "../types/audit-logs.types";
 import { formatDateTime } from "@/shared/utils/format-date";
 import {
@@ -107,94 +105,92 @@ export function AuditLogDetailDrawer({
   };
 
   return (
-    <ThemeProvider theme={muiTheme}>
-      <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ pr: 6, position: "relative" }}>
-          Chi tiết nhật ký hệ thống
-          <ActionIconButton
-            kind="close"
-            label="Đóng"
-            onClick={onClose}
-            sx={{ position: "absolute", right: 10, top: 8 }}
-          />
-        </DialogTitle>
-        <DialogContent dividers>
-          <Stack spacing={2}>
-            <Box
-              sx={{
-                border: "1px solid",
-                borderColor: "divider",
-                borderRadius: 2,
-                p: 2,
-              }}
-            >
-              <Grid container spacing={2}>
-                <DetailField
-                  label="Mã bản ghi"
-                  value={
-                    <Stack
-                      direction="row"
-                      spacing={0.5}
-                      sx={{ alignItems: "center" }}
-                    >
-                      <span>{auditLog.id}</span>
-                      <ActionIconButton
-                        kind="copy"
-                        label="Sao chép mã bản ghi"
-                        onClick={copyId}
-                      />
-                    </Stack>
-                  }
-                />
-                <DetailField
-                  label="Thời gian"
-                  value={formatDateTime(auditLog.created_at)}
-                />
-                <DetailField
-                  label="Hành động"
-                  value={
-                    <Tag color={ACTION_COLOR[auditLog.action] ?? "default"}>
-                      {actionLabel}
-                    </Tag>
-                  }
-                />
-                <DetailField
-                  label="Phân hệ"
-                  value={AUDIT_MODULE_LABELS[auditLog.module] || "Phân hệ khác"}
-                />
-                <DetailField
-                  label="Đối tượng"
-                  value={`${auditLog.object_type}${auditLog.object_id ? ` #${auditLog.object_id}` : ""}`}
-                />
-                <DetailField
-                  label="Người thực hiện"
-                  value={
-                    auditLog.actor?.email ||
-                    auditLog.actor?.display_name ||
-                    "Hệ thống"
-                  }
-                />
-                <DetailField
-                  label="Địa chỉ IP"
-                  value={
-                    <Text copyable={!!auditLog.ip_address}>
-                      {auditLog.ip_address || "—"}
-                    </Text>
-                  }
-                />
-                <DetailField label="Mô tả" value={auditLog.description} />
-              </Grid>
-            </Box>
-
-            {auditLog.before_data && (
-              <JsonBlock
-                title="Dữ liệu trước thay đổi"
-                value={auditLog.before_data}
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle sx={{ pr: 6, position: "relative" }}>
+        Chi tiết nhật ký hệ thống
+        <ActionIconButton
+          kind="close"
+          label="Đóng"
+          onClick={onClose}
+          sx={{ position: "absolute", right: 10, top: 8 }}
+        />
+      </DialogTitle>
+      <DialogContent dividers>
+        <Stack spacing={2}>
+          <Box
+            sx={{
+              border: "1px solid",
+              borderColor: "divider",
+              borderRadius: 2,
+              p: 2,
+            }}
+          >
+            <Grid container spacing={2}>
+              <DetailField
+                label="Mã bản ghi"
+                value={
+                  <Stack
+                    direction="row"
+                    spacing={0.5}
+                    sx={{ alignItems: "center" }}
+                  >
+                    <span>{auditLog.id}</span>
+                    <ActionIconButton
+                      kind="copy"
+                      label="Sao chép mã bản ghi"
+                      onClick={copyId}
+                    />
+                  </Stack>
+                }
               />
-            )}
-          </Stack>
-        </DialogContent>
-      </Dialog>
-    </ThemeProvider>
+              <DetailField
+                label="Thời gian"
+                value={formatDateTime(auditLog.created_at)}
+              />
+              <DetailField
+                label="Hành động"
+                value={
+                  <Tag color={ACTION_COLOR[auditLog.action] ?? "default"}>
+                    {actionLabel}
+                  </Tag>
+                }
+              />
+              <DetailField
+                label="Phân hệ"
+                value={AUDIT_MODULE_LABELS[auditLog.module] || "Phân hệ khác"}
+              />
+              <DetailField
+                label="Đối tượng"
+                value={`${auditLog.object_type}${auditLog.object_id ? ` #${auditLog.object_id}` : ""}`}
+              />
+              <DetailField
+                label="Người thực hiện"
+                value={
+                  auditLog.actor?.email ||
+                  auditLog.actor?.display_name ||
+                  "Hệ thống"
+                }
+              />
+              <DetailField
+                label="Địa chỉ IP"
+                value={
+                  <Text copyable={!!auditLog.ip_address}>
+                    {auditLog.ip_address || "—"}
+                  </Text>
+                }
+              />
+              <DetailField label="Mô tả" value={auditLog.description} />
+            </Grid>
+          </Box>
+
+          {auditLog.before_data && (
+            <JsonBlock
+              title="Dữ liệu trước thay đổi"
+              value={auditLog.before_data}
+            />
+          )}
+        </Stack>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -20,10 +20,8 @@ import {
   Tab,
   Tabs,
   TextField,
-  ThemeProvider,
   Typography,
 } from "@mui/material";
-import { muiTheme } from "@/app/mui-theme";
 import {
   HistoryOutlined,
   PaperClipOutlined,
@@ -800,7 +798,7 @@ export function WarrantyDetailModal({
   ];
 
   return (
-    <ThemeProvider theme={muiTheme}>
+    <>
       <Dialog {...dialog.dialogProps} maxWidth="lg" fullWidth>
         <DialogTitle sx={{ pr: 6, position: "relative", pb: 1 }}>
           <Stack
@@ -2119,6 +2117,6 @@ export function WarrantyDetailModal({
           </ActionButton>
         </DialogActions>
       </Dialog>
-    </ThemeProvider>
+    </>
   );
 }

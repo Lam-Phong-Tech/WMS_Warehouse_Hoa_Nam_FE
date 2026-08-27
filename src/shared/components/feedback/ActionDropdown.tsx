@@ -1,12 +1,5 @@
 import { useState } from "react";
-import {
-  ListItemIcon,
-  ListItemText,
-  Menu,
-  MenuItem,
-  ThemeProvider,
-} from "@mui/material";
-import { muiTheme } from "@/app/mui-theme";
+import { ListItemIcon, ListItemText, Menu, MenuItem } from "@mui/material";
 import {
   ACTION_KINDS,
   ActionIconButton,
@@ -71,9 +64,7 @@ export interface ActionDropdownProps {
  * quyền dùng HÀM THUẦN (getPermissionCode, hasPermission) trên state đã lấy từ
  * usePermissionState() — gọi hook ĐÚNG 1 LẦN, không gọi trong vòng lặp.
  *
- * Bọc ThemeProvider cục bộ (thay vì trông cậy theme của trang cha) vì component
- * này thường được render bên trong ô của bảng antd (Table column render) — cây
- * render đó không chắc nằm trong 1 ThemeProvider MUI nào của trang cha.
+ * Theme lấy từ AppThemeProvider ở composition root — context xuyên qua portal.
  */
 export function ActionDropdown({
   items,
@@ -114,7 +105,7 @@ export function ActionDropdown({
   const handleClose = () => setAnchorEl(null);
 
   return (
-    <ThemeProvider theme={muiTheme}>
+    <>
       <ActionIconButton
         kind="more"
         label={tooltip}
@@ -149,6 +140,6 @@ export function ActionDropdown({
           </MenuItem>
         ))}
       </Menu>
-    </ThemeProvider>
+    </>
   );
 }

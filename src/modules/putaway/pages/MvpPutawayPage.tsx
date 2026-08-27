@@ -16,10 +16,8 @@ import {
   Tab,
   Tabs,
   TextField,
-  ThemeProvider,
   Typography,
 } from "@mui/material";
-import { muiTheme } from "@/app/mui-theme";
 import { guardBackdropClose } from "@/shared/utils/dialogGuard";
 import { DataTable } from "@/shared/components";
 import type { ColumnWithSortType } from "@/shared/components";
@@ -656,7 +654,7 @@ export default function MvpPutawayPage() {
           />
         ) : null}
 
-        <ThemeProvider theme={muiTheme}>
+        <>
           <Tabs
             value={activeTab}
             onChange={(_event, value: string) => setActiveTab(value)}
@@ -721,7 +719,7 @@ export default function MvpPutawayPage() {
               />
             </Col>
           </Row>
-        </ThemeProvider>
+        </>
 
         {activeTab === "pending" ? (
           <DataTable<PutawayTask>
@@ -770,7 +768,7 @@ export default function MvpPutawayPage() {
         )}
       </Card>
 
-      <ThemeProvider theme={muiTheme}>
+      <>
         <Dialog
           open={Boolean(selected)}
           onClose={guardBackdropClose(closePutaway)}
@@ -1068,7 +1066,7 @@ export default function MvpPutawayPage() {
             </ActionButton>
           </DialogActions>
         </Dialog>
-      </ThemeProvider>
+      </>
 
       <CameraScanModal
         open={cameraOpen}

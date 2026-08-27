@@ -34,7 +34,9 @@ describe("LoginPage", () => {
     renderWithProviders(<LoginPage />);
 
     await user.type(
-      screen.getByPlaceholderText(/admin@gmail\.com hoặc admin/i),
+      // Placeholder hiện hành của LoginPage là "your@gmail.com" (đổi ở đợt
+      // migration [skip ci] nhưng test chưa được cập nhật theo).
+      screen.getByPlaceholderText(/your@gmail\.com/i),
       "not-an-email@",
     );
     await user.click(screen.getByRole("button", { name: /đăng nhập/i }));

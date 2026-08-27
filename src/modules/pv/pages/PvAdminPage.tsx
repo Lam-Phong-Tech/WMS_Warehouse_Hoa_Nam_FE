@@ -19,10 +19,8 @@ import {
   Tab,
   Tabs,
   TextField,
-  ThemeProvider,
   Typography,
 } from "@mui/material";
-import { muiTheme } from "@/app/mui-theme";
 import {
   ProfileOutlined,
   ApartmentOutlined,
@@ -321,7 +319,7 @@ function SimpleMasterTab({
         columns={columns}
       />
 
-      <ThemeProvider theme={muiTheme}>
+      <>
         <Dialog
           open={isOpen}
           onClose={guardBackdropClose(() => setIsOpen(false))}
@@ -412,7 +410,7 @@ function SimpleMasterTab({
             </ActionButton>
           </DialogActions>
         </Dialog>
-      </ThemeProvider>
+      </>
     </div>
   );
 }
@@ -666,7 +664,7 @@ export default function PvAdminPage() {
   ];
 
   return (
-    <ThemeProvider theme={muiTheme}>
+    <>
       <div style={{ padding: "clamp(8px, 2vw, 16px)" }}>
         <h1 style={{ fontSize: "clamp(17px, 3vw, 22px)", fontWeight: 700 }}>
           Quản trị ứng dụng phân vùng
@@ -1042,7 +1040,7 @@ export default function PvAdminPage() {
           </DialogActions>
         </Dialog>
       </div>
-    </ThemeProvider>
+    </>
   );
 }
 

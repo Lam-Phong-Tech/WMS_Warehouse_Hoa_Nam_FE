@@ -28,6 +28,27 @@ const PERMISSION_INTERNAL_FILES = [
   'src/shared/types/permission.ts',
 ];
 
+// Part 2 Vuexy sync — biên giới design system (đi kèm ratchet script
+// `yarn ui:architecture|ui:tokens|ui:styles`, xem docs/ui/vuexy-sync/13):
+// @emotion/* chỉ là engine nội bộ của MUI; design-tokens (hệ warm) đã retire.
+const RESTRICTED_UI_PATHS = [
+  {
+    name: '@emotion/react',
+    message:
+      'Không import @emotion/* trực tiếp — chỉ là styled-engine nội bộ của MUI. Dùng sx/theme qua @/shared/ui.',
+  },
+  {
+    name: '@emotion/styled',
+    message:
+      'Không import @emotion/* trực tiếp — chỉ là styled-engine nội bộ của MUI. Dùng sx/theme qua @/shared/ui.',
+  },
+  {
+    name: '@/shared/design-tokens',
+    message:
+      'Nguồn token warm đã retire (DEC-UI-BASELINE-01) — dùng @/shared/ui/tokens.',
+  },
+];
+
 export default defineConfig([
   globalIgnores(['dist']),
   {
@@ -76,9 +97,17 @@ export default defineConfig([
               message:
                 "Không import trực tiếp — dùng '@/shared/components/permission' hoặc '@/lib/permissions'.",
             },
+            ...RESTRICTED_UI_PATHS,
           ],
         },
       ],
+    },
+  },
+  {
+    // Các file permission-internal vẫn phải tuân biên giới design system.
+    files: PERMISSION_INTERNAL_FILES,
+    rules: {
+      'no-restricted-imports': ['error', { paths: RESTRICTED_UI_PATHS }],
     },
   },
 ])

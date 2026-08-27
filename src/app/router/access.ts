@@ -83,7 +83,13 @@ export const ROUTE_PERMISSIONS: Record<string, string | string[] | undefined> =
     // REQ-017: route demo /component-catalog chỉ tồn tại ở bản DEV (xem
     // router/index.tsx). Production không có entry -> resolver trả sentinel
     // UNREGISTERED_ROUTE_PERMISSION -> fail-closed nếu route lọt lại.
-    ...(import.meta.env.DEV ? { [ROUTES.COMPONENT_CATALOG]: undefined } : {}),
+    ...(import.meta.env.DEV
+      ? {
+          [ROUTES.COMPONENT_CATALOG]: undefined,
+          // Part 2 Vuexy sync: foundation catalog — DEV-only, mọi user đã đăng nhập.
+          [ROUTES.UI_FOUNDATION]: undefined,
+        }
+      : {}),
     [ROUTES.PROFILE]: undefined,
     // Hộp thư thông báo cá nhân — tự scope theo user_id ở BE, không cần permission riêng.
     [ROUTES.NOTIFICATIONS]: undefined,

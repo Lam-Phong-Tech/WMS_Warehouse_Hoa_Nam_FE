@@ -119,6 +119,11 @@ const ComponentCatalogPage = lazy(() =>
     default: m.default,
   })),
 );
+const FoundationCatalogPage = lazy(() =>
+  import("@/shared/ui/catalog/FoundationCatalogPage").then((m) => ({
+    default: m.default,
+  })),
+);
 const ProfilePage = lazy(() =>
   import("@/modules/auth/pages/ProfilePage").then((m) => ({
     default: m.ProfilePage,
@@ -309,6 +314,16 @@ export const router = createBrowserRouter([
                   element: routeEl(
                     ROUTES.COMPONENT_CATALOG,
                     <ComponentCatalogPage />,
+                  ),
+                },
+                // Part 2 Vuexy sync: golden catalog của design-system foundation
+                // (docs/ui/vuexy-sync/10-design-system-adr.md) — DEV-only như
+                // /component-catalog.
+                {
+                  path: ROUTES.UI_FOUNDATION,
+                  element: routeEl(
+                    ROUTES.UI_FOUNDATION,
+                    <FoundationCatalogPage />,
                   ),
                 },
               ]

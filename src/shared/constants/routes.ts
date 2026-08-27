@@ -45,6 +45,7 @@ export const ROUTES = {
   REVERSE: "/reverse",
   REPORTS: "/reports",
   COMPONENT_CATALOG: "/component-catalog",
+  UI_FOUNDATION: "/ui-foundation",
 
   // Organization & Employee Management
   ORG_UNITS: "/org-units",

@@ -1,13 +1,6 @@
 import { useState } from "react";
 import { Space, Tag, Typography } from "antd";
-import {
-  ListItemIcon,
-  ListItemText,
-  Menu,
-  MenuItem,
-  ThemeProvider,
-} from "@mui/material";
-import { muiTheme } from "@/app/mui-theme";
+import { ListItemIcon, ListItemText, Menu, MenuItem } from "@mui/material";
 import {
   ApartmentOutlined,
   CheckOutlined,
@@ -48,7 +41,7 @@ export function ContextSwitcher() {
   const handleClose = () => setAnchorEl(null);
 
   return (
-    <ThemeProvider theme={muiTheme}>
+    <>
       <Space
         style={layoutStyles.contextSwitcherTrigger}
         size={6}
@@ -133,6 +126,6 @@ export function ContextSwitcher() {
           );
         })}
       </Menu>
-    </ThemeProvider>
+    </>
   );
 }

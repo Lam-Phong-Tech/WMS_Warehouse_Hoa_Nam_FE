@@ -11,10 +11,8 @@ import {
   Chip,
   Paper,
   Stack,
-  ThemeProvider,
   Typography,
 } from "@mui/material";
-import { muiTheme } from "@/app/mui-theme";
 import { ROUTES } from "@/shared/constants/routes";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { fetchDashboardKPI } from "../services/dashboardService";
@@ -332,556 +330,549 @@ export default function DashboardPage() {
     : [];
 
   return (
-    <ThemeProvider theme={muiTheme}>
-      <div className="hn-dashboard-page">
-        <Paper
-          component="section"
-          aria-labelledby="dashboard-title"
-          variant="outlined"
-          sx={{ p: 3, borderRadius: 2 }}
+    <div className="hn-dashboard-page">
+      <Paper
+        component="section"
+        aria-labelledby="dashboard-title"
+        variant="outlined"
+        sx={{ p: 3, borderRadius: 2 }}
+      >
+        <Chip label="Tổng quan vận hành" size="small" sx={{ mb: 1.5 }} />
+        <Typography variant="h4" id="dashboard-title" sx={{ mb: 0.5 }}>
+          Tổng quan kho
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          Theo dõi tồn khả dụng, nhập kho, xuất kho, bảo hành và các cảnh báo
+          đối soát trên cùng một màn hình.
+        </Typography>
+
+        <Stack
+          direction="row"
+          spacing={1}
+          role="group"
+          aria-label="Chọn kỳ xem nhanh"
+          sx={{ mt: 2.5, flexWrap: "wrap" }}
         >
-          <Chip label="Tổng quan vận hành" size="small" sx={{ mb: 1.5 }} />
-          <Typography variant="h4" id="dashboard-title" sx={{ mb: 0.5 }}>
-            Tổng quan kho
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Theo dõi tồn khả dụng, nhập kho, xuất kho, bảo hành và các cảnh báo
-            đối soát trên cùng một màn hình.
-          </Typography>
+          {DASHBOARD_PERIOD_PRESETS.map((option) => (
+            <Button
+              key={option.value}
+              variant={preset === option.value ? "contained" : "outlined"}
+              onClick={() => setPreset(option.value)}
+              disabled={!canViewReport}
+            >
+              {option.label}
+            </Button>
+          ))}
+          {dashboardQuery.isFetching ? (
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ alignSelf: "center", ml: 1 }}
+            >
+              Đang tải…
+            </Typography>
+          ) : null}
+        </Stack>
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{
+            display: "block",
+            mt: 2.5,
+            pt: 1.5,
+            borderTop: "1px solid",
+            borderColor: "divider",
+          }}
+        >
+          Dữ liệu được tổng hợp theo múi giờ Việt Nam. Cần xem chi tiết theo
+          ngày/tháng/khoảng ngày tuỳ ý — vào mục Báo cáo.
+        </Typography>
+      </Paper>
 
-          <Stack
-            direction="row"
-            spacing={1}
-            role="group"
-            aria-label="Chọn kỳ xem nhanh"
-            sx={{ mt: 2.5, flexWrap: "wrap" }}
-          >
-            {DASHBOARD_PERIOD_PRESETS.map((option) => (
-              <Button
-                key={option.value}
-                variant={preset === option.value ? "contained" : "outlined"}
-                onClick={() => setPreset(option.value)}
-                disabled={!canViewReport}
-              >
-                {option.label}
-              </Button>
-            ))}
-            {dashboardQuery.isFetching ? (
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ alignSelf: "center", ml: 1 }}
-              >
-                Đang tải…
-              </Typography>
-            ) : null}
-          </Stack>
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{
-              display: "block",
-              mt: 2.5,
-              pt: 1.5,
-              borderTop: "1px solid",
-              borderColor: "divider",
-            }}
-          >
-            Dữ liệu được tổng hợp theo múi giờ Việt Nam. Cần xem chi tiết theo
-            ngày/tháng/khoảng ngày tuỳ ý — vào mục Báo cáo.
-          </Typography>
-        </Paper>
+      {isProfileLoaded && !canViewReport ? (
+        <DashboardStateAlert
+          severity="warning"
+          title="Không có quyền xem báo cáo tổng quan."
+          description="Vui lòng liên hệ quản trị viên nếu bạn cần quyền truy cập."
+        />
+      ) : null}
 
-        {isProfileLoaded && !canViewReport ? (
-          <DashboardStateAlert
-            severity="warning"
-            title="Không có quyền xem báo cáo tổng quan."
-            description="Vui lòng liên hệ quản trị viên nếu bạn cần quyền truy cập."
-          />
-        ) : null}
+      {canViewReport && dashboardQuery.isLoading ? (
+        <DashboardStateAlert
+          severity="info"
+          title="Đang tải số liệu tổng quan…"
+          description="Hệ thống đang tổng hợp dữ liệu vận hành."
+        />
+      ) : null}
 
-        {canViewReport && dashboardQuery.isLoading ? (
-          <DashboardStateAlert
-            severity="info"
-            title="Đang tải số liệu tổng quan…"
-            description="Hệ thống đang tổng hợp dữ liệu vận hành."
-          />
-        ) : null}
+      {canViewReport && dashboardQuery.isError ? (
+        <DashboardStateAlert
+          severity="error"
+          title={
+            status === 403
+              ? "Bạn không có quyền xem báo cáo tổng quan."
+              : status === 422
+                ? "Khoảng ngày đã chọn không hợp lệ."
+                : "Không tải được số liệu tổng quan."
+          }
+          description={
+            status === 401
+              ? "Phiên đăng nhập không còn hợp lệ."
+              : "Hệ thống không hiển thị dữ liệu cũ khi việc tải dữ liệu thất bại."
+          }
+          action={
+            <ActionButton
+              kind="refresh"
+              onClick={() => dashboardQuery.refetch()}
+              disabled={dashboardQuery.isFetching}
+            >
+              Thử lại
+            </ActionButton>
+          }
+        />
+      ) : null}
 
-        {canViewReport && dashboardQuery.isError ? (
-          <DashboardStateAlert
-            severity="error"
-            title={
-              status === 403
-                ? "Bạn không có quyền xem báo cáo tổng quan."
-                : status === 422
-                  ? "Khoảng ngày đã chọn không hợp lệ."
-                  : "Không tải được số liệu tổng quan."
-            }
-            description={
-              status === 401
-                ? "Phiên đăng nhập không còn hợp lệ."
-                : "Hệ thống không hiển thị dữ liệu cũ khi việc tải dữ liệu thất bại."
-            }
-            action={
-              <ActionButton
-                kind="refresh"
-                onClick={() => dashboardQuery.refetch()}
-                disabled={dashboardQuery.isFetching}
-              >
-                Thử lại
-              </ActionButton>
-            }
-          />
-        ) : null}
-
-        {data ? (
-          <>
-            <Box component="section" aria-labelledby="dashboard-kpi-title">
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  gap: 1.5,
-                  flexWrap: "wrap",
-                  mb: 1.5,
-                }}
-              >
-                <Box>
-                  <Typography variant="h6" id="dashboard-kpi-title">
-                    Chỉ số vận hành
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ display: "block" }}
-                  >
-                    Kỳ thống kê: {formatDate(data.period.from_date)} →{" "}
-                    {formatDate(data.period.to_date)}
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ display: "block" }}
-                  >
-                    Phạm vi dữ liệu:{" "}
-                    {data.data_scope === "GLOBAL"
-                      ? "Toàn hệ thống"
-                      : `Theo ${data.scope_warehouse_ids?.length ?? 0} kho bạn được phân quyền`}
-                  </Typography>
-                </Box>
-                <Chip
-                  label="Dữ liệu hệ thống"
-                  size="small"
-                  variant="outlined"
-                />
+      {data ? (
+        <>
+          <Box component="section" aria-labelledby="dashboard-kpi-title">
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: 1.5,
+                flexWrap: "wrap",
+                mb: 1.5,
+              }}
+            >
+              <Box>
+                <Typography variant="h6" id="dashboard-kpi-title">
+                  Chỉ số vận hành
+                </Typography>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: "block" }}
+                >
+                  Kỳ thống kê: {formatDate(data.period.from_date)} →{" "}
+                  {formatDate(data.period.to_date)}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: "block" }}
+                >
+                  Phạm vi dữ liệu:{" "}
+                  {data.data_scope === "GLOBAL"
+                    ? "Toàn hệ thống"
+                    : `Theo ${data.scope_warehouse_ids?.length ?? 0} kho bạn được phân quyền`}
+                </Typography>
               </Box>
-
-              <Box className="hn-dashboard-kpi-grid">
-                <DashboardMetricCard
-                  label="Tồn khả dụng"
-                  value={data.available_qty}
-                  note="Số lượng hiện có thể sử dụng"
-                  icon={<StockOutlined />}
-                  color={CHART_COLORS.primary}
-                />
-                <DashboardMetricCard
-                  label="Nhập kho"
-                  value={data.receipt_qty}
-                  note="Tổng số lượng đã ghi nhận nhập trong kỳ"
-                  icon={<ImportOutlined />}
-                  color={CHART_COLORS.success}
-                />
-                <DashboardMetricCard
-                  label="Xuất kho"
-                  value={data.issue_qty}
-                  note="Tổng số lượng đã ghi nhận xuất trong kỳ"
-                  icon={<ExportOutlined />}
-                  color={CHART_COLORS.warning}
-                />
-                <DashboardMetricCard
-                  label="Xuất linh kiện"
-                  value={data.component_issue_qty}
-                  note="Tổng linh kiện đã xuất trong kỳ"
-                  icon={<ToolOutlined />}
-                  color={CHART_COLORS.info}
-                />
-                <DashboardMetricCard
-                  label="Điều chỉnh tồn (ròng)"
-                  value={data.reversal_net}
-                  note="Chênh lệch tăng/giảm tồn do điều chỉnh trong kỳ"
-                  icon={<SwapOutlined />}
-                  color={CHART_COLORS.violet}
-                />
-              </Box>
+              <Chip label="Dữ liệu hệ thống" size="small" variant="outlined" />
             </Box>
 
-            {empty ? (
-              <DashboardStateAlert
-                severity="info"
-                title="Không có số liệu trong kỳ."
-                description="Chưa phát sinh dữ liệu vận hành trong khoảng ngày đã chọn."
+            <Box className="hn-dashboard-kpi-grid">
+              <DashboardMetricCard
+                label="Tồn khả dụng"
+                value={data.available_qty}
+                note="Số lượng hiện có thể sử dụng"
+                icon={<StockOutlined />}
+                color={CHART_COLORS.primary}
               />
-            ) : (
-              <Box
-                component="section"
-                aria-label="Biểu đồ tổng quan"
-                className="hn-dashboard-grid"
+              <DashboardMetricCard
+                label="Nhập kho"
+                value={data.receipt_qty}
+                note="Tổng số lượng đã ghi nhận nhập trong kỳ"
+                icon={<ImportOutlined />}
+                color={CHART_COLORS.success}
+              />
+              <DashboardMetricCard
+                label="Xuất kho"
+                value={data.issue_qty}
+                note="Tổng số lượng đã ghi nhận xuất trong kỳ"
+                icon={<ExportOutlined />}
+                color={CHART_COLORS.warning}
+              />
+              <DashboardMetricCard
+                label="Xuất linh kiện"
+                value={data.component_issue_qty}
+                note="Tổng linh kiện đã xuất trong kỳ"
+                icon={<ToolOutlined />}
+                color={CHART_COLORS.info}
+              />
+              <DashboardMetricCard
+                label="Điều chỉnh tồn (ròng)"
+                value={data.reversal_net}
+                note="Chênh lệch tăng/giảm tồn do điều chỉnh trong kỳ"
+                icon={<SwapOutlined />}
+                color={CHART_COLORS.violet}
+              />
+            </Box>
+          </Box>
+
+          {empty ? (
+            <DashboardStateAlert
+              severity="info"
+              title="Không có số liệu trong kỳ."
+              description="Chưa phát sinh dữ liệu vận hành trong khoảng ngày đã chọn."
+            />
+          ) : (
+            <Box
+              component="section"
+              aria-label="Biểu đồ tổng quan"
+              className="hn-dashboard-grid"
+            >
+              <Card variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                  Biểu đồ luồng kho trong kỳ
+                </Typography>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: "block" }}
+                >
+                  So sánh quy mô nhập, xuất, xuất linh kiện và điều chỉnh tồn.
+                </Typography>
+                <Box role="img" aria-label={flowChartLabel} sx={{ mt: 2 }}>
+                  <BarChart
+                    categories={flowMetrics.map((metric) => metric.label)}
+                    series={[
+                      {
+                        name: "Giá trị",
+                        data: flowMetrics.map((metric) => metric.value),
+                      },
+                    ]}
+                    distributed
+                    valueFormatter={formatNumber}
+                  />
+                </Box>
+              </Card>
+
+              <Card variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                  Bảo hành theo trạng thái
+                </Typography>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: "block" }}
+                >
+                  Tổng hợp các ca bảo hành hiện có trong hệ thống.
+                </Typography>
+                {data.data_scope === "WAREHOUSE_SCOPED" ? (
+                  <Box
+                    role="note"
+                    sx={{
+                      mt: 1.25,
+                      pl: 1.25,
+                      py: 0.75,
+                      borderLeft: "3px solid",
+                      borderColor: "divider",
+                    }}
+                  >
+                    <Typography variant="caption" color="text.secondary">
+                      Số liệu bảo hành được tổng hợp toàn hệ thống và không giới
+                      hạn theo kho.
+                    </Typography>
+                  </Box>
+                ) : null}
+                {warrantyEntries.length === 0 ? (
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mt: 2 }}
+                  >
+                    Chưa có ca bảo hành.
+                  </Typography>
+                ) : (
+                  <Box
+                    sx={{
+                      display: "grid",
+                      gridTemplateColumns: { xs: "1fr", sm: "1fr auto" },
+                      gap: 2,
+                      alignItems: "center",
+                      mt: 2,
+                    }}
+                  >
+                    <Stack spacing={1}>
+                      {warrantyEntries.map(([warrantyStatus, count]) => (
+                        <Stack
+                          key={warrantyStatus}
+                          direction="row"
+                          sx={{
+                            justifyContent: "space-between",
+                            borderBottom: "1px solid",
+                            borderColor: "divider",
+                            pb: 1,
+                          }}
+                        >
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              textTransform: "lowercase",
+                              "&::first-letter": {
+                                textTransform: "uppercase",
+                              },
+                            }}
+                          >
+                            {WARRANTY_STATUS_LABELS[warrantyStatus] ??
+                              warrantyStatus.replaceAll("_", " ")}
+                          </Typography>
+                          <Typography sx={{ fontWeight: 700 }}>
+                            {formatNumber(count)}
+                          </Typography>
+                        </Stack>
+                      ))}
+                    </Stack>
+                    <Box sx={{ width: { xs: "100%", sm: 220 } }}>
+                      <DonutChart
+                        items={warrantyEntries.map(
+                          ([warrantyStatus, count]) => ({
+                            label:
+                              WARRANTY_STATUS_LABELS[warrantyStatus] ??
+                              warrantyStatus.replaceAll("_", " "),
+                            value: count,
+                          }),
+                        )}
+                        centerLabel="Tổng ca"
+                        valueFormatter={formatNumber}
+                      />
+                    </Box>
+                  </Box>
+                )}
+              </Card>
+
+              <Card variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                  Đối soát tồn kho
+                </Typography>
+                <Typography
+                  sx={{
+                    display: "block",
+                    mt: 1.5,
+                    mb: 0.5,
+                    fontSize: 24,
+                    fontWeight: 700,
+                  }}
+                >
+                  {formatNumber(data.reconciliation_warning_count)} cảnh báo
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Số trường hợp chênh lệch cần kiểm tra tại thời điểm hiện tại.
+                </Typography>
+              </Card>
+
+              <Card
+                variant="outlined"
+                onClick={() => navigate(ROUTES.MASTER_DATA)}
+                sx={{ p: 2, borderRadius: 2, cursor: "pointer" }}
               >
-                <Card variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                  Tồn dưới định mức
+                </Typography>
+                <Typography
+                  sx={{
+                    display: "block",
+                    mt: 1.5,
+                    mb: 0.5,
+                    fontSize: 24,
+                    fontWeight: 700,
+                  }}
+                >
+                  {formatNumber(data.below_min_stock_count)} SKU
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  SKU có định mức tối thiểu và tổng tồn khả dụng (mọi kho) thấp
+                  hơn định mức.
+                </Typography>
+              </Card>
+
+              <Card
+                variant="outlined"
+                onClick={() => navigate(ROUTES.MASTER_DATA)}
+                sx={{ p: 2, borderRadius: 2, cursor: "pointer" }}
+              >
+                <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                  Tồn vượt định mức
+                </Typography>
+                <Typography
+                  sx={{
+                    display: "block",
+                    mt: 1.5,
+                    mb: 0.5,
+                    fontSize: 24,
+                    fontWeight: 700,
+                  }}
+                >
+                  {formatNumber(data.above_max_stock_count)} SKU
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  SKU có định mức tối đa và tổng tồn khả dụng (mọi kho) cao hơn
+                  định mức.
+                </Typography>
+              </Card>
+
+              {dailyPoints.length > 0 ? (
+                <Card
+                  variant="outlined"
+                  sx={{ p: 2, borderRadius: 2, gridColumn: "1 / -1" }}
+                >
                   <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                    Biểu đồ luồng kho trong kỳ
+                    Nhập / Xuất theo ngày
                   </Typography>
                   <Typography
                     variant="caption"
                     color="text.secondary"
                     sx={{ display: "block" }}
                   >
-                    So sánh quy mô nhập, xuất, xuất linh kiện và điều chỉnh tồn.
+                    So sánh lượng hàng nhập và xuất theo từng ngày trong kỳ đang
+                    xem.
                   </Typography>
-                  <Box role="img" aria-label={flowChartLabel} sx={{ mt: 2 }}>
+                  <Box sx={{ mt: 1.5 }}>
                     <BarChart
-                      categories={flowMetrics.map((metric) => metric.label)}
+                      categories={dailyPoints.map((point) =>
+                        formatDate(point.date),
+                      )}
                       series={[
                         {
-                          name: "Giá trị",
-                          data: flowMetrics.map((metric) => metric.value),
+                          name: "Nhập",
+                          data: dailyPoints.map((point) => point.receipt_qty),
+                          color: CHART_COLORS.primary,
+                        },
+                        {
+                          name: "Xuất",
+                          data: dailyPoints.map((point) => point.issue_qty),
+                          color: CHART_COLORS.warning,
                         },
                       ]}
-                      distributed
                       valueFormatter={formatNumber}
                     />
                   </Box>
                 </Card>
+              ) : null}
 
-                <Card variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+              {dailyPoints.length > 0 ? (
+                <Card
+                  variant="outlined"
+                  sx={{ p: 2, borderRadius: 2, gridColumn: "1 / -1" }}
+                >
                   <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                    Bảo hành theo trạng thái
+                    Xu hướng bảo hành
                   </Typography>
                   <Typography
                     variant="caption"
                     color="text.secondary"
                     sx={{ display: "block" }}
                   >
-                    Tổng hợp các ca bảo hành hiện có trong hệ thống.
+                    Số ca bảo hành mới tiếp nhận theo từng ngày trong kỳ đang
+                    xem.
                   </Typography>
-                  {data.data_scope === "WAREHOUSE_SCOPED" ? (
-                    <Box
-                      role="note"
-                      sx={{
-                        mt: 1.25,
-                        pl: 1.25,
-                        py: 0.75,
-                        borderLeft: "3px solid",
-                        borderColor: "divider",
-                      }}
-                    >
-                      <Typography variant="caption" color="text.secondary">
-                        Số liệu bảo hành được tổng hợp toàn hệ thống và không
-                        giới hạn theo kho.
-                      </Typography>
-                    </Box>
-                  ) : null}
-                  {warrantyEntries.length === 0 ? (
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ mt: 2 }}
-                    >
-                      Chưa có ca bảo hành.
-                    </Typography>
-                  ) : (
-                    <Box
-                      sx={{
-                        display: "grid",
-                        gridTemplateColumns: { xs: "1fr", sm: "1fr auto" },
-                        gap: 2,
-                        alignItems: "center",
-                        mt: 2,
-                      }}
-                    >
-                      <Stack spacing={1}>
-                        {warrantyEntries.map(([warrantyStatus, count]) => (
-                          <Stack
-                            key={warrantyStatus}
-                            direction="row"
-                            sx={{
-                              justifyContent: "space-between",
-                              borderBottom: "1px solid",
-                              borderColor: "divider",
-                              pb: 1,
-                            }}
-                          >
-                            <Typography
-                              variant="body2"
-                              sx={{
-                                textTransform: "lowercase",
-                                "&::first-letter": {
-                                  textTransform: "uppercase",
-                                },
-                              }}
-                            >
-                              {WARRANTY_STATUS_LABELS[warrantyStatus] ??
-                                warrantyStatus.replaceAll("_", " ")}
-                            </Typography>
-                            <Typography sx={{ fontWeight: 700 }}>
-                              {formatNumber(count)}
-                            </Typography>
-                          </Stack>
-                        ))}
-                      </Stack>
-                      <Box sx={{ width: { xs: "100%", sm: 220 } }}>
-                        <DonutChart
-                          items={warrantyEntries.map(
-                            ([warrantyStatus, count]) => ({
-                              label:
-                                WARRANTY_STATUS_LABELS[warrantyStatus] ??
-                                warrantyStatus.replaceAll("_", " "),
-                              value: count,
-                            }),
-                          )}
-                          centerLabel="Tổng ca"
-                          valueFormatter={formatNumber}
-                        />
-                      </Box>
-                    </Box>
-                  )}
+                  <Box sx={{ mt: 1.5 }}>
+                    <AreaChart
+                      categories={dailyPoints.map((point) =>
+                        formatDate(point.date),
+                      )}
+                      data={dailyPoints.map(
+                        (point) => point.warranty_received_count,
+                      )}
+                      name="Ca tiếp nhận"
+                      color={CHART_COLORS.danger}
+                      valueFormatter={formatNumber}
+                    />
+                  </Box>
                 </Card>
+              ) : null}
 
-                <Card variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                    Đối soát tồn kho
-                  </Typography>
-                  <Typography
-                    sx={{
-                      display: "block",
-                      mt: 1.5,
-                      mb: 0.5,
-                      fontSize: 24,
-                      fontWeight: 700,
-                    }}
-                  >
-                    {formatNumber(data.reconciliation_warning_count)} cảnh báo
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Số trường hợp chênh lệch cần kiểm tra tại thời điểm hiện
-                    tại.
-                  </Typography>
-                </Card>
-
+              {topDefects.length > 0 ? (
                 <Card
                   variant="outlined"
-                  onClick={() => navigate(ROUTES.MASTER_DATA)}
-                  sx={{ p: 2, borderRadius: 2, cursor: "pointer" }}
+                  sx={{ p: 2, borderRadius: 2, gridColumn: "1 / -1" }}
                 >
                   <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                    Tồn dưới định mức
+                    Top bệnh/lỗi thường gặp
                   </Typography>
                   <Typography
-                    sx={{
-                      display: "block",
-                      mt: 1.5,
-                      mb: 0.5,
-                      fontSize: 24,
-                      fontWeight: 700,
-                    }}
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ display: "block" }}
                   >
-                    {formatNumber(data.below_min_stock_count)} SKU
+                    Số ca bảo hành theo từng bệnh/lỗi trong kỳ đang xem.
                   </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    SKU có định mức tối thiểu và tổng tồn khả dụng (mọi kho)
-                    thấp hơn định mức.
-                  </Typography>
+                  <Box sx={{ mt: 1.5 }}>
+                    <HorizontalBarChart
+                      items={topDefects}
+                      limit={8}
+                      valueFormatter={formatNumber}
+                    />
+                  </Box>
                 </Card>
+              ) : null}
+            </Box>
+          )}
+        </>
+      ) : null}
 
-                <Card
-                  variant="outlined"
-                  onClick={() => navigate(ROUTES.MASTER_DATA)}
-                  sx={{ p: 2, borderRadius: 2, cursor: "pointer" }}
-                >
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                    Tồn vượt định mức
-                  </Typography>
-                  <Typography
-                    sx={{
-                      display: "block",
-                      mt: 1.5,
-                      mb: 0.5,
-                      fontSize: 24,
-                      fontWeight: 700,
-                    }}
-                  >
-                    {formatNumber(data.above_max_stock_count)} SKU
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    SKU có định mức tối đa và tổng tồn khả dụng (mọi kho) cao
-                    hơn định mức.
-                  </Typography>
-                </Card>
-
-                {dailyPoints.length > 0 ? (
-                  <Card
-                    variant="outlined"
-                    sx={{ p: 2, borderRadius: 2, gridColumn: "1 / -1" }}
-                  >
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                      Nhập / Xuất theo ngày
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ display: "block" }}
-                    >
-                      So sánh lượng hàng nhập và xuất theo từng ngày trong kỳ
-                      đang xem.
-                    </Typography>
-                    <Box sx={{ mt: 1.5 }}>
-                      <BarChart
-                        categories={dailyPoints.map((point) =>
-                          formatDate(point.date),
-                        )}
-                        series={[
-                          {
-                            name: "Nhập",
-                            data: dailyPoints.map((point) => point.receipt_qty),
-                            color: CHART_COLORS.primary,
-                          },
-                          {
-                            name: "Xuất",
-                            data: dailyPoints.map((point) => point.issue_qty),
-                            color: CHART_COLORS.warning,
-                          },
-                        ]}
-                        valueFormatter={formatNumber}
-                      />
-                    </Box>
-                  </Card>
-                ) : null}
-
-                {dailyPoints.length > 0 ? (
-                  <Card
-                    variant="outlined"
-                    sx={{ p: 2, borderRadius: 2, gridColumn: "1 / -1" }}
-                  >
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                      Xu hướng bảo hành
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ display: "block" }}
-                    >
-                      Số ca bảo hành mới tiếp nhận theo từng ngày trong kỳ đang
-                      xem.
-                    </Typography>
-                    <Box sx={{ mt: 1.5 }}>
-                      <AreaChart
-                        categories={dailyPoints.map((point) =>
-                          formatDate(point.date),
-                        )}
-                        data={dailyPoints.map(
-                          (point) => point.warranty_received_count,
-                        )}
-                        name="Ca tiếp nhận"
-                        color={CHART_COLORS.danger}
-                        valueFormatter={formatNumber}
-                      />
-                    </Box>
-                  </Card>
-                ) : null}
-
-                {topDefects.length > 0 ? (
-                  <Card
-                    variant="outlined"
-                    sx={{ p: 2, borderRadius: 2, gridColumn: "1 / -1" }}
-                  >
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                      Top bệnh/lỗi thường gặp
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ display: "block" }}
-                    >
-                      Số ca bảo hành theo từng bệnh/lỗi trong kỳ đang xem.
-                    </Typography>
-                    <Box sx={{ mt: 1.5 }}>
-                      <HorizontalBarChart
-                        items={topDefects}
-                        limit={8}
-                        valueFormatter={formatNumber}
-                      />
-                    </Box>
-                  </Card>
-                ) : null}
-              </Box>
-            )}
-          </>
-        ) : null}
-
-        {data ? (
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
-              gap: 2,
-            }}
-          >
-            <DashboardActionItems />
-            <DashboardRecentActivity />
-          </Box>
-        ) : null}
-
-        <Box component="section" aria-labelledby="workflow-title">
-          <Typography variant="h6" id="workflow-title" sx={{ mb: 1.5 }}>
-            Điều hướng luồng nghiệp vụ
-          </Typography>
-          <Stack spacing={1.5}>
-            {FLOW_LANES.map((lane) => (
-              <Stack
-                key={lane.label}
-                direction="row"
-                spacing={1}
-                sx={{ flexWrap: "wrap", alignItems: "center" }}
-              >
-                <Chip
-                  label={lane.label}
-                  size="small"
-                  color="primary"
-                  variant="outlined"
-                />
-                {lane.nodes.map((node, index) => (
-                  <Stack
-                    key={`${lane.label}-${node.label}`}
-                    direction="row"
-                    spacing={1}
-                    sx={{ alignItems: "center" }}
-                  >
-                    {index > 0 ? (
-                      <Typography
-                        component="span"
-                        aria-hidden="true"
-                        color="text.secondary"
-                      >
-                        →
-                      </Typography>
-                    ) : null}
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      onClick={() => node.route && navigate(node.route)}
-                      sx={{ cursor: node.route ? "pointer" : "default" }}
-                    >
-                      {node.label}
-                    </Button>
-                  </Stack>
-                ))}
-              </Stack>
-            ))}
-          </Stack>
+      {data ? (
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+            gap: 2,
+          }}
+        >
+          <DashboardActionItems />
+          <DashboardRecentActivity />
         </Box>
-      </div>
-    </ThemeProvider>
+      ) : null}
+
+      <Box component="section" aria-labelledby="workflow-title">
+        <Typography variant="h6" id="workflow-title" sx={{ mb: 1.5 }}>
+          Điều hướng luồng nghiệp vụ
+        </Typography>
+        <Stack spacing={1.5}>
+          {FLOW_LANES.map((lane) => (
+            <Stack
+              key={lane.label}
+              direction="row"
+              spacing={1}
+              sx={{ flexWrap: "wrap", alignItems: "center" }}
+            >
+              <Chip
+                label={lane.label}
+                size="small"
+                color="primary"
+                variant="outlined"
+              />
+              {lane.nodes.map((node, index) => (
+                <Stack
+                  key={`${lane.label}-${node.label}`}
+                  direction="row"
+                  spacing={1}
+                  sx={{ alignItems: "center" }}
+                >
+                  {index > 0 ? (
+                    <Typography
+                      component="span"
+                      aria-hidden="true"
+                      color="text.secondary"
+                    >
+                      →
+                    </Typography>
+                  ) : null}
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={() => node.route && navigate(node.route)}
+                    sx={{ cursor: node.route ? "pointer" : "default" }}
+                  >
+                    {node.label}
+                  </Button>
+                </Stack>
+              ))}
+            </Stack>
+          ))}
+        </Stack>
+      </Box>
+    </div>
   );
 }

@@ -24,10 +24,8 @@ import {
   Grid,
   Tab,
   Tabs,
-  ThemeProvider,
   Typography,
 } from "@mui/material";
-import { muiTheme } from "@/app/mui-theme";
 import {
   AuditOutlined,
   ExportOutlined,
@@ -2813,7 +2811,7 @@ export default function AlignedReportsPage() {
       data-mvp-screen="RPT-01"
       data-testid="wwhn-258-report-screen"
     >
-      <ThemeProvider theme={muiTheme}>
+      <>
         <Tabs
           value={report}
           onChange={(_event, key: ReportKey) => {
@@ -2857,7 +2855,7 @@ export default function AlignedReportsPage() {
             sx={{ minHeight: 40, textTransform: "none" }}
           />
         </Tabs>
-      </ThemeProvider>
+      </>
 
       {isDefectSkuTab ? (
         <DefectSkuReport />

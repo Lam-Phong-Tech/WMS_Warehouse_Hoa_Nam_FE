@@ -11,10 +11,8 @@ import {
   Grid,
   MenuItem,
   TextField,
-  ThemeProvider,
   Typography,
 } from "@mui/material";
-import { muiTheme } from "@/app/mui-theme";
 import { toast } from "sonner";
 import { useMvpSkus } from "@/modules/master-data/hooks/use-mvp-master";
 import { getApiErrorMessage, resolveFormErrors } from "@/shared/api/api-error";
@@ -194,7 +192,7 @@ export function IssuePhysicalCodeModal({
     skuOptions.find((option) => option.value === skuId) ?? null;
 
   return (
-    <ThemeProvider theme={muiTheme}>
+    <>
       <Dialog
         open={open}
         onClose={guardBackdropClose(handleClose)}
@@ -375,6 +373,6 @@ export function IssuePhysicalCodeModal({
           )}
         </DialogActions>
       </Dialog>
-    </ThemeProvider>
+    </>
   );
 }

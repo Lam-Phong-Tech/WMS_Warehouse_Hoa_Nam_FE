@@ -12,10 +12,8 @@ import {
   Grid,
   Stack,
   TextField,
-  ThemeProvider,
   Typography,
 } from "@mui/material";
-import { muiTheme } from "@/app/mui-theme";
 import dayjs from "dayjs";
 import { toast } from "sonner";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -459,7 +457,7 @@ export function OutboundIntakeModal({
   const consumable = Boolean(preview) && canImport && overridePhoneValid;
 
   return (
-    <ThemeProvider theme={muiTheme}>
+    <>
       <Dialog
         {...dialog.dialogProps}
         open={open && dialog.open}
@@ -902,6 +900,6 @@ export function OutboundIntakeModal({
           </ActionButton>
         </DialogActions>
       </Dialog>
-    </ThemeProvider>
+    </>
   );
 }

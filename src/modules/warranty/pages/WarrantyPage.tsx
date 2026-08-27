@@ -6,10 +6,8 @@ import {
   MenuItem,
   Select,
   TextField,
-  ThemeProvider,
   Typography as MuiTypography,
 } from "@mui/material";
-import { muiTheme } from "@/app/mui-theme";
 import {
   ResponsiveDataTable,
   type ResponsiveTableColumn,
@@ -267,7 +265,7 @@ export default function WarrantyPage() {
     : [...MVP_PAGE_SIZE_OPTIONS, perPage].sort((a, b) => a - b);
 
   return (
-    <ThemeProvider theme={muiTheme}>
+    <>
       <div className="warranty-page hn-mvp-source-screen">
         {!canViewPii ? (
           <div className="footer-note" style={{ marginBottom: 8 }}>
@@ -470,6 +468,6 @@ export default function WarrantyPage() {
           />
         ) : null}
       </div>
-    </ThemeProvider>
+    </>
   );
 }

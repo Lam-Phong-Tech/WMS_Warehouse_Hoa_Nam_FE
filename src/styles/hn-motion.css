@@ -62,7 +62,7 @@ body {
 
 /* Viền focus bàn phím hiện ra mềm mại (a11y vẫn giữ nguyên). */
 :where(a, button, input, select, textarea, [tabindex]):focus-visible {
-  outline: 2px solid var(--primary, #2563eb);
+  outline: 2px solid var(--primary, var(--wms-primary));
   outline-offset: 2px;
   transition: outline-offset var(--hn-dur-fast) var(--hn-ease-out);
 }

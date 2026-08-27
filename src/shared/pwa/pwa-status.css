@@ -11,18 +11,18 @@
   border: 1px solid rgba(0, 0, 0, 0.14);
   border-radius: 8px;
   background: #ffffff;
-  color: #1f1f1f;
+  color: var(--wms-text-strong);
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.16);
   font-size: 13px;
   line-height: 1.4;
 }
 
 .wms-pwa-status--offline {
-  border-color: #d48806;
+  border-color: var(--wms-warning-text);
 }
 
 .wms-pwa-status--update {
-  border-color: #1f6f43;
+  border-color: var(--wms-success-dark);
 }
 
 .wms-pwa-status button {
@@ -30,7 +30,7 @@
   border: 0;
   border-radius: 6px;
   padding: 6px 10px;
-  background: #1f6f43;
+  background: var(--wms-success-dark);
   color: #ffffff;
   cursor: pointer;
   font: inherit;
@@ -38,7 +38,7 @@
 }
 
 .wms-pwa-status button:focus-visible {
-  outline: 2px solid #1677ff;
+  outline: 2px solid var(--wms-primary);
   outline-offset: 2px;
 }
 

@@ -9,10 +9,8 @@ import {
   Grid,
   Stack,
   TextField,
-  ThemeProvider,
   Typography,
 } from "@mui/material";
-import { muiTheme } from "@/app/mui-theme";
 import { useQuery } from "@tanstack/react-query";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { getApiErrorMessage } from "@/shared/api/api-error";
@@ -205,7 +203,7 @@ export function TraceModal({ movementId, onClose }: Props) {
   const physicalCode = codeTrace?.physical_code as RawRecord | null | undefined;
 
   return (
-    <ThemeProvider theme={muiTheme}>
+    <>
       <Dialog {...dialog.dialogProps} maxWidth="lg" fullWidth>
         <DialogTitle sx={{ pr: 6, position: "relative" }}>
           Truy vết chứng từ nguồn
@@ -1106,6 +1104,6 @@ export function TraceModal({ movementId, onClose }: Props) {
           </Stack>
         </DialogContent>
       </Dialog>
-    </ThemeProvider>
+    </>
   );
 }

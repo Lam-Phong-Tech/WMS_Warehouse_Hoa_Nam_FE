@@ -4,10 +4,8 @@ import {
   MenuItem,
   Select,
   TextField,
-  ThemeProvider,
   Typography as MuiTypography,
 } from "@mui/material";
-import { muiTheme } from "@/app/mui-theme";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { TableLoadingBanner } from "@/shared/components/feedback/BusinessState";
 import {
@@ -131,142 +129,140 @@ export function AuditLogsPage() {
     : [...MVP_PAGE_SIZE_OPTIONS, perPage].sort((a, b) => a - b);
 
   return (
-    <ThemeProvider theme={muiTheme}>
-      <div className="audit-logs-page hn-mvp-source-screen">
-        <div className="toolbar">
-          <TextField
-            value={searchInput}
-            placeholder="Tìm theo mô tả, đối tượng..."
-            slotProps={{
-              htmlInput: { "aria-label": "Tìm nhật ký hệ thống" },
-            }}
-            onChange={(event) => setSearchInput(event.target.value)}
-            sx={{ minWidth: 260, ...TOOLBAR_SX }}
-          />
-          <Select
-            displayEmpty
-            value={module}
-            inputProps={{ "aria-label": "Lọc phân hệ" }}
-            onChange={(event) => {
-              setModule(event.target.value as AuditModule | "");
-              setPage(1);
-            }}
-            sx={{ minWidth: 190, ...TOOLBAR_SX }}
-          >
-            <MenuItem value="">Phân hệ: Tất cả</MenuItem>
-            {Object.entries(AUDIT_MODULE_LABELS).map(([value, label]) => (
-              <MenuItem key={value} value={value}>
-                {label}
-              </MenuItem>
-            ))}
-          </Select>
-          <Select
-            displayEmpty
-            value={action}
-            inputProps={{ "aria-label": "Lọc hành động" }}
-            onChange={(event) => {
-              setAction(event.target.value as AuditAction | "");
-              setPage(1);
-            }}
-            sx={{ minWidth: 200, ...TOOLBAR_SX }}
-          >
-            <MenuItem value="">Hành động: Tất cả</MenuItem>
-            {Object.entries(AUDIT_ACTION_LABELS).map(([value, label]) => (
-              <MenuItem key={value} value={value}>
-                {label}
-              </MenuItem>
-            ))}
-          </Select>
-          <Select
-            value={perPage}
-            inputProps={{ "aria-label": "Số dòng mỗi trang" }}
-            onChange={(event) => {
-              setPerPage(Number(event.target.value));
-              setPage(1);
-            }}
-            sx={{ minWidth: 100, ...TOOLBAR_SX }}
-          >
-            {perPageOptions.map((size) => (
-              <MenuItem key={size} value={size}>
-                {size} / trang
-              </MenuItem>
-            ))}
-          </Select>
-          {/* Tổng số dòng đặt ngay trong toolbar (cạnh bộ lọc/số dòng mỗi trang)
-           * để dễ thấy — thay vì chỉ hiện ở phần phân trang tít dưới bảng dài. */}
-          <MuiTypography
-            variant="body2"
-            color="text.secondary"
-            sx={{ whiteSpace: "nowrap" }}
-          >
-            Tổng {pagination.total} bản ghi
-          </MuiTypography>
-          <div className="spacer" />
-          {selection.selectedCount > 0 ? (
-            <>
-              <MuiTypography
-                variant="body2"
-                color="text.secondary"
-                sx={{ whiteSpace: "nowrap" }}
-              >
-                Đã chọn {selection.selectedCount}
-              </MuiTypography>
-              <ActionButton kind="clear" onClick={selection.clear}>
-                Bỏ chọn
-              </ActionButton>
-              <ActionButton kind="exportExcel" onClick={exportSelected}>
-                Xuất Excel ({selection.selectedCount})
-              </ActionButton>
-            </>
-          ) : null}
-        </div>
-
-        {isError ? (
-          <div style={{ marginBottom: 14 }}>
-            <ApiErrorAlert
-              error={error}
-              title="Không tải được nhật ký hệ thống"
-              onRetry={refetch}
-            />
-          </div>
-        ) : null}
-
-        <TableLoadingBanner loading={isLoading || isFetching} />
-        <AuditLogsTable
-          data={auditLogs}
-          loading={isLoading || isFetching}
-          error={isError ? error : null}
-          page={pagination.current}
-          perPage={perPage}
-          selection={selection}
-          onSortChange={(field, order) => {
-            setSortBy(field);
-            setSortOrder(order);
+    <div className="audit-logs-page hn-mvp-source-screen">
+      <div className="toolbar">
+        <TextField
+          value={searchInput}
+          placeholder="Tìm theo mô tả, đối tượng..."
+          slotProps={{
+            htmlInput: { "aria-label": "Tìm nhật ký hệ thống" },
+          }}
+          onChange={(event) => setSearchInput(event.target.value)}
+          sx={{ minWidth: 260, ...TOOLBAR_SX }}
+        />
+        <Select
+          displayEmpty
+          value={module}
+          inputProps={{ "aria-label": "Lọc phân hệ" }}
+          onChange={(event) => {
+            setModule(event.target.value as AuditModule | "");
             setPage(1);
           }}
-          onView={(log) => {
-            setSelectedLog(log);
-            setDetailOpen(true);
-          }}
-        />
-        <div
-          style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}
+          sx={{ minWidth: 190, ...TOOLBAR_SX }}
         >
-          <Pagination
-            current={pagination.current}
-            pageSize={perPage}
-            total={pagination.total}
-            showSizeChanger={false}
-            onChange={(nextPage) => setPage(nextPage)}
+          <MenuItem value="">Phân hệ: Tất cả</MenuItem>
+          {Object.entries(AUDIT_MODULE_LABELS).map(([value, label]) => (
+            <MenuItem key={value} value={value}>
+              {label}
+            </MenuItem>
+          ))}
+        </Select>
+        <Select
+          displayEmpty
+          value={action}
+          inputProps={{ "aria-label": "Lọc hành động" }}
+          onChange={(event) => {
+            setAction(event.target.value as AuditAction | "");
+            setPage(1);
+          }}
+          sx={{ minWidth: 200, ...TOOLBAR_SX }}
+        >
+          <MenuItem value="">Hành động: Tất cả</MenuItem>
+          {Object.entries(AUDIT_ACTION_LABELS).map(([value, label]) => (
+            <MenuItem key={value} value={value}>
+              {label}
+            </MenuItem>
+          ))}
+        </Select>
+        <Select
+          value={perPage}
+          inputProps={{ "aria-label": "Số dòng mỗi trang" }}
+          onChange={(event) => {
+            setPerPage(Number(event.target.value));
+            setPage(1);
+          }}
+          sx={{ minWidth: 100, ...TOOLBAR_SX }}
+        >
+          {perPageOptions.map((size) => (
+            <MenuItem key={size} value={size}>
+              {size} / trang
+            </MenuItem>
+          ))}
+        </Select>
+        {/* Tổng số dòng đặt ngay trong toolbar (cạnh bộ lọc/số dòng mỗi trang)
+         * để dễ thấy — thay vì chỉ hiện ở phần phân trang tít dưới bảng dài. */}
+        <MuiTypography
+          variant="body2"
+          color="text.secondary"
+          sx={{ whiteSpace: "nowrap" }}
+        >
+          Tổng {pagination.total} bản ghi
+        </MuiTypography>
+        <div className="spacer" />
+        {selection.selectedCount > 0 ? (
+          <>
+            <MuiTypography
+              variant="body2"
+              color="text.secondary"
+              sx={{ whiteSpace: "nowrap" }}
+            >
+              Đã chọn {selection.selectedCount}
+            </MuiTypography>
+            <ActionButton kind="clear" onClick={selection.clear}>
+              Bỏ chọn
+            </ActionButton>
+            <ActionButton kind="exportExcel" onClick={exportSelected}>
+              Xuất Excel ({selection.selectedCount})
+            </ActionButton>
+          </>
+        ) : null}
+      </div>
+
+      {isError ? (
+        <div style={{ marginBottom: 14 }}>
+          <ApiErrorAlert
+            error={error}
+            title="Không tải được nhật ký hệ thống"
+            onRetry={refetch}
           />
         </div>
+      ) : null}
 
-        <AuditLogDetailDrawer
-          open={detailOpen}
-          auditLog={selectedLog}
-          onClose={() => setDetailOpen(false)}
+      <TableLoadingBanner loading={isLoading || isFetching} />
+      <AuditLogsTable
+        data={auditLogs}
+        loading={isLoading || isFetching}
+        error={isError ? error : null}
+        page={pagination.current}
+        perPage={perPage}
+        selection={selection}
+        onSortChange={(field, order) => {
+          setSortBy(field);
+          setSortOrder(order);
+          setPage(1);
+        }}
+        onView={(log) => {
+          setSelectedLog(log);
+          setDetailOpen(true);
+        }}
+      />
+      <div
+        style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}
+      >
+        <Pagination
+          current={pagination.current}
+          pageSize={perPage}
+          total={pagination.total}
+          showSizeChanger={false}
+          onChange={(nextPage) => setPage(nextPage)}
         />
       </div>
-    </ThemeProvider>
+
+      <AuditLogDetailDrawer
+        open={detailOpen}
+        auditLog={selectedLog}
+        onClose={() => setDetailOpen(false)}
+      />
+    </div>
   );
 }

@@ -77,10 +77,10 @@
 }
 
 .hn-dashboard-validation {
-  border: 1px solid color-mix(in srgb, #d4380d 45%, transparent);
+  border: 1px solid color-mix(in srgb, var(--wms-error) 45%, transparent);
   border-radius: 8px;
   padding: 8px 10px;
-  color: #a8071a;
+  color: var(--wms-error-text);
   font-size: 13px;
 }
 

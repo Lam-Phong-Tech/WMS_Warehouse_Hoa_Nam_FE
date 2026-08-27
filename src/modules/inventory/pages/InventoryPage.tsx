@@ -6,15 +6,7 @@ import {
   ResponsiveDataTable,
   type ResponsiveTableColumn,
 } from "@/shared/components/data-display/ResponsiveDataTable";
-import {
-  MenuItem,
-  Select,
-  Tab,
-  Tabs,
-  TextField,
-  ThemeProvider,
-} from "@mui/material";
-import { muiTheme } from "@/app/mui-theme";
+import { MenuItem, Select, Tab, Tabs, TextField } from "@mui/material";
 import { AppstoreOutlined, SwapOutlined } from "@/shared/components/icons";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import {
@@ -456,7 +448,7 @@ export default function InventoryPage() {
   ];
 
   return (
-    <ThemeProvider theme={muiTheme}>
+    <>
       <div className="inventory-page hn-mvp-source-screen">
         <Tabs
           value={activeTab}
@@ -742,6 +734,6 @@ export default function InventoryPage() {
           />
         ) : null}
       </div>
-    </ThemeProvider>
+    </>
   );
 }

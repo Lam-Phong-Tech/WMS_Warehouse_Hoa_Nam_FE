@@ -18,10 +18,8 @@ import {
   Skeleton,
   Stack,
   TextField,
-  ThemeProvider,
   Typography,
 } from "@mui/material";
-import { muiTheme } from "@/app/mui-theme";
 import {
   fetchWarehouse,
   fetchWarehouses,
@@ -265,7 +263,7 @@ export function WarehouseConfigScreen() {
   const fieldsDisabled = !canManage || saveMutation.isPending;
 
   return (
-    <ThemeProvider theme={muiTheme}>
+    <>
       <Stack spacing={2} sx={{ maxWidth: 880, mx: "auto", width: "100%" }}>
         <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
           <ActionButton
@@ -595,6 +593,6 @@ export function WarehouseConfigScreen() {
           </DialogActions>
         </Dialog>
       </Stack>
-    </ThemeProvider>
+    </>
   );
 }
