@@ -6,6 +6,7 @@ import {
   within,
 } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { MemoryRouter } from "react-router-dom";
 import {
   AgencyMasterScreen,
   DefectMasterScreen,
@@ -106,7 +107,11 @@ describe("API-backed MVP master screens", () => {
   });
 
   it("keeps SKU create/edit inside the list modal", async () => {
-    render(<SkuMasterScreen />);
+    render(
+      <MemoryRouter>
+        <SkuMasterScreen />
+      </MemoryRouter>,
+    );
     expect(screen.getByText("DCH-DRILL-DJZ10A-220V-V1")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /Thêm SKU/ }));
@@ -136,7 +141,11 @@ describe("API-backed MVP master screens", () => {
   });
 
   it("loads agency data and opens add/edit modal", () => {
-    render(<AgencyMasterScreen />);
+    render(
+      <MemoryRouter>
+        <AgencyMasterScreen />
+      </MemoryRouter>,
+    );
     expect(screen.getByText("Đại lý Minh Anh")).toBeInTheDocument();
     // REQ-001: màn master đổi nhãn "Đại lý" → "Nơi nhận".
     fireEvent.click(screen.getByRole("button", { name: /Thêm nơi nhận/ }));
@@ -144,7 +153,11 @@ describe("API-backed MVP master screens", () => {
   });
 
   it("loads defect data and supports legacy add deep link", () => {
-    render(<DefectMasterScreen openCreateOnMount />);
+    render(
+      <MemoryRouter>
+        <DefectMasterScreen openCreateOnMount />
+      </MemoryRouter>,
+    );
     expect(screen.getByText("Không chạy motor")).toBeInTheDocument();
     expect(screen.getByRole("dialog")).toBeInTheDocument();
   });

@@ -341,18 +341,19 @@ test.describe("WWHN-144 / WWHN-145 closure", () => {
     await setupMockApi(page, { refreshSuccess: true, isSuperAdmin: true });
 
     await page.goto(`${BASE_URL}/dashboard?screen=MAP-01`);
+    // Part 4: MAP-01 là DashboardPage thật (bản wireframe MvpSourceScreen +
+    // footer-note "Wireframe low-fi..." đã bị thay từ đợt MUI hoá [skip ci]
+    // 5df4f21 — assertion cũ trỏ nội dung không còn tồn tại). Hợp đồng mới:
+    // marker MAP-01 + tiêu đề dashboard thật.
     await expect(page.locator('[data-mvp-screen="MAP-01"]')).toBeVisible();
-    // Nội dung footer-note MAP-01 được refresh sang trích dẫn versioned
-    // (BRD v3.20 / SRS-FRD v1.12 / BPD v1.12 · DEC-HN-20260814-01) — assertion
-    // cũ trỏ câu chữ generic trước khi refresh, luôn fail độc lập với hành vi.
     await expect(
-      page.getByText(
-        "Wireframe low-fi · Nguồn hiện hành: BRD v3.20 / SRS-FRD v1.12 / BPD v1.12 · DEC-HN-20260814-01.",
-      ),
+      page.getByRole("heading", { name: "Tổng quan kho" }),
     ).toBeVisible();
 
+    // Điều hướng bằng đúng mục sidebar (nhãn nav-data hiện hành).
     await page
-      .getByText("Danh sách SKU / Product Master", { exact: true })
+      .getByTestId("primary-navigation")
+      .getByRole("button", { name: "Danh sách SKU", exact: true })
       .click();
     await expect(page).toHaveURL(/\/master-data\/skus\?screen=MST-01$/);
     await expect(page.locator('[data-mvp-screen="MST-01"]')).toBeVisible();
@@ -360,8 +361,10 @@ test.describe("WWHN-144 / WWHN-145 closure", () => {
     // API-backed, ApiMasterScreens.tsx) chứ không phải bảng tĩnh của
     // MvpSourceScreen wireframe nữa — cột "Theo dõi serial"/nút "+ Tạo SKU" là
     // câu chữ wireframe cũ, component thật dùng "Serial" (<th>) và "Thêm SKU".
+    // Cột "Serial" thuộc bảng SKU thế hệ cũ — bảng hiện hành (ApiMasterScreens)
+    // dùng bộ cột SKU/Loại/Hãng/Nhóm hàng/Trạng thái/Ứng dụng phân vùng.
     await expect(
-      page.getByRole("columnheader", { name: "Serial" }),
+      page.getByRole("columnheader", { name: /sắp xếp theo SKU/ }),
     ).toBeVisible();
     await expect(page.getByRole("button", { name: "Thêm SKU" })).toBeVisible();
 
@@ -392,32 +395,43 @@ test.describe("WWHN-144 / WWHN-145 closure", () => {
       await page.goto(`${BASE_URL}/dashboard?screen=MAP-01`);
       await expect(page).toHaveURL(/\/dashboard\?screen=MAP-01$/);
 
-      const app = page.locator(".hn-mvp-app");
-      const aside = page.locator(".hn-mvp-aside");
-      const main = page.locator(".hn-mvp-main");
-      await expect(app).toBeVisible();
-      await expect(aside).toBeVisible();
+      // Part 4 shell (UiAppShell — Vuexy): desktop sidebar cố định 260px;
+      // <lg (980) sidebar chuyển thành Drawer overlay + hamburger ở topbar
+      // (thay hợp đồng cũ .hn-mvp-* 300px/stacked của shell wireframe).
+      const main = page.locator("main");
       await expect(main).toBeVisible();
-      await expect(page.getByTestId("primary-navigation")).toBeVisible();
       await expect(page.locator('[data-mvp-screen="MAP-01"]')).toBeVisible();
-      await expect(
-        page.getByText("Hoa Nam WMS", { exact: true }),
-      ).toBeVisible();
-      await expect(
-        page.getByText("Bản đồ màn hình & phạm vi", { exact: true }).first(),
-      ).toBeVisible();
 
-      const asideBox = await aside.boundingBox();
       const mainBox = await main.boundingBox();
-      expect(asideBox).not.toBeNull();
       expect(mainBox).not.toBeNull();
 
-      if (viewport.width > 980) {
-        expect(Math.round(asideBox?.width ?? 0)).toBe(300);
-        expect(Math.round(mainBox?.x ?? 0)).toBe(300);
+      if (viewport.width >= 980) {
+        const aside = page.getByTestId("app-sidebar");
+        await expect(aside).toBeVisible();
+        await expect(page.getByTestId("primary-navigation")).toBeVisible();
+        await expect(
+          page.getByText("Hoa Nam WMS", { exact: true }),
+        ).toBeVisible();
+        await expect(
+          page.getByText("Bản đồ màn hình & phạm vi", { exact: true }).first(),
+        ).toBeVisible();
+        const asideBox = await aside.boundingBox();
+        expect(asideBox).not.toBeNull();
+        expect(Math.round(asideBox?.width ?? 0)).toBe(260);
+        expect(Math.round(mainBox?.x ?? 0)).toBe(260);
       } else {
-        expect(Math.round(asideBox?.width ?? 0)).toBe(viewport.width);
-        expect((mainBox?.y ?? 0) >= (asideBox?.height ?? 0) - 1).toBeTruthy();
+        // Mobile/tablet: sidebar ẩn, mở qua hamburger → Drawer 260px.
+        await expect(page.getByTestId("app-sidebar")).toHaveCount(0);
+        const hamburger = page.getByTestId("mobile-nav-toggle");
+        await expect(hamburger).toBeVisible();
+        await hamburger.click();
+        const drawerNav = page.getByTestId("primary-navigation");
+        await expect(drawerNav).toBeVisible();
+        await expect(
+          drawerNav.getByText("Bản đồ màn hình & phạm vi", { exact: true }),
+        ).toBeVisible();
+        await page.keyboard.press("Escape");
+        await expect(drawerNav).toBeHidden();
       }
 
       const hasHorizontalOverflow = await page.evaluate(

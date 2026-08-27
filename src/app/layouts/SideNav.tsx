@@ -1,255 +1,66 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+/**
+ * SideNav — sidebar nghiệp vụ trên nền design system (Part 4 shell swap).
+ *
+ * - Data từ nav-data.ts (nguồn nav DUY NHẤT — NAV-01); visibility theo
+ *   ROUTE_PERMISSIONS + hasAnyWmsPermission (RBAC domain, không theo screen-id).
+ * - Style Vuexy SÁNG 100% bằng token/sx (SEMANTIC_LIGHT/MOTION) — các class
+ *   `hn-mvp-*` GIỮ LẠI thuần tuý làm test-hook (E2E wwhn-144), không còn CSS.
+ * - Điều hướng giữ dạng `path?screen=<id>` — hợp đồng URL của E2E/deep-link;
+ *   việc render màn thuộc route+RequirePermission (bypass ?screen= đã gỡ ở
+ *   MainLayout — SEC-RBAC-01).
+ */
+import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import Box from "@mui/material/Box";
+import Collapse from "@mui/material/Collapse";
+import { UiIcon, UiIconButton } from "@/shared/ui";
 import {
-  AppstoreOutlined,
-  AuditOutlined,
-  BarChartOutlined,
-  DownOutlined,
-  FileTextOutlined,
-  FundOutlined,
-  HomeOutlined,
-  InboxOutlined,
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
-  ProfileOutlined,
-  RightOutlined,
-  RollbackOutlined,
-  SettingOutlined,
-  ShopOutlined,
-  StockOutlined,
-  SwapOutlined,
-  TeamOutlined,
-  ToolOutlined,
-  WarningOutlined,
-} from "@/shared/components/icons";
-import { ROUTE_PERMISSIONS } from "@/app/router/access";
-import { ROUTES } from "@/shared/constants/routes";
-import { hasAnyWmsPermission } from "@/shared/constants/wms-permissions";
+  MOTION,
+  RADIUS,
+  SEMANTIC_LIGHT as S,
+  TYPOGRAPHY,
+} from "@/shared/ui/tokens";
+import {
+  DEFAULT_SCREEN_BY_PATH,
+  getVisibleNavGroups,
+  matchesPath,
+  NAV_GROUPS,
+  normalizeScreen,
+} from "@/app/layouts/nav-data";
 import { useAuthStore } from "@/shared/store/auth.store";
 
-type NavItem = { screen: string; label: string; path: string; icon: ReactNode };
-type NavGroup = { name: string; icon: ReactNode; items: NavItem[] };
-
-/**
- * Navigation follows the Hoa Nam MVP screen inventory while keeping transactional
- * subflows inside their owning list screens. Create/edit screens for IAM, SKU,
- * Agency, Defect and Inbound are in-page modals. Inbound scan/full-post is opened
- * from the receipt list, and Putaway detail is opened from the pending list.
- *
- * Each list item deliberately uses its owning route so visibility is evaluated
- * against that domain's RBAC permission rather than a presentation-only screen id.
- */
-const NAV_GROUPS: NavGroup[] = [
-  {
-    name: "Tổng quan",
-    icon: <BarChartOutlined />,
-    items: [
-      {
-        screen: "MAP-01",
-        path: ROUTES.DASHBOARD,
-        label: "Bản đồ màn hình & phạm vi",
-        icon: <BarChartOutlined />,
-      },
-    ],
-  },
-  {
-    name: "Danh mục",
-    icon: <SettingOutlined />,
-    items: [
-      {
-        screen: "MST-01",
-        path: ROUTES.MASTER_DATA,
-        label: "Danh sách SKU",
-        icon: <ProfileOutlined />,
-      },
-      {
-        // SCR-MST-01 (REQ-SRS-029): hãng/nhóm hàng/model/nguồn điện/quy cách là
-        // master nuôi form tạo SKU nên đứng ngay cạnh mục SKU.
-        screen: "MST-CAT-01",
-        path: ROUTES.CATALOG_MASTER,
-        label: "Danh mục sản phẩm",
-        icon: <AppstoreOutlined />,
-      },
-      {
-        screen: "AGY-01",
-        path: ROUTES.AGENCIES,
-        label: "Danh mục đại lý / nơi nhận",
-        icon: <ShopOutlined />,
-      },
-      {
-        screen: "DEF-01",
-        path: ROUTES.DEFECTS,
-        label: "Danh mục bệnh / lỗi",
-        icon: <WarningOutlined />,
-      },
-    ],
-  },
-  {
-    name: "Nhập kho",
-    icon: <InboxOutlined />,
-    items: [
-      {
-        screen: "IN-01",
-        path: ROUTES.INBOUND,
-        label: "Danh sách phiếu nhập",
-        icon: <InboxOutlined />,
-      },
-      {
-        screen: "PTW-00",
-        path: ROUTES.PUTAWAY,
-        label: "Danh sách linh kiện chờ xếp khay",
-        icon: <SwapOutlined />,
-      },
-    ],
-  },
-  {
-    name: "Xuất kho",
-    icon: <StockOutlined />,
-    items: [
-      {
-        screen: "OUT-01",
-        path: ROUTES.OUTBOUND,
-        label: "Danh sách phiếu xuất",
-        icon: <StockOutlined />,
-      },
-    ],
-  },
-  {
-    // WAR-02 / WAR-03 / COMP-01 mở modal ngay trên danh sách (giống IN-02/OUT-03)
-    // nên không liệt kê trong menu; deep-link ?screen= vẫn được WarrantyPage xử lý.
-    name: "Bảo hành & linh kiện",
-    icon: <ToolOutlined />,
-    items: [
-      {
-        screen: "WAR-01",
-        path: ROUTES.WARRANTY,
-        label: "Danh sách bảo hành",
-        icon: <ToolOutlined />,
-      },
-    ],
-  },
-  {
-    // TRACE-01 / REV-01 mở modal ngay trên danh sách (giống WAR-02/COMP-01)
-    // nên không liệt kê trong menu; deep-link ?screen= vẫn được hub page xử lý.
-    name: "Tồn kho & kiểm soát",
-    icon: <FundOutlined />,
-    items: [
-      {
-        screen: "INV-01",
-        path: ROUTES.INVENTORY,
-        label: "Tra cứu tồn & đối soát",
-        icon: <FundOutlined />,
-      },
-      {
-        screen: "REV-00",
-        path: ROUTES.REVERSE,
-        label: "Danh sách phiếu điều chỉnh tồn kho",
-        icon: <RollbackOutlined />,
-      },
-    ],
-  },
-  {
-    name: "Báo cáo",
-    icon: <FileTextOutlined />,
-    items: [
-      {
-        screen: "RPT-01",
-        path: ROUTES.REPORTS,
-        label: "Báo cáo vận hành",
-        icon: <FileTextOutlined />,
-      },
-    ],
-  },
-  {
-    name: "Hệ thống",
-    icon: <SettingOutlined />,
-    items: [
-      {
-        // Gộp cả tab "Vai trò & ma trận quyền" và "Phòng ban" bên trong
-        // (IamUsersGd1Page); route /system/roles vẫn sống cho deep-link.
-        screen: "IAM-01",
-        path: ROUTES.IAM_USERS,
-        label: "Danh sách người dùng & phân quyền",
-        icon: <TeamOutlined />,
-      },
-      {
-        // SCR-WH-01 (REQ-SRS-001): cấu hình đúng 01 kho tổng.
-        screen: "WH-01",
-        path: ROUTES.WAREHOUSE_CONFIG,
-        label: "Cấu hình kho",
-        icon: <HomeOutlined />,
-      },
-      {
-        // AUDIT-01: route + quyền audit_log.view đã có sẵn từ trước nhưng
-        // chưa từng được liệt kê trong NAV_GROUPS (mảng menu.tsx tương ứng
-        // chỉ dùng cho breadcrumb, không phải sidebar thật) nên mục này vô
-        // hình với mọi user kể cả admin.
-        screen: "AUDIT-01",
-        path: ROUTES.AUDIT_LOGS,
-        label: "Nhật ký hệ thống",
-        icon: <AuditOutlined />,
-      },
-    ],
-  },
-];
-
-const DEFAULT_SCREEN_BY_PATH: Record<string, string> = {
-  [ROUTES.DASHBOARD]: "MAP-01",
-  [ROUTES.IAM_USERS]: "IAM-01",
-  [ROUTES.MASTER_DATA]: "MST-01",
-  [ROUTES.CATALOG_MASTER]: "MST-CAT-01",
-  [ROUTES.WAREHOUSE_CONFIG]: "WH-01",
-  [ROUTES.AGENCIES]: "AGY-01",
-  [ROUTES.DEFECTS]: "DEF-01",
-  [ROUTES.INBOUND]: "IN-01",
-  [ROUTES.PUTAWAY]: "PTW-00",
-  [ROUTES.OUTBOUND]: "OUT-01",
-  [ROUTES.WARRANTY]: "WAR-01",
-  [ROUTES.INVENTORY]: "INV-01",
-  [ROUTES.SCAN]: "TRACE-01",
-  [ROUTES.REVERSE]: "REV-00",
-  [ROUTES.REPORTS]: "RPT-01",
-  [ROUTES.AUDIT_LOGS]: "AUDIT-01",
-};
-
-const MODAL_PARENT_SCREEN: Record<string, string> = {
-  "IAM-02": "IAM-01",
-  "MST-02": "MST-01",
-  "AGY-02": "AGY-01",
-  "DEF-02": "DEF-01",
-  "IN-02": "IN-01",
-  "IN-03": "IN-01",
-  "PTW-01": "PTW-00",
-  "OUT-REQ-01": "OUT-01",
-  "OUT-03": "OUT-01",
-  "OUT-02": "OUT-01",
-  "LBL-01": "OUT-01",
-  "RFID-01": "OUT-01",
-  "WAR-02": "WAR-01",
-  "WAR-03": "WAR-01",
-  "COMP-01": "WAR-01",
-  "TRACE-01": "INV-01",
-  "REV-01": "REV-00",
-};
-
-function matchesPath(currentPath: string, targetPath: string) {
-  return (
-    currentPath === targetPath ||
-    (targetPath !== "/" && currentPath.startsWith(`${targetPath}/`))
-  );
-}
-
-function normalizeScreen(screen: string | null | undefined) {
-  if (!screen) return screen;
-  return MODAL_PARENT_SCREEN[screen] ?? screen;
-}
+const itemButtonSx = (active: boolean) =>
+  ({
+    display: "flex",
+    alignItems: "center",
+    gap: 1.25,
+    width: "100%",
+    minHeight: 38,
+    padding: "8px 12px",
+    border: "none",
+    borderRadius: `${RADIUS.control}px`,
+    cursor: "pointer",
+    textAlign: "left" as const,
+    fontFamily: "inherit",
+    fontSize: TYPOGRAPHY.fontSizeBody,
+    backgroundColor: active ? S.primary : "transparent",
+    color: active ? S.onPrimary : S.textHigh,
+    transition: `background-color ${MOTION.duration.fast}ms ${MOTION.easing.standard}, color ${MOTION.duration.fast}ms ${MOTION.easing.standard}`,
+    "&:hover": {
+      backgroundColor: active ? S.primary : S.primarySoft,
+    },
+    "&:focus-visible": {
+      outline: "none",
+      boxShadow: S.focusRing,
+    },
+  }) as const;
 
 export interface SideNavProps {
   /** true khi thanh bên đang ở chế độ thu gọn (chỉ còn dải icon nhóm). */
   collapsed?: boolean;
   /** Yêu cầu mở lại thanh bên đầy đủ (gọi khi bấm icon nhóm lúc đang thu gọn). */
   onExpand?: () => void;
-  /** Đảo trạng thái thu gọn — nút đóng/mở nằm ngay trong thanh bên, cạnh tên hệ thống. */
+  /** Đảo trạng thái thu gọn — nút đóng/mở nằm ngay trong thanh bên. */
   onToggle?: () => void;
 }
 
@@ -267,30 +78,24 @@ export function SideNav({
     normalizeScreen(requestedScreen) ??
     DEFAULT_SCREEN_BY_PATH[location.pathname];
 
-  const canAccess = (path: string) => {
-    const required = ROUTE_PERMISSIONS[path];
-    if (!required) return true;
-    const permissions = Array.isArray(required) ? required : [required];
-    return hasAnyWmsPermission(permissionCodes, permissions, isSuperAdmin);
-  };
+  const visibleGroups = getVisibleNavGroups(permissionCodes, isSuperAdmin);
 
-  const activeGroupName = NAV_GROUPS.find((group) =>
+  const activeGroupName = visibleGroups.find((group) =>
     group.items.some(
       (item) =>
-        selectedScreen === item.screen &&
+        (selectedScreen === item.screen || !selectedScreen) &&
         matchesPath(location.pathname, item.path),
     ),
   )?.name;
 
+  // Vuexy mặc định MỞ mọi nhóm (khả năng khám phá menu theo quyền — role hạn
+  // chế thấy ngay mục của mình); người dùng vẫn đóng/mở từng nhóm được.
   const [openGroups, setOpenGroups] = useState<Set<string>>(
-    () => new Set(activeGroupName ? [activeGroupName] : []),
+    () => new Set(NAV_GROUPS.map((group) => group.name)),
   );
   const isFirstRender = useRef(true);
 
-  // Trang hiện tại đổi (điều hướng từ breadcrumb, deep-link, nút back...) —
-  // luôn đảm bảo nhóm đang active được mở, không đụng tới các nhóm khác mà
-  // người dùng đã tự mở/đóng. Bỏ qua lần render đầu vì state khởi tạo đã
-  // tính sẵn giá trị này rồi.
+  // Điều hướng đổi trang → đảm bảo nhóm active đang mở, không đụng nhóm khác.
   useEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false;
@@ -317,55 +122,118 @@ export function SideNav({
   };
 
   return (
-    <nav data-testid="primary-navigation" aria-label="Điều hướng chính">
-      <div className="hn-mvp-brand">
-        <div className="hn-mvp-logo" aria-hidden="true">
+    <Box
+      component="nav"
+      data-testid="primary-navigation"
+      aria-label="Điều hướng chính"
+      sx={{ px: 1.5, py: 1.5, display: "grid", gap: 0.5 }}
+    >
+      {/* Brand + nút thu gọn */}
+      <Box
+        className="hn-mvp-brand"
+        sx={{ display: "flex", alignItems: "center", gap: 1.25, px: 1, pb: 1.5 }}
+      >
+        <Box
+          className="hn-mvp-logo"
+          aria-hidden="true"
+          sx={{
+            width: 36,
+            height: 36,
+            borderRadius: `${RADIUS.control}px`,
+            backgroundColor: S.primary,
+            color: S.onPrimary,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontWeight: 700,
+            flexShrink: 0,
+          }}
+        >
           HN
-        </div>
-        <div className="hn-mvp-brand-copy">
-          <h1>Hoa Nam WMS</h1>
-        </div>
+        </Box>
+        {!collapsed ? (
+          <Box
+            component="h1"
+            sx={{
+              margin: 0,
+              fontSize: TYPOGRAPHY.cardTitle.fontSize,
+              fontWeight: TYPOGRAPHY.cardTitle.fontWeight,
+              color: S.textHigh,
+              whiteSpace: "nowrap",
+            }}
+          >
+            Hoa Nam WMS
+          </Box>
+        ) : null}
         {onToggle ? (
-          <button
-            type="button"
+          <UiIconButton
             className="hn-mvp-aside-toggle"
             onClick={onToggle}
             aria-label={collapsed ? "Hiện menu" : "Ẩn menu"}
             aria-pressed={collapsed}
             title={collapsed ? "Hiện menu" : "Ẩn menu"}
+            sx={{ marginLeft: "auto" }}
           >
-            {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-          </button>
+            <UiIcon name={collapsed ? "angle-right" : "angle-left"} />
+          </UiIconButton>
         ) : null}
-      </div>
+      </Box>
 
-      {NAV_GROUPS.map((group) => {
-        const visibleItems = group.items.filter((item) => canAccess(item.path));
-        if (visibleItems.length === 0) return null;
+      {visibleGroups.map((group) => {
         const open = openGroups.has(group.name);
         return (
-          <section key={group.name} aria-label={group.name}>
-            <button
+          <Box component="section" key={group.name} aria-label={group.name}>
+            <Box
+              component="button"
               type="button"
               className="hn-mvp-group"
               onClick={() => handleGroupHeaderClick(group.name)}
               aria-expanded={open}
               title={group.name}
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1.25,
+                width: "100%",
+                border: "none",
+                background: "transparent",
+                cursor: "pointer",
+                padding: "8px 12px",
+                borderRadius: `${RADIUS.control}px`,
+                fontFamily: "inherit",
+                fontSize: 11,
+                fontWeight: 600,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                color: S.textDisabled,
+                "&:hover": { color: S.textMedium },
+                "&:focus-visible": { outline: "none", boxShadow: S.focusRing },
+              }}
             >
-              <span className="hn-mvp-group-icon">{group.icon}</span>
-              <span className="hn-mvp-group-label">{group.name}</span>
-              <span className="hn-mvp-group-caret">
-                {open ? <DownOutlined /> : <RightOutlined />}
-              </span>
-            </button>
-            <div className={`hn-mvp-group-items${open ? "" : " is-collapsed"}`}>
-              <div className="hn-mvp-group-items-inner">
-                {visibleItems.map((item) => {
+              <Box
+                component="span"
+                sx={{ color: S.textMedium, display: "inline-flex" }}
+              >
+                <UiIcon name={group.icon} size="sm" />
+              </Box>
+              {!collapsed ? (
+                <>
+                  <Box component="span" sx={{ flex: 1, textAlign: "left" }}>
+                    {group.name}
+                  </Box>
+                  <UiIcon name={open ? "angle-down" : "caret-right"} size="sm" />
+                </>
+              ) : null}
+            </Box>
+            <Collapse in={open && !collapsed} timeout={MOTION.duration.fast}>
+              <Box sx={{ display: "grid", gap: 0.25, pb: 0.5 }}>
+                {group.items.map((item) => {
                   const active =
-                    selectedScreen === item.screen &&
+                    (selectedScreen === item.screen || !selectedScreen) &&
                     matchesPath(location.pathname, item.path);
                   return (
-                    <button
+                    <Box
+                      component="button"
                       key={item.screen}
                       type="button"
                       className={`hn-mvp-nav-btn${active ? " active" : ""}`}
@@ -373,17 +241,35 @@ export function SideNav({
                       onClick={() =>
                         navigate(`${item.path}?screen=${item.screen}`)
                       }
+                      sx={itemButtonSx(active)}
                     >
-                      <span className="hn-mvp-nav-btn-icon">{item.icon}</span>
-                      <span className="hn-mvp-nav-btn-label">{item.label}</span>
-                    </button>
+                      <Box
+                        component="span"
+                        sx={{
+                          display: "inline-flex",
+                          color: active ? S.onPrimary : S.textMedium,
+                        }}
+                      >
+                        <UiIcon name={item.icon} size="sm" />
+                      </Box>
+                      <Box
+                        component="span"
+                        sx={{
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {item.label}
+                      </Box>
+                    </Box>
                   );
                 })}
-              </div>
-            </div>
-          </section>
+              </Box>
+            </Collapse>
+          </Box>
         );
       })}
-    </nav>
+    </Box>
   );
 }

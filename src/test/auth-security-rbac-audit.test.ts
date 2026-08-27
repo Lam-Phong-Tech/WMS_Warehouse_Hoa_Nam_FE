@@ -467,16 +467,22 @@ describe("QA1.4: RBAC — Route Permission Matrix", () => {
   });
 
   it("Menu items được filter theo permissionCodes", async () => {
-    // Bài test: Menu items phải được filter đúng theo quyền của user.
-    const { MENU, filterMenu } = await import("@/app/layouts/menu");
+    // Bài test: nav phải được filter đúng theo quyền — nguồn nav duy nhất
+    // là nav-data.ts (Part 4, NAV-01; menu.tsx cũ đã xoá). User không có
+    // quyền gì chỉ còn thấy route authenticated-public trong sidebar
+    // (Dashboard — Profile/Notifications vào từ UserMenu/chuông, không nằm menu).
+    const { getVisibleNavGroups } = await import("@/app/layouts/nav-data");
 
-    // User không có quyền gì vẫn thấy các route authenticated public.
-    const can = () => false;
-    const filtered = filterMenu(MENU, can);
-    const allLeafItems = filtered.flatMap(
-      (g: { children?: Array<unknown> }) => g.children ?? [],
+    const filtered = getVisibleNavGroups([], false);
+    const allLeafItems = filtered.flatMap((g) => g.items);
+    expect(allLeafItems.map((i) => i.path)).toEqual(["/dashboard"]);
+
+    // Có quyền inbound → đúng mục inbound hiện thêm, không lộ mục khác.
+    const withInbound = getVisibleNavGroups(["inbound.view"], false).flatMap(
+      (g) => g.items,
     );
-    expect(allLeafItems.length).toBe(3);
+    expect(withInbound.map((i) => i.path)).toContain("/inbound");
+    expect(withInbound.map((i) => i.path)).not.toContain("/warranty");
   });
 });
 

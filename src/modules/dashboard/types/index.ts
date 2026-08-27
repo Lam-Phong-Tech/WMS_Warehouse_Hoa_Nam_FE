@@ -21,7 +21,12 @@ export interface ReconciliationWarning {
 export type DashboardDataScope = "GLOBAL" | "WAREHOUSE_SCOPED";
 
 export interface DashboardKPI {
-  period: DashboardPeriod;
+  /**
+   * Kỳ thống kê BE áp dụng. Contract chuẩn LUÔN có; để optional vì
+   * normalizeDashboardKPI (Part 4) fail-soft khi payload thiếu field —
+   * UI ẩn dòng "Kỳ thống kê" thay vì crash trắng trang.
+   */
+  period?: DashboardPeriod;
   /** Phạm vi dữ liệu BE đã áp dụng cho toàn bộ KPI bên dưới. */
   data_scope: DashboardDataScope;
   /** null khi GLOBAL; danh sách kho đã áp dụng khi WAREHOUSE_SCOPED. */

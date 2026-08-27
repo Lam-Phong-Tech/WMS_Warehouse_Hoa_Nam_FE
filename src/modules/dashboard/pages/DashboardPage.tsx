@@ -259,20 +259,20 @@ export default function DashboardPage() {
     queryKey: [
       "dashboard",
       "top-defects",
-      dashboardQuery.data?.period.from_date,
-      dashboardQuery.data?.period.to_date,
+      dashboardQuery.data?.period?.from_date,
+      dashboardQuery.data?.period?.to_date,
     ],
     queryFn: () =>
       http.get<{ by_defect?: Array<{ defect: unknown; total: unknown }> }>(
         API_ENDPOINTS.REPORTS_WARRANTY_DEFECTS,
         {
           params: {
-            from_date: dashboardQuery.data?.period.from_date,
-            to_date: dashboardQuery.data?.period.to_date,
+            from_date: dashboardQuery.data?.period?.from_date,
+            to_date: dashboardQuery.data?.period?.to_date,
           },
         },
       ),
-    enabled: canViewReport && Boolean(dashboardQuery.data),
+    enabled: canViewReport && Boolean(dashboardQuery.data?.period),
     staleTime: 60_000,
   });
   const topDefects = (topDefectsQuery.data?.by_defect ?? [])
@@ -313,6 +313,7 @@ export default function DashboardPage() {
     const series = flowMetrics
       .map((metric) => `${metric.label} ${formatNumber(metric.value)}`)
       .join("; ");
+    if (!dashboardQuery.data.period) return series;
     return `Biểu đồ luồng kho từ ${formatDate(dashboardQuery.data.period.from_date)} đến ${formatDate(dashboardQuery.data.period.to_date)}: ${series}`;
   }, [dashboardQuery.data, flowMetrics]);
 
@@ -330,7 +331,7 @@ export default function DashboardPage() {
     : [];
 
   return (
-    <div className="hn-dashboard-page">
+    <div className="hn-dashboard-page" data-mvp-screen="MAP-01">
       <Paper
         component="section"
         aria-labelledby="dashboard-title"
@@ -449,14 +450,16 @@ export default function DashboardPage() {
                 <Typography variant="h6" id="dashboard-kpi-title">
                   Chỉ số vận hành
                 </Typography>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ display: "block" }}
-                >
-                  Kỳ thống kê: {formatDate(data.period.from_date)} →{" "}
-                  {formatDate(data.period.to_date)}
-                </Typography>
+                {data.period ? (
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ display: "block" }}
+                  >
+                    Kỳ thống kê: {formatDate(data.period.from_date)} →{" "}
+                    {formatDate(data.period.to_date)}
+                  </Typography>
+                ) : null}
                 <Typography
                   variant="caption"
                   color="text.secondary"

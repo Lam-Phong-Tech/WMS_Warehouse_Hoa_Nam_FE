@@ -1,14 +1,42 @@
-import { lazy, Suspense, useState } from "react";
+/**
+ * MainLayout — shell vận hành trên UiAppShell (Part 4 shell swap).
+ *
+ * SEC-RBAC-01 ĐÓNG TẠI ĐÂY: layout LUÔN render <Outlet/> — không còn
+ * renderMvpScreen theo ?screen= (cơ chế cũ mount màn nghiệp vụ NGOÀI
+ * RequirePermission của route đích). ?screen= chỉ còn 2 vai trò hợp lệ:
+ * (1) tiêu đề header (resolveScreenMeta), (2) deep-link do CHÍNH page đích
+ * xử lý sau khi đã qua guard (WAR-02, IN-02, MST-02…).
+ *
+ * Các class `hn-mvp-app/aside/main/screen` giữ làm test-hook (E2E wwhn-144) —
+ * style nằm hoàn toàn trong UiAppShell/sx token.
+ */
+import { useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
+import Box from "@mui/material/Box";
+import Drawer from "@mui/material/Drawer";
+import useMediaQuery from "@mui/material/useMediaQuery";
+import { useTheme } from "@mui/material/styles";
 import { SideNav } from "@/app/layouts/SideNav";
 import { UserMenu } from "@/app/layouts/UserMenu";
-import { AppBreadcrumb } from "@/app/layouts/AppBreadcrumb";
+import { resolveScreenMeta, getBreadcrumbTrail } from "@/app/layouts/nav-data";
 import { useMe } from "@/modules/auth/hooks/use-me";
 import { useNotificationSocket } from "@/modules/notifications/hooks/useNotificationSocket";
 import { NotificationBell } from "@/modules/notifications/components/NotificationBell";
 import { Loading } from "@/shared/components";
-import { ROUTES } from "@/shared/constants/routes";
+import {
+  LAYOUT,
+  SPACING,
+  SEMANTIC_LIGHT as S,
+  TYPOGRAPHY,
+  UiAppShell,
+  UiBreadcrumb,
+  UiFooter,
+  UiIcon,
+  UiIconButton,
+  UiTopbar,
+} from "@/shared/ui";
 import { useAuthStore } from "@/shared/store/auth.store";
+import { useNavigate } from "react-router-dom";
 
 const SIDEBAR_COLLAPSED_STORAGE_KEY = "hn-wms-sidebar-collapsed";
 
@@ -20,361 +48,30 @@ function readStoredSidebarCollapsed() {
   }
 }
 
-const IamUsersGd1Page = lazy(() =>
-  import("@/modules/iam/pages/IamUsersGd1Page").then((m) => ({
-    default: m.IamUsersGd1Page,
-  })),
-);
-const SkuMasterScreen = lazy(() =>
-  import("@/modules/master-data/pages/MvpMasterScreens").then((m) => ({
-    default: m.SkuMasterScreen,
-  })),
-);
-const AgencyMasterScreen = lazy(() =>
-  import("@/modules/master-data/pages/MvpMasterScreens").then((m) => ({
-    default: m.AgencyMasterScreen,
-  })),
-);
-const DefectMasterScreen = lazy(() =>
-  import("@/modules/master-data/pages/MvpMasterScreens").then((m) => ({
-    default: m.DefectMasterScreen,
-  })),
-);
-const DashboardPage = lazy(() =>
-  import("@/modules/dashboard/pages/DashboardPage").then((m) => ({
-    default: m.default,
-  })),
-);
-const InboundPage = lazy(() =>
-  import("@/modules/inbound/pages/InboundPage").then((m) => ({
-    default: m.default,
-  })),
-);
-const PutawayPage = lazy(() =>
-  import("@/modules/putaway/pages/PutawayPage").then((m) => ({
-    default: m.default,
-  })),
-);
-const OutboundPage = lazy(() =>
-  import("@/modules/outbound/pages/OutboundPage").then((m) => ({
-    default: m.default,
-  })),
-);
-const WarrantyPage = lazy(() =>
-  import("@/modules/warranty/pages/WarrantyPage").then((m) => ({
-    default: m.default,
-  })),
-);
-const InventoryPage = lazy(() =>
-  import("@/modules/inventory/pages/InventoryPage").then((m) => ({
-    default: m.default,
-  })),
-);
-const ReversalPage = lazy(() =>
-  import("@/modules/reverse/pages/ReversalPage").then((m) => ({
-    default: m.default,
-  })),
-);
-const ReportsPage = lazy(() =>
-  import("@/modules/reports/pages/ReportsPage").then((m) => ({
-    default: m.default,
-  })),
-);
-
-type ScreenMeta = {
-  title: string;
-  description: string;
-};
-
-const MVP_SCREEN_META: Record<string, ScreenMeta> = {
-  "MAP-01": {
-    title: "Bản đồ màn hình & phạm vi",
-    description:
-      "Tổng quan phạm vi giao diện MVP, không bao gồm ứng dụng phân vùng.",
-  },
-  "IAM-01": {
-    title: "Danh sách người dùng & phân quyền",
-    description:
-      "Danh sách người dùng, vai trò, phạm vi dữ liệu và trạng thái.",
-  },
-  "MST-01": {
-    title: "Danh sách SKU",
-    description: "Danh sách SKU và thao tác chỉnh sửa dữ liệu sản phẩm.",
-  },
-  "AGY-01": {
-    title: "Danh mục đại lý / nơi nhận",
-    description: "Danh mục đại lý / nơi nhận hàng.",
-  },
-  "DEF-01": {
-    title: "Danh mục bệnh / lỗi",
-    description: "Danh mục bệnh / lỗi dùng cho bảo hành.",
-  },
-  "IN-01": {
-    title: "Danh sách phiếu nhập",
-    description: "Danh sách phiếu nhập.",
-  },
-  "IN-02": {
-    title: "Tạo / sửa phiếu nhập nháp",
-    description: "Tạo mới hoặc chỉnh sửa phiếu nhập chưa hoàn tất.",
-  },
-  "IN-03": {
-    title: "Quét & hoàn tất nhập kho",
-    description: "Quét hàng và hoàn tất nhập kho.",
-  },
-  "PTW-00": {
-    title: "Danh sách linh kiện chờ xếp khay",
-    description: "Danh sách linh kiện chờ xếp khay để chọn hộp cần xử lý.",
-  },
-  "PTW-01": {
-    title: "Xếp linh kiện vào khay",
-    description: "Xếp linh kiện từ hộp vào khay đích.",
-  },
-  "OUT-REQ-01": {
-    title: "Tiếp nhận phiếu yêu cầu xuất",
-    description:
-      "Tiếp nhận phiếu yêu cầu xuất, có thể nhập dữ liệu từ tệp Excel.",
-  },
-  "OUT-01": {
-    title: "Danh sách phiếu xuất",
-    description: "Danh sách phiếu xuất.",
-  },
-  "OUT-03": {
-    title: "Chi tiết phiếu xuất",
-    description: "Chi tiết phiếu xuất khi mở hoặc xem phiếu.",
-  },
-  "OUT-02": {
-    title: "Quét & đối chiếu sản phẩm",
-    description: "Quét mã và đối chiếu sản phẩm trong phiếu xuất.",
-  },
-  "LBL-01": {
-    title: "Nhãn đóng gói lô hàng",
-    description:
-      "Tạo, xem trước, chuẩn bị và in đúng một nhãn đóng gói cho phiếu/lô xuất; in lại được khi cần, không ảnh hưởng tồn kho.",
-  },
-  "RFID-01": {
-    title: "RFID tùy chọn & hoàn tất xuất kho",
-    description:
-      "Gán RFID khi có thẻ và kiểm tra đủ điều kiện trước khi hoàn tất xuất kho.",
-  },
-  "WAR-01": {
-    title: "Danh sách bảo hành",
-    description: "Danh sách bảo hành.",
-  },
-  "WAR-02": {
-    title: "Tiếp nhận bảo hành",
-    description: "Tiếp nhận bảo hành.",
-  },
-  "WAR-03": {
-    title: "Chi tiết bảo hành",
-    description: "Chi tiết bảo hành.",
-  },
-  "COMP-01": {
-    title: "Xuất linh kiện cho bảo hành",
-    description: "Xuất linh kiện cho bảo hành.",
-  },
-  "INV-01": {
-    title: "Tra cứu tồn & đối soát",
-    description: "Tra cứu tồn và đối soát.",
-  },
-  "TRACE-01": {
-    title: "Truy vết mã vật lý",
-    description: "Truy vết mã vật lý.",
-  },
-  "REV-00": {
-    title: "Danh sách phiếu điều chỉnh tồn kho",
-    description: "Danh sách phiếu để chọn tạo điều chỉnh tồn kho.",
-  },
-  "REV-01": {
-    title: "Tạo phiếu điều chỉnh tồn kho",
-    description: "Tạo phiếu điều chỉnh tồn kho.",
-  },
-  "RPT-01": {
-    title: "Báo cáo vận hành",
-    description:
-      "Tồn kho, Nhập-Xuất-Tồn, Lịch sử phiếu, Đối soát toa, Nhật ký nhãn, Bảo hành, Xuất theo nơi nhận.",
-  },
-};
-
-const ROUTE_DEFAULT_SCREEN: Record<string, string> = {
-  [ROUTES.DASHBOARD]: "MAP-01",
-  [ROUTES.IAM_USERS]: "IAM-01",
-  [ROUTES.MASTER_DATA]: "MST-01",
-  [ROUTES.AGENCIES]: "AGY-01",
-  [ROUTES.DEFECTS]: "DEF-01",
-  [ROUTES.INBOUND]: "IN-01",
-  [ROUTES.PUTAWAY]: "PTW-00",
-  [ROUTES.OUTBOUND]: "OUT-01",
-  [ROUTES.WARRANTY]: "WAR-01",
-  [ROUTES.INVENTORY]: "INV-01",
-  [ROUTES.SCAN]: "TRACE-01",
-  [ROUTES.REVERSE]: "REV-00",
-  [ROUTES.REPORTS]: "RPT-01",
-};
-
-const ROUTE_META: Record<string, ScreenMeta> = {
-  [ROUTES.CATALOG_MASTER]: {
-    title: "Danh mục sản phẩm",
-    description:
-      "Hãng, nhóm hàng, mẫu sản phẩm, nguồn điện và quy cách đóng gói dùng khi tạo SKU.",
-  },
-  [ROUTES.WAREHOUSE_CONFIG]: {
-    title: "Cấu hình kho",
-    description:
-      "Thông tin, liên hệ và trạng thái của kho tổng duy nhất theo REQ-SRS-001.",
-  },
-  [ROUTES.IAM_ROLES]: {
-    title: "Vai trò & phân quyền",
-    description:
-      "Quản trị mẫu vai trò và quyền sử dụng theo quy tắc phân quyền hiện hành.",
-  },
-  [ROUTES.AUDIT_LOGS]: {
-    title: "Nhật ký hệ thống",
-    description: "Theo dõi lịch sử thao tác và thay đổi trong hệ thống.",
-  },
-  [ROUTES.PROFILE]: {
-    title: "Hồ sơ cá nhân",
-    description: "Thông tin tài khoản và ngữ cảnh truy cập hiện hành.",
-  },
-  [ROUTES.COMPONENT_CATALOG]: {
-    title: "Danh mục linh kiện",
-    description: "Danh mục linh kiện dùng nội bộ trong hệ thống.",
-  },
-};
-
-const MODAL_PARENT_SCREEN: Record<string, string> = {
-  "IAM-02": "IAM-01",
-  "MST-02": "MST-01",
-  "AGY-02": "AGY-01",
-  "DEF-02": "DEF-01",
-  "IN-02": "IN-01",
-  "IN-03": "IN-01",
-  "PTW-01": "PTW-00",
-  "OUT-REQ-01": "OUT-01",
-  "OUT-03": "OUT-01",
-  "OUT-02": "OUT-01",
-  "LBL-01": "OUT-01",
-  "RFID-01": "OUT-01",
-  "WAR-02": "WAR-01",
-  "WAR-03": "WAR-01",
-  "COMP-01": "WAR-01",
-  "TRACE-01": "INV-01",
-  "REV-01": "REV-00",
-};
-
-function normalizeScreen(screen: string | null) {
-  if (!screen) return screen;
-  return MODAL_PARENT_SCREEN[screen] ?? screen;
-}
-
-function resolveScreenMeta(pathname: string, search: string): ScreenMeta {
-  const requestedScreen = normalizeScreen(
-    new URLSearchParams(search).get("screen"),
-  );
-  if (requestedScreen && MVP_SCREEN_META[requestedScreen]) {
-    return MVP_SCREEN_META[requestedScreen];
-  }
-  const defaultScreen = ROUTE_DEFAULT_SCREEN[pathname];
-  if (defaultScreen) return MVP_SCREEN_META[defaultScreen];
-  return (
-    ROUTE_META[pathname] ?? {
-      title: "Hoa Nam WMS",
-      description: "Bám BRD / SRS-FRD / BPD hiện tại",
-    }
-  );
-}
-
-function renderMvpScreen(sourceScreen: string, requestedScreen: string | null) {
-  switch (sourceScreen) {
-    case "MAP-01":
-      return <DashboardPage />;
-    case "IAM-01":
-      return (
-        <div className="hn-mvp-source-screen">
-          <IamUsersGd1Page openCreateOnMount={requestedScreen === "IAM-02"} />
-        </div>
-      );
-    case "MST-01":
-      return (
-        <div className="hn-mvp-source-screen">
-          <SkuMasterScreen openCreateOnMount={requestedScreen === "MST-02"} />
-        </div>
-      );
-    case "AGY-01":
-      return (
-        <div className="hn-mvp-source-screen">
-          <AgencyMasterScreen
-            openCreateOnMount={requestedScreen === "AGY-02"}
-          />
-        </div>
-      );
-    case "DEF-01":
-      return (
-        <div className="hn-mvp-source-screen">
-          <DefectMasterScreen
-            openCreateOnMount={requestedScreen === "DEF-02"}
-          />
-        </div>
-      );
-    case "IN-01":
-      return (
-        <div className="hn-mvp-source-screen">
-          <InboundPage />
-        </div>
-      );
-    case "PTW-00":
-      return (
-        <div className="hn-mvp-source-screen">
-          <PutawayPage />
-        </div>
-      );
-    case "OUT-01":
-      return (
-        <div className="hn-mvp-source-screen">
-          <OutboundPage />
-        </div>
-      );
-    case "WAR-01":
-      return (
-        <div className="hn-mvp-source-screen">
-          <WarrantyPage />
-        </div>
-      );
-    case "INV-01":
-      return (
-        <div className="hn-mvp-source-screen">
-          <InventoryPage />
-        </div>
-      );
-    case "REV-00":
-      return (
-        <div className="hn-mvp-source-screen">
-          <ReversalPage />
-        </div>
-      );
-    case "RPT-01":
-      return (
-        <div className="hn-mvp-source-screen">
-          <ReportsPage />
-        </div>
-      );
-    default:
-      return <Outlet />;
-  }
-}
-
 export function MainLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const theme = useTheme();
+  // <lg (980): sidebar chuyển sang Drawer overlay + hamburger ở topbar
+  // (hợp đồng responsive 360/768/1280 của SRS — không bóp 2 cột trên mobile).
+  const isDesktop = useMediaQuery(theme.breakpoints.up("lg"));
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const isProfileLoaded = useAuthStore((state) => state.isProfileLoaded);
   const { isLoading: isLoadingProfile } = useMe();
   useNotificationSocket();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
     readStoredSidebarCollapsed,
   );
+
+  // Đổi trang trên mobile → tự đóng drawer điều hướng.
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [location.pathname, location.search]);
   const persistSidebarCollapsed = (next: boolean) => {
     try {
       localStorage.setItem(SIDEBAR_COLLAPSED_STORAGE_KEY, next ? "1" : "0");
     } catch {
-      // localStorage không khả dụng (chế độ ẩn danh) — bỏ qua, chỉ giữ state trong phiên.
+      // localStorage không khả dụng (ẩn danh) — giữ state trong phiên.
     }
   };
   const toggleSidebar = () => {
@@ -388,79 +85,126 @@ export function MainLayout() {
     setSidebarCollapsed(false);
     persistSidebarCollapsed(false);
   };
+
   const requestedScreen = new URLSearchParams(location.search).get("screen");
-  const normalizedScreen = normalizeScreen(requestedScreen);
-  const sourceScreen =
-    normalizedScreen && MVP_SCREEN_META[normalizedScreen]
-      ? normalizedScreen
-      : null;
   const meta = resolveScreenMeta(location.pathname, location.search);
+  const trail = getBreadcrumbTrail(location.pathname);
 
   if (isLoadingProfile && !isProfileLoaded) return <Loading />;
 
   return (
-    <div
-      className={`hn-mvp-app${sidebarCollapsed ? " is-sidebar-collapsed" : ""}`}
-    >
-      <aside className="hn-mvp-aside">
+    <>
+    <UiAppShell
+      collapsed={sidebarCollapsed}
+      sidebarHidden={!isDesktop}
+      sidebar={
         <SideNav
           collapsed={sidebarCollapsed}
           onExpand={expandSidebar}
           onToggle={toggleSidebar}
         />
-      </aside>
-      <main className="hn-mvp-main">
-        <header className="hn-mvp-header">
-          <div className="hn-mvp-header-left">
-            {/* Nút đóng/mở thanh bên đã chuyển vào trong sidebar (cạnh "Hoa Nam WMS")
-                nên header chỉ còn tiêu đề màn hình. */}
-            <div className="hn-mvp-title">
-              <h2>{meta.title}</h2>
-              <p>{meta.description}</p>
-            </div>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <NotificationBell />
-            <UserMenu />
-          </div>
-        </header>
-        <div className="hn-mvp-content">
-          <AppBreadcrumb />
-          {/*
-           * key đổi theo màn hình đang xem → React dựng lại node → animation CSS
-           * .hn-page-transition (hn-motion.css) chạy lại, nội dung route mới hiện
-           * lên mềm thay vì "chớp" một cái. CỐ Ý không bọc thêm thẻ div: lớp
-           * hn-wms-page-normalize.css bám vào các selector ".hn-mvp-screen > ..."
-           * nên thêm 1 tầng DOM là vỡ bố cục toàn bộ trang nghiệp vụ.
-           * CỐ Ý không đưa location.search vào key: 7 trang đang giữ bộ lọc/
-           * phân trang trên query string, key đổi theo search sẽ remount và
-           * mất state mỗi lần lọc. Chỉ pathname + tham số ?screen= (vốn dùng để
-           * đổi hẳn màn MVP) mới tính là "đổi màn hình".
-           */}
-          <section
-            key={`${location.pathname}|${requestedScreen ?? ""}`}
-            className="hn-mvp-screen hn-page-transition"
-          >
-            {sourceScreen ? (
-              <Suspense fallback={<Loading />}>
-                {renderMvpScreen(sourceScreen, requestedScreen)}
-              </Suspense>
-            ) : (
-              <Outlet />
-            )}
-          </section>
-        </div>
-        <footer className="hn-mvp-footer">
+      }
+      topbar={
+        <UiTopbar
+          left={
+            <Box
+              sx={{ display: "flex", alignItems: "center", gap: 1.5, minWidth: 0 }}
+            >
+              {!isDesktop ? (
+                <UiIconButton
+                  aria-label="Mở menu"
+                  data-testid="mobile-nav-toggle"
+                  onClick={() => setMobileNavOpen(true)}
+                >
+                  <UiIcon name="menu-burger" />
+                </UiIconButton>
+              ) : null}
+              <Box className="hn-mvp-title" sx={{ minWidth: 0 }}>
+              <Box
+                component="h2"
+                sx={{
+                  margin: 0,
+                  fontSize: TYPOGRAPHY.cardTitle.fontSize,
+                  fontWeight: TYPOGRAPHY.cardTitle.fontWeight,
+                  color: S.textHigh,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+              >
+                {meta.title}
+              </Box>
+              <Box
+                component="p"
+                sx={{
+                  margin: 0,
+                  fontSize: TYPOGRAPHY.fontSizeSecondary,
+                  color: S.textMedium,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+              >
+                {meta.description}
+              </Box>
+              </Box>
+            </Box>
+          }
+          right={
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+              <NotificationBell />
+              <UserMenu />
+            </Box>
+          }
+        />
+      }
+      footer={
+        <UiFooter>
           Hoa Nam ©{new Date().getFullYear()} — Phát triển bởi Lam Phong Tech ·{" "}
           <a
             href="https://www.flaticon.com/uicons"
             target="_blank"
             rel="noreferrer"
+            style={{ color: "inherit" }}
           >
             Icons by Flaticon
           </a>
-        </footer>
-      </main>
-    </div>
+        </UiFooter>
+      }
+    >
+      <Box sx={{ padding: `${SPACING.xl}px`, display: "grid", gap: 2 }}>
+        <UiBreadcrumb
+          items={trail.map((entry) => ({
+            label: entry.label,
+            onClick: entry.path ? () => navigate(entry.path!) : undefined,
+          }))}
+        />
+        {/*
+         * key theo pathname + ?screen= → remount chạy lại hiệu ứng chuyển màn
+         * (hn-page-transition). KHÔNG đưa cả search vào key: 7 trang giữ bộ
+         * lọc/phân trang trên query — remount theo search sẽ mất state.
+         */}
+        <Box
+          component="section"
+          key={`${location.pathname}|${requestedScreen ?? ""}`}
+          className="hn-mvp-screen hn-page-transition"
+          sx={{ minWidth: 0 }}
+        >
+          <Outlet />
+        </Box>
+      </Box>
+    </UiAppShell>
+    {!isDesktop ? (
+      <Drawer
+        open={mobileNavOpen}
+        onClose={() => setMobileNavOpen(false)}
+        slotProps={{
+          paper: { sx: { width: LAYOUT.sidebarWidth, maxWidth: "85vw" } },
+        }}
+      >
+        <SideNav collapsed={false} />
+      </Drawer>
+    ) : null}
+    </>
   );
 }

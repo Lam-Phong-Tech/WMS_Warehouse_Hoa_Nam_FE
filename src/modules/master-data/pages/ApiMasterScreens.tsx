@@ -93,6 +93,7 @@ import { useClientSort } from "@/shared/components/data-display/useClientSort";
 import { guardBackdropClose } from "@/shared/utils/dialogGuard";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 import { useUiConfirm } from "@/shared/ui";
+import { useSearchParams } from "react-router-dom";
 
 const STATUS_OPTIONS: Array<{ value: MasterStatus; label: string }> = [
   { value: "ACTIVE", label: "Đang sử dụng" },
@@ -345,6 +346,10 @@ function SkuCatalogSelect({
 }
 
 export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
+  // Deep-link ?screen=MST-02 (mo modal tao) — page tu xu ly sau khi go bypass layout.
+  const [skuSearchParams] = useSearchParams();
+  const openCreateRequested =
+    openCreateOnMount || skuSearchParams.get("screen") === "MST-02";
   const canManage = useCanManage("sku.manage");
   const { confirm: confirmAction, confirmDialog } = useUiConfirm();
   const canPublish = useCanManage(WMS_PERMISSION_CATALOG.PV_PUBLISH);
@@ -472,10 +477,10 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   };
 
   useEffect(() => {
-    if (openCreateOnMount && canManage) openCreate();
+    if (openCreateRequested && canManage) openCreate();
     // openCreate chỉ phụ thuộc trạng thái quyền và cờ mở modal.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canManage, openCreateOnMount]);
+  }, [canManage, openCreateRequested]);
 
   const openEdit = (record: SkuRecord) => {
     if (!canManage) return;
@@ -1521,6 +1526,9 @@ const AGENCY_FORM_FIELDS = {
 } as const satisfies Record<string, keyof AgencyFormState>;
 
 export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
+  const [agencySearchParams] = useSearchParams();
+  const openCreateRequested =
+    openCreateOnMount || agencySearchParams.get("screen") === "AGY-02";
   const canManage = useCanManage("agency.manage");
   const { confirm: confirmAction, confirmDialog } = useUiConfirm();
   const [keyword, setKeyword] = useState("");
@@ -1574,9 +1582,9 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   };
 
   useEffect(() => {
-    if (openCreateOnMount && canManage) openCreate();
+    if (openCreateRequested && canManage) openCreate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canManage, openCreateOnMount]);
+  }, [canManage, openCreateRequested]);
 
   const openEdit = (record: AgencyRecord) => {
     if (!canManage) return;
@@ -2198,6 +2206,9 @@ const DEFECT_FORM_FIELDS = {
 } as const satisfies Record<string, keyof DefectPayload>;
 
 export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
+  const [defectSearchParams] = useSearchParams();
+  const openCreateRequested =
+    openCreateOnMount || defectSearchParams.get("screen") === "DEF-02";
   const canManage = useCanManage("defect.manage");
   const { confirm: confirmAction, confirmDialog } = useUiConfirm();
   const [keyword, setKeyword] = useState("");
@@ -2243,9 +2254,9 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   };
 
   useEffect(() => {
-    if (openCreateOnMount && canManage) openCreate();
+    if (openCreateRequested && canManage) openCreate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canManage, openCreateOnMount]);
+  }, [canManage, openCreateRequested]);
 
   const openEdit = (record: DefectRecord) => {
     if (!canManage) return;

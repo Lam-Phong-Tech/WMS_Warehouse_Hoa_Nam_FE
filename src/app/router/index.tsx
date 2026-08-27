@@ -114,6 +114,11 @@ const ReportsPage = lazy(() =>
     default: m.default,
   })),
 );
+const NotFoundPage = lazy(() =>
+  import("@/modules/errors/pages/NotFoundPage").then((m) => ({
+    default: m.NotFoundPage,
+  })),
+);
 const FoundationCatalogPage = lazy(() =>
   import("@/shared/ui/catalog/FoundationCatalogPage").then((m) => ({
     default: m.default,
@@ -342,5 +347,5 @@ export const router = createBrowserRouter([
       },
     ],
   },
-  { path: "*", element: <Navigate to={ROUTES.HOME} replace /> },
+  { path: "*", element: <NotFoundPage /> },
 ]);

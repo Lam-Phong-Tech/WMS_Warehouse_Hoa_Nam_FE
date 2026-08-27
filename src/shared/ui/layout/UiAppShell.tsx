@@ -23,6 +23,17 @@ export interface UiAppShellProps {
   footer?: ReactNode;
   /** Thu gọn sidebar → cột trái đổi sang bề rộng collapsed. */
   collapsed?: boolean;
+  /**
+   * Ẩn hẳn cột sidebar (mobile/tablet <lg): grid còn 1 cột, sidebar do caller
+   * render trong Drawer overlay + nút hamburger ở topbar.
+   */
+  sidebarHidden?: boolean;
+  /** Class marker cho vỏ ngoài (test-hook legacy `.hn-mvp-app` — không style). */
+  className?: string;
+  /** Class marker cho aside (test-hook legacy `.hn-mvp-aside`). */
+  sidebarClassName?: string;
+  /** Class marker cho main (test-hook legacy `.hn-mvp-main`). */
+  mainClassName?: string;
 }
 
 export function UiAppShell({
@@ -31,16 +42,22 @@ export function UiAppShell({
   children,
   footer,
   collapsed = false,
+  sidebarHidden = false,
+  className,
+  sidebarClassName,
+  mainClassName,
 }: UiAppShellProps) {
   const sidebarWidth = collapsed
     ? LAYOUT.sidebarCollapsedWidth
     : LAYOUT.sidebarWidth;
+  const columns = sidebarHidden ? "1fr" : `${sidebarWidth}px 1fr`;
 
   return (
     <Box
+      className={className}
       sx={{
         display: "grid",
-        gridTemplateColumns: `${sidebarWidth}px 1fr`,
+        gridTemplateColumns: columns,
         // Chốt chiều cao viewport để main tự cuộn, sidebar đứng yên.
         height: "100dvh",
         minHeight: "100dvh",
@@ -49,23 +66,31 @@ export function UiAppShell({
       }}
     >
       {/* Cột sidebar — nền surface SÁNG theo baseline Vuexy */}
-      <Box
-        component="aside"
-        sx={{
+      {sidebarHidden ? null : (
+        <Box
+          component="aside"
+          className={sidebarClassName}
+          data-testid="app-sidebar"
+          sx={{
           backgroundColor: S.bgSurface,
           borderRight: `1px solid ${S.border}`,
-          overflowY: "auto",
-          overflowX: "hidden",
-          minWidth: 0,
-        }}
-      >
-        {sidebar}
-      </Box>
+            overflowY: "auto",
+            overflowX: "hidden",
+            minWidth: 0,
+          }}
+        >
+          {sidebar}
+        </Box>
+      )}
 
       {/* Phần còn lại: topbar sticky + main cuộn + footer */}
       <Box sx={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
         {topbar}
-        <Box component="main" sx={{ flex: 1, overflow: "auto", minHeight: 0 }}>
+        <Box
+          component="main"
+          className={mainClassName}
+          sx={{ flex: 1, overflow: "auto", minHeight: 0 }}
+        >
           {children}
         </Box>
         {footer ?? null}

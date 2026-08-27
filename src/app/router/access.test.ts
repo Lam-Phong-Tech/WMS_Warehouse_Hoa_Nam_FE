@@ -4,15 +4,19 @@ vi.unmock("@/app/router/access");
 
 describe("WMS route access contract", () => {
   it("keeps menu permissions aligned with route guard permissions", async () => {
+    // Part 4: nguồn nav duy nhất là nav-data.ts (menu.tsx cũ đã xoá — NAV-01).
+    // Mỗi nav item PHẢI trỏ vào route có mặt trong ROUTE_PERMISSIONS để
+    // visibility đánh giá đúng theo guard (fail-closed với route lạ).
     const { ROUTE_PERMISSIONS } = await import("@/app/router/access");
-    const { MENU } = await import("@/app/layouts/menu");
+    const { NAV_GROUPS } = await import("@/app/layouts/nav-data");
 
-    const leafItems = MENU.flatMap((group) => group.children ?? []);
-
+    const leafItems = NAV_GROUPS.flatMap((group) => group.items);
+    expect(leafItems.length).toBeGreaterThan(0);
     for (const item of leafItems) {
-      expect(item.permission, `${item.key} menu permission`).toEqual(
-        ROUTE_PERMISSIONS[item.key],
-      );
+      expect(
+        Object.prototype.hasOwnProperty.call(ROUTE_PERMISSIONS, item.path),
+        `${item.path} phải được đăng ký trong ROUTE_PERMISSIONS`,
+      ).toBe(true);
     }
   });
 

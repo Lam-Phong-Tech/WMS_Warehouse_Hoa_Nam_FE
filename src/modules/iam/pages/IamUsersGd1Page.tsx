@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Tab, Tabs } from "@mui/material";
 import {
   SafetyCertificateOutlined,
@@ -14,6 +15,10 @@ export interface IamUsersGd1PageProps {
 }
 
 export function IamUsersGd1Page({ openCreateOnMount }: IamUsersGd1PageProps) {
+  // Deep-link ?screen=IAM-02 (mở modal tạo user) — trước đây do MainLayout
+  // renderMvpScreen xử lý; sau khi gỡ bypass (SEC-RBAC-01) page tự đọc param.
+  const [searchParams] = useSearchParams();
+  const openCreateFromScreen = searchParams.get("screen") === "IAM-02";
   const canViewRoles = useCan(P.IAM_ROLE_VIEW);
   const canManageRoles = useCan(P.IAM_ROLE_MANAGE);
   const showRolesTab = canViewRoles || canManageRoles;
@@ -46,7 +51,9 @@ export function IamUsersGd1Page({ openCreateOnMount }: IamUsersGd1PageProps) {
       </Tabs>
 
       {activeTab === "users" ? (
-        <IamUserScreen openCreateOnMount={openCreateOnMount} />
+        <IamUserScreen
+          openCreateOnMount={openCreateOnMount || openCreateFromScreen}
+        />
       ) : (
         <IamRolePermissionScreen />
       )}

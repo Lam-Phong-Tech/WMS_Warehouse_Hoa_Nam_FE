@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { SideNav } from "@/app/layouts/SideNav";
-import { getBreadcrumb, getOpenKeys, getSelectedKey } from "@/app/layouts/menu";
+import { getBreadcrumbTrail, matchesPath } from "@/app/layouts/nav-data";
 import { ROUTES } from "@/shared/constants/routes";
 import { useAuthStore } from "@/shared/store/auth.store";
 
@@ -107,17 +107,22 @@ describe("SideNav RBAC filtering", () => {
   });
 });
 
-describe("navigation metadata", () => {
-  it("uses one metadata source for selected key, open keys and breadcrumb", () => {
-    expect(getSelectedKey(`${ROUTES.INBOUND}/draft/PO-001`)).toBe(
-      ROUTES.INBOUND,
+describe("navigation metadata (nav-data — nguồn duy nhất, NAV-01)", () => {
+  it("dùng một nguồn metadata cho active-path và breadcrumb", () => {
+    // Path lồng vẫn nhận diện đúng route sở hữu (thay getSelectedKey cũ).
+    expect(matchesPath(`${ROUTES.INBOUND}/draft/PO-001`, ROUTES.INBOUND)).toBe(
+      true,
     );
-    expect(getOpenKeys(`${ROUTES.INBOUND}/draft/PO-001`)).toEqual([
-      "inbound-group",
+    expect(matchesPath(ROUTES.OUTBOUND, ROUTES.INBOUND)).toBe(false);
+    // Breadcrumb hợp nhất từ nav-data (thay getBreadcrumb của menu.tsx cũ).
+    expect(getBreadcrumbTrail(ROUTES.PROFILE)).toEqual([
+      { label: "Trang chủ", path: ROUTES.DASHBOARD },
+      { label: "Hồ sơ cá nhân" },
     ]);
-    expect(getBreadcrumb(ROUTES.PROFILE)).toEqual([
-      { label: "Tài khoản" },
-      { label: "Hồ sơ cá nhân", path: ROUTES.PROFILE },
+    expect(getBreadcrumbTrail(ROUTES.INBOUND).map((c) => c.label)).toEqual([
+      "Trang chủ",
+      "Nhập kho",
+      "Danh sách phiếu nhập",
     ]);
   });
 });
