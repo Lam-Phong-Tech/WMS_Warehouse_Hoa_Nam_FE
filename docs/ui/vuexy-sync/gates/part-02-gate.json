@@ -1,0 +1,84 @@
+{
+  "part": 2,
+  "status": "PASS",
+  "model": "claude-fable-5",
+  "effort": "xhigh",
+  "previous_gate": "docs/ui/vuexy-sync/gates/part-01-gate.json",
+  "previous_output_sha": "a55462c83a5d9f1a2cdc828bd63ae522d1753a0a",
+  "previous_gate_validation": "PASS — HEAD input = ea309b2 là đỉnh chain hợp lệ của Part 1 (a55462c artifacts → 0fcb372 seal → ea309b2 DEC-UI-BASELINE-01); worktree sạch; baseline identities không đổi ngoài quyết định đã ghi nhận",
+  "input_sha": "ea309b211aa3b06d106af660bf29fbd15bd2a6ae",
+  "output_sha": "67c1537db429e6cfab2c2ace6698e3a629a203b0",
+  "worktree_fingerprint": "clean (git status rỗng sau checkpoint; playwright-report/test-results artifacts được restore về HEAD, không lẫn vào commit)",
+  "decision_record": "docs/decision-records/DEC-UI-BASELINE-01.md",
+  "canonical_token_source": "src/shared/ui/tokens (primitives + semantic-light + component-tokens + css-vars.css mirror; semantic-dark = null theo baseline)",
+  "composition_root": "src/shared/ui/theme/AppThemeProvider.tsx (MuiThemeProvider + antd ConfigProvider + AntdApp + locale)",
+  "theme_providers_before_after": "37 file (~48 sites) → 1 composition root (45 re-wrap gỡ khỏi 36 file; allowlist ngoại lệ RỖNG; *.test.* miễn)",
+  "css_layers_before_after": "9 lớp + 2 ngoài luồng, 2 hệ :root cạnh tranh → 1 lớp token canonical đứng đầu manifest 11 mục (enforce ui:styles); :root legacy alias về --wms-*; ~60 hex distinct re-point; fonts Inter/Be Vietnam Pro gỡ hẳn",
+  "guards": {
+    "ui:architecture": "PASS + self-test PASS (engine-import ratchet, provider boundary, createTheme uniqueness, second-token-source heuristic)",
+    "ui:tokens": "PASS + self-test PASS (hex ratchet per-file, zero-hex trong shared/ui ngoài tokens, font drift, design-tokens quay lại, index.html google-fonts)",
+    "ui:styles": "PASS + self-test PASS (CSS_MANIFEST order, css-import allowlist, !important ratchet, cấm file styles mới)",
+    "ui:foundation": "PASS (vitest src/test/ui-foundation: token-css parity, adapter parity, provider uniqueness, import-boundary negative/positive, computed-style contract)",
+    "eslint": "no-restricted-imports @emotion/* + @/shared/design-tokens (mọi file)"
+  },
+  "allowlists": {
+    "direct-ui-imports": "119 files (ratchet, deadline Part 4)",
+    "hardcoded-hex-baseline": "41 files (ratchet, deadline Part 4)",
+    "css-baseline": "css-import component-scoped + !important per-file (deadline Part 3 Phase C)",
+    "themeprovider-exceptions": "RỖNG"
+  },
+  "foundation_components": [
+    "UiText", "UiIcon", "UiButton", "UiIconButton", "UiTextField", "UiFormField",
+    "UiCard", "UiStatusBadge", "UiDialog", "UiDrawer", "UiStateSurface",
+    "AppThemeProvider", "FoundationCatalogPage (/ui-foundation DEV-only)"
+  ],
+  "commands_passed": [
+    "yarn format:check (verify-format-baseline PASS)",
+    "yarn lint (0 errors; 30 warnings có chủ đích từ trước — react-hooks/set-state-in-effect hạ warn trong config)",
+    "yarn typecheck (tsc -b PASS)",
+    "yarn test (926/926 PASS, 118 files — gồm 31 test ui-foundation mới)",
+    "yarn build (tsc -b + vite build + build-manifest PASS)",
+    "yarn ui:guards (3 guard PASS + 3 self-test PASS)",
+    "npx playwright test e2e/ui-foundation.spec.ts --project=chromium (3/3 PASS ×2 lần — computed styles + dialog motion + visual golden ổn định)",
+    "npx playwright test e2e/responsive-sweep.spec.ts --project=chromium (20/20 PASS — business smoke trên token Vuexy mới)"
+  ],
+  "business_smoke_note": "Không regression: 8 test đỏ gặp lúc đầu đều tái hiện y hệt tại input SHA (nợ từ 2 commit [skip ci] 5df4f21/a908c42: test-drift nhãn 'Mở'→'Sửa', placeholder login, gate chứng từ evidenceProvided mới, thiếu swagger-api.json local) — đã sửa test theo UI/nghiệp vụ hiện hành + 1 fix a11y thật (aria-labelledby confirm dialog ReversalDetailModal); swagger-api.json fetch đúng SHA pin 7da26cb (hash khớp BE_CONTRACT_PIN, file gitignored).",
+  "p0_open": 1,
+  "p0_items": [
+    "SEC-RBAC-01 / RC-07: ?screen= bypass RequirePermission — theo DEC-UI-BASELINE-01 D4 xử lý ở Part 3 Phase C (shell); KHÔNG phải foundation conflict, không chuyển allowlist"
+  ],
+  "p1_open": 5,
+  "p1_items": [
+    "RC-02 dual engine (Part 3-4 Phase D — worklist 29 file mixed)",
+    "RC-03 legacy CSS layers còn 8 file chờ rút (đã alias+ratchet, Phase C)",
+    "RC-06 shared layer antd chết/2 README mâu thuẫn (Phase D)",
+    "NAV-01 hai nguồn nav lệch (Phase C)",
+    "NAV-02 thiếu 404 + middleware chết (Phase C)"
+  ],
+  "p1_closed": [
+    "RC-04 (11 nguồn token → 1 canonical + shim @deprecated; parity tests)",
+    "RC-05 (37 ThemeProvider → 1 composition root; uniqueness test + guard)"
+  ],
+  "p2_open": 5,
+  "p2_items": ["CSS-13 css ngoài chuỗi (đã allowlist, gom Phase C)", "CSS-14 dead classes", "CSS-15 10 block sx height:35", "@ant-design/icons dep chết (gỡ ở Phase D9)", "toast sót 2 file"],
+  "artifacts": [
+    "src/shared/ui/** (tokens + theme + components + catalog)",
+    "scripts/check-ui-architecture.mjs",
+    "scripts/check-ui-tokens.mjs",
+    "scripts/check-ui-styles.mjs",
+    "scripts/ui-guards-lib.mjs (+ .d.mts)",
+    "src/test/ui-foundation/** (5 test files)",
+    "e2e/ui-foundation.spec.ts (+ snapshots golden)",
+    "docs/ui/vuexy-sync/10-design-system-adr.md",
+    "docs/ui/vuexy-sync/11-canonical-token-contract.md",
+    "docs/ui/vuexy-sync/12-provider-css-remediation.md",
+    "docs/ui/vuexy-sync/13-import-boundary-policy.md",
+    "docs/ui/vuexy-sync/14-foundation-visual-report.md",
+    "docs/ui/vuexy-sync/visual/part-02/ui-foundation-catalog-chromium-win32.png",
+    "docs/ui/vuexy-sync/allowlists/*.json",
+    "docs/ui/vuexy-sync/gates/part-02-gate.json"
+  ],
+  "blockers": [],
+  "next_file_allowed": "03_ClaudeCode_Fable5_xhigh_Shared_Component_Unification.md",
+  "completed_at": "2026-08-28T01:15:00+07:00"
+}
