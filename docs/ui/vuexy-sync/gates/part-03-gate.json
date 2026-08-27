@@ -1,0 +1,83 @@
+{
+  "part": 3,
+  "status": "PASS",
+  "model": "claude-fable-5",
+  "effort": "xhigh",
+  "previous_gate": "docs/ui/vuexy-sync/gates/part-02-gate.json",
+  "previous_output_sha": "67c1537db429e6cfab2c2ace6698e3a629a203b0",
+  "previous_gate_validation": "PASS — chain 1→2 PASS/PASS đúng model/effort; HEAD input = c670036 (seal gate 2); worktree sạch; guards+31 foundation tests re-PASS trước khi ghi",
+  "input_sha": "c670036f941c12e7d27f2964ce1c834fce059033",
+  "output_sha": "ab69c3669f114c8c53b1944f9ed114eaaca257b6",
+  "worktree_fingerprint": "clean (git status rỗng sau checkpoint; playwright-report/test-results artifacts restore về HEAD trước commit)",
+  "component_coverage_percent": 100,
+  "coverage_detail": "P0 16/16 + P1 13/13 = 100% (17-component-coverage-report.md); P2 2/2; inventory §4 của prompt phủ đủ kể cả component ít consumer (Timeline/Avatar/Descriptions)",
+  "duplicate_public_components_remaining": "0 ngoài 13 compatibility adapter có @deprecated + consumer đóng băng (allowlists/deprecated-components.json, enforce deprecated-components.test.ts — 12 test)",
+  "canonical_added": [
+    "forms: UiFormText/UiFormNumber/UiFormSelect/UiFormAutocomplete/UiFormCheckbox/UiFormSwitch/UiFormRadioGroup/UiFormDate (antd adapter, dayjs contract)",
+    "components: UiPagination/UiTabs/UiAvatar/UiAlert/UiKpiCard/UiDescriptions/UiTimeline/UiConfirmDialog/useUiConfirm",
+    "layout: UiAppShell/UiSidebarNav/UiTopbar/UiPageContainer/UiBreadcrumb/UiFooter + LAYOUT tokens (260/72/80)",
+    "primitives-mui re-export (Box/Stack/Grid/Divider/Tooltip/Popover/Menu/MenuItem/CircularProgress/Skeleton)"
+  ],
+  "internals_unified_api_kept": [
+    "EmptyState/LoadingState/ErrorState/PageSkeleton/Loading/NoPermissionState/ApiErrorAlert/ErrorBoundary → UiStateSurface/MUI",
+    "StatusTag → UiStatusBadge; TopPagination + MvpPaginationFooter/MvpPageSizeSelector → UiPagination (3 adapter hết antd)"
+  ],
+  "deleted_files": 34,
+  "deleted_summary": "lớp forms antd (13) + feedback wrappers antd (13) + layout antd cũ + navigation/cards + PlaceholderPage + AdaptiveDelayedRender/DelayedRender + AppHeader/AppFooter/PartnerLayout + middleware.ts + module component-catalog (route redirect /ui-foundation); FieldError/FormError xoá; SubmitButton/PageSizeSelector giữ internal @deprecated (WWHN-268 emitter / DataTable dep)",
+  "migrations_in_part3": [
+    "3 trang auth: FormInput → UiFormText (test 39/39 giữ nguyên PASS, label/placeholder không đổi)",
+    "ApiMasterScreens: Modal.confirm → useUiConfirm ×4 call sites — antd static API (message/notification/Modal.confirm) = 0 toàn src",
+    "WarrantyPage: antd message → sonner"
+  ],
+  "hardcode_violations_shared_layer": 0,
+  "visual": {
+    "goldens": ["ui-foundation-catalog.png (desktop 1280)", "ui-foundation-catalog-mobile.png (375)"],
+    "threshold": "maxDiffPixelRatio 0.02 — disposition tại 18-component-visual-report.md §3 (siết 1% khi CI runner đồng nhất)",
+    "golden_regenerated_reason": "catalog mở rộng 8→~14 section (nội dung mới), mọi computed-style contract assert độc lập TRƯỚC golden — không phải sửa golden để lách"
+  },
+  "a11y_keyboard_responsive": "E2E: focus-ring token trên sidebar (Tab), aria nav/alert/dialog labelledby/aria-current; responsive sweep catalog 8 viewport 320-1440 không tràn ngang; ARIA/keyboard unit tests per-component (Tabs arrow, Select, RadioGroup, Switch role, ConfirmDialog Esc/focus-trap)",
+  "commands_passed": [
+    "yarn format:check PASS",
+    "yarn lint 0 errors (41 warnings — react-hooks/set-state-in-effect mức warn theo config có sẵn)",
+    "yarn typecheck (tsc -b) 0 errors",
+    "yarn test exit 0 (~1004 tests / 137 files — 992 nền + 12 deprecated-guard; các test component xoá đã gỡ kèm)",
+    "yarn build PASS",
+    "yarn ui:guards PASS (3 guard + 3 self-test; baselines cập nhật: direct-ui-imports 119→82 files, hex 41→27 files)",
+    "npx vitest run src/test/ui-foundation — 43/43 PASS",
+    "npx playwright test e2e/ui-foundation.spec.ts — 7/7 PASS (computed P2+P3, dialog motion, focus-ring, sweep 8 viewport, 2 golden)",
+    "npx playwright test e2e/responsive-sweep.spec.ts — 20/20 PASS (business smoke screens thật sau mọi swap)"
+  ],
+  "p0_open": 1,
+  "p0_items": [
+    "SEC-RBAC-01 / RC-07: ?screen= bypass RequirePermission — KHÔNG phải component gap; xử lý ở Part 4 khi swap MainLayout→UiAppShell (bộ layout canonical đã sẵn sàng trong Part 3)"
+  ],
+  "p1_open": 3,
+  "p1_items": [
+    "RC-02 phần còn lại: feature screens còn import antd/MUI trực tiếp (82 file ratchet) — nội dung chính Part 4",
+    "RC-03 phần còn lại: rút 8 lớp CSS legacy sau khi shell swap (Part 4 Phase C)",
+    "NAV-01/NAV-02: hợp nhất nav data + 404 — đi cùng shell swap Part 4"
+  ],
+  "p1_closed": [
+    "RC-06 (shared layer chết/mâu thuẫn): 34 file xoá, 2 README hợp nhất định hướng qua barrel mới + 13/15/16 docs; convention duy nhất = @/shared/ui"
+  ],
+  "p2_open": 3,
+  "p2_items": ["CSS-14 dead classes (P4 Phase C)", "@ant-design/icons dep chết (gỡ ở P4-D9 cùng antd)", "CSS-15 sx height:35 (P4 cùng screen migration)"],
+  "artifacts": [
+    "src/shared/ui/forms/** (9 files + 8 test)",
+    "src/shared/ui/components/{UiPagination,UiTabs,UiAvatar,UiAlert,UiKpiCard,UiDescriptions,UiTimeline,UiConfirmDialog,useUiConfirm}.tsx (+8 test)",
+    "src/shared/ui/layout/** (8 files + 6 test)",
+    "src/shared/ui/primitives-mui.ts",
+    "src/shared/ui/catalog/FoundationCatalogPage.tsx (golden catalog ~14 section)",
+    "src/test/ui-foundation/deprecated-components.test.ts",
+    "docs/ui/vuexy-sync/allowlists/deprecated-components.json",
+    "docs/ui/vuexy-sync/15-component-contracts.md",
+    "docs/ui/vuexy-sync/16-component-migration-map.md",
+    "docs/ui/vuexy-sync/17-component-coverage-report.md",
+    "docs/ui/vuexy-sync/18-component-visual-report.md",
+    "docs/ui/vuexy-sync/visual/part-03/*.png",
+    "docs/ui/vuexy-sync/gates/part-03-gate.json"
+  ],
+  "blockers": [],
+  "next_file_allowed": "04_ClaudeCode_Fable5_xhigh_Full_WebApp_Migration.md",
+  "completed_at": "2026-08-28T02:20:00+07:00"
+}
