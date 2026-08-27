@@ -1,0 +1,58 @@
+{
+  "part": 1,
+  "status": "BLOCKED",
+  "status_detail": "Toàn bộ audit artifacts hoàn tất và checkpoint đã tạo. Gate không thể PASS vì điều kiện bắt buộc 'đọc được licensed Vuexy source' không thỏa: placeholder nguồn licensed trong prompt chưa được điền và không tồn tại trên máy. Cần Decision Phase A (A1-A6 trong 09-remediation-architecture-plan.md) để mở Prompt 2.",
+  "model": "claude-fable-5",
+  "effort": "xhigh",
+  "repository": "Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_FE",
+  "source_branch": "dev",
+  "input_sha": "a908c420663270d783a34fd378689f7940377c85",
+  "output_sha": "a55462c83a5d9f1a2cdc828bd63ae522d1753a0a",
+  "worktree_fingerprint": "clean (git status --porcelain rỗng tại input SHA; thay đổi duy nhất của Part 1 là docs/ui/vuexy-sync/** trong output_sha)",
+  "mini_app_repository": "Lam-Phong-Tech/Mini_App_WMS_Hoa_Nam",
+  "mini_app_sha": "b9d4d025a935f4c716d7d731c4d253bbaee46365",
+  "live_demo_audited": "https://demos.pixinvent.com/vuexy-vuejs-admin-template/demo-1 (read-only, 2026-08-27, computed styles — evidence: 01-context-readiness.md §4)",
+  "commands_passed": [],
+  "commands_note": "Part 1 chỉ tạo docs, không đổi code runtime — không yêu cầu quality gate build/test; husky pre-commit (lint-staged/prettier) PASS khi commit checkpoint.",
+  "inventory_coverage": {
+    "routes_registered": 33,
+    "permission_keys": 62,
+    "srs_screens_mapped": "100% (SCR-* §8.3 + Annex D đối chiếu tại 05-screen-role-inventory.md §2)",
+    "shared_components": "≈88 file (44 antd / 18 MUI / 2 mixed / 4 Apex / ~20 raw)",
+    "files_importing_antd": 93,
+    "files_importing_mui": 59,
+    "files_importing_both": 29,
+    "mui_themeprovider_files": 37,
+    "global_css_lines": 2717,
+    "important_count": 177,
+    "ant_selector_overrides": 502,
+    "hex_literals": "450 occurrences / 110 distinct",
+    "token_sources": 11
+  },
+  "p0_open": 2,
+  "p0_items": [
+    "BLK-BASELINE-01 / RC-01: thiếu licensed Vuexy source + chưa có Decision baseline (BC-01, BC-02, BC-03) — chặn Prompt 2",
+    "SEC-RBAC-01 / RC-07: MainLayout renderMvpScreen (?screen=) bypass RequirePermission (MainLayout.tsx:286-363) — khuyến nghị ticket riêng, không chặn audit"
+  ],
+  "p1_open": 7,
+  "p1_items": ["RC-02 dual engine", "RC-03 CSS cascade-order", "RC-04 11 token sources", "RC-05 37 ThemeProvider", "RC-06 shared layer chết/mâu thuẫn", "NAV-01 hai nguồn nav lệch", "NAV-02 thiếu 404 + middleware chết"],
+  "p2_open": 6,
+  "p2_items": ["CSS-05 dead fallback #6c5ce7", "CSS-13 CSS ngoài chuỗi import", "CSS-14 103+ dead classes", "DEAD-01 layouts/middleware chết", "@ant-design/icons dep chết + Inter/Be Vietnam Pro font thừa", "toast sót 2 file"],
+  "artifacts": [
+    "docs/ui/vuexy-sync/01-context-readiness.md",
+    "docs/ui/vuexy-sync/02-baseline-source-matrix.md",
+    "docs/ui/vuexy-sync/03-token-source-matrix.md",
+    "docs/ui/vuexy-sync/04-component-inventory.md",
+    "docs/ui/vuexy-sync/05-screen-role-inventory.md",
+    "docs/ui/vuexy-sync/06-library-import-graph.md",
+    "docs/ui/vuexy-sync/07-css-conflict-register.md",
+    "docs/ui/vuexy-sync/08-root-cause-analysis.md",
+    "docs/ui/vuexy-sync/09-remediation-architecture-plan.md",
+    "docs/ui/vuexy-sync/gates/part-01-gate.json"
+  ],
+  "blockers": [
+    "BLK-BASELINE-01: licensed Vuexy source không được cung cấp; cần PM/PO quyết định A1 (cung cấp source) hoặc A2/A3 (phê duyệt design-language parity theo hệ X của Mini App + chốt 3 token lệch). Chi tiết: 01-context-readiness.md §5, 02-baseline-source-matrix.md §2."
+  ],
+  "next_file_allowed": "NO — chỉ mở 02_ClaudeCode_Fable5_xhigh_Design_System_Foundation_Remediation.md sau khi Decision Phase A được phê duyệt và gate này được nâng PASS",
+  "completed_at": "2026-08-27T23:26:36+07:00"
+}
