@@ -6,20 +6,17 @@
  *  1. ADAPTER-CANONICAL: API giữ nguyên, ruột đã render bằng foundation
  *     (EmptyState, LoadingState, ErrorState, NoPermissionState, ApiErrorAlert,
  *     Loading, PageSkeleton, StatusTag, TopPagination…).
- *  2. ADAPTER antd chờ Part 4 (DataTable, FilterBar, ScanInput, PageHeader…) —
- *     consumer bị đóng băng bằng guard `deprecated-components`
+ *  2. ADAPTER antd còn lại (FilterBar, ScanInput, PageHeader…) — consumer bị
+ *     đóng băng bằng guard `deprecated-components`
  *     (docs/ui/vuexy-sync/allowlists/deprecated-components.json).
+ *     Part 5: DataTable/PageSizeSelector/useSortTooltipColumns/SubmitButton
+ *     đã XOÁ (consumer = 0).
  */
 
 // layout/ — chỉ còn PageHeader (adapter, consumer đóng băng)
 export { PageHeader, type PageHeaderProps } from "./layout/PageHeader";
 
 // data-display/ — hiển thị dữ liệu
-export {
-  DataTable,
-  type DataTableProps,
-  type ServerPagination,
-} from "./data-display/DataTable";
 export { EmptyState, type EmptyStateProps } from "./data-display/EmptyState";
 export { StatusTag, type StatusTagProps } from "./data-display/StatusTag";
 export {
@@ -37,10 +34,6 @@ export {
   type ResponsiveDataTableProps,
   type ResponsiveTableColumn,
 } from "./data-display/ResponsiveDataTable";
-export {
-  useSortTooltipColumns,
-  type ColumnWithSortType,
-} from "./data-display/useSortTooltipColumns";
 export {
   useTablePattern,
   type TableFilters,

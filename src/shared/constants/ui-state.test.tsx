@@ -14,7 +14,7 @@ import { ErrorState } from "@/shared/components/ui-states/ErrorState";
 import { PageSkeleton } from "@/shared/components/ui-states/PageSkeleton";
 import { NoPermissionState } from "@/shared/components/feedback/NoPermissionState";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
-import { SubmitButton } from "@/shared/components/forms/SubmitButton";
+import { ActionButton } from "@/shared/components/actions";
 
 /**
  * WWHN-268 · FE268-D01 — hợp đồng trạng thái UI.
@@ -98,14 +98,22 @@ describe("WWHN-268 UI state contract", () => {
     ).not.toBeNull();
   });
 
-  it("SubmitButton chỉ phát trạng thái disabled khi thật sự bị chặn", () => {
-    const enabled = render(<SubmitButton />);
+  // Part 5: SubmitButton (adapter cũ) đã xoá — emitter chuẩn của hợp đồng
+  // "disabled" là ActionButton: chỉ phát hook khi bị KHÓA VÌ QUYỀN (mode
+  // "disable" + thiếu permission), không phát cho disabled thường.
+  it("ActionButton chỉ phát trạng thái disabled khi bị khóa vì quyền", () => {
+    const enabled = render(<ActionButton kind="save">Lưu</ActionButton>);
     expect(
       enabled.container.querySelector(UI_STATE_SELECTOR[UI_STATE.DISABLED]),
     ).toBeNull();
     enabled.unmount();
 
-    const blocked = render(<SubmitButton disabled />);
+    // Store auth mặc định trong test không có quyền nào → sku.update bị chặn.
+    const blocked = render(
+      <ActionButton kind="save" module="sku" action="edit" mode="disable">
+        Lưu
+      </ActionButton>,
+    );
     expect(
       blocked.container.querySelector(UI_STATE_SELECTOR[UI_STATE.DISABLED]),
     ).not.toBeNull();

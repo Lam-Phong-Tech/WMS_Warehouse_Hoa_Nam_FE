@@ -1,4 +1,4 @@
-import { useMemo, useState, type Key, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import {
   Box,
   Grid,
@@ -20,12 +20,12 @@ import {
   SettingOutlined,
 } from "@/shared/components/icons";
 import { toast } from "sonner";
+import { FilterBar, SearchInput } from "@/shared/components";
 import {
-  DataTable,
-  FilterBar,
-  SearchInput,
-  type ColumnWithSortType,
-} from "@/shared/components";
+  ResponsiveDataTable,
+  type ResponsiveTableColumn,
+} from "@/shared/components/data-display/ResponsiveDataTable";
+import { useRowSelection } from "@/shared/hooks/useRowSelection";
 import { PvErrorState } from "@/modules/pv/components/PvErrorState";
 import { PvSwitch } from "@/modules/pv/components/PvSwitch";
 import {
@@ -158,7 +158,6 @@ function SimpleMasterTab({
 }) {
   const [editing, setEditing] = useState<PvAdminSimpleMaster | null>(null);
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([]);
   const [search, setSearch] = useState("");
   const [formValues, setFormValues] = useState<MasterFormValues>({
     code: "",
@@ -221,54 +220,46 @@ function SimpleMasterTab({
         row.name.toLowerCase().includes(query),
     );
   }, [rows, search]);
+  const rowSelection = useRowSelection(filteredRows, (row) => row.id);
 
   if (isPending)
     return <LoadingState tip="Đang tải…" testId={`${testId}-loading`} />;
   if (isError) return <PvErrorState error={error} onRetry={onRetry} />;
 
-  const columns: ColumnWithSortType<PvAdminSimpleMaster> = [
+  // Part 5: DataTable (antd adapter, freeze) → ResponsiveDataTable — comparator
+  // giữ nguyên ngữ nghĩa (localeCompare "vi" / numeric qua sortAccessor).
+  const columns: ResponsiveTableColumn<PvAdminSimpleMaster>[] = [
     {
-      title: "Mã",
-      dataIndex: "code",
-      sorter: (a, b) => a.code.localeCompare(b.code, "vi"),
+      key: "code",
+      header: "Mã",
+      sortAccessor: (row) => row.code,
+      render: (row) => row.code,
     },
     {
-      title: "Tên",
-      dataIndex: "name",
-      sorter: (a, b) => a.name.localeCompare(b.name, "vi"),
+      key: "name",
+      header: "Tên",
+      sortAccessor: (row) => row.name,
+      render: (row) => row.name,
     },
     {
-      title: "Trạng thái",
-      dataIndex: "status",
+      key: "status",
+      header: "Trạng thái",
       sortType: "value",
-      sorter: (a, b) => a.status.localeCompare(b.status),
-      render: (status: string) => (
+      sortAccessor: (row) => row.status,
+      render: (row) => (
         <UiStatusBadge
-          tone={status === "ACTIVE" ? "success" : "neutral"}
-          label={masterStatusLabel(status)}
+          tone={row.status === "ACTIVE" ? "success" : "neutral"}
+          label={masterStatusLabel(row.status)}
         />
       ),
     },
     {
-      title: "Thứ tự",
-      dataIndex: "sort_order",
+      key: "sort_order",
+      header: "Thứ tự",
       align: "right",
       sortType: "value",
-      sorter: (a, b) => a.sort_order - b.sort_order,
-    },
-    {
-      title: "",
-      key: "actions",
-      render: (_, row) => (
-        <ActionButton
-          kind="edit"
-          disabled={!canManage}
-          data-testid={`${testId}-edit`}
-          onClick={() => openForm(row)}
-        >
-          Sửa
-        </ActionButton>
-      ),
+      sortAccessor: (row) => row.sort_order,
+      render: (row) => row.sort_order,
     },
   ];
 
@@ -297,22 +288,25 @@ function SimpleMasterTab({
         />
       </FilterBar>
 
-      <DataTable<PvAdminSimpleMaster>
-        rowKey="id"
-        size="small"
-        scroll={{ x: "max-content" }}
-        dataSource={filteredRows}
-        rowSelection={{
-          type: "checkbox",
-          selectedRowKeys,
-          onChange: setSelectedRowKeys,
-        }}
-        locale={{
-          emptyText: search.trim()
-            ? "Không có kết quả phù hợp."
-            : `Chưa có ${title} nào.`,
-        }}
+      <ResponsiveDataTable<PvAdminSimpleMaster>
+        rows={filteredRows}
+        rowKey={(row) => row.id}
         columns={columns}
+        rowSelection={rowSelection}
+        selectionLabel={(row) => `Chọn ${title} ${row.code}`}
+        emptyText={
+          search.trim() ? "Không có kết quả phù hợp." : `Chưa có ${title} nào.`
+        }
+        renderRowActions={(row) => (
+          <ActionButton
+            kind="edit"
+            disabled={!canManage}
+            data-testid={`${testId}-edit`}
+            onClick={() => openForm(row)}
+          >
+            Sửa
+          </ActionButton>
+        )}
       />
 
       <UiDialog
@@ -445,9 +439,6 @@ export default function PvAdminPage() {
   const [profileViewing, setProfileViewing] = useState<PvAdminProfile | null>(
     null,
   );
-  const [profileSelectedRowKeys, setProfileSelectedRowKeys] = useState<Key[]>(
-    [],
-  );
   const [profileSearch, setProfileSearch] = useState("");
   const [profileIndustryFilter, setProfileIndustryFilter] = useState("ALL");
   const [profilePublishedFilter, setProfilePublishedFilter] = useState<
@@ -574,24 +565,31 @@ export default function PvAdminPage() {
     profileIndustryFilter,
     profilePublishedFilter,
   ]);
+  const profileRowSelection = useRowSelection(
+    filteredProfiles,
+    (row) => row.id,
+  );
 
-  const profileColumns: ColumnWithSortType<PvAdminProfile> = [
+  // Part 5: DataTable (antd adapter, freeze) → ResponsiveDataTable.
+  const profileColumns: ResponsiveTableColumn<PvAdminProfile>[] = [
     {
-      title: "Mã SKU",
-      dataIndex: "sku_code",
-      sorter: (a, b) => a.sku_code.localeCompare(b.sku_code, "vi"),
+      key: "sku_code",
+      header: "Mã SKU",
+      sortAccessor: (row) => row.sku_code,
+      render: (row) => row.sku_code,
     },
     {
-      title: "Tên hiển thị",
-      dataIndex: "display_name",
-      sorter: (a, b) => a.display_name.localeCompare(b.display_name, "vi"),
+      key: "display_name",
+      header: "Tên hiển thị",
+      sortAccessor: (row) => row.display_name,
+      render: (row) => row.display_name,
     },
     {
-      title: "Ngành nghề",
       key: "industries",
+      header: "Ngành nghề",
       sortType: "value",
-      sorter: (a, b) => a.industry_ids.length - b.industry_ids.length,
-      render: (_, row) =>
+      sortAccessor: (row) => row.industry_ids.length,
+      render: (row) =>
         row.industry_ids.length > 0 ? (
           <Stack
             direction="row"
@@ -613,11 +611,11 @@ export default function PvAdminPage() {
         ),
     },
     {
-      title: "Hiển thị trên ứng dụng",
       key: "published",
+      header: "Hiển thị trên ứng dụng",
       sortType: "value",
-      sorter: (a, b) => Number(a.published) - Number(b.published),
-      render: (_, row) => (
+      sortAccessor: (row) => Number(row.published),
+      render: (row) => (
         <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
           <PvSwitch
             checked={row.published}
@@ -633,30 +631,27 @@ export default function PvAdminPage() {
         </Stack>
       ),
     },
-    {
-      title: "",
-      key: "actions",
-      render: (_, row) => (
-        <Stack direction="row" spacing={1}>
-          <ActionButton
-            kind="view"
-            data-testid="pv-admin-profile-view"
-            onClick={() => setProfileViewing(row)}
-          >
-            Xem
-          </ActionButton>
-          <ActionButton
-            kind="edit"
-            disabled={!canManageMaster}
-            data-testid="pv-admin-profile-edit"
-            onClick={() => openProfileForm(row)}
-          >
-            Sửa hiển thị
-          </ActionButton>
-        </Stack>
-      ),
-    },
   ];
+
+  const renderProfileRowActions = (row: PvAdminProfile) => (
+    <Stack direction="row" spacing={1}>
+      <ActionButton
+        kind="view"
+        data-testid="pv-admin-profile-view"
+        onClick={() => setProfileViewing(row)}
+      >
+        Xem
+      </ActionButton>
+      <ActionButton
+        kind="edit"
+        disabled={!canManageMaster}
+        data-testid="pv-admin-profile-edit"
+        onClick={() => openProfileForm(row)}
+      >
+        Sửa hiển thị
+      </ActionButton>
+    </Stack>
+  );
 
   return (
     <Box sx={{ padding: "clamp(8px, 2vw, 16px)" }}>
@@ -767,22 +762,18 @@ export default function PvAdminPage() {
                 ]}
               />
             </FilterBar>
-            <DataTable<PvAdminProfile>
-              rowKey="id"
-              size="small"
-              scroll={{ x: "max-content" }}
-              dataSource={filteredProfiles}
-              rowSelection={{
-                type: "checkbox",
-                selectedRowKeys: profileSelectedRowKeys,
-                onChange: setProfileSelectedRowKeys,
-              }}
-              locale={{
-                emptyText: isProfileFilterActive
-                  ? "Không có kết quả phù hợp."
-                  : "Chưa có hồ sơ sản phẩm nào. Hồ sơ được tạo khi sản phẩm được đưa lên ứng dụng lần đầu.",
-              }}
+            <ResponsiveDataTable<PvAdminProfile>
+              rows={filteredProfiles}
+              rowKey={(row) => row.id}
               columns={profileColumns}
+              rowSelection={profileRowSelection}
+              selectionLabel={(row) => `Chọn hồ sơ ${row.sku_code}`}
+              emptyText={
+                isProfileFilterActive
+                  ? "Không có kết quả phù hợp."
+                  : "Chưa có hồ sơ sản phẩm nào. Hồ sơ được tạo khi sản phẩm được đưa lên ứng dụng lần đầu."
+              }
+              renderRowActions={renderProfileRowActions}
             />
           </div>
         )
@@ -1108,7 +1099,6 @@ function PvRuleTab({
   const [editing, setEditing] = useState<PvAdminRule | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [viewing, setViewing] = useState<PvAdminRule | null>(null);
-  const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<
     "ALL" | "ACTIVE" | "INACTIVE"
@@ -1149,6 +1139,7 @@ function PvRuleTab({
       return haystack.includes(query);
     });
   }, [rows, search, statusFilter, tagNameById]);
+  const rowSelection = useRowSelection(filteredRows, (row) => row.id);
 
   function openForm(row?: PvAdminRule) {
     setEditing(row ?? null);
@@ -1205,29 +1196,27 @@ function PvRuleTab({
     }
   }
 
-  const columns: ColumnWithSortType<PvAdminRule> = [
+  // Part 5: DataTable (antd adapter, freeze) → ResponsiveDataTable.
+  const columns: ResponsiveTableColumn<PvAdminRule>[] = [
     {
-      title: "Ngành nghề",
-      dataIndex: "industry_name",
-      sorter: (a, b) =>
-        (a.industry_name ?? "").localeCompare(b.industry_name ?? "", "vi"),
+      key: "industry_name",
+      header: "Ngành nghề",
+      sortAccessor: (row) => row.industry_name ?? "",
+      render: (row) => row.industry_name ?? "",
     },
     {
-      title: "Mức ưu tiên",
-      dataIndex: "priority",
+      key: "priority",
+      header: "Mức ưu tiên",
       align: "right",
       sortType: "value",
-      sorter: (a, b) => a.priority - b.priority,
+      sortAccessor: (row) => row.priority,
+      render: (row) => row.priority,
     },
     {
-      title: "Điều kiện áp dụng",
       key: "selector",
-      sorter: (a, b) =>
-        ruleSelectorSortKey(a, tagNameById).localeCompare(
-          ruleSelectorSortKey(b, tagNameById),
-          "vi",
-        ),
-      render: (_, row) =>
+      header: "Điều kiện áp dụng",
+      sortAccessor: (row) => ruleSelectorSortKey(row, tagNameById),
+      render: (row) =>
         row.sku_id ? (
           <>
             <UiStatusBadge tone="neutral" label="SKU" /> {row.sku_id}
@@ -1246,33 +1235,15 @@ function PvRuleTab({
         ),
     },
     {
-      title: "Trạng thái",
-      dataIndex: "status",
+      key: "status",
+      header: "Trạng thái",
       sortType: "value",
-      sorter: (a, b) => a.status.localeCompare(b.status),
-      render: (status: string) => (
+      sortAccessor: (row) => row.status,
+      render: (row) => (
         <UiStatusBadge
-          tone={status === "ACTIVE" ? "success" : "neutral"}
-          label={masterStatusLabel(status)}
+          tone={row.status === "ACTIVE" ? "success" : "neutral"}
+          label={masterStatusLabel(row.status)}
         />
-      ),
-    },
-    {
-      title: "",
-      key: "actions",
-      render: (_, row) => (
-        <Stack direction="row" spacing={1}>
-          <ActionButton kind="view" onClick={() => setViewing(row)}>
-            Xem
-          </ActionButton>
-          <ActionButton
-            kind="edit"
-            disabled={!canManage}
-            onClick={() => openForm(row)}
-          >
-            Sửa
-          </ActionButton>
-        </Stack>
       ),
     },
   ];
@@ -1311,23 +1282,31 @@ function PvRuleTab({
           ]}
         />
       </FilterBar>
-      <DataTable<PvAdminRule>
-        rowKey="id"
-        size="small"
-        scroll={{ x: "max-content" }}
-        dataSource={filteredRows}
-        rowSelection={{
-          type: "checkbox",
-          selectedRowKeys,
-          onChange: setSelectedRowKeys,
-        }}
-        locale={{
-          emptyText:
-            search.trim() || statusFilter !== "ALL"
-              ? "Không có kết quả phù hợp."
-              : "Chưa có quy tắc gợi ý nào.",
-        }}
+      <ResponsiveDataTable<PvAdminRule>
+        rows={filteredRows}
+        rowKey={(row) => row.id}
         columns={columns}
+        rowSelection={rowSelection}
+        selectionLabel={(row) => `Chọn quy tắc ${row.id}`}
+        emptyText={
+          search.trim() || statusFilter !== "ALL"
+            ? "Không có kết quả phù hợp."
+            : "Chưa có quy tắc gợi ý nào."
+        }
+        renderRowActions={(row) => (
+          <Stack direction="row" spacing={1}>
+            <ActionButton kind="view" onClick={() => setViewing(row)}>
+              Xem
+            </ActionButton>
+            <ActionButton
+              kind="edit"
+              disabled={!canManage}
+              onClick={() => openForm(row)}
+            >
+              Sửa
+            </ActionButton>
+          </Stack>
+        )}
       />
 
       <UiDialog

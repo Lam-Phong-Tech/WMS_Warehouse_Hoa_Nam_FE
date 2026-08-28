@@ -13,7 +13,7 @@ import type { RowSelectionState } from "@/shared/hooks/useRowSelection";
 import { SortableTh } from "./SortableTh";
 import { useClientSort } from "./useClientSort";
 import type { ClientSortState, SortAccessor } from "./useClientSort";
-import type { SortWordingType } from "./useSortTooltipColumns";
+import type { SortWordingType } from "./useClientSort";
 import { ActionButton } from "@/shared/components/actions";
 
 export interface ResponsiveTableColumn<T> {

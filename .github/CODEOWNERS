@@ -1,0 +1,19 @@
+# CODEOWNERS — Vuexy design-system governance (Part 5).
+# Thay đổi ở các đường dẫn dưới đây bắt buộc review của owner design system
+# (đổi handle/team bên dưới khi tổ chức có team slug chính thức, vd
+# @Lam-Phong-Tech/fe-design-system).
+
+# Nguồn token + theme adapter + foundation component — trái tim design system.
+/src/shared/ui/                                @quangntpk
+
+# Guard prevention + baseline allowlist — nới lỏng phải qua review.
+/scripts/check-ui-*.mjs                        @quangntpk
+/scripts/ui-guards-lib.mjs                     @quangntpk
+/docs/ui/vuexy-sync/allowlists/                @quangntpk
+
+# Golden visual baseline — update phải kèm disposition (xem 29-ci-prevention-controls.md).
+/e2e/ui-foundation.spec.ts-snapshots/          @quangntpk
+
+# Composition root CSS entrypoint.
+/src/main.tsx                                  @quangntpk
+/src/index.css                                 @quangntpk

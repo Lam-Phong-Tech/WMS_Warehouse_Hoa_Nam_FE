@@ -29,7 +29,7 @@ import { FormInput, FormSelect } from "@/shared/components/forms";
 | Nhóm (thư mục)                 | Component                                                                                                                                                               |
 | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Layout (`layout/`)             | `AppShell`, `Sidebar`, `Header`, `Breadcrumb`, `PageHeader`                                                                                                             |
-| Forms (`forms/`)               | `FormInput`/`TextField`, `FormSelect`/`SelectField`, `FormDatePicker`/`DateField`, `FormNumber`, `FormSwitch`, `FormTextarea`, `FieldError`/`FormError`, `SubmitButton` |
+| Forms (`forms/`)               | Đã chuyển hết sang `@/shared/ui/forms` (Part 3–5); còn lại `ScanInput`/`CameraScanModal` (adapter scan-flow theo Annex D) |
 | Data display (`data-display/`) | `DataTable`, `StatusBadge`, `EmptyState`, `LoadingState`                                                                                                                |
 | Feedback (`feedback/`)         | `Modal`, `FormModal`, `ConfirmButton`, `ConfirmDialog`, `Alert`, `ApiErrorAlert`, `FieldError`, `ErrorBoundary`, `Loading`                                              |
 | Navigation (`navigation/`)     | `MenuItem`, `Pagination`, `Tabs`                                                                                                                                        |

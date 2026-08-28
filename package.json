@@ -79,7 +79,7 @@
     "ui:tokens": "node scripts/check-ui-tokens.mjs",
     "ui:styles": "node scripts/check-ui-styles.mjs",
     "ui:foundation": "vitest run src/test/ui-foundation",
-    "ui:guards": "node scripts/check-ui-architecture.mjs && node scripts/check-ui-tokens.mjs && node scripts/check-ui-styles.mjs && node scripts/check-ui-architecture.mjs --self-test && node scripts/check-ui-tokens.mjs --self-test && node scripts/check-ui-styles.mjs --self-test",
+    "ui:guards": "node scripts/check-ui-architecture.mjs && node scripts/check-ui-tokens.mjs && node scripts/check-ui-styles.mjs && node scripts/check-ui-architecture.mjs --self-test && node scripts/check-ui-tokens.mjs --self-test && node scripts/check-ui-styles.mjs --self-test && node scripts/check-ui-dependencies.mjs && node scripts/check-ui-dependencies.mjs --self-test",
     "prepare": "husky",
     "postinstall": "patch-package",
     "verify:wwhn-242": "node scripts/verify-wwhn-242-closure.mjs",
@@ -89,7 +89,13 @@
     "wwhn-237:verify": "node scripts/verify-wwhn-237-closure.mjs",
     "wwhn-258:exact-sha": "node scripts/run-wwhn-258-flow06-exact-sha.mjs",
     "wwhn-258:verify": "node scripts/verify-wwhn-258-closure.mjs",
-    "test:e2e:wwhn-258": "playwright test e2e/wwhn-258-report-qa2.spec.ts --project=chromium"
+    "test:e2e:wwhn-258": "playwright test e2e/wwhn-258-report-qa2.spec.ts --project=chromium",
+    "ui:dependencies": "node scripts/check-ui-dependencies.mjs",
+    "ui:components": "vitest run src/test/ui-foundation src/shared/ui src/shared/constants/ui-state.test.tsx",
+    "ui:visual": "playwright test e2e/ui-foundation.spec.ts --project=chromium",
+    "ui:responsive": "playwright test e2e/responsive-sweep.spec.ts --project=chromium",
+    "ui:a11y": "playwright test e2e/wwhn-274-a11y-browser-matrix.spec.ts --project=wwhn-274-desktop-chromium --project=wwhn-274-chrome-android --project=wwhn-274-safari-ios",
+    "ui:full-gate": "yarn ui:guards && yarn ui:components && yarn ui:visual && yarn ui:responsive && yarn ui:a11y"
   },
   "resolutions": {
     "nanoid": "^3.3.18",
@@ -105,7 +111,6 @@
     ]
   },
   "dependencies": {
-    "@ant-design/icons": "^6.2.5",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@flaticon/flaticon-uicons": "^3.3.1",
@@ -118,7 +123,6 @@
     "dayjs": "^1.11.21",
     "js-cookie": "^3.0.8",
     "laravel-echo": "^2.4.0",
-    "lodash-es": "^4.17.21",
     "pusher-js": "^8.6.0",
     "react": "^19.2.6",
     "react-apexcharts": "^2.1.1",
@@ -132,7 +136,6 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
-    "@emotion/babel-plugin": "^11.11.0",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.61.1",
     "@testing-library/dom": "^10.4.1",
@@ -140,7 +143,6 @@
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
     "@types/js-cookie": "^3.0.6",
-    "@types/lodash-es": "^4.17.12",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
@@ -158,7 +160,6 @@
     "patch-package": "^8.0.1",
     "playwright": "^1.61.1",
     "prettier": "^3.8.4",
-    "puppeteer": "^25.3.0",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.59.2",
     "vite": "^8.1.5",

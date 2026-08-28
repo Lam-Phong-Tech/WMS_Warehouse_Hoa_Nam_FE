@@ -40,3 +40,15 @@ Shell Vuexy (sidebar sáng ~260px) thuộc Part 3 Phase C (đi cùng gỡ `?scre
 - (+) 36 provider re-wrap biến mất; theme drift 35-vs-36px sẽ được dọn ở Part 3 (10 sx `height:35` nằm trong hex/sx baseline, ratchet).
 - (−) Diện mạo antd cũ đổi theo token mới (chủ đích của retheme); mọi khác biệt thị giác là expected-change, được soi bằng catalog + E2E responsive hiện có.
 - (−) Legacy CSS layers CHƯA xoá (Part 3 Phase C theo 09-remediation) — nhưng đã bị "trói" (alias về token, ratchet `!important`, cấm file/lớp mới).
+
+---
+
+## Addendum Part 4–5 (2026-08-28) — trạng thái cuối chương trình
+
+Cập nhật hiện trạng so với các ADR gốc (không đảo quyết định nào):
+
+- **ADR-P2-04/P2-05 HOÀN TẤT VÒNG ĐỜI**: 3 shim (`app/theme.ts`, `app/mui-theme.ts`, `app/layouts/layout.styles.ts`) và `LEGACY_SHELL` đã XOÁ (consumer=0, Part 4); 4 lớp CSS wireframe đã XOÁ, 5 lớp còn lại (page-normalize/source-screen/responsive/motion/index) 100% `var(--wms-*)` và nằm trong CSS_MANIFEST 7 lớp.
+- **ADR-P2-06 MỞ RỘNG (Part 5)**: bộ guard thành 9 lệnh — thêm `ui:components`, `ui:visual`, `ui:responsive`, `ui:a11y`, `ui:dependencies` (guard MỚI: cấm UI stack/icon-engine thứ hai + bắt runtime dep chết, có `--self-test`) và `ui:full-gate`. Tất cả nối vào CI (`ci.yml` + `assert-ci-gates.mjs`); negative-proof 10 ca trong `negative-tests-part5.txt`. Governance: `29-ci-prevention-controls.md` + `.github/CODEOWNERS`.
+- **ADR-P2-07 MỞ RỘNG**: foundation đủ bộ Part 3 (forms/layout/overlay) + Part 4 (UiSelect/UiDatePicker/primitives mở rộng) + hợp đồng WWHN-268 phát `data-ui-state` ngay trên tầng canonical (UiStateSurface/UiConfirmDialog — test `ui-state-canonical`).
+- **Adapter surface cuối**: `src/shared/components/**` còn 24 file trong allowlist ratchet; DataTable/PageSizeSelector/useSortTooltipColumns/SubmitButton/AppBreadcrumb đã xoá (consumer=0); nhóm deprecated còn consumer bị đóng băng chỉ-giảm (owner/deadline trong `deprecated-components.json`). `@ant-design/icons`, `lodash-es`, `puppeteer`, `@emotion/babel-plugin` đã gỡ khỏi package.json (doc 24).
+- **antd remnant CÓ CHỦ ĐÍCH**: ScanInput/CameraScanModal (Annex D scan-focus) + DatePicker (dayjs contract) + ConfigProvider trong AppThemeProvider — cấp token qua antd-adapter; không coi là duplicate stack.

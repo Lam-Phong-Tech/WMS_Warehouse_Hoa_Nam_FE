@@ -15,7 +15,7 @@
   },
   "route": "/login",
   "finalUrl": "http://127.0.0.1:5173/login",
-  "timestamp": "2026-08-28T03:04:39.569Z",
+  "timestamp": "2026-08-28T04:19:21.558Z",
   "screenshotFilename": "WWHN-274__responsive-login-desktop__anonymous__1440x900.png",
   "assertions": [
     "Required viewport 1440x900 rendered",

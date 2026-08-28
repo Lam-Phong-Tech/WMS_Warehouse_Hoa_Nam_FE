@@ -1,8 +1,8 @@
 {
   "meta": {
     "owner": "FE1 Team",
-    "reason": "Part 3: các compatibility adapter có bản canonical cạnh tranh — consumer bị ĐÓNG BĂNG (chỉ được GIẢM khi migrate ở Part 4, không thêm mới). Enforce: src/test/ui-foundation/deprecated-components.test.ts.",
-    "deadline": "Part 4 (Full WebApp Migration) — mục tiêu mọi danh sách về rỗng rồi xoá component",
+    "reason": "Part 3 freeze — Part 5: DataTable/PageSizeSelector/useSortTooltipColumns/SubmitButton/AppBreadcrumb đã XOÁ (consumer=0). Các adapter còn lại GIỮ ĐÓNG BĂNG (chỉ được GIẢM consumer) tới khi antd remnant được gỡ. Enforce: src/test/ui-foundation/deprecated-components.test.ts.",
+    "deadline": "Bảo trì sau chương trình Vuexy-sync — xoá nốt khi antd remnant (ScanInput/DatePicker) được thay",
     "generated_by": "grep import theo tên, 2026-08-28"
   },
   "components": {
@@ -21,16 +21,6 @@
         "src/modules/reports/pages/Gd1ScopeReports.tsx",
         "src/modules/reverse/pages/ReversalPage.tsx"
       ]
-    },
-    "DataTable": {
-      "canonical": "ResponsiveDataTable (@/shared/components) — antd Table adapter freeze",
-      "consumers": [
-        "src/modules/pv/pages/PvAdminPage.tsx"
-      ]
-    },
-    "useSortTooltipColumns": {
-      "canonical": "SortableTh/useClientSort (family ResponsiveDataTable)",
-      "consumers": []
     },
     "PageHeader": {
       "canonical": "UiPageContainer (@/shared/ui)",
@@ -65,14 +55,6 @@
       "consumers": [
         "src/modules/reports/pages/AlignedReportsPage.tsx"
       ]
-    },
-    "SubmitButton": {
-      "canonical": "UiButton type=submit / ActionButton",
-      "consumers": []
-    },
-    "PageSizeSelector": {
-      "canonical": "UiPagination — internal-only của DataTable",
-      "consumers": []
     }
   }
 }

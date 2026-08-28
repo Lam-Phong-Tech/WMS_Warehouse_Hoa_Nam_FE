@@ -67,6 +67,13 @@ jobs:
         continue-on-error: true
         run: npm run typecheck
 
+      # Part 5 Vuexy-sync prevention: 4 guard tĩnh (architecture/tokens/styles/
+      # dependencies) + self-test fixture vi phạm của từng guard.
+      - name: UI design-system guards (architecture/tokens/styles/dependencies)
+        id: ui_guards
+        continue-on-error: true
+        run: npm run ui:guards
+
       - name: Unit and integration tests
         id: unit_tests
         continue-on-error: true
@@ -190,6 +197,26 @@ jobs:
         continue-on-error: true
         run: npx playwright install --with-deps chromium
 
+      # Part 5 Vuexy-sync prevention: golden visual + computed-style contract
+      # của Foundation Catalog, ma trận a11y 3 engine và sweep responsive.
+      - name: UI visual goldens (Foundation Catalog)
+        id: ui_visual
+        if: ${{ always() && steps.playwright_install.outcome == 'success' }}
+        continue-on-error: true
+        run: npm run ui:visual
+
+      - name: UI a11y browser/device matrix
+        id: ui_a11y
+        if: ${{ always() && steps.playwright_install.outcome == 'success' }}
+        continue-on-error: true
+        run: npm run ui:a11y
+
+      - name: UI responsive sweep (all routes x viewports)
+        id: ui_responsive
+        if: ${{ always() && steps.playwright_install.outcome == 'success' }}
+        continue-on-error: true
+        run: npm run ui:responsive
+
       - name: Capture responsive auth/RBAC/API-error evidence
         id: runtime_evidence
         if: ${{ always() && steps.playwright_install.outcome == 'success' }}
@@ -238,6 +265,7 @@ jobs:
           FORMAT_OUTCOME: ${{ steps.format.outcome }}
           LINT_OUTCOME: ${{ steps.lint.outcome }}
           TYPECHECK_OUTCOME: ${{ steps.typecheck.outcome }}
+          UI_GUARDS_OUTCOME: ${{ steps.ui_guards.outcome }}
           UNIT_TEST_OUTCOME: ${{ steps.unit_tests.outcome }}
           ENV_CONTRACT_OUTCOME: ${{ steps.env_contract.outcome }}
           UAT_CONTRACT_OUTCOME: ${{ steps.uat_contract.outcome }}
@@ -257,6 +285,9 @@ jobs:
           API_MAPPING_OUTCOME: ${{ steps.api_mapping.outcome }}
           WWHN_296_OUTCOME: ${{ steps.wwhn_296.outcome }}
           PLAYWRIGHT_INSTALL_OUTCOME: ${{ steps.playwright_install.outcome }}
+          UI_VISUAL_OUTCOME: ${{ steps.ui_visual.outcome }}
+          UI_A11Y_OUTCOME: ${{ steps.ui_a11y.outcome }}
+          UI_RESPONSIVE_OUTCOME: ${{ steps.ui_responsive.outcome }}
           RUNTIME_EVIDENCE_OUTCOME: ${{ steps.runtime_evidence.outcome }}
           WWHN_144_E2E_OUTCOME: ${{ steps.wwhn_144_e2e.outcome }}
           WWHN_175_E2E_OUTCOME: ${{ steps.wwhn_175_e2e.outcome }}
@@ -298,6 +329,7 @@ jobs:
           FORMAT_OUTCOME: ${{ steps.format.outcome }}
           LINT_OUTCOME: ${{ steps.lint.outcome }}
           TYPECHECK_OUTCOME: ${{ steps.typecheck.outcome }}
+          UI_GUARDS_OUTCOME: ${{ steps.ui_guards.outcome }}
           UNIT_TEST_OUTCOME: ${{ steps.unit_tests.outcome }}
           ENV_CONTRACT_OUTCOME: ${{ steps.env_contract.outcome }}
           UAT_CONTRACT_OUTCOME: ${{ steps.uat_contract.outcome }}
@@ -317,6 +349,9 @@ jobs:
           API_MAPPING_OUTCOME: ${{ steps.api_mapping.outcome }}
           WWHN_296_OUTCOME: ${{ steps.wwhn_296.outcome }}
           PLAYWRIGHT_INSTALL_OUTCOME: ${{ steps.playwright_install.outcome }}
+          UI_VISUAL_OUTCOME: ${{ steps.ui_visual.outcome }}
+          UI_A11Y_OUTCOME: ${{ steps.ui_a11y.outcome }}
+          UI_RESPONSIVE_OUTCOME: ${{ steps.ui_responsive.outcome }}
           RUNTIME_EVIDENCE_OUTCOME: ${{ steps.runtime_evidence.outcome }}
           WWHN_144_E2E_OUTCOME: ${{ steps.wwhn_144_e2e.outcome }}
           WWHN_175_E2E_OUTCOME: ${{ steps.wwhn_175_e2e.outcome }}

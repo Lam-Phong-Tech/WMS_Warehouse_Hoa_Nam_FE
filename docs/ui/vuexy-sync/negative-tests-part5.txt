@@ -1,0 +1,56 @@
+=== NEGATIVE TESTS PART 5 — f644881 working-tree ===
+
+--- [1] SELF-TESTS (fixture vi phạm nội bộ của từng guard) ---
+[ui:architecture --self-test] PASS (7 vi phạm tổng hợp được bắt, kỳ vọng >=6/7)
+[ui:tokens --self-test] PASS (5 vi phạm tổng hợp được bắt)
+[ui:styles --self-test] PASS (4 vi phạm tổng hợp được bắt)
+✔ self-test: fixture sạch phải XANH
+✔ self-test: fixture duplicate UI stack (react-bootstrap) phải ĐỎ
+✔ self-test: fixture dep chết (left-pad không import) phải ĐỎ
+
+--- [2] LIVE: feature import antd truc tiep -> ui:architecture PHAI DO ---
+[ui:architecture] FAIL — 1 vi phạm:
+  - src/modules/dashboard/__negative-fixture.tsx: import trực tiếp UI engine (antd) — file mới phải dùng @/shared/ui (hoặc xin allowlist có owner/deadline)
+>>> EXPECTED FAIL: OK
+
+--- [3] LIVE: feature import @mui/material truc tiep -> ui:architecture PHAI DO ---
+[ui:architecture] FAIL — 1 vi phạm:
+  - src/modules/dashboard/__negative-fixture.tsx: import trực tiếp UI engine (@mui/material/Box) — file mới phải dùng @/shared/ui (hoặc xin allowlist có owner/deadline)
+>>> EXPECTED FAIL: OK
+
+--- [4] LIVE: hard-code hex + font cam -> ui:tokens PHAI DO ---
+[ui:tokens] FAIL — 1 vi phạm:
+  - src/modules/dashboard/__negative-fixture.tsx: 1 hex literal (baseline 0) — không thêm literal mới, dùng token
+>>> EXPECTED FAIL: OK
+
+--- [5] LIVE: ThemeProvider thu hai ngoai composition root -> ui:architecture PHAI DO ---
+[ui:architecture] FAIL — 1 vi phạm:
+  - src/modules/dashboard/__negative-fixture.tsx: mount <ThemeProvider> ngoài composition root (src/shared/ui/theme/AppThemeProvider.tsx)
+>>> EXPECTED FAIL: OK
+
+--- [6] LIVE: import CSS ngoai entrypoint -> ui:styles PHAI DO ---
+[ui:styles] FAIL — 1 vi phạm:
+  - src/modules/dashboard/__negative-fixture.tsx: import "./rogue.css" — CSS global chỉ qua src/main.tsx; CSS cục bộ phải có trong allowlist css-baseline.json
+>>> EXPECTED FAIL: OK
+
+--- [7] LIVE: them dependency UI trung lap vao package.json -> ui:dependencies PHAI DO ---
+[ui:dependencies] FAIL — 2 vi phạm:
+  - package.json: "react-bootstrap" là dependency UI trùng lặp bị cấm — UI stack thứ hai ngoài MUI
+  - package.json: runtime dependency "react-bootstrap" không có import nào trong src/ — dep chết, gỡ đi hoặc khai INDIRECT_RUNTIME_DEPS kèm lý do
+>>> EXPECTED FAIL: OK
+
+--- [8] LIVE: go hook data-ui-state khoi UiStateSurface -> ui:components PHAI DO ---
+>>> EXPECTED FAIL: OK
+ ❯ src/test/ui-foundation/ui-state-canonical.test.tsx (2 tests | 1 failed) 185ms
+ FAIL  src/test/ui-foundation/ui-state-canonical.test.tsx > WWHN-268 hooks trên foundation canonical > UiStateSurface phát data-ui-state theo kind (no-permission → permission-denied)
+AssertionError: UiStateSurface kind="loading" phải phát data-ui-state="loading": expected null not to be null
+
+--- [9] DON FIXTURE — tat ca guard phai XANH lai ---
+[ui:architecture] PASS
+[ui:tokens] PASS
+[ui:styles] PASS
+[ui:dependencies] PASS
+      Tests  2 passed (2)
+
+--- [10] VISUAL DRIFT (tham chieu bang chung trong-session) ---
+Golden ui-foundation-catalog: threshold maxDiffPixelRatio=0.02; trong integration Part 4, drift thuc te (container 906->936px) lam 2 golden FAIL voi ratio 0.04 — log: 'Expected an image 906px by 4804px, received 936px by 4823px. 148038 pixels (ratio 0.04...) are different' (doc 22 ledger). Chung minh threshold hoat dong: chi duoc update golden sau khi XEM anh va ghi disposition.

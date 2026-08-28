@@ -1,7 +1,7 @@
 import { Tooltip } from "@mui/material";
 import { renderSortIcon } from "./renderSortIcon";
 import type { ClientSortState } from "./useClientSort";
-import type { SortWordingType } from "./useSortTooltipColumns";
+import type { SortWordingType } from "./useClientSort";
 
 export interface SortableThProps {
   /** Nhãn cột hiển thị, cũng dùng để dựng câu tooltip. */

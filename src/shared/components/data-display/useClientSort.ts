@@ -1,5 +1,11 @@
 import { useMemo, useState } from "react";
-import type { SortWordingType } from "./useSortTooltipColumns";
+
+/**
+ * Cột chữ (mã, tên, email...) sort theo alphabet → tooltip/aria nói "A → Z";
+ * cột số/ngày (`'value'`) → "tăng dần"/"giảm dần". (Chuyển về đây từ
+ * useSortTooltipColumns.ts khi adapter antd Table bị xoá ở Part 5.)
+ */
+export type SortWordingType = "text" | "value";
 
 export type SortDirection = "asc" | "desc" | undefined;
 
@@ -68,5 +74,3 @@ export function useClientSort<T>(
 
   return { sortedRows, sortState, requestSort };
 }
-
-export type { SortWordingType };
