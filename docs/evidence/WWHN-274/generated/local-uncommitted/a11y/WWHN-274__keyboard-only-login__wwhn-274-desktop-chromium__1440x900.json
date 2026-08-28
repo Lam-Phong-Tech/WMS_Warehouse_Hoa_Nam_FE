@@ -7,7 +7,7 @@
   "scenario": "keyboard-only-login",
   "result": "PASS",
   "sourceSha": "local-uncommitted",
-  "environment": "local-controlled",
+  "environment": "test",
   "buildVersion": "local-dev",
   "browserProject": "wwhn-274-desktop-chromium",
   "browserMatrixTarget": "Chrome/Edge desktop (Blink/Chromium engine, emulated latest)",
@@ -17,7 +17,7 @@
     "height": 900
   },
   "route": "/login",
-  "timestamp": "2026-08-20T03:10:23.404Z",
+  "timestamp": "2026-08-28T03:16:21.787Z",
   "screenshotFilename": "WWHN-274__keyboard-only-login__wwhn-274-desktop-chromium__1440x900.png",
   "assertions": [
     "Focus khoi tao nam o o nhap dau tien",
@@ -26,8 +26,8 @@
     "Enter tren nut submit kich hoat validation va khong khoa lai nut"
   ],
   "observed": {
-    "blurredFocusStyle": "none|3px|none|rgb(216, 223, 235)",
-    "focusedFocusStyle": "none|1px|rgba(37, 99, 235, 0.08) 0px 0px 0px 1.96693px|rgb(40, 101, 235)"
+    "blurredFocusStyle": "none|3px|none|rgba(47, 43, 61, 0.22)|1px",
+    "focusedFocusStyle": "none|3px|none|rgba(110, 99, 227, 0.8)|1px"
   },
   "truthBoundary": "Emulation-level browser/device evidence + basic a11y. Khong phai real-device matrix cua QA1 (WWHN-275) va khong phai audit WCAG day du."
 }

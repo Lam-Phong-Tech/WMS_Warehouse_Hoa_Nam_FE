@@ -6,31 +6,20 @@ import {
   type ReactNode,
 } from "react";
 import {
-  Accordion,
-  AccordionDetails,
-  AccordionSummary,
-  Alert,
   Box,
-  Chip,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  FormControl,
-  FormHelperText,
+  Collapse,
   Grid,
-  InputLabel,
   MenuItem,
-  Select,
   Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableRow,
-  TextField,
-  Typography,
-} from "@mui/material";
+  UiAlert,
+  UiDescriptions,
+  UiDialog,
+  UiIcon,
+  UiSelect,
+  UiStatusBadge,
+  UiTextField,
+  type UiStatusTone,
+} from "@/shared/ui";
 import {
   useCreateIamUser,
   useGrantIamUserPermission,
@@ -75,30 +64,6 @@ import { useAuthStore } from "@/shared/store/auth.store";
 import { formatDate, formatDateTime } from "@/shared/utils/format-date";
 import { guardBackdropClose } from "@/shared/utils/dialogGuard";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
-
-/**
- * Toolbar filter cần nhỏ gọn hơn field trong form (theo yêu cầu người dùng) —
- * override padding cục bộ, tách khỏi padding mặc định trong theme dùng cho
- * TextField/Select trong Dialog.
- */
-const TOOLBAR_CONTROL_SX = {
-  // Ép chiều cao tuyệt đối để Select (có icon mũi tên) và TextField luôn cao
-  // bằng nhau. Lưu ý: với TextField, sx mặc định áp vào .MuiFormControl-root
-  // (khung bọc ngoài) chứ KHÔNG phải khung viền thực sự nhìn thấy
-  // (.MuiOutlinedInput-root) — nên phải khai riêng bằng selector con "&
-  // .MuiOutlinedInput-root". Với Select (không có FormControl bọc ngoài), gốc
-  // sx CHÍNH LÀ khung viền nên dùng "&" tự tham chiếu. Khai cả hai để 1 khối
-  // sx dùng chung được cho mọi loại control trong toolbar.
-  "&, & .MuiOutlinedInput-root": {
-    height: 35,
-  },
-  "& .MuiSelect-select, & .MuiInputBase-input": {
-    paddingTop: "8px !important",
-    paddingBottom: "8px !important",
-    fontSize: "13.5px !important",
-    boxSizing: "border-box",
-  },
-};
 
 const STATUS_OPTIONS: Array<{ value: IamUserStatus; label: string }> = [
   { value: "ACTIVE", label: IAM_USER_STATUS_LABELS.ACTIVE },
@@ -164,10 +129,8 @@ function statusClass(status: IamUserStatus) {
   return "pill warn-pill";
 }
 
-/** Màu Chip trạng thái dùng trong Dialog MUI (thay class .pill — mất tác dụng vì Dialog render qua portal, ngoài phạm vi CSS .hn-mvp-source-screen). */
-function statusChipColor(
-  status: IamUserStatus,
-): "success" | "error" | "warning" {
+/** Tông màu UiStatusBadge cho trạng thái người dùng trong Dialog chi tiết. */
+function statusBadgeTone(status: IamUserStatus): UiStatusTone {
   if (status === "ACTIVE") return "success";
   if (status === "LOCKED") return "error";
   return "warning";
@@ -200,42 +163,78 @@ function formatLastLogin(value?: string | null) {
   return value ? formatDateTime(value) : "Chưa đăng nhập";
 }
 
-/** Cặp nhãn/giá trị dùng trong Dialog "Chi tiết người dùng" (thay antd Descriptions.Item). */
-function DetailField({ label, value }: { label: string; value: ReactNode }) {
+/** Ghi chú phụ (caption) dưới một control trong Dialog. */
+function FieldHint({
+  children,
+  mt = 0.75,
+}: {
+  children: ReactNode;
+  mt?: number;
+}) {
   return (
-    <Grid size={{ xs: 12, md: 6 }}>
-      <Typography
-        variant="caption"
-        color="text.secondary"
-        sx={{ display: "block" }}
-      >
-        {label}
-      </Typography>
-      <Typography variant="body2" component="div">
-        {value}
-      </Typography>
-    </Grid>
+    <Box sx={{ mt, fontSize: 12, color: "text.secondary" }}>{children}</Box>
   );
 }
 
-/** Icon mở rộng cho Accordion — SVG cục bộ, tránh thêm dependency @mui/icons-material. */
-function ChevronDownIcon() {
+/** Tiêu đề khối trong Dialog (thay Typography subtitle2). */
+function SectionTitle({
+  children,
+  mb = 2,
+}: {
+  children: ReactNode;
+  mb?: number;
+}) {
   return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden="true"
+    <Box sx={{ fontWeight: 700, fontSize: 14, mb, color: "text.primary" }}>
+      {children}
+    </Box>
+  );
+}
+
+/**
+ * Bảng thuần trong Dialog (thay MUI Table size="small") — Dialog render qua
+ * portal, ngoài phạm vi CSS `.hn-mvp-source-screen`, nên style tự đủ qua sx.
+ */
+function DialogTable({
+  headers,
+  lastColRight = false,
+  children,
+}: {
+  headers: string[];
+  lastColRight?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <Box
+      component="table"
+      sx={(theme) => ({
+        width: "100%",
+        borderCollapse: "collapse",
+        fontSize: 13.5,
+        "& th, & td": {
+          textAlign: "left",
+          padding: "8px 12px",
+          borderBottom: `1px solid ${theme.palette.divider}`,
+          verticalAlign: "top",
+        },
+        "& th": { fontWeight: 600, color: "text.secondary" },
+        "& tbody tr:last-of-type td": { borderBottom: "none" },
+        ...(lastColRight
+          ? {
+              "& th:last-of-type, & td:last-of-type": { textAlign: "right" },
+            }
+          : {}),
+      })}
     >
-      <path
-        d="M6 9l6 6 6-6"
-        stroke="currentColor"
-        strokeWidth={2}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
+      <thead>
+        <tr>
+          {headers.map((header) => (
+            <th key={header}>{header}</th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>{children}</tbody>
+    </Box>
   );
 }
 
@@ -274,6 +273,8 @@ export function IamUserScreen({
   >(null);
   const [revokeReason, setRevokeReason] = useState("");
   const [revokeError, setRevokeError] = useState("");
+  /** Khối "Quyền hiệu lực" trong Dialog chi tiết (thay MUI Accordion). */
+  const [isEffectiveOpen, setIsEffectiveOpen] = useState(false);
 
   const usersQuery = useIamUsers({
     keyword: search.trim(),
@@ -528,6 +529,7 @@ export function IamUserScreen({
   };
 
   const openView = (user: IamUser) => {
+    setIsEffectiveOpen(false);
     setViewingUser(user);
   };
 
@@ -690,7 +692,7 @@ export function IamUserScreen({
   return (
     <div className="hn-mvp-source-screen" data-mvp-screen="IAM-01">
       <div className="toolbar">
-        <TextField
+        <UiTextField
           value={search}
           onChange={(event) => {
             setSearch(event.target.value);
@@ -698,86 +700,65 @@ export function IamUserScreen({
           }}
           placeholder="Tìm tên / tên đăng nhập"
           slotProps={{ htmlInput: { "aria-label": "Tìm người dùng" } }}
-          sx={{ minWidth: 190, ...TOOLBAR_CONTROL_SX }}
+          sx={{ minWidth: 190 }}
         />
-        <Select
-          displayEmpty
+        <UiSelect
           value={roleFilter}
-          onChange={(event) => {
-            setRoleFilter(event.target.value);
+          onChange={(value) => {
+            setRoleFilter(value);
             setPage(1);
           }}
           disabled={rolesQuery.isLoading}
-          inputProps={{ "aria-label": "Lọc theo vai trò" }}
-          sx={{ minWidth: 128, ...TOOLBAR_CONTROL_SX }}
-        >
-          <MenuItem value="">Vai trò: Tất cả</MenuItem>
-          {roles.map((role) => (
-            <MenuItem key={role.role_id} value={role.role_id}>
-              {role.role_name}
-            </MenuItem>
-          ))}
-        </Select>
-        <Select
-          displayEmpty
+          aria-label="Lọc theo vai trò"
+          placeholder="Vai trò: Tất cả"
+          minWidth={128}
+          options={roles.map((role) => ({
+            value: role.role_id,
+            label: role.role_name,
+          }))}
+        />
+        <UiSelect
           value={departmentFilter}
-          onChange={(event) => {
-            setDepartmentFilter(event.target.value);
+          onChange={(value) => {
+            setDepartmentFilter(value);
             setPage(1);
           }}
           disabled={departmentsQuery.isLoading}
-          inputProps={{ "aria-label": "Lọc theo phòng ban" }}
-          sx={{ minWidth: 136, ...TOOLBAR_CONTROL_SX }}
-        >
-          <MenuItem value="">Phòng ban: Tất cả</MenuItem>
-          {departments.map((department) => (
-            <MenuItem
-              key={department.department_id}
-              value={department.department_id}
-            >
-              {department.department_name}
-            </MenuItem>
-          ))}
-        </Select>
-        <Select
-          displayEmpty
+          aria-label="Lọc theo phòng ban"
+          placeholder="Phòng ban: Tất cả"
+          minWidth={136}
+          options={departments.map((department) => ({
+            value: department.department_id,
+            label: department.department_name,
+          }))}
+        />
+        <UiSelect
           value={statusFilter}
-          onChange={(event) => {
-            setStatusFilter(event.target.value as IamUserStatus | "");
+          onChange={(value) => {
+            setStatusFilter(value as IamUserStatus | "");
             setPage(1);
           }}
-          inputProps={{ "aria-label": "Lọc theo trạng thái" }}
-          sx={{ minWidth: 128, ...TOOLBAR_CONTROL_SX }}
-        >
-          <MenuItem value="">Trạng thái: Tất cả</MenuItem>
-          {STATUS_OPTIONS.map((status) => (
-            <MenuItem key={status.value} value={status.value}>
-              {status.label}
-            </MenuItem>
-          ))}
-        </Select>
-        <Select
+          aria-label="Lọc theo trạng thái"
+          placeholder="Trạng thái: Tất cả"
+          minWidth={128}
+          options={STATUS_OPTIONS.map((status) => ({
+            value: status.value,
+            label: status.label,
+          }))}
+        />
+        <UiSelect
           value={perPage}
-          onChange={(event) => {
-            setPerPage(Number(event.target.value));
+          onChange={(value) => {
+            setPerPage(Number(value));
             setPage(1);
           }}
-          inputProps={{ "aria-label": "Số dòng mỗi trang" }}
-          sx={{ minWidth: 92, ...TOOLBAR_CONTROL_SX }}
-        >
-          {perPageOptions.map((size) => (
-            <MenuItem key={size} value={size}>
-              {size} / trang
-            </MenuItem>
-          ))}
-        </Select>
-        {/* Tổng số dòng đặt ngay trong toolbar (cạnh bộ lọc/số dòng mỗi trang) để
-         * dễ thấy — thay vì chỉ hiện ở MvpPaginationFooter tít dưới bảng dài. */}
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={{ whiteSpace: "nowrap" }}
-        ></Typography>
+          aria-label="Số dòng mỗi trang"
+          minWidth={92}
+          options={perPageOptions.map((size) => ({
+            value: size,
+            label: `${size} / trang`,
+          }))}
+        />
         <div className="spacer" />
         {canManageUsers ? (
           <ActionButton
@@ -791,22 +772,23 @@ export function IamUserScreen({
       </div>
 
       {listError ? (
-        <Alert
-          severity="error"
-          sx={{ marginBottom: "14px" }}
-          action={
-            <ActionButton kind="refresh" onClick={() => usersQuery.refetch()}>
-              Thử lại
-            </ActionButton>
-          }
-        >
-          {listError}
-        </Alert>
+        <Box sx={{ marginBottom: "14px" }}>
+          <UiAlert
+            tone="error"
+            action={
+              <ActionButton kind="refresh" onClick={() => usersQuery.refetch()}>
+                Thử lại
+              </ActionButton>
+            }
+          >
+            {listError}
+          </UiAlert>
+        </Box>
       ) : null}
       {roleError ? (
-        <Alert severity="error" sx={{ marginBottom: "14px" }}>
-          {roleError}
-        </Alert>
+        <Box sx={{ marginBottom: "14px" }}>
+          <UiAlert tone="error">{roleError}</UiAlert>
+        </Box>
       ) : null}
 
       <div className="table-wrap" aria-busy={usersQuery.isLoading}>
@@ -943,396 +925,26 @@ export function IamUserScreen({
         onChange={setPage}
       />
 
-      <Dialog
+      <UiDialog
         open={isModalOpen}
         onClose={guardBackdropClose(closeModal)}
         maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle sx={{ pr: 6, position: "relative" }}>
-          {editingUser ? "Sửa người dùng" : "Thêm người dùng"}
-          <ActionIconButton
-            kind="close"
-            label="Đóng"
-            onClick={closeModal}
-            disabled={isSaving}
-            sx={{ position: "absolute", right: 10, top: 8 }}
-          />
-        </DialogTitle>
-        <form onSubmit={handleSubmit} noValidate>
-          <DialogContent dividers>
-            {formError ? (
-              <Alert severity="error" sx={{ marginBottom: "14px" }}>
-                {formError}
-              </Alert>
-            ) : null}
-
-            <Grid container spacing={2}>
-              <Grid size={{ xs: 12, md: 6 }}>
-                <Box
-                  sx={{
-                    border: "1px solid",
-                    borderColor: "divider",
-                    borderRadius: 2,
-                    p: 2,
-                    height: "100%",
-                  }}
-                >
-                  <Typography
-                    variant="subtitle2"
-                    sx={{ fontWeight: 700, mb: 2 }}
-                  >
-                    Thông tin tài khoản
-                  </Typography>
-                  <Stack spacing={2}>
-                    <TextField
-                      id="iam-display-name"
-                      label="Họ và tên"
-                      required
-                      fullWidth
-                      size="small"
-                      value={formState.displayName}
-                      onChange={(event) =>
-                        updateField("displayName", event.target.value)
-                      }
-                      autoFocus
-                      disabled={isSaving}
-                      error={Boolean(fieldErrors.displayName)}
-                      helperText={fieldErrors.displayName}
-                    />
-                    <TextField
-                      id="iam-username"
-                      label="Tên đăng nhập"
-                      required
-                      fullWidth
-                      size="small"
-                      value={formState.username}
-                      onChange={(event) =>
-                        updateField("username", event.target.value)
-                      }
-                      autoComplete="off"
-                      disabled={isSaving}
-                      error={Boolean(fieldErrors.username)}
-                      helperText={fieldErrors.username}
-                    />
-                    <TextField
-                      id="iam-phone"
-                      label="Số điện thoại"
-                      fullWidth
-                      size="small"
-                      value={formState.phone}
-                      onChange={(event) =>
-                        updateField(
-                          "phone",
-                          event.target.value.replace(/\D/g, "").slice(0, 10),
-                        )
-                      }
-                      disabled={isSaving}
-                      error={Boolean(fieldErrors.phone)}
-                      helperText={fieldErrors.phone}
-                      slotProps={{
-                        htmlInput: { inputMode: "numeric", maxLength: 10 },
-                      }}
-                    />
-                    <TextField
-                      id="iam-email"
-                      label="Email"
-                      type="email"
-                      fullWidth
-                      size="small"
-                      value={formState.email}
-                      onChange={(event) =>
-                        updateField("email", event.target.value)
-                      }
-                      autoComplete="off"
-                      disabled={isSaving}
-                      error={Boolean(fieldErrors.email)}
-                      helperText={fieldErrors.email}
-                    />
-                    <FormControl
-                      fullWidth
-                      size="small"
-                      disabled={isSaving || departmentsQuery.isLoading}
-                    >
-                      <InputLabel id="iam-department-label" shrink>
-                        Phòng ban
-                      </InputLabel>
-                      <Select
-                        id="iam-department"
-                        labelId="iam-department-label"
-                        label="Phòng ban"
-                        displayEmpty
-                        value={formState.departmentId}
-                        onChange={(event) =>
-                          updateField("departmentId", event.target.value)
-                        }
-                      >
-                        <MenuItem value="">Không thuộc phòng ban</MenuItem>
-                        {/* Giữ được lựa chọn hiện tại khi phòng ban đã INACTIVE
-                              (danh mục dropdown chỉ nạp phòng ban ACTIVE). */}
-                        {formState.departmentId &&
-                        !departments.some(
-                          (department) =>
-                            department.department_id === formState.departmentId,
-                        ) ? (
-                          <MenuItem value={formState.departmentId}>
-                            {departmentNames.get(formState.departmentId) ??
-                              (editingUser?.department?.department_name ||
-                                formState.departmentId)}
-                          </MenuItem>
-                        ) : null}
-                        {departments.map((department) => (
-                          <MenuItem
-                            key={department.department_id}
-                            value={department.department_id}
-                          >
-                            {department.department_name}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                    <FormControl
-                      fullWidth
-                      size="small"
-                      required
-                      disabled={isSaving}
-                    >
-                      <InputLabel id="iam-status-label">Trạng thái</InputLabel>
-                      <Select
-                        id="iam-status"
-                        labelId="iam-status-label"
-                        label="Trạng thái"
-                        value={formState.status}
-                        onChange={(event) =>
-                          updateField(
-                            "status",
-                            event.target.value as IamUserStatus,
-                          )
-                        }
-                      >
-                        {STATUS_OPTIONS.map((status) => (
-                          <MenuItem key={status.value} value={status.value}>
-                            {status.label}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </Stack>
-                </Box>
-              </Grid>
-
-              <Grid size={{ xs: 12, md: 6 }}>
-                <Box
-                  sx={{
-                    border: "1px solid",
-                    borderColor: "divider",
-                    borderRadius: 2,
-                    p: 2,
-                    height: "100%",
-                  }}
-                >
-                  <Typography
-                    variant="subtitle2"
-                    sx={{ fontWeight: 700, mb: 2 }}
-                  >
-                    Phân quyền
-                  </Typography>
-                  <Stack spacing={2}>
-                    <div>
-                      <FormControl
-                        fullWidth
-                        size="small"
-                        required
-                        error={Boolean(fieldErrors.roleId)}
-                        disabled={
-                          isSaving || roles.length === 0 || isEditingSelf
-                        }
-                      >
-                        <InputLabel id="iam-role-label">Vai trò</InputLabel>
-                        <Select
-                          id="iam-role"
-                          labelId="iam-role-label"
-                          label="Vai trò"
-                          value={formState.roleId}
-                          onChange={(event) =>
-                            updateField("roleId", event.target.value)
-                          }
-                        >
-                          <MenuItem value="">Chọn vai trò</MenuItem>
-                          {roles.map((role) => (
-                            <MenuItem key={role.role_id} value={role.role_id}>
-                              {role.role_name}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                        {fieldErrors.roleId ? (
-                          <FormHelperText>{fieldErrors.roleId}</FormHelperText>
-                        ) : null}
-                      </FormControl>
-                      {isEditingSelf ? (
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                          sx={{ display: "block", mt: 0.75 }}
-                        >
-                          Không thể tự đổi vai trò của chính mình. Nhờ một quản
-                          trị viên khác thực hiện thay đổi này.
-                        </Typography>
-                      ) : null}
-                    </div>
-                    <div>
-                      <FormControl
-                        fullWidth
-                        size="small"
-                        required
-                        disabled={isSaving || isEditingSelf}
-                      >
-                        <InputLabel id="iam-scope-label" shrink>
-                          Phạm vi dữ liệu
-                        </InputLabel>
-                        <Select
-                          id="iam-scope"
-                          labelId="iam-scope-label"
-                          label="Phạm vi dữ liệu"
-                          displayEmpty
-                          value={formState.scopeRef}
-                          onChange={(event) =>
-                            updateField("scopeRef", event.target.value)
-                          }
-                        >
-                          <MenuItem value="">
-                            Toàn hệ thống (không giới hạn kho)
-                          </MenuItem>
-                          {warehouses.map((warehouse) => (
-                            <MenuItem key={warehouse.id} value={warehouse.id}>
-                              {warehouse.label}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        sx={{ display: "block", mt: 0.75 }}
-                      >
-                        Phạm vi được gán tường minh theo kho. Loại phạm vi của
-                        vai trò đang chọn:{" "}
-                        {scopeTypeLabel(selectedRole?.scope_type)}.
-                      </Typography>
-                    </div>
-                    <TextField
-                      id="iam-effective-from"
-                      label="Hiệu lực từ"
-                      type="date"
-                      fullWidth
-                      size="small"
-                      value={formState.effectiveFrom}
-                      onChange={(event) =>
-                        updateField("effectiveFrom", event.target.value)
-                      }
-                      disabled={isSaving || isEditingSelf}
-                      helperText="Định dạng: ngày/tháng/năm"
-                      slotProps={{ inputLabel: { shrink: true } }}
-                    />
-                    <TextField
-                      id="iam-effective-to"
-                      label="Hiệu lực đến"
-                      type="date"
-                      fullWidth
-                      size="small"
-                      value={formState.effectiveTo}
-                      onChange={(event) =>
-                        updateField("effectiveTo", event.target.value)
-                      }
-                      disabled={isSaving || isEditingSelf}
-                      helperText="Định dạng: ngày/tháng/năm"
-                      slotProps={{
-                        htmlInput: {
-                          min: formState.effectiveFrom || undefined,
-                        },
-                        inputLabel: { shrink: true },
-                      }}
-                    />
-                    <TextField
-                      id="iam-password"
-                      label={
-                        editingUser ? "Mật khẩu tạm / đặt lại" : "Mật khẩu tạm"
-                      }
-                      required={!editingUser}
-                      type="password"
-                      fullWidth
-                      size="small"
-                      value={formState.password}
-                      onChange={(event) =>
-                        updateField("password", event.target.value)
-                      }
-                      autoComplete="new-password"
-                      placeholder={
-                        editingUser
-                          ? "Để trống nếu không đổi mật khẩu"
-                          : "Tối thiểu 8 ký tự"
-                      }
-                      disabled={isSaving}
-                      error={Boolean(fieldErrors.password)}
-                      helperText={fieldErrors.password}
-                    />
-                    <TextField
-                      id="iam-reason"
-                      label="Lý do cập nhật"
-                      required
-                      multiline
-                      minRows={2}
-                      fullWidth
-                      size="small"
-                      value={formState.reason}
-                      onChange={(event) =>
-                        updateField("reason", event.target.value)
-                      }
-                      placeholder="Vd: Điều chuyển nhân sự sang phòng ban khác"
-                      disabled={isSaving}
-                      error={Boolean(fieldErrors.reason)}
-                      helperText={
-                        fieldErrors.reason ??
-                        "Bắt buộc — dùng để truy vết lịch sử thay đổi quyền/vai trò."
-                      }
-                    />
-                    {editingUser ? (
-                      <Box>
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                          sx={{ display: "block", mb: 0.5 }}
-                        >
-                          Phiên bản dữ liệu
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            border: "1px solid",
-                            borderColor: "divider",
-                            borderRadius: 1.5,
-                            px: 1.5,
-                            py: 1,
-                          }}
-                        >
-                          {editingUser.version}
-                        </Typography>
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                          sx={{ display: "block", mt: 0.75 }}
-                        >
-                          Hệ thống dùng phiên bản hiện tại để ngăn ghi đè khi có
-                          thay đổi đồng thời.
-                        </Typography>
-                      </Box>
-                    ) : null}
-                  </Stack>
-                </Box>
-              </Grid>
-            </Grid>
-          </DialogContent>
-          <DialogActions>
+        title={
+          <Stack
+            direction="row"
+            sx={{ alignItems: "center", justifyContent: "space-between" }}
+          >
+            <span>{editingUser ? "Sửa người dùng" : "Thêm người dùng"}</span>
+            <ActionIconButton
+              kind="close"
+              label="Đóng"
+              onClick={closeModal}
+              disabled={isSaving}
+            />
+          </Stack>
+        }
+        actions={
+          <>
             <ActionButton
               kind="cancel"
               onClick={closeModal}
@@ -1344,236 +956,536 @@ export function IamUserScreen({
               kind="save"
               disabled={isSaving || !formState.roleId}
               type="submit"
+              form="iam-user-form"
             >
               {isSaving ? "Đang lưu..." : "Lưu người dùng"}
             </ActionButton>
-          </DialogActions>
-        </form>
-      </Dialog>
-
-      <Dialog
-        open={Boolean(viewingUser)}
-        onClose={closeView}
-        maxWidth="sm"
-        fullWidth
-        slotProps={{ paper: { sx: { maxWidth: 760 } } }}
+          </>
+        }
       >
-        <DialogTitle sx={{ pr: 6, position: "relative" }}>
-          Chi tiết người dùng
-          <ActionIconButton
-            kind="close"
-            label="Đóng"
-            onClick={closeView}
-            sx={{ position: "absolute", right: 10, top: 8 }}
-          />
-        </DialogTitle>
-        <DialogContent dividers>
-          {viewingUser ? (
-            <Stack spacing={2}>
+        <form id="iam-user-form" onSubmit={handleSubmit} noValidate>
+          {formError ? (
+            <Box sx={{ marginBottom: "14px" }}>
+              <UiAlert tone="error">{formError}</UiAlert>
+            </Box>
+          ) : null}
+
+          <Grid container spacing={2}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <Box
                 sx={{
                   border: "1px solid",
                   borderColor: "divider",
                   borderRadius: 2,
                   p: 2,
+                  height: "100%",
                 }}
               >
-                <Grid container spacing={2}>
-                  <DetailField
+                <SectionTitle>Thông tin tài khoản</SectionTitle>
+                <Stack spacing={2}>
+                  <UiTextField
+                    id="iam-display-name"
                     label="Họ và tên"
-                    value={viewingUser.display_name}
-                  />
-                  <DetailField
-                    label="Tên đăng nhập"
-                    value={viewingUser.username}
-                  />
-                  <DetailField
-                    label="Số điện thoại"
-                    value={viewingUser.phone || "—"}
-                  />
-                  <DetailField label="Email" value={viewingUser.email || "—"} />
-                  <DetailField
-                    label="Phòng ban"
-                    value={departmentLabel(viewingUser)}
-                  />
-                  <DetailField
-                    label="Trạng thái"
-                    value={
-                      <Chip
-                        label={statusLabel(viewingUser.status)}
-                        color={statusChipColor(viewingUser.status)}
-                        size="small"
-                      />
+                    required
+                    fullWidth
+                    value={formState.displayName}
+                    onChange={(event) =>
+                      updateField("displayName", event.target.value)
                     }
+                    autoFocus
+                    disabled={isSaving}
+                    error={Boolean(fieldErrors.displayName)}
+                    helperText={fieldErrors.displayName}
                   />
-                  <DetailField
-                    label="Đăng nhập cuối"
-                    value={formatLastLogin(viewingUser.last_login_at)}
+                  <UiTextField
+                    id="iam-username"
+                    label="Tên đăng nhập"
+                    required
+                    fullWidth
+                    value={formState.username}
+                    onChange={(event) =>
+                      updateField("username", event.target.value)
+                    }
+                    autoComplete="off"
+                    disabled={isSaving}
+                    error={Boolean(fieldErrors.username)}
+                    helperText={fieldErrors.username}
                   />
-                  <DetailField
-                    label="Phiên bản dữ liệu"
-                    value={viewingUser.version}
+                  <UiTextField
+                    id="iam-phone"
+                    label="Số điện thoại"
+                    fullWidth
+                    value={formState.phone}
+                    onChange={(event) =>
+                      updateField(
+                        "phone",
+                        event.target.value.replace(/\D/g, "").slice(0, 10),
+                      )
+                    }
+                    disabled={isSaving}
+                    error={Boolean(fieldErrors.phone)}
+                    helperText={fieldErrors.phone}
+                    slotProps={{
+                      htmlInput: { inputMode: "numeric", maxLength: 10 },
+                    }}
                   />
-                </Grid>
-              </Box>
-
-              <Box>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
-                  Vai trò &amp; phạm vi ({viewingUser.roles?.length ?? 0})
-                </Typography>
-                {viewingUser.roles && viewingUser.roles.length > 0 ? (
-                  <Box
-                    sx={{
-                      border: "1px solid",
-                      borderColor: "divider",
-                      borderRadius: 2,
-                      overflow: "hidden",
+                  <UiTextField
+                    id="iam-email"
+                    label="Email"
+                    type="email"
+                    fullWidth
+                    value={formState.email}
+                    onChange={(event) =>
+                      updateField("email", event.target.value)
+                    }
+                    autoComplete="off"
+                    disabled={isSaving}
+                    error={Boolean(fieldErrors.email)}
+                    helperText={fieldErrors.email}
+                  />
+                  <UiTextField
+                    id="iam-department"
+                    select
+                    label="Phòng ban"
+                    fullWidth
+                    value={formState.departmentId}
+                    onChange={(event) =>
+                      updateField("departmentId", event.target.value)
+                    }
+                    disabled={isSaving || departmentsQuery.isLoading}
+                    slotProps={{
+                      select: { displayEmpty: true },
+                      inputLabel: { shrink: true },
                     }}
                   >
-                    <Table size="small">
-                      <TableHead>
-                        <TableRow>
-                          <TableCell>Vai trò</TableCell>
-                          <TableCell>Phạm vi</TableCell>
-                          <TableCell>Hiệu lực</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {viewingUser.roles.map((role) => (
-                          <TableRow key={role.role_id}>
-                            <TableCell>
-                              <Stack
-                                spacing={0.5}
-                                sx={{ alignItems: "flex-start" }}
-                              >
-                                <Typography variant="body2">
-                                  {role.role_name}
-                                </Typography>
-                                <Chip
-                                  label={scopeTypeLabel(role.scope_type)}
-                                  size="small"
-                                />
-                              </Stack>
-                            </TableCell>
-                            <TableCell>
-                              {scopeLabel(role, warehouseNames)}
-                            </TableCell>
-                            <TableCell>
-                              {effectiveWindowLabel(role.pivot)}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </Box>
-                ) : (
-                  <Typography variant="body2" color="text.secondary">
-                    Chưa gán vai trò nào.
-                  </Typography>
-                )}
-              </Box>
-
-              <Box>
-                <Stack
-                  direction="row"
-                  sx={{
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    mb: 1,
-                  }}
-                >
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                    Quyền cấp riêng ({overrides.length})
-                  </Typography>
-                  {canManageUsers ? (
-                    <ActionButton kind="grant" onClick={openGrantModal}>
-                      + Cấp quyền
-                    </ActionButton>
-                  ) : null}
+                    <MenuItem value="">Không thuộc phòng ban</MenuItem>
+                    {/* Giữ được lựa chọn hiện tại khi phòng ban đã INACTIVE
+                          (danh mục dropdown chỉ nạp phòng ban ACTIVE). */}
+                    {formState.departmentId &&
+                    !departments.some(
+                      (department) =>
+                        department.department_id === formState.departmentId,
+                    ) ? (
+                      <MenuItem value={formState.departmentId}>
+                        {departmentNames.get(formState.departmentId) ??
+                          (editingUser?.department?.department_name ||
+                            formState.departmentId)}
+                      </MenuItem>
+                    ) : null}
+                    {departments.map((department) => (
+                      <MenuItem
+                        key={department.department_id}
+                        value={department.department_id}
+                      >
+                        {department.department_name}
+                      </MenuItem>
+                    ))}
+                  </UiTextField>
+                  <UiTextField
+                    id="iam-status"
+                    select
+                    label="Trạng thái"
+                    required
+                    fullWidth
+                    value={formState.status}
+                    onChange={(event) =>
+                      updateField("status", event.target.value as IamUserStatus)
+                    }
+                    disabled={isSaving}
+                  >
+                    {STATUS_OPTIONS.map((status) => (
+                      <MenuItem key={status.value} value={status.value}>
+                        {status.label}
+                      </MenuItem>
+                    ))}
+                  </UiTextField>
                 </Stack>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ display: "block", mb: 1 }}
-                >
-                  Quyền cấp riêng chỉ CỘNG THÊM vào quyền theo vai trò, không
-                  thu hồi quyền của vai trò.
-                </Typography>
-                {overrides.length > 0 ? (
-                  <Box
-                    sx={{
-                      border: "1px solid",
-                      borderColor: "divider",
-                      borderRadius: 2,
-                      overflow: "hidden",
-                    }}
-                  >
-                    <Table size="small">
-                      <TableHead>
-                        <TableRow>
-                          <TableCell>Quyền</TableCell>
-                          <TableCell>Cấp lúc</TableCell>
-                          <TableCell align="right">Hành động</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {overrides.map((override) => (
-                          <TableRow key={override.user_permission_id}>
-                            <TableCell>
-                              <Stack spacing={0.25}>
-                                <Typography variant="body2">
-                                  {override.permission_name}
-                                </Typography>
-                                <Typography
-                                  variant="caption"
-                                  color="text.secondary"
-                                >
-                                  {override.permission_key}
-                                </Typography>
-                              </Stack>
-                            </TableCell>
-                            <TableCell>
-                              {formatDateTime(override.granted_at)}
-                            </TableCell>
-                            <TableCell align="right">
-                              {canManageUsers ? (
-                                <ActionButton
-                                  kind="revoke"
-                                  onClick={() =>
-                                    openRevokeConfirm(override.permission_id)
-                                  }
-                                >
-                                  Thu hồi
-                                </ActionButton>
-                              ) : null}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </Box>
-                ) : (
-                  <Typography variant="body2" color="text.secondary">
-                    Chưa cấp quyền riêng nào.
-                  </Typography>
-                )}
               </Box>
+            </Grid>
 
-              <Accordion
-                disableGutters
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Box
                 sx={{
                   border: "1px solid",
                   borderColor: "divider",
                   borderRadius: 2,
-                  "&:before": { display: "none" },
+                  p: 2,
+                  height: "100%",
                 }}
               >
-                <AccordionSummary expandIcon={<ChevronDownIcon />}>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                    Quyền hiệu lực ({effectivePermissionKeys.length})
-                  </Typography>
-                </AccordionSummary>
-                <AccordionDetails>
+                <SectionTitle>Phân quyền</SectionTitle>
+                <Stack spacing={2}>
+                  <div>
+                    <UiTextField
+                      id="iam-role"
+                      select
+                      label="Vai trò"
+                      required
+                      fullWidth
+                      value={formState.roleId}
+                      onChange={(event) =>
+                        updateField("roleId", event.target.value)
+                      }
+                      disabled={isSaving || roles.length === 0 || isEditingSelf}
+                      error={Boolean(fieldErrors.roleId)}
+                      helperText={fieldErrors.roleId}
+                    >
+                      <MenuItem value="">Chọn vai trò</MenuItem>
+                      {roles.map((role) => (
+                        <MenuItem key={role.role_id} value={role.role_id}>
+                          {role.role_name}
+                        </MenuItem>
+                      ))}
+                    </UiTextField>
+                    {isEditingSelf ? (
+                      <FieldHint>
+                        Không thể tự đổi vai trò của chính mình. Nhờ một quản
+                        trị viên khác thực hiện thay đổi này.
+                      </FieldHint>
+                    ) : null}
+                  </div>
+                  <div>
+                    <UiTextField
+                      id="iam-scope"
+                      select
+                      label="Phạm vi dữ liệu"
+                      required
+                      fullWidth
+                      value={formState.scopeRef}
+                      onChange={(event) =>
+                        updateField("scopeRef", event.target.value)
+                      }
+                      disabled={isSaving || isEditingSelf}
+                      slotProps={{
+                        select: { displayEmpty: true },
+                        inputLabel: { shrink: true },
+                      }}
+                    >
+                      <MenuItem value="">
+                        Toàn hệ thống (không giới hạn kho)
+                      </MenuItem>
+                      {warehouses.map((warehouse) => (
+                        <MenuItem key={warehouse.id} value={warehouse.id}>
+                          {warehouse.label}
+                        </MenuItem>
+                      ))}
+                    </UiTextField>
+                    <FieldHint>
+                      Phạm vi được gán tường minh theo kho. Loại phạm vi của vai
+                      trò đang chọn: {scopeTypeLabel(selectedRole?.scope_type)}.
+                    </FieldHint>
+                  </div>
+                  <UiTextField
+                    id="iam-effective-from"
+                    label="Hiệu lực từ"
+                    type="date"
+                    fullWidth
+                    value={formState.effectiveFrom}
+                    onChange={(event) =>
+                      updateField("effectiveFrom", event.target.value)
+                    }
+                    disabled={isSaving || isEditingSelf}
+                    helperText="Định dạng: ngày/tháng/năm"
+                    slotProps={{ inputLabel: { shrink: true } }}
+                  />
+                  <UiTextField
+                    id="iam-effective-to"
+                    label="Hiệu lực đến"
+                    type="date"
+                    fullWidth
+                    value={formState.effectiveTo}
+                    onChange={(event) =>
+                      updateField("effectiveTo", event.target.value)
+                    }
+                    disabled={isSaving || isEditingSelf}
+                    helperText="Định dạng: ngày/tháng/năm"
+                    slotProps={{
+                      htmlInput: {
+                        min: formState.effectiveFrom || undefined,
+                      },
+                      inputLabel: { shrink: true },
+                    }}
+                  />
+                  <UiTextField
+                    id="iam-password"
+                    label={
+                      editingUser ? "Mật khẩu tạm / đặt lại" : "Mật khẩu tạm"
+                    }
+                    required={!editingUser}
+                    type="password"
+                    fullWidth
+                    value={formState.password}
+                    onChange={(event) =>
+                      updateField("password", event.target.value)
+                    }
+                    autoComplete="new-password"
+                    placeholder={
+                      editingUser
+                        ? "Để trống nếu không đổi mật khẩu"
+                        : "Tối thiểu 8 ký tự"
+                    }
+                    disabled={isSaving}
+                    error={Boolean(fieldErrors.password)}
+                    helperText={fieldErrors.password}
+                  />
+                  <UiTextField
+                    id="iam-reason"
+                    label="Lý do cập nhật"
+                    required
+                    multiline
+                    minRows={2}
+                    fullWidth
+                    value={formState.reason}
+                    onChange={(event) =>
+                      updateField("reason", event.target.value)
+                    }
+                    placeholder="Vd: Điều chuyển nhân sự sang phòng ban khác"
+                    disabled={isSaving}
+                    error={Boolean(fieldErrors.reason)}
+                    helperText={
+                      fieldErrors.reason ??
+                      "Bắt buộc — dùng để truy vết lịch sử thay đổi quyền/vai trò."
+                    }
+                  />
+                  {editingUser ? (
+                    <Box>
+                      <FieldHint mt={0}>Phiên bản dữ liệu</FieldHint>
+                      <Box
+                        sx={{
+                          mt: 0.5,
+                          fontSize: 14,
+                          border: "1px solid",
+                          borderColor: "divider",
+                          borderRadius: 1.5,
+                          px: 1.5,
+                          py: 1,
+                        }}
+                      >
+                        {editingUser.version}
+                      </Box>
+                      <FieldHint>
+                        Hệ thống dùng phiên bản hiện tại để ngăn ghi đè khi có
+                        thay đổi đồng thời.
+                      </FieldHint>
+                    </Box>
+                  ) : null}
+                </Stack>
+              </Box>
+            </Grid>
+          </Grid>
+        </form>
+      </UiDialog>
+
+      <UiDialog
+        open={Boolean(viewingUser)}
+        onClose={closeView}
+        maxWidth="sm"
+        slotProps={{ paper: { sx: { maxWidth: 760 } } }}
+        title={
+          <Stack
+            direction="row"
+            sx={{ alignItems: "center", justifyContent: "space-between" }}
+          >
+            <span>Chi tiết người dùng</span>
+            <ActionIconButton kind="close" label="Đóng" onClick={closeView} />
+          </Stack>
+        }
+      >
+        {viewingUser ? (
+          <Stack spacing={2}>
+            <Box
+              sx={{
+                border: "1px solid",
+                borderColor: "divider",
+                borderRadius: 2,
+                p: 2,
+              }}
+            >
+              <UiDescriptions
+                columns={2}
+                items={[
+                  { label: "Họ và tên", value: viewingUser.display_name },
+                  { label: "Tên đăng nhập", value: viewingUser.username },
+                  { label: "Số điện thoại", value: viewingUser.phone || "—" },
+                  { label: "Email", value: viewingUser.email || "—" },
+                  { label: "Phòng ban", value: departmentLabel(viewingUser) },
+                  {
+                    label: "Trạng thái",
+                    value: (
+                      <UiStatusBadge
+                        tone={statusBadgeTone(viewingUser.status)}
+                        label={statusLabel(viewingUser.status)}
+                      />
+                    ),
+                  },
+                  {
+                    label: "Đăng nhập cuối",
+                    value: formatLastLogin(viewingUser.last_login_at),
+                  },
+                  { label: "Phiên bản dữ liệu", value: viewingUser.version },
+                ]}
+              />
+            </Box>
+
+            <Box>
+              <SectionTitle mb={1}>
+                Vai trò &amp; phạm vi ({viewingUser.roles?.length ?? 0})
+              </SectionTitle>
+              {viewingUser.roles && viewingUser.roles.length > 0 ? (
+                <Box
+                  sx={{
+                    border: "1px solid",
+                    borderColor: "divider",
+                    borderRadius: 2,
+                    overflow: "hidden",
+                  }}
+                >
+                  <DialogTable headers={["Vai trò", "Phạm vi", "Hiệu lực"]}>
+                    {viewingUser.roles.map((role) => (
+                      <tr key={role.role_id}>
+                        <td>
+                          <Stack
+                            spacing={0.5}
+                            sx={{ alignItems: "flex-start" }}
+                          >
+                            <span>{role.role_name}</span>
+                            <UiStatusBadge
+                              tone="neutral"
+                              label={scopeTypeLabel(role.scope_type)}
+                            />
+                          </Stack>
+                        </td>
+                        <td>{scopeLabel(role, warehouseNames)}</td>
+                        <td>{effectiveWindowLabel(role.pivot)}</td>
+                      </tr>
+                    ))}
+                  </DialogTable>
+                </Box>
+              ) : (
+                <Box sx={{ fontSize: 14, color: "text.secondary" }}>
+                  Chưa gán vai trò nào.
+                </Box>
+              )}
+            </Box>
+
+            <Box>
+              <Stack
+                direction="row"
+                sx={{
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  mb: 1,
+                }}
+              >
+                <SectionTitle mb={0}>
+                  Quyền cấp riêng ({overrides.length})
+                </SectionTitle>
+                {canManageUsers ? (
+                  <ActionButton kind="grant" onClick={openGrantModal}>
+                    + Cấp quyền
+                  </ActionButton>
+                ) : null}
+              </Stack>
+              <FieldHint mt={0}>
+                Quyền cấp riêng chỉ CỘNG THÊM vào quyền theo vai trò, không thu
+                hồi quyền của vai trò.
+              </FieldHint>
+              {overrides.length > 0 ? (
+                <Box
+                  sx={{
+                    mt: 1,
+                    border: "1px solid",
+                    borderColor: "divider",
+                    borderRadius: 2,
+                    overflow: "hidden",
+                  }}
+                >
+                  <DialogTable
+                    headers={["Quyền", "Cấp lúc", "Hành động"]}
+                    lastColRight
+                  >
+                    {overrides.map((override) => (
+                      <tr key={override.user_permission_id}>
+                        <td>
+                          <Stack spacing={0.25}>
+                            <span>{override.permission_name}</span>
+                            <Box
+                              component="span"
+                              sx={{ fontSize: 12, color: "text.secondary" }}
+                            >
+                              {override.permission_key}
+                            </Box>
+                          </Stack>
+                        </td>
+                        <td>{formatDateTime(override.granted_at)}</td>
+                        <td>
+                          {canManageUsers ? (
+                            <ActionButton
+                              kind="revoke"
+                              onClick={() =>
+                                openRevokeConfirm(override.permission_id)
+                              }
+                            >
+                              Thu hồi
+                            </ActionButton>
+                          ) : null}
+                        </td>
+                      </tr>
+                    ))}
+                  </DialogTable>
+                </Box>
+              ) : (
+                <Box sx={{ mt: 1, fontSize: 14, color: "text.secondary" }}>
+                  Chưa cấp quyền riêng nào.
+                </Box>
+              )}
+            </Box>
+
+            <Box
+              sx={{
+                border: "1px solid",
+                borderColor: "divider",
+                borderRadius: 2,
+                overflow: "hidden",
+              }}
+            >
+              <Box
+                component="button"
+                type="button"
+                aria-expanded={isEffectiveOpen}
+                onClick={() => setIsEffectiveOpen((open) => !open)}
+                sx={{
+                  width: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 1,
+                  px: 2,
+                  py: 1.5,
+                  background: "none",
+                  border: 0,
+                  cursor: "pointer",
+                  font: "inherit",
+                  textAlign: "left",
+                  color: "text.primary",
+                }}
+              >
+                <Box component="span" sx={{ fontWeight: 600, fontSize: 14 }}>
+                  Quyền hiệu lực ({effectivePermissionKeys.length})
+                </Box>
+                <Box
+                  component="span"
+                  sx={{
+                    display: "inline-flex",
+                    transition: "transform 0.2s",
+                    transform: isEffectiveOpen ? "rotate(180deg)" : "none",
+                  }}
+                >
+                  <UiIcon name="angle-down" size="md" />
+                </Box>
+              </Box>
+              <Collapse in={isEffectiveOpen}>
+                <Box sx={{ px: 2, pb: 2 }}>
                   {effectivePermissionKeys.length > 0 ? (
                     <Stack
                       direction="row"
@@ -1582,125 +1494,119 @@ export function IamUserScreen({
                       sx={{ flexWrap: "wrap" }}
                     >
                       {effectivePermissionKeys.map((permissionKey) => (
-                        <Chip
+                        <UiStatusBadge
                           key={permissionKey}
+                          tone="neutral"
                           label={permissionKey}
-                          size="small"
                         />
                       ))}
                     </Stack>
                   ) : (
-                    <Typography variant="body2" color="text.secondary">
+                    <Box sx={{ fontSize: 14, color: "text.secondary" }}>
                       Chưa có quyền nào từ các vai trò đang gắn.
-                    </Typography>
+                    </Box>
                   )}
-                </AccordionDetails>
-              </Accordion>
-            </Stack>
-          ) : null}
-        </DialogContent>
-      </Dialog>
+                </Box>
+              </Collapse>
+            </Box>
+          </Stack>
+        ) : null}
+      </UiDialog>
 
-      <Dialog
+      <UiDialog
         open={isGrantModalOpen}
         onClose={closeGrantModal}
         maxWidth="xs"
-        fullWidth
+        title="Cấp quyền riêng cho người dùng"
+        actions={
+          <>
+            <ActionButton
+              kind="cancel"
+              onClick={closeGrantModal}
+              disabled={grantPermission.isPending}
+            >
+              Hủy
+            </ActionButton>
+            <ActionButton
+              kind="grant"
+              onClick={submitGrantPermission}
+              disabled={grantPermission.isPending}
+            >
+              Cấp quyền
+            </ActionButton>
+          </>
+        }
       >
-        <DialogTitle>Cấp quyền riêng cho người dùng</DialogTitle>
-        <DialogContent dividers>
-          <Stack spacing={2} sx={{ mt: 0.5 }}>
-            {grantError ? <Alert severity="error">{grantError}</Alert> : null}
-            <FormControl fullWidth size="small">
-              <InputLabel id="grant-permission-label">Quyền</InputLabel>
-              <Select
-                labelId="grant-permission-label"
-                label="Quyền"
-                value={grantPermissionId}
-                onChange={(event) => setGrantPermissionId(event.target.value)}
+        <Stack spacing={2} sx={{ mt: 0.5 }}>
+          {grantError ? <UiAlert tone="error">{grantError}</UiAlert> : null}
+          <UiTextField
+            select
+            label="Quyền"
+            fullWidth
+            value={grantPermissionId}
+            onChange={(event) => setGrantPermissionId(event.target.value)}
+          >
+            <MenuItem value="">Chọn quyền</MenuItem>
+            {grantablePermissions.map((permission) => (
+              <MenuItem
+                key={permission.permission_id}
+                value={permission.permission_id}
               >
-                <MenuItem value="">Chọn quyền</MenuItem>
-                {grantablePermissions.map((permission) => (
-                  <MenuItem
-                    key={permission.permission_id}
-                    value={permission.permission_id}
-                  >
-                    {permission.permission_name} ({permission.permission_key})
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <TextField
-              label="Lý do"
-              required
-              multiline
-              minRows={2}
-              fullWidth
-              size="small"
-              value={grantReason}
-              onChange={(event) => setGrantReason(event.target.value)}
-              placeholder="Vd: Hỗ trợ tạm thời cho dự án X"
-            />
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <ActionButton
-            kind="cancel"
-            onClick={closeGrantModal}
-            disabled={grantPermission.isPending}
-          >
-            Hủy
-          </ActionButton>
-          <ActionButton
-            kind="grant"
-            onClick={submitGrantPermission}
-            disabled={grantPermission.isPending}
-          >
-            Cấp quyền
-          </ActionButton>
-        </DialogActions>
-      </Dialog>
+                {permission.permission_name} ({permission.permission_key})
+              </MenuItem>
+            ))}
+          </UiTextField>
+          <UiTextField
+            label="Lý do"
+            required
+            multiline
+            minRows={2}
+            fullWidth
+            value={grantReason}
+            onChange={(event) => setGrantReason(event.target.value)}
+            placeholder="Vd: Hỗ trợ tạm thời cho dự án X"
+          />
+        </Stack>
+      </UiDialog>
 
-      <Dialog
+      <UiDialog
         open={Boolean(revokingPermissionId)}
         onClose={closeRevokeConfirm}
         maxWidth="xs"
-        fullWidth
+        title="Thu hồi quyền cấp riêng"
+        actions={
+          <>
+            <ActionButton
+              kind="cancel"
+              onClick={closeRevokeConfirm}
+              disabled={revokePermission.isPending}
+            >
+              Hủy
+            </ActionButton>
+            <ActionButton
+              kind="revoke"
+              onClick={submitRevokePermission}
+              disabled={revokePermission.isPending}
+            >
+              Thu hồi
+            </ActionButton>
+          </>
+        }
       >
-        <DialogTitle>Thu hồi quyền cấp riêng</DialogTitle>
-        <DialogContent dividers>
-          <Stack spacing={2} sx={{ mt: 0.5 }}>
-            {revokeError ? <Alert severity="error">{revokeError}</Alert> : null}
-            <TextField
-              label="Lý do"
-              required
-              multiline
-              minRows={2}
-              fullWidth
-              size="small"
-              value={revokeReason}
-              onChange={(event) => setRevokeReason(event.target.value)}
-              placeholder="Vd: Kết thúc dự án X, thu hồi quyền tạm thời"
-            />
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <ActionButton
-            kind="cancel"
-            onClick={closeRevokeConfirm}
-            disabled={revokePermission.isPending}
-          >
-            Hủy
-          </ActionButton>
-          <ActionButton
-            kind="revoke"
-            onClick={submitRevokePermission}
-            disabled={revokePermission.isPending}
-          >
-            Thu hồi
-          </ActionButton>
-        </DialogActions>
-      </Dialog>
+        <Stack spacing={2} sx={{ mt: 0.5 }}>
+          {revokeError ? <UiAlert tone="error">{revokeError}</UiAlert> : null}
+          <UiTextField
+            label="Lý do"
+            required
+            multiline
+            minRows={2}
+            fullWidth
+            value={revokeReason}
+            onChange={(event) => setRevokeReason(event.target.value)}
+            placeholder="Vd: Kết thúc dự án X, thu hồi quyền tạm thời"
+          />
+        </Stack>
+      </UiDialog>
     </div>
   );
 }

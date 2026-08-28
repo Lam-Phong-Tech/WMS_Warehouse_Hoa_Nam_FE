@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { Pagination } from "antd";
 import {
-  MenuItem,
-  Select,
-  TextField,
-  Typography as MuiTypography,
-} from "@mui/material";
+  Box,
+  UiPagination,
+  UiSelect,
+  UiTextField,
+  SEMANTIC_LIGHT as S,
+  TYPOGRAPHY,
+} from "@/shared/ui";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { TableLoadingBanner } from "@/shared/components/feedback/BusinessState";
 import {
@@ -32,16 +33,12 @@ import { ActionButton } from "@/shared/components/actions";
 
 const SEARCH_DEBOUNCE_MS = 250;
 
-/** Toolbar filter nhỏ gọn — cùng chuẩn với WarrantyPage/InventoryPage. */
-const TOOLBAR_SX = {
-  "&, & .MuiOutlinedInput-root": { height: 35 },
-  "& .MuiSelect-select, & .MuiInputBase-input": {
-    paddingTop: "8px !important",
-    paddingBottom: "8px !important",
-    fontSize: "13.5px !important",
-    boxSizing: "border-box",
-  },
-};
+/** Chữ phụ trên toolbar (thay MUI Typography body2 color text.secondary). */
+const TOOLBAR_TEXT_SX = {
+  fontSize: TYPOGRAPHY.fontSizeSecondary,
+  color: S.textMedium,
+  whiteSpace: "nowrap",
+} as const;
 
 export function AuditLogsPage() {
   const [page, setPage] = useState(1);
@@ -131,83 +128,65 @@ export function AuditLogsPage() {
   return (
     <div className="audit-logs-page hn-mvp-source-screen">
       <div className="toolbar">
-        <TextField
+        <UiTextField
           value={searchInput}
           placeholder="Tìm theo mô tả, đối tượng..."
           slotProps={{
             htmlInput: { "aria-label": "Tìm nhật ký hệ thống" },
           }}
           onChange={(event) => setSearchInput(event.target.value)}
-          sx={{ minWidth: 260, ...TOOLBAR_SX }}
+          sx={{ minWidth: 260 }}
         />
-        <Select
-          displayEmpty
+        <UiSelect
           value={module}
-          inputProps={{ "aria-label": "Lọc phân hệ" }}
-          onChange={(event) => {
-            setModule(event.target.value as AuditModule | "");
+          aria-label="Lọc phân hệ"
+          placeholder="Phân hệ: Tất cả"
+          minWidth={190}
+          onChange={(value) => {
+            setModule(value as AuditModule | "");
             setPage(1);
           }}
-          sx={{ minWidth: 190, ...TOOLBAR_SX }}
-        >
-          <MenuItem value="">Phân hệ: Tất cả</MenuItem>
-          {Object.entries(AUDIT_MODULE_LABELS).map(([value, label]) => (
-            <MenuItem key={value} value={value}>
-              {label}
-            </MenuItem>
-          ))}
-        </Select>
-        <Select
-          displayEmpty
+          options={Object.entries(AUDIT_MODULE_LABELS).map(
+            ([value, label]) => ({ value, label }),
+          )}
+        />
+        <UiSelect
           value={action}
-          inputProps={{ "aria-label": "Lọc hành động" }}
-          onChange={(event) => {
-            setAction(event.target.value as AuditAction | "");
+          aria-label="Lọc hành động"
+          placeholder="Hành động: Tất cả"
+          minWidth={200}
+          onChange={(value) => {
+            setAction(value as AuditAction | "");
             setPage(1);
           }}
-          sx={{ minWidth: 200, ...TOOLBAR_SX }}
-        >
-          <MenuItem value="">Hành động: Tất cả</MenuItem>
-          {Object.entries(AUDIT_ACTION_LABELS).map(([value, label]) => (
-            <MenuItem key={value} value={value}>
-              {label}
-            </MenuItem>
-          ))}
-        </Select>
-        <Select
+          options={Object.entries(AUDIT_ACTION_LABELS).map(
+            ([value, label]) => ({ value, label }),
+          )}
+        />
+        <UiSelect
           value={perPage}
-          inputProps={{ "aria-label": "Số dòng mỗi trang" }}
-          onChange={(event) => {
-            setPerPage(Number(event.target.value));
+          aria-label="Số dòng mỗi trang"
+          minWidth={100}
+          onChange={(value) => {
+            setPerPage(Number(value));
             setPage(1);
           }}
-          sx={{ minWidth: 100, ...TOOLBAR_SX }}
-        >
-          {perPageOptions.map((size) => (
-            <MenuItem key={size} value={size}>
-              {size} / trang
-            </MenuItem>
-          ))}
-        </Select>
+          options={perPageOptions.map((size) => ({
+            value: size,
+            label: `${size} / trang`,
+          }))}
+        />
         {/* Tổng số dòng đặt ngay trong toolbar (cạnh bộ lọc/số dòng mỗi trang)
          * để dễ thấy — thay vì chỉ hiện ở phần phân trang tít dưới bảng dài. */}
-        <MuiTypography
-          variant="body2"
-          color="text.secondary"
-          sx={{ whiteSpace: "nowrap" }}
-        >
+        <Box component="span" sx={TOOLBAR_TEXT_SX}>
           Tổng {pagination.total} bản ghi
-        </MuiTypography>
+        </Box>
         <div className="spacer" />
         {selection.selectedCount > 0 ? (
           <>
-            <MuiTypography
-              variant="body2"
-              color="text.secondary"
-              sx={{ whiteSpace: "nowrap" }}
-            >
+            <Box component="span" sx={TOOLBAR_TEXT_SX}>
               Đã chọn {selection.selectedCount}
-            </MuiTypography>
+            </Box>
             <ActionButton kind="clear" onClick={selection.clear}>
               Bỏ chọn
             </ActionButton>
@@ -219,13 +198,13 @@ export function AuditLogsPage() {
       </div>
 
       {isError ? (
-        <div style={{ marginBottom: 14 }}>
+        <Box sx={{ mb: "14px" }}>
           <ApiErrorAlert
             error={error}
             title="Không tải được nhật ký hệ thống"
             onRetry={refetch}
           />
-        </div>
+        </Box>
       ) : null}
 
       <TableLoadingBanner loading={isLoading || isFetching} />
@@ -246,17 +225,16 @@ export function AuditLogsPage() {
           setDetailOpen(true);
         }}
       />
-      <div
-        style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}
-      >
-        <Pagination
-          current={pagination.current}
+      <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 1.5 }}>
+        {/* showTotal tắt: "Tổng ... bản ghi" đã hiển thị trên toolbar. */}
+        <UiPagination
+          page={pagination.current}
           pageSize={perPage}
           total={pagination.total}
-          showSizeChanger={false}
-          onChange={(nextPage) => setPage(nextPage)}
+          onPageChange={(nextPage) => setPage(nextPage)}
+          showTotal={false}
         />
-      </div>
+      </Box>
 
       <AuditLogDetailDrawer
         open={detailOpen}

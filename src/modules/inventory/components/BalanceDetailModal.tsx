@@ -1,16 +1,19 @@
 import type { ReactNode } from "react";
-import { Table, Tag, Typography as AntTypography } from "antd";
-import type { ColumnsType } from "antd/es/table";
 import {
   Box,
-  Dialog,
-  DialogContent,
-  DialogTitle,
   Grid,
+  SEMANTIC_LIGHT,
   Stack,
-  Typography,
-} from "@mui/material";
+  TYPOGRAPHY,
+  UiDialog,
+  UiStatusBadge,
+  UiText,
+} from "@/shared/ui";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
+import {
+  ResponsiveDataTable,
+  type ResponsiveTableColumn,
+} from "@/shared/components/data-display/ResponsiveDataTable";
 import {
   CONTAINER_TYPE_LABELS,
   INVENTORY_STOCK_STATUS_LABELS,
@@ -62,19 +65,32 @@ function itemConditionLabel(value: unknown): string {
   return labels[status] ?? (status ? "Tình trạng khác" : "-");
 }
 
+/** Thay cho AntTypography.Text `code` — chữ mono trên nền soft, màu từ token. */
+function CodeText({ children }: { children: ReactNode }) {
+  return (
+    <Box
+      component="code"
+      sx={{
+        fontFamily: "monospace",
+        fontSize: 13,
+        px: 0.5,
+        borderRadius: 1,
+        backgroundColor: SEMANTIC_LIGHT.secondarySoft,
+        color: SEMANTIC_LIGHT.textHigh,
+      }}
+    >
+      {children}
+    </Box>
+  );
+}
+
 function DetailField({ label, value }: { label: string; value: ReactNode }) {
   return (
     <Grid size={{ xs: 12, md: 6 }}>
-      <Typography
-        variant="caption"
-        color="text.secondary"
-        sx={{ display: "block" }}
-      >
-        {label}
-      </Typography>
-      <Typography variant="body2" component="div">
-        {value}
-      </Typography>
+      <Box sx={{ display: "block" }}>
+        <UiText variant="caption">{label}</UiText>
+      </Box>
+      <UiText variant="body">{value}</UiText>
     </Grid>
   );
 }
@@ -91,14 +107,34 @@ function StatBox({ label, value }: { label: string; value: ReactNode }) {
         minWidth: 110,
       }}
     >
-      <Typography
-        variant="caption"
-        color="text.secondary"
-        sx={{ display: "block" }}
+      <Box sx={{ display: "block" }}>
+        <UiText variant="caption">{label}</UiText>
+      </Box>
+      <Box
+        sx={{
+          fontSize: TYPOGRAPHY.cardTitle.fontSize,
+          fontWeight: TYPOGRAPHY.cardTitle.fontWeight,
+          lineHeight: TYPOGRAPHY.cardTitle.lineHeight,
+          color: SEMANTIC_LIGHT.textHigh,
+        }}
       >
-        {label}
-      </Typography>
-      <Typography variant="h6">{value}</Typography>
+        {value}
+      </Box>
+    </Box>
+  );
+}
+
+function SectionTitle({ children }: { children: ReactNode }) {
+  return (
+    <Box
+      sx={{
+        fontSize: 14,
+        fontWeight: 700,
+        mb: 1,
+        color: SEMANTIC_LIGHT.textHigh,
+      }}
+    >
+      {children}
     </Box>
   );
 }
@@ -124,365 +160,372 @@ export function BalanceDetailModal({
   const subledgerQuery = useBalanceSubledger(String(balance.id));
   const subledger = subledgerQuery.data;
 
-  const movementColumns: ColumnsType<StockMovementRow> = [
+  const movementColumns: ResponsiveTableColumn<StockMovementRow>[] = [
     {
-      title: "Mã biến động",
-      dataIndex: "movementId",
+      key: "movementId",
+      header: "Mã biến động",
       width: 140,
-      render: (value: string) => (
-        <AntTypography.Text code>{value || "-"}</AntTypography.Text>
+      render: (row) => <CodeText>{row.movementId || "-"}</CodeText>,
+    },
+    {
+      key: "time",
+      header: "Thời gian",
+      width: 150,
+      render: (row) => formatDateTime(row.time),
+    },
+    {
+      key: "type",
+      header: "Loại biến động",
+      width: 150,
+      render: (row) => (
+        <UiStatusBadge
+          tone="neutral"
+          label={businessLabel(
+            MOVEMENT_TYPE_LABELS,
+            row.type,
+            "Biến động khác",
+          )}
+        />
       ),
     },
     {
-      title: "Thời gian",
-      dataIndex: "time",
-      width: 150,
-      render: (time: string) => formatDateTime(time),
-    },
-    {
-      title: "Loại biến động",
-      dataIndex: "type",
-      width: 150,
-      render: (value: string) => (
-        <Tag>
-          {businessLabel(MOVEMENT_TYPE_LABELS, value, "Biến động khác")}
-        </Tag>
-      ),
-    },
-    {
-      title: "Số lượng thay đổi",
-      dataIndex: "qty",
+      key: "qty",
+      header: "Số lượng thay đổi",
       width: 140,
       align: "right",
-      render: (value: number) => (
-        <AntTypography.Text
-          style={{
-            color: value >= 0 ? "#237804" : "#cf1322",
+      render: (row) => (
+        <Box
+          component="span"
+          sx={{
+            color:
+              row.qty >= 0
+                ? SEMANTIC_LIGHT.successText
+                : SEMANTIC_LIGHT.errorText,
             fontVariantNumeric: "tabular-nums",
             fontWeight: 600,
           }}
         >
-          {value >= 0
-            ? `+${numberFormatter.format(value)}`
-            : numberFormatter.format(value)}
-        </AntTypography.Text>
+          {row.qty >= 0
+            ? `+${numberFormatter.format(row.qty)}`
+            : numberFormatter.format(row.qty)}
+        </Box>
       ),
     },
     {
-      title: "Chứng từ nguồn",
-      dataIndex: "source",
+      key: "source",
+      header: "Chứng từ nguồn",
       width: 180,
-      render: (value: string, row) => (
+      render: (row) => (
         <Stack spacing={0}>
-          <AntTypography.Text code>{value || "-"}</AntTypography.Text>
-          <Typography variant="caption" color="text.secondary">
+          <CodeText>{row.source || "-"}</CodeText>
+          <UiText variant="caption">
             {businessLabel(
               SOURCE_DOCUMENT_TYPE_LABELS,
               row.sourceType,
               "Nguồn khác",
             )}
-          </Typography>
+          </UiText>
         </Stack>
       ),
     },
-    {
-      title: "",
-      key: "actions",
-      width: 100,
-      fixed: "right",
-      render: (_, row) =>
-        onTraceMovement ? (
-          <ActionButton
-            kind="history"
-            sx={{ whiteSpace: "nowrap" }}
-            onClick={() => onTraceMovement(String(row.id))}
-          >
-            Truy vết
-          </ActionButton>
-        ) : null,
-    },
   ];
 
-  const itemColumns: ColumnsType<RawRecord> = [
+  const itemColumns: ResponsiveTableColumn<RawRecord>[] = [
     {
-      title: "Mã sản phẩm",
+      key: "item_code",
+      header: "Mã sản phẩm",
       width: 140,
-      render: (_, row) => (
-        <AntTypography.Text code>
-          {text(row.item_code ?? row.serial_number)}
-        </AntTypography.Text>
+      render: (row) => (
+        <CodeText>{text(row.item_code ?? row.serial_number)}</CodeText>
       ),
     },
     {
-      title: "Số sê-ri",
+      key: "serial_number",
+      header: "Số sê-ri",
       width: 140,
-      render: (_, row) => text(row.serial_number),
+      render: (row) => text(row.serial_number),
     },
     {
-      title: "Trạng thái",
+      key: "status",
+      header: "Trạng thái",
       width: 140,
-      render: (_, row) => (
-        <Tag>
-          {businessLabel(
+      render: (row) => (
+        <UiStatusBadge
+          tone="neutral"
+          label={businessLabel(
             ITEM_STATUS_LABELS,
             text(row.status, ""),
             "Trạng thái khác",
           )}
-        </Tag>
+        />
       ),
     },
     {
-      title: "Tình trạng",
+      key: "condition",
+      header: "Tình trạng",
       width: 130,
-      render: (_, row) => itemConditionLabel(row.condition),
+      render: (row) => itemConditionLabel(row.condition),
     },
     {
-      title: "Mã vật lý",
+      key: "physical_code",
+      header: "Mã vật lý",
       width: 140,
-      render: (_, row) =>
+      render: (row) =>
         row.physical_code ? (
-          <AntTypography.Text code>
-            {text(row.physical_code)}
-          </AntTypography.Text>
+          <CodeText>{text(row.physical_code)}</CodeText>
         ) : (
-          <AntTypography.Text type="secondary">-</AntTypography.Text>
+          <UiText variant="secondary">-</UiText>
         ),
     },
     {
-      title: "Vị trí",
+      key: "location_hint",
+      header: "Vị trí",
       width: 120,
-      render: (_, row) => text(row.location_hint),
+      render: (row) => text(row.location_hint),
     },
     {
-      title: "Thời điểm nhận",
+      key: "received_at",
+      header: "Thời điểm nhận",
       width: 150,
-      render: (_, row) => text(row.received_at),
+      render: (row) => text(row.received_at),
     },
   ];
 
-  const containerColumns: ColumnsType<RawRecord> = [
+  const containerColumns: ResponsiveTableColumn<RawRecord>[] = [
     {
-      title: "Mã vật chứa",
+      key: "container_code",
+      header: "Mã vật chứa",
       width: 140,
-      render: (_, row) => (
-        <AntTypography.Text code>{text(row.container_code)}</AntTypography.Text>
-      ),
+      render: (row) => <CodeText>{text(row.container_code)}</CodeText>,
     },
     {
-      title: "Loại",
+      key: "container_type",
+      header: "Loại",
       width: 110,
-      render: (_, row) => (
-        <Tag>
-          {businessLabel(
+      render: (row) => (
+        <UiStatusBadge
+          tone="neutral"
+          label={businessLabel(
             CONTAINER_TYPE_LABELS,
             text(row.container_type, ""),
             "Vật chứa khác",
           )}
-        </Tag>
+        />
       ),
     },
     {
-      title: "Số lượng",
+      key: "quantity",
+      header: "Số lượng",
       width: 100,
       align: "right",
-      render: (_, row) => numberFormatter.format(Number(row.quantity ?? 0)),
+      render: (row) => numberFormatter.format(Number(row.quantity ?? 0)),
     },
     {
-      title: "Trạng thái vật chứa",
+      key: "container_status",
+      header: "Trạng thái vật chứa",
       width: 160,
-      render: (_, row) => (
-        <Tag>
-          {businessLabel(
+      render: (row) => (
+        <UiStatusBadge
+          tone="neutral"
+          label={businessLabel(
             PUTAWAY_STATUS_LABELS,
             text(row.container_status, ""),
             "Trạng thái khác",
           )}
-        </Tag>
+        />
       ),
     },
     {
-      title: "Khu vực",
+      key: "zone_code",
+      header: "Khu vực",
       width: 100,
-      render: (_, row) => text(row.zone_code),
+      render: (row) => text(row.zone_code),
     },
     {
-      title: "Vị trí",
+      key: "location_hint",
+      header: "Vị trí",
       width: 120,
-      render: (_, row) => text(row.location_hint),
+      render: (row) => text(row.location_hint),
     },
   ];
 
   return (
-    <>
-      <Dialog {...dialog.dialogProps} maxWidth="lg" fullWidth>
-        <DialogTitle sx={{ pr: 6, position: "relative" }}>
+    <UiDialog
+      {...dialog.dialogProps}
+      maxWidth="lg"
+      fullWidth
+      title={
+        <Box sx={{ position: "relative", pr: 6 }}>
           {`Chi tiết tồn kho — ${balance.sku}`}
           <ActionIconButton
             kind="close"
             label="Đóng"
             onClick={dialog.close}
-            sx={{ position: "absolute", right: 10, top: 8 }}
+            sx={{ position: "absolute", right: -8, top: -4 }}
           />
-        </DialogTitle>
-        <DialogContent dividers>
-          <Stack spacing={2}>
-            <Box
-              sx={{
-                border: "1px solid",
-                borderColor: "divider",
-                borderRadius: 2,
-                p: 2,
-              }}
-            >
-              <Grid container spacing={2}>
-                <DetailField
-                  label="SKU"
-                  value={
-                    <AntTypography.Text code copyable>
-                      {balance.sku}
-                    </AntTypography.Text>
+        </Box>
+      }
+    >
+      <Stack spacing={2}>
+        <Box
+          sx={{
+            border: "1px solid",
+            borderColor: "divider",
+            borderRadius: 2,
+            p: 2,
+          }}
+        >
+          <Grid container spacing={2}>
+            <DetailField
+              label="SKU"
+              value={
+                <Stack
+                  direction="row"
+                  spacing={0.5}
+                  sx={{ alignItems: "center" }}
+                >
+                  <CodeText>{balance.sku}</CodeText>
+                  <ActionIconButton
+                    kind="copy"
+                    label="Sao chép"
+                    onClick={() => {
+                      void navigator.clipboard?.writeText(balance.sku);
+                    }}
+                  />
+                </Stack>
+              }
+            />
+            <DetailField label="Tên hàng" value={balance.name} />
+            <DetailField label="Kho" value={balance.warehouse} />
+            <DetailField
+              label="Trạng thái tồn"
+              value={
+                <UiStatusBadge
+                  tone={
+                    balance.stockStatus === "AVAILABLE" ? "success" : "warning"
                   }
+                  label={businessLabel(
+                    INVENTORY_STOCK_STATUS_LABELS,
+                    balance.stockStatus,
+                    "Trạng thái khác",
+                  )}
                 />
-                <DetailField label="Tên hàng" value={balance.name} />
-                <DetailField label="Kho" value={balance.warehouse} />
-                <DetailField
-                  label="Trạng thái tồn"
-                  value={
-                    <Tag
-                      color={
-                        balance.stockStatus === "AVAILABLE"
-                          ? "success"
-                          : "warning"
-                      }
+              }
+            />
+            <DetailField
+              label="Đối soát"
+              value={
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  sx={{ alignItems: "center" }}
+                >
+                  <UiStatusBadge
+                    tone={reconcileColor(balance.reconcile)}
+                    label={businessLabel(
+                      RECONCILE_STATUS_LABELS,
+                      balance.reconcile,
+                      "Chưa đối soát",
+                    )}
+                  />
+                  {balance.reconcileNote ? (
+                    <UiText variant="caption">{balance.reconcileNote}</UiText>
+                  ) : null}
+                </Stack>
+              }
+            />
+            <DetailField
+              label="Cập nhật"
+              value={balance.dataAsOf || balance.updatedAt || "-"}
+            />
+            <DetailField
+              label="Vị trí gợi ý"
+              value={
+                [balance.containerCode, balance.location]
+                  .filter(Boolean)
+                  .join(" · ") || "Chưa có vị trí gợi ý"
+              }
+            />
+            <DetailField
+              label="Biến động gần nhất"
+              value={balance.lastMovementId || "-"}
+            />
+          </Grid>
+        </Box>
+
+        <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap", rowGap: 2 }}>
+          <StatBox
+            label="Khả dụng"
+            value={formatQty(balance.available, balance.uom)}
+          />
+          <StatBox
+            label="Tồn hiện có"
+            value={formatQty(balance.onHand, balance.uom)}
+          />
+          <StatBox label="Số sản phẩm" value={formatQty(balance.serialQty)} />
+          <StatBox label="Số hộp" value={formatQty(balance.boxQty)} />
+        </Stack>
+
+        {subledgerQuery.isError ? (
+          <ApiErrorAlert
+            error={subledgerQuery.error}
+            title="Không tải được chi tiết tồn kho"
+            onRetry={() => subledgerQuery.refetch()}
+          />
+        ) : null}
+
+        <div>
+          <SectionTitle>
+            {`Sản phẩm cụ thể (${subledger?.item_count ?? balance.serialQty})`}
+          </SectionTitle>
+          <ResponsiveDataTable<RawRecord>
+            rows={(subledger?.items as RawRecord[]) ?? []}
+            columns={itemColumns}
+            rowKey={(row) => text(row.id, String(Math.random()))}
+            loading={subledgerQuery.isLoading}
+            emptyText="Không có sản phẩm cụ thể"
+          />
+        </div>
+
+        <div>
+          <SectionTitle>
+            {`Vật chứa (${subledger?.container_count ?? balance.boxQty})`}
+          </SectionTitle>
+          <ResponsiveDataTable<RawRecord>
+            rows={(subledger?.containers as RawRecord[]) ?? []}
+            columns={containerColumns}
+            rowKey={(row) => text(row.id, String(Math.random()))}
+            loading={subledgerQuery.isLoading}
+            emptyText="Không có vật chứa"
+          />
+        </div>
+
+        <div>
+          <SectionTitle>
+            {`Biến động liên quan (${movements.length})`}
+          </SectionTitle>
+          <ResponsiveDataTable<StockMovementRow>
+            rows={movements}
+            columns={movementColumns}
+            rowKey={(row) => row.id}
+            loading={movementsQuery.isLoading}
+            emptyText="Không có biến động liên quan"
+            renderRowActions={
+              onTraceMovement
+                ? (row) => (
+                    <ActionButton
+                      kind="history"
+                      sx={{ whiteSpace: "nowrap" }}
+                      onClick={() => onTraceMovement(String(row.id))}
                     >
-                      {businessLabel(
-                        INVENTORY_STOCK_STATUS_LABELS,
-                        balance.stockStatus,
-                        "Trạng thái khác",
-                      )}
-                    </Tag>
-                  }
-                />
-                <DetailField
-                  label="Đối soát"
-                  value={
-                    <Stack
-                      direction="row"
-                      spacing={1}
-                      sx={{ alignItems: "center" }}
-                    >
-                      <Tag color={reconcileColor(balance.reconcile)}>
-                        {businessLabel(
-                          RECONCILE_STATUS_LABELS,
-                          balance.reconcile,
-                          "Chưa đối soát",
-                        )}
-                      </Tag>
-                      {balance.reconcileNote ? (
-                        <Typography variant="caption" color="text.secondary">
-                          {balance.reconcileNote}
-                        </Typography>
-                      ) : null}
-                    </Stack>
-                  }
-                />
-                <DetailField
-                  label="Cập nhật"
-                  value={balance.dataAsOf || balance.updatedAt || "-"}
-                />
-                <DetailField
-                  label="Vị trí gợi ý"
-                  value={
-                    [balance.containerCode, balance.location]
-                      .filter(Boolean)
-                      .join(" · ") || "Chưa có vị trí gợi ý"
-                  }
-                />
-                <DetailField
-                  label="Biến động gần nhất"
-                  value={balance.lastMovementId || "-"}
-                />
-              </Grid>
-            </Box>
-
-            <Stack
-              direction="row"
-              spacing={2}
-              sx={{ flexWrap: "wrap", rowGap: 2 }}
-            >
-              <StatBox
-                label="Khả dụng"
-                value={formatQty(balance.available, balance.uom)}
-              />
-              <StatBox
-                label="Tồn hiện có"
-                value={formatQty(balance.onHand, balance.uom)}
-              />
-              <StatBox
-                label="Số sản phẩm"
-                value={formatQty(balance.serialQty)}
-              />
-              <StatBox label="Số hộp" value={formatQty(balance.boxQty)} />
-            </Stack>
-
-            {subledgerQuery.isError ? (
-              <ApiErrorAlert
-                error={subledgerQuery.error}
-                title="Không tải được chi tiết tồn kho"
-                onRetry={() => subledgerQuery.refetch()}
-              />
-            ) : null}
-
-            <div>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
-                {`Sản phẩm cụ thể (${subledger?.item_count ?? balance.serialQty})`}
-              </Typography>
-              <Table
-                size="small"
-                dataSource={(subledger?.items as RawRecord[]) ?? []}
-                columns={itemColumns}
-                rowKey={(row) => text(row.id, String(Math.random()))}
-                loading={subledgerQuery.isLoading}
-                pagination={false}
-                scroll={{ x: "max-content" }}
-                locale={{ emptyText: "Không có sản phẩm cụ thể" }}
-              />
-            </div>
-
-            <div>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
-                {`Vật chứa (${subledger?.container_count ?? balance.boxQty})`}
-              </Typography>
-              <Table
-                size="small"
-                dataSource={(subledger?.containers as RawRecord[]) ?? []}
-                columns={containerColumns}
-                rowKey={(row) => text(row.id, String(Math.random()))}
-                loading={subledgerQuery.isLoading}
-                pagination={false}
-                scroll={{ x: "max-content" }}
-                locale={{ emptyText: "Không có vật chứa" }}
-              />
-            </div>
-
-            <div>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
-                {`Biến động liên quan (${movements.length})`}
-              </Typography>
-              <Table
-                size="small"
-                dataSource={movements}
-                columns={movementColumns}
-                rowKey="id"
-                loading={movementsQuery.isLoading}
-                pagination={false}
-                scroll={{ x: "max-content" }}
-                locale={{ emptyText: "Không có biến động liên quan" }}
-              />
-            </div>
-          </Stack>
-        </DialogContent>
-      </Dialog>
-    </>
+                      Truy vết
+                    </ActionButton>
+                  )
+                : undefined
+            }
+          />
+        </div>
+      </Stack>
+    </UiDialog>
   );
 }

@@ -1,14 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  Alert,
-  Autocomplete,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
+  Box,
   Grid,
-  TextField,
-} from "@mui/material";
+  MenuItem,
+  Stack,
+  UiAlert,
+  UiDialog,
+  UiTextField,
+} from "@/shared/ui";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -154,10 +153,17 @@ export function InboundDraftModal({
       return { value: id, label: label || id };
     },
   );
-  const selectedWarehouseOption =
-    warehouseOptions.find(
-      (option) => option.value === formValues.warehouseId,
-    ) ?? null;
+  // Giá trị kho đang chọn có thể chưa nằm trong danh sách (danh sách đang tải
+  // hoặc kho đã ngừng hoạt động) — vẫn phải liệt kê để Select hiển thị đúng
+  // lựa chọn hiện tại thay vì cảnh báo out-of-range và hiện rỗng.
+  const warehouseSelectOptions =
+    formValues.warehouseId &&
+    !warehouseOptions.some((option) => option.value === formValues.warehouseId)
+      ? [
+          ...warehouseOptions,
+          { value: formValues.warehouseId, label: formValues.warehouseId },
+        ]
+      : warehouseOptions;
 
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {};
@@ -237,185 +243,196 @@ export function InboundDraftModal({
   };
 
   return (
-    <Dialog {...dialog.dialogProps} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ pr: 6, position: "relative" }}>
-        {documentId ? "Thông tin phiếu nhập" : "Tạo phiếu nhập"}
-        <ActionIconButton
-          kind="close"
-          label="Đóng"
-          onClick={dialog.close}
-          disabled={saving}
-          sx={{ position: "absolute", right: 10, top: 8 }}
-        />
-      </DialogTitle>
-      <DialogContent dividers>
-        <Alert severity="info" sx={{ mb: 2 }}>
+    <UiDialog
+      {...dialog.dialogProps}
+      maxWidth="sm"
+      title={
+        <Stack
+          direction="row"
+          sx={{ alignItems: "center", justifyContent: "space-between", gap: 1 }}
+        >
+          <span>{documentId ? "Thông tin phiếu nhập" : "Tạo phiếu nhập"}</span>
+          <ActionIconButton
+            kind="close"
+            label="Đóng"
+            onClick={dialog.close}
+            disabled={saving}
+          />
+        </Stack>
+      }
+      actions={
+        <>
+          <ActionButton kind="close" onClick={dialog.close}>
+            Đóng
+          </ActionButton>
+          {mutable && canCreate ? (
+            <ActionButton
+              kind="save"
+              onClick={() => void handleSave()}
+              disabled={saving}
+            >
+              {documentId ? "Lưu thông tin" : "Tạo phiếu & quét hàng"}
+            </ActionButton>
+          ) : null}
+        </>
+      }
+    >
+      <Box sx={{ mb: 2 }}>
+        <UiAlert tone="info">
           Không nhập SKU hoặc số lượng dự kiến. Sau khi tạo phiếu, quét
           QR/Barcode sản phẩm; hệ thống tự nhận SKU, tự cộng số lượng theo SKU
           và chỉ tăng tồn khi bấm Ghi nhận nhập.
-        </Alert>
+        </UiAlert>
+      </Box>
 
-        {detailQuery.isError ? (
-          <Alert
-            severity={
+      {detailQuery.isError ? (
+        <Box sx={{ mb: 2 }}>
+          <UiAlert
+            tone={
               normalizeError(detailQuery.error).status === 403
                 ? "warning"
                 : "error"
             }
-            sx={{ mb: 2 }}
           >
             {getApiErrorMessage(
               detailQuery.error,
               "Không tải được phiếu nhập.",
             )}
-          </Alert>
-        ) : null}
+          </UiAlert>
+        </Box>
+      ) : null}
 
-        {documentId && !mutable ? (
-          <Alert severity="info" sx={{ mb: 2 }}>
-            Phiếu đã kết thúc và chỉ được xem
-          </Alert>
-        ) : null}
+      {documentId && !mutable ? (
+        <Box sx={{ mb: 2 }}>
+          <UiAlert tone="info">Phiếu đã kết thúc và chỉ được xem</UiAlert>
+        </Box>
+      ) : null}
 
-        <Grid container spacing={2}>
-          <Grid size={{ xs: 12, md: 6 }}>
-            <TextField
-              id="inbound-doc-date"
-              label="Ngày chứng từ"
-              type="date"
-              required
-              fullWidth
-              value={formValues.documentDate}
-              onChange={(event) => {
-                setFormValues((current) => ({
+      <Grid container spacing={2}>
+        <Grid size={{ xs: 12, md: 6 }}>
+          <UiTextField
+            id="inbound-doc-date"
+            label="Ngày chứng từ"
+            type="date"
+            required
+            fullWidth
+            value={formValues.documentDate}
+            onChange={(event) => {
+              setFormValues((current) => ({
+                ...current,
+                documentDate: event.target.value,
+              }));
+              if (fieldErrors.documentDate) {
+                setFieldErrors((current) => ({
                   ...current,
-                  documentDate: event.target.value,
+                  documentDate: "",
                 }));
-                if (fieldErrors.documentDate) {
-                  setFieldErrors((current) => ({
-                    ...current,
-                    documentDate: "",
-                  }));
-                }
-              }}
-              disabled={!mutable}
-              slotProps={{ inputLabel: { shrink: true } }}
-              error={Boolean(fieldErrors.documentDate)}
-              helperText={
-                fieldErrors.documentDate || "Định dạng: ngày/tháng/năm"
               }
-            />
-          </Grid>
-          <Grid size={{ xs: 12, md: 6 }}>
-            <Autocomplete
-              options={warehouseOptions}
-              getOptionLabel={(option) => option.label}
-              isOptionEqualToValue={(option, value) =>
-                option.value === value.value
-              }
-              value={selectedWarehouseOption}
-              onChange={(_event, newValue) => {
-                setFormValues((current) => ({
-                  ...current,
-                  warehouseId: newValue?.value ?? "",
-                }));
-                if (fieldErrors.warehouseId) {
-                  setFieldErrors((current) => ({
-                    ...current,
-                    warehouseId: "",
-                  }));
-                }
-              }}
-              loading={warehousesQuery.isLoading}
-              disabled={!mutable || Boolean(documentId)}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="Kho nhận"
-                  required
-                  placeholder="Chọn kho nhận"
-                  error={Boolean(fieldErrors.warehouseId)}
-                  helperText={fieldErrors.warehouseId}
-                />
-              )}
-            />
-          </Grid>
-          <Grid size={12}>
-            <TextField
-              id="inbound-source"
-              label="Nguồn / tham chiếu"
-              fullWidth
-              placeholder="Chứng từ vận chuyển / nhà cung cấp (tùy chọn)"
-              value={formValues.sourceName}
-              onChange={(event) => {
-                setFormValues((current) => ({
-                  ...current,
-                  sourceName: event.target.value,
-                }));
-                if (fieldErrors.sourceName) {
-                  setFieldErrors((current) => ({
-                    ...current,
-                    sourceName: "",
-                  }));
-                }
-              }}
-              disabled={!mutable}
-              slotProps={{ htmlInput: { maxLength: 200 } }}
-              error={Boolean(fieldErrors.sourceName)}
-              helperText={fieldErrors.sourceName}
-            />
-          </Grid>
-          <Grid size={12}>
-            <TextField
-              id="inbound-note"
-              label="Ghi chú"
-              fullWidth
-              multiline
-              minRows={3}
-              value={formValues.note}
-              onChange={(event) => {
-                setFormValues((current) => ({
-                  ...current,
-                  note: event.target.value,
-                }));
-                if (fieldErrors.note) {
-                  setFieldErrors((current) => ({ ...current, note: "" }));
-                }
-              }}
-              disabled={!mutable}
-              // Lỗi server (vd quá độ dài) chiếm chỗ helperText đếm ký tự —
-              // báo sai ở đâu quan trọng hơn số ký tự còn lại.
-              error={Boolean(fieldErrors.note)}
-              helperText={fieldErrors.note || `${formValues.note.length}/1000`}
-              slotProps={{ htmlInput: { maxLength: 1000 } }}
-            />
-          </Grid>
+            }}
+            disabled={!mutable}
+            slotProps={{ inputLabel: { shrink: true } }}
+            error={Boolean(fieldErrors.documentDate)}
+            helperText={fieldErrors.documentDate || "Định dạng: ngày/tháng/năm"}
+          />
         </Grid>
-
-        {documentId ? (
-          <Grid size={12} sx={{ mt: 2 }}>
-            <DocumentAttachmentsPanel
-              documentType="INBOUND"
-              documentId={documentId}
-              disabled={!mutable}
-            />
-          </Grid>
-        ) : null}
-      </DialogContent>
-      <DialogActions>
-        <ActionButton kind="close" onClick={dialog.close}>
-          Đóng
-        </ActionButton>
-        {mutable && canCreate ? (
-          <ActionButton
-            kind="save"
-            onClick={() => void handleSave()}
-            disabled={saving}
+        <Grid size={{ xs: 12, md: 6 }}>
+          {/* Part 4 Vuexy sync: Autocomplete (MUI trần) → UiTextField select
+              cùng danh sách kho; chọn kho vẫn chỉ cập nhật state form. */}
+          <UiTextField
+            select
+            label="Kho nhận"
+            required
+            fullWidth
+            value={formValues.warehouseId}
+            onChange={(event) => {
+              setFormValues((current) => ({
+                ...current,
+                warehouseId: event.target.value,
+              }));
+              if (fieldErrors.warehouseId) {
+                setFieldErrors((current) => ({
+                  ...current,
+                  warehouseId: "",
+                }));
+              }
+            }}
+            disabled={!mutable || Boolean(documentId)}
+            error={Boolean(fieldErrors.warehouseId)}
+            helperText={fieldErrors.warehouseId}
           >
-            {documentId ? "Lưu thông tin" : "Tạo phiếu & quét hàng"}
-          </ActionButton>
-        ) : null}
-      </DialogActions>
-    </Dialog>
+            {warehouseSelectOptions.length === 0 ? (
+              <MenuItem value="" disabled>
+                Chọn kho nhận
+              </MenuItem>
+            ) : null}
+            {warehouseSelectOptions.map((option) => (
+              <MenuItem key={option.value} value={option.value}>
+                {option.label}
+              </MenuItem>
+            ))}
+          </UiTextField>
+        </Grid>
+        <Grid size={12}>
+          <UiTextField
+            id="inbound-source"
+            label="Nguồn / tham chiếu"
+            fullWidth
+            placeholder="Chứng từ vận chuyển / nhà cung cấp (tùy chọn)"
+            value={formValues.sourceName}
+            onChange={(event) => {
+              setFormValues((current) => ({
+                ...current,
+                sourceName: event.target.value,
+              }));
+              if (fieldErrors.sourceName) {
+                setFieldErrors((current) => ({
+                  ...current,
+                  sourceName: "",
+                }));
+              }
+            }}
+            disabled={!mutable}
+            slotProps={{ htmlInput: { maxLength: 200 } }}
+            error={Boolean(fieldErrors.sourceName)}
+            helperText={fieldErrors.sourceName}
+          />
+        </Grid>
+        <Grid size={12}>
+          <UiTextField
+            id="inbound-note"
+            label="Ghi chú"
+            fullWidth
+            multiline
+            minRows={3}
+            value={formValues.note}
+            onChange={(event) => {
+              setFormValues((current) => ({
+                ...current,
+                note: event.target.value,
+              }));
+              if (fieldErrors.note) {
+                setFieldErrors((current) => ({ ...current, note: "" }));
+              }
+            }}
+            disabled={!mutable}
+            // Lỗi server (vd quá độ dài) chiếm chỗ helperText đếm ký tự —
+            // báo sai ở đâu quan trọng hơn số ký tự còn lại.
+            error={Boolean(fieldErrors.note)}
+            helperText={fieldErrors.note || `${formValues.note.length}/1000`}
+            slotProps={{ htmlInput: { maxLength: 1000 } }}
+          />
+        </Grid>
+      </Grid>
+
+      {documentId ? (
+        <Grid size={12} sx={{ mt: 2 }}>
+          <DocumentAttachmentsPanel
+            documentType="INBOUND"
+            documentId={documentId}
+            disabled={!mutable}
+          />
+        </Grid>
+      ) : null}
+    </UiDialog>
   );
 }

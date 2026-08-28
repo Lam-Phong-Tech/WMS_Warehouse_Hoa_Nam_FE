@@ -1,6 +1,5 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Alert, Form, Spin, Typography } from "antd";
 import { isAxiosError } from "axios";
 import { Link } from "react-router-dom";
 import { useLogin } from "@/modules/auth/hooks/use-login";
@@ -9,7 +8,9 @@ import {
   toLoginRequest,
   type LoginFormValues,
 } from "@/modules/auth/schemas/login.schema";
-import { UiFormText } from "@/shared/ui";
+import { Box, UiAlert, UiFormText } from "@/shared/ui";
+import { SEMANTIC_LIGHT as S } from "@/shared/ui/tokens";
+import { AuthShell } from "@/modules/auth/components/AuthShell";
 import { OFFLINE_MUTATION_CODE } from "@/shared/pwa/offline-policy";
 import { ROUTES } from "@/shared/constants/routes";
 import { ActionButton } from "@/shared/components/actions";
@@ -64,103 +65,63 @@ export function LoginPage() {
   const isSubmitting = login.isPending || login.isSuccess;
 
   return (
-    <main className="hn-login-page">
-      {isSubmitting && (
-        <div className="hn-login-loading" role="status" aria-live="polite">
-          <div className="hn-login-loading-card">
-            <Spin size="large" />
-            <Typography.Text strong style={{ display: "block", marginTop: 12 }}>
-              {login.isPending
-                ? "Đang xác thực tài khoản..."
-                : "Đang tải quyền truy cập..."}
-            </Typography.Text>
-            <Typography.Text
-              type="secondary"
-              style={{ display: "block", marginTop: 4, fontSize: 12 }}
-            >
-              Hoa Nam WMS
-            </Typography.Text>
-          </div>
-        </div>
+    <AuthShell
+      titleId="login-title"
+      title="Đăng nhập hệ thống"
+      subtitle="Sử dụng tài khoản Hoa Nam để truy cập nghiệp vụ kho."
+      loadingText={
+        isSubmitting
+          ? login.isPending
+            ? "Đang xác thực tài khoản..."
+            : "Đang tải quyền truy cập..."
+          : null
+      }
+    >
+      {errorMessage && (
+        <Box sx={{ marginBottom: "14px" }}>
+          <UiAlert tone="error" title="Không thể đăng nhập">
+            {errorMessage}
+          </UiAlert>
+        </Box>
       )}
 
-      <section className="hn-login-wrap" aria-labelledby="login-title">
-        <div className="hn-login-kicker">
-          Hoa Nam Tools <span>WMS · Quản lý kho</span>
-        </div>
+      <form onSubmit={onSubmit} noValidate>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: "13px" }}>
+          <UiFormText
+            control={control}
+            name="identifier"
+            label="Đăng nhập bằng Gmail"
+            placeholder="your@gmail.com"
+            startIcon="user"
+            autoFocus
+            disabled={isSubmitting}
+          />
 
-        <div className="hn-login-frame">
-          <header className="hn-login-head">
-            <div className="hn-login-brand">
-              <div className="hn-login-mark" aria-hidden="true">
-                HN
-              </div>
-              <div>
-                <h1 id="login-title" className="hn-login-title">
-                  Đăng nhập hệ thống
-                </h1>
-                <div className="hn-login-subtitle">
-                  Sử dụng tài khoản Hoa Nam để truy cập nghiệp vụ kho.
-                </div>
-              </div>
-            </div>
-          </header>
+          <UiFormText
+            control={control}
+            name="password"
+            label="Mật khẩu"
+            placeholder="Nhập mật khẩu"
+            startIcon="lock"
+            type="password"
+            disabled={isSubmitting}
+          />
 
-          <div className="hn-login-form">
-            {errorMessage && (
-              <Alert
-                type="error"
-                title="Không thể đăng nhập"
-                description={errorMessage}
-                style={{ marginBottom: 14 }}
-                showIcon
-              />
-            )}
+          <Box sx={{ textAlign: "right", "& a": { color: S.primary } }}>
+            <Link to={ROUTES.FORGOT_PASSWORD}>Quên mật khẩu?</Link>
+          </Box>
 
-            <Form
-              layout="vertical"
-              onSubmitCapture={onSubmit}
-              requiredMark={false}
-              noValidate
-            >
-              <UiFormText
-                control={control}
-                name="identifier"
-                label="Đăng nhập bằng Gmail"
-                placeholder="your@gmail.com"
-                startIcon="user"
-                autoFocus
-                disabled={isSubmitting}
-              />
-
-              <UiFormText
-                control={control}
-                name="password"
-                label="Mật khẩu"
-                placeholder="Nhập mật khẩu"
-                startIcon="lock"
-                type="password"
-                disabled={isSubmitting}
-              />
-
-              <div style={{ textAlign: "right", marginBottom: 14 }}>
-                <Link to={ROUTES.FORGOT_PASSWORD}>Quên mật khẩu?</Link>
-              </div>
-
-              <ActionButton
-                kind="login"
-                className="hn-login-submit"
-                loading={login.isPending}
-                disabled={isSubmitting}
-                type="submit"
-                fullWidth
-              >
-                Đăng nhập
-              </ActionButton>
-            </Form>
-          </div>
-        </div>
-      </section>
-    </main>
+          <ActionButton
+            kind="login"
+            loading={login.isPending}
+            disabled={isSubmitting}
+            type="submit"
+            fullWidth
+          >
+            Đăng nhập
+          </ActionButton>
+        </Box>
+      </form>
+    </AuthShell>
   );
 }

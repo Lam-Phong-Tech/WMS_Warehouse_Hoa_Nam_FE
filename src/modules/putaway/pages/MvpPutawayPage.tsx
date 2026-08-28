@@ -1,26 +1,28 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import type { Key } from "react";
-import { Alert, Card, Col, Input, Row, Space, Tag } from "antd";
 import {
-  Alert as MuiAlert,
   Box,
-  Chip,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   Grid,
-  MenuItem,
-  Select,
   Stack,
-  Tab,
-  Tabs,
-  TextField,
-  Typography,
-} from "@mui/material";
+  UiAlert,
+  UiCard,
+  UiDialog,
+  UiPagination,
+  UiSelect,
+  UiStatusBadge,
+  UiTabs,
+  UiTextField,
+} from "@/shared/ui";
 import { guardBackdropClose } from "@/shared/utils/dialogGuard";
-import { DataTable } from "@/shared/components";
-import type { ColumnWithSortType } from "@/shared/components";
+import {
+  ResponsiveDataTable,
+  type ResponsiveTableColumn,
+} from "@/shared/components/data-display/ResponsiveDataTable";
+import {
+  useClientSort,
+  type SortAccessor,
+} from "@/shared/components/data-display/useClientSort";
+import { SearchInput } from "@/shared/components/data-display/SearchInput";
+import { useRowSelection } from "@/shared/hooks/useRowSelection";
 import { toast } from "sonner";
 import { HistoryOutlined, InboxOutlined } from "@/shared/components/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -94,16 +96,8 @@ function PutawayDetailField({
 }) {
   return (
     <Grid size={size}>
-      <Typography
-        variant="caption"
-        color="text.secondary"
-        sx={{ display: "block" }}
-      >
-        {label}
-      </Typography>
-      <Typography variant="body2" component="div">
-        {value}
-      </Typography>
+      <Box sx={{ typography: "caption", color: "text.secondary" }}>{label}</Box>
+      <Box sx={{ typography: "body2" }}>{value}</Box>
     </Grid>
   );
 }
@@ -118,59 +112,43 @@ function ApiErrorAlert({
   const normalized = normalizeError(error);
   const requestId = getErrorRequestId(error);
   return (
-    <Alert
-      showIcon
-      type={normalized.status === 403 ? "warning" : "error"}
+    <UiAlert
+      tone={normalized.status === 403 ? "warning" : "error"}
       title={
         normalized.status === 403
           ? "Không có quyền truy cập"
           : getApiErrorMessage(error, fallback)
       }
-      description={[
+    >
+      {[
         normalized.status ? `Mã phản hồi ${normalized.status}` : undefined,
         normalized.code ? `Mã lỗi: ${normalized.code}` : undefined,
         requestId ? `Mã yêu cầu: ${requestId}` : undefined,
       ]
         .filter(Boolean)
         .join(" | ")}
-    />
+    </UiAlert>
   );
 }
 
-/** Đồng bộ kích thước với select "10 / trang" ở Danh sách phiếu xuất (xem TOOLBAR_SX AlignedMvpOutboundPage.tsx). */
-const PAGE_SIZE_SELECT_SX = {
-  minWidth: 100,
-  "&, & .MuiOutlinedInput-root": { height: 35 },
-  "& .MuiSelect-select, & .MuiInputBase-input": {
-    paddingTop: "8px !important",
-    paddingBottom: "8px !important",
-    fontSize: "13.5px !important",
-    boxSizing: "border-box",
-  },
+/** Sort client-side toàn bộ danh sách (không chỉ trang hiện tại) — giữ đúng
+ * hành vi sorter của antd Table trước migrate (Part 4 Vuexy sync). */
+const TASK_SORT_ACCESSORS: Record<string, SortAccessor<PutawayTask>> = {
+  box_code: (row) => row.box_code,
+  sku_code: (row) => row.sku_code,
+  quantity: (row) => row.quantity,
+  status: (row) => row.status,
+  draft: (row) => row.to_tray_code || "",
 };
 
-function PageSizeSelector({
-  value,
-  onChange,
-}: {
-  value: number;
-  onChange: (value: number) => void;
-}) {
-  return (
-    <Select
-      value={value}
-      inputProps={{ "aria-label": "Số dòng mỗi trang" }}
-      onChange={(event) => onChange(Number(event.target.value))}
-      sx={PAGE_SIZE_SELECT_SX}
-    >
-      {PAGE_SIZE_OPTIONS.map((size) => (
-        <MenuItem key={size} value={size}>
-          {size} / trang
-        </MenuItem>
-      ))}
-    </Select>
-  );
-}
+const HISTORY_SORT_ACCESSORS: Record<string, SortAccessor<PutawayHistory>> = {
+  created_at: (row) => new Date(row.created_at),
+  box_code: (row) => row.box_code,
+  old_tray_code: (row) => row.old_tray_code || "",
+  new_tray_code: (row) => row.new_tray_code || "",
+  location_hint: (row) => row.location_hint || "",
+  actor_name: (row) => row.actor_name || "",
+};
 
 export default function MvpPutawayPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -194,12 +172,8 @@ export default function MvpPutawayPage() {
   const [historySearchDraft, setHistorySearchDraft] = useState("");
   const [pendingPageSize, setPendingPageSize] = useState(10);
   const [historyPageSize, setHistoryPageSize] = useState(10);
-  const [selectedPendingRowKeys, setSelectedPendingRowKeys] = useState<Key[]>(
-    [],
-  );
-  const [selectedHistoryRowKeys, setSelectedHistoryRowKeys] = useState<Key[]>(
-    [],
-  );
+  const [pendingPage, setPendingPage] = useState(1);
+  const [historyPage, setHistoryPage] = useState(1);
   const [selected, setSelected] = useState<PutawayTask | null>(null);
   const [detailRow, setDetailRow] = useState<PutawayTask | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
@@ -270,6 +244,31 @@ export default function MvpPutawayPage() {
       ].some((field) => (field ?? "").toLowerCase().includes(keyword)),
     );
   }, [history, historySearchDraft]);
+
+  // Sort toàn danh sách rồi mới cắt trang (đúng hành vi antd Table cũ);
+  // clamp trang khi dữ liệu co lại để không rơi vào trang rỗng.
+  const taskSort = useClientSort(tasks, TASK_SORT_ACCESSORS);
+  const historySort = useClientSort(filteredHistory, HISTORY_SORT_ACCESSORS);
+  const pendingPageCount = Math.max(
+    1,
+    Math.ceil(tasks.length / pendingPageSize),
+  );
+  const safePendingPage = Math.min(pendingPage, pendingPageCount);
+  const pagedTasks = taskSort.sortedRows.slice(
+    (safePendingPage - 1) * pendingPageSize,
+    safePendingPage * pendingPageSize,
+  );
+  const historyPageCount = Math.max(
+    1,
+    Math.ceil(filteredHistory.length / historyPageSize),
+  );
+  const safeHistoryPage = Math.min(historyPage, historyPageCount);
+  const pagedHistory = historySort.sortedRows.slice(
+    (safeHistoryPage - 1) * historyPageSize,
+    safeHistoryPage * historyPageSize,
+  );
+  const pendingSelection = useRowSelection(pagedTasks, (row) => row.id);
+  const historySelection = useRowSelection(pagedHistory, (row) => row.id);
 
   const resetTarget = () => {
     setTrayScanValue("");
@@ -463,59 +462,62 @@ export default function MvpPutawayPage() {
     }
   };
 
-  const taskColumns: ColumnWithSortType<PutawayTask> = [
+  const taskColumns: ResponsiveTableColumn<PutawayTask>[] = [
     {
-      title: "Hộp",
-      dataIndex: "box_code",
-      fixed: "left",
+      key: "box_code",
+      header: "Hộp",
       width: 170,
-      sorter: (a, b) => a.box_code.localeCompare(b.box_code, "vi"),
-      render: (value: string) => <strong>{value}</strong>,
+      sortable: true,
+      render: (row) => <strong>{row.box_code}</strong>,
     },
     {
-      title: "SKU",
-      dataIndex: "sku_code",
+      key: "sku_code",
+      header: "SKU",
       width: 170,
-      sorter: (a, b) => a.sku_code.localeCompare(b.sku_code, "vi"),
+      sortable: true,
+      render: (row) => row.sku_code,
     },
     {
-      title: "Số lượng",
-      dataIndex: "quantity",
+      key: "quantity",
+      header: "Số lượng",
       width: 100,
       align: "right",
+      sortable: true,
       sortType: "value",
-      sorter: (a, b) => a.quantity - b.quantity,
+      render: (row) => row.quantity,
     },
     {
-      title: "Trạng thái hộp",
-      dataIndex: "status",
+      key: "status",
+      header: "Trạng thái hộp",
       width: 210,
-      sorter: (a, b) => a.status.localeCompare(b.status, "vi"),
-      render: (value: string) => (
-        <Tag color={value === "STORED" ? "success" : "warning"}>
-          {boxStatusLabel(value)}
-        </Tag>
+      sortable: true,
+      render: (row) => (
+        <UiStatusBadge
+          tone={row.status === "STORED" ? "success" : "warning"}
+          label={boxStatusLabel(row.status)}
+        />
       ),
     },
     {
-      title: "Lệnh xếp khay",
       key: "draft",
+      header: "Lệnh xếp khay",
       width: 180,
-      sorter: (a, b) =>
-        (a.to_tray_code || "").localeCompare(b.to_tray_code || "", "vi"),
-      render: (_, row) =>
+      sortable: true,
+      render: (row) =>
         row.draft_id ? (
-          <Tag color="processing">{row.to_tray_code || "Đã chọn khay"}</Tag>
+          <UiStatusBadge
+            tone="info"
+            label={row.to_tray_code || "Đã chọn khay"}
+          />
         ) : (
-          <Tag>Chưa tạo</Tag>
+          <UiStatusBadge tone="neutral" label="Chưa tạo" />
         ),
     },
     {
-      title: "Hành động",
       key: "actions",
-      fixed: "right",
+      header: "Hành động",
       width: 260,
-      render: (_, row) => {
+      render: (row) => {
         const canOpenPutaway =
           !row.draft_id && row.status === "RECEIVED_PENDING_PUTAWAY";
         const dropdownItems = row.draft_id
@@ -539,7 +541,10 @@ export default function MvpPutawayPage() {
           : [];
 
         return (
-          <Space size={2}>
+          <Stack
+            direction="row"
+            sx={{ gap: 0.25, alignItems: "center", flexWrap: "wrap" }}
+          >
             <ActionButton kind="view" onClick={() => setDetailRow(row)}>
               Xem
             </ActionButton>
@@ -560,64 +565,61 @@ export default function MvpPutawayPage() {
                 items={dropdownItems}
               />
             ) : null}
-          </Space>
+          </Stack>
         );
       },
     },
   ];
 
-  const historyColumns: ColumnWithSortType<PutawayHistory> = [
+  const historyColumns: ResponsiveTableColumn<PutawayHistory>[] = [
     {
-      title: "Thời gian",
-      dataIndex: "created_at",
+      key: "created_at",
+      header: "Thời gian",
       width: 190,
+      sortable: true,
       sortType: "value",
-      sorter: (a, b) =>
-        new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-      render: (created_at: string) => formatDateTime(created_at),
+      render: (row) => formatDateTime(row.created_at),
     },
     {
-      title: "Hộp",
-      dataIndex: "box_code",
+      key: "box_code",
+      header: "Hộp",
       width: 170,
-      sorter: (a, b) => a.box_code.localeCompare(b.box_code, "vi"),
+      sortable: true,
+      render: (row) => row.box_code,
     },
     {
-      title: "Khay cũ",
-      dataIndex: "old_tray_code",
+      key: "old_tray_code",
+      header: "Khay cũ",
       width: 150,
-      sorter: (a, b) =>
-        (a.old_tray_code || "").localeCompare(b.old_tray_code || "", "vi"),
-      render: (value) => value || "-",
+      sortable: true,
+      render: (row) => row.old_tray_code || "-",
     },
     {
-      title: "Khay mới",
-      dataIndex: "new_tray_code",
+      key: "new_tray_code",
+      header: "Khay mới",
       width: 150,
-      sorter: (a, b) =>
-        (a.new_tray_code || "").localeCompare(b.new_tray_code || "", "vi"),
-      render: (value) => value || "-",
+      sortable: true,
+      render: (row) => row.new_tray_code || "-",
     },
     {
-      title: "Vị trí",
-      dataIndex: "location_hint",
+      key: "location_hint",
+      header: "Vị trí",
       width: 180,
-      sorter: (a, b) =>
-        (a.location_hint || "").localeCompare(b.location_hint || "", "vi"),
-      render: (value) => value || "-",
+      sortable: true,
+      render: (row) => row.location_hint || "-",
     },
     {
-      title: "Người thao tác",
-      dataIndex: "actor_name",
+      key: "actor_name",
+      header: "Người thao tác",
       width: 180,
-      sorter: (a, b) =>
-        (a.actor_name || "").localeCompare(b.actor_name || "", "vi"),
-      render: (value) => value || "-",
+      sortable: true,
+      render: (row) => row.actor_name || "-",
     },
     {
-      title: "Ảnh hưởng tồn",
+      key: "stock_effect",
+      header: "Ảnh hưởng tồn",
       width: 140,
-      render: () => <Tag color="success">Không đổi tồn</Tag>,
+      render: () => <UiStatusBadge tone="success" label="Không đổi tồn" />,
     },
   ];
 
@@ -631,21 +633,27 @@ export default function MvpPutawayPage() {
         </div>
       </div>
 
-      <Card className="master-data-panel" variant="borderless">
+      <UiCard className="master-data-panel">
         <div className="master-data-contract-strip">
-          <Tag color="blue">Danh sách và lệnh xếp khay</Tag>
-          <Tag color="blue">Xác nhận vị trí lưu trữ</Tag>
-          <Tag color="gold">Yêu cầu quyền xếp khay hoặc quản lý vật chứa</Tag>
-          <Tag color="green">Không thay đổi tồn kho</Tag>
+          <UiStatusBadge tone="info" label="Danh sách và lệnh xếp khay" />
+          <UiStatusBadge tone="info" label="Xác nhận vị trí lưu trữ" />
+          <UiStatusBadge
+            tone="warning"
+            label="Yêu cầu quyền xếp khay hoặc quản lý vật chứa"
+          />
+          <UiStatusBadge tone="success" label="Không thay đổi tồn kho" />
         </div>
 
-        <Alert
-          showIcon
-          type="info"
-          className="master-data-state-alert"
-          title="Xếp khay là bước định vị sau khi đã hoàn tất nhập kho, không phải bước tăng tồn"
-          description="Linh kiện đã tăng tồn ở bước hoàn tất nhập kho. Màn này chỉ gán hộp vào khay/vị trí; tạo, xác nhận hoặc hủy lệnh xếp khay đều không làm thay đổi số lượng tồn."
-        />
+        <Box className="master-data-state-alert">
+          <UiAlert
+            tone="info"
+            title="Xếp khay là bước định vị sau khi đã hoàn tất nhập kho, không phải bước tăng tồn"
+          >
+            Linh kiện đã tăng tồn ở bước hoàn tất nhập kho. Màn này chỉ gán hộp
+            vào khay/vị trí; tạo, xác nhận hoặc hủy lệnh xếp khay đều không làm
+            thay đổi số lượng tồn.
+          </UiAlert>
+        </Box>
 
         {firstError ? (
           <ApiErrorAlert
@@ -655,138 +663,226 @@ export default function MvpPutawayPage() {
         ) : null}
 
         <>
-          <Tabs
-            value={activeTab}
-            onChange={(_event, value: string) => setActiveTab(value)}
-            sx={{ marginBottom: 2 }}
-          >
-            <Tab
-              value="pending"
-              icon={<InboxOutlined style={{ fontSize: 15 }} />}
-              iconPosition="start"
-              label={`Chờ xếp khay (${tasks.length})`}
-              sx={{ minHeight: 40, textTransform: "none" }}
+          <Box sx={{ mb: 2 }}>
+            <UiTabs
+              value={activeTab}
+              onChange={setActiveTab}
+              items={[
+                {
+                  key: "pending",
+                  label: (
+                    <Stack
+                      direction="row"
+                      spacing={0.75}
+                      sx={{ alignItems: "center" }}
+                    >
+                      <InboxOutlined style={{ fontSize: 15 }} />
+                      <span>{`Chờ xếp khay (${tasks.length})`}</span>
+                    </Stack>
+                  ),
+                },
+                {
+                  key: "history",
+                  label: (
+                    <Stack
+                      direction="row"
+                      spacing={0.75}
+                      sx={{ alignItems: "center" }}
+                    >
+                      <HistoryOutlined style={{ fontSize: 15 }} />
+                      <span>Lịch sử xếp khay</span>
+                    </Stack>
+                  ),
+                },
+              ]}
             />
-            <Tab
-              value="history"
-              icon={<HistoryOutlined style={{ fontSize: 15 }} />}
-              iconPosition="start"
-              label="Lịch sử xếp khay"
-              sx={{ minHeight: 40, textTransform: "none" }}
-            />
-          </Tabs>
+          </Box>
 
           {/* Filter (tìm kiếm) và chọn số dòng/trang đặt cùng một hàng, ngay trên
               bảng — tránh để page-size lệch chỗ khỏi thanh filter/trạng thái. */}
-          <Row
-            gutter={[12, 12]}
+          <Grid
+            container
+            spacing={1.5}
             className="filter-row"
-            align="middle"
-            justify="space-between"
-            style={{ marginBottom: 12 }}
+            sx={{
+              alignItems: "center",
+              justifyContent: "space-between",
+              mb: 1.5,
+            }}
           >
-            <Col xs={24} md={8}>
+            <Grid size={{ xs: 12, md: 4 }}>
               {activeTab === "pending" ? (
-                <Input
+                <SearchInput
                   value={searchDraft}
                   placeholder="Tìm hộp / SKU..."
-                  allowClear
-                  aria-label="Tìm hộp hoặc SKU chờ xếp khay"
-                  onChange={(event) => setSearchDraft(event.target.value)}
+                  slotProps={{
+                    htmlInput: {
+                      "aria-label": "Tìm hộp hoặc SKU chờ xếp khay",
+                    },
+                  }}
+                  width="100%"
+                  onChange={setSearchDraft}
                 />
               ) : (
-                <Input
+                <SearchInput
                   value={historySearchDraft}
                   placeholder="Tìm hộp / khay / người thao tác..."
-                  allowClear
-                  aria-label="Tìm trong lịch sử xếp khay"
-                  onChange={(event) =>
-                    setHistorySearchDraft(event.target.value)
-                  }
+                  slotProps={{
+                    htmlInput: { "aria-label": "Tìm trong lịch sử xếp khay" },
+                  }}
+                  width="100%"
+                  onChange={setHistorySearchDraft}
                 />
               )}
-            </Col>
-            <Col>
-              <PageSizeSelector
+            </Grid>
+            <Grid>
+              <UiSelect
                 value={
                   activeTab === "pending" ? pendingPageSize : historyPageSize
                 }
-                onChange={
-                  activeTab === "pending"
-                    ? setPendingPageSize
-                    : setHistoryPageSize
-                }
+                aria-label="Số dòng mỗi trang"
+                options={PAGE_SIZE_OPTIONS.map((size) => ({
+                  value: size,
+                  label: `${size} / trang`,
+                }))}
+                onChange={(value) => {
+                  if (activeTab === "pending") {
+                    setPendingPageSize(Number(value));
+                  } else {
+                    setHistoryPageSize(Number(value));
+                  }
+                }}
+                minWidth={100}
               />
-            </Col>
-          </Row>
+            </Grid>
+          </Grid>
         </>
 
         {activeTab === "pending" ? (
-          <DataTable<PutawayTask>
-            rowKey="id"
-            dataSource={tasks}
-            loading={loading}
-            columns={taskColumns}
-            rowSelection={{
-              type: "checkbox",
-              selectedRowKeys: selectedPendingRowKeys,
-              onChange: setSelectedPendingRowKeys,
-            }}
-            pagination={{
-              pageSize: pendingPageSize,
-              showSizeChanger: false,
-              showTotal: (total) => `Tổng ${total} hộp`,
-            }}
-            locale={{
-              emptyText: "Không có hộp linh kiện chờ xếp khay",
-            }}
-            scroll={{ x: "max-content" }}
-          />
+          <>
+            <ResponsiveDataTable<PutawayTask>
+              columns={taskColumns}
+              rows={pagedTasks}
+              rowKey={(row) => row.id}
+              loading={loading}
+              rowSelection={pendingSelection}
+              selectionLabel={(row) => `Chọn hộp ${row.box_code}`}
+              sortState={taskSort.sortState}
+              onSortChange={taskSort.requestSort}
+              emptyText="Không có hộp linh kiện chờ xếp khay"
+            />
+            <Stack
+              direction="row"
+              sx={{
+                mt: 1.5,
+                alignItems: "center",
+                justifyContent: "space-between",
+                flexWrap: "wrap",
+                gap: 1,
+              }}
+            >
+              <Box sx={{ typography: "body2", color: "text.secondary" }}>
+                {`Tổng ${tasks.length} hộp`}
+              </Box>
+              <UiPagination
+                page={safePendingPage}
+                pageSize={pendingPageSize}
+                total={tasks.length}
+                onPageChange={setPendingPage}
+                showTotal={false}
+              />
+            </Stack>
+          </>
         ) : (
-          <DataTable<PutawayHistory>
-            rowKey="id"
-            dataSource={filteredHistory}
-            loading={loading}
-            columns={historyColumns}
-            rowSelection={{
-              type: "checkbox",
-              selectedRowKeys: selectedHistoryRowKeys,
-              onChange: setSelectedHistoryRowKeys,
-            }}
-            pagination={{
-              pageSize: historyPageSize,
-              showSizeChanger: false,
-              showTotal: (total) => `Tổng ${total} bản ghi`,
-            }}
-            locale={{
-              emptyText: historySearchDraft.trim()
-                ? "Không tìm thấy lịch sử xếp khay phù hợp"
-                : "Chưa có lịch sử xếp khay",
-            }}
-            scroll={{ x: 1180 }}
-          />
+          <>
+            <ResponsiveDataTable<PutawayHistory>
+              columns={historyColumns}
+              rows={pagedHistory}
+              rowKey={(row) => row.id}
+              loading={loading}
+              rowSelection={historySelection}
+              selectionLabel={(row) => `Chọn bản ghi ${row.box_code}`}
+              sortState={historySort.sortState}
+              onSortChange={historySort.requestSort}
+              emptyText={
+                historySearchDraft.trim()
+                  ? "Không tìm thấy lịch sử xếp khay phù hợp"
+                  : "Chưa có lịch sử xếp khay"
+              }
+            />
+            <Stack
+              direction="row"
+              sx={{
+                mt: 1.5,
+                alignItems: "center",
+                justifyContent: "space-between",
+                flexWrap: "wrap",
+                gap: 1,
+              }}
+            >
+              <Box sx={{ typography: "body2", color: "text.secondary" }}>
+                {`Tổng ${filteredHistory.length} bản ghi`}
+              </Box>
+              <UiPagination
+                page={safeHistoryPage}
+                pageSize={historyPageSize}
+                total={filteredHistory.length}
+                onPageChange={setHistoryPage}
+                showTotal={false}
+              />
+            </Stack>
+          </>
         )}
-      </Card>
+      </UiCard>
 
       <>
-        <Dialog
+        <UiDialog
           open={Boolean(selected)}
           onClose={guardBackdropClose(closePutaway)}
           maxWidth="md"
           fullWidth
+          title={
+            <Stack
+              direction="row"
+              sx={{
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 1,
+              }}
+            >
+              <span>
+                {selected
+                  ? `PTW-01 · Xếp ${selected.box_code} vào khay`
+                  : "PTW-01 · Xếp vào khay"}
+              </span>
+              <ActionIconButton
+                kind="close"
+                label="Đóng"
+                onClick={closePutaway}
+              />
+            </Stack>
+          }
+          actions={
+            <>
+              <ActionButton kind="close" onClick={closePutaway}>
+                Đóng
+              </ActionButton>
+              <ActionButton
+                kind="create"
+                onClick={() => void createDraft()}
+                disabled={
+                  !canManage ||
+                  selected?.status !== "RECEIVED_PENDING_PUTAWAY" ||
+                  !putawayForm.to_tray_id ||
+                  createMutation.isPending
+                }
+              >
+                {createMutation.isPending ? "Đang tạo..." : "Tạo lệnh xếp khay"}
+              </ActionButton>
+            </>
+          }
         >
-          <DialogTitle sx={{ pr: 6, position: "relative" }}>
-            {selected
-              ? `PTW-01 · Xếp ${selected.box_code} vào khay`
-              : "PTW-01 · Xếp vào khay"}
-            <ActionIconButton
-              kind="close"
-              label="Đóng"
-              onClick={closePutaway}
-              sx={{ position: "absolute", right: 10, top: 8 }}
-            />
-          </DialogTitle>
-          <DialogContent dividers>
+          <>
             {selected ? (
               <Box
                 sx={{
@@ -819,17 +915,14 @@ export default function MvpPutawayPage() {
                     size={{ xs: 6, sm: 3 }}
                   />
                   <Grid size={{ xs: 12, sm: 3 }}>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ display: "block" }}
+                    <Box
+                      sx={{ typography: "caption", color: "text.secondary" }}
                     >
                       Trạng thái
-                    </Typography>
-                    <Chip
+                    </Box>
+                    <UiStatusBadge
                       label={boxStatusLabel(selected.status)}
-                      color={boxStatusChipColor(selected.status)}
-                      size="small"
+                      tone={boxStatusChipColor(selected.status)}
                       sx={{ mt: 0.25 }}
                     />
                   </Grid>
@@ -837,27 +930,24 @@ export default function MvpPutawayPage() {
               </Box>
             ) : null}
 
-            <MuiAlert severity="warning" sx={{ mb: 2 }}>
-              <Typography
-                component="strong"
-                sx={{ fontWeight: 700, display: "block" }}
+            <Box sx={{ mb: 2 }}>
+              <UiAlert
+                tone="warning"
+                title="Tạo lệnh nháp chưa thay đổi vị trí vật lý"
               >
-                Tạo lệnh nháp chưa thay đổi vị trí vật lý
-              </Typography>
-              <Typography variant="body2">
                 Chỉ khi xác nhận, hộp mới được gán vào khay. Cả bước tạo lệnh và
                 bước xác nhận đều không làm thay đổi số lượng tồn kho.
-              </Typography>
-            </MuiAlert>
+              </UiAlert>
+            </Box>
 
-            <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+            <Box sx={{ typography: "subtitle2", fontWeight: 700, mb: 1 }}>
               Chọn khay đích
-            </Typography>
+            </Box>
             <Stack spacing={1.5} sx={{ mb: 2 }}>
               <Box>
-                <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
+                <Box sx={{ typography: "body2", fontWeight: 600, mb: 1 }}>
                   Quét mã vạch/QR của khay
-                </Typography>
+                </Box>
                 <Stack
                   direction="row"
                   spacing={1}
@@ -884,20 +974,22 @@ export default function MvpPutawayPage() {
                     Quét bằng camera
                   </ActionButton>
                 </Stack>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ display: "block", mt: 0.5 }}
+                <Box
+                  sx={{
+                    typography: "caption",
+                    color: "text.secondary",
+                    mt: 0.5,
+                  }}
                 >
                   Ưu tiên camera/máy quét. Nhập mã thủ công là phương án dự
                   phòng; mã phải xác định đúng một khay khả dụng.
-                </Typography>
+                </Box>
               </Box>
 
               <Box>
-                <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
+                <Box sx={{ typography: "body2", fontWeight: 600, mb: 1 }}>
                   Hoặc chọn khay trên lưới
-                </Typography>
+                </Box>
                 <TraySelectionGrid
                   trays={trays}
                   selectedTrayId={putawayForm.to_tray_id}
@@ -917,7 +1009,7 @@ export default function MvpPutawayPage() {
             </Stack>
 
             <Stack spacing={2}>
-              <TextField
+              <UiTextField
                 label="Vị trí gợi ý"
                 fullWidth
                 value={putawayForm.location_hint ?? ""}
@@ -931,7 +1023,7 @@ export default function MvpPutawayPage() {
                 slotProps={{ htmlInput: { maxLength: 255 } }}
                 placeholder="VD: Dãy trái khu linh kiện"
               />
-              <TextField
+              <UiTextField
                 label="Ghi chú"
                 fullWidth
                 multiline
@@ -948,124 +1040,109 @@ export default function MvpPutawayPage() {
                 slotProps={{ htmlInput: { maxLength: 2000 } }}
               />
             </Stack>
-          </DialogContent>
-          <DialogActions>
-            <ActionButton kind="close" onClick={closePutaway}>
-              Đóng
-            </ActionButton>
-            <ActionButton
-              kind="create"
-              onClick={() => void createDraft()}
-              disabled={
-                !canManage ||
-                selected?.status !== "RECEIVED_PENDING_PUTAWAY" ||
-                !putawayForm.to_tray_id ||
-                createMutation.isPending
-              }
-            >
-              {createMutation.isPending ? "Đang tạo..." : "Tạo lệnh xếp khay"}
-            </ActionButton>
-          </DialogActions>
-        </Dialog>
+          </>
+        </UiDialog>
 
-        <Dialog
+        <UiDialog
           open={Boolean(detailRow)}
           onClose={() => setDetailRow(null)}
           maxWidth="sm"
           fullWidth
-        >
-          <DialogTitle sx={{ pr: 6, position: "relative" }}>
-            {detailRow
-              ? `Chi tiết xếp khay · ${detailRow.box_code}`
-              : "Chi tiết xếp khay"}
-            <ActionIconButton
-              kind="close"
-              label="Đóng"
-              onClick={() => setDetailRow(null)}
-              sx={{ position: "absolute", right: 10, top: 8 }}
-            />
-          </DialogTitle>
-          <DialogContent dividers>
-            {detailRow ? (
-              <Grid container spacing={2}>
-                <PutawayDetailField label="Hộp" value={detailRow.box_code} />
-                <PutawayDetailField
-                  label="SKU"
-                  value={`${detailRow.sku_code} · ${detailRow.sku_name}`}
-                />
-                <PutawayDetailField
-                  label="Số lượng"
-                  value={detailRow.quantity}
-                />
-                <PutawayDetailField
-                  label="Phiếu nhập"
-                  value={detailRow.receipt_code || "-"}
-                />
-                <PutawayDetailField
-                  label="Khay dự kiến"
-                  value={detailRow.to_tray_code || "Chưa chọn"}
-                />
-                <PutawayDetailField
-                  label="Vị trí"
-                  value={detailRow.location_hint || "-"}
-                />
-                <PutawayDetailField
-                  label="Trạng thái hộp"
-                  value={
-                    <Chip
-                      label={boxStatusLabel(detailRow.status)}
-                      color={boxStatusChipColor(detailRow.status)}
-                      size="small"
-                    />
-                  }
-                />
-                <PutawayDetailField
-                  label="Lệnh xếp khay"
-                  value={detailRow.draft_id ? "Đã tạo lệnh nháp" : "Chưa tạo"}
-                />
-                <PutawayDetailField
-                  label="Ảnh hưởng tồn kho"
-                  value={
-                    <Chip label="Không đổi tồn" color="success" size="small" />
-                  }
-                />
-              </Grid>
-            ) : null}
-          </DialogContent>
-          <DialogActions>
+          title={
+            <Stack
+              direction="row"
+              sx={{
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 1,
+              }}
+            >
+              <span>
+                {detailRow
+                  ? `Chi tiết xếp khay · ${detailRow.box_code}`
+                  : "Chi tiết xếp khay"}
+              </span>
+              <ActionIconButton
+                kind="close"
+                label="Đóng"
+                onClick={() => setDetailRow(null)}
+              />
+            </Stack>
+          }
+          actions={
             <ActionButton kind="close" onClick={() => setDetailRow(null)}>
               Đóng
             </ActionButton>
-          </DialogActions>
-        </Dialog>
+          }
+        >
+          {detailRow ? (
+            <Grid container spacing={2}>
+              <PutawayDetailField label="Hộp" value={detailRow.box_code} />
+              <PutawayDetailField
+                label="SKU"
+                value={`${detailRow.sku_code} · ${detailRow.sku_name}`}
+              />
+              <PutawayDetailField label="Số lượng" value={detailRow.quantity} />
+              <PutawayDetailField
+                label="Phiếu nhập"
+                value={detailRow.receipt_code || "-"}
+              />
+              <PutawayDetailField
+                label="Khay dự kiến"
+                value={detailRow.to_tray_code || "Chưa chọn"}
+              />
+              <PutawayDetailField
+                label="Vị trí"
+                value={detailRow.location_hint || "-"}
+              />
+              <PutawayDetailField
+                label="Trạng thái hộp"
+                value={
+                  <UiStatusBadge
+                    label={boxStatusLabel(detailRow.status)}
+                    tone={boxStatusChipColor(detailRow.status)}
+                  />
+                }
+              />
+              <PutawayDetailField
+                label="Lệnh xếp khay"
+                value={detailRow.draft_id ? "Đã tạo lệnh nháp" : "Chưa tạo"}
+              />
+              <PutawayDetailField
+                label="Ảnh hưởng tồn kho"
+                value={<UiStatusBadge tone="success" label="Không đổi tồn" />}
+              />
+            </Grid>
+          ) : null}
+        </UiDialog>
 
-        <Dialog
+        <UiDialog
           open={Boolean(confirmPrompt)}
           onClose={() => setConfirmPrompt(null)}
           maxWidth="xs"
           fullWidth
+          title={confirmPrompt?.title}
+          actions={
+            <>
+              <ActionButton
+                kind="back"
+                onClick={() => setConfirmPrompt(null)}
+                disabled={confirmBusy}
+              >
+                Quay lại
+              </ActionButton>
+              <ActionButton
+                kind="confirm"
+                onClick={() => void runConfirmPrompt()}
+                disabled={confirmBusy}
+              >
+                {confirmBusy ? "Đang xử lý..." : confirmPrompt?.okText}
+              </ActionButton>
+            </>
+          }
         >
-          <DialogTitle>{confirmPrompt?.title}</DialogTitle>
-          <DialogContent>
-            <Typography variant="body2">{confirmPrompt?.content}</Typography>
-          </DialogContent>
-          <DialogActions>
-            <ActionButton
-              kind="back"
-              onClick={() => setConfirmPrompt(null)}
-              disabled={confirmBusy}
-            >
-              Quay lại
-            </ActionButton>
-            <ActionButton
-              kind="confirm"
-              onClick={() => void runConfirmPrompt()}
-              disabled={confirmBusy}
-            >
-              {confirmBusy ? "Đang xử lý..." : confirmPrompt?.okText}
-            </ActionButton>
-          </DialogActions>
-        </Dialog>
+          <Box sx={{ typography: "body2" }}>{confirmPrompt?.content}</Box>
+        </UiDialog>
       </>
 
       <CameraScanModal

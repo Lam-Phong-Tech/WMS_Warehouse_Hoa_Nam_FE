@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Alert, Form, Spin, Typography } from "antd";
 import { Navigate } from "react-router-dom";
 import { isAxiosError } from "axios";
 import { useChangePassword } from "@/modules/auth/hooks/use-change-password";
@@ -9,7 +8,8 @@ import {
   changePasswordSchema,
   type ChangePasswordFormValues,
 } from "@/modules/auth/schemas/change-password.schema";
-import { UiFormText } from "@/shared/ui";
+import { Box, UiAlert, UiFormText } from "@/shared/ui";
+import { AuthShell, AuthNote } from "@/modules/auth/components/AuthShell";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { ROUTES } from "@/shared/constants/routes";
 import { ActionButton } from "@/shared/components/actions";
@@ -55,117 +55,72 @@ export function ChangePasswordPage() {
   }
 
   return (
-    <main className="hn-login-page">
-      {changePassword.isPending && (
-        <div className="hn-login-loading" role="status" aria-live="polite">
-          <div className="hn-login-loading-card">
-            <Spin size="large" />
-            <Typography.Text strong style={{ display: "block", marginTop: 12 }}>
-              Đang cập nhật mật khẩu...
-            </Typography.Text>
-            <Typography.Text
-              type="secondary"
-              style={{ display: "block", marginTop: 4, fontSize: 12 }}
-            >
-              Hoa Nam WMS
-            </Typography.Text>
-          </div>
-        </div>
+    <AuthShell
+      titleId="change-password-title"
+      title="Đổi mật khẩu"
+      subtitle="Thiết lập mật khẩu mới trước khi tiếp tục sử dụng hệ thống."
+      loadingText={
+        changePassword.isPending ? "Đang cập nhật mật khẩu..." : null
+      }
+    >
+      {errorMessage && !/mật khẩu hiện tại/i.test(errorMessage) && (
+        <Box sx={{ marginBottom: "14px" }}>
+          <UiAlert tone="error" title="Không thể đổi mật khẩu">
+            {errorMessage}
+          </UiAlert>
+        </Box>
       )}
 
-      <section
-        className="hn-login-wrap"
-        aria-labelledby="change-password-title"
-      >
-        <div className="hn-login-kicker">
-          Hoa Nam Tools <span>WMS · Quản lý kho</span>
-        </div>
+      <form onSubmit={onSubmit} noValidate>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: "13px" }}>
+          <UiFormText
+            control={control}
+            name="currentPassword"
+            label="Mật khẩu hiện tại"
+            placeholder="Nhập mật khẩu hiện tại"
+            startIcon="lock"
+            type="password"
+            autoFocus
+            disabled={changePassword.isPending}
+          />
 
-        <div className="hn-login-frame">
-          <header className="hn-login-head">
-            <div className="hn-login-brand">
-              <div className="hn-login-mark" aria-hidden="true">
-                HN
-              </div>
-              <div>
-                <h1 id="change-password-title" className="hn-login-title">
-                  Đổi mật khẩu
-                </h1>
-                <div className="hn-login-subtitle">
-                  Thiết lập mật khẩu mới trước khi tiếp tục sử dụng hệ thống.
-                </div>
-              </div>
-            </div>
-          </header>
+          <UiFormText
+            control={control}
+            name="newPassword"
+            label="Mật khẩu mới"
+            placeholder="Tối thiểu 8 ký tự"
+            startIcon="lock"
+            type="password"
+            disabled={changePassword.isPending}
+          />
 
-          <div className="hn-login-form">
-            {errorMessage && !/mật khẩu hiện tại/i.test(errorMessage) && (
-              <Alert
-                type="error"
-                title="Không thể đổi mật khẩu"
-                description={errorMessage}
-                style={{ marginBottom: 14 }}
-                showIcon
-              />
-            )}
+          <UiFormText
+            control={control}
+            name="newPasswordConfirmation"
+            label="Xác nhận mật khẩu mới"
+            placeholder="Nhập lại mật khẩu mới"
+            startIcon="lock"
+            type="password"
+            disabled={changePassword.isPending}
+          />
 
-            <Form
-              layout="vertical"
-              onSubmitCapture={onSubmit}
-              requiredMark={false}
-              noValidate
-            >
-              <UiFormText
-                control={control}
-                name="currentPassword"
-                label="Mật khẩu hiện tại"
-                placeholder="Nhập mật khẩu hiện tại"
-                startIcon="lock"
-                type="password"
-                autoFocus
-                disabled={changePassword.isPending}
-              />
+          <ActionButton
+            kind="password"
+            loading={changePassword.isPending}
+            disabled={changePassword.isPending}
+            type="submit"
+            fullWidth
+          >
+            Đổi mật khẩu
+          </ActionButton>
+        </Box>
+      </form>
 
-              <UiFormText
-                control={control}
-                name="newPassword"
-                label="Mật khẩu mới"
-                placeholder="Tối thiểu 8 ký tự"
-                startIcon="lock"
-                type="password"
-                disabled={changePassword.isPending}
-              />
-
-              <UiFormText
-                control={control}
-                name="newPasswordConfirmation"
-                label="Xác nhận mật khẩu mới"
-                placeholder="Nhập lại mật khẩu mới"
-                startIcon="lock"
-                type="password"
-                disabled={changePassword.isPending}
-              />
-
-              <ActionButton
-                kind="password"
-                className="hn-login-submit"
-                loading={changePassword.isPending}
-                disabled={changePassword.isPending}
-                type="submit"
-                fullWidth
-              >
-                Đổi mật khẩu
-              </ActionButton>
-            </Form>
-
-            <div className="hn-login-note">
-              Sau khi đổi mật khẩu thành công, toàn bộ refresh token bị thu hồi
-              theo contract backend. Bạn sẽ được đưa về màn đăng nhập để tạo
-              phiên JWT mới bằng mật khẩu vừa đặt.
-            </div>
-          </div>
-        </div>
-      </section>
-    </main>
+      <AuthNote>
+        Sau khi đổi mật khẩu thành công, toàn bộ refresh token bị thu hồi theo
+        contract backend. Bạn sẽ được đưa về màn đăng nhập để tạo phiên JWT mới
+        bằng mật khẩu vừa đặt.
+      </AuthNote>
+    </AuthShell>
   );
 }

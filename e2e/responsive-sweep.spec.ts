@@ -179,10 +179,12 @@ async function auditCurrentPage(
   page: Page,
   route: string,
   failures: SweepFailure[],
+  desktopNav: boolean,
 ): Promise<void> {
   const geometry = await page.evaluate(() => {
     const doc = document.documentElement;
     const nav = document.querySelector('[data-testid="primary-navigation"]');
+    const toggle = document.querySelector('[data-testid="mobile-nav-toggle"]');
     const title = document.querySelector(".hn-mvp-title h2");
     const modal = document.querySelector(".ant-modal");
     const modalRect = modal ? modal.getBoundingClientRect() : null;
@@ -190,6 +192,9 @@ async function auditCurrentPage(
       scrollWidth: doc.scrollWidth,
       innerWidth: window.innerWidth,
       navVisible: nav ? (nav as HTMLElement).offsetParent !== null : false,
+      toggleVisible: toggle
+        ? (toggle as HTMLElement).offsetParent !== null
+        : false,
       titleVisible: title
         ? (title as HTMLElement).getBoundingClientRect().height > 0
         : false,
@@ -204,8 +209,15 @@ async function auditCurrentPage(
       problem: `page horizontal overflow: scrollWidth ${geometry.scrollWidth} > innerWidth ${geometry.innerWidth}`,
     });
   }
-  if (!geometry.navVisible) {
-    failures.push({ route, problem: "primary navigation not visible" });
+  // Shell Part 4 (UiAppShell): <lg (980) sidebar ẩn sau hamburger + Drawer
+  // (hợp đồng đã kiểm ở wwhn-144 mobile branch) — mobile chỉ yêu cầu nút mở nav.
+  if (desktopNav ? !geometry.navVisible : !geometry.toggleVisible) {
+    failures.push({
+      route,
+      problem: desktopNav
+        ? "primary navigation not visible"
+        : "mobile nav toggle not visible",
+    });
   }
   if (!geometry.titleVisible) {
     failures.push({ route, problem: "header title not visible" });
@@ -237,24 +249,37 @@ test.describe("responsive sweep — authenticated shell across all modules", () 
 
       const failures: SweepFailure[] = [];
       mkdirSync(SCREENSHOT_DIR, { recursive: true });
+      // Shell Part 4: sidebar chỉ render từ lg (980) trở lên; dưới đó nav nằm
+      // trong Drawer sau hamburger (data-testid mobile-nav-toggle).
+      const desktopNav = viewport.width >= 980;
 
       for (const route of CORE_ROUTES) {
         await page.goto(route);
         // Timeout rộng: 27 lượt goto/viewport trên 1 dev server làm lazy chunk
         // thỉnh thoảng transform chậm hơn 10s mặc định (flake hạ tầng).
         await expect(
-          page.getByTestId("primary-navigation"),
-          `nav must render on ${route}`,
+          page.getByTestId(
+            desktopNav ? "primary-navigation" : "mobile-nav-toggle",
+          ),
+          `${desktopNav ? "nav" : "mobile nav toggle"} must render on ${route}`,
         ).toBeVisible({ timeout: 30_000 });
         // Cho lazy chunk + effect render xong trước khi đo.
         await page.waitForTimeout(250);
-        await auditCurrentPage(page, route, failures);
+        await auditCurrentPage(page, route, failures, desktopNav);
       }
 
       for (const route of MODAL_ROUTES) {
         await page.goto(route);
+        // Chờ shell render như nhánh CORE_ROUTES — chờ cứng 450ms không đủ khi
+        // Vite transform chunk lạnh (deep-link modal nằm trên các page nặng).
+        await expect(
+          page.getByTestId(
+            desktopNav ? "primary-navigation" : "mobile-nav-toggle",
+          ),
+          `${desktopNav ? "nav" : "mobile nav toggle"} must render on ${route}`,
+        ).toBeVisible({ timeout: 30_000 });
         await page.waitForTimeout(450);
-        await auditCurrentPage(page, route, failures);
+        await auditCurrentPage(page, route, failures, desktopNav);
       }
 
       // Screenshot bằng chứng cho các màn tiêu biểu ở viewport này.

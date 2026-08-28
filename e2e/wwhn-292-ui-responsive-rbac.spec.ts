@@ -255,38 +255,42 @@ test.describe("WWHN-292 FE-controlled UI/responsive/RBAC closure", () => {
     const viewport = { width: 1440, height: 900 };
     await setupMockApi(page, { refreshSuccess: true, isSuperAdmin: true });
     await page.setViewportSize(viewport);
+    // Part 4: /component-catalog (catalog antd cũ, nhãn tiếng Anh) đã redirect
+    // về /ui-foundation — Foundation Catalog golden của design system; các
+    // state chuẩn giờ là UiStateSurface với nhãn tiếng Việt.
     await page.goto("/component-catalog");
+    await expect(page).toHaveURL(/\/ui-foundation$/);
 
     await expect(
-      page.getByRole("heading", { name: "Component catalog", level: 2 }),
+      page.getByRole("heading", { name: /Foundation catalog/ }),
     ).toBeVisible();
-    await expect(page.getByText("Loading", { exact: true })).toBeVisible();
-    await expect(page.getByText("Empty", { exact: true })).toBeVisible();
-    await expect(page.getByText("Error", { exact: true })).toBeVisible();
+    await expect(page.getByText("Đang tải dữ liệu…")).toBeVisible();
+    await expect(page.getByText("Chưa có dữ liệu")).toBeVisible();
+    await expect(page.getByText("Đã xảy ra lỗi")).toBeVisible();
     await expect(
-      page.getByText("No permission", { exact: true }),
-    ).toBeVisible();
-    await expect(
-      page.getByText("API error + field errors", { exact: true }),
+      page.getByText("Bạn không có quyền truy cập nội dung này"),
     ).toBeVisible();
     await expect(
-      page.getByText("Confirm action", { exact: true }),
+      page.getByText("Số lượng phải lớn hơn 0 (request_id: 9f2c-fixture)."),
     ).toBeVisible();
     await expect(
-      page.getByRole("button", { name: "Disabled until valid" }),
+      page.getByRole("button", { name: "useUiConfirm()" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Vô hiệu", exact: true }),
     ).toBeDisabled();
 
     await captureEvidence(page, testInfo, {
       scenario: "shared-ui-states",
       role: "super_admin_controlled",
       viewport,
-      route: "/component-catalog",
+      route: "/ui-foundation (redirect từ /component-catalog)",
       assertions: [
         "Loading state is visible",
         "Empty state is visible",
         "Error/no-permission states are visible",
         "API field-error state is visible",
-        "Confirm state is visible",
+        "Confirm entry point is visible",
         "Invalid action is disabled",
       ],
     });
@@ -401,8 +405,11 @@ test.describe("WWHN-292 FE-controlled UI/responsive/RBAC closure", () => {
     { key: "mobile-320", width: 320, height: 568 },
   ] as const;
 
-  const WIREFRAME_STACK_BREAKPOINT = 980;
-  const DESKTOP_ASIDE_WIDTH = 300;
+  // Part 4 shell (UiAppShell — Vuexy): sidebar grid-column 260px từ lg (980)
+  // trở lên; dưới lg sidebar KHÔNG render — nav nằm trong Drawer sau hamburger
+  // (data-testid mobile-nav-toggle). Cùng contract với wwhn-144.
+  const DESKTOP_NAV_BREAKPOINT = 980;
+  const DESKTOP_ASIDE_WIDTH = 260;
 
   for (const viewport of SHELL_VIEWPORTS) {
     test(`authenticated shell responsive ${viewport.width}x${viewport.height}`, async ({
@@ -415,7 +422,12 @@ test.describe("WWHN-292 FE-controlled UI/responsive/RBAC closure", () => {
       });
       await page.goto("/dashboard");
 
-      await expect(page.getByTestId("primary-navigation")).toBeVisible();
+      const isDesktopNav = viewport.width >= DESKTOP_NAV_BREAKPOINT;
+      if (isDesktopNav) {
+        await expect(page.getByTestId("primary-navigation")).toBeVisible();
+      } else {
+        await expect(page.getByTestId("mobile-nav-toggle")).toBeVisible();
+      }
       await expect(
         page.getByRole("heading", {
           name: "Bản đồ màn hình & phạm vi",
@@ -424,30 +436,29 @@ test.describe("WWHN-292 FE-controlled UI/responsive/RBAC closure", () => {
       ).toBeVisible();
 
       const shell = await page.evaluate(() => {
-        const aside = document.querySelector(".hn-mvp-aside");
-        const main = document.querySelector(".hn-mvp-main");
+        const aside = document.querySelector('[data-testid="app-sidebar"]');
+        const main = document.querySelector("main");
+        const asideRect = aside ? aside.getBoundingClientRect() : null;
+        const mainRect = main ? main.getBoundingClientRect() : null;
         return {
           hasHorizontalOverflow:
             document.documentElement.scrollWidth > window.innerWidth + 1,
-          asidePosition: aside ? getComputedStyle(aside).position : null,
-          asideWidth: aside
-            ? Math.round(aside.getBoundingClientRect().width)
-            : null,
-          mainMarginLeft: main ? getComputedStyle(main).marginLeft : null,
+          asideWidth: asideRect ? Math.round(asideRect.width) : null,
+          mainX: mainRect ? Math.round(mainRect.x) : null,
         };
       });
 
       expect(shell.hasHorizontalOverflow).toBe(false);
 
-      const isStacked = viewport.width <= WIREFRAME_STACK_BREAKPOINT;
-      if (isStacked) {
-        expect(shell.asidePosition).toBe("static");
-        expect(shell.mainMarginLeft).toBe("0px");
-        expect(shell.asideWidth).toBe(viewport.width);
-      } else {
-        expect(shell.asidePosition).toBe("fixed");
+      if (isDesktopNav) {
+        // Sidebar là grid column 260px; main bắt đầu ngay sau sidebar.
         expect(shell.asideWidth).toBe(DESKTOP_ASIDE_WIDTH);
-        expect(shell.mainMarginLeft).toBe(`${DESKTOP_ASIDE_WIDTH}px`);
+        expect(shell.mainX).toBe(DESKTOP_ASIDE_WIDTH);
+      } else {
+        // Dưới lg: sidebar không render; nav mở qua Drawer (đã kiểm hành vi
+        // mở/đóng ở wwhn-144 mobile branch).
+        expect(shell.asideWidth).toBeNull();
+        expect(shell.mainX).toBe(0);
       }
 
       await captureEvidence(page, testInfo, {
@@ -457,11 +468,13 @@ test.describe("WWHN-292 FE-controlled UI/responsive/RBAC closure", () => {
         route: "/dashboard",
         assertions: [
           `Authenticated shell rendered at ${viewport.width}x${viewport.height}`,
-          "Primary navigation and screen heading are visible",
+          isDesktopNav
+            ? "Primary navigation and screen heading are visible"
+            : "Mobile nav toggle and screen heading are visible",
           "No horizontal page overflow",
-          isStacked
-            ? `Aside stacks full width at or below ${WIREFRAME_STACK_BREAKPOINT}px (wireframe baseline)`
-            : `Aside stays fixed at ${DESKTOP_ASIDE_WIDTH}px and main is offset (NFR-SRS-006 desktop baseline)`,
+          isDesktopNav
+            ? `Sidebar grid column ${DESKTOP_ASIDE_WIDTH}px, main offset ${DESKTOP_ASIDE_WIDTH}px (UiAppShell desktop — NFR-SRS-006)`
+            : `Sidebar hidden below ${DESKTOP_NAV_BREAKPOINT}px; nav via hamburger Drawer (UiAppShell mobile)`,
         ],
       });
     });
@@ -617,7 +630,7 @@ test.describe("WWHN-292 FE-controlled UI/responsive/RBAC closure", () => {
     await expect(page).toHaveURL(/\/reverse$/);
     await expect(
       page.getByRole("button", {
-        name: "Danh sách phiếu Reversal",
+        name: "Danh sách phiếu điều chỉnh tồn kho",
         exact: true,
       }),
     ).toBeVisible();

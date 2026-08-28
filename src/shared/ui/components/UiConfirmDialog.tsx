@@ -3,6 +3,7 @@
  * UiDialog + UiButton. tone="danger" cho hành động phá huỷ (nút xác nhận đỏ).
  */
 import type { ReactNode } from "react";
+import Box from "@mui/material/Box";
 import { UiButton } from "./UiButton";
 import { UiDialog } from "./UiDialog";
 
@@ -58,7 +59,8 @@ export function UiConfirmDialog({
         </>
       }
     >
-      {children}
+      {/* Hợp đồng WWHN-268: bề mặt confirm phát test hook data-ui-state. */}
+      <Box data-ui-state="confirm">{children}</Box>
     </UiDialog>
   );
 }

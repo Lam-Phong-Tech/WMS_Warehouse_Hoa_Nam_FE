@@ -20,7 +20,10 @@ export const useNotificationStore = create<NotificationState>((set) => ({
   unreadCount: 0,
   isConnected: false,
   isDropdownOpen: false,
-  setUnreadCount: (count) => set({ unreadCount: Math.max(0, count) }),
+  // Math.max(0, undefined/NaN) = NaN — payload lỗi sẽ làm badge hiện "NaN";
+  // chuẩn hoá về 0 ngay tại store để mọi consumer đều an toàn.
+  setUnreadCount: (count) =>
+    set({ unreadCount: Number.isFinite(count) ? Math.max(0, count) : 0 }),
   increment: () => set((state) => ({ unreadCount: state.unreadCount + 1 })),
   setConnected: (connected) => set({ isConnected: connected }),
   setDropdownOpen: (open) => set({ isDropdownOpen: open }),

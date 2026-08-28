@@ -1,23 +1,5 @@
 import { useMemo, useState, type ReactElement } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Alert,
-  Autocomplete,
-  Box,
-  Card,
-  Chip,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  Grid,
-  MenuItem,
-  Stack,
-  Tab,
-  Tabs,
-  TextField,
-  Typography,
-} from "@mui/material";
 import { toast } from "sonner";
 import {
   AppstoreOutlined,
@@ -26,8 +8,8 @@ import {
   ShopOutlined,
   ThunderboltOutlined,
 } from "@/shared/components/icons";
-import { DataTable } from "@/shared/components";
-import type { ColumnWithSortType } from "@/shared/components";
+import { ResponsiveDataTable } from "@/shared/components";
+import type { ResponsiveTableColumn } from "@/shared/components";
 import {
   catalogMasterSupportsBrand,
   createCatalogMaster,
@@ -56,6 +38,22 @@ import {
   businessLabel,
 } from "@/shared/constants/business-labels";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
+import { useRowSelection } from "@/shared/hooks/useRowSelection";
+import {
+  Box,
+  Grid,
+  MenuItem,
+  Stack,
+  UiAlert,
+  UiCard,
+  UiDialog,
+  UiPagination,
+  UiSelect,
+  UiStatusBadge,
+  UiTabs,
+  UiText,
+  UiTextField,
+} from "@/shared/ui";
 
 interface CatalogTabMeta {
   kind: CatalogMasterKind;
@@ -126,17 +124,6 @@ const STATUS_OPTIONS: Array<{ value: MasterStatus; label: string }> = [
   { value: "INACTIVE", label: "Ngừng sử dụng" },
 ];
 
-/** Toolbar filter nhỏ gọn hơn field trong form — đồng bộ chuẩn mui-theme.ts. */
-const CATALOG_TOOLBAR_SX = {
-  "&, & .MuiOutlinedInput-root": { height: 35 },
-  "& .MuiSelect-select, & .MuiInputBase-input": {
-    paddingTop: "8px !important",
-    paddingBottom: "8px !important",
-    fontSize: "13.5px !important",
-    boxSizing: "border-box",
-  },
-};
-
 interface CatalogFormValues {
   code: string;
   name: string;
@@ -200,7 +187,6 @@ export function CatalogMasterScreen() {
   const [formValues, setFormValues] = useState<CatalogFormValues>(EMPTY_FORM);
   const [formError, setFormError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
 
   const activeTab =
     CATALOG_TABS.find((tab) => tab.kind === activeKind) ?? CATALOG_TABS[0];
@@ -231,6 +217,7 @@ export function CatalogMasterScreen() {
     pageSize: perPage,
     rowCount: rows.length,
   });
+  const rowSelection = useRowSelection(rows, (record) => record.id);
 
   const brandOptions = useMemo(
     () =>
@@ -370,100 +357,98 @@ export function CatalogMasterScreen() {
     }
   };
 
-  const columns: ColumnWithSortType<CatalogMasterRecord> = [
+  const columns: ResponsiveTableColumn<CatalogMasterRecord>[] = [
     {
-      title: activeTab.codeLabel,
-      dataIndex: "code",
+      key: "code",
+      header: activeTab.codeLabel,
       width: 200,
-      sorter: (a, b) => a.code.localeCompare(b.code, "vi"),
-      render: (value: string) => (
-        <Typography variant="body2" sx={{ fontWeight: 700 }}>
-          {value}
-        </Typography>
+      sortAccessor: (record) => record.code,
+      render: (record) => (
+        <Box component="span" sx={{ fontWeight: 700 }}>
+          {record.code}
+        </Box>
       ),
     },
     {
-      title: activeTab.nameLabel,
-      dataIndex: "name",
-      sorter: (a, b) => a.name.localeCompare(b.name, "vi"),
+      key: "name",
+      header: activeTab.nameLabel,
+      sortAccessor: (record) => record.name,
+      render: (record) => record.name,
     },
     ...(supportsBrand
       ? [
           {
-            title: "Hãng",
-            dataIndex: "brand_id",
+            key: "brand",
+            header: "Hãng",
             width: 180,
-            sorter: (a, b) =>
-              (
-                brandNameById.get(a.brand_id ?? "") ??
-                a.brand_id ??
-                ""
-              ).localeCompare(
-                brandNameById.get(b.brand_id ?? "") ?? b.brand_id ?? "",
-                "vi",
-              ),
-            render: (value: string | null) =>
-              value ? (
-                (brandNameById.get(value) ?? value)
+            sortAccessor: (record) =>
+              brandNameById.get(record.brand_id ?? "") ?? record.brand_id ?? "",
+            render: (record) =>
+              record.brand_id ? (
+                (brandNameById.get(record.brand_id) ?? record.brand_id)
               ) : (
-                <Typography variant="body2" color="text.secondary">
+                <Box component="span" sx={{ color: "text.secondary" }}>
                   —
-                </Typography>
+                </Box>
               ),
-          } as ColumnWithSortType<CatalogMasterRecord>[number],
+          } satisfies ResponsiveTableColumn<CatalogMasterRecord>,
         ]
       : []),
     {
-      title: "Mô tả",
-      dataIndex: "description",
+      key: "description",
+      header: "Mô tả",
       width: 280,
-      sorter: (a, b) =>
-        (a.description ?? "").localeCompare(b.description ?? "", "vi"),
-      render: (value: string | null) =>
-        value ? (
-          <Typography
-            variant="body2"
+      sortAccessor: (record) => record.description ?? "",
+      render: (record) =>
+        record.description ? (
+          <Box
+            component="span"
             sx={{
+              display: "inline-block",
               maxWidth: 280,
               whiteSpace: "normal",
               wordBreak: "break-word",
             }}
           >
-            {value}
-          </Typography>
+            {record.description}
+          </Box>
         ) : (
-          <Typography variant="body2" color="text.secondary">
+          <Box component="span" sx={{ color: "text.secondary" }}>
             —
-          </Typography>
+          </Box>
         ),
     },
     {
-      title: "Thứ tự",
-      dataIndex: "sort_order",
+      key: "sortOrder",
+      header: "Thứ tự",
       width: 90,
       align: "right",
       sortType: "value",
-      sorter: (a, b) => a.sort_order - b.sort_order,
+      sortAccessor: (record) => record.sort_order,
+      render: (record) => record.sort_order,
     },
     {
-      title: "Trạng thái",
-      dataIndex: "status",
+      key: "status",
+      header: "Trạng thái",
       width: 140,
       sortType: "value",
-      sorter: (a, b) => a.status.localeCompare(b.status, "vi"),
-      render: (value: MasterStatus) => (
-        <Chip
-          label={businessLabel(MASTER_STATUS_LABELS, value, "Trạng thái khác")}
-          size="small"
-          color={value === "ACTIVE" ? "success" : "warning"}
+      sortAccessor: (record) => record.status,
+      render: (record) => (
+        <UiStatusBadge
+          tone={record.status === "ACTIVE" ? "success" : "warning"}
+          label={businessLabel(
+            MASTER_STATUS_LABELS,
+            record.status,
+            "Trạng thái khác",
+          )}
         />
       ),
     },
     {
-      title: "",
       key: "actions",
+      header: "",
       width: 96,
-      render: (_, record) =>
+      render: (record) =>
         canManage ? (
           <ActionButton
             kind="edit"
@@ -480,42 +465,39 @@ export function CatalogMasterScreen() {
     ? getApiErrorMessage(listQuery.error, "Không tải được danh mục.")
     : "";
 
-  const selectedBrandOption =
-    brandOptions.find((option) => option.value === formValues.brand_id) ?? null;
-
   return (
     <>
       <Stack spacing={2}>
-        <Card variant="outlined" sx={{ borderRadius: 2 }}>
-          <Box
-            sx={{ borderBottom: "1px solid", borderColor: "divider", px: 2 }}
-          >
-            <Tabs
+        <UiCard disablePadding>
+          <Box sx={{ borderBottom: 1, borderColor: "divider", px: 2 }}>
+            <UiTabs
               value={activeKind}
-              onChange={(_event, value) =>
-                changeTab(value as CatalogMasterKind)
-              }
-              variant="scrollable"
-              scrollButtons="auto"
-            >
-              {CATALOG_TABS.map((tab) => (
-                <Tab
-                  key={tab.kind}
-                  value={tab.kind}
-                  icon={tab.icon}
-                  iconPosition="start"
-                  label={tab.label}
-                  sx={{ minHeight: 40, textTransform: "none" }}
-                />
-              ))}
-            </Tabs>
+              onChange={(key) => changeTab(key as CatalogMasterKind)}
+              aria-label="Loại danh mục"
+              items={CATALOG_TABS.map((tab) => ({
+                key: tab.kind,
+                label: (
+                  <Box
+                    component="span"
+                    sx={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 0.75,
+                    }}
+                  >
+                    {tab.icon}
+                    {tab.label}
+                  </Box>
+                ),
+              }))}
+            />
           </Box>
 
           <Box sx={{ p: 2 }}>
             {listError ? (
-              <Alert severity="error" sx={{ mb: 1.5 }}>
-                {listError}
-              </Alert>
+              <Box sx={{ mb: 1.5 }}>
+                <UiAlert tone="error">{listError}</UiAlert>
+              </Box>
             ) : null}
 
             <Stack
@@ -534,7 +516,7 @@ export function CatalogMasterScreen() {
                 spacing={1.5}
                 sx={{ flexWrap: "wrap", rowGap: 1.5 }}
               >
-                <TextField
+                <UiTextField
                   value={keyword}
                   placeholder={`Tìm mã / tên ${activeTab.itemLabel}`}
                   slotProps={{
@@ -544,46 +526,32 @@ export function CatalogMasterScreen() {
                     setKeyword(event.target.value);
                     setPage(1);
                   }}
-                  sx={{ minWidth: 220, ...CATALOG_TOOLBAR_SX }}
+                  sx={{ minWidth: 220 }}
                 />
-                <TextField
-                  select
+                <UiSelect
+                  aria-label="Lọc theo trạng thái"
                   value={statusFilter}
-                  slotProps={{
-                    select: { displayEmpty: true },
-                    htmlInput: { "aria-label": "Lọc theo trạng thái" },
-                  }}
-                  onChange={(event) => {
-                    setStatusFilter(event.target.value as MasterStatus | "");
+                  onChange={(value) => {
+                    setStatusFilter(value as MasterStatus | "");
                     setPage(1);
                   }}
-                  sx={{ minWidth: 168, ...CATALOG_TOOLBAR_SX }}
-                >
-                  <MenuItem value="">Trạng thái: Tất cả</MenuItem>
-                  {STATUS_OPTIONS.map((option) => (
-                    <MenuItem key={option.value} value={option.value}>
-                      {option.label}
-                    </MenuItem>
-                  ))}
-                </TextField>
-                <TextField
-                  select
+                  placeholder="Trạng thái: Tất cả"
+                  minWidth={168}
+                  options={STATUS_OPTIONS}
+                />
+                <UiSelect
+                  aria-label="Số dòng mỗi trang"
                   value={perPage}
-                  slotProps={{
-                    htmlInput: { "aria-label": "Số dòng mỗi trang" },
-                  }}
-                  onChange={(event) => {
-                    setPerPage(Number(event.target.value));
+                  onChange={(value) => {
+                    setPerPage(Number(value));
                     setPage(1);
                   }}
-                  sx={{ minWidth: 100, ...CATALOG_TOOLBAR_SX }}
-                >
-                  {MVP_PAGE_SIZE_OPTIONS.map((size) => (
-                    <MenuItem key={size} value={size}>
-                      {size} / trang
-                    </MenuItem>
-                  ))}
-                </TextField>
+                  minWidth={100}
+                  options={MVP_PAGE_SIZE_OPTIONS.map((size) => ({
+                    value: size,
+                    label: `${size} / trang`,
+                  }))}
+                />
               </Stack>
               {canManage ? (
                 <ActionButton kind="create" onClick={openCreate}>
@@ -592,237 +560,249 @@ export function CatalogMasterScreen() {
               ) : null}
             </Stack>
 
-            <DataTable<CatalogMasterRecord>
-              rowKey="id"
-              size="small"
-              loading={listQuery.isLoading || listQuery.isFetching}
-              dataSource={rows}
+            <ResponsiveDataTable<CatalogMasterRecord>
               columns={columns}
-              locale={{ emptyText: `Chưa có ${activeTab.itemLabel} nào.` }}
-              scroll={{ x: "max-content" }}
-              rowSelection={{
-                type: "checkbox",
-                selectedRowKeys,
-                onChange: setSelectedRowKeys,
-              }}
-              pagination={{
-                current: pagination.current,
-                pageSize: perPage,
-                total: pagination.total,
-                showSizeChanger: false,
-                showTotal: (total) => `Tổng ${total} ${activeTab.itemLabel}`,
-                onChange: setPage,
-              }}
+              rows={rows}
+              rowKey={(record) => record.id}
+              loading={listQuery.isLoading}
+              emptyText={`Chưa có ${activeTab.itemLabel} nào.`}
+              rowSelection={rowSelection}
+              selectionLabel={(record) => `Chọn ${record.code}`}
             />
-          </Box>
-        </Card>
 
-        <Dialog
+            <Stack
+              direction="row"
+              sx={{
+                justifyContent: "space-between",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: 1,
+                mt: 1.5,
+              }}
+            >
+              <UiText variant="secondary">
+                Tổng {pagination.total} {activeTab.itemLabel}
+              </UiText>
+              <UiPagination
+                page={pagination.current}
+                pageSize={perPage}
+                total={pagination.total}
+                showTotal={false}
+                onPageChange={setPage}
+              />
+            </Stack>
+          </Box>
+        </UiCard>
+
+        <UiDialog
           open={isModalOpen}
           onClose={guardBackdropClose(closeModal)}
           maxWidth="sm"
           fullWidth
+          title={
+            <>
+              {editingRecord ? "Sửa" : "Tạo"} {activeTab.itemLabel}
+              <ActionIconButton
+                kind="close"
+                label="Đóng"
+                onClick={closeModal}
+                disabled={saveMutation.isPending}
+                sx={{ position: "absolute", right: 10, top: 8 }}
+              />
+            </>
+          }
+          actions={
+            <>
+              <ActionButton
+                kind="cancel"
+                onClick={closeModal}
+                disabled={saveMutation.isPending}
+              >
+                Hủy
+              </ActionButton>
+              <ActionButton
+                kind="save"
+                onClick={() => void handleSubmit()}
+                disabled={saveMutation.isPending}
+              >
+                {saveMutation.isPending ? "Đang lưu..." : "Lưu"}
+              </ActionButton>
+            </>
+          }
         >
-          <DialogTitle sx={{ pr: 6, position: "relative" }}>
-            {editingRecord ? "Sửa" : "Tạo"} {activeTab.itemLabel}
-            <ActionIconButton
-              kind="close"
-              label="Đóng"
-              onClick={closeModal}
-              disabled={saveMutation.isPending}
-              sx={{ position: "absolute", right: 10, top: 8 }}
-            />
-          </DialogTitle>
-          <DialogContent dividers>
-            {formError ? (
-              <Alert severity="error" sx={{ mb: "14px" }}>
-                {formError}
-              </Alert>
-            ) : null}
-            <Grid container spacing={2}>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField
-                  id="catalog-code"
-                  label={activeTab.codeLabel}
-                  required
-                  fullWidth
-                  placeholder={activeTab.codePlaceholder}
-                  value={formValues.code}
-                  onChange={(event) => {
-                    const value = event.target.value;
-                    setFormValues((current) => ({ ...current, code: value }));
-                    setFieldErrors((current) =>
-                      current.code ? { ...current, code: "" } : current,
-                    );
-                  }}
-                  disabled={saveMutation.isPending}
-                  error={Boolean(fieldErrors.code)}
-                  helperText={
-                    fieldErrors.code ||
-                    (editingRecord
-                      ? "Nếu mã đã được SKU sử dụng thì hệ thống sẽ không cho phép đổi."
-                      : undefined)
-                  }
-                  slotProps={{ htmlInput: { maxLength: 80 } }}
-                />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField
-                  id="catalog-name"
-                  label={activeTab.nameLabel}
-                  required
-                  fullWidth
-                  placeholder={activeTab.namePlaceholder}
-                  value={formValues.name}
-                  onChange={(event) => {
-                    const value = event.target.value;
-                    setFormValues((current) => ({ ...current, name: value }));
-                    setFieldErrors((current) =>
-                      current.name ? { ...current, name: "" } : current,
-                    );
-                  }}
-                  disabled={saveMutation.isPending}
-                  error={Boolean(fieldErrors.name)}
-                  helperText={fieldErrors.name}
-                  slotProps={{ htmlInput: { maxLength: 200 } }}
-                />
-              </Grid>
-              {supportsBrand ? (
-                <Grid size={12}>
-                  <Autocomplete
-                    options={brandOptions}
-                    getOptionLabel={(option) => option.label}
-                    isOptionEqualToValue={(option, value) =>
-                      option.value === value.value
-                    }
-                    value={selectedBrandOption}
-                    onChange={(_event, newValue) => {
-                      setFormValues((current) => ({
-                        ...current,
-                        brand_id: newValue?.value,
-                      }));
-                      setFieldErrors((current) =>
-                        current.brand_id
-                          ? { ...current, brand_id: "" }
-                          : current,
-                      );
-                    }}
-                    loading={brandQuery.isLoading}
-                    disabled={saveMutation.isPending}
-                    renderInput={(params) => (
-                      <TextField
-                        {...params}
-                        label="Hãng"
-                        placeholder="Chọn hãng (không bắt buộc)"
-                        error={Boolean(fieldErrors.brand_id)}
-                        helperText={
-                          fieldErrors.brand_id ||
-                          "Chỉ hiển thị các hãng đang sử dụng."
-                        }
-                      />
-                    )}
-                  />
-                </Grid>
-              ) : null}
+          {formError ? (
+            <Box sx={{ mb: "14px" }}>
+              <UiAlert tone="error">{formError}</UiAlert>
+            </Box>
+          ) : null}
+          <Grid container spacing={2}>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <UiTextField
+                id="catalog-code"
+                label={activeTab.codeLabel}
+                required
+                fullWidth
+                placeholder={activeTab.codePlaceholder}
+                value={formValues.code}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setFormValues((current) => ({ ...current, code: value }));
+                  setFieldErrors((current) =>
+                    current.code ? { ...current, code: "" } : current,
+                  );
+                }}
+                disabled={saveMutation.isPending}
+                error={Boolean(fieldErrors.code)}
+                helperText={
+                  fieldErrors.code ||
+                  (editingRecord
+                    ? "Nếu mã đã được SKU sử dụng thì hệ thống sẽ không cho phép đổi."
+                    : undefined)
+                }
+                slotProps={{ htmlInput: { maxLength: 80 } }}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <UiTextField
+                id="catalog-name"
+                label={activeTab.nameLabel}
+                required
+                fullWidth
+                placeholder={activeTab.namePlaceholder}
+                value={formValues.name}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setFormValues((current) => ({ ...current, name: value }));
+                  setFieldErrors((current) =>
+                    current.name ? { ...current, name: "" } : current,
+                  );
+                }}
+                disabled={saveMutation.isPending}
+                error={Boolean(fieldErrors.name)}
+                helperText={fieldErrors.name}
+                slotProps={{ htmlInput: { maxLength: 200 } }}
+              />
+            </Grid>
+            {supportsBrand ? (
               <Grid size={12}>
-                <TextField
-                  id="catalog-description"
-                  label="Mô tả"
+                <UiTextField
+                  id="catalog-brand"
+                  select
+                  label="Hãng"
                   fullWidth
-                  multiline
-                  minRows={3}
-                  value={formValues.description ?? ""}
+                  value={formValues.brand_id ?? ""}
                   onChange={(event) => {
                     const value = event.target.value;
                     setFormValues((current) => ({
                       ...current,
-                      description: value,
+                      brand_id: value || undefined,
                     }));
                     setFieldErrors((current) =>
-                      current.description
-                        ? { ...current, description: "" }
-                        : current,
+                      current.brand_id ? { ...current, brand_id: "" } : current,
                     );
                   }}
                   disabled={saveMutation.isPending}
-                  error={Boolean(fieldErrors.description)}
-                  helperText={fieldErrors.description}
-                  slotProps={{ htmlInput: { maxLength: 2000 } }}
-                />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField
-                  id="catalog-sort-order"
-                  label="Thứ tự hiển thị"
-                  type="number"
-                  fullWidth
-                  value={formValues.sort_order ?? 0}
-                  onChange={(event) => {
-                    const value = Number(event.target.value) || 0;
-                    setFormValues((current) => ({
-                      ...current,
-                      sort_order: value,
-                    }));
-                    setFieldErrors((current) =>
-                      current.sort_order
-                        ? { ...current, sort_order: "" }
-                        : current,
-                    );
+                  error={Boolean(fieldErrors.brand_id)}
+                  helperText={
+                    fieldErrors.brand_id ||
+                    "Chỉ hiển thị các hãng đang sử dụng."
+                  }
+                  slotProps={{
+                    select: { displayEmpty: true },
+                    inputLabel: { shrink: true },
                   }}
-                  disabled={saveMutation.isPending}
-                  error={Boolean(fieldErrors.sort_order)}
-                  helperText={fieldErrors.sort_order}
-                  slotProps={{ htmlInput: { min: 0 } }}
-                />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField
-                  id="catalog-status"
-                  select
-                  label="Trạng thái"
-                  required
-                  fullWidth
-                  value={formValues.status}
-                  onChange={(event) => {
-                    const value = event.target.value as MasterStatus;
-                    setFormValues((current) => ({
-                      ...current,
-                      status: value,
-                    }));
-                    setFieldErrors((current) =>
-                      current.status ? { ...current, status: "" } : current,
-                    );
-                  }}
-                  disabled={saveMutation.isPending}
-                  error={Boolean(fieldErrors.status)}
-                  helperText={fieldErrors.status}
                 >
-                  {STATUS_OPTIONS.map((option) => (
+                  <MenuItem value="">Chọn hãng (không bắt buộc)</MenuItem>
+                  {brandOptions.map((option) => (
                     <MenuItem key={option.value} value={option.value}>
                       {option.label}
                     </MenuItem>
                   ))}
-                </TextField>
+                </UiTextField>
               </Grid>
+            ) : null}
+            <Grid size={12}>
+              <UiTextField
+                id="catalog-description"
+                label="Mô tả"
+                fullWidth
+                multiline
+                minRows={3}
+                value={formValues.description ?? ""}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setFormValues((current) => ({
+                    ...current,
+                    description: value,
+                  }));
+                  setFieldErrors((current) =>
+                    current.description
+                      ? { ...current, description: "" }
+                      : current,
+                  );
+                }}
+                disabled={saveMutation.isPending}
+                error={Boolean(fieldErrors.description)}
+                helperText={fieldErrors.description}
+                slotProps={{ htmlInput: { maxLength: 2000 } }}
+              />
             </Grid>
-          </DialogContent>
-          <DialogActions>
-            <ActionButton
-              kind="cancel"
-              onClick={closeModal}
-              disabled={saveMutation.isPending}
-            >
-              Hủy
-            </ActionButton>
-            <ActionButton
-              kind="save"
-              onClick={() => void handleSubmit()}
-              disabled={saveMutation.isPending}
-            >
-              {saveMutation.isPending ? "Đang lưu..." : "Lưu"}
-            </ActionButton>
-          </DialogActions>
-        </Dialog>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <UiTextField
+                id="catalog-sort-order"
+                label="Thứ tự hiển thị"
+                type="number"
+                fullWidth
+                value={formValues.sort_order ?? 0}
+                onChange={(event) => {
+                  const value = Number(event.target.value) || 0;
+                  setFormValues((current) => ({
+                    ...current,
+                    sort_order: value,
+                  }));
+                  setFieldErrors((current) =>
+                    current.sort_order
+                      ? { ...current, sort_order: "" }
+                      : current,
+                  );
+                }}
+                disabled={saveMutation.isPending}
+                error={Boolean(fieldErrors.sort_order)}
+                helperText={fieldErrors.sort_order}
+                slotProps={{ htmlInput: { min: 0 } }}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <UiTextField
+                id="catalog-status"
+                select
+                label="Trạng thái"
+                required
+                fullWidth
+                value={formValues.status}
+                onChange={(event) => {
+                  const value = event.target.value as MasterStatus;
+                  setFormValues((current) => ({
+                    ...current,
+                    status: value,
+                  }));
+                  setFieldErrors((current) =>
+                    current.status ? { ...current, status: "" } : current,
+                  );
+                }}
+                disabled={saveMutation.isPending}
+                error={Boolean(fieldErrors.status)}
+                helperText={fieldErrors.status}
+              >
+                {STATUS_OPTIONS.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </UiTextField>
+            </Grid>
+          </Grid>
+        </UiDialog>
       </Stack>
     </>
   );

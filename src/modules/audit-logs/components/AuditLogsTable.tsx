@@ -1,6 +1,12 @@
 import { useState } from "react";
-import { Tag } from "antd";
-import { Stack, Typography } from "@mui/material";
+import {
+  Box,
+  Stack,
+  UiStatusBadge,
+  type UiStatusTone,
+  SEMANTIC_LIGHT as S,
+  TYPOGRAPHY,
+} from "@/shared/ui";
 import {
   ResponsiveDataTable,
   type ResponsiveTableColumn,
@@ -21,17 +27,26 @@ import {
 } from "@/shared/constants/business-labels";
 import { ActionButton } from "@/shared/components/actions";
 
-const ACTION_COLOR: Record<string, string> = {
-  CREATE: "green",
-  UPDATE: "blue",
-  DELETE: "red",
-  REVOKE_ROLE_SCOPE: "orange",
-  SYNC_ROLE_SCOPES: "purple",
-  SUBMIT: "cyan",
-  CANCEL: "magenta",
-  ARCHIVE: "gray",
-  RESTORE: "lime",
+// Map preset màu antd Tag cũ → tone UiStatusBadge (recipe Part 4:
+// green→success, blue/cyan→info, red/magenta→error, orange→warning,
+// purple→primary, gray→neutral, lime→success).
+const ACTION_TONES: Record<string, UiStatusTone> = {
+  CREATE: "success",
+  UPDATE: "info",
+  DELETE: "error",
+  REVOKE_ROLE_SCOPE: "warning",
+  SYNC_ROLE_SCOPES: "primary",
+  SUBMIT: "info",
+  CANCEL: "error",
+  ARCHIVE: "neutral",
+  RESTORE: "success",
 };
+
+/** Chữ trong ô bảng (thay Typography body2). */
+const CELL_TEXT_SX = {
+  fontSize: TYPOGRAPHY.fontSizeSecondary,
+  color: S.textHigh,
+} as const;
 
 /**
  * UUID đối tượng dài 36 ký tự: in nguyên vào ô bảng thì cột tự xuống 6 dòng và
@@ -134,9 +149,9 @@ export function AuditLogsTable({
       width: 150,
       sortable: true,
       render: (row) => (
-        <Typography variant="body2" sx={{ whiteSpace: "nowrap" }}>
+        <Box sx={{ ...CELL_TEXT_SX, whiteSpace: "nowrap" }}>
           {formatDateTime(row.created_at)}
-        </Typography>
+        </Box>
       ),
     },
     {
@@ -145,9 +160,14 @@ export function AuditLogsTable({
       width: 170,
       sortable: true,
       render: (row) => (
-        <Tag color={ACTION_COLOR[row.action] ?? "default"}>
-          {businessLabel(AUDIT_ACTION_LABELS, row.action, "Hành động khác")}
-        </Tag>
+        <UiStatusBadge
+          tone={ACTION_TONES[row.action] ?? "neutral"}
+          label={businessLabel(
+            AUDIT_ACTION_LABELS,
+            row.action,
+            "Hành động khác",
+          )}
+        />
       ),
     },
     {
@@ -156,9 +176,9 @@ export function AuditLogsTable({
       width: 150,
       sortable: true,
       render: (row) => (
-        <Typography variant="body2">
+        <Box sx={CELL_TEXT_SX}>
           {AUDIT_MODULE_LABELS[row.module] || "Phân hệ khác"}
-        </Typography>
+        </Box>
       ),
     },
     {
@@ -169,19 +189,29 @@ export function AuditLogsTable({
       sortable: true,
       render: (row) => (
         <Stack spacing={0} sx={{ minWidth: 0 }}>
-          <Typography variant="body2" noWrap>
+          <Box
+            sx={{
+              ...CELL_TEXT_SX,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
             {row.object_type || "—"}
-          </Typography>
+          </Box>
           {row.object_id ? (
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              noWrap
+            <Box
               title={row.object_id}
-              sx={{ fontSize: 11 }}
+              sx={{
+                fontSize: 11,
+                color: S.textMedium,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
             >
               {`#${shortAuditId(row.object_id)}`}
-            </Typography>
+            </Box>
           ) : null}
         </Stack>
       ),
@@ -193,9 +223,17 @@ export function AuditLogsTable({
       render: (row) => {
         const actor = row.actor?.email || row.actor?.display_name || "Hệ thống";
         return (
-          <Typography variant="body2" noWrap title={actor}>
+          <Box
+            title={actor}
+            sx={{
+              ...CELL_TEXT_SX,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
             {actor}
-          </Typography>
+          </Box>
         );
       },
     },
@@ -206,9 +244,9 @@ export function AuditLogsTable({
       hideOnMobile: true,
       sortable: true,
       render: (row) => (
-        <Typography variant="body2" sx={{ whiteSpace: "nowrap" }}>
+        <Box sx={{ ...CELL_TEXT_SX, whiteSpace: "nowrap" }}>
           {row.ip_address || "—"}
-        </Typography>
+        </Box>
       ),
     },
     {
@@ -219,10 +257,10 @@ export function AuditLogsTable({
       // bề rộng rồi cắt bằng "…" — nội dung đầy đủ vẫn có ở tooltip và ở Dialog
       // chi tiết. KHÔNG đặt `width` cho cột: cột cố định càng làm bảng rộng thêm.
       render: (row) => (
-        <Typography
-          variant="body2"
+        <Box
           title={row.description}
           sx={{
+            ...CELL_TEXT_SX,
             maxWidth: 260,
             whiteSpace: "nowrap",
             overflow: "hidden",
@@ -230,7 +268,7 @@ export function AuditLogsTable({
           }}
         >
           {row.description}
-        </Typography>
+        </Box>
       ),
     },
   ];

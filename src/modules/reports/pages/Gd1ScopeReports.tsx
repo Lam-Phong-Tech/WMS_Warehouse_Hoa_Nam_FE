@@ -1,10 +1,27 @@
-import { useMemo, useState, type Key } from "react";
-import { Card, DatePicker, Empty, Input, Select, Space, Tag } from "antd";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import dayjs, { type Dayjs } from "dayjs";
+import {
+  Box,
+  Stack,
+  UiCard,
+  UiDateRangePicker,
+  UiSelect,
+  UiStatusBadge,
+  UiTextField,
+} from "@/shared/ui";
 import { http } from "@/shared/api/http";
-import { DataTable, TopPagination } from "@/shared/components";
-import type { ColumnWithSortType } from "@/shared/components";
+import { TopPagination } from "@/shared/components";
+import {
+  ResponsiveDataTable,
+  type ResponsiveTableColumn,
+} from "@/shared/components/data-display/ResponsiveDataTable";
+import {
+  TableLoadingBanner,
+  tableEmptyText,
+} from "@/shared/components/feedback/BusinessState";
+import { mvpRowNumber } from "@/shared/components/mvp/MvpSelectionCell";
+import { useRowSelection } from "@/shared/hooks/useRowSelection";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import {
   RECIPIENT_TYPE_LABELS,
@@ -17,8 +34,6 @@ import {
   ReportChartGrid,
   ReportChartPanel,
 } from "@/shared/components/reports/ReportChartPanel";
-
-const { RangePicker } = DatePicker;
 
 type Raw = Record<string, unknown>;
 
@@ -58,7 +73,6 @@ function RecipientReport() {
   const [skuCode, setSkuCode] = useState<string>();
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
-  const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([]);
 
   const recipientQuery = useQuery({
     queryKey: ["gd1", "recipients", recipientType],
@@ -115,86 +129,112 @@ function RecipientReport() {
   const byRecipient = rowsOf(data.by_recipient);
   const fmt = (value: number) => value.toLocaleString("vi-VN");
 
-  const columns: ColumnWithSortType<Raw> = [
+  const rowKey = (row: Raw) =>
+    `${text(row.document_id, "")}-${text(row.sku_id, "")}-${text(row.recipient_id, "")}`;
+  const rowSelection = useRowSelection(rows, rowKey);
+  const currentPage = number(pagination.current_page) || page;
+
+  const columns: ResponsiveTableColumn<Raw>[] = [
     {
-      title: "Ngày",
-      dataIndex: "document_date",
+      // DataTable cũ tự thêm cột STT theo pagination current/pageSize —
+      // ResponsiveDataTable không có nên khai tường minh, cùng công thức.
+      key: "stt",
+      header: "STT",
+      align: "center",
+      width: 60,
+      hideOnMobile: true,
+      render: (row) =>
+        mvpRowNumber(
+          currentPage,
+          perPage,
+          rows.findIndex((candidate) => rowKey(candidate) === rowKey(row)),
+        ),
+    },
+    {
+      key: "document_date",
+      header: "Ngày",
       width: 115,
       sortType: "value",
-      sorter: (a, b) =>
-        new Date(text(a.document_date, "")).getTime() -
-        new Date(text(b.document_date, "")).getTime(),
-      render: (value) => formatDate(text(value, "")),
+      sortAccessor: (row) => new Date(text(row.document_date, "")).getTime(),
+      render: (row) => formatDate(text(row.document_date, "")),
     },
     {
-      title: "Phiếu",
-      dataIndex: "outbound_no",
+      key: "outbound_no",
+      header: "Phiếu",
       width: 150,
-      sorter: (a, b) =>
-        text(a.outbound_no).localeCompare(text(b.outbound_no), "vi"),
+      sortAccessor: (row) => text(row.outbound_no),
+      render: (row) => text(row.outbound_no),
     },
     {
-      title: "Loại nơi nhận",
-      dataIndex: "recipient_type",
+      key: "recipient_type",
+      header: "Loại nơi nhận",
       width: 150,
-      sorter: (a, b) =>
-        recipientTypeLabel(text(a.recipient_type, "")).localeCompare(
-          recipientTypeLabel(text(b.recipient_type, "")),
-          "vi",
-        ),
-      render: (value) => <Tag>{recipientTypeLabel(text(value, ""))}</Tag>,
+      sortAccessor: (row) => recipientTypeLabel(text(row.recipient_type, "")),
+      render: (row) => (
+        <UiStatusBadge
+          tone="neutral"
+          label={recipientTypeLabel(text(row.recipient_type, ""))}
+        />
+      ),
     },
     {
-      title: "Nơi nhận",
-      dataIndex: "recipient_name",
+      key: "recipient_name",
+      header: "Nơi nhận",
       width: 210,
-      sorter: (a, b) =>
-        text(a.recipient_name).localeCompare(text(b.recipient_name), "vi"),
+      sortAccessor: (row) => text(row.recipient_name),
+      render: (row) => text(row.recipient_name),
     },
     {
-      title: "Thị trường",
-      dataIndex: "market",
+      key: "market",
+      header: "Thị trường",
       width: 130,
-      sorter: (a, b) => text(a.market).localeCompare(text(b.market), "vi"),
+      sortAccessor: (row) => text(row.market),
+      render: (row) => text(row.market),
     },
     {
-      title: "Khu vực",
-      dataIndex: "region",
+      key: "region",
+      header: "Khu vực",
       width: 130,
-      sorter: (a, b) => text(a.region).localeCompare(text(b.region), "vi"),
+      sortAccessor: (row) => text(row.region),
+      render: (row) => text(row.region),
     },
     {
-      title: "SKU",
-      dataIndex: "product_code",
+      key: "product_code",
+      header: "SKU",
       width: 150,
-      sorter: (a, b) =>
-        text(a.product_code).localeCompare(text(b.product_code), "vi"),
+      sortAccessor: (row) => text(row.product_code),
+      render: (row) => text(row.product_code),
     },
     {
-      title: "Tên SKU",
-      dataIndex: "product_name",
+      key: "product_name",
+      header: "Tên SKU",
       width: 210,
-      sorter: (a, b) =>
-        text(a.product_name).localeCompare(text(b.product_name), "vi"),
+      sortAccessor: (row) => text(row.product_name),
+      render: (row) => text(row.product_name),
     },
     {
-      title: "SL xuất",
-      dataIndex: "issued_qty",
+      key: "issued_qty",
+      header: "SL xuất",
       width: 100,
       align: "right",
       sortType: "value",
-      sorter: (a, b) => number(a.issued_qty) - number(b.issued_qty),
-      render: (value) => number(value).toLocaleString("vi-VN"),
+      sortAccessor: (row) => number(row.issued_qty),
+      render: (row) => number(row.issued_qty).toLocaleString("vi-VN"),
     },
   ];
 
   return (
-    <Space orientation="vertical" size={14} style={{ width: "100%" }}>
-      <Card size="small">
-        <Space wrap>
-          <RangePicker
+    <Stack spacing={1.75} sx={{ width: "100%" }}>
+      <UiCard>
+        <Stack
+          direction="row"
+          spacing={1}
+          sx={{ flexWrap: "wrap", rowGap: 1, alignItems: "center" }}
+        >
+          <UiDateRangePicker
             value={period}
             format="DD/MM/YYYY"
+            aria-label="Khoảng thời gian"
             onChange={(value) => {
               if (value?.[0] && value?.[1]) {
                 setPeriod([value[0], value[1]]);
@@ -202,12 +242,11 @@ function RecipientReport() {
               }
             }}
           />
-          <Select
-            allowClear
-            style={{ width: 180 }}
+          <UiSelect
+            minWidth={180}
             placeholder="Loại nơi nhận"
             aria-label="Loại nơi nhận"
-            value={recipientType}
+            value={recipientType ?? ""}
             options={Object.entries(RECIPIENT_TYPE_LABELS).map(
               ([value, label]) => ({
                 value,
@@ -215,78 +254,75 @@ function RecipientReport() {
               }),
             )}
             onChange={(value) => {
-              setRecipientType(value as RecipientType | undefined);
+              setRecipientType(
+                (value || undefined) as RecipientType | undefined,
+              );
               setRecipientId(undefined);
               setMarket(undefined);
               setRegion(undefined);
               setPage(1);
             }}
           />
-          <Select
-            allowClear
-            showSearch
-            optionFilterProp="label"
-            style={{ width: 240 }}
+          <UiSelect
+            minWidth={240}
             placeholder="Nơi nhận"
             aria-label="Nơi nhận"
-            value={recipientId}
+            value={recipientId ?? ""}
             options={recipientOptions}
-            loading={recipientQuery.isLoading}
             onChange={(value) => {
-              setRecipientId(value);
+              setRecipientId(value || undefined);
               setPage(1);
             }}
           />
-          <Select
-            allowClear
-            style={{ width: 160 }}
+          <UiSelect
+            minWidth={160}
             placeholder="Thị trường"
             aria-label="Thị trường"
-            value={market}
+            value={market ?? ""}
             options={marketOptions}
             onChange={(value) => {
-              setMarket(value);
+              setMarket(value || undefined);
               setPage(1);
             }}
           />
-          <Select
-            allowClear
-            style={{ width: 160 }}
+          <UiSelect
+            minWidth={160}
             placeholder="Khu vực"
             aria-label="Khu vực"
-            value={region}
+            value={region ?? ""}
             options={regionOptions}
             onChange={(value) => {
-              setRegion(value);
+              setRegion(value || undefined);
               setPage(1);
             }}
           />
-          {/* Dùng Input của antd cho khớp các bộ lọc antd bên cạnh: <input>
-              thuần không ăn theme, không có transition viền/focus như phần
-              còn lại của thanh lọc. */}
-          <Input
-            style={{ width: 180 }}
+          <UiTextField
+            sx={{ width: 180 }}
             value={skuCode ?? ""}
             placeholder="Mã SKU"
-            aria-label="Mã SKU"
-            allowClear
+            slotProps={{ htmlInput: { "aria-label": "Mã SKU" } }}
             onChange={(event) => {
               setSkuCode(event.target.value);
               setPage(1);
             }}
           />
-        </Space>
-      </Card>
+        </Stack>
+      </UiCard>
 
-      <Space wrap>
-        <Tag color="blue">
-          Nơi nhận: {number(summary.total_recipients ?? summary.total_agencies)}
-        </Tag>
-        <Tag>Phiếu: {number(summary.total_documents)}</Tag>
-        <Tag color="green">
-          Tổng xuất: {number(summary.total_issued_qty).toLocaleString("vi-VN")}
-        </Tag>
-      </Space>
+      <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap", rowGap: 1 }}>
+        <UiStatusBadge
+          tone="info"
+          label={`Nơi nhận: ${number(summary.total_recipients ?? summary.total_agencies)}`}
+        />
+        <UiStatusBadge
+          tone="neutral"
+          label={`Phiếu: ${number(summary.total_documents)}`}
+        />
+        <UiStatusBadge
+          tone="success"
+          label={`Tổng xuất: ${number(summary.total_issued_qty).toLocaleString("vi-VN")}`}
+        />
+      </Stack>
 
       {reportQuery.isError ? (
         <ApiErrorAlert
@@ -328,51 +364,41 @@ function RecipientReport() {
       {/* Gộp chọn số dòng/trang + điều hướng trang vào một khu vực duy nhất,
           ngay sát bảng — trước đây Select "số dòng/trang" nằm tít trên thanh
           filter còn phân trang lại nằm tít dưới bảng, tách rời nhau khó tìm. */}
-      <TopPagination
-        total={number(pagination.total) || rows.length}
-        current={number(pagination.current_page) || page}
-        pageSize={perPage}
-        unitName="dòng"
-        pageSizeOptions={[10, 20, 50]}
-        onChange={(newPage, newPageSize) => {
-          if (newPageSize !== perPage) {
-            setPerPage(newPageSize);
-            setPage(1);
-          } else {
-            setPage(newPage);
-          }
-        }}
-      />
-
-      <DataTable<Raw>
-        rowKey={(row) =>
-          `${text(row.document_id, "")}-${text(row.sku_id, "")}-${text(row.recipient_id, "")}`
-        }
-        loading={reportQuery.isLoading || reportQuery.isFetching}
-        columns={columns}
-        dataSource={rows}
-        rowSelection={{
-          type: "checkbox",
-          selectedRowKeys,
-          onChange: setSelectedRowKeys,
-        }}
-        locale={{
-          emptyText: (
-            <Empty description="Chưa có dữ liệu xuất theo bộ lọc hiện tại" />
-          ),
-        }}
-        scroll={{ x: 1450 }}
-        pagination={{
-          current: number(pagination.current_page) || page,
-          pageSize: perPage,
-          total: number(pagination.total) || rows.length,
-          // Ẩn thanh phân trang mặc định của antd ở chân bảng — đã có
-          // TopPagination phía trên đảm nhiệm, tránh hiện 2 khu vực phân trang.
-          // Vẫn giữ current/pageSize để cột STT tính đúng số thứ tự theo trang.
-          position: [],
-        }}
-      />
-    </Space>
+      <Box>
+        <TopPagination
+          total={number(pagination.total) || rows.length}
+          current={currentPage}
+          pageSize={perPage}
+          unitName="dòng"
+          pageSizeOptions={[10, 20, 50]}
+          onChange={(newPage, newPageSize) => {
+            if (newPageSize !== perPage) {
+              setPerPage(newPageSize);
+              setPage(1);
+            } else {
+              setPage(newPage);
+            }
+          }}
+        />
+        {/* Chỉ khoá bảng khi tải lần đầu — ResponsiveDataTable thay hẳn nội dung
+            bằng "Đang tải..." khi loading, nên isFetching báo qua banner để bảng
+            không trắng xoá mỗi lần đổi trang/lọc (khác overlay của antd cũ). */}
+        <TableLoadingBanner
+          loading={reportQuery.isLoading || reportQuery.isFetching}
+        />
+        <ResponsiveDataTable<Raw>
+          columns={columns}
+          rows={rows}
+          rowKey={rowKey}
+          rowSelection={rowSelection}
+          loading={reportQuery.isLoading}
+          emptyText={tableEmptyText(
+            reportQuery.isError ? reportQuery.error : null,
+            "Chưa có dữ liệu xuất theo bộ lọc hiện tại",
+          )}
+        />
+      </Box>
+    </Stack>
   );
 }
 

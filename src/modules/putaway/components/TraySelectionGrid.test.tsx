@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ThemeProvider } from "@mui/material";
-import { muiTheme } from "@/app/mui-theme";
+import { muiTheme } from "@/shared/ui/theme";
 import { TraySelectionGrid } from "./TraySelectionGrid";
 import type { TrayOption } from "@/modules/putaway/services/putawayService";
 

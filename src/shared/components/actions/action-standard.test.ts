@@ -22,9 +22,6 @@ const SRC = path.resolve(__dirname, "../../..");
 const RAW_BUTTON_ALLOWLIST = new Set([
   // Chuông thông báo — là điểm neo của popover, không mang nhãn hành động.
   "modules/notifications/components/NotificationBell.tsx",
-  // Bộ chọn kỳ + sơ đồ luồng: cần giữ trạng thái "đang chọn" (contained/outlined),
-  // nút phẳng đồng nhất sẽ xoá mất phản hồi đang-chọn.
-  "modules/dashboard/pages/DashboardPage.tsx",
   // Foundation của design system (Part 2 Vuexy sync): UiButton/UiIconButton là
   // TẦNG WRAP engine — nơi duy nhất được chạm MUI Button trực tiếp; screen
   // nghiệp vụ vẫn phải đi qua ActionButton/UiButton, không tự dựng nút.

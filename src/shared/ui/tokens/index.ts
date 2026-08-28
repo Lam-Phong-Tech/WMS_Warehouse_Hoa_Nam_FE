@@ -7,7 +7,6 @@ export {
   COLOR,
   CONTROL,
   INK_RGB,
-  LEGACY_SHELL,
   MOTION,
   OPACITY,
   RADIUS,

@@ -319,7 +319,7 @@ canvas {
 .ant-modal .btn,
 .ant-drawer .btn {
   border: 1px solid var(--wms-border);
-  background: #fff;
+  background: var(--wms-bg-surface);
   border-radius: 10px;
   padding: 9px 12px;
   cursor: pointer;
@@ -334,28 +334,28 @@ canvas {
 .ant-drawer .btn.primary {
   background: var(--wms-primary);
   border-color: var(--wms-primary);
-  color: #fff;
+  color: var(--wms-on-primary);
 }
 
 .ant-modal .btn.success,
 .ant-drawer .btn.success {
   background: var(--wms-success);
   border-color: var(--wms-success);
-  color: #fff;
+  color: var(--wms-on-primary);
 }
 
 .ant-modal .btn.warn,
 .ant-drawer .btn.warn {
   background: var(--wms-warning);
   border-color: var(--wms-warning);
-  color: #fff;
+  color: var(--wms-on-primary);
 }
 
 .ant-modal .btn.danger,
 .ant-drawer .btn.danger {
   background: var(--wms-error);
   border-color: var(--wms-error);
-  color: #fff;
+  color: var(--wms-on-primary);
 }
 
 .ant-modal .btn.small,
@@ -377,7 +377,7 @@ canvas {
 .ant-drawer .select,
 .ant-drawer .textarea {
   border: 1px solid var(--wms-border);
-  background: #fff;
+  background: var(--wms-bg-surface);
   border-radius: 10px;
   padding: 9px 10px;
   min-width: 140px;
@@ -435,7 +435,7 @@ canvas {
   border: 1px solid var(--line, var(--wms-border));
   border-radius: 14px;
   padding: 14px;
-  background: #fff;
+  background: var(--wms-bg-surface);
 }
 
 @media (max-width: 980px) {

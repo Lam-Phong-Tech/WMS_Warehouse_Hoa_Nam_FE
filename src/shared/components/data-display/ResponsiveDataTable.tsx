@@ -345,6 +345,10 @@ export function ResponsiveDataTable<T>({
             {sortedRows.map((row) => (
               <Box
                 component="tr"
+                // role tường minh = role ngầm định của <tr>: các test contract
+                // (vd WWHN-240) tìm dòng bằng closest('[role="row"]') — selector
+                // thuộc tính không thấy implicit role của HTML table.
+                role="row"
                 key={rowKey(row)}
                 onClick={onRowClick ? () => onRowClick(row) : undefined}
                 sx={{

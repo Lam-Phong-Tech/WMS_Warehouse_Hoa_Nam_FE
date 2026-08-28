@@ -1,10 +1,12 @@
-import { useMemo } from "react";
+import { useMemo, type KeyboardEvent } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Input, Select, Switch } from "antd";
+import { Box, UiSelect, UiTextField } from "@/shared/ui";
+import { RADIUS, SEMANTIC_LIGHT as S } from "@/shared/ui/tokens";
 import { PvErrorState } from "@/modules/pv/components/PvErrorState";
 import { PvFreshnessIndicator } from "@/modules/pv/components/PvFreshness";
 import { PvProductCard } from "@/modules/pv/components/PvProductCard";
 import { PvPublicLayout } from "@/modules/pv/components/PvPublicLayout";
+import { PvSwitch } from "@/modules/pv/components/PvSwitch";
 import {
   usePvIndustries,
   usePvProducts,
@@ -77,16 +79,18 @@ export default function PvCatalogPage() {
       }
       actions={<PvFreshnessIndicator meta={meta} />}
     >
-      <section
+      <Box
+        component="section"
         aria-label="Bộ lọc sản phẩm"
-        style={{
-          background: "#fff",
-          border: "2px solid #2b2b2b",
-          borderRadius: 6,
-          padding: 12,
-          marginBottom: 16,
+        sx={{
+          backgroundColor: S.bgSurface,
+          border: `1px solid ${S.border}`,
+          borderRadius: `${RADIUS.card}px`,
+          boxShadow: S.shadowCard,
+          padding: "12px",
+          marginBottom: "16px",
           display: "grid",
-          gap: 10,
+          gap: "10px",
           gridTemplateColumns:
             "repeat(auto-fit, minmax(min(100%, 220px), 1fr))",
           alignItems: "center",
@@ -95,39 +99,48 @@ export default function PvCatalogPage() {
         {/* Ô tìm kiếm để KHÔNG kiểm soát và remount theo `key` mỗi khi keyword
             trên URL đổi. Bản kiểm soát cần một useEffect đồng bộ state theo URL,
             đúng thứ react-hooks/set-state-in-effect cảnh báo, và cũng dễ trôi
-            khỏi URL khi người dùng bấm back. */}
-        <Input.Search
+            khỏi URL khi người dùng bấm back. Tìm kiếm kích hoạt bằng Enter —
+            giữ ngữ nghĩa onSearch của Input.Search cũ. */}
+        <UiTextField
           key={keywordParam}
-          allowClear
+          type="search"
           defaultValue={keywordParam}
           placeholder="Tìm theo tên hoặc mã sản phẩm"
-          aria-label="Tìm sản phẩm"
-          data-testid="pv-search-input"
-          onSearch={(value) => patchParams({ keyword: value.trim() || null })}
+          fullWidth
+          onKeyDown={(event: KeyboardEvent<HTMLDivElement>) => {
+            if (event.key !== "Enter") return;
+            const value = (event.target as HTMLInputElement).value ?? "";
+            patchParams({ keyword: value.trim() || null });
+          }}
+          slotProps={{
+            htmlInput: {
+              "aria-label": "Tìm sản phẩm",
+              "data-testid": "pv-search-input",
+            },
+          }}
         />
-        <Select
-          allowClear
-          value={industryId || undefined}
+        <UiSelect
+          value={industryId}
           placeholder="Lọc theo ngành nghề"
           aria-label="Lọc theo ngành nghề"
           data-testid="pv-industry-filter"
-          loading={industries.isLoading}
+          fullWidth
           options={(industries.data?.data ?? []).map((industry) => ({
             value: industry.industry_id,
             label: industry.industry_name,
           }))}
-          onChange={(value) => patchParams({ industry_id: value ?? null })}
-          style={{ width: "100%" }}
+          onChange={(value) => patchParams({ industry_id: value || null })}
         />
-        <label
-          style={{
+        <Box
+          component="label"
+          sx={{
             display: "flex",
             alignItems: "center",
-            gap: 8,
+            gap: "8px",
             fontSize: 13,
           }}
         >
-          <Switch
+          <PvSwitch
             checked={inStockOnly}
             data-testid="pv-in-stock-filter"
             onChange={(checked) =>
@@ -135,22 +148,31 @@ export default function PvCatalogPage() {
             }
           />
           Chỉ hiện sản phẩm còn hàng
-        </label>
-      </section>
+        </Box>
+      </Box>
 
       {industryId && (recommendations.data?.data.length ?? 0) > 0 ? (
-        <section
+        <Box
+          component="section"
           aria-label="Gợi ý theo ngành nghề"
           data-testid="pv-recommendations"
-          style={{ marginBottom: 20 }}
+          sx={{ marginBottom: "20px" }}
         >
-          <h2 style={{ fontSize: 15, fontWeight: 700, margin: "0 0 8px" }}>
+          <Box
+            component="h2"
+            sx={{
+              fontSize: 15,
+              fontWeight: 700,
+              color: S.textHigh,
+              margin: "0 0 8px",
+            }}
+          >
             Gợi ý cho ngành nghề đã chọn
-          </h2>
-          <div
-            style={{
+          </Box>
+          <Box
+            sx={{
               display: "grid",
-              gap: 12,
+              gap: "12px",
               gridTemplateColumns:
                 "repeat(auto-fill, minmax(min(100%, 200px), 1fr))",
             }}
@@ -158,8 +180,8 @@ export default function PvCatalogPage() {
             {(recommendations.data?.data ?? []).map((product) => (
               <PvProductCard key={`rec-${product.sku_id}`} product={product} />
             ))}
-          </div>
-        </section>
+          </Box>
+        </Box>
       ) : null}
 
       {products.isPending ? (
@@ -202,11 +224,11 @@ export default function PvCatalogPage() {
         </EmptyState>
       ) : (
         <>
-          <div
+          <Box
             data-testid="pv-product-grid"
-            style={{
+            sx={{
               display: "grid",
-              gap: 12,
+              gap: "12px",
               gridTemplateColumns:
                 "repeat(auto-fill, minmax(min(100%, 220px), 1fr))",
             }}
@@ -214,14 +236,15 @@ export default function PvCatalogPage() {
             {(products.data?.data ?? []).map((product) => (
               <PvProductCard key={product.sku_id} product={product} />
             ))}
-          </div>
+          </Box>
 
-          <nav
+          <Box
+            component="nav"
             aria-label="Phân trang"
-            style={{
-              marginTop: 16,
+            sx={{
+              marginTop: "16px",
               display: "flex",
-              gap: 10,
+              gap: "10px",
               alignItems: "center",
               justifyContent: "center",
               flexWrap: "wrap",
@@ -235,9 +258,9 @@ export default function PvCatalogPage() {
             >
               ← Trang trước
             </ActionButton>
-            <span style={{ fontSize: 13, color: "#57534a" }}>
+            <Box component="span" sx={{ fontSize: 13, color: S.textMedium }}>
               Trang {page}/{lastPage} · {total} sản phẩm
-            </span>
+            </Box>
             <ActionButton
               kind="next"
               disabled={page >= lastPage}
@@ -246,7 +269,7 @@ export default function PvCatalogPage() {
             >
               Trang sau →
             </ActionButton>
-          </nav>
+          </Box>
         </>
       )}
     </PvPublicLayout>

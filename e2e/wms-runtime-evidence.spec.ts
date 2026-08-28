@@ -139,20 +139,26 @@ test("component-catalog exposes shared UI states for QA2", async ({
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/component-catalog");
 
-  // Trang hiện có 2 heading trùng tên (h2 shell + h3 antd) -> khóa theo level.
+  // Part 4: /component-catalog redirect về /ui-foundation (Foundation Catalog
+  // golden) — state chuẩn là UiStateSurface nhãn tiếng Việt.
+  await expect(page).toHaveURL(/\/ui-foundation$/);
   await expect(
-    page.getByRole("heading", { name: "Component catalog", level: 2 }),
+    page.getByRole("heading", { name: /Foundation catalog/ }),
   ).toBeVisible();
-  await expect(page.getByText("Loading", { exact: true })).toBeVisible();
-  await expect(page.getByText("Empty", { exact: true })).toBeVisible();
-  await expect(page.getByText("Error", { exact: true })).toBeVisible();
-  await expect(page.getByText("No permission", { exact: true })).toBeVisible();
+  await expect(page.getByText("Đang tải dữ liệu…")).toBeVisible();
+  await expect(page.getByText("Chưa có dữ liệu")).toBeVisible();
+  await expect(page.getByText("Đã xảy ra lỗi")).toBeVisible();
   await expect(
-    page.getByText("API error + field errors", { exact: true }),
+    page.getByText("Bạn không có quyền truy cập nội dung này"),
   ).toBeVisible();
-  await expect(page.getByText("Confirm action", { exact: true })).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Disabled until valid" }),
+    page.getByText("Số lượng phải lớn hơn 0 (request_id: 9f2c-fixture)."),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "useUiConfirm()" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Vô hiệu", exact: true }),
   ).toBeDisabled();
 
   const hasHorizontalOverflow = await page.evaluate(

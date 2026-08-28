@@ -1,6 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { Box, Card, Chip, Stack, Typography } from "@mui/material";
+import {
+  Box,
+  Stack,
+  UiStatusBadge,
+  SEMANTIC_LIGHT as S,
+  RADIUS,
+  TYPOGRAPHY,
+} from "@/shared/ui";
 import dayjs from "dayjs";
 import { useCan, useCanAny } from "@/shared/components/permission";
 import { ROUTES } from "@/shared/constants/routes";
@@ -25,12 +32,15 @@ const OPEN_WARRANTY_PER_PAGE = 50;
 function ActionRow({
   icon,
   color,
+  softColor,
   title,
   subtitle,
   onClick,
 }: {
   icon: React.ReactNode;
   color: string;
+  /** Nền nhạt cùng dải với `color` — token *Soft (thay `${color}1a`). */
+  softColor: string;
   title: string;
   subtitle: string;
   onClick: () => void;
@@ -44,8 +54,7 @@ function ActionRow({
         alignItems: "center",
         cursor: "pointer",
         py: 1,
-        borderBottom: "1px solid",
-        borderColor: "divider",
+        borderBottom: `1px solid ${S.border}`,
         "&:last-child": { borderBottom: 0 },
         "&:hover": { bgcolor: "action.hover" },
       }}
@@ -55,23 +64,27 @@ function ActionRow({
           width: 34,
           height: 34,
           flex: "none",
-          borderRadius: 2,
+          borderRadius: `${RADIUS.card}px`,
           display: "grid",
           placeItems: "center",
           color,
-          bgcolor: `${color}1a`,
+          bgcolor: softColor,
         }}
         aria-hidden="true"
       >
         {icon}
       </Box>
       <Box sx={{ minWidth: 0, flex: 1 }}>
-        <Typography variant="body2" sx={{ fontWeight: 700 }}>
+        <Box
+          sx={{
+            fontSize: TYPOGRAPHY.fontSizeSecondary,
+            fontWeight: 700,
+            color: S.textHigh,
+          }}
+        >
           {title}
-        </Typography>
-        <Typography variant="caption" color="text.secondary">
-          {subtitle}
-        </Typography>
+        </Box>
+        <Box sx={{ fontSize: 12, color: S.textMedium }}>{subtitle}</Box>
       </Box>
     </Stack>
   );
@@ -156,6 +169,7 @@ export function DashboardActionItems() {
     id: string;
     icon: React.ReactNode;
     color: string;
+    softColor: string;
     title: string;
     subtitle: string;
     onClick: () => void;
@@ -166,6 +180,7 @@ export function DashboardActionItems() {
       id: "outbound-draft",
       icon: <ExportOutlined />,
       color: CHART_COLORS.warning,
+      softColor: S.warningSoft,
       title: `${draftTotal} phiếu xuất đang chờ hoàn tất`,
       subtitle: "Trạng thái DRAFT — chưa Post Issue",
       onClick: () => navigate(ROUTES.OUTBOUND),
@@ -181,6 +196,7 @@ export function DashboardActionItems() {
       id: "warranty-overdue",
       icon: <SafetyCertificateOutlined />,
       color: CHART_COLORS.danger,
+      softColor: S.errorSoft,
       title: `${openWarranty?.overdueCount} case bảo hành quá hạn`,
       subtitle:
         mostOverdueDays !== null
@@ -195,6 +211,7 @@ export function DashboardActionItems() {
       id: "putaway-pending",
       icon: <StockOutlined />,
       color: CHART_COLORS.info,
+      softColor: S.infoSoft,
       title: `${putawayTotal} box linh kiện chờ Putaway`,
       subtitle: "Chưa xếp vào khay/vị trí",
       onClick: () => navigate(ROUTES.PUTAWAY),
@@ -204,7 +221,14 @@ export function DashboardActionItems() {
   if (!canViewOutbound && !canViewWarranty && !canViewPutaway) return null;
 
   return (
-    <Card variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+    <Box
+      sx={{
+        p: 2,
+        bgcolor: S.bgSurface,
+        border: `1px solid ${S.border}`,
+        borderRadius: `${RADIUS.card}px`,
+      }}
+    >
       <Stack
         direction="row"
         sx={{
@@ -214,21 +238,35 @@ export function DashboardActionItems() {
         }}
       >
         <Box>
-          <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+          <Box
+            component="h3"
+            sx={{
+              m: 0,
+              fontSize: TYPOGRAPHY.fontSizeBody,
+              fontWeight: 700,
+              color: S.textHigh,
+            }}
+          >
             Cần xử lý
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
+          </Box>
+          <Box sx={{ fontSize: 12, color: S.textMedium }}>
             Các mục cần người vận hành chú ý
-          </Typography>
+          </Box>
         </Box>
         {rows.length > 0 ? (
-          <Chip label={rows.length} size="small" color="warning" />
+          <UiStatusBadge tone="warning" label={rows.length} />
         ) : null}
       </Stack>
       {rows.length === 0 ? (
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+        <Box
+          sx={{
+            mt: 1,
+            fontSize: TYPOGRAPHY.fontSizeSecondary,
+            color: S.textMedium,
+          }}
+        >
           Không có mục nào cần xử lý.
-        </Typography>
+        </Box>
       ) : (
         <Stack sx={{ mt: 0.5 }}>
           {rows.map((row) => (
@@ -236,6 +274,6 @@ export function DashboardActionItems() {
           ))}
         </Stack>
       )}
-    </Card>
+    </Box>
   );
 }

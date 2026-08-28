@@ -1,38 +1,31 @@
-import {
-  useMemo,
-  useState,
-  type Key,
-  type ReactElement,
-  type ReactNode,
-} from "react";
-import {
-  Alert,
-  Card,
-  DatePicker,
-  Empty,
-  Input,
-  Select,
-  Space,
-  Table,
-  Tag,
-} from "antd";
+import { useMemo, useState, type ReactElement, type ReactNode } from "react";
 import {
   Box,
-  Dialog,
-  DialogContent,
-  DialogTitle,
+  Checkbox,
   Grid,
-  Tab,
-  Tabs,
-  Typography,
-} from "@mui/material";
+  Menu,
+  MenuItem,
+  Stack,
+  UiAlert,
+  UiButton,
+  UiCard,
+  UiDatePicker,
+  UiDateRangePicker,
+  UiDialog,
+  UiPagination,
+  UiSelect,
+  UiStatusBadge,
+  UiTabs,
+  UiTextField,
+  type UiStatusTone,
+} from "@/shared/ui";
 import {
   AuditOutlined,
+  DownOutlined,
   ExportOutlined,
   FileSearchOutlined,
   HistoryOutlined,
   SafetyCertificateOutlined,
-  SearchOutlined,
   StockOutlined,
   SwapOutlined,
   TagOutlined,
@@ -72,9 +65,13 @@ import {
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 import { useHasPermission } from "@/shared/components/permission";
 import {
-  useSortTooltipColumns,
-  type ColumnWithSortType,
-} from "@/shared/components/data-display/useSortTooltipColumns";
+  ResponsiveDataTable,
+  type ResponsiveTableColumn,
+} from "@/shared/components/data-display/ResponsiveDataTable";
+import type { ClientSortState } from "@/shared/components/data-display/useClientSort";
+import { EmptyState } from "@/shared/components/data-display/EmptyState";
+import { SearchInput } from "@/shared/components/data-display/SearchInput";
+import { useRowSelection } from "@/shared/hooks/useRowSelection";
 import { warrantyPiiText } from "@/modules/warranty/constants";
 import { fetchWarehouses } from "@/modules/master-data/services/warehouse.service";
 import {
@@ -101,7 +98,28 @@ import {
 
 type Raw = Record<string, unknown>;
 
-type ReportColumn = ColumnWithSortType<Raw>[number];
+/**
+ * Cột báo cáo dạng antd-like (title/dataIndex/sorter/children) — GIỮ NGUYÊN
+ * shape này làm nguồn dữ liệu cột duy nhất: hợp đồng flow06 pin literal
+ * `dataIndex:`/`sorter`/`title:` trong source, còn modal chi tiết dựng field
+ * từ chính bộ cột. Bảng thật render qua ResponsiveDataTable bằng adapter
+ * `toResponsiveColumns` bên dưới (Part 4: antd Table đã bị gỡ).
+ */
+interface ReportColumn {
+  title: ReactNode;
+  key?: string;
+  dataIndex?: string;
+  width?: number;
+  align?: "left" | "right" | "center";
+  /** Metadata từ thời antd (cột ghim) — adapter không dùng, giữ để đọc hiểu. */
+  fixed?: "left" | "right";
+  /** Metadata từ thời antd (cắt chữ "…") — ResponsiveDataTable tự wrap chữ. */
+  ellipsis?: boolean;
+  sortType?: ResponsiveTableColumn<Raw>["sortType"];
+  sorter?: (a: Raw, b: Raw) => number;
+  render?: (value: unknown, row: Raw, index: number) => ReactNode;
+  children?: ReportColumn[];
+}
 
 /** Trải phẳng cột nhóm (cột có `children`, ví dụ Nhập/Xuất ở tab Nhập-Xuất-Tồn). */
 function flattenReportColumns(
@@ -114,31 +132,82 @@ function flattenReportColumns(
         ? column.title
         : String(column.key ?? "");
     const fullTitle = parentTitle ? `${parentTitle} · ${ownTitle}` : ownTitle;
-    const children = (column as { children?: ReportColumn[] }).children;
+    const children = column.children;
     if (children?.length) return flattenReportColumns(children, fullTitle);
     return [{ title: fullTitle, column }];
   });
 }
 
+/** Key ổn định cho một cột lá — dùng chung giữa adapter render và sort. */
+function reportColumnKey(column: ReportColumn, leafIndex: number): string {
+  return String(column.key ?? column.dataIndex ?? `col-${leafIndex}`);
+}
+
 /**
- * Bật cắt chữ bằng "…" cho mọi cột chưa tự khai.
- *
- * Bảng báo cáo không còn `scroll={{ x: "max-content" }}` (thứ sinh ra thanh kéo
- * ngang), nên cột co đúng bằng `width` đã khai. Thiếu `ellipsis`, antd để chữ
- * dài tràn khỏi ô và ĐÈ LÊN cột bên cạnh — ví dụ "TOA-SEED-IMPORT-ROW-001" đè
- * lên cột Mã SKU. Đặt mặc định ở một chỗ thay vì nhớ khai trên từng cột.
+ * Adapter cột antd-like → ResponsiveDataTable: flatten cột nhóm về cột lá
+ * (header mang đủ đường dẫn nhóm, vd "Nhập · Thuần"), giữ align/width, đánh
+ * dấu `sortable` cho cột có `sorter` (sort có kiểm soát qua
+ * `useReportColumnSort` — comparator antd cũ giữ nguyên từng ký tự).
  */
-function withEllipsis(columns: ReportColumn[]): ReportColumn[] {
-  return columns.map((column) => {
-    const children = (column as { children?: ReportColumn[] }).children;
-    if (children?.length) {
-      return { ...column, children: withEllipsis(children) } as ReportColumn;
-    }
-    // Cột STT/Thao tác nội dung ngắn và cố định, cắt chữ chỉ làm hỏng canh lề.
-    if (column.key === "__stt" || column.key === "__actions") return column;
-    if ("ellipsis" in column && column.ellipsis !== undefined) return column;
-    return { ...column, ellipsis: true } as ReportColumn;
+function toResponsiveColumns(
+  columns: ReportColumn[],
+  displayedRows: Raw[],
+): ResponsiveTableColumn<Raw>[] {
+  return flattenReportColumns(columns).map(({ title, column }, leafIndex) => ({
+    key: reportColumnKey(column, leafIndex),
+    header: title,
+    align: column.align,
+    width: column.width,
+    sortable: Boolean(column.sorter),
+    sortType: column.sortType,
+    render: (row: Raw) => {
+      const value = column.dataIndex ? row[column.dataIndex] : undefined;
+      if (column.render) {
+        return column.render(value, row, displayedRows.indexOf(row));
+      }
+      return (value ?? null) as ReactNode;
+    },
+  }));
+}
+
+/**
+ * Sort client-side CÓ KIỂM SOÁT cho bảng báo cáo: bấm cột chạy đúng comparator
+ * `sorter` của cột đó (giữ nguyên ngữ nghĩa localeCompare "vi"/numeric của
+ * từng cột như antd Table cũ), chu kỳ asc → desc → bỏ sort, tie-break theo
+ * thứ tự dòng gốc để sort ổn định.
+ */
+function useReportColumnSort(columns: ReportColumn[], rows: Raw[]) {
+  const [sortState, setSortState] = useState<ClientSortState>({
+    direction: undefined,
   });
+
+  const onSortChange = (key: string) => {
+    setSortState((prev) => {
+      if (prev.key !== key) return { key, direction: "asc" };
+      if (prev.direction === "asc") return { key, direction: "desc" };
+      return { key: undefined, direction: undefined };
+    });
+  };
+
+  const sortedRows = useMemo(() => {
+    if (!sortState.key || !sortState.direction) return rows;
+    const leaves = flattenReportColumns(columns);
+    const match = leaves.find(
+      ({ column }, leafIndex) =>
+        reportColumnKey(column, leafIndex) === sortState.key,
+    );
+    const sorter = match?.column.sorter;
+    if (!sorter) return rows;
+    const decorated = rows.map((row, index) => ({ row, index }));
+    decorated.sort((a, b) => {
+      const cmp = sorter(a.row, b.row);
+      if (cmp === 0) return a.index - b.index;
+      return sortState.direction === "asc" ? cmp : -cmp;
+    });
+    return decorated.map((entry) => entry.row);
+  }, [rows, columns, sortState]);
+
+  return { sortedRows, sortState, onSortChange };
 }
 
 /**
@@ -153,8 +222,7 @@ function primaryReportColumns(
   if (!allowed) return columns;
   return columns.filter((column) => {
     if (column.key === "__stt") return true;
-    const dataIndex = (column as { dataIndex?: string }).dataIndex;
-    return allowed.includes(dataIndex ?? String(column.key ?? ""));
+    return allowed.includes(column.dataIndex ?? String(column.key ?? ""));
   });
 }
 
@@ -345,6 +413,25 @@ const CONFIG: Record<GenericReportKey, ReportConfig> = {
 const DEFECT_SKU_TAB_KEY = "defect-sku" as const;
 const DEFECT_SKU_TAB_LABEL = "Bệnh lỗi theo SKU";
 
+/** Nhãn tab kèm icon (UiTabs nhận label ReactNode; icon shim aria-hidden). */
+function ReportTabLabel({
+  icon,
+  text: labelText,
+}: {
+  icon: ReactNode;
+  text: string;
+}) {
+  return (
+    <Box
+      component="span"
+      sx={{ display: "inline-flex", alignItems: "center", gap: 0.75 }}
+    >
+      {icon}
+      {labelText}
+    </Box>
+  );
+}
+
 const MOVEMENT_COLORS: Record<string, string> = {
   OPENING: "default",
   RECEIPT: "blue",
@@ -403,6 +490,24 @@ const STATUS_COLORS: Record<string, string> = {
   REJECTED: "error",
   PRINT_FAILED: "error",
 };
+
+/** Preset màu antd cũ → tone soft-tint của UiStatusBadge (fail-safe neutral). */
+const ANTD_COLOR_TONE: Record<string, UiStatusTone> = {
+  success: "success",
+  green: "success",
+  error: "error",
+  red: "error",
+  warning: "warning",
+  orange: "warning",
+  processing: "info",
+  blue: "info",
+  purple: "primary",
+  default: "neutral",
+};
+
+function toneOf(color: string | undefined): UiStatusTone {
+  return ANTD_COLOR_TONE[color ?? "default"] ?? "neutral";
+}
 
 const fmt = (value: unknown) =>
   new Intl.NumberFormat("vi-VN").format(Number(value ?? 0));
@@ -589,7 +694,10 @@ const STOCK_STATUS_COLORS: Record<string, string> = {
 function stockStatusTag(value: unknown) {
   const status = text(value, "");
   return (
-    <Tag color={STOCK_STATUS_COLORS[status]}>{stockStatusLabel(value)}</Tag>
+    <UiStatusBadge
+      tone={toneOf(STOCK_STATUS_COLORS[status])}
+      label={stockStatusLabel(value)}
+    />
   );
 }
 
@@ -603,16 +711,14 @@ const IDENTIFICATION_STATUS_COLORS: Record<string, string> = {
 function identificationStatusTag(value: unknown) {
   const status = text(value, "");
   return (
-    <Tag color={IDENTIFICATION_STATUS_COLORS[status]}>
-      {businessLabel(WARRANTY_IDENTIFICATION_STATUS_LABELS, status)}
-    </Tag>
+    <UiStatusBadge
+      tone={toneOf(IDENTIFICATION_STATUS_COLORS[status])}
+      label={businessLabel(WARRANTY_IDENTIFICATION_STATUS_LABELS, status)}
+    />
   );
 }
 
-function columnsFor(
-  report: ReportKey,
-  canViewPii: boolean,
-): ColumnWithSortType<Raw> {
+function columnsFor(report: ReportKey, canViewPii: boolean): ReportColumn[] {
   switch (report) {
     case "inventory-balance":
       return [
@@ -719,7 +825,8 @@ function columnsFor(
           align: "right",
           sortType: "value",
           sorter: (a, b) => n(a.variance) - n(b.variance),
-          render: (v) => (n(v) === 0 ? "0" : <Tag color="error">{fmt(v)}</Tag>),
+          render: (v) =>
+            n(v) === 0 ? "0" : <UiStatusBadge tone="error" label={fmt(v)} />,
         },
         {
           title: "Đối soát",
@@ -739,7 +846,10 @@ function columnsFor(
                   ? "default"
                   : "error";
             return (
-              <Tag color={color}>{businessLabel(RECONCILE_LABELS, status)}</Tag>
+              <UiStatusBadge
+                tone={toneOf(color)}
+                label={businessLabel(RECONCILE_LABELS, status)}
+              />
             );
           },
         },
@@ -1037,9 +1147,10 @@ function columnsFor(
           render: (v) => {
             const raw = text(v, "");
             return (
-              <Tag color={MOVEMENT_COLORS[raw]}>
-                {businessLabel(MOVEMENT_LABELS, raw)}
-              </Tag>
+              <UiStatusBadge
+                tone={toneOf(MOVEMENT_COLORS[raw])}
+                label={businessLabel(MOVEMENT_LABELS, raw)}
+              />
             );
           },
         },
@@ -1381,7 +1492,10 @@ function columnsFor(
           sorter: (a, b) =>
             Number(Boolean(a.applied)) - Number(Boolean(b.applied)),
           render: (v) => (
-            <Tag color={v ? "success" : "warning"}>{v ? "CÓ" : "CHƯA"}</Tag>
+            <UiStatusBadge
+              tone={v ? "success" : "warning"}
+              label={v ? "CÓ" : "CHƯA"}
+            />
           ),
         },
         {
@@ -1535,8 +1649,8 @@ function columnsFor(
           align: "right",
           sortType: "value",
           sorter: (a, b) => n(a.turnaround_days) - n(b.turnaround_days),
-          render: (value: number | null | undefined) =>
-            value === null || value === undefined ? "—" : `${value} ngày`,
+          render: (value) =>
+            value === null || value === undefined ? "—" : `${text(value)} ngày`,
         },
         {
           title: "Khách hàng",
@@ -1713,7 +1827,6 @@ function columnsFor(
       return [];
   }
 }
-
 /**
  * Modal "Chi tiết dòng báo cáo" — dùng chung cho MỌI tab.
  *
@@ -1721,6 +1834,9 @@ function columnsFor(
  * bảng), tái dùng luôn `render` của từng cột nên tag trạng thái, ngày giờ, số
  * đã định dạng... hiện y hệt trong bảng. Nhờ vậy thêm/bớt cột ở `columnsFor`
  * là modal tự cập nhật, không phải viết modal riêng cho từng báo cáo.
+ *
+ * Part 4: phiếu Lịch sử nhập/xuất không còn expandable row (antd Table đã gỡ)
+ * — tầng dòng (`DocumentLines`) chuyển vào modal này, mở bằng nút "Xem".
  */
 function ReportRowDetailModal({
   title,
@@ -1739,126 +1855,125 @@ function ReportRowDetailModal({
   const fields = flattenReportColumns(columns).filter(
     ({ column }) => column.key !== "__stt",
   );
+  const documentLines = Array.isArray(row.lines) ? (row.lines as Raw[]) : [];
 
   return (
-    <Dialog {...dialog.dialogProps} maxWidth="md" fullWidth>
-      <DialogTitle sx={{ pr: 6, position: "relative" }}>
-        {title}
-        <ActionIconButton
-          kind="close"
-          onClick={dialog.close}
-          sx={{ position: "absolute", right: 10, top: 8 }}
-        />
-      </DialogTitle>
-      <DialogContent dividers>
-        <Grid container spacing={2}>
-          {fields.map(({ title: label, column }) => {
-            const dataIndex = (column as { dataIndex?: string }).dataIndex;
-            const value = dataIndex ? row[dataIndex] : undefined;
-            const rendered = column.render
-              ? (
-                  column.render as (
-                    value: unknown,
-                    record: Raw,
-                    index: number,
-                  ) => ReactNode
-                )(value, row, rowIndex)
-              : text(value, "—");
-            return (
-              <Grid
-                key={String(column.key ?? dataIndex ?? label)}
-                size={{ xs: 12, sm: 6 }}
+    <UiDialog
+      {...dialog.dialogProps}
+      maxWidth="md"
+      fullWidth
+      title={
+        <Box sx={{ position: "relative", pr: 6 }}>
+          {title}
+          <ActionIconButton
+            kind="close"
+            onClick={dialog.close}
+            sx={{ position: "absolute", right: -8, top: -4 }}
+          />
+        </Box>
+      }
+    >
+      <Grid container spacing={2}>
+        {fields.map(({ title: label, column }) => {
+          const dataIndex = column.dataIndex;
+          const value = dataIndex ? row[dataIndex] : undefined;
+          const rendered = column.render
+            ? column.render(value, row, rowIndex)
+            : text(value, "—");
+          return (
+            <Grid
+              key={String(column.key ?? dataIndex ?? label)}
+              size={{ xs: 12, sm: 6 }}
+            >
+              <Box
+                sx={{
+                  typography: "caption",
+                  color: "text.secondary",
+                  display: "block",
+                }}
               >
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ display: "block" }}
-                >
-                  {label}
-                </Typography>
-                <Typography
-                  variant="body2"
-                  component="div"
-                  sx={{ wordBreak: "break-word" }}
-                >
-                  {rendered === "" ||
-                  rendered === null ||
-                  rendered === undefined
-                    ? "—"
-                    : rendered}
-                </Typography>
-              </Grid>
-            );
-          })}
-        </Grid>
-      </DialogContent>
-    </Dialog>
+                {label}
+              </Box>
+              <Box sx={{ typography: "body2", wordBreak: "break-word" }}>
+                {rendered === "" || rendered === null || rendered === undefined
+                  ? "—"
+                  : rendered}
+              </Box>
+            </Grid>
+          );
+        })}
+      </Grid>
+      {documentLines.length > 0 ? (
+        <Box sx={{ mt: 2 }}>
+          <Box sx={{ typography: "subtitle2", fontWeight: 700, mb: 1 }}>
+            Tầng dòng của phiếu: kế hoạch / đã quét / đã ghi nhận
+          </Box>
+          <DocumentLines lines={documentLines} />
+        </Box>
+      ) : null}
+    </UiDialog>
   );
 }
 
 function DocumentLines({ lines }: { lines: Raw[] }) {
-  const rawColumns: ColumnWithSortType<Raw> = [
+  const columns: ResponsiveTableColumn<Raw>[] = [
     {
-      title: "Dòng",
-      dataIndex: "line_no",
+      key: "line_no",
+      header: "Dòng",
       width: 70,
       align: "right",
       sortType: "value",
-      sorter: (a, b) => n(a.line_no) - n(b.line_no),
+      sortAccessor: (row) => n(row.line_no),
+      render: (row) => (row.line_no ?? null) as ReactNode,
     },
     {
-      title: "Mã SKU",
-      dataIndex: "product_code",
+      key: "product_code",
+      header: "Mã SKU",
       width: 160,
-      sorter: (a, b) =>
-        text(a.product_code, "").localeCompare(text(b.product_code, ""), "vi"),
+      sortAccessor: (row) => text(row.product_code, ""),
+      render: (row) => (row.product_code ?? null) as ReactNode,
     },
     {
-      title: "Tên SKU",
-      dataIndex: "product_name",
-      sorter: (a, b) =>
-        text(a.product_name, "").localeCompare(text(b.product_name, ""), "vi"),
+      key: "product_name",
+      header: "Tên SKU",
+      sortAccessor: (row) => text(row.product_name, ""),
+      render: (row) => (row.product_name ?? null) as ReactNode,
     },
     {
-      title: "Kế hoạch",
-      dataIndex: "expected_qty",
+      key: "expected_qty",
+      header: "Kế hoạch",
       width: 110,
       align: "right",
       sortType: "value",
-      sorter: (a, b) => n(a.expected_qty) - n(b.expected_qty),
-      render: fmt,
+      sortAccessor: (row) => n(row.expected_qty),
+      render: (row) => fmt(row.expected_qty),
     },
     {
-      title: "Đã quét",
-      dataIndex: "scanned_qty",
+      key: "scanned_qty",
+      header: "Đã quét",
       width: 110,
       align: "right",
       sortType: "value",
-      sorter: (a, b) => n(a.scanned_qty) - n(b.scanned_qty),
-      render: fmt,
+      sortAccessor: (row) => n(row.scanned_qty),
+      render: (row) => fmt(row.scanned_qty),
     },
     {
-      title: "Đã ghi nhận",
-      dataIndex: "posted_qty",
+      key: "posted_qty",
+      header: "Đã ghi nhận",
       width: 110,
       align: "right",
       sortType: "value",
-      sorter: (a, b) => n(a.posted_qty) - n(b.posted_qty),
-      render: fmt,
+      sortAccessor: (row) => n(row.posted_qty),
+      render: (row) => fmt(row.posted_qty),
     },
   ];
-  const { columns, onSorterChange } = useSortTooltipColumns(
-    withEllipsis(rawColumns),
-  );
 
   return (
-    <Table<Raw>
-      size="small"
-      pagination={false}
-      rowKey={(row) => text(row.id ?? row.line_no)}
-      dataSource={lines}
+    <ResponsiveDataTable<Raw>
       columns={columns}
-      onChange={(_pagination, _filters, sorter) => onSorterChange(sorter)}
+      rows={lines}
+      rowKey={(row) => text(row.id ?? row.line_no)}
+      emptyText="Chưa có dòng nào"
     />
   );
 }
@@ -1866,9 +1981,95 @@ function DocumentLines({ lines }: { lines: Raw[] }) {
 function statusTag(value: unknown) {
   const status = text(value, "");
   return (
-    <Tag color={STATUS_COLORS[status] ?? "default"}>
-      {reportStatusLabel(value)}
-    </Tag>
+    <UiStatusBadge
+      tone={toneOf(STATUS_COLORS[status] ?? "default")}
+      label={reportStatusLabel(value)}
+    />
+  );
+}
+
+/**
+ * Chọn nhiều giá trị cho bộ lọc (thay antd Select mode="multiple" — design
+ * system chưa có multi-select điều khiển trực tiếp): nút mở Menu + Checkbox
+ * từng lựa chọn, value contract string[] giữ nguyên như filter cũ.
+ */
+function MultiSelectFilter({
+  value,
+  onChange,
+  options,
+  placeholder,
+  ariaLabel,
+  minWidth = 210,
+}: {
+  value: string[];
+  onChange: (next: string[]) => void;
+  options: SelectOption[];
+  placeholder: string;
+  ariaLabel: string;
+  minWidth?: number;
+}) {
+  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+  const selected = options.filter((option) => value.includes(option.value));
+  const summary =
+    selected.length === 0
+      ? placeholder
+      : selected.length === 1
+        ? selected[0].label
+        : `Đã chọn ${selected.length} mục`;
+
+  const toggle = (optionValue: string) => {
+    onChange(
+      value.includes(optionValue)
+        ? value.filter((item) => item !== optionValue)
+        : [...value, optionValue],
+    );
+  };
+
+  return (
+    <>
+      <UiButton
+        appearance="outlined"
+        color="secondary"
+        aria-label={ariaLabel}
+        aria-haspopup="listbox"
+        endIcon={<DownOutlined style={{ fontSize: 12 }} />}
+        onClick={(event) => setAnchorEl(event.currentTarget)}
+        sx={{
+          minWidth,
+          justifyContent: "space-between",
+          fontWeight: 400,
+          textAlign: "left",
+          color: selected.length === 0 ? "text.disabled" : "text.primary",
+        }}
+      >
+        {summary}
+      </UiButton>
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={() => setAnchorEl(null)}
+      >
+        {options.length === 0 ? (
+          <MenuItem disabled>Không có lựa chọn</MenuItem>
+        ) : (
+          options.map((option) => (
+            <MenuItem
+              key={option.value}
+              dense
+              onClick={() => toggle(option.value)}
+            >
+              <Checkbox
+                size="small"
+                checked={value.includes(option.value)}
+                tabIndex={-1}
+                sx={{ p: 0.5, mr: 1 }}
+              />
+              {option.label}
+            </MenuItem>
+          ))
+        )}
+      </Menu>
+    </>
   );
 }
 
@@ -1984,7 +2185,6 @@ function Summary({ report, data }: { report: ReportKey; data?: Raw }) {
     </ReportKpiGrid>
   ) : null;
 }
-
 function DefectSkuReport() {
   const [period, setPeriod] = useState<[Dayjs, Dayjs]>([
     dayjs().subtract(30, "day"),
@@ -1993,7 +2193,6 @@ function DefectSkuReport() {
   // REQ-022/P2-04: lọc nhiều bệnh/lỗi cùng lúc — BE defectSkuBreakdown nhận
   // defect_ids[] (axios mặc định serialize mảng params thành defect_ids[]=...).
   const [defectIds, setDefectIds] = useState<string[]>([]);
-  const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([]);
   const [defectPage, setDefectPage] = useState(1);
   const [defectPageSize, setDefectPageSize] = useState(10);
 
@@ -2034,7 +2233,7 @@ function DefectSkuReport() {
   const defectSkuDistinctDefectCount = new Set(
     rows.map((row) => text(row.defect_id, "")),
   ).size;
-  const rawColumns: ColumnWithSortType<Raw> = [
+  const rawColumns: ReportColumn[] = [
     {
       title: "STT",
       key: "__stt",
@@ -2081,37 +2280,47 @@ function DefectSkuReport() {
       render: (value) => n(value).toLocaleString("vi-VN"),
     },
   ];
-  const { columns, onSorterChange } = useSortTooltipColumns(
-    withEllipsis(rawColumns),
+
+  // Sort toàn bộ tập rồi mới cắt trang — đúng hành vi antd Table client-side.
+  const { sortedRows, sortState, onSortChange } = useReportColumnSort(
+    rawColumns,
+    rows,
   );
+  const pagedRows = sortedRows.slice(
+    (defectPage - 1) * defectPageSize,
+    defectPage * defectPageSize,
+  );
+  const rowKey = (row: Raw) =>
+    `${text(row.sku_id, "")}-${text(row.defect_id, "")}`;
+  const rowSelection = useRowSelection(pagedRows, rowKey);
+  const responsiveColumns = toResponsiveColumns(rawColumns, pagedRows);
 
   return (
-    <Space orientation="vertical" size={14} style={{ width: "100%" }}>
-      <Card size="small">
-        <Space wrap>
-          <DatePicker.RangePicker
+    <Stack spacing={1.75} sx={{ width: "100%" }}>
+      <UiCard>
+        <Stack
+          direction="row"
+          spacing={1}
+          sx={{ flexWrap: "wrap", rowGap: 1, alignItems: "center" }}
+        >
+          <UiDateRangePicker
             value={period}
             format="DD/MM/YYYY"
+            aria-label="Khoảng thời gian"
             onChange={(value) => {
               if (value?.[0] && value?.[1]) setPeriod([value[0], value[1]]);
             }}
           />
-          <Select
-            allowClear
-            showSearch
-            mode="multiple"
-            maxTagCount="responsive"
-            optionFilterProp="label"
-            style={{ minWidth: 300 }}
+          <MultiSelectFilter
+            minWidth={300}
             placeholder="Bệnh/lỗi (chọn được nhiều)"
-            aria-label="Bệnh/lỗi"
+            ariaLabel="Bệnh/lỗi"
             value={defectIds}
             options={defectOptions}
-            loading={defectsQuery.isLoading}
             onChange={setDefectIds}
           />
-        </Space>
-      </Card>
+        </Stack>
+      </UiCard>
 
       <ReportKpiGrid>
         <ReportKpiCard
@@ -2140,9 +2349,9 @@ function DefectSkuReport() {
         />
       ) : null}
 
-      <Card size="small" title="Biểu đồ bệnh/lỗi theo SKU">
+      <UiCard title="Biểu đồ bệnh/lỗi theo SKU">
         {rows.length === 0 && !query.isLoading ? (
-          <Empty description="Chưa có dữ liệu trong khoảng thời gian đã chọn" />
+          <EmptyState description="Chưa có dữ liệu trong khoảng thời gian đã chọn" />
         ) : (
           <HorizontalBarChart
             items={rows.map((row) => ({
@@ -2153,34 +2362,36 @@ function DefectSkuReport() {
             valueFormatter={fmt}
           />
         )}
-      </Card>
+      </UiCard>
 
-      <Table<Raw>
-        rowKey={(row) => `${text(row.sku_id, "")}-${text(row.defect_id, "")}`}
-        loading={query.isLoading || query.isFetching}
-        columns={columns}
-        dataSource={rows}
-        rowSelection={{
-          selectedRowKeys,
-          onChange: setSelectedRowKeys,
-          fixed: true,
-        }}
-        pagination={{
-          current: defectPage,
-          pageSize: defectPageSize,
-          showSizeChanger: true,
-          showTotal: (value) => `Tổng ${fmt(value)} bản ghi`,
-          onChange: (nextPage, nextPageSize) => {
-            setDefectPage(nextPage);
-            setDefectPageSize(nextPageSize);
-          },
-        }}
-        onChange={(_pagination, _filters, sorter) => onSorterChange(sorter)}
-      />
-    </Space>
+      <Box>
+        <TableLoadingBanner loading={query.isLoading || query.isFetching} />
+        <ResponsiveDataTable<Raw>
+          columns={responsiveColumns}
+          rows={pagedRows}
+          rowKey={rowKey}
+          rowSelection={rowSelection}
+          loading={query.isLoading}
+          emptyText="Không có dữ liệu"
+          sortState={sortState}
+          onSortChange={onSortChange}
+        />
+        <Box sx={{ mt: 1 }}>
+          <UiPagination
+            page={defectPage}
+            pageSize={defectPageSize}
+            total={sortedRows.length}
+            onPageChange={setDefectPage}
+            onPageSizeChange={(nextSize) => {
+              setDefectPageSize(nextSize);
+              setDefectPage(1);
+            }}
+          />
+        </Box>
+      </Box>
+    </Stack>
   );
 }
-
 export default function AlignedReportsPage() {
   const [report, setReport] = useState<ReportKey>("inventory-balance");
   const [period, setPeriod] = useState<[Dayjs, Dayjs]>([
@@ -2207,8 +2418,6 @@ export default function AlignedReportsPage() {
   const [exporting, setExporting] = useState<"xlsx" | "pdf" | null>(null);
   const [exportDenied, setExportDenied] = useState<string | null>(null);
   const [piiReason, setPiiReason] = useState("");
-  const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([]);
-  const [agencySelectedRowKeys, setAgencySelectedRowKeys] = useState<Key[]>([]);
   // Dòng đang mở modal chi tiết (giữ cả index để cột STT/render theo vị trí
   // trong modal khớp với ngoài bảng).
   const [detailRow, setDetailRow] = useState<{
@@ -2554,11 +2763,11 @@ export default function AlignedReportsPage() {
   // nhẩm từ 4 con số rời rạc.
   const documentHistorySummary = objectOf(query.data?.summary);
   const documentHistoryDonut = (() => {
-    const total = n(documentHistorySummary.total);
+    const totalDocs = n(documentHistorySummary.total);
     const posted = n(documentHistorySummary.posted);
     const scanning = n(documentHistorySummary.scanning);
     const cancelled = n(documentHistorySummary.cancelled);
-    const other = Math.max(0, total - posted - scanning - cancelled);
+    const other = Math.max(0, totalDocs - posted - scanning - cancelled);
     return (
       [
         { label: "Đã ghi nhận", value: posted, color: CHART_COLORS.success },
@@ -2600,10 +2809,10 @@ export default function AlignedReportsPage() {
 
   const labelLogSummary = objectOf(query.data?.summary);
   const labelLogDonut = (() => {
-    const total = n(labelLogSummary.total_labels);
+    const totalLabels = n(labelLogSummary.total_labels);
     const printed = n(labelLogSummary.printed);
     const failed = n(labelLogSummary.failed);
-    const other = Math.max(0, total - printed - failed);
+    const other = Math.max(0, totalLabels - printed - failed);
     return (
       [
         { label: "Đã in", value: printed, color: CHART_COLORS.success },
@@ -2729,34 +2938,25 @@ export default function AlignedReportsPage() {
     [report, canViewPii, page, perPage],
   );
 
-  // Ngoài bảng chỉ giữ cột thiết yếu + nút Xem, để bảng vừa khung không phải
-  // kéo ngang; phần còn lại xem trong modal chi tiết.
-  const rawColumns = useMemo<ColumnWithSortType<Raw>>(
-    () => [
-      ...primaryReportColumns(allColumns, report),
-      {
-        title: "Thao tác",
-        key: "__actions",
-        width: 110,
-        fixed: "right",
-        align: "center",
-        render: (_value: unknown, row: Raw, index: number) => (
-          <ActionButton
-            kind="view"
-            aria-label="Xem chi tiết dòng báo cáo"
-            sx={{ whiteSpace: "nowrap" }}
-            onClick={() => setDetailRow({ row, index })}
-          />
-        ),
-      },
-    ],
+  // Ngoài bảng chỉ giữ cột thiết yếu + nút Xem (renderRowActions), để bảng
+  // vừa khung không phải kéo ngang; phần còn lại xem trong modal chi tiết.
+  const tableColumns = useMemo<ReportColumn[]>(
+    () => primaryReportColumns(allColumns, report),
     [allColumns, report],
   );
-  const { columns, onSorterChange } = useSortTooltipColumns(
-    withEllipsis(rawColumns),
+  const { sortedRows, sortState, onSortChange } = useReportColumnSort(
+    tableColumns,
+    rows,
   );
+  const responsiveColumns = toResponsiveColumns(tableColumns, sortedRows);
+  const mainRowKey = (row: Raw) => text(row.__rowKey, "");
+  const rowSelection = useRowSelection(rows, mainRowKey);
 
-  const byAgencyRawColumns: ColumnWithSortType<Raw> = [
+  const hasByAgency = Array.isArray(query.data?.by_agency);
+  const byAgencyRows: Raw[] = hasByAgency
+    ? (query.data?.by_agency as Raw[])
+    : [];
+  const byAgencyRawColumns: ReportColumn[] = [
     {
       title: "STT",
       key: "__stt",
@@ -2802,8 +3002,35 @@ export default function AlignedReportsPage() {
       render: fmt,
     },
   ];
-  const { columns: byAgencyColumns, onSorterChange: onByAgencySorterChange } =
-    useSortTooltipColumns(withEllipsis(byAgencyRawColumns));
+  const {
+    sortedRows: byAgencySortedRows,
+    sortState: byAgencySortState,
+    onSortChange: onByAgencySortChange,
+  } = useReportColumnSort(byAgencyRawColumns, byAgencyRows);
+  const byAgencyColumns = toResponsiveColumns(
+    byAgencyRawColumns,
+    byAgencySortedRows,
+  );
+  const byAgencyRowKey = (row: Raw) => text(row.agency_code);
+  const byAgencyRowSelection = useRowSelection(byAgencyRows, byAgencyRowKey);
+
+  const tabItems = [
+    ...(Object.keys(CONFIG) as GenericReportKey[]).map((key) => ({
+      key,
+      label: (
+        <ReportTabLabel icon={CONFIG[key].icon} text={CONFIG[key].label} />
+      ),
+    })),
+    {
+      key: DEFECT_SKU_TAB_KEY,
+      label: (
+        <ReportTabLabel
+          icon={<WarningOutlined style={{ fontSize: 15 }} />}
+          text={DEFECT_SKU_TAB_LABEL}
+        />
+      ),
+    },
+  ];
 
   return (
     <div
@@ -2811,11 +3038,13 @@ export default function AlignedReportsPage() {
       data-mvp-screen="RPT-01"
       data-testid="wwhn-258-report-screen"
     >
-      <>
-        <Tabs
+      <Box sx={{ mb: 2 }}>
+        <UiTabs
           value={report}
-          onChange={(_event, key: ReportKey) => {
-            setReport(key);
+          aria-label="Nhóm báo cáo vận hành"
+          items={tabItems}
+          onChange={(key) => {
+            setReport(key as ReportKey);
             setStatus(undefined);
             setKeyword("");
             setAgencyId(undefined);
@@ -2830,42 +3059,20 @@ export default function AlignedReportsPage() {
             setPiiReason("");
             setExportDenied(null);
             setPage(1);
-            setSelectedRowKeys([]);
-            setAgencySelectedRowKeys([]);
+            rowSelection.clear();
+            byAgencyRowSelection.clear();
           }}
-          variant="scrollable"
-          scrollButtons="auto"
-          sx={{ marginBottom: 2 }}
-        >
-          {(Object.keys(CONFIG) as GenericReportKey[]).map((key) => (
-            <Tab
-              key={key}
-              value={key}
-              icon={CONFIG[key].icon}
-              iconPosition="start"
-              label={CONFIG[key].label}
-              sx={{ minHeight: 40, textTransform: "none" }}
-            />
-          ))}
-          <Tab
-            value={DEFECT_SKU_TAB_KEY}
-            icon={<WarningOutlined style={{ fontSize: 15 }} />}
-            iconPosition="start"
-            label={DEFECT_SKU_TAB_LABEL}
-            sx={{ minHeight: 40, textTransform: "none" }}
-          />
-        </Tabs>
-      </>
+        />
+      </Box>
 
       {isDefectSkuTab ? (
         <DefectSkuReport />
       ) : (
         <>
-          <div className="toolbar" style={{ flexWrap: "wrap" }}>
+          <Box className="toolbar" sx={{ flexWrap: "wrap" }}>
             {config.dateFilter ? (
-              <DatePicker.RangePicker
+              <UiDateRangePicker
                 value={period}
-                status={invalidPeriod ? "error" : undefined}
                 aria-label="Khoảng thời gian"
                 onChange={(value) => {
                   if (value?.[0] && value?.[1]) {
@@ -2886,10 +3093,8 @@ export default function AlignedReportsPage() {
               "outbound-by-agency",
               "warranty",
             ].includes(report) ? (
-              <Input
-                allowClear
-                prefix={<SearchOutlined />}
-                style={{ width: 230 }}
+              <SearchInput
+                width={230}
                 placeholder={
                   report === "movement-trace"
                     ? "Mã vật lý / mã vạch"
@@ -2905,22 +3110,21 @@ export default function AlignedReportsPage() {
                       : "Từ khóa"
                 }
                 value={keyword}
-                onChange={(event) => {
-                  setKeyword(event.target.value);
+                onChange={(value) => {
+                  setKeyword(value);
                   resetPage();
                 }}
               />
             ) : null}
 
             {statusOptions.length ? (
-              <Select
-                allowClear
-                style={{ width: 190 }}
+              <UiSelect
+                minWidth={190}
                 placeholder="Trạng thái"
                 aria-label="Trạng thái"
-                value={status}
+                value={status ?? ""}
                 onChange={(value) => {
-                  setStatus(value);
+                  setStatus(value || undefined);
                   resetPage();
                 }}
                 options={statusOptions.map((value) => ({
@@ -2931,33 +3135,24 @@ export default function AlignedReportsPage() {
             ) : null}
 
             {["inventory-balance", "xnt", "movement-trace"].includes(report) ? (
-              <Select
-                allowClear
-                showSearch
-                optionFilterProp="label"
-                style={{ width: 210 }}
+              <UiSelect
+                minWidth={210}
                 placeholder="Kho"
                 aria-label="Kho"
-                value={warehouseId}
-                loading={warehouses.loading}
+                value={warehouseId ?? ""}
                 options={warehouses.options}
                 onChange={(value) => {
-                  setWarehouseId(value);
+                  setWarehouseId(value || undefined);
                   resetPage();
                 }}
               />
             ) : null}
 
             {report === "inventory-balance" ? (
-              <DatePicker
-                allowClear
-                style={{ width: 190 }}
+              <UiDatePicker
                 placeholder="Chốt số liệu tại ngày"
                 aria-label="Chốt số liệu tại ngày"
                 value={asOf}
-                disabledDate={(current) =>
-                  current && current.isAfter(dayjs(), "day")
-                }
                 onChange={(value) => {
                   setAsOf(value);
                   resetPage();
@@ -2966,11 +3161,10 @@ export default function AlignedReportsPage() {
             ) : null}
 
             {report === "import-match" ? (
-              <Input
-                allowClear
-                style={{ width: 180 }}
+              <UiTextField
+                sx={{ width: 180 }}
                 placeholder="Mã SKU"
-                aria-label="Mã SKU"
+                slotProps={{ htmlInput: { "aria-label": "Mã SKU" } }}
                 value={skuCode}
                 onChange={(event) => {
                   setSkuCode(event.target.value);
@@ -2980,29 +3174,26 @@ export default function AlignedReportsPage() {
             ) : null}
 
             {report === "inventory-balance" || report === "xnt" ? (
-              <Select
-                allowClear
-                showSearch
-                optionFilterProp="label"
-                style={{ width: 210 }}
+              <UiSelect
+                minWidth={210}
                 placeholder="Nhóm hàng"
                 aria-label="Nhóm hàng"
-                value={categoryId}
-                loading={categories.loading}
+                value={categoryId ?? ""}
                 options={categories.options}
                 onChange={(value) => {
-                  setCategoryId(value);
+                  setCategoryId(value || undefined);
                   resetPage();
                 }}
               />
             ) : null}
 
             {report === "document-history" ? (
-              <Select
-                style={{ width: 150 }}
+              <UiSelect
+                minWidth={150}
+                aria-label="Loại phiếu"
                 value={docType}
                 onChange={(value) => {
-                  setDocType(value);
+                  setDocType(value as "all" | "inbound" | "outbound");
                   resetPage();
                 }}
                 options={[
@@ -3014,14 +3205,13 @@ export default function AlignedReportsPage() {
             ) : null}
 
             {report === "movement-trace" ? (
-              <Select
-                allowClear
-                style={{ width: 190 }}
+              <UiSelect
+                minWidth={190}
                 placeholder="Loại biến động"
                 aria-label="Loại biến động"
-                value={movementType}
+                value={movementType ?? ""}
                 onChange={(value) => {
-                  setMovementType(value);
+                  setMovementType(value || undefined);
                   resetPage();
                 }}
                 options={[
@@ -3039,33 +3229,25 @@ export default function AlignedReportsPage() {
 
             {report === "label-log" ? (
               <>
-                <Select
-                  allowClear
-                  showSearch
-                  optionFilterProp="label"
-                  style={{ width: 210 }}
+                <UiSelect
+                  minWidth={210}
                   placeholder="Máy in"
                   aria-label="Máy in"
-                  value={printerId}
-                  loading={printers.loading}
+                  value={printerId ?? ""}
                   options={printers.options}
                   onChange={(value) => {
-                    setPrinterId(value);
+                    setPrinterId(value || undefined);
                     resetPage();
                   }}
                 />
-                <Select
-                  allowClear
-                  showSearch
-                  optionFilterProp="label"
-                  style={{ width: 200 }}
+                <UiSelect
+                  minWidth={200}
                   placeholder="Người in"
                   aria-label="Người in"
-                  value={actorId}
-                  loading={actors.loading}
+                  value={actorId ?? ""}
                   options={actors.options}
                   onChange={(value) => {
-                    setActorId(value);
+                    setActorId(value || undefined);
                     resetPage();
                   }}
                 />
@@ -3074,29 +3256,22 @@ export default function AlignedReportsPage() {
 
             {report === "warranty" ? (
               <>
-                <Select
-                  allowClear
-                  showSearch
-                  mode="multiple"
-                  maxTagCount="responsive"
-                  optionFilterProp="label"
-                  style={{ minWidth: 210 }}
+                <MultiSelectFilter
+                  minWidth={210}
                   placeholder="Bệnh / lỗi (chọn được nhiều)"
-                  aria-label="Bệnh / lỗi"
+                  ariaLabel="Bệnh / lỗi"
                   value={defectIds}
-                  loading={defects.isLoading}
                   options={defectOptions}
                   onChange={(value) => {
                     setDefectIds(value);
                     resetPage();
                   }}
                 />
-                <Select
-                  allowClear
-                  style={{ width: 220 }}
+                <UiSelect
+                  minWidth={220}
                   placeholder="Nhận diện"
                   aria-label="Nhận diện"
-                  value={identification}
+                  value={identification ?? ""}
                   options={[
                     {
                       value: "IDENTIFIED",
@@ -3108,7 +3283,7 @@ export default function AlignedReportsPage() {
                     },
                   ]}
                   onChange={(value) => {
-                    setIdentification(value);
+                    setIdentification(value || undefined);
                     resetPage();
                   }}
                 />
@@ -3117,32 +3292,31 @@ export default function AlignedReportsPage() {
 
             {report === "outbound-by-agency" ||
             report === "document-history" ? (
-              <Select
-                allowClear
-                showSearch
-                optionFilterProp="label"
-                style={{ width: 230 }}
+              <UiSelect
+                minWidth={230}
                 placeholder="Nơi nhận"
                 aria-label="Nơi nhận"
-                value={agencyId}
-                loading={agencies.isLoading}
+                value={agencyId ?? ""}
                 options={agencyOptions}
                 onChange={(value) => {
-                  setAgencyId(value);
+                  setAgencyId(value || undefined);
                   resetPage();
                 }}
               />
             ) : null}
 
             {report === "warranty" && canExportPii ? (
-              <Input
-                allowClear
-                data-testid="report-pii-reason"
-                style={{ width: 260 }}
-                maxLength={500}
-                status={piiReasonInvalid ? "error" : undefined}
+              <UiTextField
+                sx={{ width: 260 }}
+                error={piiReasonInvalid}
                 placeholder={`Lý do xuất PII (≥ ${PII_REASON_MIN_LENGTH} ký tự; bỏ trống = che thông tin)`}
-                aria-label="Lý do xuất dữ liệu PII"
+                slotProps={{
+                  htmlInput: {
+                    maxLength: 500,
+                    "data-testid": "report-pii-reason",
+                    "aria-label": "Lý do xuất dữ liệu PII",
+                  },
+                }}
                 value={piiReason}
                 onChange={(event) => setPiiReason(event.target.value)}
               />
@@ -3194,46 +3368,40 @@ export default function AlignedReportsPage() {
             >
               Xuất PDF
             </ActionButton>
-          </div>
+          </Box>
 
           {invalidPeriod && config.dateFilter ? (
-            <Alert
-              type="error"
-              showIcon
-              style={{ marginBottom: 12 }}
-              title="Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc."
-            />
+            <Box sx={{ mb: 1.5 }}>
+              <UiAlert tone="error">
+                Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc.
+              </UiAlert>
+            </Box>
           ) : null}
           {report === "warranty" ? (
-            <Alert
-              type="info"
-              showIcon
-              style={{ marginBottom: 12 }}
-              title={
-                canExportPii
+            <Box sx={{ mb: 1.5 }}>
+              <UiAlert tone="info">
+                {canExportPii
                   ? `Khách hàng/SĐT/địa chỉ hiển thị ở dạng đã che. Tệp xuất chỉ chứa PII thô khi bạn nhập lý do (≥ ${PII_REASON_MIN_LENGTH} ký tự); mọi lần xuất đều được ghi nhật ký.`
-                  : "Khách hàng/SĐT/địa chỉ hiển thị ở dạng đã che. Tài khoản của bạn không có quyền xuất PII nên tệp xuất luôn che thông tin; cần PII thô hãy liên hệ quản trị để được cấp quyền."
-              }
-            />
+                  : "Khách hàng/SĐT/địa chỉ hiển thị ở dạng đã che. Tài khoản của bạn không có quyền xuất PII nên tệp xuất luôn che thông tin; cần PII thô hãy liên hệ quản trị để được cấp quyền."}
+              </UiAlert>
+            </Box>
           ) : null}
           {piiReasonInvalid ? (
-            <Alert
-              type="warning"
-              showIcon
-              style={{ marginBottom: 12 }}
-              title={`Lý do xuất PII phải có ít nhất ${PII_REASON_MIN_LENGTH} ký tự. Bỏ trống nếu chỉ cần tệp đã che thông tin.`}
-            />
+            <Box sx={{ mb: 1.5 }}>
+              <UiAlert tone="warning">
+                {`Lý do xuất PII phải có ít nhất ${PII_REASON_MIN_LENGTH} ký tự. Bỏ trống nếu chỉ cần tệp đã che thông tin.`}
+              </UiAlert>
+            </Box>
           ) : null}
           {exceedsExportRowLimit ? (
             <div
               {...uiStateProps(UI_STATE.DISABLED, "report-export-row-limit")}
             >
-              <Alert
-                type="warning"
-                showIcon
-                style={{ marginBottom: 12 }}
-                title={`Bộ lọc hiện tại có ${fmt(total)} dòng — vượt giới hạn ${fmt(EXPORT_ROW_LIMIT)} dòng mỗi tệp. Thu hẹp khoảng ngày hoặc bộ lọc trước khi xuất.`}
-              />
+              <Box sx={{ mb: 1.5 }}>
+                <UiAlert tone="warning">
+                  {`Bộ lọc hiện tại có ${fmt(total)} dòng — vượt giới hạn ${fmt(EXPORT_ROW_LIMIT)} dòng mỗi tệp. Thu hẹp khoảng ngày hoặc bộ lọc trước khi xuất.`}
+                </UiAlert>
+              </Box>
             </div>
           ) : null}
           {exportDenied ? (
@@ -3244,60 +3412,57 @@ export default function AlignedReportsPage() {
               )}
               role="alert"
             >
-              <Alert
-                type="error"
-                showIcon
-                closable
-                onClose={() => setExportDenied(null)}
-                style={{ marginBottom: 12 }}
-                title="Xuất báo cáo bị từ chối quyền."
-                description={exportDenied}
-              />
+              <Box sx={{ mb: 1.5 }}>
+                <UiAlert
+                  tone="error"
+                  title="Xuất báo cáo bị từ chối quyền."
+                  onClose={() => setExportDenied(null)}
+                >
+                  {exportDenied}
+                </UiAlert>
+              </Box>
             </div>
           ) : null}
           {query.data?.data_scope === "WAREHOUSE_SCOPED" ? (
-            <Alert
-              type="info"
-              showIcon
-              style={{ marginBottom: 12 }}
-              title={`Số liệu đã giới hạn theo phạm vi kho của tài khoản (${
-                Array.isArray(query.data.scope_warehouse_ids)
-                  ? query.data.scope_warehouse_ids.length
-                  : 0
-              } kho). Đây không phải tổng toàn hệ thống; tệp xuất dùng đúng phạm vi này.`}
-            />
+            <Box sx={{ mb: 1.5 }}>
+              <UiAlert tone="info">
+                {`Số liệu đã giới hạn theo phạm vi kho của tài khoản (${
+                  Array.isArray(query.data.scope_warehouse_ids)
+                    ? query.data.scope_warehouse_ids.length
+                    : 0
+                } kho). Đây không phải tổng toàn hệ thống; tệp xuất dùng đúng phạm vi này.`}
+              </UiAlert>
+            </Box>
           ) : null}
           {report === "inventory-balance" && query.data?.as_of_snapshot ? (
-            <Alert
-              type="warning"
-              showIcon
-              style={{ marginBottom: 12 }}
-              title={`Đang xem ảnh chụp theo sổ tồn kho tại ${text(query.data.as_of)}. Cột "Tồn kho" là số dư tại mốc đó, nên đối soát sổ tồn kho với số dư hiện tại không áp dụng.`}
-            />
+            <Box sx={{ mb: 1.5 }}>
+              <UiAlert tone="warning">
+                {`Đang xem ảnh chụp theo sổ tồn kho tại ${text(query.data.as_of)}. Cột "Tồn kho" là số dư tại mốc đó, nên đối soát sổ tồn kho với số dư hiện tại không áp dụng.`}
+              </UiAlert>
+            </Box>
           ) : null}
           {report === "document-history" ? (
-            <Alert
-              type="info"
-              showIcon
-              style={{ marginBottom: 12 }}
-              title="Mở rộng từng phiếu để xem tầng dòng: kế hoạch / đã quét / đã ghi nhận. Số đã ghi nhận lấy từ biến động tồn kho chính thức."
-            />
+            <Box sx={{ mb: 1.5 }}>
+              <UiAlert tone="info">
+                Bấm "Xem" trên từng phiếu để xem tầng dòng: kế hoạch / đã quét /
+                đã ghi nhận. Số đã ghi nhận lấy từ biến động tồn kho chính thức.
+              </UiAlert>
+            </Box>
           ) : null}
           {report === "outbound-by-agency" ? (
-            <Alert
-              type="info"
-              showIcon
-              style={{ marginBottom: 12 }}
-              title="Nơi nhận chỉ là chiều báo cáo, không phải một nhóm tồn kho riêng."
-            />
+            <Box sx={{ mb: 1.5 }}>
+              <UiAlert tone="info">
+                Nơi nhận chỉ là chiều báo cáo, không phải một nhóm tồn kho
+                riêng.
+              </UiAlert>
+            </Box>
           ) : null}
           {report === "label-log" ? (
-            <Alert
-              type="success"
-              showIcon
-              style={{ marginBottom: 12 }}
-              title="Quy tắc hiện hành: đúng 01 nhãn đóng gói cho mỗi phiếu/lô xuất."
-            />
+            <Box sx={{ mb: 1.5 }}>
+              <UiAlert tone="success">
+                Quy tắc hiện hành: đúng 01 nhãn đóng gói cho mỗi phiếu/lô xuất.
+              </UiAlert>
+            </Box>
           ) : null}
 
           <Summary report={report} data={query.data} />
@@ -3310,7 +3475,7 @@ export default function AlignedReportsPage() {
               >
                 {inventoryChartQuery.isLoading ? null : inventoryTopSku.length ===
                   0 ? (
-                  <Empty description="Chưa có dữ liệu để vẽ biểu đồ" />
+                  <EmptyState description="Chưa có dữ liệu để vẽ biểu đồ" />
                 ) : (
                   <HorizontalBarChart
                     items={inventoryTopSku}
@@ -3324,7 +3489,7 @@ export default function AlignedReportsPage() {
               >
                 {inventoryChartQuery.isLoading ? null : inventoryTypeDonut.length ===
                   0 ? (
-                  <Empty description="Chưa có dữ liệu để vẽ biểu đồ" />
+                  <EmptyState description="Chưa có dữ liệu để vẽ biểu đồ" />
                 ) : (
                   <DonutChart
                     items={inventoryTypeDonut}
@@ -3370,7 +3535,7 @@ export default function AlignedReportsPage() {
                   description="Tổng lượng phát sinh mỗi ngày trong kỳ đã chọn."
                 >
                   {xntDailyQuery.isLoading ? null : xntDays.length === 0 ? (
-                    <Empty description="Chưa có dữ liệu để vẽ biểu đồ" />
+                    <EmptyState description="Chưa có dữ liệu để vẽ biểu đồ" />
                   ) : (
                     <BarChart
                       categories={xntDays.map((day) => fmtDate(day.date))}
@@ -3395,7 +3560,7 @@ export default function AlignedReportsPage() {
                   description="Số dư luỹ kế cuối mỗi ngày trong kỳ đã chọn."
                 >
                   {xntDailyQuery.isLoading ? null : xntDays.length === 0 ? (
-                    <Empty description="Chưa có dữ liệu để vẽ biểu đồ" />
+                    <EmptyState description="Chưa có dữ liệu để vẽ biểu đồ" />
                   ) : (
                     <AreaChart
                       categories={xntDays.map((day) => fmtDate(day.date))}
@@ -3413,7 +3578,7 @@ export default function AlignedReportsPage() {
                 >
                   {xntChartQuery.isLoading ? null : xntTopMovement.length ===
                     0 ? (
-                    <Empty description="Chưa có dữ liệu để vẽ biểu đồ" />
+                    <EmptyState description="Chưa có dữ liệu để vẽ biểu đồ" />
                   ) : (
                     <BarChart
                       categories={xntTopMovement.map((row) => row.label)}
@@ -3439,7 +3604,7 @@ export default function AlignedReportsPage() {
                 >
                   {xntChartQuery.isLoading ? null : xntTopMovement.length ===
                     0 ? (
-                    <Empty description="Chưa có dữ liệu để vẽ biểu đồ" />
+                    <EmptyState description="Chưa có dữ liệu để vẽ biểu đồ" />
                   ) : (
                     <BarChart
                       categories={xntTopMovement.map((row) => row.label)}
@@ -3466,7 +3631,7 @@ export default function AlignedReportsPage() {
                   description="SKU có tổng SL xuất (net) cao nhất trong kỳ, gộp trên toàn bộ tập lọc."
                 >
                   {xntChartQuery.isLoading ? null : xntTopIssue.length === 0 ? (
-                    <Empty description="Chưa có dữ liệu để vẽ biểu đồ" />
+                    <EmptyState description="Chưa có dữ liệu để vẽ biểu đồ" />
                   ) : (
                     <HorizontalBarChart
                       items={xntTopIssue}
@@ -3480,7 +3645,7 @@ export default function AlignedReportsPage() {
                 >
                   {xntChartQuery.isLoading ? null : xntTopReceipt.length ===
                     0 ? (
-                    <Empty description="Chưa có dữ liệu để vẽ biểu đồ" />
+                    <EmptyState description="Chưa có dữ liệu để vẽ biểu đồ" />
                   ) : (
                     <HorizontalBarChart
                       items={xntTopReceipt}
@@ -3496,7 +3661,7 @@ export default function AlignedReportsPage() {
                 >
                   {xntChartQuery.isLoading ? null : xntBottomIssue.length ===
                     0 ? (
-                    <Empty description="Chưa có dữ liệu để vẽ biểu đồ" />
+                    <EmptyState description="Chưa có dữ liệu để vẽ biểu đồ" />
                   ) : (
                     <HorizontalBarChart
                       items={xntBottomIssue}
@@ -3516,7 +3681,7 @@ export default function AlignedReportsPage() {
                   description="Theo số liệu tóm tắt của bộ lọc hiện tại."
                 >
                   {warrantyStatusDonut.length === 0 ? (
-                    <Empty description="Chưa có dữ liệu để vẽ biểu đồ" />
+                    <EmptyState description="Chưa có dữ liệu để vẽ biểu đồ" />
                   ) : (
                     <DonutBreakdown
                       items={warrantyStatusDonut}
@@ -3532,7 +3697,7 @@ export default function AlignedReportsPage() {
                   description="Đếm distinct case theo bệnh/lỗi (một case nhiều lỗi được tính vào mỗi bệnh/lỗi)."
                 >
                   {warrantyTopDefects.length === 0 ? (
-                    <Empty description="Chưa có dữ liệu để vẽ biểu đồ" />
+                    <EmptyState description="Chưa có dữ liệu để vẽ biểu đồ" />
                   ) : (
                     <HorizontalBarChart
                       items={warrantyTopDefects}
@@ -3546,7 +3711,7 @@ export default function AlignedReportsPage() {
                 >
                   {warrantyComponentQuery.isLoading ? null : warrantyComponentUsage.length ===
                     0 ? (
-                    <Empty description="Chưa có dữ liệu để vẽ biểu đồ" />
+                    <EmptyState description="Chưa có dữ liệu để vẽ biểu đồ" />
                   ) : (
                     <HorizontalBarChart
                       items={warrantyComponentUsage}
@@ -3564,17 +3729,16 @@ export default function AlignedReportsPage() {
                 title="Top nơi nhận theo SL xuất"
                 description="Theo dữ liệu tổng hợp trả về cùng báo cáo (không phụ thuộc phân trang)."
               >
-                {Array.isArray(query.data?.by_agency) &&
-                (query.data.by_agency as Raw[]).length > 0 ? (
+                {byAgencyRows.length > 0 ? (
                   <HorizontalBarChart
-                    items={(query.data.by_agency as Raw[]).map((row) => ({
+                    items={byAgencyRows.map((row) => ({
                       label: text(row.agency_name),
                       value: n(row.total_issued_qty),
                     }))}
                     valueFormatter={fmt}
                   />
                 ) : (
-                  <Empty description="Chưa có dữ liệu để vẽ biểu đồ" />
+                  <EmptyState description="Chưa có dữ liệu để vẽ biểu đồ" />
                 )}
               </ReportChartPanel>
               <ReportChartPanel
@@ -3582,7 +3746,7 @@ export default function AlignedReportsPage() {
                 description="Theo dữ liệu tổng hợp trả về cùng báo cáo (không phụ thuộc phân trang)."
               >
                 {outboundTopSku.length === 0 ? (
-                  <Empty description="Chưa có dữ liệu để vẽ biểu đồ" />
+                  <EmptyState description="Chưa có dữ liệu để vẽ biểu đồ" />
                 ) : (
                   <HorizontalBarChart
                     items={outboundTopSku}
@@ -3600,7 +3764,7 @@ export default function AlignedReportsPage() {
                 description="Đếm số dòng biến động theo movement_type, trên toàn bộ tập lọc (không phụ thuộc phân trang)."
               >
                 {movementTypeDonut.length === 0 ? (
-                  <Empty description="Chưa có dữ liệu để vẽ biểu đồ" />
+                  <EmptyState description="Chưa có dữ liệu để vẽ biểu đồ" />
                 ) : (
                   <DonutBreakdown
                     items={movementTypeDonut}
@@ -3619,7 +3783,7 @@ export default function AlignedReportsPage() {
                 description="Theo số liệu tóm tắt của bộ lọc hiện tại."
               >
                 {documentHistoryDonut.length === 0 ? (
-                  <Empty description="Chưa có dữ liệu để vẽ biểu đồ" />
+                  <EmptyState description="Chưa có dữ liệu để vẽ biểu đồ" />
                 ) : (
                   <DonutBreakdown
                     items={documentHistoryDonut}
@@ -3638,7 +3802,7 @@ export default function AlignedReportsPage() {
                 description="Theo số liệu tóm tắt của bộ lọc hiện tại."
               >
                 {importMatchDonut.length === 0 ? (
-                  <Empty description="Chưa có dữ liệu để vẽ biểu đồ" />
+                  <EmptyState description="Chưa có dữ liệu để vẽ biểu đồ" />
                 ) : (
                   <DonutBreakdown
                     items={importMatchDonut}
@@ -3657,7 +3821,7 @@ export default function AlignedReportsPage() {
                 description="Theo số liệu tóm tắt của bộ lọc hiện tại."
               >
                 {labelLogDonut.length === 0 ? (
-                  <Empty description="Chưa có dữ liệu để vẽ biểu đồ" />
+                  <EmptyState description="Chưa có dữ liệu để vẽ biểu đồ" />
                 ) : (
                   <DonutBreakdown
                     items={labelLogDonut}
@@ -3670,71 +3834,62 @@ export default function AlignedReportsPage() {
           ) : null}
 
           {query.isError ? (
-            <ApiErrorAlert
-              error={query.error}
-              title={`Không tải được ${config.label}`}
-              onRetry={() => query.refetch()}
-              style={{ marginBottom: 12 }}
-            />
+            <Box sx={{ mb: 1.5 }}>
+              <ApiErrorAlert
+                error={query.error}
+                title={`Không tải được ${config.label}`}
+                onRetry={() => query.refetch()}
+              />
+            </Box>
           ) : null}
 
           <TableLoadingBanner loading={query.isLoading || query.isFetching} />
-          <Table<Raw>
-            rowKey="__rowKey"
-            dataSource={rows}
-            columns={columns}
-            rowSelection={{
-              selectedRowKeys,
-              onChange: setSelectedRowKeys,
-              fixed: true,
-            }}
-            loading={query.isLoading || query.isFetching}
-            expandable={
-              report === "document-history"
-                ? {
-                    rowExpandable: (row) =>
-                      Array.isArray(row.lines) && row.lines.length > 0,
-                    expandedRowRender: (row) => (
-                      <DocumentLines lines={row.lines as Raw[]} />
-                    ),
-                  }
-                : undefined
-            }
-            onChange={(_pagination, _filters, sorter) => onSorterChange(sorter)}
-            pagination={{
-              current: n(pagination.current_page, page),
-              pageSize: n(pagination.per_page, perPage),
-              total,
-              showSizeChanger: false,
-              showTotal: (value) => `Tổng ${fmt(value)} bản ghi`,
-              onChange: (next) => setPage(next),
-            }}
-            locale={{
-              emptyText: tableEmptyText(
-                query.isError ? query.error : null,
-                "Không có dữ liệu theo bộ lọc",
-              ),
-            }}
+          <ResponsiveDataTable<Raw>
+            columns={responsiveColumns}
+            rows={sortedRows}
+            rowKey={mainRowKey}
+            rowSelection={rowSelection}
+            // Chỉ khoá bảng khi tải lần đầu — isFetching đã có TableLoadingBanner
+            // phía trên báo, tránh bảng trắng xoá mỗi lần đổi trang/lọc.
+            loading={query.isLoading}
+            sortState={sortState}
+            onSortChange={onSortChange}
+            emptyText={tableEmptyText(
+              query.isError ? query.error : null,
+              "Không có dữ liệu theo bộ lọc",
+            )}
+            renderRowActions={(row) => (
+              <ActionButton
+                kind="view"
+                aria-label="Xem chi tiết dòng báo cáo"
+                sx={{ whiteSpace: "nowrap" }}
+                onClick={() =>
+                  setDetailRow({ row, index: sortedRows.indexOf(row) })
+                }
+              />
+            )}
           />
-
-          {report === "outbound-by-agency" &&
-          Array.isArray(query.data?.by_agency) ? (
-            <Table<Raw>
-              style={{ marginTop: 16 }}
-              size="small"
-              pagination={false}
-              rowKey={(row) => text(row.agency_code)}
-              dataSource={query.data.by_agency as Raw[]}
-              rowSelection={{
-                selectedRowKeys: agencySelectedRowKeys,
-                onChange: setAgencySelectedRowKeys,
-                fixed: true,
-              }}
-              columns={byAgencyColumns}
-              onChange={(_pagination, _filters, sorter) =>
-                onByAgencySorterChange(sorter)
-              }
+          <Box sx={{ mt: 1.5 }}>
+            <UiPagination
+              page={n(pagination.current_page, page)}
+              pageSize={n(pagination.per_page, perPage)}
+              total={total}
+              onPageChange={(next) => setPage(next)}
             />
+          </Box>
+
+          {report === "outbound-by-agency" && hasByAgency ? (
+            <Box sx={{ mt: 2 }}>
+              <ResponsiveDataTable<Raw>
+                columns={byAgencyColumns}
+                rows={byAgencySortedRows}
+                rowKey={byAgencyRowKey}
+                rowSelection={byAgencyRowSelection}
+                sortState={byAgencySortState}
+                onSortChange={onByAgencySortChange}
+                emptyText="Không có dữ liệu"
+              />
+            </Box>
           ) : null}
 
           {detailRow ? (

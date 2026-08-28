@@ -3,16 +3,15 @@ import { isAxiosError } from "axios";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import {
-  Alert,
   Box,
-  Button,
-  Card,
-  CardContent,
-  Chip,
-  Paper,
   Stack,
-  Typography,
-} from "@mui/material";
+  UiAlert,
+  UiButton,
+  UiStatusBadge,
+  SEMANTIC_LIGHT as S,
+  RADIUS,
+  TYPOGRAPHY,
+} from "@/shared/ui";
 import { ROUTES } from "@/shared/constants/routes";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { fetchDashboardKPI } from "../services/dashboardService";
@@ -39,7 +38,6 @@ import { http } from "@/shared/api/http";
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { DashboardActionItems } from "../components/DashboardActionItems";
 import { DashboardRecentActivity } from "../components/DashboardRecentActivity";
-import "./DashboardPage.css";
 import { ActionButton } from "@/shared/components/actions";
 
 type FlowNode = {
@@ -118,6 +116,37 @@ const numberFormatter = new Intl.NumberFormat("vi-VN", {
   maximumFractionDigits: 2,
 });
 
+/** Khung card viền mỏng theo token — thay MUI Card variant="outlined" (Part 4). */
+const CARD_SX = {
+  p: 2,
+  bgcolor: S.bgSurface,
+  border: `1px solid ${S.border}`,
+  borderRadius: `${RADIUS.card}px`,
+} as const;
+
+/** Tiêu đề card nhỏ (thay Typography subtitle2 fontWeight 700). */
+const CARD_TITLE_SX = {
+  m: 0,
+  fontSize: TYPOGRAPHY.fontSizeBody,
+  fontWeight: 700,
+  color: S.textHigh,
+} as const;
+
+/** Chú thích phụ (thay Typography caption color text.secondary). */
+const CAPTION_SX = {
+  fontSize: 12,
+  color: S.textMedium,
+} as const;
+
+/** Tiêu đề khu vực (thay Typography h6) — cỡ cardTitle của design system. */
+const SECTION_TITLE_SX = {
+  m: 0,
+  fontSize: TYPOGRAPHY.cardTitle.fontSize,
+  fontWeight: TYPOGRAPHY.cardTitle.fontWeight,
+  lineHeight: TYPOGRAPHY.cardTitle.lineHeight,
+  color: S.textHigh,
+} as const;
+
 function formatNumber(value: number): string {
   return numberFormatter.format(value);
 }
@@ -146,78 +175,78 @@ function DashboardMetricCard({
   note,
   icon,
   color,
+  softColor,
 }: {
   label: string;
   value: number;
   note: string;
   icon: ReactElement;
   color: string;
+  /** Nền nhạt cùng dải với `color` — dùng token *Soft (thay `${color}1a`). */
+  softColor: string;
 }) {
   return (
-    <Card variant="outlined" sx={{ borderRadius: 2, minWidth: 0 }}>
-      <CardContent
-        sx={{ display: "grid", gap: 0.75, "&:last-child": { pb: 2 } }}
+    <Box sx={{ ...CARD_SX, minWidth: 0, display: "grid", gap: 0.75 }}>
+      <Box
+        sx={{
+          width: 36,
+          height: 36,
+          borderRadius: `${RADIUS.card}px`,
+          display: "grid",
+          placeItems: "center",
+          fontSize: 18,
+          color,
+          bgcolor: softColor,
+        }}
+        aria-hidden="true"
       >
-        <Box
-          sx={{
-            width: 36,
-            height: 36,
-            borderRadius: 2,
-            display: "grid",
-            placeItems: "center",
-            fontSize: 18,
-            color,
-            bgcolor: `${color}1a`,
-          }}
-          aria-hidden="true"
-        >
-          {icon}
-        </Box>
-        <Typography variant="body2" sx={{ fontWeight: 700 }}>
-          {label}
-        </Typography>
-        <Typography
-          sx={{
-            fontSize: "clamp(22px, 2.5vw, 30px)",
-            fontWeight: 700,
-            overflowWrap: "anywhere",
-          }}
-        >
-          {formatNumber(value)}
-        </Typography>
-        <Typography variant="caption" color="text.secondary">
-          {note}
-        </Typography>
-      </CardContent>
-    </Card>
+        {icon}
+      </Box>
+      <Box
+        sx={{
+          fontSize: TYPOGRAPHY.fontSizeSecondary,
+          fontWeight: 700,
+          color: S.textHigh,
+        }}
+      >
+        {label}
+      </Box>
+      <Box
+        sx={{
+          fontSize: "clamp(22px, 2.5vw, 30px)",
+          fontWeight: 700,
+          color: S.textHigh,
+          overflowWrap: "anywhere",
+        }}
+      >
+        {formatNumber(value)}
+      </Box>
+      <Box sx={CAPTION_SX}>{note}</Box>
+    </Box>
   );
 }
 
-/** Khối trạng thái (không quyền / đang tải / lỗi / rỗng) — 2 Typography tách
- * riêng để test getByText khớp chính xác từng câu, không gộp chung 1 node. */
+/** Khối trạng thái (không quyền / đang tải / lỗi / rỗng) — title (AlertTitle)
+ * và description là 2 node tách riêng để test getByText khớp chính xác từng
+ * câu, không gộp chung 1 node. */
 function DashboardStateAlert({
-  severity,
+  tone,
   title,
   description,
-  role,
   action,
 }: {
-  severity: "warning" | "info" | "error";
+  tone: "warning" | "info" | "error";
   title: string;
   description: string;
-  role?: string;
   action?: React.ReactNode;
 }) {
   return (
-    <Alert severity={severity} role={role}>
+    <UiAlert tone={tone} title={title}>
       <Stack spacing={0.5} sx={{ alignItems: "flex-start" }}>
-        <Typography component="strong" sx={{ fontWeight: 700 }}>
-          {title}
-        </Typography>
-        <Typography variant="body2">{description}</Typography>
+        <Box component="span">{description}</Box>
         {action}
       </Stack>
-    </Alert>
+    </UiAlert>
   );
 }
 
@@ -331,21 +360,37 @@ export default function DashboardPage() {
     : [];
 
   return (
-    <div className="hn-dashboard-page" data-mvp-screen="MAP-01">
-      <Paper
+    <Box data-mvp-screen="MAP-01" sx={{ display: "grid", gap: 2 }}>
+      <Box
         component="section"
         aria-labelledby="dashboard-title"
-        variant="outlined"
-        sx={{ p: 3, borderRadius: 2 }}
+        sx={{ ...CARD_SX, p: 3 }}
       >
-        <Chip label="Tổng quan vận hành" size="small" sx={{ mb: 1.5 }} />
-        <Typography variant="h4" id="dashboard-title" sx={{ mb: 0.5 }}>
+        <UiStatusBadge
+          tone="primary"
+          label="Tổng quan vận hành"
+          sx={{ mb: 1.5 }}
+        />
+        <Box
+          component="h1"
+          id="dashboard-title"
+          sx={{
+            m: 0,
+            mb: 0.5,
+            fontSize: TYPOGRAPHY.heading.fontSize,
+            fontWeight: TYPOGRAPHY.heading.fontWeight,
+            lineHeight: TYPOGRAPHY.heading.lineHeight,
+            color: S.textHigh,
+          }}
+        >
           Tổng quan kho
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
+        </Box>
+        <Box
+          sx={{ fontSize: TYPOGRAPHY.fontSizeSecondary, color: S.textMedium }}
+        >
           Theo dõi tồn khả dụng, nhập kho, xuất kho, bảo hành và các cảnh báo
           đối soát trên cùng một màn hình.
-        </Typography>
+        </Box>
 
         <Stack
           direction="row"
@@ -355,44 +400,37 @@ export default function DashboardPage() {
           sx={{ mt: 2.5, flexWrap: "wrap" }}
         >
           {DASHBOARD_PERIOD_PRESETS.map((option) => (
-            <Button
+            <UiButton
               key={option.value}
-              variant={preset === option.value ? "contained" : "outlined"}
+              appearance={preset === option.value ? "filled" : "outlined"}
               onClick={() => setPreset(option.value)}
               disabled={!canViewReport}
             >
               {option.label}
-            </Button>
+            </UiButton>
           ))}
           {dashboardQuery.isFetching ? (
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ alignSelf: "center", ml: 1 }}
-            >
+            <Box sx={{ ...CAPTION_SX, alignSelf: "center", ml: 1 }}>
               Đang tải…
-            </Typography>
+            </Box>
           ) : null}
         </Stack>
-        <Typography
-          variant="caption"
-          color="text.secondary"
+        <Box
           sx={{
-            display: "block",
+            ...CAPTION_SX,
             mt: 2.5,
             pt: 1.5,
-            borderTop: "1px solid",
-            borderColor: "divider",
+            borderTop: `1px solid ${S.border}`,
           }}
         >
           Dữ liệu được tổng hợp theo múi giờ Việt Nam. Cần xem chi tiết theo
           ngày/tháng/khoảng ngày tuỳ ý — vào mục Báo cáo.
-        </Typography>
-      </Paper>
+        </Box>
+      </Box>
 
       {isProfileLoaded && !canViewReport ? (
         <DashboardStateAlert
-          severity="warning"
+          tone="warning"
           title="Không có quyền xem báo cáo tổng quan."
           description="Vui lòng liên hệ quản trị viên nếu bạn cần quyền truy cập."
         />
@@ -400,7 +438,7 @@ export default function DashboardPage() {
 
       {canViewReport && dashboardQuery.isLoading ? (
         <DashboardStateAlert
-          severity="info"
+          tone="info"
           title="Đang tải số liệu tổng quan…"
           description="Hệ thống đang tổng hợp dữ liệu vận hành."
         />
@@ -408,7 +446,7 @@ export default function DashboardPage() {
 
       {canViewReport && dashboardQuery.isError ? (
         <DashboardStateAlert
-          severity="error"
+          tone="error"
           title={
             status === 403
               ? "Bạn không có quyền xem báo cáo tổng quan."
@@ -447,40 +485,49 @@ export default function DashboardPage() {
               }}
             >
               <Box>
-                <Typography variant="h6" id="dashboard-kpi-title">
+                <Box
+                  component="h2"
+                  id="dashboard-kpi-title"
+                  sx={SECTION_TITLE_SX}
+                >
                   Chỉ số vận hành
-                </Typography>
+                </Box>
                 {data.period ? (
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ display: "block" }}
-                  >
+                  <Box sx={CAPTION_SX}>
                     Kỳ thống kê: {formatDate(data.period.from_date)} →{" "}
                     {formatDate(data.period.to_date)}
-                  </Typography>
+                  </Box>
                 ) : null}
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ display: "block" }}
-                >
+                <Box sx={CAPTION_SX}>
                   Phạm vi dữ liệu:{" "}
                   {data.data_scope === "GLOBAL"
                     ? "Toàn hệ thống"
                     : `Theo ${data.scope_warehouse_ids?.length ?? 0} kho bạn được phân quyền`}
-                </Typography>
+                </Box>
               </Box>
-              <Chip label="Dữ liệu hệ thống" size="small" variant="outlined" />
+              <UiStatusBadge tone="neutral" label="Dữ liệu hệ thống" />
             </Box>
 
-            <Box className="hn-dashboard-kpi-grid">
+            {/* Breakpoint theo theme (sm/md/lg) thay cho 560/800/1100 của CSS cũ. */}
+            <Box
+              sx={{
+                display: "grid",
+                gap: 1.5,
+                gridTemplateColumns: {
+                  xs: "1fr",
+                  sm: "repeat(2, minmax(0, 1fr))",
+                  md: "repeat(3, minmax(0, 1fr))",
+                  lg: "repeat(5, minmax(0, 1fr))",
+                },
+              }}
+            >
               <DashboardMetricCard
                 label="Tồn khả dụng"
                 value={data.available_qty}
                 note="Số lượng hiện có thể sử dụng"
                 icon={<StockOutlined />}
                 color={CHART_COLORS.primary}
+                softColor={S.primarySoft}
               />
               <DashboardMetricCard
                 label="Nhập kho"
@@ -488,6 +535,7 @@ export default function DashboardPage() {
                 note="Tổng số lượng đã ghi nhận nhập trong kỳ"
                 icon={<ImportOutlined />}
                 color={CHART_COLORS.success}
+                softColor={S.successSoft}
               />
               <DashboardMetricCard
                 label="Xuất kho"
@@ -495,6 +543,7 @@ export default function DashboardPage() {
                 note="Tổng số lượng đã ghi nhận xuất trong kỳ"
                 icon={<ExportOutlined />}
                 color={CHART_COLORS.warning}
+                softColor={S.warningSoft}
               />
               <DashboardMetricCard
                 label="Xuất linh kiện"
@@ -502,6 +551,7 @@ export default function DashboardPage() {
                 note="Tổng linh kiện đã xuất trong kỳ"
                 icon={<ToolOutlined />}
                 color={CHART_COLORS.info}
+                softColor={S.infoSoft}
               />
               <DashboardMetricCard
                 label="Điều chỉnh tồn (ròng)"
@@ -509,13 +559,14 @@ export default function DashboardPage() {
                 note="Chênh lệch tăng/giảm tồn do điều chỉnh trong kỳ"
                 icon={<SwapOutlined />}
                 color={CHART_COLORS.violet}
+                softColor={S.primarySoft}
               />
             </Box>
           </Box>
 
           {empty ? (
             <DashboardStateAlert
-              severity="info"
+              tone="info"
               title="Không có số liệu trong kỳ."
               description="Chưa phát sinh dữ liệu vận hành trong khoảng ngày đã chọn."
             />
@@ -523,19 +574,23 @@ export default function DashboardPage() {
             <Box
               component="section"
               aria-label="Biểu đồ tổng quan"
-              className="hn-dashboard-grid"
+              sx={{
+                display: "grid",
+                gap: 1.5,
+                gridTemplateColumns: {
+                  xs: "1fr",
+                  sm: "repeat(2, minmax(0, 1fr))",
+                  md: "minmax(0, 2fr) minmax(240px, 1fr)",
+                },
+              }}
             >
-              <Card variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+              <Box sx={CARD_SX}>
+                <Box component="h3" sx={CARD_TITLE_SX}>
                   Biểu đồ luồng kho trong kỳ
-                </Typography>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ display: "block" }}
-                >
+                </Box>
+                <Box sx={CAPTION_SX}>
                   So sánh quy mô nhập, xuất, xuất linh kiện và điều chỉnh tồn.
-                </Typography>
+                </Box>
                 <Box role="img" aria-label={flowChartLabel} sx={{ mt: 2 }}>
                   <BarChart
                     categories={flowMetrics.map((metric) => metric.label)}
@@ -549,19 +604,15 @@ export default function DashboardPage() {
                     valueFormatter={formatNumber}
                   />
                 </Box>
-              </Card>
+              </Box>
 
-              <Card variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+              <Box sx={CARD_SX}>
+                <Box component="h3" sx={CARD_TITLE_SX}>
                   Bảo hành theo trạng thái
-                </Typography>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ display: "block" }}
-                >
+                </Box>
+                <Box sx={CAPTION_SX}>
                   Tổng hợp các ca bảo hành hiện có trong hệ thống.
-                </Typography>
+                </Box>
                 {data.data_scope === "WAREHOUSE_SCOPED" ? (
                   <Box
                     role="note"
@@ -569,24 +620,25 @@ export default function DashboardPage() {
                       mt: 1.25,
                       pl: 1.25,
                       py: 0.75,
-                      borderLeft: "3px solid",
-                      borderColor: "divider",
+                      borderLeft: `3px solid ${S.border}`,
                     }}
                   >
-                    <Typography variant="caption" color="text.secondary">
+                    <Box sx={CAPTION_SX}>
                       Số liệu bảo hành được tổng hợp toàn hệ thống và không giới
                       hạn theo kho.
-                    </Typography>
+                    </Box>
                   </Box>
                 ) : null}
                 {warrantyEntries.length === 0 ? (
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ mt: 2 }}
+                  <Box
+                    sx={{
+                      mt: 2,
+                      fontSize: TYPOGRAPHY.fontSizeSecondary,
+                      color: S.textMedium,
+                    }}
                   >
                     Chưa có ca bảo hành.
-                  </Typography>
+                  </Box>
                 ) : (
                   <Box
                     sx={{
@@ -604,14 +656,14 @@ export default function DashboardPage() {
                           direction="row"
                           sx={{
                             justifyContent: "space-between",
-                            borderBottom: "1px solid",
-                            borderColor: "divider",
+                            borderBottom: `1px solid ${S.border}`,
                             pb: 1,
                           }}
                         >
-                          <Typography
-                            variant="body2"
+                          <Box
                             sx={{
+                              fontSize: TYPOGRAPHY.fontSizeSecondary,
+                              color: S.textHigh,
                               textTransform: "lowercase",
                               "&::first-letter": {
                                 textTransform: "uppercase",
@@ -620,10 +672,10 @@ export default function DashboardPage() {
                           >
                             {WARRANTY_STATUS_LABELS[warrantyStatus] ??
                               warrantyStatus.replaceAll("_", " ")}
-                          </Typography>
-                          <Typography sx={{ fontWeight: 700 }}>
+                          </Box>
+                          <Box sx={{ fontWeight: 700, color: S.textHigh }}>
                             {formatNumber(count)}
-                          </Typography>
+                          </Box>
                         </Stack>
                       ))}
                     </Stack>
@@ -643,94 +695,85 @@ export default function DashboardPage() {
                     </Box>
                   </Box>
                 )}
-              </Card>
+              </Box>
 
-              <Card variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+              <Box sx={CARD_SX}>
+                <Box component="h3" sx={CARD_TITLE_SX}>
                   Đối soát tồn kho
-                </Typography>
-                <Typography
+                </Box>
+                <Box
                   sx={{
-                    display: "block",
                     mt: 1.5,
                     mb: 0.5,
                     fontSize: 24,
                     fontWeight: 700,
+                    color: S.textHigh,
                   }}
                 >
                   {formatNumber(data.reconciliation_warning_count)} cảnh báo
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
+                </Box>
+                <Box sx={CAPTION_SX}>
                   Số trường hợp chênh lệch cần kiểm tra tại thời điểm hiện tại.
-                </Typography>
-              </Card>
+                </Box>
+              </Box>
 
-              <Card
-                variant="outlined"
+              <Box
                 onClick={() => navigate(ROUTES.MASTER_DATA)}
-                sx={{ p: 2, borderRadius: 2, cursor: "pointer" }}
+                sx={{ ...CARD_SX, cursor: "pointer" }}
               >
-                <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                <Box component="h3" sx={CARD_TITLE_SX}>
                   Tồn dưới định mức
-                </Typography>
-                <Typography
+                </Box>
+                <Box
                   sx={{
-                    display: "block",
                     mt: 1.5,
                     mb: 0.5,
                     fontSize: 24,
                     fontWeight: 700,
+                    color: S.textHigh,
                   }}
                 >
                   {formatNumber(data.below_min_stock_count)} SKU
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
+                </Box>
+                <Box sx={CAPTION_SX}>
                   SKU có định mức tối thiểu và tổng tồn khả dụng (mọi kho) thấp
                   hơn định mức.
-                </Typography>
-              </Card>
+                </Box>
+              </Box>
 
-              <Card
-                variant="outlined"
+              <Box
                 onClick={() => navigate(ROUTES.MASTER_DATA)}
-                sx={{ p: 2, borderRadius: 2, cursor: "pointer" }}
+                sx={{ ...CARD_SX, cursor: "pointer" }}
               >
-                <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                <Box component="h3" sx={CARD_TITLE_SX}>
                   Tồn vượt định mức
-                </Typography>
-                <Typography
+                </Box>
+                <Box
                   sx={{
-                    display: "block",
                     mt: 1.5,
                     mb: 0.5,
                     fontSize: 24,
                     fontWeight: 700,
+                    color: S.textHigh,
                   }}
                 >
                   {formatNumber(data.above_max_stock_count)} SKU
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
+                </Box>
+                <Box sx={CAPTION_SX}>
                   SKU có định mức tối đa và tổng tồn khả dụng (mọi kho) cao hơn
                   định mức.
-                </Typography>
-              </Card>
+                </Box>
+              </Box>
 
               {dailyPoints.length > 0 ? (
-                <Card
-                  variant="outlined"
-                  sx={{ p: 2, borderRadius: 2, gridColumn: "1 / -1" }}
-                >
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                <Box sx={{ ...CARD_SX, gridColumn: "1 / -1" }}>
+                  <Box component="h3" sx={CARD_TITLE_SX}>
                     Nhập / Xuất theo ngày
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ display: "block" }}
-                  >
+                  </Box>
+                  <Box sx={CAPTION_SX}>
                     So sánh lượng hàng nhập và xuất theo từng ngày trong kỳ đang
                     xem.
-                  </Typography>
+                  </Box>
                   <Box sx={{ mt: 1.5 }}>
                     <BarChart
                       categories={dailyPoints.map((point) =>
@@ -751,25 +794,18 @@ export default function DashboardPage() {
                       valueFormatter={formatNumber}
                     />
                   </Box>
-                </Card>
+                </Box>
               ) : null}
 
               {dailyPoints.length > 0 ? (
-                <Card
-                  variant="outlined"
-                  sx={{ p: 2, borderRadius: 2, gridColumn: "1 / -1" }}
-                >
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                <Box sx={{ ...CARD_SX, gridColumn: "1 / -1" }}>
+                  <Box component="h3" sx={CARD_TITLE_SX}>
                     Xu hướng bảo hành
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ display: "block" }}
-                  >
+                  </Box>
+                  <Box sx={CAPTION_SX}>
                     Số ca bảo hành mới tiếp nhận theo từng ngày trong kỳ đang
                     xem.
-                  </Typography>
+                  </Box>
                   <Box sx={{ mt: 1.5 }}>
                     <AreaChart
                       categories={dailyPoints.map((point) =>
@@ -783,24 +819,17 @@ export default function DashboardPage() {
                       valueFormatter={formatNumber}
                     />
                   </Box>
-                </Card>
+                </Box>
               ) : null}
 
               {topDefects.length > 0 ? (
-                <Card
-                  variant="outlined"
-                  sx={{ p: 2, borderRadius: 2, gridColumn: "1 / -1" }}
-                >
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                <Box sx={{ ...CARD_SX, gridColumn: "1 / -1" }}>
+                  <Box component="h3" sx={CARD_TITLE_SX}>
                     Top bệnh/lỗi thường gặp
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ display: "block" }}
-                  >
+                  </Box>
+                  <Box sx={CAPTION_SX}>
                     Số ca bảo hành theo từng bệnh/lỗi trong kỳ đang xem.
-                  </Typography>
+                  </Box>
                   <Box sx={{ mt: 1.5 }}>
                     <HorizontalBarChart
                       items={topDefects}
@@ -808,7 +837,7 @@ export default function DashboardPage() {
                       valueFormatter={formatNumber}
                     />
                   </Box>
-                </Card>
+                </Box>
               ) : null}
             </Box>
           )}
@@ -829,9 +858,13 @@ export default function DashboardPage() {
       ) : null}
 
       <Box component="section" aria-labelledby="workflow-title">
-        <Typography variant="h6" id="workflow-title" sx={{ mb: 1.5 }}>
+        <Box
+          component="h2"
+          id="workflow-title"
+          sx={{ ...SECTION_TITLE_SX, mb: 1.5 }}
+        >
           Điều hướng luồng nghiệp vụ
-        </Typography>
+        </Box>
         <Stack spacing={1.5}>
           {FLOW_LANES.map((lane) => (
             <Stack
@@ -840,12 +873,7 @@ export default function DashboardPage() {
               spacing={1}
               sx={{ flexWrap: "wrap", alignItems: "center" }}
             >
-              <Chip
-                label={lane.label}
-                size="small"
-                color="primary"
-                variant="outlined"
-              />
+              <UiStatusBadge tone="primary" label={lane.label} />
               {lane.nodes.map((node, index) => (
                 <Stack
                   key={`${lane.label}-${node.label}`}
@@ -854,28 +882,28 @@ export default function DashboardPage() {
                   sx={{ alignItems: "center" }}
                 >
                   {index > 0 ? (
-                    <Typography
+                    <Box
                       component="span"
                       aria-hidden="true"
-                      color="text.secondary"
+                      sx={{ color: S.textMedium }}
                     >
                       →
-                    </Typography>
+                    </Box>
                   ) : null}
-                  <Button
+                  <UiButton
                     size="small"
-                    variant="outlined"
+                    appearance="outlined"
                     onClick={() => node.route && navigate(node.route)}
                     sx={{ cursor: node.route ? "pointer" : "default" }}
                   >
                     {node.label}
-                  </Button>
+                  </UiButton>
                 </Stack>
               ))}
             </Stack>
           ))}
         </Stack>
       </Box>
-    </div>
+    </Box>
   );
 }

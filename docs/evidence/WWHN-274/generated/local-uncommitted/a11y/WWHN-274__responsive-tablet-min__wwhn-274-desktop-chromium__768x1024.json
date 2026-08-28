@@ -7,7 +7,7 @@
   "scenario": "responsive-tablet-min",
   "result": "PASS",
   "sourceSha": "local-uncommitted",
-  "environment": "local-controlled",
+  "environment": "test",
   "buildVersion": "local-dev",
   "browserProject": "wwhn-274-desktop-chromium",
   "browserMatrixTarget": "Chrome/Edge desktop (Blink/Chromium engine, emulated latest)",
@@ -17,7 +17,7 @@
     "height": 1024
   },
   "route": "/login",
-  "timestamp": "2026-08-20T03:10:31.106Z",
+  "timestamp": "2026-08-28T03:16:30.247Z",
   "screenshotFilename": "WWHN-274__responsive-tablet-min__wwhn-274-desktop-chromium__768x1024.png",
   "assertions": [
     "Viewport 768x1024 khong tran ngang",
@@ -25,7 +25,7 @@
   ],
   "observed": {
     "horizontalOverflowPx": 0,
-    "submitHeightPx": 40
+    "submitHeightPx": 38
   },
   "truthBoundary": "Emulation-level browser/device evidence + basic a11y. Khong phai real-device matrix cua QA1 (WWHN-275) va khong phai audit WCAG day du."
 }

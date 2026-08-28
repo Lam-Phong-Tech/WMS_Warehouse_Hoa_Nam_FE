@@ -1,14 +1,17 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Pagination, Space, Tag, Typography } from "antd";
 import { toast } from "sonner";
 import {
-  MenuItem,
-  Select,
-  TextField,
-  Typography as MuiTypography,
-} from "@mui/material";
+  Box,
+  Stack,
+  UiPagination,
+  UiSelect,
+  UiStatusBadge,
+  UiText,
+  UiTextField,
+  type UiStatusTone,
+} from "@/shared/ui";
 import {
   ResponsiveDataTable,
   type ResponsiveTableColumn,
@@ -53,16 +56,25 @@ import { ActionButton } from "@/shared/components/actions";
 const SEARCH_DEBOUNCE_MS = 250;
 const DETAIL_SCREENS = new Set(["WAR-03"]);
 
-/** Toolbar filter nhỏ gọn — đồng bộ chuẩn mui-theme.ts (xem gotcha #4/#5 memory pilot MUI). */
-const TOOLBAR_SX = {
-  "&, & .MuiOutlinedInput-root": { height: 35 },
-  "& .MuiSelect-select, & .MuiInputBase-input": {
-    paddingTop: "8px !important",
-    paddingBottom: "8px !important",
-    fontSize: "13.5px !important",
-    boxSizing: "border-box",
-  },
+/** antd Tag color (WARRANTY_STATUS_COLORS) → tone soft-tint của UiStatusBadge. */
+const TAG_TONE_MAP: Record<string, UiStatusTone> = {
+  green: "success",
+  success: "success",
+  red: "error",
+  error: "error",
+  volcano: "error",
+  orange: "warning",
+  gold: "warning",
+  warning: "warning",
+  blue: "info",
+  processing: "info",
+  geekblue: "info",
+  cyan: "info",
+  purple: "primary",
 };
+
+const statusTone = (color?: string): UiStatusTone =>
+  TAG_TONE_MAP[color ?? ""] ?? "neutral";
 
 interface ComponentIssueTarget {
   caseId: string;
@@ -184,15 +196,15 @@ export default function WarrantyPage() {
       width: 190,
       sortAccessor: (row) => row.customer_name || "",
       render: (row) => (
-        <Space orientation="vertical" size={0}>
+        <Stack spacing={0}>
           {/* §13.8: mask lại ở tầng render — không tin payload đã mask sẵn. */}
-          <Typography.Text>
+          <UiText variant="body">
             {warrantyPiiText(row.customer_name, canViewPii, "name") || "—"}
-          </Typography.Text>
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          </UiText>
+          <UiText variant="caption">
             {warrantyPiiText(row.customer_phone, canViewPii, "phone") || "—"}
-          </Typography.Text>
-        </Space>
+          </UiText>
+        </Stack>
       ),
     },
     {
@@ -224,7 +236,9 @@ export default function WarrantyPage() {
       width: 130,
       hideOnMobile: true,
       sortAccessor: (row) => row.identification_type || "",
-      render: (row) => <Tag>{row.identification_type || "—"}</Tag>,
+      render: (row) => (
+        <UiStatusBadge tone="neutral" label={row.identification_type || "—"} />
+      ),
     },
     {
       key: "received_at",
@@ -242,9 +256,10 @@ export default function WarrantyPage() {
       sortType: "value",
       sortAccessor: (row) => row.status,
       render: (row) => (
-        <Tag color={WARRANTY_STATUS_COLORS[row.status]}>
-          {WARRANTY_STATUS_LABELS[row.status] ?? row.status}
-        </Tag>
+        <UiStatusBadge
+          tone={statusTone(WARRANTY_STATUS_COLORS[row.status])}
+          label={WARRANTY_STATUS_LABELS[row.status] ?? row.status}
+        />
       ),
     },
   ];
@@ -269,18 +284,18 @@ export default function WarrantyPage() {
     <>
       <div className="warranty-page hn-mvp-source-screen">
         {!canViewPii ? (
-          <div className="footer-note" style={{ marginBottom: 8 }}>
+          <Box className="footer-note" sx={{ mb: 1 }}>
             <ToolOutlined style={{ marginRight: 6 }} />
             Thông tin khách hàng (tên/SĐT/địa chỉ) đang được che theo quyền{" "}
             <b>warranty.pii.view</b>.
-          </div>
+          </Box>
         ) : null}
 
         <div className="toolbar">
           {/* Annex D SCR-WAR-01 scan-focus: auto-focus ô quét, Enter/đầu đọc submit ngay
             (không chờ debounce) và giữ focus sau khi tìm. §5.3 liệt kê camera là context
             hợp lệ cho cả "warranty receive/search" nên WAR-01 có nút camera fallback. */}
-          <TextField
+          <UiTextField
             value={searchInput}
             placeholder="Quét hoặc nhập case / mã máy / mã tạm / SĐT..."
             slotProps={{
@@ -295,7 +310,7 @@ export default function WarrantyPage() {
               setPage(1);
               searchRef.current?.focus();
             }}
-            sx={{ minWidth: 220, ...TOOLBAR_SX }}
+            sx={{ minWidth: 220 }}
           />
           <ActionButton
             kind="camera"
@@ -304,80 +319,68 @@ export default function WarrantyPage() {
           >
             Camera
           </ActionButton>
-          <Select
-            displayEmpty
+          <UiSelect
             value={status}
-            inputProps={{ "aria-label": "Lọc trạng thái bảo hành" }}
-            onChange={(event) => {
-              setStatus(event.target.value as WarrantyCaseStatus | "");
+            aria-label="Lọc trạng thái bảo hành"
+            placeholder="Trạng thái: Tất cả"
+            minWidth={160}
+            options={WARRANTY_BASELINE_STATUSES.map((value) => ({
+              value,
+              label: WARRANTY_STATUS_LABELS[value],
+            }))}
+            onChange={(value) => {
+              setStatus(value as WarrantyCaseStatus | "");
               setPage(1);
             }}
-            sx={{ minWidth: 160, ...TOOLBAR_SX }}
-          >
-            <MenuItem value="">Trạng thái: Tất cả</MenuItem>
-            {WARRANTY_BASELINE_STATUSES.map((value) => (
-              <MenuItem key={value} value={value}>
-                {WARRANTY_STATUS_LABELS[value]}
-              </MenuItem>
-            ))}
-          </Select>
-          <Select
-            displayEmpty
+          />
+          <UiSelect
             value={identification}
-            inputProps={{ "aria-label": "Lọc loại nhận diện" }}
-            onChange={(event) => {
-              setIdentification(
-                event.target.value as WarrantyIdentificationType | "",
-              );
+            aria-label="Lọc loại nhận diện"
+            placeholder="Nhận diện: Tất cả"
+            minWidth={148}
+            options={[
+              { value: "IDENTIFIED", label: "IDENTIFIED" },
+              { value: "TEMP_ONLY", label: "TEMP_ONLY" },
+            ]}
+            onChange={(value) => {
+              setIdentification(value as WarrantyIdentificationType | "");
               setPage(1);
             }}
-            sx={{ minWidth: 148, ...TOOLBAR_SX }}
-          >
-            <MenuItem value="">Nhận diện: Tất cả</MenuItem>
-            <MenuItem value="IDENTIFIED">IDENTIFIED</MenuItem>
-            <MenuItem value="TEMP_ONLY">TEMP_ONLY</MenuItem>
-          </Select>
-          <Select
-            displayEmpty
+          />
+          <UiSelect
             value={defectId}
-            inputProps={{ "aria-label": "Lọc bệnh/lỗi" }}
-            onChange={(event) => {
-              setDefectId(event.target.value);
+            aria-label="Lọc bệnh/lỗi"
+            placeholder="Bệnh/lỗi: Tất cả"
+            minWidth={148}
+            options={(defectsQuery.data?.data ?? []).map((defect) => ({
+              value: defect.defect_id,
+              label: `${defect.defect_code} · ${defect.defect_name}`,
+            }))}
+            onChange={(value) => {
+              setDefectId(value);
               setPage(1);
             }}
-            sx={{ minWidth: 148, ...TOOLBAR_SX }}
-          >
-            <MenuItem value="">Bệnh/lỗi: Tất cả</MenuItem>
-            {(defectsQuery.data?.data ?? []).map((defect) => (
-              <MenuItem key={defect.defect_id} value={defect.defect_id}>
-                {defect.defect_code} · {defect.defect_name}
-              </MenuItem>
-            ))}
-          </Select>
-          <Select
+          />
+          <UiSelect
             value={perPage}
-            inputProps={{ "aria-label": "Số dòng mỗi trang" }}
-            onChange={(event) => {
-              setPerPage(Number(event.target.value));
+            aria-label="Số dòng mỗi trang"
+            minWidth={100}
+            options={perPageOptions.map((size) => ({
+              value: size,
+              label: `${size} / trang`,
+            }))}
+            onChange={(value) => {
+              setPerPage(Number(value));
               setPage(1);
             }}
-            sx={{ minWidth: 100, ...TOOLBAR_SX }}
-          >
-            {perPageOptions.map((size) => (
-              <MenuItem key={size} value={size}>
-                {size} / trang
-              </MenuItem>
-            ))}
-          </Select>
+          />
           {/* Tổng số dòng đặt ngay trong toolbar (cạnh bộ lọc/số dòng mỗi trang) để
            * dễ thấy — thay vì chỉ hiện ở phần phân trang tít dưới bảng dài. */}
-          <MuiTypography
-            variant="body2"
-            color="text.secondary"
-            sx={{ whiteSpace: "nowrap" }}
-          >
-            Tổng {pagination.total} case bảo hành
-          </MuiTypography>
+          <Box component="span" sx={{ whiteSpace: "nowrap" }}>
+            <UiText variant="secondary">
+              Tổng {pagination.total} case bảo hành
+            </UiText>
+          </Box>
           <div className="spacer" />
           {canManage ? (
             <ActionButton kind="create" onClick={() => setIntakeOpen(true)}>
@@ -387,13 +390,13 @@ export default function WarrantyPage() {
         </div>
 
         {listQuery.isError ? (
-          <div style={{ marginBottom: 14 }}>
+          <Box sx={{ mb: "14px" }}>
             <ApiErrorAlert
               error={listQuery.error}
               title="Không tải được danh sách bảo hành"
               onRetry={() => listQuery.refetch()}
             />
-          </div>
+          </Box>
         ) : null}
 
         <TableLoadingBanner
@@ -415,17 +418,16 @@ export default function WarrantyPage() {
           onRowClick={(row) => setDetailId(row.id)}
           renderRowActions={renderRowActions}
         />
-        <div
-          style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}
-        >
-          <Pagination
-            current={pagination.current}
+        <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 1.5 }}>
+          {/* Tổng số đã hiện trong toolbar → showTotal=false, tránh lặp. */}
+          <UiPagination
+            page={pagination.current}
             pageSize={perPage}
             total={pagination.total}
-            showSizeChanger={false}
-            onChange={(nextPage) => setPage(nextPage)}
+            showTotal={false}
+            onPageChange={(nextPage) => setPage(nextPage)}
           />
-        </div>
+        </Box>
         {intakeOpen ? (
           <WarrantyIntakeModal
             open

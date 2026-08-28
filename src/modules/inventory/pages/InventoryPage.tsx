@@ -1,12 +1,24 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState } from "react";
+import type { ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Pagination, Space, Tag, Tooltip, Typography } from "antd";
+import {
+  Box,
+  SEMANTIC_LIGHT,
+  Stack,
+  Tooltip,
+  UiPagination,
+  UiSelect,
+  UiStatusBadge,
+  UiTabs,
+  UiText,
+  UiTextField,
+  type UiTabItem,
+} from "@/shared/ui";
 import {
   ResponsiveDataTable,
   type ResponsiveTableColumn,
 } from "@/shared/components/data-display/ResponsiveDataTable";
-import { MenuItem, Select, Tab, Tabs, TextField } from "@mui/material";
 import { AppstoreOutlined, SwapOutlined } from "@/shared/components/icons";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import {
@@ -41,21 +53,10 @@ import type {
   StockMovementRow,
 } from "../services/inventoryService";
 import { formatDateTime } from "@/shared/utils/format-date";
-import { ActionButton } from "@/shared/components/actions";
+import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 
 const numberFormatter = new Intl.NumberFormat("vi-VN");
 const SEARCH_DEBOUNCE_MS = 250;
-
-/** Toolbar filter nhỏ gọn — đồng bộ chuẩn mui-theme.ts (xem gotcha #4/#5 memory pilot MUI). */
-const TOOLBAR_SX = {
-  "&, & .MuiOutlinedInput-root": { height: 35 },
-  "& .MuiSelect-select, & .MuiInputBase-input": {
-    paddingTop: "8px !important",
-    paddingBottom: "8px !important",
-    fontSize: "13.5px !important",
-    boxSizing: "border-box",
-  },
-};
 
 function pageSizeOptions(current: number) {
   return MVP_PAGE_SIZE_OPTIONS.includes(
@@ -70,11 +71,64 @@ function formatQty(value: number | null | undefined, uom = "") {
   return `${numberFormatter.format(value)}${uom ? ` ${uom}` : ""}`;
 }
 
-function reconcileColor(status: string) {
+function reconcileColor(status: string): "success" | "error" | "warning" {
   if (status === "MATCH" || status === "PASS") return "success";
   if (status === "MISMATCH" || status === "FAIL") return "error";
   return "warning";
 }
+
+/** Nhãn tab kèm icon — UiTabs nhận label ReactNode nên icon ghép ngay trong label. */
+function TabLabel({ icon, text }: { icon: ReactNode; text: string }) {
+  return (
+    <Box
+      component="span"
+      sx={{ display: "inline-flex", alignItems: "center", gap: 1 }}
+    >
+      {icon}
+      <span>{text}</span>
+    </Box>
+  );
+}
+
+/** Mã dạng code (SKU/chứng từ) — thay antd Typography.Text `code`. */
+function CodeText({ children }: { children: ReactNode }) {
+  return (
+    <Box
+      component="code"
+      sx={{
+        fontFamily: "monospace",
+        fontSize: 13,
+        px: 0.5,
+        borderRadius: 1,
+        backgroundColor: SEMANTIC_LIGHT.secondarySoft,
+        color: SEMANTIC_LIGHT.textHigh,
+      }}
+    >
+      {children}
+    </Box>
+  );
+}
+
+const INVENTORY_TAB_ITEMS: UiTabItem[] = [
+  {
+    key: "balance",
+    label: (
+      <TabLabel
+        icon={<AppstoreOutlined style={{ fontSize: 15 }} />}
+        text="Tồn kho hiện tại"
+      />
+    ),
+  },
+  {
+    key: "movement",
+    label: (
+      <TabLabel
+        icon={<SwapOutlined style={{ fontSize: 15 }} />}
+        text="Lịch sử biến động"
+      />
+    ),
+  },
+];
 
 /**
  * INV-01 · Tra cứu tồn & đối soát — màn hub của luồng 05 · Tồn kho & kiểm soát.
@@ -200,9 +254,16 @@ export default function InventoryPage() {
       width: 140,
       sortAccessor: (row) => row.sku,
       render: (row) => (
-        <Typography.Text code copyable>
-          {row.sku || "-"}
-        </Typography.Text>
+        <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
+          <CodeText>{row.sku || "-"}</CodeText>
+          <ActionIconButton
+            kind="copy"
+            onClick={(event) => {
+              event.stopPropagation();
+              void navigator.clipboard?.writeText(row.sku || "-");
+            }}
+          />
+        </Stack>
       ),
     },
     {
@@ -211,12 +272,12 @@ export default function InventoryPage() {
       width: 200,
       sortAccessor: (row) => row.name || "",
       render: (row) => (
-        <Space orientation="vertical" size={0}>
+        <Stack>
           <strong>{row.name || "-"}</strong>
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          <UiText variant="secondary">
             {businessLabel(SKU_TYPE_LABELS, row.type, "Loại khác")}
-          </Typography.Text>
-        </Space>
+          </UiText>
+        </Stack>
       ),
     },
     {
@@ -226,13 +287,14 @@ export default function InventoryPage() {
       sortType: "value",
       sortAccessor: (row) => row.stockStatus,
       render: (row) => (
-        <Tag color={row.stockStatus === "AVAILABLE" ? "success" : "warning"}>
-          {businessLabel(
+        <UiStatusBadge
+          tone={row.stockStatus === "AVAILABLE" ? "success" : "warning"}
+          label={businessLabel(
             INVENTORY_STOCK_STATUS_LABELS,
             row.stockStatus,
             "Trạng thái khác",
           )}
-        </Tag>
+        />
       ),
     },
     {
@@ -279,18 +341,25 @@ export default function InventoryPage() {
       render: (row) => {
         if (row.variance === 0) {
           return (
-            <Typography.Text
-              type="secondary"
-              style={{ fontVariantNumeric: "tabular-nums" }}
+            <Box
+              component="span"
+              sx={{
+                color: SEMANTIC_LIGHT.textMedium,
+                fontVariantNumeric: "tabular-nums",
+              }}
             >
               0
-            </Typography.Text>
+            </Box>
           );
         }
         return (
-          <Typography.Text
-            style={{
-              color: row.variance > 0 ? "#d46b08" : "#cf1322",
+          <Box
+            component="span"
+            sx={{
+              color:
+                row.variance > 0
+                  ? SEMANTIC_LIGHT.warningText
+                  : SEMANTIC_LIGHT.errorText,
               fontVariantNumeric: "tabular-nums",
               fontWeight: 600,
             }}
@@ -298,7 +367,7 @@ export default function InventoryPage() {
             {row.variance > 0
               ? `+${numberFormatter.format(row.variance)}`
               : numberFormatter.format(row.variance)}
-          </Typography.Text>
+          </Box>
         );
       },
     },
@@ -310,23 +379,26 @@ export default function InventoryPage() {
       render: (row) => {
         const parts = [row.containerCode, row.location].filter(Boolean);
         if (parts.length === 0) {
-          return (
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-              Chưa có vị trí gợi ý
-            </Typography.Text>
-          );
+          return <UiText variant="secondary">Chưa có vị trí gợi ý</UiText>;
         }
         const text = parts.join(" · ");
         // Độ dài container/location thất thường (có khi rất dài) — ellipsis +
         // tooltip để tránh dòng bị dồn/cắt xấu hoặc kéo lệch chiều cao bảng
         // (tiêu chí 2), vẫn xem được đầy đủ khi hover.
         return (
-          <Typography.Text
-            style={{ fontSize: 12, maxWidth: 150 }}
-            ellipsis={{ tooltip: text }}
-          >
-            {text}
-          </Typography.Text>
+          <Tooltip title={text}>
+            <Box
+              sx={{
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                maxWidth: 150,
+                fontSize: 12,
+              }}
+            >
+              {text}
+            </Box>
+          </Tooltip>
         );
       },
     },
@@ -345,13 +417,16 @@ export default function InventoryPage() {
               : "Sổ cái và số tồn hiện tại đang có chênh lệch")
           }
         >
-          <Tag color={reconcileColor(row.reconcile)}>
-            {businessLabel(
-              RECONCILE_STATUS_LABELS,
-              row.reconcile,
-              "Chưa đối soát",
-            )}
-          </Tag>
+          <span>
+            <UiStatusBadge
+              tone={reconcileColor(row.reconcile)}
+              label={businessLabel(
+                RECONCILE_STATUS_LABELS,
+                row.reconcile,
+                "Chưa đối soát",
+              )}
+            />
+          </span>
         </Tooltip>
       ),
     },
@@ -385,18 +460,23 @@ export default function InventoryPage() {
       sortType: "value",
       sortAccessor: (row) => row.type,
       render: (row) => (
-        <Space orientation="vertical" size={0}>
-          <Tag>
-            {businessLabel(MOVEMENT_TYPE_LABELS, row.type, "Biến động khác")}
-          </Tag>
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+        <Stack sx={{ alignItems: "flex-start" }}>
+          <UiStatusBadge
+            tone="neutral"
+            label={businessLabel(
+              MOVEMENT_TYPE_LABELS,
+              row.type,
+              "Biến động khác",
+            )}
+          />
+          <UiText variant="secondary">
             {businessLabel(
               MOVEMENT_STATUS_LABELS,
               row.status,
               "Trạng thái khác",
             )}
-          </Typography.Text>
-        </Space>
+          </UiText>
+        </Stack>
       ),
     },
     {
@@ -414,9 +494,13 @@ export default function InventoryPage() {
       sortType: "value",
       sortAccessor: (row) => row.qty,
       render: (row) => (
-        <Typography.Text
-          style={{
-            color: row.qty >= 0 ? "#237804" : "#cf1322",
+        <Box
+          component="span"
+          sx={{
+            color:
+              row.qty >= 0
+                ? SEMANTIC_LIGHT.successText
+                : SEMANTIC_LIGHT.errorText,
             fontVariantNumeric: "tabular-nums",
             fontWeight: 600,
           }}
@@ -424,7 +508,7 @@ export default function InventoryPage() {
           {row.qty >= 0
             ? `+${numberFormatter.format(row.qty)}`
             : numberFormatter.format(row.qty)}
-        </Typography.Text>
+        </Box>
       ),
     },
     {
@@ -433,16 +517,16 @@ export default function InventoryPage() {
       width: 180,
       sortAccessor: (row) => row.source || "",
       render: (row) => (
-        <Space orientation="vertical" size={0}>
-          <Typography.Text code>{row.source || "-"}</Typography.Text>
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+        <Stack sx={{ alignItems: "flex-start" }}>
+          <CodeText>{row.source || "-"}</CodeText>
+          <UiText variant="secondary">
             {businessLabel(
               SOURCE_DOCUMENT_TYPE_LABELS,
               row.sourceType,
               "Nguồn khác",
             )}
-          </Typography.Text>
-        </Space>
+          </UiText>
+        </Stack>
       ),
     },
   ];
@@ -450,82 +534,67 @@ export default function InventoryPage() {
   return (
     <>
       <div className="inventory-page hn-mvp-source-screen">
-        <Tabs
-          value={activeTab}
-          onChange={(_event, value: string) => setActiveTab(value)}
-          sx={{ marginTop: "12px", minHeight: 40 }}
-        >
-          <Tab
-            value="balance"
-            icon={<AppstoreOutlined style={{ fontSize: 15 }} />}
-            iconPosition="start"
-            label="Tồn kho hiện tại"
-            sx={{ minHeight: 40, textTransform: "none" }}
+        <Box sx={{ marginTop: "12px" }}>
+          <UiTabs
+            items={INVENTORY_TAB_ITEMS}
+            value={activeTab}
+            onChange={(key) => setActiveTab(key)}
           />
-          <Tab
-            value="movement"
-            icon={<SwapOutlined style={{ fontSize: 15 }} />}
-            iconPosition="start"
-            label="Lịch sử biến động"
-            sx={{ minHeight: 40, textTransform: "none" }}
-          />
-        </Tabs>
+        </Box>
 
         {activeTab === "balance" ? (
           <>
             <div className="toolbar">
-              <TextField
+              <UiTextField
                 value={searchInput}
                 placeholder="SKU, tên hàng, kho..."
                 slotProps={{ htmlInput: { "aria-label": "Tìm tồn kho" } }}
                 onChange={(e) => setSearchInput(e.target.value)}
-                sx={{ minWidth: 220, ...TOOLBAR_SX }}
+                sx={{ minWidth: 220 }}
               />
-              <Select
-                displayEmpty
+              <UiSelect
                 value={skuType}
-                inputProps={{ "aria-label": "Lọc loại hàng" }}
-                onChange={(e) => {
-                  setSkuType(e.target.value as "PRODUCT" | "COMPONENT" | "");
+                aria-label="Lọc loại hàng"
+                placeholder="Loại: Tất cả"
+                minWidth={150}
+                options={[
+                  { value: "PRODUCT", label: "Sản phẩm" },
+                  { value: "COMPONENT", label: "Linh kiện" },
+                ]}
+                onChange={(value) => {
+                  setSkuType(value as "PRODUCT" | "COMPONENT" | "");
                   setBalancePage(1);
                 }}
-                sx={{ minWidth: 150, ...TOOLBAR_SX }}
-              >
-                <MenuItem value="">Loại: Tất cả</MenuItem>
-                <MenuItem value="PRODUCT">Sản phẩm</MenuItem>
-                <MenuItem value="COMPONENT">Linh kiện</MenuItem>
-              </Select>
-              <Select
-                displayEmpty
+              />
+              <UiSelect
                 value={stockStatus}
-                inputProps={{ "aria-label": "Lọc trạng thái tồn" }}
-                onChange={(e) => {
-                  setStockStatus(e.target.value as InventoryStockStatus | "");
+                aria-label="Lọc trạng thái tồn"
+                placeholder="Trạng thái tồn: Tất cả"
+                minWidth={190}
+                options={[
+                  { value: "AVAILABLE", label: "Khả dụng" },
+                  { value: "NON_SELLABLE", label: "Không thể bán/xuất" },
+                  { value: "DEFECTIVE", label: "Hàng lỗi" },
+                  { value: "QUARANTINE", label: "Chờ kiểm tra" },
+                ]}
+                onChange={(value) => {
+                  setStockStatus(value as InventoryStockStatus | "");
                   setBalancePage(1);
                 }}
-                sx={{ minWidth: 190, ...TOOLBAR_SX }}
-              >
-                <MenuItem value="">Trạng thái tồn: Tất cả</MenuItem>
-                <MenuItem value="AVAILABLE">Khả dụng</MenuItem>
-                <MenuItem value="NON_SELLABLE">Không thể bán/xuất</MenuItem>
-                <MenuItem value="DEFECTIVE">Hàng lỗi</MenuItem>
-                <MenuItem value="QUARANTINE">Chờ kiểm tra</MenuItem>
-              </Select>
-              <Select
+              />
+              <UiSelect
                 value={balancePerPage}
-                inputProps={{ "aria-label": "Số dòng mỗi trang" }}
-                onChange={(e) => {
-                  setBalancePerPage(Number(e.target.value));
+                aria-label="Số dòng mỗi trang"
+                minWidth={100}
+                options={pageSizeOptions(balancePerPage).map((size) => ({
+                  value: size,
+                  label: `${size} / trang`,
+                }))}
+                onChange={(value) => {
+                  setBalancePerPage(Number(value));
                   setBalancePage(1);
                 }}
-                sx={{ minWidth: 100, ...TOOLBAR_SX }}
-              >
-                {pageSizeOptions(balancePerPage).map((size) => (
-                  <MenuItem key={size} value={size}>
-                    {size} / trang
-                  </MenuItem>
-                ))}
-              </Select>
+              />
               {/* Tổng số dòng hiển thị ngay trong khu vực filter/toolbar — tránh
                 phải kéo xuống cuối bảng mới thấy (tiêu chí 4). */}
 
@@ -541,13 +610,13 @@ export default function InventoryPage() {
             </div>
 
             {balanceQuery.isError ? (
-              <div style={{ marginBottom: 14 }}>
+              <Box sx={{ mb: "14px" }}>
                 <ApiErrorAlert
                   error={balanceQuery.error}
                   title="Không thể tải tồn kho hiện tại"
                   onRetry={() => balanceQuery.refetch()}
                 />
-              </div>
+              </Box>
             ) : null}
 
             <TableLoadingBanner
@@ -578,30 +647,35 @@ export default function InventoryPage() {
                 </ActionButton>
               )}
             />
-            <div
-              style={{
+            <Box
+              sx={{
                 display: "flex",
                 justifyContent: "flex-end",
-                marginTop: 12,
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: 1,
+                mt: 1.5,
               }}
             >
-              <Pagination
-                size="small"
-                current={balancePagination.current}
+              {/* Giữ nguyên câu chữ tổng của antd showTotal cũ → UiText riêng,
+                tắt showTotal mặc định ("Tổng {total} bản ghi") của UiPagination. */}
+              <UiText variant="secondary">
+                Tổng {numberFormatter.format(balancePagination.total)} dòng tồn
+                kho
+              </UiText>
+              <UiPagination
+                page={balancePagination.current}
                 pageSize={balancePagination.pageSize}
                 total={balancePagination.total}
-                showSizeChanger={false}
-                showTotal={(total) =>
-                  `Tổng ${numberFormatter.format(total)} dòng tồn kho`
-                }
-                onChange={(page) => setBalancePage(page)}
+                showTotal={false}
+                onPageChange={(page) => setBalancePage(page)}
               />
-            </div>
+            </Box>
           </>
         ) : (
           <>
             <div className="toolbar">
-              <TextField
+              <UiTextField
                 value={movementSearch}
                 placeholder="Mã biến động, chứng từ, SKU..."
                 slotProps={{
@@ -611,55 +685,54 @@ export default function InventoryPage() {
                   setMovementSearch(e.target.value);
                   setMovementPage(1);
                 }}
-                sx={{ minWidth: 220, ...TOOLBAR_SX }}
+                sx={{ minWidth: 220 }}
               />
-              <Select
-                displayEmpty
+              <UiSelect
                 value={movementType}
-                inputProps={{ "aria-label": "Lọc loại biến động" }}
-                onChange={(e) => {
-                  setMovementType(e.target.value);
+                aria-label="Lọc loại biến động"
+                placeholder="Loại: Tất cả"
+                minWidth={190}
+                options={[
+                  { value: "RECEIPT", label: "Nhập kho" },
+                  { value: "ISSUE", label: "Xuất kho" },
+                  {
+                    value: "COMPONENT_ISSUE",
+                    label: "Xuất linh kiện bảo hành",
+                  },
+                  { value: "REVERSAL", label: "Điều chỉnh tồn kho" },
+                ]}
+                onChange={(value) => {
+                  setMovementType(value);
                   setMovementPage(1);
                 }}
-                sx={{ minWidth: 190, ...TOOLBAR_SX }}
-              >
-                <MenuItem value="">Loại: Tất cả</MenuItem>
-                <MenuItem value="RECEIPT">Nhập kho</MenuItem>
-                <MenuItem value="ISSUE">Xuất kho</MenuItem>
-                <MenuItem value="COMPONENT_ISSUE">
-                  Xuất linh kiện bảo hành
-                </MenuItem>
-                <MenuItem value="REVERSAL">Điều chỉnh tồn kho</MenuItem>
-              </Select>
-              <Select
+              />
+              <UiSelect
                 value={movementPerPage}
-                inputProps={{ "aria-label": "Số dòng mỗi trang" }}
-                onChange={(e) => {
-                  setMovementPerPage(Number(e.target.value));
+                aria-label="Số dòng mỗi trang"
+                minWidth={100}
+                options={pageSizeOptions(movementPerPage).map((size) => ({
+                  value: size,
+                  label: `${size} / trang`,
+                }))}
+                onChange={(value) => {
+                  setMovementPerPage(Number(value));
                   setMovementPage(1);
                 }}
-                sx={{ minWidth: 100, ...TOOLBAR_SX }}
-              >
-                {pageSizeOptions(movementPerPage).map((size) => (
-                  <MenuItem key={size} value={size}>
-                    {size} / trang
-                  </MenuItem>
-                ))}
-              </Select>
-              <Typography.Text type="secondary" style={{ fontSize: 13 }}>
+              />
+              <UiText variant="secondary">
                 Tổng {numberFormatter.format(movementPagination.total)} biến
                 động
-              </Typography.Text>
+              </UiText>
             </div>
 
             {movementQuery.isError ? (
-              <div style={{ marginBottom: 14 }}>
+              <Box sx={{ mb: "14px" }}>
                 <ApiErrorAlert
                   error={movementQuery.error}
                   title="Không thể tải lịch sử biến động"
                   onRetry={() => movementQuery.refetch()}
                 />
-              </div>
+              </Box>
             ) : null}
 
             <TableLoadingBanner
@@ -684,36 +757,44 @@ export default function InventoryPage() {
                       : "Tài khoản chưa có quyền truy vết tồn kho"
                   }
                 >
-                  <ActionButton
-                    kind="history"
-                    sx={{ whiteSpace: "nowrap" }}
-                    disabled={!canTrace || !row.id}
-                    onClick={() => handleOpenTrace(String(row.id))}
-                  >
-                    Truy vết
-                  </ActionButton>
+                  {/* span trung gian để tooltip vẫn hiện khi nút bị disabled */}
+                  <span>
+                    <ActionButton
+                      kind="history"
+                      sx={{ whiteSpace: "nowrap" }}
+                      disabled={!canTrace || !row.id}
+                      onClick={() => handleOpenTrace(String(row.id))}
+                    >
+                      Truy vết
+                    </ActionButton>
+                  </span>
                 </Tooltip>
               )}
             />
-            <div
-              style={{
+            <Box
+              sx={{
                 display: "flex",
                 justifyContent: "flex-end",
-                marginTop: 12,
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: 1,
+                mt: 1.5,
               }}
             >
-              <Pagination
-                size="small"
-                current={movementPagination.current}
+              {/* Giữ nguyên câu chữ tổng của antd showTotal cũ → UiText riêng,
+                tắt showTotal mặc định ("Tổng {total} bản ghi") của UiPagination. */}
+              <UiText variant="secondary">
+                Tổng {numberFormatter.format(movementPagination.total)} biến
+                động
+              </UiText>
+              <UiPagination
+                page={movementPagination.current}
                 pageSize={movementPagination.pageSize}
                 total={movementPagination.total}
-                showSizeChanger={false}
-                showTotal={(total) =>
-                  `Tổng ${numberFormatter.format(total)} biến động`
-                }
-                onChange={(page) => setMovementPage(page)}
+                showTotal={false}
+                onPageChange={(page) => setMovementPage(page)}
               />
-            </div>
+            </Box>
           </>
         )}
 

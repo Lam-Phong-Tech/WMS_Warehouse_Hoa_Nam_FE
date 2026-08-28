@@ -1,26 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Alert,
-  Box,
-  Card,
-  Chip,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  FormControl,
-  FormHelperText,
-  Grid,
-  InputLabel,
-  MenuItem,
-  Select,
-  Skeleton,
-  Stack,
-  TextField,
-  Typography,
-} from "@mui/material";
-import {
   fetchWarehouse,
   fetchWarehouses,
   updateWarehouse,
@@ -36,6 +16,20 @@ import { useCan } from "@/shared/components/permission";
 import { WMS_PERMISSION_CATALOG as P } from "@/shared/constants/wms-permissions";
 import { formatDateTime } from "@/shared/utils/format-date";
 import { ActionButton } from "@/shared/components/actions";
+import {
+  Box,
+  Grid,
+  MenuItem,
+  Skeleton,
+  Stack,
+  UiAlert,
+  UiCard,
+  UiDescriptions,
+  UiDialog,
+  UiStatusBadge,
+  UiText,
+  UiTextField,
+} from "@/shared/ui";
 
 interface WarehouseRecord {
   id: string;
@@ -275,65 +269,38 @@ export function WarehouseConfigScreen() {
           </ActionButton>
         </Box>
 
-        <Alert severity="info">
-          <Typography
-            component="strong"
-            sx={{ fontWeight: 700, display: "block" }}
-          >
-            Hệ thống sử dụng một kho tổng
-          </Typography>
-          <Typography variant="body2">
-            Trong phạm vi hiện tại, hệ thống vận hành một kho tổng. Người dùng
-            chỉ xem và cập nhật thông tin kho; không tạo hoặc xóa kho trực tiếp
-            tại màn hình này.
-          </Typography>
-        </Alert>
+        <UiAlert tone="info" title="Hệ thống sử dụng một kho tổng">
+          Trong phạm vi hiện tại, hệ thống vận hành một kho tổng. Người dùng chỉ
+          xem và cập nhật thông tin kho; không tạo hoặc xóa kho trực tiếp tại
+          màn hình này.
+        </UiAlert>
 
-        {listError ? <Alert severity="error">{listError}</Alert> : null}
-        {detailError ? <Alert severity="error">{detailError}</Alert> : null}
-        {saveError ? <Alert severity="error">{saveError}</Alert> : null}
+        {listError ? <UiAlert tone="error">{listError}</UiAlert> : null}
+        {detailError ? <UiAlert tone="error">{detailError}</UiAlert> : null}
+        {saveError ? <UiAlert tone="error">{saveError}</UiAlert> : null}
         {savedAt ? (
-          <Alert severity="success">
-            <Typography
-              component="strong"
-              sx={{ fontWeight: 700, display: "block" }}
-            >
-              Đã lưu cấu hình kho
-            </Typography>
-            <Typography variant="body2">Cập nhật lúc {savedAt}.</Typography>
-          </Alert>
+          <UiAlert tone="success" title="Đã lưu cấu hình kho">
+            Cập nhật lúc {savedAt}.
+          </UiAlert>
         ) : null}
 
         {!listQuery.isLoading && warehouses.length === 0 && !listError ? (
-          <Alert severity="warning">
-            <Typography
-              component="strong"
-              sx={{ fontWeight: 700, display: "block" }}
-            >
-              Chưa có kho tổng trong hệ thống
-            </Typography>
-            <Typography variant="body2">
-              Liên hệ quản trị hệ thống để khởi tạo kho tổng trước khi cấu hình.
-            </Typography>
-          </Alert>
+          <UiAlert tone="warning" title="Chưa có kho tổng trong hệ thống">
+            Liên hệ quản trị hệ thống để khởi tạo kho tổng trước khi cấu hình.
+          </UiAlert>
         ) : null}
 
         {warehouses.length > 1 ? (
-          <Alert severity="warning">
-            <Typography
-              component="strong"
-              sx={{ fontWeight: 700, display: "block" }}
-            >
-              Đang có {warehouses.length} kho trong dữ liệu
-            </Typography>
-            <Typography variant="body2">
-              Chỉ được giữ đúng một kho Đang hoạt động. Hãy chọn từng kho bên
-              dưới để ngừng hoạt động kho thừa.
-            </Typography>
-          </Alert>
+          <UiAlert
+            tone="warning"
+            title={`Đang có ${warehouses.length} kho trong dữ liệu`}
+          >
+            Chỉ được giữ đúng một kho Đang hoạt động. Hãy chọn từng kho bên dưới
+            để ngừng hoạt động kho thừa.
+          </UiAlert>
         ) : null}
 
-        <Card variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+        <UiCard>
           {listQuery.isLoading || detailQuery.isLoading ? (
             <Stack spacing={1}>
               {Array.from({ length: 6 }).map((_, index) => (
@@ -341,87 +308,73 @@ export function WarehouseConfigScreen() {
               ))}
             </Stack>
           ) : !warehouse ? (
-            <Typography variant="body2" color="text.secondary">
-              Chưa có kho để hiển thị.
-            </Typography>
+            <UiText variant="secondary">Chưa có kho để hiển thị.</UiText>
           ) : (
             <>
               {warehouses.length > 1 ? (
                 <Grid container sx={{ mb: 2 }}>
                   <Grid size={{ xs: 12, md: 6 }}>
-                    <FormControl fullWidth>
-                      <InputLabel id="warehouse-select-label" shrink>
-                        Chọn kho
-                      </InputLabel>
-                      <Select
-                        id="warehouse-select"
-                        labelId="warehouse-select-label"
-                        label="Chọn kho"
-                        value={resolvedId}
-                        onChange={(event) => {
-                          setSelectedId(event.target.value);
-                          setSaveError("");
-                          setSavedAt("");
-                          setFieldErrors({});
-                        }}
-                      >
-                        {warehouses.map((row) => (
-                          <MenuItem key={row.id} value={row.id}>
-                            {row.code} · {row.name}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
+                    <UiTextField
+                      id="warehouse-select"
+                      select
+                      label="Chọn kho"
+                      fullWidth
+                      value={resolvedId}
+                      onChange={(event) => {
+                        setSelectedId(event.target.value);
+                        setSaveError("");
+                        setSavedAt("");
+                        setFieldErrors({});
+                      }}
+                      slotProps={{ inputLabel: { shrink: true } }}
+                    >
+                      {warehouses.map((row) => (
+                        <MenuItem key={row.id} value={row.id}>
+                          {row.code} · {row.name}
+                        </MenuItem>
+                      ))}
+                    </UiTextField>
                   </Grid>
                 </Grid>
               ) : null}
 
               <Box
                 sx={{
-                  border: "1px solid",
+                  border: 1,
                   borderColor: "divider",
                   borderRadius: 2,
                   p: 2,
                   mb: 2,
                 }}
               >
-                <Grid container spacing={2}>
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ display: "block" }}
-                    >
-                      Mã kho
-                    </Typography>
-                    <Typography variant="body2">{warehouse.code}</Typography>
-                  </Grid>
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ display: "block" }}
-                    >
-                      Trạng thái hiện tại
-                    </Typography>
-                    <Chip
-                      label={
-                        warehouse.status === "ACTIVE"
-                          ? "Đang hoạt động"
-                          : "Ngừng hoạt động"
-                      }
-                      color={
-                        warehouse.status === "ACTIVE" ? "success" : "warning"
-                      }
-                      size="small"
-                    />
-                  </Grid>
-                </Grid>
+                <UiDescriptions
+                  columns={2}
+                  items={[
+                    { label: "Mã kho", value: warehouse.code },
+                    {
+                      label: "Trạng thái hiện tại",
+                      value: (
+                        <UiStatusBadge
+                          tone={
+                            warehouse.status === "ACTIVE"
+                              ? "success"
+                              : "warning"
+                          }
+                          label={
+                            warehouse.status === "ACTIVE"
+                              ? "Đang hoạt động"
+                              : "Ngừng hoạt động"
+                          }
+                        />
+                      ),
+                    },
+                  ]}
+                />
               </Box>
 
               <Grid container spacing={2}>
                 <Grid size={{ xs: 12, md: 6 }}>
-                  <TextField
+                  <UiTextField
                     id="warehouse-name"
                     label="Tên kho"
                     required
@@ -441,44 +394,36 @@ export function WarehouseConfigScreen() {
                   />
                 </Grid>
                 <Grid size={{ xs: 12, md: 6 }}>
-                  <FormControl
-                    fullWidth
+                  <UiTextField
+                    id="warehouse-status"
+                    select
+                    label="Trạng thái"
                     required
+                    fullWidth
                     disabled={fieldsDisabled}
+                    value={formValues.status}
+                    onChange={(event) => {
+                      const value = event.target.value as MasterStatus;
+                      setFormValues((current) => ({
+                        ...current,
+                        status: value,
+                      }));
+                      setFieldErrors((current) =>
+                        current.status ? { ...current, status: "" } : current,
+                      );
+                    }}
                     error={Boolean(fieldErrors.status)}
+                    helperText={fieldErrors.status}
                   >
-                    <InputLabel id="warehouse-status-label">
-                      Trạng thái
-                    </InputLabel>
-                    <Select
-                      id="warehouse-status"
-                      labelId="warehouse-status-label"
-                      label="Trạng thái"
-                      value={formValues.status}
-                      onChange={(event) => {
-                        const value = event.target.value as MasterStatus;
-                        setFormValues((current) => ({
-                          ...current,
-                          status: value,
-                        }));
-                        setFieldErrors((current) =>
-                          current.status ? { ...current, status: "" } : current,
-                        );
-                      }}
-                    >
-                      {STATUS_OPTIONS.map((option) => (
-                        <MenuItem key={option.value} value={option.value}>
-                          {option.label}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                    {fieldErrors.status ? (
-                      <FormHelperText>{fieldErrors.status}</FormHelperText>
-                    ) : null}
-                  </FormControl>
+                    {STATUS_OPTIONS.map((option) => (
+                      <MenuItem key={option.value} value={option.value}>
+                        {option.label}
+                      </MenuItem>
+                    ))}
+                  </UiTextField>
                 </Grid>
                 <Grid size={12}>
-                  <TextField
+                  <UiTextField
                     id="warehouse-address"
                     label="Địa chỉ"
                     fullWidth
@@ -502,7 +447,7 @@ export function WarehouseConfigScreen() {
                   />
                 </Grid>
                 <Grid size={{ xs: 12, md: 6 }}>
-                  <TextField
+                  <UiTextField
                     id="warehouse-contact-person"
                     label="Người liên hệ"
                     fullWidth
@@ -526,7 +471,7 @@ export function WarehouseConfigScreen() {
                   />
                 </Grid>
                 <Grid size={{ xs: 12, md: 6 }}>
-                  <TextField
+                  <UiTextField
                     id="warehouse-phone"
                     label="Số điện thoại"
                     fullWidth
@@ -554,44 +499,42 @@ export function WarehouseConfigScreen() {
               </Grid>
 
               {!canManage ? (
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ mt: 2 }}
-                >
-                  Tài khoản hiện tại chỉ có quyền xem nên không thể sửa cấu hình
-                  kho.
-                </Typography>
+                <Box sx={{ mt: 2 }}>
+                  <UiText variant="secondary">
+                    Tài khoản hiện tại chỉ có quyền xem nên không thể sửa cấu
+                    hình kho.
+                  </UiText>
+                </Box>
               ) : null}
             </>
           )}
-        </Card>
+        </UiCard>
 
-        <Dialog
+        <UiDialog
           open={confirmOpen}
           onClose={() => setConfirmOpen(false)}
           maxWidth="xs"
           fullWidth
+          title="Đổi trạng thái kho?"
+          actions={
+            <>
+              <ActionButton kind="cancel" onClick={() => setConfirmOpen(false)}>
+                Hủy
+              </ActionButton>
+              <ActionButton
+                kind="confirm"
+                onClick={() => void confirmStatusChange()}
+              >
+                Đồng ý
+              </ActionButton>
+            </>
+          }
         >
-          <DialogTitle>Đổi trạng thái kho?</DialogTitle>
-          <DialogContent>
-            <Typography variant="body2">
-              Hệ thống chỉ cho phép đúng một kho Đang hoạt động. Thao tác đổi
-              trạng thái không tạo chứng từ và không làm thay đổi tồn kho.
-            </Typography>
-          </DialogContent>
-          <DialogActions>
-            <ActionButton kind="cancel" onClick={() => setConfirmOpen(false)}>
-              Hủy
-            </ActionButton>
-            <ActionButton
-              kind="confirm"
-              onClick={() => void confirmStatusChange()}
-            >
-              Đồng ý
-            </ActionButton>
-          </DialogActions>
-        </Dialog>
+          <UiText variant="body">
+            Hệ thống chỉ cho phép đúng một kho Đang hoạt động. Thao tác đổi
+            trạng thái không tạo chứng từ và không làm thay đổi tồn kho.
+          </UiText>
+        </UiDialog>
       </Stack>
     </>
   );

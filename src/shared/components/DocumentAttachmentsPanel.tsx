@@ -11,6 +11,7 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
+import { SEMANTIC_LIGHT } from "@/shared/ui/tokens";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -141,7 +142,7 @@ const OVERLAY_ICON_BUTTON_SX = {
   width: 22,
   height: 22,
   bgcolor: "rgba(0, 0, 0, 0.55)",
-  color: "#fff",
+  color: SEMANTIC_LIGHT.onPrimary,
   "&:hover": { bgcolor: "rgba(0, 0, 0, 0.78)" },
 } as const;
 

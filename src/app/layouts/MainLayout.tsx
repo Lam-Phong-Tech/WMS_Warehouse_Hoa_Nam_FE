@@ -12,10 +12,6 @@
  */
 import { useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
-import Box from "@mui/material/Box";
-import Drawer from "@mui/material/Drawer";
-import useMediaQuery from "@mui/material/useMediaQuery";
-import { useTheme } from "@mui/material/styles";
 import { SideNav } from "@/app/layouts/SideNav";
 import { UserMenu } from "@/app/layouts/UserMenu";
 import { resolveScreenMeta, getBreadcrumbTrail } from "@/app/layouts/nav-data";
@@ -24,11 +20,14 @@ import { useNotificationSocket } from "@/modules/notifications/hooks/useNotifica
 import { NotificationBell } from "@/modules/notifications/components/NotificationBell";
 import { Loading } from "@/shared/components";
 import {
+  Box,
+  Drawer,
   LAYOUT,
   SPACING,
   SEMANTIC_LIGHT as S,
   TYPOGRAPHY,
   UiAppShell,
+  useMediaQuery,
   UiBreadcrumb,
   UiFooter,
   UiIcon,
@@ -51,10 +50,9 @@ function readStoredSidebarCollapsed() {
 export function MainLayout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const theme = useTheme();
   // <lg (980): sidebar chuyển sang Drawer overlay + hamburger ở topbar
   // (hợp đồng responsive 360/768/1280 của SRS — không bóp 2 cột trên mobile).
-  const isDesktop = useMediaQuery(theme.breakpoints.up("lg"));
+  const isDesktop = useMediaQuery((theme) => theme.breakpoints.up("lg"));
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const isProfileLoaded = useAuthStore((state) => state.isProfileLoaded);
   const { isLoading: isLoadingProfile } = useMe();
@@ -94,117 +92,132 @@ export function MainLayout() {
 
   return (
     <>
-    <UiAppShell
-      collapsed={sidebarCollapsed}
-      sidebarHidden={!isDesktop}
-      sidebar={
-        <SideNav
-          collapsed={sidebarCollapsed}
-          onExpand={expandSidebar}
-          onToggle={toggleSidebar}
-        />
-      }
-      topbar={
-        <UiTopbar
-          left={
-            <Box
-              sx={{ display: "flex", alignItems: "center", gap: 1.5, minWidth: 0 }}
+      <UiAppShell
+        collapsed={sidebarCollapsed}
+        sidebarHidden={!isDesktop}
+        sidebar={
+          <SideNav
+            collapsed={sidebarCollapsed}
+            onExpand={expandSidebar}
+            onToggle={toggleSidebar}
+          />
+        }
+        topbar={
+          <UiTopbar
+            left={
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1.5,
+                  minWidth: 0,
+                }}
+              >
+                {!isDesktop ? (
+                  <UiIconButton
+                    aria-label="Mở menu"
+                    data-testid="mobile-nav-toggle"
+                    onClick={() => setMobileNavOpen(true)}
+                  >
+                    <UiIcon name="menu-burger" />
+                  </UiIconButton>
+                ) : null}
+                <Box className="hn-mvp-title" sx={{ minWidth: 0 }}>
+                  <Box
+                    component="h2"
+                    sx={{
+                      margin: 0,
+                      fontSize: TYPOGRAPHY.cardTitle.fontSize,
+                      fontWeight: TYPOGRAPHY.cardTitle.fontWeight,
+                      color: S.textHigh,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {meta.title}
+                  </Box>
+                  <Box
+                    component="p"
+                    sx={{
+                      margin: 0,
+                      fontSize: TYPOGRAPHY.fontSizeSecondary,
+                      color: S.textMedium,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {meta.description}
+                  </Box>
+                </Box>
+              </Box>
+            }
+            right={
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1.5,
+                  minWidth: 0,
+                }}
+              >
+                <NotificationBell />
+                {/* Mobile: chỉ avatar — tên dài không co trong flex row
+                    (min-width:auto) từng đẩy topbar tràn ngang viewport hẹp. */}
+                <UserMenu compact={!isDesktop} />
+              </Box>
+            }
+          />
+        }
+        footer={
+          <UiFooter>
+            Hoa Nam ©{new Date().getFullYear()} — Phát triển bởi Lam Phong Tech
+            ·{" "}
+            <a
+              href="https://www.flaticon.com/uicons"
+              target="_blank"
+              rel="noreferrer"
+              style={{ color: "inherit" }}
             >
-              {!isDesktop ? (
-                <UiIconButton
-                  aria-label="Mở menu"
-                  data-testid="mobile-nav-toggle"
-                  onClick={() => setMobileNavOpen(true)}
-                >
-                  <UiIcon name="menu-burger" />
-                </UiIconButton>
-              ) : null}
-              <Box className="hn-mvp-title" sx={{ minWidth: 0 }}>
-              <Box
-                component="h2"
-                sx={{
-                  margin: 0,
-                  fontSize: TYPOGRAPHY.cardTitle.fontSize,
-                  fontWeight: TYPOGRAPHY.cardTitle.fontWeight,
-                  color: S.textHigh,
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                }}
-              >
-                {meta.title}
-              </Box>
-              <Box
-                component="p"
-                sx={{
-                  margin: 0,
-                  fontSize: TYPOGRAPHY.fontSizeSecondary,
-                  color: S.textMedium,
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                }}
-              >
-                {meta.description}
-              </Box>
-              </Box>
-            </Box>
-          }
-          right={
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-              <NotificationBell />
-              <UserMenu />
-            </Box>
-          }
-        />
-      }
-      footer={
-        <UiFooter>
-          Hoa Nam ©{new Date().getFullYear()} — Phát triển bởi Lam Phong Tech ·{" "}
-          <a
-            href="https://www.flaticon.com/uicons"
-            target="_blank"
-            rel="noreferrer"
-            style={{ color: "inherit" }}
-          >
-            Icons by Flaticon
-          </a>
-        </UiFooter>
-      }
-    >
-      <Box sx={{ padding: `${SPACING.xl}px`, display: "grid", gap: 2 }}>
-        <UiBreadcrumb
-          items={trail.map((entry) => ({
-            label: entry.label,
-            onClick: entry.path ? () => navigate(entry.path!) : undefined,
-          }))}
-        />
-        {/*
-         * key theo pathname + ?screen= → remount chạy lại hiệu ứng chuyển màn
-         * (hn-page-transition). KHÔNG đưa cả search vào key: 7 trang giữ bộ
-         * lọc/phân trang trên query — remount theo search sẽ mất state.
-         */}
-        <Box
-          component="section"
-          key={`${location.pathname}|${requestedScreen ?? ""}`}
-          className="hn-mvp-screen hn-page-transition"
-          sx={{ minWidth: 0 }}
-        >
-          <Outlet />
-        </Box>
-      </Box>
-    </UiAppShell>
-    {!isDesktop ? (
-      <Drawer
-        open={mobileNavOpen}
-        onClose={() => setMobileNavOpen(false)}
-        slotProps={{
-          paper: { sx: { width: LAYOUT.sidebarWidth, maxWidth: "85vw" } },
-        }}
+              Icons by Flaticon
+            </a>
+          </UiFooter>
+        }
       >
-        <SideNav collapsed={false} />
-      </Drawer>
-    ) : null}
+        <Box sx={{ padding: `${SPACING.xl}px`, display: "grid", gap: 2 }}>
+          <UiBreadcrumb
+            items={trail.map((entry) => ({
+              label: entry.label,
+              onClick: entry.path ? () => navigate(entry.path!) : undefined,
+            }))}
+          />
+          {/*
+           * key theo pathname + ?screen= → remount chạy lại hiệu ứng chuyển màn
+           * (hn-page-transition). KHÔNG đưa cả search vào key: 7 trang giữ bộ
+           * lọc/phân trang trên query — remount theo search sẽ mất state.
+           */}
+          <Box
+            component="section"
+            key={`${location.pathname}|${requestedScreen ?? ""}`}
+            className="hn-mvp-screen hn-page-transition"
+            sx={{ minWidth: 0 }}
+          >
+            <Outlet />
+          </Box>
+        </Box>
+      </UiAppShell>
+      {!isDesktop ? (
+        <Drawer
+          open={mobileNavOpen}
+          onClose={() => setMobileNavOpen(false)}
+          slotProps={{
+            paper: { sx: { width: LAYOUT.sidebarWidth, maxWidth: "85vw" } },
+          }}
+        >
+          <SideNav collapsed={false} />
+        </Drawer>
+      ) : null}
     </>
   );
 }

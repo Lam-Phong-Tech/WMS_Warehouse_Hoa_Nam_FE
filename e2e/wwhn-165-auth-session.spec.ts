@@ -200,10 +200,10 @@ test("limited role navigation is filtered by permission code", async ({
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/profile");
 
-  // Sidebar redesign 10-11/8: nhóm hiển thị sẵn theo section "05 · Tồn kho &
-  // kiểm soát", item là button điều hướng client-side.
+  // Part 4 shell (nav-data.ts): tên nhóm không còn tiền tố số thứ tự —
+  // "Tồn kho & kiểm soát"; item vẫn là button điều hướng client-side.
   await expect(
-    page.getByText("05 · Tồn kho & kiểm soát", { exact: true }),
+    page.getByText("Tồn kho & kiểm soát", { exact: true }),
   ).toBeVisible();
 
   const inventoryRoute = page.getByRole("button", {

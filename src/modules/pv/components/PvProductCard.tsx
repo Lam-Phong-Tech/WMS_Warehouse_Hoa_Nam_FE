@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import { Tag } from "antd";
+import { Box, UiStatusBadge } from "@/shared/ui";
+import { RADIUS, SEMANTIC_LIGHT as S } from "@/shared/ui/tokens";
 import { pvProductDetailPath } from "@/modules/pv/lib/pv-paths";
 import type { PvProduct } from "@/modules/pv/types/pv.types";
 
@@ -16,82 +17,84 @@ export function PvProductCard({ product }: { product: PvProduct }) {
     product.images.find((image) => image.is_primary) ?? product.images[0];
 
   return (
-    <Link
+    <Box
+      component={Link}
       to={pvProductDetailPath(product.sku_id)}
       data-testid="pv-product-card"
       data-sku-code={product.sku_code}
-      style={{
+      sx={{
         display: "flex",
         flexDirection: "column",
-        background: "#fff",
-        border: "2px solid #2b2b2b",
-        borderRadius: 6,
-        boxShadow: "4px 5px 0 rgba(43,43,43,.10)",
+        backgroundColor: S.bgSurface,
+        border: `1px solid ${S.border}`,
+        borderRadius: `${RADIUS.card}px`,
+        boxShadow: S.shadowCard,
         color: "inherit",
         textDecoration: "none",
         overflow: "hidden",
         height: "100%",
       }}
     >
-      <div
-        style={{
+      <Box
+        sx={{
           aspectRatio: "4 / 3",
-          background: "#efece3",
+          backgroundColor: S.bgSubtle,
           display: "grid",
           placeItems: "center",
           overflow: "hidden",
         }}
       >
         {primaryImage ? (
-          <img
+          <Box
+            component="img"
             src={primaryImage.url}
             alt={primaryImage.alt_text ?? product.display_name}
             loading="lazy"
-            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            sx={{ width: "100%", height: "100%", objectFit: "cover" }}
           />
         ) : (
-          <span style={{ color: "#a8a397", fontSize: 12 }}>Chưa có ảnh</span>
+          <Box component="span" sx={{ color: S.textDisabled, fontSize: 12 }}>
+            Chưa có ảnh
+          </Box>
         )}
-      </div>
+      </Box>
 
-      <div style={{ padding: 12, display: "grid", gap: 6, flex: 1 }}>
-        <div style={{ fontWeight: 700, fontSize: 14, lineHeight: 1.35 }}>
+      <Box sx={{ padding: "12px", display: "grid", gap: "6px", flex: 1 }}>
+        <Box sx={{ fontWeight: 700, fontSize: 14, lineHeight: 1.35 }}>
           {product.display_name}
-        </div>
-        <div style={{ fontSize: 12, color: "#7a766c" }}>
+        </Box>
+        <Box sx={{ fontSize: 12, color: S.textMedium }}>
           Mã: {product.sku_code}
           {product.brand_name ? ` · ${product.brand_name}` : ""}
-        </div>
+        </Box>
         {product.power_source_name ? (
-          <div style={{ fontSize: 12, color: "#7a766c" }}>
+          <Box sx={{ fontSize: 12, color: S.textMedium }}>
             Nguồn điện: {product.power_source_name}
-          </div>
+          </Box>
         ) : null}
 
-        <div
-          style={{
+        <Box
+          sx={{
             marginTop: "auto",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            gap: 8,
+            gap: "8px",
             flexWrap: "wrap",
           }}
         >
-          <Tag
-            color={outOfStock ? "default" : "green"}
+          <UiStatusBadge
+            tone={outOfStock ? "neutral" : "success"}
+            label={product.stock_label}
             data-testid="pv-stock-badge"
             data-stock-status={product.stock_status}
-            style={{ marginInlineEnd: 0 }}
-          >
-            {product.stock_label}
-          </Tag>
-          <span style={{ fontSize: 12, color: "#57534a" }}>
+          />
+          <Box component="span" sx={{ fontSize: 12, color: S.textMedium }}>
             Tồn khả dụng: <strong>{product.available_qty}</strong>
             {product.unit ? ` ${product.unit}` : ""}
-          </span>
-        </div>
-      </div>
-    </Link>
+          </Box>
+        </Box>
+      </Box>
+    </Box>
   );
 }

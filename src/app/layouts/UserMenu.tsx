@@ -1,17 +1,21 @@
 /** Nội bộ render bằng design-system foundation (Part 4) — public API giữ nguyên. */
 import { useState } from "react";
-import Box from "@mui/material/Box";
-import Divider from "@mui/material/Divider";
-import ListItemIcon from "@mui/material/ListItemIcon";
-import ListItemText from "@mui/material/ListItemText";
-import Menu from "@mui/material/Menu";
-import MenuItem from "@mui/material/MenuItem";
 import { LogoutOutlined, ProfileOutlined } from "@/shared/components/icons";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { useLogout } from "@/modules/auth/hooks/use-logout";
-import { SEMANTIC_LIGHT as S, TYPOGRAPHY, UiAvatar } from "@/shared/ui";
+import {
+  Box,
+  Divider,
+  ListItemIcon,
+  ListItemText,
+  Menu,
+  MenuItem,
+  SEMANTIC_LIGHT as S,
+  TYPOGRAPHY,
+  UiAvatar,
+} from "@/shared/ui";
 import { ROUTES } from "@/shared/constants/routes";
 
 interface Props {
@@ -120,14 +124,20 @@ export function UserMenu({ compact = false }: Props) {
           <Box sx={{ fontWeight: 600, color: S.textHigh }}>{displayName}</Box>
           {userEmail && (
             <Box
-              sx={{ fontSize: TYPOGRAPHY.fontSizeSecondary, color: S.textMedium }}
+              sx={{
+                fontSize: TYPOGRAPHY.fontSizeSecondary,
+                color: S.textMedium,
+              }}
             >
               {userEmail}
             </Box>
           )}
           {positionInfo && (
             <Box
-              sx={{ fontSize: TYPOGRAPHY.fontSizeSecondary, color: S.textMedium }}
+              sx={{
+                fontSize: TYPOGRAPHY.fontSizeSecondary,
+                color: S.textMedium,
+              }}
             >
               {positionInfo}
             </Box>

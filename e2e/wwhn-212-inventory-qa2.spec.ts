@@ -325,12 +325,22 @@ test("WWHN-212 action guard: inventory.view without inventory.trace hides and di
   await expectBootstrapComplete(api);
 
   await expect(page.getByText("SKU-211", { exact: true })).toBeVisible();
+  // UiAppShell mới có mục nav "Truy vết mã vật lý" (đi /scan) trong sidebar,
+  // getByRole name mặc định match substring nên phải khoanh vùng main + exact
+  // để pin đúng nút hành động TRACE-01 của màn INV-01 (vẫn phải BIẾN MẤT khi
+  // thiếu inventory.trace).
   await expect(
-    page.getByRole("button", { name: "Truy vết mã" }),
+    page
+      .getByRole("main")
+      .getByRole("button", { name: "Truy vết mã", exact: true }),
   ).toHaveCount(0);
-  await page.getByRole("tab", { name: /Lịch sử dịch chuyển/ }).click();
-  await expect(page.getByText("MV-211", { exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Trace" })).toBeDisabled();
+  // Nhãn tab sau Part 4: "Lịch sử biến động"; cột movement_no không còn nên
+  // nhận diện dòng movement qua mã chứng từ nguồn IN-211 (cùng mock row).
+  await page.getByRole("tab", { name: /Lịch sử biến động/ }).click();
+  await expect(page.getByText("IN-211", { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Truy vết", exact: true }),
+  ).toBeDisabled();
   await page.screenshot({
     path: testInfo.outputPath("action-guard-trace.png"),
     fullPage: true,
@@ -347,7 +357,11 @@ test("WWHN-212 filters + balance subledger + movement trace + physical-code trac
 
   await expect(page.getByText("SKU-211", { exact: true })).toBeVisible();
   await page.getByLabel("Tìm tồn kho").fill("SKU-211");
-  await page.getByLabel("Lọc trạng thái tồn").selectOption("normal");
+  // UiSelect (MUI) không phải <select> native — mở combobox rồi chọn option.
+  // Bucket trạng thái tồn nay theo ERD bảng 29 (service gửi `stock_status`),
+  // chọn "Khả dụng" (AVAILABLE) thay giá trị legacy `status=normal`.
+  await page.getByRole("combobox", { name: "Lọc trạng thái tồn" }).click();
+  await page.getByRole("option", { name: "Khả dụng", exact: true }).click();
   await expect
     .poll(() =>
       api.inventoryUrls.some((raw) => {
@@ -355,13 +369,13 @@ test("WWHN-212 filters + balance subledger + movement trace + physical-code trac
         return (
           url.pathname.endsWith("/inventory/balances") &&
           url.searchParams.get("keyword") === "SKU-211" &&
-          url.searchParams.get("status") === "normal"
+          url.searchParams.get("stock_status") === "AVAILABLE"
         );
       }),
     )
     .toBe(true);
 
-  await page.getByRole("button", { name: "Mở" }).first().click();
+  await page.getByRole("button", { name: "Mở", exact: true }).first().click();
   await expect
     .poll(() =>
       api.inventoryUrls.some((raw) =>
@@ -373,9 +387,9 @@ test("WWHN-212 filters + balance subledger + movement trace + physical-code trac
     .toBe(true);
   await page.keyboard.press("Escape");
 
-  await page.getByRole("tab", { name: /Lịch sử dịch chuyển/ }).click();
-  await expect(page.getByText("MV-211", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Trace" }).click();
+  await page.getByRole("tab", { name: /Lịch sử biến động/ }).click();
+  await expect(page.getByText("IN-211", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Truy vết", exact: true }).click();
   await expect
     .poll(() => {
       const paths = api.inventoryUrls.map((raw) => new URL(raw).pathname);
@@ -390,9 +404,14 @@ test("WWHN-212 filters + balance subledger + movement trace + physical-code trac
   await page.keyboard.press("Escape");
 
   await page.getByRole("tab", { name: /Tồn kho hiện tại/ }).click();
-  await page.getByRole("button", { name: "Truy vết mã" }).click();
+  // Khoanh vùng main + exact: tránh đụng mục nav sidebar "Truy vết mã vật lý".
+  await page
+    .getByRole("main")
+    .getByRole("button", { name: "Truy vết mã", exact: true })
+    .click();
+  // Tiêu đề modal TRACE-01 sau Part 4 bỏ hậu tố "(TRACE-01)".
   await expect(
-    page.getByText("Truy vết chứng từ nguồn (TRACE-01)", { exact: true }),
+    page.getByText("Truy vết chứng từ nguồn", { exact: true }),
   ).toBeVisible();
   const codeInput = page.getByLabel("Tra cứu mã vật lý");
   await codeInput.fill("QR-211");

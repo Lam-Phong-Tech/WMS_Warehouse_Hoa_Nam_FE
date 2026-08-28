@@ -54,6 +54,9 @@ export function UiStateSurface({
   return (
     <Box
       role={kind === "error" ? "alert" : "status"}
+      // Hợp đồng WWHN-268: mọi state surface phát test hook data-ui-state
+      // (kind "no-permission" map về khoá chuẩn "permission-denied").
+      data-ui-state={kind === "no-permission" ? "permission-denied" : kind}
       sx={{
         display: "flex",
         flexDirection: "column",

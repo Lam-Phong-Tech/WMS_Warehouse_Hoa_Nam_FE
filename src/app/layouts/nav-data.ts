@@ -265,108 +265,112 @@ export function getVisibleNavGroups(
 }
 
 /** Tiêu đề/mô tả route ngoài NAV_GROUPS (header + breadcrumb). */
-export const ROUTE_META: Record<string, { title: string; description: string }> =
-  {
-    [ROUTES.IAM_ROLES]: {
-      title: "Vai trò & phân quyền",
-      description:
-        "Quản trị mẫu vai trò và quyền sử dụng theo quy tắc phân quyền hiện hành.",
-    },
-    [ROUTES.PROFILE]: {
-      title: "Hồ sơ cá nhân",
-      description: "Thông tin tài khoản và ngữ cảnh truy cập hiện hành.",
-    },
-    [ROUTES.NOTIFICATIONS]: {
-      title: "Thông báo",
-      description: "Danh sách thông báo hệ thống của tài khoản.",
-    },
-    [ROUTES.UI_FOUNDATION]: {
-      title: "Foundation catalog",
-      description: "Golden catalog của design system (DEV).",
-    },
-    [ROUTES.COMPONENT_CATALOG]: {
-      title: "Foundation catalog",
-      description: "Golden catalog của design system (DEV).",
-    },
-  };
+export const ROUTE_META: Record<
+  string,
+  { title: string; description: string }
+> = {
+  [ROUTES.IAM_ROLES]: {
+    title: "Vai trò & phân quyền",
+    description:
+      "Quản trị mẫu vai trò và quyền sử dụng theo quy tắc phân quyền hiện hành.",
+  },
+  [ROUTES.PROFILE]: {
+    title: "Hồ sơ cá nhân",
+    description: "Thông tin tài khoản và ngữ cảnh truy cập hiện hành.",
+  },
+  [ROUTES.NOTIFICATIONS]: {
+    title: "Thông báo",
+    description: "Danh sách thông báo hệ thống của tài khoản.",
+  },
+  [ROUTES.UI_FOUNDATION]: {
+    title: "Foundation catalog",
+    description: "Golden catalog của design system (DEV).",
+  },
+  [ROUTES.COMPONENT_CATALOG]: {
+    title: "Foundation catalog",
+    description: "Golden catalog của design system (DEV).",
+  },
+};
 
 /** Tiêu đề/mô tả theo screen-id (header của shell). */
-export const SCREEN_META: Record<string, { title: string; description: string }> =
-  {
-    "MAP-01": {
-      title: "Bản đồ màn hình & phạm vi",
-      description:
-        "Tổng quan phạm vi giao diện MVP, không bao gồm ứng dụng phân vùng.",
-    },
-    "IAM-01": {
-      title: "Danh sách người dùng & phân quyền",
-      description:
-        "Danh sách người dùng, vai trò, phạm vi dữ liệu và trạng thái.",
-    },
-    "MST-01": {
-      title: "Danh sách SKU",
-      description: "Danh sách SKU và thao tác chỉnh sửa dữ liệu sản phẩm.",
-    },
-    "MST-CAT-01": {
-      title: "Danh mục sản phẩm",
-      description:
-        "Hãng, nhóm hàng, mẫu sản phẩm, nguồn điện và quy cách đóng gói dùng khi tạo SKU.",
-    },
-    "WH-01": {
-      title: "Cấu hình kho",
-      description:
-        "Thông tin, liên hệ và trạng thái của kho tổng duy nhất theo REQ-SRS-001.",
-    },
-    "AGY-01": {
-      title: "Danh mục đại lý / nơi nhận",
-      description: "Danh mục đại lý / nơi nhận hàng.",
-    },
-    "DEF-01": {
-      title: "Danh mục bệnh / lỗi",
-      description: "Danh mục bệnh / lỗi dùng cho bảo hành.",
-    },
-    "IN-01": {
-      title: "Danh sách phiếu nhập",
-      description: "Danh sách phiếu nhập.",
-    },
-    "PTW-00": {
-      title: "Danh sách linh kiện chờ xếp khay",
-      description: "Danh sách linh kiện chờ xếp khay để chọn hộp cần xử lý.",
-    },
-    "OUT-01": {
-      title: "Danh sách phiếu xuất",
-      description: "Danh sách phiếu xuất.",
-    },
-    "WAR-01": {
-      title: "Danh sách bảo hành",
-      description: "Danh sách bảo hành.",
-    },
-    "INV-01": {
-      title: "Tra cứu tồn & đối soát",
-      description: "Tra cứu tồn và đối soát.",
-    },
-    "TRACE-01": {
-      title: "Truy vết mã vật lý",
-      description: "Truy vết mã vật lý.",
-    },
-    "REV-00": {
-      title: "Danh sách phiếu điều chỉnh tồn kho",
-      description: "Danh sách phiếu để chọn tạo điều chỉnh tồn kho.",
-    },
-    "RPT-01": {
-      title: "Báo cáo vận hành",
-      description:
-        "Tồn kho, Nhập-Xuất-Tồn, Lịch sử phiếu, Đối soát toa, Nhật ký nhãn, Bảo hành, Xuất theo nơi nhận.",
-    },
-    "AUDIT-01": {
-      title: "Nhật ký hệ thống",
-      description: "Theo dõi lịch sử thao tác và thay đổi trong hệ thống.",
-    },
-    "PV-ADM-01": {
-      title: "Ứng dụng phân vùng (PV)",
-      description: "Publish SKU, gắn ngành hàng và ưu tiên gợi ý cho app PV.",
-    },
-  };
+export const SCREEN_META: Record<
+  string,
+  { title: string; description: string }
+> = {
+  "MAP-01": {
+    title: "Bản đồ màn hình & phạm vi",
+    description:
+      "Tổng quan phạm vi giao diện MVP, không bao gồm ứng dụng phân vùng.",
+  },
+  "IAM-01": {
+    title: "Danh sách người dùng & phân quyền",
+    description:
+      "Danh sách người dùng, vai trò, phạm vi dữ liệu và trạng thái.",
+  },
+  "MST-01": {
+    title: "Danh sách SKU",
+    description: "Danh sách SKU và thao tác chỉnh sửa dữ liệu sản phẩm.",
+  },
+  "MST-CAT-01": {
+    title: "Danh mục sản phẩm",
+    description:
+      "Hãng, nhóm hàng, mẫu sản phẩm, nguồn điện và quy cách đóng gói dùng khi tạo SKU.",
+  },
+  "WH-01": {
+    title: "Cấu hình kho",
+    description:
+      "Thông tin, liên hệ và trạng thái của kho tổng duy nhất theo REQ-SRS-001.",
+  },
+  "AGY-01": {
+    title: "Danh mục đại lý / nơi nhận",
+    description: "Danh mục đại lý / nơi nhận hàng.",
+  },
+  "DEF-01": {
+    title: "Danh mục bệnh / lỗi",
+    description: "Danh mục bệnh / lỗi dùng cho bảo hành.",
+  },
+  "IN-01": {
+    title: "Danh sách phiếu nhập",
+    description: "Danh sách phiếu nhập.",
+  },
+  "PTW-00": {
+    title: "Danh sách linh kiện chờ xếp khay",
+    description: "Danh sách linh kiện chờ xếp khay để chọn hộp cần xử lý.",
+  },
+  "OUT-01": {
+    title: "Danh sách phiếu xuất",
+    description: "Danh sách phiếu xuất.",
+  },
+  "WAR-01": {
+    title: "Danh sách bảo hành",
+    description: "Danh sách bảo hành.",
+  },
+  "INV-01": {
+    title: "Tra cứu tồn & đối soát",
+    description: "Tra cứu tồn và đối soát.",
+  },
+  "TRACE-01": {
+    title: "Truy vết mã vật lý",
+    description: "Truy vết mã vật lý.",
+  },
+  "REV-00": {
+    title: "Danh sách phiếu điều chỉnh tồn kho",
+    description: "Danh sách phiếu để chọn tạo điều chỉnh tồn kho.",
+  },
+  "RPT-01": {
+    title: "Báo cáo vận hành",
+    description:
+      "Tồn kho, Nhập-Xuất-Tồn, Lịch sử phiếu, Đối soát toa, Nhật ký nhãn, Bảo hành, Xuất theo nơi nhận.",
+  },
+  "AUDIT-01": {
+    title: "Nhật ký hệ thống",
+    description: "Theo dõi lịch sử thao tác và thay đổi trong hệ thống.",
+  },
+  "PV-ADM-01": {
+    title: "Ứng dụng phân vùng (PV)",
+    description: "Publish SKU, gắn ngành hàng và ưu tiên gợi ý cho app PV.",
+  },
+};
 
 /** Tiêu đề header: ?screen= (đã normalize) → default theo route → ROUTE_META. */
 export function resolveScreenMeta(pathname: string, search: string) {

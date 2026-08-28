@@ -22,3 +22,9 @@ export {
   type UiRadioOption,
 } from "./UiFormRadioGroup";
 export { UiFormDate, type UiFormDateProps } from "./UiFormDate";
+export {
+  UiDatePicker,
+  UiDateRangePicker,
+  type UiDatePickerProps,
+  type UiDateRangePickerProps,
+} from "./UiDatePicker";

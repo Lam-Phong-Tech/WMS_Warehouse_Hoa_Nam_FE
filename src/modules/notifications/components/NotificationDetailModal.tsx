@@ -1,5 +1,16 @@
-import { Descriptions, Modal, Tag, Typography } from "antd";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import {
+  Box,
+  Stack,
+  UiDescriptions,
+  UiDialog,
+  UiStatusBadge,
+  type UiDescriptionsItem,
+  SEMANTIC_LIGHT as S,
+  RADIUS,
+  TYPOGRAPHY,
+} from "@/shared/ui";
 import { UserOutlined } from "@/shared/components/icons";
 import { StatusTag } from "@/shared/components/data-display/StatusTag";
 import { NOTIFICATION_SEVERITY_LABELS } from "@/shared/constants/business-labels";
@@ -13,7 +24,7 @@ import {
 import { resolveNotificationLink } from "@/modules/notifications/utils/resolve-notification-link";
 import type { NotificationItem } from "@/modules/notifications/types/notification.types";
 import { formatDateTime } from "@/shared/utils/format-date";
-import { ActionButton } from "@/shared/components/actions";
+import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 
 interface NotificationDetailModalProps {
   item: NotificationItem | null;
@@ -53,11 +64,117 @@ export function NotificationDetailModal({
     navigate(link.path);
   };
 
+  // Thay Typography.Text copyable của antd: nút copy tường minh + toast.
+  const copySubjectId = () => {
+    if (!item?.subject_id) return;
+    void navigator.clipboard?.writeText(item.subject_id);
+    toast.success("Đã sao chép mã đối tượng.");
+  };
+
+  const detailItems: UiDescriptionsItem[] = item
+    ? [
+        {
+          label: "Người thực hiện",
+          value: item.actor_name ? (
+            <Box
+              component="span"
+              sx={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 0.75,
+              }}
+            >
+              <UserOutlined />
+              {item.actor_name}
+            </Box>
+          ) : (
+            <Box component="span" sx={{ color: S.textMedium }}>
+              Hệ thống
+            </Box>
+          ),
+        },
+        {
+          label: "Loại thông báo",
+          value: NOTIFICATION_EVENT_LABELS[item.event_key] ?? item.event_key,
+        },
+        {
+          label: "Nguồn",
+          value:
+            NOTIFICATION_SOURCE_MODULE_LABELS[item.source_module] ??
+            item.source_module,
+        },
+        ...(item.subject_type
+          ? [
+              {
+                label: "Đối tượng liên quan",
+                value: (
+                  <>
+                    {NOTIFICATION_SUBJECT_TYPE_LABELS[item.subject_type] ??
+                      item.subject_type}
+                    {item.subject_id ? (
+                      <Stack
+                        direction="row"
+                        spacing={0.5}
+                        sx={{ alignItems: "center", mt: "2px" }}
+                      >
+                        <Box
+                          component="span"
+                          sx={{
+                            fontSize: 12,
+                            color: S.textMedium,
+                            overflowWrap: "anywhere",
+                          }}
+                        >
+                          {item.subject_id}
+                        </Box>
+                        <ActionIconButton
+                          kind="copy"
+                          label="Sao chép mã đối tượng"
+                          onClick={copySubjectId}
+                        />
+                      </Stack>
+                    ) : null}
+                  </>
+                ),
+              } satisfies UiDescriptionsItem,
+            ]
+          : []),
+        {
+          label: "Thời gian tạo",
+          value: formatDateTime(item.created_at),
+        },
+        {
+          label: "Trạng thái đọc",
+          value: item.read_at ? (
+            <UiStatusBadge
+              tone="neutral"
+              label={`Đã đọc lúc ${formatDateTime(item.read_at)}`}
+            />
+          ) : (
+            <UiStatusBadge tone="info" label="Chưa đọc" />
+          ),
+        },
+      ]
+    : [];
+
   return (
-    <Modal
+    <UiDialog
       open={item !== null}
-      onCancel={onClose}
-      footer={
+      onClose={onClose}
+      maxWidth="md"
+      title={
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <span>Chi tiết thông báo</span>
+          {item && (
+            <StatusTag
+              status={item.severity}
+              colorMap={NOTIFICATION_SEVERITY_COLOR}
+              labelMap={NOTIFICATION_SEVERITY_LABELS}
+            />
+          )}
+        </Box>
+      }
+      actions={
         <>
           <ActionButton kind="close" onClick={onClose}>
             Đóng
@@ -69,107 +186,58 @@ export function NotificationDetailModal({
           )}
         </>
       }
-      title={
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span>Chi tiết thông báo</span>
-          {item && (
-            <StatusTag
-              status={item.severity}
-              colorMap={NOTIFICATION_SEVERITY_COLOR}
-              labelMap={NOTIFICATION_SEVERITY_LABELS}
-            />
-          )}
-        </div>
-      }
-      width={720}
     >
       {item && (
         <>
-          <Typography.Title level={5} style={{ marginTop: 0 }}>
-            {item.title}
-          </Typography.Title>
-          <Typography.Paragraph type="secondary">
-            {item.body}
-          </Typography.Paragraph>
-
-          <Descriptions
-            bordered
-            size="small"
-            column={{ xs: 1, sm: 2 }}
-            styles={{ label: { width: 160 } }}
+          <Box
+            component="h3"
+            sx={{
+              m: 0,
+              mb: 0.5,
+              fontSize: TYPOGRAPHY.cardTitle.fontSize,
+              fontWeight: TYPOGRAPHY.cardTitle.fontWeight,
+              lineHeight: TYPOGRAPHY.cardTitle.lineHeight,
+              color: S.textHigh,
+            }}
           >
-            <Descriptions.Item label="Người thực hiện">
-              {item.actor_name ? (
-                <span>
-                  <UserOutlined style={{ marginInlineEnd: 6 }} />
-                  {item.actor_name}
-                </span>
-              ) : (
-                <Typography.Text type="secondary">Hệ thống</Typography.Text>
-              )}
-            </Descriptions.Item>
+            {item.title}
+          </Box>
+          <Box component="p" sx={{ m: 0, mb: 2, color: S.textMedium }}>
+            {item.body}
+          </Box>
 
-            <Descriptions.Item label="Loại thông báo">
-              {NOTIFICATION_EVENT_LABELS[item.event_key] ?? item.event_key}
-            </Descriptions.Item>
-
-            <Descriptions.Item label="Nguồn">
-              {NOTIFICATION_SOURCE_MODULE_LABELS[item.source_module] ??
-                item.source_module}
-            </Descriptions.Item>
-
-            {item.subject_type && (
-              <Descriptions.Item label="Đối tượng liên quan">
-                {NOTIFICATION_SUBJECT_TYPE_LABELS[item.subject_type] ??
-                  item.subject_type}
-                {item.subject_id && (
-                  <Typography.Text
-                    type="secondary"
-                    copyable={{ text: item.subject_id }}
-                    style={{ display: "block", fontSize: 12, marginTop: 2 }}
-                  >
-                    {item.subject_id}
-                  </Typography.Text>
-                )}
-              </Descriptions.Item>
-            )}
-
-            <Descriptions.Item label="Thời gian tạo">
-              {formatDateTime(item.created_at)}
-            </Descriptions.Item>
-
-            <Descriptions.Item label="Trạng thái đọc">
-              {item.read_at ? (
-                <Tag color="default">
-                  Đã đọc lúc {formatDateTime(item.read_at)}
-                </Tag>
-              ) : (
-                <Tag color="blue">Chưa đọc</Tag>
-              )}
-            </Descriptions.Item>
-          </Descriptions>
+          <Box
+            sx={{
+              border: `1px solid ${S.border}`,
+              borderRadius: `${RADIUS.card}px`,
+              p: 2,
+            }}
+          >
+            <UiDescriptions items={detailItems} columns={2} />
+          </Box>
 
           {payloadEntries.length > 0 && (
-            <div style={{ maxHeight: 240, overflowY: "auto", marginTop: 12 }}>
-              <Descriptions
-                bordered
-                size="small"
-                column={{ xs: 1, sm: 2 }}
-                styles={{ label: { width: 160 } }}
-              >
-                {payloadEntries.map(([key, value]) => (
-                  <Descriptions.Item
-                    key={key}
-                    label={NOTIFICATION_PAYLOAD_FIELD_LABELS[key] ?? key}
-                  >
-                    {formatPayloadValue(value)}
-                  </Descriptions.Item>
-                ))}
-              </Descriptions>
-            </div>
+            <Box
+              sx={{
+                maxHeight: 240,
+                overflowY: "auto",
+                mt: 1.5,
+                border: `1px solid ${S.border}`,
+                borderRadius: `${RADIUS.card}px`,
+                p: 2,
+              }}
+            >
+              <UiDescriptions
+                columns={2}
+                items={payloadEntries.map(([key, value]) => ({
+                  label: NOTIFICATION_PAYLOAD_FIELD_LABELS[key] ?? key,
+                  value: formatPayloadValue(value),
+                }))}
+              />
+            </Box>
           )}
         </>
       )}
-    </Modal>
+    </UiDialog>
   );
 }

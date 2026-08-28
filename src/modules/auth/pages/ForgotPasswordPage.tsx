@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Alert, Form, Spin, Typography } from "antd";
 import { Link } from "react-router-dom";
 import { isAxiosError } from "axios";
 import { useForgotPassword } from "@/modules/auth/hooks/use-forgot-password";
@@ -15,7 +14,8 @@ import {
   type OtpFormValues,
   type ResetPasswordFormValues,
 } from "@/modules/auth/schemas/forgot-password.schema";
-import { UiFormText } from "@/shared/ui";
+import { Box, UiAlert, UiFormText } from "@/shared/ui";
+import { AuthShell, AuthNote } from "@/modules/auth/components/AuthShell";
 import { ROUTES } from "@/shared/constants/routes";
 import { ActionButton } from "@/shared/components/actions";
 
@@ -131,206 +131,149 @@ export function ForgotPasswordPage() {
     forgotPassword.isPending || verifyOtp.isPending || resetPassword.isPending;
 
   return (
-    <main className="hn-login-page">
-      {isBusy && (
-        <div className="hn-login-loading" role="status" aria-live="polite">
-          <div className="hn-login-loading-card">
-            <Spin size="large" />
-            <Typography.Text strong style={{ display: "block", marginTop: 12 }}>
-              Đang xử lý...
-            </Typography.Text>
-            <Typography.Text
-              type="secondary"
-              style={{ display: "block", marginTop: 4, fontSize: 12 }}
+    <AuthShell
+      titleId="forgot-password-title"
+      title="Quên mật khẩu"
+      subtitle={
+        <>
+          {step === "email" && "Nhập email đã đăng ký để nhận mã xác thực."}
+          {step === "otp" && `Nhập mã OTP 6 số vừa gửi tới ${email}.`}
+          {step === "password" && "Đặt mật khẩu mới cho tài khoản."}
+        </>
+      }
+      loadingText={isBusy ? "Đang xử lý..." : null}
+    >
+      {step === "email" && (
+        <form onSubmit={onSubmitEmail} noValidate>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: "13px" }}>
+            <UiFormText
+              control={emailForm.control}
+              name="email"
+              label="Email"
+              placeholder="your@gmail.com"
+              startIcon="user"
+              autoFocus
+              disabled={forgotPassword.isPending}
+            />
+
+            <ActionButton
+              kind="send"
+              loading={forgotPassword.isPending}
+              disabled={forgotPassword.isPending}
+              type="submit"
+              fullWidth
             >
-              Hoa Nam WMS
-            </Typography.Text>
-          </div>
-        </div>
+              Gửi mã OTP
+            </ActionButton>
+
+            <AuthNote sx={{ marginTop: 0 }}>
+              <Link to={ROUTES.LOGIN}>Quay lại đăng nhập</Link>
+            </AuthNote>
+          </Box>
+        </form>
       )}
 
-      <section
-        className="hn-login-wrap"
-        aria-labelledby="forgot-password-title"
-      >
-        <div className="hn-login-kicker">
-          Hoa Nam Tools <span>WMS · Quản lý kho</span>
-        </div>
-
-        <div className="hn-login-frame">
-          <header className="hn-login-head">
-            <div className="hn-login-brand">
-              <div className="hn-login-mark" aria-hidden="true">
-                HN
-              </div>
-              <div>
-                <h1 id="forgot-password-title" className="hn-login-title">
-                  Quên mật khẩu
-                </h1>
-                <div className="hn-login-subtitle">
-                  {step === "email" &&
-                    "Nhập email đã đăng ký để nhận mã xác thực."}
-                  {step === "otp" && `Nhập mã OTP 6 số vừa gửi tới ${email}.`}
-                  {step === "password" && "Đặt mật khẩu mới cho tài khoản."}
-                </div>
-              </div>
-            </div>
-          </header>
-
-          <div className="hn-login-form">
-            {step === "email" && (
-              <Form
-                layout="vertical"
-                onSubmitCapture={onSubmitEmail}
-                requiredMark={false}
-                noValidate
-              >
-                <UiFormText
-                  control={emailForm.control}
-                  name="email"
-                  label="Email"
-                  placeholder="your@gmail.com"
-                  startIcon="user"
-                  autoFocus
-                  disabled={forgotPassword.isPending}
-                />
-
-                <ActionButton
-                  kind="send"
-                  className="hn-login-submit"
-                  loading={forgotPassword.isPending}
-                  disabled={forgotPassword.isPending}
-                  type="submit"
-                  fullWidth
-                >
-                  Gửi mã OTP
-                </ActionButton>
-
-                <div className="hn-login-note">
-                  <Link to={ROUTES.LOGIN}>Quay lại đăng nhập</Link>
-                </div>
-              </Form>
+      {step === "otp" && (
+        <form onSubmit={onSubmitOtp} noValidate>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: "13px" }}>
+            {verifyOtp.isError && (
+              <UiAlert tone="error">
+                {getApiErrorMessage(
+                  verifyOtp.error,
+                  "Mã OTP không đúng hoặc đã hết hạn.",
+                )}
+              </UiAlert>
             )}
 
-            {step === "otp" && (
-              <Form
-                layout="vertical"
-                onSubmitCapture={onSubmitOtp}
-                requiredMark={false}
-                noValidate
+            <UiFormText
+              control={otpForm.control}
+              name="otp"
+              label="Mã OTP"
+              placeholder="Nhập 6 chữ số"
+              startIcon="lock"
+              numericOnly
+              maxLength={6}
+              autoFocus
+              disabled={verifyOtp.isPending || isExpired}
+            />
+
+            <AuthNote sx={{ marginTop: 0 }}>
+              {isExpired ? (
+                "Mã OTP đã hết hạn."
+              ) : (
+                <>Mã có hiệu lực trong {formatCountdown(secondsLeft)}</>
+              )}
+            </AuthNote>
+
+            {isExpired ? (
+              <ActionButton
+                kind="send"
+                loading={forgotPassword.isPending}
+                onClick={onResendOtp}
+                fullWidth
               >
-                {verifyOtp.isError && (
-                  <Alert
-                    type="error"
-                    description={getApiErrorMessage(
-                      verifyOtp.error,
-                      "Mã OTP không đúng hoặc đã hết hạn.",
-                    )}
-                    style={{ marginBottom: 14 }}
-                    showIcon
-                  />
+                Gửi lại mã OTP
+              </ActionButton>
+            ) : (
+              <ActionButton
+                kind="confirm"
+                loading={verifyOtp.isPending}
+                disabled={verifyOtp.isPending}
+                type="submit"
+                fullWidth
+              >
+                Xác nhận
+              </ActionButton>
+            )}
+          </Box>
+        </form>
+      )}
+
+      {step === "password" && (
+        <form onSubmit={onSubmitPassword} noValidate>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: "13px" }}>
+            {resetPassword.isError && (
+              <UiAlert tone="error">
+                {getApiErrorMessage(
+                  resetPassword.error,
+                  "Đặt lại mật khẩu thất bại.",
                 )}
-
-                <UiFormText
-                  control={otpForm.control}
-                  name="otp"
-                  label="Mã OTP"
-                  placeholder="Nhập 6 chữ số"
-                  startIcon="lock"
-                  numericOnly
-                  maxLength={6}
-                  autoFocus
-                  disabled={verifyOtp.isPending || isExpired}
-                />
-
-                <div className="hn-login-note" style={{ marginBottom: 14 }}>
-                  {isExpired ? (
-                    "Mã OTP đã hết hạn."
-                  ) : (
-                    <>Mã có hiệu lực trong {formatCountdown(secondsLeft)}</>
-                  )}
-                </div>
-
-                {isExpired ? (
-                  <ActionButton
-                    kind="send"
-                    className="hn-login-submit"
-                    loading={forgotPassword.isPending}
-                    onClick={onResendOtp}
-                    fullWidth
-                  >
-                    Gửi lại mã OTP
-                  </ActionButton>
-                ) : (
-                  <ActionButton
-                    kind="confirm"
-                    className="hn-login-submit"
-                    loading={verifyOtp.isPending}
-                    disabled={verifyOtp.isPending}
-                    type="submit"
-                    fullWidth
-                  >
-                    Xác nhận
-                  </ActionButton>
-                )}
-              </Form>
+              </UiAlert>
             )}
 
-            {step === "password" && (
-              <Form
-                layout="vertical"
-                onSubmitCapture={onSubmitPassword}
-                requiredMark={false}
-                noValidate
-              >
-                {resetPassword.isError && (
-                  <Alert
-                    type="error"
-                    description={getApiErrorMessage(
-                      resetPassword.error,
-                      "Đặt lại mật khẩu thất bại.",
-                    )}
-                    style={{ marginBottom: 14 }}
-                    showIcon
-                  />
-                )}
+            <UiFormText
+              control={passwordForm.control}
+              name="newPassword"
+              label="Mật khẩu mới"
+              placeholder="Tối thiểu 8 ký tự"
+              startIcon="lock"
+              type="password"
+              autoFocus
+              disabled={resetPassword.isPending}
+            />
 
-                <UiFormText
-                  control={passwordForm.control}
-                  name="newPassword"
-                  label="Mật khẩu mới"
-                  placeholder="Tối thiểu 8 ký tự"
-                  startIcon="lock"
-                  type="password"
-                  autoFocus
-                  disabled={resetPassword.isPending}
-                />
+            <UiFormText
+              control={passwordForm.control}
+              name="newPasswordConfirmation"
+              label="Xác nhận mật khẩu mới"
+              placeholder="Nhập lại mật khẩu mới"
+              startIcon="lock"
+              type="password"
+              disabled={resetPassword.isPending}
+            />
 
-                <UiFormText
-                  control={passwordForm.control}
-                  name="newPasswordConfirmation"
-                  label="Xác nhận mật khẩu mới"
-                  placeholder="Nhập lại mật khẩu mới"
-                  startIcon="lock"
-                  type="password"
-                  disabled={resetPassword.isPending}
-                />
-
-                <ActionButton
-                  kind="reset"
-                  className="hn-login-submit"
-                  loading={resetPassword.isPending}
-                  disabled={resetPassword.isPending}
-                  type="submit"
-                  fullWidth
-                >
-                  Đặt lại mật khẩu
-                </ActionButton>
-              </Form>
-            )}
-          </div>
-        </div>
-      </section>
-    </main>
+            <ActionButton
+              kind="reset"
+              loading={resetPassword.isPending}
+              disabled={resetPassword.isPending}
+              type="submit"
+              fullWidth
+            >
+              Đặt lại mật khẩu
+            </ActionButton>
+          </Box>
+        </form>
+      )}
+    </AuthShell>
   );
 }

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Card, List, Typography } from "antd";
+import { Box, UiCard, UiPagination, SEMANTIC_LIGHT as S } from "@/shared/ui";
 import { PageHeader, EmptyState, LoadingState } from "@/shared/components";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { StatusTag } from "@/shared/components/data-display/StatusTag";
@@ -29,7 +29,8 @@ export default function NotificationsPage() {
   const markRead = useMarkNotificationRead();
   const markAllRead = useMarkAllNotificationsRead();
 
-  const items = data?.data ?? [];
+  // Phòng thủ render như NotificationBell: payload không phải mảng → coi là rỗng.
+  const items = Array.isArray(data?.data) ? data.data : [];
   const total = data?.meta?.total ?? 0;
 
   return (
@@ -48,7 +49,7 @@ export default function NotificationsPage() {
         }
       />
 
-      <Card variant="borderless">
+      <UiCard>
         {isError ? (
           <ApiErrorAlert
             error={error}
@@ -63,57 +64,65 @@ export default function NotificationsPage() {
             description="Bạn chưa nhận được thông báo nào."
           />
         ) : (
-          <List
-            dataSource={items}
-            loading={isLoading}
-            pagination={{
-              current: page,
-              pageSize: perPage,
-              total,
-              onChange: setPage,
-            }}
-            renderItem={(item) => (
-              <List.Item
-                style={{
-                  background: item.read_at ? "transparent" : "#f4f8ff",
-                  padding: "12px 16px",
-                  cursor: "pointer",
-                }}
-                onClick={() => {
-                  if (!item.read_at) markRead.mutate(item.id);
-                  setSelected(item);
-                }}
-              >
-                <div style={{ width: "100%" }}>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      gap: 8,
-                    }}
-                  >
-                    <Typography.Text strong>{item.title}</Typography.Text>
-                    <StatusTag
-                      status={item.severity}
-                      colorMap={NOTIFICATION_SEVERITY_COLOR}
-                      labelMap={NOTIFICATION_SEVERITY_LABELS}
-                    />
-                  </div>
-                  <Typography.Text type="secondary">
-                    {item.body}
-                  </Typography.Text>
-                  <div>
-                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          <>
+            <Box component="ul" sx={{ listStyle: "none", m: 0, p: 0 }}>
+              {items.map((item) => (
+                <Box
+                  component="li"
+                  key={item.id}
+                  onClick={() => {
+                    if (!item.read_at) markRead.mutate(item.id);
+                    setSelected(item);
+                  }}
+                  sx={{
+                    bgcolor: item.read_at ? "transparent" : S.primarySoft,
+                    px: 2,
+                    py: 1.5,
+                    cursor: "pointer",
+                    borderBottom: `1px solid ${S.border}`,
+                    "&:last-child": { borderBottom: 0 },
+                  }}
+                >
+                  <Box sx={{ width: "100%" }}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        gap: 1,
+                      }}
+                    >
+                      <Box component="strong" sx={{ color: S.textHigh }}>
+                        {item.title}
+                      </Box>
+                      <StatusTag
+                        status={item.severity}
+                        colorMap={NOTIFICATION_SEVERITY_COLOR}
+                        labelMap={NOTIFICATION_SEVERITY_LABELS}
+                      />
+                    </Box>
+                    <Box component="span" sx={{ color: S.textMedium }}>
+                      {item.body}
+                    </Box>
+                    <Box sx={{ fontSize: 12, color: S.textMedium }}>
                       {formatDateTime(item.created_at)}
                       {item.read_at ? " · Đã đọc" : ""}
-                    </Typography.Text>
-                  </div>
-                </div>
-              </List.Item>
-            )}
-          />
+                    </Box>
+                  </Box>
+                </Box>
+              ))}
+            </Box>
+            <Box sx={{ mt: 2, display: "flex", justifyContent: "flex-end" }}>
+              <UiPagination
+                page={page}
+                pageSize={perPage}
+                total={total}
+                onPageChange={setPage}
+                showTotal={false}
+              />
+            </Box>
+          </>
         )}
-      </Card>
+      </UiCard>
 
       <NotificationDetailModal
         item={selected}

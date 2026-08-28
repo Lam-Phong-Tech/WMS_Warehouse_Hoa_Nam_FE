@@ -12,6 +12,7 @@
  *   ring dùng token --wms-focus-ring (kiểm bằng E2E + test ARIA từng component).
  */
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import {
   Box,
@@ -445,7 +446,10 @@ export default function FoundationCatalogPage() {
             <UiButton appearance="outlined">Nút viền</UiButton>
             <UiButton appearance="text">Nút chữ</UiButton>
             <UiButton color="error">Nguy hiểm</UiButton>
-            <UiButton disabled>Vô hiệu</UiButton>
+            {/* WWHN-268: nút bị chặn phát hook data-ui-state="disabled". */}
+            <UiButton disabled data-ui-state="disabled">
+              Vô hiệu
+            </UiButton>
             <UiButton loading>Đang lưu…</UiButton>
             <UiIconButton aria-label="Làm mới" data-testid="icon-btn">
               <UiIcon name="refresh" />
@@ -680,13 +684,25 @@ export default function FoundationCatalogPage() {
                 title: "Đổi trạng thái SKU?",
                 content: "Promise-API useUiConfirm — thay Modal.confirm.",
                 confirmText: "Đồng ý",
-              }).then((ok) => setLastConfirm(ok ? "Đồng ý" : "Hủy"));
+              }).then((ok) => {
+                setLastConfirm(ok ? "Đồng ý" : "Hủy");
+                // WWHN-268: xác nhận thành công sinh toast success thật —
+                // demo giữ nguyên hành vi chuẩn của flow confirm nghiệp vụ.
+                if (ok) toast.success("Đã xác nhận thao tác (fixture).");
+              });
             }}
           >
             useUiConfirm()
           </UiButton>
           <UiText variant="secondary">
-            Kết quả confirm gần nhất: {lastConfirm}
+            Kết quả confirm gần nhất:{" "}
+            {/* WWHN-268: kết quả xác nhận thành công phát hook "success". */}
+            <Box
+              component="span"
+              data-ui-state={lastConfirm === "Đồng ý" ? "success" : undefined}
+            >
+              {lastConfirm}
+            </Box>
           </UiText>
         </Stack>
         <UiDialog

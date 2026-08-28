@@ -1,7 +1,17 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useCallback, useEffect, useState } from "react";
-import { Alert, Input, Pagination, Select, Space, Tag, Typography } from "antd";
-import { Tab, Tabs } from "@mui/material";
+import {
+  Box,
+  Stack,
+  UiAlert,
+  UiPagination,
+  UiSelect,
+  UiStatusBadge,
+  UiTabs,
+  UiText,
+  UiTextField,
+  type UiStatusTone,
+} from "@/shared/ui";
 import {
   HistoryOutlined,
   ScanOutlined,
@@ -13,6 +23,7 @@ import {
   InlineApiError,
   tableEmptyText,
 } from "@/shared/components/feedback/BusinessState";
+import { SearchInput } from "@/shared/components/data-display/SearchInput";
 import { MvpPageSizeSelector } from "@/shared/components/mvp/MvpListPagination";
 import { resolveApiPagination } from "@/shared/components/mvp/mvp-pagination";
 import type { ApiMeta } from "@/shared/types/api-response";
@@ -48,11 +59,13 @@ import type {
   ScanContext,
   ScanEvent,
 } from "../types";
+import type { ReactNode } from "react";
 import { ActionButton } from "@/shared/components/actions";
 
-const stateColorMap: Record<ScanCodeState, string> = {
-  waiting: "default",
-  scanned: "processing",
+// Tông soft-tint theo UiStatusBadge — "processing"/"default" (antd cũ) ⇒ info/neutral.
+const stateToneMap: Record<ScanCodeState, UiStatusTone> = {
+  waiting: "neutral",
+  scanned: "info",
   success: "success",
   error: "error",
 };
@@ -70,17 +83,17 @@ const CARRIER_LABELS: Record<string, string> = {
   RFID: "RFID",
 };
 
-// Màu Tag trạng thái: hoàn tất/hợp lệ = xanh lá, lỗi/không hợp lệ = đỏ,
+// Màu badge trạng thái: hoàn tất/hợp lệ = xanh lá, lỗi/không hợp lệ = đỏ,
 // cảnh báo/chưa hoàn tất = cam vàng — theo quy ước chung của dự án.
-const SCAN_RESULT_COLOR: Record<string, string> = {
+const SCAN_RESULT_TONE: Record<string, UiStatusTone> = {
   VALID: "success",
   DUPLICATE: "warning",
   UNKNOWN: "error",
   INVALID: "error",
 };
 
-const SCAN_BATCH_STATUS_COLOR: Record<string, string> = {
-  OPEN: "processing",
+const SCAN_BATCH_STATUS_TONE: Record<string, UiStatusTone> = {
+  OPEN: "info",
   CLASSIFIED: "warning",
   PARTIALLY_POSTED: "warning",
   CLOSED: "success",
@@ -99,6 +112,18 @@ const SCAN_CONTEXT_OPTIONS: Array<{ value: ScanContext; label: string }> = [
 function warehouseLabel(row: Record<string, unknown>) {
   return String(
     row.name ?? row.warehouse_name ?? row.code ?? row.warehouse_code ?? "Kho",
+  );
+}
+
+function tabLabel(icon: ReactNode, text: string) {
+  return (
+    <Box
+      component="span"
+      sx={{ display: "inline-flex", alignItems: "center", gap: 0.75 }}
+    >
+      {icon}
+      {text}
+    </Box>
   );
 }
 
@@ -303,7 +328,9 @@ export default function PhysicalCodesPage() {
       sortAccessor: (row) => row.code_type,
       hideOnMobile: true,
       render: (row) => (
-        <Tag>{CARRIER_LABELS[row.code_type] ?? "Loại mã khác"}</Tag>
+        <UiStatusBadge
+          label={CARRIER_LABELS[row.code_type] ?? "Loại mã khác"}
+        />
       ),
     },
     {
@@ -338,9 +365,14 @@ export default function PhysicalCodesPage() {
       sortType: "value",
       sortAccessor: (row) => row.status,
       render: (row) => (
-        <Tag color={row.status === "ACTIVE" ? "success" : "default"}>
-          {businessLabel(MASTER_STATUS_LABELS, row.status, "Trạng thái khác")}
-        </Tag>
+        <UiStatusBadge
+          tone={row.status === "ACTIVE" ? "success" : "neutral"}
+          label={businessLabel(
+            MASTER_STATUS_LABELS,
+            row.status,
+            "Trạng thái khác",
+          )}
+        />
       ),
     },
     {
@@ -380,13 +412,13 @@ export default function PhysicalCodesPage() {
       sortType: "value",
       sortAccessor: (row) => row.classification,
       render: (row) => (
-        <Tag>
-          {businessLabel(
+        <UiStatusBadge
+          label={businessLabel(
             SCAN_CLASSIFICATION_LABELS,
             row.classification,
             "Đối tượng khác",
           )}
-        </Tag>
+        />
       ),
     },
     {
@@ -395,13 +427,14 @@ export default function PhysicalCodesPage() {
       sortType: "value",
       sortAccessor: (row) => row.stock_status,
       render: (row) => (
-        <Tag color={row.stock_status === "AVAILABLE" ? "success" : "warning"}>
-          {businessLabel(
+        <UiStatusBadge
+          tone={row.stock_status === "AVAILABLE" ? "success" : "warning"}
+          label={businessLabel(
             INVENTORY_STOCK_STATUS_LABELS,
             row.stock_status,
             "Trạng thái khác",
           )}
-        </Tag>
+        />
       ),
     },
     {
@@ -415,7 +448,7 @@ export default function PhysicalCodesPage() {
     {
       key: "stock_effect",
       header: "Ảnh hưởng tồn kho",
-      render: () => <Tag color="success">Không thay đổi tồn</Tag>,
+      render: () => <UiStatusBadge tone="success" label="Không thay đổi tồn" />,
     },
   ];
 
@@ -451,13 +484,14 @@ export default function PhysicalCodesPage() {
       sortType: "value",
       sortAccessor: (row) => row.status,
       render: (row) => (
-        <Tag color={SCAN_BATCH_STATUS_COLOR[row.status] ?? "default"}>
-          {businessLabel(
+        <UiStatusBadge
+          tone={SCAN_BATCH_STATUS_TONE[row.status] ?? "neutral"}
+          label={businessLabel(
             SCAN_BATCH_STATUS_LABELS,
             row.status,
             "Trạng thái khác",
           )}
-        </Tag>
+        />
       ),
     },
     {
@@ -527,9 +561,10 @@ export default function PhysicalCodesPage() {
       sortType: "value",
       sortAccessor: (row) => row.status,
       render: (row) => (
-        <Tag color={SCAN_RESULT_COLOR[row.status] ?? "default"}>
-          {businessLabel(SCAN_RESULT_LABELS, row.status, "Kết quả khác")}
-        </Tag>
+        <UiStatusBadge
+          tone={SCAN_RESULT_TONE[row.status] ?? "neutral"}
+          label={businessLabel(SCAN_RESULT_LABELS, row.status, "Kết quả khác")}
+        />
       ),
     },
     {
@@ -542,52 +577,55 @@ export default function PhysicalCodesPage() {
   ];
 
   return (
-    <div style={{ padding: 24 }}>
-      <>
-        <Tabs
+    <Box sx={{ p: 3 }}>
+      <Box sx={{ mb: 2 }}>
+        <UiTabs
+          aria-label="Các tab mã vật lý"
           value={activeTab}
-          onChange={(_event, value: string) => {
-            setActiveTab(value);
+          onChange={(key) => {
+            setActiveTab(key);
             setClassifyResult(null);
             setClassifyState("waiting");
             setClassifyMessage("");
           }}
-          sx={{ marginBottom: 2 }}
-        >
-          <Tab
-            value="list"
-            icon={<UnorderedListOutlined style={{ fontSize: 15 }} />}
-            iconPosition="start"
-            label="Danh sách mã vật lý"
-            sx={{ minHeight: 40, textTransform: "none" }}
-          />
-          <Tab
-            value="classify"
-            icon={<ScanOutlined style={{ fontSize: 15 }} />}
-            iconPosition="start"
-            label="Nhận diện mã quét"
-            sx={{ minHeight: 40, textTransform: "none" }}
-          />
-          <Tab
-            value="history"
-            icon={<HistoryOutlined style={{ fontSize: 15 }} />}
-            iconPosition="start"
-            label="Lịch sử quét"
-            sx={{ minHeight: 40, textTransform: "none" }}
-          />
-        </Tabs>
-      </>
+          items={[
+            {
+              key: "list",
+              label: tabLabel(
+                <UnorderedListOutlined style={{ fontSize: 15 }} />,
+                "Danh sách mã vật lý",
+              ),
+            },
+            {
+              key: "classify",
+              label: tabLabel(
+                <ScanOutlined style={{ fontSize: 15 }} />,
+                "Nhận diện mã quét",
+              ),
+            },
+            {
+              key: "history",
+              label: tabLabel(
+                <HistoryOutlined style={{ fontSize: 15 }} />,
+                "Lịch sử quét",
+              ),
+            },
+          ]}
+        />
+      </Box>
 
       {activeTab === "list" && (
         <>
-          <Space wrap style={{ marginBottom: 16 }}>
-            <Input.Search
+          <Stack
+            direction="row"
+            sx={{ flexWrap: "wrap", gap: 1, alignItems: "center", mb: 2 }}
+          >
+            <SearchInput
               placeholder="Giá trị mã..."
               aria-label="Giá trị mã"
-              style={{ width: 285 }}
+              width={285}
               value={codeSearch}
-              allowClear
-              onChange={(event) => setCodeSearch(event.target.value)}
+              onChange={setCodeSearch}
             />
             <MvpPageSizeSelector
               value={codePerPage}
@@ -596,7 +634,7 @@ export default function PhysicalCodesPage() {
                 setCodePage(1);
               }}
             />
-            <div style={{ flex: 1 }} />
+            <Box sx={{ flex: 1 }} />
             <ActionButton
               kind="barcode"
               disabled={!canCreatePhysicalCode}
@@ -604,7 +642,7 @@ export default function PhysicalCodesPage() {
             >
               Tạo mã vật lý
             </ActionButton>
-          </Space>
+          </Stack>
           <InlineApiError
             error={listError}
             title="Không thể tải danh sách mã vật lý"
@@ -617,63 +655,78 @@ export default function PhysicalCodesPage() {
             loading={loading}
             emptyText={tableEmptyText(listError)}
           />
-          <div
-            style={{
-              marginTop: 16,
+          <Box
+            sx={{
+              mt: 2,
               display: "flex",
               justifyContent: "flex-end",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: 1.5,
             }}
           >
-            <Pagination
-              current={codePage}
+            <UiText variant="secondary">
+              Tổng {filteredCodes.length} mã vật lý
+            </UiText>
+            <UiPagination
+              page={codePage}
               pageSize={codePerPage}
               total={filteredCodes.length}
-              showSizeChanger={false}
-              showTotal={(total) => `Tổng ${total} mã vật lý`}
-              onChange={setCodePage}
+              showTotal={false}
+              onPageChange={setCodePage}
             />
-          </div>
+          </Box>
         </>
       )}
 
       {activeTab === "classify" && (
         <>
-          <Alert
-            type="info"
-            showIcon
-            title="Tra cứu mã an toàn"
-            description="Nhận diện mã chỉ dùng để tra cứu thông tin. Thao tác này không làm tăng, giảm hoặc thay đổi tồn kho."
-            style={{ marginBottom: 16 }}
-          />
-          <Space wrap style={{ marginBottom: 16 }}>
-            <Select
-              placeholder="Chọn kho"
+          <Box sx={{ mb: 2 }}>
+            <UiAlert tone="info" title="Tra cứu mã an toàn">
+              Nhận diện mã chỉ dùng để tra cứu thông tin. Thao tác này không làm
+              tăng, giảm hoặc thay đổi tồn kho.
+            </UiAlert>
+          </Box>
+          <Stack
+            direction="row"
+            sx={{ flexWrap: "wrap", gap: 1, alignItems: "center", mb: 2 }}
+          >
+            <UiSelect
               aria-label="Chọn kho"
-              value={warehouseId || undefined}
-              loading={warehousesQuery.isLoading}
-              style={{ width: 250 }}
+              placeholder="Chọn kho"
+              value={warehouseId}
+              minWidth={250}
               onChange={setWarehouseId}
               options={warehouses.map((row) => ({
                 value: String(row.id ?? ""),
                 label: warehouseLabel(row),
               }))}
             />
-            <Select<ScanContext>
+            <UiSelect
+              aria-label="Ngữ cảnh quét"
               value={scanContext}
-              onChange={setScanContext}
+              minWidth={220}
+              onChange={(value) => setScanContext(value as ScanContext)}
               options={SCAN_CONTEXT_OPTIONS}
-              style={{ width: 220 }}
             />
-            <Input.Search
+            <UiTextField
               placeholder="Quét hoặc nhập mã..."
-              aria-label="Quét hoặc nhập mã"
+              slotProps={{ htmlInput: { "aria-label": "Quét hoặc nhập mã" } }}
               value={scanValue}
               onChange={(event) => setScanValue(event.target.value)}
-              onSearch={submitScan}
-              style={{ width: 360 }}
-              enterButton="Nhận diện"
+              onKeyDown={(event) => {
+                if (event.key === "Enter") void submitScan();
+              }}
+              sx={{ width: 300 }}
               disabled={!warehouseId.trim()}
             />
+            <ActionButton
+              kind="scan"
+              onClick={submitScan}
+              disabled={!warehouseId.trim()}
+            >
+              Nhận diện
+            </ActionButton>
             <ActionButton
               kind="barcode"
               onClick={submitScan}
@@ -682,32 +735,32 @@ export default function PhysicalCodesPage() {
             >
               Nhận diện mã
             </ActionButton>
-          </Space>
+          </Stack>
 
           {classifyState !== "waiting" && classifyState !== "scanned" && (
-            <Alert
-              type={classifyState === "success" ? "success" : "error"}
-              title={
-                <Space wrap>
-                  <Typography.Text strong>Kết quả:</Typography.Text>
-                  <Tag color={stateColorMap[classifyState]}>
-                    {STATE_LABELS[classifyState]}
-                  </Tag>
-                  <Typography.Text>{classifyMessage}</Typography.Text>
-                </Space>
-              }
-              showIcon
-              style={{ marginBottom: 16 }}
-            />
+            <Box sx={{ mb: 2 }}>
+              <UiAlert tone={classifyState === "success" ? "success" : "error"}>
+                <Stack
+                  direction="row"
+                  sx={{ flexWrap: "wrap", gap: 1, alignItems: "center" }}
+                >
+                  <Box component="span" sx={{ fontWeight: 600 }}>
+                    Kết quả:
+                  </Box>
+                  <UiStatusBadge
+                    tone={stateToneMap[classifyState]}
+                    label={STATE_LABELS[classifyState]}
+                  />
+                  <span>{classifyMessage}</span>
+                </Stack>
+              </UiAlert>
+            </Box>
           )}
 
           {loading && classifyState === "scanned" && (
-            <Alert
-              type="info"
-              title="Đang nhận diện mã..."
-              showIcon
-              style={{ marginBottom: 16 }}
-            />
+            <Box sx={{ mb: 2 }}>
+              <UiAlert tone="info">Đang nhận diện mã...</UiAlert>
+            </Box>
           )}
 
           {classifyResult && (
@@ -727,25 +780,31 @@ export default function PhysicalCodesPage() {
             title="Không thể tải lịch sử quét"
             onRetry={() => setReloadKey((value) => value + 1)}
           />
-          <Space
-            wrap
-            style={{
-              marginBottom: 8,
+          <Stack
+            direction="row"
+            sx={{
+              mb: 1,
               width: "100%",
               justifyContent: "space-between",
+              flexWrap: "wrap",
+              gap: 1,
             }}
           >
-            <Space wrap>
-              <Typography.Text strong>Lô quét</Typography.Text>
-              <Input.Search
+            <Stack
+              direction="row"
+              sx={{ flexWrap: "wrap", gap: 1, alignItems: "center" }}
+            >
+              <Box component="span" sx={{ fontWeight: 600 }}>
+                Lô quét
+              </Box>
+              <SearchInput
                 placeholder="Tìm theo số lô..."
                 aria-label="Tìm theo số lô"
-                style={{ width: 220 }}
+                width={220}
                 value={batchSearch}
-                allowClear
-                onChange={(event) => setBatchSearch(event.target.value)}
+                onChange={setBatchSearch}
               />
-            </Space>
+            </Stack>
             <MvpPageSizeSelector
               value={batchPerPage}
               onChange={(value) => {
@@ -753,7 +812,7 @@ export default function PhysicalCodesPage() {
                 setBatchPage(1);
               }}
             />
-          </Space>
+          </Stack>
           <ResponsiveDataTable
             columns={batchColumns}
             rows={filteredBatches}
@@ -761,47 +820,62 @@ export default function PhysicalCodesPage() {
             loading={loading}
             emptyText={tableEmptyText(historyError)}
           />
-          <div
-            style={{
-              marginTop: 16,
-              marginBottom: 16,
+          <Box
+            sx={{
+              mt: 2,
+              mb: 2,
               display: "flex",
               justifyContent: "flex-end",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: 1.5,
             }}
           >
-            <Pagination
-              current={batchPagination.current}
+            <UiText variant="secondary">
+              Tổng{" "}
+              {normalizedBatchSearch
+                ? filteredBatches.length
+                : batchPagination.total}{" "}
+              lô quét
+            </UiText>
+            <UiPagination
+              page={batchPagination.current}
               pageSize={batchPerPage}
               total={
                 normalizedBatchSearch
                   ? filteredBatches.length
                   : batchPagination.total
               }
-              showSizeChanger={false}
-              showTotal={(total) => `Tổng ${total} lô quét`}
-              onChange={setBatchPage}
+              showTotal={false}
+              onPageChange={setBatchPage}
             />
-          </div>
+          </Box>
 
-          <Space
-            wrap
-            style={{
-              marginBottom: 8,
+          <Stack
+            direction="row"
+            sx={{
+              mb: 1,
               width: "100%",
               justifyContent: "space-between",
+              flexWrap: "wrap",
+              gap: 1,
             }}
           >
-            <Space wrap>
-              <Typography.Text strong>Sự kiện quét</Typography.Text>
-              <Input.Search
+            <Stack
+              direction="row"
+              sx={{ flexWrap: "wrap", gap: 1, alignItems: "center" }}
+            >
+              <Box component="span" sx={{ fontWeight: 600 }}>
+                Sự kiện quét
+              </Box>
+              <SearchInput
                 placeholder="Tìm theo mã..."
                 aria-label="Tìm theo mã sự kiện quét"
-                style={{ width: 220 }}
+                width={220}
                 value={eventSearch}
-                allowClear
-                onChange={(event) => setEventSearch(event.target.value)}
+                onChange={setEventSearch}
               />
-            </Space>
+            </Stack>
             <MvpPageSizeSelector
               value={eventPerPage}
               onChange={(value) => {
@@ -809,7 +883,7 @@ export default function PhysicalCodesPage() {
                 setEventPage(1);
               }}
             />
-          </Space>
+          </Stack>
           <ResponsiveDataTable
             columns={eventColumns}
             rows={filteredEvents}
@@ -817,26 +891,35 @@ export default function PhysicalCodesPage() {
             loading={loading}
             emptyText={tableEmptyText(historyError)}
           />
-          <div
-            style={{
-              marginTop: 16,
+          <Box
+            sx={{
+              mt: 2,
               display: "flex",
               justifyContent: "flex-end",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: 1.5,
             }}
           >
-            <Pagination
-              current={eventPagination.current}
+            <UiText variant="secondary">
+              Tổng{" "}
+              {normalizedEventSearch
+                ? filteredEvents.length
+                : eventPagination.total}{" "}
+              sự kiện
+            </UiText>
+            <UiPagination
+              page={eventPagination.current}
               pageSize={eventPerPage}
               total={
                 normalizedEventSearch
                   ? filteredEvents.length
                   : eventPagination.total
               }
-              showSizeChanger={false}
-              showTotal={(total) => `Tổng ${total} sự kiện`}
-              onChange={setEventPage}
+              showTotal={false}
+              onPageChange={setEventPage}
             />
-          </div>
+          </Box>
         </>
       )}
 
@@ -850,6 +933,6 @@ export default function PhysicalCodesPage() {
           setReloadKey((value) => value + 1);
         }}
       />
-    </div>
+    </Box>
   );
 }

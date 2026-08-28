@@ -1,14 +1,15 @@
 import type { ReactNode } from "react";
-import { Tag, Typography as AntTypography } from "antd";
 import {
   Box,
-  Dialog,
-  DialogContent,
-  DialogTitle,
   Grid,
   Stack,
-  Typography,
-} from "@mui/material";
+  UiDialog,
+  UiStatusBadge,
+  type UiStatusTone,
+  SEMANTIC_LIGHT as S,
+  RADIUS,
+  TYPOGRAPHY,
+} from "@/shared/ui";
 import { toast } from "sonner";
 import type { AuditLog } from "../types/audit-logs.types";
 import { formatDateTime } from "@/shared/utils/format-date";
@@ -19,34 +20,33 @@ import {
 } from "@/shared/constants/business-labels";
 import { ActionIconButton } from "@/shared/components/actions";
 
-const { Text } = AntTypography;
-
-const ACTION_COLOR: Record<string, string> = {
-  CREATE: "green",
-  UPDATE: "blue",
-  DELETE: "red",
-  REVOKE_ROLE_SCOPE: "orange",
-  SYNC_ROLE_SCOPES: "purple",
-  SUBMIT: "cyan",
-  CANCEL: "magenta",
-  ARCHIVE: "gray",
-  RESTORE: "lime",
+// Map preset màu antd Tag cũ → tone UiStatusBadge (cùng bảng với AuditLogsTable).
+const ACTION_TONES: Record<string, UiStatusTone> = {
+  CREATE: "success",
+  UPDATE: "info",
+  DELETE: "error",
+  REVOKE_ROLE_SCOPE: "warning",
+  SYNC_ROLE_SCOPES: "primary",
+  SUBMIT: "info",
+  CANCEL: "error",
+  ARCHIVE: "neutral",
+  RESTORE: "success",
 };
 
 /** Cặp nhãn/giá trị trong Dialog "Chi tiết nhật ký hệ thống" (thay antd Descriptions.Item). */
 function DetailField({ label, value }: { label: string; value: ReactNode }) {
   return (
     <Grid size={{ xs: 12, sm: 6 }}>
-      <Typography
-        variant="caption"
-        color="text.secondary"
-        sx={{ display: "block" }}
+      <Box sx={{ fontSize: 12, color: S.textMedium }}>{label}</Box>
+      <Box
+        sx={{
+          fontSize: TYPOGRAPHY.fontSizeSecondary,
+          color: S.textHigh,
+          overflowWrap: "anywhere",
+        }}
       >
-        {label}
-      </Typography>
-      <Typography variant="body2" component="div">
         {value}
-      </Typography>
+      </Box>
     </Grid>
   );
 }
@@ -54,16 +54,24 @@ function DetailField({ label, value }: { label: string; value: ReactNode }) {
 function JsonBlock({ title, value }: { title: string; value: unknown }) {
   return (
     <Box>
-      <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+      <Box
+        component="h3"
+        sx={{
+          m: 0,
+          mb: 1,
+          fontSize: TYPOGRAPHY.fontSizeBody,
+          fontWeight: 700,
+          color: S.textHigh,
+        }}
+      >
         {title}
-      </Typography>
+      </Box>
       <Box
         component="pre"
         sx={{
-          bgcolor: "action.hover",
-          border: "1px solid",
-          borderColor: "divider",
-          borderRadius: 2,
+          bgcolor: S.bgSubtle,
+          border: `1px solid ${S.border}`,
+          borderRadius: `${RADIUS.card}px`,
           p: 2,
           maxHeight: 300,
           overflow: "auto",
@@ -104,93 +112,117 @@ export function AuditLogDetailDrawer({
     toast.success("Đã sao chép mã bản ghi.");
   };
 
+  // Thay Typography.Text copyable của antd: nút copy tường minh + toast.
+  const copyIp = () => {
+    if (!auditLog.ip_address) return;
+    void navigator.clipboard?.writeText(auditLog.ip_address);
+    toast.success("Đã sao chép địa chỉ IP.");
+  };
+
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ pr: 6, position: "relative" }}>
-        Chi tiết nhật ký hệ thống
-        <ActionIconButton
-          kind="close"
-          label="Đóng"
-          onClick={onClose}
-          sx={{ position: "absolute", right: 10, top: 8 }}
-        />
-      </DialogTitle>
-      <DialogContent dividers>
-        <Stack spacing={2}>
-          <Box
-            sx={{
-              border: "1px solid",
-              borderColor: "divider",
-              borderRadius: 2,
-              p: 2,
-            }}
-          >
-            <Grid container spacing={2}>
-              <DetailField
-                label="Mã bản ghi"
-                value={
+    <UiDialog
+      open={open}
+      onClose={onClose}
+      maxWidth="sm"
+      title={
+        <Box sx={{ pr: 6, position: "relative" }}>
+          Chi tiết nhật ký hệ thống
+          <ActionIconButton
+            kind="close"
+            label="Đóng"
+            onClick={onClose}
+            sx={{ position: "absolute", right: -10, top: -2 }}
+          />
+        </Box>
+      }
+    >
+      <Stack spacing={2}>
+        <Box
+          sx={{
+            border: `1px solid ${S.border}`,
+            borderRadius: `${RADIUS.card}px`,
+            p: 2,
+          }}
+        >
+          <Grid container spacing={2}>
+            <DetailField
+              label="Mã bản ghi"
+              value={
+                <Stack
+                  direction="row"
+                  spacing={0.5}
+                  sx={{ alignItems: "center" }}
+                >
+                  <span>{auditLog.id}</span>
+                  <ActionIconButton
+                    kind="copy"
+                    label="Sao chép mã bản ghi"
+                    onClick={copyId}
+                  />
+                </Stack>
+              }
+            />
+            <DetailField
+              label="Thời gian"
+              value={formatDateTime(auditLog.created_at)}
+            />
+            <DetailField
+              label="Hành động"
+              value={
+                <UiStatusBadge
+                  tone={ACTION_TONES[auditLog.action] ?? "neutral"}
+                  label={actionLabel}
+                />
+              }
+            />
+            <DetailField
+              label="Phân hệ"
+              value={AUDIT_MODULE_LABELS[auditLog.module] || "Phân hệ khác"}
+            />
+            <DetailField
+              label="Đối tượng"
+              value={`${auditLog.object_type}${auditLog.object_id ? ` #${auditLog.object_id}` : ""}`}
+            />
+            <DetailField
+              label="Người thực hiện"
+              value={
+                auditLog.actor?.email ||
+                auditLog.actor?.display_name ||
+                "Hệ thống"
+              }
+            />
+            <DetailField
+              label="Địa chỉ IP"
+              value={
+                auditLog.ip_address ? (
                   <Stack
                     direction="row"
                     spacing={0.5}
                     sx={{ alignItems: "center" }}
                   >
-                    <span>{auditLog.id}</span>
+                    <span>{auditLog.ip_address}</span>
                     <ActionIconButton
                       kind="copy"
-                      label="Sao chép mã bản ghi"
-                      onClick={copyId}
+                      label="Sao chép địa chỉ IP"
+                      onClick={copyIp}
                     />
                   </Stack>
-                }
-              />
-              <DetailField
-                label="Thời gian"
-                value={formatDateTime(auditLog.created_at)}
-              />
-              <DetailField
-                label="Hành động"
-                value={
-                  <Tag color={ACTION_COLOR[auditLog.action] ?? "default"}>
-                    {actionLabel}
-                  </Tag>
-                }
-              />
-              <DetailField
-                label="Phân hệ"
-                value={AUDIT_MODULE_LABELS[auditLog.module] || "Phân hệ khác"}
-              />
-              <DetailField
-                label="Đối tượng"
-                value={`${auditLog.object_type}${auditLog.object_id ? ` #${auditLog.object_id}` : ""}`}
-              />
-              <DetailField
-                label="Người thực hiện"
-                value={
-                  auditLog.actor?.email ||
-                  auditLog.actor?.display_name ||
-                  "Hệ thống"
-                }
-              />
-              <DetailField
-                label="Địa chỉ IP"
-                value={
-                  <Text copyable={!!auditLog.ip_address}>
-                    {auditLog.ip_address || "—"}
-                  </Text>
-                }
-              />
-              <DetailField label="Mô tả" value={auditLog.description} />
-            </Grid>
-          </Box>
-
-          {auditLog.before_data && (
-            <JsonBlock
-              title="Dữ liệu trước thay đổi"
-              value={auditLog.before_data}
+                ) : (
+                  "—"
+                )
+              }
             />
-          )}
-        </Stack>
-      </DialogContent>
-    </Dialog>
+            <DetailField label="Mô tả" value={auditLog.description} />
+          </Grid>
+        </Box>
+
+        {auditLog.before_data && (
+          <JsonBlock
+            title="Dữ liệu trước thay đổi"
+            value={auditLog.before_data}
+          />
+        )}
+      </Stack>
+    </UiDialog>
   );
 }

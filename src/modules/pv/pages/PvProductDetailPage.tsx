@@ -1,5 +1,6 @@
 import { Link, useParams } from "react-router-dom";
-import { Descriptions, Tag } from "antd";
+import { Box, UiDescriptions, UiStatusBadge } from "@/shared/ui";
+import { RADIUS, SEMANTIC_LIGHT as S } from "@/shared/ui/tokens";
 import { PvErrorState } from "@/modules/pv/components/PvErrorState";
 import { PvFreshnessIndicator } from "@/modules/pv/components/PvFreshness";
 import { PvProductCard } from "@/modules/pv/components/PvProductCard";
@@ -10,6 +11,14 @@ import { LoadingState } from "@/shared/components/data-display/LoadingState";
 import { ROUTES } from "@/shared/constants/routes";
 import type { PublicApiError } from "@/shared/api/public-http";
 import { ActionButton } from "@/shared/components/actions";
+
+/** Surface trắng token-hoá dùng chung trong màn chi tiết PV. */
+const CARD_SX = {
+  backgroundColor: S.bgSurface,
+  border: `1px solid ${S.border}`,
+  borderRadius: `${RADIUS.card}px`,
+  boxShadow: S.shadowCard,
+} as const;
 
 /**
  * WWHN-252 — SCR-PV-02 (PV product detail).
@@ -45,11 +54,11 @@ export default function PvProductDetailPage() {
         detail ? <PvFreshnessIndicator meta={product.data?.meta} /> : null
       }
     >
-      <div style={{ marginBottom: 12 }}>
+      <Box sx={{ marginBottom: "12px" }}>
         <Link to={ROUTES.PV_CATALOG} data-testid="pv-back-to-catalog">
           ← Về danh mục sản phẩm
         </Link>
-      </div>
+      </Box>
 
       {product.isPending ? (
         <LoadingState tip="Đang tải sản phẩm…" testId="pv-detail-loading" />
@@ -67,177 +76,183 @@ export default function PvProductDetailPage() {
         <PvErrorState error={product.error} onRetry={() => product.refetch()} />
       ) : detail ? (
         <>
-          <section
+          <Box
+            component="section"
             data-testid="pv-detail"
-            style={{
+            sx={{
               display: "grid",
-              gap: 16,
+              gap: "16px",
               gridTemplateColumns:
                 "repeat(auto-fit, minmax(min(100%, 320px), 1fr))",
               alignItems: "start",
             }}
           >
-            <div
-              style={{
-                background: "#fff",
-                border: "2px solid #2b2b2b",
-                borderRadius: 6,
-                overflow: "hidden",
-              }}
-            >
-              <div
-                style={{
+            <Box sx={{ ...CARD_SX, overflow: "hidden" }}>
+              <Box
+                sx={{
                   aspectRatio: "4 / 3",
-                  background: "#efece3",
+                  backgroundColor: S.bgSubtle,
                   display: "grid",
                   placeItems: "center",
                 }}
               >
                 {detail.images[0] ? (
-                  <img
+                  <Box
+                    component="img"
                     src={detail.images[0].url}
                     alt={detail.images[0].alt_text ?? detail.display_name}
-                    style={{
+                    sx={{
                       width: "100%",
                       height: "100%",
                       objectFit: "cover",
                     }}
                   />
                 ) : (
-                  <span style={{ color: "#a8a397", fontSize: 13 }}>
+                  <Box
+                    component="span"
+                    sx={{ color: S.textDisabled, fontSize: 13 }}
+                  >
                     Chưa có ảnh sản phẩm
-                  </span>
+                  </Box>
                 )}
-              </div>
+              </Box>
               {detail.images.length > 1 ? (
-                <div
-                  style={{
+                <Box
+                  sx={{
                     display: "flex",
-                    gap: 8,
-                    padding: 8,
+                    gap: "8px",
+                    padding: "8px",
                     overflowX: "auto",
                   }}
                 >
                   {detail.images.slice(1).map((image) => (
-                    <img
+                    <Box
+                      component="img"
                       key={image.url}
                       src={image.url}
                       alt={image.alt_text ?? detail.display_name}
-                      style={{
+                      sx={{
                         width: 72,
                         height: 56,
                         objectFit: "cover",
-                        borderRadius: 4,
+                        borderRadius: `${RADIUS.control}px`,
                         flex: "0 0 auto",
                       }}
                     />
                   ))}
-                </div>
+                </Box>
               ) : null}
-            </div>
+            </Box>
 
-            <div style={{ display: "grid", gap: 12 }}>
-              <div
-                style={{
-                  background: "#fff",
-                  border: "2px solid #2b2b2b",
-                  borderRadius: 6,
-                  padding: 14,
+            <Box sx={{ display: "grid", gap: "12px" }}>
+              <Box
+                sx={{
+                  ...CARD_SX,
+                  padding: "14px",
                   display: "grid",
-                  gap: 8,
+                  gap: "8px",
                 }}
               >
-                <div
-                  style={{
+                <Box
+                  sx={{
                     display: "flex",
-                    gap: 8,
+                    gap: "8px",
                     alignItems: "center",
                     flexWrap: "wrap",
                   }}
                 >
-                  <Tag
-                    color={
+                  <UiStatusBadge
+                    tone={
                       detail.stock_status === "OUT_OF_STOCK"
-                        ? "default"
-                        : "green"
+                        ? "neutral"
+                        : "success"
                     }
+                    label={detail.stock_label}
                     data-testid="pv-detail-stock"
                     data-stock-status={detail.stock_status}
-                  >
-                    {detail.stock_label}
-                  </Tag>
-                  <span style={{ fontSize: 13 }}>
+                  />
+                  <Box component="span" sx={{ fontSize: 13 }}>
                     Tồn khả dụng kho tổng:{" "}
                     <strong>{detail.available_qty}</strong>
                     {detail.unit ? ` ${detail.unit}` : ""}
-                  </span>
-                </div>
+                  </Box>
+                </Box>
                 {detail.description ? (
-                  <p style={{ margin: 0, fontSize: 13, color: "#57534a" }}>
+                  <Box
+                    component="p"
+                    sx={{ margin: 0, fontSize: 13, color: S.textMedium }}
+                  >
                     {detail.description}
-                  </p>
+                  </Box>
                 ) : null}
                 {detail.industries.length > 0 ? (
-                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  <Box sx={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
                     {detail.industries.map((industry) => (
-                      <Tag key={industry.industry_id}>
-                        {industry.industry_name}
-                      </Tag>
+                      <UiStatusBadge
+                        key={industry.industry_id}
+                        tone="neutral"
+                        label={industry.industry_name}
+                      />
                     ))}
-                  </div>
+                  </Box>
                 ) : null}
-              </div>
+              </Box>
 
-              <Descriptions
-                bordered
-                size="small"
-                column={1}
+              <Box
                 data-testid="pv-detail-spec"
-                style={{ background: "#fff" }}
-                items={[
-                  {
-                    key: "brand",
-                    label: "Thương hiệu",
-                    children: detail.brand_name ?? "—",
-                  },
-                  {
-                    key: "category",
-                    label: "Nhóm hàng",
-                    children: detail.category_name ?? "—",
-                  },
-                  {
-                    key: "model",
-                    label: "Model",
-                    children: detail.model_name ?? "—",
-                  },
-                  {
-                    key: "power",
-                    label: "Nguồn điện",
-                    children: detail.power_source_name ?? "—",
-                  },
-                  ...specifications.map(([key, value]) => ({
-                    key: `spec-${key}`,
-                    label: key,
-                    children: String(value),
-                  })),
-                ]}
-              />
-            </div>
-          </section>
+                sx={{ ...CARD_SX, padding: "14px" }}
+              >
+                <UiDescriptions
+                  columns={1}
+                  items={[
+                    {
+                      label: "Thương hiệu",
+                      value: detail.brand_name ?? "—",
+                    },
+                    {
+                      label: "Nhóm hàng",
+                      value: detail.category_name ?? "—",
+                    },
+                    {
+                      label: "Model",
+                      value: detail.model_name ?? "—",
+                    },
+                    {
+                      label: "Nguồn điện",
+                      value: detail.power_source_name ?? "—",
+                    },
+                    ...specifications.map(([key, value]) => ({
+                      label: key,
+                      value: String(value),
+                    })),
+                  ]}
+                />
+              </Box>
+            </Box>
+          </Box>
 
           {(related.data?.data.length ?? 0) > 1 ? (
-            <section
+            <Box
+              component="section"
               data-testid="pv-detail-related"
               aria-label="Sản phẩm cùng ngành nghề"
-              style={{ marginTop: 24 }}
+              sx={{ marginTop: "24px" }}
             >
-              <h2 style={{ fontSize: 15, fontWeight: 700, margin: "0 0 8px" }}>
+              <Box
+                component="h2"
+                sx={{
+                  fontSize: 15,
+                  fontWeight: 700,
+                  color: S.textHigh,
+                  margin: "0 0 8px",
+                }}
+              >
                 Sản phẩm cùng ngành nghề
-              </h2>
-              <div
-                style={{
+              </Box>
+              <Box
+                sx={{
                   display: "grid",
-                  gap: 12,
+                  gap: "12px",
                   gridTemplateColumns:
                     "repeat(auto-fill, minmax(min(100%, 200px), 1fr))",
                 }}
@@ -248,8 +263,8 @@ export default function PvProductDetailPage() {
                   .map((item) => (
                     <PvProductCard key={item.sku_id} product={item} />
                   ))}
-              </div>
-            </section>
+              </Box>
+            </Box>
           ) : null}
         </>
       ) : null}

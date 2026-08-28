@@ -278,7 +278,9 @@ test.describe("WWHN-327 FE-controlled dashboard KPI closure", () => {
       });
       await page.goto("/dashboard");
 
-      const kpi = page.getByRole("region", { name: "KPI vận hành" });
+      // Part 4 Vuexy: section KPI lấy tên từ heading "Chỉ số vận hành"
+      // (aria-labelledby="dashboard-kpi-title") — "KPI vận hành" không còn.
+      const kpi = page.getByRole("region", { name: "Chỉ số vận hành" });
       await expect(kpi).toBeVisible();
       await expect(kpi.getByText("1.234")).toBeVisible();
       await expect(
@@ -312,12 +314,16 @@ test.describe("WWHN-327 FE-controlled dashboard KPI closure", () => {
     await page.goto("/dashboard");
 
     await expect(
-      page.getByText(/Phạm vi dữ liệu:\s*Giới hạn 2 kho theo phân quyền/),
+      page.getByText(/Phạm vi dữ liệu:\s*Theo 2 kho bạn được phân quyền/),
     ).toBeVisible();
 
+    // 024f578 bỏ thuật ngữ backend/ERD khỏi UI vận hành — ngoại lệ warranty
+    // GLOBAL vẫn được khai báo bằng role="note", chỉ đổi câu chữ hướng người dùng.
     const note = page.getByRole("note");
-    await expect(note).toContainText("số liệu bảo hành vẫn là toàn hệ thống");
-    await expect(note).toContainText("warranty_case không gắn kho trong ERD");
+    await expect(note).toContainText(
+      "Số liệu bảo hành được tổng hợp toàn hệ thống",
+    );
+    await expect(note).toContainText("không giới hạn theo kho");
 
     // Tổng cảnh báo phải đọc từ reconciliation_warning_count, không phải length mảng mẫu.
     await expect(page.getByText("137 cảnh báo")).toBeVisible();
@@ -373,7 +379,7 @@ test.describe("WWHN-327 FE-controlled dashboard KPI closure", () => {
     await page.goto("/dashboard");
 
     await expect(
-      page.getByText("Bạn không có quyền report.view trong context hiện hành."),
+      page.getByText("Không có quyền xem báo cáo tổng quan."),
     ).toBeVisible();
     expect(dashboardCalls).toBe(0);
 
@@ -400,10 +406,10 @@ test.describe("WWHN-327 FE-controlled dashboard KPI closure", () => {
     await page.goto("/dashboard");
 
     await expect(
-      page.getByText("Bạn không có quyền report.view."),
+      page.getByText("Bạn không có quyền xem báo cáo tổng quan."),
     ).toBeVisible();
     await expect(
-      page.getByRole("region", { name: "KPI vận hành" }),
+      page.getByRole("region", { name: "Chỉ số vận hành" }),
     ).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Thử lại" })).toBeEnabled();
 
@@ -430,7 +436,7 @@ test.describe("WWHN-327 FE-controlled dashboard KPI closure", () => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto("/dashboard");
 
-    await expect(page.getByText("Bộ lọc ngày không hợp lệ.")).toBeVisible();
+    await expect(page.getByText("Khoảng ngày đã chọn không hợp lệ.")).toBeVisible();
     await expect(page.getByRole("button", { name: "Thử lại" })).toBeEnabled();
 
     await captureEvidence(page, testInfo, {
@@ -448,21 +454,49 @@ test.describe("WWHN-327 FE-controlled dashboard KPI closure", () => {
   test("blocks a reversed period on the client before calling the API", async ({
     page,
   }, testInfo) => {
+    // BA 2026-08-27 (a908c42): dashboard bỏ nhập ngày tự do — chỉ còn preset
+    // "Chọn kỳ xem nhanh" (startOf..endOf, không thể đảo kỳ). Ý nghiệp vụ giữ
+    // nguyên: client KHÔNG THỂ gửi kỳ đảo ngược lên API; enforcement chuyển từ
+    // validation message sang cấu trúc control (preset-only).
     await setupMockApi(page);
     await page.setViewportSize({ width: 1440, height: 900 });
+
+    const kpiRequests: string[] = [];
+    page.on("request", (request) => {
+      if (request.url().includes("/reports/dashboard-quick")) {
+        kpiRequests.push(request.url());
+      }
+    });
+
     await page.goto("/dashboard");
 
     await expect(
-      page.getByRole("region", { name: "KPI vận hành" }),
+      page.getByRole("region", { name: "Chỉ số vận hành" }),
     ).toBeVisible();
 
-    await page.getByLabel("Từ ngày").fill("2026-08-18");
-    await page.getByLabel("Đến ngày").fill("2026-08-01");
+    const periodGroup = page.getByRole("group", {
+      name: "Chọn kỳ xem nhanh",
+    });
+    await expect(periodGroup).toBeVisible();
+    // Không còn ô nhập ngày tự do → không tồn tại đường nhập kỳ đảo ngược.
+    await expect(page.getByLabel("Từ ngày")).toHaveCount(0);
+    await expect(page.getByLabel("Đến ngày")).toHaveCount(0);
 
-    await expect(
-      page.getByText("Đến ngày phải lớn hơn hoặc bằng Từ ngày."),
-    ).toBeVisible();
-    await expect(page.getByRole("button", { name: "Áp dụng" })).toBeDisabled();
+    const before = kpiRequests.length;
+    await periodGroup.getByRole("button", { name: "Quý này" }).click();
+    await expect
+      .poll(() => kpiRequests.length, { timeout: 15_000 })
+      .toBeGreaterThan(before);
+
+    // Mọi request phát ra đều có from_date <= to_date (preset startOf..endOf).
+    for (const url of kpiRequests) {
+      const params = new URL(url).searchParams;
+      const from = params.get("from_date");
+      const to = params.get("to_date");
+      if (from && to) {
+        expect(from <= to).toBe(true);
+      }
+    }
 
     await captureEvidence(page, testInfo, {
       scenario: "reversed-period-guard",
@@ -470,8 +504,8 @@ test.describe("WWHN-327 FE-controlled dashboard KPI closure", () => {
       viewport: { width: 1440, height: 900 },
       route: "/dashboard",
       assertions: [
-        "to_date < from_date shows an inline validation message",
-        "apply action is disabled so no invalid request is sent",
+        "period control is preset-only (no free date inputs) so a reversed range cannot be entered",
+        "every dashboard-quick request carries from_date <= to_date",
       ],
     });
   });

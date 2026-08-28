@@ -1,17 +1,9 @@
 import { useMemo, useState } from "react";
 import Chart from "react-apexcharts";
 import type { ApexOptions } from "apexcharts";
-import {
-  Box,
-  Chip,
-  InputAdornment,
-  Stack,
-  TextField,
-  Tooltip,
-  Typography,
-} from "@mui/material";
-import { lighten, useTheme } from "@mui/material/styles";
-import { SearchOutlined } from "@/shared/components/icons";
+import { Box, Stack, Tooltip, UiStatusBadge } from "@/shared/ui";
+import { SEMANTIC_LIGHT as S, TYPOGRAPHY } from "@/shared/ui/tokens";
+import { SearchInput } from "@/shared/components/data-display/SearchInput";
 import type { TrayOption } from "@/modules/putaway/services/putawayService";
 import { ActionIconButton } from "@/shared/components/actions";
 
@@ -92,6 +84,39 @@ function escapeHtml(value: string): string {
   });
 }
 
+/**
+ * Pha màu về trắng ra MÀU ĐẶC (cùng công thức `lighten()` của MUI) — thay cho
+ * import `@mui/material/styles` sau khi file chuyển sang đọc token trực tiếp
+ * (Part 4 Vuexy sync, biên giới import @/shared/ui).
+ */
+function lighten(hexColor: string, coefficient: number): string {
+  const hex = hexColor.replace("#", "");
+  const full =
+    hex.length === 3
+      ? hex
+          .split("")
+          .map((ch) => ch + ch)
+          .join("")
+      : hex;
+  const num = Number.parseInt(full, 16);
+  const mix = (channel: number) =>
+    Math.round(channel + (255 - channel) * coefficient);
+  return `rgb(${mix((num >> 16) & 0xff)}, ${mix((num >> 8) & 0xff)}, ${mix(num & 0xff)})`;
+}
+
+// Màu pastel nhạt (nền) + chữ đậm màu — đúng tinh thần 3 tầng màu của
+// wireframe (bg nhạt/border đậm/text đậm), thay vì đổ nguyên khối màu bão
+// hoà `info.light`/`success.light` mặc định của MUI (khá đậm, không phải
+// pastel) trông thô và không đồng bộ phần còn lại của giao diện. Dùng
+// `lighten()` (pha trắng ra màu đặc) chứ KHÔNG dùng `alpha()` (rgba trong
+// suốt) — đã verify trên browser thật: khi đổi trạng thái ô (chọn khay),
+// ApexCharts tween màu rgba bị lỗi hiển thị (fill không đúng ngay sau khi
+// đổi), còn màu đặc (kể cả pastel) luôn cập nhật đúng.
+const EMPTY_COLOR = S.bgSurface;
+const USED_COLOR = lighten(S.info, 0.82);
+const SELECTED_COLOR = lighten(S.success, 0.82);
+const TEXT_COLOR = S.textHigh;
+
 interface TrayCellPoint {
   x: string;
   y: number;
@@ -150,7 +175,6 @@ export function TraySelectionGrid({
   onRefresh,
   pendingQuantity,
 }: TraySelectionGridProps) {
-  const theme = useTheme();
   const [search, setSearch] = useState("");
 
   const sortedTrays = useMemo(
@@ -221,25 +245,12 @@ export function TraySelectionGrid({
     [groups, maxCols, showRowLabels, selectedTrayId],
   );
 
-  // Màu pastel nhạt (nền) + chữ đậm màu — đúng tinh thần 3 tầng màu của
-  // wireframe (bg nhạt/border đậm/text đậm), thay vì đổ nguyên khối màu bão
-  // hoà `info.light`/`success.light` mặc định của MUI (khá đậm, không phải
-  // pastel) trông thô và không đồng bộ phần còn lại của giao diện. Dùng
-  // `lighten()` (pha trắng ra màu đặc) chứ KHÔNG dùng `alpha()` (rgba trong
-  // suốt) — đã verify trên browser thật: khi đổi trạng thái ô (chọn khay),
-  // ApexCharts tween màu rgba bị lỗi hiển thị (fill không đúng ngay sau khi
-  // đổi), còn màu đặc (kể cả pastel) luôn cập nhật đúng.
-  const emptyColor = theme.palette.background.paper;
-  const usedColor = lighten(theme.palette.info.main, 0.82);
-  const selectedColor = lighten(theme.palette.success.main, 0.82);
-  const textColor = theme.palette.text.primary;
-
   const chartOptions: ApexOptions = useMemo(
     () => ({
       chart: {
         type: "heatmap",
         toolbar: { show: false },
-        fontFamily: theme.typography.fontFamily,
+        fontFamily: TYPOGRAPHY.fontFamily,
         selection: { enabled: false },
         // options/series được tính lại (useMemo) mỗi khi trays/onSelect đổi
         // tham chiếu, khiến ApexCharts gọi updateOptions liên tục — animation
@@ -283,19 +294,19 @@ export function TraySelectionGrid({
               {
                 from: CELL_EMPTY,
                 to: CELL_EMPTY,
-                color: emptyColor,
+                color: EMPTY_COLOR,
                 name: "Trống",
               },
               {
                 from: CELL_USED,
                 to: CELL_USED,
-                color: usedColor,
+                color: USED_COLOR,
                 name: "Đang chứa",
               },
               {
                 from: CELL_SELECTED,
                 to: CELL_SELECTED,
-                color: selectedColor,
+                color: SELECTED_COLOR,
                 name: "Đang chọn",
               },
             ],
@@ -304,19 +315,16 @@ export function TraySelectionGrid({
       },
       /* ApexCharts heatmap không có option "gap" riêng — giả lập khoảng cách
        * giữa các ô (giống gap của CSS grid trong wireframe) bằng viền dày
-       * cùng màu nền khung chứa (background.default), thay vì viền mảnh màu
-       * divider. Nếu để mảnh, 2 ô liền kề cùng trạng thái (vd cùng "Đang
-       * chứa") sẽ dính liền thành một khối, không phân biệt được từng khay. */
-      stroke: { width: 6, colors: [theme.palette.background.default] },
+       * cùng màu nền khung chứa (bgCanvas), thay vì viền mảnh màu divider.
+       * Nếu để mảnh, 2 ô liền kề cùng trạng thái (vd cùng "Đang chứa") sẽ
+       * dính liền thành một khối, không phân biệt được từng khay. */
+      stroke: { width: 6, colors: [S.bgCanvas] },
       dataLabels: {
         enabled: true,
         // fontWeight 700 (không phải 800) vì Arial không có mặt chữ đậm hơn
         // "bold" thật — weight nặng hơn buộc trình duyệt tự "giả đậm" (synthetic
         // bold), dễ làm dấu tiếng Việt bị méo/lệch trong SVG text.
-        // fontWeight 700 (không phải 800) vì Arial không có mặt chữ đậm hơn
-        // "bold" thật — weight nặng hơn buộc trình duyệt tự "giả đậm" (synthetic
-        // bold), dễ làm dấu tiếng Việt bị méo/lệch trong SVG text.
-        style: { fontSize: "13px", fontWeight: 700, colors: [textColor] },
+        style: { fontSize: "13px", fontWeight: 700, colors: [TEXT_COLOR] },
         formatter: (_value, opts) =>
           readPoint(opts?.w, opts?.seriesIndex, opts?.dataPointIndex)?.code ??
           "",
@@ -329,7 +337,7 @@ export function TraySelectionGrid({
       yaxis: {
         labels: {
           show: showRowLabels,
-          style: { fontWeight: 700, colors: theme.palette.text.secondary },
+          style: { fontWeight: 700, colors: S.textMedium },
         },
       },
       grid: { show: false, padding: { left: 4, right: 4 } },
@@ -342,23 +350,13 @@ export function TraySelectionGrid({
             .filter(Boolean)
             .map(escapeHtml)
             .join(" · ");
-          return `<div style="padding:8px 10px;font-size:12px;line-height:1.4;font-family:${escapeHtml(theme.typography.fontFamily ?? "")};">
+          return `<div style="padding:8px 10px;font-size:12px;line-height:1.4;font-family:${escapeHtml(TYPOGRAPHY.fontFamily)};">
             <strong>${escapeHtml(point.code)}</strong><br/>${detail}
           </div>`;
         },
       },
     }),
-    [
-      theme,
-      disabled,
-      trays,
-      onSelect,
-      showRowLabels,
-      emptyColor,
-      usedColor,
-      selectedColor,
-      textColor,
-    ],
+    [disabled, trays, onSelect, showRowLabels],
   );
 
   const selectedTray =
@@ -384,22 +382,13 @@ export function TraySelectionGrid({
       }}
     >
       <Stack direction="row" spacing={1} sx={{ mb: 1.5 }}>
-        <TextField
-          fullWidth
+        <SearchInput
+          width="100%"
           value={search}
           placeholder="Tìm mã khay, VD: A03"
+          slotProps={{ htmlInput: { "aria-label": "Tìm mã khay" } }}
           disabled={disabled}
-          onChange={(event) => setSearch(event.target.value)}
-          slotProps={{
-            input: {
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchOutlined style={{ fontSize: 15 }} />
-                </InputAdornment>
-              ),
-            },
-            htmlInput: { "aria-label": "Tìm mã khay" },
-          }}
+          onChange={setSearch}
         />
         {onRefresh ? (
           <Tooltip title="Làm mới danh sách khay">
@@ -445,24 +434,27 @@ export function TraySelectionGrid({
           </Box>
         ) : !loading ? (
           <Box sx={{ py: 3, textAlign: "center" }}>
-            <Typography variant="body2" color="text.secondary">
+            <Box sx={{ typography: "body2", color: "text.secondary" }}>
               {search
                 ? "Không tìm thấy khay khớp với từ khóa."
                 : "Chưa có khay khả dụng."}
-            </Typography>
+            </Box>
           </Box>
         ) : null}
       </Box>
 
       {showRowLabels ? (
-        <Typography
-          variant="caption"
-          color="text.secondary"
-          sx={{ display: "block", mt: 0.75, fontStyle: "italic" }}
+        <Box
+          sx={{
+            typography: "caption",
+            color: "text.secondary",
+            mt: 0.75,
+            fontStyle: "italic",
+          }}
         >
           * Nhóm theo khu vực chỉ để hiển thị dễ nhìn, không phải sơ đồ vị trí
           kho.
-        </Typography>
+        </Box>
       ) : null}
 
       <Stack
@@ -481,9 +473,9 @@ export function TraySelectionGrid({
               bgcolor: "background.paper",
             }}
           />
-          <Typography variant="caption" color="text.secondary">
+          <Box sx={{ typography: "caption", color: "text.secondary" }}>
             Trống
-          </Typography>
+          </Box>
         </Stack>
         <Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>
           <Box
@@ -493,12 +485,12 @@ export function TraySelectionGrid({
               borderRadius: 0.75,
               border: "1px solid",
               borderColor: "info.main",
-              bgcolor: usedColor,
+              bgcolor: USED_COLOR,
             }}
           />
-          <Typography variant="caption" color="text.secondary">
+          <Box sx={{ typography: "caption", color: "text.secondary" }}>
             Đang chứa (vẫn chọn được)
-          </Typography>
+          </Box>
         </Stack>
         <Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>
           <Box
@@ -508,12 +500,12 @@ export function TraySelectionGrid({
               borderRadius: 0.75,
               border: "1px solid",
               borderColor: "success.main",
-              bgcolor: selectedColor,
+              bgcolor: SELECTED_COLOR,
             }}
           />
-          <Typography variant="caption" color="text.secondary">
+          <Box sx={{ typography: "caption", color: "text.secondary" }}>
             Đang chọn
-          </Typography>
+          </Box>
         </Stack>
       </Stack>
 
@@ -528,16 +520,12 @@ export function TraySelectionGrid({
           py: 1.25,
         }}
       >
-        <Typography
-          variant="caption"
-          color="text.secondary"
-          sx={{ display: "block" }}
-        >
+        <Box sx={{ typography: "caption", color: "text.secondary" }}>
           Khay đã chọn
-        </Typography>
-        <Typography
-          variant="subtitle1"
+        </Box>
+        <Box
           sx={{
+            typography: "subtitle1",
             fontWeight: 700,
             lineHeight: 1.3,
             mb: selectedTray ? 1 : 0,
@@ -545,20 +533,17 @@ export function TraySelectionGrid({
           }}
         >
           {selectedTray ? selectedTray.container_code : "Chưa chọn khay"}
-        </Typography>
+        </Box>
         {selectedTray ? (
           <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
-            <Chip
-              size="small"
+            <UiStatusBadge
               label={trayStatusLabel(selectedTray.status)}
-              color={isOccupied(selectedTray.status) ? "info" : "success"}
-              variant="outlined"
+              tone={isOccupied(selectedTray.status) ? "info" : "success"}
             />
             {typeof pendingQuantity === "number" ? (
-              <Chip
-                size="small"
+              <UiStatusBadge
+                tone="neutral"
                 label={`Số lượng xếp vào: ${pendingQuantity} PCS`}
-                variant="outlined"
               />
             ) : null}
           </Stack>

@@ -5,19 +5,17 @@ import { AppProviders } from "./app/providers/AppProviders";
 import { bootstrapAuth } from "./app/bootstrap-auth";
 import { registerPwa } from "./shared/pwa/register-pwa";
 import "@flaticon/flaticon-uicons/css/regular/rounded.css";
-// Canonical design tokens (DEC-UI-BASELINE-01) — PHẢI đứng trước mọi CSS khác:
-// các file legacy bên dưới chỉ alias biến của lớp này. Đây là entrypoint CSS
-// global DUY NHẤT của dự án (guard: yarn ui:styles).
+// Canonical design tokens (DEC-UI-BASELINE-01) — PHẢI đứng trước mọi CSS khác.
+// Đây là entrypoint CSS global DUY NHẤT của dự án (guard: yarn ui:styles).
+// Part 4 teardown: các lớp wireframe (hoa-nam-wireframe, hoa-nam-ant-overrides,
+// hn-wms-mvp-exact, hn-wms-sidebar-account) đã XOÁ — shell/screen style nằm
+// trong UiAppShell/sx token; chỉ giữ 3 lớp hỗ trợ màn raw-table + motion.
 import "./shared/ui/tokens/css-vars.css";
 import "./index.css";
-import "./styles/hoa-nam-wireframe.css";
-import "./styles/hoa-nam-ant-overrides.css";
-import "./styles/hn-wms-mvp-exact.css";
 import "./styles/hn-wms-page-normalize.css";
-import "./styles/hn-wms-sidebar-account.css";
 import "./styles/hn-wms-source-screen.css";
-// hn-responsive.css phải đứng cuối: nó là lớp responsive foundation thắng
-// cascade của các file wireframe "exact" phía trên mà không sửa nội dung gốc.
+// hn-responsive.css đứng gần cuối: lớp responsive foundation thắng cascade
+// của các lớp scoped phía trên mà không sửa nội dung gốc.
 import "./styles/hn-responsive.css";
 // hn-motion.css đứng sau cùng: chỉ khai báo transition/animation (không đụng
 // layout) nên không tranh chấp lớp responsive ở trên, nhưng vẫn thắng cascade

@@ -1,26 +1,18 @@
+import { useMemo, useState, type Key, type ReactNode } from "react";
 import {
-  useMemo,
-  useState,
-  type InputHTMLAttributes,
-  type Key,
-  type ReactNode,
-} from "react";
-import { Tag, Select } from "antd";
-import {
-  Autocomplete,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
+  Box,
   Grid,
   MenuItem,
   Stack,
-  Switch,
-  Tab,
-  Tabs,
-  TextField,
-  Typography,
-} from "@mui/material";
+  UiDescriptions,
+  UiDialog,
+  UiSelect,
+  UiStatusBadge,
+  UiTabs,
+  UiText,
+  UiTextField,
+} from "@/shared/ui";
+import { SEMANTIC_LIGHT as S } from "@/shared/ui/tokens";
 import {
   ProfileOutlined,
   ApartmentOutlined,
@@ -35,6 +27,7 @@ import {
   type ColumnWithSortType,
 } from "@/shared/components";
 import { PvErrorState } from "@/modules/pv/components/PvErrorState";
+import { PvSwitch } from "@/modules/pv/components/PvSwitch";
 import {
   usePvAdminIndustries,
   usePvAdminProfiles,
@@ -110,20 +103,22 @@ function ruleSelectorSortKey(
   return "";
 }
 
-function DetailField({ label, value }: { label: string; value: ReactNode }) {
+/** Nhãn tab kèm icon (UiTabs nhận label ReactNode). */
+function TabLabel({
+  icon,
+  children,
+}: {
+  icon: ReactNode;
+  children: ReactNode;
+}) {
   return (
-    <Grid size={{ xs: 12, sm: 6 }}>
-      <Typography
-        variant="caption"
-        color="text.secondary"
-        sx={{ display: "block" }}
-      >
-        {label}
-      </Typography>
-      <Typography variant="body2" component="div">
-        {value}
-      </Typography>
-    </Grid>
+    <Box
+      component="span"
+      sx={{ display: "inline-flex", alignItems: "center", gap: "6px" }}
+    >
+      {icon}
+      {children}
+    </Box>
   );
 }
 
@@ -248,9 +243,10 @@ function SimpleMasterTab({
       sortType: "value",
       sorter: (a, b) => a.status.localeCompare(b.status),
       render: (status: string) => (
-        <Tag color={status === "ACTIVE" ? "green" : "default"}>
-          {masterStatusLabel(status)}
-        </Tag>
+        <UiStatusBadge
+          tone={status === "ACTIVE" ? "success" : "neutral"}
+          label={masterStatusLabel(status)}
+        />
       ),
     },
     {
@@ -319,81 +315,13 @@ function SimpleMasterTab({
         columns={columns}
       />
 
-      <>
-        <Dialog
-          open={isOpen}
-          onClose={guardBackdropClose(() => setIsOpen(false))}
-          maxWidth="xs"
-          fullWidth
-        >
-          <DialogTitle>
-            {editing ? `Sửa ${title}` : `Thêm ${title}`}
-          </DialogTitle>
-          <DialogContent dividers>
-            <Stack spacing={2}>
-              <TextField
-                required
-                fullWidth
-                label="Mã"
-                value={formValues.code}
-                onChange={(event) => {
-                  const value = event.target.value;
-                  setFormValues((current) => ({ ...current, code: value }));
-                  setFieldErrors((current) =>
-                    current.code ? { ...current, code: "" } : current,
-                  );
-                }}
-                error={Boolean(fieldErrors.code)}
-                helperText={fieldErrors.code}
-                slotProps={{ htmlInput: { maxLength: 80 } }}
-              />
-              <TextField
-                required
-                fullWidth
-                label="Tên"
-                value={formValues.name}
-                onChange={(event) => {
-                  const value = event.target.value;
-                  setFormValues((current) => ({ ...current, name: value }));
-                  setFieldErrors((current) =>
-                    current.name ? { ...current, name: "" } : current,
-                  );
-                }}
-                error={Boolean(fieldErrors.name)}
-                helperText={fieldErrors.name}
-                slotProps={{ htmlInput: { maxLength: 200 } }}
-              />
-              <TextField
-                select
-                fullWidth
-                label="Trạng thái"
-                value={formValues.status}
-                onChange={(event) =>
-                  setFormValues((current) => ({
-                    ...current,
-                    status: event.target.value as "ACTIVE" | "INACTIVE",
-                  }))
-                }
-              >
-                <MenuItem value="ACTIVE">Đang sử dụng</MenuItem>
-                <MenuItem value="INACTIVE">Ngừng sử dụng</MenuItem>
-              </TextField>
-              <TextField
-                fullWidth
-                type="number"
-                label="Thứ tự hiển thị"
-                value={formValues.sort_order}
-                onChange={(event) =>
-                  setFormValues((current) => ({
-                    ...current,
-                    sort_order: Number(event.target.value) || 0,
-                  }))
-                }
-                slotProps={{ htmlInput: { min: 0 } }}
-              />
-            </Stack>
-          </DialogContent>
-          <DialogActions>
+      <UiDialog
+        open={isOpen}
+        onClose={guardBackdropClose(() => setIsOpen(false))}
+        maxWidth="xs"
+        title={editing ? `Sửa ${title}` : `Thêm ${title}`}
+        actions={
+          <>
             <ActionButton
               kind="cancel"
               onClick={() => setIsOpen(false)}
@@ -408,9 +336,72 @@ function SimpleMasterTab({
             >
               {saving ? "Đang lưu..." : "Lưu"}
             </ActionButton>
-          </DialogActions>
-        </Dialog>
-      </>
+          </>
+        }
+      >
+        <Stack spacing={2} sx={{ pt: 0.5 }}>
+          <UiTextField
+            required
+            fullWidth
+            label="Mã"
+            value={formValues.code}
+            onChange={(event) => {
+              const value = event.target.value;
+              setFormValues((current) => ({ ...current, code: value }));
+              setFieldErrors((current) =>
+                current.code ? { ...current, code: "" } : current,
+              );
+            }}
+            error={Boolean(fieldErrors.code)}
+            helperText={fieldErrors.code}
+            slotProps={{ htmlInput: { maxLength: 80 } }}
+          />
+          <UiTextField
+            required
+            fullWidth
+            label="Tên"
+            value={formValues.name}
+            onChange={(event) => {
+              const value = event.target.value;
+              setFormValues((current) => ({ ...current, name: value }));
+              setFieldErrors((current) =>
+                current.name ? { ...current, name: "" } : current,
+              );
+            }}
+            error={Boolean(fieldErrors.name)}
+            helperText={fieldErrors.name}
+            slotProps={{ htmlInput: { maxLength: 200 } }}
+          />
+          <UiTextField
+            select
+            fullWidth
+            label="Trạng thái"
+            value={formValues.status}
+            onChange={(event) =>
+              setFormValues((current) => ({
+                ...current,
+                status: event.target.value as "ACTIVE" | "INACTIVE",
+              }))
+            }
+          >
+            <MenuItem value="ACTIVE">Đang sử dụng</MenuItem>
+            <MenuItem value="INACTIVE">Ngừng sử dụng</MenuItem>
+          </UiTextField>
+          <UiTextField
+            fullWidth
+            type="number"
+            label="Thứ tự hiển thị"
+            value={formValues.sort_order}
+            onChange={(event) =>
+              setFormValues((current) => ({
+                ...current,
+                sort_order: Number(event.target.value) || 0,
+              }))
+            }
+            slotProps={{ htmlInput: { min: 0 } }}
+          />
+        </Stack>
+      </UiDialog>
     </div>
   );
 }
@@ -608,11 +599,17 @@ export default function PvAdminPage() {
             sx={{ flexWrap: "wrap", rowGap: 0.5 }}
           >
             {row.industry_ids.map((id) => (
-              <Tag key={id}>{industryNameById.get(id) ?? id}</Tag>
+              <UiStatusBadge
+                key={id}
+                tone="neutral"
+                label={industryNameById.get(id) ?? id}
+              />
             ))}
           </Stack>
         ) : (
-          <span style={{ color: "#8c887e" }}>—</span>
+          <Box component="span" sx={{ color: S.textDisabled }}>
+            —
+          </Box>
         ),
     },
     {
@@ -622,19 +619,17 @@ export default function PvAdminPage() {
       sorter: (a, b) => Number(a.published) - Number(b.published),
       render: (_, row) => (
         <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-          <Switch
+          <PvSwitch
             checked={row.published}
             disabled={!canPublish}
-            slotProps={{
-              input: {
-                "data-testid": "pv-admin-publish-switch",
-              } as InputHTMLAttributes<HTMLInputElement>,
-            }}
-            onChange={(event) => togglePublish(row, event.target.checked)}
+            aria-label="Bật/tắt hiển thị trên ứng dụng"
+            data-testid="pv-admin-publish-switch"
+            onChange={(checked) => togglePublish(row, checked)}
           />
-          <Tag color={row.published ? "green" : "default"}>
-            {row.published ? "Đang hiển thị" : "Đang ẩn"}
-          </Tag>
+          <UiStatusBadge
+            tone={row.published ? "success" : "neutral"}
+            label={row.published ? "Đang hiển thị" : "Đang ẩn"}
+          />
         </Stack>
       ),
     },
@@ -664,165 +659,185 @@ export default function PvAdminPage() {
   ];
 
   return (
-    <>
-      <div style={{ padding: "clamp(8px, 2vw, 16px)" }}>
-        <h1 style={{ fontSize: "clamp(17px, 3vw, 22px)", fontWeight: 700 }}>
-          Quản trị ứng dụng phân vùng
-        </h1>
-        <p style={{ color: "#7a766c", fontSize: 13, marginTop: 0 }}>
-          Quản lý ngành nghề, thẻ phân loại, quy tắc gợi ý và hồ sơ sản phẩm
-          hiển thị trên ứng dụng.
-          {canPublish
-            ? ""
-            : " Tài khoản hiện tại không có quyền bật hoặc tắt hiển thị sản phẩm."}
-        </p>
+    <Box sx={{ padding: "clamp(8px, 2vw, 16px)" }}>
+      <Box
+        component="h1"
+        sx={{
+          fontSize: "clamp(17px, 3vw, 22px)",
+          fontWeight: 700,
+          color: S.textHigh,
+          margin: "0 0 4px",
+        }}
+      >
+        Quản trị ứng dụng phân vùng
+      </Box>
+      <Box
+        component="p"
+        sx={{ color: S.textMedium, fontSize: 13, marginTop: 0 }}
+      >
+        Quản lý ngành nghề, thẻ phân loại, quy tắc gợi ý và hồ sơ sản phẩm hiển
+        thị trên ứng dụng.
+        {canPublish
+          ? ""
+          : " Tài khoản hiện tại không có quyền bật hoặc tắt hiển thị sản phẩm."}
+      </Box>
 
-        <Tabs
+      <Box sx={{ mb: 2 }}>
+        <UiTabs
           value={activeTab}
-          onChange={(_event, value: string) => setActiveTab(value)}
-          sx={{ minHeight: 40, mb: 2 }}
-        >
-          <Tab
-            value="profiles"
-            icon={<ProfileOutlined style={{ fontSize: 15 }} />}
-            iconPosition="start"
-            label="Hồ sơ sản phẩm"
-            sx={{ minHeight: 40, textTransform: "none" }}
-          />
-          <Tab
-            value="industries"
-            icon={<ApartmentOutlined style={{ fontSize: 15 }} />}
-            iconPosition="start"
-            label="Ngành nghề"
-            sx={{ minHeight: 40, textTransform: "none" }}
-          />
-          <Tab
-            value="tags"
-            icon={<TagOutlined style={{ fontSize: 15 }} />}
-            iconPosition="start"
-            label="Thẻ phân loại"
-            sx={{ minHeight: 40, textTransform: "none" }}
-          />
-          <Tab
-            value="rules"
-            icon={<SettingOutlined style={{ fontSize: 15 }} />}
-            iconPosition="start"
-            label="Quy tắc gợi ý"
-            sx={{ minHeight: 40, textTransform: "none" }}
-          />
-        </Tabs>
+          onChange={setActiveTab}
+          aria-label="Quản trị ứng dụng phân vùng"
+          items={[
+            {
+              key: "profiles",
+              label: (
+                <TabLabel icon={<ProfileOutlined style={{ fontSize: 15 }} />}>
+                  Hồ sơ sản phẩm
+                </TabLabel>
+              ),
+            },
+            {
+              key: "industries",
+              label: (
+                <TabLabel icon={<ApartmentOutlined style={{ fontSize: 15 }} />}>
+                  Ngành nghề
+                </TabLabel>
+              ),
+            },
+            {
+              key: "tags",
+              label: (
+                <TabLabel icon={<TagOutlined style={{ fontSize: 15 }} />}>
+                  Thẻ phân loại
+                </TabLabel>
+              ),
+            },
+            {
+              key: "rules",
+              label: (
+                <TabLabel icon={<SettingOutlined style={{ fontSize: 15 }} />}>
+                  Quy tắc gợi ý
+                </TabLabel>
+              ),
+            },
+          ]}
+        />
+      </Box>
 
-        {activeTab === "profiles" ? (
-          profiles.isPending ? (
-            <LoadingState tip="Đang tải…" testId="pv-admin-profiles-loading" />
-          ) : profiles.isError ? (
-            <PvErrorState
-              error={profiles.error}
-              onRetry={() => profiles.refetch()}
-            />
-          ) : (
-            <div data-testid="pv-admin-profiles">
-              <FilterBar>
-                <SearchInput
-                  placeholder="Tìm theo mã SKU hoặc tên hiển thị..."
-                  value={profileSearch}
-                  onChange={setProfileSearch}
-                  width={260}
-                />
-                <Select
-                  value={profileIndustryFilter}
-                  style={{ width: 180 }}
-                  onChange={(value: string) => setProfileIndustryFilter(value)}
-                  options={[
-                    { value: "ALL", label: "Tất cả ngành nghề" },
-                    ...industryOptions,
-                  ]}
-                />
-                <Select
-                  value={profilePublishedFilter}
-                  style={{ width: 180 }}
-                  onChange={(value: "ALL" | "PUBLISHED" | "HIDDEN") =>
-                    setProfilePublishedFilter(value)
-                  }
-                  options={[
-                    { value: "ALL", label: "Tất cả trạng thái" },
-                    { value: "PUBLISHED", label: "Đang hiển thị" },
-                    { value: "HIDDEN", label: "Đang ẩn" },
-                  ]}
-                />
-              </FilterBar>
-              <DataTable<PvAdminProfile>
-                rowKey="id"
-                size="small"
-                scroll={{ x: "max-content" }}
-                dataSource={filteredProfiles}
-                rowSelection={{
-                  type: "checkbox",
-                  selectedRowKeys: profileSelectedRowKeys,
-                  onChange: setProfileSelectedRowKeys,
-                }}
-                locale={{
-                  emptyText: isProfileFilterActive
-                    ? "Không có kết quả phù hợp."
-                    : "Chưa có hồ sơ sản phẩm nào. Hồ sơ được tạo khi sản phẩm được đưa lên ứng dụng lần đầu.",
-                }}
-                columns={profileColumns}
+      {activeTab === "profiles" ? (
+        profiles.isPending ? (
+          <LoadingState tip="Đang tải…" testId="pv-admin-profiles-loading" />
+        ) : profiles.isError ? (
+          <PvErrorState
+            error={profiles.error}
+            onRetry={() => profiles.refetch()}
+          />
+        ) : (
+          <div data-testid="pv-admin-profiles">
+            <FilterBar>
+              <SearchInput
+                placeholder="Tìm theo mã SKU hoặc tên hiển thị..."
+                value={profileSearch}
+                onChange={setProfileSearch}
+                width={260}
               />
-            </div>
-          )
-        ) : null}
-
-        {activeTab === "industries" ? (
-          <SimpleMasterTab
-            testId="pv-admin-industries"
-            title="ngành nghề"
-            rows={industries.data?.data ?? []}
-            isPending={industries.isPending}
-            isError={industries.isError}
-            error={industries.error}
-            onRetry={() => industries.refetch()}
-            canManage={canManageMaster}
-            onSave={(input) => saveIndustry.mutateAsync(input)}
-          />
-        ) : null}
-
-        {activeTab === "tags" ? (
-          <SimpleMasterTab
-            testId="pv-admin-tags"
-            title="thẻ phân loại"
-            rows={tags.data?.data ?? []}
-            isPending={tags.isPending}
-            isError={tags.isError}
-            error={tags.error}
-            onRetry={() => tags.refetch()}
-            canManage={canManageMaster}
-            onSave={(input) => saveTag.mutateAsync(input)}
-          />
-        ) : null}
-
-        {activeTab === "rules" ? (
-          rules.isPending ? (
-            <LoadingState tip="Đang tải…" testId="pv-admin-rules-loading" />
-          ) : rules.isError ? (
-            <PvErrorState error={rules.error} onRetry={() => rules.refetch()} />
-          ) : (
-            <PvRuleTab
-              rows={rules.data?.data ?? []}
-              industryOptions={industryOptions}
-              tagOptions={tagOptions}
-              canManage={canManageMaster}
-              onSave={(input) => saveRule.mutateAsync(input)}
+              <UiSelect
+                value={profileIndustryFilter}
+                aria-label="Lọc theo ngành nghề"
+                minWidth={180}
+                onChange={(value) => setProfileIndustryFilter(value)}
+                options={[
+                  { value: "ALL", label: "Tất cả ngành nghề" },
+                  ...industryOptions,
+                ]}
+              />
+              <UiSelect
+                value={profilePublishedFilter}
+                aria-label="Lọc theo trạng thái hiển thị"
+                minWidth={180}
+                onChange={(value) =>
+                  setProfilePublishedFilter(
+                    value as "ALL" | "PUBLISHED" | "HIDDEN",
+                  )
+                }
+                options={[
+                  { value: "ALL", label: "Tất cả trạng thái" },
+                  { value: "PUBLISHED", label: "Đang hiển thị" },
+                  { value: "HIDDEN", label: "Đang ẩn" },
+                ]}
+              />
+            </FilterBar>
+            <DataTable<PvAdminProfile>
+              rowKey="id"
+              size="small"
+              scroll={{ x: "max-content" }}
+              dataSource={filteredProfiles}
+              rowSelection={{
+                type: "checkbox",
+                selectedRowKeys: profileSelectedRowKeys,
+                onChange: setProfileSelectedRowKeys,
+              }}
+              locale={{
+                emptyText: isProfileFilterActive
+                  ? "Không có kết quả phù hợp."
+                  : "Chưa có hồ sơ sản phẩm nào. Hồ sơ được tạo khi sản phẩm được đưa lên ứng dụng lần đầu.",
+              }}
+              columns={profileColumns}
             />
-          )
-        ) : null}
+          </div>
+        )
+      ) : null}
 
-        <Dialog
-          open={profileViewing !== null}
-          onClose={() => setProfileViewing(null)}
-          maxWidth="sm"
-          fullWidth
-        >
-          <DialogTitle sx={{ pr: 6, position: "relative" }}>
+      {activeTab === "industries" ? (
+        <SimpleMasterTab
+          testId="pv-admin-industries"
+          title="ngành nghề"
+          rows={industries.data?.data ?? []}
+          isPending={industries.isPending}
+          isError={industries.isError}
+          error={industries.error}
+          onRetry={() => industries.refetch()}
+          canManage={canManageMaster}
+          onSave={(input) => saveIndustry.mutateAsync(input)}
+        />
+      ) : null}
+
+      {activeTab === "tags" ? (
+        <SimpleMasterTab
+          testId="pv-admin-tags"
+          title="thẻ phân loại"
+          rows={tags.data?.data ?? []}
+          isPending={tags.isPending}
+          isError={tags.isError}
+          error={tags.error}
+          onRetry={() => tags.refetch()}
+          canManage={canManageMaster}
+          onSave={(input) => saveTag.mutateAsync(input)}
+        />
+      ) : null}
+
+      {activeTab === "rules" ? (
+        rules.isPending ? (
+          <LoadingState tip="Đang tải…" testId="pv-admin-rules-loading" />
+        ) : rules.isError ? (
+          <PvErrorState error={rules.error} onRetry={() => rules.refetch()} />
+        ) : (
+          <PvRuleTab
+            rows={rules.data?.data ?? []}
+            industryOptions={industryOptions}
+            tagOptions={tagOptions}
+            canManage={canManageMaster}
+            onSave={(input) => saveRule.mutateAsync(input)}
+          />
+        )
+      ) : null}
+
+      <UiDialog
+        open={profileViewing !== null}
+        onClose={() => setProfileViewing(null)}
+        sx={{ "& .MuiDialogTitle-root": { pr: 6, position: "relative" } }}
+        title={
+          <>
             Chi tiết hồ sơ sản phẩm
             <ActionIconButton
               kind="close"
@@ -830,199 +845,106 @@ export default function PvAdminPage() {
               onClick={() => setProfileViewing(null)}
               sx={{ position: "absolute", right: 10, top: 8 }}
             />
-          </DialogTitle>
-          <DialogContent dividers>
-            {profileViewing ? (
-              <Grid container spacing={2}>
-                <DetailField
-                  label="SKU"
-                  value={`${profileViewing.sku_code} — ${profileViewing.sku_name}`}
-                />
-                <DetailField
-                  label="Tên hiển thị"
-                  value={profileViewing.display_name}
-                />
-                <DetailField
-                  label="Mô tả"
-                  value={profileViewing.description || "—"}
-                />
-                <DetailField
-                  label="Ngành nghề"
-                  value={
-                    profileViewing.industry_ids.length > 0 ? (
-                      <Stack
-                        direction="row"
-                        spacing={0.5}
-                        sx={{ flexWrap: "wrap", rowGap: 0.5 }}
-                      >
-                        {profileViewing.industry_ids.map((id) => (
-                          <Tag key={id}>{industryNameById.get(id) ?? id}</Tag>
-                        ))}
-                      </Stack>
-                    ) : (
-                      "—"
-                    )
-                  }
-                />
-                <DetailField
-                  label="Thẻ phân loại"
-                  value={
-                    profileViewing.tag_ids.length > 0 ? (
-                      <Stack
-                        direction="row"
-                        spacing={0.5}
-                        sx={{ flexWrap: "wrap", rowGap: 0.5 }}
-                      >
-                        {profileViewing.tag_ids.map((id) => (
-                          <Tag key={id}>{tagNameById.get(id) ?? id}</Tag>
-                        ))}
-                      </Stack>
-                    ) : (
-                      "—"
-                    )
-                  }
-                />
-                <DetailField
-                  label="Thứ tự hiển thị"
-                  value={profileViewing.sort_order}
-                />
-                <DetailField
-                  label="Hiển thị trên ứng dụng"
-                  value={
-                    <Tag color={profileViewing.published ? "green" : "default"}>
-                      {profileViewing.published ? "Đang hiển thị" : "Đang ẩn"}
-                    </Tag>
-                  }
-                />
-                <DetailField
-                  label="Trạng thái SKU"
-                  value={
-                    <Tag
-                      color={
-                        profileViewing.sku_status === "ACTIVE"
-                          ? "green"
-                          : "default"
-                      }
+          </>
+        }
+      >
+        {profileViewing ? (
+          <UiDescriptions
+            columns={2}
+            items={[
+              {
+                label: "SKU",
+                value: `${profileViewing.sku_code} — ${profileViewing.sku_name}`,
+              },
+              {
+                label: "Tên hiển thị",
+                value: profileViewing.display_name,
+              },
+              {
+                label: "Mô tả",
+                value: profileViewing.description || "—",
+              },
+              {
+                label: "Ngành nghề",
+                value:
+                  profileViewing.industry_ids.length > 0 ? (
+                    <Stack
+                      direction="row"
+                      spacing={0.5}
+                      sx={{ flexWrap: "wrap", rowGap: 0.5 }}
                     >
-                      {masterStatusLabel(profileViewing.sku_status)}
-                    </Tag>
-                  }
-                />
-              </Grid>
-            ) : null}
-          </DialogContent>
-        </Dialog>
+                      {profileViewing.industry_ids.map((id) => (
+                        <UiStatusBadge
+                          key={id}
+                          tone="neutral"
+                          label={industryNameById.get(id) ?? id}
+                        />
+                      ))}
+                    </Stack>
+                  ) : (
+                    "—"
+                  ),
+              },
+              {
+                label: "Thẻ phân loại",
+                value:
+                  profileViewing.tag_ids.length > 0 ? (
+                    <Stack
+                      direction="row"
+                      spacing={0.5}
+                      sx={{ flexWrap: "wrap", rowGap: 0.5 }}
+                    >
+                      {profileViewing.tag_ids.map((id) => (
+                        <UiStatusBadge
+                          key={id}
+                          tone="neutral"
+                          label={tagNameById.get(id) ?? id}
+                        />
+                      ))}
+                    </Stack>
+                  ) : (
+                    "—"
+                  ),
+              },
+              {
+                label: "Thứ tự hiển thị",
+                value: profileViewing.sort_order,
+              },
+              {
+                label: "Hiển thị trên ứng dụng",
+                value: (
+                  <UiStatusBadge
+                    tone={profileViewing.published ? "success" : "neutral"}
+                    label={
+                      profileViewing.published ? "Đang hiển thị" : "Đang ẩn"
+                    }
+                  />
+                ),
+              },
+              {
+                label: "Trạng thái SKU",
+                value: (
+                  <UiStatusBadge
+                    tone={
+                      profileViewing.sku_status === "ACTIVE"
+                        ? "success"
+                        : "neutral"
+                    }
+                    label={masterStatusLabel(profileViewing.sku_status)}
+                  />
+                ),
+              },
+            ]}
+          />
+        ) : null}
+      </UiDialog>
 
-        <Dialog
-          open={profileEditing !== null}
-          onClose={guardBackdropClose(() => setProfileEditing(null))}
-          maxWidth="sm"
-          fullWidth
-        >
-          <DialogTitle>Sửa thông tin hiển thị</DialogTitle>
-          <DialogContent dividers>
-            <Grid container spacing={2}>
-              <Grid size={{ xs: 12, sm: 8 }}>
-                <TextField
-                  required
-                  fullWidth
-                  label="Tên hiển thị"
-                  value={profileForm.display_name}
-                  onChange={(event) => {
-                    const value = event.target.value;
-                    setProfileForm((current) => ({
-                      ...current,
-                      display_name: value,
-                    }));
-                    if (displayNameError) setDisplayNameError(null);
-                  }}
-                  error={Boolean(displayNameError)}
-                  helperText={displayNameError}
-                  slotProps={{ htmlInput: { maxLength: 255 } }}
-                />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 4 }}>
-                <TextField
-                  fullWidth
-                  type="number"
-                  label="Thứ tự hiển thị"
-                  value={profileForm.sort_order}
-                  onChange={(event) =>
-                    setProfileForm((current) => ({
-                      ...current,
-                      sort_order: Number(event.target.value) || 0,
-                    }))
-                  }
-                  slotProps={{ htmlInput: { min: 0 } }}
-                />
-              </Grid>
-              <Grid size={12}>
-                <TextField
-                  fullWidth
-                  multiline
-                  minRows={3}
-                  label="Mô tả"
-                  value={profileForm.description}
-                  onChange={(event) =>
-                    setProfileForm((current) => ({
-                      ...current,
-                      description: event.target.value,
-                    }))
-                  }
-                />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <Autocomplete
-                  multiple
-                  options={industryOptions}
-                  value={industryOptions.filter((option) =>
-                    profileForm.industry_ids.includes(option.value),
-                  )}
-                  getOptionLabel={(option) => option.label}
-                  isOptionEqualToValue={(option, value) =>
-                    option.value === value.value
-                  }
-                  onChange={(_event, options) =>
-                    setProfileForm((current) => ({
-                      ...current,
-                      industry_ids: options.map((option) => option.value),
-                    }))
-                  }
-                  renderInput={(params) => (
-                    <TextField {...params} label="Ngành nghề" />
-                  )}
-                />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <Autocomplete
-                  multiple
-                  options={tagOptions}
-                  value={tagOptions.filter((option) =>
-                    profileForm.tag_ids.includes(option.value),
-                  )}
-                  getOptionLabel={(option) => option.label}
-                  isOptionEqualToValue={(option, value) =>
-                    option.value === value.value
-                  }
-                  onChange={(_event, options) =>
-                    setProfileForm((current) => ({
-                      ...current,
-                      tag_ids: options.map((option) => option.value),
-                    }))
-                  }
-                  renderInput={(params) => (
-                    <TextField {...params} label="Thẻ phân loại" />
-                  )}
-                />
-              </Grid>
-              <Grid size={12}>
-                <Typography variant="caption" color="text.secondary">
-                  Bật hoặc tắt hiển thị sản phẩm bằng công tắc ở bảng danh sách.
-                </Typography>
-              </Grid>
-            </Grid>
-          </DialogContent>
-          <DialogActions>
+      <UiDialog
+        open={profileEditing !== null}
+        onClose={guardBackdropClose(() => setProfileEditing(null))}
+        title="Sửa thông tin hiển thị"
+        actions={
+          <>
             <ActionButton
               kind="cancel"
               onClick={() => setProfileEditing(null)}
@@ -1037,10 +959,125 @@ export default function PvAdminPage() {
             >
               {savingProfile ? "Đang lưu..." : "Lưu"}
             </ActionButton>
-          </DialogActions>
-        </Dialog>
-      </div>
-    </>
+          </>
+        }
+      >
+        <Grid container spacing={2} sx={{ pt: 0.5 }}>
+          <Grid size={{ xs: 12, sm: 8 }}>
+            <UiTextField
+              required
+              fullWidth
+              label="Tên hiển thị"
+              value={profileForm.display_name}
+              onChange={(event) => {
+                const value = event.target.value;
+                setProfileForm((current) => ({
+                  ...current,
+                  display_name: value,
+                }));
+                if (displayNameError) setDisplayNameError(null);
+              }}
+              error={Boolean(displayNameError)}
+              helperText={displayNameError}
+              slotProps={{ htmlInput: { maxLength: 255 } }}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 4 }}>
+            <UiTextField
+              fullWidth
+              type="number"
+              label="Thứ tự hiển thị"
+              value={profileForm.sort_order}
+              onChange={(event) =>
+                setProfileForm((current) => ({
+                  ...current,
+                  sort_order: Number(event.target.value) || 0,
+                }))
+              }
+              slotProps={{ htmlInput: { min: 0 } }}
+            />
+          </Grid>
+          <Grid size={12}>
+            <UiTextField
+              fullWidth
+              multiline
+              minRows={3}
+              label="Mô tả"
+              value={profileForm.description}
+              onChange={(event) =>
+                setProfileForm((current) => ({
+                  ...current,
+                  description: event.target.value,
+                }))
+              }
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <UiTextField
+              select
+              fullWidth
+              label="Ngành nghề"
+              value={profileForm.industry_ids}
+              onChange={(event) =>
+                setProfileForm((current) => ({
+                  ...current,
+                  industry_ids: event.target.value as unknown as string[],
+                }))
+              }
+              slotProps={{
+                select: {
+                  multiple: true,
+                  renderValue: (selected) =>
+                    (selected as string[])
+                      .map((id) => industryNameById.get(id) ?? id)
+                      .join(", "),
+                },
+              }}
+            >
+              {industryOptions.map((option) => (
+                <MenuItem key={option.value} value={option.value}>
+                  {option.label}
+                </MenuItem>
+              ))}
+            </UiTextField>
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <UiTextField
+              select
+              fullWidth
+              label="Thẻ phân loại"
+              value={profileForm.tag_ids}
+              onChange={(event) =>
+                setProfileForm((current) => ({
+                  ...current,
+                  tag_ids: event.target.value as unknown as string[],
+                }))
+              }
+              slotProps={{
+                select: {
+                  multiple: true,
+                  renderValue: (selected) =>
+                    (selected as string[])
+                      .map((id) => tagNameById.get(id) ?? id)
+                      .join(", "),
+                },
+              }}
+            >
+              {tagOptions.map((option) => (
+                <MenuItem key={option.value} value={option.value}>
+                  {option.label}
+                </MenuItem>
+              ))}
+            </UiTextField>
+          </Grid>
+          <Grid size={12}>
+            <UiText variant="caption">
+              Bật hoặc tắt hiển thị sản phẩm bằng công tắc ở bảng danh sách.
+            </UiText>
+          </Grid>
+        </Grid>
+      </UiDialog>
+    </Box>
   );
 }
 
@@ -1193,15 +1230,16 @@ function PvRuleTab({
       render: (_, row) =>
         row.sku_id ? (
           <>
-            <Tag>SKU</Tag> {row.sku_id}
+            <UiStatusBadge tone="neutral" label="SKU" /> {row.sku_id}
           </>
         ) : row.category_id ? (
           <>
-            <Tag>Nhóm hàng</Tag> {row.category_id}
+            <UiStatusBadge tone="neutral" label="Nhóm hàng" /> {row.category_id}
           </>
         ) : row.tag_id ? (
           <>
-            <Tag>Thẻ phân loại</Tag> {tagNameById.get(row.tag_id) ?? row.tag_id}
+            <UiStatusBadge tone="neutral" label="Thẻ phân loại" />{" "}
+            {tagNameById.get(row.tag_id) ?? row.tag_id}
           </>
         ) : (
           "—"
@@ -1213,9 +1251,10 @@ function PvRuleTab({
       sortType: "value",
       sorter: (a, b) => a.status.localeCompare(b.status),
       render: (status: string) => (
-        <Tag color={status === "ACTIVE" ? "green" : "default"}>
-          {masterStatusLabel(status)}
-        </Tag>
+        <UiStatusBadge
+          tone={status === "ACTIVE" ? "success" : "neutral"}
+          label={masterStatusLabel(status)}
+        />
       ),
     },
     {
@@ -1258,11 +1297,12 @@ function PvRuleTab({
           onChange={setSearch}
           width={280}
         />
-        <Select
+        <UiSelect
           value={statusFilter}
-          style={{ width: 180 }}
-          onChange={(value: "ALL" | "ACTIVE" | "INACTIVE") =>
-            setStatusFilter(value)
+          aria-label="Lọc theo trạng thái"
+          minWidth={180}
+          onChange={(value) =>
+            setStatusFilter(value as "ALL" | "ACTIVE" | "INACTIVE")
           }
           options={[
             { value: "ALL", label: "Tất cả trạng thái" },
@@ -1290,195 +1330,191 @@ function PvRuleTab({
         columns={columns}
       />
 
-      <Dialog
+      <UiDialog
         open={viewing !== null}
         onClose={() => setViewing(null)}
-        maxWidth="sm"
-        fullWidth
+        sx={{ "& .MuiDialogTitle-root": { pr: 6, position: "relative" } }}
+        title={
+          <>
+            Chi tiết quy tắc gợi ý
+            <ActionIconButton
+              kind="close"
+              label="Đóng"
+              onClick={() => setViewing(null)}
+              sx={{ position: "absolute", right: 10, top: 8 }}
+            />
+          </>
+        }
       >
-        <DialogTitle sx={{ pr: 6, position: "relative" }}>
-          Chi tiết quy tắc gợi ý
-          <ActionIconButton
-            kind="close"
-            label="Đóng"
-            onClick={() => setViewing(null)}
-            sx={{ position: "absolute", right: 10, top: 8 }}
+        {viewing ? (
+          <UiDescriptions
+            columns={2}
+            items={[
+              {
+                label: "Ngành nghề",
+                value: viewing.industry_name ?? viewing.industry_id,
+              },
+              {
+                label: "Điều kiện áp dụng",
+                value: viewing.sku_id ? (
+                  <>
+                    <UiStatusBadge tone="neutral" label="SKU" />{" "}
+                    {viewing.sku_id}
+                  </>
+                ) : viewing.category_id ? (
+                  <>
+                    <UiStatusBadge tone="neutral" label="Nhóm hàng" />{" "}
+                    {viewing.category_id}
+                  </>
+                ) : viewing.tag_id ? (
+                  <>
+                    <UiStatusBadge tone="neutral" label="Thẻ phân loại" />{" "}
+                    {tagNameById.get(viewing.tag_id) ?? viewing.tag_id}
+                  </>
+                ) : (
+                  "—"
+                ),
+              },
+              { label: "Mức ưu tiên", value: viewing.priority },
+              {
+                label: "Trạng thái",
+                value: (
+                  <UiStatusBadge
+                    tone={viewing.status === "ACTIVE" ? "success" : "neutral"}
+                    label={masterStatusLabel(viewing.status)}
+                  />
+                ),
+              },
+            ]}
           />
-        </DialogTitle>
-        <DialogContent dividers>
-          {viewing ? (
-            <Grid container spacing={2}>
-              <DetailField
-                label="Ngành nghề"
-                value={viewing.industry_name ?? viewing.industry_id}
-              />
-              <DetailField
-                label="Điều kiện áp dụng"
-                value={
-                  viewing.sku_id ? (
-                    <>
-                      <Tag>SKU</Tag> {viewing.sku_id}
-                    </>
-                  ) : viewing.category_id ? (
-                    <>
-                      <Tag>Nhóm hàng</Tag> {viewing.category_id}
-                    </>
-                  ) : viewing.tag_id ? (
-                    <>
-                      <Tag>Thẻ phân loại</Tag>{" "}
-                      {tagNameById.get(viewing.tag_id) ?? viewing.tag_id}
-                    </>
-                  ) : (
-                    "—"
-                  )
-                }
-              />
-              <DetailField label="Mức ưu tiên" value={viewing.priority} />
-              <DetailField
-                label="Trạng thái"
-                value={
-                  <Tag
-                    color={viewing.status === "ACTIVE" ? "green" : "default"}
-                  >
-                    {masterStatusLabel(viewing.status)}
-                  </Tag>
-                }
-              />
-            </Grid>
-          ) : null}
-        </DialogContent>
-      </Dialog>
+        ) : null}
+      </UiDialog>
 
-      <Dialog
+      <UiDialog
         open={isOpen}
         onClose={guardBackdropClose(() => setIsOpen(false))}
         maxWidth="xs"
-        fullWidth
+        title={editing ? "Sửa quy tắc gợi ý" : "Thêm quy tắc gợi ý"}
+        actions={
+          <>
+            <ActionButton
+              kind="cancel"
+              onClick={() => setIsOpen(false)}
+              disabled={saving}
+            >
+              Hủy
+            </ActionButton>
+            <ActionButton
+              kind="save"
+              onClick={() => void submit()}
+              disabled={saving}
+            >
+              {saving ? "Đang lưu..." : "Lưu"}
+            </ActionButton>
+          </>
+        }
       >
-        <DialogTitle>
-          {editing ? "Sửa quy tắc gợi ý" : "Thêm quy tắc gợi ý"}
-        </DialogTitle>
-        <DialogContent dividers>
-          <Stack spacing={2}>
-            <TextField
-              select
-              required
-              fullWidth
-              label="Ngành nghề"
-              value={formValues.industry_id}
-              onChange={(event) => {
-                const value = event.target.value;
-                setFormValues((current) => ({
-                  ...current,
-                  industry_id: value,
-                }));
-                setFieldErrors((current) =>
-                  current.industry_id
-                    ? { ...current, industry_id: "" }
-                    : current,
-                );
-              }}
-              error={Boolean(fieldErrors.industry_id)}
-              helperText={fieldErrors.industry_id}
-            >
-              {industryOptions.map((option) => (
-                <MenuItem key={option.value} value={option.value}>
-                  {option.label}
-                </MenuItem>
-              ))}
-            </TextField>
-            <TextField
-              fullWidth
-              label="SKU áp dụng (chọn SKU hoặc thẻ phân loại)"
-              placeholder="Mã định danh SKU"
-              value={formValues.sku_id}
-              onChange={(event) =>
-                setFormValues((current) => ({
-                  ...current,
-                  sku_id: event.target.value,
-                }))
-              }
-            />
-            <TextField
-              select
-              fullWidth
-              label="Thẻ phân loại"
-              value={formValues.tag_id}
-              onChange={(event) =>
-                setFormValues((current) => ({
-                  ...current,
-                  tag_id: event.target.value,
-                }))
-              }
-            >
-              <MenuItem value="">
-                <em>Không chọn</em>
+        <Stack spacing={2} sx={{ pt: 0.5 }}>
+          <UiTextField
+            select
+            required
+            fullWidth
+            label="Ngành nghề"
+            value={formValues.industry_id}
+            onChange={(event) => {
+              const value = event.target.value;
+              setFormValues((current) => ({
+                ...current,
+                industry_id: value,
+              }));
+              setFieldErrors((current) =>
+                current.industry_id ? { ...current, industry_id: "" } : current,
+              );
+            }}
+            error={Boolean(fieldErrors.industry_id)}
+            helperText={fieldErrors.industry_id}
+          >
+            {industryOptions.map((option) => (
+              <MenuItem key={option.value} value={option.value}>
+                {option.label}
               </MenuItem>
-              {tagOptions.map((option) => (
-                <MenuItem key={option.value} value={option.value}>
-                  {option.label}
-                </MenuItem>
-              ))}
-            </TextField>
-            <TextField
-              required
-              fullWidth
-              type="number"
-              label="Mức ưu tiên"
-              value={formValues.priority}
-              onChange={(event) => {
-                const value = Number(event.target.value) || 0;
-                setFormValues((current) => ({
-                  ...current,
-                  priority: value,
-                }));
-                setFieldErrors((current) =>
-                  current.priority ? { ...current, priority: "" } : current,
-                );
-              }}
-              error={Boolean(fieldErrors.priority)}
-              helperText={fieldErrors.priority}
-              slotProps={{ htmlInput: { min: 0 } }}
-            />
-            <TextField
-              select
-              fullWidth
-              label="Trạng thái"
-              value={formValues.status}
-              onChange={(event) =>
-                setFormValues((current) => ({
-                  ...current,
-                  status: event.target.value as "ACTIVE" | "INACTIVE",
-                }))
-              }
-            >
-              <MenuItem value="ACTIVE">Đang sử dụng</MenuItem>
-              <MenuItem value="INACTIVE">Ngừng sử dụng</MenuItem>
-            </TextField>
-            <Typography variant="caption" color="text.secondary">
-              Quy tắc phải có ít nhất một điều kiện áp dụng (SKU hoặc thẻ phân
-              loại) và mức ưu tiên không được trùng với quy tắc đang sử dụng
-              khác trong cùng ngành nghề.
-            </Typography>
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <ActionButton
-            kind="cancel"
-            onClick={() => setIsOpen(false)}
-            disabled={saving}
+            ))}
+          </UiTextField>
+          <UiTextField
+            fullWidth
+            label="SKU áp dụng (chọn SKU hoặc thẻ phân loại)"
+            placeholder="Mã định danh SKU"
+            value={formValues.sku_id}
+            onChange={(event) =>
+              setFormValues((current) => ({
+                ...current,
+                sku_id: event.target.value,
+              }))
+            }
+          />
+          <UiTextField
+            select
+            fullWidth
+            label="Thẻ phân loại"
+            value={formValues.tag_id}
+            onChange={(event) =>
+              setFormValues((current) => ({
+                ...current,
+                tag_id: event.target.value,
+              }))
+            }
           >
-            Hủy
-          </ActionButton>
-          <ActionButton
-            kind="save"
-            onClick={() => void submit()}
-            disabled={saving}
+            <MenuItem value="">
+              <em>Không chọn</em>
+            </MenuItem>
+            {tagOptions.map((option) => (
+              <MenuItem key={option.value} value={option.value}>
+                {option.label}
+              </MenuItem>
+            ))}
+          </UiTextField>
+          <UiTextField
+            required
+            fullWidth
+            type="number"
+            label="Mức ưu tiên"
+            value={formValues.priority}
+            onChange={(event) => {
+              const value = Number(event.target.value) || 0;
+              setFormValues((current) => ({
+                ...current,
+                priority: value,
+              }));
+              setFieldErrors((current) =>
+                current.priority ? { ...current, priority: "" } : current,
+              );
+            }}
+            error={Boolean(fieldErrors.priority)}
+            helperText={fieldErrors.priority}
+            slotProps={{ htmlInput: { min: 0 } }}
+          />
+          <UiTextField
+            select
+            fullWidth
+            label="Trạng thái"
+            value={formValues.status}
+            onChange={(event) =>
+              setFormValues((current) => ({
+                ...current,
+                status: event.target.value as "ACTIVE" | "INACTIVE",
+              }))
+            }
           >
-            {saving ? "Đang lưu..." : "Lưu"}
-          </ActionButton>
-        </DialogActions>
-      </Dialog>
+            <MenuItem value="ACTIVE">Đang sử dụng</MenuItem>
+            <MenuItem value="INACTIVE">Ngừng sử dụng</MenuItem>
+          </UiTextField>
+          <UiText variant="caption">
+            Quy tắc phải có ít nhất một điều kiện áp dụng (SKU hoặc thẻ phân
+            loại) và mức ưu tiên không được trùng với quy tắc đang sử dụng khác
+            trong cùng ngành nghề.
+          </UiText>
+        </Stack>
+      </UiDialog>
     </div>
   );
 }

@@ -290,7 +290,7 @@ test.describe("WWHN-211 Inventory list/detail/trace closure", () => {
       await page.goto(`${BASE_URL}/inventory`);
 
       await expect(page.getByText("SKU-WWHN-211")).toBeVisible();
-      await expect(page.getByText("MATCH", { exact: true })).toBeVisible();
+      await expect(page.getByText("Khớp", { exact: true }).first()).toBeVisible();
       await expectNoDocumentOverflow(page);
 
       await captureEvidence(
@@ -311,7 +311,9 @@ test.describe("WWHN-211 Inventory list/detail/trace closure", () => {
     await mockSession(page, { balanceMode: "empty", latencyMs: 800 });
     await page.goto(`${BASE_URL}/inventory`);
 
-    await expect(page.locator(".ant-table-wrapper").first()).toBeVisible();
+    // Part 4 (ResponsiveDataTable): khi rỗng KHÔNG render <table> — khối empty
+    // đứng thay chỗ bảng; loading hiện chỉ báo "Đang tải" trước khi empty về.
+    await expect(page.getByText(/Đang tải/).first()).toBeVisible();
     await expect(
       page.getByText("Không có tồn kho theo bộ lọc hiện tại"),
     ).toBeVisible();
@@ -366,12 +368,12 @@ test.describe("WWHN-211 Inventory list/detail/trace closure", () => {
     await mockSession(page);
     await page.goto(`${BASE_URL}/inventory`);
 
-    await page.getByText("Lịch sử dịch chuyển").click();
-    await expect(page.getByText("MV-WWHN-211")).toBeVisible();
+    await page.getByText("Lịch sử biến động").click();
+    await expect(page.getByText("IN-WWHN-211")).toBeVisible();
 
-    await page.getByRole("button", { name: "Trace" }).click();
+    await page.getByRole("button", { name: "Truy vết", exact: true }).click();
     await expect(
-      page.getByText("Truy vết chứng từ nguồn (TRACE-01)"),
+      page.getByText("Truy vết chứng từ nguồn").first(),
     ).toBeVisible();
 
     await captureEvidence(page, testInfo, "trace-flow", [
@@ -401,10 +403,10 @@ test.describe("WWHN-211 Inventory list/detail/trace closure", () => {
     await mockSession(page, { permissions: ["inventory.view"] });
     await page.goto(`${BASE_URL}/inventory`);
 
-    await page.getByText("Lịch sử dịch chuyển").click();
-    await expect(page.getByText("MV-WWHN-211")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Trace" })).toBeDisabled();
-    await expect(page.getByText("Truy vết mã")).toHaveCount(0);
+    await page.getByText("Lịch sử biến động").click();
+    await expect(page.getByText("IN-WWHN-211")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Truy vết", exact: true })).toBeDisabled();
+    await expect(page.locator("main").getByText("Truy vết mã")).toHaveCount(0);
 
     await captureEvidence(page, testInfo, "trace-permission-disabled", [
       "Trace action is disabled in the UI without inventory.trace",

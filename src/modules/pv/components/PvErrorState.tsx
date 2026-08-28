@@ -1,4 +1,5 @@
 import { ErrorState } from "@/shared/components/ui-states/ErrorState";
+import { UiText } from "@/shared/ui";
 import type { PublicApiError } from "@/shared/api/public-http";
 
 /**
@@ -56,9 +57,9 @@ export function PvErrorState({
           {publicError?.requestId ? (
             <>
               <br />
-              <span style={{ fontSize: 11 }}>
+              <UiText variant="caption">
                 Mã yêu cầu: {publicError.requestId}
-              </span>
+              </UiText>
             </>
           ) : null}
         </>

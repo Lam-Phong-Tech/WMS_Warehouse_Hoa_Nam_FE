@@ -38,16 +38,23 @@ export function UiPagination({
   showTotal = true,
   disabled = false,
 }: UiPaginationProps) {
+  // Phòng thủ NaN/undefined từ payload lỗi: Math.max(1, NaN) = NaN sẽ làm MUI
+  // Pagination render chữ "NaN" — chuẩn hoá về số hữu hạn trước khi tính.
+  const safeTotal = Number.isFinite(total) ? Math.max(0, total) : 0;
+  const safeSize = Number.isFinite(pageSize) && pageSize > 0 ? pageSize : 1;
   // Số trang tối thiểu 1 — total=0 vẫn render đủ khung (không giật layout).
-  const pageCount = Math.max(1, Math.ceil(total / Math.max(1, pageSize)));
-  const safePage = Math.min(Math.max(1, page), pageCount);
+  const pageCount = Math.max(1, Math.ceil(safeTotal / safeSize));
+  const safePage = Math.min(
+    Math.max(1, Number.isFinite(page) ? page : 1),
+    pageCount,
+  );
 
   // pageSize hiện tại (vd BE trả per_page=15) có thể nằm ngoài mốc chuẩn —
   // vẫn phải liệt kê để Select hiển thị đúng lựa chọn hiện tại (MUI Select
   // cảnh báo và hiện rỗng nếu value không khớp MenuItem nào).
-  const sizeOptions = pageSizeOptions.includes(pageSize)
+  const sizeOptions = pageSizeOptions.includes(safeSize)
     ? pageSizeOptions
-    : [...pageSizeOptions, pageSize].sort((a, b) => a - b);
+    : [...pageSizeOptions, safeSize].sort((a, b) => a - b);
 
   return (
     <Box
@@ -62,7 +69,7 @@ export function UiPagination({
       }}
     >
       {showTotal ? (
-        <UiText variant="secondary">Tổng {total} bản ghi</UiText>
+        <UiText variant="secondary">Tổng {safeTotal} bản ghi</UiText>
       ) : null}
       <Box
         sx={{
@@ -75,7 +82,7 @@ export function UiPagination({
         {onPageSizeChange ? (
           <Select
             size="small"
-            value={pageSize}
+            value={safeSize}
             disabled={disabled}
             inputProps={{ "aria-label": "Số bản ghi mỗi trang" }}
             onChange={(event) => onPageSizeChange(Number(event.target.value))}

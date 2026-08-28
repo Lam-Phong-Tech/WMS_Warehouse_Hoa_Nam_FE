@@ -343,24 +343,23 @@ test.describe("WWHN-248 · QA2 — transition guards (DEC-WAR-STATE-001)", () =>
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto("/warranty");
 
+    // Part 4: click dòng đã mở luôn modal chi tiết (onRowClick) — không còn
+    // bước bấm nút hàng riêng; nút "Sửa" phía sau bị aria-hidden bởi modal.
     await page.getByText("BH-QA2-0002").click();
-    await page.getByRole("button", { name: "Mở" }).first().click();
     await expect(page.getByText("Khách hàng & tiếp nhận")).toBeVisible();
 
     await page.getByRole("button", { name: "Cập nhật trạng thái" }).click();
-    // Modal trạng thái là modal LỒNG trong modal chi tiết — mọi thao tác phải
-    // scope vào đúng modal này, nếu không click sẽ trúng Select của modal dưới.
-    // antd v6 KHÔNG render .ant-modal-content — scope theo .ant-modal + title.
-    const statusModal = page
-      .locator(".ant-modal")
-      .filter({ hasText: "Cập nhật trạng thái bảo hành" });
+    // Modal trạng thái là modal LỒNG trong modal chi tiết — Part 4: UiDialog
+    // (MUI) có aria-label riêng nên scope thẳng theo accessible name.
+    const statusModal = page.getByRole("dialog", {
+      name: "Cập nhật trạng thái bảo hành",
+    });
     await expect(statusModal).toBeVisible();
 
     // Ma trận: CHECKING → {REPAIRING, COMPLETED, CANCELLED} — không hơn.
-    await statusModal.locator(".ant-select").first().click();
-    const options = page.locator(
-      ".ant-select-dropdown:not(.ant-select-dropdown-hidden) .ant-select-item-option",
-    );
+    // Select giờ là MUI (UiTextField select) — options nằm trong listbox portal.
+    await statusModal.getByRole("combobox").first().click();
+    const options = page.getByRole("option");
     await expect(options).toHaveText([
       "Đang sửa chữa",
       "Đã hoàn tất xử lý",
@@ -370,9 +369,9 @@ test.describe("WWHN-248 · QA2 — transition guards (DEC-WAR-STATE-001)", () =>
 
     // Guard bằng chứng: rời CHECKING cần confirmed_defect, COMPLETED cần note.
     await expect(
-      page.getByText("Kết quả kiểm tra / bệnh xác nhận (bắt buộc)"),
+      page.getByText("Kết quả kiểm tra / bệnh xác nhận (bắt buộc)").first(),
     ).toBeVisible();
-    await expect(page.getByText("Kết quả xử lý (bắt buộc)")).toBeVisible();
+    await expect(page.getByText("Kết quả xử lý (bắt buộc)").first()).toBeVisible();
 
     await statusModal
       .getByRole("button", { name: "Cập nhật", exact: true })
@@ -425,35 +424,36 @@ test.describe("WWHN-248 · QA2 — transition guards (DEC-WAR-STATE-001)", () =>
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto("/warranty");
 
-    await page.getByRole("button", { name: "Mở" }).first().click();
+    await page.getByRole("button", { name: "Sửa", exact: true }).first().click();
     await page.getByRole("button", { name: "Cập nhật trạng thái" }).click();
-    const statusModal = page
-      .locator(".ant-modal")
-      .filter({ hasText: "Cập nhật trạng thái bảo hành" });
+    const statusModal = page.getByRole("dialog", {
+      name: "Cập nhật trạng thái bảo hành",
+    });
     await expect(statusModal).toBeVisible();
-    await statusModal.locator(".ant-select").first().click();
+    await statusModal.getByRole("combobox").first().click();
     await page
-      .locator(
-        ".ant-select-dropdown:not(.ant-select-dropdown-hidden) .ant-select-item-option",
-      )
+      .getByRole("option")
       .filter({ hasText: "Đang sửa chữa" })
       .click();
     await statusModal
       .getByLabel(/Kết quả kiểm tra \/ bệnh xác nhận/)
       .fill("Hỏng chổi than, cần thay");
+    // Guard mới (a908c42): sang REPAIRING bắt buộc ngày dự kiến sửa xong —
+    // phải điền để request thật sự tới BE và nhận 409.
+    await statusModal
+      .getByLabel(/Ngày dự kiến sửa xong/)
+      .fill("2026-09-05");
     await statusModal
       .getByRole("button", { name: "Cập nhật", exact: true })
       .click();
 
-    // Lỗi 409 hiện Ở TRONG modal (Alert) — người dùng không mất ngữ cảnh nhập —
-    // đồng thời có toast lỗi toàn cục; assert phải scope để không dính strict mode.
+    // Chuẩn hoá toast (a908c42): lỗi 409 báo qua toast lỗi mang đúng message
+    // của BE; modal GIỮ NGUYÊN mở cùng dữ liệu đã nhập — người dùng không mất
+    // ngữ cảnh (ngữ nghĩa cũ của Alert trong modal được giữ theo cách này).
     await expect(
-      statusModal.getByText(
-        "Case đã ở trạng thái đóng, không cập nhật được.",
-      ),
-    ).toBeVisible();
-    await expect(
-      page.locator('[data-sonner-toast][data-type="error"]'),
+      page
+        .locator('[data-sonner-toast][data-type="error"]')
+        .getByText(/Case đã ở trạng thái đóng, không cập nhật được\./),
     ).toBeVisible();
     await expect(statusModal).toBeVisible();
   });
@@ -466,13 +466,15 @@ test.describe("WWHN-248 · QA2 — transition guards (DEC-WAR-STATE-001)", () =>
     await page.goto("/warranty");
 
     await expect(page.getByText("BH-QA2-0007")).toBeVisible();
-    await page.getByRole("button", { name: "Mở" }).nth(1).click();
+    await page.getByRole("button", { name: "Sửa", exact: true }).nth(1).click();
 
     await expect(
       page.getByText(/Mã tạm: TEMP-QA2-77 · sales_trace_status = NOT_TRACEABLE/),
     ).toBeVisible();
+    // VietnameseUiBoundary rewrite từ kỹ thuật trong DOM ("item"→"sản phẩm",
+    // "movement"→"biến động tồn kho") — regex nới theo cả hai dạng.
     await expect(
-      page.getByText(/Không liên kết item gốc, không sinh stock movement/),
+      page.getByText(/Không liên kết (item|sản phẩm) gốc, không sinh stock/),
     ).toBeVisible();
     await expect(
       page.getByRole("button", { name: "Cập nhật trạng thái" }),
@@ -519,7 +521,7 @@ test.describe("WWHN-248 · QA2 — RBAC & PII (§13.8, NFR-SRS-015)", () => {
     expect(content).not.toContain(RAW_PHONE);
 
     // Detail: banner mask + địa chỉ masked, PII thô vẫn không lộ.
-    await page.getByRole("button", { name: "Mở" }).first().click();
+    await page.getByRole("button", { name: "Sửa", exact: true }).first().click();
     await expect(
       page.getByText(
         "Thông tin khách hàng đang được che (mask) theo quyền warranty.pii.view.",
@@ -546,7 +548,7 @@ test.describe("WWHN-248 · QA2 — RBAC & PII (§13.8, NFR-SRS-015)", () => {
     await expect(page.getByText(RAW_PHONE).first()).toBeVisible();
     await expect(page.getByText(/đang được che theo quyền/)).toHaveCount(0);
 
-    await page.getByRole("button", { name: "Mở" }).first().click();
+    await page.getByRole("button", { name: "Sửa", exact: true }).first().click();
     await expect(page.getByText(RAW_ADDRESS)).toBeVisible();
     await page.screenshot({
       path: testInfo.outputPath("qa2-pii-full-view.png"),

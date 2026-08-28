@@ -299,8 +299,10 @@ test.describe("WWHN-178 / WWHN-179 Master/SKU closure R2", () => {
       await expect(
         page.getByRole("button", { name: /Thêm SKU/ }),
       ).toBeVisible();
+      // "Import Excel" đổi wording thành "Nhập từ Excel" (commit i18n 2ad8aa7);
+      // vẫn là nút mở SkuImportModal, chỉ đổi text.
       await expect(
-        page.getByRole("button", { name: /Import Excel/ }),
+        page.getByRole("button", { name: /Nhập từ Excel/ }),
       ).toBeVisible();
       await expectNoDocumentOverflow(page);
 
@@ -310,7 +312,7 @@ test.describe("WWHN-178 / WWHN-179 Master/SKU closure R2", () => {
         `success-responsive-${viewport.key}`,
         [
           "Canonical GET /products data renders on MST-01",
-          "Thêm SKU and Import Excel actions are visible with sku.manage",
+          "Thêm SKU and Nhập từ Excel actions are visible with sku.manage",
           "Document has no horizontal overflow",
           "Named controls expose accessible roles",
         ],
@@ -323,7 +325,9 @@ test.describe("WWHN-178 / WWHN-179 Master/SKU closure R2", () => {
     await mockSession(page, { productMode: "empty", latencyMs: 1200 });
     await page.goto(`${BASE_URL}${MASTER_ROUTE}`);
 
-    await expect(page.getByText("Đang tải dữ liệu từ API...")).toBeVisible();
+    // Wording loading của bảng MVP hiện tại là "Đang tải dữ liệu..." (bỏ đuôi
+    // "từ API" theo commit dashboard wording 024f578).
+    await expect(page.getByText("Đang tải dữ liệu...")).toBeVisible();
     await expect(
       page.getByText("Không có SKU phù hợp bộ lọc."),
     ).toBeVisible();
@@ -344,7 +348,10 @@ test.describe("WWHN-178 / WWHN-179 Master/SKU closure R2", () => {
     await expect(page.getByText("Không có quyền truy cập")).toBeVisible();
     const trace = page.getByTestId("permission-denied-trace");
     await expect(trace).toBeVisible();
-    await expect(trace).toContainText("HTTP 403");
+    // VietnameseUiBoundary (commit i18n 2ad8aa7) dịch runtime "HTTP 403" →
+    // "Mã phản hồi 403" và "Request ID" → "Mã yêu cầu". Ngữ nghĩa giữ nguyên:
+    // status 403 + error_code ACCESS_DENIED + request_id đều phải hiển thị.
+    await expect(trace).toContainText("Mã phản hồi 403");
     await expect(trace).toContainText("ACCESS_DENIED");
     await expect(trace).toContainText(FORBIDDEN_REQUEST_ID);
 
@@ -370,9 +377,11 @@ test.describe("WWHN-178 / WWHN-179 Master/SKU closure R2", () => {
     await expect(dialog.getByText("Thêm SKU").first()).toBeVisible();
     await dialog.getByRole("button", { name: "Lưu SKU" }).click();
 
-    await expect(
-      dialog.getByText("Mã SKU và tên SKU là bắt buộc."),
-    ).toBeVisible();
+    // Validation giờ báo lỗi theo từng ô nhập (helperText của UiTextField)
+    // thay vì một banner gộp "Mã SKU và tên SKU là bắt buộc." — vẫn là cùng
+    // ràng buộc bắt buộc cho mã + tên SKU.
+    await expect(dialog.getByText("Mã SKU là bắt buộc.")).toBeVisible();
+    await expect(dialog.getByText("Tên SKU là bắt buộc.")).toBeVisible();
 
     await captureEvidence(page, testInfo, "validation-keyboard-focus", [
       "Keyboard Enter opens the SKU create dialog",
@@ -387,16 +396,18 @@ test.describe("WWHN-178 / WWHN-179 Master/SKU closure R2", () => {
     await mockSession(page);
     await page.goto(`${BASE_URL}${MASTER_ROUTE}`);
 
-    await page.getByRole("button", { name: /Import Excel/ }).click();
+    // Nút và tiêu đề modal đã Việt hoá: "Nhập từ Excel" mở SkuImportModal với
+    // title "Nhập danh sách SKU từ Excel" (vẫn là modal WWHN-331).
+    await page.getByRole("button", { name: /Nhập từ Excel/ }).click();
     const dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
     await expect(
-      dialog.getByText("Import SKU từ Excel (WWHN-331)"),
+      dialog.getByText("Nhập danh sách SKU từ Excel"),
     ).toBeVisible();
     await page.keyboard.press("Escape");
 
     await captureEvidence(page, testInfo, "import-modal-permission", [
-      "Import Excel opens the WWHN-331 SkuImportModal for sku.manage",
+      "Nhập từ Excel opens the WWHN-331 SkuImportModal for sku.manage",
       "Import surface is the officially contracted /skus/import-* family",
     ]);
   });
@@ -447,8 +458,12 @@ test.describe("WWHN-178 / WWHN-179 Master/SKU closure R2", () => {
     // Bề mặt hợp lệ của MST-01 theo swagger-api.json (BE pin 7da26cb):
     // auth/*, /products, catalog refs. Phantom endpoint (/uoms, /suppliers —
     // có controller nhưng không route/spec) tuyệt đối không được gọi.
+    // Shell traffic (NotificationBell trong topbar — module notification, có
+    // trên MỌI route authenticated) không thuộc bề mặt của màn MST-01; loại
+    // khỏi phép đo pin nhưng vẫn nằm trong swagger pin chung.
     const allowed = [
       /\/api\/v1\/auth\/(refresh|me|logout)$/,
+      /\/api\/v1\/notifications(\/unread-count)?$/,
       /\/api\/v1\/products$/,
       /\/api\/v1\/brands$/,
       /\/api\/v1\/product-categories$/,

@@ -1,13 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Typography } from "antd";
-import {
-  MenuItem,
-  Select,
-  TextField,
-  Typography as MuiTypography,
-} from "@mui/material";
+import { Box, Tooltip, UiSelect, UiTextField } from "@/shared/ui";
 import {
   ResponsiveDataTable,
   type ResponsiveTableColumn,
@@ -37,17 +31,6 @@ import { ActionButton } from "@/shared/components/actions";
 
 const SEARCH_DEBOUNCE_MS = 250;
 const numberFormatter = new Intl.NumberFormat("vi-VN");
-
-/** Toolbar filter nhỏ gọn — đồng bộ chuẩn mui-theme.ts (xem gotcha #4/#5 memory pilot MUI). */
-const TOOLBAR_SX = {
-  "&, & .MuiOutlinedInput-root": { height: 35 },
-  "& .MuiSelect-select, & .MuiInputBase-input": {
-    paddingTop: "8px !important",
-    paddingBottom: "8px !important",
-    fontSize: "13.5px !important",
-    boxSizing: "border-box",
-  },
-};
 
 /** REV-00 · Danh sách phiếu điều chỉnh tồn kho bằng nghiệp vụ hoàn đảo. */
 export default function ReversalPage() {
@@ -140,9 +123,18 @@ export default function ReversalPage() {
       sortAccessor: (row) =>
         row.reference_document_code || row.reference_document_id,
       render: (row) => (
-        <Typography.Text code>
+        <Box
+          component="code"
+          sx={{
+            px: 0.5,
+            py: 0.25,
+            borderRadius: 1,
+            bgcolor: "action.hover",
+            fontSize: 12.5,
+          }}
+        >
           {row.reference_document_code || row.reference_document_id}
-        </Typography.Text>
+        </Box>
       ),
     },
     {
@@ -179,19 +171,22 @@ export default function ReversalPage() {
       sortAccessor: (row) => row.reason || "",
       render: (row) => (
         <div>
-          <Typography.Text
-            style={{ maxWidth: 230 }}
-            ellipsis={{ tooltip: row.reason || "-" }}
-          >
-            {row.reason || "-"}
-          </Typography.Text>
-          {row.reason_code ? (
-            <Typography.Text
-              type="secondary"
-              style={{ fontSize: 12, display: "block" }}
+          <Tooltip title={row.reason || "-"}>
+            <Box
+              sx={{
+                maxWidth: 230,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
             >
+              {row.reason || "-"}
+            </Box>
+          </Tooltip>
+          {row.reason_code ? (
+            <Box sx={{ fontSize: 12, color: "text.secondary" }}>
               {row.reason_code}
-            </Typography.Text>
+            </Box>
           ) : null}
         </div>
       ),
@@ -227,67 +222,57 @@ export default function ReversalPage() {
     <>
       <div className="reversal-page hn-mvp-source-screen">
         {!canPost ? (
-          <div
+          <Box
             className="footer-note"
             role="note"
             data-testid="reversal-readonly-note"
-            style={{ marginBottom: 12 }}
+            sx={{ mb: 1.5 }}
           >
             Chế độ chỉ xem: tài khoản hiện tại chưa có quyền tạo, xác nhận, hoàn
             tất hoặc hủy phiếu điều chỉnh tồn kho. Bạn vẫn có thể xem danh sách
             và chi tiết.
-          </div>
+          </Box>
         ) : null}
 
         <div className="toolbar">
-          <TextField
+          <UiTextField
             value={searchInput}
             placeholder="Mã điều chỉnh, chứng từ gốc, lý do..."
             slotProps={{
               htmlInput: { "aria-label": "Tìm phiếu điều chỉnh tồn kho" },
             }}
             onChange={(event) => setSearchInput(event.target.value)}
-            sx={{ minWidth: 220, ...TOOLBAR_SX }}
+            sx={{ minWidth: 220 }}
           />
-          <Select
-            displayEmpty
+          <UiSelect
             value={statusFilter}
-            inputProps={{ "aria-label": "Lọc trạng thái phiếu điều chỉnh" }}
-            onChange={(event) => {
-              setStatusFilter(event.target.value);
+            aria-label="Lọc trạng thái phiếu điều chỉnh"
+            placeholder="Trạng thái: Tất cả"
+            minWidth={168}
+            options={Object.entries(REVERSAL_STATUS_LABELS).map(
+              ([value, label]) => ({
+                value,
+                label: label.replace(/ ·.*$/, ""),
+              }),
+            )}
+            onChange={(value) => {
+              setStatusFilter(value);
               setPage(1);
             }}
-            sx={{ minWidth: 168, ...TOOLBAR_SX }}
-          >
-            <MenuItem value="">Trạng thái: Tất cả</MenuItem>
-            {Object.entries(REVERSAL_STATUS_LABELS).map(([value, label]) => (
-              <MenuItem key={value} value={value}>
-                {label.replace(/ ·.*$/, "")}
-              </MenuItem>
-            ))}
-          </Select>
-          <Select
+          />
+          <UiSelect
             value={perPage}
-            inputProps={{ "aria-label": "Số dòng mỗi trang" }}
-            onChange={(event) => {
-              setPerPage(Number(event.target.value));
+            aria-label="Số dòng mỗi trang"
+            minWidth={100}
+            options={perPageOptions.map((size) => ({
+              value: size,
+              label: `${size} / trang`,
+            }))}
+            onChange={(value) => {
+              setPerPage(Number(value));
               setPage(1);
             }}
-            sx={{ minWidth: 100, ...TOOLBAR_SX }}
-          >
-            {perPageOptions.map((size) => (
-              <MenuItem key={size} value={size}>
-                {size} / trang
-              </MenuItem>
-            ))}
-          </Select>
-          {/* Tổng số dòng đặt ngay trong toolbar (cạnh bộ lọc/số dòng mỗi trang) để
-           * dễ thấy — thay vì chỉ hiện ở phần phân trang tít dưới bảng dài. */}
-          <MuiTypography
-            variant="body2"
-            color="text.secondary"
-            sx={{ whiteSpace: "nowrap" }}
-          ></MuiTypography>
+          />
           <div className="spacer" />
           {canPost ? (
             <ActionButton kind="create" onClick={() => setCreateOpen(true)}>
@@ -297,13 +282,13 @@ export default function ReversalPage() {
         </div>
 
         {listQuery.isError ? (
-          <div style={{ marginBottom: 14 }}>
+          <Box sx={{ mb: 1.75 }}>
             <ApiErrorAlert
               error={listQuery.error}
               title="Không tải được danh sách phiếu điều chỉnh"
               onRetry={() => listQuery.refetch()}
             />
-          </div>
+          </Box>
         ) : null}
 
         <TableLoadingBanner

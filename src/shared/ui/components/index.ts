@@ -47,3 +47,4 @@ export {
 } from "./UiTimeline";
 export { UiConfirmDialog, type UiConfirmDialogProps } from "./UiConfirmDialog";
 export { useUiConfirm, type UiConfirmOptions } from "./useUiConfirm";
+export { UiSelect, type UiSelectProps, type UiSelectChoice } from "./UiSelect";

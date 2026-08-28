@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
+import { Box } from "@/shared/ui";
+import { RADIUS, SEMANTIC_LIGHT as S } from "@/shared/ui/tokens";
 import { ROUTES } from "@/shared/constants/routes";
 
 export interface PvPublicLayoutProps {
@@ -27,61 +29,65 @@ export function PvPublicLayout({
   children,
 }: PvPublicLayoutProps) {
   return (
-    <div
+    <Box
       data-testid="pv-public-layout"
-      style={{
+      sx={{
         minHeight: "100vh",
-        background: "#f6f5f1",
+        backgroundColor: S.bgCanvas,
         display: "flex",
         flexDirection: "column",
       }}
     >
-      <header
-        style={{
-          background: "#fff",
-          borderBottom: "2px solid #2b2b2b",
+      <Box
+        component="header"
+        sx={{
+          backgroundColor: S.bgSurface,
+          borderBottom: `1px solid ${S.border}`,
           padding: "12px clamp(12px, 4vw, 32px)",
         }}
       >
-        <div
-          style={{
+        <Box
+          sx={{
             maxWidth: 1280,
             margin: "0 auto",
             display: "flex",
             flexWrap: "wrap",
-            gap: 12,
+            gap: "12px",
             alignItems: "center",
             justifyContent: "space-between",
           }}
         >
-          <Link
+          <Box
+            component={Link}
             to={ROUTES.PV_CATALOG}
-            style={{
+            sx={{
               display: "flex",
               alignItems: "center",
-              gap: 10,
-              color: "#2b2b2b",
+              gap: "10px",
+              color: S.textHigh,
               textDecoration: "none",
             }}
           >
-            <span
+            <Box
+              component="span"
               aria-hidden
-              style={{
+              sx={{
                 width: 34,
                 height: 34,
-                borderRadius: 6,
-                background: "#2b2b2b",
-                color: "#fff",
+                borderRadius: `${RADIUS.control}px`,
+                backgroundColor: S.primary,
+                color: S.onPrimary,
                 display: "grid",
                 placeItems: "center",
                 fontWeight: 700,
               }}
             >
               HN
-            </span>
-            <span>
-              <span
-                style={{
+            </Box>
+            <Box component="span">
+              <Box
+                component="span"
+                sx={{
                   display: "block",
                   fontWeight: 700,
                   fontSize: "clamp(15px, 2.4vw, 18px)",
@@ -89,20 +95,22 @@ export function PvPublicLayout({
                 }}
               >
                 Hoa Nam · Danh mục sản phẩm
-              </span>
-              <span
-                style={{ display: "block", fontSize: 12, color: "#7a766c" }}
+              </Box>
+              <Box
+                component="span"
+                sx={{ display: "block", fontSize: 12, color: S.textMedium }}
               >
                 Trang công khai · chỉ xem
-              </span>
-            </span>
-          </Link>
+              </Box>
+            </Box>
+          </Box>
           {actions}
-        </div>
-      </header>
+        </Box>
+      </Box>
 
-      <main
-        style={{
+      <Box
+        component="main"
+        sx={{
           flex: 1,
           width: "100%",
           maxWidth: 1280,
@@ -110,39 +118,42 @@ export function PvPublicLayout({
           padding: "clamp(12px, 3vw, 24px) clamp(12px, 4vw, 32px) 40px",
         }}
       >
-        <h1
-          style={{
+        <Box
+          component="h1"
+          sx={{
             fontSize: "clamp(18px, 3.2vw, 24px)",
             fontWeight: 700,
+            color: S.textHigh,
             margin: "0 0 4px",
           }}
         >
           {title}
-        </h1>
+        </Box>
         {subtitle ? (
-          <div
-            style={{ color: "#7a766c", fontSize: 13, marginBottom: 16 }}
+          <Box
+            sx={{ color: S.textMedium, fontSize: 13, marginBottom: "16px" }}
             data-testid="pv-page-subtitle"
           >
             {subtitle}
-          </div>
+          </Box>
         ) : (
-          <div style={{ marginBottom: 16 }} />
+          <Box sx={{ marginBottom: "16px" }} />
         )}
         {children}
-      </main>
+      </Box>
 
-      <footer
-        style={{
-          borderTop: "1px solid #e2ded3",
+      <Box
+        component="footer"
+        sx={{
+          borderTop: `1px solid ${S.divider}`,
           padding: "12px clamp(12px, 4vw, 32px)",
           fontSize: 12,
-          color: "#8c887e",
+          color: S.textDisabled,
           textAlign: "center",
         }}
       >
         Số lượng hiển thị là tồn khả dụng của kho tổng, chỉ mang tính tham khảo.
-      </footer>
-    </div>
+      </Box>
+    </Box>
   );
 }

@@ -1,5 +1,6 @@
-import { Descriptions, Tag } from "antd";
 import { useNavigate } from "react-router-dom";
+import { Box, Stack, UiDescriptions, UiStatusBadge } from "@/shared/ui";
+import { SEMANTIC_LIGHT as S } from "@/shared/ui/tokens";
 import { NoPermissionState } from "@/shared/components/feedback/NoPermissionState";
 import { useAuthStore } from "@/shared/store/auth.store";
 
@@ -13,17 +14,17 @@ export function NoPermissionPage() {
   const permissionCodes = useAuthStore((s) => s.permissionCodes);
 
   return (
-    <div
-      style={{
+    <Box
+      sx={{
         minHeight: "100vh",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        padding: 24,
-        background: "#f5f5f5",
+        padding: "24px",
+        backgroundColor: S.bgCanvas,
       }}
     >
-      <div style={{ maxWidth: 600, width: "100%" }}>
+      <Box sx={{ maxWidth: 600, width: "100%" }}>
         <NoPermissionState
           title="Không có quyền truy cập"
           description={
@@ -31,38 +32,51 @@ export function NoPermissionPage() {
               Bạn không có quyền truy cập trang này. Vui lòng liên hệ quản trị
               viên để được cấp quyền phù hợp.
               {user && (
-                <div style={{ marginTop: 12, textAlign: "left" }}>
-                  <Descriptions size="small" column={1}>
-                    <Descriptions.Item label="Tài khoản">
-                      {user.name || user.email}
-                    </Descriptions.Item>
-                    <Descriptions.Item label="Email">
-                      {user.email}
-                    </Descriptions.Item>
-                    <Descriptions.Item label="Quyền hiện tại">
-                      {permissionCodes.length > 0 ? (
-                        <span>
-                          {permissionCodes.slice(0, 5).map((code) => (
-                            <Tag
-                              key={code}
-                              color="blue"
-                              style={{ marginBottom: 4 }}
+                <Box sx={{ marginTop: "12px", textAlign: "left" }}>
+                  <UiDescriptions
+                    columns={1}
+                    items={[
+                      {
+                        label: "Tài khoản",
+                        value: user.name || user.email,
+                      },
+                      {
+                        label: "Email",
+                        value: user.email,
+                      },
+                      {
+                        label: "Quyền hiện tại",
+                        value:
+                          permissionCodes.length > 0 ? (
+                            <Stack
+                              direction="row"
+                              spacing={0.5}
+                              sx={{ flexWrap: "wrap", rowGap: 0.5 }}
                             >
-                              {code}
-                            </Tag>
-                          ))}
-                          {permissionCodes.length > 5 && (
-                            <Tag color="default">
-                              +{permissionCodes.length - 5} khác
-                            </Tag>
-                          )}
-                        </span>
-                      ) : (
-                        <Tag color="red">Chưa có quyền nào</Tag>
-                      )}
-                    </Descriptions.Item>
-                  </Descriptions>
-                </div>
+                              {permissionCodes.slice(0, 5).map((code) => (
+                                <UiStatusBadge
+                                  key={code}
+                                  tone="info"
+                                  label={code}
+                                />
+                              ))}
+                              {permissionCodes.length > 5 && (
+                                <UiStatusBadge
+                                  tone="neutral"
+                                  label={`+${permissionCodes.length - 5} khác`}
+                                />
+                              )}
+                            </Stack>
+                          ) : (
+                            <UiStatusBadge
+                              tone="error"
+                              label="Chưa có quyền nào"
+                            />
+                          ),
+                      },
+                    ]}
+                  />
+                </Box>
               )}
             </>
           }
@@ -70,7 +84,7 @@ export function NoPermissionPage() {
           onAction={() => navigate(-1)}
           showHomeButton={true}
         />
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }

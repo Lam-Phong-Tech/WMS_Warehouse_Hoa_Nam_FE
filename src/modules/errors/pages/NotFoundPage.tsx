@@ -4,8 +4,12 @@
  * để hoạt động cho cả người dùng chưa đăng nhập.
  */
 import { useNavigate } from "react-router-dom";
-import Box from "@mui/material/Box";
-import { SEMANTIC_LIGHT as S, UiButton, UiStateSurface } from "@/shared/ui";
+import {
+  Box,
+  SEMANTIC_LIGHT as S,
+  UiButton,
+  UiStateSurface,
+} from "@/shared/ui";
 import { ROUTES } from "@/shared/constants/routes";
 
 export function NotFoundPage() {

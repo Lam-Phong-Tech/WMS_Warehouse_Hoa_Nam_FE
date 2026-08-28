@@ -5,7 +5,7 @@
   "evidenceClass": "FE_CONTROLLED_NOT_QA_UAT",
   "result": "PASS",
   "sourceSha": "local-uncommitted",
-  "environment": "local-controlled",
+  "environment": "test",
   "buildVersion": "local-dev",
   "browserProject": "chromium",
   "role": "super_admin_controlled",
@@ -14,8 +14,8 @@
     "height": 900
   },
   "route": "/component-catalog",
-  "finalUrl": "http://127.0.0.1:5173/component-catalog",
-  "timestamp": "2026-08-19T01:43:42.931Z",
+  "finalUrl": "http://127.0.0.1:5173/ui-foundation",
+  "timestamp": "2026-08-28T03:05:05.869Z",
   "screenshotFilename": "WWHN-274__shared-release-ui-states__super_admin_controlled__1440x900.png",
   "assertions": [
     "Loading state is visible",

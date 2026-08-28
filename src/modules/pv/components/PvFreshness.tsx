@@ -1,4 +1,4 @@
-import { Tag, Tooltip } from "antd";
+import { Tooltip, UiStatusBadge } from "@/shared/ui";
 import {
   computeFreshness,
   formatDataAsOf,
@@ -20,15 +20,17 @@ export function PvFreshnessIndicator({ meta }: { meta?: PvFreshness }) {
           : `Ngưỡng độ tươi cho phép: ${thresholdSeconds}s.`
       }
     >
-      <Tag
-        color={isDegraded ? "warning" : "default"}
+      <UiStatusBadge
+        tone={isDegraded ? "warning" : "neutral"}
         data-testid="pv-freshness"
         data-pv-freshness={isDegraded ? "degraded" : "live"}
-        style={{ marginInlineEnd: 0 }}
-      >
-        {isDegraded ? "Dữ liệu có thể cũ · " : "Cập nhật lúc "}
-        {formatDataAsOf(meta?.data_as_of)}
-      </Tag>
+        label={
+          <>
+            {isDegraded ? "Dữ liệu có thể cũ · " : "Cập nhật lúc "}
+            {formatDataAsOf(meta?.data_as_of)}
+          </>
+        }
+      />
     </Tooltip>
   );
 }

@@ -1,10 +1,17 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState } from "react";
 import dayjs from "dayjs";
-import { Progress, Tag } from "antd";
-import { Box, MenuItem, Select, TextField } from "@mui/material";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
+import {
+  Box,
+  LinearProgress,
+  Stack,
+  UiSelect,
+  UiStatusBadge,
+  UiTextField,
+  type UiStatusTone,
+} from "@/shared/ui";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import {
   TableLoadingBanner,
@@ -39,26 +46,16 @@ import { ActionButton } from "@/shared/components/actions";
 
 const SEARCH_DEBOUNCE_MS = 250;
 
-/** Toolbar filter nhỏ gọn — đồng bộ chuẩn mui-theme.ts (xem gotcha #4/#5 memory pilot MUI). */
-const TOOLBAR_SX = {
-  "&, & .MuiOutlinedInput-root": { height: 35 },
-  "& .MuiSelect-select, & .MuiInputBase-input": {
-    paddingTop: "8px !important",
-    paddingBottom: "8px !important",
-    fontSize: "13.5px !important",
-    boxSizing: "border-box",
-  },
-};
-
 const STATUS_OPTIONS: Array<{ value: OutboundStatus; label: string }> =
   Object.entries(OUTBOUND_STATUS_LABELS).map(([value, label]) => ({
     value: value as OutboundStatus,
     label,
   }));
 
-const STATUS_COLOR: Record<OutboundStatus, string> = {
+/** Tông màu soft-tint theo UiStatusBadge — "processing" (antd cũ) ⇒ info. */
+const STATUS_TONE: Record<OutboundStatus, UiStatusTone> = {
   DRAFT: "warning",
-  SCANNING: "processing",
+  SCANNING: "info",
   POSTED: "success",
   CANCELLED: "error",
 };
@@ -169,7 +166,7 @@ export default function AlignedMvpOutboundPage() {
             {value.length > 12 ? `${value.slice(0, 8)}…` : value}
           </span>
         ) : (
-          <Tag color="error">Thiếu yêu cầu xuất</Tag>
+          <UiStatusBadge tone="error" label="Thiếu yêu cầu xuất" />
         );
       },
     },
@@ -220,6 +217,9 @@ export default function AlignedMvpOutboundPage() {
           // vượt khung, nên nội dung ô PHẢI co lại theo cột. `minWidth` cứng ở
           // đây từng làm thanh đối chiếu tràn sang đè lên cột "Trạng thái".
           // Flex + minWidth:0 cho thanh co lại, số đếm giữ nguyên không xuống dòng.
+          // Không hiện chữ % trên thanh: nó lặp lại thông tin của số đếm bên
+          // cạnh mà lại chiếm chiều ngang — chính phần thừa đó từng đẩy nội
+          // dung tràn khỏi ô (thời antd Progress showInfo).
           <Box
             sx={{
               display: "flex",
@@ -228,15 +228,11 @@ export default function AlignedMvpOutboundPage() {
               minWidth: 0,
             }}
           >
-            <Progress
-              percent={percent}
-              size="small"
-              // Tắt chữ % có sẵn của antd: nó lặp lại thông tin của số đếm bên
-              // cạnh mà lại chiếm ~2.5em chiều ngang — chính phần thừa đó đẩy
-              // nội dung tràn khỏi ô.
-              showInfo={false}
-              status={row.status === "POSTED" ? "success" : "normal"}
-              style={{ flex: 1, minWidth: 48, margin: 0, lineHeight: 1 }}
+            <LinearProgress
+              variant="determinate"
+              value={percent}
+              color={row.status === "POSTED" ? "success" : "primary"}
+              sx={{ flex: 1, minWidth: 48 }}
             />
             <Box
               component="span"
@@ -255,9 +251,14 @@ export default function AlignedMvpOutboundPage() {
       sortType: "value",
       sortAccessor: (row) => row.status,
       render: (row) => (
-        <Tag color={STATUS_COLOR[row.status]}>
-          {businessLabel(OUTBOUND_STATUS_LABELS, row.status, "Chưa xác định")}
-        </Tag>
+        <UiStatusBadge
+          tone={STATUS_TONE[row.status]}
+          label={businessLabel(
+            OUTBOUND_STATUS_LABELS,
+            row.status,
+            "Chưa xác định",
+          )}
+        />
       ),
     },
   ];
@@ -287,62 +288,58 @@ export default function AlignedMvpOutboundPage() {
   return (
     <>
       <div className="outbound-page hn-mvp-source-screen">
-        <div className="toolbar">
-          <TextField
+        <Stack
+          className="toolbar"
+          direction="row"
+          sx={{ gap: 1, alignItems: "center", flexWrap: "wrap", mb: "14px" }}
+        >
+          <UiTextField
             value={searchInput}
             placeholder="Tìm mã phiếu xuất / ghi chú..."
             slotProps={{ htmlInput: { "aria-label": "Tìm phiếu xuất" } }}
             onChange={(event) => setSearchInput(event.target.value)}
-            sx={{ minWidth: 220, ...TOOLBAR_SX }}
+            sx={{ minWidth: 220 }}
           />
-          <Select
-            displayEmpty
+          <UiSelect
+            aria-label="Lọc trạng thái phiếu xuất"
             value={status}
-            inputProps={{ "aria-label": "Lọc trạng thái phiếu xuất" }}
-            onChange={(event) => {
-              setStatus(event.target.value as OutboundStatus | "");
+            placeholder="Trạng thái: Tất cả"
+            options={STATUS_OPTIONS}
+            onChange={(value) => {
+              setStatus(value as OutboundStatus | "");
               setPage(1);
             }}
-            sx={{ minWidth: 168, ...TOOLBAR_SX }}
-          >
-            <MenuItem value="">Trạng thái: Tất cả</MenuItem>
-            {STATUS_OPTIONS.map((option) => (
-              <MenuItem key={option.value} value={option.value}>
-                {option.label}
-              </MenuItem>
-            ))}
-          </Select>
-          <Select
+            minWidth={168}
+          />
+          <UiSelect
+            aria-label="Số dòng mỗi trang"
             value={perPage}
-            inputProps={{ "aria-label": "Số dòng mỗi trang" }}
-            onChange={(event) => {
-              setPerPage(Number(event.target.value));
+            options={perPageOptions.map((size) => ({
+              value: size,
+              label: `${size} / trang`,
+            }))}
+            onChange={(value) => {
+              setPerPage(Number(value));
               setPage(1);
             }}
-            sx={{ minWidth: 100, ...TOOLBAR_SX }}
-          >
-            {perPageOptions.map((size) => (
-              <MenuItem key={size} value={size}>
-                {size} / trang
-              </MenuItem>
-            ))}
-          </Select>
-          <div className="spacer" />
+            minWidth={100}
+          />
+          <Box className="spacer" sx={{ flex: 1 }} />
           {canImport ? (
             <ActionButton kind="create" onClick={() => setIntakeOpen(true)}>
               Tiếp nhận yêu cầu xuất
             </ActionButton>
           ) : null}
-        </div>
+        </Stack>
 
         {listQuery.isError ? (
-          <div style={{ marginBottom: 14 }}>
+          <Box sx={{ mb: "14px" }}>
             <ApiErrorAlert
               error={listQuery.error}
               title="Không tải được danh sách phiếu xuất"
               onRetry={() => listQuery.refetch()}
             />
-          </div>
+          </Box>
         ) : null}
 
         <TableLoadingBanner

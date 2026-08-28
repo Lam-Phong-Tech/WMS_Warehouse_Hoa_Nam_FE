@@ -72,8 +72,8 @@ export function UiAppShell({
           className={sidebarClassName}
           data-testid="app-sidebar"
           sx={{
-          backgroundColor: S.bgSurface,
-          borderRight: `1px solid ${S.border}`,
+            backgroundColor: S.bgSurface,
+            borderRight: `1px solid ${S.border}`,
             overflowY: "auto",
             overflowX: "hidden",
             minWidth: 0,

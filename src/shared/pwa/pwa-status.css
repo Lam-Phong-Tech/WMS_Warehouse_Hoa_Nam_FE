@@ -10,7 +10,7 @@
   padding: 10px 12px;
   border: 1px solid rgba(0, 0, 0, 0.14);
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--wms-bg-surface);
   color: var(--wms-text-strong);
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.16);
   font-size: 13px;
@@ -31,7 +31,7 @@
   border-radius: 6px;
   padding: 6px 10px;
   background: var(--wms-success-dark);
-  color: #ffffff;
+  color: var(--wms-on-primary);
   cursor: pointer;
   font: inherit;
   font-weight: 600;

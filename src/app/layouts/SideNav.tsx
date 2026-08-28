@@ -11,9 +11,7 @@
  */
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import Box from "@mui/material/Box";
-import Collapse from "@mui/material/Collapse";
-import { UiIcon, UiIconButton } from "@/shared/ui";
+import { Box, Collapse, UiIcon, UiIconButton } from "@/shared/ui";
 import {
   MOTION,
   RADIUS,
@@ -131,7 +129,13 @@ export function SideNav({
       {/* Brand + nút thu gọn */}
       <Box
         className="hn-mvp-brand"
-        sx={{ display: "flex", alignItems: "center", gap: 1.25, px: 1, pb: 1.5 }}
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 1.25,
+          px: 1,
+          pb: 1.5,
+        }}
       >
         <Box
           className="hn-mvp-logo"
@@ -221,7 +225,10 @@ export function SideNav({
                   <Box component="span" sx={{ flex: 1, textAlign: "left" }}>
                     {group.name}
                   </Box>
-                  <UiIcon name={open ? "angle-down" : "caret-right"} size="sm" />
+                  <UiIcon
+                    name={open ? "angle-down" : "caret-right"}
+                    size="sm"
+                  />
                 </>
               ) : null}
             </Box>

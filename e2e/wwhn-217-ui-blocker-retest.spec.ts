@@ -413,6 +413,21 @@ async function login(page: Page, route: string): Promise<void> {
   await expect(page.locator("#root")).not.toBeEmpty();
 }
 
+/**
+ * Part 4 (ResponsiveDataTable): dưới 768px bảng render dạng CARD (MuiCard) —
+ * không còn <table>; từ 768 trở lên vẫn là bảng thật. Bề mặt dữ liệu hợp lệ
+ * là MỘT trong hai dạng theo viewport.
+ */
+async function expectDataSurface(page: Page, width: number): Promise<void> {
+  if (width >= 768) {
+    await expect(page.locator("table").first()).toBeVisible();
+    return;
+  }
+  await expect(
+    page.locator("main .MuiCard-root, main table").first(),
+  ).toBeVisible();
+}
+
 async function hasHorizontalOverflow(page: Page): Promise<boolean> {
   return page.evaluate(
     () => document.documentElement.scrollWidth > window.innerWidth + 1,
@@ -439,7 +454,7 @@ test.describe("WWHN-217 · QA2 retest — responsive matrix (NFR-SRS-006)", () =
         await login(page, flow.route);
 
         await expect(page).toHaveURL(new RegExp(`${flow.route}$`));
-        await expect(page.locator("table").first()).toBeVisible();
+        await expectDataSurface(page, page.viewportSize()?.width ?? 1280);
         expect(await hasHorizontalOverflow(page)).toBe(false);
 
         await captureEvidence(page, testInfo, {
@@ -537,8 +552,8 @@ test.describe("WWHN-217 · QA2 retest — back / duplicate / retry / network", (
     await page.setViewportSize({ width: 375, height: 812 });
     await login(page, "/inventory");
 
-    await expect(page.locator("table").first()).toBeVisible();
-    await page.getByRole("button", { name: /Mở|Chi tiết/ }).first().click();
+    await expectDataSurface(page, page.viewportSize()?.width ?? 1280);
+    await page.locator("main").getByRole("button", { name: /Mở|Chi tiết/ }).first().click();
     await expect(page.getByRole("dialog").first()).toBeVisible();
 
     await page.goBack();
@@ -569,7 +584,7 @@ test.describe("WWHN-217 · QA2 retest — back / duplicate / retry / network", (
     await page.setViewportSize({ width: 375, height: 812 });
     await login(page, "/inbound");
 
-    await expect(page.locator("table").first()).toBeVisible();
+    await expectDataSurface(page, page.viewportSize()?.width ?? 1280);
     await page.getByRole("button", { name: /Tạo phiếu nhập|Tạo phiếu/ }).first().click();
     await expect(page.getByRole("dialog").first()).toBeVisible();
 
@@ -600,10 +615,10 @@ test.describe("WWHN-217 · QA2 retest — back / duplicate / retry / network", (
     await page.setViewportSize({ width: 375, height: 812 });
     await login(page, "/outbound");
 
-    await expect(page.locator("table").first()).toBeVisible();
+    await expectDataSurface(page, page.viewportSize()?.width ?? 1280);
     // OUTBOUND_ROW ở trạng thái SCANNING + đủ quyền outbound.scan → nút hành động là "Mở"
     // (vào overlay chi tiết scan → tổng hợp → Packing Label → Post Issue).
-    await page.getByRole("button", { name: /Mở|Xem/ }).first().click();
+    await page.locator("main").getByRole("button", { name: /Mở|Xem/ }).first().click();
     await expect(page.getByRole("dialog").first()).toBeVisible();
 
     await page.goBack();
@@ -669,7 +684,7 @@ test.describe("WWHN-217 · QA2 retest — back / duplicate / retry / network", (
     await expect(page.locator('[data-ui-state="error"]').first()).toBeVisible();
     await page.getByRole("button", { name: /Thử lại/ }).first().click();
 
-    await expect(page.locator("table").first()).toBeVisible();
+    await expectDataSurface(page, page.viewportSize()?.width ?? 1280);
     await expect(page.getByText("SKU-217").first()).toBeVisible();
     // 1 lần hỏng (500 -> query layer retry 1 lần transient) + lần bấm Thử lại.
     expect(api.countOf("/inventory/balances")).toBeGreaterThanOrEqual(2);
@@ -730,7 +745,7 @@ test.describe("WWHN-217 · QA2 retest — back / duplicate / retry / network", (
     const api = await setupMockApi(page);
     await page.setViewportSize({ width: 1280, height: 900 });
     await login(page, "/inbound");
-    await expect(page.locator("table").first()).toBeVisible();
+    await expectDataSurface(page, page.viewportSize()?.width ?? 1280);
 
     const writesBefore = api.requests.filter(
       (entry) => entry.method !== "GET",

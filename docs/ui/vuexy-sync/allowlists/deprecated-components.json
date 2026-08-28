@@ -25,20 +25,16 @@
     "DataTable": {
       "canonical": "ResponsiveDataTable (@/shared/components) — antd Table adapter freeze",
       "consumers": [
-        "src/modules/master-data/pages/CatalogMasterScreen.tsx",
-        "src/modules/putaway/pages/MvpPutawayPage.tsx",
-        "src/modules/pv/pages/PvAdminPage.tsx",
-        "src/modules/reports/pages/Gd1ScopeReports.tsx"
+        "src/modules/pv/pages/PvAdminPage.tsx"
       ]
     },
     "useSortTooltipColumns": {
       "canonical": "SortableTh/useClientSort (family ResponsiveDataTable)",
-      "consumers": ["src/modules/reports/pages/AlignedReportsPage.tsx"]
+      "consumers": []
     },
     "PageHeader": {
       "canonical": "UiPageContainer (@/shared/ui)",
       "consumers": [
-        "src/modules/auth/pages/ProfilePage.tsx",
         "src/modules/notifications/pages/NotificationsPage.tsx"
       ]
     },
@@ -61,20 +57,14 @@
     "ReportKpiCard": {
       "canonical": "UiKpiCard (@/shared/ui)",
       "consumers": [
-        "src/modules/reports/pages/AlignedReportsPage.tsx",
-        "src/modules/reports/pages/Gd1ScopeReports.tsx"
+        "src/modules/reports/pages/AlignedReportsPage.tsx"
       ]
     },
     "ReportKpiGrid": {
       "canonical": "UiKpiCard + Grid (@/shared/ui)",
       "consumers": [
-        "src/modules/reports/pages/AlignedReportsPage.tsx",
-        "src/modules/reports/pages/Gd1ScopeReports.tsx"
+        "src/modules/reports/pages/AlignedReportsPage.tsx"
       ]
-    },
-    "AppBreadcrumb": {
-      "canonical": "UiBreadcrumb (@/shared/ui/layout)",
-      "consumers": ["src/app/layouts/MainLayout.tsx"]
     },
     "SubmitButton": {
       "canonical": "UiButton type=submit / ActionButton",

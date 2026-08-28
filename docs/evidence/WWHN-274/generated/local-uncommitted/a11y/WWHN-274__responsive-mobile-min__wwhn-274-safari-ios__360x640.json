@@ -7,7 +7,7 @@
   "scenario": "responsive-mobile-min",
   "result": "PASS",
   "sourceSha": "local-uncommitted",
-  "environment": "local-controlled",
+  "environment": "test",
   "buildVersion": "local-dev",
   "browserProject": "wwhn-274-safari-ios",
   "browserMatrixTarget": "Safari iOS (WebKit engine, iPhone-class emulation)",
@@ -17,7 +17,7 @@
     "height": 640
   },
   "route": "/login",
-  "timestamp": "2026-08-20T03:10:46.498Z",
+  "timestamp": "2026-08-28T03:16:34.248Z",
   "screenshotFilename": "WWHN-274__responsive-mobile-min__wwhn-274-safari-ios__360x640.png",
   "assertions": [
     "Viewport 360x640 khong tran ngang",
@@ -25,7 +25,7 @@
   ],
   "observed": {
     "horizontalOverflowPx": 0,
-    "submitHeightPx": 40
+    "submitHeightPx": 38
   },
   "truthBoundary": "Emulation-level browser/device evidence + basic a11y. Khong phai real-device matrix cua QA1 (WWHN-275) va khong phai audit WCAG day du."
 }

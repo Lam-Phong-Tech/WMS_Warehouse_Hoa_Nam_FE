@@ -1,5 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
-import { Box, Card, Chip, Stack, Typography } from "@mui/material";
+import {
+  Box,
+  Stack,
+  UiStatusBadge,
+  type UiStatusTone,
+  SEMANTIC_LIGHT as S,
+  RADIUS,
+  TYPOGRAPHY,
+} from "@/shared/ui";
 import { useCan } from "@/shared/components/permission";
 import { http } from "@/shared/api/http";
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
@@ -25,17 +33,22 @@ const STATUS_LABELS: Record<string, string> = {
   CANCELLED: "Đã hủy",
 };
 
-const STATUS_COLORS: Record<
-  string,
-  "default" | "success" | "warning" | "error"
-> = {
-  DRAFT: "default",
+// Map màu antd/MUI cũ (default/warning/success/error) → tone UiStatusBadge.
+const STATUS_TONES: Record<string, UiStatusTone> = {
+  DRAFT: "neutral",
   SCANNING: "warning",
   POSTED: "success",
   CANCELLED: "error",
 };
 
 const RECENT_ACTIVITY_LIMIT = 6;
+
+/** Cắt 1 dòng với ellipsis (thay prop noWrap của Typography). */
+const NOWRAP_SX = {
+  whiteSpace: "nowrap",
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+} as const;
 
 /**
  * "Hoạt động gần đây" chỉ gồm phiếu Nhập/Xuất (report_document_history),
@@ -68,21 +81,38 @@ export function DashboardRecentActivity() {
   const rows = (query.data?.rows ?? []).slice(0, RECENT_ACTIVITY_LIMIT);
 
   return (
-    <Card variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
-      <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-        Hoạt động gần đây
-      </Typography>
-      <Typography
-        variant="caption"
-        color="text.secondary"
-        sx={{ display: "block" }}
+    <Box
+      sx={{
+        p: 2,
+        bgcolor: S.bgSurface,
+        border: `1px solid ${S.border}`,
+        borderRadius: `${RADIUS.card}px`,
+      }}
+    >
+      <Box
+        component="h3"
+        sx={{
+          m: 0,
+          fontSize: TYPOGRAPHY.fontSizeBody,
+          fontWeight: 700,
+          color: S.textHigh,
+        }}
       >
+        Hoạt động gần đây
+      </Box>
+      <Box sx={{ fontSize: 12, color: S.textMedium }}>
         Phiếu nhập/xuất mới nhất (chưa gồm bảo hành)
-      </Typography>
+      </Box>
       {rows.length === 0 ? (
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
+        <Box
+          sx={{
+            mt: 1.5,
+            fontSize: TYPOGRAPHY.fontSizeSecondary,
+            color: S.textMedium,
+          }}
+        >
           {query.isLoading ? "Đang tải…" : "Chưa có hoạt động nào."}
-        </Typography>
+        </Box>
       ) : (
         <Stack sx={{ mt: 1 }}>
           {rows.map((row, index) => {
@@ -96,8 +126,7 @@ export function DashboardRecentActivity() {
                 sx={{
                   alignItems: "center",
                   py: 1,
-                  borderBottom: "1px solid",
-                  borderColor: "divider",
+                  borderBottom: `1px solid ${S.border}`,
                   "&:last-child": { borderBottom: 0 },
                 }}
               >
@@ -106,14 +135,12 @@ export function DashboardRecentActivity() {
                     width: 34,
                     height: 34,
                     flex: "none",
-                    borderRadius: 2,
+                    borderRadius: `${RADIUS.card}px`,
                     display: "grid",
                     placeItems: "center",
-                    color:
-                      docType === "INBOUND" ? "success.main" : "primary.main",
+                    color: docType === "INBOUND" ? S.success : S.primary,
                     bgcolor:
-                      docType === "INBOUND" ? "success.light" : "primary.light",
-                    opacity: 0.9,
+                      docType === "INBOUND" ? S.successSoft : S.primarySoft,
                   }}
                   aria-hidden="true"
                 >
@@ -124,24 +151,30 @@ export function DashboardRecentActivity() {
                   )}
                 </Box>
                 <Box sx={{ minWidth: 0, flex: 1 }}>
-                  <Typography variant="body2" sx={{ fontWeight: 700 }} noWrap>
+                  <Box
+                    sx={{
+                      ...NOWRAP_SX,
+                      fontSize: TYPOGRAPHY.fontSizeSecondary,
+                      fontWeight: 700,
+                      color: S.textHigh,
+                    }}
+                  >
                     {String(row.document_no ?? "")}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" noWrap>
+                  </Box>
+                  <Box sx={{ ...NOWRAP_SX, fontSize: 12, color: S.textMedium }}>
                     {formatDate(String(row.document_date ?? ""))}
                     {row.counterpart ? ` · ${String(row.counterpart)}` : ""}
-                  </Typography>
+                  </Box>
                 </Box>
-                <Chip
+                <UiStatusBadge
+                  tone={STATUS_TONES[status] ?? "neutral"}
                   label={STATUS_LABELS[status] ?? status}
-                  size="small"
-                  color={STATUS_COLORS[status] ?? "default"}
                 />
               </Stack>
             );
           })}
         </Stack>
       )}
-    </Card>
+    </Box>
   );
 }

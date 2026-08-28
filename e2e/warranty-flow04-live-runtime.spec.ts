@@ -155,7 +155,7 @@ test.describe("Flow 04 live runtime (FE ↔ BE thật, không mock)", () => {
       await page.setViewportSize({ width: 1440, height: 900 });
       await page.goto("/login");
       // LoginPage dùng FormInput custom (label không gắn htmlFor) -> chọn theo placeholder.
-      await page.getByPlaceholder("admin@gmail.com hoặc admin").fill(USERNAME);
+      await page.getByPlaceholder("your@gmail.com").fill(USERNAME);
       await page.getByPlaceholder("Nhập mật khẩu").fill(PASSWORD);
       const [loginResponse] = await Promise.all([
         page.waitForResponse(

@@ -194,11 +194,13 @@ test.describe("WWHN-175 / WWHN-176 foundation closure", () => {
       await mockAnonymousSession(page);
       await page.goto(`${BASE_URL}/login`);
 
+      // Part 4: AuthShell — h1 là tiêu đề màn ("Đăng nhập hệ thống"); brand
+      // "Hoa Nam WMS" là khối logo, không còn là heading.
       await expect(
-        page.getByRole("heading", { name: "Hoa Nam" }),
+        page.getByRole("heading", { name: "Đăng nhập hệ thống" }),
       ).toBeVisible();
-      await expect(page.locator('input[name="email"]')).toBeVisible();
-      await expect(page.locator('input[name="password"]')).toBeVisible();
+      await expect(page.getByPlaceholder("your@gmail.com")).toBeVisible();
+      await expect(page.getByPlaceholder("Nhập mật khẩu")).toBeVisible();
       await expect(
         page.getByRole("button", { name: "Đăng nhập" }),
       ).toBeEnabled();
@@ -226,20 +228,23 @@ test.describe("WWHN-175 / WWHN-176 foundation closure", () => {
       await mockAuthenticatedSession(page);
       await page.goto(`${BASE_URL}/component-catalog`);
 
+      // Part 4: /component-catalog redirect về /ui-foundation (Foundation
+      // Catalog golden) — state chuẩn là UiStateSurface nhãn tiếng Việt.
+      await expect(page).toHaveURL(/\/ui-foundation$/);
       await expect(
-        page.getByRole("heading", { name: "Component catalog" }),
+        page.getByRole("heading", { name: /Foundation catalog/ }),
       ).toBeVisible();
-      await expect(page.getByText("Loading", { exact: true })).toBeVisible();
-      await expect(page.getByText("Empty", { exact: true })).toBeVisible();
-      await expect(page.getByText("Error", { exact: true })).toBeVisible();
+      await expect(page.getByText("Đang tải dữ liệu…")).toBeVisible();
+      await expect(page.getByText("Chưa có dữ liệu")).toBeVisible();
+      await expect(page.getByText("Đã xảy ra lỗi")).toBeVisible();
       await expect(
-        page.getByText("No permission", { exact: true }),
+        page.getByText("Bạn không có quyền truy cập nội dung này"),
       ).toBeVisible();
       await expect(
-        page.getByText("API error + field errors", { exact: true }),
+        page.getByText("Số lượng phải lớn hơn 0 (request_id: 9f2c-fixture)."),
       ).toBeVisible();
       await expect(
-        page.getByRole("button", { name: "Disabled until valid" }),
+        page.getByRole("button", { name: "Vô hiệu", exact: true }),
       ).toBeDisabled();
       await expectNoDocumentOverflow(page);
 
@@ -266,14 +271,20 @@ test.describe("WWHN-175 / WWHN-176 foundation closure", () => {
     await mockAuthenticatedSession(page);
     await page.goto(`${BASE_URL}/component-catalog`);
 
-    const openButton = page.getByRole("button", { name: "Mở modal" });
+    // Part 4: demo overlay của Foundation Catalog — nút "Mở dialog", UiDialog
+    // tự gắn accessible name từ title.
+    const openButton = page.getByRole("button", { name: "Mở dialog" });
     await openButton.focus();
     await expect(openButton).toBeFocused();
     await page.keyboard.press("Enter");
 
-    const dialog = page.getByRole("dialog", { name: "Form modal" });
+    const dialog = page.getByRole("dialog", {
+      name: "Xác nhận hoàn tất xuất kho",
+    });
     await expect(dialog).toBeVisible();
-    await expect(dialog.getByPlaceholder("IN-260729-001")).toBeVisible();
+    await expect(
+      dialog.getByText(/Hành động này sẽ trừ tồn kho/),
+    ).toBeVisible();
 
     await page.keyboard.press("Escape");
     await expect(dialog).toBeHidden();

@@ -1,20 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Table, Tag } from "antd";
 import {
-  Alert,
-  Autocomplete,
   Box,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   Grid,
   MenuItem,
   Stack,
-  TextField,
-  Typography,
-} from "@mui/material";
-import type { ColumnsType } from "antd/es/table";
+  UiAlert,
+  UiDialog,
+  UiStatusBadge,
+  UiTextField,
+} from "@/shared/ui";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { getApiErrorMessage } from "@/shared/api/api-error";
@@ -26,6 +20,10 @@ import { guardBackdropClose } from "@/shared/utils/dialogGuard";
 import { useDialogExit } from "@/shared/utils/useDialogExit";
 import { DocumentAttachmentsPanel } from "@/shared/components/DocumentAttachmentsPanel";
 import { CameraScanModal } from "@/shared/components/forms/CameraScanModal";
+import {
+  ResponsiveDataTable,
+  type ResponsiveTableColumn,
+} from "@/shared/components/data-display/ResponsiveDataTable";
 import { useHasPermission } from "@/shared/components/permission";
 import { WMS_ACTION_PERMISSIONS } from "@/shared/constants/wms-permissions";
 import {
@@ -86,19 +84,27 @@ function labelStatus(value?: string | null): string {
   return value ? (labels[value] ?? value) : "Chưa tạo";
 }
 
+/** Khung viền section dùng chung trong modal (thay Box sx lặp lại). */
+const SECTION_SX = {
+  border: "1px solid",
+  borderColor: "divider",
+  borderRadius: 2,
+  p: 2,
+} as const;
+
 function DetailField({ label, value }: { label: string; value: ReactNode }) {
   return (
     <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-      <Typography
-        variant="caption"
-        color="text.secondary"
-        sx={{ display: "block" }}
+      <Box
+        sx={{
+          typography: "caption",
+          color: "text.secondary",
+          display: "block",
+        }}
       >
         {label}
-      </Typography>
-      <Typography variant="body2" component="div">
-        {value}
-      </Typography>
+      </Box>
+      <Box sx={{ typography: "body2" }}>{value}</Box>
     </Grid>
   );
 }
@@ -487,45 +493,48 @@ export function AlignedOutboundDetailModal({
       toast.error(getApiErrorMessage(error, "Gán RFID thất bại.")),
   });
 
-  const lineColumns: ColumnsType<OutboundLineRecord> = [
+  const lineColumns: ResponsiveTableColumn<OutboundLineRecord>[] = [
     {
-      title: "SKU",
-      dataIndex: "productId",
-      render: (value) => short(value),
+      key: "productId",
+      header: "SKU",
       width: 180,
+      render: (row) => short(row.productId),
     },
     {
-      title: "Cần xuất",
-      dataIndex: "expected",
+      key: "expected",
+      header: "Cần xuất",
       width: 100,
       align: "right",
+      render: (row) => row.expected,
     },
     {
-      title: "Đã quét",
-      dataIndex: "scanned",
+      key: "scanned",
+      header: "Đã quét",
       width: 100,
       align: "right",
+      render: (row) => row.scanned,
     },
   ];
 
-  const matchColumns: ColumnsType<OutboundItemMatchRecord> = [
+  const matchColumns: ResponsiveTableColumn<OutboundItemMatchRecord>[] = [
     {
-      title: "Sản phẩm",
       key: "item",
-      render: (_, match) =>
+      header: "Sản phẩm",
+      render: (match) =>
         match.itemCode || match.serialNumber || short(match.itemId),
     },
     {
-      title: "RFID",
-      dataIndex: "rfidCode",
-      render: (value) => value || "—",
+      key: "rfidCode",
+      header: "RFID",
       width: 150,
+      render: (match) => match.rfidCode || "—",
     },
     {
-      title: "",
       key: "actions",
+      header: "",
+      mobileLabel: "Thao tác",
       width: 190,
-      render: (_, match) => (
+      render: (match) => (
         <Stack direction="row" spacing={0.5}>
           {mutable && can("outbound.scan") ? (
             <ActionButton
@@ -556,470 +565,390 @@ export function AlignedOutboundDetailModal({
 
   if (detailQuery.isLoading) {
     return (
-      <>
-        <Dialog {...dialog.dialogProps} maxWidth="sm" fullWidth>
-          <DialogTitle>Chi tiết phiếu xuất</DialogTitle>
-          <DialogContent dividers>Đang tải...</DialogContent>
-        </Dialog>
-      </>
+      <UiDialog
+        {...dialog.dialogProps}
+        maxWidth="sm"
+        fullWidth
+        title="Chi tiết phiếu xuất"
+      >
+        Đang tải...
+      </UiDialog>
     );
   }
 
   if (detailQuery.isError || !detail || !doc) {
     return (
-      <>
-        <Dialog {...dialog.dialogProps} maxWidth="sm" fullWidth>
-          <DialogTitle>Chi tiết phiếu xuất</DialogTitle>
-          <DialogContent dividers>
-            <Alert severity="error">
-              {getApiErrorMessage(
-                detailQuery.error,
-                "Không tải được phiếu xuất.",
-              )}
-            </Alert>
-          </DialogContent>
-        </Dialog>
-      </>
+      <UiDialog
+        {...dialog.dialogProps}
+        maxWidth="sm"
+        fullWidth
+        title="Chi tiết phiếu xuất"
+      >
+        <UiAlert tone="error">
+          {getApiErrorMessage(detailQuery.error, "Không tải được phiếu xuất.")}
+        </UiAlert>
+      </UiDialog>
     );
   }
 
   return (
     <>
-      <Dialog {...dialog.dialogProps} maxWidth="lg" fullWidth>
-        <DialogTitle sx={{ pr: 6, position: "relative" }}>
-          Chi tiết phiếu xuất
-          <ActionIconButton
-            kind="close"
-            label="Đóng"
-            onClick={dialog.close}
-            sx={{ position: "absolute", right: 10, top: 8 }}
-          />
-        </DialogTitle>
-        <DialogContent dividers>
-          <Stack spacing={2}>
-            <Box
-              sx={{
-                border: "1px solid",
-                borderColor: "divider",
-                borderRadius: 2,
-                p: 2,
-              }}
-            >
-              <Grid container spacing={2}>
-                <DetailField label="Phiếu" value={doc.code} />
-                <DetailField
-                  label="Trạng thái"
-                  value={
-                    <Tag>
-                      {businessLabel(OUTBOUND_STATUS_LABELS, doc.status)}
-                    </Tag>
-                  }
-                />
-                <DetailField
-                  label="Nơi nhận"
-                  value={doc.recipientName || "—"}
-                />
-                <DetailField
-                  label="Đã quét"
-                  value={`${totalScanned}/${totalExpected}`}
-                />
-              </Grid>
-            </Box>
-
-            <Box
-              sx={{
-                border: "1px solid",
-                borderColor: "divider",
-                borderRadius: 2,
-                p: 2,
-              }}
-            >
-              <DocumentAttachmentsPanel
-                documentType="OUTBOUND"
-                documentId={documentId}
-                disabled={!mutable}
+      <UiDialog
+        {...dialog.dialogProps}
+        maxWidth="lg"
+        fullWidth
+        title={
+          <Box
+            component="span"
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 1,
+            }}
+          >
+            Chi tiết phiếu xuất
+            <ActionIconButton
+              kind="close"
+              label="Đóng"
+              onClick={dialog.close}
+            />
+          </Box>
+        }
+      >
+        <Stack spacing={2}>
+          <Box sx={SECTION_SX}>
+            <Grid container spacing={2}>
+              <DetailField label="Phiếu" value={doc.code} />
+              <DetailField
+                label="Trạng thái"
+                value={
+                  <UiStatusBadge
+                    label={businessLabel(OUTBOUND_STATUS_LABELS, doc.status)}
+                  />
+                }
               />
-            </Box>
+              <DetailField label="Nơi nhận" value={doc.recipientName || "—"} />
+              <DetailField
+                label="Đã quét"
+                value={`${totalScanned}/${totalExpected}`}
+              />
+            </Grid>
+          </Box>
 
-            <Box
-              sx={{
-                border: "1px solid",
-                borderColor: "divider",
-                borderRadius: 2,
-                p: 2,
-              }}
-            >
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5 }}>
-                1 · Quét và đối chiếu hàng
-              </Typography>
-              <Stack spacing={1.5}>
-                <Stack
-                  direction="row"
-                  spacing={1.5}
-                  sx={{ flexWrap: "wrap", rowGap: 1 }}
+          <Box sx={SECTION_SX}>
+            <DocumentAttachmentsPanel
+              documentType="OUTBOUND"
+              documentId={documentId}
+              disabled={!mutable}
+            />
+          </Box>
+
+          <Box sx={SECTION_SX}>
+            <Box sx={{ typography: "subtitle2", fontWeight: 700, mb: 1.5 }}>
+              1 · Quét và đối chiếu hàng
+            </Box>
+            <Stack spacing={1.5}>
+              <Stack
+                direction="row"
+                spacing={1.5}
+                sx={{ flexWrap: "wrap", rowGap: 1 }}
+              >
+                <UiTextField
+                  select
+                  sx={{ width: 300 }}
+                  label="Tự nhận SKU từ mã quét"
+                  value={lineId}
+                  onChange={(event) => setLineId(event.target.value)}
                 >
-                  <Autocomplete
-                    sx={{ width: 300 }}
-                    options={detail.lines
-                      .filter((line) => line.scanned < line.expected)
-                      .map((line) => ({
-                        value: line.id,
-                        label: `${short(line.productId)} · ${line.scanned}/${line.expected}`,
-                      }))}
-                    value={
-                      lineId
-                        ? {
-                            value: lineId,
-                            label:
-                              detail.lines
-                                .filter((line) => line.scanned < line.expected)
-                                .find((line) => line.id === lineId)
-                                ?.productId ?? lineId,
-                          }
-                        : null
-                    }
-                    getOptionLabel={(option) => option.label}
-                    isOptionEqualToValue={(option, value) =>
-                      option.value === value.value
-                    }
-                    onChange={(_event, option) =>
-                      setLineId(option?.value ?? "")
-                    }
-                    renderInput={(params) => (
-                      <TextField
-                        {...params}
-                        label="Tự nhận SKU từ mã quét"
-                        placeholder="Tự nhận SKU từ mã quét"
-                      />
-                    )}
-                  />
-                  <TextField
-                    sx={{ width: 330 }}
-                    value={scanCode}
-                    label="Quét QR/Barcode sản phẩm"
-                    placeholder="Quét QR/Barcode sản phẩm"
-                    onChange={(event) => setScanCode(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") {
-                        scanMutation.mutate({
-                          rawCode: scanCode,
-                          scanSource: "MANUAL",
-                        });
-                      }
-                    }}
-                    disabled={!mutable || !can("outbound.scan")}
-                  />
-                  <ActionButton
-                    kind="scan"
-                    disabled={
-                      !mutable ||
-                      !can("outbound.scan") ||
-                      !scanCode.trim() ||
-                      scanMutation.isPending
-                    }
-                    onClick={() =>
+                  <MenuItem value="">Tự nhận SKU từ mã quét</MenuItem>
+                  {detail.lines
+                    .filter((line) => line.scanned < line.expected)
+                    .map((line) => (
+                      <MenuItem key={line.id} value={line.id}>
+                        {`${short(line.productId)} · ${line.scanned}/${line.expected}`}
+                      </MenuItem>
+                    ))}
+                </UiTextField>
+                <UiTextField
+                  sx={{ width: 330 }}
+                  value={scanCode}
+                  label="Quét QR/Barcode sản phẩm"
+                  placeholder="Quét QR/Barcode sản phẩm"
+                  onChange={(event) => setScanCode(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
                       scanMutation.mutate({
                         rawCode: scanCode,
                         scanSource: "MANUAL",
-                      })
+                      });
                     }
-                  >
-                    {scanMutation.isPending ? "Đang quét..." : "Quét"}
-                  </ActionButton>
-                  <ActionButton
-                    kind="camera"
-                    disabled={!mutable || !can("outbound.scan")}
-                    onClick={() => setCameraOpen(true)}
-                  >
-                    Camera
-                  </ActionButton>
-                </Stack>
-                <Table
-                  rowKey="id"
-                  size="small"
-                  pagination={false}
-                  columns={lineColumns}
-                  dataSource={detail.lines}
-                  scroll={{ x: 520 }}
-                />
-                <Table
-                  rowKey="id"
-                  size="small"
-                  pagination={false}
-                  columns={matchColumns}
-                  dataSource={activeMatches}
-                  scroll={{ x: 760 }}
-                />
-              </Stack>
-            </Box>
-
-            <Box
-              sx={{
-                border: "1px solid",
-                borderColor: "divider",
-                borderRadius: 2,
-                p: 2,
-              }}
-            >
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5 }}>
-                2 · Ghi nhận xuất kho & In nhãn
-              </Typography>
-              <Stack spacing={1.5}>
-                {shortStockLines.length ? (
-                  <Alert severity="warning">
-                    <Typography sx={{ fontWeight: 700 }}>
-                      Tồn khả dụng hiện thấp hơn số lượng cần xuất
-                    </Typography>
-                    <Typography variant="body2">
-                      {`SKU thiếu: ${shortStockLines
-                        .map((line) => short(line.productId))
-                        .join(
-                          ", ",
-                        )}. Hệ thống sẽ kiểm tra lại tại thời điểm ghi nhận.`}
-                    </Typography>
-                  </Alert>
-                ) : null}
-                {!posted ? (
-                  <Stack
-                    direction="row"
-                    spacing={1.5}
-                    sx={{ flexWrap: "wrap", rowGap: 1, alignItems: "center" }}
-                  >
-                    <TextField
-                      sx={{ width: 260 }}
-                      value={customerPhone}
-                      label="SĐT trên nhãn (tùy chọn)"
-                      placeholder="SĐT trên nhãn (tùy chọn)"
-                      slotProps={{ htmlInput: { maxLength: 10 } }}
-                      onChange={(event) =>
-                        setCustomerPhone(
-                          event.target.value.replace(/\D/g, "").slice(0, 10),
-                        )
-                      }
-                      error={!customerPhoneValid}
-                    />
-                    <ActionButton
-                      kind="print"
-                      disabled={
-                        !can("outbound.post") ||
-                        !postReady ||
-                        postAndLabelMutation.isPending
-                      }
-                      onClick={() => setPostConfirmOpen(true)}
-                    >
-                      {canPrepareLabel
-                        ? "Ghi nhận xuất kho & In nhãn"
-                        : "Ghi nhận xuất kho"}
-                    </ActionButton>
-                    {can("outbound.cancel") && mutable ? (
-                      <ActionButton
-                        kind="cancel"
-                        onClick={() => setCancelOpen(true)}
-                      >
-                        Hủy phiếu
-                      </ActionButton>
-                    ) : null}
-                  </Stack>
-                ) : (
-                  <Alert severity="success">
-                    <Typography sx={{ fontWeight: 700 }}>
-                      Phiếu đã ghi nhận xuất kho
-                    </Typography>
-                    <Typography variant="body2">
-                      Tồn kho đã được trừ. Việc in/in lại nhãn không làm thay
-                      đổi tồn kho.
-                    </Typography>
-                  </Alert>
-                )}
-                {postBlockReason && !posted ? (
-                  <Typography variant="body2" color="text.secondary">
-                    {postBlockReason}
-                  </Typography>
-                ) : null}
-                {evidence ? (
-                  <Typography variant="body2" color="text.secondary">
-                    {evidence.movementRefs.length} movement · Request{" "}
-                    {evidence.requestId || "—"}
-                  </Typography>
-                ) : null}
-              </Stack>
-            </Box>
-
-            <Grid container spacing={2}>
-              <Grid size={{ xs: 12, lg: 8 }}>
-                <Box
-                  sx={{
-                    border: "1px solid",
-                    borderColor: "divider",
-                    borderRadius: 2,
-                    p: 2,
                   }}
+                  disabled={!mutable || !can("outbound.scan")}
+                />
+                <ActionButton
+                  kind="scan"
+                  disabled={
+                    !mutable ||
+                    !can("outbound.scan") ||
+                    !scanCode.trim() ||
+                    scanMutation.isPending
+                  }
+                  onClick={() =>
+                    scanMutation.mutate({
+                      rawCode: scanCode,
+                      scanSource: "MANUAL",
+                    })
+                  }
                 >
-                  <Typography
-                    variant="subtitle2"
-                    sx={{ fontWeight: 700, mb: 1.5 }}
+                  {scanMutation.isPending ? "Đang quét..." : "Quét"}
+                </ActionButton>
+                <ActionButton
+                  kind="camera"
+                  disabled={!mutable || !can("outbound.scan")}
+                  onClick={() => setCameraOpen(true)}
+                >
+                  Camera
+                </ActionButton>
+              </Stack>
+              <ResponsiveDataTable<OutboundLineRecord>
+                columns={lineColumns}
+                rows={detail.lines}
+                rowKey={(row) => row.id}
+              />
+              <ResponsiveDataTable<OutboundItemMatchRecord>
+                columns={matchColumns}
+                rows={activeMatches}
+                rowKey={(row) => row.id}
+              />
+            </Stack>
+          </Box>
+
+          <Box sx={SECTION_SX}>
+            <Box sx={{ typography: "subtitle2", fontWeight: 700, mb: 1.5 }}>
+              2 · Ghi nhận xuất kho & In nhãn
+            </Box>
+            <Stack spacing={1.5}>
+              {shortStockLines.length ? (
+                <UiAlert
+                  tone="warning"
+                  title="Tồn khả dụng hiện thấp hơn số lượng cần xuất"
+                >
+                  {`SKU thiếu: ${shortStockLines
+                    .map((line) => short(line.productId))
+                    .join(
+                      ", ",
+                    )}. Hệ thống sẽ kiểm tra lại tại thời điểm ghi nhận.`}
+                </UiAlert>
+              ) : null}
+              {!posted ? (
+                <Stack
+                  direction="row"
+                  spacing={1.5}
+                  sx={{ flexWrap: "wrap", rowGap: 1, alignItems: "center" }}
+                >
+                  <UiTextField
+                    sx={{ width: 260 }}
+                    value={customerPhone}
+                    label="SĐT trên nhãn (tùy chọn)"
+                    placeholder="SĐT trên nhãn (tùy chọn)"
+                    slotProps={{ htmlInput: { maxLength: 10 } }}
+                    onChange={(event) =>
+                      setCustomerPhone(
+                        event.target.value.replace(/\D/g, "").slice(0, 10),
+                      )
+                    }
+                    error={!customerPhoneValid}
+                  />
+                  <ActionButton
+                    kind="print"
+                    disabled={
+                      !can("outbound.post") ||
+                      !postReady ||
+                      postAndLabelMutation.isPending
+                    }
+                    onClick={() => setPostConfirmOpen(true)}
                   >
-                    3 · Xem và in nhãn
-                  </Typography>
-                  <Stack spacing={1.5}>
-                    {labelWarning ? (
-                      <Alert severity="warning">{labelWarning}</Alert>
-                    ) : null}
-                    {!posted ? (
-                      <Typography variant="body2" color="text.secondary">
-                        Nhãn được chuẩn bị sau khi ghi nhận xuất kho.
-                      </Typography>
-                    ) : packingLabel ? (
-                      <>
-                        <Grid container spacing={2}>
-                          <DetailField
-                            label="Mã nhãn"
-                            value={packingLabel.labelCode}
-                          />
-                          <DetailField
-                            label="Trạng thái"
-                            value={labelStatus(packingLabel.status)}
-                          />
-                          <DetailField
-                            label="Nơi nhận"
-                            value={
-                              packingLabel.recipientName ||
-                              doc.recipientName ||
-                              "—"
-                            }
-                          />
-                          <DetailField
-                            label="Số sản phẩm"
-                            value={packingLabel.itemCount}
-                          />
-                          <DetailField
-                            label="Số SKU"
-                            value={packingLabel.skuCount}
-                          />
-                          <DetailField
-                            label="Toa nguồn"
-                            value={packingLabel.sourceRequestNo || "—"}
-                          />
-                        </Grid>
-                        <Stack
-                          direction="row"
-                          spacing={1.5}
-                          sx={{
-                            flexWrap: "wrap",
-                            rowGap: 1,
-                            alignItems: "center",
-                          }}
+                    {canPrepareLabel
+                      ? "Ghi nhận xuất kho & In nhãn"
+                      : "Ghi nhận xuất kho"}
+                  </ActionButton>
+                  {can("outbound.cancel") && mutable ? (
+                    <ActionButton
+                      kind="cancel"
+                      onClick={() => setCancelOpen(true)}
+                    >
+                      Hủy phiếu
+                    </ActionButton>
+                  ) : null}
+                </Stack>
+              ) : (
+                <UiAlert tone="success" title="Phiếu đã ghi nhận xuất kho">
+                  Tồn kho đã được trừ. Việc in/in lại nhãn không làm thay đổi
+                  tồn kho.
+                </UiAlert>
+              )}
+              {postBlockReason && !posted ? (
+                <Box sx={{ typography: "body2", color: "text.secondary" }}>
+                  {postBlockReason}
+                </Box>
+              ) : null}
+              {evidence ? (
+                <Box sx={{ typography: "body2", color: "text.secondary" }}>
+                  {evidence.movementRefs.length} movement · Request{" "}
+                  {evidence.requestId || "—"}
+                </Box>
+              ) : null}
+            </Stack>
+          </Box>
+
+          <Grid container spacing={2}>
+            <Grid size={{ xs: 12, lg: 8 }}>
+              <Box sx={SECTION_SX}>
+                <Box sx={{ typography: "subtitle2", fontWeight: 700, mb: 1.5 }}>
+                  3 · Xem và in nhãn
+                </Box>
+                <Stack spacing={1.5}>
+                  {labelWarning ? (
+                    <UiAlert tone="warning">{labelWarning}</UiAlert>
+                  ) : null}
+                  {!posted ? (
+                    <Box sx={{ typography: "body2", color: "text.secondary" }}>
+                      Nhãn được chuẩn bị sau khi ghi nhận xuất kho.
+                    </Box>
+                  ) : packingLabel ? (
+                    <>
+                      <Grid container spacing={2}>
+                        <DetailField
+                          label="Mã nhãn"
+                          value={packingLabel.labelCode}
+                        />
+                        <DetailField
+                          label="Trạng thái"
+                          value={labelStatus(packingLabel.status)}
+                        />
+                        <DetailField
+                          label="Nơi nhận"
+                          value={
+                            packingLabel.recipientName ||
+                            doc.recipientName ||
+                            "—"
+                          }
+                        />
+                        <DetailField
+                          label="Số sản phẩm"
+                          value={packingLabel.itemCount}
+                        />
+                        <DetailField
+                          label="Số SKU"
+                          value={packingLabel.skuCount}
+                        />
+                        <DetailField
+                          label="Toa nguồn"
+                          value={packingLabel.sourceRequestNo || "—"}
+                        />
+                      </Grid>
+                      <Stack
+                        direction="row"
+                        spacing={1.5}
+                        sx={{
+                          flexWrap: "wrap",
+                          rowGap: 1,
+                          alignItems: "center",
+                        }}
+                      >
+                        {/*
+                         * CỐ Ý KHÔNG dùng slotProps.select.native: native:true trả về
+                         * <select>/<option> thuần nên trình duyệt vẽ menu theo kiểu
+                         * hệ điều hành — bung ra tức thì, phông và màu highlight
+                         * khác hẳn phần còn lại của app. Select bên trong UiTextField
+                         * dùng menu React (có hiệu ứng Grow theo theme adapter) và ăn theme.
+                         */}
+                        <UiTextField
+                          select
+                          label="Máy in"
+                          sx={{ width: 280 }}
+                          value={printerId}
+                          onChange={(event) => setPrinterId(event.target.value)}
                         >
-                          {/*
-                           * CỐ Ý KHÔNG dùng slotProps.select.native: native:true trả về
-                           * <select>/<option> thuần nên trình duyệt vẽ menu theo kiểu
-                           * hệ điều hành — bung ra tức thì, phông và màu highlight
-                           * khác hẳn phần còn lại của app. Select của MUI dùng menu
-                           * React (có hiệu ứng Grow theo mui-theme) và ăn theme.
-                           */}
-                          <TextField
-                            select
-                            label="Máy in"
-                            sx={{ width: 280 }}
-                            value={printerId}
-                            onChange={(event) =>
-                              setPrinterId(event.target.value)
-                            }
-                          >
-                            <MenuItem value="" disabled>
-                              Chọn máy in
+                          <MenuItem value="" disabled>
+                            Chọn máy in
+                          </MenuItem>
+                          {activePrinters.map((printer) => (
+                            <MenuItem key={printer.id} value={printer.id}>
+                              {`${printer.code} · ${printer.name}`}
                             </MenuItem>
-                            {activePrinters.map((printer) => (
-                              <MenuItem key={printer.id} value={printer.id}>
-                                {`${printer.code} · ${printer.name}`}
-                              </MenuItem>
-                            ))}
-                          </TextField>
-                          <ActionButton
-                            kind="print"
-                            disabled={
-                              !printerId ||
-                              (!can("packing_label.print") &&
-                                !can("label.print") &&
-                                !can("packing_label.reprint") &&
-                                !can("label.reprint")) ||
-                              printMutation.isPending
-                            }
-                            onClick={() => printMutation.mutate()}
-                          >
-                            {printMutation.isPending
-                              ? "Đang gửi lệnh in..."
-                              : packingLabel.status === "PRINTED"
-                                ? "In lại nhãn"
-                                : "In nhãn"}
-                          </ActionButton>
-                        </Stack>
-                      </>
-                    ) : (
-                      <Box>
+                          ))}
+                        </UiTextField>
                         <ActionButton
                           kind="print"
-                          disabled={labelPrepareMutation.isPending}
-                          onClick={() => labelPrepareMutation.mutate()}
+                          disabled={
+                            !printerId ||
+                            (!can("packing_label.print") &&
+                              !can("label.print") &&
+                              !can("packing_label.reprint") &&
+                              !can("label.reprint")) ||
+                            printMutation.isPending
+                          }
+                          onClick={() => printMutation.mutate()}
                         >
-                          {labelPrepareMutation.isPending
-                            ? "Đang chuẩn bị..."
-                            : "Chuẩn bị lại nhãn"}
+                          {printMutation.isPending
+                            ? "Đang gửi lệnh in..."
+                            : packingLabel.status === "PRINTED"
+                              ? "In lại nhãn"
+                              : "In nhãn"}
                         </ActionButton>
-                      </Box>
-                    )}
-                  </Stack>
-                </Box>
-              </Grid>
-
-              <Grid size={{ xs: 12, lg: 4 }}>
-                <Box
-                  sx={{
-                    border: "1px solid",
-                    borderColor: "divider",
-                    borderRadius: 2,
-                    p: 2,
-                  }}
-                >
-                  <Typography
-                    variant="subtitle2"
-                    sx={{ fontWeight: 700, mb: 1 }}
-                  >
-                    RFID (tùy chọn)
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Có thể gán RFID cho từng sản phẩm nếu vận hành sử dụng. RFID
-                    không phải điều kiện để ghi nhận xuất kho.
-                  </Typography>
-                </Box>
-              </Grid>
+                      </Stack>
+                    </>
+                  ) : (
+                    <Box>
+                      <ActionButton
+                        kind="print"
+                        disabled={labelPrepareMutation.isPending}
+                        onClick={() => labelPrepareMutation.mutate()}
+                      >
+                        {labelPrepareMutation.isPending
+                          ? "Đang chuẩn bị..."
+                          : "Chuẩn bị lại nhãn"}
+                      </ActionButton>
+                    </Box>
+                  )}
+                </Stack>
+              </Box>
             </Grid>
-          </Stack>
 
-          <CameraScanModal
-            open={cameraOpen}
-            title="Quét sản phẩm xuất kho"
-            onDetected={(code) => {
-              setCameraOpen(false);
-              scanMutation.mutate({ rawCode: code, scanSource: "CAMERA" });
-            }}
-            onClose={() => setCameraOpen(false)}
-          />
+            <Grid size={{ xs: 12, lg: 4 }}>
+              <Box sx={SECTION_SX}>
+                <Box sx={{ typography: "subtitle2", fontWeight: 700, mb: 1 }}>
+                  RFID (tùy chọn)
+                </Box>
+                <Box sx={{ typography: "body2", color: "text.secondary" }}>
+                  Có thể gán RFID cho từng sản phẩm nếu vận hành sử dụng. RFID
+                  không phải điều kiện để ghi nhận xuất kho.
+                </Box>
+              </Box>
+            </Grid>
+          </Grid>
+        </Stack>
 
-          <Dialog
-            open={postConfirmOpen}
-            onClose={() => setPostConfirmOpen(false)}
-            maxWidth="xs"
-            fullWidth
-          >
-            <DialogTitle>Ghi nhận xuất kho & In nhãn?</DialogTitle>
-            <DialogContent dividers>
-              <Typography variant="body2">
-                Tồn kho sẽ được trừ ngay khi ghi nhận. Sau đó hệ thống chuẩn bị
-                bản xem trước nhãn để in.
-              </Typography>
-            </DialogContent>
-            <DialogActions>
+        <CameraScanModal
+          open={cameraOpen}
+          title="Quét sản phẩm xuất kho"
+          onDetected={(code) => {
+            setCameraOpen(false);
+            scanMutation.mutate({ rawCode: code, scanSource: "CAMERA" });
+          }}
+          onClose={() => setCameraOpen(false)}
+        />
+
+        <UiDialog
+          open={postConfirmOpen}
+          onClose={() => setPostConfirmOpen(false)}
+          maxWidth="xs"
+          fullWidth
+          title="Ghi nhận xuất kho & In nhãn?"
+          actions={
+            <>
               <ActionButton
                 kind="cancel"
                 onClick={() => setPostConfirmOpen(false)}
@@ -1040,28 +969,23 @@ export function AlignedOutboundDetailModal({
                   ? "Đang ghi nhận..."
                   : "Ghi nhận"}
               </ActionButton>
-            </DialogActions>
-          </Dialog>
+            </>
+          }
+        >
+          <Box sx={{ typography: "body2" }}>
+            Tồn kho sẽ được trừ ngay khi ghi nhận. Sau đó hệ thống chuẩn bị bản
+            xem trước nhãn để in.
+          </Box>
+        </UiDialog>
 
-          <Dialog
-            open={cancelOpen}
-            onClose={guardBackdropClose(() => setCancelOpen(false))}
-            maxWidth="xs"
-            fullWidth
-          >
-            <DialogTitle>Hủy phiếu xuất</DialogTitle>
-            <DialogContent dividers>
-              <TextField
-                fullWidth
-                multiline
-                minRows={3}
-                value={cancelReason}
-                onChange={(event) => setCancelReason(event.target.value)}
-                label="Lý do hủy"
-                placeholder="Lý do hủy"
-              />
-            </DialogContent>
-            <DialogActions>
+        <UiDialog
+          open={cancelOpen}
+          onClose={guardBackdropClose(() => setCancelOpen(false))}
+          maxWidth="xs"
+          fullWidth
+          title="Hủy phiếu xuất"
+          actions={
+            <>
               <ActionButton kind="close" onClick={() => setCancelOpen(false)}>
                 Đóng
               </ActionButton>
@@ -1072,35 +996,28 @@ export function AlignedOutboundDetailModal({
               >
                 {cancelMutation.isPending ? "Đang hủy..." : "Hủy phiếu"}
               </ActionButton>
-            </DialogActions>
-          </Dialog>
-
-          <Dialog
-            open={Boolean(rfidTarget)}
-            onClose={guardBackdropClose(() => setRfidTarget(null))}
-            maxWidth="xs"
+            </>
+          }
+        >
+          <UiTextField
             fullWidth
-          >
-            <DialogTitle>{`Gán RFID · ${rfidTarget?.itemCode ?? ""}`}</DialogTitle>
-            <DialogContent dividers>
-              <Stack spacing={2}>
-                <TextField
-                  fullWidth
-                  value={rfidCode}
-                  onChange={(event) => setRfidCode(event.target.value)}
-                  label="Mã RFID"
-                  placeholder="Mã RFID"
-                />
-                <TextField
-                  fullWidth
-                  value={rfidHardwareUid}
-                  onChange={(event) => setRfidHardwareUid(event.target.value)}
-                  label="Hardware UID"
-                  placeholder="Hardware UID"
-                />
-              </Stack>
-            </DialogContent>
-            <DialogActions>
+            multiline
+            minRows={3}
+            value={cancelReason}
+            onChange={(event) => setCancelReason(event.target.value)}
+            label="Lý do hủy"
+            placeholder="Lý do hủy"
+          />
+        </UiDialog>
+
+        <UiDialog
+          open={Boolean(rfidTarget)}
+          onClose={guardBackdropClose(() => setRfidTarget(null))}
+          maxWidth="xs"
+          fullWidth
+          title={`Gán RFID · ${rfidTarget?.itemCode ?? ""}`}
+          actions={
+            <>
               <ActionButton kind="close" onClick={() => setRfidTarget(null)}>
                 Đóng
               </ActionButton>
@@ -1115,10 +1032,27 @@ export function AlignedOutboundDetailModal({
               >
                 {rfidMutation.isPending ? "Đang gán..." : "Gán RFID"}
               </ActionButton>
-            </DialogActions>
-          </Dialog>
-        </DialogContent>
-      </Dialog>
+            </>
+          }
+        >
+          <Stack spacing={2}>
+            <UiTextField
+              fullWidth
+              value={rfidCode}
+              onChange={(event) => setRfidCode(event.target.value)}
+              label="Mã RFID"
+              placeholder="Mã RFID"
+            />
+            <UiTextField
+              fullWidth
+              value={rfidHardwareUid}
+              onChange={(event) => setRfidHardwareUid(event.target.value)}
+              label="Hardware UID"
+              placeholder="Hardware UID"
+            />
+          </Stack>
+        </UiDialog>
+      </UiDialog>
     </>
   );
 }

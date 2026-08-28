@@ -1,18 +1,14 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Tag } from "antd";
 import {
-  Alert,
-  Autocomplete,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
+  Box,
   Grid,
   MenuItem,
-  TextField,
-  Typography,
-} from "@mui/material";
+  UiAlert,
+  UiDialog,
+  UiStatusBadge,
+  UiTextField,
+} from "@/shared/ui";
 import { toast } from "sonner";
 import { useMvpSkus } from "@/modules/master-data/hooks/use-mvp-master";
 import { getApiErrorMessage, resolveFormErrors } from "@/shared/api/api-error";
@@ -65,16 +61,16 @@ const ISSUE_FORM_FIELDS = [
 function DetailField({ label, value }: { label: string; value: ReactNode }) {
   return (
     <Grid size={{ xs: 12, sm: 6 }}>
-      <Typography
-        variant="caption"
-        color="text.secondary"
-        sx={{ display: "block" }}
+      <Box
+        sx={{
+          typography: "caption",
+          color: "text.secondary",
+          display: "block",
+        }}
       >
         {label}
-      </Typography>
-      <Typography variant="body2" component="div">
-        {value}
-      </Typography>
+      </Box>
+      <Box sx={{ typography: "body2" }}>{value}</Box>
     </Grid>
   );
 }
@@ -188,191 +184,183 @@ export function IssuePhysicalCodeModal({
   };
 
   const result = issueMutation.data;
-  const selectedSkuOption =
-    skuOptions.find((option) => option.value === skuId) ?? null;
 
   return (
-    <>
-      <Dialog
-        open={open}
-        onClose={guardBackdropClose(handleClose)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Tạo mã vật lý mới</DialogTitle>
-        <DialogContent dividers>
-          <Alert severity="info" sx={{ mb: 2 }}>
-            <Typography sx={{ fontWeight: 700 }}>
-              Tạo mã không làm thay đổi tồn kho
-            </Typography>
-            <Typography variant="body2">
-              Hệ thống tạo một sản phẩm cụ thể kèm mã vật lý mới. Thao tác này
-              chỉ tạo thông tin nhận diện, chưa làm tăng hoặc giảm tồn kho. Chỉ
-              áp dụng cho SKU sản phẩm có quản lý số sê-ri.
-            </Typography>
-          </Alert>
-
-          {result ? (
-            <Grid container spacing={2}>
-              <DetailField label="Mã sản phẩm" value={result.item_id} />
-              <DetailField
-                label="Giá trị mã"
-                value={<Tag color="blue">{result.code_value}</Tag>}
-              />
-              <DetailField
-                label="Hình thức mã"
-                value={carrierLabel(result.carrier_type)}
-              />
-              <DetailField label="Số sê-ri" value={result.serial_number} />
-              <DetailField
-                label="Trạng thái sản phẩm"
-                value={businessLabel(
-                  ITEM_STATUS_LABELS,
-                  result.item_status,
-                  "Trạng thái khác",
-                )}
-              />
-              <DetailField
-                label="Trạng thái mã"
-                value={businessLabel(
-                  MASTER_STATUS_LABELS,
-                  result.status,
-                  "Trạng thái khác",
-                )}
-              />
-            </Grid>
-          ) : (
-            <Grid container spacing={2}>
-              <Grid size={12}>
-                <Autocomplete
-                  options={skuOptions}
-                  value={selectedSkuOption}
-                  loading={skuQuery.isLoading}
-                  getOptionLabel={(option) => option.label}
-                  isOptionEqualToValue={(option, value) =>
-                    option.value === value.value
-                  }
-                  noOptionsText={
-                    skuQuery.isLoading
-                      ? "Đang tải..."
-                      : "Không có SKU sản phẩm đang sử dụng và có quản lý số sê-ri"
-                  }
-                  onChange={(_event, option) => {
-                    setSkuId(option?.value ?? null);
-                    if (fieldErrors.skuId) {
-                      setFieldErrors((current) => ({ ...current, skuId: "" }));
-                    }
-                  }}
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      required
-                      label="SKU sản phẩm có quản lý số sê-ri"
-                      placeholder="Chọn SKU..."
-                      error={Boolean(fieldErrors.skuId)}
-                      helperText={fieldErrors.skuId}
-                    />
-                  )}
-                />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField
-                  select
-                  required
-                  fullWidth
-                  label="Hình thức mã"
-                  value={carrierType}
-                  onChange={(event) => {
-                    setCarrierType(
-                      event.target.value as IssuePhysicalCodeCarrierType,
-                    );
-                    if (fieldErrors.carrierType) {
-                      setFieldErrors((current) => ({
-                        ...current,
-                        carrierType: "",
-                      }));
-                    }
-                  }}
-                  // Trường bắt buộc gửi lên server nên phải có chỗ hiện lỗi
-                  // riêng, nếu không lỗi của nó chỉ còn đường rơi vào toast.
-                  error={Boolean(fieldErrors.carrierType)}
-                  helperText={fieldErrors.carrierType}
-                >
-                  {CARRIER_OPTIONS.map((option) => (
-                    <MenuItem key={option.value} value={option.value}>
-                      {option.label}
-                    </MenuItem>
-                  ))}
-                </TextField>
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField
-                  fullWidth
-                  label="Giá trị mã (bỏ trống để hệ thống tự sinh)"
-                  placeholder="Ví dụ: SP-0001-20260822-AB12"
-                  value={codeValue}
-                  onChange={(event) => {
-                    setCodeValue(event.target.value);
-                    if (fieldErrors.codeValue) {
-                      setFieldErrors((current) => ({
-                        ...current,
-                        codeValue: "",
-                      }));
-                    }
-                  }}
-                  error={Boolean(fieldErrors.codeValue)}
-                  helperText={fieldErrors.codeValue}
-                  slotProps={{ htmlInput: { maxLength: 200 } }}
-                />
-              </Grid>
-              <Grid size={12}>
-                <TextField
-                  fullWidth
-                  label="Số sê-ri (bỏ trống để hệ thống tự sinh)"
-                  placeholder="Ví dụ: SN-SP-0001-8F3C1A2B"
-                  value={serialNumber}
-                  onChange={(event) => {
-                    setSerialNumber(event.target.value);
-                    if (fieldErrors.serialNumber) {
-                      setFieldErrors((current) => ({
-                        ...current,
-                        serialNumber: "",
-                      }));
-                    }
-                  }}
-                  error={Boolean(fieldErrors.serialNumber)}
-                  helperText={fieldErrors.serialNumber}
-                  slotProps={{ htmlInput: { maxLength: 100 } }}
-                />
-              </Grid>
-            </Grid>
-          )}
-        </DialogContent>
-        <DialogActions>
-          {result ? (
-            <ActionButton kind="close" onClick={handleClose}>
-              Đóng
+    <UiDialog
+      open={open}
+      onClose={guardBackdropClose(handleClose)}
+      maxWidth="sm"
+      fullWidth
+      title="Tạo mã vật lý mới"
+      actions={
+        result ? (
+          <ActionButton kind="close" onClick={handleClose}>
+            Đóng
+          </ActionButton>
+        ) : (
+          <>
+            <ActionButton
+              kind="cancel"
+              onClick={handleClose}
+              disabled={issueMutation.isPending}
+            >
+              Hủy
             </ActionButton>
-          ) : (
-            <>
-              <ActionButton
-                kind="cancel"
-                onClick={handleClose}
-                disabled={issueMutation.isPending}
-              >
-                Hủy
-              </ActionButton>
-              <ActionButton
-                kind="create"
-                onClick={handleSubmit}
-                disabled={issueMutation.isPending}
-              >
-                {issueMutation.isPending ? "Đang tạo..." : "Tạo mã"}
-              </ActionButton>
-            </>
-          )}
-        </DialogActions>
-      </Dialog>
-    </>
+            <ActionButton
+              kind="create"
+              onClick={handleSubmit}
+              disabled={issueMutation.isPending}
+            >
+              {issueMutation.isPending ? "Đang tạo..." : "Tạo mã"}
+            </ActionButton>
+          </>
+        )
+      }
+    >
+      <Box sx={{ mb: 2 }}>
+        <UiAlert tone="info" title="Tạo mã không làm thay đổi tồn kho">
+          Hệ thống tạo một sản phẩm cụ thể kèm mã vật lý mới. Thao tác này chỉ
+          tạo thông tin nhận diện, chưa làm tăng hoặc giảm tồn kho. Chỉ áp dụng
+          cho SKU sản phẩm có quản lý số sê-ri.
+        </UiAlert>
+      </Box>
+
+      {result ? (
+        <Grid container spacing={2}>
+          <DetailField label="Mã sản phẩm" value={result.item_id} />
+          <DetailField
+            label="Giá trị mã"
+            value={<UiStatusBadge tone="info" label={result.code_value} />}
+          />
+          <DetailField
+            label="Hình thức mã"
+            value={carrierLabel(result.carrier_type)}
+          />
+          <DetailField label="Số sê-ri" value={result.serial_number} />
+          <DetailField
+            label="Trạng thái sản phẩm"
+            value={businessLabel(
+              ITEM_STATUS_LABELS,
+              result.item_status,
+              "Trạng thái khác",
+            )}
+          />
+          <DetailField
+            label="Trạng thái mã"
+            value={businessLabel(
+              MASTER_STATUS_LABELS,
+              result.status,
+              "Trạng thái khác",
+            )}
+          />
+        </Grid>
+      ) : (
+        <Grid container spacing={2}>
+          <Grid size={12}>
+            <UiTextField
+              select
+              required
+              fullWidth
+              label="SKU sản phẩm có quản lý số sê-ri"
+              value={skuId ?? ""}
+              onChange={(event) => {
+                setSkuId(event.target.value || null);
+                if (fieldErrors.skuId) {
+                  setFieldErrors((current) => ({ ...current, skuId: "" }));
+                }
+              }}
+              error={Boolean(fieldErrors.skuId)}
+              helperText={fieldErrors.skuId}
+            >
+              <MenuItem value="" disabled>
+                Chọn SKU...
+              </MenuItem>
+              {skuOptions.length === 0 ? (
+                <MenuItem value="__empty__" disabled>
+                  {skuQuery.isLoading
+                    ? "Đang tải..."
+                    : "Không có SKU sản phẩm đang sử dụng và có quản lý số sê-ri"}
+                </MenuItem>
+              ) : null}
+              {skuOptions.map((option) => (
+                <MenuItem key={option.value} value={option.value}>
+                  {option.label}
+                </MenuItem>
+              ))}
+            </UiTextField>
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <UiTextField
+              select
+              required
+              fullWidth
+              label="Hình thức mã"
+              value={carrierType}
+              onChange={(event) => {
+                setCarrierType(
+                  event.target.value as IssuePhysicalCodeCarrierType,
+                );
+                if (fieldErrors.carrierType) {
+                  setFieldErrors((current) => ({
+                    ...current,
+                    carrierType: "",
+                  }));
+                }
+              }}
+              // Trường bắt buộc gửi lên server nên phải có chỗ hiện lỗi
+              // riêng, nếu không lỗi của nó chỉ còn đường rơi vào toast.
+              error={Boolean(fieldErrors.carrierType)}
+              helperText={fieldErrors.carrierType}
+            >
+              {CARRIER_OPTIONS.map((option) => (
+                <MenuItem key={option.value} value={option.value}>
+                  {option.label}
+                </MenuItem>
+              ))}
+            </UiTextField>
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <UiTextField
+              fullWidth
+              label="Giá trị mã (bỏ trống để hệ thống tự sinh)"
+              placeholder="Ví dụ: SP-0001-20260822-AB12"
+              value={codeValue}
+              onChange={(event) => {
+                setCodeValue(event.target.value);
+                if (fieldErrors.codeValue) {
+                  setFieldErrors((current) => ({
+                    ...current,
+                    codeValue: "",
+                  }));
+                }
+              }}
+              error={Boolean(fieldErrors.codeValue)}
+              helperText={fieldErrors.codeValue}
+              slotProps={{ htmlInput: { maxLength: 200 } }}
+            />
+          </Grid>
+          <Grid size={12}>
+            <UiTextField
+              fullWidth
+              label="Số sê-ri (bỏ trống để hệ thống tự sinh)"
+              placeholder="Ví dụ: SN-SP-0001-8F3C1A2B"
+              value={serialNumber}
+              onChange={(event) => {
+                setSerialNumber(event.target.value);
+                if (fieldErrors.serialNumber) {
+                  setFieldErrors((current) => ({
+                    ...current,
+                    serialNumber: "",
+                  }));
+                }
+              }}
+              error={Boolean(fieldErrors.serialNumber)}
+              helperText={fieldErrors.serialNumber}
+              slotProps={{ htmlInput: { maxLength: 100 } }}
+            />
+          </Grid>
+        </Grid>
+      )}
+    </UiDialog>
   );
 }

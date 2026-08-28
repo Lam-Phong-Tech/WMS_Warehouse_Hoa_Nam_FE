@@ -1,7 +1,6 @@
 import { useMemo } from "react";
 import { Table } from "antd";
 import type { TablePaginationConfig, TableProps } from "antd";
-import { DESIGN_TOKENS } from "@/app/theme";
 import { EmptyState } from "./EmptyState";
 import { TopPagination, type TopPaginationProps } from "./TopPagination";
 import { PageSizeSelector } from "./PageSizeSelector";
@@ -204,7 +203,7 @@ export function DataTable<T extends object>({
       {!isBottomPlacement && topPaginationElement}
       <Table<T>
         rowKey={rowKey}
-        size={size ?? DESIGN_TOKENS.table.size}
+        size={size ?? "middle"}
         scroll={scroll ?? { x: "max-content" }}
         locale={{ emptyText: <EmptyState />, ...locale }}
         pagination={resolvedPagination}

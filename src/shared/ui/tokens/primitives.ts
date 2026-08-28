@@ -153,18 +153,6 @@ export const Z_INDEX = {
   blockingLoading: 9999,
 } as const;
 
-/**
- * LEGACY SHELL — sidebar tối theo BA-wireframe MVP, GIỮ TẠM trong Part 2.
- * Shell Vuexy (sidebar sáng ~260px) làm ở Part 3 Phase C; khi đó xoá khối này.
- * Allowlist: docs/ui/vuexy-sync/allowlists/legacy-scoped.json (owner/deadline).
- */
-export const LEGACY_SHELL = {
-  siderBg: "#0f172a",
-  siderHover: "#111f3d",
-  siderText: "#e5e7eb",
-  siderMuted: "#94a3b8",
-} as const;
-
 /** [ĐO card shadow không có ở login] → [X] bộ bóng của spec X */
 export const SHADOW = {
   card: `0 4px 18px rgba(${INK_RGB}, 0.1)`,

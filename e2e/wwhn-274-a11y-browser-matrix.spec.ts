@@ -117,13 +117,22 @@ async function writeMatrixEvidence(
  * thanh vo nghia — chinh la ly do ban dau cua bai test nay bao do.
  */
 function readFocusSignature(element: HTMLElement | SVGElement): string {
-  const target = element.closest(".ant-input-affix-wrapper") ?? element;
+  // Part 4 (MUI): input không mang border — chỉ báo focus nằm trên fieldset
+  // `.MuiOutlinedInput-notchedOutline` (đổi màu/độ dày viền). Giữ nhánh antd
+  // cũ cho các control adapter còn lại.
+  const root =
+    element.closest(".MuiOutlinedInput-root") ??
+    element.closest(".ant-input-affix-wrapper") ??
+    element;
+  const target =
+    root.querySelector?.(".MuiOutlinedInput-notchedOutline") ?? root;
   const style = window.getComputedStyle(target);
   return [
     style.outlineStyle,
     style.outlineWidth,
     style.boxShadow,
     style.borderColor,
+    style.borderWidth,
   ].join("|");
 }
 
@@ -163,8 +172,8 @@ test.describe("WWHN-274 a11y + browser/device matrix (NFR-SRS-006)", () => {
     await expect(headings).toHaveText("Đăng nhập hệ thống");
 
     // Label phai lien ket voi input that (getByLabel chi khop khi co htmlFor/aria-label).
-    const identifier = page.getByLabel("Email hoặc tên đăng nhập");
-    const password = page.getByLabel("Mật khẩu");
+    const identifier = page.getByLabel("Đăng nhập bằng Gmail");
+    const password = page.getByLabel("Mật khẩu", { exact: true });
     await expect(identifier).toBeVisible();
     await expect(password).toBeVisible();
     await expect(password).toHaveAttribute("type", "password");
@@ -199,8 +208,8 @@ test.describe("WWHN-274 a11y + browser/device matrix (NFR-SRS-006)", () => {
     );
 
     await page.goto("/login");
-    const identifier = page.getByLabel("Email hoặc tên đăng nhập");
-    const password = page.getByLabel("Mật khẩu");
+    const identifier = page.getByLabel("Đăng nhập bằng Gmail");
+    const password = page.getByLabel("Mật khẩu", { exact: true });
 
     // Focus dau tien phai o o dau tien (autoFocus), khong lac vao phan tu trang tri.
     await expect(identifier).toBeFocused();
@@ -217,13 +226,19 @@ test.describe("WWHN-274 a11y + browser/device matrix (NFR-SRS-006)", () => {
     const focusedFocusStyle = await password.evaluate(readFocusSignature);
     expect(focusedFocusStyle).not.toBe(blurredFocusStyle);
 
-    // "Khac nhau" chua du: khac biet phai la dau hieu thi giac that (outline hoac
-    // box-shadow), khong phai mot thay doi vo hinh.
-    const [focusedOutlineStyle, , focusedBoxShadow] =
+    // "Khac nhau" chua du: khac biet phai la dau hieu thi giac that — outline,
+    // box-shadow, HOAC vien doi mau/do day (chi bao focus chuan cua MUI
+    // notched outline).
+    const [focusedOutlineStyle, , focusedBoxShadow, focusedBorderColor, focusedBorderWidth] =
       focusedFocusStyle.split("|");
-    expect(focusedOutlineStyle !== "none" || focusedBoxShadow !== "none").toBe(
-      true,
-    );
+    const [, , , blurredBorderColor, blurredBorderWidth] =
+      blurredFocusStyle.split("|");
+    expect(
+      focusedOutlineStyle !== "none" ||
+        focusedBoxShadow !== "none" ||
+        focusedBorderColor !== blurredBorderColor ||
+        focusedBorderWidth !== blurredBorderWidth,
+    ).toBe(true);
 
     // Submit phai voi toi bang ban phim va Enter phai kich hoat validation, khong "im lang".
     const submit = page.getByRole("button", { name: "Đăng nhập" });

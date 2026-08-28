@@ -306,6 +306,38 @@ async function setupMockApi(
       return;
     }
 
+    // DocumentEvidenceGuard (a908c42): REVERSAL bắt buộc >=1 chứng từ trước khi
+    // Post — nút "Hoàn tất điều chỉnh" disabled tới khi evidence_status=PROVIDED.
+    // Mock 1 chứng từ đã nộp để mở khoá gate (cùng họ drift-repair với unit
+    // wwhn-242-reversal-corrections).
+    if (path.endsWith("/reversal-documents/rev-242-1/attachments")) {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: [
+            {
+              id: "att-242-1",
+              document_type: "REVERSAL",
+              document_id: "rev-242-1",
+              file_name: "bien-ban-dieu-chinh.pdf",
+              mime_type: "application/pdf",
+              file_size: 12345,
+              uploaded_by: "thukho",
+              uploaded_at: "2026-08-18T09:30:00Z",
+            },
+          ],
+          meta: {
+            request_id: "WWHN-242-ATTACH",
+            evidence_status: "PROVIDED",
+            requires_evidence: true,
+          },
+        }),
+      });
+      return;
+    }
+
     if (path.endsWith("/reversal-documents/rev-242-1")) {
       await json(doc);
       return;
@@ -365,10 +397,12 @@ async function hasHorizontalOverflow(page: Page): Promise<boolean> {
 }
 
 async function openDetail(page: Page): Promise<void> {
-  // Nút mang icon antd nên accessible name gồm cả nhãn icon; khớp lỏng theo chữ "Mở".
-  await page.getByRole("button", { name: /Mở/ }).first().click();
+  // exact:true — shell mobile có hamburger aria-label "Mở menu"; khớp lỏng
+  // /Mở/ sẽ trúng hamburger trước và mở Drawer thay vì mở chi tiết.
+  await page.getByRole("button", { name: "Mở", exact: true }).first().click();
+  // Title đổi "Chi tiết hoàn đảo" → "Chi tiết phiếu điều chỉnh" (i18n 2ad8aa7).
   await expect(
-    page.getByText(/Chi tiết hoàn đảo — REV-20260818-0001/),
+    page.getByText(/Chi tiết phiếu điều chỉnh — REV-20260818-0001/),
   ).toBeVisible();
 }
 
@@ -455,7 +489,7 @@ test.describe("WWHN-242 · REV-00/REV-01 evidence matrix", () => {
       await openDetail(page);
 
       await page
-        .getByRole("button", { name: /Post reversal/ })
+        .getByRole("button", { name: /Hoàn tất điều chỉnh/ })
         .first()
         .click();
 
@@ -467,15 +501,18 @@ test.describe("WWHN-242 · REV-00/REV-01 evidence matrix", () => {
       // theo hộp thoại chứa nội dung cảnh báo rồi mới soi tiêu đề bên trong nó.
       const confirmDialog = page
         .getByRole("dialog")
-        .filter({ hasText: "Đây là bước duy nhất phát sinh movement đối ứng" });
+        .filter({ hasText: "Đây là bước làm phát sinh giao dịch đối ứng" });
       await expect(confirmDialog).toBeVisible();
-      await expect(confirmDialog).toContainText("Post reversal?");
+      await expect(confirmDialog).toContainText("Hoàn tất phiếu điều chỉnh tồn kho?");
       await expect(
-        page.getByText(/Đây là bước duy nhất phát sinh movement đối ứng/),
+        page.getByText(/Đây là bước làm phát sinh giao dịch đối ứng/),
       ).toBeVisible();
+      // antd Modal.confirm cũ để lại 2 nút cùng tên trong a11y tree; UiDialog
+      // (MUI) đặt aria-hidden lên nền sau modal → chỉ còn nút của hộp xác nhận
+      // là accessible (cải thiện a11y, không phải mất nút).
       await expect(
-        page.getByRole("button", { name: /Post reversal/ }),
-      ).toHaveCount(2);
+        page.getByRole("button", { name: /Hoàn tất điều chỉnh/ }),
+      ).toHaveCount(1);
       expect(await hasHorizontalOverflow(page)).toBe(false);
 
       await captureEvidence(page, testInfo, {
@@ -545,12 +582,12 @@ test.describe("WWHN-242 · REV-00/REV-01 evidence matrix", () => {
     await expect(page.getByText("REV-20260818-0001")).toBeVisible();
     await expect(page.getByTestId("reversal-readonly-note")).toBeVisible();
     await expect(
-      page.getByRole("button", { name: /Tạo hoàn đảo/ }),
+      page.getByRole("button", { name: /Tạo phiếu điều chỉnh/ }),
     ).toHaveCount(0);
 
     await openDetail(page);
     await expect(
-      page.getByRole("button", { name: /Post reversal/ }),
+      page.getByRole("button", { name: /Hoàn tất điều chỉnh/ }),
     ).toHaveCount(0);
     await expect(
       page.getByRole("button", { name: /Huỷ phiếu DRAFT/ }),
@@ -577,7 +614,7 @@ test.describe("WWHN-242 · REV-00/REV-01 evidence matrix", () => {
     await page.goto("/reverse");
 
     await expect(
-      page.getByRole("button", { name: /Tạo hoàn đảo/ }),
+      page.getByRole("button", { name: /Tạo phiếu điều chỉnh/ }),
     ).toBeVisible();
     await expect(page.getByTestId("reversal-readonly-note")).toHaveCount(0);
 
@@ -600,26 +637,28 @@ test.describe("WWHN-242 · REV-00/REV-01 evidence matrix", () => {
     await setupMockApi(page);
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto("/reverse");
-    await page.getByRole("button", { name: /Tạo hoàn đảo/ }).click();
+    await page.getByRole("button", { name: /Tạo phiếu điều chỉnh/ }).click();
 
-    // Movement bị chặn hiện đúng mã guard của BE, không phải thông điệp chung chung.
+    // Operator UI không hiện mã guard thô của BE nữa (định hướng gỡ thuật ngữ
+    // developer khỏi UI vận hành — 024f578): movement bị chặn phải hiện trạng
+    // thái chặn rõ ràng, không phải thông điệp chung chung.
     await expect(
-      page.getByText("DOWNSTREAM_CONSUMPTION_EXISTS").first(),
+      page.getByText("Đang bị chặn bởi nghiệp vụ liên quan").first(),
     ).toBeVisible();
 
     await page.getByText("MOV-RECEIPT-000441").click();
     await expect(
-      page.getByText(/Tạo hoàn đảo từ MOV-RECEIPT-000441/),
+      page.getByText(/Điều chỉnh từ MOV-RECEIPT-000441/),
     ).toBeVisible();
 
-    const qtyInput = page.locator("input[role='spinbutton']").first();
+    const qtyInput = page.getByRole("spinbutton").first();
     await qtyInput.fill("2");
     await page
-      .getByPlaceholder("Nhập lý do hoàn đảo (tối thiểu 5 ký tự)...")
+      .getByPlaceholder("Nhập lý do điều chỉnh (tối thiểu 5 ký tự)...")
       .fill("Nhập thừa 2 đơn vị, trả lại NCC");
 
     // Preview ảnh hưởng tồn phải là partial (-2), không phải toàn bộ 20.
-    await expect(page.getByText(/Kiểm tra phụ thuộc: PASS/)).toBeVisible();
+    await expect(page.getByText(/Kiểm tra phụ thuộc: Đạt/)).toBeVisible();
     expect(await hasHorizontalOverflow(page)).toBe(false);
 
     await captureEvidence(page, testInfo, {
@@ -650,7 +689,7 @@ test.describe("WWHN-242 · REV-00/REV-01 evidence matrix", () => {
       page.getByRole("button", { name: /Xác nhận hàng vật lý đã về/ }),
     ).toBeVisible();
     await expect(
-      page.getByRole("button", { name: /Post reversal/ }).first(),
+      page.getByRole("button", { name: /Hoàn tất điều chỉnh/ }).first(),
     ).toBeDisabled();
 
     await captureEvidence(page, testInfo, {
@@ -717,11 +756,12 @@ test.describe("WWHN-242 · REV-00/REV-01 evidence matrix", () => {
 
       // Bấm Post rồi xác nhận trong hộp Modal.confirm (nút OK trùng nhãn nên lấy nút cuối).
       await page
-        .getByRole("button", { name: /Post reversal/ })
+        .getByRole("button", { name: /Hoàn tất điều chỉnh/ })
         .first()
         .click();
-      const postButtons = page.getByRole("button", { name: /Post reversal/ });
-      await expect(postButtons).toHaveCount(2);
+      // UiDialog đặt aria-hidden lên nền → chỉ nút xác nhận là accessible.
+      const postButtons = page.getByRole("button", { name: /Hoàn tất điều chỉnh/ });
+      await expect(postButtons).toHaveCount(1);
       await postButtons.last().click();
 
       const staleNotice = page.getByTestId("reversal-stale-version-notice");

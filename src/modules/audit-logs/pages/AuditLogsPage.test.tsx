@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { renderWithProviders } from "@/test/test-utils";
 import { cleanupTestState } from "@/test/setup";
 
@@ -91,10 +91,13 @@ describe("AuditLogsPage (Nhật ký hệ thống)", () => {
     expect(screen.getByLabelText("Số dòng mỗi trang")).toBeInTheDocument();
     expect(screen.getByText("Tổng 2 bản ghi")).toBeInTheDocument();
 
-    // STT chạy theo trang.
+    // STT chạy theo trang. Scope trong bảng vì UiPagination (MUI, Part 4 thay
+    // antd Pagination vốn bị stub trong test setup) cũng render nút trang "1"
+    // thật — query toàn màn sẽ trúng 2 node.
+    const table = screen.getByRole("table");
     expect(screen.getByText("STT")).toBeInTheDocument();
-    expect(screen.getByText("1")).toBeInTheDocument();
-    expect(screen.getByText("2")).toBeInTheDocument();
+    expect(within(table).getByText("1")).toBeInTheDocument();
+    expect(within(table).getByText("2")).toBeInTheDocument();
 
     // Chọn nhiều: 1 checkbox header + 1 checkbox mỗi dòng.
     expect(

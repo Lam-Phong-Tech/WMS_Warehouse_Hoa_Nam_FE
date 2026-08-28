@@ -356,7 +356,7 @@ test.describe("WWHN-268 · FE268-D01 · hợp đồng trạng thái UI có bằn
       await expect(disabled).toBeDisabled();
 
       // confirm: mở Popconfirm bằng hành động thật của người dùng.
-      await page.getByRole("button", { name: "Confirm action" }).click();
+      await page.getByRole("button", { name: "useUiConfirm()" }).click();
       await expect(
         page.locator(UI_STATE_SELECTOR.confirm).first(),
       ).toBeVisible();

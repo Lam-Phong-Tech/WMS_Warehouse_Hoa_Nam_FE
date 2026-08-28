@@ -6,7 +6,6 @@
 import type { ThemeConfig } from "antd";
 import {
   COMPONENT_TOKENS as C,
-  LEGACY_SHELL,
   MOTION,
   SEMANTIC_LIGHT as S,
   TYPOGRAPHY,
@@ -39,23 +38,8 @@ export const antdTheme: ThemeConfig = {
     motionEaseOut: MOTION.easing.out,
   },
   components: {
-    Layout: {
-      bodyBg: S.bgCanvas,
-      // Sidebar tối legacy — giữ tới Part 3 (shell Vuexy); xem LEGACY_SHELL.
-      siderBg: LEGACY_SHELL.siderBg,
-      headerBg: S.bgCanvas,
-    },
-    Menu: {
-      darkItemBg: LEGACY_SHELL.siderBg,
-      darkSubMenuItemBg: LEGACY_SHELL.siderBg,
-      darkItemColor: LEGACY_SHELL.siderText,
-      darkItemHoverBg: LEGACY_SHELL.siderHover,
-      darkItemSelectedBg: S.primary,
-      darkItemSelectedColor: S.onPrimary,
-      itemBorderRadius: C.button.radius,
-      itemMarginInline: 0,
-      itemMarginBlock: 3,
-    },
+    // Part 4: khối Layout/Menu (sidebar tối legacy) đã XOÁ — shell là
+    // UiAppShell (MUI); antd không còn render Layout/Menu nào trong app.
     Card: {
       borderRadiusLG: C.card.radius,
     },

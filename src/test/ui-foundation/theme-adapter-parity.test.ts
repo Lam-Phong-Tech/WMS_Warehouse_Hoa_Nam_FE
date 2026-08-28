@@ -85,17 +85,6 @@ describe("antd adapter ↔ tokens", () => {
   });
 });
 
-describe("shim tương thích trỏ về canonical", () => {
-  it("BRAND (deprecated) đã re-point sang Vuexy tokens", async () => {
-    const { BRAND, themeConfig } = await import("@/app/theme");
-    expect(BRAND.primary).toBe(S.primary);
-    expect(BRAND.danger).toBe(S.error);
-    expect(BRAND.canvas).toBe(S.bgCanvas);
-    expect(themeConfig).toBe(antdTheme);
-  });
-
-  it("mui-theme shim là chính muiTheme của adapter", async () => {
-    const shim = await import("@/app/mui-theme");
-    expect(shim.muiTheme).toBe(muiTheme);
-  });
-});
+// Part 4: shim `@/app/theme` và `@/app/mui-theme` đã XOÁ (consumer = 0) —
+// describe "shim tương thích" gỡ theo; nguồn theme duy nhất được bảo vệ bởi
+// provider-uniqueness.test + check-ui-architecture.

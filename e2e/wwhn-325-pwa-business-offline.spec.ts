@@ -45,7 +45,7 @@ test.describe("WWHN-325 offline mutation guard qua UI thật", () => {
     await page.evaluate(() => window.dispatchEvent(new Event("offline")));
 
     await page
-      .getByPlaceholder("admin@gmail.com hoặc admin")
+      .getByPlaceholder("your@gmail.com")
       .fill("qa2-offline@example.com");
     await page.getByPlaceholder("Nhập mật khẩu").fill("Password!123");
     await page.getByRole("button", { name: "Đăng nhập" }).click();

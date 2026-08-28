@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import dayjs from "dayjs";
-import { Space, Tag } from "antd";
-import { MenuItem, Select, TextField } from "@mui/material";
+import { Box, Stack, UiSelect, UiStatusBadge, UiTextField } from "@/shared/ui";
 import {
   ResponsiveDataTable,
   type ResponsiveTableColumn,
@@ -40,30 +39,20 @@ const STATUS_OPTIONS = Object.entries(INBOUND_STATUS_LABELS).map(
 );
 const SEARCH_DEBOUNCE_MS = 250;
 
-/** Toolbar filter nhỏ gọn — đồng bộ chuẩn mui-theme.ts (xem gotcha #4/#5 memory pilot MUI). */
-const TOOLBAR_SX = {
-  "&, & .MuiOutlinedInput-root": { height: 35 },
-  "& .MuiSelect-select, & .MuiInputBase-input": {
-    paddingTop: "8px !important",
-    paddingBottom: "8px !important",
-    fontSize: "13.5px !important",
-    boxSizing: "border-box",
-  },
-};
-
 function statusTag(status: InboundDocument["status"]) {
-  const color =
+  const tone =
     status === "POSTED"
-      ? "success"
+      ? ("success" as const)
       : status === "SCANNING"
-        ? "processing"
+        ? ("info" as const)
         : status === "CANCELLED"
-          ? "error"
-          : "warning";
+          ? ("error" as const)
+          : ("warning" as const);
   return (
-    <Tag color={color}>
-      {businessLabel(INBOUND_STATUS_LABELS, status, "Chưa xác định")}
-    </Tag>
+    <UiStatusBadge
+      tone={tone}
+      label={businessLabel(INBOUND_STATUS_LABELS, status, "Chưa xác định")}
+    />
   );
 }
 
@@ -228,7 +217,7 @@ function InboundListScreen() {
   const renderRowActions = (row: InboundDocument) => {
     const mutable = row.status === "DRAFT" || row.status === "SCANNING";
     return (
-      <Space size={4} wrap>
+      <Stack direction="row" sx={{ gap: 0.5, flexWrap: "wrap" }}>
         <ActionButton kind="scan" onClick={() => setScanDocumentId(row.id)}>
           {mutable && canScan
             ? row.status === "DRAFT"
@@ -247,7 +236,7 @@ function InboundListScreen() {
             Sửa thông tin
           </ActionButton>
         ) : null}
-      </Space>
+      </Stack>
     );
   };
 
@@ -259,47 +248,50 @@ function InboundListScreen() {
 
   return (
     <div className="inbound-page hn-mvp-source-screen">
-      <div className="toolbar">
-        <TextField
+      {/* Toolbar filter — thay wireframe vocab `.toolbar/.spacer` bằng Stack/Box
+          sx cùng nhịp (gap 8, wrap, mb 14) theo Part 4 Vuexy sync. */}
+      <Stack
+        direction="row"
+        sx={{
+          gap: 1,
+          alignItems: "center",
+          flexWrap: "wrap",
+          mb: "14px",
+          "& > *": { minWidth: 0, maxWidth: "100%" },
+        }}
+      >
+        <UiTextField
           value={searchInput}
           placeholder="Tìm mã phiếu / nguồn nhập..."
           slotProps={{ htmlInput: { "aria-label": "Tìm phiếu nhập" } }}
           onChange={(event) => setSearchInput(event.target.value)}
-          sx={{ minWidth: 220, ...TOOLBAR_SX }}
+          sx={{ minWidth: 220 }}
         />
-        <Select
-          displayEmpty
+        <UiSelect
           value={status ?? ""}
-          inputProps={{ "aria-label": "Lọc trạng thái phiếu nhập" }}
-          onChange={(event) => {
-            setStatus(event.target.value || undefined);
+          aria-label="Lọc trạng thái phiếu nhập"
+          placeholder="Trạng thái: Tất cả"
+          options={STATUS_OPTIONS}
+          onChange={(value) => {
+            setStatus(value || undefined);
             setPage(1);
           }}
-          sx={{ minWidth: 168, ...TOOLBAR_SX }}
-        >
-          <MenuItem value="">Trạng thái: Tất cả</MenuItem>
-          {STATUS_OPTIONS.map((option) => (
-            <MenuItem key={option.value} value={option.value}>
-              {option.label}
-            </MenuItem>
-          ))}
-        </Select>
-        <Select
+          minWidth={168}
+        />
+        <UiSelect
           value={perPage}
-          inputProps={{ "aria-label": "Số dòng mỗi trang" }}
-          onChange={(event) => {
-            setPerPage(Number(event.target.value));
+          aria-label="Số dòng mỗi trang"
+          options={perPageOptions.map((size) => ({
+            value: size,
+            label: `${size} / trang`,
+          }))}
+          onChange={(value) => {
+            setPerPage(Number(value));
             setPage(1);
           }}
-          sx={{ minWidth: 100, ...TOOLBAR_SX }}
-        >
-          {perPageOptions.map((size) => (
-            <MenuItem key={size} value={size}>
-              {size} / trang
-            </MenuItem>
-          ))}
-        </Select>
-        <div className="spacer" />
+          minWidth={100}
+        />
+        <Box sx={{ flex: 1 }} />
         {canCreate ? (
           <ActionButton
             kind="create"
@@ -311,16 +303,16 @@ function InboundListScreen() {
             Tạo phiếu nhập
           </ActionButton>
         ) : null}
-      </div>
+      </Stack>
 
       {query.isError ? (
-        <div style={{ marginBottom: 14 }}>
+        <Box sx={{ mb: "14px" }}>
           <ApiErrorAlert
             error={query.error}
             title="Không tải được danh sách phiếu nhập."
             onRetry={() => query.refetch()}
           />
-        </div>
+        </Box>
       ) : null}
 
       <TableLoadingBanner loading={query.isLoading || query.isFetching} />

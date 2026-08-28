@@ -1,10 +1,24 @@
 import { useQuery } from "@tanstack/react-query";
-import { Avatar, Card, Descriptions, Empty, Space, Table, Tag } from "antd";
-import { UserOutlined } from "@/shared/components/icons";
-import { PageHeader } from "@/shared/components";
-import { BRAND } from "@/app/theme";
+import {
+  Box,
+  Stack,
+  UiAvatar,
+  UiCard,
+  UiDescriptions,
+  UiPageContainer,
+  UiStatusBadge,
+  UiText,
+  type UiStatusTone,
+} from "@/shared/ui";
+import {
+  ResponsiveDataTable,
+  type ResponsiveTableColumn,
+} from "@/shared/components";
 import { useAuthStore } from "@/shared/store/auth.store";
-import { auditLogService } from "@/modules/audit-logs/services/audit-logs.service";
+import {
+  auditLogService,
+  type MyPermissionHistoryEntry,
+} from "@/modules/audit-logs/services/audit-logs.service";
 import { formatDateTime } from "@/shared/utils/format-date";
 
 const PERMISSION_HISTORY_ACTION_LABELS: Record<string, string> = {
@@ -26,16 +40,41 @@ function statusLabel(status?: string) {
   return status || "—";
 }
 
-function statusColor(status?: string) {
-  if (status === "ACTIVE") return "green";
-  if (status === "LOCKED") return "red";
-  if (status === "INACTIVE") return "orange";
-  return "default";
+function statusTone(status?: string): UiStatusTone {
+  if (status === "ACTIVE") return "success";
+  if (status === "LOCKED") return "error";
+  if (status === "INACTIVE") return "warning";
+  return "neutral";
 }
 
 function empty(value?: string | number | null) {
   return value === undefined || value === null || value === "" ? "—" : value;
 }
+
+const HISTORY_COLUMNS: ResponsiveTableColumn<MyPermissionHistoryEntry>[] = [
+  {
+    key: "created_at",
+    header: "Thời gian",
+    width: 170,
+    render: (row) => formatDateTime(row.created_at),
+  },
+  {
+    key: "action",
+    header: "Hành động",
+    width: 180,
+    render: (row) => (
+      <UiStatusBadge
+        tone="neutral"
+        label={permissionHistoryActionLabel(row.action)}
+      />
+    ),
+  },
+  {
+    key: "reason",
+    header: "Lý do",
+    render: (row) => row.reason || "—",
+  },
+];
 
 export function ProfilePage() {
   const user = useAuthStore((s) => s.user);
@@ -69,124 +108,102 @@ export function ProfilePage() {
   const historyRows = historyQuery.data?.data ?? [];
 
   return (
-    <div>
-      <PageHeader title="Thông tin tài khoản" />
-
-      <Card>
-        <div
-          style={{
+    <UiPageContainer title="Thông tin tài khoản">
+      <UiCard>
+        <Box
+          sx={{
             display: "flex",
             flexWrap: "wrap",
             alignItems: "center",
-            gap: 16,
-            marginBottom: 24,
+            gap: "16px",
+            marginBottom: "24px",
           }}
         >
-          <Avatar
-            size={64}
-            icon={<UserOutlined />}
-            style={{ background: BRAND.primary, flexShrink: 0 }}
-          />
-          <div style={{ minWidth: 0, overflowWrap: "anywhere" }}>
-            <div style={{ fontSize: 18, fontWeight: 600 }}>{displayName}</div>
-            {email ? (
-              <div style={{ color: "rgba(0,0,0,0.45)" }}>{email}</div>
-            ) : null}
-          </div>
-        </div>
+          <UiAvatar name={displayName} size="lg" />
+          <Box sx={{ minWidth: 0, overflowWrap: "anywhere" }}>
+            <UiText variant="cardTitle">{displayName}</UiText>
+            {email ? <UiText variant="secondary">{email}</UiText> : null}
+          </Box>
+        </Box>
 
-        <Descriptions column={1} bordered size="middle">
-          <Descriptions.Item label="Họ và tên">{displayName}</Descriptions.Item>
-          <Descriptions.Item label="Tên đăng nhập">
-            {empty(username)}
-          </Descriptions.Item>
-          <Descriptions.Item label="Mã nhân viên">
-            {empty(code)}
-          </Descriptions.Item>
-          <Descriptions.Item label="Số điện thoại">
-            {empty(phone)}
-          </Descriptions.Item>
-          <Descriptions.Item label="Email">{empty(email)}</Descriptions.Item>
-          <Descriptions.Item label="Trạng thái">
-            <Tag color={statusColor(status)}>{statusLabel(status)}</Tag>
-          </Descriptions.Item>
-          <Descriptions.Item label="Vai trò">
-            {isSuperAdmin ? (
-              <Tag color="gold">Super Admin</Tag>
-            ) : roles.length > 0 ? (
-              <Space size={[8, 8]} wrap>
-                {roles.map((role) => (
-                  <Tag key={role.role_id}>
-                    {role.role_name}
-                    {role.role_code ? ` (${role.role_code})` : ""}
-                  </Tag>
-                ))}
-              </Space>
-            ) : (
-              empty(profile?.role?.name ?? currentContext?.role_name)
-            )}
-          </Descriptions.Item>
-          <Descriptions.Item label="Phạm vi kho">
-            {warehouseScopes.length > 0 ? (
-              <Space size={[8, 8]} wrap>
-                {warehouseScopes.map((scope) => (
-                  <Tag key={scope}>{scope}</Tag>
-                ))}
-              </Space>
-            ) : (
-              empty(currentContext?.scope_ref ?? currentContext?.warehouse_name)
-            )}
-          </Descriptions.Item>
-          <Descriptions.Item label="Ngữ cảnh hiện tại">
-            {empty(currentContext?.role_name)}
-          </Descriptions.Item>
-          <Descriptions.Item label="Quyền được cấp">
-            {permissionCodes.length}
-          </Descriptions.Item>
-        </Descriptions>
-      </Card>
-
-      <Card
-        title="Lịch sử thay đổi quyền/vai trò trên tài khoản của tôi"
-        style={{ marginTop: 16 }}
-      >
-        <Table
-          rowKey="id"
-          size="small"
-          loading={historyQuery.isLoading}
-          dataSource={historyRows}
-          pagination={false}
-          locale={{
-            emptyText: (
-              <Empty description="Chưa có thay đổi nào được ghi nhận." />
-            ),
-          }}
-          columns={[
+        <UiDescriptions
+          columns={2}
+          items={[
+            { label: "Họ và tên", value: displayName },
+            { label: "Tên đăng nhập", value: empty(username) },
+            { label: "Mã nhân viên", value: empty(code) },
+            { label: "Số điện thoại", value: empty(phone) },
+            { label: "Email", value: empty(email) },
             {
-              title: "Thời gian",
-              dataIndex: "created_at",
-              key: "created_at",
-              width: 170,
-              render: (value: string) => formatDateTime(value),
-            },
-            {
-              title: "Hành động",
-              dataIndex: "action",
-              key: "action",
-              width: 180,
-              render: (value: string) => (
-                <Tag>{permissionHistoryActionLabel(value)}</Tag>
+              label: "Trạng thái",
+              value: (
+                <UiStatusBadge
+                  tone={statusTone(status)}
+                  label={statusLabel(status)}
+                />
               ),
             },
             {
-              title: "Lý do",
-              dataIndex: "reason",
-              key: "reason",
-              render: (value: string | null) => value || "—",
+              label: "Vai trò",
+              value: isSuperAdmin ? (
+                <UiStatusBadge tone="warning" label="Super Admin" />
+              ) : roles.length > 0 ? (
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  sx={{ flexWrap: "wrap", rowGap: 1 }}
+                >
+                  {roles.map((role) => (
+                    <UiStatusBadge
+                      key={role.role_id}
+                      tone="neutral"
+                      label={`${role.role_name}${
+                        role.role_code ? ` (${role.role_code})` : ""
+                      }`}
+                    />
+                  ))}
+                </Stack>
+              ) : (
+                empty(profile?.role?.name ?? currentContext?.role_name)
+              ),
             },
+            {
+              label: "Phạm vi kho",
+              value:
+                warehouseScopes.length > 0 ? (
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    sx={{ flexWrap: "wrap", rowGap: 1 }}
+                  >
+                    {warehouseScopes.map((scope) => (
+                      <UiStatusBadge key={scope} tone="neutral" label={scope} />
+                    ))}
+                  </Stack>
+                ) : (
+                  empty(
+                    currentContext?.scope_ref ?? currentContext?.warehouse_name,
+                  )
+                ),
+            },
+            {
+              label: "Ngữ cảnh hiện tại",
+              value: empty(currentContext?.role_name),
+            },
+            { label: "Quyền được cấp", value: permissionCodes.length },
           ]}
         />
-      </Card>
-    </div>
+      </UiCard>
+
+      <UiCard title="Lịch sử thay đổi quyền/vai trò trên tài khoản của tôi">
+        <ResponsiveDataTable<MyPermissionHistoryEntry>
+          columns={HISTORY_COLUMNS}
+          rows={historyRows}
+          rowKey={(row) => row.id}
+          loading={historyQuery.isLoading}
+          emptyText="Chưa có thay đổi nào được ghi nhận."
+        />
+      </UiCard>
+    </UiPageContainer>
   );
 }

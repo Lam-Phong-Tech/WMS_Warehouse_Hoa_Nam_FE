@@ -1,8 +1,11 @@
+/** Nội bộ render bằng design-system foundation (Part 4) — public API giữ nguyên. */
 /* eslint-disable react-refresh/only-export-components */
 import type { ReactNode } from "react";
-import { Empty, Space, Spin } from "antd";
+import CircularProgress from "@mui/material/CircularProgress";
+import Box from "@mui/material/Box";
 import { EmptyState } from "@/shared/components/data-display/EmptyState";
 import { UI_STATE, uiStateProps } from "@/shared/constants/ui-state";
+import { SEMANTIC_LIGHT as S, UiIcon } from "@/shared/ui";
 import { ApiErrorAlert } from "./ApiErrorAlert";
 
 export function InlineApiError({
@@ -28,12 +31,8 @@ export function InlineApiError({
 /**
  * Nội dung thân bảng khi không có dòng nào.
  *
- * WWHN-268 · FE268-D02: trước đây mỗi màn tự viết một chuỗi ternary
- * (`isError ? "Không tải được dữ liệu" : "..."`) nên (a) trạng thái rỗng và
- * trạng thái lỗi trông giống hệt nhau trong bằng chứng QA2 và (b) không có
- * selector ổn định để chụp đúng trạng thái. Helper này là điểm duy nhất quyết
- * định hai trạng thái đó, và phát ra `data-ui-state` theo hợp đồng
- * `src/shared/constants/ui-state.ts`.
+ * WWHN-268 · FE268-D02: điểm duy nhất quyết định trạng thái rỗng vs lỗi của
+ * bảng, phát `data-ui-state` theo hợp đồng `src/shared/constants/ui-state.ts`.
  */
 export function tableEmptyText(
   error: unknown,
@@ -46,10 +45,18 @@ export function tableEmptyText(
         {...uiStateProps(UI_STATE.ERROR, "ui-state-error-table")}
         role="alert"
       >
-        <Empty
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-          description={errorDescription}
-        />
+        <Box
+          sx={{
+            display: "grid",
+            justifyItems: "center",
+            gap: 1,
+            py: 2,
+            color: S.textMedium,
+          }}
+        >
+          <UiIcon name="cross-circle" color={S.error} size="lg" />
+          {errorDescription}
+        </Box>
       </div>
     );
   }
@@ -59,11 +66,8 @@ export function tableEmptyText(
 /**
  * Dải báo "đang tải" đặt ngay trên bảng dữ liệu.
  *
- * WWHN-268 · FE268-D02: spinner mặc định của antd Table không phát ra thuộc
- * tính nào để bằng chứng QA2 khẳng định "đây là trạng thái loading của dữ
- * liệu" — khác với skeleton lúc tải chunk route, vốn cũng là loading nhưng
- * của tầng khác. Dải này vừa là test hook ổn định, vừa là affordance rõ ràng
- * theo Annex D (loading phải nhìn thấy được, không chỉ mờ bảng).
+ * WWHN-268 · FE268-D02: test hook ổn định cho trạng thái loading của DỮ LIỆU
+ * (khác skeleton tải chunk route) + affordance rõ ràng theo Annex D.
  */
 export function TableLoadingBanner({
   loading,
@@ -83,11 +87,11 @@ export function TableLoadingBanner({
         alignItems: "center",
         gap: 8,
         marginBottom: 8,
-        color: "#555",
+        color: S.textMedium,
         fontSize: 13,
       }}
     >
-      <Spin size="small" />
+      <CircularProgress size={14} />
       {label}
     </div>
   );
@@ -95,8 +99,17 @@ export function TableLoadingBanner({
 
 export function ResponsiveToolbar({ children }: { children: ReactNode }) {
   return (
-    <Space style={{ marginBottom: 16, width: "100%" }} wrap size={[8, 8]}>
+    <Box
+      sx={{
+        marginBottom: 2,
+        width: "100%",
+        display: "flex",
+        flexWrap: "wrap",
+        gap: 1,
+        alignItems: "center",
+      }}
+    >
       {children}
-    </Space>
+    </Box>
   );
 }

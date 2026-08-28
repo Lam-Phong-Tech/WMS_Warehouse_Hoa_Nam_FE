@@ -189,6 +189,15 @@ async function mockWarrantySession(
       return;
     }
 
+    if (path === "/warranty-cases/wc-e2e-2" && method === "GET") {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: envelope({ ...CASE_LIST[1], stock_effect: "NONE" }),
+      });
+      return;
+    }
+
     if (/^\/warranty-cases\/[^/]+\/(events|attachments)$/.test(path)) {
       await route.fulfill({
         status: 200,
@@ -243,7 +252,12 @@ test("Happy: WAR-01 hiển thị danh sách; WAR-02 tạo TEMP_ONLY với Idempo
   // WAR-01: hub danh sách.
   await expect(page.getByText("BH-E2E-0001")).toBeVisible();
   await expect(page.getByText("BH-E2E-0002")).toBeVisible();
-  await expect(page.getByText("TEMP-E2E-02")).toBeVisible();
+  // Part 4: mã tạm không còn là cột danh sách — hiện ở header modal chi tiết
+  // (click dòng mở WAR-03) rồi đóng lại để tiếp tục flow.
+  await page.getByText("BH-E2E-0002").click();
+  await expect(page.getByText("TEMP-E2E-02").first()).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
 
   // WAR-02: intake TEMP_ONLY. Locator dùng regex vì accessible name của nút là
   // "<icon> Tiếp nhận bảo hành" (antd v6 icon không đóng góp ký tự "+" vào name).
@@ -304,7 +318,7 @@ test("Negative: BE 422 khi tạo case hiển thị lỗi + request id, form retr
   await page.getByLabel("Lý do mất/không có mã").fill("Mất tem");
   await page.getByLabel("Mô tả nhận diện máy").fill("Máy khoan xanh");
   await page.getByLabel("Tên khách gửi").fill("Lê Văn C");
-  await page.getByLabel("Số điện thoại").fill("12345678");
+  await page.getByLabel("Số điện thoại").fill("0912345678");
   await page.getByLabel("Bệnh / lỗi khách phản ánh").fill("Không chạy");
 
   const [createResponse] = await Promise.all([
@@ -339,18 +353,19 @@ test("WAR-03 + COMP-01: mở chi tiết case và modal xuất linh kiện purpos
   await page.goto("/warranty");
 
   await expect(page.getByText("BH-E2E-0001")).toBeVisible();
-  await page.getByRole("button", { name: "Mở" }).first().click();
+  await page.getByRole("button", { name: "Sửa", exact: true }).first().click();
 
   // WAR-03: chi tiết case + khối nghiệp vụ.
   await expect(page.getByText("Khách hàng & tiếp nhận")).toBeVisible();
   await expect(page.getByText("Máy & chẩn đoán")).toBeVisible();
-  await expect(page.getByText(/Tệp đính kèm/)).toBeVisible();
+  // Part 4: khối đính kèm đổi nhãn theo tab "Ảnh & video (n)".
+  await expect(page.getByText(/Ảnh & video/)).toBeVisible();
 
   // COMP-01: mở modal xuất linh kiện, ràng buộc purpose=WARRANTY hiển thị rõ.
   await page.getByRole("button", { name: "Xuất linh kiện" }).click();
   await expect(page.getByText(/purpose=WARRANTY/).first()).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Tạo phiếu DRAFT" }),
+    page.getByRole("button", { name: /Tạo phiếu (DRAFT|nháp)/ }),
   ).toBeVisible();
 
   await page.screenshot({

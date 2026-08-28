@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Alert, Modal } from "antd";
 import { ActionButton } from "@/shared/components/actions";
+import { SEMANTIC_LIGHT } from "@/shared/ui/tokens";
 
 type BarcodeResult = { rawValue?: string };
 type BarcodeDetectorInstance = {
@@ -182,7 +183,8 @@ export function CameraScanModal({
               width: "100%",
               minHeight: 260,
               borderRadius: 12,
-              background: "#0f172a",
+              // Nền letterbox quanh khung camera — ink token thay hex slate cũ.
+              background: SEMANTIC_LIGHT.textStrong,
             }}
           />
           <Alert

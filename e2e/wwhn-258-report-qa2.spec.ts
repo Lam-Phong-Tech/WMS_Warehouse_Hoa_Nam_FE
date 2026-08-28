@@ -129,6 +129,22 @@ async function installApi(page: Page, scenario: Scenario): Promise<Harness> {
       return;
     }
 
+    // Checklist 27/08: POST /reports/export chỉ tạo job; FE poll
+    // GET /reports/export/{id} tới khi READY rồi mới tải file.
+    if (path === "/reports/export/job-258") {
+      await json({
+        export_job_id: "job-258",
+        report_code: "warranty-defects",
+        format: "xlsx",
+        status: "READY",
+        row_count: 1,
+        download_url:
+          "/api/v1/reports/warranty-defects/export-excel?format=xlsx",
+        error_message: null,
+      });
+      return;
+    }
+
     if (path === "/reports/export") {
       exportBodies.push(request.postDataJSON() as Record<string, unknown>);
       await json({
@@ -181,7 +197,15 @@ async function installApi(page: Page, scenario: Scenario): Promise<Harness> {
       const total = scenario.total ?? 1;
       await json({
         period: { from_date: "2026-07-20", to_date: "2026-08-19" },
-        summary: { total_cases: total, temp_only: 0 },
+        // Contract hiện tại (BaM1ReportController): summary.total/processing/
+        // returned/cancelled/temp_only — không còn total_cases.
+        summary: {
+          total,
+          processing: total,
+          returned: 0,
+          cancelled: 0,
+          temp_only: 0,
+        },
         pagination: { current_page: 1, per_page: 15, total, last_page: 1 },
         rows: scenario.empty ? [] : [WARRANTY_ROW],
         by_defect: [],
@@ -215,6 +239,10 @@ async function openWarrantyReport(
   });
   await page.goto("/reports");
   await expect.poll(api.meCalls, { timeout: 15_000 }).toBeGreaterThanOrEqual(1);
+  // ReportsPage (UiTabs shell) mặc định mở tab "Báo cáo theo từng thị trường";
+  // màn RPT-01 (wwhn-258-report-screen) nằm ở tab "Báo cáo vận hành" — phải
+  // chọn tab trước khi chờ testid.
+  await page.getByRole("tab", { name: /Báo cáo vận hành/ }).click();
   // `/auth/me` trả về sau khi shell đã mount, và bộ quyền mới làm cả trang render
   // lại. Chờ một phần tử ổn định sau lần render đó, nếu không tab bị detach ngay
   // giữa lúc click.
@@ -232,29 +260,12 @@ async function openWarrantyReport(
  * dùng thật thay vì ép click một phần tử bị khuất.
  */
 async function selectWarrantyTab(page: Page): Promise<void> {
+  // Part 4: 8 tab nhóm báo cáo chuyển từ antd/rc-tabs sang UiTabs (MUI,
+  // scrollable) — không còn dropdown "more"; ở viewport hẹp tab nằm trong
+  // vùng cuộn và Playwright tự scrollIntoView khi click (vẫn là đường đi
+  // người dùng thật: kéo thanh tab rồi bấm).
   const tab = page.getByRole("tab", { name: /Bảo hành/ });
-
-  // Ở 768px, 8 tab không đủ chỗ nên rc-tabs đẩy phần thừa vào nút "more": tab
-  // vẫn nằm trong DOM nhưng bị cắt khỏi khung thanh tab và không nhận click.
-  // Đây là affordance hợp lệ theo Annex D (hành động vẫn tới được), nên bằng
-  // chứng phải đi đúng đường người dùng. Quyết định bằng hình học thay vì thử
-  // click rồi bắt lỗi — một cú click trượt sẽ để con trỏ nằm trên nút "more" và
-  // tự đóng dropdown mở ra sau đó.
-  const wrap = await page.locator(".ant-tabs-nav-wrap").first().boundingBox();
-  const box = await tab.boundingBox();
-  const clipped =
-    !wrap || !box || box.x < wrap.x || box.x + box.width > wrap.x + wrap.width;
-
-  if (!clipped) {
-    await tab.click();
-    await expect(tab).toHaveAttribute("aria-selected", "true");
-    return;
-  }
-
-  await page.locator(".ant-tabs-nav-more").first().click();
-  const item = page.locator('[id$="more-popup-warranty"]');
-  await item.waitFor({ state: "visible", timeout: 10_000 });
-  await item.click();
+  await tab.click();
   await expect(tab).toHaveAttribute("aria-selected", "true");
 }
 
@@ -287,7 +298,7 @@ test("QA2 · ma trận vai: report.view / +report.export / +warranty.pii.export"
   await expect(page.getByTestId("report-pii-reason")).toHaveCount(0);
   await expect(
     page.getByText(
-      /không có warranty\.pii\.export nên file export luôn ở dạng mask/,
+      /không có quyền xuất PII nên tệp xuất luôn che thông tin/,
     ),
   ).toBeVisible();
   await page.screenshot({
@@ -316,9 +327,19 @@ test("QA2 · PII cột khách hàng luôn mask khi thiếu warranty.pii.view", a
   await openWarrantyReport(page, api);
 
   await expect(page.getByText("BH-20260819-001")).toBeVisible();
+  // Bảng ngoài chỉ giữ cột thiết yếu (không còn cột Khách hàng/SĐT/Địa chỉ) —
+  // PII hiển thị trong modal chi tiết mở bằng nút "Xem"; mask vẫn bắt buộc.
   await expect(page.getByText("Nguyễn Văn A")).toHaveCount(0);
   await expect(page.getByText("0901234567")).toHaveCount(0);
-  await expect(page.getByText("*******567")).toBeVisible();
+  await page
+    .getByRole("button", { name: "Xem chi tiết dòng báo cáo" })
+    .first()
+    .click();
+  const detailDialog = page.getByRole("dialog");
+  await expect(detailDialog.getByText("*******567")).toBeVisible();
+  await expect(detailDialog.getByText("N*** V*** A***")).toBeVisible();
+  await expect(page.getByText("Nguyễn Văn A")).toHaveCount(0);
+  await expect(page.getByText("0901234567")).toHaveCount(0);
   await page.screenshot({
     path: join(EVIDENCE_DIR, "pii-01-masked-columns.png"),
     fullPage: true,
@@ -335,7 +356,7 @@ test("QA2 · filter đi vào request và export giữ nguyên bộ lọc", async
   });
   await openWarrantyReport(page, api);
 
-  await page.getByPlaceholder("SKU / model").fill("KT-2000");
+  await page.getByPlaceholder("SKU / mẫu sản phẩm").fill("KT-2000");
   await expect
     .poll(() => api.reportUrls.some((url) => url.includes("model=KT-2000")), {
       timeout: 10_000,

@@ -1,17 +1,4 @@
-import { useEffect, useRef, useState } from "react";
-import { Table } from "antd";
-import type { ColumnsType } from "antd/es/table";
-import {
-  Alert,
-  Box,
-  Chip,
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  Stack,
-  Switch,
-  Typography,
-} from "@mui/material";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
@@ -37,6 +24,19 @@ import {
 import { sha256OfFile } from "@/shared/utils/file-digest";
 import { formatDateTime } from "@/shared/utils/format-date";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
+import { ResponsiveDataTable } from "@/shared/components";
+import type { ResponsiveTableColumn } from "@/shared/components";
+import {
+  Box,
+  SEMANTIC_LIGHT as S,
+  Stack,
+  Switch,
+  UiAlert,
+  UiDialog,
+  UiPagination,
+  UiStatusBadge,
+  UiText,
+} from "@/shared/ui";
 
 interface SkuImportModalProps {
   open: boolean;
@@ -124,19 +124,84 @@ function payloadSignature(fileSha256: string | null, updateExisting: boolean) {
   return `${fileSha256}|${updateExisting ? "update=1" : "update=0"}`;
 }
 
-const ROW_ERROR_COLUMNS: ColumnsType<SkuImportRowError> = [
-  { title: "Dòng", dataIndex: "row", width: 70 },
-  { title: "Trường dữ liệu", dataIndex: "field", width: 150 },
-  { title: "Loại lỗi", dataIndex: "code", width: 190 },
-  { title: "Nội dung lỗi", dataIndex: "message" },
+type KeyedRowError = SkuImportRowError & { __key: string };
+
+const ROW_ERROR_COLUMNS: ResponsiveTableColumn<KeyedRowError>[] = [
+  { key: "row", header: "Dòng", width: 70, render: (record) => record.row },
   {
-    title: "Giá trị nhập",
-    dataIndex: "value",
+    key: "field",
+    header: "Trường dữ liệu",
+    width: 150,
+    render: (record) => record.field,
+  },
+  {
+    key: "code",
+    header: "Loại lỗi",
+    width: 190,
+    render: (record) => record.code,
+  },
+  {
+    key: "message",
+    header: "Nội dung lỗi",
+    render: (record) => record.message,
+  },
+  {
+    key: "value",
+    header: "Giá trị nhập",
     width: 160,
-    render: (value: unknown) =>
-      value === null || value === undefined ? "-" : String(value),
+    render: (record) =>
+      record.value === null || record.value === undefined
+        ? "-"
+        : String(record.value),
   },
 ];
+
+const ROW_ERROR_PAGE_SIZE = 10;
+
+/**
+ * Bảng dòng lỗi của kết quả kiểm tra/nhập — thay antd Table (Part 4). Giữ ngữ
+ * nghĩa phân trang cũ: chỉ hiện phân trang khi quá 10 dòng, cỡ trang cố định.
+ */
+function RowErrorTable({ errors }: { errors: SkuImportRowError[] }) {
+  const [page, setPage] = useState(1);
+  const keyed = useMemo(
+    () =>
+      errors.map((error, index) => ({
+        ...error,
+        __key: `${error.row}-${error.field}-${index}`,
+      })),
+    [errors],
+  );
+  const paginated = keyed.length > ROW_ERROR_PAGE_SIZE;
+  const pageCount = Math.max(1, Math.ceil(keyed.length / ROW_ERROR_PAGE_SIZE));
+  const safePage = Math.min(Math.max(1, page), pageCount);
+  const visibleRows = paginated
+    ? keyed.slice(
+        (safePage - 1) * ROW_ERROR_PAGE_SIZE,
+        safePage * ROW_ERROR_PAGE_SIZE,
+      )
+    : keyed;
+
+  return (
+    <Stack spacing={1}>
+      <ResponsiveDataTable<KeyedRowError>
+        columns={ROW_ERROR_COLUMNS}
+        rows={visibleRows}
+        rowKey={(record) => record.__key}
+        emptyText="Không có dòng lỗi"
+      />
+      {paginated ? (
+        <UiPagination
+          page={safePage}
+          pageSize={ROW_ERROR_PAGE_SIZE}
+          total={keyed.length}
+          showTotal={false}
+          onPageChange={setPage}
+        />
+      ) : null}
+    </Stack>
+  );
+}
 
 function ResultSummary({
   result,
@@ -151,34 +216,26 @@ function ResultSummary({
       spacing={1.5}
       sx={{ flexWrap: "wrap", rowGap: 1, alignItems: "center" }}
     >
-      <Chip label={label} color="primary" size="small" />
-      <Typography variant="body2">Tổng: {result.totalRows}</Typography>
-      <Typography variant="body2" color="success.main">
+      <UiStatusBadge tone="primary" label={label} />
+      <UiText variant="body">Tổng: {result.totalRows}</UiText>
+      <UiText variant="body" color={S.successText}>
         Hợp lệ: {result.validRows}
-      </Typography>
-      <Typography
-        variant="body2"
-        color={result.errorRows > 0 ? "error.main" : "text.primary"}
+      </UiText>
+      <UiText
+        variant="body"
+        color={result.errorRows > 0 ? S.errorText : undefined}
       >
         Lỗi: {result.errorRows}
-      </Typography>
+      </UiText>
       {result.dryRun ? (
         <>
-          <Typography variant="body2">
-            Sẽ tạo mới: {result.wouldInsertRows}
-          </Typography>
-          <Typography variant="body2">
-            Sẽ cập nhật: {result.wouldUpdateRows}
-          </Typography>
+          <UiText variant="body">Sẽ tạo mới: {result.wouldInsertRows}</UiText>
+          <UiText variant="body">Sẽ cập nhật: {result.wouldUpdateRows}</UiText>
         </>
       ) : (
         <>
-          <Typography variant="body2">
-            Đã tạo mới: {result.insertedRows}
-          </Typography>
-          <Typography variant="body2">
-            Đã cập nhật: {result.updatedRows}
-          </Typography>
+          <UiText variant="body">Đã tạo mới: {result.insertedRows}</UiText>
+          <UiText variant="body">Đã cập nhật: {result.updatedRows}</UiText>
         </>
       )}
     </Stack>
@@ -230,10 +287,10 @@ function SkuImportErrorFilePanel({
 
   if (!available) {
     return (
-      <Typography variant="body2" color="text.secondary">
+      <UiText variant="secondary">
         Tệp lỗi không còn tải được hoặc báo cáo không có dòng lỗi. Hãy chạy lại
         Kiểm tra trước sau khi đã sửa tệp nếu cần tạo báo cáo lỗi mới.
-      </Typography>
+      </UiText>
     );
   }
 
@@ -246,10 +303,10 @@ function SkuImportErrorFilePanel({
       >
         {downloadMutation.isPending ? "Đang tải..." : "Tải tệp lỗi"}
       </ActionButton>
-      <Typography variant="body2" color="text.secondary">
+      <UiText variant="secondary">
         Tệp chứa số dòng, trường dữ liệu, loại lỗi, nội dung lỗi và giá trị bị
         từ chối{formatExpiry(expiresAt)}.
-      </Typography>
+      </UiText>
       {downloadMutation.error &&
       !isNoPermissionError(downloadMutation.error) ? (
         <ApiErrorAlert
@@ -506,225 +563,196 @@ export function SkuImportModal({
 
   return (
     <>
-      <Dialog
+      <UiDialog
         {...dialog.dialogProps}
         open={open && dialog.open}
         onClose={close}
         maxWidth="md"
         fullWidth
+        title={
+          <>
+            Nhập danh sách SKU từ Excel
+            <ActionIconButton
+              kind="close"
+              label="Đóng"
+              onClick={close}
+              sx={{ position: "absolute", right: 10, top: 8 }}
+            />
+          </>
+        }
       >
-        <DialogTitle sx={{ pr: 6, position: "relative" }}>
-          Nhập danh sách SKU từ Excel
-          <ActionIconButton
-            kind="close"
-            label="Đóng"
-            onClick={close}
-            sx={{ position: "absolute", right: 10, top: 8 }}
-          />
-        </DialogTitle>
-        <DialogContent dividers>
-          <Stack spacing={1.75}>
-            <Alert severity="info">
-              <Typography sx={{ fontWeight: 700 }}>
-                Chọn tệp → Kiểm tra trước → sửa lỗi nếu có → Nhập dữ liệu
-              </Typography>
-              <Typography variant="body2">
-                {`Hệ thống chỉ ghi dữ liệu khi toàn bộ tệp hợp lệ. Nếu còn một dòng lỗi thì không SKU nào được tạo hoặc cập nhật. ${describeConstraints(constraints)}`}
-              </Typography>
-            </Alert>
+        <Stack spacing={1.75}>
+          <UiAlert
+            tone="info"
+            title="Chọn tệp → Kiểm tra trước → sửa lỗi nếu có → Nhập dữ liệu"
+          >
+            {`Hệ thống chỉ ghi dữ liệu khi toàn bộ tệp hợp lệ. Nếu còn một dòng lỗi thì không SKU nào được tạo hoặc cập nhật. ${describeConstraints(constraints)}`}
+          </UiAlert>
 
-            <Stack
-              direction="row"
-              spacing={2}
-              sx={{ flexWrap: "wrap", rowGap: 1.5, alignItems: "center" }}
-            >
-              <input
-                key={fileInputKey}
-                type="file"
-                accept={acceptAttribute(constraints)}
-                aria-label="Chọn tệp Excel chứa SKU"
+          <Stack
+            direction="row"
+            spacing={2}
+            sx={{ flexWrap: "wrap", rowGap: 1.5, alignItems: "center" }}
+          >
+            <input
+              key={fileInputKey}
+              type="file"
+              accept={acceptAttribute(constraints)}
+              aria-label="Chọn tệp Excel chứa SKU"
+              onChange={(event) => {
+                setFile(event.target.files?.[0] ?? null);
+                invalidatePreview();
+              }}
+            />
+            <Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>
+              <Switch
+                checked={updateExisting}
                 onChange={(event) => {
-                  setFile(event.target.files?.[0] ?? null);
+                  setUpdateExisting(event.target.checked);
                   invalidatePreview();
                 }}
+                slotProps={{
+                  input: { "aria-label": "Cho phép cập nhật SKU đã tồn tại" },
+                }}
               />
-              <Stack
-                direction="row"
-                spacing={0.75}
-                sx={{ alignItems: "center" }}
-              >
-                <Switch
-                  checked={updateExisting}
-                  onChange={(event) => {
-                    setUpdateExisting(event.target.checked);
-                    invalidatePreview();
-                  }}
-                  slotProps={{
-                    input: { "aria-label": "Cho phép cập nhật SKU đã tồn tại" },
-                  }}
-                />
-                <Typography variant="body2">
-                  Cho phép cập nhật SKU đã tồn tại
-                </Typography>
-              </Stack>
-              <ActionButton
-                kind="download"
-                disabled={templateMutation.isPending}
-                onClick={() => templateMutation.mutate()}
-              >
-                {templateMutation.isPending ? "Đang tải..." : "Tải tệp mẫu"}
-              </ActionButton>
+              <UiText variant="body">Cho phép cập nhật SKU đã tồn tại</UiText>
             </Stack>
+            <ActionButton
+              kind="download"
+              disabled={templateMutation.isPending}
+              onClick={() => templateMutation.mutate()}
+            >
+              {templateMutation.isPending ? "Đang tải..." : "Tải tệp mẫu"}
+            </ActionButton>
+          </Stack>
 
-            <Typography variant="body2" color="text.secondary">
-              Tệp cần có tối thiểu cột mã SKU và tên SKU. Các thông tin còn lại
-              như đơn vị tính, loại SKU, hãng, nhóm hàng, mẫu sản phẩm, nguồn
-              điện, quy cách đóng gói, phiên bản sản phẩm, trạng thái và chế độ
-              quản lý số sê-ri có thể khai báo thêm theo tệp mẫu.
-            </Typography>
+          <UiText variant="secondary">
+            Tệp cần có tối thiểu cột mã SKU và tên SKU. Các thông tin còn lại
+            như đơn vị tính, loại SKU, hãng, nhóm hàng, mẫu sản phẩm, nguồn
+            điện, quy cách đóng gói, phiên bản sản phẩm, trạng thái và chế độ
+            quản lý số sê-ri có thể khai báo thêm theo tệp mẫu.
+          </UiText>
 
-            {!canImport ? (
-              <Alert severity="warning">
-                Tài khoản hiện tại không có quyền nhập danh sách SKU.
-              </Alert>
-            ) : null}
+          {!canImport ? (
+            <UiAlert tone="warning">
+              Tài khoản hiện tại không có quyền nhập danh sách SKU.
+            </UiAlert>
+          ) : null}
 
-            {digestError ? <Alert severity="error">{digestError}</Alert> : null}
+          {digestError ? <UiAlert tone="error">{digestError}</UiAlert> : null}
 
-            <Stack spacing={1}>
-              <Stack
-                direction="row"
-                spacing={1.5}
-                sx={{ flexWrap: "wrap", rowGap: 1, alignItems: "center" }}
-              >
-                <ActionButton
-                  kind="view"
-                  disabled={
-                    !canImport ||
-                    !fileSha256 ||
-                    digestPending ||
-                    commitMutation.isPending ||
-                    previewMutation.isPending
-                  }
-                  onClick={() => {
-                    const payload = currentPayload();
-                    if (payload) previewMutation.mutate(payload);
-                  }}
-                >
-                  {previewMutation.isPending || digestPending
-                    ? "Đang kiểm tra..."
-                    : "Kiểm tra trước"}
-                </ActionButton>
-                <ActionButton
-                  kind="upload"
-                  disabled={!canCommit}
-                  onClick={() => {
-                    const payload = currentPayload();
-                    if (payload) commitMutation.mutate(payload);
-                  }}
-                >
-                  {commitMutation.isPending ? "Đang nhập..." : "Nhập dữ liệu"}
-                </ActionButton>
-              </Stack>
-
-              {digestPending ? (
-                <Typography variant="body2" color="text.secondary">
-                  Đang kiểm tra nội dung tệp…
-                </Typography>
-              ) : previewSignature !== "" && !previewMatchesCurrentPayload ? (
-                <Typography variant="body2" color="text.secondary">
-                  Tệp hoặc lựa chọn cập nhật đã thay đổi sau lần kiểm tra trước.
-                  Hãy kiểm tra lại trước khi nhập dữ liệu.
-                </Typography>
-              ) : !previewResult ? (
-                <Typography variant="body2" color="text.secondary">
-                  Cần kiểm tra tệp và xử lý hết lỗi trước khi nhập dữ liệu.
-                </Typography>
-              ) : null}
-            </Stack>
-
-            {activeResult ? (
-              <Stack spacing={1.25}>
-                <ResultSummary
-                  result={activeResult}
-                  label={
-                    commitResult
-                      ? commitResult.duplicate
-                        ? "Đã xử lý trước đó"
-                        : commitResult.committed
-                          ? "Đã nhập dữ liệu"
-                          : "Không được ghi dữ liệu"
-                      : "Kết quả kiểm tra trước"
-                  }
-                />
-
-                {commitResult?.duplicate ? (
-                  <Alert severity="warning">
-                    <Typography sx={{ fontWeight: 700 }}>
-                      Tệp này đã được nhập trước đó
-                    </Typography>
-                    <Typography variant="body2">
-                      Nội dung tệp và lựa chọn cập nhật giống một lần nhập gần
-                      đây, nên hệ thống không tạo hoặc cập nhật SKU lần nữa. Nếu
-                      muốn thay đổi cách xử lý SKU đã tồn tại, hãy đổi lựa chọn
-                      rồi kiểm tra lại.
-                    </Typography>
-                  </Alert>
-                ) : null}
-
-                {activeResult.rowErrors.length > 0 ? (
-                  <Box>
-                    <Table<SkuImportRowError>
-                      rowKey={(row, index) =>
-                        `${row.row}-${row.field}-${index}`
-                      }
-                      size="small"
-                      dataSource={activeResult.rowErrors}
-                      columns={ROW_ERROR_COLUMNS}
-                      scroll={{ x: "max-content" }}
-                      pagination={
-                        activeResult.rowErrors.length > 10
-                          ? { pageSize: 10, showSizeChanger: false }
-                          : false
-                      }
-                      locale={{ emptyText: "Không có dòng lỗi" }}
-                    />
-                  </Box>
-                ) : null}
-
-                {activeResult.errorRows > 0 && activeResult.importReportId ? (
-                  <SkuImportErrorFilePanel
-                    reportId={activeResult.importReportId}
-                    availableHint={activeResult.errorFileAvailable}
-                    expiresAtHint={activeResult.errorFileExpiresAt}
-                  />
-                ) : null}
-              </Stack>
-            ) : null}
-
+          <Stack spacing={1}>
             <Stack
               direction="row"
               spacing={1.5}
-              sx={{ justifyContent: "flex-end" }}
+              sx={{ flexWrap: "wrap", rowGap: 1, alignItems: "center" }}
             >
               <ActionButton
-                kind="reset"
-                disabled={previewMutation.isPending || commitMutation.isPending}
-                onClick={resetAll}
+                kind="view"
+                disabled={
+                  !canImport ||
+                  !fileSha256 ||
+                  digestPending ||
+                  commitMutation.isPending ||
+                  previewMutation.isPending
+                }
+                onClick={() => {
+                  const payload = currentPayload();
+                  if (payload) previewMutation.mutate(payload);
+                }}
               >
-                Làm lại
+                {previewMutation.isPending || digestPending
+                  ? "Đang kiểm tra..."
+                  : "Kiểm tra trước"}
               </ActionButton>
               <ActionButton
-                kind="close"
-                disabled={previewMutation.isPending || commitMutation.isPending}
-                onClick={close}
+                kind="upload"
+                disabled={!canCommit}
+                onClick={() => {
+                  const payload = currentPayload();
+                  if (payload) commitMutation.mutate(payload);
+                }}
               >
-                Đóng
+                {commitMutation.isPending ? "Đang nhập..." : "Nhập dữ liệu"}
               </ActionButton>
             </Stack>
+
+            {digestPending ? (
+              <UiText variant="secondary">Đang kiểm tra nội dung tệp…</UiText>
+            ) : previewSignature !== "" && !previewMatchesCurrentPayload ? (
+              <UiText variant="secondary">
+                Tệp hoặc lựa chọn cập nhật đã thay đổi sau lần kiểm tra trước.
+                Hãy kiểm tra lại trước khi nhập dữ liệu.
+              </UiText>
+            ) : !previewResult ? (
+              <UiText variant="secondary">
+                Cần kiểm tra tệp và xử lý hết lỗi trước khi nhập dữ liệu.
+              </UiText>
+            ) : null}
           </Stack>
-        </DialogContent>
-      </Dialog>
+
+          {activeResult ? (
+            <Stack spacing={1.25}>
+              <ResultSummary
+                result={activeResult}
+                label={
+                  commitResult
+                    ? commitResult.duplicate
+                      ? "Đã xử lý trước đó"
+                      : commitResult.committed
+                        ? "Đã nhập dữ liệu"
+                        : "Không được ghi dữ liệu"
+                    : "Kết quả kiểm tra trước"
+                }
+              />
+
+              {commitResult?.duplicate ? (
+                <UiAlert tone="warning" title="Tệp này đã được nhập trước đó">
+                  Nội dung tệp và lựa chọn cập nhật giống một lần nhập gần đây,
+                  nên hệ thống không tạo hoặc cập nhật SKU lần nữa. Nếu muốn
+                  thay đổi cách xử lý SKU đã tồn tại, hãy đổi lựa chọn rồi kiểm
+                  tra lại.
+                </UiAlert>
+              ) : null}
+
+              {activeResult.rowErrors.length > 0 ? (
+                <Box>
+                  <RowErrorTable errors={activeResult.rowErrors} />
+                </Box>
+              ) : null}
+
+              {activeResult.errorRows > 0 && activeResult.importReportId ? (
+                <SkuImportErrorFilePanel
+                  reportId={activeResult.importReportId}
+                  availableHint={activeResult.errorFileAvailable}
+                  expiresAtHint={activeResult.errorFileExpiresAt}
+                />
+              ) : null}
+            </Stack>
+          ) : null}
+
+          <Stack
+            direction="row"
+            spacing={1.5}
+            sx={{ justifyContent: "flex-end" }}
+          >
+            <ActionButton
+              kind="reset"
+              disabled={previewMutation.isPending || commitMutation.isPending}
+              onClick={resetAll}
+            >
+              Làm lại
+            </ActionButton>
+            <ActionButton
+              kind="close"
+              disabled={previewMutation.isPending || commitMutation.isPending}
+              onClick={close}
+            >
+              Đóng
+            </ActionButton>
+          </Stack>
+        </Stack>
+      </UiDialog>
     </>
   );
 }
