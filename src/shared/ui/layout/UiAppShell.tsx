@@ -61,6 +61,11 @@ export function UiAppShell({
         // Chốt chiều cao viewport để main tự cuộn, sidebar đứng yên.
         height: "100dvh",
         minHeight: "100dvh",
+        // Không có overflow:hidden, hàng grid ẩn (auto) sẽ giãn theo chiều cao
+        // NỘI DUNG của main thay vì bị chốt ở 100dvh ("grid blowout") — lúc đó
+        // main mất vùng cuộn riêng và cả document cuộn theo, kéo sidebar/topbar
+        // trôi cùng. overflow:hidden ở đây buộc con phải tự cuộn bên trong.
+        overflow: "hidden",
         backgroundColor: S.bgCanvas,
         transition: `grid-template-columns ${MOTION.duration.normal}ms ${MOTION.easing.standard}`,
       }}
@@ -77,6 +82,7 @@ export function UiAppShell({
             overflowY: "auto",
             overflowX: "hidden",
             minWidth: 0,
+            minHeight: 0,
           }}
         >
           {sidebar}
@@ -84,7 +90,14 @@ export function UiAppShell({
       )}
 
       {/* Phần còn lại: topbar sticky + main cuộn + footer */}
-      <Box sx={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          minWidth: 0,
+          minHeight: 0,
+        }}
+      >
         {topbar}
         <Box
           component="main"

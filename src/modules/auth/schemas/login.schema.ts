@@ -17,6 +17,8 @@ export const loginSchema = z
       .min(1, "Vui lòng nhập email hoặc tên đăng nhập")
       .max(254, "Email hoặc tên đăng nhập quá dài"),
     password: z.string().min(1, "Vui lòng nhập mật khẩu"),
+    /** "Ghi nhớ đăng nhập" — chỉ lưu identifier phía client, không vào payload. */
+    remember: z.boolean().optional(),
   })
   .superRefine(({ identifier }, context) => {
     if (isEmailIdentifier(identifier)) {

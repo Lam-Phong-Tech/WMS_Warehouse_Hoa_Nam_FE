@@ -232,6 +232,18 @@ export const muiTheme = createTheme({
         },
       },
     },
+    /**
+     * Alert (lỗi API, cảnh báo nghiệp vụ) xuất hiện giữa luồng thao tác và đẩy
+     * nội dung bên dưới xuống — hiện tức thì làm cả trang giật một nhịp. Dùng
+     * lại keyframes toàn cục của hn-motion.css để giữ một nguồn định nghĩa.
+     */
+    MuiAlert: {
+      styleOverrides: {
+        root: {
+          animation: `hn-fade-in-up ${MOTION.duration.normal}ms ${MOTION.easing.out} backwards`,
+        },
+      },
+    },
     MuiIconButton: {
       defaultProps: { size: "small" },
       styleOverrides: {

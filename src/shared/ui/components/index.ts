@@ -32,6 +32,7 @@ export {
 } from "./UiStateSurface";
 export { UiPagination, type UiPaginationProps } from "./UiPagination";
 export { UiTabs, type UiTabsProps, type UiTabItem } from "./UiTabs";
+export { UiTabPanel, type UiTabPanelProps } from "./UiTabPanel";
 export { UiAvatar, type UiAvatarProps } from "./UiAvatar";
 export { UiAlert, type UiAlertProps } from "./UiAlert";
 export { UiKpiCard, type UiKpiCardProps } from "./UiKpiCard";

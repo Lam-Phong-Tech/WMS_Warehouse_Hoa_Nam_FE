@@ -51,6 +51,7 @@ import {
   UiSelect,
   UiStatusBadge,
   UiTabs,
+  UiTabPanel,
   UiText,
   UiTextField,
 } from "@/shared/ui";
@@ -493,7 +494,7 @@ export function CatalogMasterScreen() {
             />
           </Box>
 
-          <Box sx={{ p: 2 }}>
+          <UiTabPanel value={activeKind} sx={{ p: 2 }}>
             {listError ? (
               <Box sx={{ mb: 1.5 }}>
                 <UiAlert tone="error">{listError}</UiAlert>
@@ -591,7 +592,7 @@ export function CatalogMasterScreen() {
                 onPageChange={setPage}
               />
             </Stack>
-          </Box>
+          </UiTabPanel>
         </UiCard>
 
         <UiDialog

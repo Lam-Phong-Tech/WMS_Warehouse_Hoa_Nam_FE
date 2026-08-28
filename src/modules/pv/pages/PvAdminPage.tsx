@@ -9,6 +9,7 @@ import {
   UiSelect,
   UiStatusBadge,
   UiTabs,
+  UiTabPanel,
   UiText,
   UiTextField,
 } from "@/shared/ui";
@@ -720,107 +721,115 @@ export default function PvAdminPage() {
       </Box>
 
       {activeTab === "profiles" ? (
-        profiles.isPending ? (
-          <LoadingState tip="Đang tải…" testId="pv-admin-profiles-loading" />
-        ) : profiles.isError ? (
-          <PvErrorState
-            error={profiles.error}
-            onRetry={() => profiles.refetch()}
-          />
-        ) : (
-          <div data-testid="pv-admin-profiles">
-            <FilterBar>
-              <SearchInput
-                placeholder="Tìm theo mã SKU hoặc tên hiển thị..."
-                value={profileSearch}
-                onChange={setProfileSearch}
-                width={260}
-              />
-              <UiSelect
-                value={profileIndustryFilter}
-                aria-label="Lọc theo ngành nghề"
-                minWidth={180}
-                onChange={(value) => setProfileIndustryFilter(value)}
-                options={[
-                  { value: "ALL", label: "Tất cả ngành nghề" },
-                  ...industryOptions,
-                ]}
-              />
-              <UiSelect
-                value={profilePublishedFilter}
-                aria-label="Lọc theo trạng thái hiển thị"
-                minWidth={180}
-                onChange={(value) =>
-                  setProfilePublishedFilter(
-                    value as "ALL" | "PUBLISHED" | "HIDDEN",
-                  )
-                }
-                options={[
-                  { value: "ALL", label: "Tất cả trạng thái" },
-                  { value: "PUBLISHED", label: "Đang hiển thị" },
-                  { value: "HIDDEN", label: "Đang ẩn" },
-                ]}
-              />
-            </FilterBar>
-            <ResponsiveDataTable<PvAdminProfile>
-              rows={filteredProfiles}
-              rowKey={(row) => row.id}
-              columns={profileColumns}
-              rowSelection={profileRowSelection}
-              selectionLabel={(row) => `Chọn hồ sơ ${row.sku_code}`}
-              emptyText={
-                isProfileFilterActive
-                  ? "Không có kết quả phù hợp."
-                  : "Chưa có hồ sơ sản phẩm nào. Hồ sơ được tạo khi sản phẩm được đưa lên ứng dụng lần đầu."
-              }
-              renderRowActions={renderProfileRowActions}
+        <UiTabPanel value={activeTab}>
+          {profiles.isPending ? (
+            <LoadingState tip="Đang tải…" testId="pv-admin-profiles-loading" />
+          ) : profiles.isError ? (
+            <PvErrorState
+              error={profiles.error}
+              onRetry={() => profiles.refetch()}
             />
-          </div>
-        )
+          ) : (
+            <div data-testid="pv-admin-profiles">
+              <FilterBar>
+                <SearchInput
+                  placeholder="Tìm theo mã SKU hoặc tên hiển thị..."
+                  value={profileSearch}
+                  onChange={setProfileSearch}
+                  width={260}
+                />
+                <UiSelect
+                  value={profileIndustryFilter}
+                  aria-label="Lọc theo ngành nghề"
+                  minWidth={180}
+                  onChange={(value) => setProfileIndustryFilter(value)}
+                  options={[
+                    { value: "ALL", label: "Tất cả ngành nghề" },
+                    ...industryOptions,
+                  ]}
+                />
+                <UiSelect
+                  value={profilePublishedFilter}
+                  aria-label="Lọc theo trạng thái hiển thị"
+                  minWidth={180}
+                  onChange={(value) =>
+                    setProfilePublishedFilter(
+                      value as "ALL" | "PUBLISHED" | "HIDDEN",
+                    )
+                  }
+                  options={[
+                    { value: "ALL", label: "Tất cả trạng thái" },
+                    { value: "PUBLISHED", label: "Đang hiển thị" },
+                    { value: "HIDDEN", label: "Đang ẩn" },
+                  ]}
+                />
+              </FilterBar>
+              <ResponsiveDataTable<PvAdminProfile>
+                rows={filteredProfiles}
+                rowKey={(row) => row.id}
+                columns={profileColumns}
+                rowSelection={profileRowSelection}
+                selectionLabel={(row) => `Chọn hồ sơ ${row.sku_code}`}
+                emptyText={
+                  isProfileFilterActive
+                    ? "Không có kết quả phù hợp."
+                    : "Chưa có hồ sơ sản phẩm nào. Hồ sơ được tạo khi sản phẩm được đưa lên ứng dụng lần đầu."
+                }
+                renderRowActions={renderProfileRowActions}
+              />
+            </div>
+          )}
+        </UiTabPanel>
       ) : null}
 
       {activeTab === "industries" ? (
-        <SimpleMasterTab
-          testId="pv-admin-industries"
-          title="ngành nghề"
-          rows={industries.data?.data ?? []}
-          isPending={industries.isPending}
-          isError={industries.isError}
-          error={industries.error}
-          onRetry={() => industries.refetch()}
-          canManage={canManageMaster}
-          onSave={(input) => saveIndustry.mutateAsync(input)}
-        />
+        <UiTabPanel value={activeTab}>
+          <SimpleMasterTab
+            testId="pv-admin-industries"
+            title="ngành nghề"
+            rows={industries.data?.data ?? []}
+            isPending={industries.isPending}
+            isError={industries.isError}
+            error={industries.error}
+            onRetry={() => industries.refetch()}
+            canManage={canManageMaster}
+            onSave={(input) => saveIndustry.mutateAsync(input)}
+          />
+        </UiTabPanel>
       ) : null}
 
       {activeTab === "tags" ? (
-        <SimpleMasterTab
-          testId="pv-admin-tags"
-          title="thẻ phân loại"
-          rows={tags.data?.data ?? []}
-          isPending={tags.isPending}
-          isError={tags.isError}
-          error={tags.error}
-          onRetry={() => tags.refetch()}
-          canManage={canManageMaster}
-          onSave={(input) => saveTag.mutateAsync(input)}
-        />
+        <UiTabPanel value={activeTab}>
+          <SimpleMasterTab
+            testId="pv-admin-tags"
+            title="thẻ phân loại"
+            rows={tags.data?.data ?? []}
+            isPending={tags.isPending}
+            isError={tags.isError}
+            error={tags.error}
+            onRetry={() => tags.refetch()}
+            canManage={canManageMaster}
+            onSave={(input) => saveTag.mutateAsync(input)}
+          />
+        </UiTabPanel>
       ) : null}
 
       {activeTab === "rules" ? (
-        rules.isPending ? (
-          <LoadingState tip="Đang tải…" testId="pv-admin-rules-loading" />
-        ) : rules.isError ? (
-          <PvErrorState error={rules.error} onRetry={() => rules.refetch()} />
-        ) : (
-          <PvRuleTab
-            rows={rules.data?.data ?? []}
-            industryOptions={industryOptions}
-            tagOptions={tagOptions}
-            canManage={canManageMaster}
-            onSave={(input) => saveRule.mutateAsync(input)}
-          />
-        )
+        <UiTabPanel value={activeTab}>
+          {rules.isPending ? (
+            <LoadingState tip="Đang tải…" testId="pv-admin-rules-loading" />
+          ) : rules.isError ? (
+            <PvErrorState error={rules.error} onRetry={() => rules.refetch()} />
+          ) : (
+            <PvRuleTab
+              rows={rules.data?.data ?? []}
+              industryOptions={industryOptions}
+              tagOptions={tagOptions}
+              canManage={canManageMaster}
+              onSave={(input) => saveRule.mutateAsync(input)}
+            />
+          )}
+        </UiTabPanel>
       ) : null}
 
       <UiDialog

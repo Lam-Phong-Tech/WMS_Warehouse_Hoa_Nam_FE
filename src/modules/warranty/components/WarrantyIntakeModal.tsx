@@ -39,6 +39,30 @@ import type {
   WarrantyIdentificationType,
 } from "@/modules/warranty/types";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
+import {
+  AnimatedInlineList,
+  AnimatedInlineItem,
+} from "@/shared/components/motion";
+import { createRowKey } from "@/shared/components/motion/row-key";
+
+/**
+ * Khóa ổn định cho từng tệp đã chọn.
+ *
+ * Không dùng `${file.name}-${index}`: chọn hai tệp trùng tên (rất thường gặp
+ * với ảnh chụp từ điện thoại) sẽ đụng khóa, và xóa chip ở giữa làm mọi chip
+ * phía sau đổi khóa nên React coi như "đổi nội dung" thay vì "bị xóa" — mất
+ * hiệu ứng thu nhỏ. WeakMap bám theo chính đối tượng File (ổn định suốt vòng
+ * đời state) nên không cần đổi kiểu state đang là File[].
+ */
+const fileRowKeys = new WeakMap<File, string>();
+function fileRowKey(file: File): string {
+  let key = fileRowKeys.get(file);
+  if (!key) {
+    key = createRowKey("file");
+    fileRowKeys.set(file, key);
+  }
+  return key;
+}
 
 // Annex D SCR-WAR-01 field `images`: jpg/png/webp; <=10 files; <=10MB/file.
 const MAX_INTAKE_IMAGES = 10;
@@ -681,19 +705,22 @@ export function WarrantyIntakeModal({
             spacing={1}
             sx={{ flexWrap: "wrap", rowGap: 1 }}
           >
-            {imageFiles.map((file, index) => (
-              <UiStatusBadge
-                key={`${file.name}-${index}`}
-                tone="neutral"
-                label={file.name}
-                onDelete={() =>
-                  setImageFiles((current) =>
-                    current.filter((_, i) => i !== index),
-                  )
-                }
-                deleteIcon={<DeleteOutlined />}
-              />
-            ))}
+            <AnimatedInlineList>
+              {imageFiles.map((file, index) => (
+                <AnimatedInlineItem key={fileRowKey(file)}>
+                  <UiStatusBadge
+                    tone="neutral"
+                    label={file.name}
+                    onDelete={() =>
+                      setImageFiles((current) =>
+                        current.filter((_, i) => i !== index),
+                      )
+                    }
+                    deleteIcon={<DeleteOutlined />}
+                  />
+                </AnimatedInlineItem>
+              ))}
+            </AnimatedInlineList>
           </Stack>
           {imageFiles.length < MAX_INTAKE_IMAGES ? (
             <ActionButton
@@ -736,19 +763,22 @@ export function WarrantyIntakeModal({
             spacing={1}
             sx={{ flexWrap: "wrap", rowGap: 1, mb: 1 }}
           >
-            {videoFiles.map((file, index) => (
-              <UiStatusBadge
-                key={`${file.name}-${index}`}
-                tone="neutral"
-                label={file.name}
-                onDelete={() =>
-                  setVideoFiles((current) =>
-                    current.filter((_, i) => i !== index),
-                  )
-                }
-                deleteIcon={<DeleteOutlined />}
-              />
-            ))}
+            <AnimatedInlineList>
+              {videoFiles.map((file, index) => (
+                <AnimatedInlineItem key={fileRowKey(file)}>
+                  <UiStatusBadge
+                    tone="neutral"
+                    label={file.name}
+                    onDelete={() =>
+                      setVideoFiles((current) =>
+                        current.filter((_, i) => i !== index),
+                      )
+                    }
+                    deleteIcon={<DeleteOutlined />}
+                  />
+                </AnimatedInlineItem>
+              ))}
+            </AnimatedInlineList>
           </Stack>
           {videoFiles.length < MAX_INTAKE_VIDEOS ? (
             <Box

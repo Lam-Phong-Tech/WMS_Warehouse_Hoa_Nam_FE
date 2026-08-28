@@ -8,6 +8,7 @@ import {
   UiSelect,
   UiStatusBadge,
   UiTabs,
+  UiTabPanel,
   UiText,
   UiTextField,
   type UiStatusTone,
@@ -615,7 +616,7 @@ export default function PhysicalCodesPage() {
       </Box>
 
       {activeTab === "list" && (
-        <>
+        <UiTabPanel value={activeTab}>
           <Stack
             direction="row"
             sx={{ flexWrap: "wrap", gap: 1, alignItems: "center", mb: 2 }}
@@ -676,11 +677,11 @@ export default function PhysicalCodesPage() {
               onPageChange={setCodePage}
             />
           </Box>
-        </>
+        </UiTabPanel>
       )}
 
       {activeTab === "classify" && (
-        <>
+        <UiTabPanel value={activeTab}>
           <Box sx={{ mb: 2 }}>
             <UiAlert tone="info" title="Tra cứu mã an toàn">
               Nhận diện mã chỉ dùng để tra cứu thông tin. Thao tác này không làm
@@ -770,11 +771,11 @@ export default function PhysicalCodesPage() {
               rowKey={(row) => row.raw_code}
             />
           )}
-        </>
+        </UiTabPanel>
       )}
 
       {activeTab === "history" && (
-        <>
+        <UiTabPanel value={activeTab}>
           <InlineApiError
             error={historyError}
             title="Không thể tải lịch sử quét"
@@ -920,7 +921,7 @@ export default function PhysicalCodesPage() {
               onPageChange={setEventPage}
             />
           </Box>
-        </>
+        </UiTabPanel>
       )}
 
       <IssuePhysicalCodeModal

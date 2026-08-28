@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Box, UiTabs } from "@/shared/ui";
+import { Box, UiTabs, UiTabPanel } from "@/shared/ui";
 import { ApartmentOutlined, BarChartOutlined } from "@/shared/components/icons";
 import AlignedReportsPage from "@/modules/reports/pages/AlignedReportsPage";
 import Gd1ScopeReports from "@/modules/reports/pages/Gd1ScopeReports";
@@ -50,7 +50,9 @@ export default function ReportsPage() {
         />
       </Box>
 
-      {tab === "gd1" ? <Gd1ScopeReports /> : <AlignedReportsPage />}
+      <UiTabPanel value={tab}>
+        {tab === "gd1" ? <Gd1ScopeReports /> : <AlignedReportsPage />}
+      </UiTabPanel>
     </>
   );
 }

@@ -21,6 +21,20 @@ import {
 import TextField from "@mui/material/TextField";
 import { UiIconButton } from "../components/UiButton";
 import InputAdornment from "@mui/material/InputAdornment";
+import { SEMANTIC_LIGHT as S } from "../tokens";
+
+/**
+ * MUI (bản đang dùng trong dự án) tự sinh/gỡ CSS động cho biến thể
+ * "&.Mui-error" của notchedOutline/label một cách không ổn định (đã quan
+ * sát được viền/label KHÔNG đổi đỏ dù class Mui-error có mặt) — ép màu trực
+ * tiếp qua sx gắn với fieldState.error để đồng bộ tuyệt đối với validation.
+ */
+const ERROR_FIELD_SX = {
+  "& .MuiOutlinedInput-root.Mui-error .MuiOutlinedInput-notchedOutline": {
+    borderColor: S.error,
+  },
+  "& .MuiInputLabel-root.Mui-error": { color: S.error },
+} as const;
 
 export interface UiFormTextProps<T extends FieldValues> {
   control: Control<T>;
@@ -109,6 +123,7 @@ export function UiFormText<T extends FieldValues>({
           disabled={disabled}
           autoFocus={autoFocus}
           error={Boolean(fieldState.error)}
+          sx={fieldState.error ? ERROR_FIELD_SX : undefined}
           helperText={fieldState.error?.message ?? helperText}
           name={field.name}
           value={(field.value as string | undefined) ?? ""}

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Box, UiTabs, type UiTabItem } from "@/shared/ui";
+import { Box, UiTabs, UiTabPanel, type UiTabItem } from "@/shared/ui";
 import {
   SafetyCertificateOutlined,
   UserOutlined,
@@ -73,13 +73,15 @@ export function IamUsersGd1Page({ openCreateOnMount }: IamUsersGd1PageProps) {
         />
       </Box>
 
-      {activeTab === "users" ? (
-        <IamUserScreen
-          openCreateOnMount={openCreateOnMount || openCreateFromScreen}
-        />
-      ) : (
-        <IamRolePermissionScreen />
-      )}
+      <UiTabPanel value={activeTab}>
+        {activeTab === "users" ? (
+          <IamUserScreen
+            openCreateOnMount={openCreateOnMount || openCreateFromScreen}
+          />
+        ) : (
+          <IamRolePermissionScreen />
+        )}
+      </UiTabPanel>
     </>
   );
 }

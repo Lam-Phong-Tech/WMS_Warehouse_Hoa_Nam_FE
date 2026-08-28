@@ -40,7 +40,7 @@ describe("UiAppShell", () => {
     expect(main).toContainElement(screen.getByTestId("slot-main"));
   });
 
-  it("cột sidebar rộng LAYOUT.sidebarWidth (260px) khi mở rộng", () => {
+  it("cột sidebar rộng LAYOUT.sidebarWidth khi mở rộng", () => {
     renderShell(false);
     expect(emotionCss()).toContain(
       `grid-template-columns:${LAYOUT.sidebarWidth}px 1fr`,

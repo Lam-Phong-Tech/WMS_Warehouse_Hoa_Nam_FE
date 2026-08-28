@@ -8,12 +8,42 @@ import {
   toLoginRequest,
   type LoginFormValues,
 } from "@/modules/auth/schemas/login.schema";
-import { Box, UiAlert, UiFormText } from "@/shared/ui";
-import { SEMANTIC_LIGHT as S } from "@/shared/ui/tokens";
+import {
+  Box,
+  UiAlert,
+  UiButton,
+  UiFormCheckbox,
+  UiFormText,
+} from "@/shared/ui";
 import { AuthShell } from "@/modules/auth/components/AuthShell";
 import { OFFLINE_MUTATION_CODE } from "@/shared/pwa/offline-policy";
 import { ROUTES } from "@/shared/constants/routes";
-import { ActionButton } from "@/shared/components/actions";
+
+/**
+ * "Ghi nhớ đăng nhập": chỉ lưu identifier (KHÔNG BAO GIỜ lưu mật khẩu) để
+ * prefill lần sau; storage bị chặn (private mode) thì bỏ qua trong im lặng.
+ */
+const REMEMBER_STORAGE_KEY = "hn-wms.login.remember-identifier";
+
+function readRememberedIdentifier(): string {
+  try {
+    return window.localStorage.getItem(REMEMBER_STORAGE_KEY) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+function persistRememberedIdentifier(identifier: string | null): void {
+  try {
+    if (identifier === null) {
+      window.localStorage.removeItem(REMEMBER_STORAGE_KEY);
+    } else {
+      window.localStorage.setItem(REMEMBER_STORAGE_KEY, identifier.trim());
+    }
+  } catch {
+    // tiện ích phụ — không chặn đăng nhập
+  }
+}
 
 function getLoginErrorMessage(error: unknown): string {
   if (isAxiosError(error)) {
@@ -51,14 +81,20 @@ function getLoginErrorMessage(error: unknown): string {
 
 export function LoginPage() {
   const login = useLogin();
+  const rememberedIdentifier = readRememberedIdentifier();
   const { control, handleSubmit } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { identifier: "", password: "" },
+    defaultValues: {
+      identifier: rememberedIdentifier,
+      password: "",
+      remember: rememberedIdentifier !== "",
+    },
   });
 
-  const onSubmit = handleSubmit((values) =>
-    login.mutate(toLoginRequest(values)),
-  );
+  const onSubmit = handleSubmit((values) => {
+    persistRememberedIdentifier(values.remember ? values.identifier : null);
+    login.mutate(toLoginRequest(values));
+  });
 
   const errorMessage = login.isError ? getLoginErrorMessage(login.error) : null;
 
@@ -67,8 +103,15 @@ export function LoginPage() {
   return (
     <AuthShell
       titleId="login-title"
-      title="Đăng nhập hệ thống"
-      subtitle="Sử dụng tài khoản Hoa Nam để truy cập nghiệp vụ kho."
+      title={
+        <>
+          Xin chào bạn đến với Hoa Nam!{" "}
+          <Box component="span" aria-hidden="true">
+            👋
+          </Box>
+        </>
+      }
+      subtitle="Vui lòng đăng nhập vào tài khoản của bạn"
       loadingText={
         isSubmitting
           ? login.isPending
@@ -86,13 +129,12 @@ export function LoginPage() {
       )}
 
       <form onSubmit={onSubmit} noValidate>
-        <Box sx={{ display: "flex", flexDirection: "column", gap: "13px" }}>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           <UiFormText
             control={control}
             name="identifier"
-            label="Đăng nhập bằng Gmail"
+            label="Email"
             placeholder="your@gmail.com"
-            startIcon="user"
             autoFocus
             disabled={isSubmitting}
           />
@@ -102,24 +144,39 @@ export function LoginPage() {
             name="password"
             label="Mật khẩu"
             placeholder="Nhập mật khẩu"
-            startIcon="lock"
             type="password"
             disabled={isSubmitting}
           />
 
-          <Box sx={{ textAlign: "right", "& a": { color: S.primary } }}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              flexWrap: "wrap",
+              gap: "4px",
+              // Kéo lề checkbox của MUI về thẳng cột với ô nhập.
+              marginTop: "-6px",
+              "& .MuiFormControlLabel-root": { marginLeft: "-9px" },
+            }}
+          >
+            <UiFormCheckbox
+              control={control}
+              name="remember"
+              label="Ghi nhớ đăng nhập"
+              disabled={isSubmitting}
+            />
             <Link to={ROUTES.FORGOT_PASSWORD}>Quên mật khẩu?</Link>
           </Box>
 
-          <ActionButton
-            kind="login"
-            loading={login.isPending}
-            disabled={isSubmitting}
+          <UiButton
             type="submit"
             fullWidth
+            loading={login.isPending}
+            disabled={isSubmitting}
           >
             Đăng nhập
-          </ActionButton>
+          </UiButton>
         </Box>
       </form>
     </AuthShell>

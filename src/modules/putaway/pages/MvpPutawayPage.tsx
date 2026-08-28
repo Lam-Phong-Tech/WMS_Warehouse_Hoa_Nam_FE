@@ -10,6 +10,7 @@ import {
   UiSelect,
   UiStatusBadge,
   UiTabs,
+  UiTabPanel,
   UiTextField,
 } from "@/shared/ui";
 import { guardBackdropClose } from "@/shared/utils/dialogGuard";
@@ -759,7 +760,7 @@ export default function MvpPutawayPage() {
         </>
 
         {activeTab === "pending" ? (
-          <>
+          <UiTabPanel value={activeTab}>
             <ResponsiveDataTable<PutawayTask>
               columns={taskColumns}
               rows={pagedTasks}
@@ -792,9 +793,9 @@ export default function MvpPutawayPage() {
                 showTotal={false}
               />
             </Stack>
-          </>
+          </UiTabPanel>
         ) : (
-          <>
+          <UiTabPanel value={activeTab}>
             <ResponsiveDataTable<PutawayHistory>
               columns={historyColumns}
               rows={pagedHistory}
@@ -831,7 +832,7 @@ export default function MvpPutawayPage() {
                 showTotal={false}
               />
             </Stack>
-          </>
+          </UiTabPanel>
         )}
       </UiCard>
 

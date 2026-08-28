@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
-import { Collapse } from "@mui/material";
+import { Collapse, Grow } from "@mui/material";
 import { TransitionGroup } from "react-transition-group";
 import { MOTION_DURATION, MOTION_ENABLED } from "./motion-tokens";
 import { useReducedMotion } from "./useReducedMotion";
@@ -118,5 +118,74 @@ export function AnimatedListItem({
     >
       <div style={{ paddingBottom: gap }}>{children}</div>
     </Collapse>
+  );
+}
+
+/**
+ * Biến thể NGANG/LƯỚI của AnimatedList — dùng cho tập phần tử xếp cạnh nhau
+ * (chip file đính kèm, ô ảnh trong lưới) thay vì các dòng xếp dọc.
+ *
+ * Vì sao không dùng luôn AnimatedList: nó bọc mỗi item trong `Collapse`, tức
+ * co giãn CHIỀU CAO. Với chip nằm ngang thì thứ cần co là chỗ trống theo chiều
+ * ngang, nên ở đây dùng `Grow` (thu/phóng + mờ dần) — phần tử biến mất tại chỗ
+ * còn các phần tử sau tự dồn lên theo layout của cha.
+ *
+ * `component={null}` khiến TransitionGroup KHÔNG chèn thẻ bọc: các item trở
+ * thành con trực tiếp của `<Stack>`/lưới cha, giữ nguyên `spacing`/`gap` và
+ * `gridTemplateColumns` sẵn có. Nếu bọc thêm một lớp div, toàn bộ tập phần tử
+ * sẽ dồn thành MỘT ô lưới và vỡ layout.
+ */
+export function AnimatedInlineList({ children }: { children: ReactNode }) {
+  const reduced = useReducedMotion();
+
+  if (!MOTION_ENABLED || reduced) {
+    return <>{children}</>;
+  }
+
+  return <TransitionGroup component={null}>{children}</TransitionGroup>;
+}
+
+export interface AnimatedInlineItemProps {
+  children: ReactNode;
+  className?: string;
+  style?: CSSProperties;
+  /** Do TransitionGroup tự truyền — không tự khai khi gọi. */
+  in?: boolean;
+  onExited?: (node: HTMLElement) => void;
+  appear?: boolean;
+  enter?: boolean;
+  exit?: boolean;
+}
+
+export function AnimatedInlineItem({
+  children,
+  className,
+  style,
+  ...transitionProps
+}: AnimatedInlineItemProps) {
+  const reduced = useReducedMotion();
+
+  if (!MOTION_ENABLED || reduced) {
+    return (
+      <div className={className} style={style}>
+        {children}
+      </div>
+    );
+  }
+
+  return (
+    <Grow
+      {...transitionProps}
+      timeout={{
+        enter: MOTION_DURATION.normal,
+        exit: MOTION_DURATION.fast,
+      }}
+    >
+      {/* Bọc div để Grow luôn có một node DOM thật nhận ref + style, không phụ
+          thuộc việc component con có forwardRef hay không. */}
+      <div className={className} style={style}>
+        {children}
+      </div>
+    </Grow>
   );
 }

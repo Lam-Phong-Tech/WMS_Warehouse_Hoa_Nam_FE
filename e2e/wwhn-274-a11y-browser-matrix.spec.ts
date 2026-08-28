@@ -169,10 +169,10 @@ test.describe("WWHN-274 a11y + browser/device matrix (NFR-SRS-006)", () => {
     await expect(page.locator("main")).toHaveCount(1);
     const headings = page.getByRole("heading", { level: 1 });
     await expect(headings).toHaveCount(1);
-    await expect(headings).toHaveText("Đăng nhập hệ thống");
+    await expect(headings).toHaveText("Xin chào bạn đến với Hoa Nam! 👋");
 
     // Label phai lien ket voi input that (getByLabel chi khop khi co htmlFor/aria-label).
-    const identifier = page.getByLabel("Đăng nhập bằng Gmail");
+    const identifier = page.getByLabel("Email", { exact: true });
     const password = page.getByLabel("Mật khẩu", { exact: true });
     await expect(identifier).toBeVisible();
     await expect(password).toBeVisible();
@@ -193,7 +193,7 @@ test.describe("WWHN-274 a11y + browser/device matrix (NFR-SRS-006)", () => {
         "Nut submit co accessible name va dang enabled",
       ],
       observed: {
-        headingText: "Đăng nhập hệ thống",
+        headingText: "Xin chào bạn đến với Hoa Nam! 👋",
         submitAccessibleName: "Đăng nhập",
       },
     });
@@ -208,7 +208,7 @@ test.describe("WWHN-274 a11y + browser/device matrix (NFR-SRS-006)", () => {
     );
 
     await page.goto("/login");
-    const identifier = page.getByLabel("Đăng nhập bằng Gmail");
+    const identifier = page.getByLabel("Email", { exact: true });
     const password = page.getByLabel("Mật khẩu", { exact: true });
 
     // Focus dau tien phai o o dau tien (autoFocus), khong lac vao phan tu trang tri.

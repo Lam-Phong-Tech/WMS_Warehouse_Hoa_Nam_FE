@@ -16,6 +16,7 @@ import {
   UiSelect,
   UiStatusBadge,
   UiTabs,
+  UiTabPanel,
   UiTextField,
   type UiStatusTone,
 } from "@/shared/ui";
@@ -3066,9 +3067,11 @@ export default function AlignedReportsPage() {
       </Box>
 
       {isDefectSkuTab ? (
-        <DefectSkuReport />
+        <UiTabPanel value={report}>
+          <DefectSkuReport />
+        </UiTabPanel>
       ) : (
-        <>
+        <UiTabPanel value={report}>
           <Box className="toolbar" sx={{ flexWrap: "wrap" }}>
             {config.dateFilter ? (
               <UiDateRangePicker
@@ -3901,7 +3904,7 @@ export default function AlignedReportsPage() {
               onClose={() => setDetailRow(null)}
             />
           ) : null}
-        </>
+        </UiTabPanel>
       )}
     </div>
   );

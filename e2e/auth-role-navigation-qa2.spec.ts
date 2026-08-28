@@ -395,7 +395,7 @@ test.describe("WWHN-144 / WWHN-145 closure", () => {
       await page.goto(`${BASE_URL}/dashboard?screen=MAP-01`);
       await expect(page).toHaveURL(/\/dashboard\?screen=MAP-01$/);
 
-      // Part 4 shell (UiAppShell — Vuexy): desktop sidebar cố định 260px;
+      // Part 4 shell (UiAppShell — Vuexy): desktop sidebar cố định 320px;
       // <lg (980) sidebar chuyển thành Drawer overlay + hamburger ở topbar
       // (thay hợp đồng cũ .hn-mvp-* 300px/stacked của shell wireframe).
       const main = page.locator("main");
@@ -417,10 +417,10 @@ test.describe("WWHN-144 / WWHN-145 closure", () => {
         ).toBeVisible();
         const asideBox = await aside.boundingBox();
         expect(asideBox).not.toBeNull();
-        expect(Math.round(asideBox?.width ?? 0)).toBe(260);
-        expect(Math.round(mainBox?.x ?? 0)).toBe(260);
+        expect(Math.round(asideBox?.width ?? 0)).toBe(320);
+        expect(Math.round(mainBox?.x ?? 0)).toBe(320);
       } else {
-        // Mobile/tablet: sidebar ẩn, mở qua hamburger → Drawer 260px.
+        // Mobile/tablet: sidebar ẩn, mở qua hamburger → Drawer 320px.
         await expect(page.getByTestId("app-sidebar")).toHaveCount(0);
         const hamburger = page.getByTestId("mobile-nav-toggle");
         await expect(hamburger).toBeVisible();

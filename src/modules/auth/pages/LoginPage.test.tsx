@@ -8,10 +8,13 @@ describe("LoginPage", () => {
   it("hiển thị form đăng nhập", () => {
     renderWithProviders(<LoginPage />);
     expect(
-      screen.getByRole("heading", { name: /đăng nhập hệ thống/i }),
+      screen.getByRole("heading", { name: /xin chào bạn đến với hoa nam/i }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /đăng nhập/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("checkbox", { name: /ghi nhớ đăng nhập/i }),
     ).toBeInTheDocument();
   });
 
@@ -34,8 +37,6 @@ describe("LoginPage", () => {
     renderWithProviders(<LoginPage />);
 
     await user.type(
-      // Placeholder hiện hành của LoginPage là "your@gmail.com" (đổi ở đợt
-      // migration [skip ci] nhưng test chưa được cập nhật theo).
       screen.getByPlaceholderText(/your@gmail\.com/i),
       "not-an-email@",
     );

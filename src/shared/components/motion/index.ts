@@ -10,8 +10,11 @@
 export {
   AnimatedList,
   AnimatedListItem,
+  AnimatedInlineList,
+  AnimatedInlineItem,
   type AnimatedListProps,
   type AnimatedListItemProps,
+  type AnimatedInlineItemProps,
 } from "./AnimatedList";
 export { createRowKey } from "./row-key";
 export { useReducedMotion } from "./useReducedMotion";

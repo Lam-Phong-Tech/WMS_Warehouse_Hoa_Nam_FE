@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { SideNav } from "@/app/layouts/SideNav";
 import { getBreadcrumbTrail, matchesPath } from "@/app/layouts/nav-data";
@@ -69,10 +70,15 @@ describe("SideNav RBAC filtering", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("folds inbound and putaway operations into their owning list screens", () => {
+  it("folds inbound and putaway operations into their owning list screens", async () => {
     withPermissions([], true);
 
     renderSideNav(`${ROUTES.INBOUND}?screen=IN-03&id=receipt-1`);
+
+    // Mọi nhóm mặc định đóng (yêu cầu người dùng 2026-08-28) — bấm mở nhóm sở
+    // hữu route deep-link trước khi truy vấn item bên trong bằng role.
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Nhập kho" }));
 
     const inboundList = screen.getByRole("button", {
       name: "Danh sách phiếu nhập",
@@ -91,6 +97,26 @@ describe("SideNav RBAC filtering", () => {
     expect(
       screen.queryByText("Putaway linh kiện vào khay"),
     ).not.toBeInTheDocument();
+  });
+
+  it("mặc định mọi nhóm đóng — bấm tiêu đề nhóm mới sổ ra trang con", async () => {
+    withPermissions([], true);
+
+    renderSideNav(ROUTES.DASHBOARD);
+
+    const inboundGroup = screen.getByRole("button", { name: "Nhập kho" });
+    expect(inboundGroup).toHaveAttribute("aria-expanded", "false");
+    expect(
+      screen.queryByRole("button", { name: "Danh sách phiếu nhập" }),
+    ).not.toBeInTheDocument();
+
+    const user = userEvent.setup();
+    await user.click(inboundGroup);
+
+    expect(inboundGroup).toHaveAttribute("aria-expanded", "true");
+    expect(
+      screen.getByRole("button", { name: "Danh sách phiếu nhập" }),
+    ).toBeInTheDocument();
   });
 
   it("lets Super Admin see all list entry points even with no permission codes", () => {

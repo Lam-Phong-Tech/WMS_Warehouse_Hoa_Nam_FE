@@ -224,7 +224,7 @@ test.describe("WWHN-292 FE-controlled UI/responsive/RBAC closure", () => {
       await page.goto("/login");
 
       await expect(
-        page.getByRole("heading", { name: "Đăng nhập hệ thống" }),
+        page.getByRole("heading", { name: "Xin chào bạn đến với Hoa Nam!" }),
       ).toBeVisible();
       await expect(
         page.getByRole("button", { name: "Đăng nhập" }),
@@ -405,11 +405,11 @@ test.describe("WWHN-292 FE-controlled UI/responsive/RBAC closure", () => {
     { key: "mobile-320", width: 320, height: 568 },
   ] as const;
 
-  // Part 4 shell (UiAppShell — Vuexy): sidebar grid-column 260px từ lg (980)
+  // Part 4 shell (UiAppShell — Vuexy): sidebar grid-column 320px từ lg (980)
   // trở lên; dưới lg sidebar KHÔNG render — nav nằm trong Drawer sau hamburger
   // (data-testid mobile-nav-toggle). Cùng contract với wwhn-144.
   const DESKTOP_NAV_BREAKPOINT = 980;
-  const DESKTOP_ASIDE_WIDTH = 260;
+  const DESKTOP_ASIDE_WIDTH = 320;
 
   for (const viewport of SHELL_VIEWPORTS) {
     test(`authenticated shell responsive ${viewport.width}x${viewport.height}`, async ({
@@ -451,7 +451,7 @@ test.describe("WWHN-292 FE-controlled UI/responsive/RBAC closure", () => {
       expect(shell.hasHorizontalOverflow).toBe(false);
 
       if (isDesktopNav) {
-        // Sidebar là grid column 260px; main bắt đầu ngay sau sidebar.
+        // Sidebar là grid column 320px; main bắt đầu ngay sau sidebar.
         expect(shell.asideWidth).toBe(DESKTOP_ASIDE_WIDTH);
         expect(shell.mainX).toBe(DESKTOP_ASIDE_WIDTH);
       } else {

@@ -185,7 +185,7 @@ test.describe("WWHN-274 FE-controlled build/config/smoke release sign-off", () =
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       await page.goto("/login");
 
-      await expect(page.getByRole("heading", { name: "Đăng nhập hệ thống" })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Xin chào bạn đến với Hoa Nam!" })).toBeVisible();
       await expect(page.getByRole("button", { name: "Đăng nhập" })).toBeVisible();
       const hasHorizontalOverflow = await page.evaluate(
         () => document.documentElement.scrollWidth > window.innerWidth + 1,

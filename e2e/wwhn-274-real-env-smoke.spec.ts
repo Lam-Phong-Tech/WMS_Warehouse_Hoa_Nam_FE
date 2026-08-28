@@ -273,7 +273,7 @@ test.describe("WWHN-274 real-environment FE-BE smoke", () => {
     await page.goto(`${REAL_BASE_URL}/dashboard`);
     await page.waitForURL(/\/login$/u, { timeout: 20_000 });
     await expect(
-      page.getByRole("heading", { name: "Đăng nhập hệ thống" }),
+      page.getByRole("heading", { name: "Xin chào bạn đến với Hoa Nam!" }),
     ).toBeVisible();
 
     // Bootstrap phiên phải thực sự chạm backend thật (không mock, không stub).

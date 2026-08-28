@@ -22,7 +22,6 @@ import {
   DEFAULT_SCREEN_BY_PATH,
   getVisibleNavGroups,
   matchesPath,
-  NAV_GROUPS,
   normalizeScreen,
 } from "@/app/layouts/nav-data";
 import { useAuthStore } from "@/shared/store/auth.store";
@@ -86,20 +85,23 @@ export function SideNav({
     ),
   )?.name;
 
-  // Vuexy mặc định MỞ mọi nhóm (khả năng khám phá menu theo quyền — role hạn
-  // chế thấy ngay mục của mình); người dùng vẫn đóng/mở từng nhóm được.
-  const [openGroups, setOpenGroups] = useState<Set<string>>(
-    () => new Set(NAV_GROUPS.map((group) => group.name)),
-  );
-  const isFirstRender = useRef(true);
+  // Mặc định TẤT CẢ nhóm đóng (yêu cầu người dùng 2026-08-28) — người dùng
+  // bấm vào tiêu đề nhóm mới sổ ra các trang con; nhóm đang active vẫn tự mở
+  // lại khi điều hướng tới (effect bên dưới), chỉ không áp dụng ở lần mount
+  // đầu để giữ đúng trạng thái "chưa mở" khi vào ứng dụng.
+  const [openGroups, setOpenGroups] = useState<Set<string>>(() => new Set());
+  // Chốt activeGroupName lúc mount làm mốc so sánh — dùng giá trị khởi tạo
+  // (không phải ref rỗng + cờ "lần đầu") để miễn nhiễm với StrictMode gọi
+  // effect 2 lần ở dev: cờ boolean bị effect đầu tiêu thụ mất, effect thứ hai
+  // (cùng lượt mount) sẽ lọt qua guard và tự mở nhóm ngay khi vào ứng dụng.
+  const previousActiveGroupRef = useRef(activeGroupName);
 
-  // Điều hướng đổi trang → đảm bảo nhóm active đang mở, không đụng nhóm khác.
+  // Điều hướng SANG route khác → tự mở nhóm active mới, không đụng nhóm khác;
+  // không tự mở ở lần mount đầu (giữ đúng "mặc định mọi nhóm đóng").
   useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
-    if (!activeGroupName) return;
+    const previousActiveGroup = previousActiveGroupRef.current;
+    previousActiveGroupRef.current = activeGroupName;
+    if (!activeGroupName || previousActiveGroup === activeGroupName) return;
     setOpenGroups((prev) =>
       prev.has(activeGroupName) ? prev : new Set(prev).add(activeGroupName),
     );
@@ -124,13 +126,28 @@ export function SideNav({
       component="nav"
       data-testid="primary-navigation"
       aria-label="Điều hướng chính"
-      sx={{ px: 1.5, py: 1.5, display: "grid", gap: 0.5 }}
+      sx={{
+        px: 1.5,
+        py: 1.5,
+        display: "grid",
+        // minmax(0, 1fr) thay cho 1fr mặc định: item lưới mặc định có
+        // `min-width: auto` nên cột bị NỞ theo nội dung rộng nhất — kể cả nội
+        // dung đang ẩn trong <Collapse> (nhãn menu dài, whiteSpace: nowrap).
+        // Hậu quả ở rail thu gọn 72px: cả khối con vẫn được dàn ở ~299px rồi
+        // bị aside cắt đi, nên nút thu gọn nằm lọt ra ngoài vùng nhìn thấy.
+        gridTemplateColumns: "minmax(0, 1fr)",
+        gap: 0.5,
+      }}
     >
       {/* Brand + nút thu gọn */}
       <Box
         className="hn-mvp-brand"
         sx={{
           display: "flex",
+          // Rail thu gọn chỉ rộng 72px, không đủ cho logo 36px + nút 32px nằm
+          // ngang: nút sẽ bị đẩy ra ngoài và bị cắt mất, khiến người dùng
+          // không còn chỗ bấm để mở lại menu. Thu gọn thì xếp dọc, căn giữa.
+          flexDirection: collapsed ? "column" : "row",
           alignItems: "center",
           gap: 1.25,
           px: 1,
@@ -176,9 +193,32 @@ export function SideNav({
             aria-label={collapsed ? "Hiện menu" : "Ẩn menu"}
             aria-pressed={collapsed}
             title={collapsed ? "Hiện menu" : "Ẩn menu"}
-            sx={{ marginLeft: "auto" }}
+            sx={{
+              // Thu gọn: đã xếp dọc nên bỏ marginLeft:auto, nếu giữ thì nút bị
+              // đẩy khỏi rail. Mở rộng: vẫn đẩy nút về sát mép phải.
+              marginLeft: collapsed ? 0 : "auto",
+              flexShrink: 0,
+              width: 32,
+              height: 32,
+              // Vuông bo góc + viền + nền: nút trông "bấm được" thay vì một
+              // ký tự mũi tên trơn lẫn vào nền sidebar.
+              borderRadius: `${RADIUS.control}px`,
+              border: "1px solid",
+              borderColor: S.border,
+              backgroundColor: S.bgSurface,
+              color: S.textMedium,
+              "&:hover": {
+                backgroundColor: S.primarySoft,
+                borderColor: S.primary,
+                color: S.primary,
+              },
+            }}
           >
-            <UiIcon name={collapsed ? "angle-right" : "angle-left"} />
+            {/* Một icon hamburger cho cả hai trạng thái — quy ước quen thuộc
+                cho nút bật/tắt menu, người dùng không phải đoán hướng mũi tên.
+                Trạng thái đóng/mở vẫn được truyền cho trợ năng qua
+                aria-pressed + aria-label/title ở trên. */}
+            <UiIcon name="menu-burger" size="sm" />
           </UiIconButton>
         ) : null}
       </Box>
@@ -206,11 +246,13 @@ export function SideNav({
                 borderRadius: `${RADIUS.control}px`,
                 fontFamily: "inherit",
                 fontSize: 11,
-                fontWeight: 600,
+                fontWeight: 700,
                 letterSpacing: "0.08em",
                 textTransform: "uppercase",
-                color: S.textDisabled,
-                "&:hover": { color: S.textMedium },
+                // Đậm hơn textDisabled cũ (0.4 alpha, khó đọc) — yêu cầu người
+                // dùng 2026-08-28: tiêu đề nhóm phải rõ/nổi hơn.
+                color: S.textMedium,
+                "&:hover": { color: S.textHigh },
                 "&:focus-visible": { outline: "none", boxShadow: S.focusRing },
               }}
             >
@@ -225,8 +267,12 @@ export function SideNav({
                   <Box component="span" sx={{ flex: 1, textAlign: "left" }}>
                     {group.name}
                   </Box>
+                  {/* Cặp icon phải CÙNG HỌ. Trước đây lệch: đóng dùng
+                      `caret-right` (tam giác đặc) còn mở dùng `angle-down`
+                      (chevron mảnh) nên hàng nhóm nhìn lộn xộn. Chốt dùng họ
+                      caret ĐẶC cho cả hai trạng thái. */}
                   <UiIcon
-                    name={open ? "angle-down" : "caret-right"}
+                    name={open ? "caret-down" : "caret-right"}
                     size="sm"
                   />
                 </>

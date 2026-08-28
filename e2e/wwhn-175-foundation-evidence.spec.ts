@@ -194,10 +194,10 @@ test.describe("WWHN-175 / WWHN-176 foundation closure", () => {
       await mockAnonymousSession(page);
       await page.goto(`${BASE_URL}/login`);
 
-      // Part 4: AuthShell — h1 là tiêu đề màn ("Đăng nhập hệ thống"); brand
+      // AuthShell dark: h1 là lời chào ("Xin chào bạn đến với Hoa Nam!"); brand
       // "Hoa Nam WMS" là khối logo, không còn là heading.
       await expect(
-        page.getByRole("heading", { name: "Đăng nhập hệ thống" }),
+        page.getByRole("heading", { name: "Xin chào bạn đến với Hoa Nam!" }),
       ).toBeVisible();
       await expect(page.getByPlaceholder("your@gmail.com")).toBeVisible();
       await expect(page.getByPlaceholder("Nhập mật khẩu")).toBeVisible();

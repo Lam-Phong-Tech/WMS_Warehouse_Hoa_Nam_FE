@@ -142,9 +142,14 @@ body,
   }
 }
 
-/* Smooth transitions cho Ant Design components */
+/* Smooth transitions cho Ant Design components
+   (không dùng `transition: all` — animate cả layout property như width sẽ
+   gây reflow toàn trang mỗi frame → giật; xem nguyên tắc ở hn-motion.css). */
 .ant-layout-sider {
-  transition: all 0.2s ease !important;
+  transition:
+    width 200ms cubic-bezier(0.4, 0, 0.2, 1),
+    background-color 140ms cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 .ant-menu-inline-collapsed-tooltip {

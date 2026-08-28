@@ -28,6 +28,11 @@ import {
 import type { AgencyRecord } from "@/modules/master-data/types/mvp-master.types";
 import { useDialogExit } from "@/shared/utils/useDialogExit";
 import {
+  AnimatedList,
+  AnimatedListItem,
+} from "@/shared/components/motion/AnimatedList";
+import { createRowKey } from "@/shared/components/motion/row-key";
+import {
   consumeOutboundImport,
   fetchAvailableQtyBySku,
   uploadOutboundRequestFile,
@@ -40,8 +45,18 @@ import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 type IntakeMode = "manual" | "excel";
 
 interface LineInput {
+  /** Khóa ổn định cho hiệu ứng thêm/xóa dòng — không gửi lên API. */
+  key: string;
   product_id: string;
   required_qty: number;
+}
+
+function createEmptyLine(): LineInput {
+  return {
+    key: createRowKey("outbound-line"),
+    product_id: "",
+    required_qty: 1,
+  };
 }
 
 type LineResolution = { sku_id?: string; required_qty?: number };
@@ -119,9 +134,7 @@ export function OutboundIntakeModal({
   const [recipientAddress, setRecipientAddress] = useState("");
   const [recipientPhone, setRecipientPhone] = useState("");
   const [requestDate, setRequestDate] = useState("");
-  const [lines, setLines] = useState<LineInput[]>([
-    { product_id: "", required_qty: 1 },
-  ]);
+  const [lines, setLines] = useState<LineInput[]>([createEmptyLine()]);
   const [formError, setFormError] = useState<string | null>(null);
 
   const skuQuery = useMvpSkus({
@@ -183,7 +196,7 @@ export function OutboundIntakeModal({
     setRecipientAddress("");
     setRecipientPhone("");
     setRequestDate("");
-    setLines([{ product_id: "", required_qty: 1 }]);
+    setLines([createEmptyLine()]);
     setFormError(null);
   };
 
@@ -621,79 +634,79 @@ export function OutboundIntakeModal({
             </Grid>
 
             <Stack spacing={1.5}>
-              {lines.map((line, index) => (
-                <Stack
-                  key={`line-${index}`}
-                  direction="row"
-                  spacing={1.5}
-                  sx={{
-                    alignItems: "flex-start",
-                    flexWrap: "wrap",
-                    rowGap: 1,
-                  }}
-                >
-                  <UiTextField
-                    select
-                    required
-                    label="SKU sản phẩm"
-                    sx={{ minWidth: 380 }}
-                    value={line.product_id}
-                    onChange={(event) =>
-                      updateLine(index, { product_id: event.target.value })
-                    }
-                  >
-                    <MenuItem value="" disabled>
-                      Chỉ SKU sản phẩm đang sử dụng
-                    </MenuItem>
-                    {skuQuery.isLoading && skuOptions.length === 0 ? (
-                      <MenuItem value="__loading__" disabled>
-                        Đang tải...
-                      </MenuItem>
-                    ) : null}
-                    {skuOptions.map((option) => (
-                      <MenuItem key={option.value} value={option.value}>
-                        {option.label}
-                      </MenuItem>
-                    ))}
-                  </UiTextField>
-                  <UiTextField
-                    required
-                    type="number"
-                    label="Số lượng"
-                    value={line.required_qty}
-                    onChange={(event) =>
-                      updateLine(index, {
-                        required_qty: Math.max(
-                          1,
-                          Math.trunc(Number(event.target.value) || 1),
-                        ),
-                      })
-                    }
-                    sx={{ width: 130 }}
-                    slotProps={{ htmlInput: { min: 1, step: 1 } }}
-                  />
-                  <ActionButton
-                    kind="delete"
-                    disabled={lines.length === 1}
-                    onClick={() =>
-                      setLines((current) =>
-                        current.filter((_, i) => i !== index),
-                      )
-                    }
-                    sx={{ mt: "8px" }}
-                  >
-                    Xóa dòng
-                  </ActionButton>
-                </Stack>
-              ))}
+              <AnimatedList>
+                {lines.map((line, index) => (
+                  <AnimatedListItem key={line.key} gap={12}>
+                    <Stack
+                      direction="row"
+                      spacing={1.5}
+                      sx={{
+                        alignItems: "flex-start",
+                        flexWrap: "wrap",
+                        rowGap: 1,
+                      }}
+                    >
+                      <UiTextField
+                        select
+                        required
+                        label="SKU sản phẩm"
+                        sx={{ minWidth: 380 }}
+                        value={line.product_id}
+                        onChange={(event) =>
+                          updateLine(index, { product_id: event.target.value })
+                        }
+                      >
+                        <MenuItem value="" disabled>
+                          Chỉ SKU sản phẩm đang sử dụng
+                        </MenuItem>
+                        {skuQuery.isLoading && skuOptions.length === 0 ? (
+                          <MenuItem value="__loading__" disabled>
+                            Đang tải...
+                          </MenuItem>
+                        ) : null}
+                        {skuOptions.map((option) => (
+                          <MenuItem key={option.value} value={option.value}>
+                            {option.label}
+                          </MenuItem>
+                        ))}
+                      </UiTextField>
+                      <UiTextField
+                        required
+                        type="number"
+                        label="Số lượng"
+                        value={line.required_qty}
+                        onChange={(event) =>
+                          updateLine(index, {
+                            required_qty: Math.max(
+                              1,
+                              Math.trunc(Number(event.target.value) || 1),
+                            ),
+                          })
+                        }
+                        sx={{ width: 130 }}
+                        slotProps={{ htmlInput: { min: 1, step: 1 } }}
+                      />
+                      <ActionButton
+                        kind="delete"
+                        disabled={lines.length === 1}
+                        onClick={() =>
+                          setLines((current) =>
+                            current.filter((_, i) => i !== index),
+                          )
+                        }
+                        sx={{ mt: "8px" }}
+                      >
+                        Xóa dòng
+                      </ActionButton>
+                    </Stack>
+                  </AnimatedListItem>
+                ))}
+              </AnimatedList>
               <Box>
                 <ActionButton
                   kind="create"
                   onClick={() =>
-                    setLines((current) => [
-                      ...current,
-                      { product_id: "", required_qty: 1 },
-                    ])
+                    setLines((current) => [...current, createEmptyLine()])
                   }
                 >
                   Thêm dòng SKU

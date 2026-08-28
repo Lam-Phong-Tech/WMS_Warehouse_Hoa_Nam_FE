@@ -116,7 +116,7 @@ for (const viewport of viewports) {
 
     // Heading login đổi theo redesign 10-11/8.
     await expect(
-      page.getByRole("heading", { name: "Đăng nhập hệ thống" }),
+      page.getByRole("heading", { name: "Xin chào bạn đến với Hoa Nam!" }),
     ).toBeVisible();
     await expect(page.getByRole("button", { name: "Đăng nhập" })).toBeVisible();
 

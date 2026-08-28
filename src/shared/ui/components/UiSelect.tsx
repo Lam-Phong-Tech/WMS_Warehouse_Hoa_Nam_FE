@@ -46,6 +46,17 @@ export function UiSelect({
   "data-testid": dataTestId,
 }: UiSelectProps) {
   const labelId = useId();
+  /**
+   * Có placeholder ⇒ `displayEmpty` bật ⇒ ô LUÔN hiển thị chữ (placeholder khi
+   * chưa chọn). Nhãn outlined của MUI mặc định chỉ "co lên" khi có giá trị
+   * hoặc đang focus, nên lúc chưa chọn nó nằm giữa ô và ĐÈ LÊN placeholder.
+   * Ép nhãn co sẵn và mở sẵn khe viền để hai thứ không chồng nhau.
+   *
+   * Chỉ ép khi có placeholder — không có placeholder thì giữ nguyên hành vi
+   * mặc định của MUI (nhãn nằm trong ô khi rỗng), tránh đổi giao diện các chỗ
+   * đang dùng `label` một mình.
+   */
+  const forceShrink = Boolean(placeholder) || undefined;
   return (
     <FormControl
       size="small"
@@ -53,10 +64,15 @@ export function UiSelect({
       fullWidth={fullWidth}
       sx={minWidth ? { minWidth } : undefined}
     >
-      {label ? <InputLabel id={labelId}>{label}</InputLabel> : null}
+      {label ? (
+        <InputLabel id={labelId} shrink={forceShrink}>
+          {label}
+        </InputLabel>
+      ) : null}
       <Select
         labelId={label ? labelId : undefined}
         label={label}
+        notched={forceShrink}
         value={value}
         onChange={(event) => onChange(String(event.target.value))}
         displayEmpty={Boolean(placeholder)}

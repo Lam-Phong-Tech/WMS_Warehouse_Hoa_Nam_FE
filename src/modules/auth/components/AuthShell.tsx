@@ -3,6 +3,7 @@ import { Box, CircularProgress, UiCard, type BoxProps } from "@/shared/ui";
 import {
   RADIUS,
   SEMANTIC_LIGHT as S,
+  TYPOGRAPHY,
   Z_INDEX,
   inkAlpha,
 } from "@/shared/ui/tokens";
@@ -18,10 +19,9 @@ export interface AuthShellProps {
 }
 
 /**
- * Vỏ các màn auth (Login / ChangePassword / ForgotPassword) — Part 4 Vuexy
- * sync: thay bộ class `.hn-login-*` của hoa-nam-wireframe.css (sắp xoá) bằng
- * Box/UiCard + token. Card trắng radius 6 giữa canvas bgCanvas, logo HN +
- * kicker/tiêu đề giữ nguyên nội dung như bản wireframe.
+ * Vỏ các màn auth (Login / ChangePassword / ForgotPassword) — layout kiểu
+ * login Vuexy: heading chào mừng + subtitle nằm trong card (thay header band
+ * + logo HN cũ), card trắng trên canvas bgCanvas như baseline light.
  */
 export function AuthShell({
   titleId,
@@ -96,11 +96,11 @@ export function AuthShell({
       <Box
         component="section"
         aria-labelledby={titleId}
-        sx={{ width: "min(460px, 100%)" }}
+        sx={{ width: "min(440px, 100%)" }}
       >
         <Box
           sx={{
-            margin: "0 0 9px",
+            margin: "0 0 10px",
             color: S.textStrong,
             fontSize: 17,
             fontWeight: 700,
@@ -122,58 +122,27 @@ export function AuthShell({
         </Box>
 
         <UiCard disablePadding>
-          <Box
-            component="header"
-            sx={{
-              padding: { xs: "16px 16px 14px", md: "16px 20px 14px" },
-              borderBottom: `1px solid ${S.divider}`,
-              backgroundColor: S.bgSubtle,
-            }}
-          >
-            <Box sx={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <Box
-                aria-hidden="true"
-                sx={{
-                  width: 38,
-                  height: 38,
-                  display: "inline-grid",
-                  placeItems: "center",
-                  flex: "0 0 auto",
-                  border: `1.5px solid ${S.primary}`,
-                  borderRadius: `${RADIUS.control}px`,
-                  backgroundColor: S.primarySoft,
-                  color: S.primary,
-                  fontSize: 16,
-                  fontWeight: 700,
-                }}
-              >
-                HN
-              </Box>
-              <Box>
-                <Box
-                  component="h1"
-                  id={titleId}
-                  sx={{
-                    margin: 0,
-                    color: S.textHigh,
-                    fontSize: 19,
-                    lineHeight: 1.25,
-                    fontWeight: 700,
-                  }}
-                >
-                  {title}
-                </Box>
-                <Box
-                  sx={{ marginTop: "3px", color: S.textMedium, fontSize: 12.5 }}
-                >
-                  {subtitle}
-                </Box>
-              </Box>
+          <Box sx={{ padding: { xs: "24px 20px 26px", md: "28px 26px 30px" } }}>
+            <Box
+              component="h1"
+              id={titleId}
+              sx={{
+                margin: 0,
+                color: S.textStrong,
+                fontSize: TYPOGRAPHY.heading.fontSize,
+                fontWeight: 600,
+                lineHeight: TYPOGRAPHY.heading.lineHeight,
+              }}
+            >
+              {title}
             </Box>
-          </Box>
+            <Box sx={{ marginTop: "4px", color: S.textMedium, fontSize: 15 }}>
+              {subtitle}
+            </Box>
 
-          <Box sx={{ padding: { xs: "18px 16px 20px", md: "18px 20px 20px" } }}>
-            {children}
+            <Box sx={{ marginTop: "22px", "& a": { color: S.primary } }}>
+              {children}
+            </Box>
           </Box>
         </UiCard>
       </Box>

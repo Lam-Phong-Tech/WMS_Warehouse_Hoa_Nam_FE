@@ -72,6 +72,12 @@ import type {
   WarrantyCaseStatus,
 } from "@/modules/warranty/types";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
+import {
+  AnimatedList,
+  AnimatedListItem,
+  AnimatedInlineList,
+  AnimatedInlineItem,
+} from "@/shared/components/motion";
 
 const RETURN_ATTACHMENT_TYPES = Object.entries(
   WARRANTY_ATTACHMENT_TYPE_LABELS,
@@ -1181,6 +1187,7 @@ export function WarrantyDetailModal({
 
           {activeTab === "history" ? (
             <Box
+              className="hn-fade-in-up"
               sx={{
                 border: "1px solid",
                 borderColor: "divider",
@@ -1253,7 +1260,7 @@ export function WarrantyDetailModal({
               ) : null}
 
               {activeTab === "overview" ? (
-                <Grid container spacing={2}>
+                <Grid className="hn-fade-in-up" container spacing={2}>
                   <Grid size={{ xs: 12, lg: 6 }}>
                     <Box
                       sx={{
@@ -1448,7 +1455,7 @@ export function WarrantyDetailModal({
               ) : null}
 
               {activeTab === "media" ? (
-                <Stack spacing={2.5}>
+                <Stack className="hn-fade-in-up" spacing={2.5}>
                   {canUploadAttachment ? (
                     <UiTextField
                       select
@@ -1502,19 +1509,24 @@ export function WarrantyDetailModal({
                           gap: 1.5,
                         }}
                       >
-                        {imageAttachments.map((attachment) => (
-                          <ImageAttachmentTile
-                            key={attachment.id}
-                            attachment={attachment}
-                            url={imageUrls[attachment.id]}
-                            canDelete={canManage}
-                            onPreview={() => setPreviewId(attachment.id)}
-                            onDownload={() =>
-                              handleDownloadAttachment(attachment)
-                            }
-                            onDelete={() => setDeleteConfirmId(attachment.id)}
-                          />
-                        ))}
+                        <AnimatedInlineList>
+                          {imageAttachments.map((attachment) => (
+                            <AnimatedInlineItem key={attachment.id}>
+                              <ImageAttachmentTile
+                                attachment={attachment}
+                                url={imageUrls[attachment.id]}
+                                canDelete={canManage}
+                                onPreview={() => setPreviewId(attachment.id)}
+                                onDownload={() =>
+                                  handleDownloadAttachment(attachment)
+                                }
+                                onDelete={() =>
+                                  setDeleteConfirmId(attachment.id)
+                                }
+                              />
+                            </AnimatedInlineItem>
+                          ))}
+                        </AnimatedInlineList>
                         {canUploadAttachment ? (
                           <Box
                             component="label"
@@ -1600,29 +1612,32 @@ export function WarrantyDetailModal({
                       MP4/MOV/WEBM, mỗi video ≤ 300MB. Video không xem trước
                       trong modal — tải xuống để mở.
                     </Box>
-                    <Stack
-                      spacing={1}
-                      sx={{ mb: videoAttachments.length ? 1.5 : 0 }}
-                    >
-                      {videoAttachments.map((attachment) => (
-                        <AttachmentRow
-                          key={attachment.id}
-                          attachment={attachment}
-                          icon={
-                            <PlayCircleOutlined
-                              style={{
-                                color: ACTION_ICON_COLORS.upload,
-                                fontSize: 18,
-                              }}
+                    {/* Không đặt `spacing` ở Stack: khi một dòng thu về 0 thì
+                        khoảng cách vẫn còn rồi mất đột ngột — khoảng cách nằm
+                        trong `gap` của từng item để co cùng chiều cao. */}
+                    <Stack sx={{ mb: videoAttachments.length ? 1.5 : 0 }}>
+                      <AnimatedList>
+                        {videoAttachments.map((attachment) => (
+                          <AnimatedListItem key={attachment.id} gap={8}>
+                            <AttachmentRow
+                              attachment={attachment}
+                              icon={
+                                <PlayCircleOutlined
+                                  style={{
+                                    color: ACTION_ICON_COLORS.upload,
+                                    fontSize: 18,
+                                  }}
+                                />
+                              }
+                              canDelete={canManage}
+                              onDownload={() =>
+                                handleDownloadAttachment(attachment)
+                              }
+                              onDelete={() => setDeleteConfirmId(attachment.id)}
                             />
-                          }
-                          canDelete={canManage}
-                          onDownload={() =>
-                            handleDownloadAttachment(attachment)
-                          }
-                          onDelete={() => setDeleteConfirmId(attachment.id)}
-                        />
-                      ))}
+                          </AnimatedListItem>
+                        ))}
+                      </AnimatedList>
                     </Stack>
                     {canUploadAttachment ? (
                       <Box
@@ -1700,21 +1715,26 @@ export function WarrantyDetailModal({
                       >
                         {`Tệp khác (${otherAttachments.length})`}
                       </Box>
-                      <Stack spacing={1}>
-                        {otherAttachments.map((attachment) => (
-                          <AttachmentRow
-                            key={attachment.id}
-                            attachment={attachment}
-                            icon={
-                              <PaperClipOutlined style={{ fontSize: 16 }} />
-                            }
-                            canDelete={canManage}
-                            onDownload={() =>
-                              handleDownloadAttachment(attachment)
-                            }
-                            onDelete={() => setDeleteConfirmId(attachment.id)}
-                          />
-                        ))}
+                      <Stack>
+                        <AnimatedList>
+                          {otherAttachments.map((attachment) => (
+                            <AnimatedListItem key={attachment.id} gap={8}>
+                              <AttachmentRow
+                                attachment={attachment}
+                                icon={
+                                  <PaperClipOutlined style={{ fontSize: 16 }} />
+                                }
+                                canDelete={canManage}
+                                onDownload={() =>
+                                  handleDownloadAttachment(attachment)
+                                }
+                                onDelete={() =>
+                                  setDeleteConfirmId(attachment.id)
+                                }
+                              />
+                            </AnimatedListItem>
+                          ))}
+                        </AnimatedList>
                       </Stack>
                     </Box>
                   ) : null}
@@ -1723,6 +1743,7 @@ export function WarrantyDetailModal({
 
               {canIssue && activeTab === "issues" ? (
                 <Box
+                  className="hn-fade-in-up"
                   sx={{
                     border: "1px solid",
                     borderColor: "divider",

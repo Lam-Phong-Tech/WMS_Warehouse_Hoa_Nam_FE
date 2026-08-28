@@ -7,7 +7,7 @@
 import Box from "@mui/material/Box";
 import CircularProgress from "@mui/material/CircularProgress";
 import type { ReactNode } from "react";
-import { SEMANTIC_LIGHT as S, SPACING } from "@/shared/ui/tokens";
+import { MOTION, SEMANTIC_LIGHT as S, SPACING } from "@/shared/ui/tokens";
 import { UiIcon } from "./UiIcon";
 import { UiText } from "./UiText";
 
@@ -65,6 +65,9 @@ export function UiStateSurface({
         gap: `${SPACING.sm}px`,
         padding: `${SPACING.xxl}px`,
         textAlign: "center",
+        // Đổi loading → dữ liệu / rỗng / lỗi là lúc cả khối bị thay, hiện tức
+        // thì sẽ "chớp". Keyframes toàn cục định nghĩa ở hn-motion.css.
+        animation: `hn-fade-in ${MOTION.duration.normal}ms ${MOTION.easing.out} backwards`,
       }}
     >
       {kind === "loading" ? (

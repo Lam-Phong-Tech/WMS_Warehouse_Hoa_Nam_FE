@@ -11,6 +11,7 @@ import {
   UiSelect,
   UiStatusBadge,
   UiTabs,
+  UiTabPanel,
   UiText,
   UiTextField,
   type UiTabItem,
@@ -543,7 +544,7 @@ export default function InventoryPage() {
         </Box>
 
         {activeTab === "balance" ? (
-          <>
+          <UiTabPanel value={activeTab}>
             <div className="toolbar">
               <UiTextField
                 value={searchInput}
@@ -671,9 +672,9 @@ export default function InventoryPage() {
                 onPageChange={(page) => setBalancePage(page)}
               />
             </Box>
-          </>
+          </UiTabPanel>
         ) : (
-          <>
+          <UiTabPanel value={activeTab}>
             <div className="toolbar">
               <UiTextField
                 value={movementSearch}
@@ -795,7 +796,7 @@ export default function InventoryPage() {
                 onPageChange={(page) => setMovementPage(page)}
               />
             </Box>
-          </>
+          </UiTabPanel>
         )}
 
         {balanceDetailRow ? (
