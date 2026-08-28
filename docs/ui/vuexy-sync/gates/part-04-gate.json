@@ -1,0 +1,73 @@
+{
+  "part": 4,
+  "status": "PASS",
+  "model": "claude-fable-5",
+  "effort": "xhigh",
+  "previous_gate": "docs/ui/vuexy-sync/gates/part-03-gate.json",
+  "previous_output_sha": "ab69c3669f114c8c53b1944f9ed114eaaca257b6",
+  "previous_gate_validation": "PASS — chain 1→2→3 PASS đúng model/effort; HEAD input = 0b60408 (seal gate 3); foundation/component guards + 43 ui-foundation tests re-PASS trước khi migrate; P0 SEC-RBAC-01 mở từ Part 3 được đóng NGAY trong Part 4a đúng kế hoạch",
+  "input_sha": "0b60408a758c122f433245cad4858eb5f4c716e7",
+  "intermediate_checkpoints": [
+    "5b168233ce7f460f7dac2f5d39ea723e0d419d60 (Part 4a — shell swap UiAppShell, SEC-RBAC-01 đóng, nav-data NAV-01, NotFoundPage NAV-02)"
+  ],
+  "output_sha": "e3044d6b9af88acb8686a558f2b135e104204619",
+  "worktree_fingerprint": "clean (git status rỗng sau checkpoint; playwright-report artifact restore về HEAD trước commit)",
+  "screen_coverage_percent": 100,
+  "screen_coverage_detail": "29/29 route inventory (05-screen-role-inventory) audit + migrate + evidence — ma trận đầy đủ docs/ui/vuexy-sync/19-screen-migration-matrix.md; catch-all 404 mới (NAV-02) và /component-catalog→/ui-foundation tính trong 29",
+  "role_coverage_percent": 100,
+  "role_coverage_detail": "allowed/restricted/direct-URL/action-gating/API-403+401/loading/empty/partial/validation/retry/offline/responsive per-screen — docs/ui/vuexy-sync/20-role-screen-evidence.md (unit RBAC suites + 19 spec E2E fixture-role; route-guard wwhn-212:301 fail ở baseline nay PASS nhờ SEC-RBAC-01)",
+  "direct_ui_imports_outside_adapters": 0,
+  "adapter_zone": "src/shared/ui/** (34 file foundation) + src/shared/components/** (27 file allowlist direct-ui-imports.json — owner/reason/deadline trong meta); src/modules/** + src/app/** = 0",
+  "hardcoded_design_violations_p0_p1": 0,
+  "hardcode_note": "hex baseline còn đúng 1 file: src/shared/utils/performance-monitor.ts (4 màu console %c — không phải UI render, P2 có owner); height:35 = 0; @emotion trực tiếp = 0; CSS wireframe 4 file đã xoá, 3 lớp giữ lại 100% var(--wms-*)",
+  "duplicate_token_theme_provider": 0,
+  "duplicate_note": "1 nguồn token + 1 createTheme + 1 antdTheme + 1 AppThemeProvider; shim app/theme.ts + app/mui-theme.ts + layout.styles.ts ĐÃ XOÁ (consumer=0); LEGACY_SHELL đã gỡ khỏi tokens",
+  "business_regression": "0 — invariants auth/session/RBAC/API/routes/flows giữ nguyên; 3 fix phòng thủ render (normalizeDashboardKPI, notification NaN/items guard, UiPagination NaN-safe) không đổi contract; ledger drift-repair + spec-refresh đầy đủ trong 22-business-regression-report.md (fail-at-input-SHA chứng minh bằng worktree 0b60408)",
+  "visual_responsive_a11y_pwa": "PASS — goldens foundation ×2 (regenerate có disposition, ngưỡng 0.02 giữ nguyên); responsive-sweep 10 viewport × 27 route; a11y matrix 3 engine + keyboard; PWA offline ×2; console/network duplicate checks — 21-full-app-visual-report.md",
+  "commands_passed": [
+    "yarn format:check PASS",
+    "yarn lint 0 errors (44 warnings họ react-hooks có sẵn từ trước, không tăng loại mới)",
+    "npx tsc --noEmit -p tsconfig.app.json 0 errors (hook commit chạy tsc -b PASS)",
+    "yarn test — 137 files / 1001 tests PASS",
+    "yarn build PASS + yarn health:check PASS",
+    "node scripts/check-ui-architecture.mjs PASS (baseline 82→27, chỉ adapter-zone)",
+    "node scripts/check-ui-tokens.mjs PASS (baseline 27→1 file console-only)",
+    "node scripts/check-ui-styles.mjs PASS (CSS_MANIFEST 11→7 lớp)",
+    "E2E chromium (24 spec, --retries=1): 233 passed · 1 flaky-pass (wwhn-258, IO) · 7 skipped env-gated · 0 failed",
+    "E2E responsive-sweep: 19/20 full-run + 1366x768 solo PASS (flake IO có hồ sơ — 20 §4)",
+    "E2E wwhn-144 + a11y matrix (4 projects): 14 passed · 2 skipped by-design · 0 failed"
+  ],
+  "p0_open": 0,
+  "p0_closed": [
+    "SEC-RBAC-01/RC-07: layout luôn render <Outlet/> — ?screen= chỉ còn meta/deep-link do page đích xử lý sau guard (Part 4a, 5b16823)"
+  ],
+  "p1_open": 0,
+  "p1_closed": [
+    "RC-02: feature-land 0 direct import (82→0 file ngoài adapter)",
+    "RC-03: 4 lớp CSS wireframe xoá, 3 lớp còn lại token-hoá; DashboardPage.css xoá",
+    "NAV-01 (nav-data.ts nguồn duy nhất, /scan + /pv-admin có entry) + NAV-02 (404 thật)"
+  ],
+  "p2_open": 3,
+  "p2_items": [
+    "Deprecated-frozen còn consumer (StatusTag 3 / TopPagination 3 / DataTable+deps 1 / PageHeader 1 / MvpPaginationFooter 3 / MvpPageSizeSelector 3 / ReportKpi* 1) — chỉ-giảm, xoá hẳn ở Part 5",
+    "UiAutocomplete canonical chưa có (4 chỗ tạm dùng select — mất typeahead) + PvSwitch module-local chờ hợp nhất UiSwitch",
+    "@ant-design/icons còn 2 file adapter-zone (renderSortIcon/useSortTooltipColumns) — gỡ cùng antd ở Part 5; !important còn 97 chỗ trong 5 file CSS scoped"
+  ],
+  "artifacts": [
+    "src/app/layouts/{MainLayout,SideNav,UserMenu,nav-data}.tsx|ts (shell UiAppShell)",
+    "src/modules/** — 60+ file màn hình migrate về @/shared/ui",
+    "src/shared/ui/** bổ sung: UiSelect, UiDatePicker/UiDateRangePicker, primitives (Badge/LinearProgress/Collapse/Switch/Checkbox/Radio/FormControlLabel/Drawer/useMediaQuery/ListItemIcon/ListItemText), WWHN-268 hooks trên UiStateSurface/UiConfirmDialog/catalog",
+    "src/modules/auth/components/AuthShell.tsx + src/modules/pv/components/PvSwitch.tsx (module-local)",
+    "docs/ui/vuexy-sync/19-screen-migration-matrix.md",
+    "docs/ui/vuexy-sync/20-role-screen-evidence.md",
+    "docs/ui/vuexy-sync/21-full-app-visual-report.md",
+    "docs/ui/vuexy-sync/22-business-regression-report.md",
+    "docs/ui/vuexy-sync/23-full-source-violation-report.md",
+    "docs/ui/vuexy-sync/allowlists/*.json (regenerate ratchet)",
+    "e2e/* — 19 spec drift-repair về contract hiện tại",
+    "docs/ui/vuexy-sync/gates/part-04-gate.json"
+  ],
+  "blockers": [],
+  "next_file_allowed": "05_ClaudeCode_Fable5_xhigh_Final_Regression_Prevention.md",
+  "completed_at": "2026-08-28T13:05:00+07:00"
+}
