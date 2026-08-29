@@ -8,6 +8,7 @@ import {
   UiDialog,
   UiStatusBadge,
   UiTextField,
+  useUiConfirm,
 } from "@/shared/ui";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -54,6 +55,15 @@ import type { ReactNode } from "react";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 
 type RfidTarget = { itemId: string; itemCode: string };
+
+/** Lý do in lại nhãn thường gặp (mục 9) + "Khác" cho phép nhập tay. */
+const REPRINT_REASONS = [
+  "Máy in hết mực",
+  "Lỗi máy in",
+  "Nhãn bị hỏng / rách",
+  "In lại chứng từ",
+  "Khác",
+] as const;
 
 interface Props {
   documentId: string;
@@ -136,6 +146,10 @@ export function AlignedOutboundDetailModal({
   const [printerId, setPrinterId] = useState("");
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
+  // Lý do in lại nhãn (mục 9): bắt buộc chọn trước khi reprint.
+  const [reprintOpen, setReprintOpen] = useState(false);
+  const [reprintReasonKey, setReprintReasonKey] = useState("");
+  const [reprintReasonNote, setReprintReasonNote] = useState("");
   const [rfidTarget, setRfidTarget] = useState<RfidTarget | null>(null);
   const [rfidCode, setRfidCode] = useState("");
   const [rfidHardwareUid, setRfidHardwareUid] = useState("");
@@ -146,6 +160,8 @@ export function AlignedOutboundDetailModal({
   const [labelWarning, setLabelWarning] = useState<string | null>(null);
   const [postConfirmOpen, setPostConfirmOpen] = useState(false);
   const postKeyRef = useRef<string | null>(null);
+  // Xác nhận trước khi gỡ đối chiếu — confirmDialog PHẢI render trong cây bên dưới.
+  const { confirm, confirmDialog } = useUiConfirm();
 
   const detailQuery = useQuery({
     queryKey: ["mvp-outbound", "detail", documentId],
@@ -413,7 +429,7 @@ export function AlignedOutboundDetailModal({
   });
 
   const printMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (reprintReason?: string) => {
       if (!printerId) throw new Error("Chọn máy in đang hoạt động.");
       let label = packingLabel;
       if (
@@ -429,13 +445,17 @@ export function AlignedOutboundDetailModal({
         ifMatch: label.version,
         idempotencyKey: makeKey(`label-print-${label.id}`),
       };
+      // In lại (nhãn đã PRINTED) phải kèm lý do để BE ghi vào nhật ký in.
       return label.status === "PRINTED"
-        ? reprintLabelSnapshot(payload)
+        ? reprintLabelSnapshot({ ...payload, reason: reprintReason })
         : printLabelSnapshot(payload);
     },
     onSuccess: async () => {
       toast.success("Đã gửi lệnh in nhãn.");
       setPreparedLabel(null);
+      setReprintOpen(false);
+      setReprintReasonKey("");
+      setReprintReasonNote("");
       await refresh();
     },
     onError: async (error) => {
@@ -493,6 +513,21 @@ export function AlignedOutboundDetailModal({
       toast.error(getApiErrorMessage(error, "Gán RFID thất bại.")),
   });
 
+  // Gỡ đối chiếu là thao tác không hoàn tác được bằng nút bấm: muốn tính lại
+  // vào phiếu phải quét lại sản phẩm thật — bắt buộc xác nhận trước khi gọi server.
+  const handleUnmatch = async (match: OutboundItemMatchRecord) => {
+    const accepted = await confirm({
+      title: "Gỡ sản phẩm khỏi đối chiếu?",
+      content:
+        "Sản phẩm sẽ bị gỡ khỏi danh sách đối chiếu của phiếu xuất. Muốn tính lại vào phiếu, bạn phải quét lại sản phẩm đó.",
+      confirmText: "Gỡ",
+      cancelText: "Hủy",
+      tone: "danger",
+    });
+    if (!accepted) return;
+    unmatchMutation.mutate(match.id);
+  };
+
   const lineColumns: ResponsiveTableColumn<OutboundLineRecord>[] = [
     {
       key: "productId",
@@ -539,7 +574,7 @@ export function AlignedOutboundDetailModal({
           {mutable && can("outbound.scan") ? (
             <ActionButton
               kind="delete"
-              onClick={() => unmatchMutation.mutate(match.id)}
+              onClick={() => void handleUnmatch(match)}
             >
               Gỡ
             </ActionButton>
@@ -715,11 +750,15 @@ export function AlignedOutboundDetailModal({
                 columns={lineColumns}
                 rows={detail.lines}
                 rowKey={(row) => row.id}
+                loading={detailQuery.isFetching}
+                emptyText="Phiếu chưa có dòng hàng cần xuất."
               />
               <ResponsiveDataTable<OutboundItemMatchRecord>
                 columns={matchColumns}
                 rows={activeMatches}
                 rowKey={(row) => row.id}
+                loading={detailQuery.isFetching}
+                emptyText="Chưa đối chiếu sản phẩm nào — quét mã sản phẩm để bắt đầu."
               />
             </Stack>
           </Box>
@@ -890,7 +929,16 @@ export function AlignedOutboundDetailModal({
                               !can("label.reprint")) ||
                             printMutation.isPending
                           }
-                          onClick={() => printMutation.mutate()}
+                          onClick={() => {
+                            // In lại phải nhập lý do trước; in lần đầu thì gửi ngay.
+                            if (packingLabel.status === "PRINTED") {
+                              setReprintReasonKey("");
+                              setReprintReasonNote("");
+                              setReprintOpen(true);
+                            } else {
+                              printMutation.mutate(undefined);
+                            }
+                          }}
                         >
                           {printMutation.isPending
                             ? "Đang gửi lệnh in..."
@@ -1011,6 +1059,74 @@ export function AlignedOutboundDetailModal({
         </UiDialog>
 
         <UiDialog
+          open={reprintOpen}
+          onClose={guardBackdropClose(() => setReprintOpen(false))}
+          maxWidth="xs"
+          fullWidth
+          title="Lý do in lại nhãn"
+          actions={
+            <>
+              <ActionButton kind="close" onClick={() => setReprintOpen(false)}>
+                Đóng
+              </ActionButton>
+              <ActionButton
+                kind="print"
+                disabled={
+                  printMutation.isPending ||
+                  !reprintReasonKey ||
+                  (reprintReasonKey === "Khác" && !reprintReasonNote.trim())
+                }
+                onClick={() => {
+                  const reason =
+                    reprintReasonKey === "Khác"
+                      ? reprintReasonNote.trim()
+                      : reprintReasonKey;
+                  printMutation.mutate(reason);
+                }}
+              >
+                {printMutation.isPending
+                  ? "Đang gửi lệnh in..."
+                  : "In lại nhãn"}
+              </ActionButton>
+            </>
+          }
+        >
+          <Stack spacing={2}>
+            <UiAlert tone="info">
+              Ghi lý do in lại để lưu vào nhật ký in — không làm thay đổi tồn
+              kho.
+            </UiAlert>
+            <UiTextField
+              select
+              fullWidth
+              value={reprintReasonKey}
+              onChange={(event) => setReprintReasonKey(event.target.value)}
+              label="Lý do in lại"
+            >
+              <MenuItem value="" disabled>
+                Chọn lý do
+              </MenuItem>
+              {REPRINT_REASONS.map((reason) => (
+                <MenuItem key={reason} value={reason}>
+                  {reason}
+                </MenuItem>
+              ))}
+            </UiTextField>
+            {reprintReasonKey === "Khác" ? (
+              <UiTextField
+                fullWidth
+                multiline
+                minRows={2}
+                value={reprintReasonNote}
+                onChange={(event) => setReprintReasonNote(event.target.value)}
+                label="Nhập lý do cụ thể"
+                placeholder="Nhập lý do in lại"
+              />
+            ) : null}
+          </Stack>
+        </UiDialog>
+
+        <UiDialog
           open={Boolean(rfidTarget)}
           onClose={guardBackdropClose(() => setRfidTarget(null))}
           maxWidth="xs"
@@ -1047,12 +1163,14 @@ export function AlignedOutboundDetailModal({
               fullWidth
               value={rfidHardwareUid}
               onChange={(event) => setRfidHardwareUid(event.target.value)}
-              label="Hardware UID"
-              placeholder="Hardware UID"
+              label="Mã thiết bị (UID)"
+              placeholder="Nhập mã thiết bị"
             />
           </Stack>
         </UiDialog>
       </UiDialog>
+
+      {confirmDialog}
     </>
   );
 }

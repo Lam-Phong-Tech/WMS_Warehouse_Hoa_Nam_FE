@@ -29,6 +29,7 @@ import { InboundDraftModal } from "@/modules/inbound/components/InboundDraftModa
 import { useInboundDocuments } from "@/modules/inbound/hooks/use-inbound";
 import { InboundScanModal } from "@/modules/inbound/pages/MvpInboundScreens";
 import type { InboundDocument } from "@/modules/inbound/types";
+import { formatQuantity } from "@/shared/utils/format-number";
 import { ActionButton } from "@/shared/components/actions";
 
 const STATUS_OPTIONS = Object.entries(INBOUND_STATUS_LABELS).map(
@@ -189,7 +190,7 @@ function InboundListScreen() {
       align: "right",
       sortType: "value",
       sortAccessor: (row) => row.scanned,
-      render: (row) => row.scanned.toLocaleString("vi-VN"),
+      render: (row) => formatQuantity(row.scanned),
     },
     {
       key: "status",

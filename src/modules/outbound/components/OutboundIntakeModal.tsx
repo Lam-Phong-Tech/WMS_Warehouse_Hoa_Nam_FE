@@ -4,7 +4,6 @@ import {
   Grid,
   MenuItem,
   Stack,
-  UiAlert,
   UiDialog,
   UiPagination,
   UiSelect,
@@ -135,7 +134,58 @@ export function OutboundIntakeModal({
   const [recipientPhone, setRecipientPhone] = useState("");
   const [requestDate, setRequestDate] = useState("");
   const [lines, setLines] = useState<LineInput[]>([createEmptyLine()]);
-  const [formError, setFormError] = useState<string | null>(null);
+  // Lỗi kiểm tra hiển thị INLINE ngay dưới từng ô (thay cho một khối lỗi tổng
+  // data-ui-state="error"): người dùng thấy đúng ô nào cần sửa.
+  const [fieldErrors, setFieldErrors] = useState<{
+    requestNo?: string;
+    recipientName?: string;
+    recipientPhone?: string;
+    lines: Record<number, { product_id?: string; required_qty?: string }>;
+  }>({ lines: {} });
+
+  const clearFieldError = (
+    field: "requestNo" | "recipientName" | "recipientPhone",
+  ) =>
+    setFieldErrors((prev) =>
+      prev[field] ? { ...prev, [field]: undefined } : prev,
+    );
+
+  const clearLineError = (index: number) =>
+    setFieldErrors((prev) => {
+      if (!prev.lines[index]) return prev;
+      const nextLines = { ...prev.lines };
+      delete nextLines[index];
+      return { ...prev, lines: nextLines };
+    });
+
+  const validateManualForm = () => {
+    const errors: typeof fieldErrors = { lines: {} };
+    if (!requestNo.trim()) errors.requestNo = "Nhập mã phiếu yêu cầu xuất.";
+    if (!recipientName.trim()) errors.recipientName = "Nhập người / nơi nhận.";
+    if (recipientPhone && !/^0\d{9}$/.test(recipientPhone)) {
+      errors.recipientPhone =
+        "Số điện thoại phải gồm đúng 10 chữ số và bắt đầu bằng số 0.";
+    }
+    lines.forEach((line, index) => {
+      const lineError: { product_id?: string; required_qty?: string } = {};
+      if (!line.product_id) lineError.product_id = "Chọn SKU sản phẩm.";
+      if (!line.required_qty || line.required_qty < 1) {
+        lineError.required_qty = "Nhập số lượng ≥ 1.";
+      }
+      if (lineError.product_id || lineError.required_qty) {
+        errors.lines[index] = lineError;
+      }
+    });
+    return errors;
+  };
+
+  const hasFieldErrors = (errors: typeof fieldErrors) =>
+    Boolean(
+      errors.requestNo ||
+      errors.recipientName ||
+      errors.recipientPhone ||
+      Object.keys(errors.lines).length > 0,
+    );
 
   const skuQuery = useMvpSkus({
     status: "ACTIVE",
@@ -197,7 +247,7 @@ export function OutboundIntakeModal({
     setRecipientPhone("");
     setRequestDate("");
     setLines([createEmptyLine()]);
-    setFormError(null);
+    setFieldErrors({ lines: {} });
   };
 
   const close = () => {
@@ -207,25 +257,8 @@ export function OutboundIntakeModal({
 
   const validateManualMutation = useMutation({
     mutationFn: async () => {
-      if (!requestNo.trim()) {
-        throw new Error("__FORM__Nhập mã phiếu yêu cầu xuất");
-      }
-      if (!recipientName.trim()) {
-        throw new Error("__FORM__Nhập người nhận");
-      }
-      if (recipientPhone && !/^0\d{9}$/.test(recipientPhone)) {
-        throw new Error(
-          "__FORM__Số điện thoại phải gồm đúng 10 chữ số và bắt đầu bằng số 0.",
-        );
-      }
-      for (const line of lines) {
-        if (!line.product_id) {
-          throw new Error("__FORM__Chọn SKU cho tất cả các dòng");
-        }
-        if (!line.required_qty || line.required_qty < 1) {
-          throw new Error("__FORM__Nhập số lượng cho tất cả các dòng");
-        }
-      }
+      // Validate client-side đã chạy TRƯỚC ở nút bấm (setFieldErrors) — ở đây
+      // chỉ dựng dữ liệu và gọi dry-run BE.
       const rows: OutboundRequestRowInput[] = lines.map((line) => ({
         request_no: requestNo.trim(),
         request_date: requestDate || undefined,
@@ -239,7 +272,7 @@ export function OutboundIntakeModal({
       return validateOutboundRequestRows(rows);
     },
     onSuccess: (result) => {
-      setFormError(null);
+      setFieldErrors({ lines: {} });
       setPreview(result);
       setPreviewPage(1);
       if (result.status === "VALIDATED") {
@@ -253,16 +286,20 @@ export function OutboundIntakeModal({
       }
     },
     onError: (error) => {
-      const message = error instanceof Error ? error.message : String(error);
-      if (message.startsWith("__FORM__")) {
-        setFormError(message.replace("__FORM__", ""));
-        return;
-      }
+      // Lỗi máy chủ/mạng (không phải lỗi từng ô) — báo qua toast, không dựng
+      // lại khối lỗi tổng.
       toast.error(
         getApiErrorMessage(error, "Xác nhận yêu cầu xuất kho thất bại."),
       );
     },
   });
+
+  const handleValidateManual = () => {
+    const errors = validateManualForm();
+    setFieldErrors(errors);
+    if (hasFieldErrors(errors)) return;
+    validateManualMutation.mutate();
+  };
 
   const validateFileMutation = useMutation({
     mutationFn: async () => {
@@ -551,7 +588,6 @@ export function OutboundIntakeModal({
 
         {mode === "manual" ? (
           <Stack spacing={2}>
-            {formError ? <UiAlert tone="error">{formError}</UiAlert> : null}
             <Grid container spacing={2}>
               <Grid size={{ xs: 12, md: 6 }}>
                 <UiTextField
@@ -560,7 +596,12 @@ export function OutboundIntakeModal({
                   label="Mã phiếu yêu cầu xuất"
                   placeholder="VD: REQ-20260813-001"
                   value={requestNo}
-                  onChange={(event) => setRequestNo(event.target.value)}
+                  onChange={(event) => {
+                    setRequestNo(event.target.value);
+                    clearFieldError("requestNo");
+                  }}
+                  error={Boolean(fieldErrors.requestNo)}
+                  helperText={fieldErrors.requestNo}
                   slotProps={{ htmlInput: { maxLength: 80 } }}
                 />
               </Grid>
@@ -580,7 +621,12 @@ export function OutboundIntakeModal({
                   fullWidth
                   label="Người / nơi nhận"
                   value={recipientName}
-                  onChange={(event) => setRecipientName(event.target.value)}
+                  onChange={(event) => {
+                    setRecipientName(event.target.value);
+                    clearFieldError("recipientName");
+                  }}
+                  error={Boolean(fieldErrors.recipientName)}
+                  helperText={fieldErrors.recipientName}
                   slotProps={{ htmlInput: { maxLength: 200 } }}
                 />
               </Grid>
@@ -599,18 +645,22 @@ export function OutboundIntakeModal({
                   label="SĐT liên hệ"
                   placeholder="VD: 0901234567"
                   value={recipientPhone}
-                  onChange={(event) =>
+                  onChange={(event) => {
                     setRecipientPhone(
                       event.target.value.replace(/\D/g, "").slice(0, 10),
-                    )
-                  }
+                    );
+                    clearFieldError("recipientPhone");
+                  }}
                   error={
-                    Boolean(recipientPhone) && !/^0\d{9}$/.test(recipientPhone)
+                    Boolean(fieldErrors.recipientPhone) ||
+                    (Boolean(recipientPhone) &&
+                      !/^0\d{9}$/.test(recipientPhone))
                   }
                   helperText={
-                    Boolean(recipientPhone) && !/^0\d{9}$/.test(recipientPhone)
+                    fieldErrors.recipientPhone ??
+                    (Boolean(recipientPhone) && !/^0\d{9}$/.test(recipientPhone)
                       ? "Số điện thoại phải gồm đúng 10 chữ số và bắt đầu bằng số 0."
-                      : undefined
+                      : undefined)
                   }
                   slotProps={{
                     htmlInput: { maxLength: 10, inputMode: "numeric" },
@@ -652,9 +702,12 @@ export function OutboundIntakeModal({
                         label="SKU sản phẩm"
                         sx={{ minWidth: 380 }}
                         value={line.product_id}
-                        onChange={(event) =>
-                          updateLine(index, { product_id: event.target.value })
-                        }
+                        onChange={(event) => {
+                          updateLine(index, { product_id: event.target.value });
+                          clearLineError(index);
+                        }}
+                        error={Boolean(fieldErrors.lines[index]?.product_id)}
+                        helperText={fieldErrors.lines[index]?.product_id}
                       >
                         <MenuItem value="" disabled>
                           Chỉ SKU sản phẩm đang sử dụng
@@ -675,14 +728,17 @@ export function OutboundIntakeModal({
                         type="number"
                         label="Số lượng"
                         value={line.required_qty}
-                        onChange={(event) =>
+                        onChange={(event) => {
                           updateLine(index, {
                             required_qty: Math.max(
                               1,
                               Math.trunc(Number(event.target.value) || 1),
                             ),
-                          })
-                        }
+                          });
+                          clearLineError(index);
+                        }}
+                        error={Boolean(fieldErrors.lines[index]?.required_qty)}
+                        helperText={fieldErrors.lines[index]?.required_qty}
                         sx={{ width: 130 }}
                         slotProps={{ htmlInput: { min: 1, step: 1 } }}
                       />
@@ -722,7 +778,7 @@ export function OutboundIntakeModal({
               <ActionButton
                 kind="view"
                 disabled={!canImport || validateManualMutation.isPending}
-                onClick={() => validateManualMutation.mutate()}
+                onClick={handleValidateManual}
               >
                 {validateManualMutation.isPending
                   ? "Đang kiểm tra..."
@@ -733,10 +789,6 @@ export function OutboundIntakeModal({
                 hiện hành — thiếu thì nhãn đóng gói để trống trường tương ứng.
               </Box>
             </Stack>
-            <ApiErrorAlert
-              error={validateManualMutation.error}
-              title="Không kiểm tra được yêu cầu xuất"
-            />
           </Stack>
         ) : (
           <Stack spacing={1.5}>
@@ -810,11 +862,17 @@ export function OutboundIntakeModal({
                   Lỗi dữ liệu: {preview.errorRows}
                 </Box>
               </Stack>
+              {/* Bảng xem trước lấy từ kết quả kiểm tra (mutation, không phải
+                  query) — hiện loading khi đang kiểm tra lại dữ liệu/tệp. */}
               <ResponsiveDataTable<ImportRow>
                 columns={previewColumns}
                 rows={pagedPreviewRows}
                 rowKey={(row) => row.id}
-                emptyText="Không có dòng dữ liệu nào"
+                loading={
+                  validateManualMutation.isPending ||
+                  validateFileMutation.isPending
+                }
+                emptyText="Không có dòng dữ liệu nào trong kết quả xem trước."
               />
               {previewPaged ? (
                 <UiPagination

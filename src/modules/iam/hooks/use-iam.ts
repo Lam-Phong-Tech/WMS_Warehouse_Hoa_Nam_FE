@@ -1,10 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
+  createIamDepartment,
   createIamRole,
   createIamUserWithRole,
   deleteIamRole,
   getIamDepartments,
+  updateIamDepartment,
+  type IamDepartmentPayload,
   getIamPermissions,
   getIamRole,
   getIamRoles,
@@ -158,6 +161,36 @@ export function useDeleteIamRole() {
   });
 }
 
+export function useCreateIamDepartment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: IamDepartmentPayload) => createIamDepartment(payload),
+    onSuccess: () => {
+      toast.success("Đã tạo phòng ban");
+      void invalidateIam(queryClient);
+    },
+    onError: (error) => toast.error(getMutationErrorMessage(error)),
+  });
+}
+
+export function useUpdateIamDepartment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      departmentId,
+      payload,
+    }: {
+      departmentId: string;
+      payload: Partial<IamDepartmentPayload>;
+    }) => updateIamDepartment(departmentId, payload),
+    onSuccess: () => {
+      toast.success("Đã cập nhật phòng ban");
+      void invalidateIam(queryClient);
+    },
+    onError: (error) => toast.error(getMutationErrorMessage(error)),
+  });
+}
+
 export function useSyncIamRolePermissions() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -189,11 +222,14 @@ export function useCreateIamUser() {
       payload,
       assignment,
       reason,
+      extraRoleIds,
     }: {
       payload: IamUserPayload;
       assignment: IamUserRoleAssignment;
       reason: string;
-    }) => createIamUserWithRole(payload, assignment, reason),
+      extraRoleIds?: string[];
+    }) =>
+      createIamUserWithRole(payload, assignment, reason, extraRoleIds ?? []),
     onSuccess: () => {
       toast.success("Đã thêm người dùng");
       void invalidateIam(queryClient);
@@ -213,12 +249,16 @@ export function useUpdateIamUser() {
       assignment,
       reason,
       currentAssignment,
+      extraRoleIds,
+      currentExtraRoleIds,
     }: {
       userId: string;
       payload: IamUserUpdatePayload;
       assignment: IamUserRoleAssignment;
       reason: string;
       currentAssignment?: IamUserRoleAssignment;
+      extraRoleIds?: string[];
+      currentExtraRoleIds?: string[];
     }) =>
       updateIamUserWithRole(
         userId,
@@ -226,6 +266,8 @@ export function useUpdateIamUser() {
         assignment,
         reason,
         currentAssignment,
+        extraRoleIds ?? [],
+        currentExtraRoleIds ?? [],
       ),
     onSuccess: () => {
       toast.success("Đã cập nhật người dùng");

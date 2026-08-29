@@ -28,7 +28,7 @@ export function NotFoundPage() {
       <UiStateSurface
         kind="empty"
         title="Không tìm thấy trang (404)"
-        description="Đường dẫn không tồn tại hoặc đã bị di chuyển. Kiểm tra lại URL hoặc quay về trang chính."
+        description="Đường dẫn không tồn tại hoặc đã bị di chuyển. Kiểm tra lại đường dẫn hoặc quay về trang chính."
         action={
           <UiButton onClick={() => navigate(ROUTES.DASHBOARD)}>
             Về trang chính

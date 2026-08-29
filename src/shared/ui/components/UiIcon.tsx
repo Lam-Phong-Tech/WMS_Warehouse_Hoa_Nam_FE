@@ -1,15 +1,17 @@
 /**
- * Foundation Icon wrapper — một icon family duy nhất (Flaticon Uicons,
- * `fi fi-rr-*`, CSS nạp một lần ở main.tsx). Kích thước theo token.
+ * Foundation Icon wrapper — một icon family duy nhất (Flaticon Uicons; biến
+ * thể + prefix class do ICON_FAMILY quyết định, CSS nạp một lần ở main.tsx).
+ * Kích thước theo token.
  *
  * Icon nghiệp vụ có tên sẵn: dùng shim `@/shared/components/icons`
  * (90 component, cùng cơ chế class này). UiIcon dành cho catalog/foundation
  * và icon mới chưa có trong shim.
  */
 import { COMPONENT_TOKENS } from "@/shared/ui/tokens";
+import { flatIconClass } from "@/shared/ui/icons/icon-family";
 
 export interface UiIconProps {
-  /** Slug Flaticon rounded-regular, vd "user", "box", "check" → fi-rr-<slug>. */
+  /** Slug Flaticon, vd "user", "box", "check" → <prefix>-<slug>. */
   name: string;
   size?: keyof typeof COMPONENT_TOKENS.icon;
   /** Màu bằng token — mặc định kế thừa màu chữ hiện tại. */
@@ -27,7 +29,7 @@ export function UiIcon({
 }: UiIconProps) {
   return (
     <i
-      className={`fi fi-rr-${name}${className ? ` ${className}` : ""}`}
+      className={`${flatIconClass(name)}${className ? ` ${className}` : ""}`}
       aria-label={ariaLabel}
       aria-hidden={ariaLabel ? undefined : true}
       style={{

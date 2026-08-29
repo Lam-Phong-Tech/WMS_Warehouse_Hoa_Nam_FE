@@ -136,6 +136,7 @@ function SimpleMasterTab({
   title,
   rows,
   isPending,
+  isFetching,
   isError,
   error,
   onRetry,
@@ -146,6 +147,8 @@ function SimpleMasterTab({
   title: string;
   rows: PvAdminSimpleMaster[];
   isPending: boolean;
+  /** Query đang refetch (sau khi lưu/invalidate) — hiện loading trên bảng. */
+  isFetching: boolean;
   isError: boolean;
   error: unknown;
   onRetry: () => void;
@@ -295,6 +298,7 @@ function SimpleMasterTab({
         columns={columns}
         rowSelection={rowSelection}
         selectionLabel={(row) => `Chọn ${title} ${row.code}`}
+        loading={isFetching}
         emptyText={
           search.trim() ? "Không có kết quả phù hợp." : `Chưa có ${title} nào.`
         }
@@ -770,6 +774,7 @@ export default function PvAdminPage() {
                 columns={profileColumns}
                 rowSelection={profileRowSelection}
                 selectionLabel={(row) => `Chọn hồ sơ ${row.sku_code}`}
+                loading={profiles.isFetching}
                 emptyText={
                   isProfileFilterActive
                     ? "Không có kết quả phù hợp."
@@ -789,6 +794,7 @@ export default function PvAdminPage() {
             title="ngành nghề"
             rows={industries.data?.data ?? []}
             isPending={industries.isPending}
+            isFetching={industries.isFetching}
             isError={industries.isError}
             error={industries.error}
             onRetry={() => industries.refetch()}
@@ -805,6 +811,7 @@ export default function PvAdminPage() {
             title="thẻ phân loại"
             rows={tags.data?.data ?? []}
             isPending={tags.isPending}
+            isFetching={tags.isFetching}
             isError={tags.isError}
             error={tags.error}
             onRetry={() => tags.refetch()}
@@ -823,6 +830,7 @@ export default function PvAdminPage() {
           ) : (
             <PvRuleTab
               rows={rules.data?.data ?? []}
+              isFetching={rules.isFetching}
               industryOptions={industryOptions}
               tagOptions={tagOptions}
               canManage={canManageMaster}
@@ -1083,12 +1091,15 @@ export default function PvAdminPage() {
 
 function PvRuleTab({
   rows,
+  isFetching,
   industryOptions,
   tagOptions,
   canManage,
   onSave,
 }: {
   rows: PvAdminRule[];
+  /** Query đang refetch (sau khi lưu/invalidate) — hiện loading trên bảng. */
+  isFetching: boolean;
   industryOptions: Array<{ value: string; label: string }>;
   tagOptions: Array<{ value: string; label: string }>;
   canManage: boolean;
@@ -1297,6 +1308,7 @@ function PvRuleTab({
         columns={columns}
         rowSelection={rowSelection}
         selectionLabel={(row) => `Chọn quy tắc ${row.id}`}
+        loading={isFetching}
         emptyText={
           search.trim() || statusFilter !== "ALL"
             ? "Không có kết quả phù hợp."

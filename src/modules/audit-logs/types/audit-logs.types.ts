@@ -21,6 +21,13 @@ export type AuditAction =
   | "CANCEL"
   | "ARCHIVE"
   | "RESTORE"
+  // Phiên đăng nhập / bảo mật (mục 13).
+  | "LOGIN"
+  | "LOGOUT"
+  | "LOGIN_DENIED"
+  | "TOKEN_REFRESH"
+  | "CHANGE_PASSWORD"
+  | "ASSIGN_ROLES"
   | string;
 
 /** Đúng 5 luồng theo yêu cầu vận hành mục 6 — xem AuditLogger::MODULE_*. */
@@ -80,6 +87,10 @@ export interface AuditLogFilters {
   user_id?: string;
   /** Tìm theo mô tả/lý do (BE: `q`). */
   q?: string;
+  /** Lọc created_at >= (Y-m-d hoặc Y-m-d H:i:s). */
+  date_from?: string;
+  /** Lọc created_at <= (Y-m-d hoặc Y-m-d H:i:s). */
+  date_to?: string;
   sort_by?: string;
   sort_order?: "asc" | "desc";
 }

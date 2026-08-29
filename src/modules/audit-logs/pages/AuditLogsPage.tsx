@@ -19,6 +19,7 @@ import { formatDateTime } from "@/shared/utils/format-date";
 import { AuditLogsTable } from "@/modules/audit-logs/components/AuditLogsTable";
 import { AuditLogDetailDrawer } from "@/modules/audit-logs/components/AuditLogDetailDrawer";
 import { useAuditLogs } from "@/modules/audit-logs/hooks/use-audit-logs";
+import { useIamUsers } from "@/modules/iam/hooks/use-iam";
 import type {
   AuditAction,
   AuditLog,
@@ -58,6 +59,25 @@ export function AuditLogsPage() {
   const [search, setSearch] = useState("");
   const [module, setModule] = useState<AuditModule | "">("");
   const [action, setAction] = useState<AuditAction | "">("");
+  // Lọc theo khoảng thời gian / khung giờ (mục 13). Giá trị từ input
+  // datetime-local có dạng "YYYY-MM-DDTHH:mm"; BE nhận "Y-m-d H:i:s".
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [userId, setUserId] = useState("");
+
+  // Danh bạ người dùng để lọc "ai đã thao tác". Best-effort: nếu tài khoản
+  // không có quyền xem người dùng thì query lỗi và dropdown chỉ rỗng, phần
+  // còn lại của trang vẫn chạy bình thường.
+  const usersQuery = useIamUsers({ per_page: 200 });
+  const userOptions = (usersQuery.data?.data ?? []).map((user) => ({
+    value: user.user_id,
+    label: user.email
+      ? `${user.display_name} (${user.email})`
+      : user.display_name,
+  }));
+
+  const toApiDateTime = (value: string) =>
+    value ? `${value.replace("T", " ")}:00` : undefined;
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -76,6 +96,9 @@ export function AuditLogsPage() {
       q: search || undefined,
       module: module || undefined,
       action: action || undefined,
+      user_id: userId || undefined,
+      date_from: toApiDateTime(dateFrom),
+      date_to: toApiDateTime(dateTo),
     },
   );
 
@@ -162,6 +185,45 @@ export function AuditLogsPage() {
           options={Object.entries(AUDIT_ACTION_LABELS).map(
             ([value, label]) => ({ value, label }),
           )}
+        />
+        <UiSelect
+          value={userId}
+          aria-label="Lọc theo người thực hiện"
+          placeholder="Người dùng: Tất cả"
+          minWidth={220}
+          onChange={(value) => {
+            setUserId(String(value));
+            setPage(1);
+          }}
+          options={userOptions}
+        />
+        <UiTextField
+          type="datetime-local"
+          value={dateFrom}
+          label="Từ thời điểm"
+          slotProps={{
+            inputLabel: { shrink: true },
+            htmlInput: { "aria-label": "Lọc từ thời điểm" },
+          }}
+          onChange={(event) => {
+            setDateFrom(event.target.value);
+            setPage(1);
+          }}
+          sx={{ minWidth: 210 }}
+        />
+        <UiTextField
+          type="datetime-local"
+          value={dateTo}
+          label="Đến thời điểm"
+          slotProps={{
+            inputLabel: { shrink: true },
+            htmlInput: { "aria-label": "Lọc đến thời điểm" },
+          }}
+          onChange={(event) => {
+            setDateTo(event.target.value);
+            setPage(1);
+          }}
+          sx={{ minWidth: 210 }}
         />
         <UiSelect
           value={perPage}

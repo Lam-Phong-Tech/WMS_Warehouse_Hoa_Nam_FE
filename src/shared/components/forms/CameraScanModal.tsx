@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Alert, Modal } from "antd";
 import { ActionButton } from "@/shared/components/actions";
+import { getCameraErrorMessage } from "@/shared/utils/camera-error";
 import { SEMANTIC_LIGHT } from "@/shared/ui/tokens";
+import { ANTD_ALERT_ICONS, ANTD_CLOSE_ICON } from "@/shared/ui/icons";
 
 type BarcodeResult = { rawValue?: string };
 type BarcodeDetectorInstance = {
@@ -141,11 +143,9 @@ export function CameraScanModal({
 
         frameRef.current = requestAnimationFrame(() => void detectFrame());
       } catch (error) {
-        const reason =
-          error instanceof Error ? error.message : "Không xác định";
-        setCameraError(
-          `Không truy cập được camera (${reason}). Hãy đóng camera và nhập Barcode/QR thủ công.`,
-        );
+        // Không nối message DOMException (tiếng Anh kỹ thuật) vào câu tiếng
+        // Việt — dịch qua helper dùng chung để nêu rõ nguyên nhân + cách xử lý.
+        setCameraError(getCameraErrorMessage(error));
         stop();
       }
     };
@@ -167,11 +167,18 @@ export function CameraScanModal({
           Đóng / nhập tay
         </ActionButton>
       }
+      // Nút đóng mặc định của antd Modal là CloseOutlined (@ant-design/icons).
+      closeIcon={ANTD_CLOSE_ICON}
       destroyOnHidden
       centered
     >
       {cameraError ? (
-        <Alert type="warning" showIcon title={cameraError} />
+        <Alert
+          type="warning"
+          showIcon
+          icon={ANTD_ALERT_ICONS.warning}
+          title={cameraError}
+        />
       ) : (
         <>
           <video
@@ -191,6 +198,7 @@ export function CameraScanModal({
             style={{ marginTop: 12 }}
             type="info"
             showIcon
+            icon={ANTD_ALERT_ICONS.info}
             title={cameraReady ? "Camera sẵn sàng" : "Đang khởi tạo camera..."}
             description="Đưa Barcode/QR vào khung hình. Camera chỉ đọc mã; dữ liệu vẫn phải qua validation nghiệp vụ như nhập tay. Camera không đọc RFID."
           />

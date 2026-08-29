@@ -43,6 +43,13 @@ export const ROUTE_PERMISSIONS: Record<string, string | string[] | undefined> =
       P.CONTAINER_VIEW,
       P.CONTAINER_MANAGE,
     ],
+    // Màn tổng quan khay (read-only) dùng chung quyền với luồng xếp khay.
+    [ROUTES.PUTAWAY_TRAYS]: [
+      P.PUTAWAY_VIEW,
+      P.PUTAWAY_MANAGE,
+      P.CONTAINER_VIEW,
+      P.CONTAINER_MANAGE,
+    ],
 
     // P.OUTBOUND_CREATE đã gỡ khỏi danh sách: mã `outbound.create` bị BE thu hồi
     // 27/08 vì không route nào đọc tới, nên không còn ai khớp được. Quyền vào màn

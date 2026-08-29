@@ -26,6 +26,8 @@ export const ROUTES = {
   // 02 · Nhập kho
   INBOUND: "/inbound",
   PUTAWAY: "/putaway",
+  /** PTW-OVERVIEW — màn tổng quan khay chỉ để XEM trạng thái (read-only). */
+  PUTAWAY_TRAYS: "/putaway/trays",
 
   // Remaining WMS modules
   OUTBOUND: "/outbound",

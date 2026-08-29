@@ -28,16 +28,16 @@ import type { InventoryBalanceRow } from "../services/inventoryService";
 import { useStockMovements, useBalanceSubledger } from "../hooks/use-inventory";
 import type { StockMovementRow } from "../services/inventoryService";
 import { formatDateTime } from "@/shared/utils/format-date";
+import { formatQuantity } from "@/shared/utils/format-number";
 import { useDialogExit } from "@/shared/utils/useDialogExit";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
-
-const numberFormatter = new Intl.NumberFormat("vi-VN");
 
 type RawRecord = Record<string, unknown>;
 
 function formatQty(value: number | null | undefined, uom = "") {
-  if (value === null || value === undefined) return "-";
-  return `${numberFormatter.format(value)}${uom ? ` ${uom}` : ""}`;
+  const formatted = formatQuantity(value);
+  if (formatted === "-") return "-";
+  return `${formatted}${uom ? ` ${uom}` : ""}`;
 }
 
 function text(val: unknown, fallback = "-") {
@@ -206,8 +206,8 @@ export function BalanceDetailModal({
           }}
         >
           {row.qty >= 0
-            ? `+${numberFormatter.format(row.qty)}`
-            : numberFormatter.format(row.qty)}
+            ? `+${formatQuantity(row.qty)}`
+            : formatQuantity(row.qty)}
         </Box>
       ),
     },
@@ -318,7 +318,7 @@ export function BalanceDetailModal({
       header: "Số lượng",
       width: 100,
       align: "right",
-      render: (row) => numberFormatter.format(Number(row.quantity ?? 0)),
+      render: (row) => formatQuantity(Number(row.quantity ?? 0)),
     },
     {
       key: "container_status",

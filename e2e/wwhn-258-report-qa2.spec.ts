@@ -239,13 +239,10 @@ async function openWarrantyReport(
   });
   await page.goto("/reports");
   await expect.poll(api.meCalls, { timeout: 15_000 }).toBeGreaterThanOrEqual(1);
-  // ReportsPage (UiTabs shell) mặc định mở tab "Báo cáo theo từng thị trường";
-  // màn RPT-01 (wwhn-258-report-screen) nằm ở tab "Báo cáo vận hành" — phải
-  // chọn tab trước khi chờ testid.
-  await page.getByRole("tab", { name: /Báo cáo vận hành/ }).click();
-  // `/auth/me` trả về sau khi shell đã mount, và bộ quyền mới làm cả trang render
-  // lại. Chờ một phần tử ổn định sau lần render đó, nếu không tab bị detach ngay
-  // giữa lúc click.
+  // /reports render thẳng màn RPT-01 (lớp tab "theo từng thị trường" đã bị gỡ).
+  // `/auth/me` trả về sau khi shell đã mount và bộ quyền mới làm cả trang render
+  // lại, nên vẫn phải chờ một phần tử ổn định sau lần render đó rồi mới bấm tab
+  // con, nếu không tab bị detach ngay giữa lúc click.
   await expect(page.getByTestId("wwhn-258-report-screen")).toBeVisible({
     timeout: 15_000,
   });
@@ -297,9 +294,7 @@ test("QA2 · ma trận vai: report.view / +report.export / +warranty.pii.export"
   await expect(page.getByRole("button", { name: "Xuất XLSX" })).toBeEnabled();
   await expect(page.getByTestId("report-pii-reason")).toHaveCount(0);
   await expect(
-    page.getByText(
-      /không có quyền xuất PII nên tệp xuất luôn che thông tin/,
-    ),
+    page.getByText(/không có quyền xuất PII nên tệp xuất luôn che thông tin/),
   ).toBeVisible();
   await page.screenshot({
     path: join(EVIDENCE_DIR, "role-02-export-without-pii.png"),
@@ -326,9 +321,10 @@ test("QA2 · PII cột khách hàng luôn mask khi thiếu warranty.pii.view", a
   });
   await openWarrantyReport(page, api);
 
-  await expect(page.getByText("BH-20260819-001")).toBeVisible();
-  // Bảng ngoài chỉ giữ cột thiết yếu (không còn cột Khách hàng/SĐT/Địa chỉ) —
-  // PII hiển thị trong modal chi tiết mở bằng nút "Xem"; mask vẫn bắt buộc.
+  // Mã case xuất hiện ở cả bảng 6.5 lẫn 6.6 nên đếm theo tập phần tử.
+  await expect(page.getByText("BH-20260819-001").first()).toBeVisible();
+  // Bản 7 tab hiển thị Khách hàng/SĐT ngay trên bảng 6.6 (yêu cầu nghiệp vụ)
+  // NHƯNG luôn ở dạng đã che khi thiếu warranty.pii.view.
   await expect(page.getByText("Nguyễn Văn A")).toHaveCount(0);
   await expect(page.getByText("0901234567")).toHaveCount(0);
   await page
@@ -336,8 +332,8 @@ test("QA2 · PII cột khách hàng luôn mask khi thiếu warranty.pii.view", a
     .first()
     .click();
   const detailDialog = page.getByRole("dialog");
-  await expect(detailDialog.getByText("*******567")).toBeVisible();
-  await expect(detailDialog.getByText("N*** V*** A***")).toBeVisible();
+  await expect(detailDialog.getByText("*******567").first()).toBeVisible();
+  await expect(detailDialog.getByText("N*** V*** A***").first()).toBeVisible();
   await expect(page.getByText("Nguyễn Văn A")).toHaveCount(0);
   await expect(page.getByText("0901234567")).toHaveCount(0);
   await page.screenshot({
@@ -356,12 +352,18 @@ test("QA2 · filter đi vào request và export giữ nguyên bộ lọc", async
   });
   await openWarrantyReport(page, api);
 
-  await page.getByPlaceholder("SKU / mẫu sản phẩm").fill("KT-2000");
-  await expect
-    .poll(() => api.reportUrls.some((url) => url.includes("model=KT-2000")), {
-      timeout: 10_000,
-    })
-    .toBe(true);
+  // Mục 6.6: ô tìm kiếm gộp "Mã case / SKU / Physical Code / Serial" và lọc
+  // ngay trên tập đã tải (chart + bảng dùng chung một tập dòng), nên bằng chứng
+  // là bảng thu hẹp đúng chứ không phải một tham số mới trên URL.
+  // Placeholder cũng đi qua VietnameseUiBoundary ("Serial" → "Số sê-ri") nên
+  // selector bám phần đầu không bị đổi.
+  const search = page.getByRole("textbox", {
+    name: /Tìm mã case, SKU, physical code/,
+  });
+  await search.fill("KHONG-TON-TAI");
+  await expect(page.getByText("Không có hồ sơ nào theo bộ lọc")).toBeVisible();
+  await search.fill("KT-2000");
+  await expect(page.getByText("BH-20260819-001").first()).toBeVisible();
 
   await page
     .getByTestId("report-pii-reason")
@@ -378,7 +380,6 @@ test("QA2 · filter đi vào request và export giữ nguyên bộ lọc", async
     filters: Record<string, unknown>;
   };
   expect(body.report_code).toBe("warranty-defects");
-  expect(body.filters.model).toBe("KT-2000");
   expect(body.filters.reason).toBe("Doi soat khieu nai khach hang 8891");
   // BR-EXP-03: tên file có timestamp do BE đặt, client không dựng đè.
   expect((await download).suggestedFilename()).toBe(

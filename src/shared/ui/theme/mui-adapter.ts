@@ -8,9 +8,11 @@
  */
 import { createTheme } from "@mui/material/styles";
 import Grow from "@mui/material/Grow";
+import { MUI_ICON_SLOTS } from "@/shared/ui/icons";
 import {
   BREAKPOINTS,
   COMPONENT_TOKENS as C,
+  CONTROL,
   MOTION,
   SEMANTIC_LIGHT as S,
   TYPOGRAPHY,
@@ -89,6 +91,13 @@ export const muiTheme = createTheme({
             transform: "translateY(0) scale(0.97)",
             transitionDuration: `${MOTION.duration.instant}ms`,
           },
+          // Focus phải thấy được bằng mắt: global :where(...) trong
+          // hn-motion.css có specificity 0 nên bị mọi `outline: none` cục bộ
+          // đè mất — khai lại ở đây với specificity thật của component.
+          "&:focus-visible": {
+            outline: `2px solid ${S.primary}`,
+            outlineOffset: 2,
+          },
         },
         startIcon: {
           "& > *:nth-of-type(1)": { fontSize: 16 },
@@ -102,7 +111,7 @@ export const muiTheme = createTheme({
       defaultProps: { size: "small" },
     },
     MuiSelect: {
-      defaultProps: { size: "small" },
+      defaultProps: { size: "small", ...MUI_ICON_SLOTS.MuiSelect },
       styleOverrides: {
         select: {
           paddingTop: C.input.paddingY,
@@ -145,6 +154,17 @@ export const muiTheme = createTheme({
           // Nhãn field giữ màu chữ bình thường kể cả khi field lỗi — chỉ viền
           // input và helperText đổi đỏ (quyết định UX có sẵn của dự án).
           "&.Mui-error": { color: S.textHigh },
+          // BUG: InputLabel tự nhân thêm transform scale(0.75) khi ở trạng
+          // thái nổi lên viền (shrink) — nếu root fontSize đặt thẳng 13px thì
+          // chữ HIỂN THỊ THẬT chỉ còn 13*0.75=9.75px, quá nhỏ khiến dấu tiếng
+          // Việt (ã, ạ, ộ...) vỡ nét/trông như mất nửa chữ (đo được qua
+          // getComputedStyle trên label thật — xem ghi chú soát UI 2026-08-29).
+          // Bù ngược 0.75 chỉ ở trạng thái shrink để chữ nổi hiển thị đúng
+          // 13px thật; trạng thái nghỉ (chưa nổi) không có transform nên vẫn
+          // đúng 13px như trước, không đổi.
+          "&.MuiInputLabel-shrink": {
+            fontSize: `${(C.input.labelFontSize / 0.75).toFixed(4)}px`,
+          },
         },
         asterisk: { color: S.error },
       },
@@ -224,6 +244,7 @@ export const muiTheme = createTheme({
       },
     },
     MuiChip: {
+      defaultProps: { ...MUI_ICON_SLOTS.MuiChip },
       styleOverrides: {
         root: {
           borderRadius: C.chip.radius,
@@ -238,21 +259,58 @@ export const muiTheme = createTheme({
      * lại keyframes toàn cục của hn-motion.css để giữ một nguồn định nghĩa.
      */
     MuiAlert: {
+      defaultProps: { ...MUI_ICON_SLOTS.MuiAlert },
       styleOverrides: {
         root: {
           animation: `hn-fade-in-up ${MOTION.duration.normal}ms ${MOTION.easing.out} backwards`,
         },
       },
     },
+    /**
+     * Các component MUI tự vẽ icon mặc định (bộ SVG nội bộ của MUI). Ép về
+     * Flaticon Uicons ở đây để cả app chỉ còn MỘT bộ icon — chi tiết slug xem
+     * src/shared/ui/icons/icon-slots.tsx.
+     */
+    MuiNativeSelect: {
+      defaultProps: { ...MUI_ICON_SLOTS.MuiNativeSelect },
+    },
+    MuiAutocomplete: {
+      defaultProps: { ...MUI_ICON_SLOTS.MuiAutocomplete },
+    },
+    MuiCheckbox: {
+      defaultProps: { ...MUI_ICON_SLOTS.MuiCheckbox },
+    },
+    MuiRadio: {
+      defaultProps: { ...MUI_ICON_SLOTS.MuiRadio },
+    },
+    MuiPaginationItem: {
+      defaultProps: { ...MUI_ICON_SLOTS.MuiPaginationItem },
+    },
+    MuiTabs: {
+      defaultProps: { ...MUI_ICON_SLOTS.MuiTabs },
+    },
     MuiIconButton: {
       defaultProps: { size: "small" },
       styleOverrides: {
         root: {
           fontSize: C.icon.md,
+          // Vùng bấm tối thiểu: size="small" mặc định chỉ ~28px, quá nhỏ cho
+          // thao tác trong kho (WCAG khuyến nghị ≥44, tokens khai heightTouch
+          // 44). 34px là mức cân bằng không phá layout bảng dày.
+          minWidth: 34,
+          minHeight: 34,
+          "@media (pointer: coarse)": {
+            minWidth: CONTROL.heightTouch,
+            minHeight: CONTROL.heightTouch,
+          },
           transition: CONTROL_TRANSITION,
           "&:active:not(.Mui-disabled)": {
             transform: "scale(0.92)",
             transitionDuration: `${MOTION.duration.instant}ms`,
+          },
+          "&:focus-visible": {
+            outline: `2px solid ${S.primary}`,
+            outlineOffset: 2,
           },
         },
       },

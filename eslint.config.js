@@ -110,4 +110,53 @@ export default defineConfig([
       'no-restricted-imports': ['error', { paths: RESTRICTED_UI_PATHS }],
     },
   },
+  {
+    // Biên giới cứng cho màn nghiệp vụ: src/modules không được import UI engine
+    // trực tiếp — mọi control phải đi qua @/shared/ui (hoặc lớp shared/components
+    // hiện hành). Hiện trạng đã sạch (0 vi phạm) nên bật ở mức error; đây là
+    // chốt chặn để màn mới không tự chọn component lệch hệ.
+    // Flat config ghi đè rule theo block sau cùng, nên block này phải lặp lại
+    // cả 2 luật permission-boundary của block phía trên; các file
+    // permission-internal thuộc modules được ignore ở đây (block riêng của
+    // chúng vẫn giữ RESTRICTED_UI_PATHS).
+    files: ['src/modules/**/*.{ts,tsx}'],
+    ignores: [
+      '**/*.test.*',
+      '**/__tests__/**',
+      'src/modules/auth/utils/permission.ts',
+      'src/modules/auth/components/Can.tsx',
+    ],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@/shared/hooks/usePermission',
+              message:
+                "Không import trực tiếp — dùng '@/shared/components/permission' (public API).",
+            },
+            {
+              name: '@/modules/auth/utils/permission',
+              message:
+                "Không import trực tiếp — dùng '@/shared/components/permission' hoặc '@/lib/permissions'.",
+            },
+            {
+              name: 'antd',
+              message:
+                'Màn nghiệp vụ không import antd trực tiếp — dùng @/shared/ui.',
+            },
+            ...RESTRICTED_UI_PATHS,
+          ],
+          patterns: [
+            {
+              group: ['@mui/material', '@mui/material/*', '@mui/icons-material/*', 'antd/*'],
+              message:
+                'Màn nghiệp vụ không import UI engine trực tiếp — dùng @/shared/ui (primitives-mui cho Box/Stack...).',
+            },
+          ],
+        },
+      ],
+    },
+  },
 ])

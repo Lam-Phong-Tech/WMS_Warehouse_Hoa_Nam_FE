@@ -11,6 +11,7 @@
  * tiếng Việt (Telex/VNI) phải nguyên vẹn, mọi phím đi thẳng vào input gốc.
  */
 import { useState } from "react";
+import { flatIconClass } from "@/shared/ui/icons/icon-family";
 import type { ReactNode } from "react";
 import {
   Controller,
@@ -92,7 +93,7 @@ export function UiFormText<T extends FieldValues>({
         disabled={disabled}
       >
         <i
-          className={showPassword ? "fi fi-rr-eye-crossed" : "fi fi-rr-eye"}
+          className={flatIconClass(showPassword ? "eye-crossed" : "eye")}
           aria-hidden
         />
       </UiIconButton>
@@ -102,7 +103,7 @@ export function UiFormText<T extends FieldValues>({
   const startIconSlug = type === "search" ? "search" : startIcon;
   const startAdornment = startIconSlug ? (
     <InputAdornment position="start">
-      <i className={`fi fi-rr-${startIconSlug}`} aria-hidden />
+      <i className={flatIconClass(startIconSlug)} aria-hidden />
     </InputAdornment>
   ) : undefined;
 

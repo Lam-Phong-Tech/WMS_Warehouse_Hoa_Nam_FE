@@ -345,7 +345,8 @@ export function getMutationErrorMessage(error: unknown): string {
  */
 export const getNoPermissionMessage = getMutationErrorMessage;
 
-const DEFAULT_MESSAGE = "Lỗi hệ thống";
+const DEFAULT_MESSAGE =
+  "Hệ thống đang gặp sự cố, vui lòng thử lại sau ít phút. Nếu vẫn lỗi, liên hệ quản trị viên.";
 
 /**
  * Trích thông điệp lỗi thân thiện từ bất kỳ lỗi nào (axios / Error / unknown).
@@ -385,6 +386,40 @@ export function getApiErrorMessage(
     // dưới thay vì lộ mã thô ra UI.
   }
 
+  // Lỗi axios không có envelope: dịch sang câu tiếng Việt có nguyên nhân +
+  // cách xử lý. Nhánh này phải chạy TRƯỚC nhánh đọc `error.message` chung —
+  // AxiosError luôn mang message kỹ thuật tiếng Anh ("Network Error",
+  // "timeout of 30000ms exceeded", "Request failed with status code 500"...)
+  // nên nếu để nhánh chung chạy trước thì các câu dưới đây thành mã chết.
+  if (isAxiosError(error)) {
+    const axiosErr = error as Record<string, unknown>;
+    if (axiosErr.code === "ECONNABORTED" || axiosErr.code === "ETIMEDOUT") {
+      return "Yêu cầu quá thời gian, vui lòng thử lại.";
+    }
+    if (axiosErr.code === "ERR_NETWORK") {
+      return "Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.";
+    }
+
+    const response = axiosErr.response as Record<string, unknown> | undefined;
+    if (response?.status) {
+      const status = Number(response.status);
+      if (status === 429) {
+        const retryAfter = Number(axiosErr._retryAfterSeconds);
+        return Number.isFinite(retryAfter) && retryAfter > 0
+          ? `Thao tác tạm bị khóa do thực hiện quá nhiều lần. Vui lòng đợi ${String(Math.ceil(retryAfter))} giây rồi thử lại.`
+          : "Thao tác tạm bị khóa do thực hiện quá nhiều lần. Vui lòng đợi một lát rồi thử lại.";
+      }
+      if (status >= 500) return fallback;
+      if (status === 404) {
+        return "Không tìm thấy dữ liệu yêu cầu — có thể đã bị xóa hoặc thay đổi. Hãy tải lại trang.";
+      }
+      return "Yêu cầu chưa thực hiện được. Kiểm tra lại thông tin rồi thử lại; nếu vẫn lỗi, liên hệ quản trị viên.";
+    }
+    // AxiosError nhưng không có mã lỗi/response cụ thể: message của axios là
+    // câu kỹ thuật tiếng Anh, không đưa ra UI.
+    return fallback;
+  }
+
   if (
     error &&
     typeof error === "object" &&
@@ -398,24 +433,6 @@ export function getApiErrorMessage(
     }
   }
 
-  if (isAxiosError(error)) {
-    const axiosErr = error as Record<string, unknown>;
-    if (axiosErr.code === "ECONNABORTED") {
-      return "Yêu cầu quá thời gian, vui lòng thử lại.";
-    }
-    if (axiosErr.code === "ERR_NETWORK") {
-      return "Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.";
-    }
-
-    const response = axiosErr.response as Record<string, unknown> | undefined;
-    if (response?.status) {
-      const status = Number(response.status);
-      if (status >= 500) return fallback;
-      return `Máy chủ trả về lỗi (${String(status)}).`;
-    }
-  }
-
-  if (error instanceof Error && error.message) return error.message;
   return fallback;
 }
 

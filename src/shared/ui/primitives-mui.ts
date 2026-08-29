@@ -29,10 +29,6 @@ export {
   type ListItemTextProps,
 } from "@mui/material/ListItemText";
 export {
-  default as CircularProgress,
-  type CircularProgressProps,
-} from "@mui/material/CircularProgress";
-export {
   default as Skeleton,
   type SkeletonProps,
 } from "@mui/material/Skeleton";

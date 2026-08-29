@@ -98,9 +98,7 @@ async function installApi(page: Page): Promise<Harness> {
 
     if (path === "/reports/export") {
       exportBodies.push(request.postDataJSON());
-      exportIdempotencyKeys.push(
-        request.headers()["idempotency-key"] ?? "",
-      );
+      exportIdempotencyKeys.push(request.headers()["idempotency-key"] ?? "");
       await json({
         export_job_id: "job-flow06-1",
         report_code: "inventory-balance",
@@ -108,7 +106,8 @@ async function installApi(page: Page): Promise<Harness> {
         status: "READY",
         row_count: 1,
         filters: {},
-        download_url: "/api/v1/reports/inventory-balance/export-excel?format=xlsx",
+        download_url:
+          "/api/v1/reports/inventory-balance/export-excel?format=xlsx",
         requested_at: "2026-08-17T10:00:00+07:00",
       });
       return;
@@ -160,7 +159,9 @@ async function installApi(page: Page): Promise<Harness> {
             ledger_qty: 10,
             variance: 0,
             reconciliation_status:
-              url.searchParams.get("as_of") !== null ? "NOT_APPLICABLE" : "MATCH",
+              url.searchParams.get("as_of") !== null
+                ? "NOT_APPLICABLE"
+                : "MATCH",
             updated_at: "2026-08-17 09:30:00",
           },
         ],
@@ -216,7 +217,20 @@ async function installApi(page: Page): Promise<Harness> {
           total_scanned_qty: 10,
         },
         pagination: { current_page: 1, per_page: 15, total: 1, last_page: 1 },
-        batches: [],
+        batches: [
+          {
+            id: "imp-1",
+            import_no: "IMP-001",
+            source_file_name: "toa.xlsx",
+            status: "CONSUMED",
+            total_rows: 1,
+            valid_rows: 1,
+            error_rows: 0,
+            pass_rate: 100,
+            uploaded_at: "2026-08-17 08:00:00",
+            uploaded_by_name: "NV Kho",
+          },
+        ],
         rows: [
           {
             id: "imp-1|1",
@@ -313,14 +327,27 @@ async function installApi(page: Page): Promise<Harness> {
 async function openReports(page: Page, api: Harness): Promise<void> {
   await page.setViewportSize({ width: 1600, height: 950 });
   await page.goto("/reports");
-  await expect.poll(api.refreshCalls, { timeout: 5_000 }).toBeGreaterThanOrEqual(1);
+  await expect
+    .poll(api.refreshCalls, { timeout: 5_000 })
+    .toBeGreaterThanOrEqual(1);
   await expect.poll(api.meCalls, { timeout: 5_000 }).toBeGreaterThanOrEqual(1);
-  // ReportsPage (UiTabs shell) mặc định mở tab thị trường; RPT-01 nằm ở tab
-  // "Báo cáo vận hành" — chọn trước khi thao tác các tab nhóm bên trong.
-  await page.getByRole("tab", { name: /Báo cáo vận hành/ }).click();
+  // /reports render thẳng trang Báo cáo vận hành (lớp tab "theo từng thị
+  // trường" đã bị gỡ), nên chỉ còn MỘT tầng tab: 7 nhóm nghiệp vụ.
   await expect(page.getByTestId("wwhn-258-report-screen")).toBeVisible({
     timeout: 15_000,
   });
+}
+
+/**
+ * Bản 7 tab: mỗi tab là một nhóm nghiệp vụ trọn vẹn (biểu đồ + bảng +
+ * drill-down) thay cho 9 bảng rời trước đây. Helper này chọn tab con theo nhãn
+ * để từng test không phải lặp lại chuỗi điều hướng hai tầng.
+ */
+async function openOperationsTab(page: Page, name: RegExp): Promise<void> {
+  // Lưu ý: nhãn tab đi qua VietnameseUiBoundary nên chữ tiếng Anh trong source
+  // ("Import", "Match", "Packing Label") được Việt hoá lúc render. Selector ở
+  // đây phải bám vào phần chữ KHÔNG bị đổi.
+  await page.getByRole("tab", { name }).click();
 }
 
 test("Flow 06 · RPT-INV-01 hiển thị as_of snapshot và cột updated_at", async ({
@@ -328,90 +355,102 @@ test("Flow 06 · RPT-INV-01 hiển thị as_of snapshot và cột updated_at", a
 }, testInfo) => {
   const api = await installApi(page);
   await openReports(page, api);
+  await openOperationsTab(page, /Tồn kho & đối soát/);
 
   await expect(page.getByText("SKU-RPT-01").first()).toBeVisible();
-  await expect(page.getByRole("columnheader", { name: /Cập nhật/ })).toBeVisible();
+  await expect(
+    page.getByRole("columnheader", { name: /Cập nhật cuối/ }),
+  ).toBeVisible();
 
   await page.getByPlaceholder("Chốt số liệu tại ngày").click();
   await page.getByTitle("2026-08-10").first().click();
 
   await expect
-    .poll(() => api.reportUrls.some((url) => url.includes("as_of=2026-08-10")), {
-      timeout: 5_000,
-    })
+    .poll(
+      () => api.reportUrls.some((url) => url.includes("as_of=2026-08-10")),
+      {
+        timeout: 5_000,
+      },
+    )
     .toBe(true);
-  // Part 4: cột "Đối soát" (reconciliation_status) chuyển vào modal "Xem";
-  // enum thô cũng đã Việt hoá (NOT_APPLICABLE → "Không áp dụng").
-  await page
-    .getByRole("button", { name: "Xem chi tiết dòng báo cáo" })
-    .first()
-    .click();
-  await expect(
-    page.getByRole("dialog").getByText("Không áp dụng"),
-  ).toBeVisible();
-  await page.keyboard.press("Escape");
   await expect(page.getByText(/ảnh chụp theo sổ tồn kho/)).toBeVisible();
+  // Trạng thái đối soát của ảnh chụp là "Không áp dụng" (NOT_APPLICABLE) — Việt
+  // hoá qua RECONCILE_LABELS, xem ngay trên bảng 2.5.
+  await expect(page.getByText("Không áp dụng").first()).toBeVisible();
   await page.screenshot({
     path: testInfo.outputPath("rpt-inv-01-as-of.png"),
     fullPage: true,
   });
 });
 
-test("Flow 06 · RPT-OUT-MATCH-01 hiển thị tầng dòng của toa", async ({ page }) => {
+test("Flow 06 · RPT-OUT-MATCH-01 hiển thị tầng dòng của toa", async ({
+  page,
+}) => {
   const api = await installApi(page);
   await openReports(page, api);
+  await openOperationsTab(page, /lỗi dữ liệu/);
 
-  await page.getByRole("tab", { name: "Đối soát toa" }).click();
-  await expect(page.getByText("TOA-20260817-001")).toBeVisible();
-  // Part 4: bảng ngoài chỉ giữ cột thiết yếu (PRIMARY_REPORT_FIELDS) — header
-  // Việt hoá; "Phiên bản"/"Đã match" chuyển vào modal "Xem".
-  for (const header of [/Phiếu toa/, /Yêu cầu/, /Đã quét/, /Kiểm tra/]) {
-    await expect(page.getByRole("columnheader", { name: header })).toBeVisible();
-  }
+  // Bảng 4.3 là danh sách batch; tầng dòng SKU của toa nằm trong chi tiết batch.
+  await expect(page.getByText("IMP-001").first()).toBeVisible();
   await page
-    .getByRole("button", { name: "Xem chi tiết dòng báo cáo" })
+    .getByRole("button", { name: "Xem chi tiết batch" })
     .first()
     .click();
   const matchDialog = page.getByRole("dialog");
-  await expect(matchDialog.getByText("v3")).toBeVisible();
+  for (const header of [/Phiếu toa/, /Yêu cầu/, /Đã quét/, /Kiểm tra/]) {
+    await expect(
+      matchDialog.getByRole("columnheader", { name: header }),
+    ).toBeVisible();
+  }
+  await expect(matchDialog.getByText("TOA-20260817-001")).toBeVisible();
   await expect(matchDialog.getByText("Đã đối chiếu")).toBeVisible();
   await page.keyboard.press("Escape");
 
+  // Bộ lọc "Mã SKU" thu hẹp danh sách batch theo tầng dòng đã tải về.
+  await page.getByPlaceholder("Mã SKU").fill("KHONG-TON-TAI");
+  await expect(page.getByText("Không có batch nào theo bộ lọc")).toBeVisible();
   await page.getByPlaceholder("Mã SKU").fill("SKU-RPT-01");
-  await expect
-    .poll(
-      () => api.reportUrls.some((url) => url.includes("sku_code=SKU-RPT-01")),
-      { timeout: 5_000 },
-    )
-    .toBe(true);
+  await expect(page.getByText("IMP-001").first()).toBeVisible();
 });
 
 test("Flow 06 · RPT-LABEL-01 hiển thị máy in và người in", async ({ page }) => {
   const api = await installApi(page);
   await openReports(page, api);
+  await openOperationsTab(page, /Print . Reprint/);
 
-  await page.getByRole("tab", { name: "Nhật ký nhãn đóng gói" }).click();
-  // Part 4: máy in / người in là metadata soi-từng-dòng → modal "Xem".
+  // Bảng 5.3 đưa máy in / người in ra NGOÀI bảng (yêu cầu nghiệp vụ mục 5.3)
+  // thay vì giấu trong modal như bản 9 tab.
+  await expect(
+    page.getByRole("columnheader", { name: "Máy in" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("columnheader", { name: "Người in" }),
+  ).toBeVisible();
+  await expect(page.getByText("Máy in kho tổng").first()).toBeVisible();
+
+  // Bấm một phiếu để xem toàn bộ lịch sử in/in lại của nhãn đó.
   await page
-    .getByRole("button", { name: "Xem chi tiết dòng báo cáo" })
+    .getByRole("button", { name: "Xem lịch sử in của nhãn" })
     .first()
     .click();
-  const labelDialog = page.getByRole("dialog");
-  await expect(labelDialog.getByText("Máy in kho tổng")).toBeVisible();
-  await expect(labelDialog.getByText("Người in")).toBeVisible();
+  await expect(
+    page
+      .getByRole("dialog")
+      .getByText(/lần in/)
+      .first(),
+  ).toBeVisible();
   await page.keyboard.press("Escape");
 });
 
-test("Flow 06 · RPT-IO-01 mở rộng phiếu để xem tầng dòng", async ({ page }) => {
+test("Flow 06 · RPT-IO-01 mở phiếu để xem tầng dòng", async ({ page }) => {
   const api = await installApi(page);
   await openReports(page, api);
+  // Lịch sử chứng từ là mục 1.4 của tab đầu tiên (đang mở sẵn).
+  await openOperationsTab(page, /Chứng từ/);
 
-  await page.getByRole("tab", { name: "Lịch sử nhập/xuất" }).click();
   await expect(page.getByText("OUT-20260817-001").first()).toBeVisible();
-  // Part 4: expandable row antd bỏ — tầng dòng (DocumentLines) xem trong modal
-  // "Xem" (cùng đường đi người dùng, không mất dữ liệu).
   await page
-    .getByRole("button", { name: "Xem chi tiết dòng báo cáo" })
+    .getByRole("button", { name: "Xem chi tiết chứng từ" })
     .first()
     .click();
   const ioDialog = page.getByRole("dialog");
@@ -429,11 +468,14 @@ test("Flow 06 · export đi qua POST /reports/export và giữ tên file của B
 }) => {
   const api = await installApi(page);
   await openReports(page, api);
+  await openOperationsTab(page, /Tồn kho & đối soát/);
 
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "Xuất XLSX" }).click();
 
-  await expect.poll(() => api.exportBodies().length, { timeout: 10_000 }).toBe(1);
+  await expect
+    .poll(() => api.exportBodies().length, { timeout: 10_000 })
+    .toBe(1);
   expect(api.exportBodies()[0]).toMatchObject({
     report_code: "inventory-balance",
     format: "xlsx",

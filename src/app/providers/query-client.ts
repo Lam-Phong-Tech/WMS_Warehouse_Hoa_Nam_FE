@@ -1,5 +1,6 @@
-import { QueryClient } from "@tanstack/react-query";
-import { normalizeError } from "@/shared/api/api-error";
+import { MutationCache, QueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { getMutationErrorMessage, normalizeError } from "@/shared/api/api-error";
 
 // Retry đúng semantics của HTTP contract:
 // - 4xx là lỗi auth/permission/validation/business contract -> fail fast để UI
@@ -27,6 +28,15 @@ function shouldRetryQuery(failureCount: number, error: unknown): boolean {
 // - refetchOnWindowFocus false: tránh tự refetch gây giật UI.
 // - mutations retry 0: không tự retry POST/PUT/DELETE để tránh lặp side effect.
 export const queryClient = new QueryClient({
+  // Lưới an toàn: mutation nào KHÔNG tự khai onError sẽ vẫn báo lỗi cho người
+  // dùng bằng thông điệp thân thiện, thay vì thất bại trong im lặng. Mutation
+  // đã có onError riêng thì giữ nguyên (tránh toast trùng đôi).
+  mutationCache: new MutationCache({
+    onError: (error, _variables, _context, mutation) => {
+      if (mutation.options.onError) return;
+      toast.error(getMutationErrorMessage(error));
+    },
+  }),
   defaultOptions: {
     queries: {
       staleTime: 60 * 1000,

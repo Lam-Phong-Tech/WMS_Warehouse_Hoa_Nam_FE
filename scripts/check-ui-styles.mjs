@@ -13,6 +13,7 @@
 import path from "node:path";
 import {
   REPO_ROOT,
+  loadIconFamily,
   countImportant,
   fail,
   findCssImports,
@@ -25,9 +26,13 @@ import {
 const BASELINE_PATH = "docs/ui/vuexy-sync/allowlists/css-baseline.json";
 const ENTRYPOINT = "src/main.tsx";
 
-/** Load order hợp đồng — đổi thứ tự = sửa cả manifest này lẫn tài liệu 12. */
+/**
+ * Load order hợp đồng — đổi thứ tự = sửa cả manifest này lẫn tài liệu 12.
+ * Dòng đầu (CSS font icon) lấy từ ICON_FAMILY.cssImport để đổi biến thể icon
+ * chỉ phải sửa src/shared/ui/icons/icon-family.ts.
+ */
 export const CSS_MANIFEST = [
-  "@flaticon/flaticon-uicons/css/regular/rounded.css",
+  loadIconFamily().cssImport,
   "./shared/ui/tokens/css-vars.css",
   "./index.css",
   "./styles/hn-wms-page-normalize.css",
@@ -98,9 +103,16 @@ function selfTest() {
     "src/modules/foo/Bad.tsx": 'import "./Bad.css";',
     "src/styles/rogue-override.css": "a { color: red !important; }",
   };
-  const violations = checkStyles(tsFiles, cssFiles, (f) => fixtures[f] ?? "", baseline);
+  const violations = checkStyles(
+    tsFiles,
+    cssFiles,
+    (f) => fixtures[f] ?? "",
+    baseline,
+  );
   if (violations.length >= 4) {
-    console.log(`[ui:styles --self-test] PASS (${violations.length} vi phạm tổng hợp được bắt)`);
+    console.log(
+      `[ui:styles --self-test] PASS (${violations.length} vi phạm tổng hợp được bắt)`,
+    );
     return 0;
   }
   console.error(`[ui:styles --self-test] FAIL — chỉ bắt ${violations.length}:`);
@@ -135,7 +147,8 @@ if (mode === "--update-baseline") {
       owner: "FE1 Team",
       reason:
         "Hiện trạng CSS cục bộ + !important sau Part 2. Ratchet: !important chỉ được GIẢM; không thêm CSS import ngoài entrypoint.",
-      deadline: "Part 3-4 — rút các lớp wireframe/exact/normalize theo 09-remediation §Phase C",
+      deadline:
+        "Part 3-4 — rút các lớp wireframe/exact/normalize theo 09-remediation §Phase C",
       generated_by: "scripts/check-ui-styles.mjs --update-baseline",
     },
     cssImports,

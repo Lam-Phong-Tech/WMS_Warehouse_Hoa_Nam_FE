@@ -1,7 +1,7 @@
 /**
  * Nội bộ render bằng design-system foundation (Part 3) — public API giữ nguyên.
  */
-import CircularProgress from "@mui/material/CircularProgress";
+import { UiSpinner } from "@/shared/ui";
 import { SEMANTIC_LIGHT, Z_INDEX } from "@/shared/ui/tokens";
 
 import { UI_STATE, uiStateProps } from "@/shared/constants/ui-state";
@@ -29,7 +29,7 @@ export function Loading() {
         zIndex: Z_INDEX.blockingLoading,
       }}
     >
-      <CircularProgress size={40} />
+      <UiSpinner size={40} />
       <div style={{ marginTop: 10, color: SEMANTIC_LIGHT.textMedium }}>
         Đang tải...
       </div>

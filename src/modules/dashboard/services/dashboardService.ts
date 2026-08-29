@@ -1,52 +1,100 @@
 import { http } from "@/shared/api/http";
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
-import type { DashboardKPI, DashboardQuery } from "../types";
+import type {
+  DashboardOverview,
+  DashboardQuery,
+  DashboardSkuSplit,
+  DashboardStockStatusSplit,
+} from "../types";
 
 /**
- * WWHN-327/WWHN-328: dashboard chỉ dùng aggregate contract chính thức.
- * Filter là date-only; timezone/cutoff do BE xử lý theo APP_TIMEZONE.
+ * Dashboard chỉ dùng aggregate contract chính thức. Filter là date-only;
+ * timezone/cutoff do BE xử lý theo APP_TIMEZONE.
  *
- * Part 4 (phòng thủ): BE/proxy trả payload thiếu field (partial contract)
- * từng làm CRASH trắng cả dashboard (`data.period.from_date`,
- * `Object.entries(warranty_cases_by_status)`...). Normalize fail-soft về
- * giá trị rỗng an toàn — dashboard hiển thị trạng thái 0/EMPTY thay vì chết;
- * số liệu THẬT không bị đổi khi contract đầy đủ.
+ * Phòng thủ fail-soft: BE/proxy trả payload thiếu field (partial contract) từng làm
+ * CRASH trắng cả dashboard (`data.period.from_date`, `Object.entries(...)`).
+ * Normalize về giá trị rỗng an toàn — màn hình hiển thị trạng thái 0/EMPTY thay vì
+ * chết; số liệu THẬT không bị đổi khi contract đầy đủ.
  */
-export function normalizeDashboardKPI(
-  raw: Partial<DashboardKPI> | null | undefined,
-): DashboardKPI {
+const EMPTY_SPLIT: DashboardSkuSplit = { product: 0, component: 0, total: 0 };
+
+const EMPTY_STATUS_SPLIT: DashboardStockStatusSplit = {
+  AVAILABLE: 0,
+  NON_SELLABLE: 0,
+  DEFECTIVE: 0,
+  QUARANTINE: 0,
+};
+
+function split(raw: Partial<DashboardSkuSplit> | undefined): DashboardSkuSplit {
+  const product = raw?.product ?? 0;
+  const component = raw?.component ?? 0;
+  return { product, component, total: raw?.total ?? product + component };
+}
+
+function statusSplit(
+  raw: Partial<DashboardStockStatusSplit> | undefined,
+): DashboardStockStatusSplit {
+  return { ...EMPTY_STATUS_SPLIT, ...(raw ?? {}) };
+}
+
+export function normalizeDashboardOverview(
+  raw: Partial<DashboardOverview> | null | undefined,
+): DashboardOverview {
   const source = raw ?? {};
+  const kpi = source.kpi;
+  const structure = source.stock_structure;
   return {
-    period: source.period,
+    period: source.period ?? { from_date: "", to_date: "" },
     data_scope: source.data_scope ?? "GLOBAL",
     scope_warehouse_ids: source.scope_warehouse_ids ?? null,
-    available_qty: source.available_qty ?? 0,
-    receipt_qty: source.receipt_qty ?? 0,
-    issue_qty: source.issue_qty ?? 0,
-    component_issue_qty: source.component_issue_qty ?? 0,
-    reversal_net: source.reversal_net ?? 0,
-    warranty_cases_by_status: source.warranty_cases_by_status ?? {},
-    reconciliation_warning_count: source.reconciliation_warning_count ?? 0,
-    reconciliation_warnings: source.reconciliation_warnings ?? [],
-    below_min_stock_count: source.below_min_stock_count ?? 0,
-    below_min_stock_skus: source.below_min_stock_skus ?? [],
-    above_max_stock_count: source.above_max_stock_count ?? 0,
-    above_max_stock_skus: source.above_max_stock_skus ?? [],
-    daily: source.daily ?? [],
+    kpi: {
+      on_hand: split(kpi?.on_hand ?? EMPTY_SPLIT),
+      receipt_today: split(kpi?.receipt_today),
+      issue_today: split(kpi?.issue_today),
+      receipt_month: split(kpi?.receipt_month),
+      issue_month: split(kpi?.issue_month),
+    },
+    warranty_received: {
+      today: source.warranty_received?.today ?? 0,
+      week: source.warranty_received?.week ?? 0,
+      month: source.warranty_received?.month ?? 0,
+    },
+    top_sku: {
+      best: source.top_sku?.best ?? null,
+      worst: source.top_sku?.worst ?? null,
+    },
+    flow_daily: source.flow_daily ?? [],
+    stock_trend: source.stock_trend ?? [],
+    stock_structure: {
+      PRODUCT: statusSplit(structure?.PRODUCT),
+      COMPONENT: statusSplit(structure?.COMPONENT),
+    },
+    warranty: {
+      by_status: source.warranty?.by_status ?? {},
+      overdue_count: source.warranty?.overdue_count ?? 0,
+      overdue_sample: source.warranty?.overdue_sample ?? [],
+    },
+    issues: {
+      inventory_mismatch: source.issues?.inventory_mismatch ?? 0,
+      import_error: source.issues?.import_error ?? 0,
+      warranty_overdue: source.issues?.warranty_overdue ?? 0,
+      print_failed: source.issues?.print_failed ?? 0,
+    },
   };
 }
 
-export async function fetchDashboardKPI(
+export async function fetchDashboardOverview(
   query: DashboardQuery = {},
-): Promise<DashboardKPI> {
-  const raw = await http.get<Partial<DashboardKPI>>(
-    API_ENDPOINTS.DASHBOARD_KPI,
+): Promise<DashboardOverview> {
+  const raw = await http.get<Partial<DashboardOverview>>(
+    API_ENDPOINTS.REPORTS_DASHBOARD_OVERVIEW,
     {
       params: {
         ...(query.from_date ? { from_date: query.from_date } : {}),
         ...(query.to_date ? { to_date: query.to_date } : {}),
+        ...(query.warehouse_id ? { warehouse_id: query.warehouse_id } : {}),
       },
     },
   );
-  return normalizeDashboardKPI(raw);
+  return normalizeDashboardOverview(raw);
 }

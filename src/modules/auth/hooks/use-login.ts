@@ -49,8 +49,10 @@ export function useLogin() {
         : (safeRedirect ?? ROUTES.DASHBOARD);
       navigate(nextPath, { replace: true });
     },
-    onError: () => {
-      toast.error("Đăng nhập thất bại");
-    },
+    // Cố ý là no-op: LoginPage đã hiển thị nguyên nhân cụ thể (sai mật khẩu /
+    // tài khoản bị khóa / mất mạng...) bằng UiAlert ngay trong form qua
+    // getLoginErrorMessage. Toast chung chung ở đây chỉ gây thông báo trùng
+    // đôi; vẫn phải khai onError để MutationCache fallback không toast thêm.
+    onError: () => {},
   });
 }

@@ -224,6 +224,12 @@ describe("IN-03 · bảng mã đã quét và gỡ mã trước Post", () => {
 
     fireEvent.click(await screen.findByRole("button", { name: /Gỡ mã/ }));
 
+    // Gỡ mã là thao tác phá huỷ — phải qua hộp thoại xác nhận trước khi gọi
+    // server; nút xác nhận trong dialog cũng mang nhãn "Gỡ mã".
+    expect(await screen.findByText("Gỡ mã đã quét?")).toBeInTheDocument();
+    const unscanButtons = screen.getAllByRole("button", { name: /Gỡ mã/ });
+    fireEvent.click(unscanButtons[unscanButtons.length - 1]);
+
     await waitFor(() => {
       expect(unscan).toHaveBeenCalledWith({
         id: "IN-1",

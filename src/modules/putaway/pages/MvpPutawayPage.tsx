@@ -27,7 +27,8 @@ import { useRowSelection } from "@/shared/hooks/useRowSelection";
 import { toast } from "sonner";
 import { HistoryOutlined, InboxOutlined } from "@/shared/components/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Link as RouterLink } from "react-router-dom";
+import { ROUTES } from "@/shared/constants/routes";
 import {
   getApiErrorMessage,
   getErrorRequestId,
@@ -337,9 +338,9 @@ export default function MvpPutawayPage() {
       toast.success(`Đã nhận khay ${tray.container_code}.`);
     } catch (error) {
       setPutawayForm((current) => ({ ...current, to_tray_id: "" }));
-      setTrayScanError(
-        error instanceof Error ? error.message : "Mã khay không hợp lệ.",
-      );
+      // Ưu tiên thông điệp thân thiện (BE / message nghiệp vụ); lỗi JS thô
+      // không bao giờ lộ ra UI.
+      setTrayScanError(getApiErrorMessage(error, "Mã khay không hợp lệ."));
     }
   };
 
@@ -632,6 +633,14 @@ export default function MvpPutawayPage() {
         <div>
           <h1>Danh sách linh kiện chờ xếp khay</h1>
         </div>
+        {/* Mục 15: lối vào trực tiếp màn XEM tổng quan khay (read-only), tách
+            khỏi thao tác chọn khay trong dialog tạo lệnh. */}
+        <RouterLink
+          to={ROUTES.PUTAWAY_TRAYS}
+          style={{ textDecoration: "none" }}
+        >
+          <ActionButton kind="view" label="Tổng quan tình trạng khay" />
+        </RouterLink>
       </div>
 
       <UiCard className="master-data-panel">

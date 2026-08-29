@@ -33,6 +33,8 @@ const PER_PAGE = 12;
 export default function PvCatalogPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const industryId = searchParams.get("industry_id") ?? "";
+  const categoryId = searchParams.get("category_id") ?? "";
+  const tagId = searchParams.get("tag_id") ?? "";
   const keywordParam = searchParams.get("keyword") ?? "";
   const inStockOnly = searchParams.get("in_stock") === "1";
   const page = Number(searchParams.get("page") ?? "1") || 1;
@@ -41,16 +43,60 @@ export default function PvCatalogPage() {
     () => ({
       keyword: keywordParam || undefined,
       industry_id: industryId || undefined,
+      category_id: categoryId || undefined,
+      tag_id: tagId || undefined,
       in_stock: inStockOnly || undefined,
       page,
       per_page: PER_PAGE,
     }),
-    [keywordParam, industryId, inStockOnly, page],
+    [keywordParam, industryId, categoryId, tagId, inStockOnly, page],
   );
 
   const products = usePvProducts(query);
   const industries = usePvIndustries();
   const recommendations = usePvRecommendations(industryId || undefined);
+
+  // Danh mục & phân loại (tag) chưa có endpoint liệt kê công khai riêng, nên
+  // options được rút từ một snapshot sản phẩm KHÔNG áp category/tag (chỉ giữ
+  // ngành nghề đang chọn). Nhờ vậy dropdown vẫn đứng yên sau khi người dùng đã
+  // chọn một danh mục — nếu rút từ chính danh sách đã lọc thì options sẽ tự thu
+  // về đúng một mục. Việc LỌC vẫn do server thực hiện qua category_id/tag_id.
+  const taxonomySnapshot = usePvProducts(
+    useMemo(
+      () => ({
+        industry_id: industryId || undefined,
+        per_page: 200,
+      }),
+      [industryId],
+    ),
+  );
+
+  const categoryOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const product of taxonomySnapshot.data?.data ?? []) {
+      if (product.category_id) {
+        map.set(
+          product.category_id,
+          product.category_name ?? product.category_id,
+        );
+      }
+    }
+    return [...map.entries()]
+      .map(([value, label]) => ({ value, label }))
+      .sort((a, b) => a.label.localeCompare(b.label, "vi"));
+  }, [taxonomySnapshot.data]);
+
+  const tagOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const product of taxonomySnapshot.data?.data ?? []) {
+      for (const tag of product.tags) {
+        map.set(tag.tag_id, tag.tag_name || tag.tag_code || tag.tag_id);
+      }
+    }
+    return [...map.entries()]
+      .map(([value, label]) => ({ value, label }))
+      .sort((a, b) => a.label.localeCompare(b.label, "vi"));
+  }, [taxonomySnapshot.data]);
 
   function patchParams(next: Record<string, string | null>) {
     const params = new URLSearchParams(searchParams);
@@ -66,7 +112,9 @@ export default function PvCatalogPage() {
   const meta = products.data?.meta;
   const total = meta?.total ?? 0;
   const lastPage = meta?.last_page ?? 1;
-  const hasFilter = Boolean(keywordParam || industryId || inStockOnly);
+  const hasFilter = Boolean(
+    keywordParam || industryId || categoryId || tagId || inStockOnly,
+  );
 
   return (
     <PvPublicLayout
@@ -130,6 +178,24 @@ export default function PvCatalogPage() {
             label: industry.industry_name,
           }))}
           onChange={(value) => patchParams({ industry_id: value || null })}
+        />
+        <UiSelect
+          value={categoryId}
+          placeholder="Lọc theo danh mục / nhóm hàng"
+          aria-label="Lọc theo danh mục sản phẩm"
+          data-testid="pv-category-filter"
+          fullWidth
+          options={categoryOptions}
+          onChange={(value) => patchParams({ category_id: value || null })}
+        />
+        <UiSelect
+          value={tagId}
+          placeholder="Lọc theo phân loại"
+          aria-label="Lọc theo phân loại sản phẩm"
+          data-testid="pv-tag-filter"
+          fullWidth
+          options={tagOptions}
+          onChange={(value) => patchParams({ tag_id: value || null })}
         />
         <Box
           component="label"
@@ -214,6 +280,8 @@ export default function PvCatalogPage() {
                 patchParams({
                   keyword: null,
                   industry_id: null,
+                  category_id: null,
+                  tag_id: null,
                   in_stock: null,
                 })
               }

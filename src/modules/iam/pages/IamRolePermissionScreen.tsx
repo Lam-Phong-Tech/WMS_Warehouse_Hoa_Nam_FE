@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   Box,
-  CircularProgress,
+  UiSpinner,
   MenuItem,
   SEMANTIC_LIGHT as S,
   Stack,
@@ -655,7 +655,7 @@ export function IamRolePermissionScreen() {
             </Box>
             {rolesQuery.isLoading ? (
               <Box sx={{ textAlign: "center", padding: 4 }}>
-                <CircularProgress size={28} />
+                <UiSpinner size={28} />
               </Box>
             ) : roles.length === 0 ? (
               <UiStateSurface kind="empty" title="Chưa có vai trò nào." />
@@ -705,7 +705,7 @@ export function IamRolePermissionScreen() {
             </UiAlert>
           ) : permissionsQuery.isLoading ? (
             <Box sx={{ textAlign: "center", padding: 6 }}>
-              <CircularProgress size={28} />
+              <UiSpinner size={28} />
             </Box>
           ) : !selectedRole ? (
             <UiStateSurface

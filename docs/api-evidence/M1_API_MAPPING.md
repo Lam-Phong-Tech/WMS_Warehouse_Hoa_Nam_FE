@@ -69,6 +69,7 @@ Hợp đồng response mà UI phụ thuộc (đã có test cả hai phía):
 | Screen/action | Method | Path | Current disposition |
 | --- | --- | --- | --- |
 | Dashboard quick KPI | GET | `/reports/dashboard-quick` | BE route present; active UI wiring remains task-specific. |
+| Dashboard tổng quan | GET | `/reports/dashboard-overview` | pending contract — route BE + OpenAPI attribute đã thêm, chờ chạy `php artisan l5-swagger:generate` ở repo BE rồi `npm run contract:sync -- --repin` để spec pin lại; khi đó gỡ trạng thái này. |
 | Inventory XNT | GET | `/reports/inventory-xnt` | BE route present, `report.view`. |
 | Export XNT | GET | `/reports/inventory-xnt/export-excel` | BE route present, `report.export`. |
 | Reports hub | GET | `/reports/hub` | BE route present; no longer marked missing. |

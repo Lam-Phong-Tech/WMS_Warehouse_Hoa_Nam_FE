@@ -301,7 +301,7 @@ test.describe("WWHN-248 · QA2 — UI states (hợp đồng UI_STATE WWHN-268)",
 
     await expect(page.getByTestId("ui-state-empty-table")).toBeVisible();
     await expect(
-      page.getByText("Không có case bảo hành theo bộ lọc hiện tại"),
+      page.getByText("Không có phiếu bảo hành theo bộ lọc hiện tại"),
     ).toBeVisible();
     // Empty ≠ dead-end: hướng đi tiếp theo (tiếp nhận case mới) vẫn hiển thị.
     await expect(

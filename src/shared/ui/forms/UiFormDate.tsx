@@ -21,6 +21,7 @@ import type { Dayjs } from "dayjs";
 import FormControl from "@mui/material/FormControl";
 import FormHelperText from "@mui/material/FormHelperText";
 import FormLabel from "@mui/material/FormLabel";
+import { ANTD_PICKER_ICONS, antdAllowClear } from "@/shared/ui/icons";
 
 export interface UiFormDateProps<T extends FieldValues> {
   control: Control<T>;
@@ -80,7 +81,9 @@ export function UiFormDate<T extends FieldValues>({
               onChange={(date) => field.onChange(date)}
               onBlur={field.onBlur}
               format={format}
-              allowClear={allowClear}
+              // Calendar/clear mặc định của antd là @ant-design/icons — ép Flaticon.
+              suffixIcon={ANTD_PICKER_ICONS.suffixIcon}
+              allowClear={antdAllowClear(allowClear)}
               disabled={disabled}
               placeholder={placeholder}
               status={fieldState.error ? "error" : undefined}

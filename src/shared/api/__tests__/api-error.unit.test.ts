@@ -27,7 +27,9 @@ describe("api-error.unit", () => {
       status: 400,
       data: { error_code: "VALIDATION_ERROR" },
     });
-    expect(getApiErrorMessage(error)).toBe("Máy chủ trả về lỗi (400).");
+    expect(getApiErrorMessage(error)).toBe(
+      "Yêu cầu chưa thực hiện được. Kiểm tra lại thông tin rồi thử lại; nếu vẫn lỗi, liên hệ quản trị viên.",
+    );
   });
 
   it("should not leak nested error.code as the user-facing message", () => {
@@ -35,7 +37,9 @@ describe("api-error.unit", () => {
       status: 500,
       data: { error: { code: "INTERNAL_ERROR" } },
     });
-    expect(getApiErrorMessage(error)).toBe("Lỗi hệ thống");
+    expect(getApiErrorMessage(error)).toBe(
+      "Hệ thống đang gặp sự cố, vui lòng thử lại sau ít phút. Nếu vẫn lỗi, liên hệ quản trị viên.",
+    );
   });
 
   it("should extract field errors", () => {
@@ -60,6 +64,8 @@ describe("api-error.unit", () => {
       status: 500,
       data: {},
     });
-    expect(getApiErrorMessage(error)).toBe("Lỗi hệ thống");
+    expect(getApiErrorMessage(error)).toBe(
+      "Hệ thống đang gặp sự cố, vui lòng thử lại sau ít phút. Nếu vẫn lỗi, liên hệ quản trị viên.",
+    );
   });
 });

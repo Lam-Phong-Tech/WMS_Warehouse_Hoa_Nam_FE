@@ -6,6 +6,7 @@
  */
 export * from "./tokens";
 export * from "./theme";
+export * from "./icons";
 export * from "./components";
 export * from "./forms";
 export * from "./layout";

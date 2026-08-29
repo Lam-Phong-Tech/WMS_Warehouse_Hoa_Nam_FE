@@ -162,7 +162,14 @@ const ROW_ERROR_PAGE_SIZE = 10;
  * Bảng dòng lỗi của kết quả kiểm tra/nhập — thay antd Table (Part 4). Giữ ngữ
  * nghĩa phân trang cũ: chỉ hiện phân trang khi quá 10 dòng, cỡ trang cố định.
  */
-function RowErrorTable({ errors }: { errors: SkuImportRowError[] }) {
+function RowErrorTable({
+  errors,
+  loading = false,
+}: {
+  errors: SkuImportRowError[];
+  /** Đang kiểm tra/nhập lại — hiện trạng thái tải trên bảng dòng lỗi. */
+  loading?: boolean;
+}) {
   const [page, setPage] = useState(1);
   const keyed = useMemo(
     () =>
@@ -188,6 +195,7 @@ function RowErrorTable({ errors }: { errors: SkuImportRowError[] }) {
         columns={ROW_ERROR_COLUMNS}
         rows={visibleRows}
         rowKey={(record) => record.__key}
+        loading={loading}
         emptyText="Không có dòng lỗi"
       />
       {paginated ? (
@@ -717,7 +725,12 @@ export function SkuImportModal({
 
               {activeResult.rowErrors.length > 0 ? (
                 <Box>
-                  <RowErrorTable errors={activeResult.rowErrors} />
+                  <RowErrorTable
+                    errors={activeResult.rowErrors}
+                    loading={
+                      previewMutation.isPending || commitMutation.isPending
+                    }
+                  />
                 </Box>
               ) : null}
 

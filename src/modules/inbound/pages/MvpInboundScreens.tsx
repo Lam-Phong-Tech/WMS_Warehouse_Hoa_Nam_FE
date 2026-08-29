@@ -10,6 +10,7 @@ import {
   UiPagination,
   UiStatusBadge,
   UiTextField,
+  useUiConfirm,
 } from "@/shared/ui";
 import { SEMANTIC_LIGHT as S } from "@/shared/ui/tokens";
 import {
@@ -28,6 +29,7 @@ import {
   normalizeError,
 } from "@/shared/api/api-error";
 import { guardBackdropClose } from "@/shared/utils/dialogGuard";
+import { getCameraErrorMessage } from "@/shared/utils/camera-error";
 import { useDialogExit } from "@/shared/utils/useDialogExit";
 import {
   classifyConcurrencyError,
@@ -269,11 +271,9 @@ function CameraScanModal({
 
         frameRef.current = requestAnimationFrame(() => void detectFrame());
       } catch (error) {
-        const reason =
-          error instanceof Error ? error.message : "Không xác định";
-        setCameraError(
-          `Không truy cập được camera (${reason}). Hãy đóng camera và nhập mã thủ công.`,
-        );
+        // DOMException của trình duyệt mang message tiếng Anh kỹ thuật —
+        // dịch sang câu tiếng Việt nêu nguyên nhân + cách xử lý.
+        setCameraError(getCameraErrorMessage(error));
         stop();
       }
     };
@@ -382,6 +382,8 @@ export function InboundScanModal({
   const canScan = useInboundPermission(P.INBOUND_SCAN);
   const canPost = useInboundPermission(P.INBOUND_POST);
   const canCancel = useInboundPermission(WMS_ACTION_PERMISSIONS.CANCEL_INBOUND);
+  // Thay xoá 1 click — confirmDialog PHẢI render trong cây bên dưới.
+  const { confirm, confirmDialog } = useUiConfirm();
 
   const detail = detailQuery.data;
   const skuRows = skuQuery.data?.data ?? [];
@@ -704,6 +706,17 @@ export function InboundScanModal({
 
   const handleUnscan = async (entry: InboundScanEntry) => {
     if (!detail || scanVersion === null || !canScan || !isMutable) return;
+    // Gỡ mã là thao tác không hoàn tác được bằng nút bấm: muốn thêm lại phải
+    // quét lại sản phẩm thật — bắt buộc xác nhận trước khi gọi server.
+    const accepted = await confirm({
+      title: "Gỡ mã đã quét?",
+      content:
+        "Mã sẽ bị xóa khỏi phiếu nhập. Muốn thêm lại, bạn phải quét lại sản phẩm đó. Tồn kho không thay đổi.",
+      confirmText: "Gỡ mã",
+      cancelText: "Hủy",
+      tone: "danger",
+    });
+    if (!accepted) return;
     try {
       const result = await unscanMutation.mutateAsync({
         id: documentId,
@@ -1475,6 +1488,8 @@ export function InboundScanModal({
                   columns={lineColumns}
                   rows={detail.lines}
                   rowKey={(line) => line.id}
+                  loading={detailQuery.isFetching}
+                  emptyText="Chưa có dòng SKU nào — quét mã sản phẩm đầu tiên để hệ thống tự tạo dòng."
                 />
               </Box>
 
@@ -1546,10 +1561,13 @@ export function InboundScanModal({
                   <Box sx={{ typography: "subtitle2", fontWeight: 700, mb: 1 }}>
                     Diễn biến quét trong phiên thao tác
                   </Box>
+                  {/* Nhật ký phiên là state cục bộ (không có query) nên không có
+                      cờ loading tương ứng; chỉ bổ sung emptyText. */}
                   <ResponsiveDataTable<ScanLogRow>
                     columns={scanLogColumns}
                     rows={pagedScanLog}
                     rowKey={(row) => row.key}
+                    emptyText="Chưa có lượt quét nào trong phiên này — kết quả từng lượt quét sẽ hiện ở đây."
                   />
                   {scanLog.length > SCAN_LOG_PAGE_SIZE ? (
                     <Box sx={{ mt: 1.5 }}>
@@ -1653,6 +1671,8 @@ export function InboundScanModal({
           />
         </Stack>
       </UiDialog>
+
+      {confirmDialog}
     </>
   );
 }

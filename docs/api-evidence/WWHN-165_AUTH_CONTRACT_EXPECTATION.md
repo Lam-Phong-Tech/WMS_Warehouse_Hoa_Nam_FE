@@ -64,7 +64,7 @@ Auth token response bắt buộc có:
   "is_super_admin": false,
   "active_context": {
     "role_id": 10,
-    "role_name": "Warehouse Manager",
+    "role_name": "Quản lý kho",
     "scope_type": "kho",
     "org_unit_id": null,
     "department_id": null,

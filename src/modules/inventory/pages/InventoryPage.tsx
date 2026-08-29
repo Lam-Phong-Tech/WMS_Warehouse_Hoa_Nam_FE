@@ -54,9 +54,9 @@ import type {
   StockMovementRow,
 } from "../services/inventoryService";
 import { formatDateTime } from "@/shared/utils/format-date";
+import { formatQuantity } from "@/shared/utils/format-number";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 
-const numberFormatter = new Intl.NumberFormat("vi-VN");
 const SEARCH_DEBOUNCE_MS = 250;
 
 function pageSizeOptions(current: number) {
@@ -68,8 +68,9 @@ function pageSizeOptions(current: number) {
 }
 
 function formatQty(value: number | null | undefined, uom = "") {
-  if (value === null || value === undefined) return "-";
-  return `${numberFormatter.format(value)}${uom ? ` ${uom}` : ""}`;
+  const formatted = formatQuantity(value);
+  if (formatted === "-") return "-";
+  return `${formatted}${uom ? ` ${uom}` : ""}`;
 }
 
 function reconcileColor(status: string): "success" | "error" | "warning" {
@@ -366,8 +367,8 @@ export default function InventoryPage() {
             }}
           >
             {row.variance > 0
-              ? `+${numberFormatter.format(row.variance)}`
-              : numberFormatter.format(row.variance)}
+              ? `+${formatQuantity(row.variance)}`
+              : formatQuantity(row.variance)}
           </Box>
         );
       },
@@ -507,8 +508,8 @@ export default function InventoryPage() {
           }}
         >
           {row.qty >= 0
-            ? `+${numberFormatter.format(row.qty)}`
-            : numberFormatter.format(row.qty)}
+            ? `+${formatQuantity(row.qty)}`
+            : formatQuantity(row.qty)}
         </Box>
       ),
     },
@@ -661,7 +662,7 @@ export default function InventoryPage() {
               {/* Giữ nguyên câu chữ tổng của antd showTotal cũ → UiText riêng,
                 tắt showTotal mặc định ("Tổng {total} bản ghi") của UiPagination. */}
               <UiText variant="secondary">
-                Tổng {numberFormatter.format(balancePagination.total)} dòng tồn
+                Tổng {formatQuantity(balancePagination.total)} dòng tồn
                 kho
               </UiText>
               <UiPagination
@@ -721,7 +722,7 @@ export default function InventoryPage() {
                 }}
               />
               <UiText variant="secondary">
-                Tổng {numberFormatter.format(movementPagination.total)} biến
+                Tổng {formatQuantity(movementPagination.total)} biến
                 động
               </UiText>
             </div>
@@ -785,7 +786,7 @@ export default function InventoryPage() {
               {/* Giữ nguyên câu chữ tổng của antd showTotal cũ → UiText riêng,
                 tắt showTotal mặc định ("Tổng {total} bản ghi") của UiPagination. */}
               <UiText variant="secondary">
-                Tổng {numberFormatter.format(movementPagination.total)} biến
+                Tổng {formatQuantity(movementPagination.total)} biến
                 động
               </UiText>
               <UiPagination

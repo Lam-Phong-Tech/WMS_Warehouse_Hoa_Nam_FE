@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Toaster } from "sonner";
 import { QueryProvider } from "@/app/providers/query-provider";
 import { AppThemeProvider } from "@/shared/ui/theme";
+import { TOAST_ICONS } from "@/shared/ui/icons";
 import { ErrorBoundary } from "@/shared/components/feedback/ErrorBoundary";
 
 export interface AppProvidersProps {
@@ -27,6 +28,9 @@ export function AppProviders({ children }: AppProvidersProps) {
             expand
             gap={12}
             visibleToasts={5}
+            // Sonner tự vẽ icon severity + nút đóng bằng bộ SVG riêng —
+            // ép về Flaticon Uicons cho đồng bộ toàn app.
+            icons={TOAST_ICONS}
             swipeDirections={["bottom"]}
             className="app-toaster"
           />

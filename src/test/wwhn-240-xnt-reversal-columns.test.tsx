@@ -81,9 +81,16 @@ function xntPayload() {
   };
 }
 
+/**
+ * Tab 1 của bản 7 tab ("Nhập – Xuất – Tồn & Chứng từ") là tab mặc định; bảng
+ * "Chi tiết cân đối theo SKU" nằm ngay dưới biểu đồ waterfall 1.1 và chính là
+ * nơi giữ hợp đồng cột gross / đã đảo / thuần của WWHN-240.
+ */
 async function openXntTab() {
   renderWithProviders(<AlignedReportsPage />, ["/reports"]);
-  fireEvent.click(await screen.findByRole("tab", { name: /Nhập-Xuất-Tồn/ }));
+  // Chọn đúng tab XNT: tab "Chứng từ cần bổ sung" cũng chứa "Chứng từ" nên
+  // regex phải neo vào phần "Nhập – Xuất – Tồn" để không khớp nhập nhằng.
+  fireEvent.click(await screen.findByRole("tab", { name: /Nhập.*Xuất.*Tồn/ }));
   return screen.findByText("PRD-QA19-01");
 }
 
@@ -126,11 +133,11 @@ describe("WWHN-240 · tab XNT render đủ cột gross / đã đảo / thuần",
     expect(row).not.toBeNull();
     const cells = Array.from((row as HTMLElement).children)
       .map((cell) => cell.textContent?.trim())
-      // 2 cột đầu (checkbox chọn dòng + STT) được thêm cho mọi bảng danh
-      // sách chính 26/08 — không thuộc phạm vi assertion cột reversal.
-      .slice(2);
+      // Cột đầu là STT của mọi bảng báo cáo — không thuộc phạm vi assertion
+      // cột reversal (bảng cân đối không bật chọn nhiều dòng).
+      .slice(1);
 
-    // Thứ tự cột lá theo columnsFor("xnt"): kho, mã, tên, tồn, đầu kỳ,
+    // Thứ tự cột lá theo xntColumns (TabInventoryFlow): kho, mã, tên, tồn, đầu kỳ,
     // nhập(gross/đã đảo/thuần), xuất(g/đ/t), xuất LK(g/đ/t), reversal net,
     // cuối kỳ. Mỗi giá trị fixture là duy nhất nên mọi hoán vị/mất cột đều đỏ.
     // Ô "Xem" cuối dòng là cột Thao tác chung của mọi báo cáo (mở modal chi tiết).

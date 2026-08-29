@@ -1,9 +1,30 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 function read(path: string): string {
   return readFileSync(join(process.cwd(), path), "utf8");
+}
+
+/**
+ * Trang Báo cáo vận hành đã tách từ MỘT file khổng lồ thành module
+ * `src/modules/reports/**` (shell 7 tab + 7 tab component + lớp dữ liệu/bộ
+ * lọc/bảng dùng chung). Các hợp đồng dưới đây là hợp đồng của MÀN HÌNH chứ
+ * không của một file, nên quét toàn bộ module thay vì đọc đúng một đường dẫn —
+ * nếu không, chỉ cần đổi chỗ đặt code là guard im lặng mất hiệu lực.
+ */
+function readReportsModule(): string {
+  const root = join(process.cwd(), "src/modules/reports");
+  const parts: string[] = [];
+  const walk = (dir: string) => {
+    for (const entry of readdirSync(dir)) {
+      const full = join(dir, entry);
+      if (statSync(full).isDirectory()) walk(full);
+      else if (/\.tsx?$/u.test(entry)) parts.push(readFileSync(full, "utf8"));
+    }
+  };
+  walk(root);
+  return parts.join("\n");
 }
 
 describe("Flow 06 report pagination/export alignment", () => {
@@ -13,18 +34,24 @@ describe("Flow 06 report pagination/export alignment", () => {
     );
   });
 
-  it("sends server pagination on every report query", () => {
-    const source = read("src/modules/reports/pages/AlignedReportsPage.tsx");
-    expect(source).toContain("{ page, per_page: perPage }");
-    expect(source).toContain("pagination.current_page");
-    expect(source).toContain("pagination.total");
-    expect(source).toContain("pagination.per_page");
+  /**
+   * Biểu đồ và bảng của cùng một mục phải mô tả CÙNG một tập dòng, nên báo cáo
+   * được gọi KHÔNG kèm `per_page` (BE trả trọn tập đã lọc) và việc cắt trang
+   * chuyển hẳn về client.
+   */
+  it("keeps chart and table on the same filtered row set", () => {
+    const source = readReportsModule();
+    expect(source).toContain("export function useClientPagination");
+    expect(source).toContain("const pageRows = rows.slice(");
+    expect(source).toContain("ReportPaginationBar");
+    // Trần cuốn trang cho các endpoint BE cắt trang ngay ở tầng SQL.
+    expect(source).toContain("WARRANTY_MAX_PAGES");
   });
 
   it("exposes both XLSX and PDF under report.export", () => {
-    const source = read("src/modules/reports/pages/AlignedReportsPage.tsx");
-    expect(source).toContain('exportReport("xlsx")');
-    expect(source).toContain('exportReport("pdf")');
+    const source = readReportsModule();
+    expect(source).toContain('onExport("xlsx")');
+    expect(source).toContain('onExport("pdf")');
     expect(source).toContain("setExporting(format)");
     expect(
       source.match(/permissionCode="REPORT_EXPORT"/g)?.length,
@@ -33,10 +60,10 @@ describe("Flow 06 report pagination/export alignment", () => {
 
   /** Annex D SCR-RPT-01: action export trỏ /reports/export, không gọi thẳng file. */
   it("creates the export job through Annex C createReportExport", () => {
-    const source = read("src/modules/reports/pages/AlignedReportsPage.tsx");
+    const source = readReportsModule();
     expect(source).toContain("API_ENDPOINTS.REPORTS_EXPORT");
     expect(source).toContain('"Idempotency-Key": createIdempotencyKey()');
-    expect(source).toContain("report_code: config.reportCode");
+    expect(source).toContain("report_code: request.reportCode");
     expect(read("src/shared/api/endpoints.ts")).toContain(
       'REPORTS_EXPORT: "/reports/export"',
     );
@@ -44,7 +71,7 @@ describe("Flow 06 report pagination/export alignment", () => {
 
   /** BR-EXP-03: tên file có timestamp do BE đặt, client không được tự dựng đè. */
   it("keeps the server-issued export file name", () => {
-    const source = read("src/modules/reports/pages/AlignedReportsPage.tsx");
+    const source = readReportsModule();
     expect(source).toContain("fileName ??");
     const httpSource = read("src/shared/api/http.ts");
     expect(httpSource).toContain("downloadFile");
@@ -53,61 +80,95 @@ describe("Flow 06 report pagination/export alignment", () => {
 
   /** §13.10: cột và filter bắt buộc của từng báo cáo phải có mặt trên màn hình. */
   it("renders the mandatory §13.10 columns and filters", () => {
-    const source = read("src/modules/reports/pages/AlignedReportsPage.tsx");
-    // RPT-INV-01: as_of + updated_at
-    expect(source).toContain("result.as_of = asOf.format");
+    const source = readReportsModule();
+    // RPT-INV-01: tồn kho + đối soát + cập nhật cuối
     expect(source).toContain('dataIndex: "updated_at"');
-    // RPT-OUT-MATCH-01: tầng dòng
+    expect(source).toContain('dataIndex: "ledger_qty"');
+    expect(source).toContain('dataIndex: "variance"');
+    // RPT-XNT-01 (WWHN-240): mỗi chiều tách gross · đã đảo · thuần
     for (const field of [
-      "source_request_no",
-      "source_version",
-      "sku_code",
-      "required_qty",
-      "matched_qty",
-      "scanned_qty",
-      "validation_status",
+      "receipt_gross",
+      "receipt_reversal",
+      "receipt_net",
+      "issue_gross",
+      "issue_reversal",
+      "issue_net",
+      "component_issue_gross",
+      "component_issue_reversal",
+      "component_issue_net",
+      "reversal_net",
     ]) {
       expect(source).toContain(field);
     }
-    // RPT-LABEL-01: printer + actor
+    // RPT-OUT-MATCH-01: tầng dòng đối soát toa
+    for (const field of [
+      "source_request_no",
+      "sku_code",
+      "required_qty",
+      "scanned_qty",
+      "validation_status",
+      "error_code",
+    ]) {
+      expect(source).toContain(field);
+    }
+    // RPT-LABEL-01: printer + actor + kết quả in
     expect(source).toContain("printer_name");
     expect(source).toContain("printed_by_name");
-    expect(source).toContain("result.actor_id = actorId");
-    // RPT-MOV-01: movement_id là cột đầu (i18n: "Mã biến động", ghim trái)
-    expect(source.replace(/\s+/gu, " ")).toContain(
-      'title: "Mã biến động", dataIndex: "id", width: 190, fixed: "left"',
-    );
-    // RPT-IO-01: tầng dòng expected/scanned/posted + filter nơi nhận
-    expect(source).toContain("DocumentLines");
+    expect(source).toContain("reprint_count");
+    // RPT-MOV-01: sổ biến động là nguồn của mọi drill-down
+    expect(source).toContain("MovementTable");
+    expect(source).toContain("movement_type");
+    // RPT-IO-01: tầng dòng expected/scanned/posted + chiều tăng/giảm
+    expect(source).toContain("DocumentLinesTable");
     expect(source).toContain("posted_qty");
-    expect(source).toContain("result.agency_id = agencyId");
+    expect(source).toContain("DIRECTION_LABELS");
     // RPT-WAR-01: cột khách hàng đã mask + lý do xuất PII
-    expect(source).toContain('dataIndex: "customer_name"');
-    // WWHN-258 · FE258-P1-04: `reason` chỉ được đính khi actor có
-    // `warranty.pii.export` VÀ lý do đủ dài. Assertion cũ chỉ pin
-    // `filters.reason = piiReason.trim()`, tức là chấp nhận cả trường hợp gửi
-    // reason khi thiếu quyền — thứ mà BE trả 403.
-    expect(source).toContain("filters.reason = piiReasonTrimmed");
+    expect(source).toContain("warrantyPiiText");
+    expect(source).toContain("piiReasonTrimmed");
     // Khớp bằng regex bỏ qua khoảng trắng: điều kiện trải nhiều dòng và Prettier
     // có quyền xuống dòng lại bất cứ lúc nào.
     expect(source.replace(/\s+/gu, " ")).toContain(
-      'report === "warranty" && canExportPii && piiReasonTrimmed.length >= PII_REASON_MIN_LENGTH',
+      "canExportPii && piiReasonTrimmed.length >= PII_REASON_MIN_LENGTH",
     );
   });
 
-  it("keeps all eight baseline report groups", () => {
-    const source = read("src/modules/reports/pages/AlignedReportsPage.tsx");
+  it("keeps the seven operations report groups", () => {
+    const shell = read("src/modules/reports/pages/AlignedReportsPage.tsx");
     for (const key of [
-      "inventory-balance",
-      "xnt",
-      "document-history",
-      "movement-trace",
-      "import-match",
-      "label-log",
+      "inventory-flow",
+      "stock-reconcile",
+      "traceability",
+      "import-quality",
+      "packing-label",
       "warranty",
-      "outbound-by-agency",
+      "recipient",
     ]) {
-      expect(source).toContain(key);
+      expect(shell).toContain(key);
+    }
+  });
+
+  /** Mọi report_code gửi lên /reports/export phải là code BE thật đang phục vụ. */
+  it("only exports report codes the backend serves", () => {
+    const source = readReportsModule();
+    const codes = [
+      ...new Set(
+        (source.match(/reportCode:\s*"([a-z-]+)"/gu) ?? []).map(
+          (match) => match.split('"')[1],
+        ),
+      ),
+    ];
+    expect(codes.length).toBeGreaterThan(0);
+    for (const code of codes) {
+      expect([
+        "inventory-balance",
+        "inventory-xnt",
+        "document-history",
+        "movement-trace",
+        "import-match",
+        "label-log",
+        "warranty-defects",
+        "outbound-by-agency",
+      ]).toContain(code);
     }
   });
 });

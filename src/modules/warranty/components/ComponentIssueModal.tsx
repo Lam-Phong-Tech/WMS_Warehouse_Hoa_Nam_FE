@@ -71,10 +71,10 @@ const STATUS_BADGE: Record<
   ComponentIssueStatus,
   { tone: UiStatusTone; label: string }
 > = {
-  DRAFT: { tone: "neutral", label: "DRAFT" },
-  SCANNING: { tone: "info", label: "SCANNING" },
-  POSTED: { tone: "success", label: "POSTED" },
-  CANCELLED: { tone: "error", label: "CANCELLED" },
+  DRAFT: { tone: "neutral", label: "Nháp" },
+  SCANNING: { tone: "info", label: "Đang quét" },
+  POSTED: { tone: "success", label: "Đã ghi nhận" },
+  CANCELLED: { tone: "error", label: "Đã hủy" },
 };
 
 function errorText(error: unknown, fallback: string): string {
@@ -212,7 +212,7 @@ export function ComponentIssueModal({
   const handleCreate = async () => {
     if (!validateDraftLines()) return;
     if (!warehouse?.id) {
-      toast.error("Chưa xác định được kho tổng ACTIVE.");
+      toast.error("Chưa xác định được kho tổng đang hoạt động.");
       return;
     }
     try {
@@ -304,7 +304,12 @@ export function ComponentIssueModal({
       );
       onChanged?.();
     } catch (error: unknown) {
-      toast.error(errorText(error, "Post phiếu xuất linh kiện thất bại."));
+      toast.error(
+        errorText(
+          error,
+          "Không hoàn tất được phiếu xuất linh kiện. Vui lòng thử lại; nếu vẫn lỗi, liên hệ quản trị viên.",
+        ),
+      );
     }
   };
 
@@ -367,7 +372,7 @@ export function ComponentIssueModal({
           <Stack spacing={0}>
             {active.map((item) => (
               <UiText key={item.id} variant="caption">
-                {item.item_id ? "Serial item" : "Box"} × {item.quantity}
+                {item.item_id ? "Hàng có số sê-ri" : "Hộp"} × {item.quantity}
               </UiText>
             ))}
           </Stack>
@@ -619,6 +624,8 @@ export function ComponentIssueModal({
                   columns={lineColumns}
                   rows={detail.lines}
                   rowKey={(line) => line.id}
+                  loading={detailQuery.isFetching}
+                  emptyText="Phiếu chưa có dòng linh kiện nào."
                   onRowClick={(line) => setSelectedLineId(line.id)}
                 />
 

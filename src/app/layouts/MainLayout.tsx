@@ -38,12 +38,23 @@ import { useAuthStore } from "@/shared/store/auth.store";
 import { useNavigate } from "react-router-dom";
 
 const SIDEBAR_COLLAPSED_STORAGE_KEY = "hn-wms-sidebar-collapsed";
+const SIDEBAR_WIDTH_STORAGE_KEY = "hn-wms-sidebar-width";
 
 function readStoredSidebarCollapsed() {
   try {
     return localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY) === "1";
   } catch {
     return false;
+  }
+}
+
+function readStoredSidebarWidth() {
+  try {
+    const raw = localStorage.getItem(SIDEBAR_WIDTH_STORAGE_KEY);
+    const parsed = raw ? Number(raw) : NaN;
+    return Number.isFinite(parsed) ? parsed : LAYOUT.sidebarWidth;
+  } catch {
+    return LAYOUT.sidebarWidth;
   }
 }
 
@@ -60,6 +71,7 @@ export function MainLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
     readStoredSidebarCollapsed,
   );
+  const [sidebarWidth, setSidebarWidth] = useState(readStoredSidebarWidth);
 
   // Đổi trang trên mobile → tự đóng drawer điều hướng.
   useEffect(() => {
@@ -83,6 +95,14 @@ export function MainLayout() {
     setSidebarCollapsed(false);
     persistSidebarCollapsed(false);
   };
+  const handleSidebarWidthChange = (next: number) => {
+    setSidebarWidth(next);
+    try {
+      localStorage.setItem(SIDEBAR_WIDTH_STORAGE_KEY, String(next));
+    } catch {
+      // localStorage không khả dụng — giữ state trong phiên.
+    }
+  };
 
   const requestedScreen = new URLSearchParams(location.search).get("screen");
   const meta = resolveScreenMeta(location.pathname, location.search);
@@ -95,6 +115,8 @@ export function MainLayout() {
       <UiAppShell
         collapsed={sidebarCollapsed}
         sidebarHidden={!isDesktop}
+        sidebarWidth={sidebarWidth}
+        onSidebarWidthChange={handleSidebarWidthChange}
         sidebar={
           <SideNav
             collapsed={sidebarCollapsed}

@@ -9,7 +9,9 @@ import fs from "node:fs";
 import path from "node:path";
 
 export const REPO_ROOT = path.resolve(
-  path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1")),
+  path.dirname(
+    new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1"),
+  ),
   "..",
 );
 
@@ -121,4 +123,29 @@ export function fail(violations, guardName) {
   console.error(`[${guardName}] FAIL — ${violations.length} vi phạm:`);
   for (const v of violations) console.error("  - " + v);
   return 1;
+}
+
+/**
+ * Đọc họ icon đang chọn từ NGUỒN DUY NHẤT src/shared/ui/icons/icon-family.ts.
+ * Guard nào cần biết prefix/font/CSS của Flaticon đều lấy qua đây — không
+ * hardcode, để đổi biến thể chỉ phải sửa một chỗ.
+ */
+export function loadIconFamily() {
+  const src = read("src/shared/ui/icons/icon-family.ts");
+  const pick = (key) => {
+    const m = src.match(new RegExp(`^  ${key}: "([^"]+)"`, "m"));
+    if (!m) {
+      throw new Error(
+        `icon-family.ts: thiếu trường "${key}" — guard không xác định được họ icon`,
+      );
+    }
+    return m[1];
+  };
+  const cssImport = pick("cssImport");
+  return {
+    prefix: pick("prefix"),
+    fontFamily: pick("fontFamily"),
+    cssImport,
+    cssFile: cssImport.replace(/^@/, "node_modules/@"),
+  };
 }

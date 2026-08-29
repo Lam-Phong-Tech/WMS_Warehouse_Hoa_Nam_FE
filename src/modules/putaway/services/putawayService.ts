@@ -164,6 +164,18 @@ export async function fetchPutawayTrays(): Promise<TrayOption[]> {
   return result.data.filter(isPutawayTrayUsable);
 }
 
+/**
+ * Mục 15: màn TỔNG QUAN khay (read-only) cần thấy MỌI khay — gồm cả khay đã
+ * đóng/đã xuất để đánh dấu "cần chú ý" — nên KHÔNG lọc `isPutawayTrayUsable`
+ * như luồng chọn khay để xếp.
+ */
+export async function fetchAllPutawayTrays(): Promise<TrayOption[]> {
+  const result = await http.getPage<TrayOption[]>(API_ENDPOINTS.CONTAINERS, {
+    params: { container_type: "TRAY", per_page: 500 },
+  });
+  return result.data;
+}
+
 export async function createPutawayTask(payload: {
   box_container_id: string;
   to_tray_id: string;

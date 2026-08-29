@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -55,6 +55,21 @@ function readJson<T>(path: string): T {
 
 function readText(path: string): string {
   return readFileSync(join(process.cwd(), path), "utf8");
+}
+
+/** Toàn bộ source của module Báo cáo vận hành (mọi file .ts/.tsx). */
+function readReportsModuleText(): string {
+  const root = join(process.cwd(), "src/modules/reports");
+  const parts: string[] = [];
+  const walk = (dir: string) => {
+    for (const entry of readdirSync(dir)) {
+      const full = join(dir, entry);
+      if (statSync(full).isDirectory()) walk(full);
+      else if (/\.tsx?$/u.test(entry)) parts.push(readFileSync(full, "utf8"));
+    }
+  };
+  walk(root);
+  return parts.join("\n");
 }
 
 describe("WWHN-237 — hợp đồng FE không khai capability variance/kiểm kê", () => {
@@ -139,7 +154,10 @@ describe("WWHN-237 — hợp đồng FE không khai capability variance/kiểm k
   });
 
   it("trang báo cáo chỉ dùng report code nằm trong registry MVP", () => {
-    const source = readText("src/modules/reports/pages/AlignedReportsPage.tsx");
+    // Trang báo cáo nay là module nhiều file (shell 7 tab + tab component + lớp
+    // dùng chung) nên guard phải quét cả thư mục: đọc đúng một file thì chỉ cần
+    // chuyển code sang file bên cạnh là guard mất hiệu lực trong im lặng.
+    const source = readReportsModuleText();
     const declared = [
       ...new Set(
         (source.match(/reportCode:\s*"([a-z-]+)"/gu) ?? []).map(

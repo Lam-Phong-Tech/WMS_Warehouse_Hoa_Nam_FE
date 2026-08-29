@@ -16,6 +16,7 @@ import {
   UiText,
   UiTextField,
 } from "@/shared/ui/components";
+import { ICON_FAMILY } from "@/shared/ui/icons/icon-family";
 
 // Render qua MuiThemeProvider trực tiếp (test cô lập — không cần antd App).
 function renderUi(node: React.ReactElement) {
@@ -44,7 +45,9 @@ describe("UiButton", () => {
     renderUi(<UiButton loading>Đang lưu</UiButton>);
     const btn = screen.getByRole("button");
     expect(btn).toBeDisabled();
-    expect(btn.querySelector(".MuiCircularProgress-root")).not.toBeNull();
+    expect(
+      btn.querySelector(`.hn-spinner i.${ICON_FAMILY.prefix}-spinner`),
+    ).not.toBeNull();
   });
 });
 

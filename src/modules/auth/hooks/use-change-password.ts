@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { authService } from "@/modules/auth/services/auth.service";
+import { getMutationErrorMessage } from "@/shared/api/api-error";
 import { ROUTES } from "@/shared/constants/routes";
 import { useAuthStore } from "@/shared/store/auth.store";
 import type { ChangePasswordRequest } from "@/modules/auth/types/auth.types";
@@ -27,8 +28,10 @@ export function useChangePassword() {
       useAuthStore.persist.clearStorage();
       navigate(ROUTES.LOGIN, { replace: true });
     },
-    onError: () => {
-      toast.error("Đổi mật khẩu thất bại");
+    onError: (error) => {
+      // Phải đưa nguyên nhân thật ra UI ("Mật khẩu hiện tại không đúng"...) —
+      // toast chung chung khiến người dùng không biết sửa gì.
+      toast.error(getMutationErrorMessage(error));
     },
   });
 }

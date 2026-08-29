@@ -1,4 +1,5 @@
 import { alpha } from "@mui/material/styles";
+import { RADIUS } from "@/shared/ui/tokens";
 import {
   ACTION_ICON_COLORS,
   ACTION_TONAL_TEXT_COLORS,
@@ -18,11 +19,10 @@ export type ActionAppearance = "flat" | "tonal";
  * Kiểu bề mặt mặc định cho TOÀN dự án. Đổi đúng dòng này là đổi hình thức của
  * cả 280+ nút hành động — không màn nào được tự quyết.
  *
- * Đang ở giai đoạn dùng thử: màn "Danh sách SKU" khai `appearance="tonal"`
- * tại chỗ để đối chiếu. Khi chốt, đổi hằng số này thành `"tonal"` và gỡ các
- * prop khai lẻ đó đi.
+ * Đã chốt `"tonal"`: nút có nền nhạt cùng tông nghiệp vụ nên nhận diện được là
+ * nút, khác hẳn chữ thường — yêu cầu UX "button phải nhìn ra là button".
  */
-export const ACTION_APPEARANCE_DEFAULT: ActionAppearance = "flat";
+export const ACTION_APPEARANCE_DEFAULT: ActionAppearance = "tonal";
 
 const SURFACE = {
   /** Độ phủ của nền nhạt, theo `--v-activated-opacity` của Vuexy/Vuetify. */
@@ -30,10 +30,14 @@ const SURFACE = {
   /** Nền đậm thêm khi rê chuột. */
   fillHover: 0.22,
   /**
-   * Bo góc biến thể "Rounded". Trên nút cao 36px, giá trị này ra dáng viên
-   * thuốc. Muốn về dáng vuông vắn mặc định của Vuexy thì đổi thành 6.
+   * Bo góc nút hành động — dùng ĐÚNG `RADIUS.control` như mọi control khác
+   * (input, nút trong hộp thoại), không khai một giá trị riêng.
+   *
+   * Trước đây là 20px: trên nút cao 36px con số đó ra dáng viên thuốc, khiến
+   * nút hành động trong bảng nhìn khác hẳn nút "Hủy"/"Xác nhận" ở footer hộp
+   * thoại ngay bên cạnh — cùng là nút mà hai hình dạng.
    */
-  radius: 20,
+  radius: RADIUS.control,
 } as const;
 
 /** Màu nền nhạt của một hành động. */
@@ -49,8 +53,8 @@ export function actionTonalText(kind: ActionKind): string {
 /**
  * `sx` dựng bề mặt "tonal" theo tông nghiệp vụ của `kind`.
  *
- * Bo góc khai tường minh ở đây (khác `muiTheme` 10px) vì đây là biến thể
- * "Rounded" người dùng chọn riêng, không phải bo góc chung của hệ.
+ * Bo góc lặp lại tường minh ở đây để ghi đè bo góc mà MUI tự đặt cho biến thể
+ * nút đang dùng — giá trị vẫn là `RADIUS.control` chung của hệ.
  *
  * KHÔNG đổ bóng và KHÔNG viền — đúng như `variant="tonal"` của Vuexy.
  */

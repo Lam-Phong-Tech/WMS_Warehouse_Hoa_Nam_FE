@@ -27,10 +27,10 @@ import { ReversalDetailModal } from "../components/ReversalDetailModal";
 import { ReversalStatusTag } from "../components/ReversalStatusTag";
 import type { ReversalDocument } from "../types";
 import { formatDateTime } from "@/shared/utils/format-date";
+import { formatQuantity } from "@/shared/utils/format-number";
 import { ActionButton } from "@/shared/components/actions";
 
 const SEARCH_DEBOUNCE_MS = 250;
-const numberFormatter = new Intl.NumberFormat("vi-VN");
 
 /** REV-00 · Danh sách phiếu điều chỉnh tồn kho bằng nghiệp vụ hoàn đảo. */
 export default function ReversalPage() {
@@ -144,7 +144,7 @@ export default function ReversalPage() {
       align: "right",
       sortType: "value",
       sortAccessor: (row) => row.total_qty,
-      render: (row) => numberFormatter.format(row.total_qty),
+      render: (row) => formatQuantity(row.total_qty),
     },
     {
       key: "status",

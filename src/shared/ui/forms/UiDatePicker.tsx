@@ -8,6 +8,7 @@
  */
 import { DatePicker } from "antd";
 import type { Dayjs } from "dayjs";
+import { ANTD_PICKER_ICONS, antdAllowClear } from "@/shared/ui/icons";
 
 const { RangePicker } = DatePicker;
 
@@ -36,7 +37,10 @@ export function UiDatePicker({
       onChange={onChange}
       placeholder={placeholder}
       format={format}
-      allowClear={allowClear}
+      // antd mặc định vẽ CalendarOutlined/CloseCircleFilled của @ant-design/icons
+      // — ép về Flaticon Uicons (@/shared/ui/icons).
+      suffixIcon={ANTD_PICKER_ICONS.suffixIcon}
+      allowClear={antdAllowClear(allowClear)}
       disabled={disabled}
       aria-label={ariaLabel}
     />
@@ -68,7 +72,10 @@ export function UiDateRangePicker({
       onChange={(next) => onChange(next as [Dayjs | null, Dayjs | null] | null)}
       placeholder={placeholder}
       format={format}
-      allowClear={allowClear}
+      suffixIcon={ANTD_PICKER_ICONS.suffixIcon}
+      // Dấu ngăn giữa 2 ô mặc định là SwapRightOutlined (@ant-design/icons).
+      separator={ANTD_PICKER_ICONS.separator}
+      allowClear={antdAllowClear(allowClear)}
       disabled={disabled}
       aria-label={ariaLabel}
     />

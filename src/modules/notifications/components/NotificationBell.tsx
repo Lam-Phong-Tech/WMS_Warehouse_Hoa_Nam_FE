@@ -2,7 +2,7 @@ import { useState } from "react";
 import {
   Badge,
   Box,
-  CircularProgress,
+  UiSpinner,
   Popover,
   UiIconButton,
   UiStateSurface,
@@ -124,7 +124,7 @@ export function NotificationBell() {
             />
           ) : isLoading ? (
             <Box sx={{ p: 3, textAlign: "center" }}>
-              <CircularProgress size={18} />
+              <UiSpinner size={18} />
             </Box>
           ) : items.length === 0 ? (
             <UiStateSurface kind="empty" title="Chưa có thông báo" />

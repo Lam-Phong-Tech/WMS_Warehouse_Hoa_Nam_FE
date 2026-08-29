@@ -1,37 +1,47 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, within } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { isAxiosError } from "axios";
 import dayjs from "dayjs";
 import { useAuthStore } from "@/shared/store/auth.store";
-import { fetchDashboardKPI } from "../services/dashboardService";
-import type { DashboardKPI } from "../types";
+import { fetchDashboardOverview } from "../services/dashboardService";
+import type { DashboardOverview } from "../types";
 import DashboardPage from "./DashboardPage";
 
 vi.mock("../services/dashboardService", () => ({
-  fetchDashboardKPI: vi.fn(),
+  fetchDashboardOverview: vi.fn(),
 }));
 
 // jsdom không đo được kích thước SVG (getBBox/getComputedTextLength) nên
-// ApexCharts render với width:0 và không có data-label nào xuất hiện trong
-// DOM — chart vẫn hoạt động đúng ở trình duyệt thật, chỉ riêng jsdom là
-// không vẽ được. Stub tối thiểu này chỉ render lại các giá trị số (series)
-// thành text để giữ nguyên assertion cũ (getByText("300")...), không mock
-// toàn cục để các test khác vẫn dùng ApexCharts thật nếu cần. Chỉ render khi
-// dataLabels.enabled không phải false, đúng với việc DonutChart tắt
-// dataLabels (giá trị thật chỉ hiện trong tooltip khi hover) — tránh trùng
-// text với danh sách trạng thái bảo hành vẫn hiển thị song song.
+// ApexCharts render với width:0 và không data-label nào vào DOM — chart vẫn đúng
+// trên trình duyệt thật. Stub tối thiểu render lại series thành text để assertion
+// đọc được, và phơi nút giả cho dataPointSelection để test được drilldown.
 vi.mock("react-apexcharts", () => ({
   default: ({
     series,
     options,
   }: {
     series: unknown;
-    options?: { dataLabels?: { enabled?: boolean } };
+    options?: {
+      chart?: {
+        events?: {
+          dataPointSelection?: (
+            event: unknown,
+            ctx: unknown,
+            config: { dataPointIndex: number },
+          ) => void;
+        };
+      };
+    };
   }) => {
-    if (options?.dataLabels?.enabled === false) {
-      return <div data-testid="apex-chart-stub" />;
-    }
+    const onSelect = options?.chart?.events?.dataPointSelection;
     const values = Array.isArray(series)
       ? series.flatMap((entry) =>
           typeof entry === "number"
@@ -46,71 +56,89 @@ vi.mock("react-apexcharts", () => ({
         {values.map((value, index) => (
           <span key={index}>{String(value)}</span>
         ))}
+        {onSelect ? (
+          <button
+            type="button"
+            data-testid="apex-point-0"
+            onClick={() => onSelect(null, null, { dataPointIndex: 0 })}
+          >
+            point-0
+          </button>
+        ) : null}
       </div>
     );
   },
 }));
 
-const mockedFetchDashboardKPI = vi.mocked(fetchDashboardKPI);
+const mockedFetch = vi.mocked(fetchDashboardOverview);
 
-const populatedDashboard: DashboardKPI = {
-  period: { from_date: "2026-07-19", to_date: "2026-08-18" },
+const today = dayjs().format("YYYY-MM-DD");
+
+const populated: DashboardOverview = {
+  period: { from_date: today, to_date: today },
   data_scope: "GLOBAL",
   scope_warehouse_ids: null,
-  available_qty: 1234,
-  receipt_qty: 300,
-  issue_qty: 120,
-  component_issue_qty: 25,
-  reversal_net: -5,
-  warranty_cases_by_status: { CHECKING: 3, COMPLETED: 7 },
-  reconciliation_warning_count: 1,
-  reconciliation_warnings: [{ product_id: "p-1" }],
-  below_min_stock_count: 0,
-  below_min_stock_skus: [],
-  above_max_stock_count: 0,
-  above_max_stock_skus: [],
-  daily: [
+  kpi: {
+    on_hand: { product: 800, component: 434, total: 1234 },
+    receipt_today: { product: 200, component: 100, total: 300 },
+    issue_today: { product: 90, component: 30, total: 120 },
+    receipt_month: { product: 1000, component: 500, total: 1500 },
+    issue_month: { product: 600, component: 150, total: 750 },
+  },
+  warranty_received: { today: 3, week: 11, month: 42 },
+  top_sku: {
+    best: { sku_code: "SKU-A", sku_name: "Máy bơm A", issue_qty: 90 },
+    worst: { sku_code: "SKU-Z", sku_name: "Máy bơm Z", issue_qty: 2 },
+  },
+  flow_daily: [
     {
-      date: "2026-08-17",
-      receipt_qty: 150,
-      issue_qty: 60,
-      warranty_received_count: 1,
-    },
-    {
-      date: "2026-08-18",
-      receipt_qty: 150,
-      issue_qty: 60,
-      warranty_received_count: 2,
+      date: today,
+      receipt_product: 200,
+      receipt_component: 100,
+      issue_product: 90,
+      issue_component: 30,
     },
   ],
-};
-
-const emptyDashboard: DashboardKPI = {
-  period: { from_date: "2026-07-19", to_date: "2026-08-18" },
-  data_scope: "GLOBAL",
-  scope_warehouse_ids: null,
-  available_qty: 0,
-  receipt_qty: 0,
-  issue_qty: 0,
-  component_issue_qty: 0,
-  reversal_net: 0,
-  warranty_cases_by_status: {},
-  reconciliation_warning_count: 0,
-  reconciliation_warnings: [],
-  below_min_stock_count: 0,
-  below_min_stock_skus: [],
-  above_max_stock_count: 0,
-  above_max_stock_skus: [],
-  daily: [],
+  stock_trend: [{ date: today, closing_qty: 1234 }],
+  stock_structure: {
+    PRODUCT: {
+      AVAILABLE: 800,
+      NON_SELLABLE: 50,
+      DEFECTIVE: 20,
+      QUARANTINE: 10,
+    },
+    COMPONENT: {
+      AVAILABLE: 434,
+      NON_SELLABLE: 0,
+      DEFECTIVE: 0,
+      QUARANTINE: 0,
+    },
+  },
+  warranty: {
+    by_status: { CHECKING: 3, COMPLETED: 7 },
+    overdue_count: 137,
+    overdue_sample: [
+      {
+        warranty_case_code: "WC-001",
+        customer_name: "Nguyễn Văn A",
+        status: "CHECKING",
+        estimated_completion_date: "2026-08-01",
+        days_overdue: 28,
+      },
+    ],
+  },
+  issues: {
+    inventory_mismatch: 5,
+    import_error: 2,
+    warranty_overdue: 137,
+    print_failed: 1,
+  },
 };
 
 function renderDashboard() {
   const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: { retry: false, gcTime: 0 },
-    },
+    defaultOptions: { queries: { retry: false, gcTime: 0 } },
   });
-
   return render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter>
@@ -130,79 +158,67 @@ afterEach(() => {
   });
 });
 
-describe("DashboardPage / WWHN-327", () => {
-  it("renders KPI and optional chart from the real aggregate response", async () => {
-    mockedFetchDashboardKPI.mockResolvedValue(populatedDashboard);
-
+describe("DashboardPage — tổng quan", () => {
+  it("đổi toggle Sản phẩm/Linh kiện thì KPI đọc đúng nhánh số liệu", async () => {
+    mockedFetch.mockResolvedValue(populated);
     renderDashboard();
 
-    const kpiRegion = await screen.findByRole("region", {
-      name: "Chỉ số vận hành",
-    });
-    expect(within(kpiRegion).getByText("1.234")).toBeInTheDocument();
-    expect(within(kpiRegion).getByText("300")).toBeInTheDocument();
-    expect(within(kpiRegion).getByText("120")).toBeInTheDocument();
-    expect(within(kpiRegion).getByText("25")).toBeInTheDocument();
-    expect(within(kpiRegion).getByText("-5")).toBeInTheDocument();
+    const kpi = await screen.findByRole("region", { name: "Chỉ số vận hành" });
+    // Mặc định "Sản phẩm & Linh kiện" → dùng total.
+    expect(within(kpi).getByText("1.234")).toBeInTheDocument();
+    expect(within(kpi).getByText("300")).toBeInTheDocument();
 
-    const chartRegion = screen.getByRole("region", {
-      name: "Biểu đồ tổng quan",
-    });
-    expect(within(chartRegion).getByText("300")).toBeInTheDocument();
-    expect(within(chartRegion).getByText("-5")).toBeInTheDocument();
+    fireEvent.click(within(kpi).getByRole("button", { name: "Linh kiện" }));
 
-    expect(
-      within(chartRegion).getByRole("img", {
-        name: "Biểu đồ luồng kho từ 19-7-2026 đến 18-8-2026: Nhập kho 300; Xuất kho 120; Xuất linh kiện 25; Điều chỉnh tồn (ròng) -5",
-      }),
-    ).toBeInTheDocument();
-
-    expect(within(chartRegion).getByText("3")).toBeInTheDocument();
-    expect(within(chartRegion).getByText("7")).toBeInTheDocument();
-    expect(within(chartRegion).getByText("1 cảnh báo")).toBeInTheDocument();
-    // BA (2026-08-27): Dashboard mặc định preset "Hôm nay", không còn gọi
-    // trống {} để BE tự áp 30 ngày gần nhất — luôn gửi kèm from_date/to_date.
-    const today = dayjs().format("YYYY-MM-DD");
-    expect(mockedFetchDashboardKPI).toHaveBeenCalledWith({
-      from_date: today,
-      to_date: today,
-    });
+    // Linh kiện → component. 434 và 100 chỉ xuất hiện ở nhánh này.
+    expect(within(kpi).getByText("434")).toBeInTheDocument();
+    expect(within(kpi).getByText("100")).toBeInTheDocument();
+    expect(within(kpi).queryByText("1.234")).not.toBeInTheDocument();
   });
 
-  it("renders an explicit empty state instead of fabricated chart data", async () => {
-    mockedFetchDashboardKPI.mockResolvedValue(emptyDashboard);
-
+  it("hiển thị tổng thật của ca quá hạn, không lấy độ dài mảng mẫu", async () => {
+    mockedFetch.mockResolvedValue(populated);
     renderDashboard();
 
-    expect(
-      await screen.findByText("Không có số liệu trong kỳ."),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole("img", { name: /Biểu đồ luồng kho/i }),
-    ).not.toBeInTheDocument();
+    // overdue_sample chỉ có 1 phần tử nhưng tổng thật là 137.
+    expect(await screen.findByText("137 ca quá hạn")).toBeInTheDocument();
   });
 
-  it("does not expose backend/API implementation language to operators", async () => {
-    mockedFetchDashboardKPI.mockResolvedValue(populatedDashboard);
-
+  it("mở được danh sách chi tiết ca bảo hành quá hạn", async () => {
+    mockedFetch.mockResolvedValue(populated);
     renderDashboard();
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Xem chi tiết" }),
+    );
+
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByText("WC-001")).toBeInTheDocument();
+    expect(within(dialog).getByText("28 ngày")).toBeInTheDocument();
+  });
+
+  it("đổi kỳ biểu đồ nhập-xuất thì gọi lại API với khoảng ngày mới", async () => {
+    mockedFetch.mockResolvedValue(populated);
+    renderDashboard();
+
     await screen.findByRole("region", { name: "Chỉ số vận hành" });
+    const startOfWeek = dayjs().startOf("week").format("YYYY-MM-DD");
+    expect(mockedFetch).toHaveBeenCalledWith(
+      expect.objectContaining({ from_date: startOfWeek }),
+    );
 
-    const visibleText = document.body.textContent ?? "";
-    for (const forbidden of [
-      "Mặc định BE",
-      "Kỳ BE",
-      "backend authoritative",
-      "/reports/dashboard-quick",
-      "occurred_at",
-      "scope_type",
-      "wireframe",
-    ]) {
-      expect(visibleText).not.toContain(forbidden);
-    }
+    const group = screen.getByRole("group", {
+      name: "Chọn kỳ xem biểu đồ nhập xuất",
+    });
+    fireEvent.click(within(group).getByRole("button", { name: "Năm này" }));
+
+    const startOfYear = dayjs().startOf("year").format("YYYY-MM-DD");
+    expect(mockedFetch).toHaveBeenCalledWith(
+      expect.objectContaining({ from_date: startOfYear }),
+    );
   });
 
-  it("does not call report API when the loaded profile lacks report.view", () => {
+  it("không gọi API báo cáo khi profile đã tải mà thiếu report.view", () => {
     useAuthStore.setState({
       isProfileLoaded: true,
       isSuperAdmin: false,
@@ -216,62 +232,33 @@ describe("DashboardPage / WWHN-327", () => {
         "Vui lòng liên hệ quản trị viên nếu bạn cần quyền truy cập.",
       ),
     ).toBeInTheDocument();
-    expect(mockedFetchDashboardKPI).not.toHaveBeenCalled();
+    expect(mockedFetch).not.toHaveBeenCalled();
   });
 
-  it("shows the warehouse data scope returned by the aggregate contract", async () => {
-    mockedFetchDashboardKPI.mockResolvedValue({
-      ...populatedDashboard,
-      data_scope: "WAREHOUSE_SCOPED",
-      scope_warehouse_ids: ["wh-1", "wh-2"],
+  it("lỗi 403 thì không lộ bất kỳ số liệu nào", async () => {
+    // src/test/setup.ts mock axios toàn cục với isAxiosError luôn trả false, nên
+    // nhánh phân loại theo HTTP status không bao giờ chạy. Cài lại đúng hành vi
+    // thật của axios (nhận diện theo cờ trên chính object lỗi) cho test này.
+    vi.mocked(isAxiosError).mockImplementation(
+      (payload: unknown): payload is never =>
+        Boolean(
+          payload &&
+          typeof payload === "object" &&
+          (payload as { isAxiosError?: boolean }).isAxiosError === true,
+        ),
+    );
+    mockedFetch.mockRejectedValue({
+      isAxiosError: true,
+      response: { status: 403 },
     });
 
     renderDashboard();
 
     expect(
-      await screen.findByText(
-        /Phạm vi dữ liệu:\s*Theo 2 kho bạn được phân quyền/,
-      ),
+      await screen.findByText("Bạn không có quyền xem báo cáo tổng quan."),
     ).toBeInTheDocument();
-  });
-
-  it("declares the warranty global exception when the payload is warehouse-scoped", async () => {
-    mockedFetchDashboardKPI.mockResolvedValue({
-      ...populatedDashboard,
-      data_scope: "WAREHOUSE_SCOPED",
-      scope_warehouse_ids: ["wh-1"],
-    });
-
-    renderDashboard();
-
-    const exception = await screen.findByRole("note");
-    expect(exception).toHaveTextContent(
-      /bảo hành được tổng hợp toàn hệ thống/i,
-    );
-    expect(exception).toHaveTextContent(/không giới hạn theo kho/i);
-  });
-
-  it("does not show the warranty scope exception on a global payload", async () => {
-    mockedFetchDashboardKPI.mockResolvedValue(populatedDashboard);
-
-    renderDashboard();
-
-    await screen.findByRole("region", { name: "Chỉ số vận hành" });
-    expect(screen.queryByRole("note")).not.toBeInTheDocument();
-  });
-
-  it("counts reconciliation warnings from the total, not from the capped sample", async () => {
-    mockedFetchDashboardKPI.mockResolvedValue({
-      ...populatedDashboard,
-      reconciliation_warning_count: 137,
-      reconciliation_warnings: [{ product_id: "p-1" }, { product_id: "p-2" }],
-    });
-
-    renderDashboard();
-
-    const chartRegion = await screen.findByRole("region", {
-      name: "Biểu đồ tổng quan",
-    });
-    expect(within(chartRegion).getByText("137 cảnh báo")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("region", { name: "Chỉ số vận hành" }),
+    ).not.toBeInTheDocument();
   });
 });

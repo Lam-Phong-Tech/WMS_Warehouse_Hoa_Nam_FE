@@ -124,6 +124,16 @@ function skuTypeLabel(type: SkuType | string) {
   return businessLabel(SKU_TYPE_LABELS, type, "Loại khác");
 }
 
+/**
+ * Định mức tồn chưa đặt (null) hiển thị "—"; 0 phải hiện là "0" vì đó là một
+ * định mức THẬT (cảnh báo khi hết hàng), không phải "chưa cấu hình".
+ */
+function stockThresholdLabel(value?: number | string | null): string {
+  if (value === null || value === undefined || value === "") return "—";
+  const num = Number(value);
+  return Number.isFinite(num) ? num.toLocaleString("vi-VN") : String(value);
+}
+
 function compactRef(value?: string | null) {
   if (!value) return "—";
   return value.length > 14 ? `${value.slice(0, 8)}…${value.slice(-4)}` : value;
@@ -404,6 +414,8 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
     type: (r) => skuTypeLabel(r.sku_type),
     brand: (r) => refLabel(brandIndex, r.brand_id),
     category: (r) => refLabel(categoryIndex, r.category_id),
+    minStock: (r) => r.min_stock ?? null,
+    maxStock: (r) => r.max_stock ?? null,
     status: (r) => r.status,
     published: (r) => (r.published_to_app ? 1 : 0),
   });
@@ -501,31 +513,34 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
       errors.publishedToApp =
         "Chỉ SKU đang sử dụng mới được đưa lên ứng dụng phân vùng.";
     }
-    // GĐ1 Dashboard "tồn dưới/vượt định mức" — để trống = chưa đặt, không bắt buộc.
+    // Định mức tồn (phục vụ báo cáo định mức tồn): min ≥ 0 — 0 là định mức
+    // THẬT, không phải "chưa đặt"; max ≥ 1; max PHẢI LỚN HƠN min (không phải ≥).
+    // Để trống = chưa đặt định mức, không bắt buộc. Cùng rule với BE
+    // ValidatesSkuStockThresholds + CHECK chk_skus_stock_thresholds.
     const minStockTrim = form.minStock.trim();
     const maxStockTrim = form.maxStock.trim();
     const minStockNum = minStockTrim === "" ? null : Number(minStockTrim);
     const maxStockNum = maxStockTrim === "" ? null : Number(maxStockTrim);
     if (
-      minStockTrim !== "" &&
-      (!Number.isFinite(minStockNum) || (minStockNum as number) < 0)
+      minStockNum !== null &&
+      (!Number.isFinite(minStockNum) || minStockNum < 0)
     ) {
       errors.minStock = "Định mức tối thiểu phải là số ≥ 0.";
     }
     if (
-      maxStockTrim !== "" &&
-      (!Number.isFinite(maxStockNum) || (maxStockNum as number) < 0)
+      maxStockNum !== null &&
+      (!Number.isFinite(maxStockNum) || maxStockNum < 1)
     ) {
-      errors.maxStock = "Định mức tối đa phải là số ≥ 0.";
+      errors.maxStock = "Định mức tối đa phải là số ≥ 1.";
     }
     if (
       !errors.minStock &&
       !errors.maxStock &&
       minStockNum !== null &&
       maxStockNum !== null &&
-      maxStockNum < minStockNum
+      maxStockNum <= minStockNum
     ) {
-      errors.maxStock = "Định mức tối đa phải ≥ định mức tối thiểu.";
+      errors.maxStock = "Định mức tối đa phải lớn hơn định mức tối thiểu.";
     }
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
@@ -682,7 +697,6 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           <Box sx={{ flex: 1 }} />
           {canManage ? (
             <ActionButton
-              appearance="tonal"
               kind="import"
               onClick={() => setImportModalOpen(true)}
             >
@@ -690,7 +704,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
             </ActionButton>
           ) : null}
           {canManage ? (
-            <ActionButton appearance="tonal" kind="create" onClick={openCreate}>
+            <ActionButton kind="create" onClick={openCreate}>
               Thêm SKU
             </ActionButton>
           ) : null}
@@ -717,7 +731,6 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               tone="error"
               action={
                 <ActionButton
-                  appearance="tonal"
                   kind="close"
                   onClick={() => setPublishError(null)}
                 >
@@ -771,6 +784,20 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                   onSort={requestSort}
                 />
                 <SortableTh
+                  label="Định mức tối thiểu"
+                  sortKey="minStock"
+                  sortState={sortState}
+                  onSort={requestSort}
+                  sortType="value"
+                />
+                <SortableTh
+                  label="Định mức tối đa"
+                  sortKey="maxStock"
+                  sortState={sortState}
+                  onSort={requestSort}
+                  sortType="value"
+                />
+                <SortableTh
                   label="Trạng thái"
                   sortKey="status"
                   sortState={sortState}
@@ -790,7 +817,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
             <tbody>
               {query.isLoading ? (
                 <tr>
-                  <td colSpan={9} className="muted">
+                  <td colSpan={11} className="muted">
                     Đang tải dữ liệu...
                   </td>
                 </tr>
@@ -827,6 +854,8 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                       <td title={record.category_id ?? undefined}>
                         {refLabel(categoryIndex, record.category_id)}
                       </td>
+                      <td>{stockThresholdLabel(record.min_stock)}</td>
+                      <td>{stockThresholdLabel(record.max_stock)}</td>
                       <td>
                         <UiStatusBadge
                           tone={masterStatusTone(record.status)}
@@ -853,7 +882,6 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                           sx={{ flexWrap: "wrap" }}
                         >
                           <ActionButton
-                            appearance="tonal"
                             kind="view"
                             onClick={() => setViewing(record)}
                           >
@@ -861,7 +889,6 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                           </ActionButton>
                           {canManage ? (
                             <ActionButton
-                              appearance="tonal"
                               kind="edit"
                               onClick={() => openEdit(record)}
                             >
@@ -870,7 +897,6 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                           ) : null}
                           {canPublish ? (
                             <ActionButton
-                              appearance="tonal"
                               // Nút 2 trạng thái: màu phải đổi theo NGHĨA của
                               // lần bấm sắp tới — đỏ khi sắp gỡ, xanh khi sắp đưa lên.
                               kind={isPublished ? "unpublish" : "publish"}
@@ -899,7 +925,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                 })
               ) : (
                 <tr>
-                  <td colSpan={9} className="muted">
+                  <td colSpan={11} className="muted">
                     Không có SKU phù hợp bộ lọc.
                   </td>
                 </tr>
@@ -926,7 +952,6 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
             <>
               Chi tiết SKU
               <ActionIconButton
-                appearance="tonal"
                 kind="close"
                 label="Đóng"
                 onClick={() => setViewing(null)}
@@ -986,6 +1011,14 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                     value: viewing.version_code || "—",
                   },
                   {
+                    label: "Định mức tối thiểu",
+                    value: stockThresholdLabel(viewing.min_stock),
+                  },
+                  {
+                    label: "Định mức tối đa",
+                    value: stockThresholdLabel(viewing.max_stock),
+                  },
+                  {
                     label: "Quản lý số sê-ri",
                     value: viewing.is_serial_tracked ? "Có" : "Không",
                   },
@@ -1019,7 +1052,6 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
             <>
               {editing ? "Sửa SKU" : "Thêm SKU"}
               <ActionIconButton
-                appearance="tonal"
                 kind="close"
                 label="Đóng"
                 onClick={close}
@@ -1030,16 +1062,10 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           }
           actions={
             <>
-              <ActionButton
-                appearance="tonal"
-                kind="cancel"
-                onClick={close}
-                disabled={isSaving}
-              >
+              <ActionButton kind="cancel" onClick={close} disabled={isSaving}>
                 Hủy
               </ActionButton>
               <ActionButton
-                appearance="tonal"
                 kind="save"
                 disabled={isSaving}
                 type="submit"
@@ -1347,7 +1373,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                       placeholder="Để trống = chưa đặt định mức"
                       helperText={
                         fieldErrors.minStock ??
-                        "Toàn hệ thống (không theo từng kho). Để trống = không cảnh báo tồn thấp."
+                        "Toàn hệ thống (không theo từng kho). Nhập 0 nếu chỉ cảnh báo khi hết hàng; để trống = chưa đặt định mức."
                       }
                       error={Boolean(fieldErrors.minStock)}
                       onChange={(event) =>
@@ -1368,7 +1394,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                       placeholder="Để trống = chưa đặt định mức"
                       helperText={
                         fieldErrors.maxStock ??
-                        "Toàn hệ thống (không theo từng kho). Để trống = không cảnh báo tồn vượt."
+                        "Phải ≥ 1 và lớn hơn định mức tối thiểu; để trống = chưa đặt định mức."
                       }
                       error={Boolean(fieldErrors.maxStock)}
                       onChange={(event) =>
@@ -1378,7 +1404,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                         }))
                       }
                       disabled={isSaving}
-                      slotProps={{ htmlInput: { min: 0, step: "any" } }}
+                      slotProps={{ htmlInput: { min: 1, step: "any" } }}
                     />
                     <Box>
                       <FormControlLabel

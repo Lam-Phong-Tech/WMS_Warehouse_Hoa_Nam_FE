@@ -42,6 +42,8 @@ export const API_ENDPOINTS = {
   WEBHOOKS_M2_ORDER_PROCESSING: "/webhooks/m2/order-processing",
   DASHBOARD: "/reports/dashboard-quick",
   DASHBOARD_KPI: "/reports/dashboard-quick",
+  /** Màn Dashboard tổng quan — một payload cho cả màn hình. */
+  REPORTS_DASHBOARD_OVERVIEW: "/reports/dashboard-overview",
   DASHBOARD_RECENT_DOCUMENTS: "/document-status-history",
   DASHBOARD_RECONCILE_HEALTH: "/inventory-snapshots",
   DASHBOARD_ALERTS: "/safe-stock-alerts",

@@ -1,5 +1,6 @@
 export { UiText, type UiTextProps, type UiTextVariant } from "./UiText";
 export { UiIcon, type UiIconProps } from "./UiIcon";
+export { UiSpinner, type UiSpinnerProps } from "./UiSpinner";
 export {
   UiButton,
   UiIconButton,

@@ -10,6 +10,7 @@ import { ThemeProvider as MuiThemeProvider } from "@mui/material/styles";
 import { useForm } from "react-hook-form";
 import { muiTheme } from "@/shared/ui/theme/mui-adapter";
 import { UiFormText, type UiFormTextProps } from "./UiFormText";
+import { ICON_FAMILY } from "@/shared/ui/icons/icon-family";
 
 interface HostValues {
   ten: string;
@@ -90,7 +91,9 @@ describe("UiFormText", () => {
 
   it("search: có icon kính lúp ở startAdornment", () => {
     const { container } = render(<Host type="search" />);
-    expect(container.querySelector("i.fi.fi-rr-search")).not.toBeNull();
+    expect(
+      container.querySelector(`i.fi.${ICON_FAMILY.prefix}-search`),
+    ).not.toBeNull();
   });
 
   it("helperText nối aria-describedby (MUI mặc định)", () => {

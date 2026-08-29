@@ -36,14 +36,13 @@ import {
 import { ReversalStatusTag } from "./ReversalStatusTag";
 import type { ReversalLine, ReversalReturnCondition } from "../types";
 import { formatDateTime } from "@/shared/utils/format-date";
+import { formatQuantity } from "@/shared/utils/format-number";
 import type { ReactNode } from "react";
 import { useDialogExit } from "@/shared/utils/useDialogExit";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 
-const numberFormatter = new Intl.NumberFormat("vi-VN");
-
 function qty(value?: number) {
-  return numberFormatter.format(Number(value ?? 0));
+  return formatQuantity(Number(value ?? 0));
 }
 
 function idempotencyKey(action: string, id: string) {

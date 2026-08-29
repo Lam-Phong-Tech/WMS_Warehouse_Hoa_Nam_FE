@@ -64,6 +64,7 @@ import { useAuthStore } from "@/shared/store/auth.store";
 import { formatDate, formatDateTime } from "@/shared/utils/format-date";
 import { guardBackdropClose } from "@/shared/utils/dialogGuard";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
+import { DepartmentManagerModal } from "@/modules/iam/components/DepartmentManagerModal";
 
 const STATUS_OPTIONS: Array<{ value: IamUserStatus; label: string }> = [
   { value: "ACTIVE", label: IAM_USER_STATUS_LABELS.ACTIVE },
@@ -79,6 +80,8 @@ type UserFormState = {
   /** REQ-011: department_id — optional, "" nghĩa là không thuộc phòng ban nào. */
   departmentId: string;
   roleId: string;
+  /** Mục 14: vai trò kiêm nhiệm ngoài vai trò chính (multi-role). */
+  additionalRoleIds: string[];
   scopeRef: string;
   effectiveFrom: string;
   effectiveTo: string;
@@ -95,6 +98,7 @@ const EMPTY_FORM: UserFormState = {
   email: "",
   departmentId: "",
   roleId: "",
+  additionalRoleIds: [],
   scopeRef: "",
   effectiveFrom: "",
   effectiveTo: "",
@@ -255,6 +259,7 @@ export function IamUserScreen({
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState("");
+  const [departmentManagerOpen, setDepartmentManagerOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<IamUserStatus | "">("");
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(15);
@@ -516,6 +521,10 @@ export function IamUserScreen({
       email: user.email ?? "",
       departmentId: user.department_id ?? "",
       roleId: primaryRole?.role_id ?? roles[0]?.role_id ?? "",
+      // Vai trò kiêm nhiệm = mọi role hiện có trừ role chính (role đầu tiên).
+      additionalRoleIds: (user.roles ?? [])
+        .slice(1)
+        .map((role) => role.role_id),
       scopeRef: primaryRole?.pivot?.scope_ref ?? "",
       effectiveFrom: primaryRole?.pivot?.effective_from?.slice(0, 10) ?? "",
       effectiveTo: primaryRole?.pivot?.effective_to?.slice(0, 10) ?? "",
@@ -624,6 +633,13 @@ export function IamUserScreen({
     };
     const currentRole = editingUser?.roles?.[0];
     const reason = formState.reason.trim();
+    // Vai trò bổ sung (kiêm nhiệm), loại trùng vai trò chính.
+    const extraRoleIds = formState.additionalRoleIds.filter(
+      (roleId) => roleId && roleId !== formState.roleId,
+    );
+    const currentExtraRoleIds = (editingUser?.roles ?? [])
+      .slice(1)
+      .map((role) => role.role_id);
 
     try {
       if (editingUser) {
@@ -631,6 +647,8 @@ export function IamUserScreen({
           userId: editingUser.user_id,
           assignment,
           reason,
+          extraRoleIds,
+          currentExtraRoleIds,
           currentAssignment: currentRole
             ? {
                 role_id: currentRole.role_id,
@@ -650,6 +668,7 @@ export function IamUserScreen({
         await createUser.mutateAsync({
           assignment,
           reason,
+          extraRoleIds,
           payload: {
             ...basePayload,
             password,
@@ -760,6 +779,14 @@ export function IamUserScreen({
           }))}
         />
         <div className="spacer" />
+        {canManageUsers ? (
+          <ActionButton
+            kind="settings"
+            onClick={() => setDepartmentManagerOpen(true)}
+          >
+            Quản lý phòng ban
+          </ActionButton>
+        ) : null}
         {canManageUsers ? (
           <ActionButton
             kind="create"
@@ -1143,6 +1170,52 @@ export function IamUserScreen({
                         trị viên khác thực hiện thay đổi này.
                       </FieldHint>
                     ) : null}
+                  </div>
+                  <div>
+                    <UiTextField
+                      id="iam-extra-roles"
+                      select
+                      label="Vai trò kiêm nhiệm (tùy chọn)"
+                      fullWidth
+                      value={formState.additionalRoleIds}
+                      onChange={(event) =>
+                        updateField(
+                          "additionalRoleIds",
+                          (Array.isArray(event.target.value)
+                            ? event.target.value
+                            : [event.target.value]) as string[],
+                        )
+                      }
+                      disabled={isSaving || roles.length === 0 || isEditingSelf}
+                      slotProps={{
+                        select: {
+                          multiple: true,
+                          displayEmpty: true,
+                          renderValue: (selected) => {
+                            const ids = selected as string[];
+                            if (ids.length === 0)
+                              return "Không có vai trò kiêm nhiệm";
+                            return roles
+                              .filter((role) => ids.includes(role.role_id))
+                              .map((role) => role.role_name)
+                              .join(", ");
+                          },
+                        },
+                        inputLabel: { shrink: true },
+                      }}
+                    >
+                      {roles
+                        .filter((role) => role.role_id !== formState.roleId)
+                        .map((role) => (
+                          <MenuItem key={role.role_id} value={role.role_id}>
+                            {role.role_name}
+                          </MenuItem>
+                        ))}
+                    </UiTextField>
+                    <FieldHint>
+                      Một người có thể kiêm nhiều vai trò; phạm vi dữ liệu áp
+                      dụng chung với vai trò chính.
+                    </FieldHint>
                   </div>
                   <div>
                     <UiTextField
@@ -1607,6 +1680,13 @@ export function IamUserScreen({
           />
         </Stack>
       </UiDialog>
+
+      {departmentManagerOpen ? (
+        <DepartmentManagerModal
+          open={departmentManagerOpen}
+          onClose={() => setDepartmentManagerOpen(false)}
+        />
+      ) : null}
     </div>
   );
 }

@@ -359,3 +359,81 @@ body,
     width: 100%;
   }
 }
+
+/* ==========================================================================
+   ICON — Flaticon Uicons là bộ icon DUY NHẤT của dự án.
+   Hai chỗ dưới đây không thể ép từ React nên phải xử lý bằng CSS:
+   ========================================================================== */
+
+/* 1. Spinner của toast loading (sonner) — glyph spinner cần keyframes. */
+@keyframes hn-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 2. Mũi tên chuyển tháng/năm trong panel antd DatePicker.
+      antd HARDCODE các icon này thành <span> vẽ bằng border (xem
+      antd/es/date-picker/generatePicker/generateSinglePicker.js) nên prop
+      prevIcon/nextIcon không có tác dụng — thay bằng glyph Flaticon ở đây.
+      Selector gốc của antd là `.ant-picker-dropdown .ant-picker-prev-icon`
+      (0,2,0); thêm `body` để thắng cascade bằng specificity, không dùng cờ ưu tiên.
+      Codepoint đối chiếu @flaticon/flaticon-uicons/css/regular/rounded.css
+      (guard: yarn ui:icons). */
+body .ant-picker-dropdown .ant-picker-prev-icon,
+body .ant-picker-dropdown .ant-picker-next-icon,
+body .ant-picker-dropdown .ant-picker-super-prev-icon,
+body .ant-picker-dropdown .ant-picker-super-next-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  height: auto;
+  transform: none;
+  font-family: uicons-regular-rounded;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 1;
+}
+
+body .ant-picker-dropdown .ant-picker-prev-icon::before,
+body .ant-picker-dropdown .ant-picker-next-icon::before,
+body .ant-picker-dropdown .ant-picker-super-prev-icon::before,
+body .ant-picker-dropdown .ant-picker-super-next-icon::before {
+  position: static;
+  width: auto;
+  height: auto;
+  border: 0;
+}
+
+body .ant-picker-dropdown .ant-picker-super-prev-icon::after,
+body .ant-picker-dropdown .ant-picker-super-next-icon::after {
+  content: none;
+}
+
+/* fi-rr-angle-small-left */
+body .ant-picker-dropdown .ant-picker-prev-icon::before {
+  content: "\f154";
+}
+/* fi-rr-angle-small-right */
+body .ant-picker-dropdown .ant-picker-next-icon::before {
+  content: "\f155";
+}
+/* fi-rr-angle-double-small-left */
+body .ant-picker-dropdown .ant-picker-super-prev-icon::before {
+  content: "\f14d";
+}
+/* fi-rr-angle-double-small-right */
+body .ant-picker-dropdown .ant-picker-super-next-icon::before {
+  content: "\f14e";
+}
+
+/* Vòng quay chờ canonical (UiSpinner) — glyph spinner của Flaticon. Đặt class ở đây
+   để reduced-motion của hn-motion.css áp được và test có hook ổn định. */
+.hn-spinner {
+  color: inherit;
+}

@@ -28,9 +28,9 @@ export interface ErrorStateProps {
  */
 export function ErrorState({
   title = "Không tải được dữ liệu",
-  description = "Lỗi máy chủ (500) / mất kết nối.",
+  description = "Hệ thống đang gặp sự cố hoặc mất kết nối mạng. Vui lòng thử lại; nếu vẫn lỗi, liên hệ quản trị viên.",
   onRetry,
-  retryLabel = "↻ Thử lại",
+  retryLabel = "Thử lại",
   children,
   testId,
 }: ErrorStateProps) {

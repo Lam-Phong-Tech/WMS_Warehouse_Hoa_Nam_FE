@@ -13,6 +13,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Box, Collapse, UiIcon, UiIconButton } from "@/shared/ui";
 import {
+  COMPONENT_TOKENS,
   MOTION,
   RADIUS,
   SEMANTIC_LIGHT as S,
@@ -26,14 +27,31 @@ import {
 } from "@/app/layouts/nav-data";
 import { useAuthStore } from "@/shared/store/auth.store";
 
-const itemButtonSx = (active: boolean) =>
+/**
+ * HÌNH HỌC CÂY ĐIỀU HƯỚNG (phản hồi người dùng 2026-08-29: trang con không
+ * thụt vào nên nhìn ngang hàng với tiêu đề nhóm, gây nhầm cấp).
+ *
+ * Tiêu đề nhóm: padding-left 12 + icon 16 + gap 10 ⇒ CHỮ bắt đầu ở 38px.
+ * Trang con canh icon của nó thẳng cột chữ đó — đủ để thấy quan hệ cha–con mà
+ * không cần vẽ thêm đường kẻ dọc.
+ */
+const NAV_GROUP_PADDING_X = 12;
+const NAV_ICON_SIZE = COMPONENT_TOKENS.icon.sm;
+const NAV_ICON_GAP = 10;
+/**
+ * Lề trái của mục con: icon của nó thẳng cột CHỮ của tiêu đề nhóm. Chỉ thụt
+ * lề, KHÔNG kẻ đường dọc (yêu cầu người dùng 2026-08-29).
+ */
+const NAV_ITEM_INDENT = NAV_GROUP_PADDING_X + NAV_ICON_SIZE + NAV_ICON_GAP;
+
+const itemButtonSx = (active: boolean, paddingLeft: number) =>
   ({
     display: "flex",
     alignItems: "center",
-    gap: 1.25,
+    gap: `${NAV_ICON_GAP}px`,
     width: "100%",
     minHeight: 38,
-    padding: "8px 12px",
+    padding: `8px ${NAV_GROUP_PADDING_X}px 8px ${paddingLeft}px`,
     border: "none",
     borderRadius: `${RADIUS.control}px`,
     cursor: "pointer",
@@ -144,7 +162,7 @@ export function SideNav({
         className="hn-mvp-brand"
         sx={{
           display: "flex",
-          // Rail thu gọn chỉ rộng 72px, không đủ cho logo 36px + nút 32px nằm
+          // Rail thu gọn chỉ rộng 72px, không đủ cho logo 36px + nút 38px nằm
           // ngang: nút sẽ bị đẩy ra ngoài và bị cắt mất, khiến người dùng
           // không còn chỗ bấm để mở lại menu. Thu gọn thì xếp dọc, căn giữa.
           flexDirection: collapsed ? "column" : "row",
@@ -198,8 +216,9 @@ export function SideNav({
               // đẩy khỏi rail. Mở rộng: vẫn đẩy nút về sát mép phải.
               marginLeft: collapsed ? 0 : "auto",
               flexShrink: 0,
-              width: 32,
-              height: 32,
+              // 38×38: đạt cỡ chạm tối thiểu (32×32 cũ quá nhỏ cho ngón tay).
+              width: 38,
+              height: 38,
               // Vuông bo góc + viền + nền: nút trông "bấm được" thay vì một
               // ký tự mũi tên trơn lẫn vào nền sidebar.
               borderRadius: `${RADIUS.control}px`,
@@ -218,7 +237,8 @@ export function SideNav({
                 cho nút bật/tắt menu, người dùng không phải đoán hướng mũi tên.
                 Trạng thái đóng/mở vẫn được truyền cho trợ năng qua
                 aria-pressed + aria-label/title ở trên. */}
-            <UiIcon name="menu-burger" size="sm" />
+            {/* md (18px) cân với nút 38×38 — sm (16px) trông lọt thỏm. */}
+            <UiIcon name="menu-burger" size="md" />
           </UiIconButton>
         ) : null}
       </Box>
@@ -237,12 +257,12 @@ export function SideNav({
               sx={{
                 display: "flex",
                 alignItems: "center",
-                gap: 1.25,
+                gap: `${NAV_ICON_GAP}px`,
                 width: "100%",
                 border: "none",
                 background: "transparent",
                 cursor: "pointer",
-                padding: "8px 12px",
+                padding: `8px ${NAV_GROUP_PADDING_X}px`,
                 borderRadius: `${RADIUS.control}px`,
                 fontFamily: "inherit",
                 fontSize: 11,
@@ -279,7 +299,13 @@ export function SideNav({
               ) : null}
             </Box>
             <Collapse in={open && !collapsed} timeout={MOTION.duration.fast}>
-              <Box sx={{ display: "grid", gap: 0.25, pb: 0.5 }}>
+              <Box
+                sx={{
+                  display: "grid",
+                  gap: 0.25,
+                  pb: 0.5,
+                }}
+              >
                 {group.items.map((item) => {
                   const active =
                     (selectedScreen === item.screen || !selectedScreen) &&
@@ -294,7 +320,7 @@ export function SideNav({
                       onClick={() =>
                         navigate(`${item.path}?screen=${item.screen}`)
                       }
-                      sx={itemButtonSx(active)}
+                      sx={itemButtonSx(active, NAV_ITEM_INDENT)}
                     >
                       <Box
                         component="span"

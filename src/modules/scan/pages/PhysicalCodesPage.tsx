@@ -142,6 +142,9 @@ export default function PhysicalCodesPage() {
   const [eventPage, setEventPage] = useState(1);
   const [eventPerPage, setEventPerPage] = useState(10);
   const [eventSearch, setEventSearch] = useState("");
+  // Mục 8: drill-down từ một lô quét xuống các event lỗi của chính lô đó.
+  const [eventBatchFilter, setEventBatchFilter] = useState("");
+  const [eventBatchLabel, setEventBatchLabel] = useState("");
   const [batchMeta, setBatchMeta] = useState<ApiMeta>({});
   const [eventMeta, setEventMeta] = useState<ApiMeta>({});
   const [scanValue, setScanValue] = useState("");
@@ -201,11 +204,16 @@ export default function PhysicalCodesPage() {
     : batches;
 
   const normalizedEventSearch = eventSearch.trim().toLowerCase();
-  const filteredEvents = normalizedEventSearch
-    ? events.filter((row) =>
-        (row.code_value ?? "").toLowerCase().includes(normalizedEventSearch),
-      )
-    : events;
+  const filteredEvents = events.filter((row) => {
+    if (eventBatchFilter && row.batch_id !== eventBatchFilter) return false;
+    if (
+      normalizedEventSearch &&
+      !(row.code_value ?? "").toLowerCase().includes(normalizedEventSearch)
+    ) {
+      return false;
+    }
+    return true;
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -496,6 +504,15 @@ export default function PhysicalCodesPage() {
       ),
     },
     {
+      key: "total_codes",
+      header: "Tổng dòng",
+      align: "right",
+      sortType: "value",
+      sortAccessor: (row) => row.total_codes,
+      hideOnMobile: true,
+      render: (row) => row.total_codes,
+    },
+    {
       key: "valid_count",
       header: "Hợp lệ",
       align: "right",
@@ -528,6 +545,22 @@ export default function PhysicalCodesPage() {
       sortType: "value",
       sortAccessor: (row) => row.invalid_count,
       render: (row) => row.invalid_count,
+    },
+    {
+      key: "drilldown",
+      header: "Chi tiết",
+      align: "center",
+      render: (row) => (
+        <ActionButton
+          kind="view"
+          label="Xem dòng"
+          onClick={() => {
+            setEventBatchFilter(row.id);
+            setEventBatchLabel(row.batch_no);
+            setEventPage(1);
+          }}
+        />
+      ),
     },
   ];
 
@@ -567,6 +600,12 @@ export default function PhysicalCodesPage() {
           label={businessLabel(SCAN_RESULT_LABELS, row.status, "Kết quả khác")}
         />
       ),
+    },
+    {
+      key: "message",
+      header: "Nội dung lỗi / ghi chú",
+      sortAccessor: (row) => row.message ?? "",
+      render: (row) => row.message ?? "—",
     },
     {
       key: "scanned_at",
@@ -654,7 +693,12 @@ export default function PhysicalCodesPage() {
             rows={filteredCodes}
             rowKey={(row) => row.id}
             loading={loading}
-            emptyText={tableEmptyText(listError)}
+            emptyText={tableEmptyText(
+              listError,
+              codeSearch.trim()
+                ? "Không có mã vật lý nào khớp giá trị đang tìm."
+                : 'Chưa có mã vật lý nào — bấm "Tạo mã vật lý" để sinh mã mới.',
+            )}
           />
           <Box
             sx={{
@@ -819,7 +863,12 @@ export default function PhysicalCodesPage() {
             rows={filteredBatches}
             rowKey={(row) => row.id}
             loading={loading}
-            emptyText={tableEmptyText(historyError)}
+            emptyText={tableEmptyText(
+              historyError,
+              normalizedBatchSearch
+                ? "Không có lô quét nào khớp số lô đang tìm."
+                : "Chưa có lô quét nào — lô được tạo khi thực hiện quét hàng theo phiên.",
+            )}
           />
           <Box
             sx={{
@@ -876,6 +925,17 @@ export default function PhysicalCodesPage() {
                 value={eventSearch}
                 onChange={setEventSearch}
               />
+              {eventBatchFilter ? (
+                <UiStatusBadge
+                  tone="info"
+                  onDelete={() => {
+                    setEventBatchFilter("");
+                    setEventBatchLabel("");
+                    setEventPage(1);
+                  }}
+                  label={`Đang lọc theo lô: ${eventBatchLabel || eventBatchFilter}`}
+                />
+              ) : null}
             </Stack>
             <MvpPageSizeSelector
               value={eventPerPage}
@@ -890,7 +950,12 @@ export default function PhysicalCodesPage() {
             rows={filteredEvents}
             rowKey={(row) => row.id}
             loading={loading}
-            emptyText={tableEmptyText(historyError)}
+            emptyText={tableEmptyText(
+              historyError,
+              normalizedEventSearch
+                ? "Không có sự kiện quét nào khớp mã đang tìm."
+                : "Chưa có sự kiện quét nào — mỗi lượt quét mã sẽ được ghi lại tại đây.",
+            )}
           />
           <Box
             sx={{

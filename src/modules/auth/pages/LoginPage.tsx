@@ -10,6 +10,7 @@ import {
 } from "@/modules/auth/schemas/login.schema";
 import {
   Box,
+  GreetingIcon,
   UiAlert,
   UiButton,
   UiFormCheckbox,
@@ -66,12 +67,18 @@ function getLoginErrorMessage(error: unknown): string {
         return error.message;
       }
       if (error.code === "ECONNABORTED") {
-        return "Máy chủ xác thực phản hồi quá thời gian. Vui lòng thử lại.";
+        return "Máy chủ phản hồi quá thời gian. Vui lòng thử lại; nếu vẫn lỗi, liên hệ quản trị viên.";
       }
-      return "Không thể kết nối đến máy chủ xác thực. Kiểm tra Backend hoặc cấu hình CORS.";
+      return "Không kết nối được hệ thống. Kiểm tra kết nối mạng rồi thử lại; nếu vẫn lỗi, liên hệ quản trị viên.";
     }
 
-    return `Đăng nhập thất bại (HTTP ${error.response.status}).`;
+    if (error.response.status === 401) {
+      return "Email hoặc mật khẩu không đúng. Vui lòng kiểm tra lại.";
+    }
+    if (error.response.status === 429) {
+      return "Đăng nhập sai quá nhiều lần nên tài khoản tạm bị khóa. Vui lòng đợi một lát rồi thử lại.";
+    }
+    return "Đăng nhập chưa thực hiện được. Vui lòng thử lại; nếu vẫn lỗi, liên hệ quản trị viên.";
   }
 
   return error instanceof Error && error.message
@@ -106,9 +113,8 @@ export function LoginPage() {
       title={
         <>
           Xin chào bạn đến với Hoa Nam!{" "}
-          <Box component="span" aria-hidden="true">
-            👋
-          </Box>
+          {/* Emoji hệ thống đã thay bằng glyph Flaticon — một bộ icon duy nhất. */}
+          <GreetingIcon style={{ verticalAlign: "-0.1em" }} />
         </>
       }
       subtitle="Vui lòng đăng nhập vào tài khoản của bạn"

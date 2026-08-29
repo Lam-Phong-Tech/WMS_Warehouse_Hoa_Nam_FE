@@ -1,7 +1,7 @@
 /** Nội bộ render bằng design-system foundation (Part 4) — public API giữ nguyên. */
 /* eslint-disable react-refresh/only-export-components */
 import type { ReactNode } from "react";
-import CircularProgress from "@mui/material/CircularProgress";
+import { UiSpinner } from "@/shared/ui";
 import Box from "@mui/material/Box";
 import { EmptyState } from "@/shared/components/data-display/EmptyState";
 import { UI_STATE, uiStateProps } from "@/shared/constants/ui-state";
@@ -37,7 +37,7 @@ export function InlineApiError({
 export function tableEmptyText(
   error: unknown,
   description = "Không có dữ liệu",
-  errorDescription = "Dữ liệu chưa được tải do lỗi API",
+  errorDescription = "Không tải được dữ liệu. Kiểm tra kết nối mạng rồi thử tải lại; nếu vẫn lỗi, liên hệ quản trị viên.",
 ) {
   if (error) {
     return (
@@ -91,7 +91,7 @@ export function TableLoadingBanner({
         fontSize: 13,
       }}
     >
-      <CircularProgress size={14} />
+      <UiSpinner size={14} />
       {label}
     </div>
   );

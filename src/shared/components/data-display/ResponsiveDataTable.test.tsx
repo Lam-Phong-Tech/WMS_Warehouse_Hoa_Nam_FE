@@ -33,6 +33,59 @@ function Harness({ onRowClick }: { onRowClick?: (row: Row) => void }) {
   );
 }
 
+describe("ResponsiveDataTable · hợp đồng ui-state (WWHN-268)", () => {
+  it("branch loading phát data-ui-state + spinner + aria-busy", () => {
+    render(
+      <ResponsiveDataTable<Row>
+        columns={COLUMNS}
+        rows={[]}
+        rowKey={(row) => row.id}
+        loading
+      />,
+    );
+    const surface = screen.getByTestId("ui-state-loading-table");
+    expect(surface).toHaveAttribute("data-ui-state", "loading");
+    expect(surface).toHaveAttribute("aria-busy", "true");
+    expect(surface).toHaveTextContent("Đang tải...");
+    // UiSpinner phát role="progressbar" — bằng chứng có affordance quay.
+    expect(surface.querySelector('[role="progressbar"]')).not.toBeNull();
+  });
+
+  it("branch empty mặc định (chuỗi thuần) phát data-ui-state=empty", () => {
+    render(
+      <ResponsiveDataTable<Row>
+        columns={COLUMNS}
+        rows={[]}
+        rowKey={(row) => row.id}
+      />,
+    );
+    const surface = screen.getByTestId("ui-state-empty-table");
+    expect(surface).toHaveAttribute("data-ui-state", "empty");
+    expect(surface).toHaveTextContent("Không có dữ liệu");
+  });
+
+  it("emptyText là ReactNode (đã tự mang hook) thì KHÔNG double-wrap", () => {
+    render(
+      <ResponsiveDataTable<Row>
+        columns={COLUMNS}
+        rows={[]}
+        rowKey={(row) => row.id}
+        emptyText={
+          <div data-ui-state="empty" data-testid="ui-state-empty-table">
+            Trống (tự phát hook)
+          </div>
+        }
+      />,
+    );
+    // Nếu bảng bọc thêm lớp hook nữa thì testid trùng → getByTestId ném lỗi.
+    const surface = screen.getByTestId("ui-state-empty-table");
+    expect(surface).toHaveTextContent("Trống (tự phát hook)");
+    expect(document.querySelectorAll('[data-ui-state="empty"]')).toHaveLength(
+      1,
+    );
+  });
+});
+
 describe("ResponsiveDataTable · chọn nhiều dòng", () => {
   it("không có cột checkbox khi không truyền rowSelection", () => {
     render(

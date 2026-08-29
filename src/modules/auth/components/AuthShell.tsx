@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Box, CircularProgress, UiCard, type BoxProps } from "@/shared/ui";
+import { Box, UiCard, UiSpinner, type BoxProps } from "@/shared/ui";
 import {
   RADIUS,
   SEMANTIC_LIGHT as S,
@@ -68,7 +68,7 @@ export function AuthShell({
               boxShadow: S.shadowFloating,
             }}
           >
-            <CircularProgress size={32} />
+            <UiSpinner size={32} />
             <Box
               sx={{
                 display: "block",

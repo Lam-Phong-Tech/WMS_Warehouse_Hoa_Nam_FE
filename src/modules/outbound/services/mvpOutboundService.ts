@@ -811,12 +811,17 @@ export async function reprintLabelSnapshot(input: {
   printerConfigId: string;
   ifMatch: number;
   idempotencyKey: string;
+  /** Lý do in lại (bắt buộc chọn ở UI) — BE ghi vào nhật ký in để truy trách nhiệm. */
+  reason?: string;
 }): Promise<RawRecord> {
   return http.post<RawRecord>(
     endpoint(API_ENDPOINTS.OUTBOUND_PACKING_LABEL_REPRINT, input.documentId, {
       labelId: input.labelId,
     }),
-    { printer_config_id: input.printerConfigId },
+    {
+      printer_config_id: input.printerConfigId,
+      ...(input.reason ? { reason: input.reason } : {}),
+    },
     headers(input.ifMatch, input.idempotencyKey),
   );
 }

@@ -80,6 +80,31 @@ export async function getIamDepartments(
   return { data: result.data, meta: result.meta };
 }
 
+export interface IamDepartmentPayload {
+  department_code: string;
+  department_name: string;
+  status?: "ACTIVE" | "INACTIVE";
+  description?: string | null;
+}
+
+/** POST /departments — tạo phòng ban (BR mục 14). BE gate iam.user.manage. */
+export function createIamDepartment(
+  payload: IamDepartmentPayload,
+): Promise<IamDepartment> {
+  return http.post<IamDepartment>(API_ENDPOINTS.DEPARTMENTS, payload);
+}
+
+/** PATCH /departments/{id} — cập nhật phòng ban. */
+export function updateIamDepartment(
+  departmentId: string,
+  payload: Partial<IamDepartmentPayload>,
+): Promise<IamDepartment> {
+  return http.patch<IamDepartment>(
+    `${API_ENDPOINTS.DEPARTMENTS}/${departmentId}`,
+    payload,
+  );
+}
+
 export function getIamRole(roleId: string): Promise<IamRole> {
   return http.get<IamRole>(`${API_ENDPOINTS.ROLES}/${roleId}`);
 }
@@ -164,16 +189,31 @@ export function assignIamUserRole(
   userId: string,
   assignment: IamUserRoleAssignment,
   reason: string,
+  /**
+   * Mục 14: vai trò BỔ SUNG (kiêm nhiệm) ngoài vai trò chính. BE `assignRoles`
+   * dùng sync(roles[]) nên phải gửi ĐỦ cả vai trò chính + bổ sung trong một lần,
+   * nếu không các vai trò không gửi sẽ bị gỡ. Vai trò bổ sung dùng chung phạm vi
+   * dữ liệu của vai trò chính (hệ thống một kho tổng — REQ-SRS-001).
+   */
+  extraRoleIds: string[] = [],
 ): Promise<IamUser> {
+  const scopeRef = assignment.scope_ref?.trim() ? assignment.scope_ref : null;
+  const primary = {
+    role_id: assignment.role_id,
+    scope_ref: scopeRef,
+    effective_from: assignment.effective_from || null,
+    effective_to: assignment.effective_to || null,
+  };
+  const extras = extraRoleIds
+    .filter((roleId) => roleId && roleId !== assignment.role_id)
+    .map((roleId) => ({
+      role_id: roleId,
+      scope_ref: scopeRef,
+      effective_from: assignment.effective_from || null,
+      effective_to: assignment.effective_to || null,
+    }));
   return http.post<IamUser>(`${API_ENDPOINTS.USERS}/${userId}/roles`, {
-    roles: [
-      {
-        role_id: assignment.role_id,
-        scope_ref: assignment.scope_ref?.trim() ? assignment.scope_ref : null,
-        effective_from: assignment.effective_from || null,
-        effective_to: assignment.effective_to || null,
-      },
-    ],
+    roles: [primary, ...extras],
     reason,
   });
 }
@@ -182,9 +222,10 @@ export async function createIamUserWithRole(
   payload: IamUserPayload,
   assignment: IamUserRoleAssignment,
   reason: string,
+  extraRoleIds: string[] = [],
 ): Promise<IamUser> {
   const created = await createIamUser(payload);
-  return assignIamUserRole(created.user_id, assignment, reason);
+  return assignIamUserRole(created.user_id, assignment, reason, extraRoleIds);
 }
 
 export async function updateIamUserWithRole(
@@ -193,19 +234,26 @@ export async function updateIamUserWithRole(
   assignment: IamUserRoleAssignment,
   reason: string,
   current?: IamUserRoleAssignment,
+  extraRoleIds: string[] = [],
+  currentExtraRoleIds: string[] = [],
 ): Promise<IamUser> {
   const updated = await updateIamUser(userId, payload);
-  // Chỉ gọi endpoint gán role khi role hoặc phạm vi thực sự đổi. BE chặn tự gán
-  // role cho chính mình (SCR-IAM-01, no self-escalation) bất kể giá trị mới là
-  // gì, nên gọi lại endpoint này một cách vô ích trên mỗi lần sửa hồ sơ của
-  // chính actor (đổi số điện thoại, trạng thái...) sẽ luôn bị 409 dù không đổi.
+  // Chỉ gọi endpoint gán role khi role, phạm vi HOẶC tập vai trò bổ sung thực sự
+  // đổi. BE chặn tự gán role cho chính mình (SCR-IAM-01, no self-escalation) bất
+  // kể giá trị mới là gì, nên gọi lại endpoint này một cách vô ích trên mỗi lần
+  // sửa hồ sơ của chính actor (đổi số điện thoại, trạng thái...) sẽ luôn bị 409
+  // dù không đổi.
+  const sameExtras =
+    [...extraRoleIds].sort().join(",") ===
+    [...currentExtraRoleIds].sort().join(",");
   const unchanged =
     assignment.role_id === current?.role_id &&
     (assignment.scope_ref || null) === (current?.scope_ref || null) &&
     (assignment.effective_from || null) === (current?.effective_from || null) &&
-    (assignment.effective_to || null) === (current?.effective_to || null);
+    (assignment.effective_to || null) === (current?.effective_to || null) &&
+    sameExtras;
   if (unchanged) {
     return updated;
   }
-  return assignIamUserRole(userId, assignment, reason);
+  return assignIamUserRole(userId, assignment, reason, extraRoleIds);
 }

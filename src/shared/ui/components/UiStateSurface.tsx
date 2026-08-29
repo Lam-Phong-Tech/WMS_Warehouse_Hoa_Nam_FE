@@ -5,7 +5,7 @@
  * description, hành động retry rõ ràng).
  */
 import Box from "@mui/material/Box";
-import CircularProgress from "@mui/material/CircularProgress";
+import { UiSpinner } from "./UiSpinner";
 import type { ReactNode } from "react";
 import { MOTION, SEMANTIC_LIGHT as S, SPACING } from "@/shared/ui/tokens";
 import { UiIcon } from "./UiIcon";
@@ -71,7 +71,7 @@ export function UiStateSurface({
       }}
     >
       {kind === "loading" ? (
-        <CircularProgress size={28} />
+        <UiSpinner size={28} />
       ) : preset.icon ? (
         <UiIcon name={preset.icon} size="lg" color={preset.color} />
       ) : null}

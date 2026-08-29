@@ -1,21 +1,21 @@
 import type { HTMLAttributes } from "react";
+import { flatIconClass } from "@/shared/ui/icons/icon-family";
 
 /**
- * Shim thay thế @ant-design/icons bằng Flaticon Uicons (style Regular Rounded,
- * lớp `fi-rr-*`). Mỗi tên export giữ đúng tên component antd cũ (VD:
+ * Shim thay thế @ant-design/icons bằng Flaticon Uicons (biến thể + prefix do
+ * ICON_FAMILY quyết định). Mỗi tên export giữ đúng tên component antd cũ (VD:
  * `UserOutlined`) nên các nơi gọi `<UserOutlined />` không cần sửa gì thêm —
  * chỉ cần đổi đường dẫn import sang module này.
  *
- * CSS font của Uicons được nạp một lần ở src/main.tsx
- * (@flaticon/flaticon-uicons/css/regular/rounded.css).
+ * CSS font của Uicons được nạp một lần ở src/main.tsx theo
+ * ICON_FAMILY.cssImport (guard `yarn ui:icons` bắt lệch).
  */
 export type FlaticonIconProps = HTMLAttributes<HTMLElement>;
 
 function createFlaticonIcon(slug: string) {
   function FlaticonIcon({ className, ...rest }: FlaticonIconProps) {
-    const classes = className
-      ? `fi fi-rr-${slug} ${className}`
-      : `fi fi-rr-${slug}`;
+    const base = flatIconClass(slug);
+    const classes = className ? `${base} ${className}` : base;
     return <i className={classes} aria-hidden="true" {...rest} />;
   }
   FlaticonIcon.displayName = `FlaticonIcon(${slug})`;

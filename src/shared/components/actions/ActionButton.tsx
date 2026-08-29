@@ -16,6 +16,7 @@ import {
 } from "@/shared/types/permission";
 import { hasScopeForAction } from "@/shared/types/permission.scope";
 import { UI_STATE, uiStateTestId } from "@/shared/constants/ui-state";
+import { UiSpinner } from "@/shared/ui";
 
 export interface ActionButtonProps extends Omit<
   MuiButtonProps,
@@ -34,6 +35,8 @@ export interface ActionButtonProps extends Omit<
    * (`ACTION_APPEARANCE_DEFAULT`). Chỉ khai tại màn khi đang dùng thử.
    */
   appearance?: ActionAppearance;
+  /** Đang gửi/xử lý: khóa nút và thay icon bằng spinner. */
+  loading?: boolean;
 
   // — Kiểm soát quyền (tùy chọn; chỉ bật khi truyền đủ module + action) —
   /** Module để suy ra mã quyền. */
@@ -57,9 +60,9 @@ export interface ActionButtonProps extends Omit<
  * NÚT HÀNH ĐỘNG CHUẨN — dùng cho MỌI thao tác trong toàn dự án.
  *
  * Hình thức chốt cứng, không cho lệch giữa các màn:
- *   • nền phẳng (MUI `variant="text"`), chữ màu primary
+ *   • bề mặt `tonal` (nền nhạt cùng tông nghiệp vụ) — nút nhận diện được là nút
  *   • icon đứng trước nhãn, tô đúng tông màu nghiệp vụ theo `kind`
- *   • cỡ `small`, chiều cao 36px theo `muiTheme`
+ *   • cỡ `small`, chiều cao 38px theo `muiTheme`
  *
  * Icon / màu / nhãn mặc định KHÔNG khai tại màn mà lấy từ
  * `action-kinds.tsx` — muốn thêm hành động thì thêm `kind` ở đó.
@@ -76,6 +79,7 @@ export function ActionButton({
   icon,
   iconOnly = false,
   appearance = ACTION_APPEARANCE_DEFAULT,
+  loading = false,
   module,
   action,
   permissionCode,
@@ -124,8 +128,12 @@ export function ActionButton({
   // Bề mặt `tonal` đã tô màu cho cả chữ lẫn icon, nên icon kế thừa màu chữ;
   // bề mặt `flat` thì icon phải tự tô để còn phân biệt được hành động.
   const tonal = appearance === "tonal";
-  const iconNode =
-    icon ?? (tonal ? <Icon /> : <Icon style={{ color: actionColor(kind) }} />);
+  const iconNode = loading ? (
+    <UiSpinner size={16} label={null} />
+  ) : (
+    (icon ??
+      (tonal ? <Icon /> : <Icon style={{ color: actionColor(kind) }} />))
+  );
 
   return (
     <Button
@@ -142,7 +150,8 @@ export function ActionButton({
         dataTestId ??
         (isButtonDisabled ? uiStateTestId(UI_STATE.DISABLED) : undefined)
       }
-      disabled={Boolean(disabled) || isButtonDisabled}
+      disabled={Boolean(disabled) || isButtonDisabled || loading}
+      aria-busy={loading || undefined}
       title={isButtonDisabled ? disabledTooltip : title}
       aria-label={resolvedAriaLabel}
       sx={{

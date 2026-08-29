@@ -12,8 +12,12 @@ export const LAYOUT = {
    * hay "Danh sách người dùng & phân quyền" bị ellipsis mất chữ ở 260px; ở
    * 300px nhãn dài nhất ("Danh sách linh kiện chờ xếp khay") vừa khít tuyệt
    * đối (0px dư) — chừa thêm biên ở 320px để không bị đè khi mở nhóm con.
+   * Nâng tiếp lên 340 (yêu cầu người dùng 2026-08-29): rộng thêm một chút.
    */
-  sidebarWidth: 320,
+  sidebarWidth: 340,
+  /** Giới hạn khi người dùng KÉO GIÃN sidebar (đọc hết nhãn menu dài). */
+  sidebarMinWidth: 240,
+  sidebarMaxWidth: 560,
   /** [X] bề rộng sidebar thu gọn (chỉ icon) */
   sidebarCollapsedWidth: 72,
   /** [X] chiều cao topbar sticky */

@@ -1,6 +1,10 @@
 import Chart from "react-apexcharts";
 import type { ApexOptions } from "apexcharts";
-import { baseChartOptions, CHART_COLORS } from "./chart-theme";
+import {
+  baseChartOptions,
+  chartPointEvents,
+  CHART_COLORS,
+} from "./chart-theme";
 
 export type HorizontalBarItem = {
   label: string;
@@ -14,6 +18,11 @@ export type HorizontalBarChartProps = {
   height?: number;
   color?: string;
   valueFormatter?: (value: number) => string;
+  /**
+   * Nhấn vào một cột để xem chi tiết. Nhận `item` đã sắp xếp/cắt trần, không phải
+   * phần tử thứ i của `items` gốc — caller không cần tự lặp lại phép sort.
+   */
+  onSelect?: (item: HorizontalBarItem, index: number) => void;
 };
 
 /** Horizontal ranked bar chart — dùng cho mọi "Top N" (bệnh/lỗi, nơi nhận, SKU...). */
@@ -23,13 +32,28 @@ export function HorizontalBarChart({
   height,
   color = CHART_COLORS.primary,
   valueFormatter,
+  onSelect,
 }: HorizontalBarChartProps) {
   const sorted = [...items].sort((a, b) => b.value - a.value).slice(0, limit);
   const resolvedHeight = height ?? Math.max(220, sorted.length * 34 + 40);
 
   const options: ApexOptions = {
     ...baseChartOptions,
-    chart: { ...baseChartOptions.chart, type: "bar" },
+    chart: {
+      ...baseChartOptions.chart,
+      type: "bar",
+      // Chỉ CHÈN key `events` khi thật sự có handler. Đặt `events: undefined`
+      // sẽ ghi đè object mặc định của ApexCharts bằng undefined và chart im lặng
+      // không mount (không ném lỗi, chỉ mất hẳn khỏi màn hình).
+      ...chartPointEvents(
+        onSelect
+          ? (point) => {
+              const item = sorted[point.dataPointIndex];
+              if (item) onSelect(item, point.dataPointIndex);
+            }
+          : undefined,
+      ),
+    },
     plotOptions: {
       bar: {
         horizontal: true,

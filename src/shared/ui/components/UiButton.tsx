@@ -9,7 +9,7 @@
  */
 import Button from "@mui/material/Button";
 import IconButton from "@mui/material/IconButton";
-import CircularProgress from "@mui/material/CircularProgress";
+import { UiSpinner } from "./UiSpinner";
 import type { ButtonProps } from "@mui/material/Button";
 import type { IconButtonProps } from "@mui/material/IconButton";
 
@@ -37,31 +37,29 @@ export function UiButton({
   children,
   sx,
   color = "primary",
+  startIcon,
   ...rest
 }: UiButtonProps) {
+  // "inherit" không có trong palette — tonal cần một tông thật để pha nền nhạt.
+  const paletteColor = color === "inherit" ? "primary" : color;
   return (
     <Button
       variant={APPEARANCE_TO_VARIANT[appearance]}
       color={color}
       disabled={disabled || loading}
-      startIcon={
-        loading ? (
-          <CircularProgress size={16} color="inherit" />
-        ) : (
-          rest.startIcon
-        )
-      }
+      aria-busy={loading || undefined}
+      startIcon={loading ? <UiSpinner size={16} label={null} /> : startIcon}
       sx={
         appearance === "tonal"
           ? [
               (theme) => ({
                 backgroundColor: `rgba(${hexToRgb(
-                  theme.palette[color as "primary"].main,
+                  theme.palette[paletteColor as "primary"].main,
                 )}, 0.16)`,
-                color: theme.palette[color as "primary"].dark,
+                color: theme.palette[paletteColor as "primary"].dark,
                 "&:hover": {
                   backgroundColor: `rgba(${hexToRgb(
-                    theme.palette[color as "primary"].main,
+                    theme.palette[paletteColor as "primary"].main,
                   )}, 0.24)`,
                 },
                 boxShadow: "none",

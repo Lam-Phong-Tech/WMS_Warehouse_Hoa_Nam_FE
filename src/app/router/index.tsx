@@ -89,6 +89,11 @@ const PutawayPage = lazy(() =>
     default: m.default,
   })),
 );
+const TrayOverviewPage = lazy(() =>
+  import("@/modules/putaway/pages/TrayOverviewPage").then((m) => ({
+    default: m.default,
+  })),
+);
 const OutboundPage = lazy(() =>
   import("@/modules/outbound/pages/OutboundPage").then((m) => ({
     default: m.default,
@@ -285,6 +290,10 @@ export const router = createBrowserRouter([
             element: routeEl(ROUTES.PUTAWAY, <PutawayPage />),
           },
           {
+            path: ROUTES.PUTAWAY_TRAYS,
+            element: routeEl(ROUTES.PUTAWAY_TRAYS, <TrayOverviewPage />),
+          },
+          {
             path: ROUTES.OUTBOUND,
             element: routeEl(ROUTES.OUTBOUND, <OutboundPage />),
           },
@@ -347,5 +356,7 @@ export const router = createBrowserRouter([
       },
     ],
   },
-  { path: "*", element: <NotFoundPage /> },
+  // NotFoundPage là lazy — phải qua withPageLoader như mọi route khác, nếu
+  // không render sẽ ném lỗi vì thiếu Suspense boundary khi chunk chưa tải.
+  { path: "*", element: withPageLoader(<NotFoundPage />) },
 ]);

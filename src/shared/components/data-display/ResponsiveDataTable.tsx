@@ -9,6 +9,8 @@ import {
 } from "@mui/material";
 import type { ReactNode } from "react";
 import { MvpSelectionCheckbox } from "@/shared/components/mvp/MvpSelectionCell";
+import { UI_STATE, uiStateProps } from "@/shared/constants/ui-state";
+import { UiSpinner } from "@/shared/ui";
 import type { RowSelectionState } from "@/shared/hooks/useRowSelection";
 import { SortableTh } from "./SortableTh";
 import { useClientSort } from "./useClientSort";
@@ -141,16 +143,42 @@ export function ResponsiveDataTable<T>({
     ) : null;
 
   if (loading) {
+    // WWHN-268: hợp đồng ui-state — branch loading tự phát data-ui-state +
+    // testid ổn định (cùng bộ selector với TableLoadingBanner) để bằng chứng
+    // QA2 không phải dò theo chuỗi "Đang tải...".
     return (
-      <Box sx={{ py: 6, textAlign: "center", color: "text.secondary" }}>
+      <Box
+        {...uiStateProps(UI_STATE.LOADING, "ui-state-loading-table")}
+        aria-busy="true"
+        sx={{
+          py: 6,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 1,
+          color: "text.secondary",
+        }}
+      >
+        {/* label=null: đã có chữ "Đang tải..." ngay bên cạnh, không lặp a11y name. */}
+        <UiSpinner size={16} label={null} />
         Đang tải...
       </Box>
     );
   }
 
   if (!sortedRows.length) {
+    // Chỉ tự phát hook trạng thái khi emptyText là chuỗi mặc định/thuần —
+    // ReactNode do nơi gọi truyền (vd tableEmptyText của BusinessState) đã
+    // tự mang data-ui-state riêng, bọc thêm sẽ thành double-wrap sai hợp đồng.
+    const emptyHooks =
+      typeof emptyText === "string"
+        ? uiStateProps(UI_STATE.EMPTY, "ui-state-empty-table")
+        : {};
     return (
-      <Box sx={{ py: 6, textAlign: "center", color: "text.secondary" }}>
+      <Box
+        {...emptyHooks}
+        sx={{ py: 6, textAlign: "center", color: "text.secondary" }}
+      >
         {emptyText}
       </Box>
     );

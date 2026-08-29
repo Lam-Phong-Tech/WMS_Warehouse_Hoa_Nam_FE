@@ -1,6 +1,10 @@
 import Chart from "react-apexcharts";
 import type { ApexOptions } from "apexcharts";
-import { baseChartOptions, CATEGORICAL_PALETTE } from "./chart-theme";
+import {
+  baseChartOptions,
+  CATEGORICAL_PALETTE,
+  chartPointEvents,
+} from "./chart-theme";
 
 export type DonutChartItem = {
   label: string;
@@ -16,6 +20,8 @@ export type DonutChartProps = {
   valueFormatter?: (value: number) => string;
   /** Tắt khi ghép với DonutBreakdown — bảng chi tiết bên cạnh đã thay thế chú giải. */
   legend?: boolean;
+  /** Nhấn vào một lát để xem chi tiết nhóm đó. */
+  onSelect?: (item: DonutChartItem, index: number) => void;
 };
 
 export function DonutChart({
@@ -24,13 +30,28 @@ export function DonutChart({
   centerLabel,
   valueFormatter,
   legend = true,
+  onSelect,
 }: DonutChartProps) {
   const total = items.reduce((sum, item) => sum + item.value, 0);
   const format = (value: number) => valueFormatter?.(value) ?? String(value);
 
   const options: ApexOptions = {
     ...baseChartOptions,
-    chart: { ...baseChartOptions.chart, type: "donut" },
+    chart: {
+      ...baseChartOptions.chart,
+      type: "donut",
+      // Chỉ CHÈN key `events` khi thật sự có handler. Đặt `events: undefined`
+      // sẽ ghi đè object mặc định của ApexCharts bằng undefined và chart im lặng
+      // không mount (không ném lỗi, chỉ mất hẳn khỏi màn hình).
+      ...chartPointEvents(
+        onSelect
+          ? (point) => {
+              const item = items[point.dataPointIndex];
+              if (item) onSelect(item, point.dataPointIndex);
+            }
+          : undefined,
+      ),
+    },
     labels: items.map((item) => item.label),
     colors: items.map(
       (item, index) =>

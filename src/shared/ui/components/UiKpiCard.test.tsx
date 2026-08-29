@@ -8,6 +8,7 @@ import { ThemeProvider as MuiThemeProvider } from "@mui/material/styles";
 import { muiTheme } from "@/shared/ui/theme/mui-adapter";
 import { SEMANTIC_LIGHT as S, TYPOGRAPHY } from "@/shared/ui/tokens";
 import { UiKpiCard } from "./UiKpiCard";
+import { ICON_FAMILY } from "@/shared/ui/icons/icon-family";
 
 function renderUi(node: React.ReactElement) {
   return render(<MuiThemeProvider theme={muiTheme}>{node}</MuiThemeProvider>);
@@ -40,7 +41,9 @@ describe("UiKpiCard", () => {
     const { container } = renderUi(
       <UiKpiCard label="SKU" value={99} icon="box" />,
     );
-    expect(container.querySelector(".fi-rr-box")).not.toBeNull();
+    expect(
+      container.querySelector(`.${ICON_FAMILY.prefix}-box`),
+    ).not.toBeNull();
     expect(emotionCss()).toContain(S.primarySoft);
   });
 

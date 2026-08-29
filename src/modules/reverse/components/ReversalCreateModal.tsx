@@ -41,6 +41,7 @@ import type {
 } from "../types";
 import { isStockRestoringMovement } from "../types";
 import { formatDateTime } from "@/shared/utils/format-date";
+import { formatQuantity } from "@/shared/utils/format-number";
 import { useDialogExit } from "@/shared/utils/useDialogExit";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 
@@ -64,10 +65,8 @@ function idempotencyKey() {
   return `reversal-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
-const numberFormatter = new Intl.NumberFormat("vi-VN");
-
 function qty(value?: number) {
-  return numberFormatter.format(Number(value ?? 0));
+  return formatQuantity(Number(value ?? 0));
 }
 
 /**
@@ -733,6 +732,7 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
                   columns={lineColumns}
                   rows={selectedMovement.lines}
                   rowKey={(line) => line.id}
+                  loading={movementsQuery.isFetching}
                   emptyText="Chưa có dòng nào"
                 />
               </Box>

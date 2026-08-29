@@ -8,6 +8,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { ThemeProvider as MuiThemeProvider } from "@mui/material/styles";
 import { muiTheme } from "@/shared/ui/theme/mui-adapter";
 import { UiConfirmDialog } from "./UiConfirmDialog";
+import { ICON_FAMILY } from "@/shared/ui/icons/icon-family";
 
 function renderUi(node: React.ReactElement) {
   return render(<MuiThemeProvider theme={muiTheme}>{node}</MuiThemeProvider>);
@@ -76,7 +77,10 @@ describe("UiConfirmDialog", () => {
     const confirm = screen.getByRole("button", { name: "Ghi sổ" });
     expect(confirm).toBeDisabled();
     expect(screen.getByRole("button", { name: "Hủy" })).toBeDisabled();
-    expect(confirm.querySelector(".MuiCircularProgress-root")).not.toBeNull();
+    // Spinner canonical là glyph Flaticon (UiSpinner), không còn SVG của MUI.
+    expect(
+      confirm.querySelector(`.hn-spinner i.${ICON_FAMILY.prefix}-spinner`),
+    ).not.toBeNull();
   });
 
   it("tone danger → nút xác nhận màu error", () => {

@@ -49,6 +49,8 @@ import {
   usePhysicalCodeTrace,
 } from "../hooks/use-inventory";
 import { useDialogExit } from "@/shared/utils/useDialogExit";
+import { formatDateTime } from "@/shared/utils/format-date";
+import { formatQuantity } from "@/shared/utils/format-number";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 
 interface Props {
@@ -254,7 +256,7 @@ const CONTAINER_ITEM_COLUMNS: ResponsiveTableColumn<KeyedRecord>[] = [
     header: "Số lượng",
     width: 100,
     align: "right",
-    render: (row) => Number(row.quantity ?? 0).toLocaleString("vi-VN"),
+    render: (row) => formatQuantity(Number(row.quantity ?? 0)),
   },
   {
     key: "status",
@@ -310,9 +312,7 @@ const MOVEMENT_COLUMNS: ResponsiveTableColumn<RawRecord>[] = [
             fontWeight: 600,
           }}
         >
-          {qty >= 0
-            ? `+${qty.toLocaleString("vi-VN")}`
-            : qty.toLocaleString("vi-VN")}
+          {qty >= 0 ? `+${formatQuantity(qty)}` : formatQuantity(qty)}
         </Box>
       );
     },
@@ -327,7 +327,8 @@ const MOVEMENT_COLUMNS: ResponsiveTableColumn<RawRecord>[] = [
     key: "time",
     header: "Thời gian",
     width: 150,
-    render: (row) => text(row.occurred_at ?? row.created_at),
+    render: (row) =>
+      formatDateTime(text(row.occurred_at ?? row.created_at, "") || null),
   },
 ];
 
@@ -369,9 +370,7 @@ const TRACE_LINE_COLUMNS: ResponsiveTableColumn<KeyedRecord>[] = [
     width: 100,
     align: "right",
     render: (row) =>
-      Number(row.quantity ?? row.qty ?? row.qty_actual ?? 0).toLocaleString(
-        "vi-VN",
-      ),
+      formatQuantity(Number(row.quantity ?? row.qty ?? row.qty_actual ?? 0)),
   },
   {
     key: "status",
@@ -433,7 +432,7 @@ const CHAIN_COLUMNS: ResponsiveTableColumn<CorrectionChainNode>[] = [
           fontWeight: 600,
         }}
       >
-        {Number(row.qty_delta).toLocaleString("vi-VN")}
+        {formatQuantity(Number(row.qty_delta))}
       </Box>
     ),
   },
@@ -441,7 +440,7 @@ const CHAIN_COLUMNS: ResponsiveTableColumn<CorrectionChainNode>[] = [
     key: "occurred_at",
     header: "Thời điểm",
     width: 160,
-    render: (row) => text(row.occurred_at),
+    render: (row) => formatDateTime(text(row.occurred_at, "") || null),
   },
   {
     key: "actor",
@@ -728,6 +727,8 @@ export function TraceModal({ movementId, onClose }: Props) {
                   )}
                   rowKey={(row) => row.__rowKey}
                   columns={CONTAINER_ITEM_COLUMNS}
+                  loading={physicalCodeQuery.isFetching}
+                  emptyText="Chưa có sản phẩm nào trong vật chứa này"
                 />
               </div>
             ) : null}
@@ -741,6 +742,8 @@ export function TraceModal({ movementId, onClose }: Props) {
                   rows={codeTrace.movements}
                   rowKey={(row) => text(row.id, String(Math.random()))}
                   columns={MOVEMENT_COLUMNS}
+                  loading={physicalCodeQuery.isFetching}
+                  emptyText="Chưa có giao dịch nào cho mã này"
                 />
               </div>
             ) : null}
@@ -787,7 +790,7 @@ export function TraceModal({ movementId, onClose }: Props) {
                             variant="caption"
                             color={SEMANTIC_LIGHT.textMedium}
                           >
-                            {text(wc.received_at)}
+                            {formatDateTime(text(wc.received_at, "") || null)}
                           </UiText>
                         </Stack>
                         <Grid container spacing={1.5} sx={{ mt: 0.5 }}>
@@ -811,7 +814,10 @@ export function TraceModal({ movementId, onClose }: Props) {
                                 variant="caption"
                                 color={SEMANTIC_LIGHT.textMedium}
                               >
-                                {text(event.event_at)} —{" "}
+                                {formatDateTime(
+                                  text(event.event_at, "") || null,
+                                )}{" "}
+                                —{" "}
                                 {text(event.to_status ?? event.event_type)}
                                 {event.note ? ` (${text(event.note)})` : ""}
                               </UiText>
@@ -849,10 +855,13 @@ export function TraceModal({ movementId, onClose }: Props) {
             />
             <DetailField
               label="Thời gian"
-              value={text(
-                movement.occurred_at ??
-                  movement.performed_at ??
-                  movement.created_at,
+              value={formatDateTime(
+                text(
+                  movement.occurred_at ??
+                    movement.performed_at ??
+                    movement.created_at,
+                  "",
+                ) || null,
               )}
             />
             <DetailField
@@ -901,9 +910,9 @@ export function TraceModal({ movementId, onClose }: Props) {
                     fontWeight: 600,
                   }}
                 >
-                  {Number(
-                    movement.qty_change ?? movement.quantity ?? 0,
-                  ).toLocaleString("vi-VN")}
+                  {formatQuantity(
+                    Number(movement.qty_change ?? movement.quantity ?? 0),
+                  )}
                 </Box>
               }
             />
@@ -979,7 +988,7 @@ export function TraceModal({ movementId, onClose }: Props) {
               />
               <DetailField
                 label="Thời điểm ghi nhận"
-                value={trace.postedAt || "-"}
+                value={formatDateTime(trace.postedAt || null)}
               />
               <DetailField label="Người thao tác" value={trace.actor || "-"} />
               <DetailField
@@ -1019,6 +1028,8 @@ export function TraceModal({ movementId, onClose }: Props) {
                   )}
                   rowKey={(row) => row.__rowKey}
                   columns={TRACE_LINE_COLUMNS}
+                  loading={traceQuery.isFetching}
+                  emptyText="Chưa có dòng chứng từ nào"
                 />
               </div>
             ) : null}
@@ -1040,7 +1051,7 @@ export function TraceModal({ movementId, onClose }: Props) {
                 />
                 <DetailField
                   label="Số lượng gốc"
-                  value={trace.netEffect.originalQty.toLocaleString("vi-VN")}
+                  value={formatQuantity(trace.netEffect.originalQty)}
                 />
                 <DetailField
                   label="Đã điều chỉnh"
@@ -1055,19 +1066,19 @@ export function TraceModal({ movementId, onClose }: Props) {
                         fontWeight: 600,
                       }}
                     >
-                      {trace.netEffect.reversedQty.toLocaleString("vi-VN")}
+                      {formatQuantity(trace.netEffect.reversedQty)}
                     </Box>
                   }
                 />
                 <DetailField
                   label="Còn điều chỉnh được"
-                  value={trace.netEffect.remainingReversibleQty.toLocaleString(
-                    "vi-VN",
+                  value={formatQuantity(
+                    trace.netEffect.remainingReversibleQty,
                   )}
                 />
                 <DetailField
                   label="Tác động ròng"
-                  value={trace.netEffect.netQtyDelta.toLocaleString("vi-VN")}
+                  value={formatQuantity(trace.netEffect.netQtyDelta)}
                 />
                 <DetailField
                   label="Trạng thái"
@@ -1107,6 +1118,8 @@ export function TraceModal({ movementId, onClose }: Props) {
                   rows={trace.chain ?? []}
                   rowKey={(row) => row.id}
                   columns={CHAIN_COLUMNS}
+                  loading={traceQuery.isFetching}
+                  emptyText="Chưa có bút toán điều chỉnh nào"
                 />
               </div>
             ) : null}
@@ -1133,9 +1146,12 @@ export function TraceModal({ movementId, onClose }: Props) {
                             `Bước ${index + 1}`,
                           );
                     const time = item.created_at ?? item.changed_at;
+                    const formattedTime = time
+                      ? formatDateTime(String(time))
+                      : "-";
                     return {
                       title: label,
-                      time: time ? String(time) : undefined,
+                      time: formattedTime === "-" ? undefined : formattedTime,
                     };
                   })}
                 />

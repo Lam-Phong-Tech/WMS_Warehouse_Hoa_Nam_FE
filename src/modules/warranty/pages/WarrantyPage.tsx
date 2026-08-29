@@ -185,7 +185,7 @@ export default function WarrantyPage() {
     },
     {
       key: "case_code",
-      header: "Case",
+      header: "Phiếu",
       width: 190,
       sortAccessor: (row) => row.case_code || row.id,
       render: (row) => <strong>{row.case_code || row.id}</strong>,
@@ -312,13 +312,7 @@ export default function WarrantyPage() {
             }}
             sx={{ minWidth: 220 }}
           />
-          <ActionButton
-            kind="camera"
-            aria-label="Quét mã máy bằng camera"
-            onClick={() => setCameraOpen(true)}
-          >
-            Camera
-          </ActionButton>
+          
           <UiSelect
             value={status}
             aria-label="Lọc trạng thái bảo hành"
@@ -339,8 +333,11 @@ export default function WarrantyPage() {
             placeholder="Nhận diện: Tất cả"
             minWidth={148}
             options={[
-              { value: "IDENTIFIED", label: "IDENTIFIED" },
-              { value: "TEMP_ONLY", label: "TEMP_ONLY" },
+              { value: "IDENTIFIED", label: "Đã xác định sản phẩm" },
+              {
+                value: "TEMP_ONLY",
+                label: "Tiếp nhận tạm, chưa xác định sản phẩm",
+              },
             ]}
             onChange={(value) => {
               setIdentification(value as WarrantyIdentificationType | "");
@@ -378,7 +375,7 @@ export default function WarrantyPage() {
            * dễ thấy — thay vì chỉ hiện ở phần phân trang tít dưới bảng dài. */}
           <Box component="span" sx={{ whiteSpace: "nowrap" }}>
             <UiText variant="secondary">
-              Tổng {pagination.total} case bảo hành
+              Tổng {pagination.total} phiếu bảo hành
             </UiText>
           </Box>
           <div className="spacer" />
@@ -413,7 +410,7 @@ export default function WarrantyPage() {
           loading={listQuery.isLoading || listQuery.isFetching}
           emptyText={tableEmptyText(
             listQuery.isError ? listQuery.error : null,
-            "Không có case bảo hành theo bộ lọc hiện tại",
+            "Không có phiếu bảo hành theo bộ lọc hiện tại",
           )}
           onRowClick={(row) => setDetailId(row.id)}
           renderRowActions={renderRowActions}

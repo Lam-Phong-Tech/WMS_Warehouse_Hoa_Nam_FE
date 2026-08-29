@@ -1,58 +1,13 @@
-import { useState } from "react";
-import { Box, UiTabs, UiTabPanel } from "@/shared/ui";
-import { ApartmentOutlined, BarChartOutlined } from "@/shared/components/icons";
 import AlignedReportsPage from "@/modules/reports/pages/AlignedReportsPage";
-import Gd1ScopeReports from "@/modules/reports/pages/Gd1ScopeReports";
 
-/** Nhãn tab kèm icon — UiTabs nhận label ReactNode (icon shim aria-hidden). */
-function TabLabel({ icon, text }: { icon: React.ReactNode; text: string }) {
-  return (
-    <Box
-      component="span"
-      sx={{ display: "inline-flex", alignItems: "center", gap: 0.75 }}
-    >
-      {icon}
-      {text}
-    </Box>
-  );
-}
-
+/**
+ * Route /reports.
+ *
+ * Trước đây màn này là một lớp tab thứ hai ("Báo cáo theo từng thị trường" /
+ * "Báo cáo vận hành") bọc ngoài 7 tab nghiệp vụ, tức người dùng phải đi qua hai
+ * tầng tab để tới báo cáo. Nhóm "theo từng thị trường" đã được gỡ khỏi phạm vi,
+ * nên lớp bọc không còn lý do tồn tại — render thẳng trang Báo cáo vận hành.
+ */
 export default function ReportsPage() {
-  const [tab, setTab] = useState<"gd1" | "operations">("gd1");
-
-  return (
-    <>
-      <Box sx={{ mb: 2 }}>
-        <UiTabs
-          value={tab}
-          onChange={(key) => setTab(key as "gd1" | "operations")}
-          aria-label="Nhóm báo cáo"
-          items={[
-            {
-              key: "gd1",
-              label: (
-                <TabLabel
-                  icon={<ApartmentOutlined style={{ fontSize: 15 }} />}
-                  text="Báo cáo theo từng thị trường"
-                />
-              ),
-            },
-            {
-              key: "operations",
-              label: (
-                <TabLabel
-                  icon={<BarChartOutlined style={{ fontSize: 15 }} />}
-                  text="Báo cáo vận hành"
-                />
-              ),
-            },
-          ]}
-        />
-      </Box>
-
-      <UiTabPanel value={tab}>
-        {tab === "gd1" ? <Gd1ScopeReports /> : <AlignedReportsPage />}
-      </UiTabPanel>
-    </>
-  );
+  return <AlignedReportsPage />;
 }

@@ -81,7 +81,9 @@ function grant(permissionCodes: string[]) {
 async function openWarrantyTab() {
   renderWithProviders(<AlignedReportsPage />, ["/reports"]);
   fireEvent.click(await screen.findByRole("tab", { name: /Bảo hành/ }));
-  return screen.findByText("BH-0001");
+  // Mã case xuất hiện ở cả bảng 6.5 (linh kiện theo hồ sơ) lẫn bảng 6.6 (danh
+  // sách hồ sơ) nên chờ theo TẬP phần tử, không phải một phần tử duy nhất.
+  return screen.findAllByText("BH-0001");
 }
 
 /** Mở modal "Chi tiết" của dòng đầu tiên bằng nút Xem ở cột Thao tác. */
@@ -169,12 +171,14 @@ describe("WWHN-258 · báo cáo bảo hành — gate PII theo quyền", () => {
     expect(screen.queryByText("Nguyễn Văn A")).not.toBeInTheDocument();
     expect(screen.queryByText("0901234567")).not.toBeInTheDocument();
 
-    // Cột PII nay nằm trong modal chi tiết (bảng chỉ giữ cột thiết yếu để không
-    // phải kéo ngang) — mask phải giữ nguyên hiệu lực ở đó.
+    // Bản 7 tab hiển thị Khách hàng/SĐT ở CẢ bảng 6.6 lẫn hộp thoại chi tiết
+    // (yêu cầu nghiệp vụ mục 6.6 liệt hai cột này), nên assert theo tập phần tử
+    // thay vì một phần tử duy nhất — điều phải giữ là: không chỗ nào lộ PII thô,
+    // và giá trị đã che vẫn hiện đúng.
     await openRowDetail();
     expect(screen.queryByText("Nguyễn Văn A")).not.toBeInTheDocument();
     expect(screen.queryByText("0901234567")).not.toBeInTheDocument();
-    expect(screen.getByText("*******567")).toBeInTheDocument();
+    expect(screen.getAllByText("*******567").length).toBeGreaterThan(0);
   });
 
   it("có warranty.pii.view: modal chi tiết hiển thị khách hàng đầy đủ", async () => {
@@ -182,8 +186,8 @@ describe("WWHN-258 · báo cáo bảo hành — gate PII theo quyền", () => {
     await openWarrantyTab();
     await openRowDetail();
 
-    expect(screen.getByText("Nguyễn Văn A")).toBeInTheDocument();
-    expect(screen.getByText("0901234567")).toBeInTheDocument();
+    expect(screen.getAllByText(/Nguyễn Văn A/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/0901234567/).length).toBeGreaterThan(0);
   });
 
   it("không có quyền xuất PII thì payload export không bao giờ mang reason", async () => {

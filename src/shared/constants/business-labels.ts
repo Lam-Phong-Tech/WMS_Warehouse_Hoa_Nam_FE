@@ -233,6 +233,35 @@ export const AUDIT_ACTION_LABELS = {
   CANCEL: "Hủy",
   ARCHIVE: "Lưu trữ",
   RESTORE: "Khôi phục",
+  // Phiên đăng nhập / bảo mật (mục 13: tra "ai đã vào hệ thống").
+  LOGIN: "Đăng nhập",
+  LOGOUT: "Đăng xuất",
+  LOGIN_DENIED: "Đăng nhập bị từ chối",
+  TOKEN_REFRESH: "Làm mới phiên",
+  CHANGE_PASSWORD: "Đổi mật khẩu",
+  AUTO_LOCK: "Tự động khóa tài khoản",
+  // Phân quyền / vai trò.
+  ASSIGN_ROLES: "Gán vai trò",
+  ASSIGN_PERMISSIONS: "Gán quyền",
+  GRANT_USER_PERMISSION: "Cấp quyền riêng",
+  REVOKE_USER_PERMISSION: "Thu hồi quyền riêng",
+  // Thao tác nghiệp vụ thường gặp.
+  POST: "Ghi nhận",
+  POST_ISSUE: "Ghi nhận xuất kho",
+  SCAN: "Quét mã",
+  APPROVE: "Phê duyệt",
+  REJECT: "Từ chối",
+  RECEIVE: "Tiếp nhận",
+  RETURN: "Trả hàng",
+  CONFIRM_RETURN: "Xác nhận trả hàng",
+  DISPATCH: "Xuất giao",
+  CONVERT: "Chuyển đổi",
+  RECORD_LOSS: "Ghi nhận thất thoát",
+  CREATE_REVERSAL: "Tạo điều chỉnh tồn",
+  REVERSAL_POST: "Ghi nhận điều chỉnh tồn",
+  PUTAWAY_CONFIRM: "Xác nhận xếp khay",
+  WARRANTY_STATUS_CHANGE: "Đổi trạng thái bảo hành",
+  REPORT_EXPORTED: "Xuất báo cáo",
 } as const;
 
 /**

@@ -4,7 +4,11 @@
  * Trước đây sidebar đọc NAV_GROUPS (SideNav.tsx) còn breadcrumb đọc MENU
  * (menu.tsx) — hai cây lệch nhau (/scan, /pv-admin, /notifications). File này
  * hợp nhất: SideNav, breadcrumb, tiêu đề header và test RBAC menu đều đọc
- * từ đây. Icon là slug flaticon (fi-rr-*) — render qua UiIcon.
+ * từ đây. Icon là slug Flaticon — render qua UiIcon.
+ *
+ * QUY ƯỚC ICON: mọi icon trong menu phải KHÁC NHAU — icon của nhóm cha không
+ * được trùng icon của trang con bên trong nó (nhìn vào không phân biệt được
+ * đang ở cấp nào). Test `nav-data.test.ts` khoá điều này.
  *
  * Mỗi item dùng đúng route sở hữu để visibility đánh giá theo RBAC của
  * domain đó (ROUTE_PERMISSIONS), không theo screen-id trình bày.
@@ -34,14 +38,14 @@ export const NAV_GROUPS: NavGroupData[] = [
       {
         screen: "MAP-01",
         path: ROUTES.DASHBOARD,
-        label: "Bản đồ màn hình & phạm vi",
-        icon: "chart-histogram",
+        label: "Tổng quan kho",
+        icon: "sitemap",
       },
     ],
   },
   {
     name: "Danh mục",
-    icon: "settings",
+    icon: "book-alt",
     items: [
       {
         screen: "MST-01",
@@ -78,7 +82,7 @@ export const NAV_GROUPS: NavGroupData[] = [
         screen: "IN-01",
         path: ROUTES.INBOUND,
         label: "Danh sách phiếu nhập",
-        icon: "inbox",
+        icon: "inbox-in",
       },
       {
         screen: "PTW-00",
@@ -96,7 +100,7 @@ export const NAV_GROUPS: NavGroupData[] = [
         screen: "OUT-01",
         path: ROUTES.OUTBOUND,
         label: "Danh sách phiếu xuất",
-        icon: "warehouse-alt",
+        icon: "inbox-out",
       },
     ],
   },
@@ -110,7 +114,7 @@ export const NAV_GROUPS: NavGroupData[] = [
         screen: "WAR-01",
         path: ROUTES.WARRANTY,
         label: "Danh sách bảo hành",
-        icon: "tool-box",
+        icon: "shield-check",
       },
     ],
   },
@@ -122,15 +126,15 @@ export const NAV_GROUPS: NavGroupData[] = [
         screen: "INV-01",
         path: ROUTES.INVENTORY,
         label: "Tra cứu tồn & đối soát",
-        icon: "inventory-alt",
+        icon: "boxes",
       },
-      {
-        // NAV-01 fix: /scan trước đây chỉ vào được bằng URL trực tiếp.
-        screen: "TRACE-01",
-        path: ROUTES.SCAN,
-        label: "Truy vết mã vật lý",
-        icon: "barcode-read",
-      },
+      // {
+      //   // NAV-01 fix: /scan trước đây chỉ vào được bằng URL trực tiếp.
+      //   screen: "TRACE-01",
+      //   path: ROUTES.SCAN,
+      //   label: "Truy vết mã vật lý",
+      //   icon: "barcode-read",
+      // },
       {
         screen: "REV-00",
         path: ROUTES.REVERSE,
@@ -147,7 +151,7 @@ export const NAV_GROUPS: NavGroupData[] = [
         screen: "RPT-01",
         path: ROUTES.REPORTS,
         label: "Báo cáo vận hành",
-        icon: "document",
+        icon: "chart-pie",
       },
     ],
   },
@@ -161,13 +165,13 @@ export const NAV_GROUPS: NavGroupData[] = [
         label: "Danh sách người dùng & phân quyền",
         icon: "users",
       },
-      {
-        // NAV-01 fix: PV admin (SCR-PV-ADM-01) trước đây không có trong sidebar.
-        screen: "PV-ADM-01",
-        path: ROUTES.PV_ADMIN,
-        label: "Ứng dụng phân vùng (PV)",
-        icon: "globe",
-      },
+      // {
+      //   // NAV-01 fix: PV admin (SCR-PV-ADM-01) trước đây không có trong sidebar.
+      //   screen: "PV-ADM-01",
+      //   path: ROUTES.PV_ADMIN,
+      //   label: "Ứng dụng phân vùng (PV)",
+      //   icon: "globe",
+      // },
       {
         screen: "WH-01",
         path: ROUTES.WAREHOUSE_CONFIG,
@@ -278,6 +282,11 @@ export const ROUTE_META: Record<
     title: "Hồ sơ cá nhân",
     description: "Thông tin tài khoản và ngữ cảnh truy cập hiện hành.",
   },
+  [ROUTES.PUTAWAY_TRAYS]: {
+    title: "Tổng quan tình trạng khay",
+    description:
+      "Xem nhanh khay trống / đang chứa / cần chú ý, không thao tác xếp khay.",
+  },
   [ROUTES.NOTIFICATIONS]: {
     title: "Thông báo",
     description: "Danh sách thông báo hệ thống của tài khoản.",
@@ -298,9 +307,9 @@ export const SCREEN_META: Record<
   { title: string; description: string }
 > = {
   "MAP-01": {
-    title: "Bản đồ màn hình & phạm vi",
+    title: "Tổng quan kho",
     description:
-      "Tổng quan phạm vi giao diện MVP, không bao gồm ứng dụng phân vùng.",
+      "Tổng quan phạm vi giao diện, không bao gồm ứng dụng phân vùng.",
   },
   "IAM-01": {
     title: "Danh sách người dùng & phân quyền",
