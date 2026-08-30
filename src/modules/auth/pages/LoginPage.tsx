@@ -106,7 +106,7 @@ export function LoginPage() {
       titleId="login-title"
       title={
         <>
-          Xin chào bạn đến với Hoa Nam
+          Chào mừng đến với Hoa Nam
         </>
       }
       subtitle="Vui lòng đăng nhập vào tài khoản của bạn"

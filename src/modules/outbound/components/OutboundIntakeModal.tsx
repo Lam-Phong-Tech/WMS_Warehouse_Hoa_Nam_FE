@@ -406,12 +406,12 @@ export function OutboundIntakeModal({
     },
     {
       key: "sku_mapping",
-      header: "Gán SKU khi xác nhận",
+      header: "Gán lại SKU (nếu cần)",
       width: 260,
       render: (row) => (
         <UiSelect
           aria-label={`Gán SKU khi xác nhận dòng ${row.rowNo}`}
-          placeholder="Giữ nguyên theo tệp"
+          placeholder="Giữ nguyên"
           minWidth={240}
           value={resolutions[row.rowNo]?.sku_id ?? ""}
           onChange={(value) =>
@@ -671,7 +671,7 @@ export function OutboundIntakeModal({
                 <UiTextField
                   fullWidth
                   type="date"
-                  label="Ngày xuất"
+                  label="Ngày tạo toa"
                   value={requestDate}
                   onChange={(event) => setRequestDate(event.target.value)}
                   slotProps={{
@@ -883,71 +883,6 @@ export function OutboundIntakeModal({
                   onPageChange={setPreviewPage}
                 />
               ) : null}
-
-              <Box
-                sx={{
-                  border: "1px solid",
-                  borderColor: "divider",
-                  borderRadius: 2,
-                  p: 1.5,
-                }}
-              >
-                <Box sx={{ typography: "subtitle2", fontWeight: 700, mb: 1 }}>
-                  Ghi đè người nhận khi xác nhận (tùy chọn)
-                </Box>
-                <Stack
-                  direction="row"
-                  spacing={1.5}
-                  sx={{ flexWrap: "wrap", rowGap: 1.5 }}
-                >
-                  <UiTextField
-                    label="Người nhận"
-                    sx={{ width: 240 }}
-                    slotProps={{ htmlInput: { maxLength: 200 } }}
-                    value={recipientOverride.receiver_name}
-                    onChange={(event) =>
-                      setRecipientOverride((current) => ({
-                        ...current,
-                        receiver_name: event.target.value,
-                      }))
-                    }
-                  />
-                  <UiTextField
-                    label="Địa chỉ nhận (tùy chọn)"
-                    sx={{ width: 300 }}
-                    slotProps={{ htmlInput: { maxLength: 1000 } }}
-                    value={recipientOverride.receiver_address}
-                    onChange={(event) =>
-                      setRecipientOverride((current) => ({
-                        ...current,
-                        receiver_address: event.target.value,
-                      }))
-                    }
-                  />
-                  <UiTextField
-                    label="SĐT liên hệ (tùy chọn)"
-                    sx={{ width: 200 }}
-                    error={!overridePhoneValid}
-                    helperText={
-                      overridePhoneValid
-                        ? undefined
-                        : "Số điện thoại phải gồm đúng 10 chữ số và bắt đầu bằng số 0."
-                    }
-                    slotProps={{
-                      htmlInput: { maxLength: 10, inputMode: "numeric" },
-                    }}
-                    value={recipientOverride.receiver_contact_phone}
-                    onChange={(event) =>
-                      setRecipientOverride((current) => ({
-                        ...current,
-                        receiver_contact_phone: event.target.value
-                          .replace(/\D/g, "")
-                          .slice(0, 10),
-                      }))
-                    }
-                  />
-                </Stack>
-              </Box>
 
               <Stack
                 direction="row"

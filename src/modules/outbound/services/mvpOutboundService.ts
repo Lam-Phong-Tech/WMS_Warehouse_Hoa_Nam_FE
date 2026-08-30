@@ -10,6 +10,9 @@ export interface OutboundLineRecord {
   id: string;
   documentId: string;
   productId: string;
+  /** Mã SKU đọc được (BE enrich từ bảng sku); fallback về productId khi thiếu. */
+  skuCode?: string | null;
+  skuName?: string | null;
   expected: number;
   scanned: number;
   remaining: number;
@@ -297,6 +300,8 @@ function normalizeLine(row: RawRecord, documentId: string): OutboundLineRecord {
     id: text(row.id ?? row.stock_document_line_id),
     documentId,
     productId: text(row.product_id ?? row.sku_id),
+    skuCode: text(row.sku_code) || null,
+    skuName: text(row.sku_name ?? row.product_name) || null,
     expected,
     scanned,
     remaining: Math.max(expected - scanned, 0),

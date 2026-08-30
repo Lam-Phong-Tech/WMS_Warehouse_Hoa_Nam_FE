@@ -269,10 +269,17 @@ export function BalanceDetailModal({
     {
       key: "physical_code",
       header: "Mã vật lý",
-      width: 140,
+      width: 180,
       render: (row) =>
-        row.physical_code ? (
-          <CodeText>{text(row.physical_code)}</CodeText>
+        row.physical_code || row.rfid_code ? (
+          <Stack spacing={0.25}>
+            {row.physical_code ? (
+              <CodeText>{text(row.physical_code)}</CodeText>
+            ) : null}
+            {row.rfid_code ? (
+              <UiText variant="secondary">{`RFID: ${text(row.rfid_code)}`}</UiText>
+            ) : null}
+          </Stack>
         ) : (
           <UiText variant="secondary">-</UiText>
         ),

@@ -44,6 +44,33 @@ function isGenericValidationMessage(message?: string): boolean {
   return !!message && GENERIC_VALIDATION_MESSAGES.has(message.trim());
 }
 
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const PURE_NUMBER_PATTERN = /^-?\d+(\.\d+)?$/;
+
+/**
+ * `errors`/`error.details` được thiết kế cho lỗi VALIDATE (giá trị luôn là một
+ * câu tiếng Việt hoàn chỉnh, xem lang/vi/validation.php — mọi câu đều dạng
+ * ":Attribute ..."). Một số endpoint nghiệp vụ (không phải validate) tái dùng
+ * đúng field này để đính kèm SIÊU DỮ LIỆU audit cho việc retry/debug (uuid sự
+ * kiện, version, cờ boolean...) — đó không phải câu dành cho người đọc.
+ *
+ * Nếu không lọc, một lỗi in nhãn thất bại sẽ hiện đúng như đã gặp thật:
+ * "54ce74be-9359-... In thất bại 4 false" thay vì một câu rõ nghĩa, vì
+ * {@link formatFieldErrors} nối thẳng mọi giá trị trong `errors` lại. Loại các
+ * giá trị không "trông giống câu" (UUID/số thuần/boolean) trước khi hiển thị;
+ * không đụng tới câu message thật nào vì câu message luôn có khoảng trắng/chữ
+ * cái, không bao giờ khớp các mẫu dưới đây.
+ */
+function looksLikeDisplayMessage(value: string): boolean {
+  const trimmed = value.trim();
+  if (trimmed === "") return false;
+  if (trimmed === "true" || trimmed === "false") return false;
+  if (UUID_PATTERN.test(trimmed)) return false;
+  if (PURE_NUMBER_PATTERN.test(trimmed)) return false;
+  return true;
+}
+
 /**
  * Ghép các lỗi theo từng trường thành một câu đọc được.
  *
@@ -58,7 +85,7 @@ function formatFieldErrors(
   if (!errors || Object.keys(errors).length === 0) return undefined;
   const messages = Object.values(errors)
     .map((message) => (Array.isArray(message) ? message[0] : String(message)))
-    .filter((message) => message.trim() !== "");
+    .filter(looksLikeDisplayMessage);
   return messages.length > 0 ? messages.join(" ") : undefined;
 }
 

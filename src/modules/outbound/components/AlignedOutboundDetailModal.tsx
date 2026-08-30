@@ -53,6 +53,7 @@ import {
 } from "@/modules/outbound/services/alignedOutboundService";
 import type { ReactNode } from "react";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
+import { PackingLabelPreviewDialog } from "@/modules/outbound/components/PackingLabelPreviewDialog";
 
 type RfidTarget = { itemId: string; itemCode: string };
 
@@ -158,6 +159,7 @@ export function AlignedOutboundDetailModal({
     null,
   );
   const [labelWarning, setLabelWarning] = useState<string | null>(null);
+  const [labelPreviewOpen, setLabelPreviewOpen] = useState(false);
   const [postConfirmOpen, setPostConfirmOpen] = useState(false);
   const postKeyRef = useRef<string | null>(null);
   // Xác nhận trước khi gỡ đối chiếu — confirmDialog PHẢI render trong cây bên dưới.
@@ -250,11 +252,16 @@ export function AlignedOutboundDetailModal({
   const customerPhoneValid =
     customerPhone === "" || /^0\d{9}$/.test(customerPhone);
   const availability = availabilityQuery.data ?? {};
-  const shortStockLines = (detail?.lines ?? []).filter(
-    (line) =>
-      availabilityQuery.isSuccess &&
-      (availability[line.productId] ?? 0) < line.expected,
-  );
+  // Chỉ có ý nghĩa TRƯỚC khi ghi nhận xuất kho ("sắp xuất, tồn có đủ không?").
+  // Sau khi POSTED, tồn kho đã bị trừ đúng bằng số đã xuất nên tồn khả dụng
+  // giảm là kết quả bình thường, không phải cảnh báo thiếu hàng.
+  const shortStockLines = posted
+    ? []
+    : (detail?.lines ?? []).filter(
+        (line) =>
+          availabilityQuery.isSuccess &&
+          (availability[line.productId] ?? 0) < line.expected,
+      );
 
   const postBlockReason = !doc
     ? ""
@@ -533,7 +540,7 @@ export function AlignedOutboundDetailModal({
       key: "productId",
       header: "SKU",
       width: 180,
-      render: (row) => short(row.productId),
+      render: (row) => row.skuCode ?? short(row.productId),
     },
     {
       key: "expected",
@@ -701,7 +708,7 @@ export function AlignedOutboundDetailModal({
                     .filter((line) => line.scanned < line.expected)
                     .map((line) => (
                       <MenuItem key={line.id} value={line.id}>
-                        {`${short(line.productId)} · ${line.scanned}/${line.expected}`}
+                        {`${line.skuCode ?? short(line.productId)} · ${line.scanned}/${line.expected}`}
                       </MenuItem>
                     ))}
                 </UiTextField>
@@ -774,7 +781,7 @@ export function AlignedOutboundDetailModal({
                   title="Tồn khả dụng hiện thấp hơn số lượng cần xuất"
                 >
                   {`SKU thiếu: ${shortStockLines
-                    .map((line) => short(line.productId))
+                    .map((line) => line.skuCode ?? short(line.productId))
                     .join(
                       ", ",
                     )}. Hệ thống sẽ kiểm tra lại tại thời điểm ghi nhận.`}
@@ -887,6 +894,14 @@ export function AlignedOutboundDetailModal({
                           value={packingLabel.sourceRequestNo || "—"}
                         />
                       </Grid>
+                      <Box>
+                        <ActionButton
+                          kind="view"
+                          onClick={() => setLabelPreviewOpen(true)}
+                        >
+                          Xem trước nhãn
+                        </ActionButton>
+                      </Box>
                       <Stack
                         direction="row"
                         spacing={1.5}
@@ -1169,6 +1184,12 @@ export function AlignedOutboundDetailModal({
           </Stack>
         </UiDialog>
       </UiDialog>
+
+      <PackingLabelPreviewDialog
+        open={labelPreviewOpen}
+        label={packingLabel ?? null}
+        onClose={() => setLabelPreviewOpen(false)}
+      />
 
       {confirmDialog}
     </>

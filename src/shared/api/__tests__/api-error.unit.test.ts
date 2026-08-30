@@ -59,6 +59,45 @@ describe("api-error.unit", () => {
     );
   });
 
+  // Bug thật gặp khi in nhãn thất bại chưa kết nối máy in: một endpoint từng
+  // đính kèm siêu dữ liệu audit thuần (uuid sự kiện, version, cờ boolean) vào
+  // đúng field `errors` mà formatFieldErrors nối thẳng lại để hiển thị — toast
+  // hiện "54ce74be-... 4 false" thay vì câu message thật. Endpoint in nhãn đã
+  // được sửa để không còn gửi field này nữa; test này giữ nguyên bộ lọc như
+  // lưới an toàn cho các endpoint khác lỡ tái phạm cùng kiểu trộn dữ liệu.
+  it("should ignore non-message values (uuid/number/boolean) in field errors and fall back to message", () => {
+    const error = createMockAxiosError({
+      status: 409,
+      data: {
+        message:
+          "Không thể kết nối tới máy in. Kiểm tra máy in đã bật và đã kết nối mạng, sau đó thử lại.",
+        errors: {
+          label_print_event_id: "54ce74be-9359-4cbd-9561-cc148efb31a2",
+          version: 4,
+          reprint: false,
+        },
+      },
+    });
+    expect(getApiErrorMessage(error)).toBe(
+      "Không thể kết nối tới máy in. Kiểm tra máy in đã bật và đã kết nối mạng, sau đó thử lại.",
+    );
+  });
+
+  it("should keep a real sentence field error even when siblings are metadata", () => {
+    const error = createMockAxiosError({
+      status: 422,
+      data: {
+        errors: {
+          container_id: "11111111-1111-4111-8111-111111111111",
+          reason: "Container đã CLOSED/ISSUED nên không dùng cho scan mới.",
+        },
+      },
+    });
+    expect(getApiErrorMessage(error)).toBe(
+      "Container đã CLOSED/ISSUED nên không dùng cho scan mới.",
+    );
+  });
+
   it("should handle unknown error", () => {
     const error = createMockAxiosError({
       status: 500,

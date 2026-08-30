@@ -1252,13 +1252,6 @@ export function WarrantyDetailModal({
 
           {detail ? (
             <Stack spacing={2}>
-              {detail.identification_type === "TEMP_ONLY" &&
-              activeTab === "overview" ? (
-                <UiAlert tone="warning">
-                  {`Mã tạm: ${detail.temporary_item_code ?? "—"} · sales_trace_status = NOT_TRACEABLE. Không liên kết item gốc, không sinh stock movement.`}
-                </UiAlert>
-              ) : null}
-
               {activeTab === "overview" ? (
                 <Grid className="hn-fade-in-up" container spacing={2}>
                   <Grid size={{ xs: 12, lg: 6 }}>
