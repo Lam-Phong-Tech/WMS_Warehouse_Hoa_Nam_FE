@@ -3,7 +3,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Box,
   Grid,
-  MenuItem,
   Stack,
   UiAlert,
   UiDialog,
@@ -57,11 +56,9 @@ import type { ScanClassifyResponse } from "@/modules/scan/types";
 import {
   useCancelInbound,
   useCompleteInboundCartonScan,
-  useEnsureComponentLine,
   useInboundDetail,
   useInboundScanEntries,
   usePostInboundReceipt,
-  useRegisterInboundBox,
   useScanInbound,
   useUnscanInbound,
 } from "@/modules/inbound/hooks/use-inbound";
@@ -103,7 +100,6 @@ type ScanLogRow = {
   errorCode?: string;
 };
 
-const AUTO_LINE = "__AUTO__";
 // STT (số thứ tự) cần cộng theo trang hiện tại — page size cố định cho 2 bảng
 // phân trang trong modal quét (mã đã quét / diễn biến quét phiên).
 const SCAN_ENTRY_PAGE_SIZE = 10;
@@ -128,6 +124,31 @@ function StatCard({ label, value }: { label: string; value: number }) {
 
 function looksCompositeProductQr(code: string): boolean {
   return /^HN\d+\|/i.test(code.trim());
+}
+
+/**
+ * Mã HỘP linh kiện scan-driven: BOX-<SKU>-<seq>, ví dụ BOX-HN-COMP-BASE-003-0001
+ *   -> sku_code = HN-COMP-BASE-003, box_seq = 0001
+ * Mã hộp tự mang SKU linh kiện nên FE nhận diện được ngay tại client để mở ô
+ * nhập số lượng, còn việc tạo SKU/dòng/đăng ký hộp do backend làm authoritative
+ * (khớp BoxCodeParser phía BE). SKU code có thể chứa '-' và kết thúc bằng chữ
+ * số: regex greedy giữ đúng đuôi '-<digits>' cuối làm box_seq.
+ */
+function parseBoxCode(
+  code: string,
+): { boxCode: string; skuCode: string; boxSeq: string } | null {
+  const normalized = code.trim().toUpperCase();
+  const matched = /^BOX-(.+)-(\d+)$/.exec(normalized);
+  if (!matched) return null;
+  const skuCode = matched[1].trim();
+  if (skuCode === "") return null;
+  return { boxCode: normalized, skuCode, boxSeq: matched[2] };
+}
+
+/** Trích sku_code từ QR composite HN…|SKU=<code>|ITEM=… để hiển thị khi hỏi loại. */
+function parseCompositeSkuCode(code: string): string | null {
+  const matched = /\|SKU=([^|]+)/i.exec(code.trim());
+  return matched ? matched[1].trim().toUpperCase() : null;
 }
 
 function makeKey(prefix: string) {
@@ -355,17 +376,26 @@ export function InboundScanModal({
   const detailQuery = useInboundDetail(documentId);
   const skuQuery = useMvpSkus({ status: "ACTIVE", per_page: 100 });
   const scanEntriesQuery = useInboundScanEntries(documentId, "ALL");
-  const registerBoxMutation = useRegisterInboundBox();
-  const ensureComponentMutation = useEnsureComponentLine();
   const scanMutation = useScanInbound();
   const unscanMutation = useUnscanInbound();
   const postMutation = usePostInboundReceipt();
   const cancelMutation = useCancelInbound();
   const completeCartonMutation = useCompleteInboundCartonScan();
-  const [lineId, setLineId] = useState<string>(AUTO_LINE);
-  const [componentSkuId, setComponentSkuId] = useState<string | undefined>();
   const [scanCode, setScanCode] = useState("");
-  const [boxCode, setBoxCode] = useState("");
+  // Linh kiện theo hộp đang chờ nhập số lượng: quét mã BOX-<SKU>-<seq> xong,
+  // hệ thống mở ô số lượng + nút Xác nhận (mã hộp tự mang SKU linh kiện).
+  const [pendingBox, setPendingBox] = useState<{
+    boxCode: string;
+    skuCode: string;
+  } | null>(null);
+  // SKU mới (mã item) lần đầu chưa rõ loại: giữ lại lần quét để hỏi Sản phẩm /
+  // Linh kiện rồi gửi lại kèm new_sku_type.
+  const [pendingNewSku, setPendingNewSku] = useState<{
+    code: string;
+    quantity: number;
+    containerId?: string;
+    skuCode: string;
+  } | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [scanVersion, setScanVersion] = useState<number | null>(null);
   const [scanLog, setScanLog] = useState<ScanLogRow[]>([]);
@@ -373,7 +403,7 @@ export function InboundScanModal({
   const [cancelReason, setCancelReason] = useState("");
   const [receiptEvidence, setReceiptEvidence] =
     useState<ReceiptEvidence | null>(null);
-  const [cameraTarget, setCameraTarget] = useState<"box" | "code" | null>(null);
+  const [cameraOpen, setCameraOpen] = useState(false);
   const [activeCarton, setActiveCarton] = useState<ActiveCarton | null>(null);
   const [scanEntryPage, setScanEntryPage] = useState(1);
   const [scanLogPage, setScanLogPage] = useState(1);
@@ -395,41 +425,17 @@ export function InboundScanModal({
   useEffect(() => {
     if (!detail) return;
     setScanVersion(detail.document.version);
-    if (
-      lineId !== AUTO_LINE &&
-      !detail.lines.some((line) => line.id === lineId)
-    ) {
-      setLineId(AUTO_LINE);
-    }
-  }, [detail, lineId]);
+  }, [detail]);
 
-  useEffect(() => {
-    setScanCode("");
-    setBoxCode("");
-    setQuantity(1);
-  }, [lineId]);
-
-  const selectedLine = detail?.lines.find((line) => line.id === lineId);
-  const selectedSku = selectedLine
-    ? skuById.get(selectedLine.productId)
-    : undefined;
-  const isComponent = selectedSku?.sku_type === "COMPONENT";
-  const isSerialTracked = Boolean(selectedSku?.is_serial_tracked);
   // GĐ1-REQ-004: số lượng nhập đến từ hàng thực quét/đếm — không còn khái niệm
   // "dự kiến/còn lại" làm gate; Post chỉ cần đã ghi nhận ít nhất một đơn vị.
   const totalScanned =
     detail?.lines.reduce((sum, line) => sum + line.scanned, 0) ?? 0;
   const hasScanned = totalScanned > 0;
-  const componentSkuOptions = skuRows.filter(
-    (sku) => sku.sku_type === "COMPONENT",
-  );
   const isMutable =
     detail?.document.status === "DRAFT" ||
     detail?.document.status === "SCANNING";
-  const busy =
-    scanMutation.isPending ||
-    registerBoxMutation.isPending ||
-    ensureComponentMutation.isPending;
+  const busy = scanMutation.isPending;
   const working =
     busy ||
     postMutation.isPending ||
@@ -452,10 +458,6 @@ export function InboundScanModal({
   const sessionErrorCount = scanLog.filter(
     (row) => !row.success && !(row.errorCode ?? "").includes("DUPLICATE"),
   ).length;
-
-  useEffect(() => {
-    if (isSerialTracked) setQuantity(1);
-  }, [isSerialTracked]);
 
   const handleCartonDetected = (
     classified: ScanClassifyResponse,
@@ -532,29 +534,154 @@ export function InboundScanModal({
     }
   };
 
+  /**
+   * Ghi nhận một lần quét lên server (dùng chung cho sản phẩm/linh kiện dán mã
+   * và cho hộp linh kiện đã nhập số lượng). Server tự đối chiếu SKU + tự tạo
+   * dòng; với mã hộp còn tự tạo COMPONENT SKU + đăng ký hộp. Trả về true nếu ghi
+   * nhận thành công.
+   */
+  const submitScan = async ({
+    code,
+    quantity: scanQuantity,
+    containerId,
+    boxSkuCode,
+    newSkuType,
+  }: {
+    code: string;
+    quantity: number;
+    containerId?: string;
+    boxSkuCode?: string;
+    newSkuType?: "PRODUCT" | "COMPONENT";
+  }): Promise<boolean> => {
+    if (!detail || scanVersion === null) return false;
+    const scanFingerprint = [
+      code,
+      scanQuantity,
+      containerId ?? "",
+      newSkuType ?? "",
+    ].join("|");
+    const pendingScanKey = scanKeyRef.current;
+    const scanAttemptKey =
+      pendingScanKey?.fingerprint === scanFingerprint
+        ? pendingScanKey.key
+        : makeKey(`inbound-scan-${documentId}`);
+    scanKeyRef.current = { key: scanAttemptKey, fingerprint: scanFingerprint };
+    try {
+      const result = await scanMutation.mutateAsync({
+        id: documentId,
+        code,
+        ifMatch: scanVersion,
+        // Luôn gửi raw code_value: server parse QR sản phẩm/mã hộp authoritative
+        // và tự match/ tạo dòng. Không còn resolve line phía client.
+        includeCodeValue: true,
+        quantity: scanQuantity,
+        containerId,
+        newSkuType,
+        idempotencyKey: scanAttemptKey,
+      });
+      const first = result[0];
+      if (!first) throw new Error("Hệ thống không trả kết quả quét.");
+      scanKeyRef.current = null;
+      setScanVersion(first.version);
+      const identityText = [
+        first.sku ? `SKU ${first.sku}` : boxSkuCode ? `SKU ${boxSkuCode}` : "",
+        first.item_unique ?? "",
+      ]
+        .filter(Boolean)
+        .join(" · ");
+      const candidateText =
+        first.resolution_status === "NEW_ITEM_CANDIDATE"
+          ? ` · ${QR_RESOLUTION_STATUS_LABELS.NEW_ITEM_CANDIDATE}`
+          : "";
+      const kindText = boxSkuCode
+        ? " · hộp linh kiện"
+        : activeCarton
+          ? ` · thùng ${activeCarton.code}`
+          : "";
+      setScanLog((current) =>
+        [
+          {
+            key: makeKey("scan"),
+            code,
+            result: first.replayed
+              ? "Hợp lệ · đã ghi nhận trước đó, không cộng thêm"
+              : `Hợp lệ · +${scanQuantity}${identityText ? ` · ${identityText}` : ""}${candidateText}${kindText}`,
+            success: true,
+            lineId: first.line_id,
+          },
+          ...current,
+        ].slice(0, 20),
+      );
+      if (first.replayed) {
+        toast.success(
+          "Lần quét này đã được ghi nhận trước đó. Hệ thống trả lại kết quả cũ — số đã quét không tăng thêm.",
+        );
+      }
+      setScanCode("");
+      await Promise.all([detailQuery.refetch(), scanEntriesQuery.refetch()]);
+      onChanged?.();
+      return true;
+    } catch (error) {
+      const errorText = getApiErrorMessage(error, "Mã quét không hợp lệ.");
+      const errorCode = normalizeError(error).code ?? undefined;
+      scanKeyRef.current = shouldReuseScanKey(error)
+        ? { key: scanAttemptKey, fingerprint: scanFingerprint }
+        : null;
+      // SKU mới lần đầu: chưa xác định được loại từ mã → hỏi người dùng chọn
+      // Sản phẩm / Linh kiện rồi gửi lại kèm new_sku_type (không báo lỗi đỏ).
+      if (errorCode === "NEW_SKU_TYPE_REQUIRED" && !newSkuType) {
+        setPendingNewSku({
+          code,
+          quantity: scanQuantity,
+          containerId,
+          skuCode: parseCompositeSkuCode(code) ?? code,
+        });
+        return false;
+      }
+      setScanLog((current) =>
+        [
+          {
+            key: makeKey("scan-error"),
+            code,
+            result: errorText,
+            success: false,
+            errorCode,
+          },
+          ...current,
+        ].slice(0, 20),
+      );
+      toast.error(errorText);
+      await detailQuery.refetch();
+      onChanged?.();
+      return false;
+    }
+  };
+
+  /**
+   * Một ô quét thống nhất: nhân viên chỉ quét, hệ thống tự nhận diện.
+   *  - Mã HỘP linh kiện (BOX-<SKU>-<seq>) → mở ô nhập số lượng + nút Xác nhận.
+   *  - Mã thùng carton → đặt làm "thùng đang quét" cho sản phẩm.
+   *  - Mã sản phẩm / linh kiện dán mã → ghi nhận +1, server tự đối chiếu SKU.
+   */
   const handleScan = async (scannedCode?: string) => {
-    const autoMatch = !selectedLine;
     if (!detail || scanVersion === null || !canScan || !isMutable) return;
-    if (!autoMatch && !selectedSku) return;
-    const normalizedBox = boxCode.trim();
-    const normalizedCode = (scannedCode ?? scanCode).trim();
-    const scanQuantity =
-      isSerialTracked || !isComponent ? 1 : Math.max(1, Number(quantity) || 1);
-
-    if (isComponent && !normalizedBox) {
-      toast.error("Linh kiện bắt buộc có hộp trước khi ghi nhận quét.");
-      return;
-    }
-    if ((!isComponent || isSerialTracked) && !normalizedCode) {
-      toast.error("Mã vạch hoặc số sê-ri là bắt buộc cho dòng này.");
+    const normalizedCode = (scannedCode ?? scanCode).trim().toUpperCase();
+    if (!normalizedCode) {
+      toast.error("Vui lòng quét hoặc nhập một mã.");
       return;
     }
 
-    if (
-      !isComponent &&
-      normalizedCode &&
-      !looksCompositeProductQr(normalizedCode)
-    ) {
+    // Linh kiện theo hộp: mã hộp mang sẵn SKU → mở ô nhập số lượng đếm tay.
+    const box = parseBoxCode(normalizedCode);
+    if (box) {
+      setPendingBox({ boxCode: box.boxCode, skuCode: box.skuCode });
+      setQuantity(1);
+      setScanCode("");
+      return;
+    }
+
+    // Mã sản phẩm dạng thường (không phải QR composite): thử nhận diện thùng carton.
+    if (!looksCompositeProductQr(normalizedCode)) {
       let classified: ScanClassifyResponse | null = null;
       try {
         classified = await classifyScanCodes({
@@ -571,137 +698,45 @@ export function InboundScanModal({
       }
     }
 
-    const logicalCode = normalizedCode || normalizedBox;
-    const scanFingerprint = [
-      selectedLine?.id ?? AUTO_LINE,
-      scanQuantity,
-      normalizedCode,
-      normalizedBox,
-      !isComponent ? (activeCarton?.id ?? "") : "",
-    ].join("|");
-    const pendingScanKey = scanKeyRef.current;
-    const scanAttemptKey =
-      pendingScanKey?.fingerprint === scanFingerprint
-        ? pendingScanKey.key
-        : makeKey(`inbound-scan-${documentId}`);
-    scanKeyRef.current = { key: scanAttemptKey, fingerprint: scanFingerprint };
-    try {
-      let containerId: string | undefined;
-      if (isComponent && selectedLine) {
-        const box = await registerBoxMutation.mutateAsync({
-          id: documentId,
-          lineId: selectedLine.id,
-          boxCode: normalizedBox,
-        });
-        if (box.stock_effect !== "NONE" || box.movement_created !== false) {
-          throw new Error(
-            "Lỗi bất biến: đăng ký hộp không được làm thay đổi tồn kho.",
-          );
-        }
-        containerId = box.container_id;
-      } else if (activeCarton) {
-        containerId = activeCarton.id;
-      }
+    // Sản phẩm / linh kiện dán mã: +1, gắn vào thùng đang quét nếu có.
+    await submitScan({
+      code: normalizedCode,
+      quantity: 1,
+      containerId: activeCarton?.id,
+    });
+  };
 
-      const result = await scanMutation.mutateAsync({
-        id: documentId,
-        code: logicalCode,
-        lineId: selectedLine?.id,
-        ifMatch: scanVersion,
-        includeCodeValue: !isComponent || isSerialTracked,
-        quantity: scanQuantity,
-        containerId,
-        idempotencyKey: scanAttemptKey,
-      });
-      const first = result[0];
-      if (!first) throw new Error("Hệ thống không trả kết quả quét.");
-      scanKeyRef.current = null;
-      setScanVersion(first.version);
-      const identityText = [
-        first.sku ? `SKU ${first.sku}` : "",
-        first.item_unique ?? "",
-      ]
-        .filter(Boolean)
-        .join(" · ");
-      const candidateText =
-        first.resolution_status === "NEW_ITEM_CANDIDATE"
-          ? ` · ${QR_RESOLUTION_STATUS_LABELS.NEW_ITEM_CANDIDATE}`
-          : "";
-      const cartonText =
-        !isComponent && activeCarton ? ` · thùng ${activeCarton.code}` : "";
-      setScanLog((current) =>
-        [
-          {
-            key: makeKey("scan"),
-            code: logicalCode,
-            result: first.replayed
-              ? "Hợp lệ · đã ghi nhận trước đó, không cộng thêm"
-              : `Hợp lệ · +${scanQuantity}${identityText ? ` · ${identityText}` : ""}${candidateText}${cartonText}`,
-            success: true,
-            lineId: first.line_id,
-          },
-          ...current,
-        ].slice(0, 20),
-      );
-      if (first.replayed) {
-        toast.success(
-          "Lần quét này đã được ghi nhận trước đó. Hệ thống trả lại kết quả cũ — số đã quét không tăng thêm.",
-        );
-      }
-      setScanCode("");
-      if (!isSerialTracked) setQuantity(1);
-      await Promise.all([detailQuery.refetch(), scanEntriesQuery.refetch()]);
-      onChanged?.();
-    } catch (error) {
-      const errorText = getApiErrorMessage(error, "Mã quét không hợp lệ.");
-      const errorCode = normalizeError(error).code ?? undefined;
-      scanKeyRef.current = shouldReuseScanKey(error)
-        ? { key: scanAttemptKey, fingerprint: scanFingerprint }
-        : null;
-      setScanLog((current) =>
-        [
-          {
-            key: makeKey("scan-error"),
-            code: logicalCode,
-            result: errorText,
-            success: false,
-            lineId: selectedLine?.id,
-            errorCode,
-          },
-          ...current,
-        ].slice(0, 20),
-      );
-      toast.error(errorText);
-      await detailQuery.refetch();
-      onChanged?.();
+  // Xác nhận số lượng linh kiện trong hộp đã quét, rồi quay lại chờ quét tiếp.
+  const handleConfirmBox = async () => {
+    if (!pendingBox || !canScan || !isMutable) return;
+    const qty = Math.max(1, Number(quantity) || 1);
+    const ok = await submitScan({
+      code: pendingBox.boxCode,
+      quantity: qty,
+      boxSkuCode: pendingBox.skuCode,
+    });
+    if (ok) {
+      setPendingBox(null);
+      setQuantity(1);
     }
   };
 
-  // GĐ1 COMPONENT theo Box: materialize dòng linh kiện theo SKU thực nhận rồi
-  // chuyển sang nhánh Hộp/serial/số đếm hiện có. Idempotent theo document + SKU.
-  const handleAddComponentLine = async () => {
-    if (!componentSkuId || !canScan || !isMutable) return;
-    try {
-      const result = await ensureComponentMutation.mutateAsync({
-        id: documentId,
-        skuId: componentSkuId,
-      });
-      const refreshed = await detailQuery.refetch();
-      setLineId(result.line_id);
-      setComponentSkuId(undefined);
-      const version = refreshed.data?.document.version;
-      if (version !== undefined) setScanVersion(version);
-      toast.success(
-        `Đã sẵn sàng ghi nhận linh kiện ${result.sku_code} theo hộp (${
-          result.is_serial_tracked
-            ? "quét từng số sê-ri"
-            : "nhập số lượng đếm thực tế"
-        }).`,
-      );
-      onChanged?.();
-    } catch (error) {
-      toast.error(getApiErrorMessage(error, "Không tạo được dòng linh kiện."));
-    }
+  const handleCancelBox = () => {
+    setPendingBox(null);
+    setQuantity(1);
+  };
+
+  // Người dùng đã chọn loại cho SKU mới: gửi lại lần quét kèm new_sku_type.
+  const handleChooseNewSkuType = async (type: "PRODUCT" | "COMPONENT") => {
+    if (!pendingNewSku) return;
+    const pending = pendingNewSku;
+    setPendingNewSku(null);
+    await submitScan({
+      code: pending.code,
+      quantity: pending.quantity,
+      containerId: pending.containerId,
+      newSkuType: type,
+    });
   };
 
   const handleUnscan = async (entry: InboundScanEntry) => {
@@ -1002,11 +1037,6 @@ export function InboundScanModal({
     },
   ];
 
-  const componentSkuAutocompleteOptions = componentSkuOptions.map((sku) => ({
-    value: sku.sku_id,
-    label: `${sku.sku_code} · ${sku.sku_name}`,
-  }));
-
   return (
     <>
       <UiDialog
@@ -1190,7 +1220,7 @@ export function InboundScanModal({
                   >
                     Ghi nhận mã vạch / QR / hộp
                   </Box>
-                  {!isComponent && activeCarton ? (
+                  {activeCarton ? (
                     <Box sx={{ mb: 1.5 }}>
                       <UiAlert tone="info">
                         <Stack
@@ -1222,168 +1252,91 @@ export function InboundScanModal({
                     </Box>
                   ) : null}
 
-                  {/*
-                   * Vùng nhập xếp lưới 2 cột. Panel này chiếm trọn bề ngang modal
-                   * (maxWidth="lg" ≈ 1200px); xếp dọc 1 cột thì mỗi ô kéo dài cả
-                   * nghìn pixel — vừa trống trải vừa bắt mắt rê xa. Ô quét mã là
-                   * đường chính nên vẫn chiếm trọn hàng (gridColumn 1 / -1).
-                   */}
-                  <Box
-                    sx={{
-                      display: "grid",
-                      gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
-                      columnGap: 2,
-                      rowGap: 1.5,
-                      alignItems: "start",
-                      mb: 1.5,
-                    }}
-                  >
-                    <Box sx={{ minWidth: 0 }}>
+                  {pendingBox ? (
+                    /* Đã quét một mã HỘP linh kiện: hiện ô nhập số lượng đếm tay
+                       + nút Xác nhận. Xác nhận xong quay lại chờ quét mã tiếp. */
+                    <Box
+                      sx={{
+                        border: "1px solid",
+                        borderColor: "primary.main",
+                        borderRadius: 2,
+                        p: 2,
+                        mb: 1.5,
+                      }}
+                    >
+                      <Stack
+                        direction="row"
+                        spacing={0.75}
+                        sx={{ alignItems: "center", mb: 1 }}
+                      >
+                        <InboxOutlined color="primary" />
+                        <Box sx={{ fontWeight: 700 }}>
+                          {`Hộp linh kiện: ${pendingBox.skuCode}`}
+                        </Box>
+                      </Stack>
                       <Box
                         sx={{
-                          typography: "caption",
+                          typography: "body2",
                           color: "text.secondary",
-                          mb: 0.5,
+                          mb: 1.5,
                         }}
                       >
-                        Dòng nhận
+                        Mã hộp <strong>{pendingBox.boxCode}</strong> chứa linh
+                        kiện <strong>{pendingBox.skuCode}</strong>. Nhập số lượng
+                        đếm được trong hộp rồi bấm Xác nhận. Nếu SKU chưa có trong
+                        kho, hệ thống sẽ tự tạo và bạn bổ sung thông tin sau.
                       </Box>
-                      <UiTextField
-                        select
-                        fullWidth
-                        value={lineId}
-                        disabled={!canScan || busy}
-                        onChange={(event) => setLineId(event.target.value)}
+                      <Stack
+                        direction={{ xs: "column", sm: "row" }}
+                        spacing={1.5}
+                        sx={{ alignItems: { sm: "flex-end" } }}
                       >
-                        <MenuItem value={AUTO_LINE}>
-                          Tự động theo QR (sản phẩm — hệ thống tự đối chiếu SKU)
-                        </MenuItem>
-                        {detail.lines.map((line) => {
-                          const sku = skuById.get(line.productId);
-                          return (
-                            <MenuItem key={line.id} value={line.id}>
-                              {`${sku?.sku_code ?? line.productId} · đã quét ${line.scanned}`}
-                            </MenuItem>
-                          );
-                        })}
-                      </UiTextField>
-                    </Box>
-
-                    <Box sx={{ minWidth: 0 }}>
-                      <Box
-                        sx={{
-                          typography: "caption",
-                          color: "text.secondary",
-                          mb: 0.5,
-                        }}
-                      >
-                        Nhận linh kiện theo hộp — chọn SKU linh kiện thực nhận
-                        (dòng phiếu tự tạo, không nhập số lượng dự kiến)
-                      </Box>
-                      <Stack direction="row" spacing={1}>
-                        {/* Part 4 Vuexy sync: Autocomplete (MUI trần) →
-                            UiTextField select cùng danh sách SKU linh kiện. */}
-                        <UiTextField
-                          select
-                          sx={{ flex: 1 }}
-                          label="Chọn SKU linh kiện"
-                          value={componentSkuId ?? ""}
-                          disabled={!canScan || busy}
-                          onChange={(event) =>
-                            setComponentSkuId(event.target.value || undefined)
-                          }
-                        >
-                          <MenuItem value="">Chọn SKU linh kiện</MenuItem>
-                          {componentSkuAutocompleteOptions.map((option) => (
-                            <MenuItem key={option.value} value={option.value}>
-                              {option.label}
-                            </MenuItem>
-                          ))}
-                        </UiTextField>
+                        <Box sx={{ minWidth: 0 }}>
+                          <Box
+                            sx={{
+                              typography: "caption",
+                              color: "text.secondary",
+                              mb: 0.5,
+                            }}
+                          >
+                            Số lượng linh kiện trong hộp *
+                          </Box>
+                          <UiTextField
+                            type="number"
+                            autoFocus
+                            value={quantity}
+                            disabled={!canScan || busy}
+                            onChange={(event) =>
+                              setQuantity(Number(event.target.value) || 1)
+                            }
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter") {
+                                event.preventDefault();
+                                void handleConfirmBox();
+                              }
+                            }}
+                            sx={{ width: "100%", maxWidth: 220 }}
+                            slotProps={{ htmlInput: { min: 1 } }}
+                          />
+                        </Box>
                         <ActionButton
-                          kind="create"
-                          disabled={!canScan || busy || !componentSkuId}
-                          onClick={() => void handleAddComponentLine()}
+                          kind="scan"
+                          disabled={!canScan || busy}
+                          onClick={() => void handleConfirmBox()}
                         >
-                          {ensureComponentMutation.isPending
-                            ? "Đang thêm..."
-                            : "Thêm dòng linh kiện"}
+                          {busy ? "Đang xử lý..." : "Xác nhận"}
+                        </ActionButton>
+                        <ActionButton
+                          kind="cancel"
+                          disabled={busy}
+                          onClick={handleCancelBox}
+                        >
+                          Hủy
                         </ActionButton>
                       </Stack>
                     </Box>
-
-                    {isComponent ? (
-                      <Box
-                        sx={{
-                          minWidth: 0,
-                          gridColumn: {
-                            xs: "auto",
-                            md: isSerialTracked ? "1 / -1" : "auto",
-                          },
-                        }}
-                      >
-                        <Box
-                          sx={{
-                            typography: "caption",
-                            color: "text.secondary",
-                            mb: 0.5,
-                          }}
-                        >
-                          Hộp *
-                        </Box>
-                        <Stack direction="row" spacing={1}>
-                          <UiTextField
-                            fullWidth
-                            value={boxCode}
-                            disabled={!canScan || busy}
-                            placeholder="Quét / nhập hộp chứa đúng một SKU linh kiện"
-                            onChange={(event) => setBoxCode(event.target.value)}
-                            slotProps={{ htmlInput: { maxLength: 120 } }}
-                          />
-                          <ActionButton
-                            kind="camera"
-                            disabled={!canScan || busy}
-                            onClick={() => setCameraTarget("box")}
-                            sx={{ flexShrink: 0 }}
-                          >
-                            Quét bằng camera
-                          </ActionButton>
-                        </Stack>
-                      </Box>
-                    ) : null}
-
-                    {/* Đi liền ô Hộp: cùng mô tả kiện đang nhận, và ghép cặp 2 ô
-                        này giúp lưới không hở nửa hàng trống. */}
-                    {isComponent && !isSerialTracked ? (
-                      <Box sx={{ minWidth: 0 }}>
-                        <Box
-                          sx={{
-                            typography: "caption",
-                            color: "text.secondary",
-                            mb: 0.5,
-                          }}
-                        >
-                          Số lượng lần nhận *
-                        </Box>
-                        <UiTextField
-                          type="number"
-                          value={quantity}
-                          onChange={(event) =>
-                            setQuantity(Number(event.target.value) || 1)
-                          }
-                          disabled={!canScan || busy}
-                          sx={{ width: "100%", maxWidth: 220 }}
-                          slotProps={{ htmlInput: { min: 1 } }}
-                        />
-                      </Box>
-                    ) : null}
-
-                    <Box
-                      sx={{
-                        minWidth: 0,
-                        gridColumn: { xs: "auto", md: "1 / -1" },
-                      }}
-                    >
+                  ) : (
+                    <Box sx={{ mb: 1.5 }}>
                       <Box
                         sx={{
                           typography: "caption",
@@ -1391,9 +1344,9 @@ export function InboundScanModal({
                           mb: 0.5,
                         }}
                       >
-                        {isComponent && !isSerialTracked
-                          ? "Mã vạch / số sê-ri (không bắt buộc với linh kiện nhập theo số lượng)"
-                          : "Mã vạch / Số sê-ri *"}
+                        Quét sản phẩm hoặc mã hộp linh kiện — hệ thống tự nhận
+                        diện: sản phẩm/linh kiện dán mã ghi nhận +1, mã hộp
+                        (BOX-…) mở ô nhập số lượng.
                       </Box>
                       <Stack
                         direction="row"
@@ -1405,11 +1358,7 @@ export function InboundScanModal({
                             value={scanCode}
                             size="middle"
                             disabled={!canScan || busy}
-                            placeholder={
-                              isSerialTracked
-                                ? "Quét số sê-ri / mã vạch"
-                                : "Quét mã vạch/QR hoặc nhập tay"
-                            }
+                            placeholder="Quét sản phẩm hoặc mã hộp linh kiện (BOX-…)"
                             onChange={setScanCode}
                             onScan={(code) => void handleScan(code)}
                           />
@@ -1417,39 +1366,14 @@ export function InboundScanModal({
                         <ActionButton
                           kind="camera"
                           disabled={!canScan || busy}
-                          onClick={() => setCameraTarget("code")}
+                          onClick={() => setCameraOpen(true)}
                           sx={{ flexShrink: 0 }}
                         >
                           Quét bằng camera
                         </ActionButton>
                       </Stack>
                     </Box>
-                  </Box>
-
-                  <ActionButton
-                    kind="scan"
-                    disabled={
-                      !canScan || busy || (lineId !== AUTO_LINE && !selectedSku)
-                    }
-                    onClick={() => void handleScan()}
-                  >
-                    {busy ? "Đang xử lý..." : "Ghi nhận quét"}
-                  </ActionButton>
-
-                  {selectedLine ? (
-                    <Box sx={{ mt: 1.5 }}>
-                      <UiAlert tone="info">
-                        <Box sx={{ fontWeight: 700 }}>
-                          {`${selectedSku?.sku_code ?? selectedLine.productId}: đã quét ${selectedLine.scanned}`}
-                        </Box>
-                        <Box sx={{ typography: "body2" }}>
-                          {isComponent
-                            ? "Linh kiện: bắt buộc có hộp. Với linh kiện nhập theo số lượng có thể ghi nhận nhiều đơn vị mỗi hộp; linh kiện quản lý số sê-ri vẫn ghi nhận từng đơn vị. Sau khi hoàn tất nhập kho mới thực hiện xếp khay."
-                            : "Sản phẩm: quét mã vạch/QR khi nhập kho. RFID không bắt buộc; ở luồng xuất kho, RFID chỉ là gán mã tùy chọn và không chặn hoàn tất xuất kho."}
-                        </Box>
-                      </UiAlert>
-                    </Box>
-                  ) : null}
+                  )}
                 </Box>
               ) : (
                 <Box sx={{ mb: 2 }}>
@@ -1608,20 +1532,58 @@ export function InboundScanModal({
       </UiDialog>
 
       <CameraScanModal
-        open={cameraTarget !== null}
-        title={
-          cameraTarget === "box"
-            ? "Quét mã hộp bằng camera"
-            : "Quét mã vạch / QR bằng camera"
-        }
-        onClose={() => setCameraTarget(null)}
+        open={cameraOpen}
+        title="Quét mã vạch / QR / hộp bằng camera"
+        onClose={() => setCameraOpen(false)}
         onDetected={(code) => {
-          if (cameraTarget === "box") setBoxCode(code);
-          else setScanCode(code);
-          setCameraTarget(null);
-          toast.success("Đã đọc mã từ camera. Kiểm tra và bấm Ghi nhận quét.");
+          setCameraOpen(false);
+          void handleScan(code);
         }}
       />
+
+      <UiDialog
+        open={pendingNewSku !== null}
+        onClose={guardBackdropClose(() => setPendingNewSku(null))}
+        maxWidth="xs"
+        fullWidth
+        title="Đây là sản phẩm hay linh kiện?"
+        actions={
+          <>
+            <ActionButton
+              kind="back"
+              disabled={busy}
+              onClick={() => setPendingNewSku(null)}
+            >
+              Hủy
+            </ActionButton>
+            <ActionButton
+              kind="confirm"
+              disabled={busy}
+              onClick={() => void handleChooseNewSkuType("COMPONENT")}
+            >
+              Linh kiện
+            </ActionButton>
+            <ActionButton
+              kind="confirm"
+              disabled={busy}
+              onClick={() => void handleChooseNewSkuType("PRODUCT")}
+            >
+              Sản phẩm
+            </ActionButton>
+          </>
+        }
+      >
+        <Stack spacing={1.5}>
+          <UiAlert tone="info">
+            <Box sx={{ fontWeight: 700 }}>
+              {`Mã "${pendingNewSku?.skuCode ?? ""}" chưa có trong hệ thống`}
+            </Box>
+            <Box sx={{ typography: "body2" }}>
+             Hệ thống phát hiện mã bạn vừa quét là mã mới chưa có trong kho. Bạn cần xác nhận đây là sản phẩm hay linh kiện.
+            </Box>
+          </UiAlert>
+        </Stack>
+      </UiDialog>
 
       <UiDialog
         open={cancelOpen}

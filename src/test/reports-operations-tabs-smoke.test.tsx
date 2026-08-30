@@ -1,15 +1,18 @@
 /**
- * Báo cáo vận hành (7 tab) — smoke render THẬT của cả bảy tab.
+ * Báo cáo vận hành (8 trang riêng trong sidebar) — smoke render THẬT của cả
+ * tám trang.
  *
- * Vì sao cần: hai bộ test hiện có chỉ mount tab 1 (WWHN-240) và tab 6
- * (WWHN-258). Năm tab còn lại chỉ được "test" gián tiếp qua typecheck, mà
- * typecheck không bắt được lỗi runtime kinh điển của màn báo cáo: đọc field
- * `undefined` của payload, chart mount với series rỗng, hay bộ lọc chạy trên
- * mảng chưa tồn tại. File này mở lần lượt từng tab với payload đúng shape BE và
- * đòi hỏi: tab render được, không văng lỗi, và mục tiêu đề của tab có mặt.
+ * Trước đây đây là 1 trang với 8 tab nội trang (AlignedReportsPage); phản hồi
+ * người dùng 2026-08-30 tách mỗi tab thành MỘT route/trang riêng, sổ ra ở
+ * sidebar nhóm "Báo cáo" thay vì bấm tab trong trang. File này mount lần lượt
+ * từng trang với payload đúng shape BE và đòi hỏi: trang render được, không
+ * văng lỗi, và mục tiêu đề của trang có mặt — kế thừa lý do tồn tại từ bản tab
+ * cũ (typecheck không bắt được lỗi runtime: đọc field `undefined` của payload,
+ * chart mount với series rỗng, hay bộ lọc chạy trên mảng chưa tồn tại).
  */
+import type { ComponentType } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import { renderWithProviders } from "@/test/test-utils";
 import { cleanupTestState } from "@/test/setup";
 
@@ -32,7 +35,15 @@ vi.mock("react-apexcharts", () => ({
 
 import { http } from "@/shared/api/http";
 import { useAuthStore } from "@/shared/store/auth.store";
-import AlignedReportsPage from "@/modules/reports/pages/AlignedReportsPage";
+import { ROUTES } from "@/shared/constants/routes";
+import InventoryFlowReportPage from "@/modules/reports/pages/InventoryFlowReportPage";
+import StockReconcileReportPage from "@/modules/reports/pages/StockReconcileReportPage";
+import TraceabilityReportPage from "@/modules/reports/pages/TraceabilityReportPage";
+import ImportQualityReportPage from "@/modules/reports/pages/ImportQualityReportPage";
+import PackingLabelReportPage from "@/modules/reports/pages/PackingLabelReportPage";
+import WarrantyReportPage from "@/modules/reports/pages/WarrantyReportPage";
+import RecipientReportPage from "@/modules/reports/pages/RecipientReportPage";
+import PendingEvidenceReportPage from "@/modules/reports/pages/PendingEvidenceReportPage";
 
 const TODAY = "2026-08-20";
 
@@ -323,52 +334,65 @@ const PAGE_PAYLOAD: Record<string, unknown[]> = {
   ],
 };
 
-const TABS: Array<{ tab: RegExp; testId: string; heading: RegExp }> = [
+const PAGES: Array<{
+  Page: ComponentType;
+  path: string;
+  testId: string;
+  heading: RegExp;
+}> = [
   {
-    tab: /Nhập/,
+    Page: InventoryFlowReportPage,
+    path: ROUTES.REPORTS_INVENTORY_FLOW,
     testId: "rpt-tab-inventory-flow",
-    // Tiêu đề tab 1 cũng chứa cụm "Lịch sử chứng từ" nên phải khớp CHÍNH XÁC
-    // tiêu đề mục 1.4, nếu không sẽ dính hai phần tử.
+    // Tiêu đề trang 1 cũng chứa cụm "Lịch sử chứng từ" nên phải khớp CHÍNH
+    // XÁC tiêu đề mục 1.4, nếu không sẽ dính hai phần tử.
     heading: /^Lịch sử chứng từ$/,
   },
   {
-    tab: /Tồn kho & đối soát/,
+    Page: StockReconcileReportPage,
+    path: ROUTES.REPORTS_STOCK_RECONCILE,
     testId: "rpt-tab-stock-reconcile",
     heading: /Cảnh báo định mức tồn kho/,
   },
   {
-    tab: /Truy vết hàng hóa/,
+    Page: TraceabilityReportPage,
+    path: ROUTES.REPORTS_TRACEABILITY,
     testId: "rpt-tab-traceability",
     heading: /Vòng đời sản phẩm/,
   },
   {
-    tab: /Import \/ Match/,
+    Page: ImportQualityReportPage,
+    path: ROUTES.REPORTS_IMPORT_QUALITY,
     testId: "rpt-tab-import-quality",
     heading: /Lịch sử Import\/Scan & Batch/,
   },
   {
-    tab: /Packing Label/,
+    Page: PackingLabelReportPage,
+    path: ROUTES.REPORTS_PACKING_LABEL,
     testId: "rpt-tab-packing-label",
     heading: /Lịch sử Print \/ Reprint/,
   },
   {
-    tab: /Bảo hành & linh kiện/,
+    Page: WarrantyReportPage,
+    path: ROUTES.REPORTS_WARRANTY,
     testId: "rpt-tab-warranty",
     heading: /Danh sách chi tiết hồ sơ bảo hành/,
   },
   {
-    tab: /Xuất theo người nhận/,
+    Page: RecipientReportPage,
+    path: ROUTES.REPORTS_RECIPIENT,
     testId: "rpt-tab-recipient",
     heading: /Bảng chi tiết xuất theo người nhận/,
   },
   {
-    tab: /Chứng từ cần bổ sung/,
+    Page: PendingEvidenceReportPage,
+    path: ROUTES.REPORTS_PENDING_EVIDENCE,
     testId: "rpt-tab-pending-evidence",
     heading: /Danh sách chứng từ cần bổ sung/,
   },
 ];
 
-describe("Báo cáo vận hành · 7 tab render được với payload thật", () => {
+describe("Báo cáo vận hành · 8 trang render được với payload thật", () => {
   beforeEach(() => {
     vi.mocked(http.get).mockReset();
     vi.mocked(http.getPage).mockReset();
@@ -393,23 +417,13 @@ describe("Báo cáo vận hành · 7 tab render được với payload thật", 
     cleanupTestState();
   });
 
-  it.each(TABS)(
-    "mở tab $testId không văng lỗi và hiện mục chính",
-    async ({ tab, testId, heading }) => {
-      renderWithProviders(<AlignedReportsPage />, ["/reports"]);
-      fireEvent.click(await screen.findByRole("tab", { name: tab }));
+  it.each(PAGES)(
+    "mở $testId không văng lỗi và hiện mục chính",
+    async ({ Page, path, testId, heading }) => {
+      renderWithProviders(<Page />, [path]);
 
       expect(await screen.findByTestId(testId)).toBeInTheDocument();
       expect(await screen.findByText(heading)).toBeInTheDocument();
     },
   );
-
-  it("chuyển qua đủ các tab liên tiếp trong một phiên", async () => {
-    renderWithProviders(<AlignedReportsPage />, ["/reports"]);
-    for (const { tab, testId } of TABS) {
-      fireEvent.click(await screen.findByRole("tab", { name: tab }));
-      expect(await screen.findByTestId(testId)).toBeInTheDocument();
-    }
-    expect(screen.getAllByRole("tab")).toHaveLength(TABS.length);
-  });
 });

@@ -114,8 +114,43 @@ const ReversalPage = lazy(() =>
     default: m.default,
   })),
 );
-const ReportsPage = lazy(() =>
-  import("@/modules/reports/pages/ReportsPage").then((m) => ({
+const InventoryFlowReportPage = lazy(() =>
+  import("@/modules/reports/pages/InventoryFlowReportPage").then((m) => ({
+    default: m.default,
+  })),
+);
+const StockReconcileReportPage = lazy(() =>
+  import("@/modules/reports/pages/StockReconcileReportPage").then((m) => ({
+    default: m.default,
+  })),
+);
+const TraceabilityReportPage = lazy(() =>
+  import("@/modules/reports/pages/TraceabilityReportPage").then((m) => ({
+    default: m.default,
+  })),
+);
+const ImportQualityReportPage = lazy(() =>
+  import("@/modules/reports/pages/ImportQualityReportPage").then((m) => ({
+    default: m.default,
+  })),
+);
+const PackingLabelReportPage = lazy(() =>
+  import("@/modules/reports/pages/PackingLabelReportPage").then((m) => ({
+    default: m.default,
+  })),
+);
+const WarrantyReportPage = lazy(() =>
+  import("@/modules/reports/pages/WarrantyReportPage").then((m) => ({
+    default: m.default,
+  })),
+);
+const RecipientReportPage = lazy(() =>
+  import("@/modules/reports/pages/RecipientReportPage").then((m) => ({
+    default: m.default,
+  })),
+);
+const PendingEvidenceReportPage = lazy(() =>
+  import("@/modules/reports/pages/PendingEvidenceReportPage").then((m) => ({
     default: m.default,
   })),
 );
@@ -310,8 +345,57 @@ export const router = createBrowserRouter([
             element: routeEl(ROUTES.REVERSE, <ReversalPage />),
           },
           {
-            path: ROUTES.REPORTS,
-            element: routeEl(ROUTES.REPORTS, <ReportsPage />),
+            path: ROUTES.REPORTS_INVENTORY_FLOW,
+            element: routeEl(
+              ROUTES.REPORTS_INVENTORY_FLOW,
+              <InventoryFlowReportPage />,
+            ),
+          },
+          {
+            path: ROUTES.REPORTS_STOCK_RECONCILE,
+            element: routeEl(
+              ROUTES.REPORTS_STOCK_RECONCILE,
+              <StockReconcileReportPage />,
+            ),
+          },
+          {
+            path: ROUTES.REPORTS_TRACEABILITY,
+            element: routeEl(
+              ROUTES.REPORTS_TRACEABILITY,
+              <TraceabilityReportPage />,
+            ),
+          },
+          {
+            path: ROUTES.REPORTS_IMPORT_QUALITY,
+            element: routeEl(
+              ROUTES.REPORTS_IMPORT_QUALITY,
+              <ImportQualityReportPage />,
+            ),
+          },
+          {
+            path: ROUTES.REPORTS_PACKING_LABEL,
+            element: routeEl(
+              ROUTES.REPORTS_PACKING_LABEL,
+              <PackingLabelReportPage />,
+            ),
+          },
+          {
+            path: ROUTES.REPORTS_WARRANTY,
+            element: routeEl(ROUTES.REPORTS_WARRANTY, <WarrantyReportPage />),
+          },
+          {
+            path: ROUTES.REPORTS_RECIPIENT,
+            element: routeEl(
+              ROUTES.REPORTS_RECIPIENT,
+              <RecipientReportPage />,
+            ),
+          },
+          {
+            path: ROUTES.REPORTS_PENDING_EVIDENCE,
+            element: routeEl(
+              ROUTES.REPORTS_PENDING_EVIDENCE,
+              <PendingEvidenceReportPage />,
+            ),
           },
           // REQ-017: màn demo /component-catalog là công cụ nội bộ cho DEV —
           // không đăng ký route ở bản production (access.ts + menu.tsx gate

@@ -78,7 +78,16 @@ export const ROUTE_PERMISSIONS: Record<string, string | string[] | undefined> =
     // REVERSAL_POST là fail-closed sai — khoá luôn màn danh sách của các vai chỉ đọc.
     // Hành vi ghi vẫn ẩn theo REVERSAL_POST bên trong REV-00/REV-01.
     [ROUTES.REVERSE]: [P.INVENTORY_VIEW, P.REVERSAL_POST],
-    [ROUTES.REPORTS]: [P.REPORT_VIEW],
+    // 8 trang báo cáo con dùng chung report.view (không phân quyền riêng
+    // từng trang — phản hồi người dùng 2026-08-30).
+    [ROUTES.REPORTS_INVENTORY_FLOW]: [P.REPORT_VIEW],
+    [ROUTES.REPORTS_STOCK_RECONCILE]: [P.REPORT_VIEW],
+    [ROUTES.REPORTS_TRACEABILITY]: [P.REPORT_VIEW],
+    [ROUTES.REPORTS_IMPORT_QUALITY]: [P.REPORT_VIEW],
+    [ROUTES.REPORTS_PACKING_LABEL]: [P.REPORT_VIEW],
+    [ROUTES.REPORTS_WARRANTY]: [P.REPORT_VIEW],
+    [ROUTES.REPORTS_RECIPIENT]: [P.REPORT_VIEW],
+    [ROUTES.REPORTS_PENDING_EVIDENCE]: [P.REPORT_VIEW],
     // WWHN-252 · SCR-PV-ADM-01: hai quyền TÁCH BIỆT cùng mở được màn quản trị
     // App PV — pv.master.manage (ngành nghề/tag/rule/hồ sơ hiển thị) và
     // pv.publish (bật/tắt hiển thị công khai). Vào được màn không có nghĩa là

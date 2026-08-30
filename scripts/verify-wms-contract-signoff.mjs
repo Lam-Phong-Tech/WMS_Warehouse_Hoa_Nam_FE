@@ -46,7 +46,10 @@ const receiving = read("src/modules/inbound/services/inboundService.ts");
 const shipping = read("src/modules/shipping/services/shippingService.ts");
 const warranty = read("src/modules/warranty/services/warrantyService.ts");
 const componentIssue = read("src/modules/warranty/services/componentIssueService.ts");
-const reports = read("src/modules/reports/pages/AlignedReportsPage.tsx");
+// Trang báo cáo đã tách thành 8 route riêng (AlignedReportsPage.tsx xoá —
+// phản hồi người dùng 2026-08-30); guard export permission thực chất nằm ở
+// lớp report-export.ts dùng chung cho cả 8 trang, không phải ở shell UI.
+const reports = read("src/modules/reports/operations/report-export.ts");
 const tests = read("src/test/wms-contract-signoff-guards.test.ts");
 const warrantyTests = read("src/test/warranty-v17-fail-closed.test.ts");
 const signoff = read("src/shared/api/wms-contract-signoff.ts");

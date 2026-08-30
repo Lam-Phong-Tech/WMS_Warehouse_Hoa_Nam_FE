@@ -8,11 +8,11 @@ import {
   changePasswordSchema,
   type ChangePasswordFormValues,
 } from "@/modules/auth/schemas/change-password.schema";
-import { Box, UiAlert, UiFormText } from "@/shared/ui";
+import { Box, UiAlert, UiButton } from "@/shared/ui";
 import { AuthShell, AuthNote } from "@/modules/auth/components/AuthShell";
+import { AuthField } from "@/modules/auth/components/AuthField";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { ROUTES } from "@/shared/constants/routes";
-import { ActionButton } from "@/shared/components/actions";
 
 export function ChangePasswordPage() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -73,46 +73,42 @@ export function ChangePasswordPage() {
 
       <form onSubmit={onSubmit} noValidate>
         <Box sx={{ display: "flex", flexDirection: "column", gap: "13px" }}>
-          <UiFormText
+          <AuthField
             control={control}
             name="currentPassword"
             label="Mật khẩu hiện tại"
             placeholder="Nhập mật khẩu hiện tại"
-            startIcon="lock"
             type="password"
             autoFocus
             disabled={changePassword.isPending}
           />
 
-          <UiFormText
+          <AuthField
             control={control}
             name="newPassword"
             label="Mật khẩu mới"
             placeholder="Tối thiểu 8 ký tự"
-            startIcon="lock"
             type="password"
             disabled={changePassword.isPending}
           />
 
-          <UiFormText
+          <AuthField
             control={control}
             name="newPasswordConfirmation"
             label="Xác nhận mật khẩu mới"
             placeholder="Nhập lại mật khẩu mới"
-            startIcon="lock"
             type="password"
             disabled={changePassword.isPending}
           />
 
-          <ActionButton
-            kind="password"
+          <UiButton
             loading={changePassword.isPending}
             disabled={changePassword.isPending}
             type="submit"
             fullWidth
           >
             Đổi mật khẩu
-          </ActionButton>
+          </UiButton>
         </Box>
       </form>
 

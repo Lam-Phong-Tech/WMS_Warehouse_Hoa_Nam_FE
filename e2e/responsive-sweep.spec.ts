@@ -51,7 +51,15 @@ const CORE_ROUTES = [
   "/warranty",
   "/inventory",
   "/reverse",
-  "/reports",
+  // "/reports" tách thành 8 route riêng (2026-08-30) — quét cả 8.
+  "/reports/inventory-flow",
+  "/reports/stock-reconcile",
+  "/reports/traceability",
+  "/reports/import-quality",
+  "/reports/packing-label",
+  "/reports/warranty",
+  "/reports/recipient",
+  "/reports/pending-evidence",
   "/audit-logs",
   "/profile",
   "/component-catalog",
@@ -283,7 +291,11 @@ test.describe("responsive sweep — authenticated shell across all modules", () 
       }
 
       // Screenshot bằng chứng cho các màn tiêu biểu ở viewport này.
-      for (const shot of ["/dashboard", "/outbound", "/reports"]) {
+      for (const shot of [
+        "/dashboard",
+        "/outbound",
+        "/reports/inventory-flow",
+      ]) {
         await page.goto(shot);
         await page.waitForTimeout(250);
         await page.screenshot({

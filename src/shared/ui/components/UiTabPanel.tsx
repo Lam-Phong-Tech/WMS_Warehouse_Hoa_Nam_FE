@@ -45,9 +45,8 @@ export function UiTabPanel({
       // CỐ Ý KHÔNG đặt role="tabpanel": UiTabs (MUI Tabs) không phát id cho
       // từng tab nên không có gì để `aria-labelledby` trỏ tới — một tabpanel
       // không gắn được với tab của nó gây nhiễu cho trình đọc màn hình hơn là
-      // không có role. Ngoài ra ReportsPage lồng AlignedReportsPage nên sẽ
-      // sinh tabpanel lồng tabpanel. Đây thuần là lớp bọc chuyển động; ngữ
-      // nghĩa giữ NGUYÊN như trước khi thêm hiệu ứng.
+      // không có role. Đây thuần là lớp bọc chuyển động; ngữ nghĩa giữ NGUYÊN
+      // như trước khi thêm hiệu ứng.
       sx={[
         {
           // Keyframes khai báo toàn cục ở src/styles/hn-motion.css (một nguồn

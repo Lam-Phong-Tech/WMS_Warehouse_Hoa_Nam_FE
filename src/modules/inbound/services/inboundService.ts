@@ -40,6 +40,12 @@ type ScanOptions = {
   quantity?: number;
   containerId?: string;
   /**
+   * Loại người dùng chọn cho SKU MỚI khi quét mã item lần đầu (loại chưa suy ra
+   * được từ mã). Bỏ trống với SKU đã tồn tại; SKU mới mà thiếu -> BE trả
+   * NEW_SKU_TYPE_REQUIRED để FE hỏi rồi gửi lại kèm giá trị này.
+   */
+  newSkuType?: "PRODUCT" | "COMPONENT";
+  /**
    * WWHN-187 (DEV187-P1-07) — key của đúng *hành động quét* đang thực hiện.
    *
    * Bỏ trống thì service tự sinh một key mới cho lần gửi này. Khi gọi lại đúng
@@ -453,6 +459,7 @@ export async function scanInboundDocument(
     if (options.includeCodeValue !== false) body.code_value = code;
     if (options.lineId) body.line_id = options.lineId;
     if (options.containerId) body.container_id = options.containerId;
+    if (options.newSkuType) body.new_sku_type = options.newSkuType;
 
     // WWHN-187 (DEV187-P1-07) — mỗi hành động quét mang đúng một Idempotency-Key.
     //

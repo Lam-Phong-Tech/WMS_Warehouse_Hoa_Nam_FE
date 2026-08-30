@@ -163,12 +163,25 @@ const FE_SCOPE_MANDATORY = ["scripts/verify-wwhn-237-closure.mjs", "src/test/wwh
 }
 
 // ── 3. Bề mặt báo cáo FE khớp đúng 9 report code MVP ─────────────────────────
+// Báo cáo đã tách khỏi 1 shell tab bar (AlignedReportsPage.tsx, đã xoá) thành
+// 8 trang riêng trong sidebar (phản hồi người dùng 2026-08-30) — quét cả 8
+// route page + toàn bộ operations/ dùng chung, không đọc đúng một đường dẫn.
 {
-  const rel = "src/modules/reports/pages/AlignedReportsPage.tsx";
-  const source = readText(rel);
-  if (source === null) {
-    record("FE-REPORT-SURFACE", false, `${rel} không tồn tại.`);
+  const REPORT_SURFACE_FILES = [
+    "src/modules/reports/pages/InventoryFlowReportPage.tsx",
+    "src/modules/reports/pages/StockReconcileReportPage.tsx",
+    "src/modules/reports/pages/TraceabilityReportPage.tsx",
+    "src/modules/reports/pages/ImportQualityReportPage.tsx",
+    "src/modules/reports/pages/PackingLabelReportPage.tsx",
+    "src/modules/reports/pages/WarrantyReportPage.tsx",
+    "src/modules/reports/pages/RecipientReportPage.tsx",
+    "src/modules/reports/pages/PendingEvidenceReportPage.tsx",
+  ];
+  const missing = REPORT_SURFACE_FILES.filter((rel) => readText(rel) === null);
+  if (missing.length > 0) {
+    record("FE-REPORT-SURFACE", false, `Thiếu trang báo cáo: ${missing.join(", ")}.`);
   } else {
+    const source = REPORT_SURFACE_FILES.map((rel) => readText(rel)).join("\n");
     const declared = [...new Set((source.match(/reportCode:\s*"([a-z-]+)"/g) ?? []).map((m) => m.split('"')[1]))].sort();
     const unknown = declared.filter((code) => !CANONICAL_REPORT_CODES.includes(code));
     record(

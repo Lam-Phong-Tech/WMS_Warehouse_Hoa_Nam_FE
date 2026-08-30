@@ -457,3 +457,203 @@ describe("IN-03 · carton scan context (Đã quét xong thùng)", () => {
     expect(screen.queryByText("Thùng đang quét: CTN-002")).toBeNull();
   });
 });
+
+/**
+ * Luồng scan-driven cho LINH KIỆN theo mã HỘP (BOX-<SKU>-<seq>): quét một mã
+ * hộp mở ô nhập số lượng đếm tay + nút Xác nhận; xác nhận mới gửi lên server
+ * (code_value = mã hộp, không kèm line_id/container_id — server tự lo). Không
+ * cần chọn SKU / thêm dòng / đăng ký hộp thủ công trước.
+ */
+describe("IN-03 · quét mã hộp linh kiện (scan-driven)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    grant([P.INBOUND_VIEW, P.INBOUND_SCAN, P.INBOUND_CREATE, P.INBOUND_POST]);
+  });
+
+  afterEach(() => {
+    cleanupTestState();
+  });
+
+  async function scanCode(code: string) {
+    const input = await screen.findByLabelText("Scan code");
+    fireEvent.change(input, { target: { value: code } });
+    fireEvent.keyDown(input, { key: "Enter" });
+  }
+
+  it("quét mã hộp mở ô nhập số lượng, chưa gọi endpoint scan", async () => {
+    const scanMutate = vi.fn();
+    mockHooks([]);
+    vi.mocked(useScanInbound).mockReturnValue({
+      isPending: false,
+      mutateAsync: scanMutate,
+    } as never);
+
+    renderWithProviders(
+      <InboundScanModal documentId="IN-1" onClose={vi.fn()} />,
+    );
+    await scanCode("BOX-HN-COMP-BASE-003-0001");
+
+    // Nhận diện là hộp linh kiện, hiện panel số lượng — chưa ghi nhận.
+    expect(
+      await screen.findByText("Hộp linh kiện: HN-COMP-BASE-003"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Xác nhận/ }),
+    ).toBeInTheDocument();
+    // Không gọi classify (đã nhận diện tại client) và chưa gọi scan.
+    expect(classifyScanCodes).not.toHaveBeenCalled();
+    expect(scanMutate).not.toHaveBeenCalled();
+  });
+
+  it("xác nhận số lượng gửi mã hộp lên scan (không kèm line/container)", async () => {
+    const scanMutate = vi
+      .fn()
+      .mockResolvedValue([
+        { code_value: "BOX-HN-COMP-BASE-003-0001", status: "VALID", version: 5 },
+      ]);
+    mockHooks([]);
+    vi.mocked(useScanInbound).mockReturnValue({
+      isPending: false,
+      mutateAsync: scanMutate,
+    } as never);
+
+    renderWithProviders(
+      <InboundScanModal documentId="IN-1" onClose={vi.fn()} />,
+    );
+    await scanCode("BOX-HN-COMP-BASE-003-0001");
+    await screen.findByText("Hộp linh kiện: HN-COMP-BASE-003");
+
+    fireEvent.change(screen.getByRole("spinbutton"), {
+      target: { value: "5" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Xác nhận/ }));
+
+    await waitFor(() => {
+      expect(scanMutate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: "IN-1",
+          code: "BOX-HN-COMP-BASE-003-0001",
+          quantity: 5,
+          includeCodeValue: true,
+          ifMatch: 4,
+        }),
+      );
+    });
+    // Mã hộp tự mang SKU: server tự tạo dòng + đăng ký hộp, FE không gửi kèm.
+    const arg = scanMutate.mock.calls[0][0];
+    expect(arg.lineId).toBeUndefined();
+    expect(arg.containerId).toBeUndefined();
+  });
+});
+
+/**
+ * SKU mới (mã item) lần đầu: backend trả NEW_SKU_TYPE_REQUIRED → FE hiện hộp
+ * thoại chọn Sản phẩm / Linh kiện → gửi lại lần quét kèm new_sku_type.
+ */
+describe("IN-03 · hỏi loại SKU mới khi quét lần đầu", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    grant([P.INBOUND_VIEW, P.INBOUND_SCAN, P.INBOUND_CREATE, P.INBOUND_POST]);
+  });
+
+  afterEach(() => {
+    cleanupTestState();
+  });
+
+  async function scanCode(code: string) {
+    const input = await screen.findByLabelText("Scan code");
+    fireEvent.change(input, { target: { value: code } });
+    fireEvent.keyDown(input, { key: "Enter" });
+  }
+
+  function newSkuTypeRequiredError() {
+    return {
+      isAxiosError: true,
+      response: {
+        status: 422,
+        data: {
+          error: {
+            code: "NEW_SKU_TYPE_REQUIRED",
+            message: "SKU chưa có trong hệ thống — hãy chọn loại.",
+          },
+        },
+      },
+    };
+  }
+
+  it("hỏi loại rồi gửi lại kèm new_sku_type khi chọn Linh kiện", async () => {
+    const scanMutate = vi
+      .fn()
+      .mockRejectedValueOnce(newSkuTypeRequiredError())
+      .mockResolvedValueOnce([
+        {
+          code_value: "HN1|SKU=NEW-SKU-9|ITEM=SN-1",
+          status: "VALID",
+          version: 5,
+        },
+      ]);
+    mockHooks([]);
+    vi.mocked(useScanInbound).mockReturnValue({
+      isPending: false,
+      mutateAsync: scanMutate,
+    } as never);
+
+    renderWithProviders(
+      <InboundScanModal documentId="IN-1" onClose={vi.fn()} />,
+    );
+    await scanCode("HN1|SKU=NEW-SKU-9|ITEM=SN-1");
+
+    // Composite QR → không classify; hiện hộp thoại hỏi loại kèm mã SKU.
+    expect(
+      await screen.findByText(/chưa có trong hệ thống/),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/NEW-SKU-9/)).toBeInTheDocument();
+    expect(classifyScanCodes).not.toHaveBeenCalled();
+    expect(scanMutate).toHaveBeenCalledTimes(1);
+    expect(scanMutate.mock.calls[0][0].newSkuType).toBeUndefined();
+
+    fireEvent.click(screen.getByRole("button", { name: /Linh kiện/ }));
+
+    await waitFor(() => {
+      expect(scanMutate).toHaveBeenCalledTimes(2);
+    });
+    expect(scanMutate.mock.calls[1][0]).toEqual(
+      expect.objectContaining({
+        id: "IN-1",
+        code: "HN1|SKU=NEW-SKU-9|ITEM=SN-1",
+        newSkuType: "COMPONENT",
+      }),
+    );
+  });
+
+  it("gửi new_sku_type=PRODUCT khi chọn Sản phẩm", async () => {
+    const scanMutate = vi
+      .fn()
+      .mockRejectedValueOnce(newSkuTypeRequiredError())
+      .mockResolvedValueOnce([
+        {
+          code_value: "HN1|SKU=NEW-SKU-9|ITEM=SN-1",
+          status: "VALID",
+          version: 5,
+        },
+      ]);
+    mockHooks([]);
+    vi.mocked(useScanInbound).mockReturnValue({
+      isPending: false,
+      mutateAsync: scanMutate,
+    } as never);
+
+    renderWithProviders(
+      <InboundScanModal documentId="IN-1" onClose={vi.fn()} />,
+    );
+    await scanCode("HN1|SKU=NEW-SKU-9|ITEM=SN-1");
+    await screen.findByText(/chưa có trong hệ thống/);
+
+    fireEvent.click(screen.getByRole("button", { name: /Sản phẩm/ }));
+
+    await waitFor(() => {
+      expect(scanMutate).toHaveBeenCalledTimes(2);
+    });
+    expect(scanMutate.mock.calls[1][0].newSkuType).toBe("PRODUCT");
+  });
+});

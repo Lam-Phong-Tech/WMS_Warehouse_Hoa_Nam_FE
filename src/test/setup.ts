@@ -1113,7 +1113,14 @@ vi.mock("@/app/router/access", () => ({
     "/inventory": ["inventory.view"],
     "/warranty": ["warranty.manage", "warranty.component_issue"],
     "/reverse": ["inventory.reversal.post"],
-    "/reports": ["report.view"],
+    "/reports/inventory-flow": ["report.view"],
+    "/reports/stock-reconcile": ["report.view"],
+    "/reports/traceability": ["report.view"],
+    "/reports/import-quality": ["report.view"],
+    "/reports/packing-label": ["report.view"],
+    "/reports/warranty": ["report.view"],
+    "/reports/recipient": ["report.view"],
+    "/reports/pending-evidence": ["report.view"],
     // WWHN-252 · SCR-PV-ADM-01 (route NỘI BỘ). SCR-PV-01/02 là route công khai
     // nên KHÔNG có mặt ở bảng này — chúng không đi qua RequirePermission.
     "/pv-admin": ["pv.master.manage", "pv.publish"],

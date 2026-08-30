@@ -71,7 +71,14 @@ describe("WMS route access contract", () => {
       ],
       // WWHN-242: REV-00 là màn đọc, BE cấp GET reversal-documents bằng inventory.view.
       [ROUTES.REVERSE]: ["inventory.view", "inventory.reversal.post"],
-      [ROUTES.REPORTS]: ["report.view"],
+      [ROUTES.REPORTS_INVENTORY_FLOW]: ["report.view"],
+      [ROUTES.REPORTS_STOCK_RECONCILE]: ["report.view"],
+      [ROUTES.REPORTS_TRACEABILITY]: ["report.view"],
+      [ROUTES.REPORTS_IMPORT_QUALITY]: ["report.view"],
+      [ROUTES.REPORTS_PACKING_LABEL]: ["report.view"],
+      [ROUTES.REPORTS_WARRANTY]: ["report.view"],
+      [ROUTES.REPORTS_RECIPIENT]: ["report.view"],
+      [ROUTES.REPORTS_PENDING_EVIDENCE]: ["report.view"],
       [ROUTES.AUDIT_LOGS]: "audit_log.view",
       [ROUTES.PROFILE]: undefined,
     });
@@ -85,7 +92,18 @@ describe("WMS route access contract", () => {
         path.toLowerCase().includes("stocktake"),
       ),
     ).toEqual([]);
-    expect(ROUTE_PERMISSIONS[ROUTES.REPORTS]).not.toContain("report.export");
+    for (const path of [
+      ROUTES.REPORTS_INVENTORY_FLOW,
+      ROUTES.REPORTS_STOCK_RECONCILE,
+      ROUTES.REPORTS_TRACEABILITY,
+      ROUTES.REPORTS_IMPORT_QUALITY,
+      ROUTES.REPORTS_PACKING_LABEL,
+      ROUTES.REPORTS_WARRANTY,
+      ROUTES.REPORTS_RECIPIENT,
+      ROUTES.REPORTS_PENDING_EVIDENCE,
+    ]) {
+      expect(ROUTE_PERMISSIONS[path]).not.toContain("report.export");
+    }
   });
 
   it("fail-closed: route chưa khai báo nhận sentinel không ai có (WWHN-165)", async () => {

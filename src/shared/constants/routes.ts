@@ -45,7 +45,17 @@ export const ROUTES = {
   // scripts/verify-wwhn-242-closure.mjs (check "no-stocktake citation").
   WARRANTY: "/warranty",
   REVERSE: "/reverse",
-  REPORTS: "/reports",
+  // Báo cáo vận hành — mỗi mục là MỘT trang riêng trong sidebar (không còn
+  // gộp vào 1 route "/reports" với tab bar nội trang — phản hồi người dùng
+  // 2026-08-30). Thứ tự khớp RPT-01..RPT-08 ở nav-data.ts.
+  REPORTS_INVENTORY_FLOW: "/reports/inventory-flow",
+  REPORTS_STOCK_RECONCILE: "/reports/stock-reconcile",
+  REPORTS_TRACEABILITY: "/reports/traceability",
+  REPORTS_IMPORT_QUALITY: "/reports/import-quality",
+  REPORTS_PACKING_LABEL: "/reports/packing-label",
+  REPORTS_WARRANTY: "/reports/warranty",
+  REPORTS_RECIPIENT: "/reports/recipient",
+  REPORTS_PENDING_EVIDENCE: "/reports/pending-evidence",
   COMPONENT_CATALOG: "/component-catalog",
   UI_FOUNDATION: "/ui-foundation",
 

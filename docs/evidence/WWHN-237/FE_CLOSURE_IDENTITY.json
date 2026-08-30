@@ -7,13 +7,13 @@
   "fe": {
     "branch": "m1",
     "commit_sha": "c77ba6429c68982c7e7b8d297917c0cab26f8380",
-    "head_at_run": "3cc524f82f860218d199756aebedf07025fef1f3",
+    "head_at_run": "9bfe014f6ecc8fdc3d5453cbb71c917861889954",
     "working_tree_clean": false
   },
   "be": {
     "branch": "m1",
     "commit_sha": "d1af7ca00016271b64312e2d537ca45bdea9d794",
-    "head_at_run": "7da26cb1cc13df58537c5ff8556070ad8529ed4d"
+    "head_at_run": "b6d9a3476368032c0633fb75abe64d906b40588f"
   },
   "baselines": {
     "docs/HN_SRS_FRD_v1.12_FULL.md": "5ab1dd6c468e93f57a932741e823855806a9d37ac5dde9b118335ff8f84de086",
@@ -56,7 +56,7 @@
     {
       "id": "FE-REPORT-CODES",
       "status": "PASS",
-      "detail": "8 report code, tất cả nằm trong registry MVP"
+      "detail": "0 report code, tất cả nằm trong registry MVP"
     },
     {
       "id": "FE-REPORT-SURFACE",
@@ -111,7 +111,7 @@
     {
       "id": "CANDIDATE-PAIR",
       "status": "FAIL",
-      "detail": "pin FE c77ba6429c68982c7e7b8d297917c0cab26f8380 ≠ commit cuối chạm scope 2b94a79b6fb408c849ab59c0304ecc83fe2c535b — artifact FE đã đổi sau khi pin; chạy lại build pin rồi xin lại consumer confirmation"
+      "detail": "pin FE c77ba6429c68982c7e7b8d297917c0cab26f8380 ≠ commit cuối chạm scope 9bfe014f6ecc8fdc3d5453cbb71c917861889954 — artifact FE đã đổi sau khi pin; chạy lại build pin rồi xin lại consumer confirmation"
     }
   ],
   "status": "FAIL"

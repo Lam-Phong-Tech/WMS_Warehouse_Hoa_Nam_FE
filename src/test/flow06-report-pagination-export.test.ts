@@ -7,11 +7,12 @@ function read(path: string): string {
 }
 
 /**
- * Trang Báo cáo vận hành đã tách từ MỘT file khổng lồ thành module
- * `src/modules/reports/**` (shell 7 tab + 7 tab component + lớp dữ liệu/bộ
- * lọc/bảng dùng chung). Các hợp đồng dưới đây là hợp đồng của MÀN HÌNH chứ
- * không của một file, nên quét toàn bộ module thay vì đọc đúng một đường dẫn —
- * nếu không, chỉ cần đổi chỗ đặt code là guard im lặng mất hiệu lực.
+ * Báo cáo vận hành là module `src/modules/reports/**` (8 trang riêng trong
+ * sidebar — trước đây 1 shell tab bar bọc 8 tab component — phản hồi người
+ * dùng 2026-08-30; xem các trang `*ReportPage.tsx`). Các hợp đồng dưới đây là
+ * hợp đồng của MÀN HÌNH chứ không của một file, nên quét toàn bộ module thay
+ * vì đọc đúng một đường dẫn — nếu không, chỉ cần đổi chỗ đặt code là guard im
+ * lặng mất hiệu lực.
  */
 function readReportsModule(): string {
   const root = join(process.cwd(), "src/modules/reports");
@@ -28,10 +29,20 @@ function readReportsModule(): string {
 }
 
 describe("Flow 06 report pagination/export alignment", () => {
-  it("uses the aligned report page", () => {
-    expect(read("src/modules/reports/pages/ReportsPage.tsx")).toContain(
-      "AlignedReportsPage",
-    );
+  it("wires each report route directly to its own page component", () => {
+    const router = read("src/app/router/index.tsx");
+    for (const page of [
+      "InventoryFlowReportPage",
+      "StockReconcileReportPage",
+      "TraceabilityReportPage",
+      "ImportQualityReportPage",
+      "PackingLabelReportPage",
+      "WarrantyReportPage",
+      "RecipientReportPage",
+      "PendingEvidenceReportPage",
+    ]) {
+      expect(router).toContain(page);
+    }
   });
 
   /**
@@ -132,18 +143,19 @@ describe("Flow 06 report pagination/export alignment", () => {
     );
   });
 
-  it("keeps the seven operations report groups", () => {
-    const shell = read("src/modules/reports/pages/AlignedReportsPage.tsx");
-    for (const key of [
-      "inventory-flow",
-      "stock-reconcile",
-      "traceability",
-      "import-quality",
-      "packing-label",
-      "warranty",
-      "recipient",
+  it("keeps the eight operations report routes", () => {
+    const routes = read("src/shared/constants/routes.ts");
+    for (const path of [
+      "/reports/inventory-flow",
+      "/reports/stock-reconcile",
+      "/reports/traceability",
+      "/reports/import-quality",
+      "/reports/packing-label",
+      "/reports/warranty",
+      "/reports/recipient",
+      "/reports/pending-evidence",
     ]) {
-      expect(shell).toContain(key);
+      expect(routes).toContain(path);
     }
   });
 

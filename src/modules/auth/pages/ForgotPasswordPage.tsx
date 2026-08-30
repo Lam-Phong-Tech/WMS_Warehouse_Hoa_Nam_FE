@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Link } from "react-router-dom";
 import { isAxiosError } from "axios";
 import { useForgotPassword } from "@/modules/auth/hooks/use-forgot-password";
 import { useVerifyOtp } from "@/modules/auth/hooks/use-verify-otp";
@@ -14,10 +13,13 @@ import {
   type OtpFormValues,
   type ResetPasswordFormValues,
 } from "@/modules/auth/schemas/forgot-password.schema";
-import { Box, UiAlert, UiFormText } from "@/shared/ui";
-import { AuthShell, AuthNote } from "@/modules/auth/components/AuthShell";
-import { ROUTES } from "@/shared/constants/routes";
-import { ActionButton } from "@/shared/components/actions";
+import { Box, UiAlert, UiButton } from "@/shared/ui";
+import {
+  AuthShell,
+  AuthNote,
+  AuthBackLink,
+} from "@/modules/auth/components/AuthShell";
+import { AuthField } from "@/modules/auth/components/AuthField";
 
 /** Đồng bộ với config/password_reset.php (otp_ttl_minutes=5) phía BE — chỉ là
  * đếm ngược hiển thị, BE mới là nguồn sự thật về hạn thật của OTP. */
@@ -133,6 +135,7 @@ export function ForgotPasswordPage() {
   return (
     <AuthShell
       titleId="forgot-password-title"
+      illustration="forgot"
       title="Quên mật khẩu"
       subtitle={
         <>
@@ -146,29 +149,25 @@ export function ForgotPasswordPage() {
       {step === "email" && (
         <form onSubmit={onSubmitEmail} noValidate>
           <Box sx={{ display: "flex", flexDirection: "column", gap: "13px" }}>
-            <UiFormText
+            <AuthField
               control={emailForm.control}
               name="email"
               label="Email"
               placeholder="your@gmail.com"
-              startIcon="user"
               autoFocus
               disabled={forgotPassword.isPending}
             />
 
-            <ActionButton
-              kind="send"
+            <UiButton
               loading={forgotPassword.isPending}
               disabled={forgotPassword.isPending}
               type="submit"
               fullWidth
             >
               Gửi mã OTP
-            </ActionButton>
+            </UiButton>
 
-            <AuthNote sx={{ marginTop: 0 }}>
-              <Link to={ROUTES.LOGIN}>Quay lại đăng nhập</Link>
-            </AuthNote>
+            <AuthBackLink>Quay lại đăng nhập</AuthBackLink>
           </Box>
         </form>
       )}
@@ -185,12 +184,11 @@ export function ForgotPasswordPage() {
               </UiAlert>
             )}
 
-            <UiFormText
+            <AuthField
               control={otpForm.control}
               name="otp"
               label="Mã OTP"
               placeholder="Nhập 6 chữ số"
-              startIcon="lock"
               numericOnly
               maxLength={6}
               autoFocus
@@ -206,25 +204,25 @@ export function ForgotPasswordPage() {
             </AuthNote>
 
             {isExpired ? (
-              <ActionButton
-                kind="send"
+              <UiButton
                 loading={forgotPassword.isPending}
                 onClick={onResendOtp}
                 fullWidth
               >
                 Gửi lại mã OTP
-              </ActionButton>
+              </UiButton>
             ) : (
-              <ActionButton
-                kind="confirm"
+              <UiButton
                 loading={verifyOtp.isPending}
                 disabled={verifyOtp.isPending}
                 type="submit"
                 fullWidth
               >
                 Xác nhận
-              </ActionButton>
+              </UiButton>
             )}
+
+            <AuthBackLink>Quay lại đăng nhập</AuthBackLink>
           </Box>
         </form>
       )}
@@ -241,36 +239,33 @@ export function ForgotPasswordPage() {
               </UiAlert>
             )}
 
-            <UiFormText
+            <AuthField
               control={passwordForm.control}
               name="newPassword"
               label="Mật khẩu mới"
               placeholder="Tối thiểu 8 ký tự"
-              startIcon="lock"
               type="password"
               autoFocus
               disabled={resetPassword.isPending}
             />
 
-            <UiFormText
+            <AuthField
               control={passwordForm.control}
               name="newPasswordConfirmation"
               label="Xác nhận mật khẩu mới"
               placeholder="Nhập lại mật khẩu mới"
-              startIcon="lock"
               type="password"
               disabled={resetPassword.isPending}
             />
 
-            <ActionButton
-              kind="reset"
+            <UiButton
               loading={resetPassword.isPending}
               disabled={resetPassword.isPending}
               type="submit"
               fullWidth
             >
               Đặt lại mật khẩu
-            </ActionButton>
+            </UiButton>
           </Box>
         </form>
       )}

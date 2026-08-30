@@ -276,15 +276,10 @@ export function InboundDraftModal({
           ) : null}
         </>
       }
+      
     >
-      <Box sx={{ mb: 2 }}>
-        <UiAlert tone="info">
-          Không nhập SKU hoặc số lượng dự kiến. Sau khi tạo phiếu, quét
-          QR/Barcode sản phẩm; hệ thống tự nhận SKU, tự cộng số lượng theo SKU
-          và chỉ tăng tồn khi bấm Ghi nhận nhập.
-        </UiAlert>
-      </Box>
-
+      <br />
+    
       {detailQuery.isError ? (
         <Box sx={{ mb: 2 }}>
           <UiAlert

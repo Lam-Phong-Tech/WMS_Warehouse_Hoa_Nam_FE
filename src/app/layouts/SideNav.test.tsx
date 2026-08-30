@@ -54,7 +54,7 @@ describe("SideNav RBAC filtering", () => {
     expect(screen.getByText("Danh sách phiếu nhập")).toBeInTheDocument();
     expect(screen.getByText("Danh sách phiếu xuất")).toBeInTheDocument();
     expect(screen.getByText("Tra cứu tồn & đối soát")).toBeInTheDocument();
-    expect(screen.getByText("Báo cáo vận hành")).toBeInTheDocument();
+    expect(screen.getByText("Nhập – Xuất – Tồn & Chứng từ")).toBeInTheDocument();
   });
 
   it("hides routes and groups that the user cannot access", () => {
@@ -64,7 +64,7 @@ describe("SideNav RBAC filtering", () => {
 
     expect(screen.getByText("Danh sách phiếu nhập")).toBeInTheDocument();
     expect(screen.queryByText("Danh sách bảo hành")).not.toBeInTheDocument();
-    expect(screen.queryByText("Báo cáo vận hành")).not.toBeInTheDocument();
+    expect(screen.queryByText("Nhập – Xuất – Tồn & Chứng từ")).not.toBeInTheDocument();
     expect(
       screen.queryByText("Danh sách linh kiện chờ xếp khay"),
     ).not.toBeInTheDocument();
@@ -119,6 +119,23 @@ describe("SideNav RBAC filtering", () => {
     ).toBeInTheDocument();
   });
 
+  it("accordion flush — sổ nhóm khác thì nhóm đang mở tự đóng lại", async () => {
+    withPermissions([], true);
+
+    renderSideNav(ROUTES.DASHBOARD);
+
+    const inboundGroup = screen.getByRole("button", { name: "Nhập kho" });
+    const user = userEvent.setup();
+    await user.click(inboundGroup);
+    expect(inboundGroup).toHaveAttribute("aria-expanded", "true");
+
+    const outboundGroup = screen.getByRole("button", { name: "Xuất kho" });
+    await user.click(outboundGroup);
+
+    expect(outboundGroup).toHaveAttribute("aria-expanded", "true");
+    expect(inboundGroup).toHaveAttribute("aria-expanded", "false");
+  });
+
   it("lets Super Admin see all list entry points even with no permission codes", () => {
     withPermissions([], true);
 
@@ -129,7 +146,7 @@ describe("SideNav RBAC filtering", () => {
       screen.getByText("Danh sách linh kiện chờ xếp khay"),
     ).toBeInTheDocument();
     expect(screen.getByText("Danh sách bảo hành")).toBeInTheDocument();
-    expect(screen.getByText("Báo cáo vận hành")).toBeInTheDocument();
+    expect(screen.getByText("Nhập – Xuất – Tồn & Chứng từ")).toBeInTheDocument();
   });
 });
 

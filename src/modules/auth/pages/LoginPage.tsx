@@ -8,15 +8,9 @@ import {
   toLoginRequest,
   type LoginFormValues,
 } from "@/modules/auth/schemas/login.schema";
-import {
-  Box,
-  GreetingIcon,
-  UiAlert,
-  UiButton,
-  UiFormCheckbox,
-  UiFormText,
-} from "@/shared/ui";
+import { Box, UiAlert, UiButton, UiFormCheckbox } from "@/shared/ui";
 import { AuthShell } from "@/modules/auth/components/AuthShell";
+import { AuthField } from "@/modules/auth/components/AuthField";
 import { OFFLINE_MUTATION_CODE } from "@/shared/pwa/offline-policy";
 import { ROUTES } from "@/shared/constants/routes";
 
@@ -112,9 +106,7 @@ export function LoginPage() {
       titleId="login-title"
       title={
         <>
-          Xin chào bạn đến với Hoa Nam!{" "}
-          {/* Emoji hệ thống đã thay bằng glyph Flaticon — một bộ icon duy nhất. */}
-          <GreetingIcon style={{ verticalAlign: "-0.1em" }} />
+          Xin chào bạn đến với Hoa Nam
         </>
       }
       subtitle="Vui lòng đăng nhập vào tài khoản của bạn"
@@ -136,7 +128,7 @@ export function LoginPage() {
 
       <form onSubmit={onSubmit} noValidate>
         <Box sx={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-          <UiFormText
+          <AuthField
             control={control}
             name="identifier"
             label="Email"
@@ -145,11 +137,11 @@ export function LoginPage() {
             disabled={isSubmitting}
           />
 
-          <UiFormText
+          <AuthField
             control={control}
             name="password"
             label="Mật khẩu"
-            placeholder="Nhập mật khẩu"
+            placeholder="············"
             type="password"
             disabled={isSubmitting}
           />

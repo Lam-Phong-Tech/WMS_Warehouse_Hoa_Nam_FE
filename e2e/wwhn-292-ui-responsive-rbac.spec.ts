@@ -534,7 +534,48 @@ test.describe("WWHN-292 FE-controlled UI/responsive/RBAC closure", () => {
       route: "/system/roles",
       menuLabel: "Vai trò & phân quyền",
     },
-    { screen: "RPT-01", route: "/reports", menuLabel: "Báo cáo vận hành" },
+    // Báo cáo vận hành tách thành 8 route riêng trong sidebar (phản hồi người
+    // dùng 2026-08-30) — mỗi trang gate report.view độc lập.
+    {
+      screen: "RPT-01",
+      route: "/reports/inventory-flow",
+      menuLabel: "Nhập – Xuất – Tồn & Chứng từ",
+    },
+    {
+      screen: "RPT-02",
+      route: "/reports/stock-reconcile",
+      menuLabel: "Tồn kho & đối soát",
+    },
+    {
+      screen: "RPT-03",
+      route: "/reports/traceability",
+      menuLabel: "Truy vết hàng hóa",
+    },
+    {
+      screen: "RPT-04",
+      route: "/reports/import-quality",
+      menuLabel: "Nhập dữ liệu / đối chiếu & lỗi dữ liệu",
+    },
+    {
+      screen: "RPT-05",
+      route: "/reports/packing-label",
+      menuLabel: "Nhãn đóng gói – Print / Reprint",
+    },
+    {
+      screen: "RPT-06",
+      route: "/reports/warranty",
+      menuLabel: "Bảo hành & linh kiện",
+    },
+    {
+      screen: "RPT-07",
+      route: "/reports/recipient",
+      menuLabel: "Xuất theo người nhận / đại lý",
+    },
+    {
+      screen: "RPT-08",
+      route: "/reports/pending-evidence",
+      menuLabel: "Chứng từ cần bổ sung",
+    },
     { screen: "AUDIT-01", route: "/audit-logs", menuLabel: null },
   ] as const;
 

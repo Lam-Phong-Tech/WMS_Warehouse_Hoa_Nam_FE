@@ -144,14 +144,59 @@ export const NAV_GROUPS: NavGroupData[] = [
     ],
   },
   {
+    // 8 mục — mỗi mục là MỘT trang riêng (trước đây gộp vào 1 trang có tab
+    // bar nội trang; phản hồi người dùng 2026-08-30: muốn sổ ra sidebar như
+    // các nhóm khác thay vì bấm tab trong trang).
     name: "Báo cáo",
     icon: "document",
     items: [
       {
         screen: "RPT-01",
-        path: ROUTES.REPORTS,
-        label: "Báo cáo vận hành",
-        icon: "chart-pie",
+        path: ROUTES.REPORTS_INVENTORY_FLOW,
+        label: "Nhập – Xuất – Tồn & Chứng từ",
+        icon: "arrows-repeat",
+      },
+      {
+        screen: "RPT-02",
+        path: ROUTES.REPORTS_STOCK_RECONCILE,
+        label: "Tồn kho & đối soát",
+        icon: "balance-scale-left",
+      },
+      {
+        screen: "RPT-03",
+        path: ROUTES.REPORTS_TRACEABILITY,
+        label: "Truy vết hàng hóa",
+        icon: "barcode-read",
+      },
+      {
+        screen: "RPT-04",
+        path: ROUTES.REPORTS_IMPORT_QUALITY,
+        label: "Nhập dữ liệu / đối chiếu & lỗi dữ liệu",
+        icon: "clipboard-list-check",
+      },
+      {
+        screen: "RPT-05",
+        path: ROUTES.REPORTS_PACKING_LABEL,
+        label: "Nhãn đóng gói – Print / Reprint",
+        icon: "print",
+      },
+      {
+        screen: "RPT-06",
+        path: ROUTES.REPORTS_WARRANTY,
+        label: "Bảo hành & linh kiện",
+        icon: "shield-exclamation",
+      },
+      {
+        screen: "RPT-07",
+        path: ROUTES.REPORTS_RECIPIENT,
+        label: "Xuất theo người nhận / đại lý",
+        icon: "truck-container",
+      },
+      {
+        screen: "RPT-08",
+        path: ROUTES.REPORTS_PENDING_EVIDENCE,
+        label: "Chứng từ cần bổ sung",
+        icon: "paperclip-vertical",
       },
     ],
   },
@@ -203,7 +248,14 @@ export const DEFAULT_SCREEN_BY_PATH: Record<string, string> = {
   [ROUTES.INVENTORY]: "INV-01",
   [ROUTES.SCAN]: "TRACE-01",
   [ROUTES.REVERSE]: "REV-00",
-  [ROUTES.REPORTS]: "RPT-01",
+  [ROUTES.REPORTS_INVENTORY_FLOW]: "RPT-01",
+  [ROUTES.REPORTS_STOCK_RECONCILE]: "RPT-02",
+  [ROUTES.REPORTS_TRACEABILITY]: "RPT-03",
+  [ROUTES.REPORTS_IMPORT_QUALITY]: "RPT-04",
+  [ROUTES.REPORTS_PACKING_LABEL]: "RPT-05",
+  [ROUTES.REPORTS_WARRANTY]: "RPT-06",
+  [ROUTES.REPORTS_RECIPIENT]: "RPT-07",
+  [ROUTES.REPORTS_PENDING_EVIDENCE]: "RPT-08",
   [ROUTES.AUDIT_LOGS]: "AUDIT-01",
   [ROUTES.PV_ADMIN]: "PV-ADM-01",
 };
@@ -367,9 +419,37 @@ export const SCREEN_META: Record<
     description: "Danh sách phiếu để chọn tạo điều chỉnh tồn kho.",
   },
   "RPT-01": {
-    title: "Báo cáo vận hành",
+    title: "Nhập – Xuất – Tồn & Chứng từ",
     description:
-      "Tồn kho, Nhập-Xuất-Tồn, Lịch sử phiếu, Đối soát toa, Nhật ký nhãn, Bảo hành, Xuất theo nơi nhận.",
+      "Cân đối tồn theo kỳ, biến động theo ngày và toàn bộ chứng từ phát sinh.",
+  },
+  "RPT-02": {
+    title: "Tồn kho & đối soát",
+    description: "Cơ cấu tồn kho hiện tại và tỷ lệ đối soát theo kỳ.",
+  },
+  "RPT-03": {
+    title: "Truy vết hàng hóa",
+    description: "Truy vết vòng đời sản phẩm theo mã vật lý hoặc SKU.",
+  },
+  "RPT-04": {
+    title: "Nhập dữ liệu / đối chiếu & lỗi dữ liệu",
+    description: "Kết quả Import/Scan theo thời gian và các mã lỗi phổ biến.",
+  },
+  "RPT-05": {
+    title: "Nhãn đóng gói – Print / Reprint",
+    description: "Kết quả in nhãn theo thời gian và máy in có nhiều lỗi nhất.",
+  },
+  "RPT-06": {
+    title: "Bảo hành & linh kiện",
+    description: "Tình trạng, xu hướng bảo hành và bệnh/lỗi theo SKU.",
+  },
+  "RPT-07": {
+    title: "Xuất theo người nhận / đại lý",
+    description: "Cơ cấu hàng đã xuất theo người nhận và loại người nhận.",
+  },
+  "RPT-08": {
+    title: "Chứng từ cần bổ sung",
+    description: "Danh sách chứng từ còn thiếu cần bổ sung.",
   },
   "AUDIT-01": {
     title: "Nhật ký hệ thống",

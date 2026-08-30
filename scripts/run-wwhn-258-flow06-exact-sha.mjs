@@ -110,12 +110,19 @@ const treeState = porcelain === "" ? "clean" : "dirty";
 const evidenceDir = join("docs", "evidence", "WWHN-258", sourceSha);
 mkdirSync(join(repoRoot, evidenceDir), { recursive: true });
 
-/** Sáu file mà bước "Flow 06 formatting" của workflow kiểm đích danh. */
+/**
+ * Sáu file mà bước "Flow 06 formatting" của workflow kiểm đích danh.
+ *
+ * AlignedReportsPage.tsx (shell tab bar của báo cáo) đã xoá — tách thành 8
+ * trang riêng trong sidebar (phản hồi người dùng 2026-08-30). WWHN-258 nói cụ
+ * thể về báo cáo bảo hành (PII gate) nên trỏ đích danh WarrantyReportPage.tsx,
+ * trang kế thừa đúng phần nội dung mà evidence WWHN-258 đang đo.
+ */
 const FORMAT_TARGETS = [
   "src/modules/outbound/services/alignedOutboundService.ts",
   "src/modules/outbound/components/AlignedOutboundDetailModal.tsx",
   "src/modules/outbound/pages/AlignedMvpOutboundPage.tsx",
-  "src/modules/reports/pages/AlignedReportsPage.tsx",
+  "src/modules/reports/pages/WarrantyReportPage.tsx",
   "src/test/flow06-packing-label-alignment.test.ts",
   "src/test/flow06-report-pagination-export.test.ts",
 ];

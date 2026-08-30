@@ -237,33 +237,14 @@ async function openWarrantyReport(
     width: viewport.width,
     height: viewport.height,
   });
-  await page.goto("/reports");
+  // Báo cáo bảo hành là MỘT route riêng trong sidebar (trước đây là tab con
+  // của "/reports" — phản hồi người dùng 2026-08-30 tách hẳn ra), nên mở
+  // thẳng route thay vì goto("/reports") rồi bấm tab.
+  await page.goto("/reports/warranty");
   await expect.poll(api.meCalls, { timeout: 15_000 }).toBeGreaterThanOrEqual(1);
-  // /reports render thẳng màn RPT-01 (lớp tab "theo từng thị trường" đã bị gỡ).
-  // `/auth/me` trả về sau khi shell đã mount và bộ quyền mới làm cả trang render
-  // lại, nên vẫn phải chờ một phần tử ổn định sau lần render đó rồi mới bấm tab
-  // con, nếu không tab bị detach ngay giữa lúc click.
   await expect(page.getByTestId("wwhn-258-report-screen")).toBeVisible({
     timeout: 15_000,
   });
-  await selectWarrantyTab(page);
-}
-
-/**
- * Ở 768px, 8 tab báo cáo không đủ chỗ nên antd đẩy phần thừa vào nút "more";
- * tab vẫn nằm trong DOM nhưng bị cắt khỏi vùng nhìn, click thẳng không chọn
- * được. Đây là affordance hợp lệ theo Annex D ("no horizontal loss of critical
- * action" — hành động vẫn tới được), nên bằng chứng phải đi đúng đường người
- * dùng thật thay vì ép click một phần tử bị khuất.
- */
-async function selectWarrantyTab(page: Page): Promise<void> {
-  // Part 4: 8 tab nhóm báo cáo chuyển từ antd/rc-tabs sang UiTabs (MUI,
-  // scrollable) — không còn dropdown "more"; ở viewport hẹp tab nằm trong
-  // vùng cuộn và Playwright tự scrollIntoView khi click (vẫn là đường đi
-  // người dùng thật: kéo thanh tab rồi bấm).
-  const tab = page.getByRole("tab", { name: /Bảo hành/ });
-  await tab.click();
-  await expect(tab).toHaveAttribute("aria-selected", "true");
 }
 
 test.beforeAll(() => {

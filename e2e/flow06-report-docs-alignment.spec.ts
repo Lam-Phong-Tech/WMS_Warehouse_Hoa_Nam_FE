@@ -324,38 +324,33 @@ async function installApi(page: Page): Promise<Harness> {
   };
 }
 
-async function openReports(page: Page, api: Harness): Promise<void> {
+/**
+ * Mỗi nhóm nghiệp vụ (biểu đồ + bảng + drill-down, thay cho 9 bảng rời trước
+ * đây) là MỘT route/trang riêng trong sidebar (trước đây là 1 trong 7 tab nội
+ * trang của "/reports" — phản hồi người dùng 2026-08-30 tách hẳn ra). Vì vậy
+ * mở thẳng đúng route thay vì goto("/reports") rồi bấm tab.
+ */
+async function openReports(
+  page: Page,
+  api: Harness,
+  path: string = "/reports/inventory-flow",
+): Promise<void> {
   await page.setViewportSize({ width: 1600, height: 950 });
-  await page.goto("/reports");
+  await page.goto(path);
   await expect
     .poll(api.refreshCalls, { timeout: 5_000 })
     .toBeGreaterThanOrEqual(1);
   await expect.poll(api.meCalls, { timeout: 5_000 }).toBeGreaterThanOrEqual(1);
-  // /reports render thẳng trang Báo cáo vận hành (lớp tab "theo từng thị
-  // trường" đã bị gỡ), nên chỉ còn MỘT tầng tab: 7 nhóm nghiệp vụ.
   await expect(page.getByTestId("wwhn-258-report-screen")).toBeVisible({
     timeout: 15_000,
   });
-}
-
-/**
- * Bản 7 tab: mỗi tab là một nhóm nghiệp vụ trọn vẹn (biểu đồ + bảng +
- * drill-down) thay cho 9 bảng rời trước đây. Helper này chọn tab con theo nhãn
- * để từng test không phải lặp lại chuỗi điều hướng hai tầng.
- */
-async function openOperationsTab(page: Page, name: RegExp): Promise<void> {
-  // Lưu ý: nhãn tab đi qua VietnameseUiBoundary nên chữ tiếng Anh trong source
-  // ("Import", "Match", "Packing Label") được Việt hoá lúc render. Selector ở
-  // đây phải bám vào phần chữ KHÔNG bị đổi.
-  await page.getByRole("tab", { name }).click();
 }
 
 test("Flow 06 · RPT-INV-01 hiển thị as_of snapshot và cột updated_at", async ({
   page,
 }, testInfo) => {
   const api = await installApi(page);
-  await openReports(page, api);
-  await openOperationsTab(page, /Tồn kho & đối soát/);
+  await openReports(page, api, "/reports/stock-reconcile");
 
   await expect(page.getByText("SKU-RPT-01").first()).toBeVisible();
   await expect(
@@ -387,8 +382,7 @@ test("Flow 06 · RPT-OUT-MATCH-01 hiển thị tầng dòng của toa", async ({
   page,
 }) => {
   const api = await installApi(page);
-  await openReports(page, api);
-  await openOperationsTab(page, /lỗi dữ liệu/);
+  await openReports(page, api, "/reports/import-quality");
 
   // Bảng 4.3 là danh sách batch; tầng dòng SKU của toa nằm trong chi tiết batch.
   await expect(page.getByText("IMP-001").first()).toBeVisible();
@@ -415,8 +409,7 @@ test("Flow 06 · RPT-OUT-MATCH-01 hiển thị tầng dòng của toa", async ({
 
 test("Flow 06 · RPT-LABEL-01 hiển thị máy in và người in", async ({ page }) => {
   const api = await installApi(page);
-  await openReports(page, api);
-  await openOperationsTab(page, /Print . Reprint/);
+  await openReports(page, api, "/reports/packing-label");
 
   // Bảng 5.3 đưa máy in / người in ra NGOÀI bảng (yêu cầu nghiệp vụ mục 5.3)
   // thay vì giấu trong modal như bản 9 tab.
@@ -444,9 +437,9 @@ test("Flow 06 · RPT-LABEL-01 hiển thị máy in và người in", async ({ pa
 
 test("Flow 06 · RPT-IO-01 mở phiếu để xem tầng dòng", async ({ page }) => {
   const api = await installApi(page);
+  // Lịch sử chứng từ là mục 1.4 của trang "Nhập – Xuất – Tồn & Chứng từ"
+  // (route mặc định của openReports).
   await openReports(page, api);
-  // Lịch sử chứng từ là mục 1.4 của tab đầu tiên (đang mở sẵn).
-  await openOperationsTab(page, /Chứng từ/);
 
   await expect(page.getByText("OUT-20260817-001").first()).toBeVisible();
   await page
@@ -467,8 +460,7 @@ test("Flow 06 · export đi qua POST /reports/export và giữ tên file của B
   page,
 }) => {
   const api = await installApi(page);
-  await openReports(page, api);
-  await openOperationsTab(page, /Tồn kho & đối soát/);
+  await openReports(page, api, "/reports/stock-reconcile");
 
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "Xuất XLSX" }).click();

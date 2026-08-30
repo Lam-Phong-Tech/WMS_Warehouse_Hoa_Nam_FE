@@ -135,6 +135,7 @@ export function useScanInbound() {
       includeCodeValue,
       quantity,
       containerId,
+      newSkuType,
       idempotencyKey,
     }: {
       id: string;
@@ -149,6 +150,11 @@ export function useScanInbound() {
       quantity?: number;
       containerId?: string;
       /**
+       * Loại người dùng chọn cho SKU mới khi quét mã item lần đầu (PRODUCT/
+       * COMPONENT). Bỏ trống với SKU đã tồn tại.
+       */
+      newSkuType?: "PRODUCT" | "COMPONENT";
+      /**
        * WWHN-187 (DEV187-P1-07): caller giữ key của hành động quét và truyền lại
        * đúng key đó khi gửi lại, để BE replay thay vì cộng đôi `scanned_qty`.
        */
@@ -160,6 +166,7 @@ export function useScanInbound() {
         includeCodeValue,
         quantity,
         containerId,
+        newSkuType,
         idempotencyKey,
       }),
   );

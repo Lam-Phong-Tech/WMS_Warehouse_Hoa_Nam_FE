@@ -80,7 +80,12 @@ const IN_SCOPE_MODULES = [
     route: "/warranty",
     permissions: ["warranty.view", "warranty.manage"],
   },
-  { module: "report", route: "/reports", permissions: ["report.view"] },
+  // "/reports" tách thành 8 route riêng (2026-08-30) — dùng route đại diện.
+  {
+    module: "report",
+    route: "/reports/inventory-flow",
+    permissions: ["report.view"],
+  },
 ] as const;
 
 interface CaptureInput {

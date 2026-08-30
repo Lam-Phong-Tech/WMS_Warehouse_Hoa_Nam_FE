@@ -40,7 +40,8 @@ vi.mock("@/modules/master-data/hooks/use-mvp-master", () => ({
 
 import { http } from "@/shared/api/http";
 import { useAuthStore } from "@/shared/store/auth.store";
-import AlignedReportsPage from "@/modules/reports/pages/AlignedReportsPage";
+import { ROUTES } from "@/shared/constants/routes";
+import WarrantyReportPage from "@/modules/reports/pages/WarrantyReportPage";
 
 const RAW_CUSTOMER = {
   case_no: "BH-0001",
@@ -79,8 +80,7 @@ function grant(permissionCodes: string[]) {
 }
 
 async function openWarrantyTab() {
-  renderWithProviders(<AlignedReportsPage />, ["/reports"]);
-  fireEvent.click(await screen.findByRole("tab", { name: /Bảo hành/ }));
+  renderWithProviders(<WarrantyReportPage />, [ROUTES.REPORTS_WARRANTY]);
   // Mã case xuất hiện ở cả bảng 6.5 (linh kiện theo hồ sơ) lẫn bảng 6.6 (danh
   // sách hồ sơ) nên chờ theo TẬP phần tử, không phải một phần tử duy nhất.
   return screen.findAllByText("BH-0001");

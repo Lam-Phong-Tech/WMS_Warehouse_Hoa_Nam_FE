@@ -42,7 +42,7 @@ export function DashboardIssues({
     {
       label: "In nhãn lỗi",
       value: issues.print_failed,
-      open: () => navigate(ROUTES.REPORTS),
+      open: () => navigate(ROUTES.REPORTS_PACKING_LABEL),
     },
   ];
 

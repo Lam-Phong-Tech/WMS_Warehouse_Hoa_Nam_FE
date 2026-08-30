@@ -5,9 +5,10 @@
  * "test" bằng cách đọc source text (`flow06-report-pagination-export.test.ts`
  * readFileSync + regex) — chứng minh "trong file có chuỗi này", không chứng minh
  * "người dùng nhìn thấy đúng số". Register R3 đòi "QA chụp/test XNT columns",
- * nên bộ test này mount `AlignedReportsPage`, mở tab Nhập-Xuất-Tồn với payload
- * đúng hợp đồng `report_xnt_enhanced` (BE `OperationalReportController::buildXnt`)
- * và assert từng cột reversal hiển thị đúng giá trị BE trả về.
+ * nên bộ test này mount `InventoryFlowReportPage` (trang Nhập-Xuất-Tồn riêng —
+ * trước đây là tab 1 của AlignedReportsPage) với payload đúng hợp đồng
+ * `report_xnt_enhanced` (BE `OperationalReportController::buildXnt`) và assert
+ * từng cột reversal hiển thị đúng giá trị BE trả về.
  *
  * Bất biến nghiệp vụ được phản chiếu (BR-RPT-01..07 + BR-REV-11, SRS §13.10
  * RPT-XNT-01): mỗi chiều Nhập/Xuất/Xuất LK tách gross / đã đảo / thuần;
@@ -15,7 +16,7 @@
  * + reversal_unlinked_net; không ẩn hay sửa lịch sử.
  */
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import { renderWithProviders } from "@/test/test-utils";
 import { cleanupTestState } from "@/test/setup";
 
@@ -41,7 +42,8 @@ vi.mock("@/modules/master-data/hooks/use-mvp-master", () => ({
 import { http } from "@/shared/api/http";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
-import AlignedReportsPage from "@/modules/reports/pages/AlignedReportsPage";
+import { ROUTES } from "@/shared/constants/routes";
+import InventoryFlowReportPage from "@/modules/reports/pages/InventoryFlowReportPage";
 
 /**
  * Một dòng XNT đúng shape `lines[]` của `buildXnt()`. Mỗi giá trị số xuất
@@ -82,15 +84,15 @@ function xntPayload() {
 }
 
 /**
- * Tab 1 của bản 7 tab ("Nhập – Xuất – Tồn & Chứng từ") là tab mặc định; bảng
- * "Chi tiết cân đối theo SKU" nằm ngay dưới biểu đồ waterfall 1.1 và chính là
- * nơi giữ hợp đồng cột gross / đã đảo / thuần của WWHN-240.
+ * Trang "Nhập – Xuất – Tồn & Chứng từ" (route riêng, trước đây là tab 1 của
+ * bản 7 tab); bảng "Chi tiết cân đối theo SKU" nằm ngay dưới biểu đồ waterfall
+ * 1.1 và chính là nơi giữ hợp đồng cột gross / đã đảo / thuần của WWHN-240.
  */
 async function openXntTab() {
-  renderWithProviders(<AlignedReportsPage />, ["/reports"]);
-  // Chọn đúng tab XNT: tab "Chứng từ cần bổ sung" cũng chứa "Chứng từ" nên
-  // regex phải neo vào phần "Nhập – Xuất – Tồn" để không khớp nhập nhằng.
-  fireEvent.click(await screen.findByRole("tab", { name: /Nhập.*Xuất.*Tồn/ }));
+  renderWithProviders(
+    <InventoryFlowReportPage />,
+    [ROUTES.REPORTS_INVENTORY_FLOW],
+  );
   return screen.findByText("PRD-QA19-01");
 }
 

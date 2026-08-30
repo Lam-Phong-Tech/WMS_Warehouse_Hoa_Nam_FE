@@ -107,36 +107,34 @@ export function SideNav({
   // bấm vào tiêu đề nhóm mới sổ ra các trang con; nhóm đang active vẫn tự mở
   // lại khi điều hướng tới (effect bên dưới), chỉ không áp dụng ở lần mount
   // đầu để giữ đúng trạng thái "chưa mở" khi vào ứng dụng.
-  const [openGroups, setOpenGroups] = useState<Set<string>>(() => new Set());
+  //
+  // Kiểu accordion "flush" (Bootstrap) — CHỈ MỘT nhóm mở tại một thời điểm,
+  // sổ nhóm này thì nhóm khác tự đóng (yêu cầu người dùng 2026-08-30) — nên
+  // dùng 1 giá trị duy nhất thay vì Set nhiều nhóm mở song song.
+  const [openGroup, setOpenGroup] = useState<string | null>(null);
   // Chốt activeGroupName lúc mount làm mốc so sánh — dùng giá trị khởi tạo
   // (không phải ref rỗng + cờ "lần đầu") để miễn nhiễm với StrictMode gọi
   // effect 2 lần ở dev: cờ boolean bị effect đầu tiêu thụ mất, effect thứ hai
   // (cùng lượt mount) sẽ lọt qua guard và tự mở nhóm ngay khi vào ứng dụng.
   const previousActiveGroupRef = useRef(activeGroupName);
 
-  // Điều hướng SANG route khác → tự mở nhóm active mới, không đụng nhóm khác;
-  // không tự mở ở lần mount đầu (giữ đúng "mặc định mọi nhóm đóng").
+  // Điều hướng SANG route khác → tự mở nhóm active mới (đóng nhóm cũ theo
+  // đúng hành vi accordion); không tự mở ở lần mount đầu (giữ đúng "mặc định
+  // mọi nhóm đóng").
   useEffect(() => {
     const previousActiveGroup = previousActiveGroupRef.current;
     previousActiveGroupRef.current = activeGroupName;
     if (!activeGroupName || previousActiveGroup === activeGroupName) return;
-    setOpenGroups((prev) =>
-      prev.has(activeGroupName) ? prev : new Set(prev).add(activeGroupName),
-    );
+    setOpenGroup(activeGroupName);
   }, [activeGroupName]);
 
   const handleGroupHeaderClick = (name: string) => {
     if (collapsed) {
       onExpand?.();
-      setOpenGroups((prev) => new Set(prev).add(name));
+      setOpenGroup(name);
       return;
     }
-    setOpenGroups((prev) => {
-      const next = new Set(prev);
-      if (next.has(name)) next.delete(name);
-      else next.add(name);
-      return next;
-    });
+    setOpenGroup((prev) => (prev === name ? null : name));
   };
 
   return (
@@ -244,7 +242,7 @@ export function SideNav({
       </Box>
 
       {visibleGroups.map((group) => {
-        const open = openGroups.has(group.name);
+        const open = openGroup === group.name;
         return (
           <Box component="section" key={group.name} aria-label={group.name}>
             <Box

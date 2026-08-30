@@ -20,9 +20,10 @@ import {
   type Path,
 } from "react-hook-form";
 import TextField from "@mui/material/TextField";
+import Box from "@mui/material/Box";
 import { UiIconButton } from "../components/UiButton";
 import InputAdornment from "@mui/material/InputAdornment";
-import { SEMANTIC_LIGHT as S } from "../tokens";
+import { SEMANTIC_LIGHT as S, inkAlpha } from "../tokens";
 
 /**
  * MUI (bản đang dùng trong dự án) tự sinh/gỡ CSS động cho biến thể
@@ -41,6 +42,12 @@ export interface UiFormTextProps<T extends FieldValues> {
   control: Control<T>;
   name: Path<T>;
   label?: ReactNode;
+  /**
+   * "floating" (mặc định) — nhãn nổi trong viền như MUI outlined.
+   * "above" — nhãn TĨNH nằm trên ô + placeholder bên trong (pattern login-v2
+   * của Vuexy). Chỉ đổi cách hiển thị nhãn, không đổi hành vi validation.
+   */
+  labelPlacement?: "floating" | "above";
   required?: boolean;
   type?: "text" | "password" | "search";
   multiline?: boolean;
@@ -65,6 +72,7 @@ export function UiFormText<T extends FieldValues>({
   control,
   name,
   label,
+  labelPlacement = "floating",
   required = false,
   type = "text",
   multiline = false,
@@ -107,44 +115,79 @@ export function UiFormText<T extends FieldValues>({
     </InputAdornment>
   ) : undefined;
 
+  const isAbove = labelPlacement === "above";
+  const fieldId = isAbove ? `uift-${String(name)}` : undefined;
+
   return (
     <Controller
       control={control}
       name={name}
-      render={({ field, fieldState }) => (
-        <TextField
-          size="small"
-          fullWidth={fullWidth}
-          label={label}
-          required={required}
-          type={inputType}
-          multiline={multiline}
-          rows={rows}
-          placeholder={placeholder}
-          disabled={disabled}
-          autoFocus={autoFocus}
-          error={Boolean(fieldState.error)}
-          sx={fieldState.error ? ERROR_FIELD_SX : undefined}
-          helperText={fieldState.error?.message ?? helperText}
-          name={field.name}
-          value={(field.value as string | undefined) ?? ""}
-          onChange={(event) => {
-            const raw = event.target.value;
-            field.onChange(numericOnly ? raw.replace(/[^0-9]/g, "") : raw);
-          }}
-          onBlur={field.onBlur}
-          inputRef={field.ref}
-          slotProps={{
-            input: { startAdornment, endAdornment },
-            htmlInput: {
-              ...(dataTestId ? { "data-testid": dataTestId } : {}),
-              ...(maxLength !== undefined ? { maxLength } : {}),
-              ...(numericOnly ? { inputMode: "numeric" as const } : {}),
-            },
-          }}
-          autoComplete="off"
-        />
-      )}
+      render={({ field, fieldState }) => {
+        const textField = (
+          <TextField
+            id={fieldId}
+            size="small"
+            fullWidth={fullWidth}
+            // Nhãn "above" render riêng bên trên → TextField không nhận label
+            // (tránh nhãn nổi trùng lặp trong viền).
+            label={isAbove ? undefined : label}
+            required={required}
+            type={inputType}
+            multiline={multiline}
+            rows={rows}
+            placeholder={placeholder}
+            disabled={disabled}
+            autoFocus={autoFocus}
+            error={Boolean(fieldState.error)}
+            sx={fieldState.error ? ERROR_FIELD_SX : undefined}
+            helperText={fieldState.error?.message ?? helperText}
+            name={field.name}
+            value={(field.value as string | undefined) ?? ""}
+            onChange={(event) => {
+              const raw = event.target.value;
+              field.onChange(numericOnly ? raw.replace(/[^0-9]/g, "") : raw);
+            }}
+            onBlur={field.onBlur}
+            inputRef={field.ref}
+            slotProps={{
+              input: { startAdornment, endAdornment },
+              htmlInput: {
+                ...(dataTestId ? { "data-testid": dataTestId } : {}),
+                ...(maxLength !== undefined ? { maxLength } : {}),
+                ...(numericOnly ? { inputMode: "numeric" as const } : {}),
+              },
+            }}
+            autoComplete="off"
+          />
+        );
+
+        if (!isAbove) return textField;
+
+        return (
+          <Box>
+            <Box
+              component="label"
+              htmlFor={fieldId}
+              sx={{
+                display: "block",
+                marginBottom: "4px",
+                fontSize: 13,
+                fontWeight: 400,
+                lineHeight: 1.15,
+                color: fieldState.error ? S.error : inkAlpha(0.78),
+              }}
+            >
+              {label}
+              {required ? (
+                <Box component="span" sx={{ color: S.error, marginLeft: "2px" }}>
+                  *
+                </Box>
+              ) : null}
+            </Box>
+            {textField}
+          </Box>
+        );
+      }}
     />
   );
 }

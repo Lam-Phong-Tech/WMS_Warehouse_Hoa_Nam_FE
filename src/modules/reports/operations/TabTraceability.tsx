@@ -34,7 +34,6 @@ import {
   ReportKpiRow,
   ReportSectionHeading,
 } from "./report-ui";
-import { RPT_CARD_SX } from "./report-tokens";
 import {
   AllOrPickFilter,
   ItemKindFilter,
@@ -519,24 +518,6 @@ export default function TabTraceability() {
         onPageChange={pagination.setPage}
         onPageSizeChange={pagination.setPerPage}
       />
-
-      <Box sx={{ ...RPT_CARD_SX, mt: 2 }}>
-        <ReportSectionHeading
-          id="rpt-tab3-lifecycle"
-          title="Vòng đời sản phẩm"
-          description="Bấm một dòng ở bảng trên để xem toàn bộ mốc: Nhập kho → Putaway → Xuất kho → Bảo hành → Trả hàng/Reversal."
-        />
-        {selected ? (
-          <Box sx={{ typography: "body2", color: "text.secondary" }}>
-            Đang xem: <b>{selected.physicalCode || selected.productCode}</b> —{" "}
-            {selected.productName}
-          </Box>
-        ) : (
-          <Box sx={{ typography: "body2", color: "text.secondary" }}>
-            Chưa chọn hiện vật nào.
-          </Box>
-        )}
-      </Box>
 
       {selected ? (
         <DrillDownDialog

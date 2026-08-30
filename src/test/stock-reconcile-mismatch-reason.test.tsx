@@ -8,7 +8,7 @@
  * hoàn toàn thì không hiện gì thêm.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import { renderWithProviders } from "@/test/test-utils";
 import { cleanupTestState } from "@/test/setup";
 
@@ -29,7 +29,8 @@ vi.mock("react-apexcharts", () => ({
 
 import { http } from "@/shared/api/http";
 import { useAuthStore } from "@/shared/store/auth.store";
-import AlignedReportsPage from "@/modules/reports/pages/AlignedReportsPage";
+import { ROUTES } from "@/shared/constants/routes";
+import StockReconcileReportPage from "@/modules/reports/pages/StockReconcileReportPage";
 
 const TODAY = "2026-08-20";
 
@@ -115,9 +116,9 @@ describe("RPT-INV-01 · vì sao Chênh lệch 0 mà vẫn Có chênh lệch", ()
   });
 
   it("chỉ rõ check nào đang lệch, và không bịa lý do cho dòng đã khớp", async () => {
-    renderWithProviders(<AlignedReportsPage />, ["/reports"]);
-    fireEvent.click(
-      await screen.findByRole("tab", { name: /Tồn kho & đối soát/ }),
+    renderWithProviders(
+      <StockReconcileReportPage />,
+      [ROUTES.REPORTS_STOCK_RECONCILE],
     );
     await screen.findByTestId("rpt-tab-stock-reconcile");
     // Bảng 2.5 render sau khi payload đối soát về; chờ đúng dòng thay vì đọc DOM sớm.
