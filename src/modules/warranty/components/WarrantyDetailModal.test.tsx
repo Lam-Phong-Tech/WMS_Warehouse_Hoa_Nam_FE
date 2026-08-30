@@ -114,7 +114,8 @@ describe("WarrantyDetailModal (WAR-03)", () => {
     // Tab mặc định "Tổng quan": thông tin case + cảnh báo PII/mã tạm.
     expect(await screen.findByText("BH-0001")).toBeInTheDocument();
     expect(screen.getByText(/warranty.pii.view/)).toBeInTheDocument();
-    expect(screen.getByText(/Mã tạm: TEMP-0001/)).toBeInTheDocument();
+    expect(screen.getByText(/Item \/ serial \/ mã tạm/)).toBeInTheDocument();
+    expect(screen.getByText("TEMP-0001")).toBeInTheDocument();
     expect(document.body.textContent).toContain("Chết mạch nguồn");
     expect(document.body.textContent).toContain("Pin 20V, sạc");
 

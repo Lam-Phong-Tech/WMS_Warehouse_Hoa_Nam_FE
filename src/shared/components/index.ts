@@ -43,6 +43,11 @@ export {
   TopPagination,
   type TopPaginationProps,
 } from "./data-display/TopPagination";
+export {
+  CopyableId,
+  type CopyableIdProps,
+} from "./data-display/CopyableId";
+export { shortId } from "@/shared/utils/shortId";
 
 // feedback/ — trạng thái, lỗi
 export { Loading } from "./feedback/Loading";

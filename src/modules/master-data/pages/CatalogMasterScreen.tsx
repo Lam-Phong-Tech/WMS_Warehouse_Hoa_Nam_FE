@@ -255,6 +255,10 @@ export function CatalogMasterScreen() {
     },
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ["catalog-master"] }),
+    // Rỗng có chủ đích: màn này chủ ý chỉ hiện banner lỗi dưới form
+    // (setFormError), không toast. Thiếu onError thì global MutationCache
+    // (query-client.ts) vẫn tự bắn thêm 1 toast ngoài ý muốn, chồng lên banner.
+    onError: () => {},
   });
 
   const changeTab = (kind: CatalogMasterKind) => {

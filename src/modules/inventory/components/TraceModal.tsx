@@ -15,6 +15,7 @@ import {
   type UiStatusTone,
 } from "@/shared/ui";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
+import { CopyableId } from "@/shared/components/data-display/CopyableId";
 import { getApiErrorMessage } from "@/shared/api/api-error";
 import { CameraScanModal } from "@/shared/components/forms/CameraScanModal";
 import {
@@ -401,13 +402,19 @@ const CHAIN_COLUMNS: ResponsiveTableColumn<CorrectionChainNode>[] = [
     key: "movement_no",
     header: "Mã biến động",
     width: 170,
-    render: (row) => (
-      <CodeText
-        sx={{ fontSize: 12, ...(row.is_subject ? { fontWeight: 600 } : {}) }}
-      >
-        {row.movement_no ?? row.id}
-      </CodeText>
-    ),
+    render: (row) =>
+      row.movement_no ? (
+        <CodeText
+          sx={{
+            fontSize: 12,
+            ...(row.is_subject ? { fontWeight: 600 } : {}),
+          }}
+        >
+          {row.movement_no}
+        </CodeText>
+      ) : (
+        <CopyableId value={row.id} />
+      ),
   },
   {
     key: "type",
@@ -846,11 +853,13 @@ export function TraceModal({ movementId, onClose }: Props) {
             <DetailField
               label="Mã biến động"
               value={
-                <CopyableCode
-                  value={text(
-                    movement.movement_no ?? movement.code ?? movement.id,
-                  )}
-                />
+                movement.movement_no ?? movement.code ? (
+                  <CopyableCode
+                    value={text(movement.movement_no ?? movement.code)}
+                  />
+                ) : (
+                  <CopyableId value={text(movement.id)} />
+                )
               }
             />
             <DetailField

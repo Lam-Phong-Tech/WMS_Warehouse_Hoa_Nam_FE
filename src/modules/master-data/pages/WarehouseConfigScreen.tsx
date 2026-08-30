@@ -184,6 +184,10 @@ export function WarehouseConfigScreen() {
         status: values.status,
       }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["warehouse"] }),
+    // Rỗng có chủ đích: màn này chủ ý chỉ hiện banner lỗi dưới form
+    // (setSaveError), không toast. Thiếu onError thì global MutationCache
+    // (query-client.ts) vẫn tự bắn thêm 1 toast ngoài ý muốn, chồng lên banner.
+    onError: () => {},
   });
 
   const doSave = async () => {

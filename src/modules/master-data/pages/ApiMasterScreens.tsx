@@ -1208,7 +1208,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                             disabled={isSaving || form.status !== "ACTIVE"}
                           />
                         }
-                        label="Cho phép hiển thị SKU này trên ứng dụng phân vùng"
+                        label="Cho phép hiển thị SKU này trên ứng dụng xem sản phẩm"
                       />
                       {form.status !== "ACTIVE" ? (
                         <Box sx={FIELD_CAPTION_SX}>
@@ -1373,7 +1373,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                       placeholder="Để trống = chưa đặt định mức"
                       helperText={
                         fieldErrors.minStock ??
-                        "Toàn hệ thống (không theo từng kho). Nhập 0 nếu chỉ cảnh báo khi hết hàng; để trống = chưa đặt định mức."
+                        "Nhập 0 nếu muốn chỉ cảnh báo khi hết hàng; để trống nếu chưa muốn đặt định mức."
                       }
                       error={Boolean(fieldErrors.minStock)}
                       onChange={(event) =>
@@ -1394,7 +1394,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                       placeholder="Để trống = chưa đặt định mức"
                       helperText={
                         fieldErrors.maxStock ??
-                        "Phải ≥ 1 và lớn hơn định mức tối thiểu; để trống = chưa đặt định mức."
+                        "Phải ≥ 1 và lớn hơn định mức tối thiểu; để trống nếu chưa muốn đặt định mức."
                       }
                       error={Boolean(fieldErrors.maxStock)}
                       onChange={(event) =>

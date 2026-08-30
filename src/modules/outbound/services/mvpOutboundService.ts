@@ -25,6 +25,8 @@ export interface OutboundDocumentRecord {
   date: string;
   warehouseId: string;
   outboundRequestId?: string | null;
+  /** Mã toa đọc được (BE enrich từ outbound_requests.request_no); fallback về outboundRequestId khi thiếu. */
+  requestNo?: string | null;
   agencyId?: string | null;
   recipientName: string;
   recipientAddress: string;
@@ -329,6 +331,7 @@ function normalizeDocument(row: RawRecord): OutboundDocumentRecord {
     date: text(row.doc_date ?? row.created_at),
     warehouseId: text(row.src_warehouse_id ?? row.warehouse_id),
     outboundRequestId: text(row.outbound_request_id) || null,
+    requestNo: text(row.request_no) || null,
     agencyId: text(row.agency_id) || null,
     recipientName: text(row.recipient_name ?? row.customer_name, "-"),
     recipientAddress: text(row.recipient_address ?? row.customer_address, "-"),

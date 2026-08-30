@@ -61,6 +61,17 @@ export function useInboundScanEntries(
   });
 }
 
+/**
+ * `onError` khai RỖNG có chủ đích: mọi component gọi các hook dưới đây đã tự
+ * xử lý lỗi theo đúng ngữ cảnh của mình (toast + refetch lại query, có nơi còn
+ * ghi vào nhật ký quét hiển thị trong modal, có nơi phải NGĂN toast để mở
+ * dialog khác thay vào đó — vd NEW_SKU_TYPE_REQUIRED ở MvpInboundScreens.tsx).
+ * Nếu để trống hoàn toàn (không khai onError), global `MutationCache` trong
+ * query-client.ts sẽ TỰ bắn thêm một toast chung chung nữa mỗi khi mutation
+ * lỗi, chồng lên toast/luồng riêng của component → thấy 2 thông báo cho cùng
+ * một lỗi. Khai `onError` rỗng ở đây chỉ để CHẶN lưới an toàn đó, không đảm
+ * nhận việc hiển thị (nơi gọi lo hết).
+ */
 function useInvalidateInboundMutation<TVariables, TResult>(
   mutationFn: (variables: TVariables) => Promise<TResult>,
 ) {
@@ -69,6 +80,9 @@ function useInvalidateInboundMutation<TVariables, TResult>(
     mutationFn,
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: inboundKeys.all }),
+    onError: () => {
+      // Im lặng có chủ đích — xem docblock ở trên.
+    },
   });
 }
 export function useCreateInbound() {

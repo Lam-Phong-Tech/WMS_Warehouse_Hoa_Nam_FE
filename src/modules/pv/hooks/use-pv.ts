@@ -147,6 +147,11 @@ function useInvalidatePv() {
   return () => queryClient.invalidateQueries({ queryKey: pvKeys.all });
 }
 
+// `onError` khai RỖNG có chủ đích ở cả 5 hook trong file này: PvAdminPage.tsx
+// đã tự toast theo đúng ngữ cảnh (resolveFormErrors gắn lỗi field, nhánh riêng
+// cho 412/428 ở togglePublish...). Không khai onError thì global
+// `MutationCache` (query-client.ts) sẽ tự bắn thêm một toast chung chung nữa
+// → thấy 2 thông báo cho cùng một lỗi.
 export function useSavePvIndustry() {
   const invalidate = useInvalidatePv();
   return useMutation({
@@ -163,6 +168,7 @@ export function useSavePvIndustry() {
           )
         : createPvIndustry(input.payload),
     onSuccess: invalidate,
+    onError: () => {},
   });
 }
 
@@ -178,6 +184,7 @@ export function useSavePvTag() {
         ? updatePvTag(input.id, requiredVersion(input.version), input.payload)
         : createPvTag(input.payload),
     onSuccess: invalidate,
+    onError: () => {},
   });
 }
 
@@ -193,6 +200,7 @@ export function useSavePvRule() {
         ? updatePvRule(input.id, requiredVersion(input.version), input.payload)
         : createPvRule(input.payload),
     onSuccess: invalidate,
+    onError: () => {},
   });
 }
 
@@ -212,6 +220,7 @@ export function useSavePvProfile() {
           )
         : createPvProfile(input.payload),
     onSuccess: invalidate,
+    onError: () => {},
   });
 }
 
@@ -235,5 +244,6 @@ export function useSetPvPublished() {
     }) =>
       setPvProductPublished(input.skuId, input.published, input.profileVersion),
     onSuccess: invalidate,
+    onError: () => {},
   });
 }

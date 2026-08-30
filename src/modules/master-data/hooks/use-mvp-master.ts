@@ -71,6 +71,14 @@ export function useMvpSkuHasStock(skuId: string, enabled: boolean) {
   });
 }
 
+/**
+ * `onError` khai RỖNG có chủ đích: mọi component gọi các hook dưới đây
+ * (ApiMasterScreens.tsx) đã tự toast + hiện banner lỗi cục bộ (setFormError/
+ * setPublishError) cho cả create lẫn update. Không khai onError thì global
+ * `MutationCache` (query-client.ts) sẽ tự bắn thêm một toast chung chung nữa
+ * → thấy 2 thông báo cho cùng một lỗi. Khai rỗng ở đây chỉ để chặn lưới an
+ * toàn đó, không đảm nhận việc hiển thị.
+ */
 function useInvalidateMasterMutation<TVariables>(
   mutationFn: (variables: TVariables) => Promise<unknown>,
 ) {
@@ -79,6 +87,9 @@ function useInvalidateMasterMutation<TVariables>(
     mutationFn,
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: mvpMasterKeys.all }),
+    onError: () => {
+      // Im lặng có chủ đích — xem docblock ở trên.
+    },
   });
 }
 

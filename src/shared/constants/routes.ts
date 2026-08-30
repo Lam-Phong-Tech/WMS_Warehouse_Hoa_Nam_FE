@@ -44,6 +44,7 @@ export const ROUTES = {
   // standalone đã được duyệt — trích như vậy là nói quá thẩm quyền. Guard chống hồi quy:
   // scripts/verify-wwhn-242-closure.mjs (check "no-stocktake citation").
   WARRANTY: "/warranty",
+  WARRANTY_COMPONENT_ISSUES: "/warranty/component-issues",
   REVERSE: "/reverse",
   // Báo cáo vận hành — mỗi mục là MỘT trang riêng trong sidebar (không còn
   // gộp vào 1 route "/reports" với tab bar nội trang — phản hồi người dùng

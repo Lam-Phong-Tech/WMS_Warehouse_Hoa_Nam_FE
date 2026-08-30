@@ -71,6 +71,9 @@ export const ROUTE_PERMISSIONS: Record<string, string | string[] | undefined> =
       P.WARRANTY_MANAGE,
       P.WARRANTY_COMPONENT_ISSUE,
     ],
+    // Toàn bộ lý do tồn tại của trang này là xem/mở phiếu xuất linh kiện — gate
+    // đúng bằng quyền mà fetchComponentIssueDocuments tự assert phía service.
+    [ROUTES.WARRANTY_COMPONENT_ISSUES]: [P.WARRANTY_COMPONENT_ISSUE],
     // WWHN-242 · REV-00 là màn ĐỌC. SRS §RACI "Inventory query/trace/reversal" cấp
     // V cho WAREHOUSE_APPROVER/LEADERSHIP/VIEWER/WARRANTY_STAFF/WAREHOUSE_STAFF, và BE
     // mở GET /reversal-documents{,/:id,/:id/lines} bằng `inventory.view`; chỉ

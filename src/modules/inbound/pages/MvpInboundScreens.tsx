@@ -16,6 +16,7 @@ import {
   ResponsiveDataTable,
   type ResponsiveTableColumn,
 } from "@/shared/components/data-display/ResponsiveDataTable";
+import { CopyableId } from "@/shared/components/data-display/CopyableId";
 import { toast } from "sonner";
 import {
   CheckCircleOutlined,
@@ -859,11 +860,14 @@ export function InboundScanModal({
       key: "sku",
       header: "SKU",
       width: 220,
-      render: (line) => (
-        <strong>
-          {skuById.get(line.productId)?.sku_code ?? line.productId}
-        </strong>
-      ),
+      render: (line) => {
+        const skuCode = skuById.get(line.productId)?.sku_code;
+        return skuCode ? (
+          <strong>{skuCode}</strong>
+        ) : (
+          <CopyableId value={line.productId} />
+        );
+      },
     },
     {
       key: "name",
@@ -1384,13 +1388,13 @@ export function InboundScanModal({
                   >
                     <Box sx={{ fontWeight: 700 }}>
                       {detail.document.status === "POSTED"
-                        ? "Phiếu đã nhập kho và chỉ đọc"
-                        : "Phiếu đã hủy và chỉ đọc"}
+                        ? "Nhập kho thành công"
+                        : "Nhập kho thất bại, phiếu đã bị hủy"}
                     </Box>
                     <Box sx={{ typography: "body2" }}>
                       {detail.document.status === "POSTED"
-                        ? "Không sửa/xóa phiếu đã nhập kho. Sai giao dịch phải xử lý bằng điều chỉnh tồn kho theo cơ chế ghi bổ sung."
-                        : "Phiếu đã hủy không làm thay đổi tồn kho. Muốn làm lại phải tạo phiếu mới."}
+                        ? ""
+                        : "Phiếu đã hủy không làm thay đổi tồn kho. "}
                     </Box>
                   </UiAlert>
                 </Box>
@@ -1513,15 +1517,40 @@ export function InboundScanModal({
                     <Box sx={{ fontWeight: 700 }}>
                       Kết quả hoàn tất nhập kho
                     </Box>
-                    <Box sx={{ typography: "body2" }}>
-                      Mã yêu cầu: <strong>{receiptEvidence.requestId}</strong>
+                    <Box
+                      sx={{
+                        typography: "body2",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 0.5,
+                      }}
+                    >
+                      Mã yêu cầu:{" "}
+                      <CopyableId value={receiptEvidence.requestId} />
                     </Box>
-                    <Box sx={{ typography: "body2" }}>
-                      Biến động tồn kho:{" "}
-                      {receiptEvidence.movementRefs.join(", ")}
+                    <Box
+                      sx={{
+                        typography: "body2",
+                        display: "flex",
+                        alignItems: "center",
+                        flexWrap: "wrap",
+                        gap: 0.5,
+                      }}
+                    >
+                      Biến động tồn kho ({receiptEvidence.movementRefs.length}):
+                      {receiptEvidence.movementRefs.map((ref) => (
+                        <CopyableId key={ref} value={ref} />
+                      ))}
                     </Box>
-                    <Box sx={{ typography: "body2" }}>
-                      Phiếu nhập: {receiptEvidence.receiptId}
+                    <Box
+                      sx={{
+                        typography: "body2",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 0.5,
+                      }}
+                    >
+                      Phiếu nhập: <CopyableId value={receiptEvidence.receiptId} />
                     </Box>
                   </UiAlert>
                 </Box>

@@ -155,19 +155,22 @@ export default function AlignedMvpOutboundPage() {
     },
     {
       key: "request",
-      header: "Yêu cầu xuất",
+      header: "Mã toa yêu cầu",
       width: 150,
       hideOnMobile: true,
-      sortAccessor: (row) => row.outboundRequestId ?? "",
+      sortAccessor: (row) => row.requestNo ?? row.outboundRequestId ?? "",
       render: (row) => {
-        const value = row.outboundRequestId;
-        return value ? (
-          <span title={value}>
-            {value.length > 12 ? `${value.slice(0, 8)}…` : value}
-          </span>
-        ) : (
-          <UiStatusBadge tone="error" label="Thiếu yêu cầu xuất" />
-        );
+        if (!row.outboundRequestId) {
+          return <UiStatusBadge tone="error" label="Thiếu yêu cầu xuất" />;
+        }
+        // Ưu tiên mã toa đọc được (request_no); chỉ rút gọn UUID khi BE lỡ
+        // chưa kèm được request_no (tránh lộ chuỗi thô ra danh sách).
+        const value = row.requestNo || row.outboundRequestId;
+        const truncated =
+          !row.requestNo && value.length > 12
+            ? `${value.slice(0, 8)}…`
+            : value;
+        return <span title={value}>{truncated}</span>;
       },
     },
     {

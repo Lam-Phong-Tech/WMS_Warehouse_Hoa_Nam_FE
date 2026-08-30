@@ -21,7 +21,6 @@ import { DeleteOutlined, PlayCircleOutlined } from "@/shared/components/icons";
 import {
   extractFieldErrorsRaw,
   getApiErrorMessage,
-  getErrorRequestId,
 } from "@/shared/api/api-error";
 import { ACTION_ICON_COLORS } from "@/shared/theme/actionIconColors";
 import { useDialogExit } from "@/shared/utils/useDialogExit";
@@ -393,12 +392,15 @@ export function WarrantyIntakeModal({
       resetForm();
       onCreated(created);
     } catch (error: unknown) {
+      // Toast ngắn đã hiện qua onError của createMutation (use-warranty.ts).
+      // Ở đây chỉ dựng banner lỗi CỐ ĐỊNH trong form — kèm chi tiết từng field
+      // sai (hữu ích hơn khi đọc trong banner so với nhét vào một dòng toast).
+      // Không kèm request_id: đó là mã tra cứu kỹ thuật, người dùng đọc không
+      // hiểu (xem ApiErrorAlert.tsx — request_id chỉ hiện ở dòng phụ có nhãn).
       const fieldErrors = extractFieldErrorsRaw(error);
-      const requestId = getErrorRequestId(error);
       const errorMsg = `${getApiErrorMessage(error, "Không tạo được case bảo hành.")}${
-        requestId ? ` — Request ${requestId}` : ""
-      }${fieldErrors ? ` (${Object.values(fieldErrors).flat().join("; ")})` : ""}`;
-      toast.error(errorMsg);
+        fieldErrors ? ` (${Object.values(fieldErrors).flat().join("; ")})` : ""
+      }`;
       setFormError(errorMsg);
     }
   };
@@ -460,7 +462,7 @@ export function WarrantyIntakeModal({
             sx={{ display: "flex", flexWrap: "wrap", columnGap: 2 }}
           >
             <FormControlLabel
-              label="Có mã máy (IDENTIFIED)"
+              label="Có mã máy"
               control={
                 <Radio
                   size="small"
@@ -472,7 +474,7 @@ export function WarrantyIntakeModal({
               }
             />
             <FormControlLabel
-              label="Mất mã (TEMP_ONLY)"
+              label="Mất mã"
               control={
                 <Radio
                   size="small"
@@ -488,11 +490,7 @@ export function WarrantyIntakeModal({
 
         {identificationType === "TEMP_ONLY" ? (
           <>
-            <UiAlert tone="warning">
-              Case TEMP_ONLY không liên kết item gốc, không xác nhận lịch sử bán
-              hàng (NOT_TRACEABLE) và không sinh stock movement. Mã tạm sẽ do hệ
-              thống sinh sau khi lưu.
-            </UiAlert>
+            
             <UiTextField
               required
               fullWidth
@@ -620,7 +618,7 @@ export function WarrantyIntakeModal({
           <Grid size={{ xs: 12, md: 8 }}>
             <UiTextField
               fullWidth
-              label="Địa chỉ khách (PII)"
+              label="Địa chỉ khách"
               value={customerAddress}
               onChange={(event) => setCustomerAddress(event.target.value)}
               slotProps={{ htmlInput: { maxLength: 500 } }}

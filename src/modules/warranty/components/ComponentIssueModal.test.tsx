@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { renderWithProviders } from "@/test/test-utils";
 import { cleanupTestState } from "@/test/setup";
+import { SEMANTIC_LIGHT } from "@/shared/ui/tokens";
 
 vi.mock("@/modules/warranty/services/componentIssueService", () => ({
   fetchComponentIssueDocuments: vi.fn(),
@@ -28,13 +30,18 @@ vi.mock("@/modules/master-data/hooks/use-mvp-master", () => ({
 vi.mock("@/shared/components/forms/CameraScanModal", () => ({
   CameraScanModal: () => null,
 }));
+vi.mock("@/modules/outbound/services/alignedOutboundService", () => ({
+  fetchAvailableQtyBySku: vi.fn(),
+}));
 
 import {
   cancelComponentIssue,
+  createComponentIssue,
   fetchComponentIssueDocument,
   postComponentIssue,
   scanComponentIssue,
 } from "@/modules/warranty/services/componentIssueService";
+import { fetchAvailableQtyBySku } from "@/modules/outbound/services/alignedOutboundService";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { ComponentIssueModal } from "./ComponentIssueModal";
 
@@ -71,6 +78,8 @@ describe("ComponentIssueModal (COMP-01)", () => {
     vi.mocked(scanComponentIssue).mockReset();
     vi.mocked(cancelComponentIssue).mockReset();
     vi.mocked(postComponentIssue).mockReset();
+    vi.mocked(createComponentIssue).mockReset();
+    vi.mocked(fetchAvailableQtyBySku).mockReset();
     useAuthStore.setState({
       isSuperAdmin: false,
       permissionCodes: ["warranty.component_issue"],
@@ -171,8 +180,8 @@ describe("ComponentIssueModal (COMP-01)", () => {
     await waitFor(() => expect(postButton).toBeEnabled());
     fireEvent.click(postButton);
 
-    // Modal.confirm (stub) hiện nút "Post" — xác nhận trước khi trừ tồn.
-    fireEvent.click(await screen.findByRole("button", { name: "Post" }));
+    // Modal.confirm (stub) hiện nút "Xác nhận" — xác nhận trước khi trừ tồn.
+    fireEvent.click(await screen.findByRole("button", { name: "Xác nhận" }));
 
     await waitFor(() => {
       expect(postComponentIssue).toHaveBeenCalledWith(
@@ -240,6 +249,79 @@ describe("ComponentIssueModal (COMP-01)", () => {
         reason: "Nhập nhầm kho",
         ifMatch: 2,
       });
+    });
+  });
+
+  it("chặn tạo phiếu khi SL cần vượt tồn khả dụng của SKU", async () => {
+    vi.mocked(fetchAvailableQtyBySku).mockResolvedValue({ "sku-1": 1 });
+    const user = userEvent.setup();
+
+    renderWithProviders(
+      <ComponentIssueModal caseId="wc-1" caseActive onClose={() => {}} />,
+    );
+
+    await user.click(await screen.findByRole("combobox"));
+    await user.click(
+      await screen.findByRole("option", { name: "LK-PIN-20V · Pin 20V" }),
+    );
+
+    const qtyInput = await screen.findByLabelText(/^SL cần/);
+    fireEvent.change(qtyInput, { target: { value: "9" } });
+
+    // Badge "Khả dụng" tô đỏ (tone error) ngay lúc gõ, không cần đợi bấm
+    // "Tạo phiếu DRAFT".
+    const availabilityBadge = (
+      await screen.findByText("Khả dụng: 1")
+    ).closest(".MuiChip-root");
+    expect(availabilityBadge).toHaveStyle({
+      backgroundColor: SEMANTIC_LIGHT.errorSoft,
+      color: SEMANTIC_LIGHT.errorText,
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /Tạo phiếu DRAFT/ }));
+
+    expect(
+      await screen.findByText("Vượt tồn khả dụng (còn 1)."),
+    ).toBeInTheDocument();
+    expect(createComponentIssue).not.toHaveBeenCalled();
+  });
+
+  it("cho tạo phiếu khi SL cần không vượt tồn khả dụng của SKU", async () => {
+    vi.mocked(fetchAvailableQtyBySku).mockResolvedValue({ "sku-1": 5 });
+    vi.mocked(createComponentIssue).mockResolvedValue({
+      id: "ci-2",
+      component_issue_no: "CI-0002",
+      version: 1,
+    } as never);
+    vi.mocked(fetchComponentIssueDocument).mockResolvedValue(
+      makeDetail({ id: "ci-2" }) as never,
+    );
+    const user = userEvent.setup();
+
+    renderWithProviders(
+      <ComponentIssueModal caseId="wc-1" caseActive onClose={() => {}} />,
+    );
+
+    await user.click(await screen.findByRole("combobox"));
+    await user.click(
+      await screen.findByRole("option", { name: "LK-PIN-20V · Pin 20V" }),
+    );
+
+    const qtyInput = await screen.findByLabelText(/^SL cần/);
+    fireEvent.change(qtyInput, { target: { value: "2" } });
+
+    const availabilityBadge = (
+      await screen.findByText("Khả dụng: 5")
+    ).closest(".MuiChip-root");
+    expect(availabilityBadge).toHaveStyle({
+      backgroundColor: SEMANTIC_LIGHT.secondarySoft,
+      color: SEMANTIC_LIGHT.secondaryDark,
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /Tạo phiếu DRAFT/ }));
+
+    await waitFor(() => {
+      expect(createComponentIssue).toHaveBeenCalled();
     });
   });
 });

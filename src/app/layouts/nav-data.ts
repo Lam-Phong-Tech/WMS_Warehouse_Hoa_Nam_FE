@@ -116,6 +116,15 @@ export const NAV_GROUPS: NavGroupData[] = [
         label: "Danh sách bảo hành",
         icon: "shield-check",
       },
+      {
+        // WAR-04 · trang riêng gom phiếu xuất linh kiện XUYÊN case (phản hồi
+        // người dùng 2026-08-30) — COMP-01 (modal tạo/xem 1 phiếu) vẫn chỉ mở
+        // từ trong WAR-03, trang này chỉ liệt kê + mở lại COMP-01 khi bấm dòng.
+        screen: "WAR-04",
+        path: ROUTES.WARRANTY_COMPONENT_ISSUES,
+        label: "Danh sách phiếu xuất linh kiện",
+        icon: "screwdriver",
+      },
     ],
   },
   {
@@ -245,6 +254,7 @@ export const DEFAULT_SCREEN_BY_PATH: Record<string, string> = {
   [ROUTES.PUTAWAY]: "PTW-00",
   [ROUTES.OUTBOUND]: "OUT-01",
   [ROUTES.WARRANTY]: "WAR-01",
+  [ROUTES.WARRANTY_COMPONENT_ISSUES]: "WAR-04",
   [ROUTES.INVENTORY]: "INV-01",
   [ROUTES.SCAN]: "TRACE-01",
   [ROUTES.REVERSE]: "REV-00",
@@ -405,6 +415,10 @@ export const SCREEN_META: Record<
   "WAR-01": {
     title: "Danh sách bảo hành",
     description: "Danh sách bảo hành.",
+  },
+  "WAR-04": {
+    title: "Danh sách phiếu xuất linh kiện",
+    description: "Toàn bộ phiếu xuất linh kiện, xuyên các case bảo hành.",
   },
   "INV-01": {
     title: "Tra cứu tồn & đối soát",

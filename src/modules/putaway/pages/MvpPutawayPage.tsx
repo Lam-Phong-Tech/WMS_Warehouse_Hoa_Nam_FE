@@ -657,7 +657,7 @@ export default function MvpPutawayPage() {
         <Box className="master-data-state-alert">
           <UiAlert
             tone="info"
-            title="Xếp khay là bước định vị sau khi đã hoàn tất nhập kho, không phải bước tăng tồn"
+            title="Xếp khay là bước định vị sau khi đã hoàn tất nhập kho"
           >
             Linh kiện đã tăng tồn ở bước hoàn tất nhập kho. Màn này chỉ gán hộp
             vào khay/vị trí; tạo, xác nhận hoặc hủy lệnh xếp khay đều không làm

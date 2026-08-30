@@ -109,6 +109,11 @@ const WarrantyPage = lazy(() =>
     default: m.default,
   })),
 );
+const WarrantyComponentIssueListPage = lazy(() =>
+  import("@/modules/warranty/pages/WarrantyComponentIssueListPage").then(
+    (m) => ({ default: m.default }),
+  ),
+);
 const ReversalPage = lazy(() =>
   import("@/modules/reverse/pages/ReversalPage").then((m) => ({
     default: m.default,
@@ -339,6 +344,13 @@ export const router = createBrowserRouter([
           {
             path: ROUTES.WARRANTY,
             element: routeEl(ROUTES.WARRANTY, <WarrantyPage />),
+          },
+          {
+            path: ROUTES.WARRANTY_COMPONENT_ISSUES,
+            element: routeEl(
+              ROUTES.WARRANTY_COMPONENT_ISSUES,
+              <WarrantyComponentIssueListPage />,
+            ),
           },
           {
             path: ROUTES.REVERSE,

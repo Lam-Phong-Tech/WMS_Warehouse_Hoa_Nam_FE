@@ -246,8 +246,7 @@ export function DocumentAttachmentsPanel({
 
       {evidenceStatus === "PENDING" ? (
         <Alert severity="warning">
-          Phiếu này bắt buộc có ít nhất một chứng từ đính kèm để đối soát trước
-          khi Post.
+          Bắt buộc có 1 chứng từ đính kèm để đối soát. Vui lòng tải lên.
         </Alert>
       ) : null}
 

@@ -1,4 +1,6 @@
 import type { WarrantyCaseStatus } from "./types";
+import type { ComponentIssueStatus } from "./services/componentIssueService";
+import type { UiStatusTone } from "@/shared/ui";
 import { formatDateTime } from "@/shared/utils/format-date";
 export {
   ITEM_STATUS_LABELS,
@@ -56,7 +58,7 @@ export const WARRANTY_NOTE_REQUIRED_LABELS: Partial<
   Record<WarrantyCaseStatus, string>
 > = {
   COMPLETED: "Kết quả xử lý (bắt buộc)",
-  RETURNED: "Biên bản bàn giao / người nhận (bắt buộc)",
+  RETURNED: "Tên người nhận (bắt buộc)",
 };
 
 export const WARRANTY_STATUS_LABELS: Record<string, string> = {
@@ -87,6 +89,17 @@ export const WARRANTY_STATUS_COLORS: Record<string, string> = {
   RETURNED_TO_CUSTOMER: "success",
   CLOSED: "default",
   CANCELLED: "error",
+};
+
+/** Dùng chung giữa ComponentIssueModal (COMP-01) và trang danh sách WAR-04. */
+export const COMPONENT_ISSUE_STATUS_BADGE: Record<
+  ComponentIssueStatus,
+  { tone: UiStatusTone; label: string }
+> = {
+  DRAFT: { tone: "neutral", label: "Nháp" },
+  SCANNING: { tone: "info", label: "Đang quét" },
+  POSTED: { tone: "success", label: "Đã ghi nhận" },
+  CANCELLED: { tone: "error", label: "Đã hủy" },
 };
 
 export const WARRANTY_ATTACHMENT_TYPE_LABELS: Record<string, string> = {

@@ -51,6 +51,7 @@ import {
   resolveFormErrors,
 } from "@/shared/api/api-error";
 import { LoadingState } from "@/shared/components/data-display/LoadingState";
+import { shortId } from "@/shared/utils/shortId";
 import {
   WMS_PERMISSION_CATALOG as P,
   hasAnyWmsPermission,
@@ -605,7 +606,7 @@ export default function PvAdminPage() {
               <UiStatusBadge
                 key={id}
                 tone="neutral"
-                label={industryNameById.get(id) ?? id}
+                label={industryNameById.get(id) ?? shortId(id)}
               />
             ))}
           </Stack>
@@ -885,7 +886,7 @@ export default function PvAdminPage() {
                         <UiStatusBadge
                           key={id}
                           tone="neutral"
-                          label={industryNameById.get(id) ?? id}
+                          label={industryNameById.get(id) ?? shortId(id)}
                         />
                       ))}
                     </Stack>
@@ -906,7 +907,7 @@ export default function PvAdminPage() {
                         <UiStatusBadge
                           key={id}
                           tone="neutral"
-                          label={tagNameById.get(id) ?? id}
+                          label={tagNameById.get(id) ?? shortId(id)}
                         />
                       ))}
                     </Stack>

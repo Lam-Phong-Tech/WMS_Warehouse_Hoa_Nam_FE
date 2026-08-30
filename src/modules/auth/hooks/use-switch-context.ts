@@ -31,5 +31,13 @@ export function useSwitchContext() {
         predicate: (query) => isContextScopedQuery(query.queryKey),
       });
     },
+    // Rỗng có chủ đích, KHÔNG thừa: ContextSwitcher.tsx tự toast qua callback
+    // onError truyền vào .mutate(vars, {onError}) — nhưng đó là callback
+    // PER-CALL của MutationObserver, tách biệt hoàn toàn khỏi
+    // `mutation.options.onError` mà global MutationCache (query-client.ts)
+    // kiểm tra để quyết định có tự bắn thêm toast hay không. Thiếu onError
+    // NGAY TẠI ĐÂY (dù ContextSwitcher đã có onError riêng ở mutate()) thì
+    // lưới an toàn vẫn không biết và tự bắn thêm 1 toast chung chung nữa.
+    onError: () => {},
   });
 }

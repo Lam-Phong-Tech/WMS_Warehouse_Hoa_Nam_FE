@@ -26,6 +26,7 @@ import {
   ResponsiveDataTable,
   type ResponsiveTableColumn,
 } from "@/shared/components/data-display/ResponsiveDataTable";
+import { shortId } from "@/shared/utils/shortId";
 import {
   useCancelReversal,
   useConfirmReversal,
@@ -302,7 +303,7 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
         fullWidth
         title={
           <Box sx={{ position: "relative", pr: 6 }}>
-            {`Chi tiết phiếu điều chỉnh — ${doc?.reversal_code ?? documentId}`}
+            {`Chi tiết phiếu điều chỉnh — ${doc?.reversal_code ?? shortId(documentId)}`}
             <ActionIconButton
               kind="close"
               label="Đóng"

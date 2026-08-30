@@ -14,6 +14,7 @@ import {
   ResponsiveDataTable,
   type ResponsiveTableColumn,
 } from "@/shared/components/data-display/ResponsiveDataTable";
+import { CopyableId } from "@/shared/components/data-display/CopyableId";
 import {
   CONTAINER_TYPE_LABELS,
   INVENTORY_STOCK_STATUS_LABELS,
@@ -165,7 +166,12 @@ export function BalanceDetailModal({
       key: "movementId",
       header: "Mã biến động",
       width: 140,
-      render: (row) => <CodeText>{row.movementId || "-"}</CodeText>,
+      render: (row) =>
+        row.movementId && row.movementId !== String(row.id) ? (
+          <CodeText>{row.movementId}</CodeText>
+        ) : (
+          <CopyableId value={String(row.id)} />
+        ),
     },
     {
       key: "time",

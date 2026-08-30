@@ -20,6 +20,7 @@ import {
   ResponsiveDataTable,
   type ResponsiveTableColumn,
 } from "@/shared/components/data-display/ResponsiveDataTable";
+import { CopyableId } from "@/shared/components/data-display/CopyableId";
 import {
   useMvpAgencies,
   useMvpSkus,
@@ -833,8 +834,18 @@ export function OutboundIntakeModal({
               p: 2,
             }}
           >
-            <Box sx={{ typography: "subtitle2", fontWeight: 700, mb: 1.5 }}>
-              {`Kết quả xem trước · ${preview.importNo || preview.id}`}
+            <Box
+              sx={{
+                typography: "subtitle2",
+                fontWeight: 700,
+                mb: 1.5,
+                display: "flex",
+                alignItems: "center",
+                gap: 0.5,
+              }}
+            >
+              Kết quả xem trước ·{" "}
+              {preview.importNo || <CopyableId value={preview.id} />}
             </Box>
             <Stack spacing={1.5}>
               <Stack

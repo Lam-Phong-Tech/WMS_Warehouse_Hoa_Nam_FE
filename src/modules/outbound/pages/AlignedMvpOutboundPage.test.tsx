@@ -140,6 +140,38 @@ describe("AlignedMvpOutboundPage RBAC gating (OUT-01, WWHN-209)", () => {
     expect(screen.getByRole("button", { name: /Xem/ })).toBeInTheDocument();
   });
 
+  it("cột Yêu cầu xuất hiện mã toa đọc được (request_no), không phải UUID thô", async () => {
+    grantOnly(["outbound.view"]);
+    serviceMocks.fetchOutboundDocuments.mockResolvedValue({
+      data: [
+        {
+          ...ROWS[0],
+          outboundRequestId: "1099ed43-5208-411f-80d7-775f3dda6e81",
+          requestNo: "YCX-2026-08-30-001",
+        },
+        // BE lỡ chưa kèm được request_no: vẫn không được lộ UUID đầy đủ.
+        {
+          ...ROWS[1],
+          id: "doc-no-reqno",
+          code: "PX-NO-REQNO",
+          outboundRequestId: "22222222-2222-4222-8222-222222222222",
+          requestNo: null,
+        },
+      ],
+      meta: { current_page: 1, per_page: 15, total: 2 },
+    });
+    renderWithProviders(<AlignedMvpOutboundPage />);
+    await screen.findByText("PX-20260820-0001");
+
+    expect(screen.getByText("YCX-2026-08-30-001")).toBeInTheDocument();
+    expect(
+      screen.queryByText("1099ed43-5208-411f-80d7-775f3dda6e81"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("22222222-2222-4222-8222-222222222222"),
+    ).not.toBeInTheDocument();
+  });
+
   it("lỗi tải danh sách: render ApiErrorAlert thay vì màn trắng (hợp đồng UI_STATE)", async () => {
     grantOnly(["outbound.view"]);
     serviceMocks.fetchOutboundDocuments.mockRejectedValue(

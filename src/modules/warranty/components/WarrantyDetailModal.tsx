@@ -28,7 +28,6 @@ import {
 import {
   extractFieldErrorsRaw,
   getApiErrorMessage,
-  getErrorRequestId,
 } from "@/shared/api/api-error";
 import { ACTION_ICON_COLORS } from "@/shared/theme/actionIconColors";
 import { guardBackdropClose } from "@/shared/utils/dialogGuard";
@@ -83,11 +82,11 @@ const RETURN_ATTACHMENT_TYPES = Object.entries(
   WARRANTY_ATTACHMENT_TYPE_LABELS,
 ) as Array<[WarrantyAttachmentType, string]>;
 
+// KHÔNG nối request_id: đó là mã tra cứu kỹ thuật cho debug, người dùng đọc
+// không hiểu (xem ApiErrorAlert.tsx — request_id chỉ hiện ở dòng phụ có nhãn
+// rõ, không bao giờ nối thẳng vào câu chính như toast ở đây).
 function errorText(error: unknown, fallback: string): string {
-  const requestId = getErrorRequestId(error);
-  return `${getApiErrorMessage(error, fallback)}${
-    requestId ? ` — Request ${requestId}` : ""
-  }`;
+  return getApiErrorMessage(error, fallback);
 }
 
 /** Annex D SCR-WAR-01 field `images`: jpg/png/webp. */
@@ -1747,7 +1746,7 @@ export function WarrantyDetailModal({
                   <Box
                     sx={{ typography: "subtitle2", fontWeight: 700, mb: 1.5 }}
                   >
-                    {`Phiếu xuất linh kiện của case (${issuesQuery.data?.data.length ?? 0})`}
+                    {`Phiếu xuất linh kiện của phiếu bảo hành (${issuesQuery.data?.data.length ?? 0})`}
                   </Box>
                   <ResponsiveDataTable
                     columns={issueColumns}
@@ -2244,9 +2243,7 @@ export function WarrantyDetailModal({
               minRows={2}
               required={diagnosisRequired}
               label={
-                diagnosisRequired
-                  ? "Kết quả kiểm tra / bệnh xác nhận (bắt buộc)"
-                  : "Kết quả kiểm tra / bệnh xác nhận"
+                "Ghi chú (không bắt buộc)"
               }
               value={statusForm.confirmed_defect}
               onChange={(event) => {

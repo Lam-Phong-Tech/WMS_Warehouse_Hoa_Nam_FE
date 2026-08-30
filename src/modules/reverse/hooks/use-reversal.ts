@@ -63,6 +63,11 @@ export function useReversibleMovements(
   });
 }
 
+// `onError` khai RỖNG có chủ đích ở cả 4 hook dưới đây: ReversalCreateModal.tsx
+// và ReversalDetailModal.tsx đã tự toast theo đúng ngữ cảnh (có nhánh riêng
+// cho 409/412/428, có fallback riêng từng hành động qua handleFailure()).
+// Không khai onError thì global `MutationCache` (query-client.ts) sẽ tự bắn
+// thêm một toast chung chung nữa → thấy 2 thông báo cho cùng một lỗi.
 export function useCreateReversal() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -70,6 +75,7 @@ export function useCreateReversal() {
       createReversalDocument(payload),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: reversalKeys.all }),
+    onError: () => {},
   });
 }
 
@@ -84,6 +90,7 @@ export function useConfirmReversal() {
       confirmReversalDocument(payload),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: reversalKeys.all }),
+    onError: () => {},
   });
 }
 
@@ -93,6 +100,7 @@ export function usePostReversal() {
     mutationFn: (payload: ReversalPostRequest) => postReversalDocument(payload),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: reversalKeys.all }),
+    onError: () => {},
   });
 }
 
@@ -103,5 +111,6 @@ export function useCancelReversal() {
       cancelReversalDocument(payload),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: reversalKeys.all }),
+    onError: () => {},
   });
 }

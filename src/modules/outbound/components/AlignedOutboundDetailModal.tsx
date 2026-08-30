@@ -25,6 +25,7 @@ import {
   ResponsiveDataTable,
   type ResponsiveTableColumn,
 } from "@/shared/components/data-display/ResponsiveDataTable";
+import { CopyableId } from "@/shared/components/data-display/CopyableId";
 import { useHasPermission } from "@/shared/components/permission";
 import { WMS_ACTION_PERMISSIONS } from "@/shared/constants/wms-permissions";
 import {
@@ -840,9 +841,21 @@ export function AlignedOutboundDetailModal({
                 </Box>
               ) : null}
               {evidence ? (
-                <Box sx={{ typography: "body2", color: "text.secondary" }}>
-                  {evidence.movementRefs.length} movement · Request{" "}
-                  {evidence.requestId || "—"}
+                <Box
+                  sx={{
+                    typography: "body2",
+                    color: "text.secondary",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 0.5,
+                  }}
+                >
+                  {evidence.movementRefs.length} movement · Request
+                  {evidence.requestId ? (
+                    <CopyableId value={evidence.requestId} />
+                  ) : (
+                    "—"
+                  )}
                 </Box>
               ) : null}
             </Stack>
