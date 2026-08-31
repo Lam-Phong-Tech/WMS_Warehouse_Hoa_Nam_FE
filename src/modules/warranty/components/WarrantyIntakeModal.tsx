@@ -21,12 +21,21 @@ import { DeleteOutlined, PlayCircleOutlined } from "@/shared/components/icons";
 import {
   extractFieldErrorsRaw,
   getApiErrorMessage,
+  resolveFormErrors,
 } from "@/shared/api/api-error";
 import { ACTION_ICON_COLORS } from "@/shared/theme/actionIconColors";
+import {
+  ITEM_STATUS_LABELS,
+  businessLabel,
+} from "@/shared/constants/business-labels";
 import { useDialogExit } from "@/shared/utils/useDialogExit";
 import { CameraScanModal } from "@/shared/components/forms/CameraScanModal";
 import { ScanInput } from "@/shared/components/forms/ScanInput";
-import { useMvpDefects } from "@/modules/master-data/hooks/use-mvp-master";
+import { useCanAny } from "@/shared/components/permission";
+import {
+  useCreateMvpDefect,
+  useMvpDefects,
+} from "@/modules/master-data/hooks/use-mvp-master";
 import { fetchWarehouses } from "@/modules/master-data/services/warehouse.service";
 import { classifyScanCodes } from "@/modules/scan/services/scanService";
 import {
@@ -155,6 +164,60 @@ export function WarrantyIntakeModal({
     });
     return () => subscription.unsubscribe();
   }, [defectForm]);
+
+  // Thêm nhanh 1 bệnh/lỗi mới ngay trong dropdown, không cần rời màn Tiếp
+  // nhận bảo hành để qua tab "Danh mục bệnh/lỗi" — chỉ hiện dòng "+ Thêm bệnh
+  // lỗi" cho ai có quyền quản lý danh mục lỗi (permission tách biệt hoàn toàn
+  // với quyền tiếp nhận bảo hành).
+  const canManageDefects = useCanAny(["defect.manage"]);
+  const createDefectMutation = useCreateMvpDefect();
+  const [defectDialogOpen, setDefectDialogOpen] = useState(false);
+  const [newDefectForm, setNewDefectForm] = useState({
+    defect_code: "",
+    defect_name: "",
+    description: "",
+  });
+  const [newDefectErrors, setNewDefectErrors] = useState<
+    Record<string, string>
+  >({});
+
+  const handleCreateDefect = async () => {
+    const errors: Record<string, string> = {};
+    if (!newDefectForm.defect_code.trim()) {
+      errors.defect_code = "Mã lỗi là bắt buộc.";
+    }
+    if (!newDefectForm.defect_name.trim()) {
+      errors.defect_name = "Tên lỗi / bệnh là bắt buộc.";
+    }
+    if (Object.keys(errors).length > 0) {
+      setNewDefectErrors(errors);
+      return;
+    }
+    try {
+      const created = await createDefectMutation.mutateAsync({
+        defect_code: newDefectForm.defect_code.trim(),
+        defect_name: newDefectForm.defect_name.trim(),
+        description: newDefectForm.description.trim() || null,
+        status: "ACTIVE",
+      });
+      defectForm.setValue("defect_ids", [
+        ...defectForm.getValues("defect_ids"),
+        created.defect_id,
+      ]);
+      toast.success(`Đã thêm bệnh/lỗi ${created.defect_code}.`);
+      setDefectDialogOpen(false);
+      setNewDefectForm({ defect_code: "", defect_name: "", description: "" });
+      setNewDefectErrors({});
+    } catch (error) {
+      const { fieldErrors } = resolveFormErrors(error, [
+        "defect_code",
+        "defect_name",
+        "description",
+      ]);
+      setNewDefectErrors(fieldErrors);
+      toast.error(getApiErrorMessage(error, "Không thêm được bệnh/lỗi mới."));
+    }
+  };
   // Change Pack QR/SKU (guide §13 WAR-02): quét raw QR -> classify(WARRANTY) ->
   // tự điền item/SKU; classify cần warehouse_id (REQ-SRS-001: một kho ACTIVE).
   const warehousesQuery = useQuery({
@@ -199,7 +262,7 @@ export function WarrantyIntakeModal({
       setResolveError(
         getApiErrorMessage(
           error,
-          "Không resolve được mã từ QR; kiểm tra lại hoặc chuyển TEMP_ONLY.",
+          "Không nhận diện được mã từ QR; kiểm tra lại hoặc chuyển sang tab \"Mất mã\".",
         ),
       );
     }
@@ -550,18 +613,18 @@ export function WarrantyIntakeModal({
             </Stack>
             <Box sx={{ mt: 0.5 }}>
               <UiText variant="caption" color={SEMANTIC_LIGHT.textMedium}>
-                Item phải đã xuất cho khách (ISSUED hoặc RETURNED_TO_CUSTOMER)
-                và chưa có case bảo hành đang hoạt động.
+                Sản phẩm phải đã xuất cho khách và chưa có phiếu bảo hành nào
+                đang xử lý.
               </UiText>
             </Box>
             {resolvedItem ? (
               <Box sx={{ mt: 1 }}>
                 <UiAlert tone="success">
-                  {`Đã nhận diện item${
+                  {`Đã nhận diện sản phẩm${
                     resolvedItem.skuCode ? ` · SKU ${resolvedItem.skuCode}` : ""
                   }${resolvedItem.itemUnique ? ` · ${resolvedItem.itemUnique}` : ""}${
                     resolvedItem.objectStatus
-                      ? ` · trạng thái ${resolvedItem.objectStatus}`
+                      ? ` · trạng thái ${businessLabel(ITEM_STATUS_LABELS, resolvedItem.objectStatus)}`
                       : ""
                   }`}
                 </UiAlert>
@@ -572,9 +635,9 @@ export function WarrantyIntakeModal({
                 <UiAlert tone="warning">
                   <Box>{resolveError}</Box>
                   <Box component="span" sx={{ fontSize: 12 }}>
-                    Nếu QR hỏng hoặc item không định danh được, chuyển sang tab
-                    "Mất mã (TEMP_ONLY)" — hệ thống không tự suy đoán liên kết
-                    item.
+                    Nếu QR hỏng hoặc không định danh được sản phẩm, chuyển sang
+                    tab "Mất mã" — hệ thống không tự suy đoán liên kết sản
+                    phẩm.
                   </Box>
                 </UiAlert>
               </Box>
@@ -646,6 +709,12 @@ export function WarrantyIntakeModal({
               options={defectOptions}
               label="Bệnh / lỗi (danh mục)"
               placeholder="Chọn từ danh mục bệnh/lỗi"
+              {...(canManageDefects
+                ? {
+                    onAddNew: () => setDefectDialogOpen(true),
+                    addNewLabel: "Thêm bệnh lỗi",
+                  }
+                : {})}
             />
           </Grid>
           <Grid size={{ xs: 12, md: 6 }}>
@@ -844,6 +913,92 @@ export function WarrantyIntakeModal({
         }}
         onClose={() => setCameraOpen(false)}
       />
+
+      <UiDialog
+        open={defectDialogOpen}
+        maxWidth="xs"
+        fullWidth
+        title={
+          <Stack
+            direction="row"
+            spacing={1}
+            sx={{ alignItems: "center", justifyContent: "space-between" }}
+          >
+            <Box component="span">Thêm bệnh lỗi</Box>
+            <ActionIconButton
+              kind="close"
+              label="Đóng"
+              onClick={() => setDefectDialogOpen(false)}
+            />
+          </Stack>
+        }
+        actions={
+          <>
+            <ActionButton
+              kind="cancel"
+              onClick={() => setDefectDialogOpen(false)}
+              disabled={createDefectMutation.isPending}
+            >
+              Hủy
+            </ActionButton>
+            <ActionButton
+              kind="save"
+              disabled={createDefectMutation.isPending}
+              onClick={() => void handleCreateDefect()}
+            >
+              {createDefectMutation.isPending ? "Đang lưu..." : "Lưu"}
+            </ActionButton>
+          </>
+        }
+      >
+        <Stack spacing={2} sx={{ pt: 1 }}>
+          <UiTextField
+            fullWidth
+            required
+            label="Mã lỗi"
+            value={newDefectForm.defect_code}
+            onChange={(event) =>
+              setNewDefectForm((current) => ({
+                ...current,
+                defect_code: event.target.value,
+              }))
+            }
+            error={Boolean(newDefectErrors.defect_code)}
+            helperText={newDefectErrors.defect_code}
+            slotProps={{ htmlInput: { maxLength: 80 } }}
+          />
+          <UiTextField
+            fullWidth
+            required
+            label="Tên lỗi / bệnh"
+            value={newDefectForm.defect_name}
+            onChange={(event) =>
+              setNewDefectForm((current) => ({
+                ...current,
+                defect_name: event.target.value,
+              }))
+            }
+            error={Boolean(newDefectErrors.defect_name)}
+            helperText={newDefectErrors.defect_name}
+            slotProps={{ htmlInput: { maxLength: 200 } }}
+          />
+          <UiTextField
+            fullWidth
+            multiline
+            minRows={2}
+            label="Mô tả"
+            value={newDefectForm.description}
+            onChange={(event) =>
+              setNewDefectForm((current) => ({
+                ...current,
+                description: event.target.value,
+              }))
+            }
+            error={Boolean(newDefectErrors.description)}
+            helperText={newDefectErrors.description}
+          />
+        </Stack>
+      </UiDialog>
     </UiDialog>
   );
 }

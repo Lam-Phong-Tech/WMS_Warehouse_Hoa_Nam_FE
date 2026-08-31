@@ -132,6 +132,7 @@ const populated: DashboardOverview = {
     import_error: 2,
     warranty_overdue: 137,
     print_failed: 1,
+    sku_pending_info: 4,
   },
 };
 

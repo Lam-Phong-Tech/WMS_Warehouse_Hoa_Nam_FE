@@ -97,6 +97,9 @@ export interface DashboardOverview {
     import_error: number;
     warranty_overdue: number;
     print_failed: number;
+    /** Snapshot hiện tại, KHÔNG lọc theo period — SKU có sku_code/sku_type
+     * nhưng chưa gán brand_id/category_id/model_id (tự tạo qua luồng quét). */
+    sku_pending_info: number;
   };
   /**
    * Số SKU đang dưới / vượt định mức tồn (min_stock/max_stock đã đặt ở SKU

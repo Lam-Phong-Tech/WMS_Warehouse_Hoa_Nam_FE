@@ -211,7 +211,7 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
   const lineColumns: ResponsiveTableColumn<ReversalLine>[] = [
     {
       key: "line_no",
-      header: "#",
+      header: "STT",
       width: 50,
       align: "center",
       render: (row) => row.line_no,
@@ -301,7 +301,7 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
     <>
       <UiDialog
         {...dialog.dialogProps}
-        maxWidth="lg"
+        maxWidth="xl"
         fullWidth
         title={
           <Box sx={{ position: "relative", pr: 6 }}>

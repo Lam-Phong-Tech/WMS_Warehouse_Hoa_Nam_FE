@@ -44,6 +44,11 @@ export function DashboardIssues({
       value: issues.print_failed,
       open: () => navigate(ROUTES.REPORTS_PACKING_LABEL),
     },
+    {
+      label: "SKU chờ điền thông tin",
+      value: issues.sku_pending_info,
+      open: () => navigate(`${ROUTES.MASTER_DATA}?filter=pending_info`),
+    },
   ];
 
   const active = items.filter((item) => item.value > 0);

@@ -746,13 +746,6 @@ export function AlignedOutboundDetailModal({
                 >
                   {scanMutation.isPending ? "Đang quét..." : "Quét"}
                 </ActionButton>
-                <ActionButton
-                  kind="camera"
-                  disabled={!mutable || !can("outbound.scan")}
-                  onClick={() => setCameraOpen(true)}
-                >
-                  Camera
-                </ActionButton>
               </Stack>
               <ResponsiveDataTable<OutboundLineRecord>
                 columns={lineColumns}

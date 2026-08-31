@@ -3,7 +3,7 @@
  * noOptionsText, lỗi validation.
  */
 import { useEffect } from "react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ThemeProvider as MuiThemeProvider } from "@mui/material/styles";
@@ -56,7 +56,14 @@ interface MultiValues {
   khos: string[];
 }
 
-function MultiHost() {
+type MultiProps = Partial<
+  Omit<
+    UiFormAutocompleteProps<MultiValues>,
+    "control" | "name" | "options" | "multiple"
+  >
+>;
+
+function MultiHost(props: MultiProps) {
   const { control, watch } = useForm<MultiValues>({
     defaultValues: { khos: [] },
   });
@@ -69,6 +76,7 @@ function MultiHost() {
         label="Kho"
         options={OPTIONS}
         multiple
+        {...props}
       />
       <output data-testid="form-value">{JSON.stringify(value)}</output>
     </MuiThemeProvider>
@@ -106,6 +114,42 @@ describe("UiFormAutocomplete", () => {
     await user.click(input);
     await user.click(await screen.findByRole("option", { name: "Kho B" }));
     expect(screen.getByTestId("form-value")).toHaveTextContent('["a","b"]');
+  });
+
+  it("onAddNew (single): hiện dòng '+ Thêm mới', chọn dòng đó gọi callback và KHÔNG set form value", async () => {
+    const user = userEvent.setup();
+    const onAddNew = vi.fn();
+    render(<SingleHost addNewLabel="+ Thêm bệnh lỗi" onAddNew={onAddNew} />);
+    const input = screen.getByLabelText("Kho");
+    await user.click(input);
+    expect(
+      await screen.findByRole("option", { name: "+ Thêm bệnh lỗi" }),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole("option", { name: "+ Thêm bệnh lỗi" }));
+    expect(onAddNew).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId("form-value")).toHaveTextContent("null");
+  });
+
+  it("onAddNew (multiple): chọn option thật vẫn thêm vào mảng; chọn dòng '+ Thêm mới' chỉ gọi callback", async () => {
+    const user = userEvent.setup();
+    const onAddNew = vi.fn();
+    render(<MultiHost onAddNew={onAddNew} />);
+    const input = screen.getByLabelText("Kho");
+    await user.click(input);
+    await user.click(await screen.findByRole("option", { name: "Kho A" }));
+    await user.click(input);
+    await user.click(await screen.findByRole("option", { name: "+ Thêm mới" }));
+    expect(onAddNew).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId("form-value")).toHaveTextContent('["a"]');
+  });
+
+  it("không truyền onAddNew: không có dòng '+ Thêm mới' trong danh sách", async () => {
+    const user = userEvent.setup();
+    render(<SingleHost />);
+    await user.click(screen.getByLabelText("Kho"));
+    expect(
+      screen.queryByRole("option", { name: /Thêm mới/ }),
+    ).not.toBeInTheDocument();
   });
 
   it("label + dấu * khi required; lỗi hiển thị; disabled đúng", () => {

@@ -179,6 +179,18 @@ const INLINE_TOKEN_LABELS: Readonly<Record<string, string>> = {
   SUBMIT: "gửi xử lý",
   ARCHIVE: "lưu trữ",
   RESTORE: "khôi phục",
+  RECEIVED: "đã tiếp nhận",
+  CHECKING: "đang kiểm tra",
+  REPAIRING: "đang sửa chữa",
+  COMPLETED: "đã hoàn tất",
+  RETURNED: "đã trả khách",
+  RETURNED_TO_CUSTOMER: "đã trả khách",
+  CLOSED: "đã đóng",
+  WAITING_PARTS: "chờ linh kiện",
+  READY: "sẵn sàng trả",
+  ISSUED: "đã xuất cho khách",
+  IN_WARRANTY: "đang bảo hành",
+  NEW: "mới tạo",
 };
 
 const PHRASE_REPLACEMENTS: ReadonlyArray<readonly [RegExp, string]> = [

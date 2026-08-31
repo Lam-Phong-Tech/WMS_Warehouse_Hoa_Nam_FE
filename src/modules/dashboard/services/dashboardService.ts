@@ -79,6 +79,7 @@ export function normalizeDashboardOverview(
       import_error: source.issues?.import_error ?? 0,
       warranty_overdue: source.issues?.warranty_overdue ?? 0,
       print_failed: source.issues?.print_failed ?? 0,
+      sku_pending_info: source.issues?.sku_pending_info ?? 0,
     },
   };
 }

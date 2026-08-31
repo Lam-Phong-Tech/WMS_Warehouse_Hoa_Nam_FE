@@ -76,6 +76,7 @@ import {
   FormControlLabel,
   Grid,
   MenuItem,
+  SEMANTIC_LIGHT,
   Stack,
   UiAlert,
   UiDescriptions,
@@ -86,6 +87,14 @@ import {
   useUiConfirm,
 } from "@/shared/ui";
 import { useSearchParams } from "react-router-dom";
+
+/**
+ * BE chưa có tham số lọc "SKU chờ điền thông tin" riêng (không đáng để thêm 1
+ * query param chỉ phục vụ 1 nút lọc) — khi bật bộ lọc này, FE quét một trang
+ * rộng rồi tự lọc/tự phân trang phía client. 500 đủ cho quy mô danh mục SKU
+ * hiện tại (MVP); nếu SKU vượt mốc này, chuyển sang param lọc thật ở BE.
+ */
+const PENDING_INFO_SCAN_LIMIT = 500;
 
 const STATUS_OPTIONS: Array<{ value: MasterStatus; label: string }> = [
   { value: "ACTIVE", label: "Đang sử dụng" },
@@ -122,6 +131,17 @@ function masterStatusLabel(status: MasterStatus | string) {
 
 function skuTypeLabel(type: SkuType | string) {
   return businessLabel(SKU_TYPE_LABELS, type, "Loại khác");
+}
+
+/**
+ * SKU tự tạo qua luồng quét (materializeSkuIfMissing bên BE) chỉ có
+ * sku_code/sku_type, chưa gán Hãng/Nhóm hàng/Model — 3 field bắt buộc của form
+ * "Thêm SKU" thủ công (validateSkuForm). Thiếu cả 3 = chắc chắn là SKU tự tạo
+ * chờ điền thông tin, không phải SKU đã tạo tay còn thiếu 1-2 trường tuỳ chọn.
+ * Cùng tiêu chí với BE (`issues.sku_pending_info` ở dashboard-overview).
+ */
+function isSkuPendingInfo(row: SkuRecord): boolean {
+  return !row.brand_id && !row.category_id && !row.model_id;
 }
 
 /**
@@ -331,6 +351,9 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   const [skuSearchParams] = useSearchParams();
   const openCreateRequested =
     openCreateOnMount || skuSearchParams.get("screen") === "MST-02";
+  // Deep-link ?filter=pending_info — Dashboard "Vấn đề cần xử lý" trỏ thẳng vào
+  // đây kèm bộ lọc đã bật sẵn, không bắt người dùng tự bấm lại nút lọc.
+  const pendingInfoRequested = skuSearchParams.get("filter") === "pending_info";
   const canManage = useCanManage("sku.manage");
   const { confirm: confirmAction, confirmDialog } = useUiConfirm();
   const canPublish = useCanManage(WMS_PERMISSION_CATALOG.PV_PUBLISH);
@@ -338,6 +361,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   const [status, setStatus] = useState<MasterStatus | "">("");
   const [type, setType] = useState<SkuType | "">("");
   const [brandId, setBrandId] = useState("");
+  const [pendingInfoOnly, setPendingInfoOnly] = useState(pendingInfoRequested);
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(15);
   const [modalOpen, setModalOpen] = useState(false);
@@ -354,8 +378,11 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
     status,
     sku_type: type,
     brand_id: brandId,
-    page,
-    per_page: perPage,
+    // "SKU chờ điền thông tin" cần quét rộng để lọc/phân trang phía client (xem
+    // PENDING_INFO_SCAN_LIMIT) — page/per_page bình thường không đủ vì SKU thiếu
+    // thông tin có thể nằm ở bất kỳ trang nào.
+    page: pendingInfoOnly ? 1 : page,
+    per_page: pendingInfoOnly ? PENDING_INFO_SCAN_LIMIT : perPage,
   });
   const catalogsQuery = useMvpProductCatalogs();
   const createMutation = useCreateMvpSku();
@@ -392,16 +419,29 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
     () => toRefIndex(catalogs.packageVariants),
     [catalogs.packageVariants],
   );
-  const rows = useMemo(
-    () =>
-      brandId ? apiRows.filter((row) => row.brand_id === brandId) : apiRows,
-    [apiRows, brandId],
+  const filteredRows = useMemo(() => {
+    const brandFiltered = brandId
+      ? apiRows.filter((row) => row.brand_id === brandId)
+      : apiRows;
+    return pendingInfoOnly
+      ? brandFiltered.filter(isSkuPendingInfo)
+      : brandFiltered;
+  }, [apiRows, brandId, pendingInfoOnly]);
+  // Chế độ "SKU chờ điền thông tin" đã tải rộng (PENDING_INFO_SCAN_LIMIT) nên tự
+  // phân trang phía client; chế độ thường vẫn dùng đúng 1 trang server trả về.
+  const rows = useMemo(() => {
+    if (!pendingInfoOnly) return filteredRows;
+    const start = (page - 1) * perPage;
+    return filteredRows.slice(start, start + perPage);
+  }, [filteredRows, pendingInfoOnly, page, perPage]);
+  const pagination = resolveApiPagination(
+    pendingInfoOnly ? undefined : query.data?.meta,
+    {
+      page,
+      pageSize: perPage,
+      rowCount: pendingInfoOnly ? filteredRows.length : apiRows.length,
+    },
   );
-  const pagination = resolveApiPagination(query.data?.meta, {
-    page,
-    pageSize: perPage,
-    rowCount: apiRows.length,
-  });
   const rowSelection = useRowSelection(
     rows,
     (record) => record.sku_id ?? record.id ?? "",
@@ -692,6 +732,25 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
             }))}
           />
           <Box sx={{ flex: 1 }} />
+          <ActionButton
+            kind="filter"
+            aria-pressed={pendingInfoOnly}
+            onClick={() => {
+              setPendingInfoOnly((current) => !current);
+              setPage(1);
+            }}
+            title="Lọc SKU chỉ có Mã và Loại — chưa gán Hãng/Nhóm hàng/Model"
+            sx={
+              pendingInfoOnly
+                ? {
+                    backgroundColor: SEMANTIC_LIGHT.warningSoft,
+                    color: SEMANTIC_LIGHT.warningText,
+                  }
+                : undefined
+            }
+          >
+            SKU chờ điền thông tin
+          </ActionButton>
           {canManage ? (
             <ActionButton
               kind="import"

@@ -279,6 +279,24 @@ export function ResponsiveDataTable<T>({
     textAlign: "center" as const,
   };
 
+  // Bảng nhiều cột (vd dòng điều chỉnh 11 cột): `width: "100%"` một mình sẽ
+  // ép browser bóp MỌI cột vừa khít container, và td có `overflowWrap:
+  // "anywhere"` cho phép bóp tới mức 1 ký tự/dòng (chữ dọc, rất khó đọc) thay
+  // vì thật sự cuộn ngang. Cộng dồn `column.width` khai báo thành `minWidth`
+  // cho table thì bảng mới tràn ra đúng độ rộng dự kiến, và wrapper
+  // `overflowX: "auto"` bên ngoài mới thật sự phát huy tác dụng cuộn ngang.
+  const declaredColumnsWidth = columns.reduce(
+    (sum, column) =>
+      sum + (typeof column.width === "number" ? column.width : 0),
+    0,
+  );
+  const tableMinWidth =
+    declaredColumnsWidth > 0
+      ? declaredColumnsWidth +
+        (rowSelection ? 44 : 0) +
+        (renderRowActions ? 96 : 0)
+      : undefined;
+
   return (
     <>
       {selectionSummary}
@@ -292,7 +310,12 @@ export function ResponsiveDataTable<T>({
       >
         <Box
           component="table"
-          sx={{ width: "100%", borderCollapse: "collapse", fontSize: 13.5 }}
+          sx={{
+            width: "100%",
+            minWidth: tableMinWidth,
+            borderCollapse: "collapse",
+            fontSize: 13.5,
+          }}
         >
           <Box component="thead">
             <Box component="tr">

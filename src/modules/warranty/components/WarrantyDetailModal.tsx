@@ -750,7 +750,7 @@ export function WarrantyDetailModal({
     }
     if (diagnosisRequired && !statusForm.confirmed_defect.trim()) {
       errors.confirmed_defect =
-        "Phải ghi kết quả kiểm tra trước khi rời trạng thái CHECKING.";
+        "Phải ghi kết quả kiểm tra trước khi rời trạng thái Đang kiểm tra.";
     }
     if (statusForm.status === "CANCELLED" && !statusForm.cancel_reason.trim()) {
       errors.cancel_reason = "Hủy case cần lý do/bằng chứng.";
@@ -1966,7 +1966,7 @@ export function WarrantyDetailModal({
             <Grid size={12}>
               <UiAlert tone="info">
                 {canViewPii
-                  ? "Sửa thông tin là stock-neutral; mọi thay đổi được ghi audit (không lưu giá trị PII vào log) và tăng version."
+                  ? "Sửa thông tin không làm thay đổi tồn kho; mọi thay đổi được ghi vào nhật ký kiểm tra (không lưu giá trị PII) và tăng số phiên bản."
                   : "Bạn không có quyền warranty.pii.view nên chỉ sửa được bệnh/lỗi và ngày mua; thông tin khách hàng bị khóa."}
               </UiAlert>
             </Grid>
@@ -2180,8 +2180,9 @@ export function WarrantyDetailModal({
         >
           <Stack spacing={2}>
             <UiAlert tone="info">
-              Cập nhật trạng thái là stock-neutral: item không tự quay lại tồn
-              bán; trả khách chuyển item sang RETURNED_TO_CUSTOMER.
+              Cập nhật trạng thái không làm thay đổi tồn kho: sản phẩm không tự
+              quay lại tồn có thể bán. Khi chuyển sang "Đã trả khách", sản phẩm
+              được đánh dấu là đã giao lại cho khách.
             </UiAlert>
             <UiTextField
               select
@@ -2237,34 +2238,43 @@ export function WarrantyDetailModal({
                 }}
               />
             ) : null}
-            <UiTextField
-              fullWidth
-              multiline
-              minRows={2}
-              required={diagnosisRequired}
-              label={
-                "Ghi chú (không bắt buộc)"
-              }
-              value={statusForm.confirmed_defect}
-              onChange={(event) => {
-                setStatusForm((current) => ({
-                  ...current,
-                  confirmed_defect: event.target.value,
-                }));
-                if (statusFieldErrors.confirmed_defect) {
-                  setStatusFieldErrors((current) => ({
-                    ...current,
-                    confirmed_defect: "",
-                  }));
+            {statusValue && WARRANTY_DIAGNOSIS_REQUIRED_TARGETS.includes(statusValue) ? (
+              // Field riêng cho "Kết quả kiểm tra" (confirmed_defect) — KHÔNG
+              // phải ô ghi chú chung. Chỉ hiện khi đang chuyển sang bước cần
+              // chẩn đoán (Đang sửa chữa/Đã hoàn tất) để tránh người dùng gõ
+              // nhầm vào đây ở các bước khác (vd. Đã trả khách) rồi ghi đè mất
+              // kết quả kiểm tra đã có trên phiếu.
+              <UiTextField
+                fullWidth
+                multiline
+                minRows={2}
+                required={diagnosisRequired}
+                label={
+                  diagnosisRequired
+                    ? "Kết quả kiểm tra (bắt buộc)"
+                    : "Kết quả kiểm tra (không bắt buộc)"
                 }
-              }}
-              error={Boolean(statusFieldErrors.confirmed_defect)}
-              helperText={
-                statusFieldErrors.confirmed_defect ??
-                `${statusForm.confirmed_defect.length}/2000`
-              }
-              slotProps={{ htmlInput: { maxLength: 2000 } }}
-            />
+                value={statusForm.confirmed_defect}
+                onChange={(event) => {
+                  setStatusForm((current) => ({
+                    ...current,
+                    confirmed_defect: event.target.value,
+                  }));
+                  if (statusFieldErrors.confirmed_defect) {
+                    setStatusFieldErrors((current) => ({
+                      ...current,
+                      confirmed_defect: "",
+                    }));
+                  }
+                }}
+                error={Boolean(statusFieldErrors.confirmed_defect)}
+                helperText={
+                  statusFieldErrors.confirmed_defect ??
+                  `${statusForm.confirmed_defect.length}/2000`
+                }
+                slotProps={{ htmlInput: { maxLength: 2000 } }}
+              />
+            ) : null}
             {statusValue === "CANCELLED" ? (
               <UiTextField
                 fullWidth

@@ -13,6 +13,7 @@ import {
   type Path,
 } from "react-hook-form";
 import Autocomplete from "@mui/material/Autocomplete";
+import Box from "@mui/material/Box";
 import TextField from "@mui/material/TextField";
 
 export interface UiAutocompleteOption {
@@ -21,6 +22,13 @@ export interface UiAutocompleteOption {
   label: string;
   disabled?: boolean;
 }
+
+/**
+ * Sentinel riêng cho dòng "+ Thêm mới" — không phải giá trị thật, chỉ dùng để
+ * nhận diện lúc chọn rồi chặn không cho vào field.value (chuỗi cố ý dài/lạ để
+ * không bao giờ trùng value thật, vốn thường là UUID).
+ */
+const ADD_NEW_OPTION_VALUE = "__ui_form_autocomplete_add_new__";
 
 export interface UiFormAutocompleteProps<T extends FieldValues> {
   control: Control<T>;
@@ -36,6 +44,14 @@ export interface UiFormAutocompleteProps<T extends FieldValues> {
   /** Mặc định true. */
   fullWidth?: boolean;
   "data-testid"?: string;
+  /**
+   * Khi truyền vào, thêm 1 dòng đặc biệt cuối danh sách (label mặc định
+   * "+ Thêm mới"). Chọn dòng này KHÔNG set giá trị field — chỉ gọi
+   * `onAddNew()` (dùng cho case tạo nhanh 1 bản ghi danh mục ngay trong
+   * dropdown, ví dụ "+ Thêm bệnh lỗi" ở form tiếp nhận bảo hành).
+   */
+  onAddNew?: () => void;
+  addNewLabel?: string;
 }
 
 export function UiFormAutocomplete<T extends FieldValues>({
@@ -50,7 +66,13 @@ export function UiFormAutocomplete<T extends FieldValues>({
   disabled = false,
   fullWidth = true,
   "data-testid": dataTestId,
+  onAddNew,
+  addNewLabel = "+ Thêm mới",
 }: UiFormAutocompleteProps<T>) {
+  const optionsWithAddNew = onAddNew
+    ? [...options, { value: ADD_NEW_OPTION_VALUE, label: addNewLabel }]
+    : options;
+
   return (
     <Controller
       control={control}
@@ -70,20 +92,28 @@ export function UiFormAutocomplete<T extends FieldValues>({
             size="small"
             fullWidth={fullWidth}
             multiple={multiple}
-            options={options}
+            options={optionsWithAddNew}
             disabled={disabled}
             value={selected}
             onChange={(_event, next) => {
               if (multiple) {
-                field.onChange(
-                  ((next as UiAutocompleteOption[]) ?? []).map(
-                    (option) => option.value,
-                  ),
+                const nextOptions = (next as UiAutocompleteOption[]) ?? [];
+                const addNewPicked = nextOptions.some(
+                  (option) => option.value === ADD_NEW_OPTION_VALUE,
                 );
+                field.onChange(
+                  nextOptions
+                    .filter((option) => option.value !== ADD_NEW_OPTION_VALUE)
+                    .map((option) => option.value),
+                );
+                if (addNewPicked) onAddNew?.();
               } else {
-                field.onChange(
-                  (next as UiAutocompleteOption | null)?.value ?? null,
-                );
+                const nextOption = next as UiAutocompleteOption | null;
+                if (nextOption?.value === ADD_NEW_OPTION_VALUE) {
+                  onAddNew?.();
+                  return;
+                }
+                field.onChange(nextOption?.value ?? null);
               }
             }}
             onBlur={field.onBlur}
@@ -93,6 +123,33 @@ export function UiFormAutocomplete<T extends FieldValues>({
               option.value === valueOption.value
             }
             noOptionsText="Không có lựa chọn"
+            renderOption={(optionProps, option) => {
+              const { key, ...rest } = optionProps;
+              if (option.value === ADD_NEW_OPTION_VALUE) {
+                return (
+                  <Box
+                    component="li"
+                    key={key}
+                    {...rest}
+                    sx={{
+                      color: "primary.main",
+                      fontWeight: 600,
+                      gap: 0.75,
+                      borderTop: "1px solid",
+                      borderColor: "divider",
+                    }}
+                  >
+                    <i className="fi fi-rr-plus" aria-hidden="true" />
+                    {option.label}
+                  </Box>
+                );
+              }
+              return (
+                <li key={key} {...rest}>
+                  {option.label}
+                </li>
+              );
+            }}
             renderInput={(params) => (
               <TextField
                 {...params}

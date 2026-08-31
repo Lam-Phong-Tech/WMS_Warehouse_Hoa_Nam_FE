@@ -79,8 +79,8 @@ export function useMvpSkuHasStock(skuId: string, enabled: boolean) {
  * → thấy 2 thông báo cho cùng một lỗi. Khai rỗng ở đây chỉ để chặn lưới an
  * toàn đó, không đảm nhận việc hiển thị.
  */
-function useInvalidateMasterMutation<TVariables>(
-  mutationFn: (variables: TVariables) => Promise<unknown>,
+function useInvalidateMasterMutation<TResult, TVariables>(
+  mutationFn: (variables: TVariables) => Promise<TResult>,
 ) {
   const queryClient = useQueryClient();
   return useMutation({
