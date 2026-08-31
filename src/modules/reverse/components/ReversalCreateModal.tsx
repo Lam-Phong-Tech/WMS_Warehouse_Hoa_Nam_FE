@@ -44,6 +44,7 @@ import { formatDateTime } from "@/shared/utils/format-date";
 import { formatQuantity } from "@/shared/utils/format-number";
 import { useDialogExit } from "@/shared/utils/useDialogExit";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
+import { EMPTY_TEXT } from "@/shared/constants/display";
 
 const RETURN_CONDITION_OPTIONS: Array<{
   value: ReversalReturnCondition;
@@ -363,7 +364,7 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
       render: (row) => (
         <Stack spacing={0}>
           {/* KHÔNG fallback sang source_document_id (UUID) — thiếu mã thì "—". */}
-          <span>{row.source_document_code || "—"}</span>
+          <span>{row.source_document_code || EMPTY_TEXT}</span>
           <Box sx={{ typography: "caption", color: "text.secondary" }}>
             {businessLabel(
               SOURCE_DOCUMENT_TYPE_LABELS,

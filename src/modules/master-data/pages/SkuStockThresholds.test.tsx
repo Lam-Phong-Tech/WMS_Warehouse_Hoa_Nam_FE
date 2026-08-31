@@ -129,8 +129,8 @@ describe("MST-01 · định mức tồn theo SKU", () => {
     const unsetCells = within(unset as HTMLTableRowElement).getAllByRole(
       "cell",
     );
-    expect(unsetCells[6]).toHaveTextContent("—");
-    expect(unsetCells[7]).toHaveTextContent("—");
+    expect(unsetCells[6]).toHaveTextContent("Chưa có");
+    expect(unsetCells[7]).toHaveTextContent("Chưa có");
   });
 
   it("chặn định mức tối đa < 1", () => {

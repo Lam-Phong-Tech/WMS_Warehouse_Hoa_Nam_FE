@@ -591,6 +591,7 @@ export async function fetchInboundScanEntries(
       candidateItemUnique: text(row.candidate_item_unique) || undefined,
       candidateSerialNumber: text(row.candidate_serial_number) || undefined,
       containerId: text(row.container_id) || undefined,
+      containerCode: text(row.container_code) || undefined,
       sku: text(row.sku_code),
       skuName: text(row.sku_name),
       quantity: num(row.quantity),

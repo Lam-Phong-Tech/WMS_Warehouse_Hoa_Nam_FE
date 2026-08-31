@@ -13,6 +13,7 @@ import { HorizontalBarChart } from "@/shared/components/charts/HorizontalBarChar
 import { MultiSeriesBarChart } from "@/shared/components/charts/MultiSeriesBarChart";
 import { LineChart } from "@/shared/components/charts/LineChart";
 import { DonutChart } from "@/shared/components/charts/DonutChart";
+import { EMPTY_TEXT } from "@/shared/constants/display";
 import {
   CATEGORICAL_PALETTE,
   CHART_COLORS,
@@ -809,7 +810,7 @@ export default function TabRecipient() {
             sortAccessor: (row) => row.productCode,
             render: (row) => (
               <Box>
-                <Box>{row.productCode || "—"}</Box>
+                <Box>{row.productCode || EMPTY_TEXT}</Box>
                 <Box sx={{ fontSize: 12, color: "text.secondary" }}>
                   {row.productName}
                 </Box>
@@ -898,23 +899,23 @@ export default function TabRecipient() {
               {
                 key: "outboundNo",
                 header: "Phiếu xuất",
-                render: (row) => row.outboundNo || "—",
+                render: (row) => row.outboundNo || EMPTY_TEXT,
               },
               {
                 key: "documentDate",
                 header: "Ngày",
                 render: (row) =>
-                  row.documentDate ? fmtDate(row.documentDate) : "—",
+                  row.documentDate ? fmtDate(row.documentDate) : EMPTY_TEXT,
               },
               {
                 key: "productCode",
                 header: "Mã SKU",
-                render: (row) => row.productCode || "—",
+                render: (row) => row.productCode || EMPTY_TEXT,
               },
               {
                 key: "productName",
                 header: "Tên SKU",
-                render: (row) => row.productName || "—",
+                render: (row) => row.productName || EMPTY_TEXT,
               },
               {
                 key: "gross",

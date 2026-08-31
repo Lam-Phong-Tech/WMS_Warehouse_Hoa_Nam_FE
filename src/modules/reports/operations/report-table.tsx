@@ -12,6 +12,7 @@ import {
 import { DownOutlined } from "@/shared/components/icons";
 import { useDialogExit } from "@/shared/utils/useDialogExit";
 import { ActionIconButton } from "@/shared/components/actions";
+import { EMPTY_TEXT } from "@/shared/constants/display";
 import { text, type Raw, type SelectOption } from "./report-format";
 import { flattenReportColumns, type ReportColumn } from "./report-columns";
 
@@ -88,7 +89,7 @@ export function ReportRowDetailModal({
           const value = dataIndex ? row[dataIndex] : undefined;
           const rendered = column.render
             ? column.render(value, row, rowIndex)
-            : text(value, "—");
+            : text(value, EMPTY_TEXT);
           return (
             <Grid
               key={String(column.key ?? dataIndex ?? label)}
@@ -105,7 +106,7 @@ export function ReportRowDetailModal({
               </Box>
               <Box sx={{ typography: "body2", wordBreak: "break-word" }}>
                 {rendered === "" || rendered === null || rendered === undefined
-                  ? "—"
+                  ? EMPTY_TEXT
                   : rendered}
               </Box>
             </Grid>

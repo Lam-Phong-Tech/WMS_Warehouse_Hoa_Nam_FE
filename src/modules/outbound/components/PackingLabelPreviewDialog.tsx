@@ -3,6 +3,7 @@ import QRCode from "qrcode";
 import JsBarcode from "jsbarcode";
 import { Box, Stack, UiDialog } from "@/shared/ui";
 import { ActionButton } from "@/shared/components/actions";
+import { EMPTY_TEXT } from "@/shared/constants/display";
 import type { PackingLabelRecord } from "@/modules/outbound/services/alignedOutboundService";
 
 interface PackingLabelPreviewDialogProps {
@@ -216,7 +217,7 @@ export function PackingLabelPreviewDialog({
                 wordBreak: "break-all",
               }}
             >
-              {label.outboundNo || "—"}
+              {label.outboundNo || EMPTY_TEXT}
             </Box>
             <Stack
               direction="row"
@@ -226,7 +227,7 @@ export function PackingLabelPreviewDialog({
                 color: "text.secondary",
               }}
             >
-              <Box>{`Toa nguồn: ${label.sourceRequestNo || "—"}`}</Box>
+              <Box>{`Toa nguồn: ${label.sourceRequestNo || EMPTY_TEXT}`}</Box>
               <Box>{`SKU: ${label.skuCount} · SP: ${label.itemCount}`}</Box>
             </Stack>
           </Box>
@@ -270,7 +271,7 @@ export function PackingLabelPreviewDialog({
               NƠI NHẬN
             </Box>
             <Box sx={{ typography: "body2", fontWeight: 700 }}>
-              {label.recipientName || "—"}
+              {label.recipientName || EMPTY_TEXT}
             </Box>
             {label.recipientAddress ? (
               <Box sx={{ typography: "caption" }}>
@@ -335,7 +336,7 @@ export function PackingLabelPreviewDialog({
                           whiteSpace: "nowrap",
                         }}
                       >
-                        {item.skuName || "—"}
+                        {item.skuName || EMPTY_TEXT}
                       </Box>
                       <Box
                         sx={{
@@ -344,7 +345,7 @@ export function PackingLabelPreviewDialog({
                           whiteSpace: "nowrap",
                         }}
                       >
-                        {item.skuCode || "—"}
+                        {item.skuCode || EMPTY_TEXT}
                       </Box>
                       <Box
                         sx={{

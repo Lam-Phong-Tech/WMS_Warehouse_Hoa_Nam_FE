@@ -9,6 +9,7 @@ import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { ActionButton } from "@/shared/components/actions";
 import { mvpRowNumber } from "@/shared/components/mvp/MvpSelectionCell";
 import { ROUTES } from "@/shared/constants/routes";
+import { EMPTY_TEXT } from "@/shared/constants/display";
 import {
   fetchPendingEvidence,
   type DocumentAttachmentType,
@@ -105,14 +106,14 @@ export default function TabPendingEvidence() {
       width: 180,
       sortAccessor: (row) => row.document_no,
       render: (row) => (
-        <Box sx={{ fontWeight: 700 }}>{row.document_no || "—"}</Box>
+        <Box sx={{ fontWeight: 700 }}>{row.document_no || EMPTY_TEXT}</Box>
       ),
     },
     {
       key: "reason",
       header: "Lý do thiếu chứng từ",
       sortAccessor: (row) => row.missing_reason,
-      render: (row) => row.missing_reason || "—",
+      render: (row) => row.missing_reason || EMPTY_TEXT,
     },
     {
       key: "createdAt",
@@ -120,7 +121,7 @@ export default function TabPendingEvidence() {
       width: 170,
       hideOnMobile: true,
       sortAccessor: (row) => row.created_at,
-      render: (row) => (row.created_at ? fmtDateTime(row.created_at) : "—"),
+      render: (row) => (row.created_at ? fmtDateTime(row.created_at) : EMPTY_TEXT),
     },
     {
       key: "action",
@@ -137,7 +138,7 @@ export default function TabPendingEvidence() {
             Mở phiếu
           </ActionButton>
         ) : (
-          "—"
+          EMPTY_TEXT
         );
       },
     },
@@ -192,7 +193,7 @@ export default function TabPendingEvidence() {
           loading={query.isLoading}
           emptyText={
             query.isError
-              ? "—"
+              ? EMPTY_TEXT
               : "Không có phiếu nào đang thiếu chứng từ. Mọi phiếu nhập/xuất/điều chỉnh đều đã đủ chứng từ."
           }
         />

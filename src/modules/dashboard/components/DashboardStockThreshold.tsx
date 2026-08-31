@@ -10,6 +10,7 @@ import {
 import { WarningOutlined, StockOutlined } from "@/shared/components/icons";
 import { CHART_COLORS } from "@/shared/components/charts/chart-theme";
 import { ROUTES } from "@/shared/constants/routes";
+import { EMPTY_TEXT } from "@/shared/constants/display";
 import type { DashboardOverview } from "../types";
 import {
   CARD_SX,
@@ -96,7 +97,7 @@ function ThresholdCard({
           overflowWrap: "anywhere",
         }}
       >
-        {value != null ? formatNumber(value) : "—"}
+        {value != null ? formatNumber(value) : EMPTY_TEXT}
       </Box>
       <Box sx={CAPTION_SX}>{note}</Box>
     </Box>

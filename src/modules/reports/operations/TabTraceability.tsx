@@ -10,6 +10,7 @@ import { SearchInput } from "@/shared/components/data-display/SearchInput";
 import { ResponsiveDataTable } from "@/shared/components/data-display/ResponsiveDataTable";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { businessLabel } from "@/shared/constants/business-labels";
+import { EMPTY_TEXT } from "@/shared/constants/display";
 import {
   fmt,
   fmtDate,
@@ -305,7 +306,7 @@ export default function TabTraceability() {
                 Số lượng: {delta >= 0 ? "+" : "−"}
                 {fmt(Math.abs(delta))} · Kho {text(row.warehouse_code)}
                 {text(row.doc_no, "") !== "—"
-                  ? ` · Chứng từ ${text(row.doc_no, "—")}`
+                  ? ` · Chứng từ ${text(row.doc_no, EMPTY_TEXT)}`
                   : ""}
               </Box>
               <Box>Người thực hiện: {text(row.actor)}</Box>
@@ -442,21 +443,21 @@ export default function TabTraceability() {
             width: 150,
             sortAccessor: (row) => row.productCode,
             render: (row) => (
-              <Box sx={{ fontWeight: 700 }}>{row.productCode || "—"}</Box>
+              <Box sx={{ fontWeight: 700 }}>{row.productCode || EMPTY_TEXT}</Box>
             ),
           },
           {
             key: "productName",
             header: "Tên sản phẩm",
             sortAccessor: (row) => row.productName,
-            render: (row) => row.productName || "—",
+            render: (row) => row.productName || EMPTY_TEXT,
           },
           {
             key: "physicalCode",
             header: "Physical Code / Serial",
             width: 200,
             sortAccessor: (row) => row.physicalCode,
-            render: (row) => row.physicalCode || "—",
+            render: (row) => row.physicalCode || EMPTY_TEXT,
           },
           {
             key: "state",
@@ -475,20 +476,20 @@ export default function TabTraceability() {
             header: "Ngày nhập",
             width: 130,
             sortAccessor: (row) => row.receivedAt,
-            render: (row) => (row.receivedAt ? fmtDate(row.receivedAt) : "—"),
+            render: (row) => (row.receivedAt ? fmtDate(row.receivedAt) : EMPTY_TEXT),
           },
           {
             key: "issuedAt",
             header: "Ngày xuất",
             width: 130,
             sortAccessor: (row) => row.issuedAt,
-            render: (row) => (row.issuedAt ? fmtDate(row.issuedAt) : "—"),
+            render: (row) => (row.issuedAt ? fmtDate(row.issuedAt) : EMPTY_TEXT),
           },
           {
             key: "recipient",
             header: "Người nhận gần nhất",
             hideOnMobile: true,
-            render: (row) => row.recipient || "—",
+            render: (row) => row.recipient || EMPTY_TEXT,
           },
           {
             key: "lastMovement",
@@ -502,7 +503,7 @@ export default function TabTraceability() {
             width: 165,
             sortAccessor: (row) => row.lastMovementAt,
             render: (row) =>
-              row.lastMovementAt ? fmtDateTime(row.lastMovementAt) : "—",
+              row.lastMovementAt ? fmtDateTime(row.lastMovementAt) : EMPTY_TEXT,
           },
         ]}
         rows={pagination.pageRows}

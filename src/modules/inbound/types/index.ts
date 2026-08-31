@@ -94,6 +94,7 @@ export interface InboundScanEntry {
   itemCode?: string;
   serialNumber?: string;
   containerId?: string;
+  containerCode?: string;
   candidateItemUnique?: string;
   candidateSerialNumber?: string;
   sku: string;

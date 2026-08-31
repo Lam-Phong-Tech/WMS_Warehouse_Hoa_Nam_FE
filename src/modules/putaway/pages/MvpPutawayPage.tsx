@@ -44,6 +44,7 @@ import {
 } from "@/shared/constants/wms-permissions";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { formatDateTime } from "@/shared/utils/format-date";
+import { EMPTY_TEXT } from "@/shared/constants/display";
 import {
   cancelPutawayTask,
   confirmPutawayTask,
@@ -594,28 +595,28 @@ export default function MvpPutawayPage() {
       header: "Khay cũ",
       width: 150,
       sortable: true,
-      render: (row) => row.old_tray_code || "-",
+      render: (row) => row.old_tray_code || EMPTY_TEXT,
     },
     {
       key: "new_tray_code",
       header: "Khay mới",
       width: 150,
       sortable: true,
-      render: (row) => row.new_tray_code || "-",
+      render: (row) => row.new_tray_code || EMPTY_TEXT,
     },
     {
       key: "location_hint",
       header: "Vị trí",
       width: 180,
       sortable: true,
-      render: (row) => row.location_hint || "-",
+      render: (row) => row.location_hint || EMPTY_TEXT,
     },
     {
       key: "actor_name",
       header: "Người thao tác",
       width: 180,
       sortable: true,
-      render: (row) => row.actor_name || "-",
+      render: (row) => row.actor_name || EMPTY_TEXT,
     },
     {
       key: "stock_effect",
@@ -921,7 +922,7 @@ export default function MvpPutawayPage() {
                   />
                   <PutawayDetailField
                     label="Phiếu nhập"
-                    value={selected.receipt_code || "-"}
+                    value={selected.receipt_code || EMPTY_TEXT}
                     size={{ xs: 6, sm: 3 }}
                   />
                   <Grid size={{ xs: 12, sm: 3 }}>
@@ -1095,7 +1096,7 @@ export default function MvpPutawayPage() {
               <PutawayDetailField label="Số lượng" value={detailRow.quantity} />
               <PutawayDetailField
                 label="Phiếu nhập"
-                value={detailRow.receipt_code || "-"}
+                value={detailRow.receipt_code || EMPTY_TEXT}
               />
               <PutawayDetailField
                 label="Khay dự kiến"
@@ -1103,7 +1104,7 @@ export default function MvpPutawayPage() {
               />
               <PutawayDetailField
                 label="Vị trí"
-                value={detailRow.location_hint || "-"}
+                value={detailRow.location_hint || EMPTY_TEXT}
               />
               <PutawayDetailField
                 label="Trạng thái hộp"

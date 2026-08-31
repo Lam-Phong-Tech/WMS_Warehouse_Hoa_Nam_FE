@@ -62,6 +62,7 @@ import type {
 } from "../types";
 import type { ReactNode } from "react";
 import { ActionButton } from "@/shared/components/actions";
+import { EMPTY_TEXT } from "@/shared/constants/display";
 
 // Tông soft-tint theo UiStatusBadge — "processing"/"default" (antd cũ) ⇒ info/neutral.
 const stateToneMap: Record<ScanCodeState, UiStatusTone> = {
@@ -366,7 +367,7 @@ export default function PhysicalCodesPage() {
       key: "target",
       header: "SKU / vật chứa",
       sortAccessor: (row) => row.sku_code || row.container_code || "",
-      render: (row) => row.sku_code || row.container_code || "—",
+      render: (row) => row.sku_code || row.container_code || EMPTY_TEXT,
     },
     {
       key: "status",
@@ -388,7 +389,7 @@ export default function PhysicalCodesPage() {
       key: "location_hint",
       header: "Vị trí gợi ý",
       sortAccessor: (row) => row.location_hint ?? "",
-      render: (row) => row.location_hint ?? "—",
+      render: (row) => row.location_hint ?? EMPTY_TEXT,
     },
   ];
 
@@ -605,7 +606,7 @@ export default function PhysicalCodesPage() {
       key: "message",
       header: "Nội dung lỗi / ghi chú",
       sortAccessor: (row) => row.message ?? "",
-      render: (row) => row.message ?? "—",
+      render: (row) => row.message ?? EMPTY_TEXT,
     },
     {
       key: "scanned_at",

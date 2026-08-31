@@ -1,6 +1,7 @@
 import type { WarrantyCaseStatus } from "./types";
 import type { ComponentIssueStatus } from "./services/componentIssueService";
 import type { UiStatusTone } from "@/shared/ui";
+import { EMPTY_TEXT } from "@/shared/constants/display";
 import { formatDateTime } from "@/shared/utils/format-date";
 export {
   ITEM_STATUS_LABELS,
@@ -110,9 +111,9 @@ export const WARRANTY_ATTACHMENT_TYPE_LABELS: Record<string, string> = {
 };
 
 export function formatWarrantyDateTime(value?: string): string {
-  if (!value) return "—";
-  const formatted = formatDateTime(value);
-  return formatted === "-" ? "—" : formatted;
+  if (!value) return EMPTY_TEXT;
+  // formatDateTime đã trả EMPTY_TEXT khi rỗng/không hợp lệ (xem format-date.ts).
+  return formatDateTime(value);
 }
 
 /**

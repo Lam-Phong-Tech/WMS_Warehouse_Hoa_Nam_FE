@@ -17,6 +17,7 @@ import { getApiErrorMessage } from "@/shared/api/api-error";
 import { MultiSeriesBarChart } from "@/shared/components/charts/MultiSeriesBarChart";
 import { HorizontalBarChart } from "@/shared/components/charts/HorizontalBarChart";
 import { CHART_COLORS } from "@/shared/components/charts/chart-theme";
+import { EMPTY_TEXT } from "@/shared/constants/display";
 import {
   axisDayLabel,
   dateSpan,
@@ -175,7 +176,7 @@ export default function TabImportQuality() {
         else if (status === "ERROR" || status === "INVALID") failed += 1;
         if (code || status === "ERROR" || status === "INVALID") {
           errors.push({
-            rowNo: text(line.row_no, "—"),
+            rowNo: text(line.row_no, EMPTY_TEXT),
             code: code || status,
             message: text(line.error_message, ""),
             reference: text(line.sku_code, ""),
@@ -215,7 +216,7 @@ export default function TabImportQuality() {
         const code = text(error.code, "");
         if (isDuplicateCode(code)) duplicate += 1;
         return {
-          rowNo: text(error.row, "—"),
+          rowNo: text(error.row, EMPTY_TEXT),
           code: code || "UNKNOWN",
           message: text(error.message, ""),
           reference: text(error.value ?? error.field, ""),
@@ -675,7 +676,7 @@ export default function TabImportQuality() {
             sortAccessor: (row) => row.batchNo,
             render: (row) => (
               <Box>
-                <Box sx={{ fontWeight: 700 }}>{row.batchNo || "—"}</Box>
+                <Box sx={{ fontWeight: 700 }}>{row.batchNo || EMPTY_TEXT}</Box>
                 <Box sx={{ fontSize: 12, color: "text.secondary" }}>
                   {row.source === "IMPORT"
                     ? "Nhập danh mục SKU"
@@ -689,7 +690,7 @@ export default function TabImportQuality() {
             header: "Thời gian",
             width: 165,
             sortAccessor: (row) => row.at,
-            render: (row) => (row.at ? fmtDateTime(row.at) : "—"),
+            render: (row) => (row.at ? fmtDateTime(row.at) : EMPTY_TEXT),
           },
           {
             key: "total",
@@ -736,7 +737,7 @@ export default function TabImportQuality() {
             key: "actor",
             header: "Người thực hiện",
             hideOnMobile: true,
-            render: (row) => row.actor || "—",
+            render: (row) => row.actor || EMPTY_TEXT,
           },
           {
             key: "status",
@@ -783,7 +784,7 @@ export default function TabImportQuality() {
               {
                 key: "batchNo",
                 header: "Batch",
-                render: (row) => row.batchNo || "—",
+                render: (row) => row.batchNo || EMPTY_TEXT,
               },
               {
                 key: "success",
@@ -806,7 +807,7 @@ export default function TabImportQuality() {
               {
                 key: "actor",
                 header: "Người thực hiện",
-                render: (row) => row.actor || "—",
+                render: (row) => row.actor || EMPTY_TEXT,
               },
             ]}
             rows={chartBatches.filter(
@@ -829,29 +830,29 @@ export default function TabImportQuality() {
               {
                 key: "batchNo",
                 header: "Batch",
-                render: (row) => row.batchNo || "—",
+                render: (row) => row.batchNo || EMPTY_TEXT,
               },
               { key: "rowNo", header: "Dòng lỗi", render: (row) => row.rowNo },
               { key: "code", header: "Mã lỗi", render: (row) => row.code },
               {
                 key: "message",
                 header: "Nội dung lỗi",
-                render: (row) => row.message || "—",
+                render: (row) => row.message || EMPTY_TEXT,
               },
               {
                 key: "reference",
                 header: "SKU / Physical Code",
-                render: (row) => row.reference || "—",
+                render: (row) => row.reference || EMPTY_TEXT,
               },
               {
                 key: "request",
                 header: "Request",
-                render: (row) => row.request || "—",
+                render: (row) => row.request || EMPTY_TEXT,
               },
               {
                 key: "at",
                 header: "Thời gian",
-                render: (row) => (row.at ? fmtDateTime(row.at) : "—"),
+                render: (row) => (row.at ? fmtDateTime(row.at) : EMPTY_TEXT),
               },
             ]}
             rows={errorDrillLines}
@@ -900,22 +901,22 @@ export default function TabImportQuality() {
               {
                 key: "message",
                 header: "Nội dung lỗi",
-                render: (row) => row.message || "—",
+                render: (row) => row.message || EMPTY_TEXT,
               },
               {
                 key: "reference",
                 header: "SKU / Physical Code",
-                render: (row) => row.reference || "—",
+                render: (row) => row.reference || EMPTY_TEXT,
               },
               {
                 key: "request",
                 header: "Request",
-                render: (row) => row.request || "—",
+                render: (row) => row.request || EMPTY_TEXT,
               },
               {
                 key: "at",
                 header: "Thời gian",
-                render: (row) => (row.at ? fmtDateTime(row.at) : "—"),
+                render: (row) => (row.at ? fmtDateTime(row.at) : EMPTY_TEXT),
               },
             ]}
             rows={openBatch.errors}

@@ -15,6 +15,7 @@ import { StackedBarChart } from "@/shared/components/charts/StackedBarChart";
 import { DonutChart } from "@/shared/components/charts/DonutChart";
 import { MultiSeriesBarChart } from "@/shared/components/charts/MultiSeriesBarChart";
 import { CHART_COLORS } from "@/shared/components/charts/chart-theme";
+import { EMPTY_TEXT } from "@/shared/constants/display";
 import {
   fmt,
   fmtDateTime,
@@ -534,7 +535,7 @@ export default function TabStockReconcile() {
         width: 110,
         sortType: "value",
         sorter: (a, b) => n(a.min_qty, -1) - n(b.min_qty, -1),
-        render: (value) => (value === null ? "—" : fmt(value)),
+        render: (value) => (value === null ? EMPTY_TEXT : fmt(value)),
       },
       {
         title: "Max Qty",
@@ -543,7 +544,7 @@ export default function TabStockReconcile() {
         width: 110,
         sortType: "value",
         sorter: (a, b) => n(a.max_qty, -1) - n(b.max_qty, -1),
-        render: (value) => (value === null ? "—" : fmt(value)),
+        render: (value) => (value === null ? EMPTY_TEXT : fmt(value)),
       },
       {
         title: "Trạng thái định mức",
@@ -567,7 +568,7 @@ export default function TabStockReconcile() {
         width: 165,
         sorter: (a, b) =>
           text(a.updated_at, "").localeCompare(text(b.updated_at, "")),
-        render: (value) => (value ? fmtDateTime(value) : "—"),
+        render: (value) => (value ? fmtDateTime(value) : EMPTY_TEXT),
       },
     ],
     [detailPagination.page, detailPagination.perPage, setSkuDrill],
@@ -796,7 +797,7 @@ export default function TabStockReconcile() {
               {
                 key: "product_name",
                 header: "Tên SKU",
-                render: (row) => row.product_name || "—",
+                render: (row) => row.product_name || EMPTY_TEXT,
               },
               {
                 key: "onHand",
@@ -922,7 +923,7 @@ export default function TabStockReconcile() {
           {
             key: "product_name",
             header: "Tên sản phẩm",
-            render: (row) => row.product_name || "—",
+            render: (row) => row.product_name || EMPTY_TEXT,
           },
           {
             key: "kind",
@@ -943,14 +944,14 @@ export default function TabStockReconcile() {
             header: "Min Qty",
             align: "right",
             width: 110,
-            render: (row) => (row.minQty === null ? "—" : fmt(row.minQty)),
+            render: (row) => (row.minQty === null ? EMPTY_TEXT : fmt(row.minQty)),
           },
           {
             key: "max",
             header: "Max Qty",
             align: "right",
             width: 110,
-            render: (row) => (row.maxQty === null ? "—" : fmt(row.maxQty)),
+            render: (row) => (row.maxQty === null ? EMPTY_TEXT : fmt(row.maxQty)),
           },
           {
             key: "gap",
@@ -960,7 +961,7 @@ export default function TabStockReconcile() {
             sortAccessor: (row) => row.normGap ?? 0,
             render: (row) =>
               row.normGap === null ? (
-                "—"
+                EMPTY_TEXT
               ) : (
                 <Box component="span" sx={{ fontWeight: 700 }}>
                   {row.normGap > 0 ? "+" : row.normGap < 0 ? "−" : ""}
@@ -1148,7 +1149,7 @@ export default function TabStockReconcile() {
               {
                 key: "product_name",
                 header: "Tên SKU",
-                render: (row) => row.product_name || "—",
+                render: (row) => row.product_name || EMPTY_TEXT,
               },
               {
                 key: "onHand",

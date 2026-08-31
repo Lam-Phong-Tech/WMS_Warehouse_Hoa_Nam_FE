@@ -43,6 +43,7 @@ import {
   type OutboundStatus,
 } from "@/modules/outbound/services/alignedOutboundService";
 import { ActionButton } from "@/shared/components/actions";
+import { EMPTY_TEXT } from "@/shared/constants/display";
 
 const SEARCH_DEBOUNCE_MS = 250;
 
@@ -152,7 +153,7 @@ export default function AlignedMvpOutboundPage() {
       width: 190,
       sortAccessor: (row) => row.code || "",
       // KHÔNG fallback sang row.id: cột này là MÃ PHIẾU đọc được ("PX-…").
-      render: (row) => <strong>{row.code || "—"}</strong>,
+      render: (row) => <strong>{row.code || EMPTY_TEXT}</strong>,
     },
     {
       key: "request",
@@ -189,7 +190,7 @@ export default function AlignedMvpOutboundPage() {
       sortType: "value",
       sortAccessor: (row) => row.date || "",
       render: (row) => {
-        if (!row.date) return "-";
+        if (!row.date) return EMPTY_TEXT;
         const parsed = dayjs(row.date);
         // Ngày-tháng-năm giờ theo cách đọc của người dùng Việt (22-09-2026 12:00),
         // cùng chuẩn với cột Ngày tạo bên Danh sách phiếu nhập.
@@ -202,7 +203,7 @@ export default function AlignedMvpOutboundPage() {
       width: 200,
       hideOnMobile: true,
       sortAccessor: (row) => row.note || "",
-      render: (row) => row.note || "-",
+      render: (row) => row.note || EMPTY_TEXT,
     },
     {
       key: "match",

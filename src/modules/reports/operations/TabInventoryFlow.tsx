@@ -18,6 +18,7 @@ import {
 import { MultiSeriesBarChart } from "@/shared/components/charts/MultiSeriesBarChart";
 import { LineChart } from "@/shared/components/charts/LineChart";
 import { CHART_COLORS } from "@/shared/components/charts/chart-theme";
+import { EMPTY_TEXT } from "@/shared/constants/display";
 import {
   axisDayLabel,
   dateSpan,
@@ -778,7 +779,7 @@ export default function TabInventoryFlow() {
         sortType: "text",
         sorter: (a, b) =>
           text(a.posted_at, "").localeCompare(text(b.posted_at, "")),
-        render: (value) => (value ? fmtDateTime(value) : "—"),
+        render: (value) => (value ? fmtDateTime(value) : EMPTY_TEXT),
       },
       {
         title: "Số lượng / SKU",

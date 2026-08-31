@@ -87,6 +87,7 @@ import {
   useUiConfirm,
 } from "@/shared/ui";
 import { useSearchParams } from "react-router-dom";
+import { EMPTY_TEXT } from "@/shared/constants/display";
 
 /**
  * BE chưa có tham số lọc "SKU chờ điền thông tin" riêng (không đáng để thêm 1
@@ -149,7 +150,7 @@ function isSkuPendingInfo(row: SkuRecord): boolean {
  * định mức THẬT (cảnh báo khi hết hàng), không phải "chưa cấu hình".
  */
 function stockThresholdLabel(value?: number | string | null): string {
-  if (value === null || value === undefined || value === "") return "—";
+  if (value === null || value === undefined || value === "") return EMPTY_TEXT;
   const num = Number(value);
   return Number.isFinite(num) ? num.toLocaleString("vi-VN") : String(value);
 }
@@ -162,11 +163,11 @@ function refLabel(
   index: Map<string, CatalogRefRecord>,
   value?: string | null,
 ): string {
-  if (!value) return "—";
+  if (!value) return EMPTY_TEXT;
   const found = index.get(value);
   // KHÔNG rơi xuống compactRef(value) (UUID rút gọn): cột này là TÊN hãng/nhóm
   // hàng. Chưa tra ra tên thì hiện "—", không lộ định danh nội bộ.
-  return found ? found.name || found.code : "—";
+  return found ? found.name || found.code : EMPTY_TEXT;
 }
 
 // ===== SKU =====
@@ -1032,7 +1033,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                     value: viewing.sku_name ?? viewing.name,
                   },
                   { label: "Loại", value: skuTypeLabel(viewing.sku_type) },
-                  { label: "Đơn vị tính", value: viewing.unit || "—" },
+                  { label: "Đơn vị tính", value: viewing.unit || EMPTY_TEXT },
                   {
                     label: "Hãng",
                     value: refLabel(brandIndex, viewing.brand_id),
@@ -1049,7 +1050,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                     label: "Nguồn điện",
                     value: viewing.power_source_id
                       ? refLabel(powerSourceIndex, viewing.power_source_id)
-                      : viewing.power_or_voltage || "—",
+                      : viewing.power_or_voltage || EMPTY_TEXT,
                   },
                   {
                     label: "Quy cách đóng gói",
@@ -1058,11 +1059,11 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                           packageVariantIndex,
                           viewing.package_variant_id,
                         )
-                      : viewing.package_variant || "—",
+                      : viewing.package_variant || EMPTY_TEXT,
                   },
                   {
                     label: "Phiên bản sản phẩm",
-                    value: viewing.version_code || "—",
+                    value: viewing.version_code || EMPTY_TEXT,
                   },
                   {
                     label: "Định mức tối thiểu",
@@ -1879,15 +1880,15 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                           label={recipientTypeLabel(record.recipient_type)}
                         />
                       ) : (
-                        "—"
+                        EMPTY_TEXT
                       )}
                     </td>
-                    <td>{record.market || "—"}</td>
-                    <td>{record.region || "—"}</td>
-                    <td>{record.contact_name || "—"}</td>
-                    <td>{record.phone || "—"}</td>
+                    <td>{record.market || EMPTY_TEXT}</td>
+                    <td>{record.region || EMPTY_TEXT}</td>
+                    <td>{record.contact_name || EMPTY_TEXT}</td>
+                    <td>{record.phone || EMPTY_TEXT}</td>
                     <td style={WRAP_TEXT_CELL_STYLE}>
-                      {record.address || "—"}
+                      {record.address || EMPTY_TEXT}
                     </td>
                     <td>
                       <UiStatusBadge
@@ -2471,7 +2472,7 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                     <td>{record.defect_code}</td>
                     <td>{record.defect_name}</td>
                     <td style={WRAP_TEXT_CELL_STYLE}>
-                      {record.description || "—"}
+                      {record.description || EMPTY_TEXT}
                     </td>
                     <td>
                       <UiStatusBadge

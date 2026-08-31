@@ -7,12 +7,15 @@
  */
 export const LAYOUT = {
   /**
-   * [ĐO] bề rộng sidebar mở rộng = 260px — chốt lại đúng demo UI/UX
-   * `1.WMS_Hoa_Nam_Sidebar_Demo.html` (2026-08-31). Nhãn dài hơn 260px được
-   * xử lý ĐÚNG NHƯ DEMO: cắt bằng ellipsis + tooltip hiện đủ chữ khi rê chuột
-   * (không nới rộng sidebar nữa).
+   * [ĐO] bề rộng sidebar mở rộng = 340px — CHỦ ĐỘNG LỆCH demo 260px (yêu cầu
+   * người dùng 2026-08-31, sau khi demo 260px làm ellipsis cắt mất chữ mục
+   * con: "Danh sách người dùng & phân quyền" ~249px, "Nhập dữ liệu / đối
+   * chiếu & lỗi dữ liệu" ~246px — đo bằng canvas 400 15px Public Sans). Ở
+   * childPaddingLeft(43) + itemPaddingX(12) + nav paddingX(10×2) thì 340px
+   * chừa dư khoảng 15px cho nhãn dài nhất, đủ margin cho biến thiên font
+   * renderer giữa các trình duyệt/OS — không cắt ellipsis nữa ở mọi mục.
    */
-  sidebarWidth: 260,
+  sidebarWidth: 340,
   /** [ĐO] bề rộng rail thu gọn (chỉ icon) */
   sidebarCollapsedWidth: 76,
   /** [X] chiều cao topbar sticky */

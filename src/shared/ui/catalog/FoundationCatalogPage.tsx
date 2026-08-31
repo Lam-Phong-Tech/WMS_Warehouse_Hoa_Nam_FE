@@ -54,6 +54,7 @@ import {
   useUiConfirm,
 } from "@/shared/ui";
 import { ResponsiveDataTable } from "@/shared/components/data-display/ResponsiveDataTable";
+import { EMPTY_TEXT } from "@/shared/constants/display";
 
 const LONG_VI =
   "Phiếu xuất kho số XK-2026-000123 của Đại lý Trần Nguyễn Bách Hóa Tổng Hợp Miền Đông Nam Bộ — kiểm tra xuống dòng, không tràn ngang.";
@@ -604,7 +605,7 @@ export default function FoundationCatalogPage() {
               },
               { label: "Người lập", value: "Trần Tùng Lâm" },
               { label: "Nơi nhận", value: LONG_VI, span: 3 },
-              { label: "Ghi chú", value: "—" },
+              { label: "Ghi chú", value: EMPTY_TEXT },
             ]}
           />
           <UiTimeline
@@ -620,7 +621,7 @@ export default function FoundationCatalogPage() {
               {
                 title: "Chờ hoàn tất xuất",
                 description: "Cần xác nhận đã dán nhãn.",
-                time: "—",
+                time: EMPTY_TEXT,
                 tone: "warning",
               },
             ]}

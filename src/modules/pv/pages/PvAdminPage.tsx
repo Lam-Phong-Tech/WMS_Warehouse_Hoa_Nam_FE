@@ -65,6 +65,7 @@ import {
 import { useAuthStore } from "@/shared/store/auth.store";
 import { guardBackdropClose } from "@/shared/utils/dialogGuard";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
+import { EMPTY_TEXT } from "@/shared/constants/display";
 
 function useCanManagePv() {
   const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
@@ -613,7 +614,7 @@ export default function PvAdminPage() {
           </Stack>
         ) : (
           <Box component="span" sx={{ color: S.textDisabled }}>
-            —
+            {EMPTY_TEXT}
           </Box>
         ),
     },
@@ -872,7 +873,7 @@ export default function PvAdminPage() {
               },
               {
                 label: "Mô tả",
-                value: profileViewing.description || "—",
+                value: profileViewing.description || EMPTY_TEXT,
               },
               {
                 label: "Ngành nghề",
@@ -892,7 +893,7 @@ export default function PvAdminPage() {
                       ))}
                     </Stack>
                   ) : (
-                    "—"
+                    EMPTY_TEXT
                   ),
               },
               {
@@ -913,7 +914,7 @@ export default function PvAdminPage() {
                       ))}
                     </Stack>
                   ) : (
-                    "—"
+                    EMPTY_TEXT
                   ),
               },
               {
@@ -1040,7 +1041,7 @@ export default function PvAdminPage() {
                   // KHÔNG `?? id`: ô select đóng lại sẽ in nguyên UUID.
                   renderValue: (selected) =>
                     (selected as string[])
-                      .map((id) => industryNameById.get(id) ?? "—")
+                      .map((id) => industryNameById.get(id) ?? EMPTY_TEXT)
                       .join(", "),
                 },
               }}
@@ -1070,7 +1071,7 @@ export default function PvAdminPage() {
                   // KHÔNG `?? id`: ô select đóng lại sẽ in nguyên UUID.
                   renderValue: (selected) =>
                     (selected as string[])
-                      .map((id) => tagNameById.get(id) ?? "—")
+                      .map((id) => tagNameById.get(id) ?? EMPTY_TEXT)
                       .join(", "),
                 },
               }}
@@ -1260,7 +1261,7 @@ function PvRuleTab({
             {tagNameById.get(row.tag_id) ?? <CopyableId value={row.tag_id} />}
           </>
         ) : (
-          "—"
+          EMPTY_TEXT
         ),
     },
     {
@@ -1365,7 +1366,7 @@ function PvRuleTab({
             items={[
               {
                 label: "Ngành nghề",
-                value: viewing.industry_name ?? "—",
+                value: viewing.industry_name ?? EMPTY_TEXT,
               },
               {
                 label: "Điều kiện áp dụng",
@@ -1389,7 +1390,7 @@ function PvRuleTab({
                     )}
                   </>
                 ) : (
-                  "—"
+                  EMPTY_TEXT
                 ),
               },
               { label: "Mức ưu tiên", value: viewing.priority },

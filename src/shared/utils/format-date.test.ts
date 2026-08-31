@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { EMPTY_TEXT } from "@/shared/constants/display";
 import { formatDate, formatDateTime } from "@/shared/utils/format-date";
 
 describe("formatDate", () => {
@@ -6,10 +7,10 @@ describe("formatDate", () => {
     expect(formatDate("2026-06-22")).toBe("22-6-2026");
   });
 
-  it("trả về '-' khi rỗng hoặc không hợp lệ", () => {
-    expect(formatDate(null)).toBe("-");
-    expect(formatDate(undefined)).toBe("-");
-    expect(formatDate("not-a-date")).toBe("-");
+  it("trả về 'Chưa có' khi rỗng hoặc không hợp lệ", () => {
+    expect(formatDate(null)).toBe(EMPTY_TEXT);
+    expect(formatDate(undefined)).toBe(EMPTY_TEXT);
+    expect(formatDate("not-a-date")).toBe(EMPTY_TEXT);
   });
 });
 
@@ -18,9 +19,9 @@ describe("formatDateTime", () => {
     expect(formatDateTime("2026-06-08T04:10:00")).toBe("8-6-2026 04:10");
   });
 
-  it("trả về '-' khi rỗng hoặc không hợp lệ", () => {
-    expect(formatDateTime(null)).toBe("-");
-    expect(formatDateTime(undefined)).toBe("-");
-    expect(formatDateTime("not-a-date")).toBe("-");
+  it("trả về 'Chưa có' khi rỗng hoặc không hợp lệ", () => {
+    expect(formatDateTime(null)).toBe(EMPTY_TEXT);
+    expect(formatDateTime(undefined)).toBe(EMPTY_TEXT);
+    expect(formatDateTime("not-a-date")).toBe(EMPTY_TEXT);
   });
 });

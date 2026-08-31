@@ -1,3 +1,5 @@
+import { EMPTY_TEXT } from "@/shared/constants/display";
+
 /**
  * REQ-001: phân loại "Nơi nhận" (bảng agencies, cột recipient_type).
  * Danh sách giá trị phải khớp validate của BE (BaM1RecipientController):
@@ -23,6 +25,6 @@ export const RECIPIENT_TYPE_LABELS: Record<RecipientType, string> = {
 
 /** Nhãn tiếng Việt cho recipient_type; giá trị lạ (dữ liệu cũ) trả nguyên mã. */
 export function recipientTypeLabel(value?: string | null): string {
-  if (!value) return "—";
+  if (!value) return EMPTY_TEXT;
   return RECIPIENT_TYPE_LABELS[value as RecipientType] ?? value;
 }

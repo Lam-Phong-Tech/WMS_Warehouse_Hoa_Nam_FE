@@ -54,6 +54,7 @@ import {
 } from "@/modules/outbound/services/alignedOutboundService";
 import type { ReactNode } from "react";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
+import { EMPTY_TEXT } from "@/shared/constants/display";
 import { PackingLabelPreviewDialog } from "@/modules/outbound/components/PackingLabelPreviewDialog";
 
 type RfidTarget = { itemId: string; itemCode: string };
@@ -80,7 +81,7 @@ function makeKey(prefix: string): string {
 }
 
 function short(value?: string | null): string {
-  if (!value) return "-";
+  if (!value) return EMPTY_TEXT;
   return value.length > 18 ? `${value.slice(0, 14)}…` : value;
 }
 
@@ -570,7 +571,7 @@ export function AlignedOutboundDetailModal({
       key: "rfidCode",
       header: "RFID",
       width: 150,
-      render: (match) => match.rfidCode || "—",
+      render: (match) => match.rfidCode || EMPTY_TEXT,
     },
     {
       key: "actions",
@@ -671,7 +672,7 @@ export function AlignedOutboundDetailModal({
                   />
                 }
               />
-              <DetailField label="Nơi nhận" value={doc.recipientName || "—"} />
+              <DetailField label="Nơi nhận" value={doc.recipientName || EMPTY_TEXT} />
               <DetailField
                 label="Đã quét"
                 value={`${totalScanned}/${totalExpected}`}
@@ -898,7 +899,7 @@ export function AlignedOutboundDetailModal({
                           value={
                             packingLabel.recipientName ||
                             doc.recipientName ||
-                            "—"
+                            EMPTY_TEXT
                           }
                         />
                         <DetailField
@@ -911,7 +912,7 @@ export function AlignedOutboundDetailModal({
                         />
                         <DetailField
                           label="Toa nguồn"
-                          value={packingLabel.sourceRequestNo || "—"}
+                          value={packingLabel.sourceRequestNo || EMPTY_TEXT}
                         />
                       </Grid>
                       <Box>

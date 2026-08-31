@@ -42,6 +42,7 @@ import {
 import { useCanAny } from "@/shared/components/permission";
 import { useMvpDefects } from "@/modules/master-data/hooks/use-mvp-master";
 import { formatDate } from "@/shared/utils/format-date";
+import { EMPTY_TEXT } from "@/shared/constants/display";
 import {
   WARRANTY_ATTACHMENT_TYPE_LABELS,
   WARRANTY_BASELINE_STATUSES,
@@ -1215,7 +1216,7 @@ export function WarrantyDetailModal({
               {`Case đã hủy tại bước "${
                 WARRANTY_STATUS_LABELS[progressStatus ?? "RECEIVED"] ??
                 progressStatus
-              }". Lý do: ${detail.cancel_reason ?? "—"}`}
+              }". Lý do: ${detail.cancel_reason ?? EMPTY_TEXT}`}
             </UiAlert>
           ) : null}
 
@@ -1322,7 +1323,7 @@ export function WarrantyDetailModal({
                               detail.customer_name,
                               canViewPii,
                               "name",
-                            ) || "—"
+                            ) || EMPTY_TEXT
                           }
                         />
                         <DetailField
@@ -1332,7 +1333,7 @@ export function WarrantyDetailModal({
                               detail.customer_phone,
                               canViewPii,
                               "phone",
-                            ) || "—"
+                            ) || EMPTY_TEXT
                           }
                         />
                         <DetailField
@@ -1342,7 +1343,7 @@ export function WarrantyDetailModal({
                               detail.customer_address,
                               canViewPii,
                               "address",
-                            ) || "—"
+                            ) || EMPTY_TEXT
                           }
                         />
                         <DetailField
@@ -1350,7 +1351,7 @@ export function WarrantyDetailModal({
                           value={
                             detail.purchase_date
                               ? formatDate(detail.purchase_date)
-                              : "—"
+                              : EMPTY_TEXT
                           }
                         />
                         <DetailField
@@ -1359,11 +1360,11 @@ export function WarrantyDetailModal({
                         />
                         <DetailField
                           label="Phụ kiện đi kèm"
-                          value={detail.accessories_received ?? "—"}
+                          value={detail.accessories_received ?? EMPTY_TEXT}
                         />
                         <DetailField
                           label="Tình trạng tiếp nhận"
-                          value={detail.received_condition ?? "—"}
+                          value={detail.received_condition ?? EMPTY_TEXT}
                           span2
                         />
                       </Grid>
@@ -1393,19 +1394,19 @@ export function WarrantyDetailModal({
                           label="Item / serial / mã tạm"
                           value={
                             detail.identification_type === "TEMP_ONLY"
-                              ? (detail.temporary_item_code ?? "—")
+                              ? (detail.temporary_item_code ?? EMPTY_TEXT)
                               : (detail.item_code ??
                                 detail.serial_number ??
-                                "—")
+                                EMPTY_TEXT)
                           }
                         />
                         <DetailField
                           label="SKU / model"
-                          value={detail.sku || detail.sku_name || "—"}
+                          value={detail.sku || detail.sku_name || EMPTY_TEXT}
                         />
                         <DetailField
                           label="Trạng thái item"
-                          value={detail.item_status ?? "—"}
+                          value={detail.item_status ?? EMPTY_TEXT}
                         />
                         <DetailField
                           label="Bệnh / lỗi (danh mục)"
@@ -1433,13 +1434,13 @@ export function WarrantyDetailModal({
                             ) : detail.defect_code ? (
                               `${detail.defect_code} · ${detail.defect}`
                             ) : (
-                              (detail.defect ?? "—")
+                              (detail.defect ?? EMPTY_TEXT)
                             )
                           }
                         />
                         <DetailField
                           label="Khách phản ánh"
-                          value={detail.reported_defect ?? "—"}
+                          value={detail.reported_defect ?? EMPTY_TEXT}
                           span2
                         />
                         <DetailField
@@ -1451,18 +1452,18 @@ export function WarrantyDetailModal({
                           <>
                             <DetailField
                               label="Lý do mất mã"
-                              value={detail.missing_code_reason ?? "—"}
+                              value={detail.missing_code_reason ?? EMPTY_TEXT}
                             />
                             <DetailField
                               label="Mô tả nhận diện"
-                              value={detail.manual_product_description ?? "—"}
+                              value={detail.manual_product_description ?? EMPTY_TEXT}
                             />
                           </>
                         ) : null}
                         {detail.status === "CANCELLED" ? (
                           <DetailField
                             label="Lý do hủy"
-                            value={detail.cancel_reason ?? "—"}
+                            value={detail.cancel_reason ?? EMPTY_TEXT}
                             span2
                           />
                         ) : null}
@@ -1471,7 +1472,7 @@ export function WarrantyDetailModal({
                           value={
                             detail.estimated_completion_date
                               ? formatDate(detail.estimated_completion_date)
-                              : "—"
+                              : EMPTY_TEXT
                           }
                         />
                         <DetailField

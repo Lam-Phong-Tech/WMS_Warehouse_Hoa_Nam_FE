@@ -6,14 +6,16 @@
  * một số lượng hiển thị khác nhau giữa các màn. Mọi nơi hiển thị số lượng
  * phải dùng helper này.
  */
+import { EMPTY_TEXT } from "@/shared/constants/display";
+
 const QUANTITY_FORMATTER = new Intl.NumberFormat("vi-VN", {
   maximumFractionDigits: 2,
 });
 
-/** Định dạng số lượng; giá trị null/undefined/không phải số trả về "-". */
+/** Định dạng số lượng; giá trị null/undefined/không phải số trả về "Chưa có". */
 export function formatQuantity(value: number | null | undefined): string {
   if (value === null || value === undefined || !Number.isFinite(value)) {
-    return "-";
+    return EMPTY_TEXT;
   }
   return QUANTITY_FORMATTER.format(value);
 }

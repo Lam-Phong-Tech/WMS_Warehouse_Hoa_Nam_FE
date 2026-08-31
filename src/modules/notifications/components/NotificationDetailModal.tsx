@@ -24,6 +24,7 @@ import type { NotificationItem } from "@/modules/notifications/types/notificatio
 import { formatDateTime } from "@/shared/utils/format-date";
 import { CopyableId } from "@/shared/components/data-display/CopyableId";
 import { ActionButton } from "@/shared/components/actions";
+import { EMPTY_TEXT } from "@/shared/constants/display";
 
 interface NotificationDetailModalProps {
   item: NotificationItem | null;
@@ -34,7 +35,7 @@ interface NotificationDetailModalProps {
 
 /** Giá trị payload có thể là chuỗi/số/bool/null hoặc object lồng — in JSON gọn cho trường hợp lồng. */
 function formatPayloadValue(value: unknown): string {
-  if (value === null || value === undefined || value === "") return "-";
+  if (value === null || value === undefined || value === "") return EMPTY_TEXT;
   if (typeof value === "object") return JSON.stringify(value);
   return String(value);
 }

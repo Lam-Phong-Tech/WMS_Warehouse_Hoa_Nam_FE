@@ -64,6 +64,7 @@ import { useAuthStore } from "@/shared/store/auth.store";
 import { formatDate, formatDateTime } from "@/shared/utils/format-date";
 import { guardBackdropClose } from "@/shared/utils/dialogGuard";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
+import { EMPTY_TEXT } from "@/shared/constants/display";
 import { DepartmentManagerModal } from "@/modules/iam/components/DepartmentManagerModal";
 
 const STATUS_OPTIONS: Array<{ value: IamUserStatus; label: string }> = [
@@ -160,7 +161,7 @@ function effectiveWindowLabel(pivot?: IamRolePivot) {
   const hasFrom = Boolean(pivot?.effective_from);
   const hasTo = Boolean(pivot?.effective_to);
   if (!hasFrom && !hasTo) return "Vô thời hạn";
-  return `${hasFrom ? formatDate(pivot?.effective_from) : "—"} → ${hasTo ? formatDate(pivot?.effective_to) : "—"}`;
+  return `${hasFrom ? formatDate(pivot?.effective_from) : EMPTY_TEXT} → ${hasTo ? formatDate(pivot?.effective_to) : EMPTY_TEXT}`;
 }
 
 function formatLastLogin(value?: string | null) {
@@ -341,8 +342,8 @@ export function IamUserScreen({
     user.department?.department_name ??
     (user.department_id
       ? // KHÔNG rơi xuống department_id (UUID) khi danh mục chưa tra ra tên.
-        (departmentNames.get(user.department_id) ?? "—")
-      : "—");
+        (departmentNames.get(user.department_id) ?? EMPTY_TEXT)
+      : EMPTY_TEXT);
 
   const roleFilteredUsers = useMemo(() => {
     if (!roleFilter) return users;
@@ -1382,8 +1383,8 @@ export function IamUserScreen({
                 items={[
                   { label: "Họ và tên", value: viewingUser.display_name },
                   { label: "Tên đăng nhập", value: viewingUser.username },
-                  { label: "Số điện thoại", value: viewingUser.phone || "—" },
-                  { label: "Email", value: viewingUser.email || "—" },
+                  { label: "Số điện thoại", value: viewingUser.phone || EMPTY_TEXT },
+                  { label: "Email", value: viewingUser.email || EMPTY_TEXT },
                   { label: "Phòng ban", value: departmentLabel(viewingUser) },
                   {
                     label: "Trạng thái",

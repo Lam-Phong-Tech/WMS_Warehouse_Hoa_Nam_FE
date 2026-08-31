@@ -39,6 +39,7 @@ import {
   formatWarrantyDateTime,
   warrantyPiiText,
 } from "@/modules/warranty/constants";
+import { EMPTY_TEXT } from "@/shared/constants/display";
 import {
   useWarrantyCases,
   warrantyKeys,
@@ -189,7 +190,7 @@ export default function WarrantyPage() {
       width: 190,
       sortAccessor: (row) => row.case_code || "",
       // KHÔNG fallback sang row.id: cột này là MÃ PHIẾU bảo hành đọc được.
-      render: (row) => <strong>{row.case_code || "—"}</strong>,
+      render: (row) => <strong>{row.case_code || EMPTY_TEXT}</strong>,
     },
     {
       key: "customer",
@@ -200,10 +201,10 @@ export default function WarrantyPage() {
         <Stack spacing={0}>
           {/* §13.8: mask lại ở tầng render — không tin payload đã mask sẵn. */}
           <UiText variant="body">
-            {warrantyPiiText(row.customer_name, canViewPii, "name") || "—"}
+            {warrantyPiiText(row.customer_name, canViewPii, "name") || EMPTY_TEXT}
           </UiText>
           <UiText variant="caption">
-            {warrantyPiiText(row.customer_phone, canViewPii, "phone") || "—"}
+            {warrantyPiiText(row.customer_phone, canViewPii, "phone") || EMPTY_TEXT}
           </UiText>
         </Stack>
       ),
@@ -216,7 +217,7 @@ export default function WarrantyPage() {
       render: (row) =>
         row.identification_type === "TEMP_ONLY" && !row.sku
           ? "Mô tả thủ công"
-          : row.sku || row.sku_name || "—",
+          : row.sku || row.sku_name || EMPTY_TEXT,
     },
     {
       key: "defect",
@@ -228,7 +229,7 @@ export default function WarrantyPage() {
         const names = (row.defects ?? [])
           .map((defect) => defect.defect_name)
           .filter(Boolean);
-        return names.length ? names.join(", ") : row.defect || "—";
+        return names.length ? names.join(", ") : row.defect || EMPTY_TEXT;
       },
     },
     {
@@ -238,7 +239,7 @@ export default function WarrantyPage() {
       hideOnMobile: true,
       sortAccessor: (row) => row.identification_type || "",
       render: (row) => (
-        <UiStatusBadge tone="neutral" label={row.identification_type || "—"} />
+        <UiStatusBadge tone="neutral" label={row.identification_type || EMPTY_TEXT} />
       ),
     },
     {

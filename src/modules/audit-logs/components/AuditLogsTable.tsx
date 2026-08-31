@@ -26,6 +26,7 @@ import {
   businessLabel,
 } from "@/shared/constants/business-labels";
 import { ActionButton } from "@/shared/components/actions";
+import { EMPTY_TEXT } from "@/shared/constants/display";
 
 // Map preset màu antd Tag cũ → tone UiStatusBadge (recipe Part 4:
 // green→success, blue/cyan→info, red/magenta→error, orange→warning,
@@ -197,7 +198,7 @@ export function AuditLogsTable({
               textOverflow: "ellipsis",
             }}
           >
-            {row.object_type || "—"}
+            {row.object_type || EMPTY_TEXT}
           </Box>
           {/* title giữ UUID đầy đủ CÓ CHỦ ĐÍCH: đây là màn nhật ký kỹ thuật cho
             quản trị, phần hiển thị đã rút gọn để không vỡ cột và bản đầy đủ chỉ
@@ -248,7 +249,7 @@ export function AuditLogsTable({
       sortable: true,
       render: (row) => (
         <Box sx={{ ...CELL_TEXT_SX, whiteSpace: "nowrap" }}>
-          {row.ip_address || "—"}
+          {row.ip_address || EMPTY_TEXT}
         </Box>
       ),
     },

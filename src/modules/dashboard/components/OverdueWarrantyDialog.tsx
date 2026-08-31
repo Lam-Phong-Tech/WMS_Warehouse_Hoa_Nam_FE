@@ -5,6 +5,7 @@ import { WARRANTY_STATUS_LABELS } from "@/modules/warranty/constants";
 import { formatDate } from "@/shared/utils/format-date";
 import type { DashboardOverdueCase } from "../types";
 import { CAPTION_SX, formatNumber } from "./dashboard-styles";
+import { EMPTY_TEXT } from "@/shared/constants/display";
 
 export function OverdueWarrantyDialog({
   open,
@@ -53,7 +54,7 @@ export function OverdueWarrantyDialog({
           {
             key: "customer",
             header: "Khách hàng",
-            render: (row) => row.customer_name ?? "—",
+            render: (row) => row.customer_name ?? EMPTY_TEXT,
           },
           {
             key: "status",

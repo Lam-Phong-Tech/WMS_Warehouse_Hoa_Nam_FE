@@ -29,6 +29,7 @@ import type { ReversalDocument } from "../types";
 import { formatDateTime } from "@/shared/utils/format-date";
 import { formatQuantity } from "@/shared/utils/format-number";
 import { ActionButton } from "@/shared/components/actions";
+import { EMPTY_TEXT } from "@/shared/constants/display";
 
 const SEARCH_DEBOUNCE_MS = 250;
 
@@ -115,7 +116,7 @@ export default function ReversalPage() {
       width: 170,
       sortAccessor: (row) => row.reversal_code || "",
       // KHÔNG fallback sang row.id: cột này là MÃ ĐIỀU CHỈNH đọc được.
-      render: (row) => <strong>{row.reversal_code || "—"}</strong>,
+      render: (row) => <strong>{row.reversal_code || EMPTY_TEXT}</strong>,
     },
     {
       key: "ref",
@@ -134,7 +135,7 @@ export default function ReversalPage() {
           }}
         >
           {/* KHÔNG fallback sang *_document_id (UUID) — thiếu mã thì hiện "—". */}
-          {row.reference_document_code || "—"}
+          {row.reference_document_code || EMPTY_TEXT}
         </Box>
       ),
     },
@@ -172,7 +173,7 @@ export default function ReversalPage() {
       sortAccessor: (row) => row.reason || "",
       render: (row) => (
         <div>
-          <Tooltip title={row.reason || "-"}>
+          <Tooltip title={row.reason || EMPTY_TEXT}>
             <Box
               sx={{
                 maxWidth: 230,
@@ -181,7 +182,7 @@ export default function ReversalPage() {
                 whiteSpace: "nowrap",
               }}
             >
-              {row.reason || "-"}
+              {row.reason || EMPTY_TEXT}
             </Box>
           </Tooltip>
           {row.reason_code ? (
@@ -209,7 +210,7 @@ export default function ReversalPage() {
       width: 150,
       hideOnMobile: true,
       sortAccessor: (row) => row.created_by || "",
-      render: (row) => row.created_by || "-",
+      render: (row) => row.created_by || EMPTY_TEXT,
     },
   ];
 

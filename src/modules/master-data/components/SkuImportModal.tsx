@@ -22,6 +22,7 @@ import {
   type SkuImportRowError,
 } from "@/modules/master-data/services/sku-import.service";
 import { sha256OfFile } from "@/shared/utils/file-digest";
+import { EMPTY_TEXT } from "@/shared/constants/display";
 import { formatDateTime } from "@/shared/utils/format-date";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 import { ResponsiveDataTable } from "@/shared/components";
@@ -82,7 +83,8 @@ function handleBlobDownload(
 function formatExpiry(isoTimestamp: string | null): string {
   if (!isoTimestamp) return "";
   const formatted = formatDateTime(isoTimestamp);
-  return formatted === "-" ? "" : ` · tải được đến ${formatted}`;
+  // formatDateTime trả EMPTY_TEXT khi không hợp lệ — không ghép hậu tố khi đó.
+  return formatted === EMPTY_TEXT ? "" : ` · tải được đến ${formatted}`;
 }
 
 function describeConstraints(constraints: SkuImportConstraints | null): string {

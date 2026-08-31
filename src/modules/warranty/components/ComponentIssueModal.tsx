@@ -42,6 +42,7 @@ import {
 } from "@/modules/warranty/hooks/use-warranty";
 import { makeWarrantyIdempotencyKey } from "@/modules/warranty/services/warrantyService";
 import { COMPONENT_ISSUE_STATUS_BADGE } from "@/modules/warranty/constants";
+import { EMPTY_TEXT } from "@/shared/constants/display";
 import type {
   ComponentIssueDocument,
   ComponentIssueLine,
@@ -380,7 +381,8 @@ export function ComponentIssueModal({
       header: "Kiểu quét",
       render: (line) => {
         const active = line.items.filter((item) => item.status !== "REMOVED");
-        if (!active.length) return <UiText variant="secondary">—</UiText>;
+        if (!active.length)
+          return <UiText variant="secondary">{EMPTY_TEXT}</UiText>;
         return (
           <Stack spacing={0}>
             {active.map((item) => (
@@ -554,7 +556,9 @@ export function ComponentIssueModal({
                                 tone={exceeds ? "error" : "neutral"}
                                 label={`Khả dụng: ${
                                   available ??
-                                  (availabilityQuery.isLoading ? "..." : "-")
+                                  (availabilityQuery.isLoading
+                                    ? "..."
+                                    : EMPTY_TEXT)
                                 }`}
                                 sx={{ fontWeight: 700, mt: "6px" }}
                               />
@@ -635,7 +639,7 @@ export function ComponentIssueModal({
                         <UiText variant="caption">Ngày chứng từ</UiText>
                       </Box>
                       <UiText variant="body">
-                        {detail.document_date || "—"}
+                        {detail.document_date || EMPTY_TEXT}
                       </UiText>
                     </Grid>
                   </Grid>
@@ -701,12 +705,7 @@ export function ComponentIssueModal({
                           onScan={handleScan}
                         />
                       </Box>
-                      <ActionButton
-                        kind="camera"
-                        onClick={() => setCameraOpen(true)}
-                      >
-                        Camera
-                      </ActionButton>
+                     
                     </Stack>
                   </Box>
                 ) : null}

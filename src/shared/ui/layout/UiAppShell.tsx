@@ -7,8 +7,8 @@
  * DEC-UI-BASELINE-01.
  *
  * KHÔNG có tay cầm kéo giãn bề rộng (gỡ theo yêu cầu người dùng 2026-08-31):
- * bề rộng chốt ở LAYOUT.sidebarWidth = 260px đúng demo, nhãn dài xử lý bằng
- * ellipsis + tooltip chứ không nới cột.
+ * bề rộng cố định ở LAYOUT.sidebarWidth (340px — lệch demo 260px, nới ra để
+ * hết ellipsis ở nhãn mục con dài, xem layout-tokens.ts).
  */
 import Box from "@mui/material/Box";
 import useMediaQuery from "@mui/material/useMediaQuery";

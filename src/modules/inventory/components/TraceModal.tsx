@@ -52,6 +52,7 @@ import {
 import { useDialogExit } from "@/shared/utils/useDialogExit";
 import { formatDateTime } from "@/shared/utils/format-date";
 import { formatQuantity } from "@/shared/utils/format-number";
+import { EMPTY_TEXT } from "@/shared/constants/display";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 
 interface Props {
@@ -999,7 +1000,10 @@ export function TraceModal({ movementId, onClose }: Props) {
                 label="Thời điểm ghi nhận"
                 value={formatDateTime(trace.postedAt || null)}
               />
-              <DetailField label="Người thao tác" value={trace.actor || "-"} />
+              <DetailField
+                label="Người thao tác"
+                value={trace.actor || EMPTY_TEXT}
+              />
               {/* request_id là UUID đối chiếu log (không có mã nghiệp vụ) — màn
                 truy vết vẫn cần nó để báo kỹ thuật, nhưng hiển thị rút gọn +
                 nút sao chép giá trị đầy đủ thay vì in nguyên chuỗi thô. */}
@@ -1147,10 +1151,11 @@ export function TraceModal({ movementId, onClose }: Props) {
                     const time = item.created_at ?? item.changed_at;
                     const formattedTime = time
                       ? formatDateTime(String(time))
-                      : "-";
+                      : EMPTY_TEXT;
                     return {
                       title: label,
-                      time: formattedTime === "-" ? undefined : formattedTime,
+                      time:
+                        formattedTime === EMPTY_TEXT ? undefined : formattedTime,
                     };
                   })}
                 />

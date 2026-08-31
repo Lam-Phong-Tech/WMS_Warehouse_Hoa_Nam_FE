@@ -42,6 +42,7 @@ import {
   formatWarrantyDateTime,
   warrantyPiiText,
 } from "@/modules/warranty/constants";
+import { EMPTY_TEXT } from "@/shared/constants/display";
 
 const SEARCH_DEBOUNCE_MS = 250;
 
@@ -190,10 +191,10 @@ export default function WarrantyComponentIssueListPage() {
         }
         return (
           <Stack spacing={0}>
-            <UiText variant="body">{caseInfo.case_code || "—"}</UiText>
+            <UiText variant="body">{caseInfo.case_code || EMPTY_TEXT}</UiText>
             <UiText variant="caption">
               {warrantyPiiText(caseInfo.customer_name, canViewPii, "name") ||
-                "—"}
+                EMPTY_TEXT}
             </UiText>
           </Stack>
         );
@@ -206,7 +207,7 @@ export default function WarrantyComponentIssueListPage() {
       hideOnMobile: true,
       render: (row) => {
         const wh = warehouseById.get(row.warehouse_id);
-        if (wh) return wh.code ? `${wh.code} · ${wh.name}` : wh.name || "—";
+        if (wh) return wh.code ? `${wh.code} · ${wh.name}` : wh.name || EMPTY_TEXT;
         return warehousesQuery.isLoading ? (
           "Đang tải..."
         ) : (
@@ -239,7 +240,7 @@ export default function WarrantyComponentIssueListPage() {
       header: "Ghi chú",
       width: 220,
       hideOnMobile: true,
-      render: (row) => row.cancel_reason || row.note || "—",
+      render: (row) => row.cancel_reason || row.note || EMPTY_TEXT,
     },
   ];
 

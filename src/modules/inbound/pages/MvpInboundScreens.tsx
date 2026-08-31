@@ -70,6 +70,7 @@ import type {
   ReceiptEvidence,
 } from "@/modules/inbound/types";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
+import { EMPTY_TEXT } from "@/shared/constants/display";
 
 type BarcodeResult = { rawValue?: string };
 type BarcodeDetectorInstance = {
@@ -877,7 +878,7 @@ export function InboundScanModal({
         const sku = skuById.get(line.productId);
         return (
           <div>
-            <div>{sku?.sku_name ?? "-"}</div>
+            <div>{sku?.sku_name ?? EMPTY_TEXT}</div>
             {sku?.sku_type ? (
               <UiStatusBadge
                 tone="neutral"
@@ -924,9 +925,8 @@ export function InboundScanModal({
           {entry.itemCode ||
             entry.serialNumber ||
             entry.candidateItemUnique ||
-            entry.itemId ||
-            entry.containerId ||
-            "-"}
+            entry.containerCode ||
+            EMPTY_TEXT}
         </Box>
       ),
     },
@@ -937,7 +937,7 @@ export function InboundScanModal({
       render: (entry) => (
         <div>
           <div>
-            <strong>{entry.sku || "-"}</strong>
+            <strong>{entry.sku || EMPTY_TEXT}</strong>
           </div>
           <Box sx={{ fontSize: 12, color: "text.secondary" }}>
             {entry.skuName}
@@ -1140,7 +1140,7 @@ export function InboundScanModal({
                       Phiếu
                     </Box>
                     <Box sx={{ typography: "body2" }}>
-                      {detail.document.code || "—"}
+                      {detail.document.code || EMPTY_TEXT}
                     </Box>
                   </Grid>
                   <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
@@ -1150,7 +1150,7 @@ export function InboundScanModal({
                       Nguồn
                     </Box>
                     <Box sx={{ typography: "body2" }}>
-                      {detail.document.source || "-"}
+                      {detail.document.source || EMPTY_TEXT}
                     </Box>
                   </Grid>
                   <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
@@ -1367,14 +1367,6 @@ export function InboundScanModal({
                             onScan={(code) => void handleScan(code)}
                           />
                         </Box>
-                        <ActionButton
-                          kind="camera"
-                          disabled={!canScan || busy}
-                          onClick={() => setCameraOpen(true)}
-                          sx={{ flexShrink: 0 }}
-                        >
-                          Quét bằng camera
-                        </ActionButton>
                       </Stack>
                     </Box>
                   )}

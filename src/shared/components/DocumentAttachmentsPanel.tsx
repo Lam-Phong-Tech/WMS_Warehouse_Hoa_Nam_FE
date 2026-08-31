@@ -33,6 +33,7 @@ import {
 } from "@/shared/api/documentAttachmentService";
 import { formatDateTime } from "@/shared/utils/format-date";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
+import { EMPTY_TEXT } from "@/shared/constants/display";
 
 /**
  * "Chứng từ nhập/xuất/hoàn trả": khối đính kèm chứng từ dùng chung cho phiếu
@@ -80,7 +81,9 @@ function kindLabel(attachment: DocumentAttachment): string {
 }
 
 function uploadedAtLabel(attachment: DocumentAttachment): string {
-  return attachment.uploaded_at ? formatDateTime(attachment.uploaded_at) : "-";
+  return attachment.uploaded_at
+    ? formatDateTime(attachment.uploaded_at)
+    : EMPTY_TEXT;
 }
 
 /** content_type có thể rỗng ở bản ghi cũ nên suy thêm từ đuôi tệp. */

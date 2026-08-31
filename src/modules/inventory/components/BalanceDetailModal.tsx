@@ -32,16 +32,17 @@ import { formatDateTime } from "@/shared/utils/format-date";
 import { formatQuantity } from "@/shared/utils/format-number";
 import { useDialogExit } from "@/shared/utils/useDialogExit";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
+import { EMPTY_TEXT } from "@/shared/constants/display";
 
 type RawRecord = Record<string, unknown>;
 
 function formatQty(value: number | null | undefined, uom = "") {
   const formatted = formatQuantity(value);
-  if (formatted === "-") return "-";
+  if (formatted === EMPTY_TEXT) return EMPTY_TEXT;
   return `${formatted}${uom ? ` ${uom}` : ""}`;
 }
 
-function text(val: unknown, fallback = "-") {
+function text(val: unknown, fallback = EMPTY_TEXT) {
   return val === undefined || val === null ? fallback : String(val);
 }
 
@@ -63,7 +64,7 @@ function itemConditionLabel(value: unknown): string {
     NON_SELLABLE: "Không thể bán/xuất",
     QUARANTINE: "Chờ kiểm tra",
   };
-  return labels[status] ?? (status ? "Tình trạng khác" : "-");
+  return labels[status] ?? (status ? "Tình trạng khác" : EMPTY_TEXT);
 }
 
 /** Thay cho AntTypography.Text `code` — chữ mono trên nền soft, màu từ token. */
@@ -169,7 +170,7 @@ export function BalanceDetailModal({
       // movementId nay chỉ chứa movement_no thật (normalizer đã bỏ fallback
       // `?? row.id`), nên không cần so sánh với id nữa — thiếu mã thì "—".
       render: (row) =>
-        row.movementId ? <CodeText>{row.movementId}</CodeText> : "—",
+        row.movementId ? <CodeText>{row.movementId}</CodeText> : EMPTY_TEXT,
     },
     {
       key: "time",
@@ -221,7 +222,7 @@ export function BalanceDetailModal({
       width: 180,
       render: (row) => (
         <Stack spacing={0}>
-          <CodeText>{row.source || "-"}</CodeText>
+          <CodeText>{row.source || EMPTY_TEXT}</CodeText>
           <UiText variant="caption">
             {businessLabel(
               SOURCE_DOCUMENT_TYPE_LABELS,
@@ -447,7 +448,7 @@ export function BalanceDetailModal({
             />
             <DetailField
               label="Cập nhật"
-              value={balance.dataAsOf || balance.updatedAt || "-"}
+              value={balance.dataAsOf || balance.updatedAt || EMPTY_TEXT}
             />
             {/* DR-LOC-001: 3 mảnh thông tin vị trí độc lập, tách riêng vì mỗi
               mảnh có thời điểm xuất hiện khác nhau — mã hộp có ngay sau nhập
@@ -475,7 +476,7 @@ export function BalanceDetailModal({
                 balance.lastMovementId ? (
                   <CopyableId value={balance.lastMovementId} />
                 ) : (
-                  "—"
+                  EMPTY_TEXT
                 )
               }
             />

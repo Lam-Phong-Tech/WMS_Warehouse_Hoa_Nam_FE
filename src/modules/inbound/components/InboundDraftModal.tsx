@@ -169,6 +169,8 @@ export function InboundDraftModal({
     const errors: Record<string, string> = {};
     if (!formValues.documentDate) {
       errors.documentDate = "Chọn ngày chứng từ.";
+    } else if (formValues.documentDate > localToday()) {
+      errors.documentDate = "Ngày chứng từ không được ở tương lai.";
     }
     if (!documentId && !formValues.warehouseId) {
       errors.warehouseId = "Chọn kho nhận.";
@@ -325,7 +327,10 @@ export function InboundDraftModal({
               }
             }}
             disabled={!mutable}
-            slotProps={{ inputLabel: { shrink: true } }}
+            slotProps={{
+              inputLabel: { shrink: true },
+              htmlInput: { max: localToday() },
+            }}
             error={Boolean(fieldErrors.documentDate)}
             helperText={fieldErrors.documentDate || "Định dạng: ngày/tháng/năm"}
           />

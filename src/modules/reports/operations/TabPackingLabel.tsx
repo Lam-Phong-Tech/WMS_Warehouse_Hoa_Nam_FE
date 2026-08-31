@@ -13,6 +13,7 @@ import { ActionButton } from "@/shared/components/actions";
 import { MultiSeriesBarChart } from "@/shared/components/charts/MultiSeriesBarChart";
 import { HorizontalBarChart } from "@/shared/components/charts/HorizontalBarChart";
 import { CHART_COLORS } from "@/shared/components/charts/chart-theme";
+import { EMPTY_TEXT } from "@/shared/constants/display";
 import {
   axisDayLabel,
   dateSpan,
@@ -502,7 +503,7 @@ export default function TabPackingLabel() {
             sortAccessor: (row) => row.outboundNo,
             render: (row) => (
               <Box>
-                <Box sx={{ fontWeight: 700 }}>{row.outboundNo || "—"}</Box>
+                <Box sx={{ fontWeight: 700 }}>{row.outboundNo || EMPTY_TEXT}</Box>
                 <Box sx={{ fontSize: 12, color: "text.secondary" }}>
                   {row.outboundDate ? fmtDate(row.outboundDate) : ""}
                 </Box>
@@ -514,7 +515,7 @@ export default function TabPackingLabel() {
             header: "Label ID",
             width: 170,
             sortAccessor: (row) => row.labelCode,
-            render: (row) => row.labelCode || "—",
+            render: (row) => row.labelCode || EMPTY_TEXT,
           },
           {
             key: "status",
@@ -547,13 +548,13 @@ export default function TabPackingLabel() {
             key: "printer",
             header: "Máy in",
             hideOnMobile: true,
-            render: (row) => row.printer || "—",
+            render: (row) => row.printer || EMPTY_TEXT,
           },
           {
             key: "actor",
             header: "Người in",
             hideOnMobile: true,
-            render: (row) => row.actor || "—",
+            render: (row) => row.actor || EMPTY_TEXT,
           },
           {
             key: "lastAttemptAt",
@@ -561,7 +562,7 @@ export default function TabPackingLabel() {
             width: 165,
             sortAccessor: (row) => row.lastAttemptAt,
             render: (row) =>
-              row.lastAttemptAt ? fmtDateTime(row.lastAttemptAt) : "—",
+              row.lastAttemptAt ? fmtDateTime(row.lastAttemptAt) : EMPTY_TEXT,
           },
           {
             key: "failureReason",
@@ -569,13 +570,13 @@ export default function TabPackingLabel() {
             hideOnMobile: true,
             render: (row) =>
               row.failureReason ||
-              (row.failed > 0 ? `${fmt(row.failed)} lần lỗi` : "—"),
+              (row.failed > 0 ? `${fmt(row.failed)} lần lỗi` : EMPTY_TEXT),
           },
           {
             key: "reprintReason",
             header: "Lý do Reprint",
             hideOnMobile: true,
-            render: (row) => row.reprintReason || "—",
+            render: (row) => row.reprintReason || EMPTY_TEXT,
           },
         ]}
         rows={pagination.pageRows}
@@ -610,17 +611,17 @@ export default function TabPackingLabel() {
               {
                 key: "outboundNo",
                 header: "Phiếu xuất",
-                render: (row) => row.outboundNo || "—",
+                render: (row) => row.outboundNo || EMPTY_TEXT,
               },
               {
                 key: "labelCode",
                 header: "Label ID",
-                render: (row) => row.labelCode || "—",
+                render: (row) => row.labelCode || EMPTY_TEXT,
               },
               {
                 key: "printer",
                 header: "Máy in",
-                render: (row) => row.printer || "—",
+                render: (row) => row.printer || EMPTY_TEXT,
               },
               {
                 key: "attempts",
@@ -661,12 +662,12 @@ export default function TabPackingLabel() {
               {
                 key: "outboundNo",
                 header: "Phiếu xuất",
-                render: (row) => row.outboundNo || "—",
+                render: (row) => row.outboundNo || EMPTY_TEXT,
               },
               {
                 key: "labelCode",
                 header: "Label ID",
-                render: (row) => row.labelCode || "—",
+                render: (row) => row.labelCode || EMPTY_TEXT,
               },
               {
                 key: "status",
@@ -682,7 +683,7 @@ export default function TabPackingLabel() {
               {
                 key: "actor",
                 header: "Người in",
-                render: (row) => row.actor || "—",
+                render: (row) => row.actor || EMPTY_TEXT,
               },
             ]}
             rows={rows.filter(
@@ -720,7 +721,7 @@ export default function TabPackingLabel() {
             <UiStatusBadge
               size="small"
               tone="neutral"
-              label={`Máy in: ${openLabel.printer || "—"}`}
+              label={`Máy in: ${openLabel.printer || EMPTY_TEXT}`}
             />
           </Stack>
           {openLabel.history.length > 0 ? (
@@ -729,7 +730,7 @@ export default function TabPackingLabel() {
                 {
                   key: "at",
                   header: "Thời gian",
-                  render: (row) => (row.at ? fmtDateTime(row.at) : "—"),
+                  render: (row) => (row.at ? fmtDateTime(row.at) : EMPTY_TEXT),
                 },
                 {
                   key: "status",
@@ -739,17 +740,17 @@ export default function TabPackingLabel() {
                 {
                   key: "printer",
                   header: "Máy in",
-                  render: (row) => row.printer || "—",
+                  render: (row) => row.printer || EMPTY_TEXT,
                 },
                 {
                   key: "actor",
                   header: "Người in",
-                  render: (row) => row.actor || "—",
+                  render: (row) => row.actor || EMPTY_TEXT,
                 },
                 {
                   key: "reason",
                   header: "Lý do",
-                  render: (row) => row.reason || "—",
+                  render: (row) => row.reason || EMPTY_TEXT,
                 },
               ]}
               rows={openLabel.history}
@@ -763,8 +764,8 @@ export default function TabPackingLabel() {
               lỗi, {fmt(openLabel.reprints)} lần in lại; lần in gần nhất lúc{" "}
               {openLabel.lastAttemptAt
                 ? fmtDateTime(openLabel.lastAttemptAt)
-                : "—"}{" "}
-              trên máy {openLabel.printer || "—"}.
+                : EMPTY_TEXT}{" "}
+              trên máy {openLabel.printer || EMPTY_TEXT}.
             </UiAlert>
           )}
         </DrillDownDialog>

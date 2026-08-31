@@ -20,6 +20,7 @@ import {
   type MyPermissionHistoryEntry,
 } from "@/modules/audit-logs/services/audit-logs.service";
 import { formatDateTime } from "@/shared/utils/format-date";
+import { EMPTY_TEXT } from "@/shared/constants/display";
 
 const PERMISSION_HISTORY_ACTION_LABELS: Record<string, string> = {
   CREATE: "Tạo tài khoản",
@@ -37,7 +38,7 @@ function statusLabel(status?: string) {
   if (status === "ACTIVE") return "Đang hoạt động";
   if (status === "INACTIVE") return "Tạm ngưng";
   if (status === "LOCKED") return "Đã khóa";
-  return status || "—";
+  return status || EMPTY_TEXT;
 }
 
 function statusTone(status?: string): UiStatusTone {
@@ -48,7 +49,7 @@ function statusTone(status?: string): UiStatusTone {
 }
 
 function empty(value?: string | number | null) {
-  return value === undefined || value === null || value === "" ? "—" : value;
+  return value === undefined || value === null || value === "" ? EMPTY_TEXT : value;
 }
 
 const HISTORY_COLUMNS: ResponsiveTableColumn<MyPermissionHistoryEntry>[] = [
@@ -72,7 +73,7 @@ const HISTORY_COLUMNS: ResponsiveTableColumn<MyPermissionHistoryEntry>[] = [
   {
     key: "reason",
     header: "Lý do",
-    render: (row) => row.reason || "—",
+    render: (row) => row.reason || EMPTY_TEXT,
   },
 ];
 

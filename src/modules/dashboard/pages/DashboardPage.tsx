@@ -327,7 +327,7 @@ export default function DashboardPage() {
           id="workflow-title"
           sx={{ ...SECTION_TITLE_SX, mb: 1.5 }}
         >
-          Điều hướng luồng nghiệp vụ
+          Luồng nghiệp vụ
         </Box>
         <Stack spacing={1.5}>
           {FLOW_LANES.map((lane) => (

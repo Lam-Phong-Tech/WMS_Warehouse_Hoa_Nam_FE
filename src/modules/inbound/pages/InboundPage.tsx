@@ -31,6 +31,7 @@ import { InboundScanModal } from "@/modules/inbound/pages/MvpInboundScreens";
 import type { InboundDocument } from "@/modules/inbound/types";
 import { formatQuantity } from "@/shared/utils/format-number";
 import { ActionButton } from "@/shared/components/actions";
+import { EMPTY_TEXT } from "@/shared/constants/display";
 
 const STATUS_OPTIONS = Object.entries(INBOUND_STATUS_LABELS).map(
   ([value, label]) => ({
@@ -153,14 +154,14 @@ function InboundListScreen() {
       sortAccessor: (row) => row.code || "",
       // KHÔNG fallback sang row.id: cột này là MÃ PHIẾU đọc được ("PN-…").
       // Thiếu mã thì hiện "—", không in UUID nội bộ cho người dùng.
-      render: (row) => <strong>{row.code || "—"}</strong>,
+      render: (row) => <strong>{row.code || EMPTY_TEXT}</strong>,
     },
     {
       key: "source",
       header: "Nguồn / tham chiếu",
       width: 220,
       sortAccessor: (row) => row.source || "",
-      render: (row) => row.source || "-",
+      render: (row) => row.source || EMPTY_TEXT,
     },
     {
       key: "date",
@@ -170,7 +171,7 @@ function InboundListScreen() {
       sortType: "value",
       sortAccessor: (row) => row.date || "",
       render: (row) => {
-        if (!row.date) return "-";
+        if (!row.date) return EMPTY_TEXT;
         const parsed = dayjs(row.date);
         // Ngày-tháng-năm giờ theo cách đọc của người dùng Việt (22-09-2026 12:00),
         // ngày/tháng đệm số 0 cho các dòng thẳng cột nhau.
@@ -183,7 +184,7 @@ function InboundListScreen() {
       width: 200,
       hideOnMobile: true,
       sortAccessor: (row) => row.note || "",
-      render: (row) => row.note || "-",
+      render: (row) => row.note || EMPTY_TEXT,
     },
     {
       key: "scanned",
@@ -210,7 +211,7 @@ function InboundListScreen() {
       sortAccessor: (row) => row.updatedAt ?? row.date ?? "",
       render: (row) => {
         const value = row.updatedAt ?? row.date;
-        if (!value) return "-";
+        if (!value) return EMPTY_TEXT;
         const parsed = dayjs(value);
         return parsed.isValid() ? parsed.format("DD-MM-YYYY HH:mm") : value;
       },

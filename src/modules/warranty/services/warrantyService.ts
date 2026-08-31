@@ -230,10 +230,9 @@ function normalizeWarrantyEvent(row: RawRecord): WarrantyEvent {
     from_status: row.from_status ? canonicalStatus(row.from_status) : undefined,
     to_status: canonicalStatus(row.to_status ?? row.status),
     description: text(row.description ?? row.note ?? row.message, "-"),
-    performed_by: text(
-      row.performed_by_name ?? row.performed_by ?? row.created_by,
-      "-",
-    ),
+    // KHÔNG rơi xuống row.created_by: đó là UUID actor thô, không phải tên —
+    // thiếu performed_by_name (join users) thì hiện "-", không hiện UUID.
+    performed_by: text(row.performed_by_name ?? row.performed_by, "-"),
     performed_at: text(row.performed_at ?? row.event_at ?? row.created_at),
   };
 }

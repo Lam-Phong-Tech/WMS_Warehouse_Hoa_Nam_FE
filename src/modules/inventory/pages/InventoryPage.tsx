@@ -56,6 +56,7 @@ import type {
 import { formatDateTime } from "@/shared/utils/format-date";
 import { formatQuantity } from "@/shared/utils/format-number";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
+import { EMPTY_TEXT } from "@/shared/constants/display";
 
 const SEARCH_DEBOUNCE_MS = 250;
 
@@ -69,7 +70,7 @@ function pageSizeOptions(current: number) {
 
 function formatQty(value: number | null | undefined, uom = "") {
   const formatted = formatQuantity(value);
-  if (formatted === "-") return "-";
+  if (formatted === EMPTY_TEXT) return EMPTY_TEXT;
   return `${formatted}${uom ? ` ${uom}` : ""}`;
 }
 
@@ -257,12 +258,12 @@ export default function InventoryPage() {
       sortAccessor: (row) => row.sku,
       render: (row) => (
         <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
-          <CodeText>{row.sku || "-"}</CodeText>
+          <CodeText>{row.sku || EMPTY_TEXT}</CodeText>
           <ActionIconButton
             kind="copy"
             onClick={(event) => {
               event.stopPropagation();
-              void navigator.clipboard?.writeText(row.sku || "-");
+              void navigator.clipboard?.writeText(row.sku || EMPTY_TEXT);
             }}
           />
         </Stack>
@@ -275,7 +276,7 @@ export default function InventoryPage() {
       sortAccessor: (row) => row.name || "",
       render: (row) => (
         <Stack>
-          <strong>{row.name || "-"}</strong>
+          <strong>{row.name || EMPTY_TEXT}</strong>
           <UiText variant="secondary">
             {businessLabel(SKU_TYPE_LABELS, row.type, "Loại khác")}
           </UiText>
@@ -527,7 +528,7 @@ export default function InventoryPage() {
       sortAccessor: (row) => row.source || "",
       render: (row) => (
         <Stack sx={{ alignItems: "flex-start" }}>
-          <CodeText>{row.source || "-"}</CodeText>
+          <CodeText>{row.source || EMPTY_TEXT}</CodeText>
           <UiText variant="secondary">
             {businessLabel(
               SOURCE_DOCUMENT_TYPE_LABELS,

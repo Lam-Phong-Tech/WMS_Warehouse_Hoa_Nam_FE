@@ -1,4 +1,5 @@
 import dayjs, { type Dayjs } from "dayjs";
+import { EMPTY_TEXT } from "@/shared/constants/display";
 import { formatDate, formatDateTime } from "@/shared/utils/format-date";
 import { formatQuantity } from "@/shared/utils/format-number";
 
@@ -9,7 +10,7 @@ export type SelectOption = { value: string; label: string };
 /** Số lượng — luôn qua formatQuantity để mọi bảng/chart cùng một cách đọc số. */
 export const fmt = (value: unknown) => formatQuantity(Number(value ?? 0));
 
-export const text = (value: unknown, fallback = "—"): string =>
+export const text = (value: unknown, fallback: string = EMPTY_TEXT): string =>
   value === null || value === undefined || value === ""
     ? fallback
     : String(value);

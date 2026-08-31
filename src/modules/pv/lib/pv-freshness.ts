@@ -1,4 +1,5 @@
 import type { PvFreshness } from "@/modules/pv/types/pv.types";
+import { EMPTY_TEXT } from "@/shared/constants/display";
 import { formatDateTime } from "@/shared/utils/format-date";
 
 /**
@@ -51,7 +52,7 @@ export function computeFreshness(
 }
 
 export function formatDataAsOf(value: string | undefined): string {
-  if (!value) return "—";
-  const formatted = formatDateTime(value);
-  return formatted === "-" ? "—" : formatted;
+  if (!value) return EMPTY_TEXT;
+  // formatDateTime đã trả EMPTY_TEXT khi rỗng/không hợp lệ (xem format-date.ts).
+  return formatDateTime(value);
 }

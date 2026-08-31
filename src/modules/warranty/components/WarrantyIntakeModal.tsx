@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -17,7 +17,11 @@ import {
   UiText,
   UiTextField,
 } from "@/shared/ui";
-import { DeleteOutlined, PlayCircleOutlined } from "@/shared/components/icons";
+import {
+  DeleteOutlined,
+  PlayCircleOutlined,
+  UploadOutlined,
+} from "@/shared/components/icons";
 import {
   extractFieldErrorsRaw,
   getApiErrorMessage,
@@ -105,6 +109,104 @@ function probeVideoDurationSeconds(file: File): Promise<number> {
     };
     videoEl.src = url;
   });
+}
+
+function formatIntakeFileSize(bytes: number): string {
+  if (!bytes) return "0 B";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+const INTAKE_TILE_DELETE_SX = {
+  width: 22,
+  height: 22,
+  bgcolor: "rgba(0, 0, 0, 0.55)",
+  color: SEMANTIC_LIGHT.onPrimary,
+  "&:hover": { bgcolor: "rgba(0, 0, 0, 0.78)" },
+} as const;
+
+const INTAKE_TILE_LABEL_SX = {
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+} as const;
+
+/**
+ * Ô ảnh vuông kiểu thư viện — đồng bộ giao diện với `ImageAttachmentTile` ở
+ * màn chi tiết case (WarrantyDetailModal). Khác biệt duy nhất: ảnh ở đây chưa
+ * tải lên server (chỉ tải sau khi case được tạo) nên xem trước bằng object
+ * URL sinh tại chỗ từ chính `File`, không có nút tải xuống.
+ */
+function IntakeImageTile({
+  file,
+  onDelete,
+}: {
+  file: File;
+  onDelete: () => void;
+}) {
+  const url = useMemo(() => URL.createObjectURL(file), [file]);
+  useEffect(() => () => URL.revokeObjectURL(url), [url]);
+
+  return (
+    <Box sx={{ minWidth: 0 }}>
+      <Box
+        sx={{
+          position: "relative",
+          width: "100%",
+          aspectRatio: "1 / 1",
+          borderRadius: 2,
+          overflow: "hidden",
+          border: "1px solid",
+          borderColor: "divider",
+          bgcolor: "action.hover",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          "&:hover .hn-intake-image-delete": { opacity: 1 },
+        }}
+      >
+        <Box
+          component="img"
+          src={url}
+          alt={file.name}
+          sx={{
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            display: "block",
+          }}
+        />
+        <Box
+          className="hn-intake-image-delete"
+          sx={{ position: "absolute", top: 4, right: 4, opacity: 0 }}
+        >
+          <ActionIconButton
+            kind="delete"
+            onClick={onDelete}
+            sx={INTAKE_TILE_DELETE_SX}
+          />
+        </Box>
+      </Box>
+      <Box
+        title={file.name}
+        sx={{ typography: "caption", display: "block", mt: 0.5, ...INTAKE_TILE_LABEL_SX }}
+      >
+        {file.name}
+      </Box>
+      <Box
+        sx={{
+          typography: "caption",
+          color: "text.secondary",
+          display: "block",
+          fontSize: 11,
+          ...INTAKE_TILE_LABEL_SX,
+        }}
+      >
+        {formatIntakeFileSize(file.size)}
+      </Box>
+    </Box>
+  );
 }
 
 interface WarrantyIntakeModalProps {
@@ -767,48 +869,67 @@ export function WarrantyIntakeModal({
               khi case bảo hành được tạo.
             </UiText>
           </Box>
-          <Stack
-            direction="row"
-            spacing={1}
-            sx={{ flexWrap: "wrap", rowGap: 1 }}
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(112px, 1fr))",
+              gap: 1.5,
+            }}
           >
             <AnimatedInlineList>
               {imageFiles.map((file, index) => (
                 <AnimatedInlineItem key={fileRowKey(file)}>
-                  <UiStatusBadge
-                    tone="neutral"
-                    label={file.name}
+                  <IntakeImageTile
+                    file={file}
                     onDelete={() =>
                       setImageFiles((current) =>
                         current.filter((_, i) => i !== index),
                       )
                     }
-                    deleteIcon={<DeleteOutlined />}
                   />
                 </AnimatedInlineItem>
               ))}
             </AnimatedInlineList>
-          </Stack>
-          {imageFiles.length < MAX_INTAKE_IMAGES ? (
-            <ActionButton
-              kind="upload"
-              component="label"
-              disabled={busy}
-              sx={{ mt: 1 }}
-            >
-              Tải ảnh
-              <input
-                type="file"
-                accept=".jpg,.jpeg,.png,.webp"
-                multiple
-                hidden
-                onChange={(event) => {
-                  addImageFiles(event.target.files);
-                  event.target.value = "";
+            {imageFiles.length < MAX_INTAKE_IMAGES ? (
+              <Box
+                component="label"
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 0.5,
+                  width: "100%",
+                  aspectRatio: "1 / 1",
+                  border: "1px dashed",
+                  borderColor: "divider",
+                  borderRadius: 2,
+                  color: "text.secondary",
+                  cursor: busy ? "not-allowed" : "pointer",
+                  opacity: busy ? 0.6 : 1,
+                  "&:hover": busy
+                    ? undefined
+                    : { borderColor: "primary.main", color: "primary.main" },
                 }}
-              />
-            </ActionButton>
-          ) : null}
+              >
+                <UploadOutlined style={{ fontSize: 18 }} />
+                <Box component="span" sx={{ typography: "caption" }}>
+                  Tải ảnh
+                </Box>
+                <input
+                  type="file"
+                  accept=".jpg,.jpeg,.png,.webp"
+                  multiple
+                  hidden
+                  disabled={busy}
+                  onChange={(event) => {
+                    addImageFiles(event.target.files);
+                    event.target.value = "";
+                  }}
+                />
+              </Box>
+            ) : null}
+          </Box>
         </Box>
 
         <Box>

@@ -11,6 +11,7 @@ import { LoadingState } from "@/shared/components/data-display/LoadingState";
 import { ROUTES } from "@/shared/constants/routes";
 import type { PublicApiError } from "@/shared/api/public-http";
 import { ActionButton } from "@/shared/components/actions";
+import { EMPTY_TEXT } from "@/shared/constants/display";
 
 /** Surface trắng token-hoá dùng chung trong màn chi tiết PV. */
 const CARD_SX = {
@@ -207,19 +208,19 @@ export default function PvProductDetailPage() {
                   items={[
                     {
                       label: "Thương hiệu",
-                      value: detail.brand_name ?? "—",
+                      value: detail.brand_name ?? EMPTY_TEXT,
                     },
                     {
                       label: "Nhóm hàng",
-                      value: detail.category_name ?? "—",
+                      value: detail.category_name ?? EMPTY_TEXT,
                     },
                     {
                       label: "Model",
-                      value: detail.model_name ?? "—",
+                      value: detail.model_name ?? EMPTY_TEXT,
                     },
                     {
                       label: "Nguồn điện",
-                      value: detail.power_source_name ?? "—",
+                      value: detail.power_source_name ?? EMPTY_TEXT,
                     },
                     ...specifications.map(([key, value]) => ({
                       label: key,

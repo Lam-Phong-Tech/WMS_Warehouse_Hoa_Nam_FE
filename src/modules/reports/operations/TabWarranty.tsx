@@ -24,6 +24,7 @@ import { DonutChart } from "@/shared/components/charts/DonutChart";
 import { LineChart } from "@/shared/components/charts/LineChart";
 import { HorizontalBarChart } from "@/shared/components/charts/HorizontalBarChart";
 import { CHART_COLORS } from "@/shared/components/charts/chart-theme";
+import { EMPTY_TEXT } from "@/shared/constants/display";
 import {
   axisDayLabel,
   dateSpan,
@@ -889,21 +890,21 @@ export default function TabWarranty() {
             width: 150,
             sortAccessor: (row) => row.caseNo,
             render: (row) => (
-              <Box sx={{ fontWeight: 700 }}>{row.caseNo || "—"}</Box>
+              <Box sx={{ fontWeight: 700 }}>{row.caseNo || EMPTY_TEXT}</Box>
             ),
           },
           {
             key: "model",
             header: "SKU máy",
             width: 150,
-            render: (row) => row.model || "—",
+            render: (row) => row.model || EMPTY_TEXT,
           },
           {
             key: "physicalCode",
             header: "Physical Code / Serial",
             width: 190,
             hideOnMobile: true,
-            render: (row) => row.physicalCode || "—",
+            render: (row) => row.physicalCode || EMPTY_TEXT,
           },
           {
             key: "status",
@@ -940,20 +941,20 @@ export default function TabWarranty() {
             header: "Phiếu xuất linh kiện",
             width: 180,
             hideOnMobile: true,
-            render: (row) => row.issueNo || "—",
+            render: (row) => row.issueNo || EMPTY_TEXT,
           },
           {
             key: "issuedAt",
             header: "Ngày xuất",
             width: 140,
             hideOnMobile: true,
-            render: (row) => (row.issuedAt ? fmtDate(row.issuedAt) : "—"),
+            render: (row) => (row.issuedAt ? fmtDate(row.issuedAt) : EMPTY_TEXT),
           },
           {
             key: "actor",
             header: "Người thực hiện",
             hideOnMobile: true,
-            render: (row) => row.actor || "—",
+            render: (row) => row.actor || EMPTY_TEXT,
           },
         ]}
         rows={componentPagination.pageRows}
@@ -1130,7 +1131,7 @@ export default function TabWarranty() {
             width: 150,
             sortAccessor: (row) => row.caseNo,
             render: (row) => (
-              <Box sx={{ fontWeight: 700 }}>{row.caseNo || "—"}</Box>
+              <Box sx={{ fontWeight: 700 }}>{row.caseNo || EMPTY_TEXT}</Box>
             ),
           },
           {
@@ -1140,7 +1141,7 @@ export default function TabWarranty() {
             sortAccessor: (row) => row.model,
             render: (row) => (
               <Box>
-                <Box>{row.model || "—"}</Box>
+                <Box>{row.model || EMPTY_TEXT}</Box>
                 <Box sx={{ fontSize: 12, color: "text.secondary" }}>
                   {row.skuName}
                 </Box>
@@ -1152,12 +1153,12 @@ export default function TabWarranty() {
             header: "Physical Code / Serial",
             width: 190,
             hideOnMobile: true,
-            render: (row) => row.physicalCode || "—",
+            render: (row) => row.physicalCode || EMPTY_TEXT,
           },
           {
             key: "defect",
             header: "Bệnh / lỗi",
-            render: (row) => row.defect || "—",
+            render: (row) => row.defect || EMPTY_TEXT,
           },
           {
             key: "status",
@@ -1175,14 +1176,14 @@ export default function TabWarranty() {
             header: "Ngày tiếp nhận",
             width: 150,
             sortAccessor: (row) => row.receivedAt,
-            render: (row) => (row.receivedAt ? fmtDate(row.receivedAt) : "—"),
+            render: (row) => (row.receivedAt ? fmtDate(row.receivedAt) : EMPTY_TEXT),
           },
           {
             key: "dueDate",
             header: "Dự kiến hoàn thành",
             width: 170,
             sortAccessor: (row) => row.dueDate,
-            render: (row) => (row.dueDate ? fmtDate(row.dueDate) : "—"),
+            render: (row) => (row.dueDate ? fmtDate(row.dueDate) : EMPTY_TEXT),
           },
           {
             key: "sla",
@@ -1204,13 +1205,13 @@ export default function TabWarranty() {
             key: "department",
             header: "Phòng ban",
             hideOnMobile: true,
-            render: (row) => row.department || "—",
+            render: (row) => row.department || EMPTY_TEXT,
           },
           {
             key: "assignee",
             header: "Người phụ trách",
             hideOnMobile: true,
-            render: (row) => row.assignee || "—",
+            render: (row) => row.assignee || EMPTY_TEXT,
           },
           {
             key: "componentCount",
@@ -1226,13 +1227,13 @@ export default function TabWarranty() {
             key: "customerName",
             header: "Khách hàng",
             hideOnMobile: true,
-            render: (row) => row.customerName || "—",
+            render: (row) => row.customerName || EMPTY_TEXT,
           },
           {
             key: "customerPhone",
             header: "SĐT",
             hideOnMobile: true,
-            render: (row) => row.customerPhone || "—",
+            render: (row) => row.customerPhone || EMPTY_TEXT,
           },
         ]}
         rows={casePagination.pageRows}
@@ -1309,12 +1310,12 @@ export default function TabWarranty() {
             <UiStatusBadge
               size="small"
               tone="neutral"
-              label={`Tiếp nhận: ${openCase.receivedAt ? fmtDate(openCase.receivedAt) : "—"}`}
+              label={`Tiếp nhận: ${openCase.receivedAt ? fmtDate(openCase.receivedAt) : EMPTY_TEXT}`}
             />
             <UiStatusBadge
               size="small"
               tone="neutral"
-              label={`Người phụ trách: ${openCase.assignee || "—"}`}
+              label={`Người phụ trách: ${openCase.assignee || EMPTY_TEXT}`}
             />
           </Stack>
 
@@ -1325,13 +1326,13 @@ export default function TabWarranty() {
               màn hình phải đọc được đúng giá trị đã che, không dính vào nhãn. */}
           <Box sx={{ typography: "body2", mb: 2, display: "grid", gap: 0.25 }}>
             <div>
-              Khách hàng: <b>{openCase.customerName || "—"}</b>
+              Khách hàng: <b>{openCase.customerName || EMPTY_TEXT}</b>
             </div>
             <div>
-              SĐT: <b>{openCase.customerPhone || "—"}</b>
+              SĐT: <b>{openCase.customerPhone || EMPTY_TEXT}</b>
             </div>
             <div>
-              Địa chỉ: <b>{openCase.customerAddress || "—"}</b>
+              Địa chỉ: <b>{openCase.customerAddress || EMPTY_TEXT}</b>
             </div>
           </Box>
 
@@ -1349,7 +1350,7 @@ export default function TabWarranty() {
                 key: "name",
                 header: "Tên linh kiện",
                 render: (row) =>
-                  catalog.byCode.get(row.skuCode)?.sku_name ?? "—",
+                  catalog.byCode.get(row.skuCode)?.sku_name ?? EMPTY_TEXT,
               },
               {
                 key: "qty",
@@ -1380,7 +1381,7 @@ export default function TabWarranty() {
                 Phiếu <b>{text(doc.component_issue_no)}</b> · trạng thái{" "}
                 {reportStatusLabel(doc.status)} · thời gian{" "}
                 {fmtDateTime(doc.posted_at ?? doc.document_date)} · người thực
-                hiện {openCase.assignee || "—"}
+                hiện {openCase.assignee || EMPTY_TEXT}
               </Box>
             );
           })()}
@@ -1418,14 +1419,14 @@ function CaseMiniTable({
           key: "caseNo",
           header: "Mã case",
           render: (row) => (
-            <Box sx={{ fontWeight: 700 }}>{row.caseNo || "—"}</Box>
+            <Box sx={{ fontWeight: 700 }}>{row.caseNo || EMPTY_TEXT}</Box>
           ),
         },
         { key: "model", header: "SKU / Model", render: (row) => row.model },
         {
           key: "defect",
           header: "Bệnh / lỗi",
-          render: (row) => row.defect || "—",
+          render: (row) => row.defect || EMPTY_TEXT,
         },
         {
           key: "status",
@@ -1435,7 +1436,7 @@ function CaseMiniTable({
         {
           key: "receivedAt",
           header: "Tiếp nhận",
-          render: (row) => (row.receivedAt ? fmtDate(row.receivedAt) : "—"),
+          render: (row) => (row.receivedAt ? fmtDate(row.receivedAt) : EMPTY_TEXT),
         },
         {
           key: "sla",

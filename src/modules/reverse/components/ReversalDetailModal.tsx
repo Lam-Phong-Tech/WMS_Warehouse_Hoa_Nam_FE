@@ -42,6 +42,7 @@ import { formatQuantity } from "@/shared/utils/format-number";
 import type { ReactNode } from "react";
 import { useDialogExit } from "@/shared/utils/useDialogExit";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
+import { EMPTY_TEXT } from "@/shared/constants/display";
 
 function qty(value?: number) {
   return formatQuantity(Number(value ?? 0));
@@ -228,13 +229,13 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
       header: "Giao dịch gốc",
       width: 160,
       // KHÔNG fallback sang original_movement_id (UUID) — thiếu mã thì "—".
-      render: (row) => row.original_movement_code || "—",
+      render: (row) => row.original_movement_code || EMPTY_TEXT,
     },
     {
       key: "serial",
       header: "Sản phẩm / Số sê-ri",
       width: 170,
-      render: (row) => row.serial_number || row.item_code || "-",
+      render: (row) => row.serial_number || row.item_code || EMPTY_TEXT,
     },
     {
       key: "original_qty",
@@ -275,7 +276,7 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
               row.return_condition,
               "Tình trạng khác",
             )
-          : "-",
+          : EMPTY_TEXT,
     },
     {
       key: "status",
@@ -437,7 +438,7 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
                       doc.correction_chain_id ? (
                         <CopyableId value={doc.correction_chain_id} />
                       ) : (
-                        "—"
+                        EMPTY_TEXT
                       )
                     }
                   />
@@ -476,14 +477,14 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
                   <DetailField label="Người tạo" value={doc.created_by} />
                   <DetailField
                     label="Thời điểm hoàn tất / người thực hiện"
-                    value={`${doc.reversed_at ? formatDateTime(doc.reversed_at) : "-"} · ${doc.posted_by ?? "-"}`}
+                    value={`${doc.reversed_at ? formatDateTime(doc.reversed_at) : EMPTY_TEXT} · ${doc.posted_by ?? EMPTY_TEXT}`}
                   />
                   <DetailField
                     label="Thông tin hủy"
                     value={
                       doc.cancelled_at
-                        ? `${formatDateTime(doc.cancelled_at)} · ${doc.cancel_reason ?? "-"}`
-                        : "-"
+                        ? `${formatDateTime(doc.cancelled_at)} · ${doc.cancel_reason ?? EMPTY_TEXT}`
+                        : EMPTY_TEXT
                     }
                   />
                 </Grid>

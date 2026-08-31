@@ -20,6 +20,7 @@ import {
 } from "@/shared/constants/business-labels";
 import { ActionIconButton } from "@/shared/components/actions";
 import { CopyableId } from "@/shared/components/data-display/CopyableId";
+import { EMPTY_TEXT } from "@/shared/constants/display";
 
 // Map preset màu antd Tag cũ → tone UiStatusBadge (cùng bảng với AuditLogsTable).
 const ACTION_TONES: Record<string, UiStatusTone> = {
@@ -207,7 +208,7 @@ export function AuditLogDetailDrawer({
                     />
                   </Stack>
                 ) : (
-                  "—"
+                  EMPTY_TEXT
                 )
               }
             />
