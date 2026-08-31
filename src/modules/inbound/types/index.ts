@@ -25,6 +25,8 @@ export interface InboundLine {
   productId: string;
   sku: string;
   skuName: string;
+  /** PRODUCT/COMPONENT gắn thẳng trên dòng (BE) — không phụ thuộc danh sách SKU tải sẵn (bị giới hạn per_page). */
+  productType: string;
   scanTarget: string;
   /** Compatibility field; canonical source is actual scan quantity. */
   expected: number;

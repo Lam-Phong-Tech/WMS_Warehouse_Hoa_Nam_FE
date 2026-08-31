@@ -862,7 +862,11 @@ export function InboundScanModal({
       header: "SKU",
       width: 220,
       render: (line) => {
-        const skuCode = skuById.get(line.productId)?.sku_code;
+        // Ưu tiên mã SKU đã gắn sẵn trên dòng (BE trả product_code/product_name
+        // qua quan hệ product — luôn đúng, không phụ thuộc trang nào). skuById chỉ
+        // là fallback cho dữ liệu cũ chưa qua BE này; bản thân nó bị giới hạn
+        // per_page nên KHÔNG chứa hết mọi SKU — không được coi là nguồn chính.
+        const skuCode = line.sku || skuById.get(line.productId)?.sku_code;
         return skuCode ? (
           <strong>{skuCode}</strong>
         ) : (
@@ -876,14 +880,18 @@ export function InboundScanModal({
       width: 250,
       render: (line) => {
         const sku = skuById.get(line.productId);
+        const name = line.skuName || sku?.sku_name;
+        // productType gắn thẳng trên dòng (BE) — nguồn chính, không phụ thuộc
+        // skuById (bị giới hạn per_page nên có thể miss SKU nằm ngoài trang đầu).
+        const productType = line.productType || sku?.sku_type;
         return (
           <div>
-            <div>{sku?.sku_name ?? EMPTY_TEXT}</div>
-            {sku?.sku_type ? (
+            <div>{name || EMPTY_TEXT}</div>
+            {productType ? (
               <UiStatusBadge
                 tone="neutral"
                 sx={{ mt: 0.5 }}
-                label={businessLabel(SKU_TYPE_LABELS, sku.sku_type)}
+                label={businessLabel(SKU_TYPE_LABELS, productType)}
               />
             ) : null}
           </div>

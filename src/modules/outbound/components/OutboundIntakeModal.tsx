@@ -1,8 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Box,
   Grid,
-  MenuItem,
   Stack,
   UiDialog,
   UiPagination,
@@ -11,6 +10,11 @@ import {
   UiTextField,
   type UiStatusTone,
 } from "@/shared/ui";
+// SKU sản phẩm cần gõ-để-lọc trên toàn danh mục (catalog lớn, không thể tải hết
+// vào 1 dropdown) — UiSelect/UiFormAutocomplete (RHF) không hợp; dùng thẳng MUI
+// Autocomplete cùng cách UiFormAutocomplete.tsx đã làm.
+import Autocomplete from "@mui/material/Autocomplete";
+import TextField from "@mui/material/TextField";
 import dayjs from "dayjs";
 import { toast } from "sonner";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -200,6 +204,47 @@ export function OutboundIntakeModal({
     value: sku.sku_id,
     label: `${sku.sku_code} · ${sku.sku_name}`,
   }));
+
+  // Ô "SKU sản phẩm" ở dòng nhập tay: catalog có thể lên tới hàng trăm/nghìn
+  // SKU nên KHÔNG được cắt cứng ở per_page như skuOptions phía trên (chỉ 100
+  // dòng đầu — nhiều SKU sẽ không bao giờ hiện). Gõ-để-lọc gọi BE theo keyword
+  // (ProductRepository::$searchable = sku_code/sku_name, LIKE cả 2 cột).
+  const [skuKeyword, setSkuKeyword] = useState("");
+  const skuSearchQuery = useMvpSkus({
+    status: "ACTIVE",
+    sku_type: "PRODUCT",
+    keyword: skuKeyword.trim(),
+    per_page: 50,
+  });
+  const skuSearchRows = skuSearchQuery.data?.data ?? [];
+  const skuSearchOptions = skuSearchRows.map((sku) => ({
+    value: sku.sku_id,
+    label: `${sku.sku_code} · ${sku.sku_name}`,
+  }));
+
+  // Nhãn hiển thị của SKU ĐÃ CHỌN phải bền vững qua mọi lần gõ tìm — nếu chỉ
+  // dựa vào skuSearchOptions (đổi theo keyword hiện tại), dòng đang không được
+  // gõ sẽ mất nhãn ngay khi kết quả tìm kiếm của dòng khác không còn chứa SKU
+  // đó (Autocomplete dùng chung 1 query keyword cho mọi dòng).
+  const [skuLabelById, setSkuLabelById] = useState<Map<string, string>>(
+    new Map(),
+  );
+  useEffect(() => {
+    const merged = [...skuOptions, ...skuSearchOptions];
+    if (merged.length === 0) return;
+    setSkuLabelById((prev) => {
+      let changed = false;
+      const next = new Map(prev);
+      for (const option of merged) {
+        if (next.get(option.value) !== option.label) {
+          next.set(option.value, option.label);
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- chỉ cần re-run khi 2 danh sách nguồn đổi, không phải mọi lần skuOptions/skuSearchOptions tạo lại tham chiếu.
+  }, [skuRows, skuSearchRows]);
   const agencyOptions = agencyRows.map((agency) => ({
     value: agency.agency_id,
     label: `${agency.agency_code} · ${agency.agency_name}`,
@@ -697,33 +742,53 @@ export function OutboundIntakeModal({
                         rowGap: 1,
                       }}
                     >
-                      <UiTextField
-                        select
-                        required
-                        label="SKU sản phẩm"
+                      <Autocomplete
+                        size="small"
                         sx={{ minWidth: 380 }}
-                        value={line.product_id}
-                        onChange={(event) => {
-                          updateLine(index, { product_id: event.target.value });
+                        options={skuSearchOptions}
+                        value={
+                          line.product_id
+                            ? {
+                                value: line.product_id,
+                                label:
+                                  skuLabelById.get(line.product_id) ??
+                                  line.product_id,
+                              }
+                            : null
+                        }
+                        onChange={(_event, next) => {
+                          updateLine(index, { product_id: next?.value ?? "" });
                           clearLineError(index);
                         }}
-                        error={Boolean(fieldErrors.lines[index]?.product_id)}
-                        helperText={fieldErrors.lines[index]?.product_id}
-                      >
-                        <MenuItem value="" disabled>
-                          Chỉ SKU sản phẩm đang sử dụng
-                        </MenuItem>
-                        {skuQuery.isLoading && skuOptions.length === 0 ? (
-                          <MenuItem value="__loading__" disabled>
-                            Đang tải...
-                          </MenuItem>
-                        ) : null}
-                        {skuOptions.map((option) => (
-                          <MenuItem key={option.value} value={option.value}>
-                            {option.label}
-                          </MenuItem>
-                        ))}
-                      </UiTextField>
+                        onInputChange={(_event, value, reason) => {
+                          if (reason === "input") setSkuKeyword(value);
+                        }}
+                        getOptionLabel={(option) => option.label}
+                        isOptionEqualToValue={(option, val) =>
+                          option.value === val.value
+                        }
+                        loading={skuSearchQuery.isFetching}
+                        noOptionsText={
+                          skuKeyword.trim()
+                            ? "Không tìm thấy SKU khớp từ khoá."
+                            : "Gõ mã hoặc tên SKU để tìm."
+                        }
+                        renderInput={(params) => (
+                          <TextField
+                            {...params}
+                            required
+                            label="SKU sản phẩm"
+                            placeholder="Gõ mã hoặc tên SKU..."
+                            error={Boolean(
+                              fieldErrors.lines[index]?.product_id,
+                            )}
+                            helperText={
+                              fieldErrors.lines[index]?.product_id ||
+                              "Chỉ SKU sản phẩm đang sử dụng"
+                            }
+                          />
+                        )}
+                      />
                       <UiTextField
                         required
                         type="number"

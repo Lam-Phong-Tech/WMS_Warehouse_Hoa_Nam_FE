@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Box,
   Grid,
-  MenuItem,
   Stack,
   UiAlert,
   UiDialog,
@@ -10,6 +9,10 @@ import {
   UiText,
   UiTextField,
 } from "@/shared/ui";
+// SKU linh kiện cần gõ-để-lọc trên toàn danh mục (catalog lớn, không thể tải
+// hết vào 1 dropdown) — cùng cách OutboundIntakeModal.tsx đã làm.
+import Autocomplete from "@mui/material/Autocomplete";
+import TextField from "@mui/material/TextField";
 import {
   ResponsiveDataTable,
   type ResponsiveTableColumn,
@@ -114,10 +117,16 @@ export function ComponentIssueModal({
     enabled: !documentId,
   });
   const warehouse = warehousesQuery.data?.[0];
+  // Catalog COMPONENT có thể lên tới hàng trăm/nghìn SKU — không thể cắt cứng
+  // ở per_page (per_page=100 cũ khiến SKU nằm ngoài trang đầu không bao giờ
+  // chọn được). Gõ-để-lọc gọi BE theo keyword (ProductRepository::$searchable
+  // = sku_code/sku_name, LIKE cả 2 cột), cùng cách OutboundIntakeModal.tsx.
+  const [skuKeyword, setSkuKeyword] = useState("");
   const skusQuery = useMvpSkus({
     sku_type: "COMPONENT",
     status: "ACTIVE",
-    per_page: 100,
+    keyword: skuKeyword.trim(),
+    per_page: 50,
   });
   // Giữ nguyên tham chiếu mảng options giữa các lần render (mỗi ký tự gõ vào
   // form đều render lại cả modal) để danh sách chọn SKU không phải dựng lại.
@@ -129,6 +138,28 @@ export function ComponentIssueModal({
       })),
     [skusQuery.data],
   );
+
+  // Nhãn hiển thị của SKU ĐÃ CHỌN phải bền vững qua mọi lần gõ tìm — nếu chỉ
+  // dựa vào skuOptions (đổi theo keyword hiện tại), dòng đang không được gõ sẽ
+  // mất nhãn ngay khi kết quả tìm kiếm của dòng khác không còn chứa SKU đó
+  // (mọi dòng dùng chung 1 query keyword).
+  const [skuLabelById, setSkuLabelById] = useState<Map<string, string>>(
+    new Map(),
+  );
+  useEffect(() => {
+    if (skuOptions.length === 0) return;
+    setSkuLabelById((prev) => {
+      let changed = false;
+      const next = new Map(prev);
+      for (const option of skuOptions) {
+        if (next.get(option.value) !== option.label) {
+          next.set(option.value, option.label);
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [skuOptions]);
 
   // Tồn khả dụng theo SKU đang chọn ở form tạo phiếu — chặn tạo phiếu khi SL
   // cần vượt tồn thực tế đang có (yêu cầu nghiệp vụ: không như xuất sản phẩm,
@@ -506,27 +537,49 @@ export function ComponentIssueModal({
                         rowGap: 1,
                       }}
                     >
-                      <UiTextField
-                        select
-                        required
-                        label="SKU linh kiện (COMPONENT)"
-                        placeholder="Chọn SKU linh kiện (COMPONENT)"
-                        value={line.sku_id}
-                        onChange={(event) =>
+                      <Autocomplete
+                        size="small"
+                        sx={{ minWidth: 360 }}
+                        options={skuOptions}
+                        value={
+                          line.sku_id
+                            ? {
+                                value: line.sku_id,
+                                label:
+                                  skuLabelById.get(line.sku_id) ??
+                                  line.sku_id,
+                              }
+                            : null
+                        }
+                        onChange={(_event, next) =>
                           updateDraftLine(index, {
-                            sku_id: event.target.value,
+                            sku_id: next?.value ?? "",
                           })
                         }
-                        error={Boolean(lineErrors[index]?.sku_id)}
-                        helperText={lineErrors[index]?.sku_id}
-                        sx={{ minWidth: 360 }}
-                      >
-                        {skuOptions.map((option) => (
-                          <MenuItem key={option.value} value={option.value}>
-                            {option.label}
-                          </MenuItem>
-                        ))}
-                      </UiTextField>
+                        onInputChange={(_event, value, reason) => {
+                          if (reason === "input") setSkuKeyword(value);
+                        }}
+                        getOptionLabel={(option) => option.label}
+                        isOptionEqualToValue={(option, val) =>
+                          option.value === val.value
+                        }
+                        loading={skusQuery.isFetching}
+                        noOptionsText={
+                          skuKeyword.trim()
+                            ? "Không tìm thấy SKU linh kiện khớp từ khoá."
+                            : "Gõ mã hoặc tên SKU linh kiện để tìm."
+                        }
+                        renderInput={(params) => (
+                          <TextField
+                            {...params}
+                            required
+                            label="SKU linh kiện (COMPONENT)"
+                            placeholder="Gõ mã hoặc tên SKU linh kiện..."
+                            error={Boolean(lineErrors[index]?.sku_id)}
+                            helperText={lineErrors[index]?.sku_id}
+                          />
+                        )}
+                      />
                       <UiTextField
                         required
                         type="number"

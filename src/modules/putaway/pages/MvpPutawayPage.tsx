@@ -977,13 +977,6 @@ export default function MvpPutawayPage() {
                       onScan={applyTrayScan}
                     />
                   </Box>
-                  <ActionButton
-                    kind="camera"
-                    disabled={!canManage || traysQuery.isLoading}
-                    onClick={() => setCameraOpen(true)}
-                  >
-                    Quét bằng camera
-                  </ActionButton>
                 </Stack>
                 <Box
                   sx={{

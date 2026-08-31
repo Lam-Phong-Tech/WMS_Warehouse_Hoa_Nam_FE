@@ -165,6 +165,7 @@ function normalizeLine(
     productId: text(row.product_id ?? row.sku_id),
     sku: text(row.sku ?? row.sku_code ?? row.product_sku ?? row.product_code),
     skuName: text(row.sku_name ?? row.product_name ?? row.name),
+    productType: text(row.sku_type ?? row.product_type),
     scanTarget: text(row.scan_target ?? row.lot_no ?? row.product_code, "-"),
     expected,
     scanned,
