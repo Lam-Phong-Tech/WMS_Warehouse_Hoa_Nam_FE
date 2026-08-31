@@ -56,6 +56,8 @@ export type InventoryBalanceRow = {
   boxQty: number;
   /** DR-LOC-001: gợi ý tương đối, không tạo bucket tồn và có thể rỗng. */
   containerCode: string;
+  /** Mã KHAY đang chứa hộp trên — chỉ có sau khi Putaway confirm, rỗng trước đó. */
+  trayCode: string;
   location: string;
   reconcile: "MATCH" | "MISMATCH" | string;
   reconcileNote: string;
@@ -299,6 +301,7 @@ function normalizeBalance(row: RawRecord): InventoryBalanceRow {
         row.qty_box,
     ),
     containerCode: text(row.container_code, ""),
+    trayCode: text(row.tray_code, ""),
     location: text(row.location_hint, ""),
     reconcile,
     reconcileNote: mismatchReason,

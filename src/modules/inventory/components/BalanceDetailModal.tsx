@@ -449,13 +449,22 @@ export function BalanceDetailModal({
               label="Cập nhật"
               value={balance.dataAsOf || balance.updatedAt || "-"}
             />
+            {/* DR-LOC-001: 3 mảnh thông tin vị trí độc lập, tách riêng vì mỗi
+              mảnh có thời điểm xuất hiện khác nhau — mã hộp có ngay sau nhập
+              kho; mã khay và vị trí chỉ có sau khi Putaway confirm, và vị trí
+              (mô tả rời, có thể do người xếp khay ghi tay) không nhất thiết
+              trùng mã khay. */}
             <DetailField
-              label="Vị trí gợi ý"
-              value={
-                [balance.containerCode, balance.location]
-                  .filter(Boolean)
-                  .join(" · ") || "Chưa có vị trí gợi ý"
-              }
+              label="Mã hộp"
+              value={balance.containerCode || "Chưa có"}
+            />
+            <DetailField
+              label="Mã khay"
+              value={balance.trayCode || "Chưa xếp khay"}
+            />
+            <DetailField
+              label="Vị trí"
+              value={balance.location || "Chưa có"}
             />
             {/* BE mới chỉ trả last_movement_id (UUID), chưa có movement_no
               tương ứng — hiển thị rút gọn + cho sao chép thay vì in chuỗi thô.

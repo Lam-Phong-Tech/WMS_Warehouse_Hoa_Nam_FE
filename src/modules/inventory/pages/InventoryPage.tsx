@@ -377,9 +377,16 @@ export default function InventoryPage() {
       key: "location",
       header: "Vị trí gợi ý",
       width: 160,
-      sortAccessor: (row) => row.containerCode || row.location || "",
+      sortAccessor: (row) => row.containerCode || row.trayCode || "",
       render: (row) => {
-        const parts = [row.containerCode, row.location].filter(Boolean);
+        // Danh sách chỉ cần 2 mã định danh để nhận ra ngay "đang ở đâu": mã hộp
+        // (container_code — có ngay sau khi nhập kho) và mã khay (tray_code —
+        // container_code của TRAY cha, chỉ có sau khi Putaway xếp hộp vào khay).
+        // Vị trí mô tả rời (location_hint) chi tiết hơn — xem ở "Xem chi tiết".
+        const parts = [
+          row.containerCode ? `Hộp ${row.containerCode}` : null,
+          row.trayCode ? `Khay ${row.trayCode}` : null,
+        ].filter((part): part is string => Boolean(part));
         if (parts.length === 0) {
           return <UiText variant="secondary">Chưa có vị trí gợi ý</UiText>;
         }

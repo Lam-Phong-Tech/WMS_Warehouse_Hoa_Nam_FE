@@ -556,6 +556,12 @@ interface StatusFormValues {
   confirmed_defect: string;
   cancel_reason: string;
   estimated_completion_date: string;
+  /**
+   * Chẩn đoán lúc tiếp nhận có thể sai — cho chọn lại bệnh/lỗi (danh mục) khi
+   * chuyển sang Đang sửa chữa/Đã hoàn tất. Rỗng = không đổi, giữ nguyên bệnh
+   * lỗi đã ghi trên phiếu (KHÔNG gửi defect_ids lên BE, xem submitStatus).
+   */
+  defect_ids: string[];
 }
 
 interface WarrantyDetailModalProps {
@@ -606,6 +612,7 @@ export function WarrantyDetailModal({
     confirmed_defect: "",
     cancel_reason: "",
     estimated_completion_date: "",
+    defect_ids: [],
   });
   const [correctOpen, setCorrectOpen] = useState(false);
   const [correctFieldErrors, setCorrectFieldErrors] = useState<
@@ -662,6 +669,26 @@ export function WarrantyDetailModal({
       defectForm.clearErrors("defect_ids");
     }
   }, [defectFieldError, defectForm]);
+
+  /**
+   * Ô chọn lại bệnh/lỗi trong dialog "Cập nhật trạng thái" (khác dialog "Sửa
+   * thông tin case" ở trên) — mini-form riêng vì mặc định PHẢI rỗng (không
+   * pre-fill bệnh lỗi hiện có của case), đúng yêu cầu "không chọn thì để
+   * trống, không đổi bệnh lỗi cũ".
+   */
+  const statusDefectForm = useForm<{ defect_ids: string[] }>({
+    defaultValues: { defect_ids: [] },
+  });
+
+  useEffect(() => {
+    const subscription = statusDefectForm.watch((values) => {
+      const defectIds = (values.defect_ids ?? []).filter(
+        (id): id is string => typeof id === "string",
+      );
+      setStatusForm((current) => ({ ...current, defect_ids: defectIds }));
+    });
+    return () => subscription.unsubscribe();
+  }, [statusDefectForm]);
 
   const [attachmentTypeOverride, setAttachmentTypeOverride] =
     useState<WarrantyAttachmentType | null>(null);
@@ -769,6 +796,16 @@ export function WarrantyDetailModal({
   const submitStatus = async () => {
     if (!detail) return;
     if (!validateStatusForm()) return;
+    // Chỉ gửi defect_ids khi ô chọn lại thực sự hiện (Đang sửa chữa/Đã hoàn
+    // tất) VÀ người dùng có chọn — BE validate defect_ids (nếu có mặt) phải
+    // là mảng min:1, còn field vắng mặt thì case giữ nguyên bệnh lỗi cũ.
+    // KHÔNG BAO GIỜ gửi mảng rỗng.
+    const defectIds =
+      statusValue &&
+      WARRANTY_DIAGNOSIS_REQUIRED_TARGETS.includes(statusValue) &&
+      statusForm.defect_ids.length > 0
+        ? statusForm.defect_ids
+        : undefined;
     try {
       const updated = await updateMutation.mutateAsync({
         id: detail.id,
@@ -779,6 +816,7 @@ export function WarrantyDetailModal({
           cancel_reason: statusForm.cancel_reason.trim() || undefined,
           estimated_completion_date:
             statusForm.estimated_completion_date || undefined,
+          defect_ids: defectIds,
           ifMatch: detail.version,
         },
       });
@@ -793,7 +831,9 @@ export function WarrantyDetailModal({
         confirmed_defect: "",
         cancel_reason: "",
         estimated_completion_date: "",
+        defect_ids: [],
       });
+      statusDefectForm.reset({ defect_ids: [] });
       setStatusFieldErrors({});
       setStatusOpen(false);
     } catch (error: unknown) {
@@ -1124,7 +1164,9 @@ export function WarrantyDetailModal({
                   cancel_reason: "",
                   estimated_completion_date:
                     detail.estimated_completion_date ?? "",
+                  defect_ids: [],
                 });
+                statusDefectForm.reset({ defect_ids: [] });
                 setStatusFieldErrors({});
                 setStatusOpen(true);
               }}
@@ -2236,6 +2278,21 @@ export function WarrantyDetailModal({
                   inputLabel: { shrink: true },
                   htmlInput: { min: dayjs().format("YYYY-MM-DD") },
                 }}
+              />
+            ) : null}
+            {statusValue && WARRANTY_DIAGNOSIS_REQUIRED_TARGETS.includes(statusValue) ? (
+              // Chẩn đoán lúc tiếp nhận (defect_ids gốc) có thể sai — cho chọn
+              // lại bệnh/lỗi ngay khi chuyển sang Đang sửa chữa/Đã hoàn tất.
+              // Mặc định RỖNG (không pre-fill bệnh lỗi hiện có của case):
+              // không chọn gì thì submitStatus không gửi defect_ids, case giữ
+              // nguyên bệnh lỗi cũ.
+              <UiFormAutocomplete
+                control={statusDefectForm.control}
+                name="defect_ids"
+                multiple
+                options={defectOptions}
+                label="Chọn lại bệnh / lỗi (không bắt buộc)"
+                placeholder="Để trống nếu chẩn đoán ban đầu vẫn đúng"
               />
             ) : null}
             {statusValue && WARRANTY_DIAGNOSIS_REQUIRED_TARGETS.includes(statusValue) ? (
