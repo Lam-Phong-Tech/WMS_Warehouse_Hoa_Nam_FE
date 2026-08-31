@@ -1,81 +1,192 @@
 /**
- * SideNav — sidebar nghiệp vụ trên nền design system (Part 4 shell swap).
+ * SideNav — thanh điều hướng bám 1:1 demo UI/UX đã chốt
+ * `1.WMS_Hoa_Nam_Sidebar_Demo.html` (2026-08-31), theo Vuexy.
  *
- * - Data từ nav-data.ts (nguồn nav DUY NHẤT — NAV-01); visibility theo
- *   ROUTE_PERMISSIONS + hasAnyWmsPermission (RBAC domain, không theo screen-id).
- * - Style Vuexy SÁNG 100% bằng token/sx (SEMANTIC_LIGHT/MOTION) — các class
- *   `hn-mvp-*` GIỮ LẠI thuần tuý làm test-hook (E2E wwhn-144), không còn CSS.
- * - Điều hướng giữ dạng `path?screen=<id>` — hợp đồng URL của E2E/deep-link;
- *   việc render màn thuộc route+RequirePermission (bypass ?screen= đã gỡ ở
- *   MainLayout — SEC-RBAC-01).
+ * Hình học/màu/motion KHÔNG ước lượng lại tại đây: mọi con số đọc từ
+ * COMPONENT_TOKENS.nav (đo từ demo). Cấu trúc 3 loại hàng đúng demo:
+ *   1. hàng phẳng (direct)   — icon + nhãn, không sổ;
+ *   2. tiêu đề nhóm (group)  — icon + nhãn + chevron xoay 180° khi mở;
+ *   3. mục con (child)       — KHÔNG icon, đánh dấu bằng chấm tròn viền,
+ *      mục đang chọn tô gradient tím + đổ bóng.
+ *
+ * Thao tác đúng demo: accordion chỉ-một-nhóm-mở; thu gọn thì đóng hết và nhớ
+ * nhóm đang mở để mở lại khi bung; ở rail chỉ còn icon + tooltip; bấm logo để
+ * bung; rê chuột/focus vào rail thì "he mở" tạm (peek — do UiAppShell +
+ * MainLayout điều phối vì nó đụng tới cột lưới của shell).
+ *
+ * Data từ nav-data.ts (nguồn nav DUY NHẤT — NAV-01); visibility theo
+ * ROUTE_PERMISSIONS + hasAnyWmsPermission (RBAC domain, không theo screen-id).
+ * Các class `hn-mvp-*` GIỮ LẠI thuần tuý làm test-hook (E2E wwhn-144).
+ * Điều hướng giữ dạng `path?screen=<id>` — hợp đồng URL của E2E/deep-link.
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactElement } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Box, Collapse, UiIcon, UiIconButton } from "@/shared/ui";
-import {
-  COMPONENT_TOKENS,
-  MOTION,
-  RADIUS,
-  SEMANTIC_LIGHT as S,
-  TYPOGRAPHY,
-} from "@/shared/ui/tokens";
+import { Box, Tooltip, VuexyNavIcon } from "@/shared/ui";
+import { COMPONENT_TOKENS, SEMANTIC_LIGHT as S } from "@/shared/ui/tokens";
 import {
   DEFAULT_SCREEN_BY_PATH,
   getVisibleNavGroups,
   matchesPath,
   normalizeScreen,
+  type NavGroupData,
+  type NavItemData,
 } from "@/app/layouts/nav-data";
 import { useAuthStore } from "@/shared/store/auth.store";
 
-/**
- * HÌNH HỌC CÂY ĐIỀU HƯỚNG (phản hồi người dùng 2026-08-29: trang con không
- * thụt vào nên nhìn ngang hàng với tiêu đề nhóm, gây nhầm cấp).
- *
- * Tiêu đề nhóm: padding-left 12 + icon 16 + gap 10 ⇒ CHỮ bắt đầu ở 38px.
- * Trang con canh icon của nó thẳng cột chữ đó — đủ để thấy quan hệ cha–con mà
- * không cần vẽ thêm đường kẻ dọc.
- */
-const NAV_GROUP_PADDING_X = 12;
-const NAV_ICON_SIZE = COMPONENT_TOKENS.icon.sm;
-const NAV_ICON_GAP = 10;
-/**
- * Lề trái của mục con: icon của nó thẳng cột CHỮ của tiêu đề nhóm. Chỉ thụt
- * lề, KHÔNG kẻ đường dọc (yêu cầu người dùng 2026-08-29).
- */
-const NAV_ITEM_INDENT = NAV_GROUP_PADDING_X + NAV_ICON_SIZE + NAV_ICON_GAP;
+const NAV = COMPONENT_TOKENS.nav;
+const C = NAV.color;
 
-const itemButtonSx = (active: boolean, paddingLeft: number) =>
-  ({
-    display: "flex",
-    alignItems: "center",
-    gap: `${NAV_ICON_GAP}px`,
+/** Tooltip của demo: hiện sau 700ms, đi tiếp sang mục kế chỉ chờ 300ms. */
+const TOOLTIP_ENTER_DELAY = 700;
+const TOOLTIP_ENTER_NEXT_DELAY = 300;
+
+/**
+ * Tooltip CHỈ cho hàng menu ở rail thu gọn — lúc đó hàng chỉ còn icon nên cần
+ * tooltip mới biết là mục gì. Khi MỞ RỘNG, nhãn đã hiện đầy đủ nên tooltip chỉ
+ * gây rối (phản hồi người dùng 2026-08-31: bỏ cái "chữ xám" khi rê chuột) —
+ * `enabled=false` thì render thẳng nút, không bọc Tooltip.
+ */
+function NavRowTooltip({
+  enabled,
+  title,
+  children,
+}: {
+  enabled: boolean;
+  title: string;
+  children: ReactElement;
+}) {
+  if (!enabled) return children;
+  return (
+    <Tooltip
+      title={title}
+      placement="right"
+      enterDelay={TOOLTIP_ENTER_DELAY}
+      enterNextDelay={TOOLTIP_ENTER_NEXT_DELAY}
+    >
+      {children}
+    </Tooltip>
+  );
+}
+
+const ACTIVE_GRADIENT = `linear-gradient(${NAV.activeGradientAngle}, ${S.primary}, ${C.activeGradientEnd})`;
+
+/** Nền/chữ của mục ĐANG CHỌN — gradient tím + bóng, đúng demo. */
+const activeSurfaceSx = {
+  background: ACTIVE_GRADIENT,
+  boxShadow: NAV.shadow.activeItem,
+  color: S.onPrimary,
+  // Giữ nguyên gradient khi rê chuột (không nhạt đi thành màu hover).
+  "&:hover": { background: ACTIVE_GRADIENT },
+} as const;
+
+const focusRingSx = {
+  outline: `2px solid ${C.focus}`,
+  outlineOffset: "2px",
+} as const;
+
+const rowResetSx = {
+  display: "flex",
+  alignItems: "center",
+  border: 0,
+  textAlign: "left" as const,
+  textDecoration: "none",
+  cursor: "pointer",
+  fontFamily: "inherit",
+} as const;
+
+/**
+ * Hàng CẤP 1 (direct + tiêu đề nhóm). `highlighted` = nhóm đang mở hoặc đang
+ * chứa mục active → nền hover + chữ đậm màu mực (demo: .is-open/.has-active).
+ */
+function topRowSx(rail: boolean, highlighted: boolean) {
+  return {
+    ...rowResetSx,
+    position: "relative" as const,
+    width: rail ? `${NAV.railItemSize}px` : "100%",
+    minHeight: rail ? NAV.railItemSize : NAV.itemMinHeight,
+    margin: rail ? `${NAV.railItemMarginY}px auto` : 0,
+    justifyContent: rail ? "center" : "flex-start",
+    gap: rail ? 0 : `${NAV.itemGap}px`,
+    padding: rail ? 0 : `${NAV.itemPaddingY}px ${NAV.itemPaddingX}px`,
+    borderRadius: `${NAV.radius}px`,
+    backgroundColor: highlighted ? C.hover : "transparent",
+    color: highlighted ? S.textStrong : C.itemText,
+    fontSize: NAV.itemFontSize,
+    fontWeight: NAV.itemFontWeight,
+    letterSpacing: 0,
+    textTransform: "none" as const,
+    "&:hover": { backgroundColor: C.hover },
+    "&:focus-visible": focusRingSx,
+  };
+}
+
+/** Chấm tròn viền đứng trước mục con (demo: .hnw-child::before). */
+function markerSx(color: string) {
+  return {
+    content: '""',
+    position: "absolute" as const,
+    left: `${NAV.markerLeft}px`,
+    top: "50%",
+    transform: "translateY(-50%)",
+    width: `${NAV.markerSize}px`,
+    height: `${NAV.markerSize}px`,
+    border: `${NAV.markerBorderWidth}px solid ${color}`,
+    borderRadius: "50%",
+  };
+}
+
+/** Mục con — không icon, thụt 43px, chữ đậm màu mực (đậm hơn hàng cấp 1). */
+function childRowSx(active: boolean) {
+  return {
+    ...rowResetSx,
+    position: "relative" as const,
     width: "100%",
-    minHeight: 38,
-    padding: `8px ${NAV_GROUP_PADDING_X}px 8px ${paddingLeft}px`,
-    border: "none",
-    borderRadius: `${RADIUS.control}px`,
-    cursor: "pointer",
-    textAlign: "left" as const,
-    fontFamily: "inherit",
-    fontSize: TYPOGRAPHY.fontSizeBody,
-    backgroundColor: active ? S.primary : "transparent",
-    color: active ? S.onPrimary : S.textHigh,
-    transition: `background-color ${MOTION.duration.fast}ms ${MOTION.easing.standard}, color ${MOTION.duration.fast}ms ${MOTION.easing.standard}`,
-    "&:hover": {
-      backgroundColor: active ? S.primary : S.primarySoft,
-    },
-    "&:focus-visible": {
-      outline: "none",
-      boxShadow: S.focusRing,
-    },
-  }) as const;
+    minHeight: NAV.childMinHeight,
+    gap: `${NAV.itemGap}px`,
+    margin: `${NAV.childMarginY}px 0`,
+    padding: `${NAV.childPaddingY}px ${NAV.itemPaddingX}px ${NAV.childPaddingY}px ${NAV.childPaddingLeft}px`,
+    borderRadius: `${NAV.radius}px`,
+    fontSize: NAV.itemFontSize,
+    fontWeight: NAV.itemFontWeight,
+    ...(active
+      ? activeSurfaceSx
+      : {
+          background: "transparent",
+          color: S.textStrong,
+          "&:hover": { backgroundColor: C.hover },
+        }),
+    "&::before": markerSx(active ? S.onPrimary : C.marker),
+    "&:focus-visible": focusRingSx,
+  };
+}
+
+/** Nhãn 1 dòng, tràn thì cắt ellipsis (tooltip bù lại phần chữ bị cắt). */
+const labelSx = {
+  minWidth: 0,
+  flex: 1,
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+} as const;
+
+const liveRegionSx = {
+  position: "absolute",
+  width: "1px",
+  height: "1px",
+  padding: 0,
+  margin: "-1px",
+  overflow: "hidden",
+  clip: "rect(0, 0, 0, 0)",
+  whiteSpace: "nowrap",
+  border: 0,
+} as const;
 
 export interface SideNavProps {
-  /** true khi thanh bên đang ở chế độ thu gọn (chỉ còn dải icon nhóm). */
+  /** true khi thanh bên đang ở chế độ thu gọn (chỉ còn dải icon). */
   collapsed?: boolean;
-  /** Yêu cầu mở lại thanh bên đầy đủ (gọi khi bấm icon nhóm lúc đang thu gọn). */
+  /** Yêu cầu mở lại thanh bên đầy đủ (bấm logo, hoặc bấm icon nhóm ở rail). */
   onExpand?: () => void;
-  /** Đảo trạng thái thu gọn — nút đóng/mở nằm ngay trong thanh bên. */
+  /** Đảo trạng thái thu gọn — nút tròn nằm ngay trong khối brand. */
   onToggle?: () => void;
 }
 
@@ -95,258 +206,362 @@ export function SideNav({
 
   const visibleGroups = getVisibleNavGroups(permissionCodes, isSuperAdmin);
 
+  const isItemActive = (item: NavItemData) =>
+    (selectedScreen === item.screen || !selectedScreen) &&
+    matchesPath(location.pathname, item.path);
+
   const activeGroupName = visibleGroups.find((group) =>
-    group.items.some(
-      (item) =>
-        (selectedScreen === item.screen || !selectedScreen) &&
-        matchesPath(location.pathname, item.path),
-    ),
+    group.items.some(isItemActive),
   )?.name;
+  const activeLabel = visibleGroups
+    .flatMap((group) => group.items)
+    .find(isItemActive)?.label;
 
-  // Mặc định TẤT CẢ nhóm đóng (yêu cầu người dùng 2026-08-28) — người dùng
-  // bấm vào tiêu đề nhóm mới sổ ra các trang con; nhóm đang active vẫn tự mở
-  // lại khi điều hướng tới (effect bên dưới), chỉ không áp dụng ở lần mount
-  // đầu để giữ đúng trạng thái "chưa mở" khi vào ứng dụng.
-  //
-  // Kiểu accordion "flush" (Bootstrap) — CHỈ MỘT nhóm mở tại một thời điểm,
-  // sổ nhóm này thì nhóm khác tự đóng (yêu cầu người dùng 2026-08-30) — nên
-  // dùng 1 giá trị duy nhất thay vì Set nhiều nhóm mở song song.
+  // Accordion "flush": CHỈ MỘT nhóm mở tại một thời điểm. Mặc định đóng hết —
+  // vào ứng dụng thấy trọn cây menu, bấm tiêu đề nhóm mới sổ.
   const [openGroup, setOpenGroup] = useState<string | null>(null);
-  // Chốt activeGroupName lúc mount làm mốc so sánh — dùng giá trị khởi tạo
-  // (không phải ref rỗng + cờ "lần đầu") để miễn nhiễm với StrictMode gọi
-  // effect 2 lần ở dev: cờ boolean bị effect đầu tiêu thụ mất, effect thứ hai
-  // (cùng lượt mount) sẽ lọt qua guard và tự mở nhóm ngay khi vào ứng dụng.
+  // Chốt activeGroupName lúc mount làm mốc so sánh — miễn nhiễm StrictMode.
   const previousActiveGroupRef = useRef(activeGroupName);
+  // Nhóm mở gần nhất — thu gọn thì đóng hết, bung ra thì mở lại đúng nhóm đó
+  // (demo: lastOpen + restoreOpenSection/closeAllSections).
+  const lastOpenGroupRef = useRef<string | null>(null);
 
-  // Điều hướng SANG route khác → tự mở nhóm active mới (đóng nhóm cũ theo
-  // đúng hành vi accordion); không tự mở ở lần mount đầu (giữ đúng "mặc định
-  // mọi nhóm đóng").
+  // Điều hướng SANG route khác → tự mở nhóm active mới.
   useEffect(() => {
     const previousActiveGroup = previousActiveGroupRef.current;
     previousActiveGroupRef.current = activeGroupName;
     if (!activeGroupName || previousActiveGroup === activeGroupName) return;
     setOpenGroup(activeGroupName);
+    lastOpenGroupRef.current = activeGroupName;
   }, [activeGroupName]);
+
+  // Thu gọn ⇄ bung (kể cả lúc "he mở" khi rê chuột vào rail).
+  useEffect(() => {
+    if (collapsed) {
+      setOpenGroup((previous) => {
+        if (previous) lastOpenGroupRef.current = previous;
+        return null;
+      });
+    } else {
+      setOpenGroup(lastOpenGroupRef.current);
+    }
+  }, [collapsed]);
 
   const handleGroupHeaderClick = (name: string) => {
     if (collapsed) {
+      // Ở rail: bấm icon nhóm vừa bung sidebar vừa sổ đúng nhóm đó.
       onExpand?.();
       setOpenGroup(name);
+      lastOpenGroupRef.current = name;
       return;
     }
-    setOpenGroup((prev) => (prev === name ? null : name));
+    setOpenGroup((previous) => {
+      const next = previous === name ? null : name;
+      if (next) lastOpenGroupRef.current = next;
+      return next;
+    });
+  };
+
+  const goTo = (item: NavItemData) =>
+    navigate(`${item.path}?screen=${item.screen}`);
+
+  /** Hàng phẳng: bấm là đi thẳng + đóng mọi nhóm đang sổ (đúng demo). */
+  const handleDirectClick = (item: NavItemData) => {
+    setOpenGroup(null);
+    lastOpenGroupRef.current = null;
+    goTo(item);
+  };
+
+  const renderDirect = (group: NavGroupData) => {
+    const item = group.items[0];
+    if (!item) return null;
+    const active = isItemActive(item);
+    return (
+      <NavRowTooltip key={group.name} enabled={collapsed} title={item.label}>
+        <Box
+          component="button"
+          type="button"
+          className={`hn-mvp-nav-btn hn-mvp-direct${active ? " active" : ""}`}
+          aria-current={active ? "page" : undefined}
+          onClick={() => handleDirectClick(item)}
+          sx={{
+            ...topRowSx(collapsed, active && collapsed),
+            // Ở rail, mục đang chọn chỉ tô nền hover (demo); khi mở rộng thì
+            // tô gradient như mục con để trạng thái "đang ở đây" nhất quán.
+            ...(active && !collapsed ? activeSurfaceSx : null),
+          }}
+        >
+          <Box component="span" sx={{ display: "inline-flex", flexShrink: 0 }}>
+            <VuexyNavIcon name={group.icon} size={NAV.iconSize} />
+          </Box>
+          {!collapsed ? (
+            <Box component="span" sx={labelSx}>
+              {item.label}
+            </Box>
+          ) : null}
+        </Box>
+      </NavRowTooltip>
+    );
+  };
+
+  const renderGroup = (group: NavGroupData, index: number) => {
+    const open = openGroup === group.name && !collapsed;
+    const hasActive = group.items.some(isItemActive);
+    const submenuId = `hn-nav-submenu-${index}`;
+    return (
+      <Box
+        component="section"
+        key={group.name}
+        aria-label={group.name}
+        sx={{
+          // Rail: gạch 22px tách cụm ngay trên nhóm (demo: reports/system).
+          ...(collapsed && group.railDivider
+            ? {
+                position: "relative",
+                marginTop: `${NAV.railDividerGapTop}px`,
+                paddingTop: `${NAV.railDividerPadTop}px`,
+                "&::before": {
+                  content: '""',
+                  position: "absolute",
+                  top: 0,
+                  left: "50%",
+                  width: `${NAV.railDividerWidth}px`,
+                  height: "1px",
+                  backgroundColor: C.border,
+                  transform: "translateX(-50%)",
+                },
+              }
+            : null),
+        }}
+      >
+        <NavRowTooltip enabled={collapsed} title={group.name}>
+          <Box
+            component="button"
+            type="button"
+            className="hn-mvp-group"
+            onClick={() => handleGroupHeaderClick(group.name)}
+            aria-expanded={open}
+            aria-controls={submenuId}
+            sx={topRowSx(collapsed, open || hasActive)}
+          >
+            <Box
+              component="span"
+              sx={{ display: "inline-flex", flexShrink: 0 }}
+            >
+              <VuexyNavIcon name={group.icon} size={NAV.iconSize} />
+            </Box>
+            {!collapsed ? (
+              <>
+                <Box component="span" sx={labelSx}>
+                  {group.name}
+                </Box>
+                <Box
+                  component="span"
+                  aria-hidden="true"
+                  sx={{
+                    display: "inline-flex",
+                    flexShrink: 0,
+                    transform: open ? "rotate(180deg)" : "rotate(0deg)",
+                    transition: `transform ${NAV.motion.chevron}ms ${NAV.motion.easing}`,
+                    "@media (prefers-reduced-motion: reduce)": {
+                      transition: "none",
+                    },
+                  }}
+                >
+                  <VuexyNavIcon name="chevron-down" size={NAV.chevronSize} />
+                </Box>
+              </>
+            ) : null}
+          </Box>
+        </NavRowTooltip>
+
+        {/*
+         * Sổ bằng grid-template-rows 0fr → 1fr (đúng demo): con giữ nguyên
+         * chiều cao tự nhiên, không cần đo bằng JS. Khi đóng: aria-hidden +
+         * inert ⇒ vừa khoá tab/trợ năng, vừa khiến truy vấn theo role bỏ qua.
+         */}
+        <Box
+          id={submenuId}
+          className="hn-mvp-submenu"
+          aria-hidden={!open}
+          inert={!open}
+          sx={{
+            display: collapsed ? "none" : "grid",
+            gridTemplateRows: open ? "1fr" : "0fr",
+            opacity: open ? 1 : 0,
+            transition: `grid-template-rows ${NAV.motion.submenu}ms ${NAV.motion.easing}, opacity ${NAV.motion.submenuOpacity}ms ${NAV.motion.easing}`,
+            "@media (prefers-reduced-motion: reduce)": { transition: "none" },
+          }}
+        >
+          <Box sx={{ minHeight: 0, overflow: "hidden" }}>
+            {group.items.map((item) => {
+              const active = isItemActive(item);
+              // Mục con CHỈ hiện khi mở rộng (rail ẩn cả submenu) nên nhãn luôn
+              // thấy — KHÔNG bọc tooltip (phản hồi người dùng 2026-08-31).
+              return (
+                <Box
+                  key={item.screen}
+                  component="button"
+                  type="button"
+                  className={`hn-mvp-nav-btn${active ? " active" : ""}`}
+                  aria-current={active ? "page" : undefined}
+                  onClick={() => goTo(item)}
+                  sx={childRowSx(active)}
+                >
+                  <Box component="span" sx={labelSx}>
+                    {item.label}
+                  </Box>
+                </Box>
+              );
+            })}
+          </Box>
+        </Box>
+      </Box>
+    );
   };
 
   return (
     <Box
-      component="nav"
-      data-testid="primary-navigation"
-      aria-label="Điều hướng chính"
       sx={{
-        px: 1.5,
-        py: 1.5,
-        display: "grid",
-        // minmax(0, 1fr) thay cho 1fr mặc định: item lưới mặc định có
-        // `min-width: auto` nên cột bị NỞ theo nội dung rộng nhất — kể cả nội
-        // dung đang ẩn trong <Collapse> (nhãn menu dài, whiteSpace: nowrap).
-        // Hậu quả ở rail thu gọn 72px: cả khối con vẫn được dàn ở ~299px rồi
-        // bị aside cắt đi, nên nút thu gọn nằm lọt ra ngoài vùng nhìn thấy.
-        gridTemplateColumns: "minmax(0, 1fr)",
-        gap: 0.5,
+        display: "flex",
+        flexDirection: "column",
+        minHeight: "100%",
+        color: S.textStrong,
       }}
     >
-      {/* Brand + nút thu gọn */}
+      {/* Brand: logo + tên + nút thu gọn tròn (demo: .hnw-brand) */}
       <Box
+        component="header"
         className="hn-mvp-brand"
         sx={{
           display: "flex",
-          // Rail thu gọn chỉ rộng 72px, không đủ cho logo 36px + nút 38px nằm
-          // ngang: nút sẽ bị đẩy ra ngoài và bị cắt mất, khiến người dùng
-          // không còn chỗ bấm để mở lại menu. Thu gọn thì xếp dọc, căn giữa.
-          flexDirection: collapsed ? "column" : "row",
           alignItems: "center",
-          gap: 1.25,
-          px: 1,
-          pb: 1.5,
+          justifyContent: collapsed ? "center" : "flex-start",
+          gap: collapsed ? 0 : `${NAV.brand.gap}px`,
+          minHeight: NAV.brand.height,
+          padding: collapsed
+            ? 0
+            : `0 ${NAV.brand.paddingRight}px 0 ${NAV.brand.paddingLeft}px`,
         }}
       >
-        <Box
-          className="hn-mvp-logo"
-          aria-hidden="true"
-          sx={{
-            width: 36,
-            height: 36,
-            borderRadius: `${RADIUS.control}px`,
-            backgroundColor: S.primary,
-            color: S.onPrimary,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontWeight: 700,
-            flexShrink: 0,
-          }}
+        <Tooltip
+          title={collapsed ? "Mở rộng thanh điều hướng" : ""}
+          placement="right"
+          enterDelay={TOOLTIP_ENTER_DELAY}
+          enterNextDelay={TOOLTIP_ENTER_NEXT_DELAY}
         >
-          HN
-        </Box>
+          <Box
+            component="button"
+            type="button"
+            className="hn-mvp-logo"
+            aria-label={
+              collapsed ? "Mở rộng thanh điều hướng" : "Biểu trưng Hoa Nam WMS"
+            }
+            onClick={() => {
+              if (collapsed) onExpand?.();
+            }}
+            sx={{
+              display: "grid",
+              placeItems: "center",
+              flex: `0 0 ${collapsed ? NAV.brand.logoSize : NAV.brand.logoBasisExpanded}px`,
+              width: NAV.brand.logoSize,
+              height: NAV.brand.logoSize,
+              padding: 0,
+              border: 0,
+              borderRadius: `${NAV.brand.logoRadius}px`,
+              backgroundColor: S.primary,
+              color: S.onPrimary,
+              fontFamily: "inherit",
+              fontSize: NAV.brand.logoFontSize,
+              fontWeight: NAV.brand.logoFontWeight,
+              letterSpacing: NAV.brand.logoLetterSpacing,
+              // Chỉ bấm được khi đang thu gọn (demo: cursor default lúc mở).
+              cursor: collapsed ? "pointer" : "default",
+              "&:focus-visible": focusRingSx,
+            }}
+          >
+            HN
+          </Box>
+        </Tooltip>
+
         {!collapsed ? (
           <Box
             component="h1"
             sx={{
               margin: 0,
-              fontSize: TYPOGRAPHY.cardTitle.fontSize,
-              fontWeight: TYPOGRAPHY.cardTitle.fontWeight,
-              color: S.textHigh,
+              minWidth: 0,
+              flex: 1,
+              overflow: "hidden",
+              fontSize: NAV.brand.nameFontSize,
+              fontWeight: NAV.brand.nameFontWeight,
+              color: S.textStrong,
               whiteSpace: "nowrap",
             }}
           >
             Hoa Nam WMS
           </Box>
         ) : null}
-        {onToggle ? (
-          <UiIconButton
-            className="hn-mvp-aside-toggle"
-            onClick={onToggle}
-            aria-label={collapsed ? "Hiện menu" : "Ẩn menu"}
-            aria-pressed={collapsed}
-            title={collapsed ? "Hiện menu" : "Ẩn menu"}
-            sx={{
-              // Thu gọn: đã xếp dọc nên bỏ marginLeft:auto, nếu giữ thì nút bị
-              // đẩy khỏi rail. Mở rộng: vẫn đẩy nút về sát mép phải.
-              marginLeft: collapsed ? 0 : "auto",
-              flexShrink: 0,
-              // 38×38: đạt cỡ chạm tối thiểu (32×32 cũ quá nhỏ cho ngón tay).
-              width: 38,
-              height: 38,
-              // Vuông bo góc + viền + nền: nút trông "bấm được" thay vì một
-              // ký tự mũi tên trơn lẫn vào nền sidebar.
-              borderRadius: `${RADIUS.control}px`,
-              border: "1px solid",
-              borderColor: S.border,
-              backgroundColor: S.bgSurface,
-              color: S.textMedium,
-              "&:hover": {
-                backgroundColor: S.primarySoft,
-                borderColor: S.primary,
-                color: S.primary,
-              },
-            }}
-          >
-            {/* Một icon hamburger cho cả hai trạng thái — quy ước quen thuộc
-                cho nút bật/tắt menu, người dùng không phải đoán hướng mũi tên.
-                Trạng thái đóng/mở vẫn được truyền cho trợ năng qua
-                aria-pressed + aria-label/title ở trên. */}
-            {/* md (18px) cân với nút 38×38 — sm (16px) trông lọt thỏm. */}
-            <UiIcon name="menu-burger" size="md" />
-          </UiIconButton>
-        ) : null}
-      </Box>
 
-      {visibleGroups.map((group) => {
-        const open = openGroup === group.name;
-        return (
-          <Box component="section" key={group.name} aria-label={group.name}>
+        {!collapsed && onToggle ? (
+          <Tooltip
+            title="Thu gọn thanh điều hướng"
+            placement="right"
+            enterDelay={TOOLTIP_ENTER_DELAY}
+            enterNextDelay={TOOLTIP_ENTER_NEXT_DELAY}
+          >
             <Box
               component="button"
               type="button"
-              className="hn-mvp-group"
-              onClick={() => handleGroupHeaderClick(group.name)}
-              aria-expanded={open}
-              title={group.name}
+              className="hn-mvp-aside-toggle"
+              onClick={onToggle}
+              aria-label="Thu gọn thanh điều hướng"
+              aria-pressed={false}
               sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: `${NAV_ICON_GAP}px`,
-                width: "100%",
-                border: "none",
+                display: "grid",
+                placeItems: "center",
+                flex: `0 0 ${NAV.brand.collapseSize}px`,
+                width: NAV.brand.collapseSize,
+                height: NAV.brand.collapseSize,
+                padding: 0,
+                border: 0,
+                borderRadius: "50%",
                 background: "transparent",
+                color: C.muted,
                 cursor: "pointer",
-                padding: `8px ${NAV_GROUP_PADDING_X}px`,
-                borderRadius: `${RADIUS.control}px`,
-                fontFamily: "inherit",
-                fontSize: 11,
-                fontWeight: 700,
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
-                // Đậm hơn textDisabled cũ (0.4 alpha, khó đọc) — yêu cầu người
-                // dùng 2026-08-28: tiêu đề nhóm phải rõ/nổi hơn.
-                color: S.textMedium,
-                "&:hover": { color: S.textHigh },
-                "&:focus-visible": { outline: "none", boxShadow: S.focusRing },
+                "&:hover": { color: S.primary },
+                "&:focus-visible": focusRingSx,
               }}
             >
-              <Box
-                component="span"
-                sx={{ color: S.textMedium, display: "inline-flex" }}
-              >
-                <UiIcon name={group.icon} size="sm" />
-              </Box>
-              {!collapsed ? (
-                <>
-                  <Box component="span" sx={{ flex: 1, textAlign: "left" }}>
-                    {group.name}
-                  </Box>
-                  {/* Cặp icon phải CÙNG HỌ. Trước đây lệch: đóng dùng
-                      `caret-right` (tam giác đặc) còn mở dùng `angle-down`
-                      (chevron mảnh) nên hàng nhóm nhìn lộn xộn. Chốt dùng họ
-                      caret ĐẶC cho cả hai trạng thái. */}
-                  <UiIcon
-                    name={open ? "caret-down" : "caret-right"}
-                    size="sm"
-                  />
-                </>
-              ) : null}
+              <VuexyNavIcon
+                name="circle-dot"
+                size={NAV.brand.collapseIconSize}
+                strokeWidth={NAV.brand.collapseStrokeWidth}
+              />
             </Box>
-            <Collapse in={open && !collapsed} timeout={MOTION.duration.fast}>
-              <Box
-                sx={{
-                  display: "grid",
-                  gap: 0.25,
-                  pb: 0.5,
-                }}
-              >
-                {group.items.map((item) => {
-                  const active =
-                    (selectedScreen === item.screen || !selectedScreen) &&
-                    matchesPath(location.pathname, item.path);
-                  return (
-                    <Box
-                      component="button"
-                      key={item.screen}
-                      type="button"
-                      className={`hn-mvp-nav-btn${active ? " active" : ""}`}
-                      aria-current={active ? "page" : undefined}
-                      onClick={() =>
-                        navigate(`${item.path}?screen=${item.screen}`)
-                      }
-                      sx={itemButtonSx(active, NAV_ITEM_INDENT)}
-                    >
-                      <Box
-                        component="span"
-                        sx={{
-                          display: "inline-flex",
-                          color: active ? S.onPrimary : S.textMedium,
-                        }}
-                      >
-                        <UiIcon name={item.icon} size="sm" />
-                      </Box>
-                      <Box
-                        component="span"
-                        sx={{
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {item.label}
-                      </Box>
-                    </Box>
-                  );
-                })}
-              </Box>
-            </Collapse>
-          </Box>
-        );
-      })}
+          </Tooltip>
+        ) : null}
+      </Box>
+
+      {/* Cây điều hướng (demo: .hnw-nav — padding 0 10px 18px) */}
+      <Box
+        component="nav"
+        data-testid="primary-navigation"
+        aria-label="Điều hướng chính"
+        sx={{
+          padding: `0 ${collapsed ? NAV.railPaddingX : NAV.paddingX}px ${NAV.paddingBottom}px`,
+        }}
+      >
+        {visibleGroups.map((group, index) =>
+          group.direct && group.items.length === 1
+            ? renderDirect(group)
+            : renderGroup(group, index),
+        )}
+      </Box>
+
+      {/* Thông báo cho trình đọc màn hình (demo: .hnw-live) */}
+      <Box component="p" aria-live="polite" sx={liveRegionSx}>
+        {activeLabel ? `Đang chọn: ${activeLabel}` : ""}
+      </Box>
     </Box>
   );
 }

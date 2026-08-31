@@ -38,3 +38,5 @@ export {
   RangeSeparatorIcon,
   GreetingIcon,
 } from "./icon-slots";
+export { VUEXY_NAV_ICONS, type VuexyNavIconName } from "./vuexy-nav-icon-paths";
+export { VuexyNavIcon, type VuexyNavIconProps } from "./vuexy-nav-icons";

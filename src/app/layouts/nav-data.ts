@@ -13,6 +13,7 @@
  * Mỗi item dùng đúng route sở hữu để visibility đánh giá theo RBAC của
  * domain đó (ROUTE_PERMISSIONS), không theo screen-id trình bày.
  */
+import type { VuexyNavIconName } from "@/shared/ui/icons";
 import { ROUTE_PERMISSIONS } from "@/app/router/access";
 import { ROUTES } from "@/shared/constants/routes";
 import { hasAnyWmsPermission } from "@/shared/constants/wms-permissions";
@@ -26,14 +27,32 @@ export interface NavItemData {
 
 export interface NavGroupData {
   name: string;
-  icon: string;
+  /**
+   * Icon HÀNG CẤP 1 — tên trong bộ VUEXY_NAV_ICONS (vẽ lại từ demo UI/UX đã
+   * chốt), KHÔNG phải slug Flaticon như `NavItemData.icon`: sidebar chỉ hiện
+   * icon ở cấp này, và demo quy định đúng bộ hình đó.
+   */
+  icon: VuexyNavIconName;
   items: NavItemData[];
+  /**
+   * Nhóm chỉ có MỘT mục và được vẽ như một dòng menu phẳng (không có mũi tên
+   * sổ, không có mục con) — đúng lối "Tổng quan vận hành" của demo Vuexy đã
+   * chốt. Breadcrumb vẫn đọc group.name như các nhóm khác.
+   */
+  direct?: boolean;
+  /**
+   * Ở rail thu gọn, vẽ một gạch ngang 22px NGAY TRÊN nhóm này để tách cụm
+   * (demo tách trước "Báo cáo" và "Hệ thống").
+   */
+  railDivider?: boolean;
 }
 
 export const NAV_GROUPS: NavGroupData[] = [
   {
     name: "Tổng quan",
-    icon: "chart-histogram",
+    icon: "layout-dashboard",
+    // Dòng phẳng ở đầu menu (demo: "Tổng quan vận hành") — không sổ nhóm.
+    direct: true,
     items: [
       {
         screen: "MAP-01",
@@ -45,7 +64,7 @@ export const NAV_GROUPS: NavGroupData[] = [
   },
   {
     name: "Danh mục",
-    icon: "book-alt",
+    icon: "package-search",
     items: [
       {
         screen: "MST-01",
@@ -76,7 +95,7 @@ export const NAV_GROUPS: NavGroupData[] = [
   },
   {
     name: "Nhập kho",
-    icon: "inbox",
+    icon: "package-plus",
     items: [
       {
         screen: "IN-01",
@@ -94,7 +113,7 @@ export const NAV_GROUPS: NavGroupData[] = [
   },
   {
     name: "Xuất kho",
-    icon: "warehouse-alt",
+    icon: "package-minus",
     items: [
       {
         screen: "OUT-01",
@@ -108,7 +127,7 @@ export const NAV_GROUPS: NavGroupData[] = [
     // WAR-02/WAR-03/COMP-01 mở modal trên danh sách — deep-link ?screen= do
     // WarrantyPage xử lý, không liệt kê menu.
     name: "Bảo hành & linh kiện",
-    icon: "tool-box",
+    icon: "briefcase-medical",
     items: [
       {
         screen: "WAR-01",
@@ -129,7 +148,7 @@ export const NAV_GROUPS: NavGroupData[] = [
   },
   {
     name: "Tồn kho & kiểm soát",
-    icon: "inventory-alt",
+    icon: "warehouse",
     items: [
       {
         screen: "INV-01",
@@ -157,7 +176,8 @@ export const NAV_GROUPS: NavGroupData[] = [
     // bar nội trang; phản hồi người dùng 2026-08-30: muốn sổ ra sidebar như
     // các nhóm khác thay vì bấm tab trong trang).
     name: "Báo cáo",
-    icon: "document",
+    icon: "chart-column-big",
+    railDivider: true,
     items: [
       {
         screen: "RPT-01",
@@ -211,7 +231,8 @@ export const NAV_GROUPS: NavGroupData[] = [
   },
   {
     name: "Hệ thống",
-    icon: "settings",
+    icon: "settings-2",
+    railDivider: true,
     items: [
       {
         screen: "IAM-01",

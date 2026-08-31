@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
@@ -54,7 +54,9 @@ describe("SideNav RBAC filtering", () => {
     expect(screen.getByText("Danh sách phiếu nhập")).toBeInTheDocument();
     expect(screen.getByText("Danh sách phiếu xuất")).toBeInTheDocument();
     expect(screen.getByText("Tra cứu tồn & đối soát")).toBeInTheDocument();
-    expect(screen.getByText("Nhập – Xuất – Tồn & Chứng từ")).toBeInTheDocument();
+    expect(
+      screen.getByText("Nhập – Xuất – Tồn & Chứng từ"),
+    ).toBeInTheDocument();
   });
 
   it("hides routes and groups that the user cannot access", () => {
@@ -64,7 +66,9 @@ describe("SideNav RBAC filtering", () => {
 
     expect(screen.getByText("Danh sách phiếu nhập")).toBeInTheDocument();
     expect(screen.queryByText("Danh sách bảo hành")).not.toBeInTheDocument();
-    expect(screen.queryByText("Nhập – Xuất – Tồn & Chứng từ")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Nhập – Xuất – Tồn & Chứng từ"),
+    ).not.toBeInTheDocument();
     expect(
       screen.queryByText("Danh sách linh kiện chờ xếp khay"),
     ).not.toBeInTheDocument();
@@ -146,7 +150,94 @@ describe("SideNav RBAC filtering", () => {
       screen.getByText("Danh sách linh kiện chờ xếp khay"),
     ).toBeInTheDocument();
     expect(screen.getByText("Danh sách bảo hành")).toBeInTheDocument();
-    expect(screen.getByText("Nhập – Xuất – Tồn & Chứng từ")).toBeInTheDocument();
+    expect(
+      screen.getByText("Nhập – Xuất – Tồn & Chứng từ"),
+    ).toBeInTheDocument();
+  });
+});
+
+/**
+ * Hợp đồng UI/UX với demo Vuexy đã chốt (1.WMS_Hoa_Nam_Sidebar_Demo.html):
+ * mục Tổng quan là DÒNG PHẲNG, rail thu gọn chỉ còn icon, và bấm logo ở rail
+ * là cách bung lại thanh điều hướng.
+ */
+describe("SideNav — hình dạng theo demo Vuexy", () => {
+  afterEach(() => {
+    resetAuthStore();
+  });
+
+  it("Tổng quan là dòng phẳng: không có nút sổ nhóm, bấm là đi thẳng", () => {
+    withPermissions([], true);
+    renderSideNav(ROUTES.DASHBOARD);
+
+    // Không tồn tại tiêu đề nhóm "Tổng quan" (nó được vẽ phẳng)…
+    expect(
+      screen.queryByRole("button", { name: "Tổng quan" }),
+    ).not.toBeInTheDocument();
+    // …mà là chính mục trang, và đang là trang hiện tại.
+    const direct = screen.getByRole("button", { name: "Tổng quan kho" });
+    expect(direct).toHaveAttribute("aria-current", "page");
+    expect(direct).not.toHaveAttribute("aria-expanded");
+  });
+
+  it("bấm dòng phẳng thì mọi nhóm đang sổ đều đóng lại", async () => {
+    withPermissions([], true);
+    renderSideNav(ROUTES.DASHBOARD);
+
+    const user = userEvent.setup();
+    const inboundGroup = screen.getByRole("button", { name: "Nhập kho" });
+    await user.click(inboundGroup);
+    expect(inboundGroup).toHaveAttribute("aria-expanded", "true");
+
+    await user.click(screen.getByRole("button", { name: "Tổng quan kho" }));
+    expect(inboundGroup).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("rail thu gọn: mất nhãn + mất nút thu gọn, logo thành nút bung lại", async () => {
+    withPermissions([], true);
+    const onExpand = vi.fn();
+    render(
+      <MemoryRouter initialEntries={[ROUTES.DASHBOARD]}>
+        <SideNav collapsed onExpand={onExpand} onToggle={() => {}} />
+      </MemoryRouter>,
+    );
+
+    expect(screen.queryByText("Nhập kho")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Thu gọn thanh điều hướng" }),
+    ).not.toBeInTheDocument();
+
+    const user = userEvent.setup();
+    await user.click(
+      screen.getByRole("button", { name: "Mở rộng thanh điều hướng" }),
+    );
+    expect(onExpand).toHaveBeenCalledTimes(1);
+  });
+
+  it("bấm icon nhóm ở rail: vừa bung thanh bên vừa sổ đúng nhóm đó", async () => {
+    withPermissions([], true);
+    const onExpand = vi.fn();
+    const { rerender } = render(
+      <MemoryRouter initialEntries={[ROUTES.DASHBOARD]}>
+        <SideNav collapsed onExpand={onExpand} />
+      </MemoryRouter>,
+    );
+
+    const user = userEvent.setup();
+    // Ở rail nhãn bị ẩn nên nút nhóm được nhận diện qua aria-label của section.
+    const railGroups = screen.getAllByRole("button", { expanded: false });
+    await user.click(railGroups[0]);
+    expect(onExpand).toHaveBeenCalled();
+
+    rerender(
+      <MemoryRouter initialEntries={[ROUTES.DASHBOARD]}>
+        <SideNav collapsed={false} onExpand={onExpand} />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("button", { name: "Danh mục" })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
   });
 });
 

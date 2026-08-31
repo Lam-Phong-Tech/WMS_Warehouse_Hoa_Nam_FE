@@ -158,3 +158,49 @@ export const SHADOW = {
   card: `0 4px 18px rgba(${INK_RGB}, 0.1)`,
   floating: `0 8px 24px rgba(${INK_RGB}, 0.14)`,
 } as const;
+
+/** Kênh RGB của primary #7367F0 — dùng cho alpha-variant (focus ring, bóng). */
+export const PURPLE_RGB = "115, 103, 240";
+
+/**
+ * NAV_COLOR — bảng màu RIÊNG của thanh điều hướng, đo 1:1 từ demo UI/UX đã
+ * chốt `1.WMS_Hoa_Nam_Sidebar_Demo.html` (2026-08-31). Tách khỏi COLOR chung
+ * vì đây là biến thể chỉ sidebar dùng; không mở ra cho màn nghiệp vụ.
+ */
+export const NAV_COLOR = {
+  /** [ĐO] đuôi gradient của mục đang chọn (đầu gradient = COLOR.purple) */
+  activeGradientEnd: "#9E95F5",
+  /** [ĐO] nền hover / nền nhóm đang mở */
+  hover: "#F3F2F5",
+  /** [ĐO] viền phải sidebar + gạch phân cách ở rail thu gọn */
+  border: "#E8E7EC",
+  /** [ĐO] chữ hàng cấp 1 (nhạt hơn chữ mục con — đúng demo) */
+  itemText: "#5B5868",
+  /** [ĐO] chữ phụ: nút thu gọn */
+  muted: "#6D6A7B",
+  /** [ĐO] viền chấm tròn đánh dấu mục con */
+  marker: "#8F8B99",
+  /** [ĐO] màu outline khi focus bằng bàn phím */
+  focus: "#8F85F3",
+} as const;
+
+/** [ĐO] bộ bóng của sidebar theo 3 trạng thái + mục đang chọn. */
+export const NAV_SHADOW = {
+  sidebar: `2px 0 12px rgba(${INK_RGB}, 0.05)`,
+  sidebarCollapsed: `1px 0 8px rgba(${INK_RGB}, 0.04)`,
+  sidebarPeek: `8px 0 24px rgba(${INK_RGB}, 0.12)`,
+  activeItem: `0 3px 8px rgba(${PURPLE_RGB}, 0.34)`,
+} as const;
+
+/** [ĐO] motion riêng của sidebar (demo dùng `ease`, không phải easing chung). */
+export const NAV_MOTION = {
+  /** đóng/mở bề rộng sidebar */
+  width: 240,
+  /** sổ submenu (grid-template-rows 0fr → 1fr) */
+  submenu: 210,
+  /** mờ/rõ submenu */
+  submenuOpacity: 160,
+  /** xoay chevron 180° */
+  chevron: 180,
+  easing: "ease",
+} as const;

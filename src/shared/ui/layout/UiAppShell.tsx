@@ -1,32 +1,36 @@
 /**
- * UiAppShell — khung shell canonical Vuexy (Part 3, PRESENTATIONAL ONLY).
+ * UiAppShell — khung shell canonical Vuexy (PRESENTATIONAL ONLY).
  *
  * Grid 2 cột: sidebar cố định bên trái (bề rộng theo LAYOUT, đổi khi
  * `collapsed`), phần còn lại xếp dọc topbar → main (overflow auto) → footer.
- * Nền canvas qua token bgCanvas; sidebar nền surface trắng theo
- * baseline DEC-UI-BASELINE-01. KHÔNG nối vào MainLayout/router ở Part 3 —
- * việc thay shell thật thuộc Part 4.
+ * Nền canvas qua token bgCanvas; sidebar nền surface trắng theo baseline
+ * DEC-UI-BASELINE-01.
+ *
+ * KHÔNG có tay cầm kéo giãn bề rộng (gỡ theo yêu cầu người dùng 2026-08-31):
+ * bề rộng chốt ở LAYOUT.sidebarWidth = 260px đúng demo, nhãn dài xử lý bằng
+ * ellipsis + tooltip chứ không nới cột.
  */
 import Box from "@mui/material/Box";
+import useMediaQuery from "@mui/material/useMediaQuery";
 import {
-  useCallback,
-  useState,
+  useRef,
   type ReactNode,
-  type PointerEvent as ReactPointerEvent,
-  type KeyboardEvent as ReactKeyboardEvent,
+  type FocusEvent as ReactFocusEvent,
 } from "react";
-import { MOTION, SEMANTIC_LIGHT as S } from "@/shared/ui/tokens";
+import {
+  COMPONENT_TOKENS,
+  SEMANTIC_LIGHT as S,
+  Z_INDEX,
+} from "@/shared/ui/tokens";
 import { LAYOUT } from "./layout-tokens";
 
-function clampSidebarWidth(width: number): number {
-  return Math.min(
-    LAYOUT.sidebarMaxWidth,
-    Math.max(LAYOUT.sidebarMinWidth, Math.round(width)),
-  );
-}
+const NAV = COMPONENT_TOKENS.nav;
 
-/** Bước thay đổi bề rộng khi dùng phím mũi tên trên tay cầm kéo giãn (a11y). */
-const SIDEBAR_KEYBOARD_STEP = 16;
+/**
+ * Rail chỉ "he mở" khi có CHUỘT THẬT (demo Vuexy dùng đúng media query này) —
+ * trên cảm ứng thì rê tay không phải ý định mở menu.
+ */
+const FINE_POINTER_QUERY = "(hover: hover) and (pointer: fine)";
 
 export interface UiAppShellProps {
   /** Nội dung cột sidebar (thường là UiSidebarNav). */
@@ -40,21 +44,21 @@ export interface UiAppShellProps {
   /** Thu gọn sidebar → cột trái đổi sang bề rộng collapsed. */
   collapsed?: boolean;
   /**
-   * Bề rộng sidebar khi MỞ RỘNG (px). Bỏ trống = LAYOUT.sidebarWidth mặc định.
-   * Truyền cùng `onSidebarWidthChange` để bật tay cầm KÉO GIÃN chiều rộng —
-   * dùng khi nhãn menu dài cần đọc trọn.
-   */
-  sidebarWidth?: number;
-  /**
-   * Gọi khi người dùng kéo (hoặc dùng phím) đổi bề rộng sidebar. Có handler này
-   * (và không collapsed/không ẩn) thì tay cầm kéo giãn hiện ở mép phải sidebar.
-   */
-  onSidebarWidthChange?: (width: number) => void;
-  /**
    * Ẩn hẳn cột sidebar (mobile/tablet <lg): grid còn 1 cột, sidebar do caller
    * render trong Drawer overlay + nút hamburger ở topbar.
    */
   sidebarHidden?: boolean;
+  /**
+   * PEEK (he mở) — đang thu gọn mà rê chuột/đưa focus vào rail thì sidebar
+   * bung tạm ở dạng LỚP PHỦ: cột lưới vẫn giữ 76px nên nội dung KHÔNG bị xô
+   * ngang, chỉ có bóng đổ đậm lên (đúng demo Vuexy đã chốt).
+   */
+  peek?: boolean;
+  /**
+   * Báo cho caller bật/tắt peek. Có handler này (và đang collapsed) thì shell
+   * tự gắn hover/focus lên chính cột sidebar.
+   */
+  onPeekChange?: (peek: boolean) => void;
   /** Class marker cho vỏ ngoài (test-hook legacy `.hn-mvp-app` — không style). */
   className?: string;
   /** Class marker cho aside (test-hook legacy `.hn-mvp-aside`). */
@@ -70,155 +74,118 @@ export function UiAppShell({
   footer,
   collapsed = false,
   sidebarHidden = false,
-  sidebarWidth,
-  onSidebarWidthChange,
+  peek = false,
+  onPeekChange,
   className,
   sidebarClassName,
   mainClassName,
 }: UiAppShellProps) {
-  const [dragging, setDragging] = useState(false);
+  const asideRef = useRef<HTMLElement | null>(null);
+  const finePointer = useMediaQuery(FINE_POINTER_QUERY);
 
-  const expandedWidth = clampSidebarWidth(sidebarWidth ?? LAYOUT.sidebarWidth);
-  const effectiveWidth = collapsed
+  const peeking = collapsed && peek && !sidebarHidden;
+
+  // BỀ RỘNG DẢI GIỮ CHỖ cho sidebar — quyết định lề trái của NỘI DUNG. Lúc
+  // peek vẫn giữ 76px để nội dung KHÔNG xô ngang (sidebar nở ra bằng lớp phủ).
+  const trackWidth = collapsed
     ? LAYOUT.sidebarCollapsedWidth
-    : expandedWidth;
-  const columns = sidebarHidden ? "1fr" : `${effectiveWidth}px 1fr`;
-  // Tay cầm kéo giãn chỉ có ý nghĩa khi sidebar đang mở rộng và đang hiển thị.
-  const resizable =
-    Boolean(onSidebarWidthChange) && !collapsed && !sidebarHidden;
+    : LAYOUT.sidebarWidth;
 
-  const startDrag = useCallback(
-    (event: ReactPointerEvent) => {
-      if (!resizable || !onSidebarWidthChange) return;
-      event.preventDefault();
-      const startX = event.clientX;
-      const startWidth = effectiveWidth;
-      setDragging(true);
-      // Khoá select-text + ép con trỏ col-resize toàn trang trong lúc kéo để
-      // không bôi đen nội dung và con trỏ không nhấp nháy khi ra khỏi tay cầm.
-      document.body.style.userSelect = "none";
-      document.body.style.cursor = "col-resize";
+  // BỀ RỘNG SIDEBAR (lớp phủ) — nở 260px khi mở rộng HOẶC đang peek, còn lại
+  // 76px. Cả hai đều là px nên `width` nội suy MƯỢT (76↔260); mấu chốt để hết
+  // giật: aside LUÔN position:absolute (không đổi relative↔absolute giữa
+  // chừng) — trước đây đổi position + đổi 100%↔260px cùng lúc khiến trình
+  // duyệt không nội suy được, sidebar "nhảy phát sang phải" rồi mới co lại.
+  const asideWidth =
+    !collapsed || peeking ? LAYOUT.sidebarWidth : LAYOUT.sidebarCollapsedWidth;
 
-      const onMove = (moveEvent: PointerEvent) => {
-        onSidebarWidthChange(
-          clampSidebarWidth(startWidth + (moveEvent.clientX - startX)),
-        );
-      };
-      const onUp = () => {
-        setDragging(false);
-        window.removeEventListener("pointermove", onMove);
-        window.removeEventListener("pointerup", onUp);
-        document.body.style.userSelect = "";
-        document.body.style.cursor = "";
-      };
-      window.addEventListener("pointermove", onMove);
-      window.addEventListener("pointerup", onUp);
-    },
-    [resizable, effectiveWidth, onSidebarWidthChange],
-  );
+  const enterPeek = () => {
+    if (!collapsed || sidebarHidden || peek) return;
+    onPeekChange?.(true);
+  };
 
-  const handleKeyResize = (event: ReactKeyboardEvent) => {
-    if (!onSidebarWidthChange) return;
-    if (event.key === "ArrowLeft") {
-      event.preventDefault();
-      onSidebarWidthChange(
-        clampSidebarWidth(effectiveWidth - SIDEBAR_KEYBOARD_STEP),
-      );
-    } else if (event.key === "ArrowRight") {
-      event.preventDefault();
-      onSidebarWidthChange(
-        clampSidebarWidth(effectiveWidth + SIDEBAR_KEYBOARD_STEP),
-      );
-    }
+  /**
+   * Rời chuột khỏi rail thì đóng peek — TRỪ khi con trỏ bàn phím vẫn còn ở
+   * trong sidebar (demo: `sidebar.contains(document.activeElement)`), nếu
+   * không người dùng đang tab trong menu sẽ bị sập menu ngay dưới tay.
+   */
+  const leavePeek = () => {
+    if (!peek) return;
+    if (asideRef.current?.contains(document.activeElement)) return;
+    onPeekChange?.(false);
+  };
+
+  const handleSidebarBlur = (event: ReactFocusEvent<HTMLElement>) => {
+    if (!peek) return;
+    const next = event.relatedTarget as Node | null;
+    if (next && asideRef.current?.contains(next)) return;
+    onPeekChange?.(false);
   };
 
   return (
     <Box
       className={className}
       sx={{
+        // KHÔNG dùng CSS Grid: phần tử position:absolute nằm trong grid bị
+        // giới hạn containing-block vào Ô LƯỚI của nó (cột 76px) nên `width`
+        // của sidebar bị kẹp, không nở ra 260px được — hiệu ứng peek chết.
+        // Dùng block position:relative làm mốc: aside (absolute) lấy trọn bề
+        // ngang shell làm containing-block, còn nội dung né sidebar bằng
+        // margin-left = trackWidth. Cả hai cùng animate 76↔260 nên mượt.
         position: "relative",
-        display: "grid",
-        gridTemplateColumns: columns,
         // Chốt chiều cao viewport để main tự cuộn, sidebar đứng yên.
         height: "100dvh",
         minHeight: "100dvh",
-        // Không có overflow:hidden, hàng grid ẩn (auto) sẽ giãn theo chiều cao
-        // NỘI DUNG của main thay vì bị chốt ở 100dvh ("grid blowout") — lúc đó
-        // main mất vùng cuộn riêng và cả document cuộn theo, kéo sidebar/topbar
-        // trôi cùng. overflow:hidden ở đây buộc con phải tự cuộn bên trong.
         overflow: "hidden",
         backgroundColor: S.bgCanvas,
-        // Khi đang kéo, tắt transition để cột bám sát con trỏ (không giật/lag).
-        transition: dragging
-          ? "none"
-          : `grid-template-columns ${MOTION.duration.normal}ms ${MOTION.easing.standard}`,
       }}
     >
-      {/* Cột sidebar — nền surface SÁNG theo baseline Vuexy */}
+      {/* Sidebar — LỚP PHỦ tuyệt đối, nở/thu bằng width (px ⇒ nội suy mượt) */}
       {sidebarHidden ? null : (
         <Box
           component="aside"
+          ref={asideRef}
           className={sidebarClassName}
           data-testid="app-sidebar"
+          data-peeking={peeking ? "true" : undefined}
+          onMouseEnter={finePointer && onPeekChange ? enterPeek : undefined}
+          onMouseLeave={finePointer && onPeekChange ? leavePeek : undefined}
+          onFocus={onPeekChange ? enterPeek : undefined}
+          onBlur={onPeekChange ? handleSidebarBlur : undefined}
           sx={{
+            position: "absolute",
+            top: 0,
+            bottom: 0,
+            left: 0,
+            width: `${asideWidth}px`,
+            zIndex: Z_INDEX.sidebar,
             backgroundColor: S.bgSurface,
-            borderRight: `1px solid ${S.border}`,
+            borderRight: `1px solid ${NAV.color.border}`,
+            boxShadow: peeking
+              ? NAV.shadow.sidebarPeek
+              : collapsed
+                ? NAV.shadow.sidebarCollapsed
+                : NAV.shadow.sidebar,
             overflowY: "auto",
             overflowX: "hidden",
-            minWidth: 0,
             minHeight: 0,
+            transition: `width ${NAV.motion.width}ms ${NAV.motion.easing}, box-shadow ${NAV.motion.width}ms ${NAV.motion.easing}`,
+            "@media (prefers-reduced-motion: reduce)": { transition: "none" },
           }}
         >
           {sidebar}
         </Box>
       )}
 
-      {/* Tay cầm KÉO GIÃN — đặt tuyệt đối tại đường biên phải của sidebar để
-          không cuộn theo nội dung aside (aside có overflowY:auto). */}
-      {resizable ? (
-        <Box
-          role="separator"
-          aria-orientation="vertical"
-          aria-label="Kéo để đổi bề rộng thanh điều hướng"
-          aria-valuenow={effectiveWidth}
-          aria-valuemin={LAYOUT.sidebarMinWidth}
-          aria-valuemax={LAYOUT.sidebarMaxWidth}
-          tabIndex={0}
-          data-testid="sidebar-resize-handle"
-          onPointerDown={startDrag}
-          onKeyDown={handleKeyResize}
-          onDoubleClick={() => onSidebarWidthChange?.(LAYOUT.sidebarWidth)}
-          title="Kéo để đổi bề rộng · bấm đúp để về mặc định"
-          sx={{
-            position: "absolute",
-            top: 0,
-            bottom: 0,
-            left: `${effectiveWidth}px`,
-            width: 10,
-            transform: "translateX(-50%)",
-            cursor: "col-resize",
-            zIndex: 5,
-            display: "flex",
-            justifyContent: "center",
-            touchAction: "none",
-            // Vạch chỉ báo mảnh ở giữa, đậm lên khi hover/kéo/focus.
-            "&::after": {
-              content: '""',
-              width: 2,
-              height: "100%",
-              backgroundColor: dragging ? S.primary : "transparent",
-              transition: `background-color ${MOTION.duration.fast}ms ${MOTION.easing.standard}`,
-            },
-            "&:hover::after": { backgroundColor: S.primary },
-            "&:focus-visible": { outline: "none" },
-            "&:focus-visible::after": { backgroundColor: S.primary, width: 3 },
-          }}
-        />
-      ) : null}
-
-      {/* Phần còn lại: topbar sticky + main cuộn + footer */}
+      {/* Nội dung: topbar sticky + main cuộn + footer. Né sidebar bằng
+          margin-left = trackWidth; lúc peek trackWidth vẫn 76 nên nội dung
+          ĐỨNG YÊN, sidebar phủ lên trên. */}
       <Box
         sx={{
+          height: "100%",
+          marginLeft: sidebarHidden ? 0 : `${trackWidth}px`,
+          transition: `margin-left ${NAV.motion.width}ms ${NAV.motion.easing}`,
+          "@media (prefers-reduced-motion: reduce)": { transition: "none" },
           display: "flex",
           flexDirection: "column",
           minWidth: 0,

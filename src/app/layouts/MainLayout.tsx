@@ -38,23 +38,12 @@ import { useAuthStore } from "@/shared/store/auth.store";
 import { useNavigate } from "react-router-dom";
 
 const SIDEBAR_COLLAPSED_STORAGE_KEY = "hn-wms-sidebar-collapsed";
-const SIDEBAR_WIDTH_STORAGE_KEY = "hn-wms-sidebar-width";
 
 function readStoredSidebarCollapsed() {
   try {
     return localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY) === "1";
   } catch {
     return false;
-  }
-}
-
-function readStoredSidebarWidth() {
-  try {
-    const raw = localStorage.getItem(SIDEBAR_WIDTH_STORAGE_KEY);
-    const parsed = raw ? Number(raw) : NaN;
-    return Number.isFinite(parsed) ? parsed : LAYOUT.sidebarWidth;
-  } catch {
-    return LAYOUT.sidebarWidth;
   }
 }
 
@@ -71,7 +60,9 @@ export function MainLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
     readStoredSidebarCollapsed,
   );
-  const [sidebarWidth, setSidebarWidth] = useState(readStoredSidebarWidth);
+  // PEEK: đang thu gọn mà rê chuột/focus vào rail thì sidebar bung TẠM (không
+  // ghi nhớ, không xô nội dung). Trạng thái "ghim" vẫn là sidebarCollapsed.
+  const [sidebarPeek, setSidebarPeek] = useState(false);
 
   // Đổi trang trên mobile → tự đóng drawer điều hướng.
   useEffect(() => {
@@ -84,25 +75,20 @@ export function MainLayout() {
       // localStorage không khả dụng (ẩn danh) — giữ state trong phiên.
     }
   };
+  const setCollapsed = (next: boolean) => {
+    setSidebarPeek(false);
+    setSidebarCollapsed(next);
+    persistSidebarCollapsed(next);
+  };
+  /**
+   * Nút tròn trong khối brand. Đang "he mở" mà bấm ⇒ GHIM MỞ luôn (đúng demo:
+   * `setPersistentCollapsed(peeking ? false : !persistentlyCollapsed)`).
+   */
   const toggleSidebar = () => {
-    setSidebarCollapsed((prev) => {
-      const next = !prev;
-      persistSidebarCollapsed(next);
-      return next;
-    });
+    setCollapsed(sidebarPeek ? false : !sidebarCollapsed);
   };
-  const expandSidebar = () => {
-    setSidebarCollapsed(false);
-    persistSidebarCollapsed(false);
-  };
-  const handleSidebarWidthChange = (next: number) => {
-    setSidebarWidth(next);
-    try {
-      localStorage.setItem(SIDEBAR_WIDTH_STORAGE_KEY, String(next));
-    } catch {
-      // localStorage không khả dụng — giữ state trong phiên.
-    }
-  };
+  /** Bấm logo ở rail (hoặc bấm icon nhóm) ⇒ ghim mở lại. */
+  const expandSidebar = () => setCollapsed(false);
 
   const requestedScreen = new URLSearchParams(location.search).get("screen");
   const meta = resolveScreenMeta(location.pathname, location.search);
@@ -115,11 +101,12 @@ export function MainLayout() {
       <UiAppShell
         collapsed={sidebarCollapsed}
         sidebarHidden={!isDesktop}
-        sidebarWidth={sidebarWidth}
-        onSidebarWidthChange={handleSidebarWidthChange}
+        peek={sidebarPeek}
+        onPeekChange={setSidebarPeek}
         sidebar={
           <SideNav
-            collapsed={sidebarCollapsed}
+            // Lúc "he mở", nội dung sidebar hiển thị y như khi đang mở rộng.
+            collapsed={sidebarCollapsed && !sidebarPeek}
             onExpand={expandSidebar}
             onToggle={toggleSidebar}
           />

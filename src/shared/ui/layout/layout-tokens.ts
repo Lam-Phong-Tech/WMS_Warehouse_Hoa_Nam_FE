@@ -7,19 +7,14 @@
  */
 export const LAYOUT = {
   /**
-   * [X] bề rộng sidebar mở rộng — nâng từ 260 lên 300 rồi 320 (yêu cầu người
-   * dùng 2026-08-28/29): nhãn dài như "Danh sách phiếu điều chỉnh tồn kho"
-   * hay "Danh sách người dùng & phân quyền" bị ellipsis mất chữ ở 260px; ở
-   * 300px nhãn dài nhất ("Danh sách linh kiện chờ xếp khay") vừa khít tuyệt
-   * đối (0px dư) — chừa thêm biên ở 320px để không bị đè khi mở nhóm con.
-   * Nâng tiếp lên 340 (yêu cầu người dùng 2026-08-29): rộng thêm một chút.
+   * [ĐO] bề rộng sidebar mở rộng = 260px — chốt lại đúng demo UI/UX
+   * `1.WMS_Hoa_Nam_Sidebar_Demo.html` (2026-08-31). Nhãn dài hơn 260px được
+   * xử lý ĐÚNG NHƯ DEMO: cắt bằng ellipsis + tooltip hiện đủ chữ khi rê chuột
+   * (không nới rộng sidebar nữa).
    */
-  sidebarWidth: 340,
-  /** Giới hạn khi người dùng KÉO GIÃN sidebar (đọc hết nhãn menu dài). */
-  sidebarMinWidth: 240,
-  sidebarMaxWidth: 560,
-  /** [X] bề rộng sidebar thu gọn (chỉ icon) */
-  sidebarCollapsedWidth: 72,
+  sidebarWidth: 260,
+  /** [ĐO] bề rộng rail thu gọn (chỉ icon) */
+  sidebarCollapsedWidth: 76,
   /** [X] chiều cao topbar sticky */
   topbarHeight: 80,
 } as const;
