@@ -74,11 +74,10 @@ export default function PvCatalogPage() {
   const categoryOptions = useMemo(() => {
     const map = new Map<string, string>();
     for (const product of taxonomySnapshot.data?.data ?? []) {
-      if (product.category_id) {
-        map.set(
-          product.category_id,
-          product.category_name ?? product.category_id,
-        );
+      // Bỏ qua nhóm hàng chưa có tên: nhãn dropdown mà rơi xuống UUID thì
+      // người xem không đọc được, thà không liệt kê lựa chọn đó.
+      if (product.category_id && product.category_name) {
+        map.set(product.category_id, product.category_name);
       }
     }
     return [...map.entries()]
@@ -90,7 +89,9 @@ export default function PvCatalogPage() {
     const map = new Map<string, string>();
     for (const product of taxonomySnapshot.data?.data ?? []) {
       for (const tag of product.tags) {
-        map.set(tag.tag_id, tag.tag_name || tag.tag_code || tag.tag_id);
+        // Tương tự: chỉ liệt kê thẻ có tên/mã đọc được, không rơi xuống UUID.
+        const label = tag.tag_name || tag.tag_code;
+        if (label) map.set(tag.tag_id, label);
       }
     }
     return [...map.entries()]

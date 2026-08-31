@@ -52,6 +52,7 @@ import {
 } from "@/shared/api/api-error";
 import { LoadingState } from "@/shared/components/data-display/LoadingState";
 import { shortId } from "@/shared/utils/shortId";
+import { CopyableId } from "@/shared/components/data-display/CopyableId";
 import {
   WMS_PERMISSION_CATALOG as P,
   hasAnyWmsPermission,
@@ -1036,9 +1037,10 @@ export default function PvAdminPage() {
               slotProps={{
                 select: {
                   multiple: true,
+                  // KHÔNG `?? id`: ô select đóng lại sẽ in nguyên UUID.
                   renderValue: (selected) =>
                     (selected as string[])
-                      .map((id) => industryNameById.get(id) ?? id)
+                      .map((id) => industryNameById.get(id) ?? "—")
                       .join(", "),
                 },
               }}
@@ -1065,9 +1067,10 @@ export default function PvAdminPage() {
               slotProps={{
                 select: {
                   multiple: true,
+                  // KHÔNG `?? id`: ô select đóng lại sẽ in nguyên UUID.
                   renderValue: (selected) =>
                     (selected as string[])
-                      .map((id) => tagNameById.get(id) ?? id)
+                      .map((id) => tagNameById.get(id) ?? "—")
                       .join(", "),
                 },
               }}
@@ -1237,19 +1240,24 @@ function PvRuleTab({
       key: "selector",
       header: "Điều kiện áp dụng",
       sortAccessor: (row) => ruleSelectorSortKey(row, tagNameById),
+      // PvAdminRule mới chỉ có sku_id/category_id, CHƯA có sku_code/category_name
+      // nên không thể hiện tên ở FE — rút gọn + cho sao chép thay vì in UUID thô.
+      // Khi BE bổ sung 2 trường mã/tên thì đổi sang hiện thẳng như thẻ phân loại.
       render: (row) =>
         row.sku_id ? (
           <>
-            <UiStatusBadge tone="neutral" label="SKU" /> {row.sku_id}
+            <UiStatusBadge tone="neutral" label="SKU" />{" "}
+            <CopyableId value={row.sku_id} />
           </>
         ) : row.category_id ? (
           <>
-            <UiStatusBadge tone="neutral" label="Nhóm hàng" /> {row.category_id}
+            <UiStatusBadge tone="neutral" label="Nhóm hàng" />{" "}
+            <CopyableId value={row.category_id} />
           </>
         ) : row.tag_id ? (
           <>
             <UiStatusBadge tone="neutral" label="Thẻ phân loại" />{" "}
-            {tagNameById.get(row.tag_id) ?? row.tag_id}
+            {tagNameById.get(row.tag_id) ?? <CopyableId value={row.tag_id} />}
           </>
         ) : (
           "—"
@@ -1308,7 +1316,11 @@ function PvRuleTab({
         rowKey={(row) => row.id}
         columns={columns}
         rowSelection={rowSelection}
-        selectionLabel={(row) => `Chọn quy tắc ${row.id}`}
+        // Quy tắc không có mã nghiệp vụ — mô tả bằng ngành nghề + mức ưu tiên
+        // thay vì đọc UUID cho người dùng trình đọc màn hình.
+        selectionLabel={(row) =>
+          `Chọn quy tắc ngành ${row.industry_name ?? "chưa xác định"} · mức ưu tiên ${row.priority}`
+        }
         loading={isFetching}
         emptyText={
           search.trim() || statusFilter !== "ALL"
@@ -1353,24 +1365,28 @@ function PvRuleTab({
             items={[
               {
                 label: "Ngành nghề",
-                value: viewing.industry_name ?? viewing.industry_id,
+                value: viewing.industry_name ?? "—",
               },
               {
                 label: "Điều kiện áp dụng",
+                // Xem chú thích ở cột "Điều kiện áp dụng" của bảng: chưa có
+                // sku_code/category_name từ BE nên rút gọn + cho sao chép.
                 value: viewing.sku_id ? (
                   <>
                     <UiStatusBadge tone="neutral" label="SKU" />{" "}
-                    {viewing.sku_id}
+                    <CopyableId value={viewing.sku_id} />
                   </>
                 ) : viewing.category_id ? (
                   <>
                     <UiStatusBadge tone="neutral" label="Nhóm hàng" />{" "}
-                    {viewing.category_id}
+                    <CopyableId value={viewing.category_id} />
                   </>
                 ) : viewing.tag_id ? (
                   <>
                     <UiStatusBadge tone="neutral" label="Thẻ phân loại" />{" "}
-                    {tagNameById.get(viewing.tag_id) ?? viewing.tag_id}
+                    {tagNameById.get(viewing.tag_id) ?? (
+                      <CopyableId value={viewing.tag_id} />
+                    )}
                   </>
                 ) : (
                   "—"

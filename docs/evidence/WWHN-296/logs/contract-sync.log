@@ -1,9 +1,0 @@
-$ node scripts/sync-be-openapi.mjs --from C:\LAM_PHONG_TECH\HoaNam_BE\WMS_Warehouse_Hoa_Nam_BE
-
-[sync-be-openapi] Nguồn: C:\LAM_PHONG_TECH\HoaNam_BE\WMS_Warehouse_Hoa_Nam_BE\storage\api-docs\api-docs.json
-[sync-be-openapi] OpenAPI 2.0.0 — 183 path, 231 operation, 21 schema
-[sync-be-openapi] Đã ghi swagger-api.json. Chạy tiếp: npm run check:api-mapping
-[sync-be-openapi] OK: spec khớp pin BE 7da26cb1cc13
-
-
-exit code: 0

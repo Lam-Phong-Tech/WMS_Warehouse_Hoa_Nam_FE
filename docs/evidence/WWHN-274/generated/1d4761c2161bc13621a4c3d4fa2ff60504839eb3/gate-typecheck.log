@@ -1,8 +1,0 @@
-$ npm run typecheck
-
-
-> wms-hoa-nam-frontend@0.0.0 typecheck
-> tsc -b --pretty false
-
-
-

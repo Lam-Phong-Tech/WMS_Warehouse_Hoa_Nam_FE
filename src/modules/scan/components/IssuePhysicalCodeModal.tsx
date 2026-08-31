@@ -18,6 +18,7 @@ import {
   MASTER_STATUS_LABELS,
   businessLabel,
 } from "@/shared/constants/business-labels";
+import { CopyableId } from "@/shared/components/data-display/CopyableId";
 import { issueItemPhysicalCode } from "../services/scanService";
 import type {
   IssueItemPhysicalCodeResult,
@@ -227,7 +228,14 @@ export function IssuePhysicalCodeModal({
 
       {result ? (
         <Grid container spacing={2}>
-          <DetailField label="Mã sản phẩm" value={result.item_id} />
+          {/* Trước đây nhãn ghi "Mã sản phẩm" nhưng in item_id (UUID nội bộ) —
+            vừa sai nhãn vừa lộ chuỗi thô, trong khi mã nhận diện thật của sản
+            phẩm chính là "Giá trị mã" + "Số sê-ri" ngay bên dưới. Giữ giá trị
+            để tra soát nhưng gọi đúng tên và hiển thị rút gọn. */}
+          <DetailField
+            label="Định danh nội bộ"
+            value={<CopyableId value={result.item_id} />}
+          />
           <DetailField
             label="Giá trị mã"
             value={<UiStatusBadge tone="info" label={result.code_value} />}

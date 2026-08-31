@@ -840,6 +840,10 @@ export function AlignedOutboundDetailModal({
                   {postBlockReason}
                 </Box>
               ) : null}
+              {/* Hiện mã chứng từ/biến động đọc được. KHÔNG hiện request_id ở
+                trạng thái thành công: đó là UUID đối chiếu log sinh cho mỗi lượt
+                gọi API, không phải chứng từ nghiệp vụ — chỉ có ích khi báo lỗi,
+                và ApiErrorAlert đã hiển thị đúng chỗ đó. */}
               {evidence ? (
                 <Box
                   sx={{
@@ -847,15 +851,25 @@ export function AlignedOutboundDetailModal({
                     color: "text.secondary",
                     display: "flex",
                     alignItems: "center",
+                    flexWrap: "wrap",
                     gap: 0.5,
                   }}
                 >
-                  {evidence.movementRefs.length} movement · Request
-                  {evidence.requestId ? (
-                    <CopyableId value={evidence.requestId} />
-                  ) : (
-                    "—"
-                  )}
+                  Biến động tồn kho ({evidence.movements.length}):
+                  {evidence.movements.map((movement, index) => (
+                    <Box
+                      key={movement.id}
+                      component="span"
+                      sx={{ display: "inline-flex", alignItems: "center" }}
+                    >
+                      {movement.code ? (
+                        <strong>{movement.code}</strong>
+                      ) : (
+                        <CopyableId value={movement.id} />
+                      )}
+                      {index < evidence.movements.length - 1 ? "," : ""}
+                    </Box>
+                  ))}
                 </Box>
               ) : null}
             </Stack>

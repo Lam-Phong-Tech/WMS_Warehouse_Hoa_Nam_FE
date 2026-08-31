@@ -1058,7 +1058,7 @@ export function InboundScanModal({
           >
             <span>
               {detail
-                ? `Quét & hoàn tất nhập kho · ${detail.document.code || documentId}`
+                ? `Quét & hoàn tất nhập kho · ${detail.document.code || "chưa có mã"}`
                 : "Quét & hoàn tất nhập kho"}
             </span>
             <ActionIconButton
@@ -1140,7 +1140,7 @@ export function InboundScanModal({
                       Phiếu
                     </Box>
                     <Box sx={{ typography: "body2" }}>
-                      {detail.document.code || documentId}
+                      {detail.document.code || "—"}
                     </Box>
                   </Grid>
                   <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
@@ -1517,6 +1517,11 @@ export function InboundScanModal({
                     <Box sx={{ fontWeight: 700 }}>
                       Kết quả hoàn tất nhập kho
                     </Box>
+                    {/* KHÔNG hiển thị request_id ở màn THÀNH CÔNG: đó là UUID
+                      đối chiếu log do middleware sinh cho mỗi lượt gọi API, không
+                      phải chứng từ nghiệp vụ nên không có mã đọc được. Nó chỉ có
+                      ích khi BÁO LỖI cho kỹ thuật — nơi duy nhất còn hiển thị là
+                      ApiErrorAlert/PvErrorState (màn lỗi, có nhãn "để tra soát"). */}
                     <Box
                       sx={{
                         typography: "body2",
@@ -1525,8 +1530,12 @@ export function InboundScanModal({
                         gap: 0.5,
                       }}
                     >
-                      Mã yêu cầu:{" "}
-                      <CopyableId value={receiptEvidence.requestId} />
+                      Phiếu nhập:{" "}
+                      {receiptEvidence.receiptCode ? (
+                        <strong>{receiptEvidence.receiptCode}</strong>
+                      ) : (
+                        <CopyableId value={receiptEvidence.receiptId} />
+                      )}
                     </Box>
                     <Box
                       sx={{
@@ -1537,20 +1546,23 @@ export function InboundScanModal({
                         gap: 0.5,
                       }}
                     >
-                      Biến động tồn kho ({receiptEvidence.movementRefs.length}):
-                      {receiptEvidence.movementRefs.map((ref) => (
-                        <CopyableId key={ref} value={ref} />
+                      Biến động tồn kho ({receiptEvidence.movements.length}):
+                      {receiptEvidence.movements.map((movement, index) => (
+                        <Box
+                          key={movement.id}
+                          component="span"
+                          sx={{ display: "inline-flex", alignItems: "center" }}
+                        >
+                          {movement.code ? (
+                            <strong>{movement.code}</strong>
+                          ) : (
+                            <CopyableId value={movement.id} />
+                          )}
+                          {index < receiptEvidence.movements.length - 1
+                            ? ","
+                            : ""}
+                        </Box>
                       ))}
-                    </Box>
-                    <Box
-                      sx={{
-                        typography: "body2",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 0.5,
-                      }}
-                    >
-                      Phiếu nhập: <CopyableId value={receiptEvidence.receiptId} />
                     </Box>
                   </UiAlert>
                 </Box>

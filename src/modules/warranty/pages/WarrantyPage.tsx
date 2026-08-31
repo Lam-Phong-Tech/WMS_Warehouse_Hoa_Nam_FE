@@ -187,8 +187,9 @@ export default function WarrantyPage() {
       key: "case_code",
       header: "Phiếu",
       width: 190,
-      sortAccessor: (row) => row.case_code || row.id,
-      render: (row) => <strong>{row.case_code || row.id}</strong>,
+      sortAccessor: (row) => row.case_code || "",
+      // KHÔNG fallback sang row.id: cột này là MÃ PHIẾU bảo hành đọc được.
+      render: (row) => <strong>{row.case_code || "—"}</strong>,
     },
     {
       key: "customer",
@@ -405,7 +406,7 @@ export default function WarrantyPage() {
           rowKey={(row) => row.id}
           rowSelection={rowSelection}
           selectionLabel={(row) =>
-            `Chọn case bảo hành ${row.case_code || row.id}`
+            `Chọn case bảo hành ${row.case_code || "chưa có mã"}`
           }
           loading={listQuery.isLoading || listQuery.isFetching}
           emptyText={tableEmptyText(

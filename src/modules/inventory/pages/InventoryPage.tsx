@@ -745,7 +745,9 @@ export default function InventoryPage() {
               columns={movementColumns}
               rows={movements}
               rowSelection={movementSelection}
-              selectionLabel={(row) => `Chọn biến động ${row.id}`}
+              selectionLabel={(row) =>
+                `Chọn biến động ${row.movementId || "chưa có mã"}`
+              }
               loading={movementQuery.isLoading || movementQuery.isFetching}
               emptyText={tableEmptyText(
                 movementQuery.isError ? movementQuery.error : null,

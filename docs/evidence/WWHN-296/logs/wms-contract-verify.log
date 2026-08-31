@@ -1,6 +1,0 @@
-$ npm run wms-contract:verify
-
-[wms-contract] PASS: current m1 runtime guards are internally consistent; Stocktake remains removed and independent final gates stay fail-closed.
-
-
-exit code: 0

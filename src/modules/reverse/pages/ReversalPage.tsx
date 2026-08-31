@@ -113,15 +113,15 @@ export default function ReversalPage() {
       key: "reversal_code",
       header: "Mã điều chỉnh",
       width: 170,
-      sortAccessor: (row) => row.reversal_code || row.id,
-      render: (row) => <strong>{row.reversal_code || row.id}</strong>,
+      sortAccessor: (row) => row.reversal_code || "",
+      // KHÔNG fallback sang row.id: cột này là MÃ ĐIỀU CHỈNH đọc được.
+      render: (row) => <strong>{row.reversal_code || "—"}</strong>,
     },
     {
       key: "ref",
       header: "Chứng từ gốc",
       width: 180,
-      sortAccessor: (row) =>
-        row.reference_document_code || row.reference_document_id,
+      sortAccessor: (row) => row.reference_document_code || "",
       render: (row) => (
         <Box
           component="code"
@@ -133,7 +133,8 @@ export default function ReversalPage() {
             fontSize: 12.5,
           }}
         >
-          {row.reference_document_code || row.reference_document_id}
+          {/* KHÔNG fallback sang *_document_id (UUID) — thiếu mã thì hiện "—". */}
+          {row.reference_document_code || "—"}
         </Box>
       ),
     },
@@ -300,7 +301,7 @@ export default function ReversalPage() {
           rowKey={(row) => row.id}
           rowSelection={rowSelection}
           selectionLabel={(row) =>
-            `Chọn phiếu điều chỉnh ${row.reversal_code || row.id}`
+            `Chọn phiếu điều chỉnh ${row.reversal_code || "chưa có mã"}`
           }
           // Chỉ khoá bảng khi tải lần đầu — ResponsiveDataTable thay hẳn nội
           // dung bảng bằng "Đang tải..." khi loading=true (không giữ dòng cũ

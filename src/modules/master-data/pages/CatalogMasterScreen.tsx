@@ -387,15 +387,20 @@ export function CatalogMasterScreen() {
             header: "Hãng",
             width: 180,
             sortAccessor: (record) =>
-              brandNameById.get(record.brand_id ?? "") ?? record.brand_id ?? "",
-            render: (record) =>
-              record.brand_id ? (
-                (brandNameById.get(record.brand_id) ?? record.brand_id)
+              brandNameById.get(record.brand_id ?? "") ?? "",
+            // KHÔNG rơi xuống brand_id (UUID) khi chưa tra ra tên hãng.
+            render: (record) => {
+              const brandName = record.brand_id
+                ? brandNameById.get(record.brand_id)
+                : undefined;
+              return brandName ? (
+                brandName
               ) : (
                 <Box component="span" sx={{ color: "text.secondary" }}>
                   —
                 </Box>
-              ),
+              );
+            },
           } satisfies ResponsiveTableColumn<CatalogMasterRecord>,
         ]
       : []),

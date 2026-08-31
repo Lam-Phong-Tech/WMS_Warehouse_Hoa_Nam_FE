@@ -1,807 +1,0 @@
-=== GATE 04-unit : yarn test ===
-yarn run v1.22.22
-$ vitest run
-
- RUN  v4.1.10 C:/Users/ACER/AppData/Local/Temp/claude/C--Users-ACER-Downloads-New-folder/9459ffd9-16c0-4b4b-861c-8c3bd0d160c7/scratchpad/wt325
-
- ' src/shared/types/permission.scope.test.ts (22 tests) 19ms
- ' src/modules/inventory/services/inventoryService.test.ts (8 tests) 20ms
- ' src/modules/inbound/services/inboundService.test.ts (14 tests) 40ms
- ' src/modules/warranty/services/componentIssueService.test.ts (12 tests) 30ms
- ' src/modules/warranty/services/warrantyService.test.ts (13 tests) 40ms
- ' src/modules/auth/services/auth.service.test.ts (11 tests) 28ms
- ' src/shared/hooks/useTablePattern.test.ts (46 tests) 508ms
- ' src/test/wms-contract-signoff-guards.test.ts (11 tests) 46ms
- ' src/test/auth-security-rbac-audit.test.ts (20 tests) 128ms
- ' src/app/router/RequirePermission.test.tsx (14 tests) 196ms
-cmd.exe : stderr | src/modules/inventory/components/TraceModal.test.tsx > TraceModal (TRACE-01) > truy vï¿½t theo 
-movementId: hiï¿½n thï¿½ chi tiï¿½t movement + chï¿½ng tï¿½ nguï¿½n + timeline (DEV211-P1-01)
-At C:\Users\ACER\AppData\Local\Temp\claude\C--Users-ACER-Downloads-New-folder\9459ffd9-16c0-4b4b-861c-8c3bd0d160c7\scra
-tchpad\run-evidence-325.ps1:13 char:3
-+   & cmd /c "$cmd" >> "$ev\$name.log" 2>&1
-+   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : NotSpecified: (stderr | src/mo... (DEV211-P1-01):String) [], RemoteException
-    + FullyQualifiedErrorId : NativeCommandError
- 
-Received `true` for a non-boolean attribute `code`.
-
-If you want to write it to the DOM, pass a string instead: code="true" or code={value.toString()}.
-Received `true` for a non-boolean attribute `copyable`.
-
-If you want to write it to the DOM, pass a string instead: copyable="true" or copyable={value.toString()}.
-Received `true` for a non-boolean attribute `strong`.
-
-If you want to write it to the DOM, pass a string instead: strong="true" or strong={value.toString()}.
-React does not recognize the `rowKey` prop on a DOM element. If you intentionally want it to appear in the DOM as a 
-custom attribute, spell it as lowercase `rowkey` instead. If you accidentally passed it from a parent component, 
-remove it from the DOM element.
-Received `false` for a non-boolean attribute `pagination`.
-
-If you want to write it to the DOM, pass a string instead: pagination="false" or pagination={value.toString()}.
-
-If you used to conditionally omit it with pagination={condition && value}, pass pagination={condition ? value : 
-undefined} instead.
-
- ' src/shared/components/permission/__tests__/PermissionGuard.test.tsx (14 tests) 215ms
-stderr | src/modules/inbound/pages/InboundScanModal.test.tsx > IN-03 ï¿½ bï¿½ng mï¿½ ï¿½ quï¿½t vï¿½ gï¿½ mï¿½ trï¿½ï¿½c Post > hiï¿½n thï¿½ 
-bï¿½ng mï¿½ ï¿½ quï¿½t ï¿½c tï¿½ server, kï¿½m SKU vï¿½ nguï¿½n quï¿½t
-Received `true` for a non-boolean attribute `wrap`.
-
-If you want to write it to the DOM, pass a string instead: wrap="true" or wrap={value.toString()}.
-Received `false` for a non-boolean attribute `loading`.
-
-If you want to write it to the DOM, pass a string instead: loading="false" or loading={value.toString()}.
-
-If you used to conditionally omit it with loading={condition && value}, pass loading={condition ? value : undefined} 
-instead.
-React does not recognize the `rowKey` prop on a DOM element. If you intentionally want it to appear in the DOM as a 
-custom attribute, spell it as lowercase `rowkey` instead. If you accidentally passed it from a parent component, 
-remove it from the DOM element.
-Received `false` for a non-boolean attribute `pagination`.
-
-If you want to write it to the DOM, pass a string instead: pagination="false" or pagination={value.toString()}.
-
-If you used to conditionally omit it with pagination={condition && value}, pass pagination={condition ? value : 
-undefined} instead.
-Received `true` for a non-boolean attribute `danger`.
-
-If you want to write it to the DOM, pass a string instead: danger="true" or danger={value.toString()}.
-
-stderr | src/modules/inventory/pages/InventoryPage.test.tsx > InventoryPage (INV-01 hub) > hiï¿½n thï¿½ danh sï¿½ch tï¿½n kho 
-hiï¿½n tï¿½i vï¿½i SKU, ï¿½i soï¿½t vï¿½ trï¿½ng thï¿½i
-React does not recognize the `showSearch` prop on a DOM element. If you intentionally want it to appear in the DOM as 
-a custom attribute, spell it as lowercase `showsearch` instead. If you accidentally passed it from a parent component, 
-remove it from the DOM element.
-React does not recognize the `labelRender` prop on a DOM element. If you intentionally want it to appear in the DOM as 
-a custom attribute, spell it as lowercase `labelrender` instead. If you accidentally passed it from a parent 
-component, remove it from the DOM element.
-Received `true` for a non-boolean attribute `code`.
-
-If you want to write it to the DOM, pass a string instead: code="true" or code={value.toString()}.
-Received `true` for a non-boolean attribute `copyable`.
-
-If you want to write it to the DOM, pass a string instead: copyable="true" or copyable={value.toString()}.
-React does not recognize the `rowKey` prop on a DOM element. If you intentionally want it to appear in the DOM as a 
-custom attribute, spell it as lowercase `rowkey` instead. If you accidentally passed it from a parent component, 
-remove it from the DOM element.
-Received `false` for a non-boolean attribute `loading`.
-
-If you want to write it to the DOM, pass a string instead: loading="false" or loading={value.toString()}.
-
-If you used to conditionally omit it with loading={condition && value}, pass loading={condition ? value : undefined} 
-instead.
-Unknown event handler property `onRow`. It will be ignored.
-
- ' src/modules/inventory/components/TraceModal.test.tsx (9 tests) 986ms
-     ' truy vï¿½t theo mï¿½ vï¿½t lï¿½ loï¿½i ITEM: hiï¿½n thï¿½ SKU/serial, khï¿½ng phï¿½i chï¿½ SKU approximation (DEV211-P1-01)  375ms
-stderr | src/modules/inventory/pages/InventoryPage.test.tsx > InventoryPage (INV-01 hub) > bï¿½m Mï¿½ mï¿½ 
-BalanceDetailModal chi tiï¿½t ï¿½ng dï¿½ng
-Received `true` for a non-boolean attribute `wrap`.
-
-If you want to write it to the DOM, pass a string instead: wrap="true" or wrap={value.toString()}.
-Received `true` for a non-boolean attribute `strong`.
-
-If you want to write it to the DOM, pass a string instead: strong="true" or strong={value.toString()}.
-Received `false` for a non-boolean attribute `pagination`.
-
-If you want to write it to the DOM, pass a string instead: pagination="false" or pagination={value.toString()}.
-
-If you used to conditionally omit it with pagination={condition && value}, pass pagination={condition ? value : 
-undefined} instead.
-
- ' src/modules/inbound/pages/InboundScanModal.test.tsx (5 tests) 1233ms
-     ' hiï¿½n thï¿½ bï¿½ng mï¿½ ï¿½ quï¿½t ï¿½c tï¿½ server, kï¿½m SKU vï¿½ nguï¿½n quï¿½t  385ms
-     ' gï¿½ mï¿½ ï¿½ quï¿½t gï¿½i ï¿½ng entry id vï¿½ version hiï¿½n tï¿½i  466ms
- ' src/shared/hooks/useFormPattern.test.tsx (8 tests) 863ms
-     ' submitForm gï¿½i onSubmit vï¿½i dï¿½ liï¿½u hï¿½p lï¿½, khï¿½ng cï¿½n handleSubmit thï¿½ cï¿½ng  430ms
- ' src/modules/inventory/pages/InventoryPage.test.tsx (10 tests) 1678ms
-     ' bï¿½m Mï¿½ mï¿½ BalanceDetailModal chi tiï¿½t ï¿½ng dï¿½ng  488ms
-stderr | src/modules/inventory/components/BalanceDetailModal.test.tsx > BalanceDetailModal > hiï¿½n thï¿½ chi tiï¿½t tï¿½n 
-kho: SKU, ï¿½i soï¿½t, item subledger, container subledger, movement liï¿½n quan
-Received `true` for a non-boolean attribute `code`.
-
-If you want to write it to the DOM, pass a string instead: code="true" or code={value.toString()}.
-Received `true` for a non-boolean attribute `copyable`.
-
-If you want to write it to the DOM, pass a string instead: copyable="true" or copyable={value.toString()}.
-Received `true` for a non-boolean attribute `wrap`.
-
-If you want to write it to the DOM, pass a string instead: wrap="true" or wrap={value.toString()}.
-Received `true` for a non-boolean attribute `strong`.
-
-If you want to write it to the DOM, pass a string instead: strong="true" or strong={value.toString()}.
-React does not recognize the `rowKey` prop on a DOM element. If you intentionally want it to appear in the DOM as a 
-custom attribute, spell it as lowercase `rowkey` instead. If you accidentally passed it from a parent component, 
-remove it from the DOM element.
-Received `false` for a non-boolean attribute `loading`.
-
-If you want to write it to the DOM, pass a string instead: loading="false" or loading={value.toString()}.
-
-If you used to conditionally omit it with loading={condition && value}, pass loading={condition ? value : undefined} 
-instead.
-Received `false` for a non-boolean attribute `pagination`.
-
-If you want to write it to the DOM, pass a string instead: pagination="false" or pagination={value.toString()}.
-
-If you used to conditionally omit it with pagination={condition && value}, pass pagination={condition ? value : 
-undefined} instead.
-
- ' src/modules/reverse/services/reversalService.test.ts (6 tests) 22ms
- ' src/shared/types/permission.test.ts (11 tests) 14ms
- ' src/shared/constants/validation.constants.test.ts (22 tests) 18ms
- ' src/shared/api/axios.test.ts (5 tests) 21ms
- ' src/test/flow01-system-catalog-contract.test.ts (9 tests) 19ms
-stderr | src/modules/warranty/pages/WarrantyPage.test.tsx > WarrantyPage (WAR-01 hub) > hiï¿½n thï¿½ danh sï¿½ch case vï¿½i 
-tag TEMP_ONLY vï¿½ nï¿½t tiï¿½p nhï¿½n theo quyï¿½n
-React does not recognize the `showSearch` prop on a DOM element. If you intentionally want it to appear in the DOM as 
-a custom attribute, spell it as lowercase `showsearch` instead. If you accidentally passed it from a parent component, 
-remove it from the DOM element.
-React does not recognize the `labelRender` prop on a DOM element. If you intentionally want it to appear in the DOM as 
-a custom attribute, spell it as lowercase `labelrender` instead. If you accidentally passed it from a parent 
-component, remove it from the DOM element.
-React does not recognize the `rowKey` prop on a DOM element. If you intentionally want it to appear in the DOM as a 
-custom attribute, spell it as lowercase `rowkey` instead. If you accidentally passed it from a parent component, 
-remove it from the DOM element.
-Received `true` for a non-boolean attribute `loading`.
-
-If you want to write it to the DOM, pass a string instead: loading="true" or loading={value.toString()}.
-Unknown event handler property `onRow`. It will be ignored.
-
-stderr | src/modules/warranty/components/ComponentIssueModal.test.tsx > ComponentIssueModal (COMP-01) > case khï¿½ng cï¿½n 
-active: cï¿½nh bï¿½o vï¿½ khï¿½ng cho tï¿½o phiï¿½u DRAFT
-Functions are not valid as a React child. This may happen if you return children instead of <children /> from render. 
-Or maybe you meant to call this function rather than return it.
-  <stub>{children}</stub>
-React does not recognize the `initialValues` prop on a DOM element. If you intentionally want it to appear in the DOM 
-as a custom attribute, spell it as lowercase `initialvalues` instead. If you accidentally passed it from a parent 
-component, remove it from the DOM element.
-Received `false` for a non-boolean attribute `loading`.
-
-If you want to write it to the DOM, pass a string instead: loading="false" or loading={value.toString()}.
-
-If you used to conditionally omit it with loading={condition && value}, pass loading={condition ? value : undefined} 
-instead.
-Received `true` for a non-boolean attribute `wrap`.
-
-If you want to write it to the DOM, pass a string instead: wrap="true" or wrap={value.toString()}.
-
- ' src/modules/inventory/components/BalanceDetailModal.test.tsx (6 tests) 1117ms
-     ' hiï¿½n thï¿½ chi tiï¿½t tï¿½n kho: SKU, ï¿½i soï¿½t, item subledger, container subledger, movement liï¿½n quan  431ms
-     ' bï¿½m Trace trï¿½n movement liï¿½n quan gï¿½i onTraceMovement vï¿½i ï¿½ng movementId  405ms
-stderr | src/modules/reverse/components/ReversalDetailModal.test.tsx > ReversalDetailModal (REV-01 lifecycle ï¿½6) > 
-hiï¿½n thï¿½ SL movement gï¿½c tï¿½ch khï¿½i SL ï¿½o vï¿½ phï¿½n cï¿½n ï¿½o
-Received `true` for a non-boolean attribute `code`.
-
-If you want to write it to the DOM, pass a string instead: code="true" or code={value.toString()}.
-Received `true` for a non-boolean attribute `copyable`.
-
-If you want to write it to the DOM, pass a string instead: copyable="true" or copyable={value.toString()}.
-Received `true` for a non-boolean attribute `strong`.
-
-If you want to write it to the DOM, pass a string instead: strong="true" or strong={value.toString()}.
-Received `true` for a non-boolean attribute `wrap`.
-
-If you want to write it to the DOM, pass a string instead: wrap="true" or wrap={value.toString()}.
-React does not recognize the `rowKey` prop on a DOM element. If you intentionally want it to appear in the DOM as a 
-custom attribute, spell it as lowercase `rowkey` instead. If you accidentally passed it from a parent component, 
-remove it from the DOM element.
-Received `false` for a non-boolean attribute `loading`.
-
-If you want to write it to the DOM, pass a string instead: loading="false" or loading={value.toString()}.
-
-If you used to conditionally omit it with loading={condition && value}, pass loading={condition ? value : undefined} 
-instead.
-Received `false` for a non-boolean attribute `pagination`.
-
-If you want to write it to the DOM, pass a string instead: pagination="false" or pagination={value.toString()}.
-
-If you used to conditionally omit it with pagination={condition && value}, pass pagination={condition ? value : 
-undefined} instead.
-
- ' src/test/wwhn-148-critical-response-contract.test.ts (4 tests) 18ms
-stderr | src/modules/warranty/components/WarrantyDetailModal.test.tsx > WarrantyDetailModal (WAR-03) > hiï¿½n thï¿½ ï¿½ 
-thï¿½ng tin case TEMP_ONLY, PII mask note, ï¿½nh kï¿½m vï¿½ phiï¿½u linh kiï¿½n
-Received `true` for a non-boolean attribute `wrap`.
-
-If you want to write it to the DOM, pass a string instead: wrap="true" or wrap={value.toString()}.
-
-stderr | src/modules/warranty/components/WarrantyDetailModal.test.tsx > WarrantyDetailModal (WAR-03) > hiï¿½n thï¿½ ï¿½ 
-thï¿½ng tin case TEMP_ONLY, PII mask note, ï¿½nh kï¿½m vï¿½ phiï¿½u linh kiï¿½n
-Received `true` for a non-boolean attribute `danger`.
-
-If you want to write it to the DOM, pass a string instead: danger="true" or danger={value.toString()}.
-React does not recognize the `rowKey` prop on a DOM element. If you intentionally want it to appear in the DOM as a 
-custom attribute, spell it as lowercase `rowkey` instead. If you accidentally passed it from a parent component, 
-remove it from the DOM element.
-Received `false` for a non-boolean attribute `loading`.
-
-If you want to write it to the DOM, pass a string instead: loading="false" or loading={value.toString()}.
-
-If you used to conditionally omit it with loading={condition && value}, pass loading={condition ? value : undefined} 
-instead.
-Received `false` for a non-boolean attribute `pagination`.
-
-If you want to write it to the DOM, pass a string instead: pagination="false" or pagination={value.toString()}.
-
-If you used to conditionally omit it with pagination={condition && value}, pass pagination={condition ? value : 
-undefined} instead.
-
-stderr | src/modules/warranty/components/ComponentIssueModal.test.tsx > ComponentIssueModal (COMP-01) > SCANNING: quï¿½t 
-serial gï¿½i ï¿½ng line ang thiï¿½u + If-Match version
-Received `true` for a non-boolean attribute `strong`.
-
-If you want to write it to the DOM, pass a string instead: strong="true" or strong={value.toString()}.
-React does not recognize the `rowKey` prop on a DOM element. If you intentionally want it to appear in the DOM as a 
-custom attribute, spell it as lowercase `rowkey` instead. If you accidentally passed it from a parent component, 
-remove it from the DOM element.
-Received `false` for a non-boolean attribute `pagination`.
-
-If you want to write it to the DOM, pass a string instead: pagination="false" or pagination={value.toString()}.
-
-If you used to conditionally omit it with pagination={condition && value}, pass pagination={condition ? value : 
-undefined} instead.
-React does not recognize the `rowClassName` prop on a DOM element. If you intentionally want it to appear in the DOM 
-as a custom attribute, spell it as lowercase `rowclassname` instead. If you accidentally passed it from a parent 
-component, remove it from the DOM element.
-Unknown event handler property `onRow`. It will be ignored.
-Received `true` for a non-boolean attribute `block`.
-
-If you want to write it to the DOM, pass a string instead: block="true" or block={value.toString()}.
-Received `true` for a non-boolean attribute `danger`.
-
-If you want to write it to the DOM, pass a string instead: danger="true" or danger={value.toString()}.
-
-stderr | src/modules/reverse/components/ReversalDetailModal.test.tsx > ReversalDetailModal (REV-01 lifecycle ï¿½6) > 
-Cancel yï¿½u cï¿½u lï¿½ do tï¿½i thiï¿½u 5 kï¿½ tï¿½ rï¿½i gï¿½i kï¿½m If-Match version
-An update to ReversalDetailModal inside a test was not wrapped in act(...).
-
-When testing, code that causes React state updates should be wrapped into act(...):
-
-act(() => {
-  /* fire events that update state */
-});
-/* assert on the output */
-
-This ensures that you're testing the behavior the user would see in the browser. Learn more at 
-https://react.dev/link/wrap-tests-with-act
-
- ' src/modules/reverse/components/ReversalDetailModal.test.tsx (5 tests) 1117ms
-     ' hiï¿½n thï¿½ SL movement gï¿½c tï¿½ch khï¿½i SL ï¿½o vï¿½ phï¿½n cï¿½n ï¿½o  595ms
- ' src/modules/warranty/pages/WarrantyPage.test.tsx (6 tests) 1398ms
-     ' hiï¿½n thï¿½ danh sï¿½ch case vï¿½i tag TEMP_ONLY vï¿½ nï¿½t tiï¿½p nhï¿½n theo quyï¿½n  683ms
- ' src/modules/warranty/components/ComponentIssueModal.test.tsx (5 tests) 1424ms
-     ' case khï¿½ng cï¿½n active: cï¿½nh bï¿½o vï¿½ khï¿½ng cho tï¿½o phiï¿½u DRAFT  585ms
- ' src/test/wwhn-153-final-signoff-policy.test.ts (5 tests) 16ms
- ' src/modules/warranty/components/WarrantyDetailModal.test.tsx (4 tests) 1375ms
-     ' hiï¿½n thï¿½ ï¿½ thï¿½ng tin case TEMP_ONLY, PII mask note, ï¿½nh kï¿½m vï¿½ phiï¿½u linh kiï¿½n  368ms
-     ' mï¿½ Component Issue tï¿½ nï¿½t chï¿½n modal vï¿½i caseActive ï¿½ng state machine  529ms
- ' src/shared/store/auth.store.test.ts (6 tests) 76ms
- ' src/modules/auth/hooks/use-login.test.tsx (3 tests) 786ms
-     ' khï¿½i phï¿½c protected URL sau login vï¿½ commit access/refresh token  610ms
- ' src/test/flow06-report-pagination-export.test.ts (7 tests) 19ms
- ' src/shared/types/api-response.test.ts (14 tests) 15ms
-stderr | src/shared/components/feedback/FormDrawer.test.tsx > FormDrawer > width truyï¿½n vï¿½o FormDrawer ï¿½ï¿½c chuyï¿½n 
-thï¿½nh prop `size` cho antd Drawer (antd v6 bï¿½ `width` cho placement ngang)
-Received `false` for a non-boolean attribute `loading`.
-
-If you want to write it to the DOM, pass a string instead: loading="false" or loading={value.toString()}.
-
-If you used to conditionally omit it with loading={condition && value}, pass loading={condition ? value : undefined} 
-instead.
-
- ' src/modules/putaway/services/putawayService.test.ts (7 tests) 25ms
- ' src/test/flow06-packing-label-alignment.test.ts (5 tests) 19ms
- ' src/app/bootstrap-auth.test.ts (6 tests) 18ms
- ' src/shared/components/feedback/FormDrawer.test.tsx (8 tests) 908ms
-     ' mode="create"/"edit" hiï¿½n thï¿½ nï¿½t Lï¿½u/Hï¿½y vï¿½ title ï¿½ng mï¿½c ï¿½nh  336ms
-stderr | src/modules/putaway/pages/MvpPutawayPage.test.tsx > PTW-00/PTW-01 ï¿½ quyï¿½n Putaway theo SRS ï¿½3 > mï¿½n PTW-00 
-render danh sï¿½ch box chï¿½ xï¿½p khay cho ngï¿½ï¿½i chï¿½ cï¿½ putaway.manage
-React does not recognize the `allowClear` prop on a DOM element. If you intentionally want it to appear in the DOM as 
-a custom attribute, spell it as lowercase `allowclear` instead. If you accidentally passed it from a parent component, 
-remove it from the DOM element.
-React does not recognize the `showSearch` prop on a DOM element. If you intentionally want it to appear in the DOM as 
-a custom attribute, spell it as lowercase `showsearch` instead. If you accidentally passed it from a parent component, 
-remove it from the DOM element.
-React does not recognize the `labelRender` prop on a DOM element. If you intentionally want it to appear in the DOM as 
-a custom attribute, spell it as lowercase `labelrender` instead. If you accidentally passed it from a parent 
-component, remove it from the DOM element.
-React does not recognize the `rowKey` prop on a DOM element. If you intentionally want it to appear in the DOM as a 
-custom attribute, spell it as lowercase `rowkey` instead. If you accidentally passed it from a parent component, 
-remove it from the DOM element.
-Received `true` for a non-boolean attribute `loading`.
-
-If you want to write it to the DOM, pass a string instead: loading="true" or loading={value.toString()}.
-
-stderr | src/modules/putaway/pages/MvpPutawayPage.test.tsx > PTW-00/PTW-01 ï¿½ quyï¿½n Putaway theo SRS ï¿½3 > mï¿½n PTW-00 
-render danh sï¿½ch box chï¿½ xï¿½p khay cho ngï¿½ï¿½i chï¿½ cï¿½ putaway.manage
-In HTML, <button> cannot be a descendant of <button>.
-This will cause a hydration error.
-
-  ...
-    <div>
-    <stub>
-    <Alert>
-    <div className="ant-tabs">
-      <div>
-      <div className="ant-tabs-t..." hidden={false}>
-        <PageSizeSelector>
-        <div role="table" rowKey="id" loading={false} pagination={{pageSize:15, ...}} scroll={{x:1270}}>
-          <div role="row">
-            <div>
-            <div>
-            <div>
-            <div>
-            <div>
-            <div>
-            <div>
-            <div>
-              <div size={2}>
-                <createButton>
-                <ActionDropdown tooltip="Thao tï¿½c P..." icon={<stub>} items={[...]}>
-                  <Dropdown menu={{items:[...]}} trigger={[...]} placement="bottomRight" disabled={false}>
-                    <div>
->                     <button
->                       type="button"
->                       onClick={function handleClick}
->                       title="Thao tï¿½c"
->                       data-placement="bottomRight"
->                       data-testid="action-dropdown-trigger"
->                     >
-                        <createButton type="text" size="small" icon={<stub>} title="Thao tï¿½c P..." disabled={false}>
->                         <button size="small" icon={<stub>} title="Thao tï¿½c Putaway" disabled={false} type="button">
-      ...
-
-<button> cannot contain a nested <button>.
-See this log for the ancestor stack trace.
-
- ' src/modules/putaway/pages/MvpPutawayPage.test.tsx (5 tests) 366ms
-     ' mï¿½n PTW-00 render danh sï¿½ch box chï¿½ xï¿½p khay cho ngï¿½ï¿½i chï¿½ cï¿½ putaway.manage  331ms
- ' src/shared/components/permission/ActionButton.test.tsx (8 tests) 186ms
- ' src/modules/master-data/services/sku-import.service.test.ts (5 tests) 17ms
-stderr | src/app/layouts/SideNav.test.tsx > SideNav RBAC filtering > shows list entry points when the user has 
-matching WMS permissions
-An update to SideNav inside a test was not wrapped in act(...).
-
-When testing, code that causes React state updates should be wrapped into act(...):
-
-act(() => {
-  /* fire events that update state */
-});
-/* assert on the output */
-
-This ensures that you're testing the behavior the user would see in the browser. Learn more at 
-https://react.dev/link/wrap-tests-with-act
-
-stderr | src/app/layouts/SideNav.test.tsx > SideNav RBAC filtering > hides routes and groups that the user cannot 
-access
-An update to SideNav inside a test was not wrapped in act(...).
-
-When testing, code that causes React state updates should be wrapped into act(...):
-
-act(() => {
-  /* fire events that update state */
-});
-/* assert on the output */
-
-This ensures that you're testing the behavior the user would see in the browser. Learn more at 
-https://react.dev/link/wrap-tests-with-act
-
- ' src/test/wwhn-178-closure.test.ts (3 tests) 209ms
-stderr | src/modules/master-data/pages/MvpMasterScreens.test.tsx > API-backed MVP master screens > keeps SKU 
-create/edit inside the list modal
-React does not recognize the `showSearch` prop on a DOM element. If you intentionally want it to appear in the DOM as 
-a custom attribute, spell it as lowercase `showsearch` instead. If you accidentally passed it from a parent component, 
-remove it from the DOM element.
-React does not recognize the `labelRender` prop on a DOM element. If you intentionally want it to appear in the DOM as 
-a custom attribute, spell it as lowercase `labelrender` instead. If you accidentally passed it from a parent 
-component, remove it from the DOM element.
-
- ' src/modules/master-data/pages/MvpMasterScreens.test.tsx (3 tests) 1276ms
-     ' keeps SKU create/edit inside the list modal  1083ms
-stderr | src/app/layouts/SideNav.test.tsx > SideNav RBAC filtering > folds inbound and putaway operations into their 
-owning list screens
-An update to SideNav inside a test was not wrapped in act(...).
-
-When testing, code that causes React state updates should be wrapped into act(...):
-
-act(() => {
-  /* fire events that update state */
-});
-/* assert on the output */
-
-This ensures that you're testing the behavior the user would see in the browser. Learn more at 
-https://react.dev/link/wrap-tests-with-act
-An update to SideNav inside a test was not wrapped in act(...).
-
-When testing, code that causes React state updates should be wrapped into act(...):
-
-act(() => {
-  /* fire events that update state */
-});
-/* assert on the output */
-
-This ensures that you're testing the behavior the user would see in the browser. Learn more at 
-https://react.dev/link/wrap-tests-with-act
-
-stderr | src/app/layouts/SideNav.test.tsx > SideNav RBAC filtering > lets Super Admin see all list entry points even 
-with no permission codes
-An update to SideNav inside a test was not wrapped in act(...).
-
-When testing, code that causes React state updates should be wrapped into act(...):
-
-act(() => {
-  /* fire events that update state */
-});
-/* assert on the output */
-
-This ensures that you're testing the behavior the user would see in the browser. Learn more at 
-https://react.dev/link/wrap-tests-with-act
-An update to SideNav inside a test was not wrapped in act(...).
-
-When testing, code that causes React state updates should be wrapped into act(...):
-
-act(() => {
-  /* fire events that update state */
-});
-/* assert on the output */
-
-This ensures that you're testing the behavior the user would see in the browser. Learn more at 
-https://react.dev/link/wrap-tests-with-act
-
- ' src/app/layouts/SideNav.test.tsx (5 tests) 978ms
-     ' folds inbound and putaway operations into their owning list screens  581ms
- ' src/shared/components/permission/PermissionGuard.test.tsx (8 tests) 240ms
- ' src/shared/api/axios.refresh.integration.test.ts (3 tests) 38ms
- ' src/app/router/ProtectedRoute.test.tsx (5 tests) 820ms
-     ' bootstrap network/5xx -> fail-closed cï¿½ retry, khï¿½ng redirect login  396ms
-stderr | src/shared/components/feedback/FormPage.test.tsx > FormPage > render title ï¿½ng
-Received `false` for a non-boolean attribute `loading`.
-
-If you want to write it to the DOM, pass a string instead: loading="false" or loading={value.toString()}.
-
-If you used to conditionally omit it with loading={condition && value}, pass loading={condition ? value : undefined} 
-instead.
-
-stderr | src/shared/components/feedback/FormModal.test.tsx > FormModal > loading=true khoï¿½ nï¿½t OK vï¿½ hiï¿½n trï¿½ng thï¿½i 
-loading (confirmLoading)
-Received `true` for a non-boolean attribute `loading`.
-
-If you want to write it to the DOM, pass a string instead: loading="true" or loading={value.toString()}.
-
- ' src/modules/audit-logs/services/audit-logs.service.test.ts (5 tests) 81ms
- o' src/modules/dashboard/pages/DashboardPage.test.tsx (3 tests | 1 failed) 680ms
-     ï¿½ renders KPI and optional chart from the real aggregate response 350ms
-     ' renders an explicit empty state instead of fabricated chart data 249ms
-     ' does not call report API when the loaded profile lacks report.view 74ms
- ' src/shared/components/feedback/FormModal.test.tsx (6 tests) 803ms
-     ' loading=true khoï¿½ nï¿½t OK vï¿½ hiï¿½n trï¿½ng thï¿½i loading (confirmLoading)  511ms
- ' src/app/router/access.test.ts (2 tests) 62ms
- ' src/shared/api/api-error.test.ts (7 tests) 14ms
- ' src/shared/components/feedback/FormPage.test.tsx (8 tests) 1316ms
-     ' gï¿½i onOk vï¿½ onCancel khi bï¿½m nï¿½t  594ms
-stderr | src/shared/api/http.test.ts > http unwrap hardening > raw array (khï¿½ng cï¿½ envelope) ï¿½! trï¿½ thï¿½ng array
-[http] Response khï¿½ng ï¿½ng envelope ApiResponse<T> tï¿½i "/x". Nhï¿½n: [ 1, 2, 3 ]
-
-stderr | src/shared/api/http.test.ts > http unwrap hardening > object hï¿½p lï¿½ nhï¿½ng thiï¿½u field `data` ï¿½! trï¿½ thï¿½ng 
-object (fallback)
-[http] Response khï¿½ng ï¿½ng envelope ApiResponse<T> tï¿½i "/x". Nhï¿½n: { foo: 'bar' }
-
-stderr | src/shared/api/http.test.ts > http unwrap hardening > getPage: object thiï¿½u `data` ï¿½! fallback trï¿½ thï¿½ng 
-object, meta rï¿½ng
-[http] Response khï¿½ng ï¿½ng envelope ApiResponse<T> tï¿½i "/x". Nhï¿½n: { items: [ 1, 2 ] }
-
- ' src/shared/api/http.test.ts (7 tests) 30ms
-stderr | src/modules/iam/pages/IamUserScreen.test.tsx > IamUserScreen > renders backend users and opens create inside 
-IAM-01
-React does not recognize the `showSearch` prop on a DOM element. If you intentionally want it to appear in the DOM as 
-a custom attribute, spell it as lowercase `showsearch` instead. If you accidentally passed it from a parent component, 
-remove it from the DOM element.
-React does not recognize the `labelRender` prop on a DOM element. If you intentionally want it to appear in the DOM as 
-a custom attribute, spell it as lowercase `labelrender` instead. If you accidentally passed it from a parent 
-component, remove it from the DOM element.
-
- ' src/modules/iam/pages/IamUserScreen.test.tsx (3 tests) 1233ms
-     ' renders backend users and opens create inside IAM-01  872ms
- ' src/modules/auth/components/ContextSwitcher.test.tsx (3 tests) 1198ms
-     ' chï¿½n kho khï¿½c gï¿½i ï¿½ng payload BE vï¿½ lï¿½u token/context mï¿½i  988ms
- ' src/shared/api/__tests__/api-error.unit.test.ts (5 tests) 10ms
- ' src/shared/pwa/pwa-assets.test.ts (3 tests) 61ms
- ' src/modules/auth/schemas/login.schema.test.ts (4 tests) 31ms
-stderr | src/shared/components/shared-components.test.tsx > PageHeader > hiï¿½n thï¿½ tiï¿½u ï¿½, mï¿½ tï¿½ vï¿½ vï¿½ng thao tï¿½c
-Received `true` for a non-boolean attribute `wrap`.
-
-If you want to write it to the DOM, pass a string instead: wrap="true" or wrap={value.toString()}.
-
-stderr | src/modules/auth/pages/LoginPage.test.tsx > LoginPage > hiï¿½n thï¿½ form ng nhï¿½p
-React does not recognize the `allowClear` prop on a DOM element. If you intentionally want it to appear in the DOM as 
-a custom attribute, spell it as lowercase `allowclear` instead. If you accidentally passed it from a parent component, 
-remove it from the DOM element.
-Received `true` for a non-boolean attribute `block`.
-
-If you want to write it to the DOM, pass a string instead: block="true" or block={value.toString()}.
-Received `false` for a non-boolean attribute `loading`.
-
-If you want to write it to the DOM, pass a string instead: loading="false" or loading={value.toString()}.
-
-If you used to conditionally omit it with loading={condition && value}, pass loading={condition ? value : undefined} 
-instead.
-React does not recognize the `requiredMark` prop on a DOM element. If you intentionally want it to appear in the DOM 
-as a custom attribute, spell it as lowercase `requiredmark` instead. If you accidentally passed it from a parent 
-component, remove it from the DOM element.
-
- ' src/shared/components/shared-components.test.tsx (7 tests) 1094ms
-     ' hiï¿½n thï¿½ tiï¿½u ï¿½, mï¿½ tï¿½ vï¿½ vï¿½ng thao tï¿½c  449ms
-     ' normalizes scan value and clears the field after submit  325ms
- ' src/modules/auth/pages/LoginPage.test.tsx (3 tests) 1214ms
-     ' hiï¿½n thï¿½ form ng nhï¿½p  492ms
-     ' bï¿½o lï¿½i khi email sai ï¿½nh dï¿½ng  526ms
- ' src/modules/master-data/services/warehouse.service.test.ts (3 tests) 15ms
- ' src/modules/auth/utils/context.test.ts (4 tests) 10ms
- ' src/modules/auth/hooks/use-switch-context.test.ts (3 tests) 9ms
- ' src/test/warranty-v17-fail-closed.test.ts (1 test) 9ms
- ' src/shared/config/env.test.ts (4 tests) 9ms
- ' src/shared/pwa/offline-policy.test.ts (9 tests) 9ms
- ' src/shared/components/data-display/TableContainer.test.tsx (4 tests) 256ms
- ' src/shared/utils/format-date.test.ts (1 test) 18ms
- ' src/app/providers/AppProviders.test.tsx (1 test) 42ms
-
-ï¿½#ï¿½#ï¿½#ï¿½#ï¿½#ï¿½#ï¿½# Failed Tests 1 ï¿½#ï¿½#ï¿½#ï¿½#ï¿½#ï¿½#ï¿½#
-
- FAIL  src/modules/dashboard/pages/DashboardPage.test.tsx > DashboardPage / WWHN-327 > renders KPI and optional chart 
-from the real aggregate response
-TestingLibraryElementError: Found multiple elements with the text: 300
-
-Here are the matching elements:
-
-Ignored nodes: comments, script, style
-[36m<strong[39m
-  [33mclass[39m=[32m"hn-dashboard-metric-value"[39m
-[36m>[39m
-  [0m300[0m
-[36m</strong>[39m
-
-Ignored nodes: comments, script, style
-[36m<strong>[39m
-  [0m300[0m
-[36m</strong>[39m
-
-(If this is intentional, then use the `*AllBy*` variant of the query (like `queryAllByText`, `getAllByText`, or 
-`findAllByText`)).
-
-Ignored nodes: comments, script, style
-[36m<body>[39m
-  [36m<div>[39m
-    [36m<div[39m
-      [33mclass[39m=[32m"hn-dashboard-page"[39m
-    [36m>[39m
-      [36m<section[39m
-        [33maria-labelledby[39m=[32m"dashboard-title"[39m
-        [33mclass[39m=[32m"hn-card hn-dashboard-header"[39m
-      [36m>[39m
-        [36m<div>[39m
-          [36m<div[39m
-            [33mclass[39m=[32m"tag"[39m
-          [36m>[39m
-            [0mWWHN-327 ï¿½ Dashboard enhancement[0m
-          [36m</div>[39m
-          [36m<h1[39m
-            [33mclass[39m=[32m"hn-dashboard-title"[39m
-            [33mid[39m=[32m"dashboard-title"[39m
-          [36m>[39m
-            [0mTï¿½ng quan dashboard[0m
-          [36m</h1>[39m
-          [36m<p[39m
-            [33mclass[39m=[32m"hn-dashboard-muted"[39m
-          [36m>[39m
-            [0mSï¿½ liï¿½u lï¿½y trï¿½c tiï¿½p tï¿½ GET /reports/dashboard-quick. Cï¿½c luï¿½ng nhï¿½p/xuï¿½t dï¿½ng occurred_at trong kï¿½; 
-tï¿½n khï¿½ dï¿½ng, bï¿½o hï¿½nh vï¿½ ï¿½i soï¿½t lï¿½ sï¿½ liï¿½u snapshot/toï¿½n bï¿½ theo contract backend.[0m
-          [36m</p>[39m
-        [36m</div>[39m
-        [36m<div[39m
-          [33maria-label[39m=[32m"Bï¿½ lï¿½c kï¿½ dashboard"[39m
-          [33mclass[39m=[32m"hn-dashboard-filter"[39m
-        [36m>[39m
-          [36m<label>[39m
-            [36m<span>[39m
-              [0mTï¿½ ngï¿½y[0m
-            [36m</span>[39m
-            [36m<input[39m
-              [33mtype[39m=[32m"date"[39m
-              [33mvalue[39m=[32m"2026-07-19"[39m
-            [36m/>[39m
-          [36m</label>[39m
-          [36m<label>[39m
-            [36m<span>[39m
-              [0mï¿½n ngï¿½y[0m
-            [36m</span>[39m
-            [36m<input[39m
-              [33mtype[39m=[32m"date"[39m
-              [33mvalue[39m=[32m"2026-08-18"[39m
-            [36m/>[39m
-          [36m</label>[39m
-          [36m<div[39m
-            [33mclass[39m=[32m"hn-dashboard-filter-actions"[39m
-          [36m>[39m
-            [36m<button[39m
-              [33mclass[39m=[32m"hn-node"[39m
-              [33mtype[39m=[32m"button"[39m
-            [36m>[39m
-              [0mï¿½p dï¿½ng[0m
-            [36m</button>[39m
-            [36m<button[39m
-              [33mclass[39m=[32m"hn-node hn-dashboard-secondary-button"[39m
-              [33mtype[39m=[32m"button"[39m
-            [36m>[39m
-              [0mMï¿½c ï¿½nh BE[0m
-            [36m</button>[39m
-          [36m</div>[39m
-        [36m</div>[39m
-        [36m<div[39m
-          [33mclass[39m=[32m"hn-dashboard-muted hn-dashboard-timezone"[39m
-        [36m>[39m
-          [0mCutoff ngï¿½y theo timezone backend: Asia/Ho_Chi_Minh. Khi khï¿½ng gï¿½i bï¿½ lï¿½c, backend dï¿½ng kï¿½ mï¿½c ï¿½nh 30 
-ngï¿½y gï¿½n nhï¿½t.[0m
-        [36m</div>[39m
-      [36m</section>[39m
-      [36m<section[39m
-        [33maria-labelledby[39m=[32m"dashboard-kpi-title"[39m
-      [36m>[39m
-        [36m<div[39m
-          [33mclass[39m=[32m"hn-dashboard-section-heading"[39m
-        [36m>[39m
-          [36m<div>[39m
-            [36m<h2[39m
-              [33mclass[39m=[32m"hn-section-title"[39m
-              [33mid[39m=[32m"dashboard-kpi-title"[39m
-            [36m>[39m
-              [0mKPI vï¿½n hï¿½nh[0m
-            [36m</h2>[39m
-            [36m<div[39m
-              [33mclass[39m=[32m"hn-dashboard-muted"[39m
-            [36m>[39m
-              [0mKï¿½ BE trï¿½ vï¿½: [0m
-              [0m2026-07-19[0m
-              [0m ï¿½! [0m
-              [0m2026-08-18[0m
-            [36m</div>[39m
-          [36m</div>[39m
-          [36m<span[39m
-            [33mclass[39m=[32m"tag"[39m
-          [36m>[39m
-            [0mNguï¿½n: backend authoritative[0m
-          [36m</span>[39m
-        [36m</div>[39m
-        [36m<div[39m
-          [33mclass[39m=[32m"hn-dashboard-kpi-grid"[39m
-        [36m>[39m
-          [36m<div[39m
-            [33mclass[39m=[32m"hn-card hn-dashboard-metric"[39m
-          [36m>[39m
-            [36m<div[39m
-              [33mclass[39m=[32m"hn-dashboard-metric-label"[39m
-            [36m>[39m
-              [0mTï¿½n khï¿½ dï¿½ng[0m
-            [36m</div>[39m
-            [36m<strong[39m
-              [33mclass[39m=[32m"hn-dashboard-metric-value"[39m
-            [36m>[39m
-              [0m1.234[0m
-            [36m</strong>[39m
-            [36m<div[39m
-              [33mclass[39m=[32m"hn-dashboard-muted"[39m
-            [36m>[39m
-              [0mSnapshot AVAILABLE hiï¿½n tï¿½i[0m
-            [36m</div>[39m
-          [36m</div>[39m
-          [36m<div[39m
-            [33mclass[39m=[32m"hn-card hn-dashboard-metric"[39m
-          [36m>[39m
-            [36m<div[39m
-              [33mclass[39m=[32m"hn-dashboard-metric-label"[39m
-            [36m>[39m
-              [0mNhï¿½p kho[0m
-            [36m</div>[39m
-            [36m<strong[39m
-              [33mclass[39m=[32m"hn-dashboard-metric-value"[39m
-            [36m>[39m
-              [0m300[0m
-            [36m</strong>[39m
-            [36m<div[39m
-              [33mclass[39m=[32m"hn-dashboard-muted"[39m
-            [36m>[39m
-              [0mRECEIPT theo occurred_at trong kï¿½[0m
-            [36m</div>[39m
-          [36m</div>[39m
-          [36m<div[39m
-            [33mclass[39m=[32m"hn-card hn-dashboard-metric"[39m
-          [36m>[39m
-            [36m<div[39m
-              [33mclass[39m=[32m"hn-dashboard-metric-label"[39m
-            [36m>[39m
-              [0mXuï¿½t kho[0m
-            [36m</div>[39m
-            [36m<strong[39m
-              [33mclass[39m=[32m"hn-dashboard-metric-value"[39m
-            [36m>[39m
-              [0m120[0m
-            [36m</strong>[39m
-            [36m<div[39m
-              [33mclass[39m=[32m"hn-dashboard-muted"[39m
-            [36m>[39m
-              [0mISSUE theo occurred_at trong kï¿½[0m
-            [36m</div>[39m
-          [36m</div>[39m
-          [36m<div[39m
-            [33mclass[39m=[32m"hn-card hn-dashboard-metric"[39m
-          [36m>[39m
-            [36m<div[39m
-              [33mclass[39m=[32m"hn-dashboard-metric-label"[39m
-            [36m>[39m
-
-              [0mXuï¿½t linh kiï¿½n[0m
-            [36m</div>[39m
-            [36m<strong[39m
-              [33mclass[39m=[32m"hn-dashboard-metric-value"[39m
-            [36m>[39m
-              [0m25[0m
-            [36m</strong>[39m
-            [36m<div[39m
-              [33mclass[39m=[32m"hn-dashboard-muted"[39m
-            [36m>[39m
-              [0mCOMPONENT_ISSUE trong kï¿½[0m
-            [36m</div>[39m
-          [36m</div>[39m
-          [36m<div[39m
-            [33mclass[39m=[32m"hn-card hn-dashboard-metric"[39m
-          [36m>[39m
-            [36m<div[39m
-              [33mclass[39m=[32m"hn-dashboard-metric-label"[39m
-            [36m>[39m
-              [0mReversal net[0m
-            [36m</div>[39m
-            [36m<strong[39m
-              [33mclass[39m=[32m"hn-das...
- o' Object.getElementError node_modules/@testing-library/dom/dist/config.js:37:19
- o' getElementError node_modules/@testing-library/dom/dist/query-helpers.js:20:35
- o' getMultipleElementsFoundError node_modules/@testing-library/dom/dist/query-helpers.js:23:10
- o' node_modules/@testing-library/dom/dist/query-helpers.js:55:13
- o' node_modules/@testing-library/dom/dist/query-helpers.js:95:19
- o' src/modules/dashboard/pages/DashboardPage.test.tsx:71:19
-     69|
-     70|     expect(await screen.findByText("1.234")).toBeInTheDocument();
-     71|     expect(screen.getByText("300")).toBeInTheDocument();
-       |                   ^
-     72|     expect(screen.getByText("-5")).toBeInTheDocument();
-     73|     expect(
-
-ï¿½#ï¿½#ï¿½#ï¿½#ï¿½#ï¿½#ï¿½#ï¿½#ï¿½#ï¿½#ï¿½#ï¿½#ï¿½#ï¿½#ï¿½#ï¿½#ï¿½#ï¿½#ï¿½#ï¿½#ï¿½#ï¿½#ï¿½#ï¿½#[1/1]ï¿½#
-
- Test Files  1 failed | 66 passed (67)
-      Tests  1 failed | 501 passed (502)
-   Start at  20:02:30
-   Duration  65.92s (transform 22.61s, setup 244.46s, import 41.67s, tests 26.79s, environment 589.61s)
-
-JSON report written to C:/Users/ACER/AppData/Local/Temp/claude/C--Users-ACER-Downloads-New-folder/9459ffd9-16c0-4b4b-861c-8c3bd0d160c7/scratchpad/wt325/test-results/vitest-results.json
-JUNIT report written to C:/Users/ACER/AppData/Local/Temp/claude/C--Users-ACER-Downloads-New-folder/9459ffd9-16c0-4b4b-861c-8c3bd0d160c7/scratchpad/wt325/test-results/vitest-junit.xml
-error Command failed with exit code 1.
-info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command.

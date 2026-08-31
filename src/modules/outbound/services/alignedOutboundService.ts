@@ -130,7 +130,9 @@ function normalizeSkuSummary(value: unknown): PackingLabelSkuSummary[] {
     )
     .map((row) => ({
       skuId: text(row.sku_id),
-      skuCode: text(row.sku_code ?? row.sku_id),
+      // KHÔNG fallback `?? row.sku_id`: field tên "skuCode" mà chứa UUID thì
+      // mọi nơi render nó (kể cả NHÃN IN) sẽ in chuỗi thô. Thiếu thì để rỗng.
+      skuCode: text(row.sku_code),
       skuName: text(row.sku_name),
       quantity: num(row.quantity),
     }));

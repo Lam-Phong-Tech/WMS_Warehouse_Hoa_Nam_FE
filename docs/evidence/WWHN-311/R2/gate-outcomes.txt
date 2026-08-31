@@ -1,7 +1,0 @@
-gate=format:check exit_code=0
-gate=lint exit_code=0
-gate=typecheck exit_code=0
-gate=test exit_code=0
-gate=build exit_code=0
-gate=health:check exit_code=0
-gate=check:api-mapping exit_code=0

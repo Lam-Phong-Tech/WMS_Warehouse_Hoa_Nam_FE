@@ -1,9 +1,0 @@
-$ npm run env:verify
-
-
-> wms-hoa-nam-frontend@0.0.0 env:verify
-> node scripts/verify-env-health-contract.mjs
-
-[env-contract] PASS: FE /health.json and versioned backend /api/v1/health contracts are locked; /api/health is rejected.
-
-

@@ -1,4 +1,0 @@
-=== GATE 03-typecheck : yarn typecheck ===
-yarn run v1.22.22
-$ tsc -b --pretty false
-Done in 61.68s.

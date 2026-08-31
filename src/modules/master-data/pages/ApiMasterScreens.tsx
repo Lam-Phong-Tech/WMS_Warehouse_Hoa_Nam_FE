@@ -134,11 +134,6 @@ function stockThresholdLabel(value?: number | string | null): string {
   return Number.isFinite(num) ? num.toLocaleString("vi-VN") : String(value);
 }
 
-function compactRef(value?: string | null) {
-  if (!value) return "—";
-  return value.length > 14 ? `${value.slice(0, 8)}…${value.slice(-4)}` : value;
-}
-
 function toRefIndex(rows: CatalogRefRecord[] | undefined) {
   return new Map((rows ?? []).map((row) => [row.id, row]));
 }
@@ -149,7 +144,9 @@ function refLabel(
 ): string {
   if (!value) return "—";
   const found = index.get(value);
-  return found ? found.name || found.code : compactRef(value);
+  // KHÔNG rơi xuống compactRef(value) (UUID rút gọn): cột này là TÊN hãng/nhóm
+  // hàng. Chưa tra ra tên thì hiện "—", không lộ định danh nội bộ.
+  return found ? found.name || found.code : "—";
 }
 
 // ===== SKU =====
@@ -848,12 +845,10 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                         </span>
                       </td>
                       <td>{skuTypeLabel(record.sku_type)}</td>
-                      <td title={record.brand_id ?? undefined}>
-                        {refLabel(brandIndex, record.brand_id)}
-                      </td>
-                      <td title={record.category_id ?? undefined}>
-                        {refLabel(categoryIndex, record.category_id)}
-                      </td>
+                      {/* Bỏ title={brand_id/category_id}: tooltip trước đây in
+                        nguyên UUID ra khi rê chuột. */}
+                      <td>{refLabel(brandIndex, record.brand_id)}</td>
+                      <td>{refLabel(categoryIndex, record.category_id)}</td>
                       <td>{stockThresholdLabel(record.min_stock)}</td>
                       <td>{stockThresholdLabel(record.max_stock)}</td>
                       <td>

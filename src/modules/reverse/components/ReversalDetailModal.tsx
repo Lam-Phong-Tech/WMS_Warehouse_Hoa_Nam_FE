@@ -27,6 +27,7 @@ import {
   type ResponsiveTableColumn,
 } from "@/shared/components/data-display/ResponsiveDataTable";
 import { shortId } from "@/shared/utils/shortId";
+import { CopyableId } from "@/shared/components/data-display/CopyableId";
 import {
   useCancelReversal,
   useConfirmReversal,
@@ -226,7 +227,8 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
       key: "original_movement",
       header: "Giao dịch gốc",
       width: 160,
-      render: (row) => row.original_movement_code || row.original_movement_id,
+      // KHÔNG fallback sang original_movement_id (UUID) — thiếu mã thì "—".
+      render: (row) => row.original_movement_code || "—",
     },
     {
       key: "serial",
@@ -426,9 +428,18 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
                       </Stack>
                     }
                   />
+                  {/* correction_chain_id là khoá liên kết nội bộ, KHÔNG có mã
+                    nghiệp vụ. Gọi đúng tên và rút gọn + cho sao chép thay vì in
+                    nguyên UUID dưới nhãn "Mã ..." khiến người dùng tưởng là mã. */}
                   <DetailField
-                    label="Mã chuỗi điều chỉnh"
-                    value={doc.correction_chain_id ?? "-"}
+                    label="Chuỗi điều chỉnh (định danh nội bộ)"
+                    value={
+                      doc.correction_chain_id ? (
+                        <CopyableId value={doc.correction_chain_id} />
+                      ) : (
+                        "—"
+                      )
+                    }
                   />
                   <DetailField label="Kho" value={doc.warehouse_name} />
                   <DetailField

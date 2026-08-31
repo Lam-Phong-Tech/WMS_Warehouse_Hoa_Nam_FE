@@ -1,6 +1,0 @@
-$ npm run health:check
-
-[health] PASS: deployable FE artifact 1.0.0 exposes /health.json and immutable build-manifest.json for source 821ac834bb70f1ee076acb7da659777be43742c6.
-
-
-exit code: 0

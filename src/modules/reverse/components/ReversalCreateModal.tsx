@@ -362,7 +362,8 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
       width: 180,
       render: (row) => (
         <Stack spacing={0}>
-          <span>{row.source_document_code || row.source_document_id}</span>
+          {/* KHÔNG fallback sang source_document_id (UUID) — thiếu mã thì "—". */}
+          <span>{row.source_document_code || "—"}</span>
           <Box sx={{ typography: "caption", color: "text.secondary" }}>
             {businessLabel(
               SOURCE_DOCUMENT_TYPE_LABELS,

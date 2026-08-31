@@ -1,6 +1,0 @@
-{
-  "schemaVersion": "1.1.0",
-  "generatedAt": "2026-08-13T12:59:48.426Z",
-  "policy": "No new Prettier debt. Existing entries are grandfathered by exact Git blob SHA and must be removed after formatting cleanup.",
-  "knownDebt": []
-}

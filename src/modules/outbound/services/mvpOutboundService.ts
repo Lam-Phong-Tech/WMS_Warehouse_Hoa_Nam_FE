@@ -136,10 +136,19 @@ export interface OutboundScanResult {
   scanSourceOrigin?: "EXPLICIT" | "INFERRED" | null;
 }
 
+export interface IssueEvidenceMovement {
+  id: string;
+  /** movement_no đọc được (vd "MV-20260830-A1B2C3D4"); thiếu ở response cũ/replay. */
+  code?: string;
+}
+
 export interface IssueEvidence {
   documentId: string;
+  /** doc_no đọc được (vd "PX-20260830153015-A1B2"); thiếu ở response cũ/replay. */
+  documentCode?: string;
   status: "POSTED";
   movementRefs: string[];
+  movements: IssueEvidenceMovement[];
   requestId: string;
   version: number;
   replayed?: boolean;
@@ -600,13 +609,33 @@ export async function unmatchOutboundItem(input: {
 }
 
 function normalizeIssueEvidence(row: RawRecord, meta: ApiMeta): IssueEvidence {
-  const movementRefs = Array.isArray(row.movement_ids)
-    ? row.movement_ids.map((value) => text(value)).filter(Boolean)
-    : [];
+  // Ưu tiên `movements` ({id, movement_no}) — BE trả kèm để FE hiện mã đọc được
+  // thay vì UUID thô. `movement_ids` (mảng id thô) vẫn có ở response cũ/replay
+  // nên giữ làm fallback.
+  const richMovements = (
+    Array.isArray(row.movements) ? row.movements : []
+  )
+    .map((movement): IssueEvidenceMovement | null => {
+      const rec = movement as RawRecord;
+      const id = text(rec?.id ?? rec?.stock_movement_id ?? rec?.movement_id);
+      const code = text(rec?.movement_no ?? rec?.code) || undefined;
+      return id ? { id, code } : null;
+    })
+    .filter((m): m is IssueEvidenceMovement => m !== null);
+  const movements =
+    richMovements.length > 0
+      ? richMovements
+      : (Array.isArray(row.movement_ids) ? row.movement_ids : [])
+          .map((value) => text(value))
+          .filter(Boolean)
+          .map((id) => ({ id }));
+  const movementRefs = movements.map((m) => m.id);
   return {
     documentId: text(row.document_id),
+    documentCode: text(row.document_no ?? row.doc_no) || undefined,
     status: "POSTED",
     movementRefs,
+    movements,
     requestId: text(meta.request_id ?? row.request_id),
     version: num(row.version),
     // AC-GWT-IN-001 (đối xứng cho outbound, WWHN-201/DEV201-P1-01R): BE đặt

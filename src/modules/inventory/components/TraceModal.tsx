@@ -1000,27 +1000,17 @@ export function TraceModal({ movementId, onClose }: Props) {
                 value={formatDateTime(trace.postedAt || null)}
               />
               <DetailField label="Người thao tác" value={trace.actor || "-"} />
+              {/* request_id là UUID đối chiếu log (không có mã nghiệp vụ) — màn
+                truy vết vẫn cần nó để báo kỹ thuật, nhưng hiển thị rút gọn +
+                nút sao chép giá trị đầy đủ thay vì in nguyên chuỗi thô. */}
               <DetailField
                 label="Mã yêu cầu kỹ thuật"
                 value={
-                  <Stack
-                    direction="row"
-                    spacing={0.5}
-                    sx={{ display: "inline-flex", alignItems: "center" }}
-                  >
-                    <Box component="span" sx={{ fontSize: 12 }}>
-                      {trace.requestId || "-"}
-                    </Box>
-                    {trace.requestId ? (
-                      <ActionIconButton
-                        kind="copy"
-                        label="Sao chép"
-                        onClick={() =>
-                          void navigator.clipboard?.writeText(trace.requestId)
-                        }
-                      />
-                    ) : null}
-                  </Stack>
+                  trace.requestId ? (
+                    <CopyableId value={trace.requestId} />
+                  ) : (
+                    "-"
+                  )
                 }
               />
             </DescriptionsBlock>

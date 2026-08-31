@@ -35,7 +35,15 @@ export function PackingLabelPreviewDialog({
       setQrDataUrl(null);
       return;
     }
-    const qrValue = label.labelCode || label.id;
+    // KHÔNG fallback sang label.id: mã QR/vạch được DÁN LÊN KIỆN HÀNG và quét
+    // lại ở khâu sau. Encode UUID nội bộ vào đó tạo ra nhãn quét-được-nhưng-vô-
+    // nghĩa (khâu sau quét ra không tra được gì) — tệ hơn hẳn việc không có mã.
+    // Thiếu labelCode thì bỏ trống, phần chữ bên dưới đã báo "chưa có mã".
+    const qrValue = label.labelCode;
+    if (!qrValue) {
+      setQrDataUrl(null);
+      return;
+    }
     let cancelled = false;
     QRCode.toDataURL(qrValue, { margin: 0, width: 120 })
       .then((url) => {
@@ -58,7 +66,8 @@ export function PackingLabelPreviewDialog({
   const attachBarcode = useCallback(
     (node: SVGSVGElement | null) => {
       if (!node || !label) return;
-      const value = label.labelCode || label.id;
+      // Cùng lý do với QR ở trên: không encode UUID nội bộ vào mã vạch in ra.
+      const value = label.labelCode;
       if (!value) return;
       try {
         JsBarcode(node, value, {
@@ -335,7 +344,7 @@ export function PackingLabelPreviewDialog({
                           whiteSpace: "nowrap",
                         }}
                       >
-                        {item.skuCode || item.skuId}
+                        {item.skuCode || "—"}
                       </Box>
                       <Box
                         sx={{

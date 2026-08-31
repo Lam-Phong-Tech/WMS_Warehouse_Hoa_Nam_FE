@@ -639,6 +639,45 @@ describe("inbound real API contract", () => {
     });
   });
 
+  it("uu tien document_no/movement_no doc duoc tu BE thay vi UUID tho", async () => {
+    vi.mocked(http.get).mockResolvedValue({
+      id: "DOC-1",
+      doc_no: "PN-001",
+      dst_warehouse_id: "WH-1",
+      status: "SCANNING",
+      version: 5,
+      lines: [
+        { id: "L-1", product_id: "SKU-1", qty_planned: 2, scanned_qty: 2 },
+      ],
+    });
+    vi.mocked(http.postWithMeta).mockResolvedValue({
+      data: {
+        document_id: "DOC-1",
+        document_no: "PN-20260830153015-A1B2",
+        status: "POSTED",
+        movement_ids: ["MOV-1"],
+        movements: [{ id: "MOV-1", movement_no: "MV-20260830-A1B2C3D4" }],
+        version: 6,
+      },
+      meta: { request_id: "REQ-1" },
+    });
+
+    const evidence = await postInboundReceipt({
+      documentId: "DOC-1",
+      idempotencyKey: "idem-post-1",
+      ifMatch: 5,
+    });
+
+    expect(evidence).toMatchObject({
+      receiptId: "DOC-1",
+      receiptCode: "PN-20260830153015-A1B2",
+      movementRef: "MOV-1",
+      movements: [{ id: "MOV-1", code: "MV-20260830-A1B2C3D4" }],
+      requestId: "REQ-1",
+      version: 6,
+    });
+  });
+
   // GĐ1 scan-driven: Post chỉ cần >= 1 đơn vị đã quét (assertHasScannedQuantity);
   // thiếu/thừa so với chứng từ tham chiếu vẫn Post được, nhưng tổng scanned = 0
   // thì FE chặn trước khi gọi BE.

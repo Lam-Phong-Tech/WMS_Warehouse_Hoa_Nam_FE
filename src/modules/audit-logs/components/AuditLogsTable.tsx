@@ -199,6 +199,9 @@ export function AuditLogsTable({
           >
             {row.object_type || "—"}
           </Box>
+          {/* title giữ UUID đầy đủ CÓ CHỦ ĐÍCH: đây là màn nhật ký kỹ thuật cho
+            quản trị, phần hiển thị đã rút gọn để không vỡ cột và bản đầy đủ chỉ
+            hiện khi rê chuột — quyết định cũ, khoá bởi AuditLogsPage.test.tsx. */}
           {row.object_id ? (
             <Box
               title={row.object_id}

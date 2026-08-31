@@ -129,10 +129,19 @@ export interface InboundUnscanResult {
   version: number;
 }
 
+export interface ReceiptEvidenceMovement {
+  id: string;
+  /** movement_no đọc được (vd "MV-20260830-A1B2C3D4") — thiếu ở response cũ/replay trước khi BE thêm trường này. */
+  code?: string;
+}
+
 export interface ReceiptEvidence {
   receiptId: string;
+  /** doc_no đọc được (vd "PN-20260830153015-A1B2") — thiếu ở response cũ/replay trước khi BE thêm trường này. */
+  receiptCode?: string;
   movementRef: string;
   movementRefs: string[];
+  movements: ReceiptEvidenceMovement[];
   requestId: string;
   traceSource: "stock_document.movements";
   replayed?: boolean;

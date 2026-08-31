@@ -23,6 +23,7 @@ import type {
   InboundUnscanResult,
   PostReceiptRequest,
   ReceiptEvidence,
+  ReceiptEvidenceMovement,
   UpdateInboundPayload,
 } from "../types";
 
@@ -212,6 +213,16 @@ function assertHasScannedQuantity(detail: InboundDetail): void {
     );
   }
 }
+function rowsOfUnknown(raw: unknown): unknown[] {
+  return Array.isArray(raw)
+    ? raw
+    : typeof raw === "object" &&
+        raw !== null &&
+        Array.isArray((raw as { data?: unknown[] }).data)
+      ? (raw as { data: unknown[] }).data
+      : [];
+}
+
 function normalizeReceiptEvidence(
   row: RawRecord,
   meta: ApiMeta,
@@ -221,26 +232,34 @@ function normalizeReceiptEvidence(
     "document_id",
     "WMS_FE_MISSING_RECEIPT_EVIDENCE",
   );
-  const raw = row.movement_ids ?? row.movements ?? [];
-  const movementList: unknown[] = Array.isArray(raw)
-    ? raw
-    : typeof raw === "object" &&
-        raw !== null &&
-        Array.isArray((raw as { data?: unknown[] }).data)
-      ? (raw as { data: unknown[] }).data
-      : [];
-  const movementRefs = movementList
-    .map((movement) =>
-      typeof movement === "string"
-        ? movement
-        : text(
-            (movement as RawRecord)?.id ??
-              (movement as RawRecord)?.stock_movement_id ??
-              (movement as RawRecord)?.movement_id ??
-              (movement as RawRecord)?.movement_no,
-          ),
-    )
-    .filter(Boolean);
+  const receiptCode = text(row.document_no ?? row.doc_no) || undefined;
+
+  // Ưu tiên `movements` (đối tượng {id, movement_no} — BE thêm để FE hiển thị
+  // mã đọc được thay vì UUID thô). `movement_ids` (mảng id thô) luôn có mặt kể
+  // cả ở response cũ trước khi BE thêm `movements`/replay bản ghi cũ — dùng làm
+  // fallback, không phải nguồn ưu tiên.
+  const richMovements = rowsOfUnknown(row.movements)
+    .map((movement): ReceiptEvidenceMovement | null => {
+      const rec = movement as RawRecord;
+      const id = text(
+        rec?.id ?? rec?.stock_movement_id ?? rec?.movement_id,
+      );
+      const code = text(rec?.movement_no ?? rec?.code) || undefined;
+      return id ? { id, code } : null;
+    })
+    .filter((m): m is ReceiptEvidenceMovement => m !== null);
+
+  const movements =
+    richMovements.length > 0
+      ? richMovements
+      : rowsOfUnknown(row.movement_ids)
+          .map((movement) =>
+            typeof movement === "string" ? movement : text(movement),
+          )
+          .filter(Boolean)
+          .map((id) => ({ id }));
+
+  const movementRefs = movements.map((m) => m.id);
   if (movementRefs.length === 0) {
     throw new WmsContractError(
       "WMS_FE_MISSING_RECEIPT_EVIDENCE",
@@ -249,8 +268,10 @@ function normalizeReceiptEvidence(
   }
   return {
     receiptId,
+    receiptCode,
     movementRef: movementRefs[0],
     movementRefs,
+    movements,
     requestId: requireNonEmptyString(
       meta.request_id ?? row.request_id,
       "request_id",

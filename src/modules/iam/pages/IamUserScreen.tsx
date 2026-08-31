@@ -307,7 +307,9 @@ export function IamUserScreen({
     () =>
       (warehousesQuery.data ?? []).map((row) => ({
         id: String(row.id ?? ""),
-        label: String(row.name ?? row.code ?? row.id ?? ""),
+        // KHÔNG rơi xuống row.id: label này hiện trong dropdown chọn kho và
+        // trong bảng người dùng — thiếu tên/mã thì để rỗng, không in UUID.
+        label: String(row.name ?? row.code ?? ""),
       })),
     [warehousesQuery.data],
   );
@@ -338,7 +340,8 @@ export function IamUserScreen({
   const departmentLabel = (user: IamUser): string =>
     user.department?.department_name ??
     (user.department_id
-      ? (departmentNames.get(user.department_id) ?? user.department_id)
+      ? // KHÔNG rơi xuống department_id (UUID) khi danh mục chưa tra ra tên.
+        (departmentNames.get(user.department_id) ?? "—")
       : "—");
 
   const roleFilteredUsers = useMemo(() => {

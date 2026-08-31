@@ -329,7 +329,11 @@ function normalizeMovement(row: RawRecord): StockMovementRow {
   const qty = num(row.qty_change ?? row.qty_delta ?? row.quantity ?? row.qty);
   return {
     id: text(row.id),
-    movementId: text(row.movement_no ?? row.code ?? row.id),
+    // KHÔNG fallback `?? row.id`: field này tên là "movementId" nhưng nghĩa là
+    // MÃ biến động đọc được (movement_no) — nhét UUID vào đây khiến mọi màn
+    // render nó tưởng đang hiển thị mã, và in ra chuỗi thô. Thiếu mã thì để
+    // rỗng, nơi hiển thị tự quyết định (thường là "—"). `row.id` vẫn có riêng.
+    movementId: text(row.movement_no ?? row.code),
     time: text(row.occurred_at ?? row.performed_at ?? row.created_at),
     type: text(row.movement_type ?? row.source_type ?? row.action),
     sku: text(

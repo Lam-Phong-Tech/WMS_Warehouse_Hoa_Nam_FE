@@ -19,6 +19,7 @@ import {
   businessLabel,
 } from "@/shared/constants/business-labels";
 import { ActionIconButton } from "@/shared/components/actions";
+import { CopyableId } from "@/shared/components/data-display/CopyableId";
 
 // Map preset màu antd Tag cũ → tone UiStatusBadge (cùng bảng với AuditLogsTable).
 const ACTION_TONES: Record<string, UiStatusTone> = {
@@ -107,11 +108,6 @@ export function AuditLogDetailDrawer({
     "Hành động khác",
   );
 
-  const copyId = () => {
-    void navigator.clipboard?.writeText(auditLog.id);
-    toast.success("Đã sao chép mã bản ghi.");
-  };
-
   // Thay Typography.Text copyable của antd: nút copy tường minh + toast.
   const copyIp = () => {
     if (!auditLog.ip_address) return;
@@ -145,22 +141,11 @@ export function AuditLogDetailDrawer({
           }}
         >
           <Grid container spacing={2}>
+            {/* Bản ghi nhật ký không có mã nghiệp vụ (id là UUID) — rút gọn +
+              cho sao chép thay vì in nguyên chuỗi thô. */}
             <DetailField
-              label="Mã bản ghi"
-              value={
-                <Stack
-                  direction="row"
-                  spacing={0.5}
-                  sx={{ alignItems: "center" }}
-                >
-                  <span>{auditLog.id}</span>
-                  <ActionIconButton
-                    kind="copy"
-                    label="Sao chép mã bản ghi"
-                    onClick={copyId}
-                  />
-                </Stack>
-              }
+              label="Định danh bản ghi"
+              value={<CopyableId value={auditLog.id} />}
             />
             <DetailField
               label="Thời gian"
@@ -179,9 +164,23 @@ export function AuditLogDetailDrawer({
               label="Phân hệ"
               value={AUDIT_MODULE_LABELS[auditLog.module] || "Phân hệ khác"}
             />
+            {/* BE chưa trả mã nghiệp vụ của đối tượng (chỉ có object_type +
+              object_id) — hiện loại đối tượng kèm định danh rút gọn, không nối
+              nguyên UUID vào câu. Khi BE bổ sung object_code thì hiện mã đó. */}
             <DetailField
               label="Đối tượng"
-              value={`${auditLog.object_type}${auditLog.object_id ? ` #${auditLog.object_id}` : ""}`}
+              value={
+                <Stack
+                  direction="row"
+                  spacing={0.5}
+                  sx={{ alignItems: "center", flexWrap: "wrap" }}
+                >
+                  <span>{auditLog.object_type}</span>
+                  {auditLog.object_id ? (
+                    <CopyableId value={auditLog.object_id} />
+                  ) : null}
+                </Stack>
+              }
             />
             <DetailField
               label="Người thực hiện"

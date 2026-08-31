@@ -1,6 +1,0 @@
-$ npm run uat:p0p1:verify
-
-[uat-p0-p1] PASS: real defect traceability, controlled after-evidence generation and fail-closed external P1 ownership are enforced.
-
-
-exit code: 0

@@ -150,27 +150,28 @@ export default function AlignedMvpOutboundPage() {
       key: "code",
       header: "Phiếu xuất",
       width: 190,
-      sortAccessor: (row) => row.code || row.id,
-      render: (row) => <strong>{row.code || row.id}</strong>,
+      sortAccessor: (row) => row.code || "",
+      // KHÔNG fallback sang row.id: cột này là MÃ PHIẾU đọc được ("PX-…").
+      render: (row) => <strong>{row.code || "—"}</strong>,
     },
     {
       key: "request",
       header: "Mã toa yêu cầu",
       width: 150,
       hideOnMobile: true,
-      sortAccessor: (row) => row.requestNo ?? row.outboundRequestId ?? "",
+      sortAccessor: (row) => row.requestNo ?? "",
       render: (row) => {
         if (!row.outboundRequestId) {
           return <UiStatusBadge tone="error" label="Thiếu yêu cầu xuất" />;
         }
-        // Ưu tiên mã toa đọc được (request_no); chỉ rút gọn UUID khi BE lỡ
-        // chưa kèm được request_no (tránh lộ chuỗi thô ra danh sách).
-        const value = row.requestNo || row.outboundRequestId;
-        const truncated =
-          !row.requestNo && value.length > 12
-            ? `${value.slice(0, 8)}…`
-            : value;
-        return <span title={value}>{truncated}</span>;
+        // Chỉ hiện MÃ TOA đọc được (request_no). Trước đây khi thiếu request_no
+        // thì rút gọn UUID và nhét nguyên chuỗi thô vào thuộc tính title —
+        // người dùng rê chuột là thấy. Nay thiếu mã thì báo thẳng bằng lời.
+        return row.requestNo ? (
+          <span>{row.requestNo}</span>
+        ) : (
+          <UiStatusBadge tone="warning" label="Chưa có mã toa" />
+        );
       },
     },
     {
@@ -353,7 +354,7 @@ export default function AlignedMvpOutboundPage() {
           rows={rows}
           rowKey={(row) => row.id}
           rowSelection={rowSelection}
-          selectionLabel={(row) => `Chọn phiếu xuất ${row.code || row.id}`}
+          selectionLabel={(row) => `Chọn phiếu xuất ${row.code || "chưa có mã"}`}
           loading={listQuery.isLoading || listQuery.isFetching}
           emptyText={tableEmptyText(
             listQuery.isError ? listQuery.error : null,

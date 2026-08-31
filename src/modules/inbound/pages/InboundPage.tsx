@@ -150,8 +150,10 @@ function InboundListScreen() {
       key: "code",
       header: "Phiếu nhập",
       width: 180,
-      sortAccessor: (row) => row.code || row.id,
-      render: (row) => <strong>{row.code || row.id}</strong>,
+      sortAccessor: (row) => row.code || "",
+      // KHÔNG fallback sang row.id: cột này là MÃ PHIẾU đọc được ("PN-…").
+      // Thiếu mã thì hiện "—", không in UUID nội bộ cho người dùng.
+      render: (row) => <strong>{row.code || "—"}</strong>,
     },
     {
       key: "source",
@@ -322,7 +324,7 @@ function InboundListScreen() {
         rows={rows}
         rowKey={(row) => row.id}
         rowSelection={rowSelection}
-        selectionLabel={(row) => `Chọn phiếu nhập ${row.code || row.id}`}
+        selectionLabel={(row) => `Chọn phiếu nhập ${row.code || "chưa có mã"}`}
         loading={query.isLoading || query.isFetching}
         renderRowActions={renderRowActions}
         emptyText={tableEmptyText(

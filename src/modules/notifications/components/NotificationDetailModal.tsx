@@ -1,8 +1,6 @@
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
 import {
   Box,
-  Stack,
   UiDescriptions,
   UiDialog,
   UiStatusBadge,
@@ -24,7 +22,8 @@ import {
 import { resolveNotificationLink } from "@/modules/notifications/utils/resolve-notification-link";
 import type { NotificationItem } from "@/modules/notifications/types/notification.types";
 import { formatDateTime } from "@/shared/utils/format-date";
-import { ActionButton, ActionIconButton } from "@/shared/components/actions";
+import { CopyableId } from "@/shared/components/data-display/CopyableId";
+import { ActionButton } from "@/shared/components/actions";
 
 interface NotificationDetailModalProps {
   item: NotificationItem | null;
@@ -62,13 +61,6 @@ export function NotificationDetailModal({
     onNavigate?.();
     onClose();
     navigate(link.path);
-  };
-
-  // Thay Typography.Text copyable của antd: nút copy tường minh + toast.
-  const copySubjectId = () => {
-    if (!item?.subject_id) return;
-    void navigator.clipboard?.writeText(item.subject_id);
-    toast.success("Đã sao chép mã đối tượng.");
   };
 
   const detailItems: UiDescriptionsItem[] = item
@@ -111,28 +103,14 @@ export function NotificationDetailModal({
                   <>
                     {NOTIFICATION_SUBJECT_TYPE_LABELS[item.subject_type] ??
                       item.subject_type}
+                    {/* Thông báo chưa kèm mã nghiệp vụ của đối tượng (BE mới
+                      trả subject_type + subject_id) — rút gọn + cho sao chép
+                      thay vì in nguyên UUID. Khi BE bổ sung subject_code thì
+                      đổi sang hiện thẳng mã đó. */}
                     {item.subject_id ? (
-                      <Stack
-                        direction="row"
-                        spacing={0.5}
-                        sx={{ alignItems: "center", mt: "2px" }}
-                      >
-                        <Box
-                          component="span"
-                          sx={{
-                            fontSize: 12,
-                            color: S.textMedium,
-                            overflowWrap: "anywhere",
-                          }}
-                        >
-                          {item.subject_id}
-                        </Box>
-                        <ActionIconButton
-                          kind="copy"
-                          label="Sao chép mã đối tượng"
-                          onClick={copySubjectId}
-                        />
-                      </Stack>
+                      <Box sx={{ mt: "2px" }}>
+                        <CopyableId value={item.subject_id} />
+                      </Box>
                     ) : null}
                   </>
                 ),

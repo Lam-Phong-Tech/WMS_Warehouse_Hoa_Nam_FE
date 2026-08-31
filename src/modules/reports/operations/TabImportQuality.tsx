@@ -227,15 +227,19 @@ export default function TabImportQuality() {
       result.push({
         id: text(row.import_report_id ?? row.id, ""),
         source: "IMPORT",
-        batchNo: text(row.file_name, text(row.import_report_id ?? row.id, "")),
+        // KHÔNG fallback sang import_report_id/id (UUID): batchNo hiển thị ở
+        // cột bảng và trong tiêu đề hộp thoại "Chi tiết batch …". Thiếu tên tệp
+        // thì để rỗng, nơi render tự hiện "—".
+        batchNo: text(row.file_name, ""),
         at,
         total: n(row.total_rows),
         success: n(row.valid_rows),
         failed: Math.max(0, n(row.error_rows) - duplicate),
         duplicate,
+        // KHÔNG fallback sang actorId (UUID): trường này hiện ở cột "Người
+        // thực hiện" và nuôi luôn danh sách chọn của bộ lọc người thực hiện.
         actor:
-          users.entries.find((entry) => entry.user_id === actorId)?.name ??
-          actorId,
+          users.entries.find((entry) => entry.user_id === actorId)?.name ?? "",
         status: text(row.status, ""),
         skuCodes: [],
         errors,

@@ -166,12 +166,10 @@ export function BalanceDetailModal({
       key: "movementId",
       header: "Mã biến động",
       width: 140,
+      // movementId nay chỉ chứa movement_no thật (normalizer đã bỏ fallback
+      // `?? row.id`), nên không cần so sánh với id nữa — thiếu mã thì "—".
       render: (row) =>
-        row.movementId && row.movementId !== String(row.id) ? (
-          <CodeText>{row.movementId}</CodeText>
-        ) : (
-          <CopyableId value={String(row.id)} />
-        ),
+        row.movementId ? <CodeText>{row.movementId}</CodeText> : "—",
     },
     {
       key: "time",
@@ -459,9 +457,18 @@ export function BalanceDetailModal({
                   .join(" · ") || "Chưa có vị trí gợi ý"
               }
             />
+            {/* BE mới chỉ trả last_movement_id (UUID), chưa có movement_no
+              tương ứng — hiển thị rút gọn + cho sao chép thay vì in chuỗi thô.
+              Khi BE bổ sung last_movement_no thì đổi sang hiện mã đó. */}
             <DetailField
               label="Biến động gần nhất"
-              value={balance.lastMovementId || "-"}
+              value={
+                balance.lastMovementId ? (
+                  <CopyableId value={balance.lastMovementId} />
+                ) : (
+                  "—"
+                )
+              }
             />
           </Grid>
         </Box>
