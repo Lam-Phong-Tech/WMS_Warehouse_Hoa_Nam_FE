@@ -270,9 +270,9 @@ describe("ComponentIssueModal (COMP-01)", () => {
 
     // Badge "Khả dụng" tô đỏ (tone error) ngay lúc gõ, không cần đợi bấm
     // "Tạo phiếu DRAFT".
-    const availabilityBadge = (
-      await screen.findByText("Khả dụng: 1")
-    ).closest(".MuiChip-root");
+    const availabilityBadge = (await screen.findByText("Khả dụng: 1")).closest(
+      ".MuiChip-root",
+    );
     expect(availabilityBadge).toHaveStyle({
       backgroundColor: SEMANTIC_LIGHT.errorSoft,
       color: SEMANTIC_LIGHT.errorText,
@@ -310,9 +310,9 @@ describe("ComponentIssueModal (COMP-01)", () => {
     const qtyInput = await screen.findByLabelText(/^SL cần/);
     fireEvent.change(qtyInput, { target: { value: "2" } });
 
-    const availabilityBadge = (
-      await screen.findByText("Khả dụng: 5")
-    ).closest(".MuiChip-root");
+    const availabilityBadge = (await screen.findByText("Khả dụng: 5")).closest(
+      ".MuiChip-root",
+    );
     expect(availabilityBadge).toHaveStyle({
       backgroundColor: SEMANTIC_LIGHT.secondarySoft,
       color: SEMANTIC_LIGHT.secondaryDark,

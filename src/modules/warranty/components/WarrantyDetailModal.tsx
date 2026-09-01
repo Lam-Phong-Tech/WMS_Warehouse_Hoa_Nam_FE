@@ -32,6 +32,7 @@ import {
 import { ACTION_ICON_COLORS } from "@/shared/theme/actionIconColors";
 import { guardBackdropClose } from "@/shared/utils/dialogGuard";
 import { useDialogExit } from "@/shared/utils/useDialogExit";
+import { useT } from "@/shared/i18n/useT";
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { http } from "@/shared/api/http";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
@@ -260,12 +261,15 @@ function ImageAttachmentTile({
   url?: string;
   onPreview: () => void;
 }) {
+  const t = useT();
   return (
     <Box className="hn-scale-in" sx={{ minWidth: 0 }}>
       <Box
         role="button"
         tabIndex={0}
-        aria-label={`Xem ảnh ${attachment.file_name}`}
+        aria-label={t("warranty.detail.viewImageAria", {
+          name: attachment.file_name,
+        })}
         onClick={onPreview}
         onKeyDown={(event) => {
           if (event.key === "Enter" || event.key === " ") {
@@ -587,6 +591,7 @@ export function WarrantyDetailModal({
   onOpenComponentIssue,
 }: WarrantyDetailModalProps) {
   const dialog = useDialogExit(onClose);
+  const t = useT();
   const canManage = useCanAny(["warranty.manage"]);
   const canIssue = useCanAny(["warranty.component_issue"]);
   const canViewPii = useCanAny(["warranty.pii.view"]);
@@ -774,18 +779,16 @@ export function WarrantyDetailModal({
   const validateStatusForm = (): boolean => {
     const errors: Record<string, string> = {};
     if (!statusForm.status) {
-      errors.status = "Chọn trạng thái mới.";
+      errors.status = t("warranty.detail.errStatus");
     }
     if (diagnosisRequired && !statusForm.confirmed_defect.trim()) {
-      errors.confirmed_defect =
-        "Phải ghi kết quả kiểm tra trước khi rời trạng thái Đang kiểm tra.";
+      errors.confirmed_defect = t("warranty.detail.errCheckResult");
     }
     if (statusForm.status === "CANCELLED" && !statusForm.cancel_reason.trim()) {
-      errors.cancel_reason = "Hủy case cần lý do/bằng chứng.";
+      errors.cancel_reason = t("warranty.detail.errCancelReason");
     }
     if (estimatedDateRequired) {
-      errors.estimated_completion_date =
-        "Nhập ngày dự kiến sửa xong để báo khách trước khi chuyển sang Đang sửa chữa.";
+      errors.estimated_completion_date = t("warranty.detail.errEstimatedDate");
     }
     if (noteRequiredLabel && !statusForm.reason.trim()) {
       errors.reason = noteRequiredLabel;
@@ -822,9 +825,10 @@ export function WarrantyDetailModal({
         },
       });
       toast.success(
-        `Đã cập nhật case ${updated.case_code} → ${
-          WARRANTY_STATUS_LABELS[updated.status] ?? updated.status
-        }.`,
+        t("warranty.detail.statusUpdated", {
+          code: updated.case_code,
+          status: WARRANTY_STATUS_LABELS[updated.status] ?? updated.status,
+        }),
       );
       setStatusForm({
         status: "",
@@ -839,7 +843,7 @@ export function WarrantyDetailModal({
       setStatusOpen(false);
     } catch (error: unknown) {
       const apiFieldErrors = extractFieldErrorsRaw(error);
-      const message = errorText(error, "Không cập nhật được trạng thái.");
+      const message = errorText(error, t("warranty.detail.statusUpdateError"));
       toast.error(
         apiFieldErrors
           ? `${message} (${Object.values(apiFieldErrors).flat().join("; ")})`
@@ -863,8 +867,7 @@ export function WarrantyDetailModal({
       correctForm.customer_phone &&
       !/^0\d{9}$/.test(correctForm.customer_phone)
     ) {
-      errors.customer_phone =
-        "Số điện thoại phải đủ 10 chữ số và bắt đầu bằng số 0.";
+      errors.customer_phone = t("warranty.detail.errPhoneFormat");
     }
     setCorrectFieldErrors(errors);
     return Object.keys(errors).length === 0;
@@ -890,16 +893,18 @@ export function WarrantyDetailModal({
             ? correctForm.customer_address.trim() || undefined
             : undefined,
           purchase_date: correctForm.purchase_date || undefined,
-          reason: correctForm.reason.trim() || "Hiệu chỉnh dữ liệu tiếp nhận",
+          reason:
+            correctForm.reason.trim() ||
+            t("warranty.detail.defaultCorrectReason"),
           ifMatch: detail.version,
         },
       });
-      toast.success("Đã cập nhật thông tin case.");
+      toast.success(t("warranty.detail.infoUpdated"));
       setCorrectFieldErrors({});
       setCorrectOpen(false);
     } catch (error: unknown) {
       const apiFieldErrors = extractFieldErrorsRaw(error);
-      const message = errorText(error, "Không cập nhật được thông tin case.");
+      const message = errorText(error, t("warranty.detail.infoUpdateError"));
       toast.error(
         apiFieldErrors
           ? `${message} (${Object.values(apiFieldErrors).flat().join("; ")})`
@@ -916,24 +921,24 @@ export function WarrantyDetailModal({
     const isImage = WARRANTY_IMAGE_MIMES.includes(file.type);
     const isVideo = WARRANTY_VIDEO_MIMES.includes(file.type);
     if (!isImage && !isVideo) {
-      toast.error(
-        `${file.name}: chỉ nhận ảnh JPG/PNG/WEBP hoặc video MP4/MOV/WEBM.`,
-      );
+      toast.error(t("warranty.detail.badFileType", { name: file.name }));
       return;
     }
     if (isImage && file.size > MAX_ATTACHMENT_IMAGE_BYTES) {
-      toast.error(`${file.name}: ảnh vượt quá 10MB.`);
+      toast.error(t("warranty.detail.imageTooLarge", { name: file.name }));
       return;
     }
     if (isVideo && file.size > MAX_ATTACHMENT_VIDEO_BYTES) {
-      toast.error(`${file.name}: video vượt quá 300MB.`);
+      toast.error(t("warranty.detail.videoTooLarge", { name: file.name }));
       return;
     }
     uploadMutation
       .mutateAsync({ caseId, file, attachmentType })
-      .then(() => toast.success(`Đã tải lên ${file.name}.`))
+      .then(() =>
+        toast.success(t("warranty.detail.uploaded", { name: file.name })),
+      )
       .catch((error: unknown) =>
-        toast.error(errorText(error, "Tải tệp lên thất bại.")),
+        toast.error(errorText(error, t("warranty.detail.uploadError"))),
       );
   };
 
@@ -948,14 +953,14 @@ export function WarrantyDetailModal({
       attachmentId: attachment.id,
       fileName: attachment.file_name,
     }).catch((error: unknown) =>
-      toast.error(errorText(error, "Tải tệp xuống thất bại.")),
+      toast.error(errorText(error, t("warranty.detail.downloadError"))),
     );
   };
 
   const issueColumns: ResponsiveTableColumn<ComponentIssueDocument>[] = [
     {
       key: "component_issue_no",
-      header: "Phiếu xuất linh kiện",
+      header: t("warranty.detail.colIssueCode"),
       render: (row) => (
         <ActionButton
           kind="detail"
@@ -975,13 +980,13 @@ export function WarrantyDetailModal({
     },
     {
       key: "document_date",
-      header: "Ngày chứng từ",
+      header: t("warranty.detail.colDocumentDate"),
       width: 130,
       render: (row) => formatDate(row.document_date),
     },
     {
       key: "status",
-      header: "Trạng thái",
+      header: t("warranty.detail.colStatus"),
       width: 120,
       render: (row) => (
         <UiStatusBadge
@@ -1004,7 +1009,7 @@ export function WarrantyDetailModal({
       label: (
         <Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>
           <ProfileOutlined style={{ fontSize: 15 }} />
-          <span>Tổng quan</span>
+          <span>{t("warranty.detail.tabOverview")}</span>
         </Stack>
       ),
     },
@@ -1013,7 +1018,9 @@ export function WarrantyDetailModal({
       label: (
         <Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>
           <PaperClipOutlined style={{ fontSize: 15 }} />
-          <span>{`Ảnh & video (${attachments.length})`}</span>
+          <span>
+            {t("warranty.detail.tabMedia", { count: attachments.length })}
+          </span>
         </Stack>
       ),
     },
@@ -1028,7 +1035,11 @@ export function WarrantyDetailModal({
                 sx={{ alignItems: "center" }}
               >
                 <ToolOutlined style={{ fontSize: 15 }} />
-                <span>{`Linh kiện (${issuesQuery.data?.data.length ?? 0})`}</span>
+                <span>
+                  {t("warranty.detail.tabComponents", {
+                    count: issuesQuery.data?.data.length ?? 0,
+                  })}
+                </span>
               </Stack>
             ),
           },
@@ -1039,7 +1050,11 @@ export function WarrantyDetailModal({
       label: (
         <Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>
           <HistoryOutlined style={{ fontSize: 15 }} />
-          <span>{`Lịch sử (${eventsQuery.data?.length ?? 0})`}</span>
+          <span>
+            {t("warranty.detail.tabHistory", {
+              count: eventsQuery.data?.length ?? 0,
+            })}
+          </span>
         </Stack>
       ),
     },
@@ -1061,7 +1076,9 @@ export function WarrantyDetailModal({
               spacing={1}
               sx={{ alignItems: "center", flexWrap: "wrap", rowGap: 0.5 }}
             >
-              <span>{detail?.case_code ?? "Chi tiết bảo hành"}</span>
+              <span>
+                {detail?.case_code ?? t("warranty.detail.fallbackTitle")}
+              </span>
               {detail ? (
                 <UiStatusBadge
                   tone={tagTone(WARRANTY_STATUS_COLORS[detail.status])}
@@ -1090,7 +1107,9 @@ export function WarrantyDetailModal({
                     : (detail.item_code ?? detail.serial_number),
                   detail.sku || detail.sku_name,
                   warrantyPiiText(detail.customer_name, canViewPii, "name"),
-                  `Nhận ${formatWarrantyDateTime(detail.received_at)}`,
+                  t("warranty.detail.receivedAt", {
+                    date: formatWarrantyDateTime(detail.received_at),
+                  }),
                 ]
                   .filter(Boolean)
                   .join(" · ")}
@@ -1098,7 +1117,7 @@ export function WarrantyDetailModal({
             ) : null}
             <ActionIconButton
               kind="close"
-              label="Đóng"
+              label={t("common.close")}
               onClick={dialog.close}
               sx={{ position: "absolute", right: 10, top: 8 }}
             />
@@ -1107,7 +1126,7 @@ export function WarrantyDetailModal({
         actions={
           <>
             <ActionButton kind="close" onClick={dialog.close}>
-              Đóng
+              {t("common.close")}
             </ActionButton>
             <ActionButton
               kind="edit"
@@ -1136,7 +1155,7 @@ export function WarrantyDetailModal({
                 setCorrectOpen(true);
               }}
             >
-              Sửa thông tin
+              {t("warranty.detail.editInfo")}
             </ActionButton>
             <ActionButton
               kind="repair"
@@ -1151,7 +1170,7 @@ export function WarrantyDetailModal({
                 })
               }
             >
-              Xuất linh kiện
+              {t("warranty.detail.issueComponents")}
             </ActionButton>
             <ActionButton
               kind="sync"
@@ -1172,7 +1191,7 @@ export function WarrantyDetailModal({
                 setStatusOpen(true);
               }}
             >
-              Cập nhật trạng thái
+              {t("warranty.detail.updateStatus")}
             </ActionButton>
           </>
         }
@@ -1207,22 +1226,25 @@ export function WarrantyDetailModal({
         <Stack spacing={2}>
           <ApiErrorAlert
             error={detailQuery.error}
-            title="Không tải được chi tiết case"
+            title={t("warranty.detail.loadError")}
             onRetry={() => detailQuery.refetch()}
           />
 
           {detail && isCancelled ? (
             <UiAlert tone="error">
-              {`Case đã hủy tại bước "${
-                WARRANTY_STATUS_LABELS[progressStatus ?? "RECEIVED"] ??
-                progressStatus
-              }". Lý do: ${detail.cancel_reason ?? EMPTY_TEXT}`}
+              {t("warranty.detail.cancelledAt", {
+                step:
+                  WARRANTY_STATUS_LABELS[progressStatus ?? "RECEIVED"] ??
+                  progressStatus ??
+                  EMPTY_TEXT,
+                reason: detail.cancel_reason ?? EMPTY_TEXT,
+              })}
             </UiAlert>
           ) : null}
 
           {!canViewPii && activeTab === "overview" ? (
             <UiAlert tone="info">
-              Thông tin khách hàng đang được che (mask) theo quyền
+              {t("warranty.detail.maskedNotice")}
               warranty.pii.view.
             </UiAlert>
           ) : null}
@@ -1238,7 +1260,7 @@ export function WarrantyDetailModal({
               }}
             >
               <Box sx={{ typography: "subtitle2", fontWeight: 700, mb: 1.5 }}>
-                Lịch sử xử lý
+                {t("warranty.detail.historyTitle")}
               </Box>
               {(eventsQuery.data ?? []).length ? (
                 <Stack spacing={1.25}>
@@ -1262,7 +1284,7 @@ export function WarrantyDetailModal({
                       <Stack spacing={0}>
                         <Box sx={{ typography: "body2", fontWeight: 700 }}>
                           {event.event_type === "NOTE"
-                            ? "Ghi chú xử lý"
+                            ? t("warranty.detail.processingNote")
                             : (WARRANTY_STATUS_LABELS[event.to_status] ??
                               event.to_status)}
                         </Box>
@@ -1274,7 +1296,9 @@ export function WarrantyDetailModal({
                         >
                           {formatWarrantyDateTime(event.performed_at)}
                           {event.performed_by && event.performed_by !== "-"
-                            ? ` · ${event.performed_by}`
+                            ? t("warranty.detail.performedBy", {
+                                user: event.performed_by,
+                              })
                             : ""}
                         </Box>
                         <Box sx={{ typography: "body2" }}>
@@ -1286,7 +1310,7 @@ export function WarrantyDetailModal({
                 </Stack>
               ) : (
                 <Box sx={{ typography: "body2", color: "text.secondary" }}>
-                  Chưa có lịch sử trạng thái cho case này.
+                  {t("warranty.detail.historyEmpty")}
                 </Box>
               )}
             </Box>
@@ -1312,12 +1336,12 @@ export function WarrantyDetailModal({
                           mb: 1.5,
                         }}
                       >
-                        Khách hàng & tiếp nhận
+                        {t("warranty.detail.sectionCustomer")}
                       </Box>
                       <Grid container spacing={2}>
                         {/* §13.8: mask lại ở tầng render — không tin payload đã mask sẵn. */}
                         <DetailField
-                          label="Khách gửi"
+                          label={t("warranty.detail.fieldCustomer")}
                           value={
                             warrantyPiiText(
                               detail.customer_name,
@@ -1327,7 +1351,7 @@ export function WarrantyDetailModal({
                           }
                         />
                         <DetailField
-                          label="SĐT"
+                          label={t("warranty.detail.fieldPhone")}
                           value={
                             warrantyPiiText(
                               detail.customer_phone,
@@ -1337,7 +1361,7 @@ export function WarrantyDetailModal({
                           }
                         />
                         <DetailField
-                          label="Địa chỉ"
+                          label={t("warranty.detail.fieldAddress")}
                           value={
                             warrantyPiiText(
                               detail.customer_address,
@@ -1347,7 +1371,7 @@ export function WarrantyDetailModal({
                           }
                         />
                         <DetailField
-                          label="Ngày mua"
+                          label={t("warranty.detail.fieldPurchaseDate")}
                           value={
                             detail.purchase_date
                               ? formatDate(detail.purchase_date)
@@ -1355,15 +1379,15 @@ export function WarrantyDetailModal({
                           }
                         />
                         <DetailField
-                          label="Ngày tiếp nhận"
+                          label={t("warranty.detail.fieldReceivedAt")}
                           value={formatWarrantyDateTime(detail.received_at)}
                         />
                         <DetailField
-                          label="Phụ kiện đi kèm"
+                          label={t("warranty.detail.fieldAccessories")}
                           value={detail.accessories_received ?? EMPTY_TEXT}
                         />
                         <DetailField
-                          label="Tình trạng tiếp nhận"
+                          label={t("warranty.detail.fieldCondition")}
                           value={detail.received_condition ?? EMPTY_TEXT}
                           span2
                         />
@@ -1387,11 +1411,11 @@ export function WarrantyDetailModal({
                           mb: 1.5,
                         }}
                       >
-                        Máy & chẩn đoán
+                        {t("warranty.detail.sectionDevice")}
                       </Box>
                       <Grid container spacing={2}>
                         <DetailField
-                          label="Item / serial / mã tạm"
+                          label={t("warranty.detail.fieldItem")}
                           value={
                             detail.identification_type === "TEMP_ONLY"
                               ? (detail.temporary_item_code ?? EMPTY_TEXT)
@@ -1405,11 +1429,11 @@ export function WarrantyDetailModal({
                           value={detail.sku || detail.sku_name || EMPTY_TEXT}
                         />
                         <DetailField
-                          label="Trạng thái item"
+                          label={t("warranty.detail.fieldItemStatus")}
                           value={detail.item_status ?? EMPTY_TEXT}
                         />
                         <DetailField
-                          label="Bệnh / lỗi (danh mục)"
+                          label={t("warranty.detail.fieldDefectCatalog")}
                           value={
                             detail.defects?.length ? (
                               <Stack
@@ -1439,36 +1463,43 @@ export function WarrantyDetailModal({
                           }
                         />
                         <DetailField
-                          label="Khách phản ánh"
+                          label={t("warranty.detail.fieldReported")}
                           value={detail.reported_defect ?? EMPTY_TEXT}
                           span2
                         />
                         <DetailField
-                          label="Kết quả kiểm tra"
-                          value={detail.confirmed_defect ?? "Chưa có kết luận"}
+                          label={t("warranty.detail.fieldCheckResult")}
+                          value={
+                            detail.confirmed_defect ??
+                            t("warranty.detail.noConclusion")
+                          }
                           span2
                         />
                         {detail.identification_type === "TEMP_ONLY" ? (
                           <>
                             <DetailField
-                              label="Lý do mất mã"
+                              label={t("warranty.detail.fieldLostReason")}
                               value={detail.missing_code_reason ?? EMPTY_TEXT}
                             />
                             <DetailField
-                              label="Mô tả nhận diện"
-                              value={detail.manual_product_description ?? EMPTY_TEXT}
+                              label={t(
+                                "warranty.detail.fieldIdentityDescription",
+                              )}
+                              value={
+                                detail.manual_product_description ?? EMPTY_TEXT
+                              }
                             />
                           </>
                         ) : null}
                         {detail.status === "CANCELLED" ? (
                           <DetailField
-                            label="Lý do hủy"
+                            label={t("warranty.detail.fieldCancelReason")}
                             value={detail.cancel_reason ?? EMPTY_TEXT}
                             span2
                           />
                         ) : null}
                         <DetailField
-                          label="Dự kiến hoàn thành"
+                          label={t("warranty.detail.fieldEstimated")}
                           value={
                             detail.estimated_completion_date
                               ? formatDate(detail.estimated_completion_date)
@@ -1476,11 +1507,11 @@ export function WarrantyDetailModal({
                           }
                         />
                         <DetailField
-                          label="Hoàn tất sửa"
+                          label={t("warranty.detail.fieldCompleted")}
                           value={formatWarrantyDateTime(detail.completed_at)}
                         />
                         <DetailField
-                          label="Trả khách"
+                          label={t("warranty.detail.fieldReturned")}
                           value={formatWarrantyDateTime(detail.returned_at)}
                         />
                       </Grid>
@@ -1494,14 +1525,14 @@ export function WarrantyDetailModal({
                   {canUploadAttachment ? (
                     <UiTextField
                       select
-                      label="Nhãn cho tệp sắp tải lên"
+                      label={t("warranty.detail.uploadKindLabel")}
                       value={attachmentType}
                       onChange={(event) =>
                         setAttachmentTypeOverride(
                           event.target.value as WarrantyAttachmentType,
                         )
                       }
-                      helperText="Đang gợi ý theo bước hiện tại của case; đổi nếu ảnh thuộc bước khác."
+                      helperText={t("warranty.detail.uploadKindHelper")}
                       sx={{ maxWidth: 320 }}
                     >
                       {RETURN_ATTACHMENT_TYPES.map(([value, label]) => (
@@ -1516,7 +1547,9 @@ export function WarrantyDetailModal({
                     <Box
                       sx={{ typography: "subtitle2", fontWeight: 700, mb: 0.5 }}
                     >
-                      {`Ảnh đính kèm (${imageAttachments.length})`}
+                      {t("warranty.detail.imagesTitle", {
+                        count: imageAttachments.length,
+                      })}
                     </Box>
                     <Box
                       sx={{
@@ -1526,14 +1559,13 @@ export function WarrantyDetailModal({
                         mb: 1,
                       }}
                     >
-                      JPG/PNG/WEBP, mỗi ảnh ≤ 10MB. Bấm vào ảnh để xem lớn; di
-                      chuột vào ảnh để tải xuống hoặc xóa.
+                      {t("warranty.detail.imagesHint")}
                     </Box>
                     {attachmentsQuery.isLoading ? (
                       <Box
                         sx={{ typography: "body2", color: "text.secondary" }}
                       >
-                        Đang tải danh sách tệp…
+                        {t("warranty.detail.loadingFiles")}
                       </Box>
                     ) : (
                       <Box
@@ -1600,8 +1632,8 @@ export function WarrantyDetailModal({
                               sx={{ typography: "caption" }}
                             >
                               {uploadMutation.isPending
-                                ? "Đang tải…"
-                                : "Tải ảnh"}
+                                ? t("warranty.detail.uploading")
+                                : t("warranty.detail.uploadImage")}
                             </Box>
                             <input
                               type="file"
@@ -1623,7 +1655,7 @@ export function WarrantyDetailModal({
                               color: "text.secondary",
                             }}
                           >
-                            Chưa có ảnh đính kèm.
+                            {t("warranty.detail.imagesEmpty")}
                           </Box>
                         ) : null}
                       </Box>
@@ -1634,7 +1666,9 @@ export function WarrantyDetailModal({
                     <Box
                       sx={{ typography: "subtitle2", fontWeight: 700, mb: 0.5 }}
                     >
-                      {`Video đính kèm (${videoAttachments.length})`}
+                      {t("warranty.detail.videosTitle", {
+                        count: videoAttachments.length,
+                      })}
                     </Box>
                     <Box
                       sx={{
@@ -1644,8 +1678,7 @@ export function WarrantyDetailModal({
                         mb: 1,
                       }}
                     >
-                      MP4/MOV/WEBM, mỗi video ≤ 300MB. Video không xem trước
-                      trong modal — tải xuống để mở.
+                      {t("warranty.detail.videosHint")}
                     </Box>
                     {/* Không đặt `spacing` ở Stack: khi một dòng thu về 0 thì
                         khoảng cách vẫn còn rồi mất đột ngột — khoảng cách nằm
@@ -1711,7 +1744,7 @@ export function WarrantyDetailModal({
                           }}
                         />
                         <Box sx={{ typography: "body2" }}>
-                          Kéo thả video vào đây hoặc bấm để chọn
+                          {t("warranty.detail.videoDrop")}
                         </Box>
                         <Box
                           component="span"
@@ -1720,7 +1753,7 @@ export function WarrantyDetailModal({
                             color: "text.secondary",
                           }}
                         >
-                          MP4/MOV/WEBM, mỗi video ≤ 300MB.
+                          {t("warranty.detail.videoLimits")}
                         </Box>
                         <input
                           type="file"
@@ -1738,7 +1771,7 @@ export function WarrantyDetailModal({
                       <Box
                         sx={{ typography: "body2", color: "text.secondary" }}
                       >
-                        Chưa có video đính kèm.
+                        {t("warranty.detail.videosEmpty")}
                       </Box>
                     )}
                   </Box>
@@ -1748,7 +1781,9 @@ export function WarrantyDetailModal({
                       <Box
                         sx={{ typography: "subtitle2", fontWeight: 700, mb: 1 }}
                       >
-                        {`Tệp khác (${otherAttachments.length})`}
+                        {t("warranty.detail.otherFilesTitle", {
+                          count: otherAttachments.length,
+                        })}
                       </Box>
                       <Stack>
                         <AnimatedList>
@@ -1789,14 +1824,16 @@ export function WarrantyDetailModal({
                   <Box
                     sx={{ typography: "subtitle2", fontWeight: 700, mb: 1.5 }}
                   >
-                    {`Phiếu xuất linh kiện của phiếu bảo hành (${issuesQuery.data?.data.length ?? 0})`}
+                    {t("warranty.detail.issuesTitle", {
+                      count: issuesQuery.data?.data.length ?? 0,
+                    })}
                   </Box>
                   <ResponsiveDataTable
                     columns={issueColumns}
                     rows={issuesQuery.data?.data ?? []}
                     rowKey={(row) => row.id}
                     loading={issuesQuery.isLoading}
-                    emptyText="Chưa có phiếu xuất linh kiện — dùng nút “Xuất linh kiện” để tạo."
+                    emptyText={t("warranty.detail.issuesEmpty")}
                   />
                 </Box>
               ) : null}
@@ -1813,7 +1850,7 @@ export function WarrantyDetailModal({
           fullWidth
           // Giữ accessible name cũ: bỏ aria-labelledby tự sinh để aria-label thắng.
           aria-labelledby={undefined}
-          aria-label="Xem ảnh đính kèm"
+          aria-label={t("warranty.detail.previewAria")}
           sx={{
             "& .MuiDialogTitle-root": { pr: 6, position: "relative" },
             "& .MuiDialogContent-root": {
@@ -1851,16 +1888,20 @@ export function WarrantyDetailModal({
                 }}
               >
                 {previewAttachment
-                  ? `${previewIndex + 1}/${imageAttachments.length} · ${formatBytes(
-                      previewAttachment.file_size_bytes,
-                    )} · ${formatWarrantyDateTime(
-                      previewAttachment.uploaded_at,
-                    )} · ${previewAttachment.file_name}`
+                  ? t("warranty.detail.previewCaption", {
+                      index: previewIndex + 1,
+                      total: imageAttachments.length,
+                      size: formatBytes(previewAttachment.file_size_bytes),
+                      date: formatWarrantyDateTime(
+                        previewAttachment.uploaded_at,
+                      ),
+                      name: previewAttachment.file_name,
+                    })
                   : null}
               </Box>
               <ActionIconButton
                 kind="close"
-                label="Đóng xem ảnh"
+                label={t("warranty.detail.previewClose")}
                 onClick={() => setPreviewId(null)}
                 sx={{ position: "absolute", right: 10, top: 8 }}
               />
@@ -1875,7 +1916,7 @@ export function WarrantyDetailModal({
                   setPreviewId(imageAttachments[previewIndex - 1]?.id ?? null)
                 }
               >
-                Ảnh trước
+                {t("warranty.detail.previousImage")}
               </ActionButton>
               <ActionButton
                 kind="next"
@@ -1887,7 +1928,7 @@ export function WarrantyDetailModal({
                   setPreviewId(imageAttachments[previewIndex + 1]?.id ?? null)
                 }
               >
-                Ảnh sau
+                {t("warranty.detail.nextImage")}
               </ActionButton>
               <Box sx={{ flexGrow: 1 }} />
               <ActionButton
@@ -1897,10 +1938,10 @@ export function WarrantyDetailModal({
                   handleDownloadAttachment(previewAttachment)
                 }
               >
-                Tải xuống
+                {t("warranty.detail.download")}
               </ActionButton>
               <ActionButton kind="close" onClick={() => setPreviewId(null)}>
-                Đóng
+                {t("common.close")}
               </ActionButton>
             </>
           }
@@ -1919,7 +1960,7 @@ export function WarrantyDetailModal({
             />
           ) : (
             <Box sx={{ typography: "body2", color: "text.secondary" }}>
-              Không hiển thị được ảnh — tải tệp xuống để xem.
+              {t("warranty.detail.previewFailed")}
             </Box>
           )}
         </UiDialog>
@@ -1929,7 +1970,7 @@ export function WarrantyDetailModal({
           onClose={() => setDeleteConfirmId(null)}
           maxWidth="xs"
           fullWidth
-          title="Xóa tệp đính kèm này?"
+          title={t("warranty.detail.deleteTitle")}
           actions={
             <>
               <ActionButton
@@ -1937,7 +1978,7 @@ export function WarrantyDetailModal({
                 onClick={() => setDeleteConfirmId(null)}
                 disabled={deleteAttachmentMutation.isPending}
               >
-                Không
+                {t("warranty.detail.deleteNo")}
               </ActionButton>
               <ActionButton
                 kind="delete"
@@ -1947,16 +1988,18 @@ export function WarrantyDetailModal({
                   deleteAttachmentMutation
                     .mutateAsync(deleteConfirmId)
                     .then(() => {
-                      toast.success("Đã xóa tệp đính kèm.");
+                      toast.success(t("warranty.detail.deleted"));
                       if (previewId === deleteConfirmId) setPreviewId(null);
                       setDeleteConfirmId(null);
                     })
                     .catch((error: unknown) =>
-                      toast.error(errorText(error, "Không xóa được tệp.")),
+                      toast.error(
+                        errorText(error, t("warranty.detail.deleteError")),
+                      ),
                     );
                 }}
               >
-                Xóa
+                {t("warranty.detail.deleteYes")}
               </ActionButton>
             </>
           }
@@ -1969,7 +2012,7 @@ export function WarrantyDetailModal({
             component="span"
             sx={{ typography: "caption", color: "text.secondary" }}
           >
-            Tệp bị gỡ khỏi hồ sơ bảo hành và không khôi phục được từ màn này.
+            {t("warranty.detail.deleteWarning")}
           </Box>
         </UiDialog>
 
@@ -1981,8 +2024,8 @@ export function WarrantyDetailModal({
           })}
           maxWidth="sm"
           fullWidth
-          aria-label="Sửa thông tin case bảo hành"
-          title="Sửa thông tin case bảo hành"
+          aria-label={t("warranty.detail.editAria")}
+          title={t("warranty.detail.editTitle")}
           actions={
             <>
               <ActionButton
@@ -1993,14 +2036,16 @@ export function WarrantyDetailModal({
                 }}
                 disabled={updateMutation.isPending}
               >
-                Hủy
+                {t("warranty.detail.editCancel")}
               </ActionButton>
               <ActionButton
                 kind="save"
                 onClick={() => void submitCorrection()}
                 disabled={updateMutation.isPending}
               >
-                {updateMutation.isPending ? "Đang lưu..." : "Lưu"}
+                {updateMutation.isPending
+                  ? t("warranty.detail.editSaving")
+                  : t("warranty.detail.editSave")}
               </ActionButton>
             </>
           }
@@ -2009,8 +2054,8 @@ export function WarrantyDetailModal({
             <Grid size={12}>
               <UiAlert tone="info">
                 {canViewPii
-                  ? "Sửa thông tin không làm thay đổi tồn kho; mọi thay đổi được ghi vào nhật ký kiểm tra (không lưu giá trị PII) và tăng số phiên bản."
-                  : "Bạn không có quyền warranty.pii.view nên chỉ sửa được bệnh/lỗi và ngày mua; thông tin khách hàng bị khóa."}
+                  ? t("warranty.detail.editHintFull")
+                  : t("warranty.detail.editHintMasked")}
               </UiAlert>
             </Grid>
             <Grid size={12}>
@@ -2019,15 +2064,15 @@ export function WarrantyDetailModal({
                 name="defect_ids"
                 multiple
                 options={defectOptions}
-                label="Bệnh / lỗi (danh mục)"
-                placeholder="Chọn từ danh mục bệnh/lỗi ACTIVE"
+                label={t("warranty.detail.fieldDefectCatalog")}
+                placeholder={t("warranty.detail.editDefectPlaceholder")}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <UiTextField
                 fullWidth
                 type="date"
-                label="Ngày dự kiến sửa xong"
+                label={t("warranty.detail.editEstimatedDate")}
                 value={correctForm.estimated_completion_date}
                 onChange={(event) => {
                   setCorrectForm((current) => ({
@@ -2053,7 +2098,7 @@ export function WarrantyDetailModal({
               <UiTextField
                 fullWidth
                 type="date"
-                label="Ngày mua"
+                label={t("warranty.detail.editPurchaseDate")}
                 value={correctForm.purchase_date}
                 onChange={(event) => {
                   setCorrectForm((current) => ({
@@ -2078,7 +2123,7 @@ export function WarrantyDetailModal({
             <Grid size={{ xs: 12, sm: 6 }}>
               <UiTextField
                 fullWidth
-                label="Tên khách gửi (PII)"
+                label={t("warranty.detail.editCustomerName")}
                 value={correctForm.customer_name}
                 disabled={!canViewPii}
                 onChange={(event) => {
@@ -2101,7 +2146,7 @@ export function WarrantyDetailModal({
             <Grid size={{ xs: 12, sm: 6 }}>
               <UiTextField
                 fullWidth
-                label="Số điện thoại (PII)"
+                label={t("warranty.detail.editPhone")}
                 value={correctForm.customer_phone}
                 disabled={!canViewPii}
                 // Rà soát validate định dạng input (Flow04 Warranty): SĐT khách VN —
@@ -2128,7 +2173,7 @@ export function WarrantyDetailModal({
                 helperText={
                   Boolean(correctForm.customer_phone) &&
                   !/^0\d{9}$/.test(correctForm.customer_phone)
-                    ? "Số điện thoại phải đủ 10 chữ số và bắt đầu bằng số 0."
+                    ? t("warranty.detail.errPhoneFormat")
                     : correctFieldErrors.customer_phone
                 }
                 slotProps={{
@@ -2139,7 +2184,7 @@ export function WarrantyDetailModal({
             <Grid size={12}>
               <UiTextField
                 fullWidth
-                label="Địa chỉ khách (PII)"
+                label={t("warranty.detail.editAddress")}
                 value={correctForm.customer_address}
                 disabled={!canViewPii}
                 onChange={(event) => {
@@ -2164,7 +2209,7 @@ export function WarrantyDetailModal({
                 fullWidth
                 multiline
                 minRows={2}
-                label="Lý do hiệu chỉnh (hiện trên timeline)"
+                label={t("warranty.detail.editReason")}
                 value={correctForm.reason}
                 onChange={(event) => {
                   setCorrectForm((current) => ({
@@ -2197,8 +2242,8 @@ export function WarrantyDetailModal({
           })}
           maxWidth="sm"
           fullWidth
-          aria-label="Cập nhật trạng thái bảo hành"
-          title="Cập nhật trạng thái bảo hành"
+          aria-label={t("warranty.detail.statusAria")}
+          title={t("warranty.detail.statusTitle")}
           actions={
             <>
               <ActionButton
@@ -2209,29 +2254,27 @@ export function WarrantyDetailModal({
                 }}
                 disabled={updateMutation.isPending}
               >
-                Hủy
+                {t("warranty.detail.editCancel")}
               </ActionButton>
               <ActionButton
                 kind="edit"
                 onClick={() => void submitStatus()}
                 disabled={updateMutation.isPending}
               >
-                {updateMutation.isPending ? "Đang cập nhật..." : "Cập nhật"}
+                {updateMutation.isPending
+                  ? t("warranty.detail.statusUpdating")
+                  : t("warranty.detail.statusSubmit")}
               </ActionButton>
             </>
           }
         >
           <Stack spacing={2}>
-            <UiAlert tone="info">
-              Cập nhật trạng thái không làm thay đổi tồn kho: sản phẩm không tự
-              quay lại tồn có thể bán. Khi chuyển sang "Đã trả khách", sản phẩm
-              được đánh dấu là đã giao lại cho khách.
-            </UiAlert>
+            <UiAlert tone="info">{t("warranty.detail.statusHint")}</UiAlert>
             <UiTextField
               select
               required
               fullWidth
-              label="Trạng thái mới"
+              label={t("warranty.detail.statusNew")}
               value={statusForm.status}
               onChange={(event) => {
                 setStatusForm((current) => ({
@@ -2259,7 +2302,7 @@ export function WarrantyDetailModal({
                 fullWidth
                 type="date"
                 required
-                label="Ngày dự kiến sửa xong (bắt buộc, để báo khách)"
+                label={t("warranty.detail.statusEstimatedDate")}
                 value={statusForm.estimated_completion_date}
                 onChange={(event) => {
                   setStatusForm((current) => ({
@@ -2281,7 +2324,8 @@ export function WarrantyDetailModal({
                 }}
               />
             ) : null}
-            {statusValue && WARRANTY_DIAGNOSIS_REQUIRED_TARGETS.includes(statusValue) ? (
+            {statusValue &&
+            WARRANTY_DIAGNOSIS_REQUIRED_TARGETS.includes(statusValue) ? (
               // Chẩn đoán lúc tiếp nhận (defect_ids gốc) có thể sai — cho chọn
               // lại bệnh/lỗi ngay khi chuyển sang Đang sửa chữa/Đã hoàn tất.
               // Mặc định RỖNG (không pre-fill bệnh lỗi hiện có của case):
@@ -2292,11 +2336,12 @@ export function WarrantyDetailModal({
                 name="defect_ids"
                 multiple
                 options={defectOptions}
-                label="Chọn lại bệnh / lỗi (không bắt buộc)"
-                placeholder="Để trống nếu chẩn đoán ban đầu vẫn đúng"
+                label={t("warranty.detail.statusRepickDefect")}
+                placeholder={t("warranty.detail.statusRepickPlaceholder")}
               />
             ) : null}
-            {statusValue && WARRANTY_DIAGNOSIS_REQUIRED_TARGETS.includes(statusValue) ? (
+            {statusValue &&
+            WARRANTY_DIAGNOSIS_REQUIRED_TARGETS.includes(statusValue) ? (
               // Field riêng cho "Kết quả kiểm tra" (confirmed_defect) — KHÔNG
               // phải ô ghi chú chung. Chỉ hiện khi đang chuyển sang bước cần
               // chẩn đoán (Đang sửa chữa/Đã hoàn tất) để tránh người dùng gõ
@@ -2309,8 +2354,8 @@ export function WarrantyDetailModal({
                 required={diagnosisRequired}
                 label={
                   diagnosisRequired
-                    ? "Kết quả kiểm tra (bắt buộc)"
-                    : "Kết quả kiểm tra (không bắt buộc)"
+                    ? t("warranty.detail.statusCheckRequired")
+                    : t("warranty.detail.statusCheckOptional")
                 }
                 value={statusForm.confirmed_defect}
                 onChange={(event) => {
@@ -2339,7 +2384,7 @@ export function WarrantyDetailModal({
                 multiline
                 minRows={2}
                 required
-                label="Lý do hủy (bắt buộc)"
+                label={t("warranty.detail.statusCancelReason")}
                 value={statusForm.cancel_reason}
                 onChange={(event) => {
                   setStatusForm((current) => ({
@@ -2366,7 +2411,11 @@ export function WarrantyDetailModal({
               multiline
               minRows={2}
               required={Boolean(noteRequiredLabel)}
-              label={noteRequiredLabel ?? "Ghi chú xử lý (hiện trên timeline)"}
+              label={
+                noteRequiredLabel
+                  ? t(noteRequiredLabel)
+                  : t("warranty.detail.statusNote")
+              }
               value={statusForm.reason}
               onChange={(event) => {
                 setStatusForm((current) => ({

@@ -33,6 +33,7 @@ import {
   businessLabel,
 } from "@/shared/constants/business-labels";
 import { useDialogExit } from "@/shared/utils/useDialogExit";
+import { useT } from "@/shared/i18n/useT";
 import { CameraScanModal } from "@/shared/components/forms/CameraScanModal";
 import { ScanInput } from "@/shared/components/forms/ScanInput";
 import { useCanAny } from "@/shared/components/permission";
@@ -190,7 +191,12 @@ function IntakeImageTile({
       </Box>
       <Box
         title={file.name}
-        sx={{ typography: "caption", display: "block", mt: 0.5, ...INTAKE_TILE_LABEL_SX }}
+        sx={{
+          typography: "caption",
+          display: "block",
+          mt: 0.5,
+          ...INTAKE_TILE_LABEL_SX,
+        }}
       >
         {file.name}
       </Box>
@@ -225,6 +231,7 @@ export function WarrantyIntakeModal({
   onCreated,
 }: WarrantyIntakeModalProps) {
   const dialog = useDialogExit(onClose);
+  const t = useT();
   const [identificationType, setIdentificationType] =
     useState<WarrantyIdentificationType>("IDENTIFIED");
   const [itemCode, setItemCode] = useState("");
@@ -286,10 +293,10 @@ export function WarrantyIntakeModal({
   const handleCreateDefect = async () => {
     const errors: Record<string, string> = {};
     if (!newDefectForm.defect_code.trim()) {
-      errors.defect_code = "Mã lỗi là bắt buộc.";
+      errors.defect_code = t("warranty.intake.errDefectCode");
     }
     if (!newDefectForm.defect_name.trim()) {
-      errors.defect_name = "Tên lỗi / bệnh là bắt buộc.";
+      errors.defect_name = t("warranty.intake.errDefectName");
     }
     if (Object.keys(errors).length > 0) {
       setNewDefectErrors(errors);
@@ -306,7 +313,9 @@ export function WarrantyIntakeModal({
         ...defectForm.getValues("defect_ids"),
         created.defect_id,
       ]);
-      toast.success(`Đã thêm bệnh/lỗi ${created.defect_code}.`);
+      toast.success(
+        t("warranty.intake.defectAdded", { code: created.defect_code }),
+      );
       setDefectDialogOpen(false);
       setNewDefectForm({ defect_code: "", defect_name: "", description: "" });
       setNewDefectErrors({});
@@ -317,7 +326,9 @@ export function WarrantyIntakeModal({
         "description",
       ]);
       setNewDefectErrors(fieldErrors);
-      toast.error(getApiErrorMessage(error, "Không thêm được bệnh/lỗi mới."));
+      toast.error(
+        getApiErrorMessage(error, t("warranty.intake.defectAddError")),
+      );
     }
   };
   // Change Pack QR/SKU (guide §13 WAR-02): quét raw QR -> classify(WARRANTY) ->
@@ -362,10 +373,7 @@ export function WarrantyIntakeModal({
       });
     } catch (error) {
       setResolveError(
-        getApiErrorMessage(
-          error,
-          "Không nhận diện được mã từ QR; kiểm tra lại hoặc chuyển sang tab \"Mất mã\".",
-        ),
+        getApiErrorMessage(error, t("warranty.intake.qrUnresolved")),
       );
     }
   };
@@ -375,16 +383,18 @@ export function WarrantyIntakeModal({
     const accepted: File[] = [];
     Array.from(incoming).forEach((file, index) => {
       if (!INTAKE_IMAGE_MIMES.includes(file.type)) {
-        toast.error(`${file.name}: chỉ nhận ảnh JPG/PNG/WEBP.`);
+        toast.error(t("warranty.intake.badImageType", { name: file.name }));
         return;
       }
       if (file.size > MAX_INTAKE_IMAGE_BYTES) {
-        toast.error(`${file.name}: vượt quá 10MB.`);
+        toast.error(t("warranty.intake.imageTooLarge", { name: file.name }));
         return;
       }
       const slot = imageFiles.length + accepted.length + index * 0;
       if (slot >= MAX_INTAKE_IMAGES) {
-        toast.error(`Tối đa ${MAX_INTAKE_IMAGES} ảnh cho một case bảo hành.`);
+        toast.error(
+          t("warranty.intake.tooManyImages", { max: MAX_INTAKE_IMAGES }),
+        );
         return;
       }
       accepted.push(file);
@@ -401,25 +411,27 @@ export function WarrantyIntakeModal({
     const accepted: File[] = [];
     for (const file of Array.from(incoming)) {
       if (!INTAKE_VIDEO_MIMES.includes(file.type)) {
-        toast.error(`${file.name}: chỉ nhận video MP4/MOV/WEBM.`);
+        toast.error(t("warranty.intake.badVideoType", { name: file.name }));
         continue;
       }
       if (file.size > MAX_INTAKE_VIDEO_BYTES) {
-        toast.error(`${file.name}: vượt quá 300MB.`);
+        toast.error(t("warranty.intake.videoTooLarge", { name: file.name }));
         continue;
       }
       if (videoFiles.length + accepted.length >= MAX_INTAKE_VIDEOS) {
-        toast.error(`Tối đa ${MAX_INTAKE_VIDEOS} video cho một case bảo hành.`);
+        toast.error(
+          t("warranty.intake.tooManyVideos", { max: MAX_INTAKE_VIDEOS }),
+        );
         continue;
       }
       try {
         const duration = await probeVideoDurationSeconds(file);
         if (duration > MAX_INTAKE_VIDEO_DURATION_SECONDS) {
-          toast.error(`${file.name}: video vượt quá 5 phút.`);
+          toast.error(t("warranty.intake.videoTooLong", { name: file.name }));
           continue;
         }
       } catch {
-        toast.error(`${file.name}: không đọc được video, thử tệp khác.`);
+        toast.error(t("warranty.intake.videoUnreadable", { name: file.name }));
         continue;
       }
       accepted.push(file);
@@ -447,11 +459,17 @@ export function WarrantyIntakeModal({
     );
     const failed = results.filter((result) => result.status === "rejected");
     if (failed.length === 0) {
-      toast.success(`Đã đính kèm ${imageFiles.length} ảnh tiếp nhận.`);
+      toast.success(
+        t("warranty.intake.imagesAttached", { count: imageFiles.length }),
+      );
       return;
     }
     toast.error(
-      `Đã tạo case ${created.case_code} nhưng ${failed.length}/${imageFiles.length} ảnh chưa tải lên được. Vào chi tiết case để đính kèm lại.`,
+      t("warranty.intake.imagesPartial", {
+        code: created.case_code,
+        failed: failed.length,
+        total: imageFiles.length,
+      }),
     );
   };
 
@@ -468,11 +486,17 @@ export function WarrantyIntakeModal({
     );
     const failed = results.filter((result) => result.status === "rejected");
     if (failed.length === 0) {
-      toast.success(`Đã đính kèm ${videoFiles.length} video tiếp nhận.`);
+      toast.success(
+        t("warranty.intake.videosAttached", { count: videoFiles.length }),
+      );
       return;
     }
     toast.error(
-      `Đã tạo case ${created.case_code} nhưng ${failed.length}/${videoFiles.length} video chưa tải lên được. Vào chi tiết case để đính kèm lại.`,
+      t("warranty.intake.videosPartial", {
+        code: created.case_code,
+        failed: failed.length,
+        total: videoFiles.length,
+      }),
     );
   };
 
@@ -501,31 +525,31 @@ export function WarrantyIntakeModal({
     setFormError(null);
     if (identificationType === "TEMP_ONLY") {
       if (!missingCodeReason.trim()) {
-        setFormError("Nhập lý do bắt buộc.");
+        setFormError(t("warranty.intake.errReason"));
         return;
       }
       if (!manualProductDescription.trim()) {
-        setFormError("Nhập mô tả máy bắt buộc.");
+        setFormError(t("warranty.intake.errDescription"));
         return;
       }
     } else if (!itemCode.trim()) {
-      setFormError("Quét hoặc nhập mã máy cần bảo hành.");
+      setFormError(t("warranty.intake.errItemCode"));
       return;
     }
     if (!customerName.trim()) {
-      setFormError("Nhập tên khách gửi.");
+      setFormError(t("warranty.intake.errCustomerName"));
       return;
     }
     if (!customerPhone.trim()) {
-      setFormError("Nhập số điện thoại.");
+      setFormError(t("warranty.intake.errPhone"));
       return;
     }
     if (!/^0\d{9}$/.test(customerPhone)) {
-      setFormError("Số điện thoại phải đủ 10 chữ số và bắt đầu bằng số 0.");
+      setFormError(t("warranty.intake.errPhoneFormat"));
       return;
     }
     if (!reportedDefect.trim()) {
-      setFormError("Nhập mô tả lỗi khách phản ánh.");
+      setFormError(t("warranty.intake.errDefectReported"));
       return;
     }
 
@@ -549,8 +573,11 @@ export function WarrantyIntakeModal({
       toast.success(
         created.identification_type === "TEMP_ONLY" &&
           created.temporary_item_code
-          ? `Đã tạo case ${created.case_code} — mã tạm ${created.temporary_item_code}.`
-          : `Đã tạo case bảo hành ${created.case_code}.`,
+          ? t("warranty.intake.createdTemporary", {
+              code: created.case_code,
+              temporary: created.temporary_item_code,
+            })
+          : t("warranty.intake.created", { code: created.case_code }),
       );
       await uploadIntakeImages(created);
       await uploadIntakeVideos(created);
@@ -563,7 +590,7 @@ export function WarrantyIntakeModal({
       // Không kèm request_id: đó là mã tra cứu kỹ thuật, người dùng đọc không
       // hiểu (xem ApiErrorAlert.tsx — request_id chỉ hiện ở dòng phụ có nhãn).
       const fieldErrors = extractFieldErrorsRaw(error);
-      const errorMsg = `${getApiErrorMessage(error, "Không tạo được case bảo hành.")}${
+      const errorMsg = `${getApiErrorMessage(error, t("warranty.error.createCase"))}${
         fieldErrors ? ` (${Object.values(fieldErrors).flat().join("; ")})` : ""
       }`;
       setFormError(errorMsg);
@@ -593,21 +620,25 @@ export function WarrantyIntakeModal({
           spacing={1}
           sx={{ alignItems: "center", justifyContent: "space-between" }}
         >
-          <Box component="span">Tiếp nhận bảo hành</Box>
-          <ActionIconButton kind="close" label="Đóng" onClick={dialog.close} />
+          <Box component="span">{t("warranty.intake.title")}</Box>
+          <ActionIconButton
+            kind="close"
+            label={t("common.close")}
+            onClick={dialog.close}
+          />
         </Stack>
       }
       actions={
         <>
           <ActionButton kind="cancel" onClick={dialog.close} disabled={busy}>
-            Hủy
+            {t("warranty.intake.cancel")}
           </ActionButton>
           <ActionButton
             kind="save"
             disabled={busy}
             onClick={() => void submit()}
           >
-            {busy ? "Đang lưu..." : "Lưu tiếp nhận"}
+            {busy ? t("warranty.intake.saving") : t("warranty.intake.save")}
           </ActionButton>
         </>
       }
@@ -618,16 +649,16 @@ export function WarrantyIntakeModal({
         <Box>
           <Box sx={{ mb: 0.5 }}>
             <UiText variant="caption" color={SEMANTIC_LIGHT.textMedium}>
-              Loại tiếp nhận *
+              {t("warranty.intake.intakeType")}
             </UiText>
           </Box>
           <Box
             role="radiogroup"
-            aria-label="Loại tiếp nhận"
+            aria-label={t("warranty.intake.intakeTypeAria")}
             sx={{ display: "flex", flexWrap: "wrap", columnGap: 2 }}
           >
             <FormControlLabel
-              label="Có mã máy"
+              label={t("warranty.intake.hasCode")}
               control={
                 <Radio
                   size="small"
@@ -639,7 +670,7 @@ export function WarrantyIntakeModal({
               }
             />
             <FormControlLabel
-              label="Mất mã"
+              label={t("warranty.intake.lostCode")}
               control={
                 <Radio
                   size="small"
@@ -655,13 +686,12 @@ export function WarrantyIntakeModal({
 
         {identificationType === "TEMP_ONLY" ? (
           <>
-            
             <UiTextField
               required
               fullWidth
               multiline
               minRows={2}
-              label="Lý do mất/không có mã"
+              label={t("warranty.intake.lostReason")}
               value={missingCodeReason}
               onChange={(event) => setMissingCodeReason(event.target.value)}
               slotProps={{ htmlInput: { maxLength: 500 } }}
@@ -672,7 +702,7 @@ export function WarrantyIntakeModal({
               fullWidth
               multiline
               minRows={2}
-              label="Mô tả nhận diện máy"
+              label={t("warranty.intake.identityDescription")}
               value={manualProductDescription}
               onChange={(event) =>
                 setManualProductDescription(event.target.value)
@@ -685,7 +715,7 @@ export function WarrantyIntakeModal({
           <Box>
             <Box sx={{ mb: 0.5 }}>
               <UiText variant="caption" color={SEMANTIC_LIGHT.textMedium}>
-                Mã máy / serial / barcode item *
+                {t("warranty.intake.itemCode")}
               </UiText>
             </Box>
             <Stack
@@ -700,7 +730,7 @@ export function WarrantyIntakeModal({
                   // Annex D SCR-WAR-01 scan-focus: ô quét tự nhận focus khi mở WAR-02
                   // ở nhánh IDENTIFIED để đầu đọc bắn được ngay.
                   autoFocus
-                  placeholder="Quét QR composite / Barcode hoặc nhập serial"
+                  placeholder={t("warranty.intake.itemCodePlaceholder")}
                   onChange={(value) => {
                     setItemCode(value);
                     setResolvedItem(null);
@@ -715,20 +745,30 @@ export function WarrantyIntakeModal({
             </Stack>
             <Box sx={{ mt: 0.5 }}>
               <UiText variant="caption" color={SEMANTIC_LIGHT.textMedium}>
-                Sản phẩm phải đã xuất cho khách và chưa có phiếu bảo hành nào
-                đang xử lý.
+                {t("warranty.intake.itemCodeHint")}
               </UiText>
             </Box>
             {resolvedItem ? (
               <Box sx={{ mt: 1 }}>
                 <UiAlert tone="success">
-                  {`Đã nhận diện sản phẩm${
-                    resolvedItem.skuCode ? ` · SKU ${resolvedItem.skuCode}` : ""
-                  }${resolvedItem.itemUnique ? ` · ${resolvedItem.itemUnique}` : ""}${
-                    resolvedItem.objectStatus
-                      ? ` · trạng thái ${businessLabel(ITEM_STATUS_LABELS, resolvedItem.objectStatus)}`
-                      : ""
-                  }`}
+                  {t("warranty.intake.resolved", {
+                    sku: resolvedItem.skuCode
+                      ? t("warranty.intake.resolvedSku", {
+                          sku: resolvedItem.skuCode,
+                        })
+                      : "",
+                    unique: resolvedItem.itemUnique
+                      ? ` · ${resolvedItem.itemUnique}`
+                      : "",
+                    status: resolvedItem.objectStatus
+                      ? t("warranty.intake.resolvedStatus", {
+                          status: businessLabel(
+                            ITEM_STATUS_LABELS,
+                            resolvedItem.objectStatus,
+                          ),
+                        })
+                      : "",
+                  })}
                 </UiAlert>
               </Box>
             ) : null}
@@ -737,9 +777,7 @@ export function WarrantyIntakeModal({
                 <UiAlert tone="warning">
                   <Box>{resolveError}</Box>
                   <Box component="span" sx={{ fontSize: 12 }}>
-                    Nếu QR hỏng hoặc không định danh được sản phẩm, chuyển sang
-                    tab "Mất mã" — hệ thống không tự suy đoán liên kết sản
-                    phẩm.
+                    {t("warranty.intake.lostCodeHint")}
                   </Box>
                 </UiAlert>
               </Box>
@@ -752,7 +790,7 @@ export function WarrantyIntakeModal({
             <UiTextField
               required
               fullWidth
-              label="Tên khách gửi"
+              label={t("warranty.intake.customerName")}
               value={customerName}
               onChange={(event) => setCustomerName(event.target.value)}
               slotProps={{ htmlInput: { maxLength: 200 } }}
@@ -762,7 +800,7 @@ export function WarrantyIntakeModal({
             <UiTextField
               required
               fullWidth
-              label="Số điện thoại"
+              label={t("warranty.intake.phone")}
               value={customerPhone}
               onChange={(event) =>
                 setCustomerPhone(
@@ -772,7 +810,7 @@ export function WarrantyIntakeModal({
               error={Boolean(customerPhone) && !/^0\d{9}$/.test(customerPhone)}
               helperText={
                 Boolean(customerPhone) && !/^0\d{9}$/.test(customerPhone)
-                  ? "Số điện thoại phải đủ 10 chữ số và bắt đầu bằng số 0."
+                  ? t("warranty.intake.errPhoneFormat")
                   : undefined
               }
               slotProps={{
@@ -783,7 +821,7 @@ export function WarrantyIntakeModal({
           <Grid size={{ xs: 12, md: 8 }}>
             <UiTextField
               fullWidth
-              label="Địa chỉ khách"
+              label={t("warranty.intake.address")}
               value={customerAddress}
               onChange={(event) => setCustomerAddress(event.target.value)}
               slotProps={{ htmlInput: { maxLength: 500 } }}
@@ -793,14 +831,14 @@ export function WarrantyIntakeModal({
             <UiTextField
               fullWidth
               type="date"
-              label="Ngày mua (nếu có)"
+              label={t("warranty.intake.purchaseDate")}
               value={purchaseDate}
               onChange={(event) => setPurchaseDate(event.target.value)}
               slotProps={{
                 inputLabel: { shrink: true },
                 htmlInput: { max: dayjs().format("YYYY-MM-DD") },
               }}
-              helperText="Định dạng: ngày/tháng/năm"
+              helperText={t("warranty.intake.dateHelper")}
             />
           </Grid>
           <Grid size={{ xs: 12, md: 6 }}>
@@ -809,12 +847,12 @@ export function WarrantyIntakeModal({
               name="defect_ids"
               multiple
               options={defectOptions}
-              label="Bệnh / lỗi (danh mục)"
-              placeholder="Chọn từ danh mục bệnh/lỗi"
+              label={t("warranty.intake.defectCatalog")}
+              placeholder={t("warranty.intake.defectCatalogPlaceholder")}
               {...(canManageDefects
                 ? {
                     onAddNew: () => setDefectDialogOpen(true),
-                    addNewLabel: "Thêm bệnh lỗi",
+                    addNewLabel: t("warranty.intake.addDefect"),
                   }
                 : {})}
             />
@@ -822,8 +860,8 @@ export function WarrantyIntakeModal({
           <Grid size={{ xs: 12, md: 6 }}>
             <UiTextField
               fullWidth
-              label="Phụ kiện đi kèm"
-              placeholder="VD: Pin 20V, sạc, hộp"
+              label={t("warranty.intake.accessories")}
+              placeholder={t("warranty.intake.accessoriesPlaceholder")}
               value={accessoriesReceived}
               onChange={(event) => setAccessoriesReceived(event.target.value)}
               slotProps={{ htmlInput: { maxLength: 1000 } }}
@@ -836,7 +874,7 @@ export function WarrantyIntakeModal({
           fullWidth
           multiline
           minRows={3}
-          label="Bệnh / lỗi khách phản ánh"
+          label={t("warranty.intake.defectReported")}
           value={reportedDefect}
           onChange={(event) => setReportedDefect(event.target.value)}
           slotProps={{ htmlInput: { maxLength: 2000 } }}
@@ -847,8 +885,8 @@ export function WarrantyIntakeModal({
           fullWidth
           multiline
           minRows={2}
-          label="Tình trạng máy khi tiếp nhận"
-          placeholder="VD: Trầy xước nhẹ thân máy, còn nguyên tem"
+          label={t("warranty.intake.conditionOnIntake")}
+          placeholder={t("warranty.intake.conditionPlaceholder")}
           value={receivedCondition}
           onChange={(event) => setReceivedCondition(event.target.value)}
           slotProps={{ htmlInput: { maxLength: 500 } }}
@@ -859,14 +897,16 @@ export function WarrantyIntakeModal({
           <Box sx={{ mb: 0.5 }}>
             <UiText variant="body">
               <Box component="span" sx={{ fontWeight: 600 }}>
-                {`Ảnh đính kèm (${imageFiles.length}/${MAX_INTAKE_IMAGES})`}
+                {t("warranty.intake.imagesTitle", {
+                  count: imageFiles.length,
+                  max: MAX_INTAKE_IMAGES,
+                })}
               </Box>
             </UiText>
           </Box>
           <Box sx={{ mb: 1 }}>
             <UiText variant="caption" color={SEMANTIC_LIGHT.textMedium}>
-              JPG/PNG/WEBP, tối đa 10 ảnh, mỗi ảnh ≤ 10MB. Ảnh được tải lên sau
-              khi case bảo hành được tạo.
+              {t("warranty.intake.imagesHint")}
             </UiText>
           </Box>
           <Box
@@ -914,7 +954,7 @@ export function WarrantyIntakeModal({
               >
                 <UploadOutlined style={{ fontSize: 18 }} />
                 <Box component="span" sx={{ typography: "caption" }}>
-                  Tải ảnh
+                  {t("warranty.intake.uploadImage")}
                 </Box>
                 <input
                   type="file"
@@ -936,14 +976,16 @@ export function WarrantyIntakeModal({
           <Box sx={{ mb: 0.5 }}>
             <UiText variant="body">
               <Box component="span" sx={{ fontWeight: 600 }}>
-                {`Video đính kèm (${videoFiles.length}/${MAX_INTAKE_VIDEOS})`}
+                {t("warranty.intake.videosTitle", {
+                  count: videoFiles.length,
+                  max: MAX_INTAKE_VIDEOS,
+                })}
               </Box>
             </UiText>
           </Box>
           <Box sx={{ mb: 1 }}>
             <UiText variant="caption" color={SEMANTIC_LIGHT.textMedium}>
-              MP4/MOV/WEBM, tối đa 2 video, mỗi video ≤ 300MB và ≤ 5 phút. Video
-              được tải lên sau khi case bảo hành được tạo.
+              {t("warranty.intake.videosHint")}
             </UiText>
           </Box>
           <Stack
@@ -1001,11 +1043,9 @@ export function WarrantyIntakeModal({
               >
                 <PlayCircleOutlined />
               </Box>
-              <UiText variant="body">
-                Kéo thả video vào đây hoặc bấm để chọn
-              </UiText>
+              <UiText variant="body">{t("warranty.intake.videoDrop")}</UiText>
               <UiText variant="caption" color={SEMANTIC_LIGHT.textMedium}>
-                Tối đa {MAX_INTAKE_VIDEOS} video, mỗi video ≤ 300MB, ≤ 5 phút.
+                {t("warranty.intake.videoLimits", { max: MAX_INTAKE_VIDEOS })}
               </UiText>
               <input
                 type="file"
@@ -1025,7 +1065,7 @@ export function WarrantyIntakeModal({
 
       <CameraScanModal
         open={cameraOpen}
-        title="Quét mã máy bảo hành"
+        title={t("warranty.intake.scanTitle")}
         onDetected={(code) => {
           // Change Pack QR/SKU: gửi RAW payload cho backend resolve — FE không
           // tự tách/parse; classify trả normalized item_code + SKU để tự điền.
@@ -1045,10 +1085,10 @@ export function WarrantyIntakeModal({
             spacing={1}
             sx={{ alignItems: "center", justifyContent: "space-between" }}
           >
-            <Box component="span">Thêm bệnh lỗi</Box>
+            <Box component="span">{t("warranty.intake.defectDialogTitle")}</Box>
             <ActionIconButton
               kind="close"
-              label="Đóng"
+              label={t("common.close")}
               onClick={() => setDefectDialogOpen(false)}
             />
           </Stack>
@@ -1060,14 +1100,16 @@ export function WarrantyIntakeModal({
               onClick={() => setDefectDialogOpen(false)}
               disabled={createDefectMutation.isPending}
             >
-              Hủy
+              {t("warranty.intake.cancel")}
             </ActionButton>
             <ActionButton
               kind="save"
               disabled={createDefectMutation.isPending}
               onClick={() => void handleCreateDefect()}
             >
-              {createDefectMutation.isPending ? "Đang lưu..." : "Lưu"}
+              {createDefectMutation.isPending
+                ? t("warranty.intake.defectSaving")
+                : t("warranty.intake.defectSave")}
             </ActionButton>
           </>
         }
@@ -1076,7 +1118,7 @@ export function WarrantyIntakeModal({
           <UiTextField
             fullWidth
             required
-            label="Mã lỗi"
+            label={t("warranty.intake.defectCode")}
             value={newDefectForm.defect_code}
             onChange={(event) =>
               setNewDefectForm((current) => ({
@@ -1091,7 +1133,7 @@ export function WarrantyIntakeModal({
           <UiTextField
             fullWidth
             required
-            label="Tên lỗi / bệnh"
+            label={t("warranty.intake.defectName")}
             value={newDefectForm.defect_name}
             onChange={(event) =>
               setNewDefectForm((current) => ({
@@ -1107,7 +1149,7 @@ export function WarrantyIntakeModal({
             fullWidth
             multiline
             minRows={2}
-            label="Mô tả"
+            label={t("warranty.intake.defectDescription")}
             value={newDefectForm.description}
             onChange={(event) =>
               setNewDefectForm((current) => ({

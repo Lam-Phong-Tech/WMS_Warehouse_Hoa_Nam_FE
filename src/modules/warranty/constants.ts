@@ -1,6 +1,7 @@
 import type { WarrantyCaseStatus } from "./types";
 import type { ComponentIssueStatus } from "./services/componentIssueService";
 import type { UiStatusTone } from "@/shared/ui";
+import type { MessageKey } from "@/shared/i18n/messages";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { formatDateTime } from "@/shared/utils/format-date";
 export {
@@ -56,10 +57,10 @@ export const WARRANTY_DIAGNOSIS_REQUIRED_TARGETS: WarrantyCaseStatus[] = [
  * (422 WARRANTY_TREATMENT_RESULT_REQUIRED / WARRANTY_HANDOVER_NOTE_REQUIRED).
  */
 export const WARRANTY_NOTE_REQUIRED_LABELS: Partial<
-  Record<WarrantyCaseStatus, string>
+  Record<WarrantyCaseStatus, MessageKey>
 > = {
-  COMPLETED: "Kết quả xử lý (bắt buộc)",
-  RETURNED: "Tên người nhận (bắt buộc)",
+  COMPLETED: "warranty.noteRequired.completed",
+  RETURNED: "warranty.noteRequired.returned",
 };
 
 export const WARRANTY_STATUS_LABELS: Record<string, string> = {

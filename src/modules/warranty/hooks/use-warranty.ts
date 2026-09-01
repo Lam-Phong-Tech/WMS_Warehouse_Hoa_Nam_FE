@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { getApiErrorMessage } from "@/shared/api/api-error";
+import { useT } from "@/shared/i18n/useT";
+import type { MessageKey } from "@/shared/i18n/messages";
 import {
   createWarrantyCase,
   deleteWarrantyAttachment,
@@ -113,16 +115,17 @@ export function useComponentIssueDetail(id: string | null | undefined) {
  */
 function useInvalidateWarrantyMutation<TVariables, TResult>(
   mutationFn: (variables: TVariables) => Promise<TResult>,
-  errorFallback?: string,
+  errorFallback?: MessageKey,
 ) {
   const queryClient = useQueryClient();
+  const t = useT();
   return useMutation({
     mutationFn,
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: warrantyKeys.all }),
     onError: errorFallback
       ? (error: unknown) => {
-          toast.error(getApiErrorMessage(error, errorFallback));
+          toast.error(getApiErrorMessage(error, t(errorFallback)));
         }
       : () => {
           // Im lặng có chủ đích — xem docblock ở trên.
@@ -133,7 +136,7 @@ function useInvalidateWarrantyMutation<TVariables, TResult>(
 export function useCreateWarrantyCase() {
   return useInvalidateWarrantyMutation(
     (payload: CreateWarrantyCaseRequest) => createWarrantyCase(payload),
-    "Không tạo được case bảo hành.",
+    "warranty.error.createCase",
   );
 }
 
@@ -171,7 +174,7 @@ export function useDeleteWarrantyAttachment() {
 export function useCreateComponentIssue() {
   return useInvalidateWarrantyMutation(
     (payload: ComponentIssueCreateRequest) => createComponentIssue(payload),
-    "Không tạo được phiếu xuất linh kiện.",
+    "warranty.error.createComponentIssue",
   );
 }
 
@@ -184,7 +187,7 @@ export function useScanComponentIssue() {
       quantity: number;
       ifMatch: number;
     }) => scanComponentIssue(input),
-    "Quét linh kiện thất bại.",
+    "warranty.error.scanComponent",
   );
 }
 
@@ -192,7 +195,7 @@ export function useCancelComponentIssue() {
   return useInvalidateWarrantyMutation(
     (input: { documentId: string; reason: string; ifMatch: number }) =>
       cancelComponentIssue(input),
-    "Không hủy được phiếu.",
+    "warranty.error.cancelDocument",
   );
 }
 
@@ -200,6 +203,6 @@ export function usePostComponentIssue() {
   return useInvalidateWarrantyMutation(
     (input: { documentId: string; ifMatch: number; idempotencyKey: string }) =>
       postComponentIssue(input),
-    "Không hoàn tất được phiếu xuất linh kiện. Vui lòng thử lại; nếu vẫn lỗi, liên hệ quản trị viên.",
+    "warranty.error.postComponentIssue",
   );
 }

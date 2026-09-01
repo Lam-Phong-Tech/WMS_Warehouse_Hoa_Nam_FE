@@ -29,6 +29,7 @@ import { useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { guardBackdropClose } from "@/shared/utils/dialogGuard";
 import { useDialogExit } from "@/shared/utils/useDialogExit";
+import { useT } from "@/shared/i18n/useT";
 import { CameraScanModal } from "@/shared/components/forms/CameraScanModal";
 import { ScanInput } from "@/shared/components/forms/ScanInput";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
@@ -86,6 +87,7 @@ export function ComponentIssueModal({
   onChanged,
 }: ComponentIssueModalProps) {
   const dialog = useDialogExit(onClose);
+  const t = useT();
   const canIssue = useCanAny(["warranty.component_issue"]);
   const [documentId, setDocumentId] = useState<string | null>(
     initialDocumentId ?? null,
@@ -237,17 +239,21 @@ export function ComponentIssueModal({
     draftLines.forEach((line, index) => {
       const lineError: { sku_id?: string; required_qty?: string } = {};
       if (!line.sku_id) {
-        lineError.sku_id = "Chọn linh kiện.";
+        lineError.sku_id = t("warranty.componentIssue.errSku");
       }
       if (!line.required_qty || line.required_qty < 1) {
-        lineError.required_qty = "Nhập số lượng.";
+        lineError.required_qty = t("warranty.componentIssue.errQty");
       } else if (line.sku_id) {
         const available = availabilityQuery.data?.[line.sku_id];
         if (available === undefined) {
-          lineError.required_qty =
-            "Chưa xác định được tồn khả dụng, vui lòng thử lại.";
+          lineError.required_qty = t(
+            "warranty.componentIssue.errAvailabilityUnknown",
+          );
         } else if (requiredBySkuId[line.sku_id] > available) {
-          lineError.required_qty = `Vượt tồn khả dụng (còn ${available}).`;
+          lineError.required_qty = t(
+            "warranty.componentIssue.errOverAvailable",
+            { available },
+          );
         }
       }
       if (Object.keys(lineError).length > 0) {
@@ -261,7 +267,7 @@ export function ComponentIssueModal({
   const handleCreate = async () => {
     if (!validateDraftLines()) return;
     if (!warehouse?.id) {
-      toast.error("Chưa xác định được kho tổng đang hoạt động.");
+      toast.error(t("warranty.componentIssue.errNoWarehouse"));
       return;
     }
     try {
@@ -278,7 +284,9 @@ export function ComponentIssueModal({
           })),
       });
       toast.success(
-        `Đã tạo phiếu xuất linh kiện ${created.component_issue_no}.`,
+        t("warranty.componentIssue.created", {
+          code: created.component_issue_no,
+        }),
       );
       setDocumentId(created.id);
       setLocalVersion(created.version);
@@ -293,7 +301,7 @@ export function ComponentIssueModal({
     if (!detail || !documentId) return;
     const line = detail.lines.find((item) => item.id === selectedLineId);
     if (!line) {
-      toast.warning("Chọn dòng linh kiện trước khi quét.");
+      toast.warning(t("warranty.componentIssue.pickLineFirst"));
       return;
     }
     if (version === null) return;
@@ -308,7 +316,12 @@ export function ComponentIssueModal({
       setLocalVersion(result.version);
       setRecentCodes((current) => [code, ...current].slice(0, 30));
       toast.success(
-        `Đã ghi nhận ${scanQuantity} × ${line.sku_code} (${result.scanned_qty}/${line.required_qty}).`,
+        t("warranty.componentIssue.scanned", {
+          qty: scanQuantity,
+          sku: line.sku_code,
+          scanned: result.scanned_qty,
+          required: line.required_qty,
+        }),
       );
       onChanged?.();
     } catch {
@@ -319,7 +332,7 @@ export function ComponentIssueModal({
   const handleCancel = async () => {
     if (!documentId || version === null) return;
     if (!cancelReason.trim()) {
-      toast.warning("Nhập lý do hủy phiếu.");
+      toast.warning(t("warranty.componentIssue.needCancelReason"));
       return;
     }
     try {
@@ -330,7 +343,7 @@ export function ComponentIssueModal({
       });
       setLocalVersion(result.version);
       setCancelOpen(false);
-      toast.success("Đã hủy phiếu xuất linh kiện.");
+      toast.success(t("warranty.componentIssue.cancelled"));
       onChanged?.();
     } catch {
       // Toast lỗi đã hiện qua onError của cancelMutation (use-warranty.ts).
@@ -350,7 +363,9 @@ export function ComponentIssueModal({
       setLocalVersion(result.version);
       setPostConfirmOpen(false);
       toast.success(
-        `Đã Post phiếu xuất linh kiện — ${result.movement_ids.length} movement trừ tồn.`,
+        t("warranty.componentIssue.posted", {
+          count: result.movement_ids.length,
+        }),
       );
       onChanged?.();
     } catch {
@@ -380,7 +395,7 @@ export function ComponentIssueModal({
     },
     {
       key: "sku",
-      header: "Linh kiện (COMPONENT)",
+      header: t("warranty.componentIssue.colComponent"),
       render: (line) => (
         <Stack spacing={0}>
           <Box
@@ -398,7 +413,7 @@ export function ComponentIssueModal({
     },
     {
       key: "progress",
-      header: "Tiến độ quét",
+      header: t("warranty.componentIssue.colProgress"),
       width: 140,
       render: (line) => (
         <UiStatusBadge
@@ -409,7 +424,7 @@ export function ComponentIssueModal({
     },
     {
       key: "items",
-      header: "Kiểu quét",
+      header: t("warranty.componentIssue.colScanKind"),
       render: (line) => {
         const active = line.items.filter((item) => item.status !== "REMOVED");
         if (!active.length)
@@ -418,8 +433,10 @@ export function ComponentIssueModal({
           <Stack spacing={0}>
             {active.map((item) => (
               <UiText key={item.id} variant="caption">
-                {item.item_id ? "Quét từng linh kiện" : "Quét theo hộp"} ×{" "}
-                {item.quantity}
+                {item.item_id
+                  ? t("warranty.componentIssue.scanPerItem")
+                  : t("warranty.componentIssue.scanPerBox")}{" "}
+                × {item.quantity}
               </UiText>
             ))}
           </Stack>
@@ -443,16 +460,24 @@ export function ComponentIssueModal({
         >
           <Box component="span">
             {documentId
-              ? `Phiếu xuất linh kiện ${detail?.component_issue_no ?? ""}`
-              : `Xuất linh kiện cho phiếu bảo hành ${caseCode ?? shortId(caseId)}`}
+              ? t("warranty.componentIssue.titleExisting", {
+                  code: detail?.component_issue_no ?? "",
+                })
+              : t("warranty.componentIssue.titleNew", {
+                  code: caseCode ?? shortId(caseId),
+                })}
           </Box>
-          <ActionIconButton kind="close" label="Đóng" onClick={dialog.close} />
+          <ActionIconButton
+            kind="close"
+            label={t("common.close")}
+            onClick={dialog.close}
+          />
         </Box>
       }
       actions={
         <>
           <ActionButton kind="close" onClick={dialog.close}>
-            Đóng
+            {t("common.close")}
           </ActionButton>
           {documentId && isOpenDocument ? (
             <>
@@ -461,7 +486,7 @@ export function ComponentIssueModal({
                 disabled={!canIssue || cancelMutation.isPending}
                 onClick={() => setCancelOpen(true)}
               >
-                Hủy phiếu
+                {t("warranty.componentIssue.cancelTrigger")}
               </ActionButton>
               <ActionButton
                 kind="approve"
@@ -470,7 +495,7 @@ export function ComponentIssueModal({
                 }
                 onClick={() => setPostConfirmOpen(true)}
               >
-                Full Post 
+                Full Post
               </ActionButton>
             </>
           ) : null}
@@ -480,7 +505,9 @@ export function ComponentIssueModal({
               disabled={!canIssue || !caseActive || createMutation.isPending}
               onClick={() => void handleCreate()}
             >
-              {createMutation.isPending ? "Đang tạo..." : "Tạo phiếu DRAFT"}
+              {createMutation.isPending
+                ? t("warranty.componentIssue.creating")
+                : t("warranty.componentIssue.create")}
             </ActionButton>
           ) : null}
         </>
@@ -489,19 +516,18 @@ export function ComponentIssueModal({
       <Stack spacing={2} sx={{ mt: 0.5 }}>
         {!caseActive && !documentId ? (
           <UiAlert tone="error">
-            Warranty case không còn active (RETURNED/CANCELLED) — không được tạo
-            phiếu xuất linh kiện.
+            {t("warranty.componentIssue.caseInactive")}
           </UiAlert>
         ) : null}
 
         {!documentId ? (
           <Stack spacing={2}>
-            
-
             <Grid container spacing={2}>
               <Grid size={{ xs: 12, sm: 6 }}>
                 <Box>
-                  <UiText variant="caption">Kho xuất</UiText>
+                  <UiText variant="caption">
+                    {t("warranty.componentIssue.warehouse")}
+                  </UiText>
                 </Box>
                 <UiText variant="body">
                   {warehouse
@@ -509,13 +535,15 @@ export function ComponentIssueModal({
                         warehouse.name ?? warehouse.warehouse_name ?? "",
                       )}`
                     : warehousesQuery.isLoading
-                      ? "Đang tải..."
-                      : "Không tìm thấy kho ACTIVE"}
+                      ? t("warranty.componentIssue.warehouseLoading")
+                      : t("warranty.componentIssue.warehouseNone")}
                 </UiText>
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
                 <Box>
-                  <UiText variant="caption">Mã phiếu bảo hành</UiText>
+                  <UiText variant="caption">
+                    {t("warranty.componentIssue.caseCode")}
+                  </UiText>
                 </Box>
                 <UiText variant="body">
                   {caseCode ?? <CopyableId value={caseId} />}
@@ -546,8 +574,7 @@ export function ComponentIssueModal({
                             ? {
                                 value: line.sku_id,
                                 label:
-                                  skuLabelById.get(line.sku_id) ??
-                                  line.sku_id,
+                                  skuLabelById.get(line.sku_id) ?? line.sku_id,
                               }
                             : null
                         }
@@ -566,15 +593,17 @@ export function ComponentIssueModal({
                         loading={skusQuery.isFetching}
                         noOptionsText={
                           skuKeyword.trim()
-                            ? "Không tìm thấy SKU linh kiện khớp từ khoá."
-                            : "Gõ mã hoặc tên SKU linh kiện để tìm."
+                            ? t("warranty.componentIssue.skuNoMatch")
+                            : t("warranty.componentIssue.skuTypeToSearch")
                         }
                         renderInput={(params) => (
                           <TextField
                             {...params}
                             required
-                            label="SKU linh kiện (COMPONENT)"
-                            placeholder="Gõ mã hoặc tên SKU linh kiện..."
+                            label={t("warranty.componentIssue.skuLabel")}
+                            placeholder={t(
+                              "warranty.componentIssue.skuPlaceholder",
+                            )}
                             error={Boolean(lineErrors[index]?.sku_id)}
                             helperText={lineErrors[index]?.sku_id}
                           />
@@ -583,7 +612,7 @@ export function ComponentIssueModal({
                       <UiTextField
                         required
                         type="number"
-                        label="SL cần"
+                        label={t("warranty.componentIssue.qtyLabel")}
                         value={line.required_qty ?? ""}
                         onChange={(event) =>
                           updateDraftLine(index, {
@@ -607,12 +636,13 @@ export function ComponentIssueModal({
                             return (
                               <UiStatusBadge
                                 tone={exceeds ? "error" : "neutral"}
-                                label={`Khả dụng: ${
-                                  available ??
-                                  (availabilityQuery.isLoading
-                                    ? "..."
-                                    : EMPTY_TEXT)
-                                }`}
+                                label={t("warranty.componentIssue.available", {
+                                  qty:
+                                    available ??
+                                    (availabilityQuery.isLoading
+                                      ? "..."
+                                      : EMPTY_TEXT),
+                                })}
                                 sx={{ fontWeight: 700, mt: "6px" }}
                               />
                             );
@@ -638,7 +668,7 @@ export function ComponentIssueModal({
                   setDraftLines((current) => [...current, emptyDraftLine()])
                 }
               >
-                Thêm dòng linh kiện
+                {t("warranty.componentIssue.addLine")}
               </ActionButton>
             </Stack>
 
@@ -646,7 +676,7 @@ export function ComponentIssueModal({
               fullWidth
               multiline
               minRows={2}
-              label="Ghi chú"
+              label={t("warranty.componentIssue.note")}
               value={draftNote}
               onChange={(event) => setDraftNote(event.target.value)}
               slotProps={{ htmlInput: { maxLength: 2000 } }}
@@ -656,7 +686,7 @@ export function ComponentIssueModal({
           <Stack spacing={1.5}>
             <ApiErrorAlert
               error={detailQuery.error}
-              title="Không tải được phiếu xuất linh kiện"
+              title={t("warranty.componentIssue.loadError")}
               onRetry={() => detailQuery.refetch()}
             />
             {detail ? (
@@ -672,7 +702,9 @@ export function ComponentIssueModal({
                   <Grid container spacing={2}>
                     <Grid size={{ xs: 12, md: 4 }}>
                       <Box>
-                        <UiText variant="caption">Trạng thái</UiText>
+                        <UiText variant="caption">
+                          {t("warranty.componentIssue.status")}
+                        </UiText>
                       </Box>
                       <UiStatusBadge
                         tone={COMPONENT_ISSUE_STATUS_BADGE[detail.status].tone}
@@ -683,13 +715,20 @@ export function ComponentIssueModal({
                     </Grid>
                     <Grid size={{ xs: 12, md: 4 }}>
                       <Box>
-                        <UiText variant="caption">Mục đích</UiText>
+                        <UiText variant="caption">
+                          {t("warranty.componentIssue.purpose")}
+                        </UiText>
                       </Box>
-                      <UiStatusBadge tone="info" label="Bảo hành" />
+                      <UiStatusBadge
+                        tone="info"
+                        label={t("warranty.componentIssue.purposeWarranty")}
+                      />
                     </Grid>
                     <Grid size={{ xs: 12, md: 4 }}>
                       <Box>
-                        <UiText variant="caption">Ngày chứng từ</UiText>
+                        <UiText variant="caption">
+                          {t("warranty.componentIssue.documentDate")}
+                        </UiText>
                       </Box>
                       <UiText variant="body">
                         {detail.document_date || EMPTY_TEXT}
@@ -700,12 +739,18 @@ export function ComponentIssueModal({
 
                 {detail.status === "CANCELLED" ? (
                   <UiAlert tone="warning">
-                    {`Phiếu đã hủy${detail.cancel_reason ? ` — ${detail.cancel_reason}` : ""}. Tồn kho không đổi.`}
+                    {t("warranty.componentIssue.cancelledNote", {
+                      reason: detail.cancel_reason
+                        ? t("warranty.componentIssue.cancelledReason", {
+                            reason: detail.cancel_reason,
+                          })
+                        : "",
+                    })}
                   </UiAlert>
                 ) : null}
                 {detail.status === "POSTED" ? (
                   <UiAlert tone="success">
-                    Đã xuất kho linh kiện thành công
+                    {t("warranty.componentIssue.postedNote")}
                   </UiAlert>
                 ) : null}
 
@@ -714,7 +759,7 @@ export function ComponentIssueModal({
                   rows={detail.lines}
                   rowKey={(line) => line.id}
                   loading={detailQuery.isFetching}
-                  emptyText="Phiếu chưa có dòng linh kiện nào."
+                  emptyText={t("warranty.componentIssue.linesEmpty")}
                   onRowClick={(line) => setSelectedLineId(line.id)}
                 />
 
@@ -728,7 +773,7 @@ export function ComponentIssueModal({
                     }}
                   >
                     <Box sx={{ fontWeight: 700, mb: 1 }}>
-                      Quét serial linh kiện hoặc box + số lượng
+                      {t("warranty.componentIssue.scanSectionTitle")}
                     </Box>
                     <Stack
                       direction="row"
@@ -741,7 +786,7 @@ export function ComponentIssueModal({
                     >
                       <UiTextField
                         type="number"
-                        label="Số lượng quét"
+                        label={t("warranty.componentIssue.scanQtyLabel")}
                         value={scanQuantity}
                         onChange={(event) =>
                           setScanQuantity(Number(event.target.value) || 1)
@@ -752,13 +797,14 @@ export function ComponentIssueModal({
                       <Box sx={{ flex: 1, minWidth: 220 }}>
                         <ScanInput
                           size="middle"
-                          placeholder="Quét Barcode/QR serial linh kiện hoặc box code"
+                          placeholder={t(
+                            "warranty.componentIssue.scanPlaceholder",
+                          )}
                           recentCodes={recentCodes}
                           disabled={!canIssue || scanMutation.isPending}
                           onScan={handleScan}
                         />
                       </Box>
-                     
                     </Stack>
                   </Box>
                 ) : null}
@@ -772,7 +818,7 @@ export function ComponentIssueModal({
         open={cancelOpen}
         onClose={guardBackdropClose(() => setCancelOpen(false))}
         maxWidth="xs"
-        title="Hủy phiếu xuất linh kiện"
+        title={t("warranty.componentIssue.cancelTitle")}
         actions={
           <>
             <ActionButton
@@ -780,14 +826,14 @@ export function ComponentIssueModal({
               onClick={() => setCancelOpen(false)}
               disabled={cancelMutation.isPending}
             >
-              Quay lại
+              {t("warranty.componentIssue.cancelBack")}
             </ActionButton>
             <ActionButton
               kind="confirm"
               onClick={() => void handleCancel()}
               disabled={cancelMutation.isPending}
             >
-              Xác nhận hủy
+              {t("warranty.componentIssue.cancelConfirm")}
             </ActionButton>
           </>
         }
@@ -797,7 +843,7 @@ export function ComponentIssueModal({
             fullWidth
             multiline
             minRows={3}
-            label="Lý do hủy (bắt buộc)"
+            label={t("warranty.componentIssue.cancelReasonLabel")}
             value={cancelReason}
             onChange={(event) => setCancelReason(event.target.value)}
             slotProps={{ htmlInput: { maxLength: 2000 } }}
@@ -809,7 +855,7 @@ export function ComponentIssueModal({
         open={postConfirmOpen}
         onClose={() => setPostConfirmOpen(false)}
         maxWidth="xs"
-        title="Full Post phiếu xuất linh kiện?"
+        title={t("warranty.componentIssue.postTitle")}
         actions={
           <>
             <ActionButton
@@ -817,26 +863,24 @@ export function ComponentIssueModal({
               onClick={() => setPostConfirmOpen(false)}
               disabled={postMutation.isPending}
             >
-              Xem lại
+              {t("warranty.componentIssue.postReview")}
             </ActionButton>
             <ActionButton
               kind="send"
               onClick={() => void handlePost()}
               disabled={postMutation.isPending}
             >
-              Xác nhận
+              {t("warranty.componentIssue.postConfirm")}
             </ActionButton>
           </>
         }
       >
-        <UiText variant="body">
-        Sau khi xác nhận, linh kiện đã quét sẽ được xuất kho và trừ tồn kho, bạn có muốn tiếp tục không?
-        </UiText>
+        <UiText variant="body">{t("warranty.componentIssue.postBody")}</UiText>
       </UiDialog>
 
       <CameraScanModal
         open={cameraOpen}
-        title="Quét linh kiện / box"
+        title={t("warranty.componentIssue.scanDialogTitle")}
         onDetected={(code) => {
           setCameraOpen(false);
           void handleScan(code.trim().toUpperCase());

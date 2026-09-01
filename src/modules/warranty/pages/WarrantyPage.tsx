@@ -40,6 +40,7 @@ import {
   warrantyPiiText,
 } from "@/modules/warranty/constants";
 import { EMPTY_TEXT } from "@/shared/constants/display";
+import { useT } from "@/shared/i18n/useT";
 import {
   useWarrantyCases,
   warrantyKeys,
@@ -90,6 +91,7 @@ interface ComponentIssueTarget {
  * modal ngay trên danh sách, không chuyển trang — đồng bộ pattern luồng 02/03.
  */
 export default function WarrantyPage() {
+  const t = useT();
   const can = useHasPermission();
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -154,9 +156,7 @@ export default function WarrantyPage() {
       if (id) {
         setComponentTarget({ caseId: id, caseActive: true, documentId: null });
       } else {
-        toast.info(
-          "Chọn một case bảo hành trong danh sách rồi bấm “Xuất linh kiện”.",
-        );
+        toast.info(t("warranty.list.pickCaseFirst"));
       }
     } else {
       return;
@@ -165,7 +165,7 @@ export default function WarrantyPage() {
     nextParams.set("screen", "WAR-01");
     nextParams.delete("id");
     setSearchParams(nextParams, { replace: true });
-  }, [searchParams, setSearchParams]);
+  }, [searchParams, setSearchParams, t]);
 
   const refreshAll = () => {
     void queryClient.invalidateQueries({ queryKey: warrantyKeys.all });
@@ -186,7 +186,7 @@ export default function WarrantyPage() {
     },
     {
       key: "case_code",
-      header: "Phiếu",
+      header: t("warranty.list.colCase"),
       width: 190,
       sortAccessor: (row) => row.case_code || "",
       // KHÔNG fallback sang row.id: cột này là MÃ PHIẾU bảo hành đọc được.
@@ -194,34 +194,36 @@ export default function WarrantyPage() {
     },
     {
       key: "customer",
-      header: "Khách hàng",
+      header: t("warranty.list.colCustomer"),
       width: 190,
       sortAccessor: (row) => row.customer_name || "",
       render: (row) => (
         <Stack spacing={0}>
           {/* §13.8: mask lại ở tầng render — không tin payload đã mask sẵn. */}
           <UiText variant="body">
-            {warrantyPiiText(row.customer_name, canViewPii, "name") || EMPTY_TEXT}
+            {warrantyPiiText(row.customer_name, canViewPii, "name") ||
+              EMPTY_TEXT}
           </UiText>
           <UiText variant="caption">
-            {warrantyPiiText(row.customer_phone, canViewPii, "phone") || EMPTY_TEXT}
+            {warrantyPiiText(row.customer_phone, canViewPii, "phone") ||
+              EMPTY_TEXT}
           </UiText>
         </Stack>
       ),
     },
     {
       key: "sku",
-      header: "Sản phẩm",
+      header: t("warranty.list.colProduct"),
       width: 170,
       sortAccessor: (row) => row.sku || row.sku_name || "",
       render: (row) =>
         row.identification_type === "TEMP_ONLY" && !row.sku
-          ? "Mô tả thủ công"
+          ? t("warranty.list.manualDescription")
           : row.sku || row.sku_name || EMPTY_TEXT,
     },
     {
       key: "defect",
-      header: "Bệnh/lỗi",
+      header: t("warranty.list.colDefect"),
       width: 170,
       hideOnMobile: true,
       sortAccessor: (row) => row.defect_code || row.defect || "",
@@ -234,17 +236,20 @@ export default function WarrantyPage() {
     },
     {
       key: "identification_type",
-      header: "Nhận diện",
+      header: t("warranty.list.colIdentification"),
       width: 130,
       hideOnMobile: true,
       sortAccessor: (row) => row.identification_type || "",
       render: (row) => (
-        <UiStatusBadge tone="neutral" label={row.identification_type || EMPTY_TEXT} />
+        <UiStatusBadge
+          tone="neutral"
+          label={row.identification_type || EMPTY_TEXT}
+        />
       ),
     },
     {
       key: "received_at",
-      header: "Ngày nhận",
+      header: t("warranty.list.colReceivedAt"),
       width: 150,
       sortType: "value",
       hideOnMobile: true,
@@ -253,7 +258,7 @@ export default function WarrantyPage() {
     },
     {
       key: "status",
-      header: "Trạng thái",
+      header: t("warranty.list.colStatus"),
       width: 150,
       sortType: "value",
       sortAccessor: (row) => row.status,
@@ -272,7 +277,7 @@ export default function WarrantyPage() {
       sx={{ whiteSpace: "nowrap" }}
       onClick={() => setDetailId(row.id)}
     >
-      Sửa
+      {t("warranty.list.edit")}
     </ActionButton>
   );
 
@@ -288,8 +293,7 @@ export default function WarrantyPage() {
         {!canViewPii ? (
           <Box className="footer-note" sx={{ mb: 1 }}>
             <ToolOutlined style={{ marginRight: 6 }} />
-            Thông tin khách hàng (tên/SĐT/địa chỉ) đang được che theo quyền{" "}
-            <b>warranty.pii.view</b>.
+            {t("warranty.list.maskedNotice")} <b>warranty.pii.view</b>.
           </Box>
         ) : null}
 
@@ -299,9 +303,9 @@ export default function WarrantyPage() {
             hợp lệ cho cả "warranty receive/search" nên WAR-01 có nút camera fallback. */}
           <UiTextField
             value={searchInput}
-            placeholder="Quét hoặc nhập case / mã máy / mã tạm / SĐT..."
+            placeholder={t("warranty.list.searchPlaceholder")}
             slotProps={{
-              htmlInput: { "aria-label": "Tìm case bảo hành" },
+              htmlInput: { "aria-label": t("warranty.list.searchAria") },
               input: { inputRef: searchRef, autoFocus: true },
             }}
             onChange={(event) => setSearchInput(event.target.value)}
@@ -314,11 +318,11 @@ export default function WarrantyPage() {
             }}
             sx={{ minWidth: 220 }}
           />
-          
+
           <UiSelect
             value={status}
-            aria-label="Lọc trạng thái bảo hành"
-            placeholder="Trạng thái: Tất cả"
+            aria-label={t("warranty.list.statusFilterAria")}
+            placeholder={t("warranty.list.statusFilterPlaceholder")}
             minWidth={160}
             options={WARRANTY_BASELINE_STATUSES.map((value) => ({
               value,
@@ -331,14 +335,14 @@ export default function WarrantyPage() {
           />
           <UiSelect
             value={identification}
-            aria-label="Lọc loại nhận diện"
-            placeholder="Nhận diện: Tất cả"
+            aria-label={t("warranty.list.identificationFilterAria")}
+            placeholder={t("warranty.list.identificationFilterPlaceholder")}
             minWidth={148}
             options={[
-              { value: "IDENTIFIED", label: "Đã xác định sản phẩm" },
+              { value: "IDENTIFIED", label: t("warranty.list.identified") },
               {
                 value: "TEMP_ONLY",
-                label: "Tiếp nhận tạm, chưa xác định sản phẩm",
+                label: t("warranty.list.temporary"),
               },
             ]}
             onChange={(value) => {
@@ -348,8 +352,8 @@ export default function WarrantyPage() {
           />
           <UiSelect
             value={defectId}
-            aria-label="Lọc bệnh/lỗi"
-            placeholder="Bệnh/lỗi: Tất cả"
+            aria-label={t("warranty.list.defectFilterAria")}
+            placeholder={t("warranty.list.defectFilterPlaceholder")}
             minWidth={148}
             options={(defectsQuery.data?.data ?? []).map((defect) => ({
               value: defect.defect_id,
@@ -362,7 +366,7 @@ export default function WarrantyPage() {
           />
           <UiSelect
             value={perPage}
-            aria-label="Số dòng mỗi trang"
+            aria-label={t("warranty.list.pageSizeAria")}
             minWidth={100}
             options={perPageOptions.map((size) => ({
               value: size,
@@ -377,13 +381,13 @@ export default function WarrantyPage() {
            * dễ thấy — thay vì chỉ hiện ở phần phân trang tít dưới bảng dài. */}
           <Box component="span" sx={{ whiteSpace: "nowrap" }}>
             <UiText variant="secondary">
-              Tổng {pagination.total} phiếu bảo hành
+              {t("warranty.list.total", { count: pagination.total })}
             </UiText>
           </Box>
           <div className="spacer" />
           {canManage ? (
             <ActionButton kind="create" onClick={() => setIntakeOpen(true)}>
-              Tiếp nhận bảo hành
+              {t("warranty.list.intake")}
             </ActionButton>
           ) : null}
         </div>
@@ -392,7 +396,7 @@ export default function WarrantyPage() {
           <Box sx={{ mb: "14px" }}>
             <ApiErrorAlert
               error={listQuery.error}
-              title="Không tải được danh sách bảo hành"
+              title={t("warranty.list.loadError")}
               onRetry={() => listQuery.refetch()}
             />
           </Box>
@@ -407,12 +411,14 @@ export default function WarrantyPage() {
           rowKey={(row) => row.id}
           rowSelection={rowSelection}
           selectionLabel={(row) =>
-            `Chọn case bảo hành ${row.case_code || "chưa có mã"}`
+            t("warranty.list.selectionLabel", {
+              code: row.case_code || t("warranty.list.noCode"),
+            })
           }
           loading={listQuery.isLoading || listQuery.isFetching}
           emptyText={tableEmptyText(
             listQuery.isError ? listQuery.error : null,
-            "Không có phiếu bảo hành theo bộ lọc hiện tại",
+            t("warranty.list.empty"),
           )}
           onRowClick={(row) => setDetailId(row.id)}
           renderRowActions={renderRowActions}
@@ -449,7 +455,7 @@ export default function WarrantyPage() {
 
         <CameraScanModal
           open={cameraOpen}
-          title="Quét mã máy / mã tạm để tra cứu case"
+          title={t("warranty.list.scanTitle")}
           onDetected={(code) => {
             setSearchInput(code.trim());
             setSearch(code.trim());

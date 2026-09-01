@@ -93,11 +93,13 @@ describe("WarrantyComponentIssueListPage (WAR-04)", () => {
     vi.mocked(fetchWarehouses).mockResolvedValue(WAREHOUSES);
     vi.mocked(fetchWarrantyCase).mockReset();
     vi.mocked(fetchWarrantyCase).mockImplementation(async (caseId) => {
-      const known: Record<string, { case_code: string; customer_name: string }> =
-        {
-          "wc-1": { case_code: "BH-0001", customer_name: "Nguyễn Văn A" },
-          "wc-2": { case_code: "BH-0002", customer_name: "Trần Thị B" },
-        };
+      const known: Record<
+        string,
+        { case_code: string; customer_name: string }
+      > = {
+        "wc-1": { case_code: "BH-0001", customer_name: "Nguyễn Văn A" },
+        "wc-2": { case_code: "BH-0002", customer_name: "Trần Thị B" },
+      };
       const found = known[String(caseId)];
       return {
         id: String(caseId),

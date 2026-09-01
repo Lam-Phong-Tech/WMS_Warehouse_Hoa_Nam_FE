@@ -43,6 +43,7 @@ import {
   warrantyPiiText,
 } from "@/modules/warranty/constants";
 import { EMPTY_TEXT } from "@/shared/constants/display";
+import { useT } from "@/shared/i18n/useT";
 
 const SEARCH_DEBOUNCE_MS = 250;
 
@@ -78,6 +79,7 @@ function normalizeWarehouseRow(row: Record<string, unknown>): WarehouseRow {
  * đúng các case_id xuất hiện trên trang hiện tại (không tải toàn bộ case).
  */
 export default function WarrantyComponentIssueListPage() {
+  const t = useT();
   const can = useHasPermission();
   const canViewPii = can("warranty.pii.view");
   const queryClient = useQueryClient();
@@ -173,16 +175,18 @@ export default function WarrantyComponentIssueListPage() {
     },
     {
       key: "component_issue_no",
-      header: "Mã phiếu",
+      header: t("warranty.componentList.colCode"),
       width: 170,
       sortAccessor: (row) => row.component_issue_no || row.id,
       render: (row) => (
-        <strong>{row.component_issue_no || <CopyableId value={row.id} />}</strong>
+        <strong>
+          {row.component_issue_no || <CopyableId value={row.id} />}
+        </strong>
       ),
     },
     {
       key: "warranty_case",
-      header: "Phiếu bảo hành",
+      header: t("warranty.componentList.colCase"),
       width: 220,
       render: (row) => {
         const caseInfo = caseById.get(row.warranty_case_id);
@@ -202,14 +206,15 @@ export default function WarrantyComponentIssueListPage() {
     },
     {
       key: "warehouse",
-      header: "Kho xuất",
+      header: t("warranty.componentList.colWarehouse"),
       width: 190,
       hideOnMobile: true,
       render: (row) => {
         const wh = warehouseById.get(row.warehouse_id);
-        if (wh) return wh.code ? `${wh.code} · ${wh.name}` : wh.name || EMPTY_TEXT;
+        if (wh)
+          return wh.code ? `${wh.code} · ${wh.name}` : wh.name || EMPTY_TEXT;
         return warehousesQuery.isLoading ? (
-          "Đang tải..."
+          t("warranty.componentList.loading")
         ) : (
           <CopyableId value={row.warehouse_id} />
         );
@@ -217,7 +222,7 @@ export default function WarrantyComponentIssueListPage() {
     },
     {
       key: "document_date",
-      header: "Ngày lập",
+      header: t("warranty.componentList.colCreated"),
       width: 140,
       sortType: "value",
       sortAccessor: (row) => row.document_date || "",
@@ -225,7 +230,7 @@ export default function WarrantyComponentIssueListPage() {
     },
     {
       key: "status",
-      header: "Trạng thái",
+      header: t("warranty.componentList.colStatus"),
       width: 140,
       sortAccessor: (row) => row.status,
       render: (row) => (
@@ -237,7 +242,7 @@ export default function WarrantyComponentIssueListPage() {
     },
     {
       key: "note",
-      header: "Ghi chú",
+      header: t("warranty.componentList.colNote"),
       width: 220,
       hideOnMobile: true,
       render: (row) => row.cancel_reason || row.note || EMPTY_TEXT,
@@ -255,15 +260,19 @@ export default function WarrantyComponentIssueListPage() {
       <div className="toolbar">
         <UiTextField
           value={searchInput}
-          placeholder="Tìm mã phiếu xuất linh kiện..."
-          slotProps={{ htmlInput: { "aria-label": "Tìm phiếu xuất linh kiện" } }}
+          placeholder={t("warranty.componentList.searchPlaceholder")}
+          slotProps={{
+            htmlInput: {
+              "aria-label": t("warranty.componentList.searchAria"),
+            },
+          }}
           onChange={(event) => setSearchInput(event.target.value)}
           sx={{ minWidth: 240 }}
         />
         <UiSelect
           value={status}
-          aria-label="Lọc trạng thái phiếu xuất linh kiện"
-          placeholder="Trạng thái: Tất cả"
+          aria-label={t("warranty.componentList.statusFilterAria")}
+          placeholder={t("warranty.componentList.statusFilterPlaceholder")}
           minWidth={170}
           options={STATUS_OPTIONS.map((value) => ({
             value,
@@ -276,7 +285,7 @@ export default function WarrantyComponentIssueListPage() {
         />
         <UiSelect
           value={perPage}
-          aria-label="Số dòng mỗi trang"
+          aria-label={t("warranty.componentList.pageSizeAria")}
           minWidth={100}
           options={perPageOptions.map((size) => ({
             value: size,
@@ -289,7 +298,9 @@ export default function WarrantyComponentIssueListPage() {
         />
         <Box component="span" sx={{ whiteSpace: "nowrap" }}>
           <UiText variant="secondary">
-            Tổng {pagination.total} phiếu xuất linh kiện
+            {t("warranty.componentList.total", {
+              count: pagination.total,
+            })}
           </UiText>
         </Box>
         <div className="spacer" />
@@ -299,13 +310,15 @@ export default function WarrantyComponentIssueListPage() {
         <Box sx={{ mb: "14px" }}>
           <ApiErrorAlert
             error={listQuery.error}
-            title="Không tải được danh sách phiếu xuất linh kiện"
+            title={t("warranty.componentList.loadError")}
             onRetry={() => listQuery.refetch()}
           />
         </Box>
       ) : null}
 
-      <TableLoadingBanner loading={listQuery.isLoading || listQuery.isFetching} />
+      <TableLoadingBanner
+        loading={listQuery.isLoading || listQuery.isFetching}
+      />
       <ResponsiveDataTable<ComponentIssueDocument>
         columns={columns}
         rows={rows}
@@ -313,7 +326,7 @@ export default function WarrantyComponentIssueListPage() {
         loading={listQuery.isLoading || listQuery.isFetching}
         emptyText={tableEmptyText(
           listQuery.isError ? listQuery.error : null,
-          "Không có phiếu xuất linh kiện theo bộ lọc hiện tại",
+          t("warranty.componentList.empty"),
         )}
         onRowClick={(row) =>
           setOpenTarget({
