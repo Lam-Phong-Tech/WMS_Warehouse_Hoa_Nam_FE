@@ -6,6 +6,15 @@ function read(path: string): string {
   return readFileSync(join(process.cwd(), path), "utf8");
 }
 
+/**
+ * Câu chữ nghiệp vụ đã chuyển sang catalog i18n, nên guard kiểm hai vế: component
+ * trỏ đúng KHOÁ, và catalog giữ đúng CÂU tiếng Việt. Chỉ kiểm một vế thì đổi khoá
+ * hoặc đổi câu đều lọt.
+ */
+function readMessages(): string {
+  return read("src/shared/i18n/messages.ts");
+}
+
 describe("Flow 06 Packing Label alignment", () => {
   it("uses the aligned outbound page and one-label-per-lot semantics", () => {
     expect(read("src/modules/outbound/pages/OutboundPage.tsx")).toContain(
@@ -20,9 +29,14 @@ describe("Flow 06 Packing Label alignment", () => {
     const modal = read(
       "src/modules/outbound/components/AlignedOutboundDetailModal.tsx",
     );
-    expect(modal).toContain("Tồn kho đã được trừ");
-    expect(modal).toContain("RFID (tùy chọn)");
-    expect(modal).toContain("không phải điều kiện để ghi nhận xuất kho");
+    expect(modal).toContain("outbound.detail.postedBody");
+    expect(modal).toContain("outbound.detail.rfidTitle");
+    expect(modal).toContain("outbound.detail.rfidBody");
+
+    const messages = readMessages();
+    expect(messages).toContain("Tồn kho đã được trừ");
+    expect(messages).toContain("RFID (tùy chọn)");
+    expect(messages).toContain("không phải điều kiện để ghi nhận xuất kho");
   });
 
   it("does not include RFID or label state in the FE post readiness gate", () => {
@@ -31,7 +45,8 @@ describe("Flow 06 Packing Label alignment", () => {
     );
     // GĐ1: gate Post là quét đủ, không phải nhãn/RFID.
     expect(modal).toContain("postBlockReason");
-    expect(modal).toContain("Chưa quét đủ");
+    expect(modal).toContain("outbound.detail.blockNotScanned");
+    expect(readMessages()).toContain("Chưa quét đủ");
     // Không còn trạng thái nghiệp vụ "đã dán nhãn" và RFID không gate Post.
     expect(modal).toContain('tồn tại trạng thái nghiệp vụ "đã dán"');
     expect(modal).not.toContain("labelApplied");
@@ -41,7 +56,8 @@ describe("Flow 06 Packing Label alignment", () => {
     // dùng version mới của server (BE bump version kể cả PRINT_FAILED).
     const onErrorBlock = modal.slice(modal.indexOf("printMutation"));
     expect(onErrorBlock).toContain("setPreparedLabel(null)");
-    expect(onErrorBlock).toContain(
+    expect(onErrorBlock).toContain("outbound.detail.printErrorSuffix");
+    expect(readMessages()).toContain(
       "Phiếu xuất kho vẫn giữ trạng thái đã ghi nhận.",
     );
   });
@@ -118,7 +134,8 @@ describe("Flow 06 Packing Label alignment", () => {
     expect(intake).toContain("recipient_contact_phone");
     expect(intake).toContain("request_date");
     // Line mapping SKU + override người nhận thực hiện ở bước xác nhận toa.
-    expect(intake).toContain(
+    expect(intake).toContain("outbound.intake.stillInvalid");
+    expect(readMessages()).toContain(
       "gán SKU/số lượng hoặc sửa người nhận rồi xác nhận lại",
     );
     expect(intake).toContain("Ghi đè người nhận khi xác nhận");

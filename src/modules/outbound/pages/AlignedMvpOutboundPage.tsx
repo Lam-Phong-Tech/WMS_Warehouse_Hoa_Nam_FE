@@ -12,6 +12,7 @@ import {
   UiTextField,
   type UiStatusTone,
 } from "@/shared/ui";
+import { useT } from "@/shared/i18n/useT";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import {
   TableLoadingBanner,
@@ -65,6 +66,7 @@ const DETAIL_SCREENS = new Set(["OUT-03", "OUT-02", "LBL-01", "RFID-01"]);
 
 /** BA baseline 2026-08-25: quét đủ -> Post Issue -> Packing Label độc lập; RFID tùy chọn. */
 export default function AlignedMvpOutboundPage() {
+  const t = useT();
   const can = useHasPermission();
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -149,7 +151,7 @@ export default function AlignedMvpOutboundPage() {
     },
     {
       key: "code",
-      header: "Phiếu xuất",
+      header: t("outbound.list.colDocument"),
       width: 190,
       sortAccessor: (row) => row.code || "",
       // KHÔNG fallback sang row.id: cột này là MÃ PHIẾU đọc được ("PX-…").
@@ -157,13 +159,18 @@ export default function AlignedMvpOutboundPage() {
     },
     {
       key: "request",
-      header: "Mã toa yêu cầu",
+      header: t("outbound.list.colRequestNo"),
       width: 150,
       hideOnMobile: true,
       sortAccessor: (row) => row.requestNo ?? "",
       render: (row) => {
         if (!row.outboundRequestId) {
-          return <UiStatusBadge tone="error" label="Thiếu yêu cầu xuất" />;
+          return (
+            <UiStatusBadge
+              tone="error"
+              label={t("outbound.list.missingRequest")}
+            />
+          );
         }
         // Chỉ hiện MÃ TOA đọc được (request_no). Trước đây khi thiếu request_no
         // thì rút gọn UUID và nhét nguyên chuỗi thô vào thuộc tính title —
@@ -171,20 +178,23 @@ export default function AlignedMvpOutboundPage() {
         return row.requestNo ? (
           <span>{row.requestNo}</span>
         ) : (
-          <UiStatusBadge tone="warning" label="Chưa có mã toa" />
+          <UiStatusBadge
+            tone="warning"
+            label={t("outbound.list.noRequestNo")}
+          />
         );
       },
     },
     {
       key: "recipientName",
-      header: "Người nhận",
+      header: t("outbound.list.colRecipient"),
       width: 190,
       sortAccessor: (row) => row.recipientName,
       render: (row) => row.recipientName,
     },
     {
       key: "date",
-      header: "Ngày tạo",
+      header: t("outbound.list.colCreated"),
       width: 150,
       hideOnMobile: true,
       sortType: "value",
@@ -199,7 +209,7 @@ export default function AlignedMvpOutboundPage() {
     },
     {
       key: "note",
-      header: "Ghi chú",
+      header: t("outbound.list.colNote"),
       width: 200,
       hideOnMobile: true,
       sortAccessor: (row) => row.note || "",
@@ -207,7 +217,7 @@ export default function AlignedMvpOutboundPage() {
     },
     {
       key: "match",
-      header: "Đối chiếu",
+      header: t("outbound.list.colReconcile"),
       width: 190,
       sortType: "value",
       sortAccessor: (row) =>
@@ -251,7 +261,7 @@ export default function AlignedMvpOutboundPage() {
     },
     {
       key: "status",
-      header: "Trạng thái",
+      header: t("outbound.list.colStatus"),
       width: 170,
       sortType: "value",
       sortAccessor: (row) => row.status,
@@ -261,7 +271,7 @@ export default function AlignedMvpOutboundPage() {
           label={businessLabel(
             OUTBOUND_STATUS_LABELS,
             row.status,
-            "Chưa xác định",
+            t("outbound.list.statusUnknown"),
           )}
         />
       ),
@@ -276,7 +286,7 @@ export default function AlignedMvpOutboundPage() {
         sx={{ whiteSpace: "nowrap" }}
         onClick={() => setDetailId(row.id)}
       >
-        {mutable && canScan ? "Mở" : "Xem"}
+        {mutable && canScan ? t("outbound.list.open") : t("outbound.list.view")}
       </ActionButton>
     );
   };
@@ -300,15 +310,17 @@ export default function AlignedMvpOutboundPage() {
         >
           <UiTextField
             value={searchInput}
-            placeholder="Tìm mã phiếu xuất / ghi chú..."
-            slotProps={{ htmlInput: { "aria-label": "Tìm phiếu xuất" } }}
+            placeholder={t("outbound.list.searchPlaceholder")}
+            slotProps={{
+              htmlInput: { "aria-label": t("outbound.list.searchAria") },
+            }}
             onChange={(event) => setSearchInput(event.target.value)}
             sx={{ minWidth: 220 }}
           />
           <UiSelect
-            aria-label="Lọc trạng thái phiếu xuất"
+            aria-label={t("outbound.list.statusFilterAria")}
             value={status}
-            placeholder="Trạng thái: Tất cả"
+            placeholder={t("outbound.list.statusFilterPlaceholder")}
             options={STATUS_OPTIONS}
             onChange={(value) => {
               setStatus(value as OutboundStatus | "");
@@ -317,7 +329,7 @@ export default function AlignedMvpOutboundPage() {
             minWidth={168}
           />
           <UiSelect
-            aria-label="Số dòng mỗi trang"
+            aria-label={t("outbound.list.pageSizeAria")}
             value={perPage}
             options={perPageOptions.map((size) => ({
               value: size,
@@ -332,7 +344,7 @@ export default function AlignedMvpOutboundPage() {
           <Box className="spacer" sx={{ flex: 1 }} />
           {canImport ? (
             <ActionButton kind="create" onClick={() => setIntakeOpen(true)}>
-              Tiếp nhận yêu cầu xuất
+              {t("outbound.list.intake")}
             </ActionButton>
           ) : null}
         </Stack>
@@ -341,7 +353,7 @@ export default function AlignedMvpOutboundPage() {
           <Box sx={{ mb: "14px" }}>
             <ApiErrorAlert
               error={listQuery.error}
-              title="Không tải được danh sách phiếu xuất"
+              title={t("outbound.list.loadError")}
               onRetry={() => listQuery.refetch()}
             />
           </Box>
@@ -355,11 +367,15 @@ export default function AlignedMvpOutboundPage() {
           rows={rows}
           rowKey={(row) => row.id}
           rowSelection={rowSelection}
-          selectionLabel={(row) => `Chọn phiếu xuất ${row.code || "chưa có mã"}`}
+          selectionLabel={(row) =>
+            t("outbound.list.selectionLabel", {
+              code: row.code || t("outbound.list.noCode"),
+            })
+          }
           loading={listQuery.isLoading || listQuery.isFetching}
           emptyText={tableEmptyText(
             listQuery.isError ? listQuery.error : null,
-            "Chưa có phiếu xuất phù hợp",
+            t("outbound.list.empty"),
           )}
           renderRowActions={renderRowActions}
         />
@@ -367,7 +383,7 @@ export default function AlignedMvpOutboundPage() {
           total={pagination.total}
           current={pagination.current}
           pageSize={perPage}
-          unitName="phiếu xuất"
+          unitName={t("outbound.list.unitName")}
           showSizeChanger={false}
           placement="bottom"
           onChange={(nextPage) => setPage(nextPage)}

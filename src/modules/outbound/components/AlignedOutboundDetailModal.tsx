@@ -55,11 +55,20 @@ import {
 import type { ReactNode } from "react";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 import { EMPTY_TEXT } from "@/shared/constants/display";
+import { useT } from "@/shared/i18n/useT";
+import type { MessageKey } from "@/shared/i18n/messages";
 import { PackingLabelPreviewDialog } from "@/modules/outbound/components/PackingLabelPreviewDialog";
 
 type RfidTarget = { itemId: string; itemCode: string };
 
-/** Lý do in lại nhãn thường gặp (mục 9) + "Khác" cho phép nhập tay. */
+/**
+ * Lý do in lại nhãn thường gặp (mục 9) + "Khác" cho phép nhập tay.
+ *
+ * CHUỖI Ở ĐÂY LÀ GIÁ TRỊ GỬI BE (`printMutation.mutate(reason)`) và được ghi
+ * vào nhật ký in — KHÔNG dịch, nếu không nhật ký sẽ lẫn hai thứ tiếng tuỳ theo
+ * ngôn ngữ người thao tác đang chọn. Chỉ phần HIỂN THỊ được dịch, qua
+ * `REPRINT_REASON_LABELS` bên dưới.
+ */
 const REPRINT_REASONS = [
   "Máy in hết mực",
   "Lỗi máy in",
@@ -67,6 +76,19 @@ const REPRINT_REASONS = [
   "In lại chứng từ",
   "Khác",
 ] as const;
+
+const OTHER_REPRINT_REASON = "Khác";
+
+const REPRINT_REASON_LABELS: Record<
+  (typeof REPRINT_REASONS)[number],
+  MessageKey
+> = {
+  "Máy in hết mực": "outbound.reprint.tonerEmpty",
+  "Lỗi máy in": "outbound.reprint.printerError",
+  "Nhãn bị hỏng / rách": "outbound.reprint.damagedLabel",
+  "In lại chứng từ": "outbound.reprint.reprintDocument",
+  Khác: "outbound.reprint.other",
+};
 
 interface Props {
   documentId: string;
@@ -133,6 +155,7 @@ export function AlignedOutboundDetailModal({
   onChanged,
 }: Props) {
   const can = useHasPermission();
+  const t = useT();
   // Bước "chuẩn bị nhãn" (tạo snapshot -> preview -> ready) là một chuỗi API
   // riêng với bộ quyền riêng, không đi kèm outbound.post. Tách cờ ra để nút và
   // luồng sau khi Post nói đúng những gì người dùng thực sự làm được.
@@ -268,13 +291,16 @@ export function AlignedOutboundDetailModal({
   const postBlockReason = !doc
     ? ""
     : !doc.outboundRequestId
-      ? "Phiếu thiếu yêu cầu xuất nguồn."
+      ? t("outbound.detail.blockMissingRequest")
       : !fullScan
-        ? `Chưa quét đủ: ${totalScanned}/${totalExpected}.`
+        ? t("outbound.detail.blockNotScanned", {
+            scanned: totalScanned,
+            expected: totalExpected,
+          })
         : doc.status !== "SCANNING"
-          ? "Phiếu không ở trạng thái sẵn sàng ghi nhận xuất kho."
+          ? t("outbound.detail.blockNotReady")
           : !customerPhoneValid
-            ? "Số điện thoại phải để trống hoặc gồm 10 chữ số, bắt đầu bằng 0."
+            ? t("outbound.detail.blockPhone")
             : "";
   const postReady = Boolean(doc && !postBlockReason);
 
@@ -324,7 +350,7 @@ export function AlignedOutboundDetailModal({
     }) => {
       const codeValue = input.rawCode.trim();
       if (!detail || !codeValue) {
-        throw new Error("Nhập hoặc quét mã sản phẩm trước.");
+        throw new Error(t("outbound.detail.needScanCode"));
       }
       return scanOutboundItem({
         documentId,
@@ -337,16 +363,16 @@ export function AlignedOutboundDetailModal({
     onSuccess: async (result) => {
       setVersion(result.version || null);
       setScanCode("");
-      toast.success("Đã đối chiếu sản phẩm.");
+      toast.success(t("outbound.detail.scanned"));
       await refresh();
     },
     onError: (error) =>
-      toast.error(getApiErrorMessage(error, "Quét/đối chiếu thất bại.")),
+      toast.error(getApiErrorMessage(error, t("outbound.detail.scanError"))),
   });
 
   const unmatchMutation = useMutation({
     mutationFn: async (matchId: string) => {
-      if (!detail) throw new Error("Chưa tải phiếu.");
+      if (!detail) throw new Error(t("outbound.detail.notLoaded"));
       return unmatchOutboundItem({
         documentId,
         matchId,
@@ -355,17 +381,17 @@ export function AlignedOutboundDetailModal({
     },
     onSuccess: async (result) => {
       setVersion(result.version || null);
-      toast.success("Đã gỡ sản phẩm khỏi danh sách đối chiếu.");
+      toast.success(t("outbound.detail.unscanned"));
       await refresh();
     },
     onError: (error) =>
-      toast.error(getApiErrorMessage(error, "Gỡ đối chiếu thất bại.")),
+      toast.error(getApiErrorMessage(error, t("outbound.detail.unscanError"))),
   });
 
   const postAndLabelMutation = useMutation({
     mutationFn: async () => {
       if (!detail || !postReady) {
-        throw new Error(postBlockReason || "Phiếu chưa sẵn sàng.");
+        throw new Error(postBlockReason || t("outbound.detail.notReady"));
       }
       const idempotencyKey =
         postKeyRef.current ?? makeKey(`post-issue-${documentId}`);
@@ -389,8 +415,8 @@ export function AlignedOutboundDetailModal({
       if (!canPrepareLabel) {
         toast.success(
           result.replayed
-            ? "Phiếu đã được ghi nhận trước đó."
-            : "Đã ghi nhận xuất kho. Việc in nhãn do người có quyền in thực hiện.",
+            ? t("outbound.detail.postReplayed")
+            : t("outbound.detail.postSuccess"),
         );
         await refresh();
         return;
@@ -399,13 +425,13 @@ export function AlignedOutboundDetailModal({
         await prepareLabel();
         toast.success(
           result.replayed
-            ? "Phiếu đã được ghi nhận trước đó. Nhãn đã sẵn sàng để in."
-            : "Đã ghi nhận xuất kho. Nhãn đã sẵn sàng để xem và in.",
+            ? t("outbound.detail.postReplayedWithLabel")
+            : t("outbound.detail.postSuccessWithLabel"),
         );
       } catch (error) {
         const message = getApiErrorMessage(
           error,
-          "Xuất kho đã thành công nhưng chưa chuẩn bị được nhãn. Có thể thử tạo nhãn lại; tồn kho không bị rollback.",
+          t("outbound.detail.postLabelFailed"),
         );
         setLabelWarning(message);
         toast.warning(message);
@@ -417,7 +443,7 @@ export function AlignedOutboundDetailModal({
       const outcome = classifyPostIssueError(error);
       toast.error(
         outcome?.message ??
-          getApiErrorMessage(error, "Ghi nhận xuất kho thất bại."),
+          getApiErrorMessage(error, t("outbound.detail.postError")),
       );
       if (outcome !== null) await refresh();
     },
@@ -427,11 +453,14 @@ export function AlignedOutboundDetailModal({
     mutationFn: () => prepareLabel(),
     onSuccess: async () => {
       setLabelWarning(null);
-      toast.success("Nhãn đã sẵn sàng để in.");
+      toast.success(t("outbound.detail.labelReady"));
       await refresh();
     },
     onError: (error) => {
-      const message = getApiErrorMessage(error, "Không chuẩn bị được nhãn.");
+      const message = getApiErrorMessage(
+        error,
+        t("outbound.detail.labelPrepareError"),
+      );
       setLabelWarning(message);
       toast.error(message);
     },
@@ -439,7 +468,7 @@ export function AlignedOutboundDetailModal({
 
   const printMutation = useMutation({
     mutationFn: async (reprintReason?: string) => {
-      if (!printerId) throw new Error("Chọn máy in đang hoạt động.");
+      if (!printerId) throw new Error(t("outbound.detail.needPrinter"));
       let label = packingLabel;
       if (
         !label ||
@@ -460,7 +489,7 @@ export function AlignedOutboundDetailModal({
         : printLabelSnapshot(payload);
     },
     onSuccess: async () => {
-      toast.success("Đã gửi lệnh in nhãn.");
+      toast.success(t("outbound.detail.printSent"));
       setPreparedLabel(null);
       setReprintOpen(false);
       setReprintReasonKey("");
@@ -469,7 +498,7 @@ export function AlignedOutboundDetailModal({
     },
     onError: async (error) => {
       toast.error(
-        `${getApiErrorMessage(error, "In nhãn thất bại.")} Phiếu xuất kho vẫn giữ trạng thái đã ghi nhận.`,
+        `${getApiErrorMessage(error, t("outbound.detail.printError"))} ${t("outbound.detail.printErrorSuffix")}`,
       );
       // BE bump version của label_snapshot kể cả khi PRINT_FAILED; giữ preparedLabel
       // cũ sẽ làm lần in lại kế tiếp gửi If-Match version lỗi thời → 412.
@@ -480,7 +509,8 @@ export function AlignedOutboundDetailModal({
 
   const cancelMutation = useMutation({
     mutationFn: async () => {
-      if (!detail || !cancelReason.trim()) throw new Error("Nhập lý do hủy.");
+      if (!detail || !cancelReason.trim())
+        throw new Error(t("outbound.detail.needCancelReason"));
       return cancelOutboundDocument(
         documentId,
         cancelReason.trim(),
@@ -488,20 +518,21 @@ export function AlignedOutboundDetailModal({
       );
     },
     onSuccess: async () => {
-      toast.success("Đã hủy phiếu xuất.");
+      toast.success(t("outbound.detail.cancelled"));
       setCancelOpen(false);
       await refresh();
       dialog.close();
     },
     onError: (error) =>
-      toast.error(getApiErrorMessage(error, "Hủy phiếu thất bại.")),
+      toast.error(getApiErrorMessage(error, t("outbound.detail.cancelError"))),
   });
 
   const rfidMutation = useMutation({
     mutationFn: async () => {
-      if (!rfidTarget || !detail) throw new Error("Chưa chọn sản phẩm.");
+      if (!rfidTarget || !detail)
+        throw new Error(t("outbound.detail.needRfidTarget"));
       if (!rfidCode.trim() || !rfidHardwareUid.trim()) {
-        throw new Error("Nhập đủ mã RFID và hardware UID.");
+        throw new Error(t("outbound.detail.needRfidFields"));
       }
       return assignRfidToItem({
         documentId,
@@ -512,25 +543,24 @@ export function AlignedOutboundDetailModal({
       });
     },
     onSuccess: async () => {
-      toast.success("Đã gán RFID cho sản phẩm.");
+      toast.success(t("outbound.detail.rfidAssigned"));
       setRfidTarget(null);
       setRfidCode("");
       setRfidHardwareUid("");
       await refresh();
     },
     onError: (error) =>
-      toast.error(getApiErrorMessage(error, "Gán RFID thất bại.")),
+      toast.error(getApiErrorMessage(error, t("outbound.detail.rfidError"))),
   });
 
   // Gỡ đối chiếu là thao tác không hoàn tác được bằng nút bấm: muốn tính lại
   // vào phiếu phải quét lại sản phẩm thật — bắt buộc xác nhận trước khi gọi server.
   const handleUnmatch = async (match: OutboundItemMatchRecord) => {
     const accepted = await confirm({
-      title: "Gỡ sản phẩm khỏi đối chiếu?",
-      content:
-        "Sản phẩm sẽ bị gỡ khỏi danh sách đối chiếu của phiếu xuất. Muốn tính lại vào phiếu, bạn phải quét lại sản phẩm đó.",
-      confirmText: "Gỡ",
-      cancelText: "Hủy",
+      title: t("outbound.detail.unscanTitle"),
+      content: t("outbound.detail.unscanDescription"),
+      confirmText: t("outbound.detail.unscanConfirm"),
+      cancelText: t("outbound.detail.unscanCancel"),
       tone: "danger",
     });
     if (!accepted) return;
@@ -546,14 +576,14 @@ export function AlignedOutboundDetailModal({
     },
     {
       key: "expected",
-      header: "Cần xuất",
+      header: t("outbound.detail.colExpected"),
       width: 100,
       align: "right",
       render: (row) => row.expected,
     },
     {
       key: "scanned",
-      header: "Đã quét",
+      header: t("outbound.detail.colScanned"),
       width: 100,
       align: "right",
       render: (row) => row.scanned,
@@ -563,7 +593,7 @@ export function AlignedOutboundDetailModal({
   const matchColumns: ResponsiveTableColumn<OutboundItemMatchRecord>[] = [
     {
       key: "item",
-      header: "Sản phẩm",
+      header: t("outbound.detail.colProduct"),
       render: (match) =>
         match.itemCode || match.serialNumber || short(match.itemId),
     },
@@ -576,7 +606,7 @@ export function AlignedOutboundDetailModal({
     {
       key: "actions",
       header: "",
-      mobileLabel: "Thao tác",
+      mobileLabel: t("outbound.detail.colAction"),
       width: 190,
       render: (match) => (
         <Stack direction="row" spacing={0.5}>
@@ -585,7 +615,7 @@ export function AlignedOutboundDetailModal({
               kind="delete"
               onClick={() => void handleUnmatch(match)}
             >
-              Gỡ
+              {t("outbound.detail.remove")}
             </ActionButton>
           ) : null}
           {match.itemId && can("physical_code.assign_rfid") ? (
@@ -613,9 +643,9 @@ export function AlignedOutboundDetailModal({
         {...dialog.dialogProps}
         maxWidth="sm"
         fullWidth
-        title="Chi tiết phiếu xuất"
+        title={t("outbound.detail.title")}
       >
-        Đang tải...
+        {t("outbound.detail.loading")}
       </UiDialog>
     );
   }
@@ -626,10 +656,13 @@ export function AlignedOutboundDetailModal({
         {...dialog.dialogProps}
         maxWidth="sm"
         fullWidth
-        title="Chi tiết phiếu xuất"
+        title={t("outbound.detail.title")}
       >
         <UiAlert tone="error">
-          {getApiErrorMessage(detailQuery.error, "Không tải được phiếu xuất.")}
+          {getApiErrorMessage(
+            detailQuery.error,
+            t("outbound.detail.loadError"),
+          )}
         </UiAlert>
       </UiDialog>
     );
@@ -651,10 +684,10 @@ export function AlignedOutboundDetailModal({
               gap: 1,
             }}
           >
-            Chi tiết phiếu xuất
+            {t("outbound.detail.title")}
             <ActionIconButton
               kind="close"
-              label="Đóng"
+              label={t("common.close")}
               onClick={dialog.close}
             />
           </Box>
@@ -663,18 +696,24 @@ export function AlignedOutboundDetailModal({
         <Stack spacing={2}>
           <Box sx={SECTION_SX}>
             <Grid container spacing={2}>
-              <DetailField label="Phiếu" value={doc.code} />
               <DetailField
-                label="Trạng thái"
+                label={t("outbound.detail.fieldDocument")}
+                value={doc.code}
+              />
+              <DetailField
+                label={t("outbound.detail.fieldStatus")}
                 value={
                   <UiStatusBadge
                     label={businessLabel(OUTBOUND_STATUS_LABELS, doc.status)}
                   />
                 }
               />
-              <DetailField label="Nơi nhận" value={doc.recipientName || EMPTY_TEXT} />
               <DetailField
-                label="Đã quét"
+                label={t("outbound.detail.fieldRecipient")}
+                value={doc.recipientName || EMPTY_TEXT}
+              />
+              <DetailField
+                label={t("outbound.detail.fieldScanned")}
                 value={`${totalScanned}/${totalExpected}`}
               />
             </Grid>
@@ -690,7 +729,7 @@ export function AlignedOutboundDetailModal({
 
           <Box sx={SECTION_SX}>
             <Box sx={{ typography: "subtitle2", fontWeight: 700, mb: 1.5 }}>
-              1 · Quét và đối chiếu hàng
+              {t("outbound.detail.step1")}
             </Box>
             <Stack spacing={1.5}>
               <Stack
@@ -701,11 +740,11 @@ export function AlignedOutboundDetailModal({
                 <UiTextField
                   select
                   sx={{ width: 300 }}
-                  label="Tự nhận SKU từ mã quét"
+                  label={t("outbound.detail.autoSku")}
                   value={lineId}
                   onChange={(event) => setLineId(event.target.value)}
                 >
-                  <MenuItem value="">Tự nhận SKU từ mã quét</MenuItem>
+                  <MenuItem value="">{t("outbound.detail.autoSku")}</MenuItem>
                   {detail.lines
                     .filter((line) => line.scanned < line.expected)
                     .map((line) => (
@@ -717,8 +756,8 @@ export function AlignedOutboundDetailModal({
                 <UiTextField
                   sx={{ width: 330 }}
                   value={scanCode}
-                  label="Quét QR/Barcode sản phẩm"
-                  placeholder="Quét QR/Barcode sản phẩm"
+                  label={t("outbound.detail.scanField")}
+                  placeholder={t("outbound.detail.scanField")}
                   onChange={(event) => setScanCode(event.target.value)}
                   onKeyDown={(event) => {
                     if (event.key === "Enter") {
@@ -745,7 +784,9 @@ export function AlignedOutboundDetailModal({
                     })
                   }
                 >
-                  {scanMutation.isPending ? "Đang quét..." : "Quét"}
+                  {scanMutation.isPending
+                    ? t("outbound.detail.scanning")
+                    : t("outbound.detail.scanAction")}
                 </ActionButton>
               </Stack>
               <ResponsiveDataTable<OutboundLineRecord>
@@ -753,33 +794,33 @@ export function AlignedOutboundDetailModal({
                 rows={detail.lines}
                 rowKey={(row) => row.id}
                 loading={detailQuery.isFetching}
-                emptyText="Phiếu chưa có dòng hàng cần xuất."
+                emptyText={t("outbound.detail.linesEmpty")}
               />
               <ResponsiveDataTable<OutboundItemMatchRecord>
                 columns={matchColumns}
                 rows={activeMatches}
                 rowKey={(row) => row.id}
                 loading={detailQuery.isFetching}
-                emptyText="Chưa đối chiếu sản phẩm nào — quét mã sản phẩm để bắt đầu."
+                emptyText={t("outbound.detail.scansEmpty")}
               />
             </Stack>
           </Box>
 
           <Box sx={SECTION_SX}>
             <Box sx={{ typography: "subtitle2", fontWeight: 700, mb: 1.5 }}>
-              2 · Ghi nhận xuất kho & In nhãn
+              {t("outbound.detail.step2")}
             </Box>
             <Stack spacing={1.5}>
               {shortStockLines.length ? (
                 <UiAlert
                   tone="warning"
-                  title="Tồn khả dụng hiện thấp hơn số lượng cần xuất"
+                  title={t("outbound.detail.shortStockTitle")}
                 >
-                  {`SKU thiếu: ${shortStockLines
-                    .map((line) => line.skuCode ?? short(line.productId))
-                    .join(
-                      ", ",
-                    )}. Hệ thống sẽ kiểm tra lại tại thời điểm ghi nhận.`}
+                  {t("outbound.detail.shortStockBody", {
+                    skus: shortStockLines
+                      .map((line) => line.skuCode ?? short(line.productId))
+                      .join(", "),
+                  })}
                 </UiAlert>
               ) : null}
               {!posted ? (
@@ -791,8 +832,8 @@ export function AlignedOutboundDetailModal({
                   <UiTextField
                     sx={{ width: 260 }}
                     value={customerPhone}
-                    label="SĐT trên nhãn (tùy chọn)"
-                    placeholder="SĐT trên nhãn (tùy chọn)"
+                    label={t("outbound.detail.labelPhone")}
+                    placeholder={t("outbound.detail.labelPhone")}
                     slotProps={{ htmlInput: { maxLength: 10 } }}
                     onChange={(event) =>
                       setCustomerPhone(
@@ -811,22 +852,24 @@ export function AlignedOutboundDetailModal({
                     onClick={() => setPostConfirmOpen(true)}
                   >
                     {canPrepareLabel
-                      ? "Ghi nhận xuất kho & In nhãn"
-                      : "Ghi nhận xuất kho"}
+                      ? t("outbound.detail.postWithLabel")
+                      : t("outbound.detail.post")}
                   </ActionButton>
                   {can("outbound.cancel") && mutable ? (
                     <ActionButton
                       kind="cancel"
                       onClick={() => setCancelOpen(true)}
                     >
-                      Hủy phiếu
+                      {t("outbound.detail.cancelTrigger")}
                     </ActionButton>
                   ) : null}
                 </Stack>
               ) : (
-                <UiAlert tone="success" title="Phiếu đã ghi nhận xuất kho">
-                  Tồn kho đã được trừ. Việc in/in lại nhãn không làm thay đổi
-                  tồn kho.
+                <UiAlert
+                  tone="success"
+                  title={t("outbound.detail.postedTitle")}
+                >
+                  {t("outbound.detail.postedBody")}
                 </UiAlert>
               )}
               {postBlockReason && !posted ? (
@@ -849,7 +892,9 @@ export function AlignedOutboundDetailModal({
                     gap: 0.5,
                   }}
                 >
-                  Biến động tồn kho ({evidence.movements.length}):
+                  {t("outbound.detail.evidenceMovements", {
+                    count: evidence.movements.length,
+                  })}
                   {evidence.movements.map((movement, index) => (
                     <Box
                       key={movement.id}
@@ -873,7 +918,7 @@ export function AlignedOutboundDetailModal({
             <Grid size={{ xs: 12, lg: 8 }}>
               <Box sx={SECTION_SX}>
                 <Box sx={{ typography: "subtitle2", fontWeight: 700, mb: 1.5 }}>
-                  3 · Xem và in nhãn
+                  {t("outbound.detail.step3")}
                 </Box>
                 <Stack spacing={1.5}>
                   {labelWarning ? (
@@ -881,21 +926,21 @@ export function AlignedOutboundDetailModal({
                   ) : null}
                   {!posted ? (
                     <Box sx={{ typography: "body2", color: "text.secondary" }}>
-                      Nhãn được chuẩn bị sau khi ghi nhận xuất kho.
+                      {t("outbound.detail.labelPending")}
                     </Box>
                   ) : packingLabel ? (
                     <>
                       <Grid container spacing={2}>
                         <DetailField
-                          label="Mã nhãn"
+                          label={t("outbound.detail.fieldLabelCode")}
                           value={packingLabel.labelCode}
                         />
                         <DetailField
-                          label="Trạng thái"
+                          label={t("outbound.detail.fieldStatus")}
                           value={labelStatus(packingLabel.status)}
                         />
                         <DetailField
-                          label="Nơi nhận"
+                          label={t("outbound.detail.fieldLabelRecipient")}
                           value={
                             packingLabel.recipientName ||
                             doc.recipientName ||
@@ -903,15 +948,15 @@ export function AlignedOutboundDetailModal({
                           }
                         />
                         <DetailField
-                          label="Số sản phẩm"
+                          label={t("outbound.detail.fieldItemCount")}
                           value={packingLabel.itemCount}
                         />
                         <DetailField
-                          label="Số SKU"
+                          label={t("outbound.detail.fieldSkuCount")}
                           value={packingLabel.skuCount}
                         />
                         <DetailField
-                          label="Toa nguồn"
+                          label={t("outbound.detail.fieldSourceRequest")}
                           value={packingLabel.sourceRequestNo || EMPTY_TEXT}
                         />
                       </Grid>
@@ -920,7 +965,7 @@ export function AlignedOutboundDetailModal({
                           kind="view"
                           onClick={() => setLabelPreviewOpen(true)}
                         >
-                          Xem trước nhãn
+                          {t("outbound.detail.previewLabel")}
                         </ActionButton>
                       </Box>
                       <Stack
@@ -941,13 +986,13 @@ export function AlignedOutboundDetailModal({
                          */}
                         <UiTextField
                           select
-                          label="Máy in"
+                          label={t("outbound.detail.fieldPrinter")}
                           sx={{ width: 280 }}
                           value={printerId}
                           onChange={(event) => setPrinterId(event.target.value)}
                         >
                           <MenuItem value="" disabled>
-                            Chọn máy in
+                            {t("outbound.detail.choosePrinter")}
                           </MenuItem>
                           {activePrinters.map((printer) => (
                             <MenuItem key={printer.id} value={printer.id}>
@@ -977,10 +1022,10 @@ export function AlignedOutboundDetailModal({
                           }}
                         >
                           {printMutation.isPending
-                            ? "Đang gửi lệnh in..."
+                            ? t("outbound.detail.printing")
                             : packingLabel.status === "PRINTED"
-                              ? "In lại nhãn"
-                              : "In nhãn"}
+                              ? t("outbound.detail.reprint")
+                              : t("outbound.detail.print")}
                         </ActionButton>
                       </Stack>
                     </>
@@ -992,8 +1037,8 @@ export function AlignedOutboundDetailModal({
                         onClick={() => labelPrepareMutation.mutate()}
                       >
                         {labelPrepareMutation.isPending
-                          ? "Đang chuẩn bị..."
-                          : "Chuẩn bị lại nhãn"}
+                          ? t("outbound.detail.preparing")
+                          : t("outbound.detail.prepareAgain")}
                       </ActionButton>
                     </Box>
                   )}
@@ -1004,11 +1049,10 @@ export function AlignedOutboundDetailModal({
             <Grid size={{ xs: 12, lg: 4 }}>
               <Box sx={SECTION_SX}>
                 <Box sx={{ typography: "subtitle2", fontWeight: 700, mb: 1 }}>
-                  RFID (tùy chọn)
+                  {t("outbound.detail.rfidTitle")}
                 </Box>
                 <Box sx={{ typography: "body2", color: "text.secondary" }}>
-                  Có thể gán RFID cho từng sản phẩm nếu vận hành sử dụng. RFID
-                  không phải điều kiện để ghi nhận xuất kho.
+                  {t("outbound.detail.rfidBody")}
                 </Box>
               </Box>
             </Grid>
@@ -1017,7 +1061,7 @@ export function AlignedOutboundDetailModal({
 
         <CameraScanModal
           open={cameraOpen}
-          title="Quét sản phẩm xuất kho"
+          title={t("outbound.detail.scanDialogTitle")}
           onDetected={(code) => {
             setCameraOpen(false);
             scanMutation.mutate({ rawCode: code, scanSource: "CAMERA" });
@@ -1030,7 +1074,7 @@ export function AlignedOutboundDetailModal({
           onClose={() => setPostConfirmOpen(false)}
           maxWidth="xs"
           fullWidth
-          title="Ghi nhận xuất kho & In nhãn?"
+          title={t("outbound.detail.postDialogTitle")}
           actions={
             <>
               <ActionButton
@@ -1038,7 +1082,7 @@ export function AlignedOutboundDetailModal({
                 onClick={() => setPostConfirmOpen(false)}
                 disabled={postAndLabelMutation.isPending}
               >
-                Hủy
+                {t("outbound.detail.postDialogCancel")}
               </ActionButton>
               <ActionButton
                 kind="confirm"
@@ -1050,15 +1094,14 @@ export function AlignedOutboundDetailModal({
                 }
               >
                 {postAndLabelMutation.isPending
-                  ? "Đang ghi nhận..."
-                  : "Ghi nhận"}
+                  ? t("outbound.detail.posting")
+                  : t("outbound.detail.postConfirm")}
               </ActionButton>
             </>
           }
         >
           <Box sx={{ typography: "body2" }}>
-            Tồn kho sẽ được trừ ngay khi ghi nhận. Sau đó hệ thống chuẩn bị bản
-            xem trước nhãn để in.
+            {t("outbound.detail.postDialogBody")}
           </Box>
         </UiDialog>
 
@@ -1067,18 +1110,20 @@ export function AlignedOutboundDetailModal({
           onClose={guardBackdropClose(() => setCancelOpen(false))}
           maxWidth="xs"
           fullWidth
-          title="Hủy phiếu xuất"
+          title={t("outbound.detail.cancelTitle")}
           actions={
             <>
               <ActionButton kind="close" onClick={() => setCancelOpen(false)}>
-                Đóng
+                {t("common.close")}
               </ActionButton>
               <ActionButton
                 kind="cancel"
                 disabled={cancelMutation.isPending || !cancelReason.trim()}
                 onClick={() => cancelMutation.mutate()}
               >
-                {cancelMutation.isPending ? "Đang hủy..." : "Hủy phiếu"}
+                {cancelMutation.isPending
+                  ? t("outbound.detail.cancelling")
+                  : t("outbound.detail.cancelTrigger")}
               </ActionButton>
             </>
           }
@@ -1089,8 +1134,8 @@ export function AlignedOutboundDetailModal({
             minRows={3}
             value={cancelReason}
             onChange={(event) => setCancelReason(event.target.value)}
-            label="Lý do hủy"
-            placeholder="Lý do hủy"
+            label={t("outbound.detail.cancelReason")}
+            placeholder={t("outbound.detail.cancelReason")}
           />
         </UiDialog>
 
@@ -1099,37 +1144,38 @@ export function AlignedOutboundDetailModal({
           onClose={guardBackdropClose(() => setReprintOpen(false))}
           maxWidth="xs"
           fullWidth
-          title="Lý do in lại nhãn"
+          title={t("outbound.reprint.title")}
           actions={
             <>
               <ActionButton kind="close" onClick={() => setReprintOpen(false)}>
-                Đóng
+                {t("common.close")}
               </ActionButton>
               <ActionButton
                 kind="print"
                 disabled={
                   printMutation.isPending ||
                   !reprintReasonKey ||
-                  (reprintReasonKey === "Khác" && !reprintReasonNote.trim())
+                  (reprintReasonKey === OTHER_REPRINT_REASON &&
+                    !reprintReasonNote.trim())
                 }
                 onClick={() => {
                   const reason =
-                    reprintReasonKey === "Khác"
+                    reprintReasonKey === OTHER_REPRINT_REASON
                       ? reprintReasonNote.trim()
                       : reprintReasonKey;
                   printMutation.mutate(reason);
                 }}
               >
                 {printMutation.isPending
-                  ? "Đang gửi lệnh in..."
-                  : "In lại nhãn"}
+                  ? t("outbound.detail.printing")
+                  : t("outbound.detail.reprint")}
               </ActionButton>
             </>
           }
         >
           <Stack spacing={2}>
             <UiAlert tone="info">
-              Ghi lý do in lại để lưu vào nhật ký in — không làm thay đổi tồn
+              {t("outbound.reprint.hint")}
               kho.
             </UiAlert>
             <UiTextField
@@ -1137,26 +1183,26 @@ export function AlignedOutboundDetailModal({
               fullWidth
               value={reprintReasonKey}
               onChange={(event) => setReprintReasonKey(event.target.value)}
-              label="Lý do in lại"
+              label={t("outbound.reprint.field")}
             >
               <MenuItem value="" disabled>
-                Chọn lý do
+                {t("outbound.reprint.choose")}
               </MenuItem>
               {REPRINT_REASONS.map((reason) => (
                 <MenuItem key={reason} value={reason}>
-                  {reason}
+                  {t(REPRINT_REASON_LABELS[reason])}
                 </MenuItem>
               ))}
             </UiTextField>
-            {reprintReasonKey === "Khác" ? (
+            {reprintReasonKey === OTHER_REPRINT_REASON ? (
               <UiTextField
                 fullWidth
                 multiline
                 minRows={2}
                 value={reprintReasonNote}
                 onChange={(event) => setReprintReasonNote(event.target.value)}
-                label="Nhập lý do cụ thể"
-                placeholder="Nhập lý do in lại"
+                label={t("outbound.reprint.otherLabel")}
+                placeholder={t("outbound.reprint.otherPlaceholder")}
               />
             ) : null}
           </Stack>
@@ -1167,11 +1213,13 @@ export function AlignedOutboundDetailModal({
           onClose={guardBackdropClose(() => setRfidTarget(null))}
           maxWidth="xs"
           fullWidth
-          title={`Gán RFID · ${rfidTarget?.itemCode ?? ""}`}
+          title={t("outbound.detail.rfidDialogTitle", {
+            code: rfidTarget?.itemCode ?? "",
+          })}
           actions={
             <>
               <ActionButton kind="close" onClick={() => setRfidTarget(null)}>
-                Đóng
+                {t("common.close")}
               </ActionButton>
               <ActionButton
                 kind="rfid"
@@ -1182,7 +1230,9 @@ export function AlignedOutboundDetailModal({
                 }
                 onClick={() => rfidMutation.mutate()}
               >
-                {rfidMutation.isPending ? "Đang gán..." : "Gán RFID"}
+                {rfidMutation.isPending
+                  ? t("outbound.detail.rfidAssigning")
+                  : t("outbound.detail.rfidAssign")}
               </ActionButton>
             </>
           }
@@ -1192,15 +1242,15 @@ export function AlignedOutboundDetailModal({
               fullWidth
               value={rfidCode}
               onChange={(event) => setRfidCode(event.target.value)}
-              label="Mã RFID"
-              placeholder="Mã RFID"
+              label={t("outbound.detail.fieldRfidCode")}
+              placeholder={t("outbound.detail.fieldRfidCode")}
             />
             <UiTextField
               fullWidth
               value={rfidHardwareUid}
               onChange={(event) => setRfidHardwareUid(event.target.value)}
-              label="Mã thiết bị (UID)"
-              placeholder="Nhập mã thiết bị"
+              label={t("outbound.detail.fieldRfidUid")}
+              placeholder={t("outbound.detail.fieldRfidUidPlaceholder")}
             />
           </Stack>
         </UiDialog>

@@ -45,6 +45,8 @@ import {
   type OutboundRequestRowInput,
 } from "@/modules/outbound/services/mvpOutboundService";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
+import { useT, type TranslateFn } from "@/shared/i18n/useT";
+import type { MessageKey } from "@/shared/i18n/messages";
 
 type IntakeMode = "manual" | "excel";
 
@@ -84,11 +86,11 @@ function text(value: unknown, fallback = ""): string {
 
 type ImportRow = OutboundImportResult["rows"][number];
 
-function rowErrorText(row: ImportRow): string {
+function rowErrorText(row: ImportRow, t: TranslateFn): string {
   return row.errors
     .map(
       (error) =>
-        `${error.field ?? `dòng ${error.row ?? row.rowNo}`}: ${error.message ?? error.error_code ?? "Lỗi"}`,
+        `${error.field ?? t("outbound.intake.rowLabel", { row: error.row ?? row.rowNo })}: ${error.message ?? error.error_code ?? t("outbound.intake.genericError")}`,
     )
     .join(" · ");
 }
@@ -101,11 +103,11 @@ const IMPORT_STATUS_TONE: Record<string, UiStatusTone> = {
   CONSUMED: "neutral",
 };
 
-const IMPORT_STATUS_LABEL: Record<string, string> = {
-  UPLOADED: "Đã tải lên",
-  VALIDATED: "Dữ liệu hợp lệ",
-  REJECTED: "Có lỗi dữ liệu",
-  CONSUMED: "Đã tạo phiếu",
+const IMPORT_STATUS_LABEL: Record<string, MessageKey> = {
+  UPLOADED: "outbound.intake.statusUploaded",
+  VALIDATED: "outbound.intake.statusValidated",
+  REJECTED: "outbound.intake.statusRejected",
+  CONSUMED: "outbound.intake.statusConsumed",
 };
 
 /** Bảng xem trước phân trang client-side như antd Table cũ (pageSize 10). */
@@ -117,6 +119,7 @@ export function OutboundIntakeModal({
   onClose,
   onConsumed,
 }: OutboundIntakeModalProps) {
+  const t = useT();
   const dialog = useDialogExit(onClose);
   const [mode, setMode] = useState<IntakeMode>("manual");
   const [file, setFile] = useState<File | null>(null);
@@ -165,17 +168,17 @@ export function OutboundIntakeModal({
 
   const validateManualForm = () => {
     const errors: typeof fieldErrors = { lines: {} };
-    if (!requestNo.trim()) errors.requestNo = "Nhập mã phiếu yêu cầu xuất.";
-    if (!recipientName.trim()) errors.recipientName = "Nhập người / nơi nhận.";
+    if (!requestNo.trim()) errors.requestNo = t("outbound.intake.errRequestNo");
+    if (!recipientName.trim())
+      errors.recipientName = t("outbound.intake.errRecipient");
     if (recipientPhone && !/^0\d{9}$/.test(recipientPhone)) {
-      errors.recipientPhone =
-        "Số điện thoại phải gồm đúng 10 chữ số và bắt đầu bằng số 0.";
+      errors.recipientPhone = t("outbound.intake.errPhone");
     }
     lines.forEach((line, index) => {
       const lineError: { product_id?: string; required_qty?: string } = {};
-      if (!line.product_id) lineError.product_id = "Chọn SKU sản phẩm.";
+      if (!line.product_id) lineError.product_id = t("outbound.intake.errSku");
       if (!line.required_qty || line.required_qty < 1) {
-        lineError.required_qty = "Nhập số lượng ≥ 1.";
+        lineError.required_qty = t("outbound.intake.errQty");
       }
       if (lineError.product_id || lineError.required_qty) {
         errors.lines[index] = lineError;
@@ -322,21 +325,15 @@ export function OutboundIntakeModal({
       setPreview(result);
       setPreviewPage(1);
       if (result.status === "VALIDATED") {
-        toast.success(
-          "Dữ liệu yêu cầu xuất hợp lệ để tiếp nhận. Tồn kho sẽ được kiểm tra lại khi quét và khi hoàn tất xuất kho.",
-        );
+        toast.success(t("outbound.intake.manualValid"));
       } else {
-        toast.warning(
-          "Dữ liệu còn lỗi bắt buộc — sửa theo từng dòng trước khi tạo phiếu xuất.",
-        );
+        toast.warning(t("outbound.intake.manualInvalid"));
       }
     },
     onError: (error) => {
       // Lỗi máy chủ/mạng (không phải lỗi từng ô) — báo qua toast, không dựng
       // lại khối lỗi tổng.
-      toast.error(
-        getApiErrorMessage(error, "Xác nhận yêu cầu xuất kho thất bại."),
-      );
+      toast.error(getApiErrorMessage(error, t("outbound.intake.manualError")));
     },
   });
 
@@ -349,31 +346,26 @@ export function OutboundIntakeModal({
 
   const validateFileMutation = useMutation({
     mutationFn: async () => {
-      if (!file)
-        throw new Error("Chọn tệp Excel (.xlsx/.xls) trước khi kiểm tra.");
+      if (!file) throw new Error(t("outbound.intake.needFile"));
       return uploadOutboundRequestFile(file);
     },
     onSuccess: (result) => {
       setPreview(result);
       setPreviewPage(1);
       if (result.status === "VALIDATED") {
-        toast.success(
-          "Dữ liệu Excel hợp lệ để tiếp nhận. Tồn kho sẽ được kiểm tra lại khi quét và khi hoàn tất xuất kho.",
-        );
+        toast.success(t("outbound.intake.excelValid"));
       } else {
-        toast.warning(
-          "Tệp có dòng lỗi bắt buộc. Cả lô chưa được tạo phiếu cho tới khi các lỗi được xử lý.",
-        );
+        toast.warning(t("outbound.intake.excelInvalid"));
       }
     },
     onError: (error) => {
-      toast.error(getApiErrorMessage(error, "Kiểm tra tệp thất bại."));
+      toast.error(getApiErrorMessage(error, t("outbound.intake.excelError")));
     },
   });
 
   const consumeMutation = useMutation({
     mutationFn: async () => {
-      if (!preview) throw new Error("Chưa có dữ liệu nhập để xác nhận.");
+      if (!preview) throw new Error(t("outbound.intake.needPreview"));
       const consumeLines = Object.entries(resolutions)
         .map(([rowNo, value]) => ({
           row_no: Number(rowNo),
@@ -398,14 +390,17 @@ export function OutboundIntakeModal({
     },
     onSuccess: (result) => {
       toast.success(
-        `Đã tạo ${result.outboundRequestIds.length} yêu cầu xuất và ${result.outboundDocumentIds.length} phiếu xuất nháp.`,
+        t("outbound.intake.created", {
+          requests: result.outboundRequestIds.length,
+          documents: result.outboundDocumentIds.length,
+        }),
       );
       const ids = result.outboundDocumentIds;
       resetAll();
       onConsumed(ids);
     },
     onError: (error) => {
-      toast.error(getApiErrorMessage(error, "Không thể tạo phiếu xuất kho."));
+      toast.error(getApiErrorMessage(error, t("outbound.intake.createError")));
     },
   });
 
@@ -426,16 +421,21 @@ export function OutboundIntakeModal({
   };
 
   const previewColumns: ResponsiveTableColumn<ImportRow>[] = [
-    { key: "rowNo", header: "Dòng", width: 70, render: (row) => row.rowNo },
+    {
+      key: "rowNo",
+      header: t("outbound.intake.colRow"),
+      width: 70,
+      render: (row) => row.rowNo,
+    },
     {
       key: "request",
-      header: "Mã yêu cầu",
+      header: t("outbound.intake.colRequestNo"),
       width: 170,
       render: (row) => text(row.normalized.request_no, "-"),
     },
     {
       key: "recipient",
-      header: "Người nhận",
+      header: t("outbound.intake.colRecipient"),
       width: 180,
       render: (row) =>
         text(
@@ -452,12 +452,12 @@ export function OutboundIntakeModal({
     },
     {
       key: "sku_mapping",
-      header: "Gán lại SKU (nếu cần)",
+      header: t("outbound.intake.colReassignSku"),
       width: 260,
       render: (row) => (
         <UiSelect
-          aria-label={`Gán SKU khi xác nhận dòng ${row.rowNo}`}
-          placeholder="Giữ nguyên"
+          aria-label={t("outbound.intake.reassignAria", { row: row.rowNo })}
+          placeholder={t("outbound.intake.keepAsIs")}
           minWidth={240}
           value={resolutions[row.rowNo]?.sku_id ?? ""}
           onChange={(value) =>
@@ -475,7 +475,7 @@ export function OutboundIntakeModal({
     },
     {
       key: "qty",
-      header: "SL yêu cầu",
+      header: t("outbound.intake.colRequiredQty"),
       width: 140,
       align: "right",
       render: (row) => (
@@ -486,7 +486,9 @@ export function OutboundIntakeModal({
             htmlInput: {
               min: 1,
               step: 1,
-              "aria-label": `SL yêu cầu dòng ${row.rowNo}`,
+              "aria-label": t("outbound.intake.requiredQtyAria", {
+                row: row.rowNo,
+              }),
             },
           }}
           value={
@@ -508,7 +510,7 @@ export function OutboundIntakeModal({
     },
     {
       key: "available",
-      header: "Khả dụng hiện tại",
+      header: t("outbound.intake.colAvailable"),
       width: 180,
       align: "right",
       render: (row) => {
@@ -517,7 +519,9 @@ export function OutboundIntakeModal({
         if (available === undefined) {
           return (
             <Box sx={{ typography: "body2", color: "text.secondary" }}>
-              {availabilityQuery.isLoading ? "…" : "Chưa có dữ liệu"}
+              {availabilityQuery.isLoading
+                ? "…"
+                : t("outbound.intake.noAvailability")}
             </Box>
           );
         }
@@ -532,7 +536,11 @@ export function OutboundIntakeModal({
             {row.errors.length === 0 ? (
               <UiStatusBadge
                 tone={available >= required ? "success" : "warning"}
-                label={available >= required ? "Đủ hiện tại" : "Thiếu hiện tại"}
+                label={
+                  available >= required
+                    ? t("outbound.intake.enoughNow")
+                    : t("outbound.intake.shortNow")
+                }
               />
             ) : null}
           </Stack>
@@ -541,13 +549,13 @@ export function OutboundIntakeModal({
     },
     {
       key: "result",
-      header: "Kết quả kiểm tra",
+      header: t("outbound.intake.colCheckResult"),
       width: 220,
       render: (row) => {
         if (row.errors.length > 0) {
           return (
             <Box sx={{ typography: "body2", color: "error.main" }}>
-              {rowErrorText(row)}
+              {rowErrorText(row, t)}
             </Box>
           );
         }
@@ -559,12 +567,14 @@ export function OutboundIntakeModal({
           return (
             <UiStatusBadge
               tone="warning"
-              label="Dữ liệu hợp lệ · Thiếu tồn hiện tại"
+              label={t("outbound.intake.validButShort")}
             />
           );
         }
 
-        return <UiStatusBadge tone="success" label="Dữ liệu hợp lệ" />;
+        return (
+          <UiStatusBadge tone="success" label={t("outbound.intake.valid")} />
+        );
       },
     },
   ];
@@ -600,13 +610,17 @@ export function OutboundIntakeModal({
             gap: 1,
           }}
         >
-          OUT-REQ-01 · Tiếp nhận phiếu yêu cầu xuất
-          <ActionIconButton kind="close" label="Đóng" onClick={close} />
+          {t("outbound.intake.title")}
+          <ActionIconButton
+            kind="close"
+            label={t("common.close")}
+            onClick={close}
+          />
         </Box>
       }
       actions={
         <ActionButton kind="close" onClick={close}>
-          Đóng
+          {t("common.close")}
         </ActionButton>
       }
     >
@@ -619,7 +633,7 @@ export function OutboundIntakeModal({
               setPreview(null);
             }}
           >
-            Nhập tay
+            {t("outbound.intake.tabManual")}
           </ActionButton>
           <ActionButton
             kind="import"
@@ -628,7 +642,7 @@ export function OutboundIntakeModal({
               setPreview(null);
             }}
           >
-            Nhập từ Excel
+            {t("outbound.intake.tabExcel")}
           </ActionButton>
         </Stack>
 
@@ -639,7 +653,7 @@ export function OutboundIntakeModal({
                 <UiTextField
                   required
                   fullWidth
-                  label="Mã phiếu yêu cầu xuất"
+                  label={t("outbound.intake.fieldRequestNo")}
                   placeholder="VD: REQ-20260813-001"
                   value={requestNo}
                   onChange={(event) => {
@@ -654,8 +668,8 @@ export function OutboundIntakeModal({
               <Grid size={{ xs: 12, md: 6 }}>
                 <UiSelect
                   fullWidth
-                  label="Đại lý / nơi nhận (tùy chọn)"
-                  placeholder="Chọn đại lý để tự điền người nhận / địa chỉ"
+                  label={t("outbound.intake.fieldAgency")}
+                  placeholder={t("outbound.intake.fieldAgencyPlaceholder")}
                   value={agencyId ?? ""}
                   onChange={(value) => handleAgencyChange(value || null)}
                   options={agencyOptions}
@@ -665,7 +679,7 @@ export function OutboundIntakeModal({
                 <UiTextField
                   required
                   fullWidth
-                  label="Người / nơi nhận"
+                  label={t("outbound.intake.fieldRecipient")}
                   value={recipientName}
                   onChange={(event) => {
                     setRecipientName(event.target.value);
@@ -679,7 +693,7 @@ export function OutboundIntakeModal({
               <Grid size={{ xs: 12, md: 6 }}>
                 <UiTextField
                   fullWidth
-                  label="Địa chỉ nhận"
+                  label={t("outbound.intake.fieldAddress")}
                   value={recipientAddress}
                   onChange={(event) => setRecipientAddress(event.target.value)}
                   slotProps={{ htmlInput: { maxLength: 1000 } }}
@@ -688,7 +702,7 @@ export function OutboundIntakeModal({
               <Grid size={{ xs: 12, md: 6 }}>
                 <UiTextField
                   fullWidth
-                  label="SĐT liên hệ"
+                  label={t("outbound.intake.fieldPhone")}
                   placeholder="VD: 0901234567"
                   value={recipientPhone}
                   onChange={(event) => {
@@ -705,7 +719,7 @@ export function OutboundIntakeModal({
                   helperText={
                     fieldErrors.recipientPhone ??
                     (Boolean(recipientPhone) && !/^0\d{9}$/.test(recipientPhone)
-                      ? "Số điện thoại phải gồm đúng 10 chữ số và bắt đầu bằng số 0."
+                      ? t("outbound.intake.errPhone")
                       : undefined)
                   }
                   slotProps={{
@@ -717,14 +731,14 @@ export function OutboundIntakeModal({
                 <UiTextField
                   fullWidth
                   type="date"
-                  label="Ngày tạo toa"
+                  label={t("outbound.intake.fieldRequestDate")}
                   value={requestDate}
                   onChange={(event) => setRequestDate(event.target.value)}
                   slotProps={{
                     inputLabel: { shrink: true },
                     htmlInput: { max: dayjs().format("YYYY-MM-DD") },
                   }}
-                  helperText="Định dạng: ngày/tháng/năm"
+                  helperText={t("outbound.intake.dateHelper")}
                 />
               </Grid>
             </Grid>
@@ -770,21 +784,23 @@ export function OutboundIntakeModal({
                         loading={skuSearchQuery.isFetching}
                         noOptionsText={
                           skuKeyword.trim()
-                            ? "Không tìm thấy SKU khớp từ khoá."
-                            : "Gõ mã hoặc tên SKU để tìm."
+                            ? t("outbound.intake.skuNoMatch")
+                            : t("outbound.intake.skuTypeToSearch")
                         }
                         renderInput={(params) => (
                           <TextField
                             {...params}
                             required
-                            label="SKU sản phẩm"
-                            placeholder="Gõ mã hoặc tên SKU..."
+                            label={t("outbound.intake.fieldSku")}
+                            placeholder={t(
+                              "outbound.intake.fieldSkuPlaceholder",
+                            )}
                             error={Boolean(
                               fieldErrors.lines[index]?.product_id,
                             )}
                             helperText={
                               fieldErrors.lines[index]?.product_id ||
-                              "Chỉ SKU sản phẩm đang sử dụng"
+                              t("outbound.intake.skuHelper")
                             }
                           />
                         )}
@@ -792,7 +808,7 @@ export function OutboundIntakeModal({
                       <UiTextField
                         required
                         type="number"
-                        label="Số lượng"
+                        label={t("outbound.intake.fieldQty")}
                         value={line.required_qty}
                         onChange={(event) => {
                           updateLine(index, {
@@ -818,7 +834,7 @@ export function OutboundIntakeModal({
                         }
                         sx={{ mt: "8px" }}
                       >
-                        Xóa dòng
+                        {t("outbound.intake.removeLine")}
                       </ActionButton>
                     </Stack>
                   </AnimatedListItem>
@@ -831,7 +847,7 @@ export function OutboundIntakeModal({
                     setLines((current) => [...current, createEmptyLine()])
                   }
                 >
-                  Thêm dòng SKU
+                  {t("outbound.intake.addLine")}
                 </ActionButton>
               </Box>
             </Stack>
@@ -847,12 +863,11 @@ export function OutboundIntakeModal({
                 onClick={handleValidateManual}
               >
                 {validateManualMutation.isPending
-                  ? "Đang kiểm tra..."
-                  : "Kiểm tra & xem trước"}
+                  ? t("outbound.intake.validating")
+                  : t("outbound.intake.validate")}
               </ActionButton>
               <Box sx={{ typography: "body2", color: "text.secondary" }}>
-                Người nhận bắt buộc; địa chỉ/SĐT/ngày toa tùy chọn theo quy định
-                hiện hành — thiếu thì nhãn đóng gói để trống trường tương ứng.
+                {t("outbound.intake.manualHint")}
               </Box>
             </Stack>
           </Stack>
@@ -862,15 +877,11 @@ export function OutboundIntakeModal({
               key={fileInputKey}
               type="file"
               accept=".xlsx,.xls"
-              aria-label="Chọn tệp Excel yêu cầu xuất"
+              aria-label={t("outbound.intake.fileAria")}
               onChange={(event) => setFile(event.target.files?.[0] ?? null)}
             />
             <Box sx={{ typography: "body2", color: "text.secondary" }}>
-              Tên cột bắt buộc trong tệp: request_no · sku_code · required_qty ·
-              recipient_name/customer_name. Cột tùy chọn: request_date ·
-              recipient_address · recipient_contact_phone · note. Tối đa 10.000
-              dòng, tệp ≤ 20MB; dòng lỗi có thể được xử lý ở bảng xem trước
-              trước khi xác nhận.
+              {t("outbound.intake.fileHint")}
             </Box>
             <Box>
               <ActionButton
@@ -879,13 +890,13 @@ export function OutboundIntakeModal({
                 onClick={() => validateFileMutation.mutate()}
               >
                 {validateFileMutation.isPending
-                  ? "Đang tải lên..."
-                  : "Tải lên & xem trước"}
+                  ? t("outbound.intake.uploading")
+                  : t("outbound.intake.upload")}
               </ActionButton>
             </Box>
             <ApiErrorAlert
               error={validateFileMutation.error}
-              title="Không kiểm tra được tệp Excel"
+              title={t("outbound.intake.uploadErrorTitle")}
             />
           </Stack>
         )}
@@ -909,7 +920,7 @@ export function OutboundIntakeModal({
                 gap: 0.5,
               }}
             >
-              Kết quả xem trước ·{" "}
+              {t("outbound.intake.previewTitle")}{" "}
               {preview.importNo || <CopyableId value={preview.id} />}
             </Box>
             <Stack spacing={1.5}>
@@ -920,13 +931,21 @@ export function OutboundIntakeModal({
               >
                 <UiStatusBadge
                   tone={IMPORT_STATUS_TONE[preview.status] ?? "neutral"}
-                  label={IMPORT_STATUS_LABEL[preview.status] ?? "Chưa xác định"}
+                  label={
+                    IMPORT_STATUS_LABEL[preview.status]
+                      ? t(IMPORT_STATUS_LABEL[preview.status])
+                      : t("outbound.intake.statusUnknown")
+                  }
                 />
                 <Box sx={{ typography: "body2" }}>
-                  Tổng: {preview.totalRows}
+                  {t("outbound.intake.previewTotal", {
+                    count: preview.totalRows,
+                  })}
                 </Box>
                 <Box sx={{ typography: "body2", color: "success.main" }}>
-                  Hợp lệ dữ liệu: {preview.validRows}
+                  {t("outbound.intake.previewValid", {
+                    count: preview.validRows,
+                  })}
                 </Box>
                 <Box
                   sx={{
@@ -935,7 +954,9 @@ export function OutboundIntakeModal({
                       preview.errorRows > 0 ? "error.main" : "text.primary",
                   }}
                 >
-                  Lỗi dữ liệu: {preview.errorRows}
+                  {t("outbound.intake.previewErrors", {
+                    count: preview.errorRows,
+                  })}
                 </Box>
               </Stack>
               {/* Bảng xem trước lấy từ kết quả kiểm tra (mutation, không phải
@@ -948,7 +969,7 @@ export function OutboundIntakeModal({
                   validateManualMutation.isPending ||
                   validateFileMutation.isPending
                 }
-                emptyText="Không có dòng dữ liệu nào trong kết quả xem trước."
+                emptyText={t("outbound.intake.previewEmpty")}
               />
               {previewPaged ? (
                 <UiPagination
@@ -971,20 +992,20 @@ export function OutboundIntakeModal({
                   onClick={() => consumeMutation.mutate()}
                 >
                   {consumeMutation.isPending
-                    ? "Đang xử lý..."
-                    : "Xác nhận & tạo phiếu xuất nháp"}
+                    ? t("outbound.intake.confirming")
+                    : t("outbound.intake.confirm")}
                 </ActionButton>
                 {!consumable ? (
                   <Box sx={{ typography: "body2", color: "text.secondary" }}>
                     {!canImport
-                      ? "Bạn không có quyền xác nhận yêu cầu xuất."
-                      : "Còn dòng lỗi — gán SKU/số lượng hoặc sửa người nhận rồi xác nhận lại."}
+                      ? t("outbound.intake.noPermission")
+                      : t("outbound.intake.stillInvalid")}
                   </Box>
                 ) : null}
               </Stack>
               <ApiErrorAlert
                 error={consumeMutation.error}
-                title="Không xác nhận được yêu cầu xuất"
+                title={t("outbound.intake.confirmErrorTitle")}
               />
             </Stack>
           </Box>

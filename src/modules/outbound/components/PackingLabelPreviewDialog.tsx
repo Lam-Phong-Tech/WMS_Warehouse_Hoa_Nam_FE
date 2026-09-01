@@ -4,6 +4,7 @@ import JsBarcode from "jsbarcode";
 import { Box, Stack, UiDialog } from "@/shared/ui";
 import { ActionButton } from "@/shared/components/actions";
 import { EMPTY_TEXT } from "@/shared/constants/display";
+import { useT } from "@/shared/i18n/useT";
 import type { PackingLabelRecord } from "@/modules/outbound/services/alignedOutboundService";
 
 interface PackingLabelPreviewDialogProps {
@@ -29,6 +30,7 @@ export function PackingLabelPreviewDialog({
   label,
   onClose,
 }: PackingLabelPreviewDialogProps) {
+  const t = useT();
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -113,10 +115,10 @@ export function PackingLabelPreviewDialog({
       onClose={onClose}
       maxWidth="xs"
       fullWidth
-      title="Xem trước nhãn"
+      title={t("outbound.label.previewTitle")}
       actions={
         <ActionButton kind="close" onClick={onClose}>
-          Đóng
+          {t("common.close")}
         </ActionButton>
       }
     >
@@ -153,7 +155,7 @@ export function PackingLabelPreviewDialog({
                 HOA NAM WMS
               </Box>
               <Box sx={{ typography: "caption", color: "text.secondary" }}>
-                Tem đóng gói xuất kho
+                {t("outbound.label.brandLine")}
               </Box>
             </Stack>
             <Stack
@@ -175,7 +177,7 @@ export function PackingLabelPreviewDialog({
                   textAlign: "center",
                 }}
               >
-                HÀNG XUẤT KHO
+                {t("outbound.label.stamp")}
               </Box>
               <Box
                 sx={{
@@ -227,8 +229,17 @@ export function PackingLabelPreviewDialog({
                 color: "text.secondary",
               }}
             >
-              <Box>{`Toa nguồn: ${label.sourceRequestNo || EMPTY_TEXT}`}</Box>
-              <Box>{`SKU: ${label.skuCount} · SP: ${label.itemCount}`}</Box>
+              <Box>
+                {t("outbound.label.sourceRequest", {
+                  code: label.sourceRequestNo || EMPTY_TEXT,
+                })}
+              </Box>
+              <Box>
+                {t("outbound.label.counts", {
+                  skuCount: label.skuCount,
+                  itemCount: label.itemCount,
+                })}
+              </Box>
             </Stack>
           </Box>
 
@@ -247,9 +258,9 @@ export function PackingLabelPreviewDialog({
               lineHeight: 1.4,
             }}
           >
-            VUI LÒNG KIỂM TRA HÀNG TRƯỚC KHI KÝ NHẬN
+            {t("outbound.label.warnCheck")}
             <br />
-            KHÔNG ĐỔI TRẢ SAU 24H KỂ TỪ KHI NHẬN HÀNG
+            {t("outbound.label.warnNoReturn")}
           </Box>
 
           {/* Người nhận. */}
@@ -268,20 +279,18 @@ export function PackingLabelPreviewDialog({
                 mb: 0.25,
               }}
             >
-              NƠI NHẬN
+              {t("outbound.label.recipient")}
             </Box>
             <Box sx={{ typography: "body2", fontWeight: 700 }}>
               {label.recipientName || EMPTY_TEXT}
             </Box>
             {label.recipientAddress ? (
-              <Box sx={{ typography: "caption" }}>
-                {label.recipientAddress}
-              </Box>
+              <Box sx={{ typography: "caption" }}>{label.recipientAddress}</Box>
             ) : null}
             {label.customerPhone ? (
-              <Box
-                sx={{ typography: "caption" }}
-              >{`ĐT: ${label.customerPhone}`}</Box>
+              <Box sx={{ typography: "caption" }}>
+                {t("outbound.label.phone", { phone: label.customerPhone })}
+              </Box>
             ) : null}
           </Box>
 
@@ -304,7 +313,7 @@ export function PackingLabelPreviewDialog({
                 mb: 0.25,
               }}
             >
-              SẢN PHẨM
+              {t("outbound.label.products")}
             </Box>
             {label.skuSummary.length ? (
               <>
@@ -316,7 +325,9 @@ export function PackingLabelPreviewDialog({
                     rowGap: 0.35,
                   }}
                 >
-                  <Box sx={headerCellSx}>Tên sản phẩm</Box>
+                  <Box sx={headerCellSx}>
+                    {t("outbound.label.colProductName")}
+                  </Box>
                   <Box sx={headerCellSx}>SKU</Box>
                   <Box sx={{ ...headerCellSx, textAlign: "right" }}>SL</Box>
                   {label.skuSummary.map((item) => (
@@ -373,7 +384,7 @@ export function PackingLabelPreviewDialog({
                   <Box
                     sx={{ typography: "caption", fontWeight: 700, fontSize: 9 }}
                   >
-                    TỔNG SỐ LƯỢNG
+                    {t("outbound.label.totalQty")}
                   </Box>
                   <Box sx={{ typography: "subtitle2", fontWeight: 800 }}>
                     {totalQuantity}
@@ -382,7 +393,7 @@ export function PackingLabelPreviewDialog({
               </>
             ) : (
               <Box sx={{ typography: "caption", color: "text.secondary" }}>
-                Chưa có dòng SKU
+                {t("outbound.label.emptyLines")}
               </Box>
             )}
           </Box>
@@ -424,7 +435,7 @@ export function PackingLabelPreviewDialog({
                 mb: 0.5,
               }}
             >
-              SỬ DỤNG NỘI BỘ KHO
+              {t("outbound.label.internalUse")}
             </Box>
             <Box
               sx={{
@@ -433,52 +444,55 @@ export function PackingLabelPreviewDialog({
                 gap: 0.5,
               }}
             >
-              {["Đã đóng gói", "Đã kiểm hàng"].map((cell) => (
-                <Stack
-                  key={cell}
-                  direction="row"
-                  spacing={0.5}
-                  sx={{
-                    alignItems: "center",
-                    border: "1px solid",
-                    borderColor: "divider",
-                    px: 0.5,
-                    py: 0.25,
-                  }}
-                >
-                  {/* Ô tích vẽ bằng viền CSS — không dùng ký tự checkbox
-                      Unicode làm icon (ui:icons chỉ cho phép glyph Flaticon). */}
-                  <Box
-                    sx={{
-                      width: 9,
-                      height: 9,
-                      border: "1px solid",
-                      borderColor: "text.primary",
-                      flexShrink: 0,
-                    }}
-                  />
-                  <Box sx={{ typography: "caption", fontSize: 9 }}>
-                    {cell}
-                  </Box>
-                </Stack>
-              ))}
-              {["Ngày: ____________", "Người phụ trách: ______"].map(
+              {[t("outbound.label.packed"), t("outbound.label.inspected")].map(
                 (cell) => (
-                  <Box
+                  <Stack
                     key={cell}
+                    direction="row"
+                    spacing={0.5}
                     sx={{
+                      alignItems: "center",
                       border: "1px solid",
                       borderColor: "divider",
                       px: 0.5,
                       py: 0.25,
-                      typography: "caption",
-                      fontSize: 9,
                     }}
                   >
-                    {cell}
-                  </Box>
+                    {/* Ô tích vẽ bằng viền CSS — không dùng ký tự checkbox
+                      Unicode làm icon (ui:icons chỉ cho phép glyph Flaticon). */}
+                    <Box
+                      sx={{
+                        width: 9,
+                        height: 9,
+                        border: "1px solid",
+                        borderColor: "text.primary",
+                        flexShrink: 0,
+                      }}
+                    />
+                    <Box sx={{ typography: "caption", fontSize: 9 }}>
+                      {cell}
+                    </Box>
+                  </Stack>
                 ),
               )}
+              {[
+                t("outbound.label.dateLine"),
+                t("outbound.label.ownerLine"),
+              ].map((cell) => (
+                <Box
+                  key={cell}
+                  sx={{
+                    border: "1px solid",
+                    borderColor: "divider",
+                    px: 0.5,
+                    py: 0.25,
+                    typography: "caption",
+                    fontSize: 9,
+                  }}
+                >
+                  {cell}
+                </Box>
+              ))}
             </Box>
           </Box>
         </Box>

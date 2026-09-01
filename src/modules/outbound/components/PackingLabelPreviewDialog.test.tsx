@@ -95,9 +95,7 @@ describe("PackingLabelPreviewDialog", () => {
       const svg = screen.getByTestId("packing-label-barcode");
       expect(svg.querySelectorAll("rect").length).toBeGreaterThan(0);
     });
-    expect(
-      screen.getByText("PL-PX-20260830133507-LQPM3Z"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("PL-PX-20260830133507-LQPM3Z")).toBeInTheDocument();
   });
 
   it("báo rõ khi nhãn chưa có dòng SKU thay vì để trống im lặng", async () => {

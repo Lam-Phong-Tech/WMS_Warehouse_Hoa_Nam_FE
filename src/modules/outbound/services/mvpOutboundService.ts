@@ -612,9 +612,7 @@ function normalizeIssueEvidence(row: RawRecord, meta: ApiMeta): IssueEvidence {
   // Ưu tiên `movements` ({id, movement_no}) — BE trả kèm để FE hiện mã đọc được
   // thay vì UUID thô. `movement_ids` (mảng id thô) vẫn có ở response cũ/replay
   // nên giữ làm fallback.
-  const richMovements = (
-    Array.isArray(row.movements) ? row.movements : []
-  )
+  const richMovements = (Array.isArray(row.movements) ? row.movements : [])
     .map((movement): IssueEvidenceMovement | null => {
       const rec = movement as RawRecord;
       const id = text(rec?.id ?? rec?.stock_movement_id ?? rec?.movement_id);
