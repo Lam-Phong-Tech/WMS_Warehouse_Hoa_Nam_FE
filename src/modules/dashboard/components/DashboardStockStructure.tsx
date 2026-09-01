@@ -3,15 +3,20 @@ import { Box, Stack, SEMANTIC_LIGHT as S, TYPOGRAPHY } from "@/shared/ui";
 import { StackedBarChart } from "@/shared/components/charts/StackedBarChart";
 import { CHART_COLORS } from "@/shared/components/charts/chart-theme";
 import { INVENTORY_STOCK_STATUS_LABELS } from "@/shared/constants/business-labels";
+import { useT } from "@/shared/i18n/useT";
+import type { MessageKey } from "@/shared/i18n/messages";
 import type { DashboardOverview, InventoryStockStatus } from "../types";
 import { ChartCard, SegmentedToggle } from "./dashboard-ui";
 import { formatNumber } from "./dashboard-styles";
 
 type StructureType = "PRODUCT" | "COMPONENT";
 
-const TYPE_OPTIONS: ReadonlyArray<{ value: StructureType; label: string }> = [
-  { value: "PRODUCT", label: "Sản phẩm" },
-  { value: "COMPONENT", label: "Linh kiện" },
+const TYPE_OPTIONS: ReadonlyArray<{
+  value: StructureType;
+  labelKey: MessageKey;
+}> = [
+  { value: "PRODUCT", labelKey: "dashboard.skuType.product" },
+  { value: "COMPONENT", labelKey: "dashboard.skuType.component" },
 ];
 
 /** Thứ tự "tốt → xấu" để đọc trái sang phải; màu theo mức độ nghiêm trọng. */
@@ -33,6 +38,7 @@ export function DashboardStockStructure({
   loading: boolean;
 }) {
   const [type, setType] = useState<StructureType>("PRODUCT");
+  const t = useT();
   const split = data.stock_structure[type];
 
   const segments = STATUS_ORDER.map((status) => ({
@@ -44,14 +50,17 @@ export function DashboardStockStructure({
 
   return (
     <ChartCard
-      title="Cơ cấu tồn kho hiện tại"
-      description="Tỉ trọng tồn theo từng trạng thái tại thời điểm hiện tại."
+      title={t("dashboard.structure.title")}
+      description={t("dashboard.structure.description")}
       toggle={
         <SegmentedToggle
-          options={TYPE_OPTIONS}
+          options={TYPE_OPTIONS.map((option) => ({
+            value: option.value,
+            label: t(option.labelKey),
+          }))}
           value={type}
           onChange={setType}
-          label="Chọn loại hàng cho cơ cấu tồn kho"
+          label={t("dashboard.structure.toggleLabel")}
         />
       }
     >
@@ -64,18 +73,24 @@ export function DashboardStockStructure({
             color: S.textMedium,
           }}
         >
-          Đang tải số liệu…
+          {t("common.loadingData")}
         </Box>
       ) : total > 0 ? (
         <>
           <Box
             role="img"
-            aria-label={`Cơ cấu tồn kho ${type === "PRODUCT" ? "sản phẩm" : "linh kiện"}: ${segments
-              .map(
-                (segment) =>
-                  `${segment.label} ${formatNumber(segment.value)} (${Math.round((segment.value / total) * 100)}%)`,
-              )
-              .join("; ")}`}
+            aria-label={t("dashboard.structure.ariaLabel", {
+              type:
+                type === "PRODUCT"
+                  ? t("dashboard.structure.typeProduct")
+                  : t("dashboard.structure.typeComponent"),
+              summary: segments
+                .map(
+                  (segment) =>
+                    `${segment.label} ${formatNumber(segment.value)} (${Math.round((segment.value / total) * 100)}%)`,
+                )
+                .join("; "),
+            })}
           >
             <StackedBarChart
               segments={segments}
@@ -136,7 +151,7 @@ export function DashboardStockStructure({
             color: S.textMedium,
           }}
         >
-          Chưa có tồn kho cho nhóm hàng này.
+          {t("dashboard.structure.empty")}
         </Box>
       )}
     </ChartCard>

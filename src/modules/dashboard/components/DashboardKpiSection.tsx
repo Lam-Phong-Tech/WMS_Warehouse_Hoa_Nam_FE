@@ -8,6 +8,8 @@ import {
   TYPOGRAPHY,
 } from "@/shared/ui";
 import { ROUTES } from "@/shared/constants/routes";
+import { useT } from "@/shared/i18n/useT";
+import type { MessageKey } from "@/shared/i18n/messages";
 import {
   StockOutlined,
   ImportOutlined,
@@ -23,12 +25,14 @@ import {
   formatNumber,
 } from "./dashboard-styles";
 
-const SKU_TYPE_OPTIONS: ReadonlyArray<{ value: SkuTypeFilter; label: string }> =
-  [
-    { value: "ALL", label: "Sản phẩm & Linh kiện" },
-    { value: "PRODUCT", label: "Sản phẩm" },
-    { value: "COMPONENT", label: "Linh kiện" },
-  ];
+const SKU_TYPE_OPTIONS: ReadonlyArray<{
+  value: SkuTypeFilter;
+  labelKey: MessageKey;
+}> = [
+  { value: "ALL", labelKey: "dashboard.skuType.all" },
+  { value: "PRODUCT", labelKey: "dashboard.skuType.product" },
+  { value: "COMPONENT", labelKey: "dashboard.skuType.component" },
+];
 
 function pick(
   split: { product: number; component: number; total: number },
@@ -58,6 +62,7 @@ function KpiCard({
   onClick?: () => void;
   drillLabel?: string;
 }) {
+  const t = useT();
   const clickable = Boolean(onClick);
   return (
     <Box
@@ -66,7 +71,8 @@ function KpiCard({
             component: "button",
             type: "button",
             onClick,
-            "aria-label": drillLabel ?? `Xem chi tiết ${label}`,
+            "aria-label":
+              drillLabel ?? t("dashboard.kpi.drillFallback", { label }),
           }
         : {})}
       sx={{
@@ -135,14 +141,15 @@ function KpiCard({
 export function DashboardKpiSection({ data }: { data: DashboardOverview }) {
   const [skuType, setSkuType] = useState<SkuTypeFilter>("ALL");
   const navigate = useNavigate();
+  const t = useT();
   const { kpi } = data;
 
   const scopeNote =
     skuType === "PRODUCT"
-      ? "Chỉ tính sản phẩm"
+      ? t("dashboard.kpi.scopeProductOnly")
       : skuType === "COMPONENT"
-        ? "Chỉ tính linh kiện"
-        : "Gồm cả sản phẩm và linh kiện";
+        ? t("dashboard.kpi.scopeComponentOnly")
+        : t("dashboard.kpi.scopeBoth");
 
   return (
     <Box component="section" aria-labelledby="dashboard-kpi-title">
@@ -158,20 +165,25 @@ export function DashboardKpiSection({ data }: { data: DashboardOverview }) {
       >
         <Box>
           <Box component="h2" id="dashboard-kpi-title" sx={SECTION_TITLE_SX}>
-            Chỉ số vận hành
+            {t("dashboard.kpi.sectionTitle")}
           </Box>
           <Box sx={{ ...CAPTION_SX, mt: 0.5 }}>
-            Phạm vi dữ liệu:{" "}
+            {t("dashboard.kpi.scopePrefix")}{" "}
             {data.data_scope === "GLOBAL"
-              ? "Toàn hệ thống"
-              : `Theo ${data.scope_warehouse_ids?.length ?? 0} kho bạn được phân quyền`}
+              ? t("dashboard.kpi.scopeGlobal")
+              : t("dashboard.kpi.scopeWarehouses", {
+                  count: data.scope_warehouse_ids?.length ?? 0,
+                })}
           </Box>
         </Box>
         <SegmentedToggle
-          options={SKU_TYPE_OPTIONS}
+          options={SKU_TYPE_OPTIONS.map((option) => ({
+            value: option.value,
+            label: t(option.labelKey),
+          }))}
           value={skuType}
           onChange={setSkuType}
-          label="Chọn loại hàng cho chỉ số"
+          label={t("dashboard.kpi.toggleLabel")}
         />
       </Stack>
 
@@ -188,54 +200,54 @@ export function DashboardKpiSection({ data }: { data: DashboardOverview }) {
         }}
       >
         <KpiCard
-          label="Tổng tồn hiện tại"
+          label={t("dashboard.kpi.onHand")}
           value={pick(kpi.on_hand, skuType)}
-          note={`${scopeNote} · bấm để tra cứu tồn kho`}
+          note={t("dashboard.kpi.onHandNote", { scope: scopeNote })}
           icon={<StockOutlined />}
           color={CHART_COLORS.primary}
           softColor={S.primarySoft}
           onClick={() => navigate(ROUTES.INVENTORY)}
-          drillLabel="Mở màn Tra cứu tồn & đối soát"
+          drillLabel={t("dashboard.kpi.onHandDrill")}
         />
         <KpiCard
-          label="Nhập hôm nay"
+          label={t("dashboard.kpi.receiptToday")}
           value={pick(kpi.receipt_today, skuType)}
-          note={`${scopeNote} · bấm để xem phiếu nhập`}
+          note={t("dashboard.kpi.receiptNote", { scope: scopeNote })}
           icon={<ImportOutlined />}
           color={CHART_COLORS.success}
           softColor={S.successSoft}
           onClick={() => navigate(ROUTES.INBOUND)}
-          drillLabel="Mở danh sách phiếu nhập"
+          drillLabel={t("dashboard.kpi.receiptDrill")}
         />
         <KpiCard
-          label="Xuất hôm nay"
+          label={t("dashboard.kpi.issueToday")}
           value={pick(kpi.issue_today, skuType)}
-          note={`${scopeNote} · bấm để xem phiếu xuất`}
+          note={t("dashboard.kpi.issueNote", { scope: scopeNote })}
           icon={<ExportOutlined />}
           color={CHART_COLORS.warning}
           softColor={S.warningSoft}
           onClick={() => navigate(ROUTES.OUTBOUND)}
-          drillLabel="Mở danh sách phiếu xuất"
+          drillLabel={t("dashboard.kpi.issueDrill")}
         />
         <KpiCard
-          label="Đã nhập tháng này"
+          label={t("dashboard.kpi.receiptMonth")}
           value={pick(kpi.receipt_month, skuType)}
-          note={`${scopeNote} · bấm để xem phiếu nhập`}
+          note={t("dashboard.kpi.receiptNote", { scope: scopeNote })}
           icon={<ImportOutlined />}
           color={CHART_COLORS.successDeep}
           softColor={S.successSoft}
           onClick={() => navigate(ROUTES.INBOUND)}
-          drillLabel="Mở danh sách phiếu nhập"
+          drillLabel={t("dashboard.kpi.receiptDrill")}
         />
         <KpiCard
-          label="Đã xuất tháng này"
+          label={t("dashboard.kpi.issueMonth")}
           value={pick(kpi.issue_month, skuType)}
-          note={`${scopeNote} · bấm để xem phiếu xuất`}
+          note={t("dashboard.kpi.issueNote", { scope: scopeNote })}
           icon={<ExportOutlined />}
           color={CHART_COLORS.warningDeep}
           softColor={S.warningSoft}
           onClick={() => navigate(ROUTES.OUTBOUND)}
-          drillLabel="Mở danh sách phiếu xuất"
+          drillLabel={t("dashboard.kpi.issueDrill")}
         />
       </Box>
     </Box>

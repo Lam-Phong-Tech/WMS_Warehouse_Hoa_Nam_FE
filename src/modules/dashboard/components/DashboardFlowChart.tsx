@@ -3,6 +3,8 @@ import { Box, SEMANTIC_LIGHT as S, TYPOGRAPHY } from "@/shared/ui";
 import { BarChart } from "@/shared/components/charts/BarChart";
 import { LineChart } from "@/shared/components/charts/LineChart";
 import { CHART_COLORS } from "@/shared/components/charts/chart-theme";
+import { useT } from "@/shared/i18n/useT";
+import type { MessageKey } from "@/shared/i18n/messages";
 import type { DashboardFlowPoint } from "../types";
 import {
   bucketSeries,
@@ -17,25 +19,29 @@ import { formatNumber } from "./dashboard-styles";
 const SERIES_META = [
   {
     key: "receipt_product",
-    name: "Nhập sản phẩm",
+    nameKey: "dashboard.flowChart.receiptProduct",
     color: CHART_COLORS.success,
   },
   {
     key: "receipt_component",
-    name: "Nhập linh kiện",
+    nameKey: "dashboard.flowChart.receiptComponent",
     color: CHART_COLORS.successDeep,
   },
   {
     key: "issue_product",
-    name: "Xuất sản phẩm",
+    nameKey: "dashboard.flowChart.issueProduct",
     color: CHART_COLORS.warning,
   },
   {
     key: "issue_component",
-    name: "Xuất linh kiện bảo hành",
+    nameKey: "dashboard.flowChart.issueComponent",
     color: CHART_COLORS.warningDeep,
   },
-] as const;
+] as const satisfies ReadonlyArray<{
+  key: string;
+  nameKey: MessageKey;
+  color: string;
+}>;
 
 export function DashboardFlowChart({
   points,
@@ -48,22 +54,28 @@ export function DashboardFlowChart({
   onPeriodChange: (next: FlowPeriod) => void;
   loading: boolean;
 }) {
+  const t = useT();
   const buckets = useMemo(
     () =>
-      bucketSeries(points, period, (accumulated, next) => ({
-        date: accumulated.date,
-        receipt_product: accumulated.receipt_product + next.receipt_product,
-        receipt_component:
-          accumulated.receipt_component + next.receipt_component,
-        issue_product: accumulated.issue_product + next.issue_product,
-        issue_component: accumulated.issue_component + next.issue_component,
-      })),
-    [points, period],
+      bucketSeries(
+        points,
+        period,
+        (accumulated, next) => ({
+          date: accumulated.date,
+          receipt_product: accumulated.receipt_product + next.receipt_product,
+          receipt_component:
+            accumulated.receipt_component + next.receipt_component,
+          issue_product: accumulated.issue_product + next.issue_product,
+          issue_component: accumulated.issue_component + next.issue_component,
+        }),
+        t,
+      ),
+    [points, period, t],
   );
 
   const categories = buckets.map((bucket) => bucket.label);
   const series = SERIES_META.map((meta) => ({
-    name: meta.name,
+    name: t(meta.nameKey),
     color: meta.color,
     data: buckets.map((bucket) => bucket.point[meta.key]),
   }));
@@ -73,24 +85,29 @@ export function DashboardFlowChart({
   );
 
   // Nhãn bằng lời cho screen-reader: tổng từng chuỗi, không đọc nổi từng cột.
-  const ariaLabel = `Biểu đồ nhập xuất theo thời gian: ${series
-    .map(
-      (item) =>
-        `${item.name} ${formatNumber(item.data.reduce((sum, value) => sum + value, 0))}`,
-    )
-    .join("; ")}`;
+  const ariaLabel = t("dashboard.flowChart.ariaLabel", {
+    summary: series
+      .map(
+        (item) =>
+          `${item.name} ${formatNumber(item.data.reduce((sum, value) => sum + value, 0))}`,
+      )
+      .join("; "),
+  });
 
   return (
     <ChartCard
       fullWidth
-      title="Nhập – Xuất theo thời gian"
-      description="So sánh lượng nhập sản phẩm, nhập linh kiện, xuất sản phẩm và xuất linh kiện bảo hành."
+      title={t("dashboard.flowChart.title")}
+      description={t("dashboard.flowChart.description")}
       toggle={
         <SegmentedToggle
-          options={FLOW_PERIOD_OPTIONS}
+          options={FLOW_PERIOD_OPTIONS.map((option) => ({
+            value: option.value,
+            label: t(option.labelKey),
+          }))}
           value={period}
           onChange={onPeriodChange}
-          label="Chọn kỳ xem biểu đồ nhập xuất"
+          label={t("dashboard.flowChart.toggleLabel")}
         />
       }
     >
@@ -103,7 +120,7 @@ export function DashboardFlowChart({
             color: S.textMedium,
           }}
         >
-          Đang tải số liệu…
+          {t("common.loadingData")}
         </Box>
       ) : hasData ? (
         <Box role="img" aria-label={ariaLabel}>
@@ -132,7 +149,7 @@ export function DashboardFlowChart({
             color: S.textMedium,
           }}
         >
-          Kỳ này chưa phát sinh nhập hoặc xuất.
+          {t("dashboard.flowChart.empty")}
         </Box>
       )}
     </ChartCard>

@@ -14,6 +14,7 @@ import { useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { SideNav } from "@/app/layouts/SideNav";
 import { UserMenu } from "@/app/layouts/UserMenu";
+import { LanguageSwitcher } from "@/app/layouts/LanguageSwitcher";
 import { resolveScreenMeta, getBreadcrumbTrail } from "@/app/layouts/nav-data";
 import { useMe } from "@/modules/auth/hooks/use-me";
 import { useNotificationSocket } from "@/modules/notifications/hooks/useNotificationSocket";
@@ -35,6 +36,8 @@ import {
   UiTopbar,
 } from "@/shared/ui";
 import { useAuthStore } from "@/shared/store/auth.store";
+import { useNavLabel } from "@/shared/i18n/nav-labels";
+import { useT } from "@/shared/i18n/useT";
 import { useNavigate } from "react-router-dom";
 
 const SIDEBAR_COLLAPSED_STORAGE_KEY = "hn-wms-sidebar-collapsed";
@@ -50,6 +53,8 @@ function readStoredSidebarCollapsed() {
 export function MainLayout() {
   const location = useLocation();
   const navigate = useNavigate();
+  const navLabel = useNavLabel();
+  const t = useT();
   // <lg (980): sidebar chuyển sang Drawer overlay + hamburger ở topbar
   // (hợp đồng responsive 360/768/1280 của SRS — không bóp 2 cột trên mobile).
   const isDesktop = useMediaQuery((theme) => theme.breakpoints.up("lg"));
@@ -124,7 +129,7 @@ export function MainLayout() {
               >
                 {!isDesktop ? (
                   <UiIconButton
-                    aria-label="Mở menu"
+                    aria-label={t("topbar.openMenu")}
                     data-testid="mobile-nav-toggle"
                     onClick={() => setMobileNavOpen(true)}
                   >
@@ -144,7 +149,7 @@ export function MainLayout() {
                       textOverflow: "ellipsis",
                     }}
                   >
-                    {meta.title}
+                    {navLabel(meta.title)}
                   </Box>
                   <Box
                     component="p"
@@ -171,6 +176,7 @@ export function MainLayout() {
                   minWidth: 0,
                 }}
               >
+                <LanguageSwitcher />
                 <NotificationBell />
                 {/* Mobile: chỉ avatar — tên dài không co trong flex row
                     (min-width:auto) từng đẩy topbar tràn ngang viewport hẹp. */}
@@ -197,7 +203,7 @@ export function MainLayout() {
         <Box sx={{ padding: `${SPACING.xl}px`, display: "grid", gap: 2 }}>
           <UiBreadcrumb
             items={trail.map((entry) => ({
-              label: entry.label,
+              label: navLabel(entry.label),
               onClick: entry.path ? () => navigate(entry.path!) : undefined,
             }))}
           />

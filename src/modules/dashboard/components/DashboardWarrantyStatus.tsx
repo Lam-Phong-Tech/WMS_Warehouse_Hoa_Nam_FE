@@ -9,6 +9,7 @@ import { DonutChart } from "@/shared/components/charts/DonutChart";
 import { WarningOutlined } from "@/shared/components/icons";
 import { businessLabel } from "@/shared/constants/business-labels";
 import { WARRANTY_STATUS_LABELS } from "@/modules/warranty/constants";
+import { useT } from "@/shared/i18n/useT";
 import type { DashboardOverview } from "../types";
 import { ChartCard } from "./dashboard-ui";
 import { formatNumber } from "./dashboard-styles";
@@ -33,6 +34,7 @@ export function DashboardWarrantyStatus({
   loading: boolean;
   onShowOverdue: () => void;
 }) {
+  const t = useT();
   const entries = Object.entries(data.warranty.by_status)
     .filter(([, count]) => count > 0)
     .sort(([a], [b]) => {
@@ -48,8 +50,8 @@ export function DashboardWarrantyStatus({
 
   return (
     <ChartCard
-      title="Tình trạng bảo hành"
-      description="Số ca theo từng trạng thái tính đến thời điểm hiện tại."
+      title={t("dashboard.warrantyStatus.title")}
+      description={t("dashboard.warrantyStatus.description")}
     >
       {loading ? (
         <Box
@@ -60,7 +62,7 @@ export function DashboardWarrantyStatus({
             color: S.textMedium,
           }}
         >
-          Đang tải số liệu…
+          {t("common.loadingData")}
         </Box>
       ) : entries.length === 0 ? (
         <Box
@@ -71,24 +73,26 @@ export function DashboardWarrantyStatus({
             color: S.textMedium,
           }}
         >
-          Chưa có ca bảo hành.
+          {t("dashboard.warrantyStatus.empty")}
         </Box>
       ) : (
         <Box
           role="img"
-          aria-label={`Biểu đồ tình trạng bảo hành: ${entries
-            .map(
-              ([status, count]) =>
-                `${businessLabel(WARRANTY_STATUS_LABELS, status)} ${formatNumber(count)}`,
-            )
-            .join("; ")}`}
+          aria-label={t("dashboard.warrantyStatus.ariaLabel", {
+            summary: entries
+              .map(
+                ([status, count]) =>
+                  `${businessLabel(WARRANTY_STATUS_LABELS, status)} ${formatNumber(count)}`,
+              )
+              .join("; "),
+          })}
         >
           <DonutChart
             items={entries.map(([status, count]) => ({
               label: businessLabel(WARRANTY_STATUS_LABELS, status),
               value: count,
             }))}
-            centerLabel="Tổng ca"
+            centerLabel={t("dashboard.warrantyStatus.centerLabel")}
             valueFormatter={formatNumber}
           />
         </Box>
@@ -128,10 +132,12 @@ export function DashboardWarrantyStatus({
                 color: overdue > 0 ? S.errorText : S.textHigh,
               }}
             >
-              {formatNumber(overdue)} ca quá hạn
+              {t("dashboard.warrantyStatus.overdueCount", {
+                count: formatNumber(overdue),
+              })}
             </Box>
             <Box sx={{ fontSize: 12, color: S.textMedium }}>
-              Đã qua ngày dự kiến hoàn thành nhưng chưa xử lý xong.
+              {t("dashboard.warrantyStatus.overdueNote")}
             </Box>
           </Box>
         </Stack>
@@ -141,7 +147,7 @@ export function DashboardWarrantyStatus({
           disabled={overdue === 0}
           onClick={onShowOverdue}
         >
-          Xem chi tiết
+          {t("common.viewDetail")}
         </UiButton>
       </Stack>
     </ChartCard>

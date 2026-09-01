@@ -32,6 +32,8 @@ import {
   type NavItemData,
 } from "@/app/layouts/nav-data";
 import { useAuthStore } from "@/shared/store/auth.store";
+import { useNavLabel } from "@/shared/i18n/nav-labels";
+import { useT } from "@/shared/i18n/useT";
 
 const NAV = COMPONENT_TOKENS.nav;
 const C = NAV.color;
@@ -197,6 +199,8 @@ export function SideNav({
 }: SideNavProps) {
   const location = useLocation();
   const navigate = useNavigate();
+  const navLabel = useNavLabel();
+  const t = useT();
   const permissionCodes = useAuthStore((state) => state.permissionCodes);
   const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
   const requestedScreen = new URLSearchParams(location.search).get("screen");
@@ -277,7 +281,11 @@ export function SideNav({
     if (!item) return null;
     const active = isItemActive(item);
     return (
-      <NavRowTooltip key={group.name} enabled={collapsed} title={item.label}>
+      <NavRowTooltip
+        key={group.name}
+        enabled={collapsed}
+        title={navLabel(item.label)}
+      >
         <Box
           component="button"
           type="button"
@@ -296,7 +304,7 @@ export function SideNav({
           </Box>
           {!collapsed ? (
             <Box component="span" sx={labelSx}>
-              {item.label}
+              {navLabel(item.label)}
             </Box>
           ) : null}
         </Box>
@@ -312,7 +320,7 @@ export function SideNav({
       <Box
         component="section"
         key={group.name}
-        aria-label={group.name}
+        aria-label={navLabel(group.name)}
         sx={{
           // Rail: gạch 22px tách cụm ngay trên nhóm (demo: reports/system).
           ...(collapsed && group.railDivider
@@ -334,7 +342,7 @@ export function SideNav({
             : null),
         }}
       >
-        <NavRowTooltip enabled={collapsed} title={group.name}>
+        <NavRowTooltip enabled={collapsed} title={navLabel(group.name)}>
           <Box
             component="button"
             type="button"
@@ -353,7 +361,7 @@ export function SideNav({
             {!collapsed ? (
               <>
                 <Box component="span" sx={labelSx}>
-                  {group.name}
+                  {navLabel(group.name)}
                 </Box>
                 <Box
                   component="span"
@@ -409,7 +417,7 @@ export function SideNav({
                   sx={childRowSx(active)}
                 >
                   <Box component="span" sx={labelSx}>
-                    {item.label}
+                    {navLabel(item.label)}
                   </Box>
                 </Box>
               );
@@ -454,9 +462,7 @@ export function SideNav({
             component="button"
             type="button"
             className="hn-mvp-logo"
-            aria-label={
-              collapsed ? "Mở rộng thanh điều hướng" : "Biểu trưng Hoa Nam WMS"
-            }
+            aria-label={collapsed ? t("nav.expand") : t("nav.brand")}
             onClick={() => {
               if (collapsed) onExpand?.();
             }}
@@ -514,7 +520,7 @@ export function SideNav({
               type="button"
               className="hn-mvp-aside-toggle"
               onClick={onToggle}
-              aria-label="Thu gọn thanh điều hướng"
+              aria-label={t("nav.collapse")}
               aria-pressed={false}
               sx={{
                 display: "grid",
@@ -546,7 +552,7 @@ export function SideNav({
       <Box
         component="nav"
         data-testid="primary-navigation"
-        aria-label="Điều hướng chính"
+        aria-label={t("nav.primary")}
         sx={{
           padding: `0 ${collapsed ? NAV.railPaddingX : NAV.paddingX}px ${NAV.paddingBottom}px`,
         }}
@@ -560,7 +566,9 @@ export function SideNav({
 
       {/* Thông báo cho trình đọc màn hình (demo: .hnw-live) */}
       <Box component="p" aria-live="polite" sx={liveRegionSx}>
-        {activeLabel ? `Đang chọn: ${activeLabel}` : ""}
+        {activeLabel
+          ? t("nav.currentlySelected", { label: navLabel(activeLabel) })
+          : ""}
       </Box>
     </Box>
   );

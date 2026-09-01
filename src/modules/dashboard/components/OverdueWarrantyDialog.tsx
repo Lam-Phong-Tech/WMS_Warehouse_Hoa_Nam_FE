@@ -3,6 +3,7 @@ import { ResponsiveDataTable } from "@/shared/components/data-display/Responsive
 import { businessLabel } from "@/shared/constants/business-labels";
 import { WARRANTY_STATUS_LABELS } from "@/modules/warranty/constants";
 import { formatDate } from "@/shared/utils/format-date";
+import { useT } from "@/shared/i18n/useT";
 import type { DashboardOverdueCase } from "../types";
 import { CAPTION_SX, formatNumber } from "./dashboard-styles";
 import { EMPTY_TEXT } from "@/shared/constants/display";
@@ -19,63 +20,68 @@ export function OverdueWarrantyDialog({
   /** Tổng THẬT từ BE — `cases` có trần 50 nên length của nó không phải tổng. */
   total: number;
 }) {
+  const t = useT();
   return (
     <UiDialog
       open={open}
       onClose={onClose}
       maxWidth="md"
-      title="Ca bảo hành quá hạn"
+      title={t("dashboard.overdueDialog.title")}
       actions={
         <UiButton appearance="outlined" onClick={onClose}>
-          Đóng
+          {t("common.close")}
         </UiButton>
       }
     >
       <Box sx={{ ...CAPTION_SX, mb: 1.5 }}>
-        Ca có ngày dự kiến hoàn thành đã qua nhưng chưa kết thúc xử lý. Tổng{" "}
+        {t("dashboard.overdueDialog.introPrefix")}{" "}
         <Box component="span" sx={{ fontWeight: 700, color: S.errorText }}>
           {formatNumber(total)}
         </Box>{" "}
-        ca
+        {t("dashboard.overdueDialog.introSuffixCase")}
         {total > cases.length
-          ? ` — đang hiển thị ${cases.length} ca cũ hạn nhất.`
+          ? t("dashboard.overdueDialog.introTruncated", {
+              count: cases.length,
+            })
           : "."}
       </Box>
       <ResponsiveDataTable
         rows={cases}
         rowKey={(row) => row.warranty_case_code}
-        emptyText="Không có ca bảo hành nào quá hạn."
+        emptyText={t("dashboard.overdueDialog.empty")}
         columns={[
           {
             key: "code",
-            header: "Mã ca",
+            header: t("dashboard.overdueDialog.columnCode"),
             render: (row) => row.warranty_case_code,
           },
           {
             key: "customer",
-            header: "Khách hàng",
+            header: t("dashboard.overdueDialog.columnCustomer"),
             render: (row) => row.customer_name ?? EMPTY_TEXT,
           },
           {
             key: "status",
-            header: "Trạng thái",
+            header: t("dashboard.overdueDialog.columnStatus"),
             render: (row) => businessLabel(WARRANTY_STATUS_LABELS, row.status),
           },
           {
             key: "due",
-            header: "Hạn dự kiến",
+            header: t("dashboard.overdueDialog.columnDue"),
             render: (row) => formatDate(row.estimated_completion_date),
           },
           {
             key: "overdue",
-            header: "Quá hạn",
+            header: t("dashboard.overdueDialog.columnOverdue"),
             align: "right",
             render: (row) => (
               <Box
                 component="span"
                 sx={{ color: S.errorText, fontWeight: 700 }}
               >
-                {row.days_overdue} ngày
+                {t("dashboard.overdueDialog.daysOverdue", {
+                  days: row.days_overdue,
+                })}
               </Box>
             ),
           },

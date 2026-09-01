@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Box, SEMANTIC_LIGHT as S, TYPOGRAPHY } from "@/shared/ui";
+import { useT } from "@/shared/i18n/useT";
+import type { MessageKey } from "@/shared/i18n/messages";
 import type { DashboardOverview, DashboardTopSku } from "../types";
 import { SegmentedToggle } from "./dashboard-ui";
 import {
@@ -13,11 +15,11 @@ type WarrantyWindow = "today" | "week" | "month";
 
 const WARRANTY_WINDOW_OPTIONS: ReadonlyArray<{
   value: WarrantyWindow;
-  label: string;
+  labelKey: MessageKey;
 }> = [
-  { value: "today", label: "Hôm nay" },
-  { value: "week", label: "Tuần này" },
-  { value: "month", label: "Tháng này" },
+  { value: "today", labelKey: "dashboard.period.today" },
+  { value: "week", labelKey: "dashboard.period.week" },
+  { value: "month", labelKey: "dashboard.period.month" },
 ];
 
 function SkuHighlightCard({
@@ -33,6 +35,7 @@ function SkuHighlightCard({
   emptyText: string;
   tone: string;
 }) {
+  const t = useT();
   return (
     <Box sx={{ ...CARD_SX, display: "grid", gap: 0.75, minWidth: 0 }}>
       <Box component="h3" sx={{ ...SECTION_TITLE_SX, fontSize: 15 }}>
@@ -60,7 +63,9 @@ function SkuHighlightCard({
               fontWeight: 700,
             }}
           >
-            Đã xuất {formatNumber(sku.issue_qty)}
+            {t("dashboard.highlights.issuedQty", {
+              qty: formatNumber(sku.issue_qty),
+            })}
           </Box>
           <Box sx={CAPTION_SX}>{note}</Box>
         </>
@@ -81,11 +86,12 @@ function SkuHighlightCard({
 
 export function DashboardHighlights({ data }: { data: DashboardOverview }) {
   const [warrantyWindow, setWarrantyWindow] = useState<WarrantyWindow>("today");
+  const t = useT();
 
   return (
     <Box
       component="section"
-      aria-label="Bảo hành tiếp nhận và SKU nổi bật"
+      aria-label={t("dashboard.highlights.sectionLabel")}
       sx={{
         display: "grid",
         gap: 1.5,
@@ -94,13 +100,16 @@ export function DashboardHighlights({ data }: { data: DashboardOverview }) {
     >
       <Box sx={{ ...CARD_SX, display: "grid", gap: 1, minWidth: 0 }}>
         <Box component="h3" sx={{ ...SECTION_TITLE_SX, fontSize: 15 }}>
-          Số máy tiếp nhận bảo hành
+          {t("dashboard.highlights.warrantyReceived")}
         </Box>
         <SegmentedToggle
-          options={WARRANTY_WINDOW_OPTIONS}
+          options={WARRANTY_WINDOW_OPTIONS.map((option) => ({
+            value: option.value,
+            label: t(option.labelKey),
+          }))}
           value={warrantyWindow}
           onChange={setWarrantyWindow}
-          label="Chọn kỳ xem số máy tiếp nhận bảo hành"
+          label={t("dashboard.highlights.warrantyToggleLabel")}
         />
         <Box
           sx={{
@@ -111,24 +120,21 @@ export function DashboardHighlights({ data }: { data: DashboardOverview }) {
         >
           {formatNumber(data.warranty_received[warrantyWindow])}
         </Box>
-        <Box sx={CAPTION_SX}>
-          Tính theo ngày tiếp nhận. Số liệu bảo hành là toàn hệ thống, không
-          giới hạn theo kho.
-        </Box>
+        <Box sx={CAPTION_SX}>{t("dashboard.highlights.warrantyNote")}</Box>
       </Box>
 
       <SkuHighlightCard
-        title="SKU xuất nhiều nhất"
+        title={t("dashboard.highlights.bestSku")}
         sku={data.top_sku.best}
-        note="Xuất nhiều nhất trong kỳ đang xem"
-        emptyText="Kỳ này chưa phát sinh xuất hàng."
+        note={t("dashboard.highlights.bestSkuNote")}
+        emptyText={t("dashboard.highlights.skuEmpty")}
         tone={S.successText}
       />
       <SkuHighlightCard
-        title="SKU xuất ít nhất"
+        title={t("dashboard.highlights.worstSku")}
         sku={data.top_sku.worst}
-        note="Ít nhất trong số các SKU có phát sinh xuất"
-        emptyText="Kỳ này chưa phát sinh xuất hàng."
+        note={t("dashboard.highlights.worstSkuNote")}
+        emptyText={t("dashboard.highlights.skuEmpty")}
         tone={S.warningText}
       />
     </Box>

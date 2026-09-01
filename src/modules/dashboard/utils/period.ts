@@ -1,6 +1,8 @@
 import dayjs from "dayjs";
 import quarterOfYear from "dayjs/plugin/quarterOfYear";
 import isoWeek from "dayjs/plugin/isoWeek";
+import type { MessageKey } from "@/shared/i18n/messages";
+import type { TranslateFn } from "@/shared/i18n/useT";
 
 dayjs.extend(quarterOfYear);
 dayjs.extend(isoWeek);
@@ -15,17 +17,19 @@ export type FlowPeriod = "week" | "month" | "quarter" | "year";
  */
 export type TrendPeriod = FlowPeriod;
 
-export const FLOW_PERIOD_OPTIONS: Array<{ value: FlowPeriod; label: string }> =
-  [
-    { value: "week", label: "Tuần này" },
-    { value: "month", label: "Tháng này" },
-    { value: "quarter", label: "Quý này" },
-    { value: "year", label: "Năm này" },
-  ];
+export const FLOW_PERIOD_OPTIONS: Array<{
+  value: FlowPeriod;
+  labelKey: MessageKey;
+}> = [
+  { value: "week", labelKey: "dashboard.period.week" },
+  { value: "month", labelKey: "dashboard.period.month" },
+  { value: "quarter", labelKey: "dashboard.period.quarter" },
+  { value: "year", labelKey: "dashboard.period.year" },
+];
 
 export const TREND_PERIOD_OPTIONS: Array<{
   value: TrendPeriod;
-  label: string;
+  labelKey: MessageKey;
 }> = FLOW_PERIOD_OPTIONS;
 
 export function getPeriodRange(period: FlowPeriod): {
@@ -61,10 +65,23 @@ function bucketKey(date: string, grain: "day" | "isoWeek" | "month"): string {
   return dayjs(date).startOf(grain).format("YYYY-MM-DD");
 }
 
-function bucketLabel(key: string, grain: "day" | "isoWeek" | "month"): string {
+function bucketLabel(
+  key: string,
+  grain: "day" | "isoWeek" | "month",
+  t?: TranslateFn,
+): string {
   const value = dayjs(key);
-  if (grain === "month") return `Th${value.month() + 1}/${value.year()}`;
-  if (grain === "isoWeek") return `Tuần ${value.isoWeek()}`;
+  if (grain === "month") {
+    const month = value.month() + 1;
+    const year = value.year();
+    return t
+      ? t("dashboard.period.monthBucket", { month, year })
+      : `Th${month}/${year}`;
+  }
+  if (grain === "isoWeek") {
+    const index = value.isoWeek();
+    return t ? t("dashboard.period.weekBucket", { index }) : `Tuần ${index}`;
+  }
   return value.format("DD/MM");
 }
 
@@ -77,6 +94,8 @@ export function bucketSeries<T extends Dated>(
   points: T[],
   period: FlowPeriod,
   reduce: (accumulated: T, next: T) => T,
+  /** Bỏ trống thì nhãn bucket giữ nguyên tiếng Việt (dùng cho test/util thuần). */
+  t?: TranslateFn,
 ): Array<{ label: string; point: T }> {
   const grain = GRAIN[period];
   const buckets = new Map<string, T>();
@@ -87,7 +106,7 @@ export function bucketSeries<T extends Dated>(
   }
   return [...buckets.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([key, point]) => ({ label: bucketLabel(key, grain), point }));
+    .map(([key, point]) => ({ label: bucketLabel(key, grain, t), point }));
 }
 
 /** Kỳ "tuần" vẽ cột nhóm; từ "tháng" trở đi chuyển sang đường (spec mục 1). */

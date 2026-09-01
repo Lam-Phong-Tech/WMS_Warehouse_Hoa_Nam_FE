@@ -10,6 +10,8 @@ import {
   TYPOGRAPHY,
 } from "@/shared/ui";
 import { ROUTES } from "@/shared/constants/routes";
+import { useT } from "@/shared/i18n/useT";
+import type { MessageKey } from "@/shared/i18n/messages";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { ActionButton } from "@/shared/components/actions";
 import { formatDate } from "@/shared/utils/format-date";
@@ -37,49 +39,55 @@ import {
   SECTION_TITLE_SX,
 } from "../components/dashboard-styles";
 
-type FlowNode = { label: string; route?: string };
-type FlowLane = { label: string; nodes: FlowNode[] };
+type FlowNode = { labelKey: MessageKey; route?: string };
+type FlowLane = { labelKey: MessageKey; nodes: FlowNode[] };
 
 const FLOW_LANES: FlowLane[] = [
   {
-    label: "Nhập kho",
+    labelKey: "dashboard.workflow.laneInbound",
     nodes: [
-      { label: "Danh sách phiếu nhập", route: ROUTES.INBOUND },
-      { label: "Tạo phiếu nháp", route: ROUTES.INBOUND },
-      { label: "Quét hàng", route: ROUTES.INBOUND },
-      { label: "Ghi nhận nhập kho", route: ROUTES.INBOUND },
-      { label: "Linh kiện chờ xếp khay", route: ROUTES.PUTAWAY },
-      { label: "Xếp vị trí", route: ROUTES.PUTAWAY },
+      { labelKey: "dashboard.workflow.receiptList", route: ROUTES.INBOUND },
+      { labelKey: "dashboard.workflow.createDraft", route: ROUTES.INBOUND },
+      { labelKey: "dashboard.workflow.scanGoods", route: ROUTES.INBOUND },
+      { labelKey: "dashboard.workflow.postReceipt", route: ROUTES.INBOUND },
+      {
+        labelKey: "dashboard.workflow.componentsAwaitingTray",
+        route: ROUTES.PUTAWAY,
+      },
+      { labelKey: "dashboard.workflow.putaway", route: ROUTES.PUTAWAY },
     ],
   },
   {
-    label: "Xuất kho",
+    labelKey: "dashboard.workflow.laneOutbound",
     nodes: [
-      { label: "Phiếu yêu cầu xuất", route: ROUTES.OUTBOUND },
-      { label: "Nhập từ Excel / nhập tay", route: ROUTES.OUTBOUND },
-      { label: "Danh sách phiếu xuất", route: ROUTES.OUTBOUND },
-      { label: "Chi tiết phiếu xuất", route: ROUTES.OUTBOUND },
-      { label: "Quét đối chiếu", route: ROUTES.OUTBOUND },
-      { label: "In nhãn", route: ROUTES.OUTBOUND },
-      { label: "Gắn RFID / ghi nhận xuất", route: ROUTES.OUTBOUND },
+      { labelKey: "dashboard.workflow.issueRequest", route: ROUTES.OUTBOUND },
+      { labelKey: "dashboard.workflow.importExcel", route: ROUTES.OUTBOUND },
+      { labelKey: "dashboard.workflow.issueList", route: ROUTES.OUTBOUND },
+      { labelKey: "dashboard.workflow.issueDetail", route: ROUTES.OUTBOUND },
+      { labelKey: "dashboard.workflow.scanReconcile", route: ROUTES.OUTBOUND },
+      { labelKey: "dashboard.workflow.printLabel", route: ROUTES.OUTBOUND },
+      { labelKey: "dashboard.workflow.rfidIssue", route: ROUTES.OUTBOUND },
     ],
   },
   {
-    label: "Bảo hành",
+    labelKey: "dashboard.workflow.laneWarranty",
     nodes: [
-      { label: "Danh sách bảo hành", route: ROUTES.WARRANTY },
-      { label: "Tiếp nhận bảo hành", route: ROUTES.WARRANTY },
-      { label: "Chi tiết bảo hành", route: ROUTES.WARRANTY },
-      { label: "Xuất linh kiện", route: ROUTES.WARRANTY },
+      { labelKey: "dashboard.workflow.warrantyList", route: ROUTES.WARRANTY },
+      { labelKey: "dashboard.workflow.warrantyIntake", route: ROUTES.WARRANTY },
+      { labelKey: "dashboard.workflow.warrantyDetail", route: ROUTES.WARRANTY },
+      { labelKey: "dashboard.workflow.componentIssue", route: ROUTES.WARRANTY },
     ],
   },
   {
-    label: "Kiểm soát",
+    labelKey: "dashboard.workflow.laneControl",
     nodes: [
-      { label: "Tra cứu tồn", route: ROUTES.INVENTORY },
-      { label: "Truy vết", route: ROUTES.SCAN },
-      { label: "Danh sách điều chỉnh tồn", route: ROUTES.REVERSE },
-      { label: "Tạo điều chỉnh tồn", route: ROUTES.REVERSE },
+      { labelKey: "dashboard.workflow.stockLookup", route: ROUTES.INVENTORY },
+      { labelKey: "dashboard.workflow.trace", route: ROUTES.SCAN },
+      { labelKey: "dashboard.workflow.adjustmentList", route: ROUTES.REVERSE },
+      {
+        labelKey: "dashboard.workflow.createAdjustment",
+        route: ROUTES.REVERSE,
+      },
     ],
   },
 ];
@@ -109,6 +117,7 @@ function DashboardStateAlert({
 
 export default function DashboardPage() {
   const navigate = useNavigate();
+  const t = useT();
   const permissionCodes = useAuthStore((state) => state.permissionCodes);
   const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
   const isProfileLoaded = useAuthStore((state) => state.isProfileLoaded);
@@ -176,7 +185,7 @@ export default function DashboardPage() {
       >
         <UiStatusBadge
           tone="primary"
-          label="Tổng quan vận hành"
+          label={t("dashboard.badge")}
           sx={{ mb: 1.5 }}
         />
         <Box
@@ -191,13 +200,12 @@ export default function DashboardPage() {
             color: S.textHigh,
           }}
         >
-          Tổng quan kho
+          {t("dashboard.title")}
         </Box>
         <Box
           sx={{ fontSize: TYPOGRAPHY.fontSizeSecondary, color: S.textMedium }}
         >
-          Theo dõi tồn kho, nhập xuất, bảo hành và các vấn đề cần xử lý trên
-          cùng một màn hình.
+          {t("dashboard.subtitle")}
         </Box>
         {data?.period?.from_date ? (
           <Box
@@ -208,9 +216,10 @@ export default function DashboardPage() {
               borderTop: `1px solid ${S.border}`,
             }}
           >
-            Kỳ đang xem: {formatDate(data.period.from_date)} →{" "}
-            {formatDate(data.period.to_date)}. Dữ liệu tổng hợp theo múi giờ
-            Việt Nam.
+            {t("dashboard.periodCaption", {
+              from: formatDate(data.period.from_date),
+              to: formatDate(data.period.to_date),
+            })}
           </Box>
         ) : null}
       </Box>
@@ -218,16 +227,16 @@ export default function DashboardPage() {
       {isProfileLoaded && !canViewReport ? (
         <DashboardStateAlert
           tone="warning"
-          title="Không có quyền xem báo cáo tổng quan."
-          description="Vui lòng liên hệ quản trị viên nếu bạn cần quyền truy cập."
+          title={t("dashboard.state.noPermissionTitle")}
+          description={t("dashboard.state.noPermissionDesc")}
         />
       ) : null}
 
       {canViewReport && query.isLoading ? (
         <DashboardStateAlert
           tone="info"
-          title="Đang tải số liệu tổng quan…"
-          description="Hệ thống đang tổng hợp dữ liệu vận hành."
+          title={t("dashboard.state.loadingTitle")}
+          description={t("dashboard.state.loadingDesc")}
         />
       ) : null}
 
@@ -236,15 +245,15 @@ export default function DashboardPage() {
           tone="error"
           title={
             status === 403
-              ? "Bạn không có quyền xem báo cáo tổng quan."
+              ? t("dashboard.state.errorForbidden")
               : status === 422
-                ? "Khoảng ngày đã chọn không hợp lệ."
-                : "Không tải được số liệu tổng quan."
+                ? t("dashboard.state.errorInvalidRange")
+                : t("dashboard.state.errorGeneric")
           }
           description={
             status === 401
-              ? "Phiên đăng nhập không còn hợp lệ."
-              : "Hệ thống không hiển thị dữ liệu cũ khi việc tải dữ liệu thất bại."
+              ? t("dashboard.state.errorSessionExpired")
+              : t("dashboard.state.errorNoStale")
           }
           action={
             <ActionButton
@@ -252,7 +261,7 @@ export default function DashboardPage() {
               onClick={() => query.refetch()}
               disabled={query.isFetching}
             >
-              Thử lại
+              {t("common.retry")}
             </ActionButton>
           }
         />
@@ -327,20 +336,20 @@ export default function DashboardPage() {
           id="workflow-title"
           sx={{ ...SECTION_TITLE_SX, mb: 1.5 }}
         >
-          Luồng nghiệp vụ
+          {t("dashboard.workflow.title")}
         </Box>
         <Stack spacing={1.5}>
           {FLOW_LANES.map((lane) => (
             <Stack
-              key={lane.label}
+              key={lane.labelKey}
               direction="row"
               spacing={1}
               sx={{ flexWrap: "wrap", alignItems: "center" }}
             >
-              <UiStatusBadge tone="primary" label={lane.label} />
+              <UiStatusBadge tone="primary" label={t(lane.labelKey)} />
               {lane.nodes.map((node, index) => (
                 <Stack
-                  key={`${lane.label}-${node.label}`}
+                  key={`${lane.labelKey}-${node.labelKey}`}
                   direction="row"
                   spacing={1}
                   sx={{ alignItems: "center" }}
@@ -360,7 +369,7 @@ export default function DashboardPage() {
                     onClick={() => node.route && navigate(node.route)}
                     sx={{ cursor: node.route ? "pointer" : "default" }}
                   >
-                    {node.label}
+                    {t(node.labelKey)}
                   </UiButton>
                 </Stack>
               ))}

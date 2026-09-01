@@ -3,6 +3,7 @@ import { Box, SEMANTIC_LIGHT as S, TYPOGRAPHY } from "@/shared/ui";
 import { HorizontalBarChart } from "@/shared/components/charts/HorizontalBarChart";
 import { CHART_COLORS } from "@/shared/components/charts/chart-theme";
 import { ROUTES } from "@/shared/constants/routes";
+import { useT } from "@/shared/i18n/useT";
 import type { DashboardOverview } from "../types";
 import { ChartCard } from "./dashboard-ui";
 import { CAPTION_SX, formatNumber } from "./dashboard-styles";
@@ -17,6 +18,7 @@ export function DashboardIssues({
   onShowOverdue: () => void;
 }) {
   const navigate = useNavigate();
+  const t = useT();
   const { issues } = data;
 
   // "Import lỗi" chứ không phải "Import/Scan lỗi": scan_record_events chỉ ghi kết
@@ -25,27 +27,27 @@ export function DashboardIssues({
   // không tồn tại.
   const items = [
     {
-      label: "Đối soát tồn lệch",
+      label: t("dashboard.issues.inventoryMismatch"),
       value: issues.inventory_mismatch,
       open: () => navigate(ROUTES.INVENTORY),
     },
     {
-      label: "Bảo hành quá hạn",
+      label: t("dashboard.issues.warrantyOverdue"),
       value: issues.warranty_overdue,
       open: onShowOverdue,
     },
     {
-      label: "Import lỗi",
+      label: t("dashboard.issues.importError"),
       value: issues.import_error,
       open: () => navigate(ROUTES.MASTER_DATA),
     },
     {
-      label: "In nhãn lỗi",
+      label: t("dashboard.issues.printFailed"),
       value: issues.print_failed,
       open: () => navigate(ROUTES.REPORTS_PACKING_LABEL),
     },
     {
-      label: "SKU chờ điền thông tin",
+      label: t("dashboard.issues.skuPendingInfo"),
       value: issues.sku_pending_info,
       open: () => navigate(`${ROUTES.MASTER_DATA}?filter=pending_info`),
     },
@@ -56,12 +58,11 @@ export function DashboardIssues({
   return (
     <ChartCard
       fullWidth
-      title="Vấn đề cần xử lý"
-      description="Số lượng tồn đọng tính đến thời điểm hiện tại. Nhấn vào một thanh để xem chi tiết."
+      title={t("dashboard.issues.title")}
+      description={t("dashboard.issues.description")}
       footer={
         <Box sx={{ ...CAPTION_SX, mt: 1.5 }}>
-          Số lần quét lỗi không được hệ thống ghi lại nên không nằm trong danh
-          sách này.
+          {t("dashboard.issues.footer")}
         </Box>
       }
     >
@@ -74,15 +75,17 @@ export function DashboardIssues({
             color: S.textMedium,
           }}
         >
-          Đang tải số liệu…
+          {t("common.loadingData")}
         </Box>
       ) : active.length > 0 ? (
         <Box
           sx={{ cursor: "pointer" }}
           role="img"
-          aria-label={`Biểu đồ vấn đề cần xử lý: ${active
-            .map((item) => `${item.label} ${formatNumber(item.value)}`)
-            .join("; ")}`}
+          aria-label={t("dashboard.issues.ariaLabel", {
+            summary: active
+              .map((item) => `${item.label} ${formatNumber(item.value)}`)
+              .join("; "),
+          })}
         >
           <HorizontalBarChart
             items={active.map((item) => ({
@@ -106,7 +109,7 @@ export function DashboardIssues({
             fontWeight: 700,
           }}
         >
-          Không có vấn đề nào cần xử lý.
+          {t("dashboard.issues.empty")}
         </Box>
       )}
     </ChartCard>

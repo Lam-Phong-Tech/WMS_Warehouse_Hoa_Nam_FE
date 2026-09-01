@@ -11,6 +11,7 @@ import { WarningOutlined, StockOutlined } from "@/shared/components/icons";
 import { CHART_COLORS } from "@/shared/components/charts/chart-theme";
 import { ROUTES } from "@/shared/constants/routes";
 import { EMPTY_TEXT } from "@/shared/constants/display";
+import { useT } from "@/shared/i18n/useT";
 import type { DashboardOverview } from "../types";
 import {
   CARD_SX,
@@ -59,7 +60,9 @@ function ThresholdCard({
         border: `1px solid ${S.border}`,
         cursor: interactive ? "pointer" : "default",
         transition: "border-color .15s ease, box-shadow .15s ease",
-        "&:hover": interactive ? { borderColor: color, boxShadow: S.focusRing } : undefined,
+        "&:hover": interactive
+          ? { borderColor: color, boxShadow: S.focusRing }
+          : undefined,
         "&:focus-visible": interactive
           ? { outline: "none", boxShadow: S.focusRing }
           : undefined,
@@ -106,20 +109,27 @@ function ThresholdCard({
 
 export function DashboardStockThreshold({ data }: { data: DashboardOverview }) {
   const navigate = useNavigate();
+  const t = useT();
   const threshold = data.stock_threshold;
   const available = threshold != null;
 
   const configuredNote = available
     ? threshold.configured != null
-      ? `Trên tổng ${formatNumber(threshold.configured)} SKU đã đặt định mức`
-      : "So với định mức đã đặt ở danh mục SKU"
-    : "Chưa có dữ liệu định mức từ máy chủ";
+      ? t("dashboard.threshold.configuredWithTotal", {
+          count: formatNumber(threshold.configured),
+        })
+      : t("dashboard.threshold.configuredFallback")
+    : t("dashboard.threshold.unavailable");
 
   return (
     <Box component="section" aria-labelledby="dashboard-threshold-title">
       <Box sx={{ mb: 1.5 }}>
-        <Box component="h2" id="dashboard-threshold-title" sx={SECTION_TITLE_SX}>
-          Định mức tồn kho
+        <Box
+          component="h2"
+          id="dashboard-threshold-title"
+          sx={SECTION_TITLE_SX}
+        >
+          {t("dashboard.threshold.sectionTitle")}
         </Box>
         <Box sx={{ ...CAPTION_SX, mt: 0.5 }}>{configuredNote}</Box>
       </Box>
@@ -132,18 +142,18 @@ export function DashboardStockThreshold({ data }: { data: DashboardOverview }) {
         }}
       >
         <ThresholdCard
-          label="Tồn dưới định mức"
+          label={t("dashboard.threshold.belowMin")}
           value={available ? threshold.below_min : null}
-          note="SKU có tồn khả dụng thấp hơn định mức tối thiểu — cần nhập bổ sung."
+          note={t("dashboard.threshold.belowMinNote")}
           icon={<WarningOutlined />}
           color={CHART_COLORS.danger}
           softColor={S.errorSoft}
           onClick={() => navigate(ROUTES.INVENTORY)}
         />
         <ThresholdCard
-          label="Tồn vượt định mức"
+          label={t("dashboard.threshold.aboveMax")}
           value={available ? threshold.above_max : null}
-          note="SKU có tồn khả dụng cao hơn định mức tối đa — cân nhắc giảm nhập."
+          note={t("dashboard.threshold.aboveMaxNote")}
           icon={<StockOutlined />}
           color={CHART_COLORS.warning}
           softColor={S.warningSoft}
@@ -153,10 +163,7 @@ export function DashboardStockThreshold({ data }: { data: DashboardOverview }) {
 
       {!available ? (
         <Stack sx={{ mt: 1 }}>
-          <Box sx={CAPTION_SX}>
-            Chỉ số này sẽ hiển thị khi máy chủ bổ sung dữ liệu định mức vào báo
-            cáo tổng quan. Định mức từng SKU được đặt tại màn Danh mục SKU.
-          </Box>
+          <Box sx={CAPTION_SX}>{t("dashboard.threshold.unavailableHint")}</Box>
         </Stack>
       ) : null}
     </Box>
