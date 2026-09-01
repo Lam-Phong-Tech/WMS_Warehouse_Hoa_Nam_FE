@@ -1,8 +1,9 @@
+import { useT } from "@/shared/i18n/useT";
 import { Box, UiDateRangePicker, UiSelect, UiTextField } from "@/shared/ui";
 import { ActionButton } from "@/shared/components/actions";
 import {
-  ITEM_KIND_OPTIONS,
-  PERIOD_PRESET_OPTIONS,
+  itemKindOptions,
+  periodPresetOptions,
   type ItemKind,
   type PeriodPreset,
   type SelectOption,
@@ -10,18 +11,19 @@ import {
 import type { PeriodFilterState, TimeWindow } from "./report-period";
 
 export function PeriodFilterControls({ state }: { state: PeriodFilterState }) {
+  const t = useT();
   return (
     <>
       <UiSelect
         minWidth={150}
-        aria-label="Kỳ báo cáo"
+        aria-label={t("reports.filters.periodAria")}
         value={state.preset}
         onChange={(value) => state.setPreset(value as PeriodPreset)}
-        options={PERIOD_PRESET_OPTIONS}
+        options={periodPresetOptions(t)}
       />
       <UiDateRangePicker
         value={state.range}
-        aria-label="Từ ngày đến ngày"
+        aria-label={t("reports.filters.dateRangeAria")}
         onChange={(value) => {
           if (value?.[0] && value?.[1]) state.setRange([value[0], value[1]]);
         }}
@@ -39,13 +41,14 @@ export function ItemKindFilter({
   onChange: (next: ItemKind) => void;
   minWidth?: number;
 }) {
+  const t = useT();
   return (
     <UiSelect
       minWidth={minWidth}
-      aria-label="Loại hàng"
+      aria-label={t("reports.filters.itemKindAria")}
       value={value}
       onChange={(next) => onChange(next as ItemKind)}
-      options={ITEM_KIND_OPTIONS}
+      options={itemKindOptions(t)}
     />
   );
 }
@@ -95,6 +98,7 @@ export function TimeWindowFilter({
   value: TimeWindow;
   onChange: (next: TimeWindow) => void;
 }) {
+  const t = useT();
   return (
     <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
       <UiTextField
@@ -102,7 +106,9 @@ export function TimeWindowFilter({
         sx={{ width: 132 }}
         value={value.from}
         onChange={(event) => onChange({ ...value, from: event.target.value })}
-        slotProps={{ htmlInput: { "aria-label": "Khung giờ từ" } }}
+        slotProps={{
+          htmlInput: { "aria-label": t("reports.filters.timeFromAria") },
+        }}
       />
       <Box component="span" sx={{ fontSize: 13 }}>
         →
@@ -112,7 +118,9 @@ export function TimeWindowFilter({
         sx={{ width: 132 }}
         value={value.to}
         onChange={(event) => onChange({ ...value, to: event.target.value })}
-        slotProps={{ htmlInput: { "aria-label": "Khung giờ đến" } }}
+        slotProps={{
+          htmlInput: { "aria-label": t("reports.filters.timeToAria") },
+        }}
       />
     </Box>
   );
@@ -128,6 +136,7 @@ export function ExportButtons({
   disabled?: boolean;
   onExport: (format: "xlsx" | "pdf") => void;
 }) {
+  const t = useT();
   return (
     <>
       <ActionButton
@@ -139,9 +148,9 @@ export function ExportButtons({
         loading={exporting === "xlsx"}
         disabled={Boolean(exporting) || disabled}
         onClick={() => onExport("xlsx")}
-        disabledTooltip="Bạn cần quyền xuất báo cáo và bộ lọc hợp lệ"
+        disabledTooltip={t("reports.filters.exportTooltip")}
       >
-        Xuất XLSX
+        {t("reports.filters.exportXlsx")}
       </ActionButton>
       <ActionButton
         kind="exportPdf"
@@ -152,9 +161,9 @@ export function ExportButtons({
         loading={exporting === "pdf"}
         disabled={Boolean(exporting) || disabled}
         onClick={() => onExport("pdf")}
-        disabledTooltip="Bạn cần quyền xuất báo cáo và bộ lọc hợp lệ"
+        disabledTooltip={t("reports.filters.exportTooltip")}
       >
-        Xuất PDF
+        {t("reports.filters.exportPdf")}
       </ActionButton>
     </>
   );

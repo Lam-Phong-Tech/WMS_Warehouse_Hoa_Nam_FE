@@ -1,3 +1,4 @@
+import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import { useMemo, useState } from "react";
 import { Box, UiAlert, UiSelect, UiStatusBadge } from "@/shared/ui";
 import {
@@ -10,7 +11,6 @@ import { SearchInput } from "@/shared/components/data-display/SearchInput";
 import { ResponsiveDataTable } from "@/shared/components/data-display/ResponsiveDataTable";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { ActionButton } from "@/shared/components/actions";
-import { businessLabel } from "@/shared/constants/business-labels";
 import {
   WaterfallChart,
   type WaterfallPoint,
@@ -66,9 +66,9 @@ import {
   type TimeWindow,
 } from "./report-period";
 import {
-  DIRECTION_LABELS,
+  DIRECTION_LABEL_KEYS,
   DIRECTION_TONE,
-  DOC_TYPE_LABELS,
+  DOC_TYPE_LABEL_KEYS,
   reportStatusLabel,
   stockStatusLabel,
   type StockDirection,
@@ -94,21 +94,32 @@ import {
 import { useReportExport } from "./report-export";
 
 /** Mỗi bậc waterfall ứng với đúng một movement_type để bấm vào là ra nguồn số. */
-const WATERFALL_STEPS = [
-  { key: "OPENING", label: "Tồn đầu" },
-  { key: "RECEIPT", label: "Nhập" },
-  { key: "ISSUE", label: "Xuất SP" },
-  { key: "COMPONENT_ISSUE", label: "Xuất LK bảo hành" },
+type WaterfallKey =
+  | "OPENING"
+  | "RECEIPT"
+  | "ISSUE"
+  | "COMPONENT_ISSUE"
+  | "REVERSAL"
+  | "CLOSING";
+
+const waterfallSteps = (
+  t: TranslateFn,
+): Array<{ key: WaterfallKey; label: string }> => [
+  { key: "OPENING", label: t("reports.inventoryFlow.opening") },
+  { key: "RECEIPT", label: t("reports.inventoryFlow.receipt") },
+  { key: "ISSUE", label: t("reports.inventoryFlow.issue") },
+  {
+    key: "COMPONENT_ISSUE",
+    label: t("reports.inventoryFlow.componentIssue"),
+  },
   { key: "REVERSAL", label: "Reversal" },
-  { key: "CLOSING", label: "Tồn cuối" },
-] as const;
+  { key: "CLOSING", label: t("reports.inventoryFlow.closing") },
+];
 
-type WaterfallKey = (typeof WATERFALL_STEPS)[number]["key"];
-
-const DOC_TYPE_FILTER_OPTIONS = [
-  { value: "all", label: "Tất cả chứng từ" },
-  { value: "INBOUND", label: "Nhập" },
-  { value: "OUTBOUND", label: "Xuất" },
+const docTypeFilterOptions = (t: TranslateFn) => [
+  { value: "all", label: t("reports.inventoryFlow.docAll") },
+  { value: "INBOUND", label: t("reports.inventoryFlow.docInbound") },
+  { value: "OUTBOUND", label: t("reports.inventoryFlow.docOutbound") },
   { value: "REVERSAL", label: "Reversal" },
 ];
 
@@ -138,6 +149,7 @@ type DocumentRow = Raw & {
  * không.
  */
 export default function TabInventoryFlow() {
+  const t = useT();
   const catalog = useSkuCatalog();
   const users = useUserDirectory();
 
@@ -193,40 +205,40 @@ export default function TabInventoryFlow() {
 
   const waterfallPoints: WaterfallPoint[] = [
     {
-      label: "Tồn đầu",
+      label: t("reports.inventoryFlow.opening"),
       value: totals.opening,
       kind: "total",
-      hint: "Số dư trước ngày bắt đầu kỳ",
+      hint: t("reports.inventoryFlow.hintOpening"),
     },
     {
-      label: "Nhập",
+      label: t("reports.inventoryFlow.receipt"),
       value: totals.receiptNet,
       kind: "delta",
-      hint: "Nhập thuần = nhập phát sinh − phần đã đảo",
+      hint: t("reports.inventoryFlow.hintReceipt"),
     },
     {
-      label: "Xuất SP",
+      label: t("reports.inventoryFlow.issue"),
       value: -totals.issueNet,
       kind: "delta",
-      hint: "Xuất sản phẩm thuần",
+      hint: t("reports.inventoryFlow.hintIssue"),
     },
     {
-      label: "Xuất LK bảo hành",
+      label: t("reports.inventoryFlow.componentIssue"),
       value: -totals.componentNet,
       kind: "delta",
-      hint: "Xuất linh kiện cho hồ sơ bảo hành, thuần",
+      hint: t("reports.inventoryFlow.hintComponentIssue"),
     },
     {
       label: "Reversal",
       value: totals.reversalUnlinked,
       kind: "delta",
-      hint: "Điều chỉnh chưa gắn giao dịch gốc (phần đã gắn đã trừ vào từng cột trên)",
+      hint: t("reports.inventoryFlow.hintReversal"),
     },
     {
-      label: "Tồn cuối",
+      label: t("reports.inventoryFlow.closing"),
       value: totals.closing,
       kind: "total",
-      hint: "Tồn đầu + Nhập − Xuất SP − Xuất LK + Reversal",
+      hint: t("reports.inventoryFlow.hintClosing"),
     },
   ];
 
@@ -264,7 +276,7 @@ export default function TabInventoryFlow() {
         render: (value) => text(value),
       },
       {
-        title: "Mã SKU",
+        title: t("reports.inventoryFlow.colSkuCode"),
         dataIndex: "product_code",
         width: 150,
         sorter: (a, b) =>
@@ -275,7 +287,7 @@ export default function TabInventoryFlow() {
         render: (value) => text(value),
       },
       {
-        title: "Tên SKU",
+        title: t("reports.inventoryFlow.colSkuName"),
         dataIndex: "product_name",
         sorter: (a, b) =>
           text(a.product_name, "").localeCompare(
@@ -285,13 +297,13 @@ export default function TabInventoryFlow() {
         render: (value) => text(value),
       },
       {
-        title: "Trạng thái tồn",
+        title: t("reports.inventoryFlow.colStockStatus"),
         dataIndex: "stock_status",
         width: 140,
         render: (value) => stockStatusLabel(value),
       },
       {
-        title: "Đầu kỳ",
+        title: t("reports.inventoryFlow.colOpening"),
         dataIndex: "opening",
         align: "right",
         width: 110,
@@ -300,11 +312,11 @@ export default function TabInventoryFlow() {
         render: fmt,
       },
       {
-        title: "Nhập",
+        title: t("reports.inventoryFlow.receipt"),
         key: "receipt-group",
         children: [
           {
-            title: "Tổng phát sinh",
+            title: t("reports.inventoryFlow.colGross"),
             dataIndex: "receipt_gross",
             align: "right",
             width: 120,
@@ -313,7 +325,7 @@ export default function TabInventoryFlow() {
             render: fmt,
           },
           {
-            title: "Đã đảo",
+            title: t("reports.inventoryFlow.colReversed"),
             dataIndex: "receipt_reversal",
             align: "right",
             width: 110,
@@ -322,7 +334,7 @@ export default function TabInventoryFlow() {
             render: fmt,
           },
           {
-            title: "Thuần",
+            title: t("reports.inventoryFlow.colNet"),
             dataIndex: "receipt_net",
             align: "right",
             width: 110,
@@ -333,11 +345,11 @@ export default function TabInventoryFlow() {
         ],
       },
       {
-        title: "Xuất",
+        title: t("reports.inventoryFlow.docOutbound"),
         key: "issue-group",
         children: [
           {
-            title: "Tổng phát sinh",
+            title: t("reports.inventoryFlow.colGross"),
             dataIndex: "issue_gross",
             align: "right",
             width: 120,
@@ -346,7 +358,7 @@ export default function TabInventoryFlow() {
             render: fmt,
           },
           {
-            title: "Đã đảo",
+            title: t("reports.inventoryFlow.colReversed"),
             dataIndex: "issue_reversal",
             align: "right",
             width: 110,
@@ -355,7 +367,7 @@ export default function TabInventoryFlow() {
             render: fmt,
           },
           {
-            title: "Thuần",
+            title: t("reports.inventoryFlow.colNet"),
             dataIndex: "issue_net",
             align: "right",
             width: 110,
@@ -366,11 +378,11 @@ export default function TabInventoryFlow() {
         ],
       },
       {
-        title: "Xuất linh kiện",
+        title: t("reports.inventoryFlow.colComponentIssue"),
         key: "component-issue-group",
         children: [
           {
-            title: "Tổng phát sinh",
+            title: t("reports.inventoryFlow.colGross"),
             dataIndex: "component_issue_gross",
             align: "right",
             width: 120,
@@ -380,7 +392,7 @@ export default function TabInventoryFlow() {
             render: fmt,
           },
           {
-            title: "Đã đảo",
+            title: t("reports.inventoryFlow.colReversed"),
             dataIndex: "component_issue_reversal",
             align: "right",
             width: 110,
@@ -390,7 +402,7 @@ export default function TabInventoryFlow() {
             render: fmt,
           },
           {
-            title: "Thuần",
+            title: t("reports.inventoryFlow.colNet"),
             dataIndex: "component_issue_net",
             align: "right",
             width: 110,
@@ -402,7 +414,7 @@ export default function TabInventoryFlow() {
         ],
       },
       {
-        title: "Điều chỉnh thuần",
+        title: t("reports.inventoryFlow.colNetReversal"),
         dataIndex: "reversal_net",
         align: "right",
         width: 150,
@@ -411,7 +423,7 @@ export default function TabInventoryFlow() {
         render: fmt,
       },
       {
-        title: "Cuối kỳ",
+        title: t("reports.inventoryFlow.colClosing"),
         dataIndex: "closing",
         align: "right",
         width: 120,
@@ -420,7 +432,7 @@ export default function TabInventoryFlow() {
         render: fmt,
       },
     ],
-    [xntPagination.page, xntPagination.perPage],
+    [xntPagination.page, xntPagination.perPage, t],
   );
 
   const {
@@ -489,17 +501,17 @@ export default function TabInventoryFlow() {
 
   const flowSeries = [
     {
-      name: "Nhập",
+      name: t("reports.inventoryFlow.receipt"),
       data: daily.receipt,
       color: CHART_COLORS.success,
     },
     {
-      name: "Xuất sản phẩm",
+      name: t("reports.inventoryFlow.seriesIssueProduct"),
       data: daily.issue,
       color: CHART_COLORS.warning,
     },
     {
-      name: "Xuất linh kiện bảo hành",
+      name: t("reports.inventoryFlow.seriesComponentIssue"),
       data: daily.component,
       color: CHART_COLORS.violet,
     },
@@ -518,10 +530,13 @@ export default function TabInventoryFlow() {
 
   const dayDrillRows = useMemo(() => {
     if (!dayDrill) return [];
+    // Khoá là NHÃN chuỗi đang hiển thị trên chart, nên phải dựng qua `t` —
+    // chart đổi ngôn ngữ thì bảng tra này phải đổi theo, nếu không bấm vào một
+    // series ở chế độ EN sẽ không lọc ra dòng nào.
     const typeOfSeries: Record<string, string | null> = {
-      Nhập: "RECEIPT",
-      "Xuất sản phẩm": "ISSUE",
-      "Xuất linh kiện bảo hành": "COMPONENT_ISSUE",
+      [t("reports.inventoryFlow.receipt")]: "RECEIPT",
+      [t("reports.inventoryFlow.seriesIssueProduct")]: "ISSUE",
+      [t("reports.inventoryFlow.seriesComponentIssue")]: "COMPONENT_ISSUE",
       Reversal: "REVERSAL",
     };
     const wanted = typeOfSeries[dayDrill.seriesName] ?? null;
@@ -529,7 +544,7 @@ export default function TabInventoryFlow() {
       if (dayKey(row.occurred_at) !== dayDrill.day) return false;
       return wanted === null || text(row.movement_type) === wanted;
     });
-  }, [dayDrill, ledgerRows]);
+  }, [dayDrill, ledgerRows, t]);
 
   const chartsLoading = xnt.isLoading || ledger.isLoading || catalog.loading;
   const chartsError = xnt.error ?? ledger.error;
@@ -692,7 +707,7 @@ export default function TabInventoryFlow() {
     () => [
       sttColumn(docPagination.page, docPagination.perPage),
       {
-        title: "Mã phiếu",
+        title: t("reports.inventoryFlow.colDocumentNo"),
         dataIndex: "document_no",
         width: 170,
         fixed: "left",
@@ -701,15 +716,18 @@ export default function TabInventoryFlow() {
         render: (value) => <Box sx={{ fontWeight: 700 }}>{text(value)}</Box>,
       },
       {
-        title: "Loại chứng từ",
+        title: t("reports.inventoryFlow.colDocumentType"),
         dataIndex: "doc_type",
         width: 150,
         sorter: (a, b) =>
           text(a.doc_type, "").localeCompare(text(b.doc_type, ""), "vi"),
-        render: (value) => businessLabel(DOC_TYPE_LABELS, text(value, "")),
+        render: (value) => {
+          const key = DOC_TYPE_LABEL_KEYS[text(value, "")];
+          return key ? t(key) : text(value, "");
+        },
       },
       {
-        title: "Tăng/Giảm",
+        title: t("reports.inventoryFlow.colDelta"),
         key: "__direction",
         width: 120,
         render: (_value, row) => {
@@ -723,14 +741,14 @@ export default function TabInventoryFlow() {
               <UiStatusBadge
                 size="small"
                 tone={DIRECTION_TONE[direction]}
-                label={DIRECTION_LABELS[direction]}
+                label={t(DIRECTION_LABEL_KEYS[direction])}
               />
             </Box>
           );
         },
       },
       {
-        title: "Trạng thái",
+        title: t("reports.inventoryFlow.colStatus"),
         dataIndex: "status",
         width: 140,
         sorter: (a, b) =>
@@ -742,7 +760,7 @@ export default function TabInventoryFlow() {
       {
         // Mục 6: đánh dấu rõ dòng nào làm đổi tồn thực tế.
         // Chỉ phiếu POSTED mới ghi vào Inventory Movement; phiếu nháp/hủy không tính.
-        title: "Tác động tồn",
+        title: t("reports.inventoryFlow.colStockImpact"),
         key: "__stock_effect",
         width: 150,
         render: (_value, row) => {
@@ -757,14 +775,18 @@ export default function TabInventoryFlow() {
               <UiStatusBadge
                 size="small"
                 tone={posted ? "success" : "neutral"}
-                label={posted ? "Đã ghi nhận tồn" : "Chưa đổi tồn"}
+                label={
+                  posted
+                    ? t("reports.inventoryFlow.posted")
+                    : t("reports.inventoryFlow.notPosted")
+                }
               />
             </Box>
           );
         },
       },
       {
-        title: "Ngày tạo",
+        title: t("reports.inventoryFlow.colCreatedAt"),
         dataIndex: "document_date",
         width: 130,
         sortType: "text",
@@ -773,7 +795,7 @@ export default function TabInventoryFlow() {
         render: (value) => fmtDate(value),
       },
       {
-        title: "Ngày POSTED",
+        title: t("reports.inventoryFlow.colPostedAt"),
         dataIndex: "posted_at",
         width: 165,
         sortType: "text",
@@ -782,7 +804,7 @@ export default function TabInventoryFlow() {
         render: (value) => (value ? fmtDateTime(value) : EMPTY_TEXT),
       },
       {
-        title: "Số lượng / SKU",
+        title: t("reports.inventoryFlow.colQtySku"),
         key: "__qty",
         width: 150,
         align: "right",
@@ -794,14 +816,14 @@ export default function TabInventoryFlow() {
         },
       },
       {
-        title: "Nguồn hàng / Người nhận",
+        title: t("reports.inventoryFlow.colSourceRecipient"),
         dataIndex: "counterpart",
         sorter: (a, b) =>
           text(a.counterpart, "").localeCompare(text(b.counterpart, ""), "vi"),
         render: (value) => text(value),
       },
       {
-        title: "Người thực hiện",
+        title: t("reports.inventoryFlow.colActor"),
         key: "__actor",
         width: 170,
         hideOnMobile: true,
@@ -813,7 +835,7 @@ export default function TabInventoryFlow() {
         render: (_value, row) => text((row as DocumentRow).__actor),
       },
       {
-        title: "Phòng ban",
+        title: t("reports.inventoryFlow.colDepartment"),
         key: "__department",
         width: 170,
         hideOnMobile: true,
@@ -827,19 +849,19 @@ export default function TabInventoryFlow() {
         render: (value) => text(value),
       },
       {
-        title: "Người ghi nhận",
+        title: t("reports.inventoryFlow.colRecordedBy"),
         dataIndex: "posted_by_name",
         detailOnly: true,
         render: (value) => text(value),
       },
       {
-        title: "Ghi chú",
+        title: t("reports.inventoryFlow.colNote"),
         dataIndex: "note",
         detailOnly: true,
         render: (value) => text(value),
       },
     ],
-    [docPagination.page, docPagination.perPage],
+    [docPagination.page, docPagination.perPage, t],
   );
 
   const tableColumns = useMemo(
@@ -858,13 +880,13 @@ export default function TabInventoryFlow() {
     <Box data-testid="rpt-tab-inventory-flow">
       <ReportSectionHeading
         id="rpt-tab1-heading"
-        title="Báo cáo Nhập – Xuất – Tồn & Lịch sử chứng từ"
-        description="Cân đối tồn theo kỳ, biến động theo ngày và toàn bộ chứng từ phát sinh."
+        title={t("reports.inventoryFlow.title")}
+        description={t("reports.inventoryFlow.description")}
       />
 
       <FilterBar
-        label="Bộ lọc chung cho các biểu đồ bên dưới"
-        hint={`Kỳ đang xem: ${chartPeriod.label}`}
+        label={t("reports.inventoryFlow.chartFilterLabel")}
+        hint={t("reports.period.viewing", { label: chartPeriod.label })}
       >
         <PeriodFilterControls state={chartPeriod} />
         <ItemKindFilter value={chartKind} onChange={setChartKind} />
@@ -872,60 +894,58 @@ export default function TabInventoryFlow() {
 
       {chartPeriod.invalid ? (
         <Box sx={{ mb: 2 }}>
-          <UiAlert tone="error">
-            Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc.
-          </UiAlert>
+          <UiAlert tone="error">{t("reports.common.dateOrderError")}</UiAlert>
         </Box>
       ) : null}
 
       <ReportKpiRow>
         <ReportKpi
-          label="Tồn đầu kỳ"
+          label={t("reports.inventoryFlow.kpiOpening")}
           value={fmt(totals.opening)}
           tone="neutral"
           icon={<StockOutlined />}
-          hint="Số dư trước ngày bắt đầu kỳ"
+          hint={t("reports.inventoryFlow.hintOpening")}
         />
         <ReportKpi
-          label="Nhập thuần"
+          label={t("reports.inventoryFlow.kpiReceiptNet")}
           value={fmt(totals.receiptNet)}
           tone="success"
           icon={<ImportOutlined />}
-          hint="Đã trừ phần nhập bị đảo"
+          hint={t("reports.inventoryFlow.kpiReceiptNetHint")}
         />
         <ReportKpi
-          label="Xuất sản phẩm thuần"
+          label={t("reports.inventoryFlow.kpiIssueNet")}
           value={fmt(totals.issueNet)}
           tone="warning"
           icon={<ExportOutlined />}
-          hint="Xuất bán/giao sản phẩm, đã trừ phần bị đảo (KHÔNG gồm linh kiện bảo hành)"
+          hint={t("reports.inventoryFlow.kpiIssueNetHint")}
         />
         <ReportKpi
-          label="Xuất linh kiện bảo hành thuần"
+          label={t("reports.inventoryFlow.kpiComponentNet")}
           value={fmt(totals.componentNet)}
           tone="warning"
           icon={<ExportOutlined />}
-          hint="Xuất linh kiện phục vụ sửa chữa bảo hành, tách riêng khỏi xuất sản phẩm"
+          hint={t("reports.inventoryFlow.kpiComponentNetHint")}
         />
         <ReportKpi
-          label="Reversal chưa gắn gốc"
+          label={t("reports.inventoryFlow.kpiOrphanReversal")}
           value={fmt(totals.reversalUnlinked)}
           tone="error"
           icon={<SwapOutlined />}
-          hint="Điều chỉnh không truy được giao dịch gốc"
+          hint={t("reports.inventoryFlow.kpiOrphanReversalHint")}
         />
         <ReportKpi
-          label="Tồn cuối kỳ"
+          label={t("reports.inventoryFlow.kpiClosing")}
           value={fmt(totals.closing)}
           tone="primary"
           icon={<StockOutlined />}
-          hint="Kết quả của phương trình cân đối"
+          hint={t("reports.inventoryFlow.kpiClosingHint")}
         />
       </ReportKpiRow>
 
       <ChartCard
-        title="Tổng quan cân đối tồn kho"
-        description="Tồn đầu + Nhập − Xuất SP − Xuất LK bảo hành + Reversal = Tồn cuối. Bấm vào một bậc để xem Movement/phiếu tạo ra số đó."
+        title={t("reports.inventoryFlow.waterfallTitle")}
+        description={t("reports.inventoryFlow.waterfallDescription")}
         fullWidth
         loading={chartsLoading}
         error={chartsError}
@@ -934,19 +954,16 @@ export default function TabInventoryFlow() {
           void ledger.refetch();
         }}
         empty={xntLines.length === 0}
-        emptyText="Kỳ này chưa có biến động tồn kho nào theo bộ lọc đang chọn."
+        emptyText={t("reports.inventoryFlow.waterfallEmpty")}
         footer={
-          <FormulaNote>
-            Nhập/Xuất là số THUẦN (đã trừ phần bị đảo). Phần Reversal còn lại
-            trên biểu đồ là điều chỉnh chưa gắn được giao dịch gốc.
-          </FormulaNote>
+          <FormulaNote>{t("reports.inventoryFlow.waterfallNote")}</FormulaNote>
         }
       >
         <WaterfallChart
           points={waterfallPoints}
           valueFormatter={fmt}
           onSelect={(_point, index) => {
-            const step = WATERFALL_STEPS[index];
+            const step = waterfallSteps(t)[index];
             if (step) setWaterfallDrill({ key: step.key, label: step.label });
           }}
         />
@@ -956,8 +973,8 @@ export default function TabInventoryFlow() {
 
       <ReportSectionHeading
         id="rpt-tab1-xnt-detail"
-        title="Chi tiết cân đối theo SKU"
-        description="Từng chiều Nhập / Xuất / Xuất linh kiện tách tổng phát sinh · đã đảo · thuần — đây là bảng đối soát đứng sau con số trên biểu đồ waterfall."
+        title={t("reports.inventoryFlow.skuTableTitle")}
+        description={t("reports.inventoryFlow.skuTableDescription")}
       />
 
       <ResponsiveDataTable<Raw>
@@ -969,11 +986,11 @@ export default function TabInventoryFlow() {
         loading={xnt.isLoading}
         sortState={xntSortState}
         onSortChange={onXntSortChange}
-        emptyText="Không có dòng cân đối nào theo bộ lọc."
+        emptyText={t("reports.inventoryFlow.skuTableEmpty")}
         renderRowActions={(row) => (
           <ActionButton
             kind="view"
-            aria-label="Xem chi tiết dòng báo cáo"
+            aria-label={t("reports.inventoryFlow.rowDetailAria")}
             sx={{ whiteSpace: "nowrap" }}
             onClick={() =>
               setXntDetailRow({ row, index: xntSortedRows.indexOf(row) })
@@ -994,11 +1011,11 @@ export default function TabInventoryFlow() {
       <ChartGrid>
         <ChartCard
           fullWidth
-          title="Biến động nhập/xuất theo ngày"
+          title={t("reports.inventoryFlow.dailyTitle")}
           description={
             useLineForFlow
-              ? "Kỳ từ 30 ngày trở lên — hiển thị dạng Line Chart cho dễ đọc xu hướng."
-              : "Nhập, xuất sản phẩm, xuất linh kiện bảo hành và reversal trong kỳ."
+              ? t("reports.inventoryFlow.dailyDescriptionLong")
+              : t("reports.inventoryFlow.dailyDescriptionShort")
           }
           loading={chartsLoading}
           error={ledger.error}
@@ -1036,24 +1053,21 @@ export default function TabInventoryFlow() {
 
         <ChartCard
           fullWidth
-          title="Xu hướng tồn kho"
-          description="Tồn khả dụng cuối mỗi ngày — cho thấy tồn đang tăng hay giảm."
+          title={t("reports.inventoryFlow.trendTitle")}
+          description={t("reports.inventoryFlow.trendDescription")}
           loading={chartsLoading}
           error={ledger.error}
           onRetry={() => void ledger.refetch()}
           empty={days.length === 0}
           footer={
-            <FormulaNote>
-              Tồn cuối ngày D = tồn trước kỳ + cộng dồn toàn bộ biến động tính
-              đến hết ngày D.
-            </FormulaNote>
+            <FormulaNote>{t("reports.inventoryFlow.trendNote")}</FormulaNote>
           }
         >
           <LineChart
             categories={dayLabels}
             series={[
               {
-                name: "Tồn cuối ngày",
+                name: t("reports.inventoryFlow.trendSeries"),
                 data: daily.closing,
                 color: CHART_COLORS.primary,
               },
@@ -1067,14 +1081,17 @@ export default function TabInventoryFlow() {
       <Box sx={{ ...{ mt: 1 } }}>
         <ReportSectionHeading
           id="rpt-tab1-doc-history"
-          title="Lịch sử chứng từ"
-          description="Toàn bộ phiếu Nhập / Xuất / Reversal phát sinh trong khoảng thời gian được chọn."
+          title={t("reports.inventoryFlow.docTitle")}
+          description={t("reports.inventoryFlow.docDescription")}
         />
       </Box>
 
       <FilterBar
-        label="Bộ lọc riêng cho bảng Lịch sử chứng từ"
-        hint={`Kỳ đang xem: ${docPeriod.label} · ${fmt(filteredDocuments.length)} chứng từ`}
+        label={t("reports.inventoryFlow.docFilterLabel")}
+        hint={t("reports.inventoryFlow.docFilterHint", {
+          label: docPeriod.label,
+          count: fmt(filteredDocuments.length),
+        })}
         actions={
           <ExportButtons
             exporting={exporter.exporting}
@@ -1104,17 +1121,17 @@ export default function TabInventoryFlow() {
         <PeriodFilterControls state={docPeriod} />
         <UiSelect
           minWidth={180}
-          aria-label="Loại chứng từ"
+          aria-label={t("reports.inventoryFlow.docTypeAria")}
           value={docType}
           onChange={setDocType}
-          options={DOC_TYPE_FILTER_OPTIONS}
+          options={docTypeFilterOptions(t)}
         />
         <AllOrPickFilter
           value={docStatus}
           onChange={setDocStatus}
           options={DOC_STATUS_OPTIONS}
-          allLabel="Tất cả trạng thái"
-          ariaLabel="Trạng thái chứng từ"
+          allLabel={t("reports.inventoryFlow.statusAll")}
+          ariaLabel={t("reports.inventoryFlow.statusAria")}
         />
         <ItemKindFilter value={docKind} onChange={setDocKind} />
         <TimeWindowFilter value={timeWindow} onChange={setTimeWindow} />
@@ -1122,20 +1139,20 @@ export default function TabInventoryFlow() {
           value={actorNames}
           onChange={setActorNames}
           options={users.actorNameOptions}
-          placeholder="Người thực hiện"
-          ariaLabel="Người thực hiện"
+          placeholder={t("reports.inventoryFlow.actorPlaceholder")}
+          ariaLabel={t("reports.inventoryFlow.actorAria")}
         />
         <AllOrPickFilter
           value={departmentId}
           onChange={setDepartmentId}
           options={users.departmentOptions}
-          allLabel="Tất cả phòng ban"
-          ariaLabel="Phòng ban"
+          allLabel={t("reports.inventoryFlow.departmentAll")}
+          ariaLabel={t("reports.inventoryFlow.departmentAria")}
         />
         <SearchInput
           width={260}
-          placeholder="Mã phiếu / SKU / người nhận"
-          aria-label="Tìm mã phiếu, SKU hoặc người nhận"
+          placeholder={t("reports.inventoryFlow.searchPlaceholder")}
+          aria-label={t("reports.inventoryFlow.searchAria")}
           value={docKeyword}
           onChange={setDocKeyword}
         />
@@ -1143,9 +1160,9 @@ export default function TabInventoryFlow() {
 
       {reversals.isError ? (
         <DataGapNotice>
-          Không đọc được danh sách phiếu Reversal ({" "}
-          {String(reversals.error ?? "")} ) — bảng dưới đang chỉ hiển thị phiếu
-          Nhập/Xuất.
+          {t("reports.inventoryFlow.reversalReadError", {
+            error: String(reversals.error ?? ""),
+          })}
         </DataGapNotice>
       ) : null}
 
@@ -1153,7 +1170,7 @@ export default function TabInventoryFlow() {
         <Box sx={{ mb: 1.5 }}>
           <ApiErrorAlert
             error={documents.error}
-            title="Không tải được lịch sử chứng từ"
+            title={t("reports.inventoryFlow.docLoadError")}
             onRetry={() => void documents.refetch()}
           />
         </Box>
@@ -1163,7 +1180,7 @@ export default function TabInventoryFlow() {
         <Box sx={{ mb: 1.5 }} role="alert">
           <UiAlert
             tone="error"
-            title="Xuất báo cáo bị từ chối quyền."
+            title={t("reports.common.exportDenied")}
             onClose={exporter.clearExportDenied}
           >
             {exporter.exportDenied}
@@ -1183,11 +1200,11 @@ export default function TabInventoryFlow() {
         }
         sortState={sortState}
         onSortChange={onSortChange}
-        emptyText="Không có chứng từ nào theo bộ lọc."
+        emptyText={t("reports.inventoryFlow.docEmpty")}
         renderRowActions={(row) => (
           <ActionButton
             kind="view"
-            aria-label="Xem chi tiết chứng từ"
+            aria-label={t("reports.inventoryFlow.docDetailAria")}
             sx={{ whiteSpace: "nowrap" }}
             onClick={() =>
               setDetailRow({ row, index: sortedRows.indexOf(row) })
@@ -1205,17 +1222,19 @@ export default function TabInventoryFlow() {
 
       {waterfallDrill ? (
         <DrillDownDialog
-          title={`Movement tạo ra số "${waterfallDrill.label}"`}
-          subtitle={`${chartPeriod.label} · ${fmt(drillRows.length)} biến động`}
+          title={t("reports.inventoryFlow.waterfallDrillTitle", {
+            label: waterfallDrill.label,
+          })}
+          subtitle={t("reports.inventoryFlow.waterfallDrillSubtitle", {
+            label: chartPeriod.label,
+            count: fmt(drillRows.length),
+          })}
           onClose={() => setWaterfallDrill(null)}
         >
           {waterfallDrill.key === "OPENING" ? (
             <Box sx={{ mb: 1.5 }}>
               <UiAlert tone="info">
-                Tồn đầu là số dư CỘNG DỒN từ trước ngày bắt đầu kỳ, không phải
-                một nhóm biến động trong kỳ. Danh sách dưới đây chỉ gồm các biến
-                động loại "Tồn đầu kỳ" phát sinh bên trong kỳ đang lọc (nếu có);
-                muốn xem toàn bộ lịch sử thì mở rộng khoảng ngày.
+                {t("reports.inventoryFlow.openingDrillNote")}
               </UiAlert>
             </Box>
           ) : null}
@@ -1225,8 +1244,13 @@ export default function TabInventoryFlow() {
 
       {dayDrill ? (
         <DrillDownDialog
-          title={`${dayDrill.seriesName} — ngày ${fmtDate(dayDrill.day)}`}
-          subtitle={`${fmt(dayDrillRows.length)} biến động`}
+          title={t("reports.inventoryFlow.dayDrillTitle", {
+            series: dayDrill.seriesName,
+            date: fmtDate(dayDrill.day),
+          })}
+          subtitle={t("reports.inventoryFlow.dayDrillSubtitle", {
+            count: fmt(dayDrillRows.length),
+          })}
           onClose={() => setDayDrill(null)}
         >
           <MovementTable rows={dayDrillRows} loading={ledger.isLoading} />
@@ -1235,7 +1259,9 @@ export default function TabInventoryFlow() {
 
       {xntDetailRow ? (
         <ReportRowDetailModal
-          title={`Chi tiết cân đối — ${text(xntDetailRow.row.product_code)}`}
+          title={t("reports.inventoryFlow.skuDetailTitle", {
+            code: text(xntDetailRow.row.product_code),
+          })}
           columns={xntColumns}
           row={xntDetailRow.row}
           rowIndex={xntDetailRow.index}
@@ -1245,7 +1271,9 @@ export default function TabInventoryFlow() {
 
       {detailRow ? (
         <ReportRowDetailModal
-          title={`Chi tiết chứng từ ${text(detailRow.row.document_no)}`}
+          title={t("reports.inventoryFlow.docDetailTitle", {
+            code: text(detailRow.row.document_no),
+          })}
           columns={documentColumns}
           row={detailRow.row}
           rowIndex={detailRow.index}
@@ -1253,20 +1281,20 @@ export default function TabInventoryFlow() {
           extra={
             <>
               <Box sx={{ typography: "subtitle2", fontWeight: 700, mb: 1 }}>
-                Danh sách SKU / Item: kế hoạch · đã quét · đã ghi nhận
+                {t("reports.inventoryFlow.docDetailLines")}
               </Box>
               <DocumentLinesTable lines={listOf(detailRow.row.lines)} />
               <Box
                 sx={{ typography: "subtitle2", fontWeight: 700, mt: 2, mb: 1 }}
               >
-                Movement liên quan
+                {t("reports.inventoryFlow.docDetailMovements")}
               </Box>
               <MovementTable
                 rows={ledgerRows.filter(
                   (row) =>
                     text(row.source_id, "") === text(detailRow.row.id, ""),
                 )}
-                emptyText="Không tìm thấy movement gắn với phiếu này trong kỳ đang lọc ở phần biểu đồ."
+                emptyText={t("reports.inventoryFlow.docDetailMovementsEmpty")}
               />
             </>
           }

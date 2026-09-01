@@ -1,3 +1,4 @@
+import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Box, UiAlert, UiSelect, UiStatusBadge } from "@/shared/ui";
@@ -62,16 +63,16 @@ import { mvpRowNumber } from "@/shared/components/mvp/MvpSelectionCell";
 import { ReportStatusBadge } from "./report-drilldown";
 import { useReportExport } from "./report-export";
 
-const SOURCE_OPTIONS = [
-  { value: "all", label: "Tất cả nguồn xử lý" },
+const sourceOptions = (t: TranslateFn) => [
+  { value: "all", label: t("reports.importQuality.sourceAll") },
   { value: "IMPORT", label: "Import" },
   { value: "SCAN", label: "Scan" },
 ];
 
-const RESULT_OPTIONS = [
-  { value: "SUCCESS", label: "Thành công" },
-  { value: "FAILED", label: "Lỗi" },
-  { value: "DUPLICATE", label: "Trùng lặp" },
+const resultOptions = (t: TranslateFn) => [
+  { value: "SUCCESS", label: t("reports.importQuality.outcomeSuccess") },
+  { value: "FAILED", label: t("reports.importQuality.outcomeFailed") },
+  { value: "DUPLICATE", label: t("reports.importQuality.outcomeDuplicate") },
 ];
 
 const TOP_ERROR_OPTIONS = [
@@ -133,6 +134,7 @@ type BatchRecord = {
  * dạng dữ liệu, thay vì mỗi mục tự xử lý hai nhánh.
  */
 export default function TabImportQuality() {
+  const t = useT();
   const period = usePeriodFilter("this-month");
   const catalog = useSkuCatalog();
   const users = useUserDirectory();
@@ -297,22 +299,22 @@ export default function TabImportQuality() {
     }
     return [
       {
-        name: "Thành công",
+        name: t("reports.importQuality.outcomeSuccess"),
         data: days.map((day) => success.get(day) ?? 0),
         color: CHART_COLORS.success,
       },
       {
-        name: "Lỗi",
+        name: t("reports.importQuality.outcomeFailed"),
         data: days.map((day) => failed.get(day) ?? 0),
         color: CHART_COLORS.danger,
       },
       {
-        name: "Trùng lặp",
+        name: t("reports.importQuality.outcomeDuplicate"),
         data: days.map((day) => duplicate.get(day) ?? 0),
         color: CHART_COLORS.warning,
       },
     ];
-  }, [days, chartBatches]);
+  }, [days, chartBatches, t]);
 
   const [dayDrill, setDayDrill] = useState<{
     day: string;
@@ -419,13 +421,10 @@ export default function TabImportQuality() {
       link.click();
       link.remove();
       URL.revokeObjectURL(url);
-      toast.success("Đã tải file lỗi để xử lý lại.");
+      toast.success(t("reports.importQuality.errorFileDownloaded"));
     } catch (error) {
       toast.error(
-        getApiErrorMessage(
-          error,
-          "Không tải được file lỗi (file có thể đã hết hạn).",
-        ),
+        getApiErrorMessage(error, t("reports.importQuality.errorFileFailed")),
       );
     } finally {
       setDownloading(null);
@@ -450,49 +449,50 @@ export default function TabImportQuality() {
     <Box data-testid="rpt-tab-import-quality">
       <ReportSectionHeading
         id="rpt-tab4-heading"
-        title="Báo cáo Import / Match và lỗi dữ liệu"
-        description="Chất lượng dữ liệu nạp vào hệ thống: kết quả theo ngày, mã lỗi hay gặp và từng batch cụ thể."
+        title={t("reports.importQuality.title")}
+        description={t("reports.importQuality.description")}
       />
 
       <FilterBar
-        label="Bộ lọc chung cho 3 biểu đồ"
-        hint={`Kỳ đang xem: ${period.label} · ${fmt(chartBatches.length)} batch`}
+        label={t("reports.importQuality.chartFilterLabel")}
+        hint={t("reports.importQuality.chartFilterHint", {
+          label: period.label,
+          count: fmt(chartBatches.length),
+        })}
       >
         <PeriodFilterControls state={period} />
         <ItemKindFilter value={itemKind} onChange={setItemKind} />
         <UiSelect
           minWidth={200}
-          aria-label="Nguồn xử lý"
+          aria-label={t("reports.importQuality.sourceAria")}
           value={source}
           onChange={setSource}
-          options={SOURCE_OPTIONS}
+          options={sourceOptions(t)}
         />
       </FilterBar>
 
       {period.invalid ? (
         <Box sx={{ mb: 2 }}>
-          <UiAlert tone="error">
-            Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc.
-          </UiAlert>
+          <UiAlert tone="error">{t("reports.common.dateOrderError")}</UiAlert>
         </Box>
       ) : null}
 
       <ReportKpiRow>
         <ReportKpi
-          label="Tổng dòng đã xử lý"
+          label={t("reports.importQuality.kpiTotalRows")}
           value={fmt(totals.total)}
           tone="primary"
           icon={<AuditOutlined />}
         />
         <ReportKpi
-          label="Thành công"
+          label={t("reports.importQuality.outcomeSuccess")}
           value={fmt(totals.success)}
           tone="success"
           icon={<CheckCircleOutlined />}
           hint={pct(totals.success, totals.total)}
         />
         <ReportKpi
-          label="Lỗi"
+          label={t("reports.importQuality.outcomeFailed")}
           value={fmt(totals.failed)}
           tone="error"
           icon={<CloseCircleOutlined />}
@@ -500,7 +500,7 @@ export default function TabImportQuality() {
           onClick={() => setResultFilter("FAILED")}
         />
         <ReportKpi
-          label="Trùng lặp"
+          label={t("reports.importQuality.outcomeDuplicate")}
           value={fmt(totals.duplicate)}
           tone="warning"
           icon={<CopyOutlined />}
@@ -511,8 +511,8 @@ export default function TabImportQuality() {
 
       <ChartGrid>
         <ChartCard
-          title="Kết quả Import/Scan theo thời gian"
-          description="Số dòng Success / Failed / Duplicate theo từng ngày trong kỳ."
+          title={t("reports.importQuality.dailyTitle")}
+          description={t("reports.importQuality.dailyDescription")}
           loading={loading}
           error={importMatch.error ?? skuImports.error}
           onRetry={() => {
@@ -520,7 +520,7 @@ export default function TabImportQuality() {
             void skuImports.refetch();
           }}
           empty={days.length === 0 || totals.total === 0}
-          emptyText="Kỳ này chưa có lần import/scan nào."
+          emptyText={t("reports.importQuality.dailyEmpty")}
         >
           <MultiSeriesBarChart
             stacked
@@ -538,16 +538,16 @@ export default function TabImportQuality() {
         </ChartCard>
 
         <ChartCard
-          title="Top mã lỗi"
-          description="Mã lỗi phát sinh nhiều nhất — bấm một cột để xem các dòng lỗi tương ứng."
+          title={t("reports.importQuality.topErrorsTitle")}
+          description={t("reports.importQuality.topErrorsDescription")}
           loading={loading}
           error={importMatch.error}
           onRetry={() => void importMatch.refetch()}
           empty={errorCodeItems.length === 0}
-          emptyText="Kỳ này không phát sinh mã lỗi nào."
+          emptyText={t("reports.importQuality.topErrorsEmpty")}
           toolbar={
             <SegmentedToggle
-              label="Số mã lỗi hiển thị"
+              label={t("reports.importQuality.topErrorsCount")}
               value={topErrors}
               onChange={setTopErrors}
               options={TOP_ERROR_OPTIONS}
@@ -566,12 +566,12 @@ export default function TabImportQuality() {
 
       <ReportSectionHeading
         id="rpt-tab4-batches"
-        title="Lịch sử Import/Scan & Batch"
-        description="Bấm vào một batch để xem từng dòng lỗi và tải file lỗi về xử lý lại."
+        title={t("reports.importQuality.batchTitle")}
+        description={t("reports.importQuality.batchDescription")}
       />
 
       <FilterBar
-        label="Bộ lọc riêng cho bảng batch"
+        label={t("reports.importQuality.batchFilterLabel")}
         hint={`${fmt(filteredBatches.length)} batch`}
         actions={
           <ExportButtons
@@ -598,36 +598,36 @@ export default function TabImportQuality() {
         <AllOrPickFilter
           value={resultFilter}
           onChange={setResultFilter}
-          options={RESULT_OPTIONS}
-          allLabel="Tất cả kết quả"
-          ariaLabel="Kết quả"
+          options={resultOptions(t)}
+          allLabel={t("reports.importQuality.outcomeAll")}
+          ariaLabel={t("reports.importQuality.outcomeAria")}
         />
         <AllOrPickFilter
           value={statusFilter}
           onChange={setStatusFilter}
           options={statusOptions}
-          allLabel="Tất cả trạng thái"
-          ariaLabel="Trạng thái batch"
+          allLabel={t("reports.importQuality.statusAll")}
+          ariaLabel={t("reports.importQuality.statusAria")}
         />
         <AllOrPickFilter
           value={actorFilter}
           onChange={setActorFilter}
           options={actorOptions}
-          allLabel="Tất cả người thực hiện"
-          ariaLabel="Người thực hiện"
+          allLabel={t("reports.importQuality.actorAll")}
+          ariaLabel={t("reports.importQuality.actorAria")}
           minWidth={210}
         />
         <SearchInput
           width={260}
           placeholder="Batch / Request ID"
-          aria-label="Tìm Batch hoặc Request ID"
+          aria-label={t("reports.importQuality.searchAria")}
           value={batchKeyword}
           onChange={setBatchKeyword}
         />
         <SearchInput
           width={180}
-          placeholder="Mã SKU"
-          aria-label="Mã SKU"
+          placeholder={t("reports.importQuality.skuPlaceholder")}
+          aria-label={t("reports.importQuality.skuAria")}
           value={skuKeyword}
           onChange={setSkuKeyword}
         />
@@ -637,7 +637,7 @@ export default function TabImportQuality() {
         <Box sx={{ mb: 1.5 }}>
           <ApiErrorAlert
             error={skuImports.error}
-            title="Không tải được lịch sử Import danh mục SKU"
+            title={t("reports.importQuality.batchLoadError")}
             onRetry={() => void skuImports.refetch()}
           />
         </Box>
@@ -647,7 +647,7 @@ export default function TabImportQuality() {
         <Box sx={{ mb: 1.5 }} role="alert">
           <UiAlert
             tone="error"
-            title="Xuất báo cáo bị từ chối quyền."
+            title={t("reports.common.exportDenied")}
             onClose={exporter.clearExportDenied}
           >
             {exporter.exportDenied}
@@ -679,22 +679,22 @@ export default function TabImportQuality() {
                 <Box sx={{ fontWeight: 700 }}>{row.batchNo || EMPTY_TEXT}</Box>
                 <Box sx={{ fontSize: 12, color: "text.secondary" }}>
                   {row.source === "IMPORT"
-                    ? "Nhập danh mục SKU"
-                    : "Scan / đối soát toa"}
+                    ? t("reports.importQuality.sourceSkuImport")
+                    : t("reports.importQuality.sourceScan")}
                 </Box>
               </Box>
             ),
           },
           {
             key: "at",
-            header: "Thời gian",
+            header: t("reports.importQuality.colTime"),
             width: 165,
             sortAccessor: (row) => row.at,
             render: (row) => (row.at ? fmtDateTime(row.at) : EMPTY_TEXT),
           },
           {
             key: "total",
-            header: "Tổng dòng",
+            header: t("reports.importQuality.colTotalRows"),
             align: "right",
             width: 110,
             sortAccessor: (row) => row.total,
@@ -702,7 +702,7 @@ export default function TabImportQuality() {
           },
           {
             key: "success",
-            header: "Thành công",
+            header: t("reports.importQuality.colSuccess"),
             align: "right",
             width: 110,
             sortAccessor: (row) => row.success,
@@ -710,7 +710,7 @@ export default function TabImportQuality() {
           },
           {
             key: "failed",
-            header: "Lỗi",
+            header: t("reports.importQuality.colFailed"),
             align: "right",
             width: 110,
             sortAccessor: (row) => row.failed,
@@ -718,7 +718,7 @@ export default function TabImportQuality() {
           },
           {
             key: "duplicate",
-            header: "Trùng lặp",
+            header: t("reports.importQuality.colDuplicate"),
             align: "right",
             width: 115,
             sortAccessor: (row) => row.duplicate,
@@ -726,7 +726,7 @@ export default function TabImportQuality() {
           },
           {
             key: "rate",
-            header: "Tỉ lệ thành công",
+            header: t("reports.importQuality.colSuccessRate"),
             align: "right",
             width: 130,
             sortAccessor: (row) =>
@@ -735,13 +735,13 @@ export default function TabImportQuality() {
           },
           {
             key: "actor",
-            header: "Người thực hiện",
+            header: t("reports.importQuality.colActor"),
             hideOnMobile: true,
             render: (row) => row.actor || EMPTY_TEXT,
           },
           {
             key: "status",
-            header: "Trạng thái",
+            header: t("reports.importQuality.colStatus"),
             width: 150,
             render: (row) => (
               <ReportStatusBadge
@@ -755,11 +755,11 @@ export default function TabImportQuality() {
         rowKey={(row) => `${row.source}:${row.id}`}
         loading={loading}
         onRowClick={(row) => setOpenBatch(row)}
-        emptyText="Không có batch nào theo bộ lọc."
+        emptyText={t("reports.importQuality.batchEmpty")}
         renderRowActions={(row) => (
           <ActionButton
             kind="view"
-            aria-label="Xem chi tiết batch"
+            aria-label={t("reports.importQuality.batchRowAria")}
             sx={{ whiteSpace: "nowrap" }}
             onClick={() => setOpenBatch(row)}
           />
@@ -775,8 +775,11 @@ export default function TabImportQuality() {
 
       {dayDrill ? (
         <DrillDownDialog
-          title={`${dayDrill.seriesName} — ngày ${dayDrill.day}`}
-          subtitle="Các batch phát sinh trong ngày"
+          title={t("reports.importQuality.dayDrillTitle", {
+            series: dayDrill.seriesName,
+            date: dayDrill.day,
+          })}
+          subtitle={t("reports.importQuality.dayDrillSubtitle")}
           onClose={() => setDayDrill(null)}
         >
           <ResponsiveDataTable<BatchRecord>
@@ -788,25 +791,25 @@ export default function TabImportQuality() {
               },
               {
                 key: "success",
-                header: "Thành công",
+                header: t("reports.importQuality.colSuccess"),
                 align: "right",
                 render: (row) => fmt(row.success),
               },
               {
                 key: "failed",
-                header: "Lỗi",
+                header: t("reports.importQuality.colFailed"),
                 align: "right",
                 render: (row) => fmt(row.failed),
               },
               {
                 key: "duplicate",
-                header: "Trùng lặp",
+                header: t("reports.importQuality.colDuplicate"),
                 align: "right",
                 render: (row) => fmt(row.duplicate),
               },
               {
                 key: "actor",
-                header: "Người thực hiện",
+                header: t("reports.importQuality.colActor"),
                 render: (row) => row.actor || EMPTY_TEXT,
               },
             ]}
@@ -814,15 +817,19 @@ export default function TabImportQuality() {
               (batch) => dayKey(batch.at) === dayDrill.day,
             )}
             rowKey={(row) => `${row.source}:${row.id}`}
-            emptyText="Không có batch nào trong ngày này."
+            emptyText={t("reports.importQuality.dayDrillEmpty")}
           />
         </DrillDownDialog>
       ) : null}
 
       {errorDrill ? (
         <DrillDownDialog
-          title={`Dòng lỗi có mã ${errorDrill}`}
-          subtitle={`${fmt(errorDrillLines.length)} dòng`}
+          title={t("reports.importQuality.errorDrillTitle", {
+            code: errorDrill,
+          })}
+          subtitle={t("reports.importQuality.errorDrillSubtitle", {
+            count: fmt(errorDrillLines.length),
+          })}
           onClose={() => setErrorDrill(null)}
         >
           <ResponsiveDataTable<ErrorLine & { batchNo: string }>
@@ -832,11 +839,19 @@ export default function TabImportQuality() {
                 header: "Batch",
                 render: (row) => row.batchNo || EMPTY_TEXT,
               },
-              { key: "rowNo", header: "Dòng lỗi", render: (row) => row.rowNo },
-              { key: "code", header: "Mã lỗi", render: (row) => row.code },
+              {
+                key: "rowNo",
+                header: t("reports.importQuality.colErrorRow"),
+                render: (row) => row.rowNo,
+              },
+              {
+                key: "code",
+                header: t("reports.importQuality.colErrorCode"),
+                render: (row) => row.code,
+              },
               {
                 key: "message",
-                header: "Nội dung lỗi",
+                header: t("reports.importQuality.colErrorMessage"),
                 render: (row) => row.message || EMPTY_TEXT,
               },
               {
@@ -851,38 +866,53 @@ export default function TabImportQuality() {
               },
               {
                 key: "at",
-                header: "Thời gian",
+                header: t("reports.importQuality.colTime"),
                 render: (row) => (row.at ? fmtDateTime(row.at) : EMPTY_TEXT),
               },
             ]}
             rows={errorDrillLines}
             rowKey={(row) => `${row.batchNo}-${row.rowNo}-${row.code}`}
-            emptyText="Không có dòng lỗi nào."
+            emptyText={t("reports.importQuality.errorDrillEmpty")}
           />
         </DrillDownDialog>
       ) : null}
 
       {openBatch ? (
         <DrillDownDialog
-          title={`Chi tiết batch ${openBatch.batchNo}`}
-          subtitle={`${openBatch.source === "IMPORT" ? "Nhập danh mục SKU" : "Scan / đối soát toa"} · ${fmt(openBatch.total)} dòng · ${pct(openBatch.success, openBatch.total)} thành công`}
+          title={t("reports.importQuality.batchDetailTitle", {
+            code: openBatch.batchNo,
+          })}
+          subtitle={t("reports.importQuality.batchDetailSubtitle", {
+            source:
+              openBatch.source === "IMPORT"
+                ? t("reports.importQuality.sourceSkuImport")
+                : t("reports.importQuality.sourceScan"),
+            total: fmt(openBatch.total),
+            rate: pct(openBatch.success, openBatch.total),
+          })}
           onClose={() => setOpenBatch(null)}
         >
           <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mb: 1.5 }}>
             <UiStatusBadge
               size="small"
               tone="success"
-              label={`Thành công ${fmt(openBatch.success)}`}
+              label={t("reports.importQuality.badgeSuccess", {
+                count: fmt(openBatch.success),
+              })}
             />
             <UiStatusBadge
               size="small"
               tone="error"
-              label={`Lỗi ${fmt(openBatch.failed)}`}
+              label={t("reports.importQuality.badgeFailed", {
+                count: fmt(openBatch.failed),
+              })}
             />
             <UiStatusBadge
               size="small"
               tone="warning"
-              label={`Trùng lặp ${fmt(openBatch.duplicate)}`}
+              label={t("reports.importQuality.badgeDuplicate", {
+                count: fmt(openBatch.duplicate),
+              })}
             />
             {openBatch.errorFileAvailable ? (
               <ActionButton
@@ -890,17 +920,25 @@ export default function TabImportQuality() {
                 loading={downloading === openBatch.id}
                 onClick={() => void downloadErrorFile(openBatch)}
               >
-                Tải file lỗi
+                {t("reports.importQuality.downloadErrorFile")}
               </ActionButton>
             ) : null}
           </Box>
           <ResponsiveDataTable<ErrorLine>
             columns={[
-              { key: "rowNo", header: "Dòng lỗi", render: (row) => row.rowNo },
-              { key: "code", header: "Mã lỗi", render: (row) => row.code },
+              {
+                key: "rowNo",
+                header: t("reports.importQuality.colErrorRow"),
+                render: (row) => row.rowNo,
+              },
+              {
+                key: "code",
+                header: t("reports.importQuality.colErrorCode"),
+                render: (row) => row.code,
+              },
               {
                 key: "message",
-                header: "Nội dung lỗi",
+                header: t("reports.importQuality.colErrorMessage"),
                 render: (row) => row.message || EMPTY_TEXT,
               },
               {
@@ -915,67 +953,67 @@ export default function TabImportQuality() {
               },
               {
                 key: "at",
-                header: "Thời gian",
+                header: t("reports.importQuality.colTime"),
                 render: (row) => (row.at ? fmtDateTime(row.at) : EMPTY_TEXT),
               },
             ]}
             rows={openBatch.errors}
             rowKey={(row) => `${row.rowNo}-${row.code}-${row.reference}`}
-            emptyText="Batch này không có dòng lỗi nào."
+            emptyText={t("reports.importQuality.batchErrorsEmpty")}
           />
           {openBatch.matchLines.length > 0 ? (
             <>
               <Box
                 sx={{ typography: "subtitle2", fontWeight: 700, mt: 2, mb: 1 }}
               >
-                Đối soát tầng dòng SKU của toa
+                {t("reports.importQuality.requestLinesTitle")}
               </Box>
               <ResponsiveDataTable<Raw>
                 columns={[
                   {
                     key: "row_no",
-                    header: "Dòng",
+                    header: t("reports.importQuality.colRow"),
                     align: "right",
                     width: 80,
                     render: (row) => text(row.row_no),
                   },
                   {
                     key: "source_request_no",
-                    header: "Phiếu toa",
+                    header: t("reports.importQuality.colRequestNo"),
                     render: (row) => text(row.source_request_no),
                   },
                   {
                     key: "sku_code",
-                    header: "Mã SKU",
+                    header: t("reports.importQuality.colSkuCode"),
                     render: (row) => text(row.sku_code),
                   },
                   {
                     key: "required_qty",
-                    header: "Yêu cầu",
+                    header: t("reports.importQuality.colRequired"),
                     align: "right",
                     render: (row) => fmt(row.required_qty),
                   },
                   {
                     key: "matched_qty",
-                    header: "Đã đối chiếu",
+                    header: t("reports.importQuality.colMatched"),
                     align: "right",
                     render: (row) => fmt(row.matched_qty),
                   },
                   {
                     key: "scanned_qty",
-                    header: "Đã quét",
+                    header: t("reports.importQuality.colScanned"),
                     align: "right",
                     render: (row) => fmt(row.scanned_qty),
                   },
                   {
                     key: "posted_qty",
-                    header: "Đã ghi nhận",
+                    header: t("reports.importQuality.colPosted"),
                     align: "right",
                     render: (row) => fmt(row.posted_qty),
                   },
                   {
                     key: "validation_status",
-                    header: "Kiểm tra",
+                    header: t("reports.importQuality.colCheck"),
                     render: (row) => (
                       <ReportStatusBadge
                         value={row.validation_status}
@@ -986,15 +1024,12 @@ export default function TabImportQuality() {
                 ]}
                 rows={openBatch.matchLines}
                 rowKey={(row) => text(row.id, "")}
-                emptyText="Toa này chưa có dòng SKU nào."
+                emptyText={t("reports.importQuality.requestLinesEmpty")}
               />
             </>
           ) : null}
           {!openBatch.errorFileAvailable && openBatch.errors.length > 0 ? (
-            <FormulaNote>
-              Batch này không còn file lỗi tải được (chỉ nguồn Import danh mục
-              SKU mới sinh file CSV lỗi, và file có hạn sử dụng).
-            </FormulaNote>
+            <FormulaNote>{t("reports.importQuality.noErrorFile")}</FormulaNote>
           ) : null}
         </DrillDownDialog>
       ) : null}

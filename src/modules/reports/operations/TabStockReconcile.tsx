@@ -1,3 +1,4 @@
+import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import { useMemo, useState } from "react";
 import dayjs, { type Dayjs } from "dayjs";
 import { Box, UiAlert, UiDatePicker, UiStatusBadge } from "@/shared/ui";
@@ -19,7 +20,7 @@ import { EMPTY_TEXT } from "@/shared/constants/display";
 import {
   fmt,
   fmtDateTime,
-  ITEM_KIND_LABELS,
+  itemKindLabel,
   listOf,
   n,
   pct,
@@ -54,7 +55,7 @@ import {
 import {
   RECONCILE_LABELS,
   reconcileCheckLabel,
-  STOCK_NORM_LABELS,
+  STOCK_NORM_LABEL_KEYS,
   STOCK_NORM_TONE,
   stockStatusLabel,
   type StockNormState,
@@ -85,17 +86,21 @@ const STOCK_STATUS_COLORS: Record<string, string> = {
   QUARANTINE: CHART_COLORS.info,
 };
 
-const TOP_OPTIONS = [
+type TopMode = "10" | "20" | "all";
+
+const topOptions = (
+  t: TranslateFn,
+): Array<{ value: TopMode; label: string }> => [
   { value: "10", label: "Top 10" },
   { value: "20", label: "Top 20" },
-  { value: "all", label: "Tất cả mismatch" },
-] as const;
+  { value: "all", label: t("reports.stockReconcile.mismatchAll") },
+];
 
-type TopMode = (typeof TOP_OPTIONS)[number]["value"];
-
-const NORM_FILTER_OPTIONS = (
-  Object.keys(STOCK_NORM_LABELS) as StockNormState[]
-).map((value) => ({ value, label: STOCK_NORM_LABELS[value] }));
+const normFilterOptions = (t: TranslateFn) =>
+  (Object.keys(STOCK_NORM_LABEL_KEYS) as StockNormState[]).map((value) => ({
+    value,
+    label: t(STOCK_NORM_LABEL_KEYS[value]),
+  }));
 
 const RECONCILE_FILTER_OPTIONS = [
   { value: "MATCH", label: "MATCH" },
@@ -151,6 +156,7 @@ function normStateOf(
  * loại hàng; 2.4 và 2.5 là hai bảng tra cứu có bộ lọc riêng.
  */
 export default function TabStockReconcile() {
+  const t = useT();
   const catalog = useSkuCatalog();
   const warehouses = useWarehouseOptions();
   const categories = useCategoryOptions();
@@ -435,7 +441,7 @@ export default function TabStockReconcile() {
         ),
       },
       {
-        title: "Tên",
+        title: t("reports.stockReconcile.colName"),
         dataIndex: "product_name",
         sorter: (a, b) =>
           text(a.product_name, "").localeCompare(
@@ -445,11 +451,10 @@ export default function TabStockReconcile() {
         render: (value) => text(value),
       },
       {
-        title: "Loại hàng",
+        title: t("reports.stockReconcile.colItemKind"),
         dataIndex: "item_kind",
         width: 120,
-        render: (value) =>
-          ITEM_KIND_LABELS[text(value, "")] ?? "Chưa phân loại",
+        render: (value) => itemKindLabel(text(value, ""), t),
       },
       {
         title: "Available Qty",
@@ -479,7 +484,7 @@ export default function TabStockReconcile() {
         render: fmt,
       },
       {
-        title: "Chênh lệch",
+        title: t("reports.stockReconcile.colVariance"),
         dataIndex: "variance",
         align: "right",
         width: 130,
@@ -500,12 +505,12 @@ export default function TabStockReconcile() {
         },
       },
       {
-        title: "Trạng thái đối soát",
+        title: t("reports.stockReconcile.colReconcileStatus"),
         dataIndex: "reconciliation_status",
         width: 210,
         render: (value, row) => {
           const checks = listOf(row.mismatch_checks as unknown)
-            .map((code) => reconcileCheckLabel(text(code, "")))
+            .map((code) => reconcileCheckLabel(text(code, ""), t))
             .filter((label) => label !== "");
           const reason = checks.join(", ");
           return (
@@ -516,12 +521,12 @@ export default function TabStockReconcile() {
                 title={
                   reason === ""
                     ? undefined
-                    : `Lệch ở: ${reason}. Cột "Chênh lệch" chỉ đo Sổ cái ↔ số dư.`
+                    : t("reports.stockReconcile.mismatchTooltip", { reason })
                 }
               />
               {reason === "" ? null : (
                 <Box sx={{ fontSize: 12, color: "text.secondary", mt: 0.5 }}>
-                  Lệch ở: {reason}
+                  {t("reports.stockReconcile.mismatchAt", { reason })}
                 </Box>
               )}
             </Box>
@@ -547,7 +552,7 @@ export default function TabStockReconcile() {
         render: (value) => (value === null ? EMPTY_TEXT : fmt(value)),
       },
       {
-        title: "Trạng thái định mức",
+        title: t("reports.stockReconcile.colThresholdStatus"),
         dataIndex: "norm_state",
         width: 165,
         detailOnly: true,
@@ -557,13 +562,13 @@ export default function TabStockReconcile() {
             <UiStatusBadge
               size="small"
               tone={STOCK_NORM_TONE[state]}
-              label={STOCK_NORM_LABELS[state]}
+              label={t(STOCK_NORM_LABEL_KEYS[state])}
             />
           );
         },
       },
       {
-        title: "Cập nhật cuối",
+        title: t("reports.stockReconcile.colUpdatedAt"),
         dataIndex: "updated_at",
         width: 165,
         sorter: (a, b) =>
@@ -571,7 +576,7 @@ export default function TabStockReconcile() {
         render: (value) => (value ? fmtDateTime(value) : EMPTY_TEXT),
       },
     ],
-    [detailPagination.page, detailPagination.perPage, setSkuDrill],
+    [detailPagination.page, detailPagination.perPage, setSkuDrill, t],
   );
 
   const detailTableColumns = useMemo(
@@ -602,26 +607,26 @@ export default function TabStockReconcile() {
     <Box data-testid="rpt-tab-stock-reconcile">
       <ReportSectionHeading
         id="rpt-tab2-heading"
-        title="Báo cáo tồn kho và đối soát"
-        description="Cơ cấu tồn hiện tại, mức khớp giữa số dư và sổ biến động, cảnh báo định mức."
+        title={t("reports.stockReconcile.title")}
+        description={t("reports.stockReconcile.description")}
       />
 
       <FilterBar
-        label="Bộ lọc chung cho các biểu đồ bên dưới"
-        hint="Số liệu là ảnh chụp tồn kho tại thời điểm hiện tại, không theo kỳ."
+        label={t("reports.stockReconcile.chartFilterLabel")}
+        hint={t("reports.stockReconcile.chartFilterHint")}
       >
         <ItemKindFilter value={chartKind} onChange={setChartKind} />
         <AllOrPickFilter
           value={warehouseId}
           onChange={setWarehouseId}
           options={warehouses.options}
-          allLabel="Tất cả kho"
+          allLabel={t("reports.stockReconcile.warehouseAll")}
           ariaLabel="Kho"
           minWidth={210}
         />
         <UiDatePicker
-          placeholder="Chốt số liệu tại ngày"
-          aria-label="Chốt số liệu tại ngày"
+          placeholder={t("reports.stockReconcile.asOfPlaceholder")}
+          aria-label={t("reports.stockReconcile.asOfAria")}
           value={asOf}
           onChange={setAsOf}
         />
@@ -630,21 +635,25 @@ export default function TabStockReconcile() {
       {balance.data?.as_of_snapshot ? (
         <Box sx={{ mb: 2 }}>
           <UiAlert tone="warning">
-            {`Đang xem ảnh chụp theo sổ tồn kho tại ${text(balance.data.as_of)}. Cột "Inventory Balance" là số dư tại mốc đó, nên đối soát sổ tồn kho với số dư hiện tại không áp dụng.`}
+            {t("reports.stockReconcile.asOfNote", {
+              date: text(balance.data.as_of),
+            })}
           </UiAlert>
         </Box>
       ) : null}
 
       <ReportKpiRow>
         <ReportKpi
-          label="Tồn khả dụng"
+          label={t("reports.stockReconcile.kpiAvailable")}
           value={fmt(totalAvailable)}
           tone="primary"
           icon={<StockOutlined />}
-          hint={`${fmt(chartAggregates.length)} SKU trong phạm vi lọc`}
+          hint={t("reports.stockReconcile.kpiAvailableHint", {
+            count: fmt(chartAggregates.length),
+          })}
         />
         <ReportKpi
-          label="SKU khớp đối soát"
+          label={t("reports.stockReconcile.kpiMatched")}
           value={fmt(matchCount)}
           tone="success"
           icon={<CheckCircleOutlined />}
@@ -652,7 +661,7 @@ export default function TabStockReconcile() {
           onClick={() => setReconcileDrill("MATCH")}
         />
         <ReportKpi
-          label="SKU lệch đối soát"
+          label={t("reports.stockReconcile.kpiMismatched")}
           value={fmt(mismatchCount)}
           tone="error"
           icon={<AuditOutlined />}
@@ -660,22 +669,22 @@ export default function TabStockReconcile() {
           onClick={() => setReconcileDrill("MISMATCH")}
         />
         <ReportKpi
-          label="Sắp hết hàng"
+          label={t("reports.stockReconcile.kpiLowStock")}
           value={fmt(lowCount)}
           tone="warning"
           icon={<WarningOutlined />}
-          hint="Available Qty dưới Min Qty đã cấu hình"
+          hint={t("reports.stockReconcile.kpiLowStockHint")}
           onClick={() => {
             setNormState("LOW");
             setNormKind("all");
           }}
         />
         <ReportKpi
-          label="Thừa hàng"
+          label={t("reports.stockReconcile.kpiOverStock")}
           value={fmt(overCount)}
           tone="info"
           icon={<WarningOutlined />}
-          hint="Available Qty vượt Max Qty đã cấu hình"
+          hint={t("reports.stockReconcile.kpiOverStockHint")}
           onClick={() => {
             setNormState("OVER");
             setNormKind("all");
@@ -685,42 +694,50 @@ export default function TabStockReconcile() {
 
       <ChartGrid>
         <ChartCard
-          title="Cơ cấu tồn kho hiện tại"
-          description="Tỉ trọng tồn theo trạng thái: Khả dụng / Không bán được / Lỗi / Cách ly."
+          title={t("reports.stockReconcile.structureTitle")}
+          description={t("reports.stockReconcile.structureDescription")}
           loading={loading}
           error={error}
           onRetry={() => void reconciliation.refetch()}
           empty={structureTotal === 0}
-          emptyText={`Chưa có tồn ${structureKind === "PRODUCT" ? "sản phẩm" : "linh kiện"} nào.`}
+          emptyText={t("reports.stockReconcile.structureEmpty", {
+            kind:
+              structureKind === "PRODUCT"
+                ? t("reports.itemKind.product")
+                : t("reports.itemKind.component"),
+          })}
           toolbar={
             <SegmentedToggle
-              label="Xem sản phẩm hay linh kiện"
+              label={t("reports.stockReconcile.structureToggleLabel")}
               value={structureKind}
               onChange={setStructureKind}
               options={[
-                { value: "PRODUCT", label: "Sản phẩm" },
-                { value: "COMPONENT", label: "Linh kiện" },
+                { value: "PRODUCT", label: t("reports.itemKind.product") },
+                { value: "COMPONENT", label: t("reports.itemKind.component") },
               ]}
             />
           }
           footer={
             <FormulaNote>
-              Trục là tỉ lệ %; tooltip hiển thị số tuyệt đối. Tổng tồn đang xem:{" "}
-              {fmt(structureTotal)}.
+              {t("reports.stockReconcile.structureNote")} {fmt(structureTotal)}.
             </FormulaNote>
           }
         >
           <StackedBarChart
             segments={structureSegments}
             height={180}
-            barLabel={structureKind === "PRODUCT" ? "Sản phẩm" : "Linh kiện"}
+            barLabel={
+              structureKind === "PRODUCT"
+                ? t("reports.itemKind.product")
+                : t("reports.itemKind.component")
+            }
             valueFormatter={fmt}
           />
         </ChartCard>
 
         <ChartCard
-          title="Tỷ lệ đối soát"
-          description="Số SKU khớp và lệch giữa Inventory Balance và tồn tính từ Inventory Movement."
+          title={t("reports.stockReconcile.reconcileRatioTitle")}
+          description={t("reports.stockReconcile.reconcileRatioDescription")}
           loading={loading}
           error={error}
           onRetry={() => void reconciliation.refetch()}
@@ -739,7 +756,7 @@ export default function TabStockReconcile() {
                 color: CHART_COLORS.danger,
               },
             ]}
-            centerLabel="Tổng SKU"
+            centerLabel={t("reports.stockReconcile.reconcileCenter")}
             valueFormatter={fmt}
             onSelect={(item) =>
               setReconcileDrill(item.label === "MATCH" ? "MATCH" : "MISMATCH")
@@ -749,20 +766,20 @@ export default function TabStockReconcile() {
       </ChartGrid>
 
       <ChartCard
-        title="Top SKU chênh lệch đối soát"
-        description="So sánh Inventory Balance với tồn tính từ Inventory Movement; Chênh lệch = Balance − Movement."
+        title={t("reports.stockReconcile.topMismatchTitle")}
+        description={t("reports.stockReconcile.topMismatchDescription")}
         fullWidth
         loading={loading}
         error={error}
         onRetry={() => void reconciliation.refetch()}
         empty={topRows.length === 0}
-        emptyText="Không có SKU nào lệch đối soát theo bộ lọc hiện tại."
+        emptyText={t("reports.stockReconcile.topMismatchEmpty")}
         toolbar={
           <SegmentedToggle
-            label="Số dòng hiển thị"
+            label={t("reports.stockReconcile.topMismatchCount")}
             value={topMode}
             onChange={setTopMode}
-            options={TOP_OPTIONS}
+            options={topOptions(t)}
           />
         }
       >
@@ -796,7 +813,7 @@ export default function TabStockReconcile() {
               },
               {
                 key: "product_name",
-                header: "Tên SKU",
+                header: t("reports.stockReconcile.colSkuName"),
                 render: (row) => row.product_name || EMPTY_TEXT,
               },
               {
@@ -813,7 +830,7 @@ export default function TabStockReconcile() {
               },
               {
                 key: "variance",
-                header: "Chênh lệch",
+                header: t("reports.stockReconcile.colVariance"),
                 align: "right",
                 render: (row) => (
                   <Box component="span" sx={{ fontWeight: 700 }}>
@@ -825,7 +842,7 @@ export default function TabStockReconcile() {
             ]}
             rows={topRows}
             rowKey={(row) => row.product_code}
-            emptyText="Không có SKU mismatch."
+            emptyText={t("reports.stockReconcile.mismatchTableEmpty")}
           />
         ) : (
           <MultiSeriesBarChart
@@ -843,7 +860,7 @@ export default function TabStockReconcile() {
                 color: CHART_COLORS.info,
               },
               {
-                name: "Chênh lệch",
+                name: t("reports.stockReconcile.colVariance"),
                 data: topRows.map((row) => row.variance),
                 color: CHART_COLORS.danger,
               },
@@ -858,27 +875,27 @@ export default function TabStockReconcile() {
 
       <ReportSectionHeading
         id="rpt-tab2-norm"
-        title="Cảnh báo định mức tồn kho"
-        description="So Available Qty hiện tại với Min Qty / Max Qty đã cấu hình cho từng SKU."
+        title={t("reports.stockReconcile.thresholdTitle")}
+        description={t("reports.stockReconcile.thresholdDescription")}
       />
 
       <FilterBar
-        label="Bộ lọc bảng cảnh báo định mức"
+        label={t("reports.stockReconcile.thresholdFilterLabel")}
         hint={`${fmt(normRows.length)} SKU`}
       >
         <AllOrPickFilter
           value={normState}
           onChange={setNormState}
-          options={NORM_FILTER_OPTIONS}
-          allLabel="Tất cả trạng thái định mức"
-          ariaLabel="Trạng thái định mức"
+          options={normFilterOptions(t)}
+          allLabel={t("reports.stockReconcile.thresholdStatusAll")}
+          ariaLabel={t("reports.stockReconcile.thresholdStatusAria")}
           minWidth={220}
         />
         <ItemKindFilter value={normKind} onChange={setNormKind} />
         <SearchInput
           width={260}
-          placeholder="SKU / tên sản phẩm"
-          aria-label="Tìm SKU hoặc tên sản phẩm"
+          placeholder={t("reports.stockReconcile.skuSearchPlaceholder")}
+          aria-label={t("reports.stockReconcile.skuSearchAria")}
           value={normKeyword}
           onChange={setNormKeyword}
         />
@@ -888,9 +905,7 @@ export default function TabStockReconcile() {
       skuAggregates.every((entry) => entry.normState === "UNSET") ? (
         <Box sx={{ mb: 1.5 }}>
           <UiAlert tone="info">
-            Chưa SKU nào được đặt Min Qty / Max Qty, nên mọi dòng đang ở trạng
-            thái "Chưa cấu hình". Đặt định mức tại màn Danh mục SKU để bảng này
-            bắt đầu cảnh báo.
+            {t("reports.stockReconcile.noThresholdNote")}
           </UiAlert>
         </Box>
       ) : null}
@@ -922,14 +937,14 @@ export default function TabStockReconcile() {
           },
           {
             key: "product_name",
-            header: "Tên sản phẩm",
+            header: t("reports.stockReconcile.colProductName"),
             render: (row) => row.product_name || EMPTY_TEXT,
           },
           {
             key: "kind",
-            header: "Loại hàng",
+            header: t("reports.stockReconcile.colItemKind"),
             width: 120,
-            render: (row) => ITEM_KIND_LABELS[row.kind] ?? "Chưa phân loại",
+            render: (row) => itemKindLabel(row.kind, t),
           },
           {
             key: "available",
@@ -944,18 +959,20 @@ export default function TabStockReconcile() {
             header: "Min Qty",
             align: "right",
             width: 110,
-            render: (row) => (row.minQty === null ? EMPTY_TEXT : fmt(row.minQty)),
+            render: (row) =>
+              row.minQty === null ? EMPTY_TEXT : fmt(row.minQty),
           },
           {
             key: "max",
             header: "Max Qty",
             align: "right",
             width: 110,
-            render: (row) => (row.maxQty === null ? EMPTY_TEXT : fmt(row.maxQty)),
+            render: (row) =>
+              row.maxQty === null ? EMPTY_TEXT : fmt(row.maxQty),
           },
           {
             key: "gap",
-            header: "Chênh lệch",
+            header: t("reports.stockReconcile.colVariance"),
             align: "right",
             width: 130,
             sortAccessor: (row) => row.normGap ?? 0,
@@ -971,13 +988,13 @@ export default function TabStockReconcile() {
           },
           {
             key: "state",
-            header: "Trạng thái",
+            header: t("reports.stockReconcile.colStatus"),
             width: 150,
             render: (row) => (
               <UiStatusBadge
                 size="small"
                 tone={STOCK_NORM_TONE[row.normState]}
-                label={STOCK_NORM_LABELS[row.normState]}
+                label={t(STOCK_NORM_LABEL_KEYS[row.normState])}
               />
             ),
           },
@@ -985,7 +1002,7 @@ export default function TabStockReconcile() {
         rows={normPagination.pageRows}
         rowKey={(row) => row.product_code}
         loading={loading}
-        emptyText="Không có SKU nào theo bộ lọc."
+        emptyText={t("reports.stockReconcile.detailEmpty")}
       />
       <ReportPaginationBar
         page={normPagination.page}
@@ -999,17 +1016,12 @@ export default function TabStockReconcile() {
 
       <ReportSectionHeading
         id="rpt-tab2-detail"
-        title="Chi tiết tồn kho & đối soát"
-        description={
-          "Một dòng cho mỗi SKU: số dư, tồn tính từ movement, chênh lệch, định mức. " +
-          'Cột "Chênh lệch" = Số dư − Sổ cái; còn "Trạng thái đối soát" tổng hợp cả 4 check ' +
-          "của SRS §7.5 (sổ cái ↔ số dư, sổ serial, số lượng trong thùng, toàn vẹn thùng chứa), " +
-          'nên chênh lệch bằng 0 mà vẫn đỏ là do lệch ở sổ phụ — dòng "Lệch ở" chỉ rõ check nào.'
-        }
+        title={t("reports.stockReconcile.detailTitle")}
+        description={t("reports.stockReconcile.detailDescription")}
       />
 
       <FilterBar
-        label="Bộ lọc bảng chi tiết"
+        label={t("reports.stockReconcile.detailFilterLabel")}
         hint={`${fmt(detailRows.length)} SKU`}
         actions={
           <ExportButtons
@@ -1032,8 +1044,8 @@ export default function TabStockReconcile() {
       >
         <SearchInput
           width={260}
-          placeholder="SKU / tên sản phẩm"
-          aria-label="Tìm SKU hoặc tên sản phẩm ở bảng chi tiết"
+          placeholder={t("reports.stockReconcile.skuSearchPlaceholder")}
+          aria-label={t("reports.stockReconcile.detailSearchAria")}
           value={detailKeyword}
           onChange={setDetailKeyword}
         />
@@ -1041,8 +1053,8 @@ export default function TabStockReconcile() {
           value={detailCategory}
           onChange={setDetailCategory}
           options={categories.options}
-          allLabel="Tất cả nhóm hàng"
-          ariaLabel="Nhóm hàng"
+          allLabel={t("reports.stockReconcile.categoryAll")}
+          ariaLabel={t("reports.stockReconcile.categoryAria")}
           minWidth={210}
         />
         <ItemKindFilter value={detailKind} onChange={setDetailKind} />
@@ -1050,23 +1062,23 @@ export default function TabStockReconcile() {
           value={detailStockStatus}
           onChange={setDetailStockStatus}
           options={STOCK_STATUS_FILTER_OPTIONS}
-          allLabel="Tất cả trạng thái tồn"
-          ariaLabel="Trạng thái tồn"
+          allLabel={t("reports.stockReconcile.stockStatusAll")}
+          ariaLabel={t("reports.stockReconcile.stockStatusAria")}
           minWidth={210}
         />
         <AllOrPickFilter
           value={detailReconcile}
           onChange={setDetailReconcile}
           options={RECONCILE_FILTER_OPTIONS}
-          allLabel="MATCH và MISMATCH"
-          ariaLabel="Trạng thái đối soát"
+          allLabel={t("reports.stockReconcile.reconcileAll")}
+          ariaLabel={t("reports.stockReconcile.reconcileAria")}
         />
         <AllOrPickFilter
           value={detailNorm}
           onChange={setDetailNorm}
-          options={NORM_FILTER_OPTIONS}
-          allLabel="Tất cả trạng thái định mức"
-          ariaLabel="Trạng thái định mức ở bảng chi tiết"
+          options={normFilterOptions(t)}
+          allLabel={t("reports.stockReconcile.thresholdStatusAll")}
+          ariaLabel={t("reports.stockReconcile.detailThresholdAria")}
           minWidth={220}
         />
       </FilterBar>
@@ -1075,7 +1087,7 @@ export default function TabStockReconcile() {
         <Box sx={{ mb: 1.5 }} role="alert">
           <UiAlert
             tone="error"
-            title="Xuất báo cáo bị từ chối quyền."
+            title={t("reports.common.exportDenied")}
             onClose={exporter.clearExportDenied}
           >
             {exporter.exportDenied}
@@ -1090,11 +1102,11 @@ export default function TabStockReconcile() {
         loading={loading}
         sortState={sortState}
         onSortChange={onSortChange}
-        emptyText="Không có SKU nào theo bộ lọc."
+        emptyText={t("reports.stockReconcile.detailEmpty")}
         renderRowActions={(row) => (
           <ActionButton
             kind="view"
-            aria-label="Xem chi tiết SKU"
+            aria-label={t("reports.stockReconcile.detailRowAria")}
             sx={{ whiteSpace: "nowrap" }}
             onClick={() =>
               setDetailRow({ row, index: sortedRows.indexOf(row) })
@@ -1112,10 +1124,15 @@ export default function TabStockReconcile() {
 
       {reconcileDrill ? (
         <DrillDownDialog
-          title={`SKU ${reconcileDrill === "MATCH" ? "khớp" : "lệch"} đối soát`}
-          subtitle={`${fmt(
-            reconcileDrill === "MATCH" ? matchCount : mismatchCount,
-          )} SKU · bấm mã SKU để xem Movement`}
+          title={t("reports.stockReconcile.reconcileDrillTitle", {
+            state:
+              reconcileDrill === "MATCH"
+                ? t("reports.stockReconcile.reconcileDrillMatch")
+                : t("reports.stockReconcile.reconcileDrillMismatch"),
+          })}
+          subtitle={t("reports.stockReconcile.reconcileDrillSubtitle", {
+            count: fmt(reconcileDrill === "MATCH" ? matchCount : mismatchCount),
+          })}
           onClose={() => setReconcileDrill(null)}
         >
           <ResponsiveDataTable<SkuAggregate>
@@ -1148,7 +1165,7 @@ export default function TabStockReconcile() {
               },
               {
                 key: "product_name",
-                header: "Tên SKU",
+                header: t("reports.stockReconcile.colSkuName"),
                 render: (row) => row.product_name || EMPTY_TEXT,
               },
               {
@@ -1165,7 +1182,7 @@ export default function TabStockReconcile() {
               },
               {
                 key: "variance",
-                header: "Chênh lệch",
+                header: t("reports.stockReconcile.colVariance"),
                 align: "right",
                 render: (row) => fmt(row.variance),
               },
@@ -1174,36 +1191,39 @@ export default function TabStockReconcile() {
               (entry) => entry.reconcile === reconcileDrill,
             )}
             rowKey={(row) => row.product_code}
-            emptyText="Không có SKU nào."
+            emptyText={t("reports.stockReconcile.drillEmpty")}
           />
         </DrillDownDialog>
       ) : null}
 
       {skuDrill ? (
         <DrillDownDialog
-          title={`Movement của SKU ${skuDrill}`}
-          subtitle="90 ngày gần nhất"
+          title={t("reports.stockReconcile.skuMovementTitle", {
+            sku: skuDrill,
+          })}
+          subtitle={t("reports.stockReconcile.skuMovementSubtitle")}
           onClose={() => setSkuDrill(null)}
         >
           <MovementTable
             rows={skuMovementRows}
             loading={skuMovements.isLoading}
-            emptyText="SKU này không có biến động trong 90 ngày gần nhất."
+            emptyText={t("reports.stockReconcile.skuMovementEmpty")}
           />
         </DrillDownDialog>
       ) : null}
 
       {detailRow ? (
         <ReportRowDetailModal
-          title={`Chi tiết tồn kho — ${text(detailRow.row.product_code)}`}
+          title={t("reports.stockReconcile.skuDetailTitle", {
+            code: text(detailRow.row.product_code),
+          })}
           columns={detailColumns}
           row={detailRow.row}
           rowIndex={detailRow.index}
           onClose={() => setDetailRow(null)}
           extra={
             <Box sx={{ typography: "caption", color: "text.secondary" }}>
-              Bấm mã SKU ở cột đầu bảng để mở danh sách Movement liên quan.
-              Trạng thái tồn theo từng kho:{" "}
+              {t("reports.stockReconcile.skuDetailNote")}{" "}
               {STOCK_STATUSES.map(
                 (status) => INVENTORY_STOCK_STATUS_LABELS[status] ?? status,
               ).join(" · ")}

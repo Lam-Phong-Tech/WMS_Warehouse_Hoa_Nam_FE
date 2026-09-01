@@ -1,3 +1,4 @@
+import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import { useMemo, useState } from "react";
 import { Box, Stack, UiAlert, UiStatusBadge } from "@/shared/ui";
 import {
@@ -52,10 +53,10 @@ import { mvpRowNumber } from "@/shared/components/mvp/MvpSelectionCell";
 import { ReportStatusBadge } from "./report-drilldown";
 import { useReportExport } from "./report-export";
 
-const RESULT_OPTIONS = [
-  { value: "PRINTED", label: "Đã in" },
-  { value: "PRINT_FAILED", label: "In lỗi" },
-  { value: "REPRINT", label: "In lại" },
+const resultOptions = (t: TranslateFn) => [
+  { value: "PRINTED", label: t("reports.packingLabel.outcomePrinted") },
+  { value: "PRINT_FAILED", label: t("reports.packingLabel.outcomeFailed") },
+  { value: "REPRINT", label: t("reports.packingLabel.outcomeReprint") },
 ];
 
 type PrintAttempt = {
@@ -97,6 +98,7 @@ type LabelRow = {
  * vào một ngày mà không giải thích sẽ khiến chart 5.1 bị đọc sai.
  */
 export default function TabPackingLabel() {
+  const t = useT();
   const period = usePeriodFilter("this-month");
   const printers = usePrinterOptions();
   const exporter = useReportExport();
@@ -192,22 +194,22 @@ export default function TabPackingLabel() {
 
     return [
       {
-        name: "Đã in",
+        name: t("reports.packingLabel.outcomePrinted"),
         data: days.map((day) => printed.get(day) ?? 0),
         color: CHART_COLORS.success,
       },
       {
-        name: "In lỗi",
+        name: t("reports.packingLabel.outcomeFailed"),
         data: days.map((day) => failed.get(day) ?? 0),
         color: CHART_COLORS.danger,
       },
       {
-        name: "In lại",
+        name: t("reports.packingLabel.outcomeReprint"),
         data: days.map((day) => reprint.get(day) ?? 0),
         color: CHART_COLORS.warning,
       },
     ];
-  }, [days, rows]);
+  }, [days, rows, t]);
 
   const [dayDrill, setDayDrill] = useState<{
     day: string;
@@ -218,7 +220,7 @@ export default function TabPackingLabel() {
   const printerFailures = useMemo(() => {
     const counter = new Map<string, { failed: number; attempts: number }>();
     for (const row of rows) {
-      const key = row.printer || "Chưa gán máy in";
+      const key = row.printer || t("reports.packingLabel.noPrinter");
       const current = counter.get(key) ?? { failed: 0, attempts: 0 };
       current.failed += row.failed;
       current.attempts += row.attempts;
@@ -232,7 +234,7 @@ export default function TabPackingLabel() {
       }))
       .filter((item) => item.attempts > 0)
       .sort((a, b) => b.value - a.value);
-  }, [rows]);
+  }, [rows, t]);
 
   // ── 5.3 Lịch sử Print / Reprint ────────────────────────────────────────
   const actorOptions = useMemo(() => {
@@ -281,52 +283,53 @@ export default function TabPackingLabel() {
     <Box data-testid="rpt-tab-packing-label">
       <ReportSectionHeading
         id="rpt-tab5-heading"
-        title="Báo cáo Packing Label – Print / Reprint"
-        description="Kết quả in nhãn theo ngày, máy in hay lỗi nhất và nhật ký từng nhãn."
+        title={t("reports.packingLabel.title")}
+        description={t("reports.packingLabel.description")}
       />
 
       <FilterBar
-        label="Bộ lọc kỳ báo cáo"
-        hint={`Kỳ đang xem: ${period.label} · ${fmt(rows.length)} nhãn`}
+        label={t("reports.packingLabel.filterLabel")}
+        hint={t("reports.packingLabel.filterHint", {
+          label: period.label,
+          count: fmt(rows.length),
+        })}
       >
         <PeriodFilterControls state={period} />
       </FilterBar>
 
       {period.invalid ? (
         <Box sx={{ mb: 2 }}>
-          <UiAlert tone="error">
-            Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc.
-          </UiAlert>
+          <UiAlert tone="error">{t("reports.common.dateOrderError")}</UiAlert>
         </Box>
       ) : null}
 
       {!hasAttemptHistory && rows.length > 0 ? (
         <DataGapNotice>
-          Máy chủ hiện trả tổng hợp theo từng nhãn (số lần in / lỗi / in lại),
-          chưa trả danh sách <b>từng lần in</b> kèm lý do. Vì vậy biểu đồ kết
-          quả in theo thời gian quy các lần in của một nhãn về{" "}
-          <b>ngày in gần nhất</b>, và hai cột "Lý do lỗi" / "Lý do Reprint" ở
-          bảng nhật ký để trống. Khi API bổ sung
-          <code> attempts[]</code>, màn hình này tự hiển thị đầy đủ mà không cần
-          sửa gì thêm.
+          {t("reports.packingLabel.apiNoteA")}{" "}
+          <b>{t("reports.packingLabel.apiNoteB")}</b>{" "}
+          {t("reports.packingLabel.apiNoteC")}{" "}
+          <b>{t("reports.packingLabel.apiNoteD")}</b>
+          {t("reports.packingLabel.apiNoteE")}
+          <code> attempts[]</code>
+          {t("reports.packingLabel.apiNoteF")}
         </DataGapNotice>
       ) : null}
 
       <ReportKpiRow>
         <ReportKpi
-          label="Nhãn đóng gói"
+          label={t("reports.packingLabel.kpiLabels")}
           value={fmt(summary.labels)}
           tone="primary"
           icon={<TagOutlined />}
         />
         <ReportKpi
-          label="Tổng lần in"
+          label={t("reports.packingLabel.kpiAttempts")}
           value={fmt(summary.attempts)}
           tone="info"
           icon={<PrinterOutlined />}
         />
         <ReportKpi
-          label="Lần in lỗi"
+          label={t("reports.packingLabel.kpiFailed")}
           value={fmt(summary.failed)}
           tone="error"
           icon={<WarningOutlined />}
@@ -334,7 +337,7 @@ export default function TabPackingLabel() {
           onClick={() => setResultFilter("PRINT_FAILED")}
         />
         <ReportKpi
-          label="Lần in lại"
+          label={t("reports.packingLabel.kpiReprints")}
           value={fmt(summary.reprints)}
           tone="warning"
           icon={<UndoOutlined />}
@@ -345,13 +348,13 @@ export default function TabPackingLabel() {
 
       <ChartGrid>
         <ChartCard
-          title="Kết quả in theo thời gian"
-          description="Số lần đã in / in lỗi / in lại theo từng ngày trong kỳ."
+          title={t("reports.packingLabel.dailyTitle")}
+          description={t("reports.packingLabel.dailyDescription")}
           loading={labelLog.isLoading}
           error={labelLog.error}
           onRetry={() => void labelLog.refetch()}
           empty={days.length === 0 || summary.attempts === 0}
-          emptyText="Kỳ này chưa có lần in nhãn nào."
+          emptyText={t("reports.packingLabel.dailyEmpty")}
         >
           <MultiSeriesBarChart
             stacked
@@ -369,18 +372,15 @@ export default function TabPackingLabel() {
         </ChartCard>
 
         <ChartCard
-          title="Máy in có nhiều lỗi nhất"
-          description="Số lần in lỗi theo từng máy in — bấm để xem các nhãn liên quan."
+          title={t("reports.packingLabel.printerTitle")}
+          description={t("reports.packingLabel.printerDescription")}
           loading={labelLog.isLoading}
           error={labelLog.error}
           onRetry={() => void labelLog.refetch()}
           empty={printerFailures.every((item) => item.value === 0)}
-          emptyText="Không có máy in nào phát sinh lỗi trong kỳ."
+          emptyText={t("reports.packingLabel.printerEmpty")}
           footer={
-            <FormulaNote>
-              Tỉ lệ lỗi từng máy = số lần in lỗi ÷ tổng số lần in của máy đó
-              (xem tooltip trên bảng nhật ký bên dưới).
-            </FormulaNote>
+            <FormulaNote>{t("reports.packingLabel.printerNote")}</FormulaNote>
           }
         >
           <HorizontalBarChart
@@ -395,13 +395,15 @@ export default function TabPackingLabel() {
 
       <ReportSectionHeading
         id="rpt-tab5-history"
-        title="Lịch sử Print / Reprint"
-        description="Bấm vào một phiếu để xem toàn bộ lịch sử các lần in / in lại của nhãn đó."
+        title={t("reports.packingLabel.logTitle")}
+        description={t("reports.packingLabel.logDescription")}
       />
 
       <FilterBar
-        label="Bộ lọc bảng nhật ký in"
-        hint={`${fmt(filtered.length)} nhãn`}
+        label={t("reports.packingLabel.logFilterLabel")}
+        hint={t("reports.packingLabel.logFilterHint", {
+          count: fmt(filtered.length),
+        })}
         actions={
           <ExportButtons
             exporting={exporter.exporting}
@@ -430,30 +432,30 @@ export default function TabPackingLabel() {
         <AllOrPickFilter
           value={resultFilter}
           onChange={setResultFilter}
-          options={RESULT_OPTIONS}
-          allLabel="Tất cả kết quả in"
-          ariaLabel="Kết quả in"
+          options={resultOptions(t)}
+          allLabel={t("reports.packingLabel.outcomeAll")}
+          ariaLabel={t("reports.packingLabel.outcomeAria")}
         />
         <AllOrPickFilter
           value={printerFilter}
           onChange={setPrinterFilter}
           options={printers.options}
-          allLabel="Tất cả máy in"
-          ariaLabel="Máy in"
+          allLabel={t("reports.packingLabel.printerAll")}
+          ariaLabel={t("reports.packingLabel.printerAria")}
           minWidth={210}
         />
         <AllOrPickFilter
           value={actorFilter}
           onChange={setActorFilter}
           options={actorOptions}
-          allLabel="Tất cả người in"
-          ariaLabel="Người thực hiện"
+          allLabel={t("reports.packingLabel.actorAll")}
+          ariaLabel={t("reports.packingLabel.actorAria")}
           minWidth={200}
         />
         <SearchInput
           width={260}
-          placeholder="Phiếu xuất / Label ID / nơi nhận"
-          aria-label="Tìm phiếu xuất, label ID hoặc nơi nhận"
+          placeholder={t("reports.packingLabel.searchPlaceholder")}
+          aria-label={t("reports.packingLabel.searchAria")}
           value={keyword}
           onChange={setKeyword}
         />
@@ -463,7 +465,7 @@ export default function TabPackingLabel() {
         <Box sx={{ mb: 1.5 }}>
           <ApiErrorAlert
             error={labelLog.error}
-            title="Không tải được nhật ký nhãn đóng gói"
+            title={t("reports.packingLabel.logLoadError")}
             onRetry={() => void labelLog.refetch()}
           />
         </Box>
@@ -473,7 +475,7 @@ export default function TabPackingLabel() {
         <Box sx={{ mb: 1.5 }} role="alert">
           <UiAlert
             tone="error"
-            title="Xuất báo cáo bị từ chối quyền."
+            title={t("reports.common.exportDenied")}
             onClose={exporter.clearExportDenied}
           >
             {exporter.exportDenied}
@@ -498,12 +500,14 @@ export default function TabPackingLabel() {
           },
           {
             key: "outboundNo",
-            header: "Phiếu xuất",
+            header: t("reports.packingLabel.colOutbound"),
             width: 170,
             sortAccessor: (row) => row.outboundNo,
             render: (row) => (
               <Box>
-                <Box sx={{ fontWeight: 700 }}>{row.outboundNo || EMPTY_TEXT}</Box>
+                <Box sx={{ fontWeight: 700 }}>
+                  {row.outboundNo || EMPTY_TEXT}
+                </Box>
                 <Box sx={{ fontSize: 12, color: "text.secondary" }}>
                   {row.outboundDate ? fmtDate(row.outboundDate) : ""}
                 </Box>
@@ -519,7 +523,7 @@ export default function TabPackingLabel() {
           },
           {
             key: "status",
-            header: "Trạng thái in",
+            header: t("reports.packingLabel.colPrintStatus"),
             width: 150,
             render: (row) => (
               <ReportStatusBadge
@@ -530,7 +534,7 @@ export default function TabPackingLabel() {
           },
           {
             key: "attempts",
-            header: "Số lần in",
+            header: t("reports.packingLabel.colAttempts"),
             align: "right",
             width: 110,
             sortAccessor: (row) => row.attempts,
@@ -538,7 +542,7 @@ export default function TabPackingLabel() {
           },
           {
             key: "reprints",
-            header: "Số lần Reprint",
+            header: t("reports.packingLabel.colReprints"),
             align: "right",
             width: 140,
             sortAccessor: (row) => row.reprints,
@@ -546,19 +550,19 @@ export default function TabPackingLabel() {
           },
           {
             key: "printer",
-            header: "Máy in",
+            header: t("reports.packingLabel.colPrinter"),
             hideOnMobile: true,
             render: (row) => row.printer || EMPTY_TEXT,
           },
           {
             key: "actor",
-            header: "Người in",
+            header: t("reports.packingLabel.colOperator"),
             hideOnMobile: true,
             render: (row) => row.actor || EMPTY_TEXT,
           },
           {
             key: "lastAttemptAt",
-            header: "Thời gian",
+            header: t("reports.packingLabel.colTime"),
             width: 165,
             sortAccessor: (row) => row.lastAttemptAt,
             render: (row) =>
@@ -566,15 +570,18 @@ export default function TabPackingLabel() {
           },
           {
             key: "failureReason",
-            header: "Lý do lỗi",
+            header: t("reports.packingLabel.colFailReason"),
             hideOnMobile: true,
             render: (row) =>
-              row.failureReason ||
-              (row.failed > 0 ? `${fmt(row.failed)} lần lỗi` : EMPTY_TEXT),
+              row.failureReason || row.failed > 0
+                ? t("reports.packingLabel.failCount", {
+                    count: fmt(row.failed),
+                  })
+                : EMPTY_TEXT,
           },
           {
             key: "reprintReason",
-            header: "Lý do Reprint",
+            header: t("reports.packingLabel.colReprintReason"),
             hideOnMobile: true,
             render: (row) => row.reprintReason || EMPTY_TEXT,
           },
@@ -583,11 +590,11 @@ export default function TabPackingLabel() {
         rowKey={(row) => row.id}
         loading={labelLog.isLoading}
         onRowClick={(row) => setOpenLabel(row)}
-        emptyText="Không có nhãn nào theo bộ lọc."
+        emptyText={t("reports.packingLabel.logEmpty")}
         renderRowActions={(row) => (
           <ActionButton
             kind="history"
-            aria-label="Xem lịch sử in của nhãn"
+            aria-label={t("reports.packingLabel.logRowAria")}
             sx={{ whiteSpace: "nowrap" }}
             onClick={() => setOpenLabel(row)}
           />
@@ -603,14 +610,17 @@ export default function TabPackingLabel() {
 
       {dayDrill ? (
         <DrillDownDialog
-          title={`${dayDrill.seriesName} — ngày ${fmtDate(dayDrill.day)}`}
+          title={t("reports.packingLabel.dayDrillTitle", {
+            series: dayDrill.seriesName,
+            date: fmtDate(dayDrill.day),
+          })}
           onClose={() => setDayDrill(null)}
         >
           <ResponsiveDataTable<LabelRow>
             columns={[
               {
                 key: "outboundNo",
-                header: "Phiếu xuất",
+                header: t("reports.packingLabel.colOutbound"),
                 render: (row) => row.outboundNo || EMPTY_TEXT,
               },
               {
@@ -620,24 +630,24 @@ export default function TabPackingLabel() {
               },
               {
                 key: "printer",
-                header: "Máy in",
+                header: t("reports.packingLabel.colPrinter"),
                 render: (row) => row.printer || EMPTY_TEXT,
               },
               {
                 key: "attempts",
-                header: "Lần in",
+                header: t("reports.packingLabel.colPrintCount"),
                 align: "right",
                 render: (row) => fmt(row.attempts),
               },
               {
                 key: "failed",
-                header: "Lỗi",
+                header: t("reports.packingLabel.colFailed"),
                 align: "right",
                 render: (row) => fmt(row.failed),
               },
               {
                 key: "reprints",
-                header: "In lại",
+                header: t("reports.packingLabel.colReprint"),
                 align: "right",
                 render: (row) => fmt(row.reprints),
               },
@@ -647,21 +657,23 @@ export default function TabPackingLabel() {
                 dayKey(row.lastAttemptAt || row.createdAt) === dayDrill.day,
             )}
             rowKey={(row) => row.id}
-            emptyText="Không có nhãn nào trong ngày này."
+            emptyText={t("reports.packingLabel.dayDrillEmpty")}
           />
         </DrillDownDialog>
       ) : null}
 
       {printerDrill ? (
         <DrillDownDialog
-          title={`Nhãn in trên máy ${printerDrill}`}
+          title={t("reports.packingLabel.printerDrillTitle", {
+            printer: printerDrill,
+          })}
           onClose={() => setPrinterDrill(null)}
         >
           <ResponsiveDataTable<LabelRow>
             columns={[
               {
                 key: "outboundNo",
-                header: "Phiếu xuất",
+                header: t("reports.packingLabel.colOutbound"),
                 render: (row) => row.outboundNo || EMPTY_TEXT,
               },
               {
@@ -671,34 +683,41 @@ export default function TabPackingLabel() {
               },
               {
                 key: "status",
-                header: "Trạng thái",
+                header: t("reports.packingLabel.colStatus"),
                 render: (row) => reportStatusLabel(row.status),
               },
               {
                 key: "failed",
-                header: "Số lần lỗi",
+                header: t("reports.packingLabel.colFailCount"),
                 align: "right",
                 render: (row) => fmt(row.failed),
               },
               {
                 key: "actor",
-                header: "Người in",
+                header: t("reports.packingLabel.colOperator"),
                 render: (row) => row.actor || EMPTY_TEXT,
               },
             ]}
             rows={rows.filter(
-              (row) => (row.printer || "Chưa gán máy in") === printerDrill,
+              (row) =>
+                (row.printer || t("reports.packingLabel.noPrinter")) ===
+                printerDrill,
             )}
             rowKey={(row) => row.id}
-            emptyText="Không có nhãn nào."
+            emptyText={t("reports.packingLabel.printerDrillEmpty")}
           />
         </DrillDownDialog>
       ) : null}
 
       {openLabel ? (
         <DrillDownDialog
-          title={`Lịch sử in nhãn ${openLabel.labelCode || openLabel.outboundNo}`}
-          subtitle={`Phiếu xuất ${openLabel.outboundNo} · ${openLabel.recipient}`}
+          title={t("reports.packingLabel.historyTitle", {
+            code: openLabel.labelCode || openLabel.outboundNo,
+          })}
+          subtitle={t("reports.packingLabel.historySubtitle", {
+            outbound: openLabel.outboundNo,
+            recipient: openLabel.recipient,
+          })}
           onClose={() => setOpenLabel(null)}
           maxWidth="md"
         >
@@ -706,22 +725,30 @@ export default function TabPackingLabel() {
             <UiStatusBadge
               size="small"
               tone="info"
-              label={`Tổng ${fmt(openLabel.attempts)} lần in`}
+              label={t("reports.packingLabel.badgeAttempts", {
+                count: fmt(openLabel.attempts),
+              })}
             />
             <UiStatusBadge
               size="small"
               tone="error"
-              label={`${fmt(openLabel.failed)} lần lỗi`}
+              label={t("reports.packingLabel.badgeFailed", {
+                count: fmt(openLabel.failed),
+              })}
             />
             <UiStatusBadge
               size="small"
               tone="warning"
-              label={`${fmt(openLabel.reprints)} lần in lại`}
+              label={t("reports.packingLabel.badgeReprints", {
+                count: fmt(openLabel.reprints),
+              })}
             />
             <UiStatusBadge
               size="small"
               tone="neutral"
-              label={`Máy in: ${openLabel.printer || EMPTY_TEXT}`}
+              label={t("reports.packingLabel.badgePrinter", {
+                printer: openLabel.printer || EMPTY_TEXT,
+              })}
             />
           </Stack>
           {openLabel.history.length > 0 ? (
@@ -729,43 +756,48 @@ export default function TabPackingLabel() {
               columns={[
                 {
                   key: "at",
-                  header: "Thời gian",
+                  header: t("reports.packingLabel.colTime"),
                   render: (row) => (row.at ? fmtDateTime(row.at) : EMPTY_TEXT),
                 },
                 {
                   key: "status",
-                  header: "Kết quả",
+                  header: t("reports.packingLabel.colResult"),
                   render: (row) => reportStatusLabel(row.status),
                 },
                 {
                   key: "printer",
-                  header: "Máy in",
+                  header: t("reports.packingLabel.colPrinter"),
                   render: (row) => row.printer || EMPTY_TEXT,
                 },
                 {
                   key: "actor",
-                  header: "Người in",
+                  header: t("reports.packingLabel.colOperator"),
                   render: (row) => row.actor || EMPTY_TEXT,
                 },
                 {
                   key: "reason",
-                  header: "Lý do",
+                  header: t("reports.packingLabel.colReason"),
                   render: (row) => row.reason || EMPTY_TEXT,
                 },
               ]}
               rows={openLabel.history}
               rowKey={(row) => `${row.at}-${row.status}`}
-              emptyText="Chưa có lần in nào."
+              emptyText={t("reports.packingLabel.historyEmpty")}
             />
           ) : (
             <UiAlert tone="info">
-              Máy chủ chưa trả danh sách từng lần in cho nhãn này. Số liệu đang
-              có: {fmt(openLabel.attempts)} lần in, {fmt(openLabel.failed)} lần
-              lỗi, {fmt(openLabel.reprints)} lần in lại; lần in gần nhất lúc{" "}
+              {t("reports.packingLabel.historyNoteA")}{" "}
+              {t("reports.packingLabel.historyNoteB", {
+                attempts: fmt(openLabel.attempts),
+                failed: fmt(openLabel.failed),
+                reprints: fmt(openLabel.reprints),
+              })}{" "}
               {openLabel.lastAttemptAt
                 ? fmtDateTime(openLabel.lastAttemptAt)
                 : EMPTY_TEXT}{" "}
-              trên máy {openLabel.printer || EMPTY_TEXT}.
+              {t("reports.packingLabel.historyNoteC", {
+                printer: openLabel.printer || EMPTY_TEXT,
+              })}
             </UiAlert>
           )}
         </DrillDownDialog>

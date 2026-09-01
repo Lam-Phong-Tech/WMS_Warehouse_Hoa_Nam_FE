@@ -1,3 +1,4 @@
+import { useT } from "@/shared/i18n/useT";
 import type { ReactElement, ReactNode } from "react";
 import {
   Box,
@@ -129,8 +130,10 @@ export function ChartCard({
   error,
   onRetry,
   empty,
-  emptyText = "Không có dữ liệu theo bộ lọc hiện tại.",
+  emptyText,
 }: ChartCardProps) {
+  const t = useT();
+  const resolvedEmptyText = emptyText ?? t("reports.common.noData");
   // Tiêu đề là duy nhất trong một tab, và chỉ một tab được mount tại một
   // thời điểm — đủ để làm id neo cho aria-labelledby.
   const titleId = `rpt-chart-${title}`
@@ -152,7 +155,7 @@ export function ChartCard({
       {error ? (
         <ApiErrorAlert
           error={error}
-          title={`Không tải được "${title}"`}
+          title={t("reports.common.loadError", { title })}
           onRetry={onRetry}
         />
       ) : loading ? (
@@ -171,7 +174,7 @@ export function ChartCard({
             fontSize: TYPOGRAPHY.fontSizeSecondary,
           }}
         >
-          {emptyText}
+          {resolvedEmptyText}
         </Box>
       ) : (
         children
@@ -418,10 +421,11 @@ export function DrillDownDialog({
 
 /** Ghi chú "số liệu này lấy ở đâu / công thức nào" — đặt dưới chart hoặc bảng. */
 export function FormulaNote({ children }: { children: ReactNode }) {
+  const t = useT();
   return (
     <Box sx={{ ...RPT_CAPTION_SX, mt: 1 }}>
       <Box component="span" sx={{ fontWeight: 700 }}>
-        Cách tính:{" "}
+        {t("reports.common.formula")}{" "}
       </Box>
       {children}
     </Box>

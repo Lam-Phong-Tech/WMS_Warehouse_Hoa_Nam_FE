@@ -132,7 +132,10 @@ describe("Flow 06 report pagination/export alignment", () => {
     // RPT-IO-01: tầng dòng expected/scanned/posted + chiều tăng/giảm
     expect(source).toContain("DocumentLinesTable");
     expect(source).toContain("posted_qty");
-    expect(source).toContain("DIRECTION_LABELS");
+    // Đổi tên khi chuyển sang i18n: bảng nhãn chiều tăng/giảm nay giữ KHOÁ
+    // message thay vì câu tiếng Việt. Guard vẫn pin đúng thứ nó quan tâm — cột
+    // "Tăng/Giảm" có mặt — nên chỉ đổi tên ký hiệu.
+    expect(source).toContain("DIRECTION_LABEL_KEYS");
     // RPT-WAR-01: cột khách hàng đã mask + lý do xuất PII
     expect(source).toContain("warrantyPiiText");
     expect(source).toContain("piiReasonTrimmed");

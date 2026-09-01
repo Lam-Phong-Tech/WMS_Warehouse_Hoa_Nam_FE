@@ -1,3 +1,4 @@
+import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import { useMemo, useState } from "react";
 import { Box, UiAlert, UiSelect } from "@/shared/ui";
 import {
@@ -70,10 +71,11 @@ const TOP_OPTIONS = [
   { value: "20", label: "Top 20" },
 ] as const;
 
-const BREAKDOWN_OPTIONS = [
-  { value: "SKU", label: "Theo SKU" },
-  { value: "CATEGORY", label: "Theo nhóm hàng" },
-] as const;
+const breakdownOptions = (t: TranslateFn) =>
+  [
+    { value: "SKU", label: t("reports.recipient.bySku") },
+    { value: "CATEGORY", label: t("reports.recipient.byCategory") },
+  ] as const;
 
 type IssueRow = {
   key: string;
@@ -108,6 +110,7 @@ type IssueRow = {
  * đúng dòng nào bị ảnh hưởng. Công thức này được ghi thẳng dưới bảng 7.5.
  */
 export default function TabRecipient() {
+  const t = useT();
   const period = usePeriodFilter("this-month");
   const catalog = useSkuCatalog();
   const categories = useCategoryOptions();
@@ -295,7 +298,7 @@ export default function TabRecipient() {
       { name: string; net: number; gross: number; documents: Set<string> }
     >();
     for (const row of filtered) {
-      const key = row.recipientName || "Chưa xác định";
+      const key = row.recipientName || t("reports.common.undetermined");
       const current = map.get(key) ?? {
         name: key,
         net: 0,
@@ -308,7 +311,7 @@ export default function TabRecipient() {
       map.set(key, current);
     }
     return [...map.values()].sort((a, b) => b.net - a.net);
-  }, [filtered]);
+  }, [filtered, t]);
 
   const [recipientDrill, setRecipientDrill] = useState<string | null>(null);
 
@@ -321,8 +324,9 @@ export default function TabRecipient() {
 
     const dimensionOf = (row: IssueRow) =>
       breakdownBy === "SKU"
-        ? row.productCode || "Chưa xác định"
-        : (categoryNameById.get(row.categoryId) ?? "Chưa phân nhóm");
+        ? row.productCode || t("reports.common.undetermined")
+        : (categoryNameById.get(row.categoryId) ??
+          t("reports.recipient.unclassified"));
 
     const dimensionTotals = new Map<string, number>();
     for (const row of filtered) {
@@ -335,7 +339,9 @@ export default function TabRecipient() {
     const ranked = [...dimensionTotals.entries()].sort((a, b) => b[1] - a[1]);
     const keptKeys = ranked.slice(0, 8).map(([key]) => key);
     const hasOther = ranked.length > keptKeys.length;
-    const dimensions = hasOther ? [...keptKeys, "Khác"] : keptKeys;
+    const dimensions = hasOther
+      ? [...keptKeys, t("reports.common.other")]
+      : keptKeys;
 
     const series = dimensions.map((dimension, index) => ({
       name: dimension,
@@ -345,7 +351,7 @@ export default function TabRecipient() {
           .filter((row) => {
             if (row.recipientName !== recipient) return false;
             const key = dimensionOf(row);
-            return dimension === "Khác"
+            return dimension === t("reports.common.other")
               ? !keptKeys.includes(key)
               : key === dimension;
           })
@@ -361,6 +367,7 @@ export default function TabRecipient() {
     topMode,
     breakdownBy,
     categoryNameById,
+    t,
   ]);
 
   // ── 7.3 Xu hướng xuất theo thời gian ───────────────────────────────────
@@ -383,7 +390,7 @@ export default function TabRecipient() {
       }
       return [
         {
-          name: "Tổng lượng xuất",
+          name: t("reports.recipient.seriesTotal"),
           data: days.map((day) => totals.get(day) ?? 0),
           color: CHART_COLORS.primary,
         },
@@ -403,7 +410,7 @@ export default function TabRecipient() {
         color: CATEGORICAL_PALETTE[index % CATEGORICAL_PALETTE.length],
       };
     });
-  }, [filtered, recipientIds, days]);
+  }, [filtered, recipientIds, days, t]);
 
   // ── 7.4 Cơ cấu theo loại Recipient ─────────────────────────────────────
   const byRecipientType = useMemo(() => {
@@ -446,11 +453,13 @@ export default function TabRecipient() {
       const key = `${row.recipientName}|${row.productCode}`;
       const current = map.get(key) ?? {
         key,
-        recipientName: row.recipientName || "Chưa xác định",
+        recipientName: row.recipientName || t("reports.common.undetermined"),
         recipientType: row.recipientType,
         productCode: row.productCode,
         productName: row.productName,
-        category: categoryNameById.get(row.categoryId) ?? "Chưa phân nhóm",
+        category:
+          categoryNameById.get(row.categoryId) ??
+          t("reports.recipient.unclassified"),
         documents: new Set<string>(),
         gross: 0,
         reversal: 0,
@@ -479,7 +488,7 @@ export default function TabRecipient() {
           : true,
       )
       .sort((a, b) => b.net - a.net);
-  }, [filtered, categoryNameById, keyword]);
+  }, [filtered, categoryNameById, keyword, t]);
 
   const pagination = useClientPagination(detailRows, 15);
 
@@ -502,13 +511,16 @@ export default function TabRecipient() {
     <Box data-testid="rpt-tab-recipient">
       <ReportSectionHeading
         id="rpt-tab7-heading"
-        title="Báo cáo xuất hàng theo người nhận / đại lý"
-        description="Ai nhận nhiều nhất, cơ cấu hàng đã xuất, xu hướng theo thời gian và tỉ trọng theo loại người nhận."
+        title={t("reports.recipient.title")}
+        description={t("reports.recipient.description")}
       />
 
       <FilterBar
-        label="Bộ lọc dùng chung cho 5 biểu đồ và bảng chi tiết"
-        hint={`Kỳ đang xem: ${period.label} · ${fmt(byRecipient.length)} người nhận`}
+        label={t("reports.recipient.filterLabel")}
+        hint={t("reports.recipient.filterHint", {
+          label: period.label,
+          count: fmt(byRecipient.length),
+        })}
       >
         <PeriodFilterControls state={period} />
         <AllOrPickFilter
@@ -518,46 +530,46 @@ export default function TabRecipient() {
             value,
             label: recipientTypeLabel(value),
           }))}
-          allLabel="Tất cả loại người nhận"
-          ariaLabel="Loại người nhận"
+          allLabel={t("reports.recipient.typeAll")}
+          ariaLabel={t("reports.recipient.typeAria")}
           minWidth={210}
         />
         <AllOrPickFilter
           value={market}
           onChange={setMarket}
           options={agencies.marketOptions}
-          allLabel="Tất cả thị trường"
-          ariaLabel="Thị trường"
+          allLabel={t("reports.recipient.marketAll")}
+          ariaLabel={t("reports.recipient.marketAria")}
         />
         <AllOrPickFilter
           value={region}
           onChange={setRegion}
           options={agencies.regionOptions}
-          allLabel="Tất cả khu vực"
-          ariaLabel="Khu vực"
+          allLabel={t("reports.recipient.regionAll")}
+          ariaLabel={t("reports.recipient.regionAria")}
         />
         <MultiSelectFilter
           value={recipientIds}
           onChange={setRecipientIds}
           options={agencies.options}
-          placeholder="Người nhận / đại lý"
-          ariaLabel="Người nhận hoặc đại lý"
+          placeholder={t("reports.recipient.recipientPlaceholder")}
+          ariaLabel={t("reports.recipient.recipientAria")}
           minWidth={240}
         />
         <AllOrPickFilter
           value={categoryId}
           onChange={setCategoryId}
           options={categories.options}
-          allLabel="Tất cả SKU / nhóm hàng"
-          ariaLabel="SKU hoặc nhóm hàng"
+          allLabel={t("reports.recipient.skuAll")}
+          ariaLabel={t("reports.recipient.skuAria")}
           minWidth={220}
         />
         <AllOrPickFilter
           value={departmentId}
           onChange={setDepartmentId}
           options={users.departmentOptions}
-          allLabel="Tất cả phòng ban"
-          ariaLabel="Phòng ban xử lý"
+          allLabel={t("reports.recipient.departmentAll")}
+          ariaLabel={t("reports.recipient.departmentAria")}
           minWidth={200}
         />
         <ItemKindFilter value={itemKind} onChange={setItemKind} />
@@ -565,54 +577,52 @@ export default function TabRecipient() {
 
       {period.invalid ? (
         <Box sx={{ mb: 2 }}>
-          <UiAlert tone="error">
-            Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc.
-          </UiAlert>
+          <UiAlert tone="error">{t("reports.common.dateOrderError")}</UiAlert>
         </Box>
       ) : null}
 
       <ReportKpiRow>
         <ReportKpi
-          label="Người nhận có phát sinh"
+          label={t("reports.recipient.kpiRecipients")}
           value={fmt(byRecipient.length)}
           tone="primary"
           icon={<TeamOutlined />}
         />
         <ReportKpi
-          label="SL xuất gộp"
+          label={t("reports.recipient.kpiGross")}
           value={fmt(totals.gross)}
           tone="info"
           icon={<ExportOutlined />}
-          hint="Lượng đã xuất trước khi trừ đảo"
+          hint={t("reports.recipient.kpiGrossHint")}
         />
         <ReportKpi
-          label="SL đã đảo"
+          label={t("reports.recipient.kpiReversed")}
           value={fmt(totals.reversal)}
           tone="warning"
           icon={<SwapOutlined />}
-          hint="Lượng đã đảo, phân bổ theo tỉ trọng dòng"
+          hint={t("reports.recipient.kpiReversedHint")}
         />
         <ReportKpi
-          label="SL xuất thuần"
+          label={t("reports.recipient.kpiNet")}
           value={fmt(totals.net)}
           tone="success"
           icon={<ShopOutlined />}
-          hint="SL xuất gộp − SL đã đảo"
+          hint={t("reports.recipient.kpiNetHint")}
         />
       </ReportKpiRow>
 
       <ChartGrid>
         <ChartCard
-          title="Top người nhận"
-          description="Người nhận / đại lý nhận nhiều hàng nhất trong kỳ, tính theo số lượng xuất thuần."
+          title={t("reports.recipient.topTitle")}
+          description={t("reports.recipient.topDescription")}
           loading={loading}
           error={outbound.error}
           onRetry={() => void outbound.refetch()}
           empty={byRecipient.length === 0}
-          emptyText="Kỳ này chưa có phiếu xuất nào theo bộ lọc."
+          emptyText={t("reports.recipient.topEmpty")}
           toolbar={
             <SegmentedToggle
-              label="Số người nhận hiển thị"
+              label={t("reports.recipient.topCount")}
               value={topMode}
               onChange={setTopMode}
               options={TOP_OPTIONS}
@@ -632,8 +642,8 @@ export default function TabRecipient() {
         </ChartCard>
 
         <ChartCard
-          title="Cơ cấu theo loại người nhận"
-          description="Tỉ trọng lượng hàng xuất cho Nhà phân phối / Đại lý / Khách công trình / Khách lẻ."
+          title={t("reports.recipient.typeMixTitle")}
+          description={t("reports.recipient.typeMixDescription")}
           loading={loading}
           error={outbound.error}
           onRetry={() => void outbound.refetch()}
@@ -641,7 +651,7 @@ export default function TabRecipient() {
         >
           <DonutChart
             items={byRecipientType}
-            centerLabel="Xuất thuần"
+            centerLabel={t("reports.recipient.typeMixCenter")}
             valueFormatter={fmt}
             onSelect={(_item, index) =>
               setTypeDrill(byRecipientType[index]?.type ?? null)
@@ -651,13 +661,13 @@ export default function TabRecipient() {
       </ChartGrid>
 
       <ChartCard
-        title="Cơ cấu hàng đã xuất theo người nhận / đại lý"
+        title={t("reports.recipient.breakdownTitle")}
         description={
           recipientIds.length === 0
-            ? `Chưa chọn người nhận cụ thể — đang so sánh ${topMode} người nhận lớn nhất.`
+            ? t("reports.recipient.breakdownTopMode", { mode: topMode })
             : recipientIds.length === 1
-              ? "Cơ cấu SKU/nhóm hàng của người nhận đang chọn."
-              : "So sánh cơ cấu giữa các người nhận đang chọn."
+              ? t("reports.recipient.breakdownSingle")
+              : t("reports.recipient.breakdownMulti")
         }
         fullWidth
         loading={loading}
@@ -666,10 +676,10 @@ export default function TabRecipient() {
         empty={structure.categories.length === 0}
         toolbar={
           <SegmentedToggle
-            label="Chiều phân rã"
+            label={t("reports.recipient.breakdownDimension")}
             value={breakdownBy}
             onChange={setBreakdownBy}
-            options={BREAKDOWN_OPTIONS}
+            options={breakdownOptions(t)}
           />
         }
       >
@@ -686,11 +696,11 @@ export default function TabRecipient() {
       <Box sx={{ height: 16 }} />
 
       <ChartCard
-        title="Xu hướng xuất theo thời gian"
+        title={t("reports.recipient.trendTitle")}
         description={
           recipientIds.length === 0
-            ? "Tổng lượng xuất theo ngày. Chọn người nhận ở thanh lọc để tách thành nhiều đường."
-            : "Lượng xuất theo ngày của từng người nhận đang chọn (tối đa 6 đường)."
+            ? t("reports.recipient.trendAll")
+            : t("reports.recipient.trendSelected")
         }
         fullWidth
         loading={loading}
@@ -710,13 +720,15 @@ export default function TabRecipient() {
 
       <ReportSectionHeading
         id="rpt-tab7-detail"
-        title="Bảng chi tiết xuất theo người nhận"
-        description="Một dòng cho mỗi cặp Người nhận × SKU trong kỳ."
+        title={t("reports.recipient.detailTitle")}
+        description={t("reports.recipient.detailDescription")}
       />
 
       <FilterBar
-        label="Tìm kiếm và xuất dữ liệu"
-        hint={`${fmt(detailRows.length)} dòng`}
+        label={t("reports.recipient.detailFilterLabel")}
+        hint={t("reports.recipient.detailFilterHint", {
+          count: fmt(detailRows.length),
+        })}
         actions={
           <ExportButtons
             exporting={exporter.exporting}
@@ -738,17 +750,17 @@ export default function TabRecipient() {
       >
         <SearchInput
           width={300}
-          placeholder="Người nhận / SKU / tên sản phẩm"
-          aria-label="Tìm người nhận, SKU hoặc tên sản phẩm"
+          placeholder={t("reports.recipient.detailSearchPlaceholder")}
+          aria-label={t("reports.recipient.detailSearchAria")}
           value={keyword}
           onChange={setKeyword}
         />
         <UiSelect
           minWidth={200}
-          aria-label="Chiều phân rã bảng"
+          aria-label={t("reports.recipient.dimensionAria")}
           value={breakdownBy}
           onChange={(value) => setBreakdownBy(value as "SKU" | "CATEGORY")}
-          options={[...BREAKDOWN_OPTIONS]}
+          options={[...breakdownOptions(t)]}
         />
       </FilterBar>
 
@@ -756,7 +768,7 @@ export default function TabRecipient() {
         <Box sx={{ mb: 1.5 }}>
           <ApiErrorAlert
             error={outbound.error}
-            title="Không tải được báo cáo xuất theo người nhận"
+            title={t("reports.recipient.detailLoadError")}
             onRetry={() => void outbound.refetch()}
           />
         </Box>
@@ -766,7 +778,7 @@ export default function TabRecipient() {
         <Box sx={{ mb: 1.5 }} role="alert">
           <UiAlert
             tone="error"
-            title="Xuất báo cáo bị từ chối quyền."
+            title={t("reports.common.exportDenied")}
             onClose={exporter.clearExportDenied}
           >
             {exporter.exportDenied}
@@ -791,7 +803,7 @@ export default function TabRecipient() {
           },
           {
             key: "recipientName",
-            header: "Người nhận",
+            header: t("reports.recipient.colRecipient"),
             sortAccessor: (row) => row.recipientName,
             render: (row) => (
               <Box sx={{ fontWeight: 700 }}>{row.recipientName}</Box>
@@ -799,13 +811,13 @@ export default function TabRecipient() {
           },
           {
             key: "recipientType",
-            header: "Loại người nhận",
+            header: t("reports.recipient.colRecipientType"),
             width: 160,
             render: (row) => recipientTypeLabel(row.recipientType),
           },
           {
             key: "productCode",
-            header: "Mã SKU",
+            header: t("reports.recipient.colSkuCode"),
             width: 150,
             sortAccessor: (row) => row.productCode,
             render: (row) => (
@@ -819,14 +831,14 @@ export default function TabRecipient() {
           },
           {
             key: "category",
-            header: "Nhóm hàng",
+            header: t("reports.recipient.colCategory"),
             width: 170,
             hideOnMobile: true,
             render: (row) => row.category,
           },
           {
             key: "documents",
-            header: "Số phiếu",
+            header: t("reports.recipient.colDocCount"),
             align: "right",
             width: 110,
             sortAccessor: (row) => row.documents.size,
@@ -834,7 +846,7 @@ export default function TabRecipient() {
           },
           {
             key: "gross",
-            header: "SL xuất gộp",
+            header: t("reports.recipient.colGross"),
             align: "right",
             width: 130,
             sortAccessor: (row) => row.gross,
@@ -842,7 +854,7 @@ export default function TabRecipient() {
           },
           {
             key: "reversal",
-            header: "SL đã đảo",
+            header: t("reports.recipient.colReversed"),
             align: "right",
             width: 120,
             sortAccessor: (row) => row.reversal,
@@ -850,7 +862,7 @@ export default function TabRecipient() {
           },
           {
             key: "net",
-            header: "SL xuất thuần",
+            header: t("reports.recipient.colNet"),
             align: "right",
             width: 145,
             sortAccessor: (row) => row.net,
@@ -862,7 +874,7 @@ export default function TabRecipient() {
           },
           {
             key: "time",
-            header: "Thời gian",
+            header: t("reports.recipient.colTime"),
             width: 190,
             hideOnMobile: true,
             render: (row) =>
@@ -874,7 +886,7 @@ export default function TabRecipient() {
         rows={pagination.pageRows}
         rowKey={(row) => row.key}
         loading={loading}
-        emptyText="Không có dòng nào theo bộ lọc."
+        emptyText={t("reports.recipient.detailEmpty")}
       />
       <ReportPaginationBar
         page={pagination.page}
@@ -883,86 +895,91 @@ export default function TabRecipient() {
         onPageChange={pagination.setPage}
         onPageSizeChange={pagination.setPerPage}
       />
-      <FormulaNote>
-        SL xuất thuần = SL xuất gộp − SL đã đảo. Lượng đảo lấy từ phiếu hoàn trả
-        đã ghi nhận, tham chiếu tới chính phiếu xuất đó, rồi phân bổ về từng
-        dòng SKU theo tỉ trọng số lượng xuất gộp của dòng trong phiếu.
-      </FormulaNote>
+      <FormulaNote>{t("reports.recipient.formulaNote")}</FormulaNote>
 
       {recipientDrill ? (
         <DrillDownDialog
-          title={`Chi tiết xuất cho ${recipientDrill}`}
+          title={t("reports.recipient.drillTitle", {
+            recipient: recipientDrill,
+          })}
           onClose={() => setRecipientDrill(null)}
         >
           <ResponsiveDataTable<IssueRow>
             columns={[
               {
                 key: "outboundNo",
-                header: "Phiếu xuất",
+                header: t("reports.recipient.colIssueNote"),
                 render: (row) => row.outboundNo || EMPTY_TEXT,
               },
               {
                 key: "documentDate",
-                header: "Ngày",
+                header: t("reports.recipient.colDate"),
                 render: (row) =>
                   row.documentDate ? fmtDate(row.documentDate) : EMPTY_TEXT,
               },
               {
                 key: "productCode",
-                header: "Mã SKU",
+                header: t("reports.recipient.colSkuCode"),
                 render: (row) => row.productCode || EMPTY_TEXT,
               },
               {
                 key: "productName",
-                header: "Tên SKU",
+                header: t("reports.recipient.colSkuName"),
                 render: (row) => row.productName || EMPTY_TEXT,
               },
               {
                 key: "gross",
-                header: "SL xuất gộp",
+                header: t("reports.recipient.colGross"),
                 align: "right",
                 render: (row) => fmt(row.gross),
               },
               {
                 key: "reversal",
-                header: "SL đã đảo",
+                header: t("reports.recipient.colReversed"),
                 align: "right",
                 render: (row) => fmt(row.reversal),
               },
               {
                 key: "net",
-                header: "SL xuất thuần",
+                header: t("reports.recipient.colNet"),
                 align: "right",
                 render: (row) => fmt(row.net),
               },
             ]}
             rows={filtered.filter(
               (row) =>
-                (row.recipientName || "Chưa xác định") === recipientDrill,
+                (row.recipientName || t("reports.common.undetermined")) ===
+                recipientDrill,
             )}
             rowKey={(row) => row.key}
-            emptyText="Không có dòng nào."
+            emptyText={t("reports.recipient.drillEmpty")}
           />
         </DrillDownDialog>
       ) : null}
 
       {typeDrill ? (
         <DrillDownDialog
-          title={`Người nhận thuộc loại ${recipientTypeLabel(typeDrill)}`}
+          title={t("reports.recipient.typeDrillTitle", {
+            type: recipientTypeLabel(typeDrill),
+          })}
           onClose={() => setTypeDrill(null)}
         >
           <ResponsiveDataTable<{ name: string; net: number; gross: number }>
             columns={[
-              { key: "name", header: "Người nhận", render: (row) => row.name },
+              {
+                key: "name",
+                header: t("reports.recipient.colName"),
+                render: (row) => row.name,
+              },
               {
                 key: "gross",
-                header: "SL xuất gộp",
+                header: t("reports.recipient.colGross"),
                 align: "right",
                 render: (row) => fmt(row.gross),
               },
               {
                 key: "net",
-                header: "SL xuất thuần",
+                header: t("reports.recipient.colNet"),
                 align: "right",
                 render: (row) => fmt(row.net),
               },
@@ -974,7 +991,8 @@ export default function TabRecipient() {
               >();
               for (const row of filtered) {
                 if (row.recipientType !== typeDrill) continue;
-                const key = row.recipientName || "Chưa xác định";
+                const key =
+                  row.recipientName || t("reports.common.undetermined");
                 const current = map.get(key) ?? { name: key, net: 0, gross: 0 };
                 current.net += row.net;
                 current.gross += row.gross;
@@ -983,7 +1001,7 @@ export default function TabRecipient() {
               return [...map.values()].sort((a, b) => b.net - a.net);
             })()}
             rowKey={(row) => row.name}
-            emptyText="Không có người nhận nào thuộc loại này."
+            emptyText={t("reports.recipient.typeDrillEmpty")}
           />
         </DrillDownDialog>
       ) : null}

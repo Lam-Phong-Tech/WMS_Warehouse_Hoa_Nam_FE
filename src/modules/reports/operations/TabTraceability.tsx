@@ -1,3 +1,5 @@
+import type { TranslateFn } from "@/shared/i18n/useT";
+import { useT } from "@/shared/i18n/useT";
 import { useMemo, useState } from "react";
 import { Box, Stack, UiAlert, UiStatusBadge, UiTimeline } from "@/shared/ui";
 import type { UiStatusTone, UiTimelineItem } from "@/shared/ui";
@@ -49,24 +51,35 @@ import { MovementTable } from "./report-drilldown";
 
 /** Trạng thái vòng đời suy ra từ movement gần nhất của một mã vật lý. */
 const LIFECYCLE_STATES = {
-  IN_STOCK: { label: "Đang trong kho", tone: "success" as UiStatusTone },
-  ISSUED: { label: "Đã xuất kho", tone: "info" as UiStatusTone },
+  IN_STOCK: {
+    labelKey: "reports.traceability.inStock",
+    tone: "success" as UiStatusTone,
+  },
+  ISSUED: {
+    labelKey: "reports.traceability.issued",
+    tone: "info" as UiStatusTone,
+  },
   COMPONENT_ISSUED: {
-    label: "Đã xuất làm linh kiện bảo hành",
+    labelKey: "reports.traceability.componentIssued",
     tone: "primary" as UiStatusTone,
   },
   REVERSED: {
-    label: "Đã hoàn trả / điều chỉnh",
+    labelKey: "reports.traceability.reversed",
     tone: "warning" as UiStatusTone,
   },
-  UNKNOWN: { label: "Chưa xác định", tone: "neutral" as UiStatusTone },
+  UNKNOWN: {
+    labelKey: "reports.traceability.unknown",
+    tone: "neutral" as UiStatusTone,
+  },
 } as const;
 
 type LifecycleState = keyof typeof LIFECYCLE_STATES;
 
-const STATE_FILTER_OPTIONS = (
-  Object.keys(LIFECYCLE_STATES) as LifecycleState[]
-).map((value) => ({ value, label: LIFECYCLE_STATES[value].label }));
+const stateFilterOptions = (t: TranslateFn) =>
+  (Object.keys(LIFECYCLE_STATES) as LifecycleState[]).map((value) => ({
+    value,
+    label: t(LIFECYCLE_STATES[value].labelKey),
+  }));
 
 /** Mục 7: lọc trực tiếp theo LOẠI MOVEMENT (không chỉ trạng thái vòng đời). */
 const MOVEMENT_TYPE_FILTER_OPTIONS = (
@@ -87,21 +100,34 @@ function stateOfMovement(movementType: string): LifecycleState {
 }
 
 /** Mốc vòng đời hiển thị trên timeline dọc (mục 3.2). */
-function lifecycleStage(row: Raw): { title: string; tone: UiStatusTone } {
+function lifecycleStage(
+  row: Raw,
+  t: TranslateFn,
+): { title: string; tone: UiStatusTone } {
   const type = text(row.movement_type, "");
   const source = text(row.source_type, "").toUpperCase();
   if (source.includes("PUTAWAY")) {
-    return { title: "Putaway — cất hàng vào vị trí", tone: "info" };
+    return { title: t("reports.traceability.milestonePutaway"), tone: "info" };
   }
   if (source.includes("WARRANTY") || type === "COMPONENT_ISSUE") {
-    return { title: "Bảo hành — xuất linh kiện", tone: "primary" };
+    return {
+      title: t("reports.traceability.milestoneWarranty"),
+      tone: "primary",
+    };
   }
   if (type === "RECEIPT" || type === "OPENING") {
-    return { title: "Nhập kho", tone: "success" };
+    return {
+      title: t("reports.traceability.milestoneReceipt"),
+      tone: "success",
+    };
   }
-  if (type === "ISSUE") return { title: "Xuất kho", tone: "info" };
+  if (type === "ISSUE")
+    return { title: t("reports.traceability.milestoneIssue"), tone: "info" };
   if (type === "REVERSAL") {
-    return { title: "Trả hàng / Reversal", tone: "warning" };
+    return {
+      title: t("reports.traceability.milestoneReversal"),
+      tone: "warning",
+    };
   }
   return { title: businessLabel(MOVEMENT_LABELS, type), tone: "neutral" };
 }
@@ -130,6 +156,7 @@ type TraceItem = {
  * truy ngược được về đúng dòng ledger sinh ra nó.
  */
 export default function TabTraceability() {
+  const t = useT();
   const catalog = useSkuCatalog();
   const period = usePeriodFilter("this-month");
   const [keyword, setKeyword] = useState("");
@@ -291,7 +318,7 @@ export default function TabTraceability() {
         text(b.occurred_at, "").localeCompare(text(a.occurred_at, "")),
       )
       .map((row) => {
-        const stage = lifecycleStage(row);
+        const stage = lifecycleStage(row, t);
         const delta = n(row.qty_delta);
         return {
           title: stage.title,
@@ -303,18 +330,27 @@ export default function TabTraceability() {
                 {text(row.product_code)} · {text(row.product_name, "")}
               </Box>
               <Box>
-                Số lượng: {delta >= 0 ? "+" : "−"}
-                {fmt(Math.abs(delta))} · Kho {text(row.warehouse_code)}
+                {t("reports.traceability.qtyLine", {
+                  sign: delta >= 0 ? "+" : "−",
+                  qty: fmt(Math.abs(delta)),
+                  warehouse: text(row.warehouse_code),
+                })}
                 {text(row.doc_no, "") !== "—"
-                  ? ` · Chứng từ ${text(row.doc_no, EMPTY_TEXT)}`
+                  ? t("reports.traceability.docLine", {
+                      doc: text(row.doc_no, EMPTY_TEXT),
+                    })
                   : ""}
               </Box>
-              <Box>Người thực hiện: {text(row.actor)}</Box>
+              <Box>
+                {t("reports.traceability.actorLine", {
+                  actor: text(row.actor),
+                })}
+              </Box>
             </Stack>
           ),
         };
       });
-  }, [traceMovements]);
+  }, [traceMovements, t]);
 
   const loading = ledger.isLoading || catalog.loading;
 
@@ -329,18 +365,21 @@ export default function TabTraceability() {
     <Box data-testid="rpt-tab-traceability">
       <ReportSectionHeading
         id="rpt-tab3-heading"
-        title="Báo cáo truy vết hàng hóa"
-        description="Tìm theo Tên / SKU / Physical Code / Serial rồi mở vòng đời của đúng hiện vật đó."
+        title={t("reports.traceability.title")}
+        description={t("reports.traceability.description")}
       />
 
       <FilterBar
-        label="Bộ lọc danh sách sản phẩm"
-        hint={`Thời gian nhập/xuất: ${period.label} · ${fmt(filtered.length)} hiện vật`}
+        label={t("reports.traceability.filterLabel")}
+        hint={t("reports.traceability.filterHint", {
+          label: period.label,
+          count: fmt(filtered.length),
+        })}
       >
         <SearchInput
           width={300}
-          placeholder="Tên / SKU / Physical Code / Serial"
-          aria-label="Tìm theo tên, SKU, physical code hoặc serial"
+          placeholder={t("reports.traceability.searchPlaceholder")}
+          aria-label={t("reports.traceability.searchAria")}
           value={keyword}
           onChange={setKeyword}
         />
@@ -349,31 +388,31 @@ export default function TabTraceability() {
           value={skuFilter}
           onChange={setSkuFilter}
           options={skuOptions}
-          allLabel="Tất cả SKU"
+          allLabel={t("reports.traceability.skuAll")}
           ariaLabel="SKU"
         />
         <AllOrPickFilter
           value={stateFilter}
           onChange={setStateFilter}
-          options={STATE_FILTER_OPTIONS}
-          allLabel="Tất cả trạng thái"
-          ariaLabel="Trạng thái hiện tại"
+          options={stateFilterOptions(t)}
+          allLabel={t("reports.traceability.statusAll")}
+          ariaLabel={t("reports.traceability.statusAria")}
           minWidth={220}
         />
         <AllOrPickFilter
           value={movementTypeFilter}
           onChange={setMovementTypeFilter}
           options={MOVEMENT_TYPE_FILTER_OPTIONS}
-          allLabel="Tất cả loại movement"
-          ariaLabel="Loại movement"
+          allLabel={t("reports.traceability.movementAll")}
+          ariaLabel={t("reports.traceability.movementAria")}
           minWidth={200}
         />
         <AllOrPickFilter
           value={actorFilter}
           onChange={setActorFilter}
           options={actorOptions}
-          allLabel="Tất cả người thực hiện"
-          ariaLabel="Người thực hiện"
+          allLabel={t("reports.traceability.actorAll")}
+          ariaLabel={t("reports.traceability.actorAria")}
           minWidth={200}
         />
         <ItemKindFilter value={kindFilter} onChange={setKindFilter} />
@@ -381,33 +420,31 @@ export default function TabTraceability() {
 
       {period.invalid ? (
         <Box sx={{ mb: 2 }}>
-          <UiAlert tone="error">
-            Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc.
-          </UiAlert>
+          <UiAlert tone="error">{t("reports.common.dateOrderError")}</UiAlert>
         </Box>
       ) : null}
 
       <ReportKpiRow>
         <ReportKpi
-          label="Hiện vật truy được"
+          label={t("reports.traceability.kpiTraced")}
           value={fmt(filtered.length)}
           tone="primary"
           icon={<BarcodeOutlined />}
-          hint="Gộp theo Physical Code / Serial trong kỳ đang lọc"
+          hint={t("reports.traceability.kpiTracedHint")}
         />
         <ReportKpi
-          label="Đang trong kho"
+          label={t("reports.traceability.kpiInStock")}
           value={fmt(inStockCount)}
           tone="success"
           icon={<ScanOutlined />}
           onClick={() => setStateFilter("IN_STOCK")}
         />
         <ReportKpi
-          label="Đã xuất"
+          label={t("reports.traceability.kpiIssued")}
           value={fmt(issuedCount)}
           tone="info"
           icon={<NodeIndexOutlined />}
-          hint="Gồm xuất bán và xuất linh kiện bảo hành"
+          hint={t("reports.traceability.kpiIssuedHint")}
           onClick={() => setStateFilter("ISSUED")}
         />
       </ReportKpiRow>
@@ -416,7 +453,7 @@ export default function TabTraceability() {
         <Box sx={{ mb: 1.5 }}>
           <ApiErrorAlert
             error={ledger.error}
-            title="Không tải được sổ biến động để truy vết"
+            title={t("reports.traceability.loadError")}
             onRetry={() => void ledger.refetch()}
           />
         </Box>
@@ -443,12 +480,14 @@ export default function TabTraceability() {
             width: 150,
             sortAccessor: (row) => row.productCode,
             render: (row) => (
-              <Box sx={{ fontWeight: 700 }}>{row.productCode || EMPTY_TEXT}</Box>
+              <Box sx={{ fontWeight: 700 }}>
+                {row.productCode || EMPTY_TEXT}
+              </Box>
             ),
           },
           {
             key: "productName",
-            header: "Tên sản phẩm",
+            header: t("reports.traceability.colProductName"),
             sortAccessor: (row) => row.productName,
             render: (row) => row.productName || EMPTY_TEXT,
           },
@@ -461,45 +500,47 @@ export default function TabTraceability() {
           },
           {
             key: "state",
-            header: "Trạng thái hiện tại",
+            header: t("reports.traceability.colCurrentStatus"),
             width: 200,
             render: (row) => (
               <UiStatusBadge
                 size="small"
                 tone={LIFECYCLE_STATES[row.state].tone}
-                label={LIFECYCLE_STATES[row.state].label}
+                label={t(LIFECYCLE_STATES[row.state].labelKey)}
               />
             ),
           },
           {
             key: "receivedAt",
-            header: "Ngày nhập",
+            header: t("reports.traceability.colInboundDate"),
             width: 130,
             sortAccessor: (row) => row.receivedAt,
-            render: (row) => (row.receivedAt ? fmtDate(row.receivedAt) : EMPTY_TEXT),
+            render: (row) =>
+              row.receivedAt ? fmtDate(row.receivedAt) : EMPTY_TEXT,
           },
           {
             key: "issuedAt",
-            header: "Ngày xuất",
+            header: t("reports.traceability.colOutboundDate"),
             width: 130,
             sortAccessor: (row) => row.issuedAt,
-            render: (row) => (row.issuedAt ? fmtDate(row.issuedAt) : EMPTY_TEXT),
+            render: (row) =>
+              row.issuedAt ? fmtDate(row.issuedAt) : EMPTY_TEXT,
           },
           {
             key: "recipient",
-            header: "Người nhận gần nhất",
+            header: t("reports.traceability.colLastRecipient"),
             hideOnMobile: true,
             render: (row) => row.recipient || EMPTY_TEXT,
           },
           {
             key: "lastMovement",
-            header: "Movement gần nhất",
+            header: t("reports.traceability.colLastMovement"),
             width: 180,
             render: (row) => row.lastMovement,
           },
           {
             key: "lastMovementAt",
-            header: "Cập nhật cuối",
+            header: t("reports.traceability.colUpdatedAt"),
             width: 165,
             sortAccessor: (row) => row.lastMovementAt,
             render: (row) =>
@@ -510,7 +551,7 @@ export default function TabTraceability() {
         rowKey={(row) => row.key}
         loading={loading}
         onRowClick={(row) => setSelected(row)}
-        emptyText="Không tìm thấy hiện vật nào theo bộ lọc."
+        emptyText={t("reports.traceability.empty")}
       />
       <ReportPaginationBar
         page={pagination.page}
@@ -522,28 +563,32 @@ export default function TabTraceability() {
 
       {selected ? (
         <DrillDownDialog
-          title={`Vòng đời — ${selected.physicalCode || selected.productCode}`}
-          subtitle={`${selected.productCode} · ${selected.productName}`}
+          title={t("reports.traceability.lifecycleTitle", {
+            code: selected.physicalCode || selected.productCode,
+          })}
+          subtitle={t("reports.traceability.lifecycleSubtitle", {
+            code: selected.productCode,
+            name: selected.productName,
+          })}
           onClose={() => setSelected(null)}
         >
           {trace.isError ? (
             <Box sx={{ mb: 1.5 }}>
               <UiAlert tone="warning">
-                Không tra được mã vật lý này qua dịch vụ truy vết; timeline dưới
-                đây dựng từ sổ biến động trong kỳ đang lọc.
+                {t("reports.traceability.traceUnavailable")}
               </UiAlert>
             </Box>
           ) : null}
           {timelineItems.length === 0 ? (
             <UiAlert tone="info">
-              Hiện vật này chưa có mốc vòng đời nào trong dữ liệu truy vết.
+              {t("reports.traceability.lifecycleEmpty")}
             </UiAlert>
           ) : (
             <>
               <UiTimeline items={timelineItems} />
               <Box sx={{ mt: 2 }}>
                 <Box sx={{ typography: "subtitle2", fontWeight: 700, mb: 1 }}>
-                  Movement liên quan
+                  {t("reports.traceability.relatedMovements")}
                 </Box>
                 <MovementTable
                   rows={traceMovements}
@@ -551,9 +596,7 @@ export default function TabTraceability() {
                 />
               </Box>
               <FormulaNote>
-                Mốc được suy từ `movement_type` và `source_type` của từng dòng
-                sổ biến động: Putaway/Bảo hành nhận diện qua nguồn phát sinh,
-                Nhập/Xuất/Reversal nhận diện qua loại biến động.
+                {t("reports.traceability.milestoneNote")}
               </FormulaNote>
             </>
           )}

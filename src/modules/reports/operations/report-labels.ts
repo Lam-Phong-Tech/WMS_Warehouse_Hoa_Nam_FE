@@ -1,3 +1,5 @@
+import type { MessageKey } from "@/shared/i18n/messages";
+import type { TranslateFn } from "@/shared/i18n/useT";
 import {
   INVENTORY_STOCK_STATUS_LABELS,
   MOVEMENT_TYPE_LABELS,
@@ -23,15 +25,16 @@ export const RECONCILE_LABELS: Readonly<Record<string, string>> = {
  * lệch nằm ở ba check còn lại thì Chênh lệch = 0 mà trạng thái vẫn đỏ — phải
  * gọi tên đúng check đang hỏng, nếu không người đọc tưởng dữ liệu mâu thuẫn.
  */
-export const RECONCILE_CHECK_LABELS: Readonly<Record<string, string>> = {
-  ledger_to_balance: "Sổ cái ↔ số dư",
-  serial_subledger: "Sổ serial",
-  quantity_subledger: "Số lượng trong thùng",
-  container_integrity: "Toàn vẹn thùng chứa",
+export const RECONCILE_CHECK_KEYS: Readonly<Record<string, MessageKey>> = {
+  ledger_to_balance: "reports.reconcileCheck.ledgerToBalance",
+  serial_subledger: "reports.reconcileCheck.serialSubledger",
+  quantity_subledger: "reports.reconcileCheck.quantitySubledger",
+  container_integrity: "reports.reconcileCheck.containerIntegrity",
 };
 
-export function reconcileCheckLabel(code: string): string {
-  return RECONCILE_CHECK_LABELS[code] ?? code;
+export function reconcileCheckLabel(code: string, t: TranslateFn): string {
+  const key = RECONCILE_CHECK_KEYS[code];
+  return key ? t(key) : code;
 }
 
 export const REPORT_STATUS_LABELS: Readonly<Record<string, string>> = {
@@ -116,11 +119,13 @@ export function statusTone(value: unknown): UiStatusTone {
 /** Chiều tác động lên tồn kho của một chứng từ — cột "Tăng/Giảm" mục 1.4. */
 export type StockDirection = "INCREASE" | "DECREASE" | "MIXED" | "NONE";
 
-export const DIRECTION_LABELS: Readonly<Record<StockDirection, string>> = {
-  INCREASE: "Tăng",
-  DECREASE: "Giảm",
-  MIXED: "Tăng/Giảm",
-  NONE: "Không đổi",
+export const DIRECTION_LABEL_KEYS: Readonly<
+  Record<StockDirection, MessageKey>
+> = {
+  INCREASE: "reports.direction.increase",
+  DECREASE: "reports.direction.decrease",
+  MIXED: "reports.direction.mixed",
+  NONE: "reports.direction.none",
 };
 
 export const DIRECTION_TONE: Readonly<Record<StockDirection, UiStatusTone>> = {
@@ -131,20 +136,20 @@ export const DIRECTION_TONE: Readonly<Record<StockDirection, UiStatusTone>> = {
 };
 
 /** Loại chứng từ hiển thị trong mục 1.4. */
-export const DOC_TYPE_LABELS: Readonly<Record<string, string>> = {
-  INBOUND: "Phiếu nhập",
-  OUTBOUND: "Phiếu xuất",
-  REVERSAL: "Phiếu hoàn trả / điều chỉnh",
+export const DOC_TYPE_LABEL_KEYS: Readonly<Record<string, MessageKey>> = {
+  INBOUND: "reports.docType.inbound",
+  OUTBOUND: "reports.docType.outbound",
+  REVERSAL: "reports.docType.reversal",
 };
 
-export const SLA_LABELS = {
-  NORMAL: "Bình thường",
-  DUE_SOON: "Sắp đến hạn",
-  OVERDUE: "Quá hạn",
-  UNSET: "Chưa đặt hạn",
-} as const;
+export const SLA_LABEL_KEYS = {
+  NORMAL: "reports.sla.normal",
+  DUE_SOON: "reports.sla.dueSoon",
+  OVERDUE: "reports.sla.overdue",
+  UNSET: "reports.sla.unset",
+} as const satisfies Record<string, MessageKey>;
 
-export type SlaState = keyof typeof SLA_LABELS;
+export type SlaState = keyof typeof SLA_LABEL_KEYS;
 
 export const SLA_TONE: Readonly<Record<SlaState, UiStatusTone>> = {
   NORMAL: "success",
@@ -154,14 +159,14 @@ export const SLA_TONE: Readonly<Record<SlaState, UiStatusTone>> = {
 };
 
 /** Trạng thái định mức tồn (mục 2.4). */
-export const STOCK_NORM_LABELS = {
-  LOW: "Sắp hết hàng",
-  NORMAL: "Bình thường",
-  OVER: "Thừa hàng",
-  UNSET: "Chưa cấu hình",
-} as const;
+export const STOCK_NORM_LABEL_KEYS = {
+  LOW: "reports.stockNorm.low",
+  NORMAL: "reports.stockNorm.normal",
+  OVER: "reports.stockNorm.over",
+  UNSET: "reports.stockNorm.unset",
+} as const satisfies Record<string, MessageKey>;
 
-export type StockNormState = keyof typeof STOCK_NORM_LABELS;
+export type StockNormState = keyof typeof STOCK_NORM_LABEL_KEYS;
 
 export const STOCK_NORM_TONE: Readonly<Record<StockNormState, UiStatusTone>> = {
   LOW: "error",

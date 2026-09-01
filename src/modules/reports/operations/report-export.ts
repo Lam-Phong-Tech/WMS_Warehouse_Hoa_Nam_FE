@@ -1,3 +1,4 @@
+import { tStatic } from "@/shared/i18n/useT";
 import { useState } from "react";
 import { toast } from "sonner";
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
@@ -57,9 +58,7 @@ async function pollReportExportJob(
       return status;
     }
     if (Date.now() >= deadline) {
-      throw new Error(
-        "Export đang xử lý lâu hơn dự kiến; vui lòng thử lại sau ít phút.",
-      );
+      throw new Error(tStatic("reports.export.timeout"));
     }
     await sleep(REPORT_EXPORT_POLL_INTERVAL_MS);
   }
@@ -118,20 +117,18 @@ export function useReportExport() {
       );
       const jobId = text(job.export_job_id, "");
       if (!jobId) {
-        throw new Error("Không nhận được export_job_id từ máy chủ.");
+        throw new Error(tStatic("reports.export.noJobId"));
       }
 
       const finalStatus = await pollReportExportJob(jobId);
       if (finalStatus.status === "FAILED") {
         throw new Error(
-          text(finalStatus.error_message, "Xuất báo cáo thất bại."),
+          text(finalStatus.error_message, tStatic("reports.export.failed")),
         );
       }
       const downloadUrl = text(finalStatus.download_url, "");
       if (!downloadUrl) {
-        throw new Error(
-          "Máy chủ báo đã sẵn sàng nhưng không trả liên kết tải.",
-        );
+        throw new Error(tStatic("reports.export.noDownloadLink"));
       }
       const { blob, fileName } = await http.downloadFile(
         stripApiPrefix(downloadUrl),
@@ -141,10 +138,16 @@ export function useReportExport() {
         fileName ?? `${request.fileStem}${request.fileSuffix ?? ""}.${format}`,
       );
       toast.success(
-        `Đã xuất ${format.toUpperCase()} theo đúng bộ lọc hiện tại (${fmt(finalStatus.row_count)} dòng).`,
+        tStatic("reports.export.ok", {
+          format: format.toUpperCase(),
+          rows: fmt(finalStatus.row_count),
+        }),
       );
     } catch (error) {
-      const message = getApiErrorMessage(error, "Xuất báo cáo thất bại.");
+      const message = getApiErrorMessage(
+        error,
+        tStatic("reports.export.failed"),
+      );
       if (isNoPermissionError(error)) setExportDenied(message);
       toast.error(message);
     } finally {

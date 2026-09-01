@@ -1,3 +1,5 @@
+import type { MessageKey } from "@/shared/i18n/messages";
+import type { TranslateFn } from "@/shared/i18n/useT";
 import dayjs, { type Dayjs } from "dayjs";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { formatDate, formatDateTime } from "@/shared/utils/format-date";
@@ -71,15 +73,14 @@ export type PeriodPreset =
   | "this-year"
   | "custom";
 
-export const PERIOD_PRESET_OPTIONS: Array<{
-  value: PeriodPreset;
-  label: string;
-}> = [
-  { value: "this-week", label: "Tuần này" },
-  { value: "this-month", label: "Tháng này" },
-  { value: "this-quarter", label: "Quý này" },
-  { value: "this-year", label: "Năm này" },
-  { value: "custom", label: "Tùy chọn" },
+export const periodPresetOptions = (
+  t: TranslateFn,
+): Array<{ value: PeriodPreset; label: string }> => [
+  { value: "this-week", label: t("reports.period.thisWeek") },
+  { value: "this-month", label: t("reports.period.thisMonth") },
+  { value: "this-quarter", label: t("reports.period.thisQuarter") },
+  { value: "this-year", label: t("reports.period.thisYear") },
+  { value: "custom", label: t("reports.period.custom") },
 ];
 
 /**
@@ -116,16 +117,23 @@ export function axisDayLabel(isoDate: string): string {
 
 export type ItemKind = "all" | "PRODUCT" | "COMPONENT";
 
-export const ITEM_KIND_OPTIONS: Array<{ value: ItemKind; label: string }> = [
-  { value: "all", label: "Tất cả loại hàng" },
-  { value: "PRODUCT", label: "Sản phẩm" },
-  { value: "COMPONENT", label: "Linh kiện" },
+export const itemKindOptions = (
+  t: TranslateFn,
+): Array<{ value: ItemKind; label: string }> => [
+  { value: "all", label: t("reports.itemKind.all") },
+  { value: "PRODUCT", label: t("reports.itemKind.product") },
+  { value: "COMPONENT", label: t("reports.itemKind.component") },
 ];
 
-export const ITEM_KIND_LABELS: Readonly<Record<string, string>> = {
-  PRODUCT: "Sản phẩm",
-  COMPONENT: "Linh kiện",
+export const ITEM_KIND_LABEL_KEYS: Readonly<Record<string, MessageKey>> = {
+  PRODUCT: "reports.itemKind.product",
+  COMPONENT: "reports.itemKind.component",
 };
+
+export function itemKindLabel(kind: string, t: TranslateFn): string {
+  const key = ITEM_KIND_LABEL_KEYS[kind];
+  return key ? t(key) : t("reports.itemKind.unclassified");
+}
 
 /** Chuỗi ngày liên tục [from, to] — chart theo ngày phải có cả ngày trống. */
 export function dateSpan(from: string, to: string): string[] {

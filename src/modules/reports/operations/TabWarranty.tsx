@@ -1,3 +1,4 @@
+import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import { useMemo, useState } from "react";
 import dayjs from "dayjs";
 import {
@@ -69,7 +70,7 @@ import {
 import { usePeriodFilter } from "./report-period";
 import {
   reportStatusLabel,
-  SLA_LABELS,
+  SLA_LABEL_KEYS,
   SLA_TONE,
   type SlaState,
 } from "./report-labels";
@@ -140,9 +141,10 @@ type CaseRow = {
 
 /** "SKU-A × 2; SKU-B × 1" → [{skuCode, qty}] (định dạng do BE dựng). */
 function parseComponents(
+  t: TranslateFn,
   value: string,
 ): Array<{ skuCode: string; qty: number }> {
-  if (!value || value === "Chưa xuất") return [];
+  if (!value || value === t("reports.warranty.notIssued")) return [];
   return value
     .split(";")
     .map((part) => part.trim())
@@ -177,6 +179,7 @@ function slaOf(
  * bảo hành không trả nhưng mục 6.5/6.6 yêu cầu.
  */
 export default function TabWarranty() {
+  const t = useT();
   const period = usePeriodFilter("this-month");
   const catalog = useSkuCatalog();
   const users = useUserDirectory();
@@ -279,7 +282,7 @@ export default function TabWarranty() {
         department: users.departmentNameOfActor(assignee),
         departmentId: users.departmentOfName(assignee),
         componentsText,
-        components: parseComponents(componentsText),
+        components: parseComponents(t, componentsText),
         customerName: warrantyPiiText(
           text(row.customer_name, ""),
           canViewPii,
@@ -298,7 +301,7 @@ export default function TabWarranty() {
         raw: row,
       };
     });
-  }, [warranty.data, rawCaseByCode, users, today, canViewPii]);
+  }, [warranty.data, rawCaseByCode, users, today, canViewPii, t]);
 
   // ── 6.1 Tình trạng bảo hành ────────────────────────────────────────────
   const statusCounts = useMemo(() => {
@@ -350,22 +353,22 @@ export default function TabWarranty() {
     }
     return [
       {
-        name: "Tiếp nhận mới",
+        name: t("reports.warranty.seriesReceived"),
         data: days.map((day) => received.get(day) ?? 0),
         color: CHART_COLORS.info,
       },
       {
-        name: "Hoàn thành",
+        name: t("reports.warranty.seriesCompleted"),
         data: days.map((day) => completed.get(day) ?? 0),
         color: CHART_COLORS.success,
       },
       {
-        name: "Quá hạn",
+        name: t("reports.warranty.seriesOverdue"),
         data: days.map((day) => overdue.get(day) ?? 0),
         color: CHART_COLORS.danger,
       },
     ];
-  }, [days, cases]);
+  }, [days, cases, t]);
 
   // ── 6.3 Bệnh/lỗi theo SKU ──────────────────────────────────────────────
   const [defectSkuId, setDefectSkuId] = useState("");
@@ -542,10 +545,12 @@ export default function TabWarranty() {
     value,
     label: reportStatusLabel(value),
   }));
-  const slaOptions = (Object.keys(SLA_LABELS) as SlaState[]).map((value) => ({
-    value,
-    label: SLA_LABELS[value],
-  }));
+  const slaOptions = (Object.keys(SLA_LABEL_KEYS) as SlaState[]).map(
+    (value) => ({
+      value,
+      label: t(SLA_LABEL_KEYS[value]),
+    }),
+  );
   const assigneeOptions = useMemo(() => {
     const values = new Set(
       cases.map((item) => item.assignee).filter((value) => value !== ""),
@@ -576,37 +581,42 @@ export default function TabWarranty() {
     <Box data-testid="rpt-tab-warranty">
       <ReportSectionHeading
         id="rpt-tab6-heading"
-        title="Báo cáo bảo hành và linh kiện"
-        description="Tình trạng hồ sơ, xu hướng theo thời gian, bệnh/lỗi theo SKU và linh kiện đã dùng."
+        title={t("reports.warranty.title")}
+        description={t("reports.warranty.description")}
       />
 
       <FilterBar
-        label="Bộ lọc kỳ báo cáo (áp cho toàn bộ tab)"
-        hint={`Kỳ đang xem: ${period.label} · ${fmt(cases.length)} hồ sơ`}
+        label={t("reports.warranty.filterLabel")}
+        hint={t("reports.warranty.filterHint", {
+          label: period.label,
+          count: fmt(cases.length),
+        })}
       >
         <PeriodFilterControls state={period} />
       </FilterBar>
 
       {period.invalid ? (
         <Box sx={{ mb: 2 }}>
-          <UiAlert tone="error">
-            Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc.
-          </UiAlert>
+          <UiAlert tone="error">{t("reports.common.dateOrderError")}</UiAlert>
         </Box>
       ) : null}
 
       <Box sx={{ mb: 2 }}>
         <UiAlert tone="info">
           {canExportPii
-            ? `Khách hàng/SĐT/địa chỉ hiển thị ở dạng đã che. Tệp xuất chỉ chứa PII thô khi bạn nhập lý do (≥ ${PII_REASON_MIN_LENGTH} ký tự); mọi lần xuất đều được ghi nhật ký.`
-            : "Khách hàng/SĐT/địa chỉ hiển thị ở dạng đã che. Tài khoản của bạn không có quyền xuất PII nên tệp xuất luôn che thông tin; cần PII thô hãy liên hệ quản trị để được cấp quyền."}
+            ? t("reports.warranty.piiCanExport", {
+                min: PII_REASON_MIN_LENGTH,
+              })
+            : t("reports.warranty.piiCannotExport")}
         </UiAlert>
       </Box>
 
       {piiReasonInvalid ? (
         <Box sx={{ mb: 1.5 }}>
           <UiAlert tone="warning">
-            {`Lý do xuất PII phải có ít nhất ${PII_REASON_MIN_LENGTH} ký tự. Bỏ trống nếu chỉ cần tệp đã che thông tin.`}
+            {t("reports.warranty.piiReasonHint", {
+              min: PII_REASON_MIN_LENGTH,
+            })}
           </UiAlert>
         </Box>
       ) : null}
@@ -615,7 +625,10 @@ export default function TabWarranty() {
         <div {...uiStateProps(UI_STATE.DISABLED, "report-export-row-limit")}>
           <Box sx={{ mb: 1.5 }}>
             <UiAlert tone="warning">
-              {`Bộ lọc hiện tại có ${fmt(totalRows)} dòng — vượt giới hạn ${fmt(EXPORT_ROW_LIMIT)} dòng mỗi tệp. Thu hẹp khoảng ngày hoặc bộ lọc trước khi xuất.`}
+              {t("reports.warranty.rowLimitWarning", {
+                rows: fmt(totalRows),
+                limit: fmt(EXPORT_ROW_LIMIT),
+              })}
             </UiAlert>
           </Box>
         </div>
@@ -623,10 +636,9 @@ export default function TabWarranty() {
 
       {noAssignee ? (
         <DataGapNotice>
-          Hồ sơ bảo hành hiện chưa gắn người phụ trách/phòng ban riêng; hai cột
-          này lấy theo <b>người tạo hồ sơ</b> và phòng ban của người đó. Khi mô
-          hình dữ liệu bổ sung trường phụ trách, các bộ lọc theo người phụ trách
-          sẽ dùng ngay trường mới.
+          {t("reports.warranty.assigneeNoteA")}{" "}
+          <b>{t("reports.warranty.assigneeNoteB")}</b>{" "}
+          {t("reports.warranty.assigneeNoteC")}
         </DataGapNotice>
       ) : null}
 
@@ -653,36 +665,42 @@ export default function TabWarranty() {
           />
         ))}
         <ReportKpi
-          label="Sắp đến hạn"
+          label={t("reports.warranty.kpiDueSoon")}
           value={fmt(dueSoonCases.length)}
           tone="warning"
           icon={<WarningOutlined />}
-          hint={`Còn ≤ ${DUE_SOON_DAYS} ngày tới hạn`}
+          hint={t("reports.warranty.kpiDueSoonHint", { days: DUE_SOON_DAYS })}
           onClick={() =>
-            setStatusDrill({ label: "Sắp đến hạn", rows: dueSoonCases })
+            setStatusDrill({
+              label: t("reports.warranty.kpiDueSoon"),
+              rows: dueSoonCases,
+            })
           }
         />
         <ReportKpi
-          label="Quá hạn"
+          label={t("reports.warranty.kpiOverdue")}
           value={fmt(overdueCases.length)}
           tone="error"
           icon={<WarningOutlined />}
-          hint="Đã qua ngày dự kiến hoàn thành"
+          hint={t("reports.warranty.kpiOverdueHint")}
           onClick={() =>
-            setStatusDrill({ label: "Quá hạn", rows: overdueCases })
+            setStatusDrill({
+              label: t("reports.warranty.kpiOverdue"),
+              rows: overdueCases,
+            })
           }
         />
       </ReportKpiRow>
 
       <ChartGrid>
         <ChartCard
-          title="Tình trạng bảo hành"
-          description="Số hồ sơ theo trạng thái tính đến hiện tại. Bấm một lát để mở danh sách hồ sơ tương ứng."
+          title={t("reports.warranty.statusTitle")}
+          description={t("reports.warranty.statusDescription")}
           loading={loading}
           error={warranty.error}
           onRetry={() => void warranty.refetch()}
           empty={cases.length === 0}
-          emptyText="Kỳ này chưa có hồ sơ bảo hành nào."
+          emptyText={t("reports.warranty.statusEmpty")}
           footer={
             <Stack
               direction="row"
@@ -692,12 +710,16 @@ export default function TabWarranty() {
               <UiStatusBadge
                 size="small"
                 tone="warning"
-                label={`Sắp đến hạn: ${fmt(dueSoonCases.length)}`}
+                label={t("reports.warranty.dueSoonBadge", {
+                  count: fmt(dueSoonCases.length),
+                })}
               />
               <UiStatusBadge
                 size="small"
                 tone="error"
-                label={`Quá hạn: ${fmt(overdueCases.length)}`}
+                label={t("reports.warranty.overdueBadge", {
+                  count: fmt(overdueCases.length),
+                })}
               />
             </Stack>
           }
@@ -708,7 +730,7 @@ export default function TabWarranty() {
               value: statusCounts.get(status) ?? 0,
               color: STATUS_COLORS[status],
             }))}
-            centerLabel="Tổng hồ sơ"
+            centerLabel={t("reports.warranty.centerLabel")}
             valueFormatter={fmt}
             onSelect={(item, index) => {
               const status = WARRANTY_STATUSES[index];
@@ -721,8 +743,8 @@ export default function TabWarranty() {
         </ChartCard>
 
         <ChartCard
-          title="Xu hướng bảo hành"
-          description="Tiếp nhận mới / Hoàn thành / Quá hạn theo ngày. Bấm một điểm để mở danh sách hồ sơ."
+          title={t("reports.warranty.trendTitle")}
+          description={t("reports.warranty.trendDescription")}
           loading={loading}
           error={warranty.error}
           onRetry={() => void warranty.refetch()}
@@ -736,10 +758,14 @@ export default function TabWarranty() {
             onSelect={(payload) => {
               const day = days[payload.categoryIndex] ?? "";
               const rows = cases.filter((item) => {
-                if (payload.seriesName === "Tiếp nhận mới") {
+                if (
+                  payload.seriesName === t("reports.warranty.seriesReceived")
+                ) {
                   return dayKey(item.receivedAt) === day;
                 }
-                if (payload.seriesName === "Hoàn thành") {
+                if (
+                  payload.seriesName === t("reports.warranty.seriesCompleted")
+                ) {
                   return dayKey(item.returnedAt) === day;
                 }
                 return item.sla === "OVERDUE" && dayKey(item.dueDate) === day;
@@ -754,20 +780,20 @@ export default function TabWarranty() {
       </ChartGrid>
 
       <ChartCard
-        title="Bệnh/lỗi theo SKU"
-        description="Chọn một SKU để xem từng bệnh/lỗi xuất hiện bao nhiêu lần. Một ca nhiều lỗi được tính một lần ở mỗi lỗi."
+        title={t("reports.warranty.defectTitle")}
+        description={t("reports.warranty.defectDescription")}
         fullWidth
         loading={breakdown.isLoading || loading}
         error={breakdown.error}
         onRetry={() => void breakdown.refetch()}
         empty={defectItems.length === 0}
-        emptyText="Chưa có bệnh/lỗi nào theo bộ lọc hiện tại."
+        emptyText={t("reports.warranty.defectEmpty")}
         toolbar={
           <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
             <UiSelect
               minWidth={240}
-              aria-label="SKU máy"
-              placeholder="Tất cả SKU"
+              aria-label={t("reports.warranty.skuAria")}
+              placeholder={t("reports.warranty.skuAll")}
               value={defectSkuId}
               onChange={setDefectSkuId}
               options={catalog.options}
@@ -776,38 +802,35 @@ export default function TabWarranty() {
               value={defectFilterIds}
               onChange={setDefectFilterIds}
               options={defects.options}
-              placeholder="Bệnh / lỗi"
-              ariaLabel="Bệnh / lỗi"
+              placeholder={t("reports.warranty.defectPlaceholder")}
+              ariaLabel={t("reports.warranty.defectAria")}
             />
             <AllOrPickFilter
               value={defectStatus}
               onChange={setDefectStatus}
               options={statusOptions}
-              allLabel="Tất cả trạng thái case"
-              ariaLabel="Trạng thái case"
+              allLabel={t("reports.warranty.caseStatusAll")}
+              ariaLabel={t("reports.warranty.caseStatusAria")}
             />
             <AllOrPickFilter
               value={defectDepartment}
               onChange={setDefectDepartment}
               options={users.departmentOptions}
-              allLabel="Tất cả phòng ban"
-              ariaLabel="Phòng ban"
+              allLabel={t("reports.warranty.departmentAll")}
+              ariaLabel={t("reports.warranty.departmentAria")}
             />
             <AllOrPickFilter
               value={defectAssignee}
               onChange={setDefectAssignee}
               options={assigneeOptions}
-              allLabel="Tất cả người phụ trách"
-              ariaLabel="Người phụ trách"
+              allLabel={t("reports.warranty.assigneeAll")}
+              ariaLabel={t("reports.warranty.assigneeAria")}
             />
           </Box>
         }
         footer={
           useLocalDefectCount ? (
-            <FormulaNote>
-              Đang đếm lại từ danh sách hồ sơ vì bộ lọc trạng thái/phòng
-              ban/người phụ trách chỉ tồn tại ở tầng hồ sơ.
-            </FormulaNote>
+            <FormulaNote>{t("reports.warranty.recountNote")}</FormulaNote>
           ) : null
         }
       >
@@ -823,17 +846,17 @@ export default function TabWarranty() {
       <Box sx={{ height: 16 }} />
 
       <ChartCard
-        title="Top linh kiện sử dụng"
-        description="Linh kiện được dùng nhiều nhất cho các hồ sơ bảo hành trong kỳ."
+        title={t("reports.warranty.topComponentsTitle")}
+        description={t("reports.warranty.topComponentsDescription")}
         fullWidth
         loading={componentUsage.isLoading}
         error={componentUsage.error}
         onRetry={() => void componentUsage.refetch()}
         empty={componentItems.length === 0}
-        emptyText="Kỳ này chưa xuất linh kiện nào cho bảo hành."
+        emptyText={t("reports.warranty.topComponentsEmpty")}
         toolbar={
           <SegmentedToggle
-            label="Số linh kiện hiển thị"
+            label={t("reports.warranty.topComponentsCount")}
             value={topComponents}
             onChange={setTopComponents}
             options={TOP_COMPONENT_OPTIONS}
@@ -852,18 +875,20 @@ export default function TabWarranty() {
 
       <ReportSectionHeading
         id="rpt-tab6-components"
-        title="Chi tiết linh kiện theo phiếu bảo hành"
-        description="Bấm một dòng để xem toàn bộ linh kiện đã dùng, phiếu xuất và movement liên quan."
+        title={t("reports.warranty.componentTableTitle")}
+        description={t("reports.warranty.componentTableDescription")}
       />
 
       <FilterBar
-        label="Bộ lọc bảng linh kiện"
-        hint={`${fmt(filteredComponentRows.length)} dòng linh kiện`}
+        label={t("reports.warranty.componentFilterLabel")}
+        hint={t("reports.warranty.componentFilterHint", {
+          count: fmt(filteredComponentRows.length),
+        })}
       >
         <SearchInput
           width={300}
-          placeholder="Mã case / SKU máy / SKU linh kiện / Serial"
-          aria-label="Tìm mã case, SKU hoặc serial"
+          placeholder={t("reports.warranty.componentSearchPlaceholder")}
+          aria-label={t("reports.warranty.componentSearchAria")}
           value={componentKeyword}
           onChange={setComponentKeyword}
         />
@@ -886,7 +911,7 @@ export default function TabWarranty() {
           },
           {
             key: "caseNo",
-            header: "Mã case",
+            header: t("reports.warranty.colCase"),
             width: 150,
             sortAccessor: (row) => row.caseNo,
             render: (row) => (
@@ -895,7 +920,7 @@ export default function TabWarranty() {
           },
           {
             key: "model",
-            header: "SKU máy",
+            header: t("reports.warranty.colDeviceSku"),
             width: 150,
             render: (row) => row.model || EMPTY_TEXT,
           },
@@ -908,7 +933,7 @@ export default function TabWarranty() {
           },
           {
             key: "status",
-            header: "Trạng thái",
+            header: t("reports.warranty.colStatus"),
             width: 150,
             render: (row) => (
               <ReportStatusBadge
@@ -919,18 +944,18 @@ export default function TabWarranty() {
           },
           {
             key: "componentName",
-            header: "Linh kiện",
+            header: t("reports.warranty.colComponent"),
             render: (row) => row.componentName,
           },
           {
             key: "componentSku",
-            header: "SKU linh kiện",
+            header: t("reports.warranty.colComponentSku"),
             width: 160,
             render: (row) => row.componentSku,
           },
           {
             key: "qty",
-            header: "Số lượng",
+            header: t("reports.warranty.colQty"),
             align: "right",
             width: 110,
             sortAccessor: (row) => row.qty,
@@ -938,21 +963,22 @@ export default function TabWarranty() {
           },
           {
             key: "issueNo",
-            header: "Phiếu xuất linh kiện",
+            header: t("reports.warranty.colIssueNote"),
             width: 180,
             hideOnMobile: true,
             render: (row) => row.issueNo || EMPTY_TEXT,
           },
           {
             key: "issuedAt",
-            header: "Ngày xuất",
+            header: t("reports.warranty.colIssueDate"),
             width: 140,
             hideOnMobile: true,
-            render: (row) => (row.issuedAt ? fmtDate(row.issuedAt) : EMPTY_TEXT),
+            render: (row) =>
+              row.issuedAt ? fmtDate(row.issuedAt) : EMPTY_TEXT,
           },
           {
             key: "actor",
-            header: "Người thực hiện",
+            header: t("reports.warranty.colActor"),
             hideOnMobile: true,
             render: (row) => row.actor || EMPTY_TEXT,
           },
@@ -961,7 +987,7 @@ export default function TabWarranty() {
         rowKey={(row) => row.key}
         loading={loading || issueDocs.isLoading}
         onRowClick={(row) => setOpenCase(row.caseRow)}
-        emptyText="Chưa có hồ sơ nào đã xuất linh kiện trong kỳ."
+        emptyText={t("reports.warranty.componentTableEmpty")}
       />
       <ReportPaginationBar
         page={componentPagination.page}
@@ -975,13 +1001,15 @@ export default function TabWarranty() {
 
       <ReportSectionHeading
         id="rpt-tab6-cases"
-        title="Danh sách chi tiết hồ sơ bảo hành"
-        description="Toàn bộ hồ sơ trong kỳ kèm SLA, bệnh/lỗi, người phụ trách và số linh kiện đã dùng."
+        title={t("reports.warranty.caseTableTitle")}
+        description={t("reports.warranty.caseTableDescription")}
       />
 
       <FilterBar
-        label="Bộ lọc bảng hồ sơ bảo hành"
-        hint={`${fmt(filteredCases.length)} hồ sơ`}
+        label={t("reports.warranty.caseFilterLabel")}
+        hint={t("reports.warranty.caseFilterHint", {
+          count: fmt(filteredCases.length),
+        })}
         actions={
           <ExportButtons
             exporting={exporter.exporting}
@@ -1012,12 +1040,14 @@ export default function TabWarranty() {
           <UiTextField
             sx={{ width: 300 }}
             error={piiReasonInvalid}
-            placeholder={`Lý do xuất PII (≥ ${PII_REASON_MIN_LENGTH} ký tự; bỏ trống = che thông tin)`}
+            placeholder={t("reports.warranty.piiReasonPlaceholder", {
+              min: PII_REASON_MIN_LENGTH,
+            })}
             slotProps={{
               htmlInput: {
                 maxLength: 500,
                 "data-testid": "report-pii-reason",
-                "aria-label": "Lý do xuất dữ liệu PII",
+                "aria-label": t("reports.warranty.piiReasonAria"),
               },
             }}
             value={piiReason}
@@ -1028,53 +1058,53 @@ export default function TabWarranty() {
           value={listStatus}
           onChange={setListStatus}
           options={statusOptions}
-          allLabel="Tất cả trạng thái"
-          ariaLabel="Trạng thái hồ sơ"
+          allLabel={t("reports.warranty.caseStatusAllShort")}
+          ariaLabel={t("reports.warranty.caseStatusFilterAria")}
         />
         <AllOrPickFilter
           value={listSku}
           onChange={setListSku}
           options={catalog.options}
-          allLabel="Tất cả SKU"
+          allLabel={t("reports.warranty.skuAllShort")}
           ariaLabel="SKU"
           minWidth={240}
         />
         <UiSelect
           minWidth={200}
-          aria-label="Số bệnh/lỗi"
-          placeholder="Mọi số bệnh/lỗi"
+          aria-label={t("reports.warranty.defectCountAria")}
+          placeholder={t("reports.warranty.defectCountPlaceholder")}
           value={listMultiDefect}
           onChange={setListMultiDefect}
           options={[
-            { value: "MULTI", label: "Nhiều bệnh/lỗi (≥ 2)" },
-            { value: "SINGLE", label: "Một bệnh/lỗi" },
+            { value: "MULTI", label: t("reports.warranty.defectMulti") },
+            { value: "SINGLE", label: t("reports.warranty.defectSingle") },
           ]}
         />
         <AllOrPickFilter
           value={listSla}
           onChange={setListSla}
           options={slaOptions}
-          allLabel="Tất cả SLA"
+          allLabel={t("reports.warranty.slaAll")}
           ariaLabel="SLA"
         />
         <AllOrPickFilter
           value={listDepartment}
           onChange={setListDepartment}
           options={users.departmentOptions}
-          allLabel="Tất cả phòng ban"
-          ariaLabel="Phòng ban của hồ sơ"
+          allLabel={t("reports.warranty.departmentAll")}
+          ariaLabel={t("reports.warranty.caseDepartmentAria")}
         />
         <AllOrPickFilter
           value={listAssignee}
           onChange={setListAssignee}
           options={assigneeOptions}
-          allLabel="Tất cả người phụ trách"
-          ariaLabel="Người phụ trách hồ sơ"
+          allLabel={t("reports.warranty.assigneeAll")}
+          ariaLabel={t("reports.warranty.caseAssigneeAria")}
         />
         <SearchInput
           width={280}
-          placeholder="Mã case / SKU / Physical Code / Serial"
-          aria-label="Tìm mã case, SKU, physical code hoặc serial"
+          placeholder={t("reports.warranty.caseSearchPlaceholder")}
+          aria-label={t("reports.warranty.caseSearchAria")}
           value={listKeyword}
           onChange={setListKeyword}
         />
@@ -1084,7 +1114,7 @@ export default function TabWarranty() {
         <Box sx={{ mb: 1.5 }}>
           <ApiErrorAlert
             error={warranty.error}
-            title="Không tải được báo cáo bảo hành"
+            title={t("reports.warranty.caseLoadError")}
             onRetry={() => void warranty.refetch()}
           />
         </Box>
@@ -1101,7 +1131,7 @@ export default function TabWarranty() {
           <Box sx={{ mb: 1.5 }}>
             <UiAlert
               tone="error"
-              title="Xuất báo cáo bị từ chối quyền."
+              title={t("reports.common.exportDenied")}
               onClose={exporter.clearExportDenied}
             >
               {exporter.exportDenied}
@@ -1127,7 +1157,7 @@ export default function TabWarranty() {
           },
           {
             key: "caseNo",
-            header: "Mã case",
+            header: t("reports.warranty.colCase"),
             width: 150,
             sortAccessor: (row) => row.caseNo,
             render: (row) => (
@@ -1157,12 +1187,12 @@ export default function TabWarranty() {
           },
           {
             key: "defect",
-            header: "Bệnh / lỗi",
+            header: t("reports.warranty.colDefect"),
             render: (row) => row.defect || EMPTY_TEXT,
           },
           {
             key: "status",
-            header: "Trạng thái",
+            header: t("reports.warranty.colStatus"),
             width: 150,
             render: (row) => (
               <ReportStatusBadge
@@ -1173,14 +1203,15 @@ export default function TabWarranty() {
           },
           {
             key: "receivedAt",
-            header: "Ngày tiếp nhận",
+            header: t("reports.warranty.colReceivedAt"),
             width: 150,
             sortAccessor: (row) => row.receivedAt,
-            render: (row) => (row.receivedAt ? fmtDate(row.receivedAt) : EMPTY_TEXT),
+            render: (row) =>
+              row.receivedAt ? fmtDate(row.receivedAt) : EMPTY_TEXT,
           },
           {
             key: "dueDate",
-            header: "Dự kiến hoàn thành",
+            header: t("reports.warranty.colEstimated"),
             width: 170,
             sortAccessor: (row) => row.dueDate,
             render: (row) => (row.dueDate ? fmtDate(row.dueDate) : EMPTY_TEXT),
@@ -1195,27 +1226,37 @@ export default function TabWarranty() {
                 tone={SLA_TONE[row.sla]}
                 label={
                   row.slaDays === null
-                    ? SLA_LABELS[row.sla]
-                    : `${SLA_LABELS[row.sla]} (${row.slaDays >= 0 ? `còn ${row.slaDays}` : `trễ ${Math.abs(row.slaDays)}`} ngày)`
+                    ? t(SLA_LABEL_KEYS[row.sla])
+                    : t("reports.warranty.slaValue", {
+                        label: t(SLA_LABEL_KEYS[row.sla]),
+                        detail:
+                          row.slaDays >= 0
+                            ? t("reports.warranty.slaRemaining", {
+                                days: row.slaDays,
+                              })
+                            : t("reports.warranty.slaLate", {
+                                days: Math.abs(row.slaDays),
+                              }),
+                      })
                 }
               />
             ),
           },
           {
             key: "department",
-            header: "Phòng ban",
+            header: t("reports.warranty.colDepartment"),
             hideOnMobile: true,
             render: (row) => row.department || EMPTY_TEXT,
           },
           {
             key: "assignee",
-            header: "Người phụ trách",
+            header: t("reports.warranty.colAssignee"),
             hideOnMobile: true,
             render: (row) => row.assignee || EMPTY_TEXT,
           },
           {
             key: "componentCount",
-            header: "Số linh kiện đã dùng",
+            header: t("reports.warranty.colComponentCount"),
             align: "right",
             width: 175,
             sortAccessor: (row) =>
@@ -1225,13 +1266,13 @@ export default function TabWarranty() {
           },
           {
             key: "customerName",
-            header: "Khách hàng",
+            header: t("reports.warranty.colCustomer"),
             hideOnMobile: true,
             render: (row) => row.customerName || EMPTY_TEXT,
           },
           {
             key: "customerPhone",
-            header: "SĐT",
+            header: t("reports.warranty.colPhone"),
             hideOnMobile: true,
             render: (row) => row.customerPhone || EMPTY_TEXT,
           },
@@ -1240,11 +1281,11 @@ export default function TabWarranty() {
         rowKey={(row) => row.caseNo}
         loading={loading}
         onRowClick={(row) => setOpenCase(row)}
-        emptyText="Không có hồ sơ nào theo bộ lọc."
+        emptyText={t("reports.warranty.caseTableEmpty")}
         renderRowActions={(row) => (
           <ActionButton
             kind="view"
-            aria-label="Xem chi tiết dòng báo cáo"
+            aria-label={t("reports.warranty.caseDetailAria")}
             sx={{ whiteSpace: "nowrap" }}
             onClick={() => setOpenCase(row)}
           />
@@ -1260,8 +1301,12 @@ export default function TabWarranty() {
 
       {statusDrill ? (
         <DrillDownDialog
-          title={`Hồ sơ bảo hành — ${statusDrill.label}`}
-          subtitle={`${fmt(statusDrill.rows.length)} hồ sơ`}
+          title={t("reports.warranty.statusDrillTitle", {
+            label: statusDrill.label,
+          })}
+          subtitle={t("reports.warranty.statusDrillSubtitle", {
+            count: fmt(statusDrill.rows.length),
+          })}
           onClose={() => setStatusDrill(null)}
         >
           <CaseMiniTable
@@ -1276,7 +1321,9 @@ export default function TabWarranty() {
 
       {defectDrill ? (
         <DrillDownDialog
-          title={`Hồ sơ có bệnh/lỗi: ${defectDrill}`}
+          title={t("reports.warranty.defectDrillTitle", {
+            defect: defectDrill,
+          })}
           onClose={() => setDefectDrill(null)}
         >
           <CaseMiniTable
@@ -1293,8 +1340,13 @@ export default function TabWarranty() {
 
       {openCase ? (
         <DrillDownDialog
-          title={`Hồ sơ bảo hành ${openCase.caseNo}`}
-          subtitle={`${openCase.model} · ${openCase.skuName}`}
+          title={t("reports.warranty.caseDialogTitle", {
+            code: openCase.caseNo,
+          })}
+          subtitle={t("reports.warranty.caseDialogSubtitle", {
+            model: openCase.model,
+            sku: openCase.skuName,
+          })}
           onClose={() => setOpenCase(null)}
         >
           <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap", mb: 1.5 }}>
@@ -1305,89 +1357,102 @@ export default function TabWarranty() {
             <UiStatusBadge
               size="small"
               tone={SLA_TONE[openCase.sla]}
-              label={SLA_LABELS[openCase.sla]}
+              label={t(SLA_LABEL_KEYS[openCase.sla])}
             />
             <UiStatusBadge
               size="small"
               tone="neutral"
-              label={`Tiếp nhận: ${openCase.receivedAt ? fmtDate(openCase.receivedAt) : EMPTY_TEXT}`}
+              label={t("reports.warranty.receivedBadge", {
+                date: openCase.receivedAt
+                  ? fmtDate(openCase.receivedAt)
+                  : EMPTY_TEXT,
+              })}
             />
             <UiStatusBadge
               size="small"
               tone="neutral"
-              label={`Người phụ trách: ${openCase.assignee || EMPTY_TEXT}`}
+              label={t("reports.warranty.assigneeBadge", {
+                name: openCase.assignee || EMPTY_TEXT,
+              })}
             />
           </Stack>
 
           <Box sx={{ typography: "subtitle2", fontWeight: 700, mb: 1 }}>
-            Khách hàng
+            {t("reports.warranty.sectionCustomer")}
           </Box>
           {/* Mỗi giá trị PII đứng trong phần tử riêng: kiểm thử và trình đọc
               màn hình phải đọc được đúng giá trị đã che, không dính vào nhãn. */}
           <Box sx={{ typography: "body2", mb: 2, display: "grid", gap: 0.25 }}>
             <div>
-              Khách hàng: <b>{openCase.customerName || EMPTY_TEXT}</b>
+              {t("reports.warranty.customerLine")}{" "}
+              <b>{openCase.customerName || EMPTY_TEXT}</b>
             </div>
             <div>
-              SĐT: <b>{openCase.customerPhone || EMPTY_TEXT}</b>
+              {t("reports.warranty.phoneLine")}{" "}
+              <b>{openCase.customerPhone || EMPTY_TEXT}</b>
             </div>
             <div>
-              Địa chỉ: <b>{openCase.customerAddress || EMPTY_TEXT}</b>
+              {t("reports.warranty.addressLine")}{" "}
+              <b>{openCase.customerAddress || EMPTY_TEXT}</b>
             </div>
           </Box>
 
           <Box sx={{ typography: "subtitle2", fontWeight: 700, mb: 1 }}>
-            Linh kiện đã sử dụng
+            {t("reports.warranty.sectionComponentsUsed")}
           </Box>
           <ResponsiveDataTable<{ skuCode: string; qty: number }>
             columns={[
               {
                 key: "skuCode",
-                header: "SKU linh kiện",
+                header: t("reports.warranty.colComponentSku"),
                 render: (row) => row.skuCode,
               },
               {
                 key: "name",
-                header: "Tên linh kiện",
+                header: t("reports.warranty.colComponentName"),
                 render: (row) =>
                   catalog.byCode.get(row.skuCode)?.sku_name ?? EMPTY_TEXT,
               },
               {
                 key: "qty",
-                header: "Số lượng",
+                header: t("reports.warranty.colQty"),
                 align: "right",
                 render: (row) => fmt(row.qty),
               },
             ]}
             rows={openCase.components}
             rowKey={(row) => row.skuCode}
-            emptyText="Hồ sơ này chưa xuất linh kiện nào."
+            emptyText={t("reports.warranty.componentsUsedEmpty")}
           />
 
           <Box sx={{ typography: "subtitle2", fontWeight: 700, mt: 2, mb: 1 }}>
-            Phiếu xuất linh kiện liên quan
+            {t("reports.warranty.sectionIssueDocs")}
           </Box>
           {(() => {
             const doc = issueDocByCase.get(openCase.caseId);
             if (!doc) {
               return (
                 <UiAlert tone="info">
-                  Chưa có phiếu xuất linh kiện gắn với hồ sơ này.
+                  {t("reports.warranty.issueDocsEmpty")}
                 </UiAlert>
               );
             }
             return (
               <Box sx={{ typography: "body2" }}>
-                Phiếu <b>{text(doc.component_issue_no)}</b> · trạng thái{" "}
-                {reportStatusLabel(doc.status)} · thời gian{" "}
-                {fmtDateTime(doc.posted_at ?? doc.document_date)} · người thực
-                hiện {openCase.assignee || EMPTY_TEXT}
+                {t("reports.warranty.issueDocLineA")}{" "}
+                <b>{text(doc.component_issue_no)}</b>{" "}
+                {t("reports.warranty.issueDocLineB")}{" "}
+                {reportStatusLabel(doc.status)}{" "}
+                {t("reports.warranty.issueDocLineC")}{" "}
+                {fmtDateTime(doc.posted_at ?? doc.document_date)}{" "}
+                {t("reports.warranty.issueDocLineD")}{" "}
+                {openCase.assignee || EMPTY_TEXT}
               </Box>
             );
           })()}
 
           <Box sx={{ typography: "subtitle2", fontWeight: 700, mt: 2, mb: 1 }}>
-            Movement liên quan (xuất linh kiện trong kỳ)
+            {t("reports.warranty.sectionMovements")}
           </Box>
           <MovementTable
             rows={listOf(caseMovements.data?.rows).filter((row) =>
@@ -1396,7 +1461,7 @@ export default function TabWarranty() {
               ),
             )}
             loading={caseMovements.isLoading}
-            emptyText="Không tìm thấy movement xuất linh kiện khớp hồ sơ này trong kỳ."
+            emptyText={t("reports.warranty.movementsEmpty")}
           />
         </DrillDownDialog>
       ) : null}
@@ -1412,12 +1477,13 @@ function CaseMiniTable({
   rows: CaseRow[];
   onOpen: (row: CaseRow) => void;
 }) {
+  const t = useT();
   return (
     <ResponsiveDataTable<CaseRow>
       columns={[
         {
           key: "caseNo",
-          header: "Mã case",
+          header: t("reports.warranty.colCase"),
           render: (row) => (
             <Box sx={{ fontWeight: 700 }}>{row.caseNo || EMPTY_TEXT}</Box>
           ),
@@ -1425,18 +1491,19 @@ function CaseMiniTable({
         { key: "model", header: "SKU / Model", render: (row) => row.model },
         {
           key: "defect",
-          header: "Bệnh / lỗi",
+          header: t("reports.warranty.colDefect"),
           render: (row) => row.defect || EMPTY_TEXT,
         },
         {
           key: "status",
-          header: "Trạng thái",
+          header: t("reports.warranty.colStatus"),
           render: (row) => reportStatusLabel(row.status),
         },
         {
           key: "receivedAt",
-          header: "Tiếp nhận",
-          render: (row) => (row.receivedAt ? fmtDate(row.receivedAt) : EMPTY_TEXT),
+          header: t("reports.warranty.colReceived"),
+          render: (row) =>
+            row.receivedAt ? fmtDate(row.receivedAt) : EMPTY_TEXT,
         },
         {
           key: "sla",
@@ -1445,7 +1512,7 @@ function CaseMiniTable({
             <UiStatusBadge
               size="small"
               tone={SLA_TONE[row.sla]}
-              label={SLA_LABELS[row.sla]}
+              label={t(SLA_LABEL_KEYS[row.sla])}
             />
           ),
         },
@@ -1453,7 +1520,7 @@ function CaseMiniTable({
       rows={rows}
       rowKey={(row) => row.caseNo}
       onRowClick={onOpen}
-      emptyText="Không có hồ sơ nào."
+      emptyText={t("reports.warranty.drillEmpty")}
     />
   );
 }

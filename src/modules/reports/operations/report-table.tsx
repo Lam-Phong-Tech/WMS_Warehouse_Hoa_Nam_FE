@@ -1,3 +1,4 @@
+import { useT } from "@/shared/i18n/useT";
 import { useState, type ReactNode } from "react";
 import {
   Box,
@@ -134,6 +135,7 @@ export function MultiSelectFilter({
   ariaLabel: string;
   minWidth?: number;
 }) {
+  const t = useT();
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const selected = options.filter((option) => value.includes(option.value));
   const summary =
@@ -141,7 +143,7 @@ export function MultiSelectFilter({
       ? placeholder
       : selected.length === 1
         ? selected[0].label
-        : `Đã chọn ${selected.length} mục`;
+        : t("reports.common.selectedCount", { count: selected.length });
 
   const toggle = (optionValue: string) => {
     onChange(
@@ -176,7 +178,7 @@ export function MultiSelectFilter({
         onClose={() => setAnchorEl(null)}
       >
         {options.length === 0 ? (
-          <MenuItem disabled>Không có lựa chọn</MenuItem>
+          <MenuItem disabled>{t("reports.common.noOptions")}</MenuItem>
         ) : (
           options.map((option) => (
             <MenuItem
