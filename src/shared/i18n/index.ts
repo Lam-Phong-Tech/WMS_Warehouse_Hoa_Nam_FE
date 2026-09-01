@@ -5,5 +5,11 @@ export {
   type MessageKey,
   type MessageTree,
 } from "./messages";
-export { useT, translate, type MessageVars, type TranslateFn } from "./useT";
+export {
+  useT,
+  translate,
+  tStatic,
+  type MessageVars,
+  type TranslateFn,
+} from "./useT";
 export { useNavLabel, navLabel, NAV_LABELS_EN } from "./nav-labels";

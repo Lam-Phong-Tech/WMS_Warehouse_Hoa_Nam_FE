@@ -58,6 +58,7 @@ import {
   SKU_TYPE_LABELS,
   businessLabel,
 } from "@/shared/constants/business-labels";
+import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import {
   RECIPIENT_TYPES,
   RECIPIENT_TYPE_LABELS,
@@ -97,9 +98,11 @@ import { EMPTY_TEXT } from "@/shared/constants/display";
  */
 const PENDING_INFO_SCAN_LIMIT = 500;
 
-const STATUS_OPTIONS: Array<{ value: MasterStatus; label: string }> = [
-  { value: "ACTIVE", label: "Đang sử dụng" },
-  { value: "INACTIVE", label: "Ngừng sử dụng" },
+const statusOptions = (
+  t: TranslateFn,
+): Array<{ value: MasterStatus; label: string }> => [
+  { value: "ACTIVE", label: t("masterData.status.inUse") },
+  { value: "INACTIVE", label: t("masterData.status.notInUse") },
 ];
 
 interface ScreenProps {
@@ -126,12 +129,16 @@ function masterStatusTone(status: MasterStatus): "success" | "warning" {
   return status === "ACTIVE" ? "success" : "warning";
 }
 
-function masterStatusLabel(status: MasterStatus | string) {
-  return businessLabel(MASTER_STATUS_LABELS, status, "Trạng thái khác");
+function masterStatusLabel(status: MasterStatus | string, t: TranslateFn) {
+  return businessLabel(
+    MASTER_STATUS_LABELS,
+    status,
+    t("masterData.status.other"),
+  );
 }
 
-function skuTypeLabel(type: SkuType | string) {
-  return businessLabel(SKU_TYPE_LABELS, type, "Loại khác");
+function skuTypeLabel(type: SkuType | string, t: TranslateFn) {
+  return businessLabel(SKU_TYPE_LABELS, type, t("masterData.common.typeOther"));
 }
 
 /**
@@ -196,7 +203,7 @@ const EMPTY_SKU_FORM: SkuFormState = {
   code: "",
   name: "",
   type: "PRODUCT",
-  unit: "cái",
+  unit: "cái", // giá trị mặc định gửi BE, không phải nhãn hiển thị
   brandId: "",
   categoryId: "",
   modelId: "",
@@ -305,6 +312,7 @@ function SkuCatalogSelect({
   onChange: (value: string) => void;
   error?: string;
 }) {
+  const t = useT();
   const rows = options ?? [];
   const isMissing = Boolean(value) && !rows.some((row) => row.id === value);
   return (
@@ -325,10 +333,10 @@ function SkuCatalogSelect({
           inputLabel: { shrink: true },
         }}
       >
-        <MenuItem value="">— Chưa chọn —</MenuItem>
+        <MenuItem value="">{t("masterData.sku.notChosen")}</MenuItem>
         {isMissing ? (
           <MenuItem value={value}>
-            Giữ liên kết hiện tại (đã ngừng sử dụng)
+            {t("masterData.sku.keepInactiveLink")}
           </MenuItem>
         ) : null}
         {rows.map((row) => (
@@ -338,16 +346,14 @@ function SkuCatalogSelect({
         ))}
       </UiTextField>
       {!error && isMissing ? (
-        <Box sx={FIELD_CAPTION_SX}>
-          Danh mục đang gán đã ngừng sử dụng — giữ nguyên hoặc chọn danh mục
-          khác.
-        </Box>
+        <Box sx={FIELD_CAPTION_SX}>{t("masterData.sku.inactiveLinkHint")}</Box>
       ) : null}
     </Box>
   );
 }
 
 export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
+  const t = useT();
   // Deep-link ?screen=MST-02 (mo modal tao) — page tu xu ly sau khi go bypass layout.
   const [skuSearchParams] = useSearchParams();
   const openCreateRequested =
@@ -449,7 +455,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   );
   const { sortedRows, sortState, requestSort } = useClientSort(rows, {
     skuCode: (r) => r.sku_code ?? r.code,
-    type: (r) => skuTypeLabel(r.sku_type),
+    type: (r) => skuTypeLabel(r.sku_type, t),
     brand: (r) => refLabel(brandIndex, r.brand_id),
     category: (r) => refLabel(categoryIndex, r.category_id),
     minStock: (r) => r.min_stock ?? null,
@@ -465,12 +471,14 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
     const skuCode = record.sku_code ?? record.code;
     const confirmed = await confirmAction({
       title: willPublish
-        ? "Đưa SKU lên ứng dụng phân vùng?"
-        : "Gỡ SKU khỏi ứng dụng phân vùng?",
+        ? t("masterData.sku.publishTitle")
+        : t("masterData.sku.unpublishTitle"),
       content: willPublish
-        ? `SKU ${skuCode} sẽ hiển thị trên ứng dụng phân vùng.`
-        : `SKU ${skuCode} sẽ không còn hiển thị trên ứng dụng phân vùng.`,
-      confirmText: willPublish ? "Đưa lên ứng dụng" : "Gỡ khỏi ứng dụng",
+        ? t("masterData.sku.publishBody", { code: skuCode })
+        : t("masterData.sku.unpublishBody", { code: skuCode }),
+      confirmText: willPublish
+        ? t("masterData.sku.publishConfirm")
+        : t("masterData.sku.unpublishConfirm"),
     });
     if (!confirmed) return;
 
@@ -482,8 +490,8 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
       });
       toast.success(
         willPublish
-          ? "Đã đưa SKU lên ứng dụng phân vùng"
-          : "Đã gỡ SKU khỏi ứng dụng phân vùng",
+          ? t("masterData.sku.published")
+          : t("masterData.sku.unpublished"),
       );
     } catch (error) {
       toast.error(getMutationErrorMessage(error));
@@ -541,15 +549,15 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
 
   const validateSkuForm = (): boolean => {
     const errors: Record<string, string> = {};
-    if (!form.code.trim()) errors.code = "Mã SKU là bắt buộc.";
-    if (!form.name.trim()) errors.name = "Tên SKU là bắt buộc.";
-    if (!form.brandId) errors.brandId = "Vui lòng chọn Hãng.";
-    if (!form.categoryId) errors.categoryId = "Vui lòng chọn Nhóm hàng.";
-    if (!form.modelId) errors.modelId = "Vui lòng chọn Model.";
-    if (!form.powerSourceId) errors.powerSourceId = "Vui lòng chọn Nguồn điện.";
+    if (!form.code.trim()) errors.code = t("masterData.sku.errCode");
+    if (!form.name.trim()) errors.name = t("masterData.sku.errName");
+    if (!form.brandId) errors.brandId = t("masterData.sku.errBrand");
+    if (!form.categoryId) errors.categoryId = t("masterData.sku.errCategory");
+    if (!form.modelId) errors.modelId = t("masterData.sku.errModel");
+    if (!form.powerSourceId)
+      errors.powerSourceId = t("masterData.sku.errPowerSource");
     if (form.publishedToApp && form.status !== "ACTIVE") {
-      errors.publishedToApp =
-        "Chỉ SKU đang sử dụng mới được đưa lên ứng dụng phân vùng.";
+      errors.publishedToApp = t("masterData.sku.errPublishInactive");
     }
     // Định mức tồn (phục vụ báo cáo định mức tồn): min ≥ 0 — 0 là định mức
     // THẬT, không phải "chưa đặt"; max ≥ 1; max PHẢI LỚN HƠN min (không phải ≥).
@@ -563,13 +571,13 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
       minStockNum !== null &&
       (!Number.isFinite(minStockNum) || minStockNum < 0)
     ) {
-      errors.minStock = "Định mức tối thiểu phải là số ≥ 0.";
+      errors.minStock = t("masterData.sku.errMinStock");
     }
     if (
       maxStockNum !== null &&
       (!Number.isFinite(maxStockNum) || maxStockNum < 1)
     ) {
-      errors.maxStock = "Định mức tối đa phải là số ≥ 1.";
+      errors.maxStock = t("masterData.sku.errMaxStock");
     }
     if (
       !errors.minStock &&
@@ -578,7 +586,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
       maxStockNum !== null &&
       maxStockNum <= minStockNum
     ) {
-      errors.maxStock = "Định mức tối đa phải lớn hơn định mức tối thiểu.";
+      errors.maxStock = t("masterData.sku.errMaxLessMin");
     }
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
@@ -592,10 +600,9 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
     const name = form.name.trim();
     if (form.status === "INACTIVE" && editing?.status === "ACTIVE") {
       const confirmed = await confirmAction({
-        title: "Ngừng sử dụng SKU?",
-        content:
-          "SKU sẽ không còn được chọn cho phiếu mới và sẽ bị gỡ khỏi ứng dụng phân vùng. Lịch sử chứng từ giữ nguyên.",
-        confirmText: "Ngừng sử dụng",
+        title: t("masterData.sku.deactivateTitle"),
+        content: t("masterData.sku.deactivateBody"),
+        confirmText: t("masterData.sku.deactivateConfirm"),
       });
       if (!confirmed) return;
     }
@@ -627,10 +634,10 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           version: editing.version,
           payload,
         });
-        toast.success("Đã cập nhật SKU");
+        toast.success(t("masterData.sku.updated"));
       } else {
         await createMutation.mutateAsync(payload);
-        toast.success("Đã thêm SKU");
+        toast.success(t("masterData.sku.created"));
       }
       setModalOpen(false);
       setEditing(null);
@@ -675,33 +682,35 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               setKeyword(event.target.value);
               setPage(1);
             }}
-            placeholder="Tìm mã / tên SKU"
-            slotProps={{ htmlInput: { "aria-label": "Tìm SKU" } }}
+            placeholder={t("masterData.sku.searchPlaceholder")}
+            slotProps={{
+              htmlInput: { "aria-label": t("masterData.sku.searchAria") },
+            }}
             sx={{ minWidth: 190 }}
           />
           <UiSelect
-            aria-label="Lọc theo loại SKU"
+            aria-label={t("masterData.sku.typeFilterAria")}
             value={type}
             onChange={(value) => {
               setType(value as SkuType | "");
               setPage(1);
             }}
-            placeholder="Loại: Tất cả"
+            placeholder={t("masterData.sku.typeFilterPlaceholder")}
             minWidth={128}
             options={[
-              { value: "PRODUCT", label: "Sản phẩm" },
-              { value: "COMPONENT", label: "Linh kiện" },
+              { value: "PRODUCT", label: t("masterData.sku.typeProduct") },
+              { value: "COMPONENT", label: t("masterData.sku.typeComponent") },
             ]}
           />
           <UiSelect
-            aria-label="Lọc theo hãng"
+            aria-label={t("masterData.sku.brandFilterAria")}
             value={brandId}
             disabled={catalogsQuery.isLoading}
             onChange={(value) => {
               setBrandId(value);
               setPage(1);
             }}
-            placeholder="Hãng: Tất cả"
+            placeholder={t("masterData.sku.brandFilterPlaceholder")}
             minWidth={136}
             options={brands.map((brand) => ({
               value: brand.id,
@@ -709,18 +718,18 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
             }))}
           />
           <UiSelect
-            aria-label="Lọc theo trạng thái"
+            aria-label={t("masterData.status.filterAria")}
             value={status}
             onChange={(value) => {
               setStatus(value as MasterStatus | "");
               setPage(1);
             }}
-            placeholder="Trạng thái: Tất cả"
+            placeholder={t("masterData.status.allPlaceholder")}
             minWidth={128}
-            options={STATUS_OPTIONS}
+            options={statusOptions(t)}
           />
           <UiSelect
-            aria-label="Số dòng mỗi trang"
+            aria-label={t("masterData.common.pageSizeAria")}
             value={perPage}
             onChange={(value) => {
               setPerPage(Number(value));
@@ -740,7 +749,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               setPendingInfoOnly((current) => !current);
               setPage(1);
             }}
-            title="Lọc SKU chỉ có Mã và Loại — chưa gán Hãng/Nhóm hàng/Model"
+            title={t("masterData.sku.pendingTooltip")}
             sx={
               pendingInfoOnly
                 ? {
@@ -750,26 +759,26 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                 : undefined
             }
           >
-            SKU chờ điền thông tin
+            {t("masterData.sku.pendingInfo")}
           </ActionButton>
           {canManage ? (
             <ActionButton
               kind="import"
               onClick={() => setImportModalOpen(true)}
             >
-              Nhập từ Excel
+              {t("masterData.sku.importExcel")}
             </ActionButton>
           ) : null}
           {canManage ? (
             <ActionButton kind="create" onClick={openCreate}>
-              Thêm SKU
+              {t("masterData.sku.create")}
             </ActionButton>
           ) : null}
         </Stack>
 
         <ApiErrorAlert
           error={query.error}
-          fallback="Không tải được danh sách SKU."
+          fallback={t("masterData.sku.errLoad")}
           onRetry={() => void query.refetch()}
         />
 
@@ -791,13 +800,13 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                   kind="close"
                   onClick={() => setPublishError(null)}
                 >
-                  Đóng
+                  {t("common.close")}
                 </ActionButton>
               }
             >
               {getApiErrorMessage(
                 publishError,
-                "Không cập nhật được trạng thái hiển thị trên ứng dụng phân vùng.",
+                t("masterData.sku.errPublishToggle"),
               )}
             </UiAlert>
           </Box>
@@ -812,7 +821,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                     checked={rowSelection.isAllSelected}
                     indeterminate={rowSelection.isIndeterminate}
                     onChange={rowSelection.toggleAll}
-                    ariaLabel="Chọn tất cả SKU"
+                    ariaLabel={t("masterData.sku.selectAllAria")}
                   />
                 </th>
                 <th className="stt-col">STT</th>
@@ -823,59 +832,59 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                   onSort={requestSort}
                 />
                 <SortableTh
-                  label="Loại"
+                  label={t("masterData.sku.colType")}
                   sortKey="type"
                   sortState={sortState}
                   onSort={requestSort}
                 />
                 <SortableTh
-                  label="Hãng"
+                  label={t("masterData.sku.colBrand")}
                   sortKey="brand"
                   sortState={sortState}
                   onSort={requestSort}
                 />
                 <SortableTh
-                  label="Nhóm hàng"
+                  label={t("masterData.sku.colCategory")}
                   sortKey="category"
                   sortState={sortState}
                   onSort={requestSort}
                 />
                 <SortableTh
-                  label="Định mức tối thiểu"
+                  label={t("masterData.sku.colMinStock")}
                   sortKey="minStock"
                   sortState={sortState}
                   onSort={requestSort}
                   sortType="value"
                 />
                 <SortableTh
-                  label="Định mức tối đa"
+                  label={t("masterData.sku.colMaxStock")}
                   sortKey="maxStock"
                   sortState={sortState}
                   onSort={requestSort}
                   sortType="value"
                 />
                 <SortableTh
-                  label="Trạng thái"
+                  label={t("masterData.status.label")}
                   sortKey="status"
                   sortState={sortState}
                   onSort={requestSort}
                   sortType="value"
                 />
                 <SortableTh
-                  label="Ứng dụng phân vùng"
+                  label={t("masterData.sku.colPvApp")}
                   sortKey="published"
                   sortState={sortState}
                   onSort={requestSort}
                   sortType="value"
                 />
-                <th aria-label="Hành động" />
+                <th aria-label={t("masterData.common.actionsAria")} />
               </tr>
             </thead>
             <tbody>
               {query.isLoading ? (
                 <tr>
                   <td colSpan={11} className="muted">
-                    Đang tải dữ liệu...
+                    {t("masterData.common.loadingData")}
                   </td>
                 </tr>
               ) : sortedRows.length > 0 ? (
@@ -891,7 +900,9 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                           onChange={(checked) =>
                             rowSelection.toggleOne(recordId, checked)
                           }
-                          ariaLabel={`Chọn ${record.sku_code ?? record.code ?? ""}`}
+                          ariaLabel={t("masterData.sku.selectRowAria", {
+                            code: record.sku_code ?? record.code ?? "",
+                          })}
                         />
                       </td>
                       <td className="stt-col">
@@ -904,7 +915,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                           {record.sku_name ?? record.name}
                         </span>
                       </td>
-                      <td>{skuTypeLabel(record.sku_type)}</td>
+                      <td>{skuTypeLabel(record.sku_type, t)}</td>
                       {/* Bỏ title={brand_id/category_id}: tooltip trước đây in
                         nguyên UUID ra khi rê chuột. */}
                       <td>{refLabel(brandIndex, record.brand_id)}</td>
@@ -914,19 +925,21 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                       <td>
                         <UiStatusBadge
                           tone={masterStatusTone(record.status)}
-                          label={masterStatusLabel(record.status)}
+                          label={masterStatusLabel(record.status, t)}
                         />
                       </td>
                       <td>
                         <UiStatusBadge
                           tone={isPublished ? "success" : "warning"}
                           label={
-                            isPublished ? "Đang hiển thị" : "Chưa hiển thị"
+                            isPublished
+                              ? t("masterData.sku.publishedBadge")
+                              : t("masterData.sku.unpublishedBadge")
                           }
                           title={
                             isPublished
-                              ? "SKU đang hiển thị trên ứng dụng phân vùng"
-                              : "SKU chưa hiển thị trên ứng dụng phân vùng"
+                              ? t("masterData.sku.publishedTooltip")
+                              : t("masterData.sku.unpublishedTooltip")
                           }
                         />
                       </td>
@@ -947,7 +960,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                               kind="edit"
                               onClick={() => openEdit(record)}
                             >
-                              Sửa
+                              {t("masterData.common.edit")}
                             </ActionButton>
                           ) : null}
                           {canPublish ? (
@@ -961,16 +974,16 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                               }
                               title={
                                 !isPublished && !statusAllowsPublish
-                                  ? "Chỉ SKU đang sử dụng mới được đưa lên ứng dụng phân vùng."
+                                  ? t("masterData.sku.errPublishInactive")
                                   : isPublished
-                                    ? "Gỡ SKU khỏi ứng dụng phân vùng"
-                                    : "Đưa SKU lên ứng dụng phân vùng"
+                                    ? t("masterData.sku.unpublishAction")
+                                    : t("masterData.sku.publishAction")
                               }
                               onClick={() => void togglePublish(record)}
                             >
                               {isPublished
-                                ? "Gỡ khỏi ứng dụng"
-                                : "Đưa lên ứng dụng"}
+                                ? t("masterData.sku.unpublishConfirm")
+                                : t("masterData.sku.publishConfirm")}
                             </ActionButton>
                           ) : null}
                         </Stack>
@@ -981,7 +994,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               ) : (
                 <tr>
                   <td colSpan={11} className="muted">
-                    Không có SKU phù hợp bộ lọc.
+                    {t("masterData.sku.empty")}
                   </td>
                 </tr>
               )}
@@ -1005,10 +1018,10 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           slotProps={{ paper: { sx: { maxWidth: 760 } } }}
           title={
             <>
-              Chi tiết SKU
+              {t("masterData.sku.detailTitle")}
               <ActionIconButton
                 kind="close"
-                label="Đóng"
+                label={t("common.close")}
                 onClick={() => setViewing(null)}
                 sx={{ position: "absolute", right: 10, top: 8 }}
               />
@@ -1027,19 +1040,28 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               <UiDescriptions
                 columns={2}
                 items={[
-                  { label: "Mã SKU", value: viewing.sku_code ?? viewing.code },
                   {
-                    label: "Tên SKU",
+                    label: t("masterData.sku.fieldCode"),
+                    value: viewing.sku_code ?? viewing.code,
+                  },
+                  {
+                    label: t("masterData.sku.fieldName"),
                     value: viewing.sku_name ?? viewing.name,
                   },
-                  { label: "Loại", value: skuTypeLabel(viewing.sku_type) },
-                  { label: "Đơn vị tính", value: viewing.unit || EMPTY_TEXT },
                   {
-                    label: "Hãng",
+                    label: t("masterData.sku.colType"),
+                    value: skuTypeLabel(viewing.sku_type, t),
+                  },
+                  {
+                    label: t("masterData.sku.fieldUnit"),
+                    value: viewing.unit || EMPTY_TEXT,
+                  },
+                  {
+                    label: t("masterData.sku.colBrand"),
                     value: refLabel(brandIndex, viewing.brand_id),
                   },
                   {
-                    label: "Nhóm hàng",
+                    label: t("masterData.sku.colCategory"),
                     value: refLabel(categoryIndex, viewing.category_id),
                   },
                   {
@@ -1047,13 +1069,13 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                     value: refLabel(modelIndex, viewing.model_id),
                   },
                   {
-                    label: "Nguồn điện",
+                    label: t("masterData.sku.fieldPowerSource"),
                     value: viewing.power_source_id
                       ? refLabel(powerSourceIndex, viewing.power_source_id)
                       : viewing.power_or_voltage || EMPTY_TEXT,
                   },
                   {
-                    label: "Quy cách đóng gói",
+                    label: t("masterData.sku.fieldPackaging"),
                     value: viewing.package_variant_id
                       ? refLabel(
                           packageVariantIndex,
@@ -1062,35 +1084,37 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                       : viewing.package_variant || EMPTY_TEXT,
                   },
                   {
-                    label: "Phiên bản sản phẩm",
+                    label: t("masterData.sku.fieldVersion"),
                     value: viewing.version_code || EMPTY_TEXT,
                   },
                   {
-                    label: "Định mức tối thiểu",
+                    label: t("masterData.sku.colMinStock"),
                     value: stockThresholdLabel(viewing.min_stock),
                   },
                   {
-                    label: "Định mức tối đa",
+                    label: t("masterData.sku.colMaxStock"),
                     value: stockThresholdLabel(viewing.max_stock),
                   },
                   {
-                    label: "Quản lý số sê-ri",
-                    value: viewing.is_serial_tracked ? "Có" : "Không",
+                    label: t("masterData.sku.fieldSerialTracked"),
+                    value: viewing.is_serial_tracked
+                      ? t("masterData.sku.yes")
+                      : t("masterData.sku.no"),
                   },
                   {
-                    label: "Trạng thái",
+                    label: t("masterData.status.label"),
                     value: (
                       <UiStatusBadge
                         tone={masterStatusTone(viewing.status)}
-                        label={masterStatusLabel(viewing.status)}
+                        label={masterStatusLabel(viewing.status, t)}
                       />
                     ),
                   },
                   {
-                    label: "Ứng dụng phân vùng",
+                    label: t("masterData.sku.colPvApp"),
                     value: viewing.published_to_app
-                      ? "Đang hiển thị"
-                      : "Chưa hiển thị",
+                      ? t("masterData.sku.publishedBadge")
+                      : t("masterData.sku.unpublishedBadge"),
                   },
                 ]}
               />
@@ -1105,10 +1129,12 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           fullWidth
           title={
             <>
-              {editing ? "Sửa SKU" : "Thêm SKU"}
+              {editing
+                ? t("masterData.sku.dialogEdit")
+                : t("masterData.sku.dialogCreate")}
               <ActionIconButton
                 kind="close"
-                label="Đóng"
+                label={t("common.close")}
                 onClick={close}
                 disabled={isSaving}
                 sx={{ position: "absolute", right: 10, top: 8 }}
@@ -1118,7 +1144,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           actions={
             <>
               <ActionButton kind="cancel" onClick={close} disabled={isSaving}>
-                Hủy
+                {t("masterData.common.cancel")}
               </ActionButton>
               <ActionButton
                 kind="save"
@@ -1126,7 +1152,9 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                 type="submit"
                 form="sku-master-form"
               >
-                {isSaving ? "Đang lưu..." : "Lưu SKU"}
+                {isSaving
+                  ? t("masterData.common.saving")
+                  : t("masterData.sku.submit")}
               </ActionButton>
             </>
           }
@@ -1149,12 +1177,12 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                   }}
                 >
                   <Box sx={{ fontWeight: 700, fontSize: 14, mb: 2 }}>
-                    Thông tin SKU
+                    {t("masterData.sku.sectionInfo")}
                   </Box>
                   <Stack spacing={2}>
                     <UiTextField
                       id="sku-code"
-                      label="Mã SKU"
+                      label={t("masterData.sku.fieldCode")}
                       required
                       fullWidth
                       value={form.code}
@@ -1170,13 +1198,13 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                       helperText={
                         fieldErrors.code ||
                         (identityLocked
-                          ? "SKU đã có tồn kho — không thể đổi mã SKU."
+                          ? t("masterData.sku.codeLockedHint")
                           : undefined)
                       }
                     />
                     <UiTextField
                       id="sku-name"
-                      label="Tên SKU"
+                      label={t("masterData.sku.fieldName")}
                       required
                       fullWidth
                       value={form.name}
@@ -1194,7 +1222,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                     <UiTextField
                       id="sku-type"
                       select
-                      label="Loại SKU"
+                      label={t("masterData.sku.fieldSkuType")}
                       fullWidth
                       disabled={isSaving}
                       value={form.type}
@@ -1205,12 +1233,16 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                         }))
                       }
                     >
-                      <MenuItem value="PRODUCT">Sản phẩm</MenuItem>
-                      <MenuItem value="COMPONENT">Linh kiện</MenuItem>
+                      <MenuItem value="PRODUCT">
+                        {t("masterData.sku.typeProduct")}
+                      </MenuItem>
+                      <MenuItem value="COMPONENT">
+                        {t("masterData.sku.typeComponent")}
+                      </MenuItem>
                     </UiTextField>
                     <UiTextField
                       id="sku-unit"
-                      label="Đơn vị tính"
+                      label={t("masterData.sku.fieldUnit")}
                       fullWidth
                       value={form.unit}
                       onChange={(event) => {
@@ -1227,7 +1259,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                     <UiTextField
                       id="sku-status"
                       select
-                      label="Trạng thái"
+                      label={t("masterData.status.label")}
                       fullWidth
                       disabled={isSaving}
                       value={form.status}
@@ -1243,7 +1275,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                         }));
                       }}
                     >
-                      {STATUS_OPTIONS.map((option) => (
+                      {statusOptions(t).map((option) => (
                         <MenuItem key={option.value} value={option.value}>
                           {option.label}
                         </MenuItem>
@@ -1263,11 +1295,11 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                             disabled={isSaving || form.status !== "ACTIVE"}
                           />
                         }
-                        label="Cho phép hiển thị SKU này trên ứng dụng xem sản phẩm"
+                        label={t("masterData.sku.publishSwitchLabel")}
                       />
                       {form.status !== "ACTIVE" ? (
                         <Box sx={FIELD_CAPTION_SX}>
-                          Chỉ SKU đang sử dụng mới được đưa lên ứng dụng.
+                          {t("masterData.sku.publishSwitchHint")}
                         </Box>
                       ) : null}
                       {fieldErrors.publishedToApp ? (
@@ -1291,16 +1323,15 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                   }}
                 >
                   <Box sx={{ fontWeight: 700, fontSize: 14, mb: 1 }}>
-                    Danh mục tham chiếu
+                    {t("masterData.sku.sectionCatalog")}
                   </Box>
                   <Box sx={{ ...FIELD_CAPTION_SX, mt: 0, mb: 2 }}>
-                    Chọn các danh mục đang sử dụng cho Hãng, Nhóm hàng, Model và
-                    Nguồn điện.
+                    {t("masterData.sku.sectionCatalogHint")}
                   </Box>
                   <Stack spacing={2}>
                     <SkuCatalogSelect
                       id="sku-brand"
-                      label="Hãng"
+                      label={t("masterData.sku.colBrand")}
                       required
                       value={form.brandId}
                       options={catalogs.brands}
@@ -1320,7 +1351,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                     />
                     <SkuCatalogSelect
                       id="sku-category"
-                      label="Nhóm hàng"
+                      label={t("masterData.sku.colCategory")}
                       required
                       value={form.categoryId}
                       options={catalogs.categories}
@@ -1360,7 +1391,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                     />
                     <SkuCatalogSelect
                       id="sku-power-source"
-                      label="Nguồn điện"
+                      label={t("masterData.sku.fieldPowerSource")}
                       required
                       value={form.powerSourceId}
                       options={catalogs.powerSources}
@@ -1380,7 +1411,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                     />
                     <SkuCatalogSelect
                       id="sku-package-variant"
-                      label="Quy cách đóng gói"
+                      label={t("masterData.sku.fieldPackaging")}
                       value={form.packageVariantId}
                       options={catalogs.packageVariants}
                       disabled={isSaving}
@@ -1399,7 +1430,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                     />
                     <UiTextField
                       id="sku-version-code"
-                      label="Phiên bản sản phẩm"
+                      label={t("masterData.sku.fieldVersion")}
                       fullWidth
                       value={form.versionCode}
                       placeholder="V1"
@@ -1421,14 +1452,14 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                     />
                     <UiTextField
                       id="sku-min-stock"
-                      label="Định mức tồn tối thiểu"
+                      label={t("masterData.sku.fieldMinStock")}
                       fullWidth
                       type="number"
                       value={form.minStock}
-                      placeholder="Để trống = chưa đặt định mức"
+                      placeholder={t("masterData.sku.thresholdPlaceholder")}
                       helperText={
                         fieldErrors.minStock ??
-                        "Nhập 0 nếu muốn chỉ cảnh báo khi hết hàng; để trống nếu chưa muốn đặt định mức."
+                        t("masterData.sku.minStockHelper")
                       }
                       error={Boolean(fieldErrors.minStock)}
                       onChange={(event) =>
@@ -1442,14 +1473,14 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                     />
                     <UiTextField
                       id="sku-max-stock"
-                      label="Định mức tồn tối đa"
+                      label={t("masterData.sku.fieldMaxStock")}
                       fullWidth
                       type="number"
                       value={form.maxStock}
-                      placeholder="Để trống = chưa đặt định mức"
+                      placeholder={t("masterData.sku.thresholdPlaceholder")}
                       helperText={
                         fieldErrors.maxStock ??
-                        "Phải ≥ 1 và lớn hơn định mức tối thiểu; để trống nếu chưa muốn đặt định mức."
+                        t("masterData.sku.maxStockHelper")
                       }
                       error={Boolean(fieldErrors.maxStock)}
                       onChange={(event) =>
@@ -1475,12 +1506,11 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                             disabled={isSaving || identityLocked}
                           />
                         }
-                        label="Quản lý riêng từng sản phẩm bằng số sê-ri / mã vật lý"
+                        label={t("masterData.sku.serialSwitchLabel")}
                       />
                       {identityLocked ? (
                         <Box sx={FIELD_CAPTION_SX}>
-                          SKU đã có tồn kho — không thể đổi chế độ quản lý số
-                          sê-ri.
+                          {t("masterData.sku.serialLockedHint")}
                         </Box>
                       ) : null}
                     </Box>
@@ -1536,6 +1566,7 @@ const AGENCY_FORM_FIELDS = {
 } as const satisfies Record<string, keyof AgencyFormState>;
 
 export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
+  const t = useT();
   const [agencySearchParams] = useSearchParams();
   const openCreateRequested =
     openCreateOnMount || agencySearchParams.get("screen") === "AGY-02";
@@ -1627,18 +1658,17 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
     const errors: Record<string, string> = {};
     // recipient_type required (BE BaM1RecipientController).
     if (!form.recipient_type) {
-      errors.recipient_type = "Vui lòng chọn loại nơi nhận.";
+      errors.recipient_type = t("masterData.recipient.errType");
     }
     if (!form.agency_code.trim()) {
-      errors.agency_code = "Mã nơi nhận là bắt buộc.";
+      errors.agency_code = t("masterData.recipient.errCode");
     }
     if (!form.agency_name.trim()) {
-      errors.agency_name = "Tên nơi nhận là bắt buộc.";
+      errors.agency_name = t("masterData.recipient.errName");
     }
     const phone = form.phone?.trim() ?? "";
     if (phone && !/^0\d{9}$/.test(phone)) {
-      errors.phone =
-        "Số điện thoại phải gồm đúng 10 chữ số và bắt đầu bằng số 0.";
+      errors.phone = t("masterData.recipient.errPhone");
     }
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
@@ -1661,10 +1691,9 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
     };
     if (form.status === "INACTIVE" && editing?.status === "ACTIVE") {
       const confirmed = await confirmAction({
-        title: "Ngừng sử dụng nơi nhận?",
-        content:
-          "Nơi nhận sẽ không còn được chọn cho chứng từ mới. Chứng từ đã lập giữ nguyên.",
-        confirmText: "Ngừng sử dụng",
+        title: t("masterData.recipient.deactivateTitle"),
+        content: t("masterData.recipient.deactivateBody"),
+        confirmText: t("masterData.sku.deactivateConfirm"),
       });
       if (!confirmed) return;
     }
@@ -1676,10 +1705,10 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           payload,
           version: editing.version,
         });
-        toast.success("Đã cập nhật nơi nhận");
+        toast.success(t("masterData.recipient.updated"));
       } else {
         await createMutation.mutateAsync(payload);
-        toast.success("Đã thêm nơi nhận");
+        toast.success(t("masterData.recipient.created"));
       }
       setModalOpen(false);
       setEditing(null);
@@ -1722,18 +1751,20 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               setKeyword(event.target.value);
               setPage(1);
             }}
-            placeholder="Tìm mã / tên / thị trường / khu vực"
-            slotProps={{ htmlInput: { "aria-label": "Tìm nơi nhận" } }}
+            placeholder={t("masterData.recipient.searchPlaceholder")}
+            slotProps={{
+              htmlInput: { "aria-label": t("masterData.recipient.searchAria") },
+            }}
             sx={{ minWidth: 220 }}
           />
           <UiSelect
-            aria-label="Lọc theo loại nơi nhận"
+            aria-label={t("masterData.recipient.typeFilterAria")}
             value={recipientType}
             onChange={(value) => {
               setRecipientType(value as RecipientType | "");
               setPage(1);
             }}
-            placeholder="Loại nơi nhận: Tất cả"
+            placeholder={t("masterData.recipient.typeFilterPlaceholder")}
             minWidth={160}
             options={RECIPIENT_TYPES.map((value) => ({
               value,
@@ -1741,18 +1772,18 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
             }))}
           />
           <UiSelect
-            aria-label="Lọc theo trạng thái"
+            aria-label={t("masterData.status.filterAria")}
             value={status}
             onChange={(value) => {
               setStatus(value as MasterStatus | "");
               setPage(1);
             }}
-            placeholder="Trạng thái: Tất cả"
+            placeholder={t("masterData.status.allPlaceholder")}
             minWidth={128}
-            options={STATUS_OPTIONS}
+            options={statusOptions(t)}
           />
           <UiSelect
-            aria-label="Số dòng mỗi trang"
+            aria-label={t("masterData.common.pageSizeAria")}
             value={perPage}
             onChange={(value) => {
               setPerPage(Number(value));
@@ -1767,14 +1798,14 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           <Box sx={{ flex: 1 }} />
           {canManage ? (
             <ActionButton kind="create" onClick={openCreate}>
-              Thêm nơi nhận
+              {t("masterData.recipient.create")}
             </ActionButton>
           ) : null}
         </Stack>
 
         <ApiErrorAlert
           error={query.error}
-          fallback="Không tải được danh sách nơi nhận."
+          fallback={t("masterData.recipient.errLoad")}
           onRetry={() => void query.refetch()}
         />
 
@@ -1787,73 +1818,73 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                     checked={rowSelection.isAllSelected}
                     indeterminate={rowSelection.isIndeterminate}
                     onChange={rowSelection.toggleAll}
-                    ariaLabel="Chọn tất cả nơi nhận"
+                    ariaLabel={t("masterData.recipient.selectAllAria")}
                   />
                 </th>
                 <th className="stt-col">STT</th>
                 <SortableTh
-                  label="Mã"
+                  label={t("masterData.recipient.colCode")}
                   sortKey="code"
                   sortState={sortState}
                   onSort={requestSort}
                 />
                 <SortableTh
-                  label="Tên nơi nhận"
+                  label={t("masterData.recipient.colName")}
                   sortKey="name"
                   sortState={sortState}
                   onSort={requestSort}
                 />
                 <SortableTh
-                  label="Loại nơi nhận"
+                  label={t("masterData.recipient.colType")}
                   sortKey="recipientType"
                   sortState={sortState}
                   onSort={requestSort}
                 />
                 <SortableTh
-                  label="Thị trường"
+                  label={t("masterData.recipient.colMarket")}
                   sortKey="market"
                   sortState={sortState}
                   onSort={requestSort}
                 />
                 <SortableTh
-                  label="Khu vực"
+                  label={t("masterData.recipient.colRegion")}
                   sortKey="region"
                   sortState={sortState}
                   onSort={requestSort}
                 />
                 <SortableTh
-                  label="Người liên hệ"
+                  label={t("masterData.recipient.colContact")}
                   sortKey="contact"
                   sortState={sortState}
                   onSort={requestSort}
                 />
                 <SortableTh
-                  label="Điện thoại"
+                  label={t("masterData.recipient.colPhone")}
                   sortKey="phone"
                   sortState={sortState}
                   onSort={requestSort}
                 />
                 <SortableTh
-                  label="Địa chỉ"
+                  label={t("masterData.recipient.colAddress")}
                   sortKey="address"
                   sortState={sortState}
                   onSort={requestSort}
                 />
                 <SortableTh
-                  label="Trạng thái"
+                  label={t("masterData.status.label")}
                   sortKey="status"
                   sortState={sortState}
                   onSort={requestSort}
                   sortType="value"
                 />
-                <th aria-label="Hành động" />
+                <th aria-label={t("masterData.common.actionsAria")} />
               </tr>
             </thead>
             <tbody>
               {query.isLoading ? (
                 <tr>
                   <td colSpan={12} className="muted">
-                    Đang tải dữ liệu...
+                    {t("masterData.common.loadingData")}
                   </td>
                 </tr>
               ) : sortedRows.length > 0 ? (
@@ -1865,7 +1896,9 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                         onChange={(checked) =>
                           rowSelection.toggleOne(record.agency_id, checked)
                         }
-                        ariaLabel={`Chọn ${record.agency_name}`}
+                        ariaLabel={t("masterData.recipient.selectRowAria", {
+                          name: record.agency_name,
+                        })}
                       />
                     </td>
                     <td className="stt-col">
@@ -1893,7 +1926,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                     <td>
                       <UiStatusBadge
                         tone={masterStatusTone(record.status)}
-                        label={masterStatusLabel(record.status)}
+                        label={masterStatusLabel(record.status, t)}
                       />
                     </td>
                     <td>
@@ -1902,10 +1935,12 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                           kind="edit"
                           onClick={() => openEdit(record)}
                         >
-                          Sửa
+                          {t("masterData.common.edit")}
                         </ActionButton>
                       ) : (
-                        <span className="muted">Chỉ xem</span>
+                        <span className="muted">
+                          {t("masterData.common.viewOnly")}
+                        </span>
                       )}
                     </td>
                   </tr>
@@ -1913,7 +1948,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               ) : (
                 <tr>
                   <td colSpan={12} className="muted">
-                    Không có nơi nhận phù hợp bộ lọc.
+                    {t("masterData.recipient.empty")}
                   </td>
                 </tr>
               )}
@@ -1925,7 +1960,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           current={pagination.current}
           pageSize={perPage}
           total={pagination.total}
-          itemLabel="nơi nhận"
+          itemLabel={t("masterData.recipient.itemLabel")}
           onChange={setPage}
         />
 
@@ -1936,10 +1971,12 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           fullWidth
           title={
             <>
-              {editing ? "Sửa nơi nhận" : "Thêm nơi nhận"}
+              {editing
+                ? t("masterData.recipient.dialogEdit")
+                : t("masterData.recipient.dialogCreate")}
               <ActionIconButton
                 kind="close"
-                label="Đóng"
+                label={t("common.close")}
                 onClick={close}
                 disabled={isSaving}
                 sx={{ position: "absolute", right: 10, top: 8 }}
@@ -1949,7 +1986,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           actions={
             <>
               <ActionButton kind="cancel" onClick={close} disabled={isSaving}>
-                Hủy
+                {t("masterData.common.cancel")}
               </ActionButton>
               <ActionButton
                 kind="save"
@@ -1957,7 +1994,9 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                 type="submit"
                 form="agency-master-form"
               >
-                {isSaving ? "Đang lưu..." : "Lưu nơi nhận"}
+                {isSaving
+                  ? t("masterData.common.saving")
+                  : t("masterData.recipient.submit")}
               </ActionButton>
             </>
           }
@@ -1972,7 +2011,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               <Grid size={{ xs: 12, sm: 6 }}>
                 <UiTextField
                   id="agency-code"
-                  label="Mã nơi nhận"
+                  label={t("masterData.recipient.fieldCode")}
                   required
                   fullWidth
                   value={form.agency_code}
@@ -1996,7 +2035,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               <Grid size={{ xs: 12, sm: 6 }}>
                 <UiTextField
                   id="agency-name"
-                  label="Tên nơi nhận"
+                  label={t("masterData.recipient.colName")}
                   required
                   fullWidth
                   value={form.agency_name}
@@ -2021,7 +2060,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                 <UiTextField
                   id="agency-recipient-type"
                   select
-                  label="Loại nơi nhận"
+                  label={t("masterData.recipient.colType")}
                   required
                   fullWidth
                   disabled={isSaving}
@@ -2045,7 +2084,9 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                     inputLabel: { shrink: true },
                   }}
                 >
-                  <MenuItem value="">Chọn loại nơi nhận</MenuItem>
+                  <MenuItem value="">
+                    {t("masterData.recipient.chooseType")}
+                  </MenuItem>
                   {RECIPIENT_TYPES.map((value) => (
                     <MenuItem key={value} value={value}>
                       {RECIPIENT_TYPE_LABELS[value]}
@@ -2056,7 +2097,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               <Grid size={{ xs: 12, sm: 6 }}>
                 <UiTextField
                   id="agency-market"
-                  label="Thị trường"
+                  label={t("masterData.recipient.colMarket")}
                   fullWidth
                   value={form.market ?? ""}
                   onChange={(event) => {
@@ -2074,7 +2115,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               <Grid size={{ xs: 12, sm: 6 }}>
                 <UiTextField
                   id="agency-region"
-                  label="Khu vực"
+                  label={t("masterData.recipient.colRegion")}
                   fullWidth
                   value={form.region ?? ""}
                   onChange={(event) => {
@@ -2092,7 +2133,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               <Grid size={{ xs: 12, sm: 6 }}>
                 <UiTextField
                   id="agency-contact-name"
-                  label="Người liên hệ"
+                  label={t("masterData.recipient.colContact")}
                   fullWidth
                   value={form.contact_name ?? ""}
                   onChange={(event) => {
@@ -2115,7 +2156,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               <Grid size={{ xs: 12, sm: 6 }}>
                 <UiTextField
                   id="agency-phone"
-                  label="Điện thoại"
+                  label={t("masterData.recipient.colPhone")}
                   fullWidth
                   value={form.phone ?? ""}
                   onChange={(event) => {
@@ -2139,7 +2180,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                 <UiTextField
                   id="agency-status"
                   select
-                  label="Trạng thái"
+                  label={t("masterData.status.label")}
                   fullWidth
                   disabled={isSaving}
                   value={form.status}
@@ -2150,7 +2191,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                     }))
                   }
                 >
-                  {STATUS_OPTIONS.map((option) => (
+                  {statusOptions(t).map((option) => (
                     <MenuItem key={option.value} value={option.value}>
                       {option.label}
                     </MenuItem>
@@ -2160,7 +2201,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               <Grid size={12}>
                 <UiTextField
                   id="agency-address"
-                  label="Địa chỉ"
+                  label={t("masterData.recipient.colAddress")}
                   fullWidth
                   multiline
                   minRows={3}
@@ -2208,6 +2249,7 @@ const DEFECT_FORM_FIELDS = {
 } as const satisfies Record<string, keyof DefectPayload>;
 
 export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
+  const t = useT();
   const [defectSearchParams] = useSearchParams();
   const openCreateRequested =
     openCreateOnMount || defectSearchParams.get("screen") === "DEF-02";
@@ -2284,9 +2326,10 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
 
   const validateDefectForm = (): boolean => {
     const errors: Record<string, string> = {};
-    if (!form.defect_code.trim()) errors.defect_code = "Mã lỗi là bắt buộc.";
+    if (!form.defect_code.trim())
+      errors.defect_code = t("masterData.defect.errCode");
     if (!form.defect_name.trim())
-      errors.defect_name = "Tên lỗi / bệnh là bắt buộc.";
+      errors.defect_name = t("masterData.defect.errName");
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -2303,10 +2346,9 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
     };
     if (form.status === "INACTIVE" && editing?.status === "ACTIVE") {
       const confirmed = await confirmAction({
-        title: "Ngừng sử dụng lỗi / bệnh?",
-        content:
-          "Lỗi / bệnh sẽ không còn được chọn cho hồ sơ bảo hành mới. Hồ sơ đã gán giữ nguyên.",
-        confirmText: "Ngừng sử dụng",
+        title: t("masterData.defect.deactivateTitle"),
+        content: t("masterData.defect.deactivateBody"),
+        confirmText: t("masterData.sku.deactivateConfirm"),
       });
       if (!confirmed) return;
     }
@@ -2318,10 +2360,10 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           payload,
           version: editing.version,
         });
-        toast.success("Đã cập nhật danh mục lỗi");
+        toast.success(t("masterData.defect.updated"));
       } else {
         await createMutation.mutateAsync(payload);
-        toast.success("Đã thêm danh mục lỗi");
+        toast.success(t("masterData.defect.created"));
       }
       setModalOpen(false);
       setEditing(null);
@@ -2364,23 +2406,25 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               setKeyword(event.target.value);
               setPage(1);
             }}
-            placeholder="Tìm mã / tên lỗi"
-            slotProps={{ htmlInput: { "aria-label": "Tìm lỗi/bệnh" } }}
+            placeholder={t("masterData.defect.searchPlaceholder")}
+            slotProps={{
+              htmlInput: { "aria-label": t("masterData.defect.searchAria") },
+            }}
             sx={{ minWidth: 220 }}
           />
           <UiSelect
-            aria-label="Lọc theo trạng thái"
+            aria-label={t("masterData.status.filterAria")}
             value={status}
             onChange={(value) => {
               setStatus(value as MasterStatus | "");
               setPage(1);
             }}
-            placeholder="Trạng thái: Tất cả"
+            placeholder={t("masterData.status.allPlaceholder")}
             minWidth={128}
-            options={STATUS_OPTIONS}
+            options={statusOptions(t)}
           />
           <UiSelect
-            aria-label="Số dòng mỗi trang"
+            aria-label={t("masterData.common.pageSizeAria")}
             value={perPage}
             onChange={(value) => {
               setPerPage(Number(value));
@@ -2395,14 +2439,14 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           <Box sx={{ flex: 1 }} />
           {canManage ? (
             <ActionButton kind="create" onClick={openCreate}>
-              Thêm lỗi
+              {t("masterData.defect.create")}
             </ActionButton>
           ) : null}
         </Stack>
 
         <ApiErrorAlert
           error={query.error}
-          fallback="Không tải được danh mục lỗi."
+          fallback={t("masterData.defect.errLoad")}
           onRetry={() => void query.refetch()}
         />
 
@@ -2415,43 +2459,43 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                     checked={rowSelection.isAllSelected}
                     indeterminate={rowSelection.isIndeterminate}
                     onChange={rowSelection.toggleAll}
-                    ariaLabel="Chọn tất cả lỗi / bệnh"
+                    ariaLabel={t("masterData.defect.selectAllAria")}
                   />
                 </th>
                 <th className="stt-col">STT</th>
                 <SortableTh
-                  label="Mã lỗi"
+                  label={t("masterData.defect.colCode")}
                   sortKey="code"
                   sortState={sortState}
                   onSort={requestSort}
                 />
                 <SortableTh
-                  label="Tên lỗi / bệnh"
+                  label={t("masterData.defect.colName")}
                   sortKey="name"
                   sortState={sortState}
                   onSort={requestSort}
                 />
                 <SortableTh
-                  label="Mô tả"
+                  label={t("masterData.common.description")}
                   sortKey="description"
                   sortState={sortState}
                   onSort={requestSort}
                 />
                 <SortableTh
-                  label="Trạng thái"
+                  label={t("masterData.status.label")}
                   sortKey="status"
                   sortState={sortState}
                   onSort={requestSort}
                   sortType="value"
                 />
-                <th aria-label="Hành động" />
+                <th aria-label={t("masterData.common.actionsAria")} />
               </tr>
             </thead>
             <tbody>
               {query.isLoading ? (
                 <tr>
                   <td colSpan={7} className="muted">
-                    Đang tải dữ liệu...
+                    {t("masterData.common.loadingData")}
                   </td>
                 </tr>
               ) : sortedRows.length > 0 ? (
@@ -2463,7 +2507,9 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                         onChange={(checked) =>
                           rowSelection.toggleOne(record.defect_id, checked)
                         }
-                        ariaLabel={`Chọn ${record.defect_name}`}
+                        ariaLabel={t("masterData.defect.selectRowAria", {
+                          name: record.defect_name,
+                        })}
                       />
                     </td>
                     <td className="stt-col">
@@ -2477,7 +2523,7 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                     <td>
                       <UiStatusBadge
                         tone={masterStatusTone(record.status)}
-                        label={masterStatusLabel(record.status)}
+                        label={masterStatusLabel(record.status, t)}
                       />
                     </td>
                     <td>
@@ -2486,10 +2532,12 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                           kind="edit"
                           onClick={() => openEdit(record)}
                         >
-                          Sửa
+                          {t("masterData.common.edit")}
                         </ActionButton>
                       ) : (
-                        <span className="muted">Chỉ xem</span>
+                        <span className="muted">
+                          {t("masterData.common.viewOnly")}
+                        </span>
                       )}
                     </td>
                   </tr>
@@ -2497,7 +2545,7 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               ) : (
                 <tr>
                   <td colSpan={7} className="muted">
-                    Không có danh mục lỗi phù hợp bộ lọc.
+                    {t("masterData.defect.empty")}
                   </td>
                 </tr>
               )}
@@ -2509,7 +2557,7 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           current={pagination.current}
           pageSize={perPage}
           total={pagination.total}
-          itemLabel="lỗi / bệnh"
+          itemLabel={t("masterData.defect.itemLabel")}
           onChange={setPage}
         />
 
@@ -2520,10 +2568,12 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           fullWidth
           title={
             <>
-              {editing ? "Sửa lỗi / bệnh" : "Thêm lỗi / bệnh"}
+              {editing
+                ? t("masterData.defect.dialogEdit")
+                : t("masterData.defect.dialogCreate")}
               <ActionIconButton
                 kind="close"
-                label="Đóng"
+                label={t("common.close")}
                 onClick={close}
                 disabled={isSaving}
                 sx={{ position: "absolute", right: 10, top: 8 }}
@@ -2533,7 +2583,7 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           actions={
             <>
               <ActionButton kind="cancel" onClick={close} disabled={isSaving}>
-                Hủy
+                {t("masterData.common.cancel")}
               </ActionButton>
               <ActionButton
                 kind="save"
@@ -2541,7 +2591,9 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                 type="submit"
                 form="defect-master-form"
               >
-                {isSaving ? "Đang lưu..." : "Lưu danh mục lỗi"}
+                {isSaving
+                  ? t("masterData.common.saving")
+                  : t("masterData.defect.submit")}
               </ActionButton>
             </>
           }
@@ -2556,7 +2608,7 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               <Grid size={{ xs: 12, sm: 6 }}>
                 <UiTextField
                   id="defect-code"
-                  label="Mã lỗi"
+                  label={t("masterData.defect.colCode")}
                   required
                   fullWidth
                   value={form.defect_code}
@@ -2581,7 +2633,7 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               <Grid size={{ xs: 12, sm: 6 }}>
                 <UiTextField
                   id="defect-name"
-                  label="Tên lỗi / bệnh"
+                  label={t("masterData.defect.colName")}
                   required
                   fullWidth
                   value={form.defect_name}
@@ -2606,7 +2658,7 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               <Grid size={12}>
                 <UiTextField
                   id="defect-description"
-                  label="Mô tả"
+                  label={t("masterData.common.description")}
                   fullWidth
                   multiline
                   minRows={3}
@@ -2632,7 +2684,7 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                 <UiTextField
                   id="defect-status"
                   select
-                  label="Trạng thái"
+                  label={t("masterData.status.label")}
                   fullWidth
                   disabled={isSaving}
                   value={form.status}
@@ -2643,7 +2695,7 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                     }))
                   }
                 >
-                  {STATUS_OPTIONS.map((option) => (
+                  {statusOptions(t).map((option) => (
                     <MenuItem key={option.value} value={option.value}>
                       {option.label}
                     </MenuItem>

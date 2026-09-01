@@ -54,6 +54,15 @@ export function translate(
 
 export type TranslateFn = (key: MessageKey, vars?: MessageVars) => string;
 
+/**
+ * Bản dịch cho nơi KHÔNG gọi được hook (service, hàm cấp module). Đọc thẳng
+ * ngôn ngữ hiện tại từ store thay vì subscribe — chấp nhận được vì các chỗ này
+ * chỉ chạy một lần lúc dựng câu lỗi, không cần render lại khi đổi ngôn ngữ.
+ */
+export function tStatic(key: MessageKey, vars?: MessageVars): string {
+  return translate(useLanguageStore.getState().language, key, vars);
+}
+
 export function useT(): TranslateFn {
   const language = useLanguageStore((state) => state.language);
   return useCallback(

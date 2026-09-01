@@ -1,3 +1,4 @@
+import { tStatic } from "@/shared/i18n/useT";
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { http } from "@/shared/api/http";
 import { ApiEnvelopeError } from "@/shared/types/api-response";
@@ -383,10 +384,7 @@ export async function importSkuExcel(
     // nào và hiển thị sai bản chất sự cố.
     if (errorCodeOf(error) === "CONCURRENCY_CONFLICT") {
       throw new SkuImportConcurrencyError(
-        messageOf(
-          error,
-          "Cùng file này đang được import với cùng tùy chọn; vui lòng đợi lần chạy hiện tại kết thúc rồi thử lại.",
-        ),
+        messageOf(error, tStatic("masterData.import.errDuplicateRun")),
         error,
       );
     }
@@ -395,10 +393,7 @@ export async function importSkuExcel(
     // `data`, để lọt xuống nhánh 422 là báo "file có lỗi" cho một file không hề có lỗi.
     if (errorCodeOf(error) === "SKU_IMPORT_REPORT_PERSISTENCE_FAILED") {
       throw new SkuImportUnavailableError(
-        messageOf(
-          error,
-          "Không lưu được Import báo cáo; toàn bộ giao dịch đã hoàn tác, không có SKU nào được tạo/cập nhật. Vui lòng thử lại.",
-        ),
+        messageOf(error, tStatic("masterData.import.errRolledBack")),
         error,
       );
     }
@@ -411,7 +406,7 @@ export async function importSkuExcel(
           .response?.data?.message === "string"
           ? (error as { response: { data: { message: string } } }).response.data
               .message
-          : "Import bị từ chối.";
+          : tStatic("masterData.import.errRejected");
       throw new SkuImportRejectedError(result, message, error);
     }
     throw error;

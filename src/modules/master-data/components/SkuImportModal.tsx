@@ -23,6 +23,7 @@ import {
 } from "@/modules/master-data/services/sku-import.service";
 import { sha256OfFile } from "@/shared/utils/file-digest";
 import { EMPTY_TEXT } from "@/shared/constants/display";
+import { useT, tStatic, type TranslateFn } from "@/shared/i18n/useT";
 import { formatDateTime } from "@/shared/utils/format-date";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 import { ResponsiveDataTable } from "@/shared/components";
@@ -55,9 +56,7 @@ interface PreviewPayload {
 
 class SkuImportFileChangedError extends Error {
   constructor() {
-    super(
-      "Nội dung tệp đã thay đổi sau lần kiểm tra trước. Hệ thống chưa gửi dữ liệu để tránh nhập một nội dung chưa được kiểm tra. Hãy chọn lại tệp và chạy Kiểm tra trước.",
-    );
+    super(tStatic("masterData.import.errStaleFile"));
     this.name = "SkuImportFileChangedError";
   }
 }
@@ -84,31 +83,45 @@ function formatExpiry(isoTimestamp: string | null): string {
   if (!isoTimestamp) return "";
   const formatted = formatDateTime(isoTimestamp);
   // formatDateTime trả EMPTY_TEXT khi không hợp lệ — không ghép hậu tố khi đó.
-  return formatted === EMPTY_TEXT ? "" : ` · tải được đến ${formatted}`;
+  return formatted === EMPTY_TEXT
+    ? ""
+    : tStatic("masterData.import.expirySuffix", { time: formatted });
 }
 
 function describeConstraints(constraints: SkuImportConstraints | null): string {
   if (!constraints) {
-    return "Giới hạn số dòng và kích thước tệp do hệ thống kiểm soát. Nếu vượt giới hạn, màn hình sẽ hiển thị thông báo cụ thể.";
+    return tStatic("masterData.import.constraintsFallback");
   }
 
   const parts = [
-    `Tối đa ${constraints.maxRows.toLocaleString("vi-VN")} dòng dữ liệu`,
-    `kích thước tệp không quá ${constraints.maxFileSizeMb} MB`,
+    tStatic("masterData.import.constraintRows", {
+      count: constraints.maxRows.toLocaleString("vi-VN"),
+    }),
+    tStatic("masterData.import.constraintSize", {
+      size: constraints.maxFileSizeMb,
+    }),
   ];
   if (constraints.allowedExtensions.length > 0) {
     parts.push(
-      `định dạng ${constraints.allowedExtensions.map((value) => `.${value}`).join(", ")}`,
+      tStatic("masterData.import.constraintExtensions", {
+        list: constraints.allowedExtensions
+          .map((value) => `.${value}`)
+          .join(", "),
+      }),
     );
   }
   if (constraints.errorFileExpiryHours > 0) {
     parts.push(
-      `tệp lỗi có thể tải trong ${constraints.errorFileExpiryHours} giờ`,
+      tStatic("masterData.import.constraintErrorFile", {
+        hours: constraints.errorFileExpiryHours,
+      }),
     );
   }
   if (constraints.maxPhysicalRowsToScan > 0) {
     parts.push(
-      `bảng tính không trải quá ${constraints.maxPhysicalRowsToScan.toLocaleString("vi-VN")} dòng kể cả dòng trống`,
+      tStatic("masterData.import.constraintScanRows", {
+        count: constraints.maxPhysicalRowsToScan.toLocaleString("vi-VN"),
+      }),
     );
   }
   return `${parts.join("; ")}.`;
@@ -128,28 +141,35 @@ function payloadSignature(fileSha256: string | null, updateExisting: boolean) {
 
 type KeyedRowError = SkuImportRowError & { __key: string };
 
-const ROW_ERROR_COLUMNS: ResponsiveTableColumn<KeyedRowError>[] = [
-  { key: "row", header: "Dòng", width: 70, render: (record) => record.row },
+const rowErrorColumns = (
+  t: TranslateFn,
+): ResponsiveTableColumn<KeyedRowError>[] => [
+  {
+    key: "row",
+    header: t("masterData.import.colRow"),
+    width: 70,
+    render: (record) => record.row,
+  },
   {
     key: "field",
-    header: "Trường dữ liệu",
+    header: t("masterData.import.colField"),
     width: 150,
     render: (record) => record.field,
   },
   {
     key: "code",
-    header: "Loại lỗi",
+    header: t("masterData.import.colErrorType"),
     width: 190,
     render: (record) => record.code,
   },
   {
     key: "message",
-    header: "Nội dung lỗi",
+    header: t("masterData.import.colErrorMessage"),
     render: (record) => record.message,
   },
   {
     key: "value",
-    header: "Giá trị nhập",
+    header: t("masterData.import.colValue"),
     width: 160,
     render: (record) =>
       record.value === null || record.value === undefined
@@ -173,6 +193,7 @@ function RowErrorTable({
   loading?: boolean;
 }) {
   const [page, setPage] = useState(1);
+  const t = useT();
   const keyed = useMemo(
     () =>
       errors.map((error, index) => ({
@@ -194,11 +215,11 @@ function RowErrorTable({
   return (
     <Stack spacing={1}>
       <ResponsiveDataTable<KeyedRowError>
-        columns={ROW_ERROR_COLUMNS}
+        columns={rowErrorColumns(t)}
         rows={visibleRows}
         rowKey={(record) => record.__key}
         loading={loading}
-        emptyText="Không có dòng lỗi"
+        emptyText={t("masterData.import.errorsEmpty")}
       />
       {paginated ? (
         <UiPagination
@@ -220,6 +241,7 @@ function ResultSummary({
   result: SkuImportResult;
   label: string;
 }) {
+  const t = useT();
   return (
     <Stack
       direction="row"
@@ -227,25 +249,39 @@ function ResultSummary({
       sx={{ flexWrap: "wrap", rowGap: 1, alignItems: "center" }}
     >
       <UiStatusBadge tone="primary" label={label} />
-      <UiText variant="body">Tổng: {result.totalRows}</UiText>
+      <UiText variant="body">
+        {t("masterData.import.total", { count: result.totalRows })}
+      </UiText>
       <UiText variant="body" color={S.successText}>
-        Hợp lệ: {result.validRows}
+        {t("masterData.import.valid", { count: result.validRows })}
       </UiText>
       <UiText
         variant="body"
         color={result.errorRows > 0 ? S.errorText : undefined}
       >
-        Lỗi: {result.errorRows}
+        {t("masterData.import.errors", { count: result.errorRows })}
       </UiText>
       {result.dryRun ? (
         <>
-          <UiText variant="body">Sẽ tạo mới: {result.wouldInsertRows}</UiText>
-          <UiText variant="body">Sẽ cập nhật: {result.wouldUpdateRows}</UiText>
+          <UiText variant="body">
+            {t("masterData.import.wouldInsert", {
+              count: result.wouldInsertRows,
+            })}
+          </UiText>
+          <UiText variant="body">
+            {t("masterData.import.wouldUpdate", {
+              count: result.wouldUpdateRows,
+            })}
+          </UiText>
         </>
       ) : (
         <>
-          <UiText variant="body">Đã tạo mới: {result.insertedRows}</UiText>
-          <UiText variant="body">Đã cập nhật: {result.updatedRows}</UiText>
+          <UiText variant="body">
+            {t("masterData.import.inserted", { count: result.insertedRows })}
+          </UiText>
+          <UiText variant="body">
+            {t("masterData.import.updated", { count: result.updatedRows })}
+          </UiText>
         </>
       )}
     </Stack>
@@ -261,6 +297,7 @@ function SkuImportErrorFilePanel({
   availableHint: boolean;
   expiresAtHint: string | null;
 }) {
+  const t = useT();
   const reportQuery = useQuery({
     queryKey: ["sku-import-report", reportId],
     queryFn: () => fetchSkuImportReport(reportId),
@@ -270,7 +307,7 @@ function SkuImportErrorFilePanel({
     mutationFn: () => downloadSkuImportErrorFile(reportId),
     onSuccess: ({ blob, fileName }) => {
       handleBlobDownload(blob, `loi-nhap-sku-${reportId}.csv`, fileName);
-      toast.success("Đã tải tệp lỗi.");
+      toast.success(t("masterData.import.errorFileDownloaded"));
     },
     onError: (error) => {
       if (normalizeError(error).status === 404) void reportQuery.refetch();
@@ -282,7 +319,7 @@ function SkuImportErrorFilePanel({
     return (
       <ApiErrorAlert
         error={reportQuery.error}
-        title="Không kiểm tra được tệp lỗi"
+        title={t("masterData.import.errorFileCheckFailed")}
         onRetry={() => void reportQuery.refetch()}
       />
     );
@@ -298,8 +335,7 @@ function SkuImportErrorFilePanel({
   if (!available) {
     return (
       <UiText variant="secondary">
-        Tệp lỗi không còn tải được hoặc báo cáo không có dòng lỗi. Hãy chạy lại
-        Kiểm tra trước sau khi đã sửa tệp nếu cần tạo báo cáo lỗi mới.
+        {t("masterData.import.errorFileGone")}
       </UiText>
     );
   }
@@ -311,17 +347,20 @@ function SkuImportErrorFilePanel({
         disabled={downloadMutation.isPending}
         onClick={() => downloadMutation.mutate()}
       >
-        {downloadMutation.isPending ? "Đang tải..." : "Tải tệp lỗi"}
+        {downloadMutation.isPending
+          ? t("masterData.import.downloading")
+          : t("masterData.import.downloadErrorFile")}
       </ActionButton>
       <UiText variant="secondary">
-        Tệp chứa số dòng, trường dữ liệu, loại lỗi, nội dung lỗi và giá trị bị
-        từ chối{formatExpiry(expiresAt)}.
+        {t("masterData.import.errorFileHint", {
+          expiry: formatExpiry(expiresAt),
+        })}
       </UiText>
       {downloadMutation.error &&
       !isNoPermissionError(downloadMutation.error) ? (
         <ApiErrorAlert
           error={downloadMutation.error}
-          title="Không tải được tệp lỗi"
+          title={t("masterData.import.errorFileDownloadFailed")}
           onRetry={() => downloadMutation.mutate()}
         />
       ) : null}
@@ -336,6 +375,7 @@ export function SkuImportModal({
   onImported,
 }: SkuImportModalProps) {
   const dialog = useDialogExit(onClose);
+  const t = useT();
   const [file, setFile] = useState<File | null>(null);
   const [fileInputKey, setFileInputKey] = useState(0);
   const [updateExisting, setUpdateExisting] = useState(false);
@@ -388,9 +428,7 @@ export function SkuImportModal({
       })
       .catch(() => {
         if (cancelled) return;
-        setDigestError(
-          "Không đọc được nội dung tệp. Tệp có thể đã bị di chuyển, đổi tên hoặc sửa sau khi chọn. Hãy chọn lại tệp.",
-        );
+        setDigestError(tStatic("masterData.import.errReadFile"));
         setDigestPending(false);
       });
     return () => {
@@ -442,9 +480,7 @@ export function SkuImportModal({
         setPreviewResult(null);
         setCommitResult(null);
         setPreviewSignature("");
-        toast.error(
-          "Nội dung hệ thống nhận được không khớp với tệp bạn đã chọn. Hãy chọn lại tệp và kiểm tra lại.",
-        );
+        toast.error(t("masterData.import.errChecksumMismatch"));
         return;
       }
       setCommitResult(null);
@@ -452,11 +488,16 @@ export function SkuImportModal({
       setPreviewSignature(signature);
       if (result.errorRows === 0) {
         toast.success(
-          `Kiểm tra hợp lệ — dự kiến tạo mới ${result.wouldInsertRows}, cập nhật ${result.wouldUpdateRows} SKU.`,
+          t("masterData.import.validateOk", {
+            insert: result.wouldInsertRows,
+            update: result.wouldUpdateRows,
+          }),
         );
       } else {
         toast.warning(
-          `Tệp có ${result.errorRows} dòng lỗi. Hãy sửa tệp và kiểm tra lại trước khi nhập dữ liệu.`,
+          t("masterData.import.validateHasErrors", {
+            count: result.errorRows,
+          }),
         );
       }
     },
@@ -481,7 +522,9 @@ export function SkuImportModal({
       }
       setPreviewResult(null);
       setPreviewSignature("");
-      toast.error(getApiErrorMessage(error, "Không thể kiểm tra tệp."));
+      toast.error(
+        getApiErrorMessage(error, t("masterData.import.errValidate")),
+      );
     },
   });
 
@@ -499,13 +542,14 @@ export function SkuImportModal({
     onSuccess: (result) => {
       setCommitResult(result);
       if (result.duplicate) {
-        toast.info(
-          "Tệp này đã được nhập trước đó với cùng lựa chọn. Hệ thống không tạo hoặc cập nhật dữ liệu lần nữa để tránh ghi trùng.",
-        );
+        toast.info(t("masterData.import.alreadyImported"));
         return;
       }
       toast.success(
-        `Nhập dữ liệu thành công — đã tạo mới ${result.insertedRows}, cập nhật ${result.updatedRows} SKU.`,
+        t("masterData.import.commitOk", {
+          insert: result.insertedRows,
+          update: result.updatedRows,
+        }),
       );
       onImported();
     },
@@ -515,10 +559,7 @@ export function SkuImportModal({
         setPreviewResult(null);
         setPreviewSignature("");
         toast.error(
-          getApiErrorMessage(
-            error,
-            "Nội dung tệp đã thay đổi sau lần kiểm tra trước. Hãy chọn lại tệp và chạy Kiểm tra trước.",
-          ),
+          getApiErrorMessage(error, t("masterData.import.errStaleShort")),
         );
         return;
       }
@@ -532,15 +573,12 @@ export function SkuImportModal({
       if (error instanceof SkuImportRejectedError) {
         setCommitResult(error.result);
         toast.error(
-          getApiErrorMessage(
-            error,
-            "Tệp có dòng lỗi nên hệ thống từ chối nhập dữ liệu SKU.",
-          ),
+          getApiErrorMessage(error, t("masterData.import.errHasErrorRows")),
         );
         return;
       }
       setCommitResult(null);
-      toast.error(getApiErrorMessage(error, "Không thể nhập dữ liệu SKU."));
+      toast.error(getApiErrorMessage(error, t("masterData.import.errCommit")));
     },
   });
 
@@ -549,7 +587,9 @@ export function SkuImportModal({
     onSuccess: ({ blob, fileName }) =>
       handleBlobDownload(blob, "mau-nhap-sku.xlsx", fileName),
     onError: (error) =>
-      toast.error(getApiErrorMessage(error, "Không tải được tệp mẫu.")),
+      toast.error(
+        getApiErrorMessage(error, t("masterData.import.errTemplate")),
+      ),
   });
 
   const currentSignature = payloadSignature(fileSha256, updateExisting);
@@ -581,10 +621,10 @@ export function SkuImportModal({
         fullWidth
         title={
           <>
-            Nhập danh sách SKU từ Excel
+            {t("masterData.import.title")}
             <ActionIconButton
               kind="close"
-              label="Đóng"
+              label={t("common.close")}
               onClick={close}
               sx={{ position: "absolute", right: 10, top: 8 }}
             />
@@ -592,11 +632,10 @@ export function SkuImportModal({
         }
       >
         <Stack spacing={1.75}>
-          <UiAlert
-            tone="info"
-            title="Chọn tệp → Kiểm tra trước → sửa lỗi nếu có → Nhập dữ liệu"
-          >
-            {`Hệ thống chỉ ghi dữ liệu khi toàn bộ tệp hợp lệ. Nếu còn một dòng lỗi thì không SKU nào được tạo hoặc cập nhật. ${describeConstraints(constraints)}`}
+          <UiAlert tone="info" title={t("masterData.import.stepsTitle")}>
+            {t("masterData.import.stepsBody", {
+              constraints: describeConstraints(constraints),
+            })}
           </UiAlert>
 
           <Stack
@@ -608,7 +647,7 @@ export function SkuImportModal({
               key={fileInputKey}
               type="file"
               accept={acceptAttribute(constraints)}
-              aria-label="Chọn tệp Excel chứa SKU"
+              aria-label={t("masterData.import.fileAria")}
               onChange={(event) => {
                 setFile(event.target.files?.[0] ?? null);
                 invalidatePreview();
@@ -622,30 +661,33 @@ export function SkuImportModal({
                   invalidatePreview();
                 }}
                 slotProps={{
-                  input: { "aria-label": "Cho phép cập nhật SKU đã tồn tại" },
+                  input: {
+                    "aria-label": t("masterData.import.allowUpdateAria"),
+                  },
                 }}
               />
-              <UiText variant="body">Cho phép cập nhật SKU đã tồn tại</UiText>
+              <UiText variant="body">
+                {t("masterData.import.allowUpdateLabel")}
+              </UiText>
             </Stack>
             <ActionButton
               kind="download"
               disabled={templateMutation.isPending}
               onClick={() => templateMutation.mutate()}
             >
-              {templateMutation.isPending ? "Đang tải..." : "Tải tệp mẫu"}
+              {templateMutation.isPending
+                ? t("masterData.import.downloading")
+                : t("masterData.import.downloadTemplate")}
             </ActionButton>
           </Stack>
 
           <UiText variant="secondary">
-            Tệp cần có tối thiểu cột mã SKU và tên SKU. Các thông tin còn lại
-            như đơn vị tính, loại SKU, hãng, nhóm hàng, mẫu sản phẩm, nguồn
-            điện, quy cách đóng gói, phiên bản sản phẩm, trạng thái và chế độ
-            quản lý số sê-ri có thể khai báo thêm theo tệp mẫu.
+            {t("masterData.import.columnsHint")}
           </UiText>
 
           {!canImport ? (
             <UiAlert tone="warning">
-              Tài khoản hiện tại không có quyền nhập danh sách SKU.
+              {t("masterData.import.noPermission")}
             </UiAlert>
           ) : null}
 
@@ -672,8 +714,8 @@ export function SkuImportModal({
                 }}
               >
                 {previewMutation.isPending || digestPending
-                  ? "Đang kiểm tra..."
-                  : "Kiểm tra trước"}
+                  ? t("masterData.import.validating")
+                  : t("masterData.import.validate")}
               </ActionButton>
               <ActionButton
                 kind="upload"
@@ -683,20 +725,23 @@ export function SkuImportModal({
                   if (payload) commitMutation.mutate(payload);
                 }}
               >
-                {commitMutation.isPending ? "Đang nhập..." : "Nhập dữ liệu"}
+                {commitMutation.isPending
+                  ? t("masterData.import.committing")
+                  : t("masterData.import.commit")}
               </ActionButton>
             </Stack>
 
             {digestPending ? (
-              <UiText variant="secondary">Đang kiểm tra nội dung tệp…</UiText>
+              <UiText variant="secondary">
+                {t("masterData.import.checkingFile")}
+              </UiText>
             ) : previewSignature !== "" && !previewMatchesCurrentPayload ? (
               <UiText variant="secondary">
-                Tệp hoặc lựa chọn cập nhật đã thay đổi sau lần kiểm tra trước.
-                Hãy kiểm tra lại trước khi nhập dữ liệu.
+                {t("masterData.import.changedSinceCheck")}
               </UiText>
             ) : !previewResult ? (
               <UiText variant="secondary">
-                Cần kiểm tra tệp và xử lý hết lỗi trước khi nhập dữ liệu.
+                {t("masterData.import.mustFixFirst")}
               </UiText>
             ) : null}
           </Stack>
@@ -708,20 +753,20 @@ export function SkuImportModal({
                 label={
                   commitResult
                     ? commitResult.duplicate
-                      ? "Đã xử lý trước đó"
+                      ? t("masterData.import.resultReplayed")
                       : commitResult.committed
-                        ? "Đã nhập dữ liệu"
-                        : "Không được ghi dữ liệu"
-                    : "Kết quả kiểm tra trước"
+                        ? t("masterData.import.resultCommitted")
+                        : t("masterData.import.resultRejected")
+                    : t("masterData.import.resultDryRun")
                 }
               />
 
               {commitResult?.duplicate ? (
-                <UiAlert tone="warning" title="Tệp này đã được nhập trước đó">
-                  Nội dung tệp và lựa chọn cập nhật giống một lần nhập gần đây,
-                  nên hệ thống không tạo hoặc cập nhật SKU lần nữa. Nếu muốn
-                  thay đổi cách xử lý SKU đã tồn tại, hãy đổi lựa chọn rồi kiểm
-                  tra lại.
+                <UiAlert
+                  tone="warning"
+                  title={t("masterData.import.replayedTitle")}
+                >
+                  {t("masterData.import.replayedBody")}
                 </UiAlert>
               ) : null}
 
@@ -756,14 +801,14 @@ export function SkuImportModal({
               disabled={previewMutation.isPending || commitMutation.isPending}
               onClick={resetAll}
             >
-              Làm lại
+              {t("masterData.import.reset")}
             </ActionButton>
             <ActionButton
               kind="close"
               disabled={previewMutation.isPending || commitMutation.isPending}
               onClick={close}
             >
-              Đóng
+              {t("common.close")}
             </ActionButton>
           </Stack>
         </Stack>

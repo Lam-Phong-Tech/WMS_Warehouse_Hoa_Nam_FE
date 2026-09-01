@@ -12,6 +12,7 @@ import {
   normalizeError,
   resolveFormErrors,
 } from "@/shared/api/api-error";
+import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import { useCan } from "@/shared/components/permission";
 import { WMS_PERMISSION_CATALOG as P } from "@/shared/constants/wms-permissions";
 import { formatDateTime } from "@/shared/utils/format-date";
@@ -64,9 +65,11 @@ const WAREHOUSE_FORM_FIELDS = {
   status: "status",
 } as const satisfies Record<string, keyof WarehouseFormValues>;
 
-const STATUS_OPTIONS: Array<{ value: MasterStatus; label: string }> = [
-  { value: "ACTIVE", label: "Đang hoạt động" },
-  { value: "INACTIVE", label: "Ngừng hoạt động" },
+const statusOptions = (
+  t: TranslateFn,
+): Array<{ value: MasterStatus; label: string }> => [
+  { value: "ACTIVE", label: t("masterData.status.operating") },
+  { value: "INACTIVE", label: t("masterData.status.notOperating") },
 ];
 
 function text(value: unknown): string {
@@ -86,40 +89,44 @@ function toWarehouse(row: Record<string, unknown>): WarehouseRecord {
   };
 }
 
-function saveErrorMessage(error: unknown): string {
+function saveErrorMessage(error: unknown, t: TranslateFn): string {
   const normalized = normalizeError(error);
   if (normalized.code === "STATE_CONFLICT") {
-    return "Hệ thống chỉ cho phép đúng một kho ở trạng thái Đang hoạt động. Hãy chuyển kho đang hoạt động sang Ngừng hoạt động trước khi kích hoạt kho này.";
+    return t("masterData.warehouse.errOneActive");
   }
   if (normalized.status === 403 || isForbiddenErrorCode(normalized.code)) {
-    return "Kho này nằm ngoài phạm vi dữ liệu của tài khoản. Liên hệ quản trị viên để được cấp quyền phù hợp.";
+    return t("masterData.warehouse.errOutOfScope");
   }
-  return getApiErrorMessage(error, "Không lưu được cấu hình kho.");
+  return getApiErrorMessage(error, t("masterData.warehouse.errSave"));
 }
 
-function validateForm(values: WarehouseFormValues): Record<string, string> {
+function validateForm(
+  values: WarehouseFormValues,
+  t: TranslateFn,
+): Record<string, string> {
   const errors: Record<string, string> = {};
   const name = values.name.trim();
-  if (!name) errors.name = "Nhập tên kho.";
-  else if (name.length > 200) errors.name = "Tên kho tối đa 200 ký tự.";
-  if (!values.status) errors.status = "Chọn trạng thái.";
+  if (!name) errors.name = t("masterData.warehouse.errName");
+  else if (name.length > 200)
+    errors.name = t("masterData.warehouse.errNameLength");
+  if (!values.status) errors.status = t("masterData.status.chooseStatus");
   if ((values.address ?? "").length > 500) {
-    errors.address = "Địa chỉ tối đa 500 ký tự.";
+    errors.address = t("masterData.warehouse.errAddressLength");
   }
   if ((values.contact_person ?? "").length > 200) {
-    errors.contact_person = "Người liên hệ tối đa 200 ký tự.";
+    errors.contact_person = t("masterData.warehouse.errContactLength");
   }
   const phone = values.phone ?? "";
   if (phone.length > 30) {
-    errors.phone = "Số điện thoại tối đa 30 ký tự.";
+    errors.phone = t("masterData.warehouse.errPhoneLength");
   } else if (phone && !/^0\d{9}$/.test(phone)) {
-    errors.phone =
-      "Số điện thoại phải gồm đúng 10 chữ số và bắt đầu bằng số 0.";
+    errors.phone = t("masterData.warehouse.errPhoneFormat");
   }
   return errors;
 }
 
 export function WarehouseConfigScreen() {
+  const t = useT();
   const queryClient = useQueryClient();
   const canManage = useCan(P.WAREHOUSE_MANAGE);
 
@@ -197,7 +204,7 @@ export function WarehouseConfigScreen() {
       ...formValues,
       name: formValues.name.trim(),
     };
-    const errors = validateForm(values);
+    const errors = validateForm(values, t);
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
       return;
@@ -217,7 +224,7 @@ export function WarehouseConfigScreen() {
       if (Object.keys(serverFieldErrors).length === 0) {
         // Không có lỗi nào theo trường: giữ nguyên các thông điệp nghiệp vụ
         // riêng của màn này (chỉ một kho hoạt động, ngoài phạm vi dữ liệu...).
-        setSaveError(saveErrorMessage(error));
+        setSaveError(saveErrorMessage(error, t));
         return;
       }
       setFieldErrors((current) => ({
@@ -247,10 +254,13 @@ export function WarehouseConfigScreen() {
   };
 
   const listError = listQuery.error
-    ? getApiErrorMessage(listQuery.error, "Không tải được danh sách kho.")
+    ? getApiErrorMessage(listQuery.error, t("masterData.warehouse.errLoadList"))
     : "";
   const detailError = detailQuery.error
-    ? getApiErrorMessage(detailQuery.error, "Không tải được thông tin kho.")
+    ? getApiErrorMessage(
+        detailQuery.error,
+        t("masterData.warehouse.errLoadDetail"),
+      )
     : "";
 
   const statusChanged =
@@ -269,38 +279,42 @@ export function WarehouseConfigScreen() {
             onClick={() => void handleSubmit()}
             disabled={!canManage || !resolvedId || saveMutation.isPending}
           >
-            {saveMutation.isPending ? "Đang lưu..." : "Lưu cấu hình"}
+            {saveMutation.isPending
+              ? t("masterData.common.saving")
+              : t("masterData.warehouse.submit")}
           </ActionButton>
         </Box>
 
-        <UiAlert tone="info" title="Hệ thống sử dụng một kho tổng">
-          Trong phạm vi hiện tại, hệ thống vận hành một kho tổng. Người dùng chỉ
-          xem và cập nhật thông tin kho; không tạo hoặc xóa kho trực tiếp tại
-          màn hình này.
+        <UiAlert
+          tone="info"
+          title={t("masterData.warehouse.singleWarehouseTitle")}
+        >
+          {t("masterData.warehouse.singleWarehouseBody")}
         </UiAlert>
 
         {listError ? <UiAlert tone="error">{listError}</UiAlert> : null}
         {detailError ? <UiAlert tone="error">{detailError}</UiAlert> : null}
         {saveError ? <UiAlert tone="error">{saveError}</UiAlert> : null}
         {savedAt ? (
-          <UiAlert tone="success" title="Đã lưu cấu hình kho">
-            Cập nhật lúc {savedAt}.
+          <UiAlert tone="success" title={t("masterData.warehouse.savedTitle")}>
+            {t("masterData.warehouse.savedAt", { time: savedAt })}
           </UiAlert>
         ) : null}
 
         {!listQuery.isLoading && warehouses.length === 0 && !listError ? (
-          <UiAlert tone="warning" title="Chưa có kho tổng trong hệ thống">
-            Liên hệ quản trị hệ thống để khởi tạo kho tổng trước khi cấu hình.
+          <UiAlert tone="warning" title={t("masterData.warehouse.noneTitle")}>
+            {t("masterData.warehouse.noneBody")}
           </UiAlert>
         ) : null}
 
         {warehouses.length > 1 ? (
           <UiAlert
             tone="warning"
-            title={`Đang có ${warehouses.length} kho trong dữ liệu`}
+            title={t("masterData.warehouse.multipleTitle", {
+              count: warehouses.length,
+            })}
           >
-            Chỉ được giữ đúng một kho Đang hoạt động. Hãy chọn từng kho bên dưới
-            để ngừng hoạt động kho thừa.
+            {t("masterData.warehouse.multipleBody")}
           </UiAlert>
         ) : null}
 
@@ -312,7 +326,9 @@ export function WarehouseConfigScreen() {
               ))}
             </Stack>
           ) : !warehouse ? (
-            <UiText variant="secondary">Chưa có kho để hiển thị.</UiText>
+            <UiText variant="secondary">
+              {t("masterData.warehouse.empty")}
+            </UiText>
           ) : (
             <>
               {warehouses.length > 1 ? (
@@ -321,7 +337,7 @@ export function WarehouseConfigScreen() {
                     <UiTextField
                       id="warehouse-select"
                       select
-                      label="Chọn kho"
+                      label={t("masterData.warehouse.pick")}
                       fullWidth
                       value={resolvedId}
                       onChange={(event) => {
@@ -354,9 +370,12 @@ export function WarehouseConfigScreen() {
                 <UiDescriptions
                   columns={2}
                   items={[
-                    { label: "Mã kho", value: warehouse.code },
                     {
-                      label: "Trạng thái hiện tại",
+                      label: t("masterData.warehouse.fieldCode"),
+                      value: warehouse.code,
+                    },
+                    {
+                      label: t("masterData.warehouse.fieldCurrentStatus"),
                       value: (
                         <UiStatusBadge
                           tone={
@@ -366,8 +385,8 @@ export function WarehouseConfigScreen() {
                           }
                           label={
                             warehouse.status === "ACTIVE"
-                              ? "Đang hoạt động"
-                              : "Ngừng hoạt động"
+                              ? t("masterData.status.operating")
+                              : t("masterData.status.notOperating")
                           }
                         />
                       ),
@@ -380,10 +399,10 @@ export function WarehouseConfigScreen() {
                 <Grid size={{ xs: 12, md: 6 }}>
                   <UiTextField
                     id="warehouse-name"
-                    label="Tên kho"
+                    label={t("masterData.warehouse.fieldName")}
                     required
                     fullWidth
-                    placeholder="Kho tổng Hoa Nam"
+                    placeholder={t("masterData.warehouse.namePlaceholder")}
                     value={formValues.name}
                     onChange={(event) => {
                       const value = event.target.value;
@@ -401,7 +420,7 @@ export function WarehouseConfigScreen() {
                   <UiTextField
                     id="warehouse-status"
                     select
-                    label="Trạng thái"
+                    label={t("masterData.status.label")}
                     required
                     fullWidth
                     disabled={fieldsDisabled}
@@ -419,7 +438,7 @@ export function WarehouseConfigScreen() {
                     error={Boolean(fieldErrors.status)}
                     helperText={fieldErrors.status}
                   >
-                    {STATUS_OPTIONS.map((option) => (
+                    {statusOptions(t).map((option) => (
                       <MenuItem key={option.value} value={option.value}>
                         {option.label}
                       </MenuItem>
@@ -429,7 +448,7 @@ export function WarehouseConfigScreen() {
                 <Grid size={12}>
                   <UiTextField
                     id="warehouse-address"
-                    label="Địa chỉ"
+                    label={t("masterData.warehouse.fieldAddress")}
                     fullWidth
                     multiline
                     minRows={2}
@@ -453,7 +472,7 @@ export function WarehouseConfigScreen() {
                 <Grid size={{ xs: 12, md: 6 }}>
                   <UiTextField
                     id="warehouse-contact-person"
-                    label="Người liên hệ"
+                    label={t("masterData.warehouse.fieldContact")}
                     fullWidth
                     value={formValues.contact_person ?? ""}
                     onChange={(event) => {
@@ -477,7 +496,7 @@ export function WarehouseConfigScreen() {
                 <Grid size={{ xs: 12, md: 6 }}>
                   <UiTextField
                     id="warehouse-phone"
-                    label="Số điện thoại"
+                    label={t("masterData.warehouse.fieldPhone")}
                     fullWidth
                     value={formValues.phone ?? ""}
                     onChange={(event) => {
@@ -505,8 +524,7 @@ export function WarehouseConfigScreen() {
               {!canManage ? (
                 <Box sx={{ mt: 2 }}>
                   <UiText variant="secondary">
-                    Tài khoản hiện tại chỉ có quyền xem nên không thể sửa cấu
-                    hình kho.
+                    {t("masterData.warehouse.readOnlyNotice")}
                   </UiText>
                 </Box>
               ) : null}
@@ -519,24 +537,23 @@ export function WarehouseConfigScreen() {
           onClose={() => setConfirmOpen(false)}
           maxWidth="xs"
           fullWidth
-          title="Đổi trạng thái kho?"
+          title={t("masterData.warehouse.confirmTitle")}
           actions={
             <>
               <ActionButton kind="cancel" onClick={() => setConfirmOpen(false)}>
-                Hủy
+                {t("masterData.common.cancel")}
               </ActionButton>
               <ActionButton
                 kind="confirm"
                 onClick={() => void confirmStatusChange()}
               >
-                Đồng ý
+                {t("masterData.warehouse.confirmOk")}
               </ActionButton>
             </>
           }
         >
           <UiText variant="body">
-            Hệ thống chỉ cho phép đúng một kho Đang hoạt động. Thao tác đổi
-            trạng thái không tạo chứng từ và không làm thay đổi tồn kho.
+            {t("masterData.warehouse.confirmBody")}
           </UiText>
         </UiDialog>
       </Stack>

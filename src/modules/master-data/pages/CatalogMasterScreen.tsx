@@ -26,6 +26,7 @@ import {
   normalizeError,
   resolveFormErrors,
 } from "@/shared/api/api-error";
+import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import {
   MVP_PAGE_SIZE_OPTIONS,
   resolveApiPagination,
@@ -67,62 +68,64 @@ interface CatalogTabMeta {
   namePlaceholder: string;
 }
 
-const CATALOG_TABS: CatalogTabMeta[] = [
+const catalogTabs = (t: TranslateFn): CatalogTabMeta[] => [
   {
     kind: "BRAND",
-    label: "Hãng",
+    label: t("masterData.catalog.brand"),
     icon: <ShopOutlined style={{ fontSize: 15 }} />,
-    itemLabel: "hãng",
-    codeLabel: "Mã hãng",
-    nameLabel: "Tên hãng",
+    itemLabel: t("masterData.catalog.brandItem"),
+    codeLabel: t("masterData.catalog.brandCode"),
+    nameLabel: t("masterData.catalog.brandName"),
     codePlaceholder: "DONGCHENG",
     namePlaceholder: "Dongcheng",
   },
   {
     kind: "CATEGORY",
-    label: "Nhóm hàng",
+    label: t("masterData.catalog.category"),
     icon: <AppstoreOutlined style={{ fontSize: 15 }} />,
-    itemLabel: "nhóm hàng",
-    codeLabel: "Mã nhóm hàng",
-    nameLabel: "Tên nhóm hàng",
+    itemLabel: t("masterData.catalog.categoryItem"),
+    codeLabel: t("masterData.catalog.categoryCode"),
+    nameLabel: t("masterData.catalog.categoryName"),
     codePlaceholder: "DRILL",
-    namePlaceholder: "Máy khoan",
+    namePlaceholder: t("masterData.catalog.categoryPlaceholder"),
   },
   {
     kind: "MODEL",
-    label: "Mẫu sản phẩm",
+    label: t("masterData.catalog.model"),
     icon: <FileTextOutlined style={{ fontSize: 15 }} />,
-    itemLabel: "mẫu sản phẩm",
-    codeLabel: "Mã mẫu sản phẩm",
-    nameLabel: "Tên mẫu sản phẩm",
+    itemLabel: t("masterData.catalog.modelItem"),
+    codeLabel: t("masterData.catalog.modelCode"),
+    nameLabel: t("masterData.catalog.modelName"),
     codePlaceholder: "DJZ10A",
-    namePlaceholder: "Máy khoan DJZ10A",
+    namePlaceholder: t("masterData.catalog.modelPlaceholder"),
   },
   {
     kind: "POWER_SOURCE",
-    label: "Nguồn điện",
+    label: t("masterData.catalog.powerSource"),
     icon: <ThunderboltOutlined style={{ fontSize: 15 }} />,
-    itemLabel: "nguồn điện",
-    codeLabel: "Mã nguồn điện",
-    nameLabel: "Tên nguồn điện",
+    itemLabel: t("masterData.catalog.powerSourceItem"),
+    codeLabel: t("masterData.catalog.powerSourceCode"),
+    nameLabel: t("masterData.catalog.powerSourceName"),
     codePlaceholder: "MAINS_DIRECT",
-    namePlaceholder: "Điện lưới trực tiếp",
+    namePlaceholder: t("masterData.catalog.powerSourcePlaceholder"),
   },
   {
     kind: "PACKAGE",
-    label: "Quy cách đóng gói",
+    label: t("masterData.catalog.packaging"),
     icon: <InboxOutlined style={{ fontSize: 15 }} />,
-    itemLabel: "quy cách đóng gói",
-    codeLabel: "Mã quy cách",
-    nameLabel: "Tên quy cách",
+    itemLabel: t("masterData.catalog.packagingItem"),
+    codeLabel: t("masterData.catalog.packagingCode"),
+    nameLabel: t("masterData.catalog.packagingName"),
     codePlaceholder: "BOX-STD",
-    namePlaceholder: "Hộp tiêu chuẩn",
+    namePlaceholder: t("masterData.catalog.packagingPlaceholder"),
   },
 ];
 
-const STATUS_OPTIONS: Array<{ value: MasterStatus; label: string }> = [
-  { value: "ACTIVE", label: "Đang sử dụng" },
-  { value: "INACTIVE", label: "Ngừng sử dụng" },
+const statusOptions = (
+  t: TranslateFn,
+): Array<{ value: MasterStatus; label: string }> => [
+  { value: "ACTIVE", label: t("masterData.status.inUse") },
+  { value: "INACTIVE", label: t("masterData.status.notInUse") },
 ];
 
 interface CatalogFormValues {
@@ -159,21 +162,23 @@ const CATALOG_FORM_FIELDS = {
   status: "status",
 } as const satisfies Record<string, keyof CatalogFormValues>;
 
-function saveErrorMessage(error: unknown): string {
+function saveErrorMessage(error: unknown, t: TranslateFn): string {
   const normalized = normalizeError(error);
   if (normalized.code === "MASTER_CODE_IMMUTABLE_AFTER_USE") {
-    return "Mã danh mục đã được SKU sử dụng nên không thể đổi. Hãy giữ nguyên mã và chỉ sửa tên/mô tả, hoặc tạo danh mục mới rồi ngừng sử dụng danh mục cũ.";
+    return t("masterData.catalog.errCodeInUse");
   }
   if (normalized.code === "STALE_VERSION") {
-    return "Bản ghi đã được người khác cập nhật. Hãy tải lại dữ liệu mới nhất rồi sửa lại.";
+    return t("masterData.catalog.errStale");
   }
   if (normalized.code === "BRAND_NOT_ACTIVE") {
-    return "Mẫu sản phẩm chỉ được gắn với hãng đang sử dụng. Hãy chọn hãng khác hoặc kích hoạt lại hãng trước.";
+    return t("masterData.catalog.errBrandInactive");
   }
-  return getApiErrorMessage(error, "Không lưu được danh mục.");
+  return getApiErrorMessage(error, t("masterData.catalog.errSave"));
 }
 
 export function CatalogMasterScreen() {
+  const t = useT();
+  const tabs = useMemo(() => catalogTabs(t), [t]);
   const queryClient = useQueryClient();
   const canManage = useCan(P.CATALOG_MANAGE);
 
@@ -189,8 +194,7 @@ export function CatalogMasterScreen() {
   const [formError, setFormError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
-  const activeTab =
-    CATALOG_TABS.find((tab) => tab.kind === activeKind) ?? CATALOG_TABS[0];
+  const activeTab = tabs.find((tab) => tab.kind === activeKind) ?? tabs[0];
   const supportsBrand = catalogMasterSupportsBrand(activeKind);
 
   const listParams = {
@@ -303,13 +307,21 @@ export function CatalogMasterScreen() {
     const errors: Record<string, string> = {};
     const code = values.code.trim();
     const name = values.name.trim();
-    if (!code) errors.code = `Nhập ${activeTab.codeLabel}.`;
-    else if (code.length > 80) errors.code = "Mã tối đa 80 ký tự.";
-    if (!name) errors.name = `Nhập ${activeTab.nameLabel}.`;
-    else if (name.length > 200) errors.name = "Tên tối đa 200 ký tự.";
+    if (!code)
+      errors.code = t("masterData.catalog.errCodeRequired", {
+        label: activeTab.codeLabel,
+      });
+    else if (code.length > 80)
+      errors.code = t("masterData.catalog.errCodeLength");
+    if (!name)
+      errors.name = t("masterData.catalog.errNameRequired", {
+        label: activeTab.nameLabel,
+      });
+    else if (name.length > 200)
+      errors.name = t("masterData.catalog.errNameLength");
     if ((values.description ?? "").length > 2000)
-      errors.description = "Mô tả tối đa 2000 ký tự.";
-    if (!values.status) errors.status = "Chọn trạng thái.";
+      errors.description = t("masterData.catalog.errDescriptionLength");
+    if (!values.status) errors.status = t("masterData.status.chooseStatus");
     return errors;
   };
 
@@ -330,8 +342,8 @@ export function CatalogMasterScreen() {
       await saveMutation.mutateAsync(values);
       toast.success(
         editingRecord
-          ? `Đã cập nhật ${activeTab.itemLabel}.`
-          : `Đã thêm ${activeTab.itemLabel}.`,
+          ? t("masterData.catalog.updated", { item: activeTab.itemLabel })
+          : t("masterData.catalog.created", { item: activeTab.itemLabel }),
       );
       setIsModalOpen(false);
       setEditingRecord(null);
@@ -346,7 +358,7 @@ export function CatalogMasterScreen() {
       if (Object.keys(serverFieldErrors).length === 0) {
         // Không có lỗi nào theo trường: giữ nguyên các thông điệp nghiệp vụ
         // riêng của màn này (mã bất biến, STALE_VERSION, hãng ngừng dùng...).
-        setFormError(saveErrorMessage(error));
+        setFormError(saveErrorMessage(error, t));
         return;
       }
       setFieldErrors((current) => ({
@@ -384,7 +396,7 @@ export function CatalogMasterScreen() {
       ? [
           {
             key: "brand",
-            header: "Hãng",
+            header: t("masterData.catalog.brand"),
             width: 180,
             sortAccessor: (record) =>
               brandNameById.get(record.brand_id ?? "") ?? "",
@@ -406,7 +418,7 @@ export function CatalogMasterScreen() {
       : []),
     {
       key: "description",
-      header: "Mô tả",
+      header: t("masterData.common.description"),
       width: 280,
       sortAccessor: (record) => record.description ?? "",
       render: (record) =>
@@ -430,7 +442,7 @@ export function CatalogMasterScreen() {
     },
     {
       key: "sortOrder",
-      header: "Thứ tự",
+      header: t("masterData.catalog.colOrder"),
       width: 90,
       align: "right",
       sortType: "value",
@@ -439,7 +451,7 @@ export function CatalogMasterScreen() {
     },
     {
       key: "status",
-      header: "Trạng thái",
+      header: t("masterData.status.label"),
       width: 140,
       sortType: "value",
       sortAccessor: (record) => record.status,
@@ -449,7 +461,7 @@ export function CatalogMasterScreen() {
           label={businessLabel(
             MASTER_STATUS_LABELS,
             record.status,
-            "Trạng thái khác",
+            t("masterData.status.other"),
           )}
         />
       ),
@@ -462,17 +474,17 @@ export function CatalogMasterScreen() {
         canManage ? (
           <ActionButton
             kind="edit"
-            aria-label={`Sửa ${record.code}`}
+            aria-label={t("masterData.catalog.editAria", { code: record.code })}
             onClick={() => openEdit(record)}
           >
-            Sửa
+            {t("masterData.common.edit")}
           </ActionButton>
         ) : null,
     },
   ];
 
   const listError = listQuery.error
-    ? getApiErrorMessage(listQuery.error, "Không tải được danh mục.")
+    ? getApiErrorMessage(listQuery.error, t("masterData.catalog.errLoad"))
     : "";
 
   return (
@@ -483,8 +495,8 @@ export function CatalogMasterScreen() {
             <UiTabs
               value={activeKind}
               onChange={(key) => changeTab(key as CatalogMasterKind)}
-              aria-label="Loại danh mục"
-              items={CATALOG_TABS.map((tab) => ({
+              aria-label={t("masterData.catalog.typeAria")}
+              items={tabs.map((tab) => ({
                 key: tab.kind,
                 label: (
                   <Box
@@ -528,9 +540,15 @@ export function CatalogMasterScreen() {
               >
                 <UiTextField
                   value={keyword}
-                  placeholder={`Tìm mã / tên ${activeTab.itemLabel}`}
+                  placeholder={t("masterData.catalog.searchPlaceholder", {
+                    item: activeTab.itemLabel,
+                  })}
                   slotProps={{
-                    htmlInput: { "aria-label": `Tìm ${activeTab.itemLabel}` },
+                    htmlInput: {
+                      "aria-label": t("masterData.catalog.searchAria", {
+                        item: activeTab.itemLabel,
+                      }),
+                    },
                   }}
                   onChange={(event) => {
                     setKeyword(event.target.value);
@@ -539,18 +557,18 @@ export function CatalogMasterScreen() {
                   sx={{ minWidth: 220 }}
                 />
                 <UiSelect
-                  aria-label="Lọc theo trạng thái"
+                  aria-label={t("masterData.status.filterAria")}
                   value={statusFilter}
                   onChange={(value) => {
                     setStatusFilter(value as MasterStatus | "");
                     setPage(1);
                   }}
-                  placeholder="Trạng thái: Tất cả"
+                  placeholder={t("masterData.status.allPlaceholder")}
                   minWidth={168}
-                  options={STATUS_OPTIONS}
+                  options={statusOptions(t)}
                 />
                 <UiSelect
-                  aria-label="Số dòng mỗi trang"
+                  aria-label={t("masterData.common.pageSizeAria")}
                   value={perPage}
                   onChange={(value) => {
                     setPerPage(Number(value));
@@ -565,7 +583,9 @@ export function CatalogMasterScreen() {
               </Stack>
               {canManage ? (
                 <ActionButton kind="create" onClick={openCreate}>
-                  Tạo {activeTab.itemLabel}
+                  {t("masterData.catalog.create", {
+                    item: activeTab.itemLabel,
+                  })}
                 </ActionButton>
               ) : null}
             </Stack>
@@ -575,9 +595,13 @@ export function CatalogMasterScreen() {
               rows={rows}
               rowKey={(record) => record.id}
               loading={listQuery.isLoading}
-              emptyText={`Chưa có ${activeTab.itemLabel} nào.`}
+              emptyText={t("masterData.catalog.empty", {
+                item: activeTab.itemLabel,
+              })}
               rowSelection={rowSelection}
-              selectionLabel={(record) => `Chọn ${record.code}`}
+              selectionLabel={(record) =>
+                t("masterData.catalog.selectionLabel", { code: record.code })
+              }
             />
 
             <Stack
@@ -591,7 +615,10 @@ export function CatalogMasterScreen() {
               }}
             >
               <UiText variant="secondary">
-                Tổng {pagination.total} {activeTab.itemLabel}
+                {t("masterData.catalog.total", {
+                  count: pagination.total,
+                  item: activeTab.itemLabel,
+                })}
               </UiText>
               <UiPagination
                 page={pagination.current}
@@ -611,10 +638,16 @@ export function CatalogMasterScreen() {
           fullWidth
           title={
             <>
-              {editingRecord ? "Sửa" : "Tạo"} {activeTab.itemLabel}
+              {editingRecord
+                ? t("masterData.catalog.dialogEdit", {
+                    item: activeTab.itemLabel,
+                  })
+                : t("masterData.catalog.dialogCreate", {
+                    item: activeTab.itemLabel,
+                  })}
               <ActionIconButton
                 kind="close"
-                label="Đóng"
+                label={t("common.close")}
                 onClick={closeModal}
                 disabled={saveMutation.isPending}
                 sx={{ position: "absolute", right: 10, top: 8 }}
@@ -628,14 +661,16 @@ export function CatalogMasterScreen() {
                 onClick={closeModal}
                 disabled={saveMutation.isPending}
               >
-                Hủy
+                {t("masterData.common.cancel")}
               </ActionButton>
               <ActionButton
                 kind="save"
                 onClick={() => void handleSubmit()}
                 disabled={saveMutation.isPending}
               >
-                {saveMutation.isPending ? "Đang lưu..." : "Lưu"}
+                {saveMutation.isPending
+                  ? t("masterData.common.saving")
+                  : t("masterData.common.save")}
               </ActionButton>
             </>
           }
@@ -666,7 +701,7 @@ export function CatalogMasterScreen() {
                 helperText={
                   fieldErrors.code ||
                   (editingRecord
-                    ? "Nếu mã đã được SKU sử dụng thì hệ thống sẽ không cho phép đổi."
+                    ? t("masterData.catalog.codeLockedHint")
                     : undefined)
                 }
                 slotProps={{ htmlInput: { maxLength: 80 } }}
@@ -698,7 +733,7 @@ export function CatalogMasterScreen() {
                 <UiTextField
                   id="catalog-brand"
                   select
-                  label="Hãng"
+                  label={t("masterData.catalog.brand")}
                   fullWidth
                   value={formValues.brand_id ?? ""}
                   onChange={(event) => {
@@ -714,15 +749,16 @@ export function CatalogMasterScreen() {
                   disabled={saveMutation.isPending}
                   error={Boolean(fieldErrors.brand_id)}
                   helperText={
-                    fieldErrors.brand_id ||
-                    "Chỉ hiển thị các hãng đang sử dụng."
+                    fieldErrors.brand_id || t("masterData.catalog.brandHelper")
                   }
                   slotProps={{
                     select: { displayEmpty: true },
                     inputLabel: { shrink: true },
                   }}
                 >
-                  <MenuItem value="">Chọn hãng (không bắt buộc)</MenuItem>
+                  <MenuItem value="">
+                    {t("masterData.catalog.brandOptional")}
+                  </MenuItem>
                   {brandOptions.map((option) => (
                     <MenuItem key={option.value} value={option.value}>
                       {option.label}
@@ -734,7 +770,7 @@ export function CatalogMasterScreen() {
             <Grid size={12}>
               <UiTextField
                 id="catalog-description"
-                label="Mô tả"
+                label={t("masterData.common.description")}
                 fullWidth
                 multiline
                 minRows={3}
@@ -760,7 +796,7 @@ export function CatalogMasterScreen() {
             <Grid size={{ xs: 12, sm: 6 }}>
               <UiTextField
                 id="catalog-sort-order"
-                label="Thứ tự hiển thị"
+                label={t("masterData.catalog.displayOrder")}
                 type="number"
                 fullWidth
                 value={formValues.sort_order ?? 0}
@@ -786,7 +822,7 @@ export function CatalogMasterScreen() {
               <UiTextField
                 id="catalog-status"
                 select
-                label="Trạng thái"
+                label={t("masterData.status.label")}
                 required
                 fullWidth
                 value={formValues.status}
@@ -804,7 +840,7 @@ export function CatalogMasterScreen() {
                 error={Boolean(fieldErrors.status)}
                 helperText={fieldErrors.status}
               >
-                {STATUS_OPTIONS.map((option) => (
+                {statusOptions(t).map((option) => (
                   <MenuItem key={option.value} value={option.value}>
                     {option.label}
                   </MenuItem>
