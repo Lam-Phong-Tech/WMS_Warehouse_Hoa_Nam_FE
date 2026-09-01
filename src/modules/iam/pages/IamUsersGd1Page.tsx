@@ -1,3 +1,4 @@
+import { useT } from "@/shared/i18n/useT";
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Box, UiTabs, UiTabPanel, type UiTabItem } from "@/shared/ui";
@@ -28,6 +29,7 @@ function TabLabel({ icon, text }: { icon: React.ReactNode; text: string }) {
 }
 
 export function IamUsersGd1Page({ openCreateOnMount }: IamUsersGd1PageProps) {
+  const t = useT();
   // Deep-link ?screen=IAM-02 (mở modal tạo user) — trước đây do MainLayout
   // renderMvpScreen xử lý; sau khi gỡ bypass (SEC-RBAC-01) page tự đọc param.
   const [searchParams] = useSearchParams();
@@ -44,7 +46,7 @@ export function IamUsersGd1Page({ openCreateOnMount }: IamUsersGd1PageProps) {
       label: (
         <TabLabel
           icon={<UserOutlined style={{ fontSize: 15 }} />}
-          text="Người dùng & phân quyền"
+          text={t("iam.tab.users")}
         />
       ),
     },
@@ -55,7 +57,7 @@ export function IamUsersGd1Page({ openCreateOnMount }: IamUsersGd1PageProps) {
             label: (
               <TabLabel
                 icon={<SafetyCertificateOutlined style={{ fontSize: 15 }} />}
-                text="Vai trò & ma trận quyền"
+                text={t("iam.tab.roles")}
               />
             ),
           },

@@ -1,3 +1,4 @@
+import { useT } from "@/shared/i18n/useT";
 import { useState } from "react";
 import {
   Box,
@@ -88,6 +89,7 @@ export function AuditLogsTable({
   onView,
   onSortChange,
 }: AuditLogsTableProps) {
+  const t = useT();
   const [sortState, setSortState] = useState<ClientSortState>({
     direction: undefined,
   });
@@ -115,7 +117,7 @@ export function AuditLogsTable({
           checked={selection.isAllSelected}
           indeterminate={selection.isIndeterminate}
           onChange={selection.toggleAll}
-          ariaLabel="Chọn tất cả nhật ký trong trang"
+          ariaLabel={t("audit.selectAllAria")}
         />
       ),
       width: 44,
@@ -126,7 +128,9 @@ export function AuditLogsTable({
           <MvpSelectionCheckbox
             checked={selection.isSelected(row.id)}
             onChange={(checked) => selection.toggleOne(row.id, checked)}
-            ariaLabel={`Chọn nhật ký ${formatDateTime(row.created_at)}`}
+            ariaLabel={t("audit.selectRowAria", {
+              time: formatDateTime(row.created_at),
+            })}
           />
         </span>
       ),
@@ -146,7 +150,7 @@ export function AuditLogsTable({
     },
     {
       key: "created_at",
-      header: "Thời gian",
+      header: t("audit.colTime"),
       width: 150,
       sortable: true,
       render: (row) => (
@@ -157,7 +161,7 @@ export function AuditLogsTable({
     },
     {
       key: "action",
-      header: "Hành động",
+      header: t("audit.colAction"),
       width: 170,
       sortable: true,
       render: (row) => (
@@ -166,25 +170,25 @@ export function AuditLogsTable({
           label={businessLabel(
             AUDIT_ACTION_LABELS,
             row.action,
-            "Hành động khác",
+            t("audit.actionOther"),
           )}
         />
       ),
     },
     {
       key: "module",
-      header: "Phân hệ",
+      header: t("audit.colModule"),
       width: 150,
       sortable: true,
       render: (row) => (
         <Box sx={CELL_TEXT_SX}>
-          {AUDIT_MODULE_LABELS[row.module] || "Phân hệ khác"}
+          {AUDIT_MODULE_LABELS[row.module] || t("audit.moduleOther")}
         </Box>
       ),
     },
     {
       key: "object_type",
-      header: "Đối tượng",
+      header: t("audit.colObject"),
       width: 180,
       hideOnMobile: true,
       sortable: true,
@@ -222,10 +226,11 @@ export function AuditLogsTable({
     },
     {
       key: "actor_email",
-      header: "Người thực hiện",
+      header: t("audit.colActor"),
       width: 190,
       render: (row) => {
-        const actor = row.actor?.email || row.actor?.display_name || "Hệ thống";
+        const actor =
+          row.actor?.email || row.actor?.display_name || t("audit.system");
         return (
           <Box
             title={actor}
@@ -243,7 +248,7 @@ export function AuditLogsTable({
     },
     {
       key: "ip_address",
-      header: "Địa chỉ IP",
+      header: t("audit.colIp"),
       width: 130,
       hideOnMobile: true,
       sortable: true,
@@ -255,7 +260,7 @@ export function AuditLogsTable({
     },
     {
       key: "description",
-      header: "Mô tả",
+      header: t("audit.colDescription"),
       // Mô tả audit log thường kèm UUID nên rất dài; để nguyên thì ô nở hết cỡ
       // và đẩy cả bảng tràn ngang, buộc người xem phải kéo thanh cuộn. Chặn trần
       // bề rộng rồi cắt bằng "…" — nội dung đầy đủ vẫn có ở tooltip và ở Dialog
@@ -283,10 +288,7 @@ export function AuditLogsTable({
       rows={data}
       rowKey={(row) => row.id}
       loading={loading}
-      emptyText={tableEmptyText(
-        error ?? null,
-        "Không có nhật ký nào theo bộ lọc hiện tại",
-      )}
+      emptyText={tableEmptyText(error ?? null, t("audit.empty"))}
       sortState={onSortChange ? sortState : undefined}
       onSortChange={onSortChange ? handleSortChange : undefined}
       onRowClick={onView}
@@ -296,7 +298,7 @@ export function AuditLogsTable({
               <ActionButton
                 kind="view"
                 sx={{ whiteSpace: "nowrap" }}
-                aria-label="Xem chi tiết nhật ký"
+                aria-label={t("audit.rowDetailAria")}
                 onClick={() => onView(row)}
               >
                 Xem

@@ -1,3 +1,4 @@
+import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import {
   useEffect,
   useMemo,
@@ -148,24 +149,26 @@ function scopeTypeLabel(scopeType?: string | null): string {
 function scopeLabel(
   role: IamRole | undefined,
   warehouseNames: Map<string, string>,
+  t: TranslateFn,
 ) {
-  if (!role) return "Chưa gán";
+  if (!role) return t("iam.user.unassigned");
   const scopeRef = role.pivot?.scope_ref;
-  if (scopeRef) return warehouseNames.get(scopeRef) ?? "Kho không xác định";
-  if (role.scope_type === "WAREHOUSE") return "Mọi kho";
-  if (role.scope_type === "FUNCTION") return "Theo chức năng";
-  return "Toàn hệ thống";
+  if (scopeRef)
+    return warehouseNames.get(scopeRef) ?? t("iam.user.unknownWarehouse");
+  if (role.scope_type === "WAREHOUSE") return t("iam.user.allWarehouses");
+  if (role.scope_type === "FUNCTION") return t("iam.user.scopeFunction");
+  return t("iam.user.scopeSystem");
 }
 
-function effectiveWindowLabel(pivot?: IamRolePivot) {
+function effectiveWindowLabel(pivot: IamRolePivot | undefined, t: TranslateFn) {
   const hasFrom = Boolean(pivot?.effective_from);
   const hasTo = Boolean(pivot?.effective_to);
-  if (!hasFrom && !hasTo) return "Vô thời hạn";
+  if (!hasFrom && !hasTo) return t("iam.user.unlimited");
   return `${hasFrom ? formatDate(pivot?.effective_from) : EMPTY_TEXT} → ${hasTo ? formatDate(pivot?.effective_to) : EMPTY_TEXT}`;
 }
 
-function formatLastLogin(value?: string | null) {
-  return value ? formatDateTime(value) : "Chưa đăng nhập";
+function formatLastLogin(value: string | null | undefined, t: TranslateFn) {
+  return value ? formatDateTime(value) : t("iam.user.neverLoggedIn");
 }
 
 /** Ghi chú phụ (caption) dưới một control trong Dialog. */
@@ -251,6 +254,7 @@ export interface IamUserScreenProps {
 export function IamUserScreen({
   openCreateOnMount = false,
 }: IamUserScreenProps) {
+  const t = useT();
   const permissionCodes = useAuthStore((state) => state.permissionCodes);
   const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
   const currentUserId = useAuthStore((state) => state.profile?.user_id);
@@ -372,7 +376,7 @@ export function IamUserScreen({
     name: (user) => user.display_name,
     department: (user) => departmentLabel(user),
     role: (user) => user.roles?.[0]?.role_name,
-    scope: (user) => scopeLabel(user.roles?.[0], warehouseNames),
+    scope: (user) => scopeLabel(user.roles?.[0], warehouseNames, t),
     status: (user) => user.status,
     lastLogin: (user) => user.last_login_at ?? undefined,
   });
@@ -430,11 +434,11 @@ export function IamUserScreen({
   const submitGrantPermission = async () => {
     if (!viewingUser) return;
     if (!grantPermissionId) {
-      setGrantError("Vui lòng chọn quyền cần cấp.");
+      setGrantError(t("iam.user.errPickPermission"));
       return;
     }
     if (grantReason.trim().length < 5) {
-      setGrantError("Vui lòng nhập lý do (tối thiểu 5 ký tự).");
+      setGrantError(t("iam.user.errReason"));
       return;
     }
     try {
@@ -465,7 +469,7 @@ export function IamUserScreen({
   const submitRevokePermission = async () => {
     if (!viewingUser || !revokingPermissionId) return;
     if (revokeReason.trim().length < 5) {
-      setRevokeError("Vui lòng nhập lý do (tối thiểu 5 ký tự).");
+      setRevokeError(t("iam.user.errReason"));
       return;
     }
     try {
@@ -579,29 +583,26 @@ export function IamUserScreen({
     const password = formState.password;
 
     if (!displayName) {
-      errors.displayName = "Vui lòng nhập họ và tên.";
+      errors.displayName = t("iam.user.errDisplayName");
     }
     if (!username) {
-      errors.username = "Vui lòng nhập tên đăng nhập.";
+      errors.username = t("iam.user.errUsername");
     }
     if (!formState.roleId) {
-      errors.roleId = "Vui lòng chọn vai trò.";
+      errors.roleId = t("iam.user.errRole");
     }
     if (!editingUser && password.length < 8) {
-      const passwordTooShortMessage = "Mật khẩu tạm phải có ít nhất 8 ký tự.";
+      const passwordTooShortMessage = t("iam.user.errPasswordShort");
       errors.password = passwordTooShortMessage;
     } else if (editingUser && password && password.length < 8) {
-      const passwordTooShortMessage =
-        "Mật khẩu đặt lại phải có ít nhất 8 ký tự.";
+      const passwordTooShortMessage = t("iam.user.errPasswordResetShort");
       errors.password = passwordTooShortMessage;
     }
     if (phone && !/^0\d{9}$/.test(phone)) {
-      errors.phone =
-        "Số điện thoại phải gồm đúng 10 chữ số và bắt đầu bằng số 0.";
+      errors.phone = t("iam.user.errPhone");
     }
     if (formState.reason.trim().length < 5) {
-      errors.reason =
-        "Vui lòng nhập lý do (tối thiểu 5 ký tự) để lưu vết thay đổi.";
+      errors.reason = t("iam.user.errUpdateReason");
     }
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
@@ -703,13 +704,10 @@ export function IamUserScreen({
     : [...MVP_PAGE_SIZE_OPTIONS, perPage].sort((a, b) => a - b);
 
   const listError = usersQuery.error
-    ? getApiErrorMessage(
-        usersQuery.error,
-        "Không tải được danh sách người dùng.",
-      )
+    ? getApiErrorMessage(usersQuery.error, t("iam.user.errLoadUsers"))
     : "";
   const roleError = rolesQuery.error
-    ? getApiErrorMessage(rolesQuery.error, "Không tải được danh sách vai trò.")
+    ? getApiErrorMessage(rolesQuery.error, t("iam.user.errLoadRoles"))
     : "";
 
   return (
@@ -721,8 +719,10 @@ export function IamUserScreen({
             setSearch(event.target.value);
             setPage(1);
           }}
-          placeholder="Tìm tên / tên đăng nhập"
-          slotProps={{ htmlInput: { "aria-label": "Tìm người dùng" } }}
+          placeholder={t("iam.user.searchPlaceholder")}
+          slotProps={{
+            htmlInput: { "aria-label": t("iam.user.searchAria") },
+          }}
           sx={{ minWidth: 190 }}
         />
         <UiSelect
@@ -732,8 +732,8 @@ export function IamUserScreen({
             setPage(1);
           }}
           disabled={rolesQuery.isLoading}
-          aria-label="Lọc theo vai trò"
-          placeholder="Vai trò: Tất cả"
+          aria-label={t("iam.user.roleFilterAria")}
+          placeholder={t("iam.user.roleFilterPlaceholder")}
           minWidth={128}
           options={roles.map((role) => ({
             value: role.role_id,
@@ -747,8 +747,8 @@ export function IamUserScreen({
             setPage(1);
           }}
           disabled={departmentsQuery.isLoading}
-          aria-label="Lọc theo phòng ban"
-          placeholder="Phòng ban: Tất cả"
+          aria-label={t("iam.user.departmentFilterAria")}
+          placeholder={t("iam.user.departmentFilterPlaceholder")}
           minWidth={136}
           options={departments.map((department) => ({
             value: department.department_id,
@@ -761,8 +761,8 @@ export function IamUserScreen({
             setStatusFilter(value as IamUserStatus | "");
             setPage(1);
           }}
-          aria-label="Lọc theo trạng thái"
-          placeholder="Trạng thái: Tất cả"
+          aria-label={t("iam.user.statusFilterAria")}
+          placeholder={t("iam.user.statusFilterPlaceholder")}
           minWidth={128}
           options={STATUS_OPTIONS.map((status) => ({
             value: status.value,
@@ -775,7 +775,7 @@ export function IamUserScreen({
             setPerPage(Number(value));
             setPage(1);
           }}
-          aria-label="Số dòng mỗi trang"
+          aria-label={t("iam.user.pageSizeAria")}
           minWidth={92}
           options={perPageOptions.map((size) => ({
             value: size,
@@ -788,7 +788,7 @@ export function IamUserScreen({
             kind="settings"
             onClick={() => setDepartmentManagerOpen(true)}
           >
-            Quản lý phòng ban
+            {t("iam.user.manageDepartments")}
           </ActionButton>
         ) : null}
         {canManageUsers ? (
@@ -797,7 +797,7 @@ export function IamUserScreen({
             onClick={openCreate}
             disabled={rolesQuery.isLoading || roles.length === 0}
           >
-            Thêm người dùng
+            {t("iam.user.create")}
           </ActionButton>
         ) : null}
       </div>
@@ -808,7 +808,7 @@ export function IamUserScreen({
             tone="error"
             action={
               <ActionButton kind="refresh" onClick={() => usersQuery.refetch()}>
-                Thử lại
+                {t("iam.user.retry")}
               </ActionButton>
             }
           >
@@ -831,56 +831,56 @@ export function IamUserScreen({
                   checked={rowSelection.isAllSelected}
                   indeterminate={rowSelection.isIndeterminate}
                   onChange={rowSelection.toggleAll}
-                  ariaLabel="Chọn tất cả người dùng"
+                  ariaLabel={t("iam.user.selectAllAria")}
                 />
               </th>
               <th className="stt-col">STT</th>
               <SortableTh
-                label="Người dùng"
+                label={t("iam.user.colUser")}
                 sortKey="name"
                 sortState={sortState}
                 onSort={requestSort}
               />
               <SortableTh
-                label="Phòng ban"
+                label={t("iam.user.colDepartment")}
                 sortKey="department"
                 sortState={sortState}
                 onSort={requestSort}
               />
               <SortableTh
-                label="Vai trò"
+                label={t("iam.user.colRole")}
                 sortKey="role"
                 sortState={sortState}
                 onSort={requestSort}
               />
               <SortableTh
-                label="Phạm vi"
+                label={t("iam.user.colScope")}
                 sortKey="scope"
                 sortState={sortState}
                 onSort={requestSort}
               />
               <SortableTh
-                label="Trạng thái"
+                label={t("iam.user.colStatus")}
                 sortKey="status"
                 sortState={sortState}
                 onSort={requestSort}
                 sortType="value"
               />
               <SortableTh
-                label="Đăng nhập cuối"
+                label={t("iam.user.colLastLogin")}
                 sortKey="lastLogin"
                 sortState={sortState}
                 onSort={requestSort}
                 sortType="value"
               />
-              <th aria-label="Hành động" />
+              <th aria-label={t("iam.user.actionsAria")} />
             </tr>
           </thead>
           <tbody>
             {usersQuery.isLoading ? (
               <tr>
                 <td colSpan={9}>
-                  <span className="muted">Đang tải dữ liệu...</span>
+                  <span className="muted">{t("iam.user.loadingData")}</span>
                 </td>
               </tr>
             ) : sortedUsers.length > 0 ? (
@@ -894,7 +894,9 @@ export function IamUserScreen({
                         onChange={(checked) =>
                           rowSelection.toggleOne(user.user_id, checked)
                         }
-                        ariaLabel={`Chọn ${user.display_name}`}
+                        ariaLabel={t("iam.user.selectRowAria", {
+                          name: user.display_name,
+                        })}
                       />
                     </td>
                     <td className="stt-col">
@@ -906,14 +908,16 @@ export function IamUserScreen({
                       <span className="muted">{user.username}</span>
                     </td>
                     <td>{departmentLabel(user)}</td>
-                    <td>{primaryRole?.role_name ?? "Chưa gán"}</td>
-                    <td>{scopeLabel(primaryRole, warehouseNames)}</td>
+                    <td>
+                      {primaryRole?.role_name ?? t("iam.user.unassigned")}
+                    </td>
+                    <td>{scopeLabel(primaryRole, warehouseNames, t)}</td>
                     <td>
                       <span className={statusClass(user.status)}>
                         {statusLabel(user.status)}
                       </span>
                     </td>
-                    <td>{formatLastLogin(user.last_login_at)}</td>
+                    <td>{formatLastLogin(user.last_login_at, t)}</td>
                     <td>
                       <Stack direction="row" spacing={1}>
                         <ActionButton
@@ -927,7 +931,7 @@ export function IamUserScreen({
                             kind="edit"
                             onClick={() => openEdit(user)}
                           >
-                            Sửa
+                            {t("iam.user.edit")}
                           </ActionButton>
                         ) : null}
                       </Stack>
@@ -938,9 +942,7 @@ export function IamUserScreen({
             ) : (
               <tr>
                 <td colSpan={9}>
-                  <span className="muted">
-                    Không có người dùng phù hợp bộ lọc.
-                  </span>
+                  <span className="muted">{t("iam.user.empty")}</span>
                 </td>
               </tr>
             )}
@@ -952,7 +954,7 @@ export function IamUserScreen({
         current={page}
         pageSize={perPage}
         total={total}
-        itemLabel="người dùng"
+        itemLabel={t("iam.user.itemLabel")}
         onChange={setPage}
       />
 
@@ -965,10 +967,14 @@ export function IamUserScreen({
             direction="row"
             sx={{ alignItems: "center", justifyContent: "space-between" }}
           >
-            <span>{editingUser ? "Sửa người dùng" : "Thêm người dùng"}</span>
+            <span>
+              {editingUser
+                ? t("iam.user.dialogEdit")
+                : t("iam.user.dialogCreate")}
+            </span>
             <ActionIconButton
               kind="close"
-              label="Đóng"
+              label={t("common.close")}
               onClick={closeModal}
               disabled={isSaving}
             />
@@ -981,7 +987,7 @@ export function IamUserScreen({
               onClick={closeModal}
               disabled={isSaving}
             >
-              Hủy
+              {t("iam.user.cancel")}
             </ActionButton>
             <ActionButton
               kind="save"
@@ -989,7 +995,7 @@ export function IamUserScreen({
               type="submit"
               form="iam-user-form"
             >
-              {isSaving ? "Đang lưu..." : "Lưu người dùng"}
+              {isSaving ? t("iam.user.saving") : t("iam.user.submit")}
             </ActionButton>
           </>
         }
@@ -1012,11 +1018,11 @@ export function IamUserScreen({
                   height: "100%",
                 }}
               >
-                <SectionTitle>Thông tin tài khoản</SectionTitle>
+                <SectionTitle>{t("iam.user.sectionAccount")}</SectionTitle>
                 <Stack spacing={2}>
                   <UiTextField
                     id="iam-display-name"
-                    label="Họ và tên"
+                    label={t("iam.user.fieldDisplayName")}
                     required
                     fullWidth
                     value={formState.displayName}
@@ -1030,7 +1036,7 @@ export function IamUserScreen({
                   />
                   <UiTextField
                     id="iam-username"
-                    label="Tên đăng nhập"
+                    label={t("iam.user.fieldUsername")}
                     required
                     fullWidth
                     value={formState.username}
@@ -1044,7 +1050,7 @@ export function IamUserScreen({
                   />
                   <UiTextField
                     id="iam-phone"
-                    label="Số điện thoại"
+                    label={t("iam.user.fieldPhone")}
                     fullWidth
                     value={formState.phone}
                     onChange={(event) =>
@@ -1077,7 +1083,7 @@ export function IamUserScreen({
                   <UiTextField
                     id="iam-department"
                     select
-                    label="Phòng ban"
+                    label={t("iam.user.colDepartment")}
                     fullWidth
                     value={formState.departmentId}
                     onChange={(event) =>
@@ -1089,7 +1095,7 @@ export function IamUserScreen({
                       inputLabel: { shrink: true },
                     }}
                   >
-                    <MenuItem value="">Không thuộc phòng ban</MenuItem>
+                    <MenuItem value="">{t("iam.user.noDepartment")}</MenuItem>
                     {/* Giữ được lựa chọn hiện tại khi phòng ban đã INACTIVE
                           (danh mục dropdown chỉ nạp phòng ban ACTIVE). */}
                     {formState.departmentId &&
@@ -1115,7 +1121,7 @@ export function IamUserScreen({
                   <UiTextField
                     id="iam-status"
                     select
-                    label="Trạng thái"
+                    label={t("iam.user.colStatus")}
                     required
                     fullWidth
                     value={formState.status}
@@ -1144,13 +1150,13 @@ export function IamUserScreen({
                   height: "100%",
                 }}
               >
-                <SectionTitle>Phân quyền</SectionTitle>
+                <SectionTitle>{t("iam.user.sectionPermissions")}</SectionTitle>
                 <Stack spacing={2}>
                   <div>
                     <UiTextField
                       id="iam-role"
                       select
-                      label="Vai trò"
+                      label={t("iam.user.colRole")}
                       required
                       fullWidth
                       value={formState.roleId}
@@ -1161,7 +1167,7 @@ export function IamUserScreen({
                       error={Boolean(fieldErrors.roleId)}
                       helperText={fieldErrors.roleId}
                     >
-                      <MenuItem value="">Chọn vai trò</MenuItem>
+                      <MenuItem value="">{t("iam.user.pickRole")}</MenuItem>
                       {roles.map((role) => (
                         <MenuItem key={role.role_id} value={role.role_id}>
                           {role.role_name}
@@ -1169,17 +1175,14 @@ export function IamUserScreen({
                       ))}
                     </UiTextField>
                     {isEditingSelf ? (
-                      <FieldHint>
-                        Không thể tự đổi vai trò của chính mình. Nhờ một quản
-                        trị viên khác thực hiện thay đổi này.
-                      </FieldHint>
+                      <FieldHint>{t("iam.user.noSelfRoleChange")}</FieldHint>
                     ) : null}
                   </div>
                   <div>
                     <UiTextField
                       id="iam-extra-roles"
                       select
-                      label="Vai trò kiêm nhiệm (tùy chọn)"
+                      label={t("iam.user.fieldExtraRoles")}
                       fullWidth
                       value={formState.additionalRoleIds}
                       onChange={(event) =>
@@ -1198,7 +1201,7 @@ export function IamUserScreen({
                           renderValue: (selected) => {
                             const ids = selected as string[];
                             if (ids.length === 0)
-                              return "Không có vai trò kiêm nhiệm";
+                              return t("iam.user.noExtraRoles");
                             return roles
                               .filter((role) => ids.includes(role.role_id))
                               .map((role) => role.role_name)
@@ -1216,16 +1219,13 @@ export function IamUserScreen({
                           </MenuItem>
                         ))}
                     </UiTextField>
-                    <FieldHint>
-                      Một người có thể kiêm nhiều vai trò; phạm vi dữ liệu áp
-                      dụng chung với vai trò chính.
-                    </FieldHint>
+                    <FieldHint>{t("iam.user.extraRolesHint")}</FieldHint>
                   </div>
                   <div>
                     <UiTextField
                       id="iam-scope"
                       select
-                      label="Phạm vi dữ liệu"
+                      label={t("iam.user.fieldDataScope")}
                       required
                       fullWidth
                       value={formState.scopeRef}
@@ -1239,7 +1239,7 @@ export function IamUserScreen({
                       }}
                     >
                       <MenuItem value="">
-                        Toàn hệ thống (không giới hạn kho)
+                        {t("iam.user.scopeAllSystem")}
                       </MenuItem>
                       {warehouses.map((warehouse) => (
                         <MenuItem key={warehouse.id} value={warehouse.id}>
@@ -1248,13 +1248,14 @@ export function IamUserScreen({
                       ))}
                     </UiTextField>
                     <FieldHint>
-                      Phạm vi được gán tường minh theo kho. Loại phạm vi của vai
-                      trò đang chọn: {scopeTypeLabel(selectedRole?.scope_type)}.
+                      {t("iam.user.scopeHint", {
+                        scope: scopeTypeLabel(selectedRole?.scope_type),
+                      })}
                     </FieldHint>
                   </div>
                   <UiTextField
                     id="iam-effective-from"
-                    label="Hiệu lực từ"
+                    label={t("iam.user.fieldValidFrom")}
                     type="date"
                     fullWidth
                     value={formState.effectiveFrom}
@@ -1262,12 +1263,12 @@ export function IamUserScreen({
                       updateField("effectiveFrom", event.target.value)
                     }
                     disabled={isSaving || isEditingSelf}
-                    helperText="Định dạng: ngày/tháng/năm"
+                    helperText={t("iam.user.dateHelper")}
                     slotProps={{ inputLabel: { shrink: true } }}
                   />
                   <UiTextField
                     id="iam-effective-to"
-                    label="Hiệu lực đến"
+                    label={t("iam.user.fieldValidTo")}
                     type="date"
                     fullWidth
                     value={formState.effectiveTo}
@@ -1275,7 +1276,7 @@ export function IamUserScreen({
                       updateField("effectiveTo", event.target.value)
                     }
                     disabled={isSaving || isEditingSelf}
-                    helperText="Định dạng: ngày/tháng/năm"
+                    helperText={t("iam.user.dateHelper")}
                     slotProps={{
                       htmlInput: {
                         min: formState.effectiveFrom || undefined,
@@ -1286,7 +1287,9 @@ export function IamUserScreen({
                   <UiTextField
                     id="iam-password"
                     label={
-                      editingUser ? "Mật khẩu tạm / đặt lại" : "Mật khẩu tạm"
+                      editingUser
+                        ? t("iam.user.fieldPasswordReset")
+                        : t("iam.user.fieldPasswordNew")
                     }
                     required={!editingUser}
                     type="password"
@@ -1298,8 +1301,8 @@ export function IamUserScreen({
                     autoComplete="new-password"
                     placeholder={
                       editingUser
-                        ? "Để trống nếu không đổi mật khẩu"
-                        : "Tối thiểu 8 ký tự"
+                        ? t("iam.user.passwordKeepHint")
+                        : t("iam.user.passwordMinHint")
                     }
                     disabled={isSaving}
                     error={Boolean(fieldErrors.password)}
@@ -1307,7 +1310,7 @@ export function IamUserScreen({
                   />
                   <UiTextField
                     id="iam-reason"
-                    label="Lý do cập nhật"
+                    label={t("iam.user.fieldUpdateReason")}
                     required
                     multiline
                     minRows={2}
@@ -1316,17 +1319,16 @@ export function IamUserScreen({
                     onChange={(event) =>
                       updateField("reason", event.target.value)
                     }
-                    placeholder="Vd: Điều chuyển nhân sự sang phòng ban khác"
+                    placeholder={t("iam.user.updateReasonPlaceholder")}
                     disabled={isSaving}
                     error={Boolean(fieldErrors.reason)}
                     helperText={
-                      fieldErrors.reason ??
-                      "Bắt buộc — dùng để truy vết lịch sử thay đổi quyền/vai trò."
+                      fieldErrors.reason ?? t("iam.user.updateReasonHint")
                     }
                   />
                   {editingUser ? (
                     <Box>
-                      <FieldHint mt={0}>Phiên bản dữ liệu</FieldHint>
+                      <FieldHint mt={0}>{t("iam.user.fieldVersion")}</FieldHint>
                       <Box
                         sx={{
                           mt: 0.5,
@@ -1340,10 +1342,7 @@ export function IamUserScreen({
                       >
                         {editingUser.version}
                       </Box>
-                      <FieldHint>
-                        Hệ thống dùng phiên bản hiện tại để ngăn ghi đè khi có
-                        thay đổi đồng thời.
-                      </FieldHint>
+                      <FieldHint>{t("iam.user.versionHint")}</FieldHint>
                     </Box>
                   ) : null}
                 </Stack>
@@ -1363,8 +1362,12 @@ export function IamUserScreen({
             direction="row"
             sx={{ alignItems: "center", justifyContent: "space-between" }}
           >
-            <span>Chi tiết người dùng</span>
-            <ActionIconButton kind="close" label="Đóng" onClick={closeView} />
+            <span>{t("iam.user.detailTitle")}</span>
+            <ActionIconButton
+              kind="close"
+              label={t("common.close")}
+              onClick={closeView}
+            />
           </Stack>
         }
       >
@@ -1381,13 +1384,25 @@ export function IamUserScreen({
               <UiDescriptions
                 columns={2}
                 items={[
-                  { label: "Họ và tên", value: viewingUser.display_name },
-                  { label: "Tên đăng nhập", value: viewingUser.username },
-                  { label: "Số điện thoại", value: viewingUser.phone || EMPTY_TEXT },
-                  { label: "Email", value: viewingUser.email || EMPTY_TEXT },
-                  { label: "Phòng ban", value: departmentLabel(viewingUser) },
                   {
-                    label: "Trạng thái",
+                    label: t("iam.user.fieldDisplayName"),
+                    value: viewingUser.display_name,
+                  },
+                  {
+                    label: t("iam.user.fieldUsername"),
+                    value: viewingUser.username,
+                  },
+                  {
+                    label: t("iam.user.fieldPhone"),
+                    value: viewingUser.phone || EMPTY_TEXT,
+                  },
+                  { label: "Email", value: viewingUser.email || EMPTY_TEXT },
+                  {
+                    label: t("iam.user.colDepartment"),
+                    value: departmentLabel(viewingUser),
+                  },
+                  {
+                    label: t("iam.user.colStatus"),
                     value: (
                       <UiStatusBadge
                         tone={statusBadgeTone(viewingUser.status)}
@@ -1396,17 +1411,22 @@ export function IamUserScreen({
                     ),
                   },
                   {
-                    label: "Đăng nhập cuối",
-                    value: formatLastLogin(viewingUser.last_login_at),
+                    label: t("iam.user.colLastLogin"),
+                    value: formatLastLogin(viewingUser.last_login_at, t),
                   },
-                  { label: "Phiên bản dữ liệu", value: viewingUser.version },
+                  {
+                    label: t("iam.user.fieldVersion"),
+                    value: viewingUser.version,
+                  },
                 ]}
               />
             </Box>
 
             <Box>
               <SectionTitle mb={1}>
-                Vai trò &amp; phạm vi ({viewingUser.roles?.length ?? 0})
+                {t("iam.user.rolesSection", {
+                  count: viewingUser.roles?.length ?? 0,
+                })}
               </SectionTitle>
               {viewingUser.roles && viewingUser.roles.length > 0 ? (
                 <Box
@@ -1417,7 +1437,13 @@ export function IamUserScreen({
                     overflow: "hidden",
                   }}
                 >
-                  <DialogTable headers={["Vai trò", "Phạm vi", "Hiệu lực"]}>
+                  <DialogTable
+                    headers={[
+                      t("iam.user.colRoleName"),
+                      t("iam.user.colScopeName"),
+                      t("iam.user.colValidity"),
+                    ]}
+                  >
                     {viewingUser.roles.map((role) => (
                       <tr key={role.role_id}>
                         <td>
@@ -1432,15 +1458,15 @@ export function IamUserScreen({
                             />
                           </Stack>
                         </td>
-                        <td>{scopeLabel(role, warehouseNames)}</td>
-                        <td>{effectiveWindowLabel(role.pivot)}</td>
+                        <td>{scopeLabel(role, warehouseNames, t)}</td>
+                        <td>{effectiveWindowLabel(role.pivot, t)}</td>
                       </tr>
                     ))}
                   </DialogTable>
                 </Box>
               ) : (
                 <Box sx={{ fontSize: 14, color: "text.secondary" }}>
-                  Chưa gán vai trò nào.
+                  {t("iam.user.noRoles")}
                 </Box>
               )}
             </Box>
@@ -1455,17 +1481,16 @@ export function IamUserScreen({
                 }}
               >
                 <SectionTitle mb={0}>
-                  Quyền cấp riêng ({overrides.length})
+                  {t("iam.user.overridesSection", { count: overrides.length })}
                 </SectionTitle>
                 {canManageUsers ? (
                   <ActionButton kind="grant" onClick={openGrantModal}>
-                    + Cấp quyền
+                    {t("iam.user.grantOverride")}
                   </ActionButton>
                 ) : null}
               </Stack>
               <FieldHint mt={0}>
-                Quyền cấp riêng chỉ CỘNG THÊM vào quyền theo vai trò, không thu
-                hồi quyền của vai trò.
+                {t("iam.user.overridesHintA")} {t("iam.user.overridesHintB")}
               </FieldHint>
               {overrides.length > 0 ? (
                 <Box
@@ -1478,7 +1503,11 @@ export function IamUserScreen({
                   }}
                 >
                   <DialogTable
-                    headers={["Quyền", "Cấp lúc", "Hành động"]}
+                    headers={[
+                      t("iam.user.colPermission"),
+                      t("iam.user.colGrantedAt"),
+                      t("iam.user.colAction"),
+                    ]}
                     lastColRight
                   >
                     {overrides.map((override) => (
@@ -1503,7 +1532,7 @@ export function IamUserScreen({
                                 openRevokeConfirm(override.permission_id)
                               }
                             >
-                              Thu hồi
+                              {t("iam.user.revoke")}
                             </ActionButton>
                           ) : null}
                         </td>
@@ -1513,7 +1542,7 @@ export function IamUserScreen({
                 </Box>
               ) : (
                 <Box sx={{ mt: 1, fontSize: 14, color: "text.secondary" }}>
-                  Chưa cấp quyền riêng nào.
+                  {t("iam.user.noOverrides")}
                 </Box>
               )}
             </Box>
@@ -1548,7 +1577,9 @@ export function IamUserScreen({
                 }}
               >
                 <Box component="span" sx={{ fontWeight: 600, fontSize: 14 }}>
-                  Quyền hiệu lực ({effectivePermissionKeys.length})
+                  {t("iam.user.effectiveSection", {
+                    count: effectivePermissionKeys.length,
+                  })}
                 </Box>
                 <Box
                   component="span"
@@ -1580,7 +1611,7 @@ export function IamUserScreen({
                     </Stack>
                   ) : (
                     <Box sx={{ fontSize: 14, color: "text.secondary" }}>
-                      Chưa có quyền nào từ các vai trò đang gắn.
+                      {t("iam.user.noEffective")}
                     </Box>
                   )}
                 </Box>
@@ -1594,7 +1625,7 @@ export function IamUserScreen({
         open={isGrantModalOpen}
         onClose={closeGrantModal}
         maxWidth="xs"
-        title="Cấp quyền riêng cho người dùng"
+        title={t("iam.user.grantTitle")}
         actions={
           <>
             <ActionButton
@@ -1602,14 +1633,14 @@ export function IamUserScreen({
               onClick={closeGrantModal}
               disabled={grantPermission.isPending}
             >
-              Hủy
+              {t("iam.user.cancel")}
             </ActionButton>
             <ActionButton
               kind="grant"
               onClick={submitGrantPermission}
               disabled={grantPermission.isPending}
             >
-              Cấp quyền
+              {t("iam.user.grantConfirm")}
             </ActionButton>
           </>
         }
@@ -1618,12 +1649,12 @@ export function IamUserScreen({
           {grantError ? <UiAlert tone="error">{grantError}</UiAlert> : null}
           <UiTextField
             select
-            label="Quyền"
+            label={t("iam.user.fieldPermission")}
             fullWidth
             value={grantPermissionId}
             onChange={(event) => setGrantPermissionId(event.target.value)}
           >
-            <MenuItem value="">Chọn quyền</MenuItem>
+            <MenuItem value="">{t("iam.user.pickPermission")}</MenuItem>
             {grantablePermissions.map((permission) => (
               <MenuItem
                 key={permission.permission_id}
@@ -1634,14 +1665,14 @@ export function IamUserScreen({
             ))}
           </UiTextField>
           <UiTextField
-            label="Lý do"
+            label={t("iam.user.fieldReason")}
             required
             multiline
             minRows={2}
             fullWidth
             value={grantReason}
             onChange={(event) => setGrantReason(event.target.value)}
-            placeholder="Vd: Hỗ trợ tạm thời cho dự án X"
+            placeholder={t("iam.user.grantReasonPlaceholder")}
           />
         </Stack>
       </UiDialog>
@@ -1650,7 +1681,7 @@ export function IamUserScreen({
         open={Boolean(revokingPermissionId)}
         onClose={closeRevokeConfirm}
         maxWidth="xs"
-        title="Thu hồi quyền cấp riêng"
+        title={t("iam.user.revokeTitle")}
         actions={
           <>
             <ActionButton
@@ -1658,14 +1689,14 @@ export function IamUserScreen({
               onClick={closeRevokeConfirm}
               disabled={revokePermission.isPending}
             >
-              Hủy
+              {t("iam.user.cancel")}
             </ActionButton>
             <ActionButton
               kind="revoke"
               onClick={submitRevokePermission}
               disabled={revokePermission.isPending}
             >
-              Thu hồi
+              {t("iam.user.revokeConfirm")}
             </ActionButton>
           </>
         }
@@ -1673,14 +1704,14 @@ export function IamUserScreen({
         <Stack spacing={2} sx={{ mt: 0.5 }}>
           {revokeError ? <UiAlert tone="error">{revokeError}</UiAlert> : null}
           <UiTextField
-            label="Lý do"
+            label={t("iam.user.fieldReason")}
             required
             multiline
             minRows={2}
             fullWidth
             value={revokeReason}
             onChange={(event) => setRevokeReason(event.target.value)}
-            placeholder="Vd: Kết thúc dự án X, thu hồi quyền tạm thời"
+            placeholder={t("iam.user.revokeReasonPlaceholder")}
           />
         </Stack>
       </UiDialog>

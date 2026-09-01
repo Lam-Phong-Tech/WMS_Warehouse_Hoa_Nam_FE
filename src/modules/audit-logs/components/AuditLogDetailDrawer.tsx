@@ -1,3 +1,4 @@
+import { useT } from "@/shared/i18n/useT";
 import type { ReactNode } from "react";
 import {
   Box,
@@ -98,6 +99,7 @@ export function AuditLogDetailDrawer({
   onClose,
   auditLog,
 }: AuditLogDetailDrawerProps) {
+  const t = useT();
   // Giữ `auditLog` cho tới khi Dialog chạy xong hiệu ứng đóng là việc của màn
   // cha (AuditLogsPage tách riêng cờ `detailOpen` với bản ghi đang xem) — ở đây
   // trả null khi chưa có bản ghi thì `open` cũng đang false, không mất hiệu ứng.
@@ -106,14 +108,14 @@ export function AuditLogDetailDrawer({
   const actionLabel = businessLabel(
     AUDIT_ACTION_LABELS,
     auditLog.action,
-    "Hành động khác",
+    t("audit.actionOther"),
   );
 
   // Thay Typography.Text copyable của antd: nút copy tường minh + toast.
   const copyIp = () => {
     if (!auditLog.ip_address) return;
     void navigator.clipboard?.writeText(auditLog.ip_address);
-    toast.success("Đã sao chép địa chỉ IP.");
+    toast.success(t("audit.ipCopied"));
   };
 
   return (
@@ -123,10 +125,10 @@ export function AuditLogDetailDrawer({
       maxWidth="sm"
       title={
         <Box sx={{ pr: 6, position: "relative" }}>
-          Chi tiết nhật ký hệ thống
+          {t("audit.detailTitle")}
           <ActionIconButton
             kind="close"
-            label="Đóng"
+            label={t("common.close")}
             onClick={onClose}
             sx={{ position: "absolute", right: -10, top: -2 }}
           />
@@ -145,15 +147,15 @@ export function AuditLogDetailDrawer({
             {/* Bản ghi nhật ký không có mã nghiệp vụ (id là UUID) — rút gọn +
               cho sao chép thay vì in nguyên chuỗi thô. */}
             <DetailField
-              label="Định danh bản ghi"
+              label={t("audit.fieldRecordId")}
               value={<CopyableId value={auditLog.id} />}
             />
             <DetailField
-              label="Thời gian"
+              label={t("audit.colTime")}
               value={formatDateTime(auditLog.created_at)}
             />
             <DetailField
-              label="Hành động"
+              label={t("audit.colAction")}
               value={
                 <UiStatusBadge
                   tone={ACTION_TONES[auditLog.action] ?? "neutral"}
@@ -162,14 +164,16 @@ export function AuditLogDetailDrawer({
               }
             />
             <DetailField
-              label="Phân hệ"
-              value={AUDIT_MODULE_LABELS[auditLog.module] || "Phân hệ khác"}
+              label={t("audit.colModule")}
+              value={
+                AUDIT_MODULE_LABELS[auditLog.module] || t("audit.moduleOther")
+              }
             />
             {/* BE chưa trả mã nghiệp vụ của đối tượng (chỉ có object_type +
               object_id) — hiện loại đối tượng kèm định danh rút gọn, không nối
               nguyên UUID vào câu. Khi BE bổ sung object_code thì hiện mã đó. */}
             <DetailField
-              label="Đối tượng"
+              label={t("audit.colObject")}
               value={
                 <Stack
                   direction="row"
@@ -184,15 +188,15 @@ export function AuditLogDetailDrawer({
               }
             />
             <DetailField
-              label="Người thực hiện"
+              label={t("audit.colActor")}
               value={
                 auditLog.actor?.email ||
                 auditLog.actor?.display_name ||
-                "Hệ thống"
+                t("audit.system")
               }
             />
             <DetailField
-              label="Địa chỉ IP"
+              label={t("audit.colIp")}
               value={
                 auditLog.ip_address ? (
                   <Stack
@@ -203,7 +207,7 @@ export function AuditLogDetailDrawer({
                     <span>{auditLog.ip_address}</span>
                     <ActionIconButton
                       kind="copy"
-                      label="Sao chép địa chỉ IP"
+                      label={t("audit.copyIpAria")}
                       onClick={copyIp}
                     />
                   </Stack>
@@ -212,13 +216,16 @@ export function AuditLogDetailDrawer({
                 )
               }
             />
-            <DetailField label="Mô tả" value={auditLog.description} />
+            <DetailField
+              label={t("audit.colDescription")}
+              value={auditLog.description}
+            />
           </Grid>
         </Box>
 
         {auditLog.before_data && (
           <JsonBlock
-            title="Dữ liệu trước thay đổi"
+            title={t("audit.beforeData")}
             value={auditLog.before_data}
           />
         )}

@@ -1,3 +1,5 @@
+import { useT, type TranslateFn } from "@/shared/i18n/useT";
+import type { MessageKey } from "@/shared/i18n/messages";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -60,45 +62,56 @@ const EMPTY_ROLE_FORM: RoleFormValues = {
   status: "ACTIVE",
 };
 
-const PERMISSION_MODULE_LABELS: Record<string, string> = {
-  iam: "Người dùng & phân quyền",
-  sku: "SKU & sản phẩm",
-  catalog: "Danh mục",
-  inbound: "Nhập kho",
-  outbound: "Xuất kho",
-  inventory: "Tồn kho",
-  warranty: "Bảo hành",
-  report: "Báo cáo",
-  reports: "Báo cáo",
-  pv: "Ứng dụng phân vùng",
-  audit: "Nhật ký hệ thống",
-  container: "Vật chứa",
-  putaway: "Xếp khay",
-  component: "Linh kiện",
-  rfid: "RFID",
-  label: "Nhãn đóng gói",
-  scan: "Quét mã",
-  warehouse: "Kho",
-  agency: "Đối tượng nhận hàng",
-  system: "Hệ thống",
+const PERMISSION_MODULE_KEYS: Record<string, MessageKey> = {
+  iam: "iam.permissionModule.iam",
+  sku: "iam.permissionModule.sku",
+  catalog: "iam.permissionModule.catalog",
+  inbound: "iam.permissionModule.inbound",
+  outbound: "iam.permissionModule.outbound",
+  inventory: "iam.permissionModule.inventory",
+  warranty: "iam.permissionModule.warranty",
+  report: "iam.permissionModule.report",
+  reports: "iam.permissionModule.report",
+  pv: "iam.permissionModule.pv",
+  audit: "iam.permissionModule.audit",
+  container: "iam.permissionModule.container",
+  putaway: "iam.permissionModule.putaway",
+  component: "iam.permissionModule.component",
+  label: "iam.permissionModule.label",
+  scan: "iam.permissionModule.scan",
+  warehouse: "iam.permissionModule.warehouse",
+  agency: "iam.permissionModule.agency",
+  system: "iam.permissionModule.system",
 };
 
-const PERMISSION_ACTION_LABELS: Record<string, string> = {
-  view: "Xem",
-  manage: "Quản lý",
-  create: "Tạo mới",
-  update: "Cập nhật",
-  delete: "Xóa",
-  scan: "Quét mã",
-  post: "Hoàn tất",
-  cancel: "Hủy",
-  import: "Nhập dữ liệu",
-  export: "Xuất dữ liệu",
-  trace: "Truy vết",
-  publish: "Đưa lên ứng dụng",
-  issue: "Xuất",
-  approve: "Phê duyệt",
-  pii: "Xem thông tin cá nhân",
+/** RFID là từ viết tắt kỹ thuật — không dịch. */
+const PERMISSION_MODULE_LITERALS: Record<string, string> = { rfid: "RFID" };
+
+function permissionModuleLabel(
+  module: string,
+  t: TranslateFn,
+): string | undefined {
+  const key = PERMISSION_MODULE_KEYS[module];
+  if (key) return t(key);
+  return PERMISSION_MODULE_LITERALS[module];
+}
+
+const PERMISSION_ACTION_KEYS: Record<string, MessageKey> = {
+  view: "iam.permissionAction.view",
+  manage: "iam.permissionAction.manage",
+  create: "iam.permissionAction.create",
+  update: "iam.permissionAction.update",
+  delete: "iam.permissionAction.remove",
+  scan: "iam.permissionAction.scan",
+  post: "iam.permissionAction.post",
+  cancel: "iam.permissionAction.cancel",
+  import: "iam.permissionAction.import",
+  export: "iam.permissionAction.export",
+  trace: "iam.permissionAction.trace",
+  publish: "iam.permissionAction.publish",
+  issue: "iam.permissionAction.issue",
+  approve: "iam.permissionAction.approve",
+  pii: "iam.permissionAction.pii",
 };
 
 /** Kiểu chữ "mã" (thay antd Typography.Text code) — viền + nền nhẹ từ token. */
@@ -111,23 +124,24 @@ const CODE_SX = {
   padding: "0 4px",
 } as const;
 
-function permissionGroup(permission: IamPermission): string {
+function permissionGroup(permission: IamPermission, t: TranslateFn): string {
   if (permission.permission_name.toLowerCase().startsWith("legacy")) {
-    return "Tương thích dữ liệu cũ";
+    return t("iam.role.legacyGroup");
   }
   const [module] = permission.permission_key.split(".");
-  return PERMISSION_MODULE_LABELS[module] ?? "Quyền hệ thống khác";
+  return permissionModuleLabel(module, t) ?? t("iam.role.otherGroup");
 }
 
-function permissionLabel(permission: IamPermission): string {
+function permissionLabel(permission: IamPermission, t: TranslateFn): string {
   const parts = permission.permission_key.split(".").filter(Boolean);
-  const module = PERMISSION_MODULE_LABELS[parts[0]] ?? "Chức năng";
-  const action =
-    [...parts]
-      .reverse()
-      .map((part) => PERMISSION_ACTION_LABELS[part])
-      .find(Boolean) ?? "Thực hiện";
-  return `${action} · ${module}`;
+  const module =
+    permissionModuleLabel(parts[0], t) ?? t("iam.role.fallbackModule");
+  const actionKey = [...parts]
+    .reverse()
+    .map((part) => PERMISSION_ACTION_KEYS[part])
+    .find(Boolean);
+  const action = actionKey ? t(actionKey) : t("iam.role.fallbackAction");
+  return t("iam.role.permissionLabel", { action, module });
 }
 
 function isSystemRole(role?: IamRole): boolean {
@@ -135,6 +149,7 @@ function isSystemRole(role?: IamRole): boolean {
 }
 
 export function IamRolePermissionScreen() {
+  const t = useT();
   const [keyword, setKeyword] = useState("");
   const [rolePage, setRolePage] = useState(1);
   const [rolePerPage, setRolePerPage] = useState(15);
@@ -215,7 +230,7 @@ export function IamRolePermissionScreen() {
       // "Ngừng hiệu lực" và ô tick bị khoá.
       .filter((permission) => permission.status === "ACTIVE")
       .forEach((permission) => {
-        const group = permissionGroup(permission);
+        const group = permissionGroup(permission, t);
         groups.set(group, [...(groups.get(group) ?? []), permission]);
       });
     return [...groups.entries()].sort(([a], [b]) => a.localeCompare(b, "vi"));
@@ -223,9 +238,7 @@ export function IamRolePermissionScreen() {
 
   const openEdit = (role: IamRole) => {
     if (isSystemRole(role)) {
-      toast.warning(
-        "Vai trò Quản trị cao nhất là vai trò hệ thống và không được chỉnh sửa.",
-      );
+      toast.warning(t("iam.role.superAdminLocked"));
       return;
     }
     setEditingRole(role);
@@ -245,12 +258,12 @@ export function IamRolePermissionScreen() {
     const errors: Partial<Record<"role_code" | "role_name", string>> = {};
     const roleCode = roleForm.role_code.trim();
     if (!roleCode) {
-      errors.role_code = "Nhập mã vai trò";
+      errors.role_code = t("iam.role.errCode");
     } else if (!/^[A-Za-z0-9_.-]+$/.test(roleCode)) {
-      errors.role_code = "Chỉ dùng chữ, số, dấu _, . hoặc -";
+      errors.role_code = t("iam.role.errCodeFormat");
     }
     if (!roleForm.role_name.trim()) {
-      errors.role_name = "Nhập tên vai trò";
+      errors.role_name = t("iam.role.errName");
     }
     setRoleFormErrors(errors);
     if (Object.keys(errors).length > 0) return;
@@ -263,7 +276,7 @@ export function IamRolePermissionScreen() {
     };
     try {
       await updateRole.mutateAsync({ roleId: editingRole.role_id, payload });
-      toast.success("Đã cập nhật vai trò.");
+      toast.success(t("iam.role.updated"));
       setRoleModalOpen(false);
     } catch {
       // Lỗi đã được hook useUpdateIamRole toast — giữ modal mở để sửa tiếp.
@@ -272,9 +285,7 @@ export function IamRolePermissionScreen() {
 
   const toggleRoleStatus = async (role: IamRole) => {
     if (isSystemRole(role)) {
-      toast.warning(
-        "Vai trò Quản trị cao nhất là vai trò hệ thống và không được vô hiệu hóa.",
-      );
+      toast.warning(t("iam.role.superAdminNoDisable"));
       return;
     }
     const nextStatus: IamRoleStatus =
@@ -290,20 +301,24 @@ export function IamRolePermissionScreen() {
     });
     toast.success(
       nextStatus === "ACTIVE"
-        ? "Đã kích hoạt lại vai trò."
-        : "Đã vô hiệu hóa vai trò.",
+        ? t("iam.role.reactivated")
+        : t("iam.role.deactivated"),
     );
   };
 
   const confirmToggleStatus = async (role: IamRole) => {
     const active = role.status === "ACTIVE";
     const accepted = await confirm({
-      title: active ? "Vô hiệu hóa vai trò?" : "Kích hoạt lại vai trò?",
+      title: active
+        ? t("iam.role.confirmDisableTitle")
+        : t("iam.role.confirmEnableTitle"),
       content: active
-        ? "Người dùng mang vai trò này sẽ không còn dùng được các quyền tương ứng."
-        : "Vai trò sẽ hoạt động trở lại và có thể gán cho người dùng.",
-      confirmText: active ? "Vô hiệu hóa" : "Kích hoạt",
-      cancelText: "Hủy",
+        ? t("iam.role.confirmDisableBody")
+        : t("iam.role.confirmEnableBody"),
+      confirmText: active
+        ? t("iam.role.confirmDisable")
+        : t("iam.role.confirmEnable"),
+      cancelText: t("iam.role.cancel"),
       tone: active ? "danger" : "primary",
     });
     if (!accepted) return;
@@ -316,11 +331,10 @@ export function IamRolePermissionScreen() {
 
   const confirmDeleteRole = async (role: IamRole) => {
     const accepted = await confirm({
-      title: "Xóa vai trò?",
-      content:
-        "Không thể xóa vai trò nếu vai trò vẫn đang được gán cho người dùng.",
-      confirmText: "Xóa",
-      cancelText: "Hủy",
+      title: t("iam.role.deleteTitle"),
+      content: t("iam.role.deleteBody"),
+      confirmText: t("iam.role.deleteConfirm"),
+      cancelText: t("iam.role.cancel"),
       tone: "danger",
     });
     if (!accepted) return;
@@ -338,9 +352,7 @@ export function IamRolePermissionScreen() {
   const requestSavePermissions = () => {
     if (!selectedRole) return;
     if (isSystemRole(selectedRole)) {
-      toast.warning(
-        "Vai trò Quản trị cao nhất có toàn quyền hệ thống và không cho phép sửa ma trận quyền.",
-      );
+      toast.warning(t("iam.role.superAdminNoMatrix"));
       return;
     }
     setPermissionReason("");
@@ -351,7 +363,7 @@ export function IamRolePermissionScreen() {
   const savePermissions = async () => {
     if (!selectedRole) return;
     if (permissionReason.trim().length < 5) {
-      setPermissionReasonError("Vui lòng nhập lý do (tối thiểu 5 ký tự).");
+      setPermissionReasonError(t("iam.role.errReason"));
       return;
     }
     try {
@@ -360,7 +372,7 @@ export function IamRolePermissionScreen() {
         permissionIds: [...new Set(checkedIds)].sort(),
         reason: permissionReason.trim(),
       });
-      toast.success("Đã cập nhật ma trận quyền cho vai trò.");
+      toast.success(t("iam.role.matrixUpdated"));
       setIsReasonModalOpen(false);
     } catch {
       // Lỗi đã được hook useSyncIamRolePermissions toast — giữ modal mở.
@@ -460,14 +472,16 @@ export function IamRolePermissionScreen() {
             label={businessLabel(
               IAM_ROLE_STATUS_LABELS,
               role.status,
-              "Trạng thái khác",
+              t("iam.role.statusOther"),
             )}
           />
           <Box component="span" sx={{ fontSize: 12, color: S.textMedium }}>
             <Box component="code" sx={{ ...CODE_SX, fontSize: 11 }}>
               {role.role_code}
             </Box>{" "}
-            · {memberCount > 0 ? `${memberCount} nhân viên` : "— nhân viên"}
+            {memberCount > 0
+              ? t("iam.role.memberCount", { count: memberCount })
+              : t("iam.role.memberNone")}
           </Box>
         </Stack>
         {canManageRoles && !isSystemRole(role) && (
@@ -478,7 +492,7 @@ export function IamRolePermissionScreen() {
           >
             <ActionIconButton
               kind="edit"
-              label={`Sửa ${role.role_name}`}
+              label={t("iam.role.editAria", { name: role.role_name })}
               onClick={(event) => {
                 event.stopPropagation();
                 openEdit(role);
@@ -488,8 +502,8 @@ export function IamRolePermissionScreen() {
               kind={active ? "deactivate" : "activate"}
               label={
                 active
-                  ? `Vô hiệu hóa ${role.role_name}`
-                  : `Kích hoạt ${role.role_name}`
+                  ? t("iam.role.disableAria", { name: role.role_name })
+                  : t("iam.role.enableAria", { name: role.role_name })
               }
               onClick={(event) => {
                 event.stopPropagation();
@@ -498,7 +512,7 @@ export function IamRolePermissionScreen() {
             />
             <ActionIconButton
               kind="delete"
-              label={`Xóa ${role.role_name}`}
+              label={t("iam.role.deleteAria", { name: role.role_name })}
               onClick={(event) => {
                 event.stopPropagation();
                 void confirmDeleteRole(role);
@@ -519,9 +533,9 @@ export function IamRolePermissionScreen() {
     const retired = permission.is_enforced === false;
     const disabled = !matrixEditable || !delegatable || retired;
     const tooltip = retired
-      ? "Mã quyền cũ, không còn cổng nào đọc tới — tick vào không cấp thêm gì."
+      ? t("iam.role.legacyHint")
       : !delegatable
-        ? "Bạn không thể cấp hoặc thu hồi quyền mà chính bạn không có."
+        ? t("iam.role.noSelfGrantHint")
         : undefined;
     return (
       <Box
@@ -565,7 +579,7 @@ export function IamRolePermissionScreen() {
                 color: retired ? S.textMedium : S.textHigh,
               }}
             >
-              {permissionLabel(permission)}
+              {permissionLabel(permission, t)}
             </Box>
             <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
               <Box component="span" sx={{ fontSize: 11, color: S.textMedium }}>
@@ -573,7 +587,9 @@ export function IamRolePermissionScreen() {
               </Box>
               <ActionIconButton
                 kind="copy"
-                label={`Sao chép mã quyền ${permission.permission_key}`}
+                label={t("iam.role.copyKeyAria", {
+                  key: permission.permission_key,
+                })}
                 sx={{ padding: "2px" }}
                 onClick={(event) => {
                   event.preventDefault();
@@ -581,15 +597,17 @@ export function IamRolePermissionScreen() {
                   void navigator.clipboard?.writeText(
                     permission.permission_key,
                   );
-                  toast.success("Đã sao chép mã quyền.");
+                  toast.success(t("iam.role.keyCopied"));
                 }}
               />
             </Stack>
             {retired ? (
               <Box component="span" sx={{ fontSize: 11, color: S.warningText }}>
                 {permission.replaced_by
-                  ? `Ngừng hiệu lực — dùng ${permission.replaced_by}`
-                  : "Ngừng hiệu lực"}
+                  ? t("iam.role.deprecatedWith", {
+                      replacement: permission.replaced_by,
+                    })
+                  : t("iam.role.deprecated")}
               </Box>
             ) : null}
           </Stack>
@@ -611,13 +629,15 @@ export function IamRolePermissionScreen() {
           },
         }}
       >
-        <UiCard title="Danh sách vai trò">
+        <UiCard title={t("iam.role.listTitle")}>
           <Stack spacing={1.5} sx={{ width: "100%" }}>
             <UiTextField
               type="search"
               fullWidth
-              placeholder="Tìm vai trò..."
-              slotProps={{ htmlInput: { "aria-label": "Tìm vai trò" } }}
+              placeholder={t("iam.role.searchPlaceholder")}
+              slotProps={{
+                htmlInput: { "aria-label": t("iam.role.searchAria") },
+              }}
               value={keyword}
               onChange={(event) => {
                 setKeyword(event.target.value);
@@ -643,7 +663,7 @@ export function IamRolePermissionScreen() {
               }}
             >
               <UiText variant="secondary">
-                Tổng {rolePagination.total} vai trò
+                {t("iam.role.total", { count: rolePagination.total })}
               </UiText>
               <UiPagination
                 page={rolePagination.current}
@@ -658,7 +678,7 @@ export function IamRolePermissionScreen() {
                 <UiSpinner size={28} />
               </Box>
             ) : roles.length === 0 ? (
-              <UiStateSurface kind="empty" title="Chưa có vai trò nào." />
+              <UiStateSurface kind="empty" title={t("iam.role.listEmpty")} />
             ) : (
               <div>
                 {roles.map((role, index) => renderRoleCard(role, index))}
@@ -670,10 +690,13 @@ export function IamRolePermissionScreen() {
         <UiCard
           title={
             <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-              <span>Ma trận quyền hạn chi tiết</span>
+              <span>{t("iam.role.matrixTitle")}</span>
               <UiStatusBadge
                 tone="info"
-                label={`${checkedIds.length}/${permissions.length} quyền`}
+                label={t("iam.role.matrixCount", {
+                  checked: checkedIds.length,
+                  total: permissions.length,
+                })}
               />
             </Stack>
           }
@@ -685,7 +708,7 @@ export function IamRolePermissionScreen() {
                   disabled={!permissionsChanged}
                   onClick={resetMatrix}
                 >
-                  Hoàn tác
+                  {t("iam.role.undo")}
                 </ActionButton>
                 <ActionButton
                   kind="save"
@@ -693,44 +716,37 @@ export function IamRolePermissionScreen() {
                   loading={syncPermissions.isPending}
                   onClick={requestSavePermissions}
                 >
-                  Lưu ma trận
+                  {t("iam.role.saveMatrix")}
                 </ActionButton>
               </Stack>
             ) : null
           }
         >
           {!canViewPermissions ? (
-            <UiAlert tone="warning">
-              Tài khoản không có quyền xem danh sách phân quyền.
-            </UiAlert>
+            <UiAlert tone="warning">{t("iam.role.noViewPermission")}</UiAlert>
           ) : permissionsQuery.isLoading ? (
             <Box sx={{ textAlign: "center", padding: 6 }}>
               <UiSpinner size={28} />
             </Box>
           ) : !selectedRole ? (
-            <UiStateSurface
-              kind="empty"
-              title="Chọn một vai trò để xem ma trận quyền"
-            />
+            <UiStateSurface kind="empty" title={t("iam.role.pickRole")} />
           ) : (
             <Stack spacing={2} sx={{ width: "100%" }}>
               {isSystemRole(selectedRole) ? (
-                <UiAlert
-                  tone="warning"
-                  title="Đây là vai trò Quản trị cao nhất"
-                >
-                  Vai trò hệ thống luôn có toàn quyền; không cho phép đổi mã,
-                  xóa hoặc thay ma trận quyền.
+                <UiAlert tone="warning" title={t("iam.role.superAdminTitle")}>
+                  {t("iam.role.superAdminBody")}
                 </UiAlert>
               ) : (
                 <UiAlert tone="info">
-                  Đang thiết lập quyền cho vai trò:{" "}
-                  <strong>{selectedRole.role_name}</strong> (Mã:{" "}
+                  {t("iam.role.settingForA")}{" "}
+                  <strong>{selectedRole.role_name}</strong>{" "}
+                  {t("iam.role.settingForB")}{" "}
                   <Box component="code" sx={CODE_SX}>
                     {selectedRole.role_code}
                   </Box>
-                  ). Tích chọn các quyền chi tiết bên dưới và bấm{" "}
-                  <strong>Lưu ma trận</strong> để cập nhật.
+                  {t("iam.role.settingForC")}{" "}
+                  <strong>{t("iam.role.saveMatrix")}</strong>{" "}
+                  {t("iam.role.settingForD")}
                 </UiAlert>
               )}
               {groupedPermissions.map(([group, items]) => {
@@ -771,7 +787,7 @@ export function IamRolePermissionScreen() {
                           <MvpSelectionCheckbox
                             checked={allChecked}
                             indeterminate={indeterminate}
-                            ariaLabel={`Chọn tất cả quyền nhóm ${group}`}
+                            ariaLabel={t("iam.role.selectGroupAria", { group })}
                             onChange={(checked) => toggleGroup(items, checked)}
                           />
                         ) : null}
@@ -781,7 +797,10 @@ export function IamRolePermissionScreen() {
                       </Stack>
                       <UiStatusBadge
                         tone={checkedCount > 0 ? "info" : "neutral"}
-                        label={`${checkedCount}/${items.length} quyền`}
+                        label={t("iam.role.groupCount", {
+                          checked: checkedCount,
+                          total: items.length,
+                        })}
                       />
                     </Box>
                     <Box
@@ -809,7 +828,7 @@ export function IamRolePermissionScreen() {
       </Box>
 
       <UiDialog
-        title="Sửa vai trò"
+        title={t("iam.role.editTitle")}
         open={roleModalOpen}
         onClose={() => setRoleModalOpen(false)}
         actions={
@@ -819,21 +838,21 @@ export function IamRolePermissionScreen() {
               onClick={() => setRoleModalOpen(false)}
               disabled={updateRole.isPending}
             >
-              Hủy
+              {t("iam.role.cancel")}
             </ActionButton>
             <ActionButton
               kind="save"
               loading={updateRole.isPending}
               onClick={() => void saveRole()}
             >
-              Lưu vai trò
+              {t("iam.role.saveRole")}
             </ActionButton>
           </>
         }
       >
         <Stack spacing={2} sx={{ mt: 0.5 }}>
           <UiTextField
-            label="Mã vai trò"
+            label={t("iam.role.fieldCode")}
             required
             fullWidth
             value={roleForm.role_code}
@@ -847,14 +866,14 @@ export function IamRolePermissionScreen() {
                 role_code: undefined,
               }));
             }}
-            placeholder="Ví dụ: KIEM_SOAT_KHO"
+            placeholder={t("iam.role.codePlaceholder")}
             autoComplete="off"
             error={Boolean(roleFormErrors.role_code)}
             helperText={roleFormErrors.role_code}
             slotProps={{ htmlInput: { maxLength: 100 } }}
           />
           <UiTextField
-            label="Tên vai trò"
+            label={t("iam.role.fieldName")}
             required
             fullWidth
             value={roleForm.role_name}
@@ -868,14 +887,14 @@ export function IamRolePermissionScreen() {
                 role_name: undefined,
               }));
             }}
-            placeholder="Ví dụ: Kiểm soát kho"
+            placeholder={t("iam.role.namePlaceholder")}
             error={Boolean(roleFormErrors.role_name)}
             helperText={roleFormErrors.role_name}
             slotProps={{ htmlInput: { maxLength: 255 } }}
           />
           <UiTextField
             select
-            label="Phạm vi áp dụng"
+            label={t("iam.role.fieldScope")}
             required
             fullWidth
             value={roleForm.scope_type}
@@ -886,13 +905,13 @@ export function IamRolePermissionScreen() {
               }))
             }
           >
-            <MenuItem value="SYSTEM">Toàn hệ thống</MenuItem>
+            <MenuItem value="SYSTEM">{t("iam.role.scopeSystem")}</MenuItem>
             <MenuItem value="WAREHOUSE">Theo kho</MenuItem>
-            <MenuItem value="FUNCTION">Theo chức năng</MenuItem>
+            <MenuItem value="FUNCTION">{t("iam.role.scopeFunction")}</MenuItem>
           </UiTextField>
           <UiTextField
             select
-            label="Trạng thái"
+            label={t("iam.role.fieldStatus")}
             required
             fullWidth
             value={roleForm.status}
@@ -903,14 +922,14 @@ export function IamRolePermissionScreen() {
               }))
             }
           >
-            <MenuItem value="ACTIVE">Đang sử dụng</MenuItem>
-            <MenuItem value="INACTIVE">Ngừng sử dụng</MenuItem>
+            <MenuItem value="ACTIVE">{t("iam.role.statusActive")}</MenuItem>
+            <MenuItem value="INACTIVE">{t("iam.role.statusInactive")}</MenuItem>
           </UiTextField>
         </Stack>
       </UiDialog>
 
       <UiDialog
-        title="Xác nhận thay đổi ma trận quyền"
+        title={t("iam.role.reasonTitle")}
         open={isReasonModalOpen}
         onClose={() => setIsReasonModalOpen(false)}
         actions={
@@ -920,22 +939,23 @@ export function IamRolePermissionScreen() {
               onClick={() => setIsReasonModalOpen(false)}
               disabled={syncPermissions.isPending}
             >
-              Hủy
+              {t("iam.role.cancel")}
             </ActionButton>
             <ActionButton
               kind="save"
               loading={syncPermissions.isPending}
               onClick={() => void savePermissions()}
             >
-              Lưu ma trận
+              {t("iam.role.saveMatrix")}
             </ActionButton>
           </>
         }
       >
         <Stack spacing={1.5}>
           <UiText variant="body">
-            Vui lòng nhập lý do thay đổi ma trận quyền của vai trò{" "}
-            <strong>{selectedRole?.role_name}</strong> để lưu vết audit.
+            {t("iam.role.reasonBodyA")}{" "}
+            <strong>{selectedRole?.role_name}</strong>{" "}
+            {t("iam.role.reasonBodyB")}
           </UiText>
           <UiTextField
             multiline
@@ -946,7 +966,7 @@ export function IamRolePermissionScreen() {
               setPermissionReason(event.target.value);
               setPermissionReasonError("");
             }}
-            placeholder="Vd: Bổ sung quyền theo yêu cầu nghiệp vụ phòng Kho"
+            placeholder={t("iam.role.reasonPlaceholder")}
             error={Boolean(permissionReasonError)}
             helperText={permissionReasonError || undefined}
           />

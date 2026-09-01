@@ -1,3 +1,4 @@
+import { useT } from "@/shared/i18n/useT";
 import { useEffect, useState } from "react";
 import {
   Box,
@@ -42,6 +43,7 @@ const TOOLBAR_TEXT_SX = {
 } as const;
 
 export function AuditLogsPage() {
+  const t = useT();
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
@@ -117,15 +119,15 @@ export function AuditLogsPage() {
   const exportSelected = () => {
     exportXlsx(
       [
-        "Thời gian",
-        "Hành động",
-        "Phân hệ",
-        "Đối tượng",
-        "Mã đối tượng",
-        "Người thực hiện",
-        "Địa chỉ IP",
-        "Kết quả",
-        "Mô tả",
+        t("audit.colTime"),
+        t("audit.colAction"),
+        t("audit.colModule"),
+        t("audit.colObject"),
+        t("audit.colObjectId"),
+        t("audit.colActor"),
+        t("audit.colIp"),
+        t("audit.colResult"),
+        t("audit.colDescription"),
       ],
       selectedLogs.map((log) => [
         formatDateTime(log.created_at),
@@ -133,7 +135,7 @@ export function AuditLogsPage() {
         AUDIT_MODULE_LABELS[log.module] || log.module,
         log.object_type,
         log.object_id ?? "",
-        log.actor?.email || log.actor?.display_name || "Hệ thống",
+        log.actor?.email || log.actor?.display_name || t("audit.system"),
         log.ip_address ?? "",
         log.result ?? "",
         log.description,
@@ -153,17 +155,17 @@ export function AuditLogsPage() {
       <div className="toolbar">
         <UiTextField
           value={searchInput}
-          placeholder="Tìm theo mô tả, đối tượng..."
+          placeholder={t("audit.searchPlaceholder")}
           slotProps={{
-            htmlInput: { "aria-label": "Tìm nhật ký hệ thống" },
+            htmlInput: { "aria-label": t("audit.searchAria") },
           }}
           onChange={(event) => setSearchInput(event.target.value)}
           sx={{ minWidth: 260 }}
         />
         <UiSelect
           value={module}
-          aria-label="Lọc phân hệ"
-          placeholder="Phân hệ: Tất cả"
+          aria-label={t("audit.moduleFilterAria")}
+          placeholder={t("audit.moduleFilterPlaceholder")}
           minWidth={190}
           onChange={(value) => {
             setModule(value as AuditModule | "");
@@ -175,8 +177,8 @@ export function AuditLogsPage() {
         />
         <UiSelect
           value={action}
-          aria-label="Lọc hành động"
-          placeholder="Hành động: Tất cả"
+          aria-label={t("audit.actionFilterAria")}
+          placeholder={t("audit.actionFilterPlaceholder")}
           minWidth={200}
           onChange={(value) => {
             setAction(value as AuditAction | "");
@@ -188,8 +190,8 @@ export function AuditLogsPage() {
         />
         <UiSelect
           value={userId}
-          aria-label="Lọc theo người thực hiện"
-          placeholder="Người dùng: Tất cả"
+          aria-label={t("audit.actorFilterAria")}
+          placeholder={t("audit.actorFilterPlaceholder")}
           minWidth={220}
           onChange={(value) => {
             setUserId(String(value));
@@ -200,10 +202,10 @@ export function AuditLogsPage() {
         <UiTextField
           type="datetime-local"
           value={dateFrom}
-          label="Từ thời điểm"
+          label={t("audit.fromLabel")}
           slotProps={{
             inputLabel: { shrink: true },
-            htmlInput: { "aria-label": "Lọc từ thời điểm" },
+            htmlInput: { "aria-label": t("audit.fromAria") },
           }}
           onChange={(event) => {
             setDateFrom(event.target.value);
@@ -214,10 +216,10 @@ export function AuditLogsPage() {
         <UiTextField
           type="datetime-local"
           value={dateTo}
-          label="Đến thời điểm"
+          label={t("audit.toLabel")}
           slotProps={{
             inputLabel: { shrink: true },
-            htmlInput: { "aria-label": "Lọc đến thời điểm" },
+            htmlInput: { "aria-label": t("audit.toAria") },
           }}
           onChange={(event) => {
             setDateTo(event.target.value);
@@ -227,7 +229,7 @@ export function AuditLogsPage() {
         />
         <UiSelect
           value={perPage}
-          aria-label="Số dòng mỗi trang"
+          aria-label={t("audit.pageSizeAria")}
           minWidth={100}
           onChange={(value) => {
             setPerPage(Number(value));
@@ -241,19 +243,19 @@ export function AuditLogsPage() {
         {/* Tổng số dòng đặt ngay trong toolbar (cạnh bộ lọc/số dòng mỗi trang)
          * để dễ thấy — thay vì chỉ hiện ở phần phân trang tít dưới bảng dài. */}
         <Box component="span" sx={TOOLBAR_TEXT_SX}>
-          Tổng {pagination.total} bản ghi
+          {t("audit.total", { count: pagination.total })}
         </Box>
         <div className="spacer" />
         {selection.selectedCount > 0 ? (
           <>
             <Box component="span" sx={TOOLBAR_TEXT_SX}>
-              Đã chọn {selection.selectedCount}
+              {t("audit.selected", { count: selection.selectedCount })}
             </Box>
             <ActionButton kind="clear" onClick={selection.clear}>
-              Bỏ chọn
+              {t("audit.clearSelection")}
             </ActionButton>
             <ActionButton kind="exportExcel" onClick={exportSelected}>
-              Xuất Excel ({selection.selectedCount})
+              {t("audit.exportExcel", { count: selection.selectedCount })}
             </ActionButton>
           </>
         ) : null}
@@ -263,7 +265,7 @@ export function AuditLogsPage() {
         <Box sx={{ mb: "14px" }}>
           <ApiErrorAlert
             error={error}
-            title="Không tải được nhật ký hệ thống"
+            title={t("audit.loadError")}
             onRetry={refetch}
           />
         </Box>

@@ -1,3 +1,4 @@
+import { useT } from "@/shared/i18n/useT";
 import { useState } from "react";
 import {
   Box,
@@ -43,6 +44,7 @@ const EMPTY_FORM: FormState = {
  * IAM-01.
  */
 export function DepartmentManagerModal({ open, onClose }: Props) {
+  const t = useT();
   const departmentsQuery = useIamDepartments({});
   const createMutation = useCreateIamDepartment();
   const updateMutation = useUpdateIamDepartment();
@@ -88,18 +90,15 @@ export function DepartmentManagerModal({ open, onClose }: Props) {
       onClose={onClose}
       maxWidth="sm"
       fullWidth
-      title="Quản lý phòng ban"
+      title={t("iam.department.title")}
       actions={
         <ActionButton kind="close" onClick={onClose}>
-          Đóng
+          {t("common.close")}
         </ActionButton>
       }
     >
       <Stack spacing={2}>
-        <UiAlert tone="info">
-          Tạo phòng ban tại đây rồi gán người dùng vào phòng ban khi tạo/sửa tài
-          khoản.
-        </UiAlert>
+        <UiAlert tone="info">{t("iam.department.hint")}</UiAlert>
 
         {/* Form tạo/sửa */}
         <Box
@@ -110,7 +109,7 @@ export function DepartmentManagerModal({ open, onClose }: Props) {
           }}
         >
           <UiTextField
-            label="Mã phòng ban"
+            label={t("iam.department.fieldCode")}
             value={form.department_code}
             onChange={(event) =>
               setForm((prev) => ({
@@ -121,7 +120,7 @@ export function DepartmentManagerModal({ open, onClose }: Props) {
             placeholder="VD: HN-DEPT-KHO"
           />
           <UiTextField
-            label="Tên phòng ban"
+            label={t("iam.department.fieldName")}
             value={form.department_name}
             onChange={(event) =>
               setForm((prev) => ({
@@ -129,11 +128,11 @@ export function DepartmentManagerModal({ open, onClose }: Props) {
                 department_name: event.target.value,
               }))
             }
-            placeholder="VD: Phòng Kho vận"
+            placeholder={t("iam.department.namePlaceholder")}
           />
           <UiTextField
             select
-            label="Trạng thái"
+            label={t("iam.department.fieldStatus")}
             value={form.status}
             onChange={(event) =>
               setForm((prev) => ({
@@ -142,16 +141,20 @@ export function DepartmentManagerModal({ open, onClose }: Props) {
               }))
             }
           >
-            <MenuItem value="ACTIVE">Đang hoạt động</MenuItem>
-            <MenuItem value="INACTIVE">Ngừng hoạt động</MenuItem>
+            <MenuItem value="ACTIVE">
+              {t("iam.department.statusActive")}
+            </MenuItem>
+            <MenuItem value="INACTIVE">
+              {t("iam.department.statusInactive")}
+            </MenuItem>
           </UiTextField>
           <UiTextField
-            label="Mô tả"
+            label={t("iam.department.fieldDescription")}
             value={form.description}
             onChange={(event) =>
               setForm((prev) => ({ ...prev, description: event.target.value }))
             }
-            placeholder="Tùy chọn"
+            placeholder={t("iam.department.descriptionPlaceholder")}
           />
         </Box>
         <Stack direction="row" spacing={1}>
@@ -160,11 +163,13 @@ export function DepartmentManagerModal({ open, onClose }: Props) {
             onClick={submit}
             disabled={!canSave || saving}
           >
-            {isEditing ? "Lưu thay đổi" : "Thêm phòng ban"}
+            {isEditing
+              ? t("iam.department.saveEdit")
+              : t("iam.department.saveCreate")}
           </ActionButton>
           {isEditing ? (
             <ActionButton kind="reset" onClick={resetForm} disabled={saving}>
-              Hủy sửa
+              {t("iam.department.cancelEdit")}
             </ActionButton>
           ) : null}
         </Stack>
@@ -172,10 +177,12 @@ export function DepartmentManagerModal({ open, onClose }: Props) {
         {/* Danh sách phòng ban */}
         <Box>
           {departmentsQuery.isPending ? (
-            <Box sx={{ py: 2, textAlign: "center" }}>Đang tải…</Box>
+            <Box sx={{ py: 2, textAlign: "center" }}>
+              {t("iam.department.loading")}
+            </Box>
           ) : departments.length === 0 ? (
             <Box sx={{ py: 2, textAlign: "center" }}>
-              Chưa có phòng ban nào.
+              {t("iam.department.empty")}
             </Box>
           ) : (
             <Stack spacing={1}>
@@ -212,12 +219,16 @@ export function DepartmentManagerModal({ open, onClose }: Props) {
                         department.status === "ACTIVE" ? "success" : "neutral"
                       }
                       label={
-                        department.status === "ACTIVE" ? "Hoạt động" : "Ngừng"
+                        department.status === "ACTIVE"
+                          ? t("iam.department.badgeActive")
+                          : t("iam.department.badgeInactive")
                       }
                     />
                     <ActionIconButton
                       kind="edit"
-                      aria-label={`Sửa ${department.department_name}`}
+                      aria-label={t("iam.department.editAria", {
+                        name: department.department_name,
+                      })}
                       onClick={() => startEdit(department)}
                     />
                   </Stack>

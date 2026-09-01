@@ -1,3 +1,4 @@
+import { tStatic } from "@/shared/i18n/useT";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -124,7 +125,7 @@ export function useCreateIamRole() {
   return useMutation({
     mutationFn: (payload: IamRolePayload) => createIamRole(payload),
     onSuccess: () => {
-      toast.success("Đã tạo vai trò");
+      toast.success(tStatic("iam.toast.roleCreated"));
       void invalidateIam(queryClient);
     },
     onError: (error) => toast.error(getMutationErrorMessage(error)),
@@ -142,7 +143,7 @@ export function useUpdateIamRole() {
       payload: IamRoleUpdatePayload;
     }) => updateIamRole(roleId, payload),
     onSuccess: () => {
-      toast.success("Đã cập nhật vai trò");
+      toast.success(tStatic("iam.toast.roleUpdated"));
       void invalidateIam(queryClient);
     },
     onError: (error) => toast.error(getMutationErrorMessage(error)),
@@ -154,7 +155,7 @@ export function useDeleteIamRole() {
   return useMutation({
     mutationFn: (roleId: string) => deleteIamRole(roleId),
     onSuccess: () => {
-      toast.success("Đã xoá vai trò");
+      toast.success(tStatic("iam.toast.roleDeleted"));
       void invalidateIam(queryClient);
     },
     onError: (error) => toast.error(getMutationErrorMessage(error)),
@@ -166,7 +167,7 @@ export function useCreateIamDepartment() {
   return useMutation({
     mutationFn: (payload: IamDepartmentPayload) => createIamDepartment(payload),
     onSuccess: () => {
-      toast.success("Đã tạo phòng ban");
+      toast.success(tStatic("iam.toast.departmentCreated"));
       void invalidateIam(queryClient);
     },
     onError: (error) => toast.error(getMutationErrorMessage(error)),
@@ -184,7 +185,7 @@ export function useUpdateIamDepartment() {
       payload: Partial<IamDepartmentPayload>;
     }) => updateIamDepartment(departmentId, payload),
     onSuccess: () => {
-      toast.success("Đã cập nhật phòng ban");
+      toast.success(tStatic("iam.toast.departmentUpdated"));
       void invalidateIam(queryClient);
     },
     onError: (error) => toast.error(getMutationErrorMessage(error)),
@@ -208,7 +209,7 @@ export function useSyncIamRolePermissions() {
         reason,
       }),
     onSuccess: () => {
-      toast.success("Đã áp dụng ma trận quyền");
+      toast.success(tStatic("iam.toast.matrixApplied"));
       void invalidateIam(queryClient);
     },
     onError: (error) => toast.error(getMutationErrorMessage(error)),
@@ -231,7 +232,7 @@ export function useCreateIamUser() {
     }) =>
       createIamUserWithRole(payload, assignment, reason, extraRoleIds ?? []),
     onSuccess: () => {
-      toast.success("Đã thêm người dùng");
+      toast.success(tStatic("iam.toast.userCreated"));
       void invalidateIam(queryClient);
     },
     onError: (error) => {
@@ -270,7 +271,7 @@ export function useUpdateIamUser() {
         currentExtraRoleIds ?? [],
       ),
     onSuccess: () => {
-      toast.success("Đã cập nhật người dùng");
+      toast.success(tStatic("iam.toast.userUpdated"));
       void invalidateIam(queryClient);
     },
     onError: (error) => {
@@ -299,7 +300,7 @@ export function useGrantIamUserPermission() {
       payload: IamGrantUserPermissionPayload;
     }) => grantIamUserPermission(userId, payload),
     onSuccess: () => {
-      toast.success("Đã cấp quyền riêng cho người dùng");
+      toast.success(tStatic("iam.toast.overrideGranted"));
       void invalidateIam(queryClient);
     },
     onError: (error) => toast.error(getMutationErrorMessage(error)),
@@ -319,7 +320,7 @@ export function useRevokeIamUserPermission() {
       reason: string;
     }) => revokeIamUserPermission(userId, permissionId, { reason }),
     onSuccess: () => {
-      toast.success("Đã thu hồi quyền cấp riêng");
+      toast.success(tStatic("iam.toast.overrideRevoked"));
       void invalidateIam(queryClient);
     },
     onError: (error) => toast.error(getMutationErrorMessage(error)),
