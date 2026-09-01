@@ -42,6 +42,7 @@ import {
   SOURCE_DOCUMENT_TYPE_LABELS,
   businessLabel,
 } from "@/shared/constants/business-labels";
+import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import {
   useInventoryBalances,
   useStockMovements,
@@ -112,13 +113,13 @@ function CodeText({ children }: { children: ReactNode }) {
   );
 }
 
-const INVENTORY_TAB_ITEMS: UiTabItem[] = [
+const inventoryTabItems = (t: TranslateFn): UiTabItem[] => [
   {
     key: "balance",
     label: (
       <TabLabel
         icon={<AppstoreOutlined style={{ fontSize: 15 }} />}
-        text="Tồn kho hiện tại"
+        text={t("inventory.tab.balances")}
       />
     ),
   },
@@ -127,7 +128,7 @@ const INVENTORY_TAB_ITEMS: UiTabItem[] = [
     label: (
       <TabLabel
         icon={<SwapOutlined style={{ fontSize: 15 }} />}
-        text="Lịch sử biến động"
+        text={t("inventory.tab.movements")}
       />
     ),
   },
@@ -139,6 +140,7 @@ const INVENTORY_TAB_ITEMS: UiTabItem[] = [
  * đồng bộ pattern luồng 02/03/04.
  */
 export default function InventoryPage() {
+  const t = useT();
   const canTrace = useCanAny([P.INVENTORY_TRACE]);
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -271,21 +273,25 @@ export default function InventoryPage() {
     },
     {
       key: "name",
-      header: "Tên hàng",
+      header: t("inventory.balance.colName"),
       width: 200,
       sortAccessor: (row) => row.name || "",
       render: (row) => (
         <Stack>
           <strong>{row.name || EMPTY_TEXT}</strong>
           <UiText variant="secondary">
-            {businessLabel(SKU_TYPE_LABELS, row.type, "Loại khác")}
+            {businessLabel(
+              SKU_TYPE_LABELS,
+              row.type,
+              t("inventory.fallback.skuType"),
+            )}
           </UiText>
         </Stack>
       ),
     },
     {
       key: "stockStatus",
-      header: "Trạng thái tồn",
+      header: t("inventory.balance.colStockStatus"),
       width: 170,
       sortType: "value",
       sortAccessor: (row) => row.stockStatus,
@@ -295,14 +301,14 @@ export default function InventoryPage() {
           label={businessLabel(
             INVENTORY_STOCK_STATUS_LABELS,
             row.stockStatus,
-            "Trạng thái khác",
+            t("inventory.fallback.status"),
           )}
         />
       ),
     },
     {
       key: "available",
-      header: "Khả dụng",
+      header: t("inventory.balance.colAvailable"),
       width: 110,
       align: "right",
       sortType: "value",
@@ -311,7 +317,7 @@ export default function InventoryPage() {
     },
     {
       key: "onHand",
-      header: "Tồn hiện có",
+      header: t("inventory.balance.colOnHand"),
       width: 120,
       align: "right",
       sortType: "value",
@@ -324,7 +330,7 @@ export default function InventoryPage() {
       // của phép đối soát. Trước đây chỉ pass-through trong service, nay hiện
       // luôn cạnh "Tồn hiện có" để người dùng thấy cả 2 số đang so với nhau.
       key: "ledgerTotal",
-      header: "Tồn theo sổ cái",
+      header: t("inventory.balance.colLedger"),
       width: 130,
       align: "right",
       sortType: "value",
@@ -336,7 +342,7 @@ export default function InventoryPage() {
       // Chênh lệch có dấu = tồn hiện có - sổ cái. Đây là con số đứng sau tag
       // "Đối soát" nên tô màu theo hướng lệch, 0 để mờ cho đỡ nhiễu.
       key: "variance",
-      header: "Chênh lệch",
+      header: t("inventory.balance.colVariance"),
       width: 120,
       align: "right",
       sortType: "value",
@@ -376,7 +382,7 @@ export default function InventoryPage() {
     },
     {
       key: "location",
-      header: "Vị trí gợi ý",
+      header: t("inventory.balance.colSuggestedLocation"),
       width: 160,
       sortAccessor: (row) => row.containerCode || row.trayCode || "",
       render: (row) => {
@@ -385,11 +391,17 @@ export default function InventoryPage() {
         // container_code của TRAY cha, chỉ có sau khi Putaway xếp hộp vào khay).
         // Vị trí mô tả rời (location_hint) chi tiết hơn — xem ở "Xem chi tiết".
         const parts = [
-          row.containerCode ? `Hộp ${row.containerCode}` : null,
+          row.containerCode
+            ? t("inventory.balance.boxPrefix", { code: row.containerCode })
+            : null,
           row.trayCode ? `Khay ${row.trayCode}` : null,
         ].filter((part): part is string => Boolean(part));
         if (parts.length === 0) {
-          return <UiText variant="secondary">Chưa có vị trí gợi ý</UiText>;
+          return (
+            <UiText variant="secondary">
+              {t("inventory.balance.noSuggestedLocation")}
+            </UiText>
+          );
         }
         const text = parts.join(" · ");
         // Độ dài container/location thất thường (có khi rất dài) — ellipsis +
@@ -414,7 +426,7 @@ export default function InventoryPage() {
     },
     {
       key: "reconcile",
-      header: "Đối soát",
+      header: t("inventory.balance.colReconcile"),
       width: 140,
       sortType: "value",
       sortAccessor: (row) => row.reconcile,
@@ -423,8 +435,8 @@ export default function InventoryPage() {
           title={
             row.reconcileNote ||
             (row.reconcile === "MATCH" || row.reconcile === "PASS"
-              ? "Sổ cái và số tồn hiện tại khớp nhau"
-              : "Sổ cái và số tồn hiện tại đang có chênh lệch")
+              ? t("inventory.balance.reconcileMatch")
+              : t("inventory.balance.reconcileMismatch"))
           }
         >
           <span>
@@ -433,7 +445,7 @@ export default function InventoryPage() {
               label={businessLabel(
                 RECONCILE_STATUS_LABELS,
                 row.reconcile,
-                "Chưa đối soát",
+                t("inventory.fallback.notReconciled"),
               )}
             />
           </span>
@@ -457,7 +469,7 @@ export default function InventoryPage() {
     },
     {
       key: "time",
-      header: "Thời gian",
+      header: t("inventory.movement.colTime"),
       width: 150,
       sortType: "value",
       sortAccessor: (row) => row.time || "",
@@ -465,7 +477,7 @@ export default function InventoryPage() {
     },
     {
       key: "type",
-      header: "Loại biến động",
+      header: t("inventory.movement.colType"),
       width: 170,
       sortType: "value",
       sortAccessor: (row) => row.type,
@@ -476,14 +488,14 @@ export default function InventoryPage() {
             label={businessLabel(
               MOVEMENT_TYPE_LABELS,
               row.type,
-              "Biến động khác",
+              t("inventory.fallback.movementType"),
             )}
           />
           <UiText variant="secondary">
             {businessLabel(
               MOVEMENT_STATUS_LABELS,
               row.status,
-              "Trạng thái khác",
+              t("inventory.fallback.status"),
             )}
           </UiText>
         </Stack>
@@ -498,7 +510,7 @@ export default function InventoryPage() {
     },
     {
       key: "qty",
-      header: "Số lượng thay đổi",
+      header: t("inventory.movement.colQtyChange"),
       width: 140,
       align: "right",
       sortType: "value",
@@ -523,7 +535,7 @@ export default function InventoryPage() {
     },
     {
       key: "source",
-      header: "Chứng từ nguồn",
+      header: t("inventory.movement.colSourceDocument"),
       width: 180,
       sortAccessor: (row) => row.source || "",
       render: (row) => (
@@ -533,7 +545,7 @@ export default function InventoryPage() {
             {businessLabel(
               SOURCE_DOCUMENT_TYPE_LABELS,
               row.sourceType,
-              "Nguồn khác",
+              t("inventory.fallback.source"),
             )}
           </UiText>
         </Stack>
@@ -546,7 +558,7 @@ export default function InventoryPage() {
       <div className="inventory-page hn-mvp-source-screen">
         <Box sx={{ marginTop: "12px" }}>
           <UiTabs
-            items={INVENTORY_TAB_ITEMS}
+            items={inventoryTabItems(t)}
             value={activeTab}
             onChange={(key) => setActiveTab(key)}
           />
@@ -557,19 +569,29 @@ export default function InventoryPage() {
             <div className="toolbar">
               <UiTextField
                 value={searchInput}
-                placeholder="SKU, tên hàng, kho..."
-                slotProps={{ htmlInput: { "aria-label": "Tìm tồn kho" } }}
+                placeholder={t("inventory.balance.searchPlaceholder")}
+                slotProps={{
+                  htmlInput: {
+                    "aria-label": t("inventory.balance.searchAria"),
+                  },
+                }}
                 onChange={(e) => setSearchInput(e.target.value)}
                 sx={{ minWidth: 220 }}
               />
               <UiSelect
                 value={skuType}
-                aria-label="Lọc loại hàng"
-                placeholder="Loại: Tất cả"
+                aria-label={t("inventory.balance.typeFilterAria")}
+                placeholder={t("inventory.balance.typeFilterPlaceholder")}
                 minWidth={150}
                 options={[
-                  { value: "PRODUCT", label: "Sản phẩm" },
-                  { value: "COMPONENT", label: "Linh kiện" },
+                  {
+                    value: "PRODUCT",
+                    label: t("inventory.balance.typeProduct"),
+                  },
+                  {
+                    value: "COMPONENT",
+                    label: t("inventory.balance.typeComponent"),
+                  },
                 ]}
                 onChange={(value) => {
                   setSkuType(value as "PRODUCT" | "COMPONENT" | "");
@@ -578,14 +600,26 @@ export default function InventoryPage() {
               />
               <UiSelect
                 value={stockStatus}
-                aria-label="Lọc trạng thái tồn"
-                placeholder="Trạng thái tồn: Tất cả"
+                aria-label={t("inventory.balance.statusFilterAria")}
+                placeholder={t("inventory.balance.statusFilterPlaceholder")}
                 minWidth={190}
                 options={[
-                  { value: "AVAILABLE", label: "Khả dụng" },
-                  { value: "NON_SELLABLE", label: "Không thể bán/xuất" },
-                  { value: "DEFECTIVE", label: "Hàng lỗi" },
-                  { value: "QUARANTINE", label: "Chờ kiểm tra" },
+                  {
+                    value: "AVAILABLE",
+                    label: t("inventory.balance.statusAvailable"),
+                  },
+                  {
+                    value: "NON_SELLABLE",
+                    label: t("inventory.balance.statusNonSellable"),
+                  },
+                  {
+                    value: "DEFECTIVE",
+                    label: t("inventory.balance.statusDefective"),
+                  },
+                  {
+                    value: "QUARANTINE",
+                    label: t("inventory.balance.statusQuarantine"),
+                  },
                 ]}
                 onChange={(value) => {
                   setStockStatus(value as InventoryStockStatus | "");
@@ -594,7 +628,7 @@ export default function InventoryPage() {
               />
               <UiSelect
                 value={balancePerPage}
-                aria-label="Số dòng mỗi trang"
+                aria-label={t("inventory.balance.pageSizeAria")}
                 minWidth={100}
                 options={pageSizeOptions(balancePerPage).map((size) => ({
                   value: size,
@@ -614,7 +648,7 @@ export default function InventoryPage() {
                   kind="trace"
                   onClick={() => setTraceMovementId("__lookup__")}
                 >
-                  Truy vết mã
+                  {t("inventory.balance.traceCode")}
                 </ActionButton>
               ) : null}
             </div>
@@ -623,7 +657,7 @@ export default function InventoryPage() {
               <Box sx={{ mb: "14px" }}>
                 <ApiErrorAlert
                   error={balanceQuery.error}
-                  title="Không thể tải tồn kho hiện tại"
+                  title={t("inventory.balance.loadError")}
                   onRetry={() => balanceQuery.refetch()}
                 />
               </Box>
@@ -637,11 +671,13 @@ export default function InventoryPage() {
               columns={balanceColumns}
               rows={balances}
               rowSelection={balanceSelection}
-              selectionLabel={(row) => `Chọn dòng tồn kho SKU ${row.sku}`}
+              selectionLabel={(row) =>
+                t("inventory.balance.selectionLabel", { sku: row.sku })
+              }
               loading={balanceQuery.isLoading || balanceQuery.isFetching}
               emptyText={tableEmptyText(
                 balanceQuery.isError ? balanceQuery.error : null,
-                "Không có tồn kho theo bộ lọc hiện tại",
+                t("inventory.balance.empty"),
               )}
               onRowClick={(row) => setBalanceDetailRow(row)}
               renderRowActions={(row) => (
@@ -653,7 +689,7 @@ export default function InventoryPage() {
                     setBalanceDetailRow(row);
                   }}
                 >
-                  Mở
+                  {t("inventory.balance.open")}
                 </ActionButton>
               )}
             />
@@ -670,7 +706,9 @@ export default function InventoryPage() {
               {/* Giữ nguyên câu chữ tổng của antd showTotal cũ → UiText riêng,
                 tắt showTotal mặc định ("Tổng {total} bản ghi") của UiPagination. */}
               <UiText variant="secondary">
-                Tổng {formatQuantity(balancePagination.total)} dòng tồn
+                {t("inventory.balance.total", {
+                  count: formatQuantity(balancePagination.total),
+                })}
                 kho
               </UiText>
               <UiPagination
@@ -687,9 +725,11 @@ export default function InventoryPage() {
             <div className="toolbar">
               <UiTextField
                 value={movementSearch}
-                placeholder="Mã biến động, chứng từ, SKU..."
+                placeholder={t("inventory.movement.searchPlaceholder")}
                 slotProps={{
-                  htmlInput: { "aria-label": "Tìm biến động tồn kho" },
+                  htmlInput: {
+                    "aria-label": t("inventory.movement.searchAria"),
+                  },
                 }}
                 onChange={(e) => {
                   setMovementSearch(e.target.value);
@@ -699,17 +739,23 @@ export default function InventoryPage() {
               />
               <UiSelect
                 value={movementType}
-                aria-label="Lọc loại biến động"
-                placeholder="Loại: Tất cả"
+                aria-label={t("inventory.movement.typeFilterAria")}
+                placeholder={t("inventory.balance.typeFilterPlaceholder")}
                 minWidth={190}
                 options={[
-                  { value: "RECEIPT", label: "Nhập kho" },
-                  { value: "ISSUE", label: "Xuất kho" },
+                  {
+                    value: "RECEIPT",
+                    label: t("inventory.movement.typeReceipt"),
+                  },
+                  { value: "ISSUE", label: t("inventory.movement.typeIssue") },
                   {
                     value: "COMPONENT_ISSUE",
-                    label: "Xuất linh kiện bảo hành",
+                    label: t("inventory.movement.typeComponentIssue"),
                   },
-                  { value: "REVERSAL", label: "Điều chỉnh tồn kho" },
+                  {
+                    value: "REVERSAL",
+                    label: t("inventory.movement.typeReversal"),
+                  },
                 ]}
                 onChange={(value) => {
                   setMovementType(value);
@@ -718,7 +764,7 @@ export default function InventoryPage() {
               />
               <UiSelect
                 value={movementPerPage}
-                aria-label="Số dòng mỗi trang"
+                aria-label={t("inventory.balance.pageSizeAria")}
                 minWidth={100}
                 options={pageSizeOptions(movementPerPage).map((size) => ({
                   value: size,
@@ -730,8 +776,9 @@ export default function InventoryPage() {
                 }}
               />
               <UiText variant="secondary">
-                Tổng {formatQuantity(movementPagination.total)} biến
-                động
+                {t("inventory.movement.total", {
+                  count: formatQuantity(movementPagination.total),
+                })}
               </UiText>
             </div>
 
@@ -739,7 +786,7 @@ export default function InventoryPage() {
               <Box sx={{ mb: "14px" }}>
                 <ApiErrorAlert
                   error={movementQuery.error}
-                  title="Không thể tải lịch sử biến động"
+                  title={t("inventory.movement.loadError")}
                   onRetry={() => movementQuery.refetch()}
                 />
               </Box>
@@ -754,19 +801,21 @@ export default function InventoryPage() {
               rows={movements}
               rowSelection={movementSelection}
               selectionLabel={(row) =>
-                `Chọn biến động ${row.movementId || "chưa có mã"}`
+                t("inventory.movement.selectionLabel", {
+                  code: row.movementId || t("inventory.movement.noCode"),
+                })
               }
               loading={movementQuery.isLoading || movementQuery.isFetching}
               emptyText={tableEmptyText(
                 movementQuery.isError ? movementQuery.error : null,
-                "Không có biến động theo bộ lọc hiện tại",
+                t("inventory.movement.empty"),
               )}
               renderRowActions={(row) => (
                 <Tooltip
                   title={
                     canTrace
-                      ? "Truy vết chứng từ nguồn"
-                      : "Tài khoản chưa có quyền truy vết tồn kho"
+                      ? t("inventory.movement.traceTooltip")
+                      : t("inventory.movement.traceNoPermission")
                   }
                 >
                   {/* span trung gian để tooltip vẫn hiện khi nút bị disabled */}
@@ -777,7 +826,7 @@ export default function InventoryPage() {
                       disabled={!canTrace || !row.id}
                       onClick={() => handleOpenTrace(String(row.id))}
                     >
-                      Truy vết
+                      {t("inventory.movement.trace")}
                     </ActionButton>
                   </span>
                 </Tooltip>
@@ -796,8 +845,9 @@ export default function InventoryPage() {
               {/* Giữ nguyên câu chữ tổng của antd showTotal cũ → UiText riêng,
                 tắt showTotal mặc định ("Tổng {total} bản ghi") của UiPagination. */}
               <UiText variant="secondary">
-                Tổng {formatQuantity(movementPagination.total)} biến
-                động
+                {t("inventory.movement.total", {
+                  count: formatQuantity(movementPagination.total),
+                })}
               </UiText>
               <UiPagination
                 page={movementPagination.current}

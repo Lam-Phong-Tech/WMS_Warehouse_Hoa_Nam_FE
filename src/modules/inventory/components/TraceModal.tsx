@@ -43,6 +43,8 @@ import {
   SOURCE_DOCUMENT_TYPE_LABELS,
   businessLabel,
 } from "@/shared/constants/business-labels";
+import { useT, type TranslateFn } from "@/shared/i18n/useT";
+import type { MessageKey } from "@/shared/i18n/messages";
 import type { CorrectionChainNode } from "../services/inventoryService";
 import {
   useStockMovement,
@@ -64,11 +66,17 @@ type RawRecord = Record<string, unknown>;
 
 type KeyedRecord = RawRecord & { __rowKey: string };
 
-const CARRIER_LABELS: Record<string, string> = {
-  QR: "QR",
-  BARCODE: "Mã vạch",
-  RFID: "RFID",
+/** QR/RFID là từ viết tắt kỹ thuật, giữ nguyên; chỉ BARCODE có bản dịch. */
+const CARRIER_LABEL_KEYS: Record<string, MessageKey | undefined> = {
+  BARCODE: "inventory.trace.barcode",
 };
+const CARRIER_LITERALS: Record<string, string> = { QR: "QR", RFID: "RFID" };
+
+function carrierLabel(carrier: string, t: TranslateFn): string {
+  const key = CARRIER_LABEL_KEYS[carrier];
+  if (key) return t(key);
+  return CARRIER_LITERALS[carrier] ?? t("inventory.fallback.codeType");
+}
 
 /** Màu antd Tag còn dùng trong WARRANTY_STATUS_COLORS → tone UiStatusBadge. */
 const TAG_COLOR_TONES: Record<string, UiStatusTone> = {
@@ -102,9 +110,9 @@ function nested(
     : undefined;
 }
 
-function statusLabel(value: unknown): string {
+function statusLabel(value: unknown, t: TranslateFn): string {
   const raw = text(value, "");
-  if (!raw) return "Chưa xác định";
+  if (!raw) return t("inventory.trace.undetermined");
   return (
     INBOUND_STATUS_LABELS[raw as keyof typeof INBOUND_STATUS_LABELS] ??
     OUTBOUND_STATUS_LABELS[raw as keyof typeof OUTBOUND_STATUS_LABELS] ??
@@ -112,7 +120,7 @@ function statusLabel(value: unknown): string {
     MASTER_STATUS_LABELS[raw as keyof typeof MASTER_STATUS_LABELS] ??
     PUTAWAY_STATUS_LABELS[raw as keyof typeof PUTAWAY_STATUS_LABELS] ??
     SCAN_RESULT_LABELS[raw as keyof typeof SCAN_RESULT_LABELS] ??
-    "Trạng thái khác"
+    t("inventory.fallback.status")
   );
 }
 
@@ -150,6 +158,7 @@ function CodeText({
 
 /** Thay AntTypography.Text `code copyable`: CodeText + nút sao chép. */
 function CopyableCode({ value }: { value: string }) {
+  const t = useT();
   return (
     <Stack
       direction="row"
@@ -159,7 +168,7 @@ function CopyableCode({ value }: { value: string }) {
       <CodeText>{value}</CodeText>
       <ActionIconButton
         kind="copy"
-        label="Sao chép"
+        label={t("inventory.trace.copy")}
         onClick={() => void navigator.clipboard?.writeText(value)}
       />
     </Stack>
@@ -231,16 +240,18 @@ function SectionLabel({ children }: { children: ReactNode }) {
   );
 }
 
-const CONTAINER_ITEM_COLUMNS: ResponsiveTableColumn<KeyedRecord>[] = [
+const containerItemColumns = (
+  t: TranslateFn,
+): ResponsiveTableColumn<KeyedRecord>[] => [
   {
     key: "container",
-    header: "Vật chứa",
+    header: t("inventory.trace.colContainer"),
     width: 160,
     render: (row) => text(row.container_code),
   },
   {
     key: "type",
-    header: "Loại",
+    header: t("inventory.trace.colType"),
     width: 120,
     render: (row) => (
       <UiStatusBadge
@@ -248,38 +259,40 @@ const CONTAINER_ITEM_COLUMNS: ResponsiveTableColumn<KeyedRecord>[] = [
         label={businessLabel(
           CONTAINER_TYPE_LABELS,
           text(row.container_type, ""),
-          "Vật chứa khác",
+          t("inventory.fallback.container"),
         )}
       />
     ),
   },
   {
     key: "quantity",
-    header: "Số lượng",
+    header: t("inventory.trace.colQty"),
     width: 100,
     align: "right",
     render: (row) => formatQuantity(Number(row.quantity ?? 0)),
   },
   {
     key: "status",
-    header: "Trạng thái",
+    header: t("inventory.trace.colStatus"),
     width: 140,
     render: (row) => (
-      <UiStatusBadge tone="neutral" label={statusLabel(row.status)} />
+      <UiStatusBadge tone="neutral" label={statusLabel(row.status, t)} />
     ),
   },
 ];
 
-const MOVEMENT_COLUMNS: ResponsiveTableColumn<RawRecord>[] = [
+const movementColumns = (
+  t: TranslateFn,
+): ResponsiveTableColumn<RawRecord>[] => [
   {
     key: "movement_no",
-    header: "Mã biến động",
+    header: t("inventory.trace.colMovementCode"),
     width: 150,
     render: (row) => <CodeText>{text(row.movement_no)}</CodeText>,
   },
   {
     key: "type",
-    header: "Loại",
+    header: t("inventory.trace.colType"),
     width: 150,
     render: (row) => (
       <UiStatusBadge
@@ -287,7 +300,7 @@ const MOVEMENT_COLUMNS: ResponsiveTableColumn<RawRecord>[] = [
         label={businessLabel(
           MOVEMENT_TYPE_LABELS,
           text(row.movement_type, ""),
-          "Biến động khác",
+          t("inventory.fallback.movementType"),
         )}
       />
     ),
@@ -300,7 +313,7 @@ const MOVEMENT_COLUMNS: ResponsiveTableColumn<RawRecord>[] = [
   },
   {
     key: "quantity",
-    header: "Số lượng",
+    header: t("inventory.trace.colQty"),
     width: 100,
     align: "right",
     render: (row) => {
@@ -321,20 +334,22 @@ const MOVEMENT_COLUMNS: ResponsiveTableColumn<RawRecord>[] = [
   },
   {
     key: "doc",
-    header: "Chứng từ",
+    header: t("inventory.trace.colDocument"),
     width: 130,
     render: (row) => <CodeText>{text(row.doc_no)}</CodeText>,
   },
   {
     key: "time",
-    header: "Thời gian",
+    header: t("inventory.trace.colTime"),
     width: 150,
     render: (row) =>
       formatDateTime(text(row.occurred_at ?? row.created_at, "") || null),
   },
 ];
 
-const TRACE_LINE_COLUMNS: ResponsiveTableColumn<KeyedRecord>[] = [
+const traceLineColumns = (
+  t: TranslateFn,
+): ResponsiveTableColumn<KeyedRecord>[] => [
   {
     key: "sku",
     header: "SKU",
@@ -353,7 +368,7 @@ const TRACE_LINE_COLUMNS: ResponsiveTableColumn<KeyedRecord>[] = [
   },
   {
     key: "name",
-    header: "Tên",
+    header: t("inventory.trace.colName"),
     width: 180,
     render: (row) => {
       const product = nested(row, "product");
@@ -368,7 +383,7 @@ const TRACE_LINE_COLUMNS: ResponsiveTableColumn<KeyedRecord>[] = [
   },
   {
     key: "quantity",
-    header: "Số lượng",
+    header: t("inventory.trace.colQty"),
     width: 100,
     align: "right",
     render: (row) =>
@@ -376,32 +391,38 @@ const TRACE_LINE_COLUMNS: ResponsiveTableColumn<KeyedRecord>[] = [
   },
   {
     key: "status",
-    header: "Trạng thái",
+    header: t("inventory.trace.colStatus"),
     width: 130,
     render: (row) => (
       <UiStatusBadge
         tone="neutral"
-        label={statusLabel(row.status ?? row.line_status)}
+        label={statusLabel(row.status ?? row.line_status, t)}
       />
     ),
   },
 ];
 
-const CHAIN_COLUMNS: ResponsiveTableColumn<CorrectionChainNode>[] = [
+const chainColumns = (
+  t: TranslateFn,
+): ResponsiveTableColumn<CorrectionChainNode>[] => [
   {
     key: "role",
-    header: "Vai trò",
+    header: t("inventory.trace.colRole"),
     width: 140,
     render: (row) => (
       <UiStatusBadge
         tone={row.role === "ORIGINAL" ? "info" : "error"}
-        label={businessLabel(MOVEMENT_ROLE_LABELS, row.role, "Vai trò khác")}
+        label={businessLabel(
+          MOVEMENT_ROLE_LABELS,
+          row.role,
+          t("inventory.fallback.movementRole"),
+        )}
       />
     ),
   },
   {
     key: "movement_no",
-    header: "Mã biến động",
+    header: t("inventory.trace.colMovementCode"),
     width: 170,
     render: (row) =>
       row.movement_no ? (
@@ -419,14 +440,18 @@ const CHAIN_COLUMNS: ResponsiveTableColumn<CorrectionChainNode>[] = [
   },
   {
     key: "type",
-    header: "Loại",
+    header: t("inventory.trace.colType"),
     width: 150,
     render: (row) =>
-      businessLabel(MOVEMENT_TYPE_LABELS, row.movement_type, "Biến động khác"),
+      businessLabel(
+        MOVEMENT_TYPE_LABELS,
+        row.movement_type,
+        t("inventory.fallback.movementType"),
+      ),
   },
   {
     key: "qty_delta",
-    header: "Thay đổi tồn",
+    header: t("inventory.trace.colQtyChange"),
     width: 110,
     align: "right",
     render: (row) => (
@@ -446,19 +471,19 @@ const CHAIN_COLUMNS: ResponsiveTableColumn<CorrectionChainNode>[] = [
   },
   {
     key: "occurred_at",
-    header: "Thời điểm",
+    header: t("inventory.trace.colMoment"),
     width: 160,
     render: (row) => formatDateTime(text(row.occurred_at, "") || null),
   },
   {
     key: "actor",
-    header: "Người thực hiện",
+    header: t("inventory.trace.colPerformedBy"),
     width: 150,
     render: (row) => text(row.actor),
   },
   {
     key: "reason",
-    header: "Lý do",
+    header: t("inventory.trace.colReason"),
     render: (row) =>
       text(row.reason_text ?? row.reason_code ?? row.reversal_document_no),
   },
@@ -466,6 +491,7 @@ const CHAIN_COLUMNS: ResponsiveTableColumn<CorrectionChainNode>[] = [
 
 /** TRACE-01 · Truy vết mã vật lý, biến động tồn và chứng từ nguồn. */
 export function TraceModal({ movementId, onClose }: Props) {
+  const t = useT();
   const dialog = useDialogExit(onClose);
   const [lookupCode, setLookupCode] = useState("");
   const [submittedCode, setSubmittedCode] = useState<string | null>(null);
@@ -515,7 +541,7 @@ export function TraceModal({ movementId, onClose }: Props) {
     } catch (error) {
       setSubmittedCode(null);
       setScanResolveError(
-        getApiErrorMessage(error, "Không nhận diện được mã đã quét."),
+        getApiErrorMessage(error, t("inventory.trace.scanError")),
       );
     }
   };
@@ -533,10 +559,10 @@ export function TraceModal({ movementId, onClose }: Props) {
       fullWidth
       title={
         <Box sx={{ pr: 6 }}>
-          Truy vết chứng từ nguồn
+          {t("inventory.trace.title")}
           <ActionIconButton
             kind="close"
-            label="Đóng"
+            label={t("common.close")}
             onClick={dialog.close}
             sx={{ position: "absolute", right: 10, top: 8 }}
           />
@@ -550,9 +576,11 @@ export function TraceModal({ movementId, onClose }: Props) {
           sx={{ flexWrap: "wrap", rowGap: 1.5 }}
         >
           <UiTextField
-            placeholder="Mã sản phẩm / Số sê-ri / Hộp / Khay / SKU / Mã vạch / QR / RFID..."
+            placeholder={t("inventory.trace.searchPlaceholder")}
             value={lookupCode}
-            slotProps={{ htmlInput: { "aria-label": "Tra cứu mã vật lý" } }}
+            slotProps={{
+              htmlInput: { "aria-label": t("inventory.trace.searchAria") },
+            }}
             onChange={(event) => setLookupCode(event.target.value)}
             onKeyDown={(event) => {
               if (event.key === "Enter") handleLookup();
@@ -561,23 +589,23 @@ export function TraceModal({ movementId, onClose }: Props) {
           />
           <ActionButton
             kind="camera"
-            aria-label="Quét camera để truy vết"
+            aria-label={t("inventory.trace.cameraAria")}
             onClick={() => setCameraOpen(true)}
           >
-            Quét camera
+            {t("inventory.trace.camera")}
           </ActionButton>
           <ActionButton
             kind="search"
             disabled={!lookupCode.trim()}
             onClick={handleLookup}
           >
-            Tra cứu
+            {t("inventory.trace.lookup")}
           </ActionButton>
         </Stack>
 
         <CameraScanModal
           open={cameraOpen}
-          title="Quét mã để truy vết"
+          title={t("inventory.trace.scanTitle")}
           onDetected={(code) => void handleCameraDetected(code)}
           onClose={() => setCameraOpen(false)}
         />
@@ -587,60 +615,57 @@ export function TraceModal({ movementId, onClose }: Props) {
         ) : null}
 
         {!movementId && !submittedCode ? (
-          <UiText variant="secondary">
-            Chọn một biến động tồn kho từ danh sách hoặc nhập mã vật lý để truy
-            vết.
-          </UiText>
+          <UiText variant="secondary">{t("inventory.trace.idle")}</UiText>
         ) : null}
 
         {physicalCodeQuery.isError ? (
           <ApiErrorAlert
             error={physicalCodeQuery.error}
-            title="Không tìm thấy mã vật lý"
+            title={t("inventory.trace.notFound")}
             onRetry={() => physicalCodeQuery.refetch()}
           />
         ) : null}
 
         {physicalCodeQuery.isLoading ? (
           <Box sx={{ textAlign: "center", py: 2 }}>
-            <UiText variant="secondary">Đang tra cứu mã vật lý...</UiText>
+            <UiText variant="secondary">{t("inventory.trace.looking")}</UiText>
           </Box>
         ) : null}
 
         {codeTrace ? (
           <>
-            <DescriptionsBlock title="Kết quả tra cứu mã vật lý">
+            <DescriptionsBlock title={t("inventory.trace.resultTitle")}>
               <DetailField
-                label="Mã vật lý"
+                label={t("inventory.trace.fieldPhysicalCode")}
                 value={<CopyableCode value={text(physicalCode?.code_value)} />}
               />
               <DetailField
-                label="Loại mã"
+                label={t("inventory.trace.fieldCodeType")}
                 value={
                   <UiStatusBadge
                     tone="neutral"
-                    label={
-                      CARRIER_LABELS[text(physicalCode?.carrier_type, "")] ??
-                      "Loại mã khác"
-                    }
+                    label={carrierLabel(
+                      text(physicalCode?.carrier_type, ""),
+                      t,
+                    )}
                   />
                 }
               />
               <DetailField
-                label="Đối tượng gắn"
+                label={t("inventory.trace.fieldBoundObject")}
                 value={
                   <UiStatusBadge
                     tone="info"
                     label={businessLabel(
                       SCAN_CLASSIFICATION_LABELS,
                       codeTrace.resolved_type,
-                      "Đối tượng khác",
+                      t("inventory.fallback.object"),
                     )}
                   />
                 }
               />
               <DetailField
-                label="Trạng thái"
+                label={t("inventory.trace.fieldStatus")}
                 value={
                   <UiStatusBadge
                     tone={
@@ -648,7 +673,7 @@ export function TraceModal({ movementId, onClose }: Props) {
                         ? "success"
                         : "neutral"
                     }
-                    label={statusLabel(physicalCode?.status)}
+                    label={statusLabel(physicalCode?.status, t)}
                   />
                 }
               />
@@ -665,7 +690,7 @@ export function TraceModal({ movementId, onClose }: Props) {
                     }
                   />
                   <DetailField
-                    label="Trạng thái sản phẩm"
+                    label={t("inventory.trace.fieldItemStatus")}
                     value={
                       <UiStatusBadge
                         tone="neutral"
@@ -675,7 +700,7 @@ export function TraceModal({ movementId, onClose }: Props) {
                             resolvedObject.status ?? resolvedObject.item_status,
                             "",
                           ),
-                          "Trạng thái khác",
+                          t("inventory.fallback.status"),
                         )}
                       />
                     }
@@ -686,20 +711,20 @@ export function TraceModal({ movementId, onClose }: Props) {
               {codeTrace.resolved_type === "CONTAINER" && resolvedObject ? (
                 <>
                   <DetailField
-                    label="Mã vật chứa"
+                    label={t("inventory.trace.fieldContainerCode")}
                     value={
                       <CodeText>{text(resolvedObject.container_code)}</CodeText>
                     }
                   />
                   <DetailField
-                    label="Loại vật chứa"
+                    label={t("inventory.trace.fieldContainerType")}
                     value={
                       <UiStatusBadge
                         tone="neutral"
                         label={businessLabel(
                           CONTAINER_TYPE_LABELS,
                           text(resolvedObject.container_type, ""),
-                          "Vật chứa khác",
+                          t("inventory.fallback.container"),
                         )}
                       />
                     }
@@ -710,11 +735,11 @@ export function TraceModal({ movementId, onClose }: Props) {
               {codeTrace.resolved_type === "SKU" && resolvedObject ? (
                 <>
                   <DetailField
-                    label="Mã SKU"
+                    label={t("inventory.trace.fieldSkuCode")}
                     value={<CodeText>{text(resolvedObject.sku_code)}</CodeText>}
                   />
                   <DetailField
-                    label="Tên SKU"
+                    label={t("inventory.trace.fieldSkuName")}
                     value={text(resolvedObject.sku_name)}
                   />
                 </>
@@ -724,7 +749,9 @@ export function TraceModal({ movementId, onClose }: Props) {
             {codeTrace.container_items.length > 0 ? (
               <div>
                 <SectionLabel>
-                  {`Sản phẩm trong vật chứa (${codeTrace.container_items.length})`}
+                  {t("inventory.trace.containerItemsTitle", {
+                    count: codeTrace.container_items.length,
+                  })}
                 </SectionLabel>
                 <ResponsiveDataTable
                   rows={codeTrace.container_items.map((row, index) =>
@@ -734,9 +761,9 @@ export function TraceModal({ movementId, onClose }: Props) {
                     ),
                   )}
                   rowKey={(row) => row.__rowKey}
-                  columns={CONTAINER_ITEM_COLUMNS}
+                  columns={containerItemColumns(t)}
                   loading={physicalCodeQuery.isFetching}
-                  emptyText="Chưa có sản phẩm nào trong vật chứa này"
+                  emptyText={t("inventory.trace.containerItemsEmpty")}
                 />
               </div>
             ) : null}
@@ -744,14 +771,16 @@ export function TraceModal({ movementId, onClose }: Props) {
             {codeTrace.movements.length > 0 ? (
               <div>
                 <SectionLabel>
-                  {`Lịch sử biến động (${codeTrace.movements.length})`}
+                  {t("inventory.trace.movementsTitle", {
+                    count: codeTrace.movements.length,
+                  })}
                 </SectionLabel>
                 <ResponsiveDataTable
                   rows={codeTrace.movements}
                   rowKey={(row) => text(row.id, String(Math.random()))}
-                  columns={MOVEMENT_COLUMNS}
+                  columns={movementColumns(t)}
                   loading={physicalCodeQuery.isFetching}
-                  emptyText="Chưa có giao dịch nào cho mã này"
+                  emptyText={t("inventory.trace.movementsEmpty")}
                 />
               </div>
             ) : null}
@@ -759,7 +788,9 @@ export function TraceModal({ movementId, onClose }: Props) {
             {(codeTrace.warranty_history ?? []).length > 0 ? (
               <div>
                 <SectionLabel>
-                  {`Lịch sử bảo hành (${codeTrace.warranty_history.length})`}
+                  {t("inventory.trace.warrantyTitle", {
+                    count: codeTrace.warranty_history.length,
+                  })}
                 </SectionLabel>
                 <Stack spacing={1.5}>
                   {codeTrace.warranty_history.map((wc, index) => {
@@ -791,7 +822,7 @@ export function TraceModal({ movementId, onClose }: Props) {
                             }
                             label={
                               WARRANTY_STATUS_LABELS[text(wc.status, "")] ??
-                              "Trạng thái khác"
+                              t("inventory.fallback.status")
                             }
                           />
                           <UiText
@@ -803,11 +834,14 @@ export function TraceModal({ movementId, onClose }: Props) {
                         </Stack>
                         <Grid container spacing={1.5} sx={{ mt: 0.5 }}>
                           <DetailField
-                            label="Khách hàng"
-                            value={`${text(wc.customer_name)} · ${text(wc.customer_phone)}`}
+                            label={t("inventory.trace.fieldCustomer")}
+                            value={t("inventory.trace.customerValue", {
+                              name: text(wc.customer_name),
+                              phone: text(wc.customer_phone),
+                            })}
                           />
                           <DetailField
-                            label="Lỗi/bệnh"
+                            label={t("inventory.trace.fieldDefect")}
                             value={text(wc.defect_name ?? wc.confirmed_defect)}
                           />
                         </Grid>
@@ -825,8 +859,7 @@ export function TraceModal({ movementId, onClose }: Props) {
                                 {formatDateTime(
                                   text(event.event_at, "") || null,
                                 )}{" "}
-                                —{" "}
-                                {text(event.to_status ?? event.event_type)}
+                                — {text(event.to_status ?? event.event_type)}
                                 {event.note ? ` (${text(event.note)})` : ""}
                               </UiText>
                             ))}
@@ -844,17 +877,17 @@ export function TraceModal({ movementId, onClose }: Props) {
         {movementQuery.isError ? (
           <ApiErrorAlert
             error={movementQuery.error}
-            title="Không thể tải chi tiết biến động"
+            title={t("inventory.trace.movementLoadError")}
             onRetry={() => movementQuery.refetch()}
           />
         ) : null}
 
         {movement ? (
-          <DescriptionsBlock title="Chi tiết biến động">
+          <DescriptionsBlock title={t("inventory.trace.movementDetailTitle")}>
             <DetailField
-              label="Mã biến động"
+              label={t("inventory.trace.fieldMovementCode")}
               value={
-                movement.movement_no ?? movement.code ? (
+                (movement.movement_no ?? movement.code) ? (
                   <CopyableCode
                     value={text(movement.movement_no ?? movement.code)}
                   />
@@ -864,7 +897,7 @@ export function TraceModal({ movementId, onClose }: Props) {
               }
             />
             <DetailField
-              label="Thời gian"
+              label={t("inventory.trace.fieldTime")}
               value={formatDateTime(
                 text(
                   movement.occurred_at ??
@@ -875,14 +908,14 @@ export function TraceModal({ movementId, onClose }: Props) {
               )}
             />
             <DetailField
-              label="Loại biến động"
+              label={t("inventory.trace.fieldMovementType")}
               value={
                 <UiStatusBadge
                   tone="neutral"
                   label={businessLabel(
                     MOVEMENT_TYPE_LABELS,
                     text(movement.movement_type ?? movement.source_type, ""),
-                    "Biến động khác",
+                    t("inventory.fallback.movementType"),
                   )}
                 />
               }
@@ -908,7 +941,7 @@ export function TraceModal({ movementId, onClose }: Props) {
               )}
             />
             <DetailField
-              label="Số lượng thay đổi"
+              label={t("inventory.trace.fieldQtyChange")}
               value={
                 <Box
                   component="span"
@@ -927,15 +960,15 @@ export function TraceModal({ movementId, onClose }: Props) {
               }
             />
             <DetailField
-              label="Tồn trước / sau"
+              label={t("inventory.trace.fieldBeforeAfter")}
               value={`${text(movement.qty_before ?? movement.balance_before)} / ${text(movement.qty_after ?? movement.balance_after)}`}
             />
             <DetailField
-              label="Chứng từ nguồn"
+              label={t("inventory.trace.fieldSourceDocument")}
               value={`${businessLabel(
                 SOURCE_DOCUMENT_TYPE_LABELS,
                 text(movement.document_type ?? movement.source_type, ""),
-                "Nguồn khác",
+                t("inventory.fallback.source"),
               )} — ${text(
                 movement.document_code ??
                   movement.doc_no ??
@@ -949,39 +982,41 @@ export function TraceModal({ movementId, onClose }: Props) {
         {traceQuery.isError ? (
           <ApiErrorAlert
             error={traceQuery.error}
-            title="Không thể truy vết chứng từ nguồn"
+            title={t("inventory.trace.sourceLoadError")}
             onRetry={() => traceQuery.refetch()}
           />
         ) : null}
 
         {traceQuery.isLoading ? (
           <Box sx={{ textAlign: "center", py: 2 }}>
-            <UiText variant="secondary">Đang tải dữ liệu truy vết...</UiText>
+            <UiText variant="secondary">
+              {t("inventory.trace.sourceLoading")}
+            </UiText>
           </Box>
         ) : null}
 
         {trace ? (
           <>
-            <DescriptionsBlock title="Chứng từ nguồn">
+            <DescriptionsBlock title={t("inventory.trace.sourceTitle")}>
               <DetailField
-                label="Loại nguồn"
+                label={t("inventory.trace.fieldSourceType")}
                 value={
                   <UiStatusBadge
                     tone="neutral"
                     label={businessLabel(
                       SOURCE_DOCUMENT_TYPE_LABELS,
                       trace.sourceType,
-                      "Nguồn khác",
+                      t("inventory.fallback.source"),
                     )}
                   />
                 }
               />
               <DetailField
-                label="Mã chứng từ"
+                label={t("inventory.trace.fieldDocumentCode")}
                 value={<CopyableCode value={trace.sourceCode} />}
               />
               <DetailField
-                label="Trạng thái"
+                label={t("inventory.trace.fieldStatus")}
                 value={
                   <UiStatusBadge
                     tone={
@@ -992,36 +1027,36 @@ export function TraceModal({ movementId, onClose }: Props) {
                           ? "error"
                           : "info"
                     }
-                    label={statusLabel(trace.status)}
+                    label={statusLabel(trace.status, t)}
                   />
                 }
               />
               <DetailField
-                label="Thời điểm ghi nhận"
+                label={t("inventory.trace.fieldRecordedAt")}
                 value={formatDateTime(trace.postedAt || null)}
               />
               <DetailField
-                label="Người thao tác"
+                label={t("inventory.trace.fieldOperator")}
                 value={trace.actor || EMPTY_TEXT}
               />
               {/* request_id là UUID đối chiếu log (không có mã nghiệp vụ) — màn
                 truy vết vẫn cần nó để báo kỹ thuật, nhưng hiển thị rút gọn +
                 nút sao chép giá trị đầy đủ thay vì in nguyên chuỗi thô. */}
               <DetailField
-                label="Mã yêu cầu kỹ thuật"
+                label={t("inventory.trace.fieldRequestId")}
                 value={
-                  trace.requestId ? (
-                    <CopyableId value={trace.requestId} />
-                  ) : (
-                    "-"
-                  )
+                  trace.requestId ? <CopyableId value={trace.requestId} /> : "-"
                 }
               />
             </DescriptionsBlock>
 
             {trace.lines.length > 0 ? (
               <div>
-                <SectionLabel>{`Dòng chứng từ (${trace.lines.length})`}</SectionLabel>
+                <SectionLabel>
+                  {t("inventory.trace.linesTitle", {
+                    count: trace.lines.length,
+                  })}
+                </SectionLabel>
                 <ResponsiveDataTable
                   rows={trace.lines.map((row, index) =>
                     withRowKey(
@@ -1030,34 +1065,34 @@ export function TraceModal({ movementId, onClose }: Props) {
                     ),
                   )}
                   rowKey={(row) => row.__rowKey}
-                  columns={TRACE_LINE_COLUMNS}
+                  columns={traceLineColumns(t)}
                   loading={traceQuery.isFetching}
-                  emptyText="Chưa có dòng chứng từ nào"
+                  emptyText={t("inventory.trace.linesEmpty")}
                 />
               </div>
             ) : null}
 
             {trace.netEffect ? (
-              <DescriptionsBlock title="Tác động tồn kho sau điều chỉnh">
+              <DescriptionsBlock title={t("inventory.trace.netEffectTitle")}>
                 <DetailField
-                  label="Giao dịch gốc"
+                  label={t("inventory.trace.fieldOriginalMovement")}
                   value={
                     <UiStatusBadge
                       tone="neutral"
                       label={businessLabel(
                         MOVEMENT_TYPE_LABELS,
                         trace.netEffect.originalMovementType,
-                        "Biến động khác",
+                        t("inventory.fallback.movementType"),
                       )}
                     />
                   }
                 />
                 <DetailField
-                  label="Số lượng gốc"
+                  label={t("inventory.trace.fieldOriginalQty")}
                   value={formatQuantity(trace.netEffect.originalQty)}
                 />
                 <DetailField
-                  label="Đã điều chỉnh"
+                  label={t("inventory.trace.fieldReversed")}
                   value={
                     <Box
                       component="span"
@@ -1074,24 +1109,24 @@ export function TraceModal({ movementId, onClose }: Props) {
                   }
                 />
                 <DetailField
-                  label="Còn điều chỉnh được"
-                  value={formatQuantity(
-                    trace.netEffect.remainingReversibleQty,
-                  )}
+                  label={t("inventory.trace.fieldReversible")}
+                  value={formatQuantity(trace.netEffect.remainingReversibleQty)}
                 />
                 <DetailField
-                  label="Tác động ròng"
+                  label={t("inventory.trace.fieldNetEffect")}
                   value={formatQuantity(trace.netEffect.netQtyDelta)}
                 />
                 <DetailField
-                  label="Trạng thái"
+                  label={t("inventory.trace.fieldStatus")}
                   value={
                     <UiStatusBadge
                       tone={trace.netEffect.fullyReversed ? "error" : "success"}
                       label={
                         trace.netEffect.fullyReversed
-                          ? "Đã điều chỉnh toàn bộ"
-                          : `Còn hiệu lực (${trace.netEffect.reversalCount} lần điều chỉnh)`
+                          ? t("inventory.trace.fullyReversed")
+                          : t("inventory.trace.stillEffective", {
+                              count: trace.netEffect.reversalCount,
+                            })
                       }
                     />
                   }
@@ -1102,7 +1137,9 @@ export function TraceModal({ movementId, onClose }: Props) {
             {(trace.chain ?? []).length > 0 ? (
               <div>
                 <SectionLabel>
-                  {`Chuỗi điều chỉnh (${(trace.chain ?? []).length} bút toán)`}
+                  {t("inventory.trace.chainTitle", {
+                    count: (trace.chain ?? []).length,
+                  })}
                   {trace.chainTruncated ? (
                     <Box
                       component="span"
@@ -1113,30 +1150,30 @@ export function TraceModal({ movementId, onClose }: Props) {
                         color: SEMANTIC_LIGHT.error,
                       }}
                     >
-                      · chuỗi quá dài, đã rút gọn
+                      {t("inventory.trace.chainTruncated")}
                     </Box>
                   ) : null}
                 </SectionLabel>
                 <ResponsiveDataTable
                   rows={trace.chain ?? []}
                   rowKey={(row) => row.id}
-                  columns={CHAIN_COLUMNS}
+                  columns={chainColumns(t)}
                   loading={traceQuery.isFetching}
-                  emptyText="Chưa có bút toán điều chỉnh nào"
+                  emptyText={t("inventory.trace.chainEmpty")}
                 />
               </div>
             ) : null}
 
             <div>
-              <SectionLabel>Diễn biến</SectionLabel>
+              <SectionLabel>{t("inventory.trace.timelineTitle")}</SectionLabel>
               {trace.timeline.length > 0 ? (
                 <UiTimeline
                   items={trace.timeline.map((item, index) => {
                     const from = item.from_status
-                      ? statusLabel(item.from_status)
+                      ? statusLabel(item.from_status, t)
                       : "";
                     const to = item.to_status
-                      ? statusLabel(item.to_status)
+                      ? statusLabel(item.to_status, t)
                       : "";
                     const label =
                       from && to
@@ -1146,7 +1183,9 @@ export function TraceModal({ movementId, onClose }: Props) {
                               item.event ??
                               item.movement_no ??
                               item.code,
-                            `Bước ${index + 1}`,
+                            t("inventory.trace.timelineStep", {
+                              index: index + 1,
+                            }),
                           );
                     const time = item.created_at ?? item.changed_at;
                     const formattedTime = time
@@ -1155,13 +1194,15 @@ export function TraceModal({ movementId, onClose }: Props) {
                     return {
                       title: label,
                       time:
-                        formattedTime === EMPTY_TEXT ? undefined : formattedTime,
+                        formattedTime === EMPTY_TEXT
+                          ? undefined
+                          : formattedTime,
                     };
                   })}
                 />
               ) : (
                 <UiText variant="secondary">
-                  Chưa có dữ liệu diễn biến để hiển thị.
+                  {t("inventory.trace.timelineEmpty")}
                 </UiText>
               )}
             </div>

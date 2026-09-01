@@ -25,6 +25,8 @@ import {
   SOURCE_DOCUMENT_TYPE_LABELS,
   businessLabel,
 } from "@/shared/constants/business-labels";
+import { useT, type TranslateFn } from "@/shared/i18n/useT";
+import type { MessageKey } from "@/shared/i18n/messages";
 import type { InventoryBalanceRow } from "../services/inventoryService";
 import { useStockMovements, useBalanceSubledger } from "../hooks/use-inventory";
 import type { StockMovementRow } from "../services/inventoryService";
@@ -52,19 +54,22 @@ function reconcileColor(status: string) {
   return "warning";
 }
 
-function itemConditionLabel(value: unknown): string {
+const ITEM_CONDITION_KEYS: Record<string, MessageKey> = {
+  NEW: "inventory.condition.new",
+  GOOD: "inventory.condition.good",
+  NORMAL: "inventory.condition.normal",
+  SELLABLE: "inventory.condition.sellable",
+  DEFECTIVE: "inventory.condition.defective",
+  DAMAGED: "inventory.condition.damaged",
+  NON_SELLABLE: "inventory.condition.nonSellable",
+  QUARANTINE: "inventory.condition.quarantine",
+};
+
+function itemConditionLabel(value: unknown, t: TranslateFn): string {
   const status = text(value, "");
-  const labels: Record<string, string> = {
-    NEW: "Mới",
-    GOOD: "Tốt",
-    NORMAL: "Bình thường",
-    SELLABLE: "Có thể bán/xuất",
-    DEFECTIVE: "Hàng lỗi",
-    DAMAGED: "Hư hỏng",
-    NON_SELLABLE: "Không thể bán/xuất",
-    QUARANTINE: "Chờ kiểm tra",
-  };
-  return labels[status] ?? (status ? "Tình trạng khác" : EMPTY_TEXT);
+  const key = ITEM_CONDITION_KEYS[status];
+  if (key) return t(key);
+  return status ? t("inventory.fallback.condition") : EMPTY_TEXT;
 }
 
 /** Thay cho AntTypography.Text `code` — chữ mono trên nền soft, màu từ token. */
@@ -153,6 +158,7 @@ export function BalanceDetailModal({
   onTraceMovement,
 }: Props) {
   const dialog = useDialogExit(onClose);
+  const t = useT();
   const movementsQuery = useStockMovements({
     search: balance.sku,
     per_page: 10,
@@ -165,7 +171,7 @@ export function BalanceDetailModal({
   const movementColumns: ResponsiveTableColumn<StockMovementRow>[] = [
     {
       key: "movementId",
-      header: "Mã biến động",
+      header: t("inventory.detail.colMovementCode"),
       width: 140,
       // movementId nay chỉ chứa movement_no thật (normalizer đã bỏ fallback
       // `?? row.id`), nên không cần so sánh với id nữa — thiếu mã thì "—".
@@ -174,13 +180,13 @@ export function BalanceDetailModal({
     },
     {
       key: "time",
-      header: "Thời gian",
+      header: t("inventory.detail.colTime"),
       width: 150,
       render: (row) => formatDateTime(row.time),
     },
     {
       key: "type",
-      header: "Loại biến động",
+      header: t("inventory.detail.colMovementType"),
       width: 150,
       render: (row) => (
         <UiStatusBadge
@@ -188,14 +194,14 @@ export function BalanceDetailModal({
           label={businessLabel(
             MOVEMENT_TYPE_LABELS,
             row.type,
-            "Biến động khác",
+            t("inventory.fallback.movementType"),
           )}
         />
       ),
     },
     {
       key: "qty",
-      header: "Số lượng thay đổi",
+      header: t("inventory.detail.colQtyChange"),
       width: 140,
       align: "right",
       render: (row) => (
@@ -218,7 +224,7 @@ export function BalanceDetailModal({
     },
     {
       key: "source",
-      header: "Chứng từ nguồn",
+      header: t("inventory.detail.colSourceDocument"),
       width: 180,
       render: (row) => (
         <Stack spacing={0}>
@@ -227,7 +233,7 @@ export function BalanceDetailModal({
             {businessLabel(
               SOURCE_DOCUMENT_TYPE_LABELS,
               row.sourceType,
-              "Nguồn khác",
+              t("inventory.fallback.source"),
             )}
           </UiText>
         </Stack>
@@ -238,7 +244,7 @@ export function BalanceDetailModal({
   const itemColumns: ResponsiveTableColumn<RawRecord>[] = [
     {
       key: "item_code",
-      header: "Mã sản phẩm",
+      header: t("inventory.detail.colProductCode"),
       width: 140,
       render: (row) => (
         <CodeText>{text(row.item_code ?? row.serial_number)}</CodeText>
@@ -246,13 +252,13 @@ export function BalanceDetailModal({
     },
     {
       key: "serial_number",
-      header: "Số sê-ri",
+      header: t("inventory.detail.colSerial"),
       width: 140,
       render: (row) => text(row.serial_number),
     },
     {
       key: "status",
-      header: "Trạng thái",
+      header: t("inventory.detail.colStatus"),
       width: 140,
       render: (row) => (
         <UiStatusBadge
@@ -260,20 +266,20 @@ export function BalanceDetailModal({
           label={businessLabel(
             ITEM_STATUS_LABELS,
             text(row.status, ""),
-            "Trạng thái khác",
+            t("inventory.fallback.status"),
           )}
         />
       ),
     },
     {
       key: "condition",
-      header: "Tình trạng",
+      header: t("inventory.detail.colCondition"),
       width: 130,
-      render: (row) => itemConditionLabel(row.condition),
+      render: (row) => itemConditionLabel(row.condition, t),
     },
     {
       key: "physical_code",
-      header: "Mã vật lý",
+      header: t("inventory.detail.colPhysicalCode"),
       width: 180,
       render: (row) =>
         row.physical_code || row.rfid_code ? (
@@ -291,13 +297,13 @@ export function BalanceDetailModal({
     },
     {
       key: "location_hint",
-      header: "Vị trí",
+      header: t("inventory.detail.colLocation"),
       width: 120,
       render: (row) => text(row.location_hint),
     },
     {
       key: "received_at",
-      header: "Thời điểm nhận",
+      header: t("inventory.detail.colReceivedAt"),
       width: 150,
       render: (row) => text(row.received_at),
     },
@@ -306,13 +312,13 @@ export function BalanceDetailModal({
   const containerColumns: ResponsiveTableColumn<RawRecord>[] = [
     {
       key: "container_code",
-      header: "Mã vật chứa",
+      header: t("inventory.detail.colContainerCode"),
       width: 140,
       render: (row) => <CodeText>{text(row.container_code)}</CodeText>,
     },
     {
       key: "container_type",
-      header: "Loại",
+      header: t("inventory.detail.colType"),
       width: 110,
       render: (row) => (
         <UiStatusBadge
@@ -320,21 +326,21 @@ export function BalanceDetailModal({
           label={businessLabel(
             CONTAINER_TYPE_LABELS,
             text(row.container_type, ""),
-            "Vật chứa khác",
+            t("inventory.fallback.container"),
           )}
         />
       ),
     },
     {
       key: "quantity",
-      header: "Số lượng",
+      header: t("inventory.detail.colQty"),
       width: 100,
       align: "right",
       render: (row) => formatQuantity(Number(row.quantity ?? 0)),
     },
     {
       key: "container_status",
-      header: "Trạng thái vật chứa",
+      header: t("inventory.detail.colContainerStatus"),
       width: 160,
       render: (row) => (
         <UiStatusBadge
@@ -342,20 +348,20 @@ export function BalanceDetailModal({
           label={businessLabel(
             PUTAWAY_STATUS_LABELS,
             text(row.container_status, ""),
-            "Trạng thái khác",
+            t("inventory.fallback.status"),
           )}
         />
       ),
     },
     {
       key: "zone_code",
-      header: "Khu vực",
+      header: t("inventory.detail.colZone"),
       width: 100,
       render: (row) => text(row.zone_code),
     },
     {
       key: "location_hint",
-      header: "Vị trí",
+      header: t("inventory.detail.colLocation"),
       width: 120,
       render: (row) => text(row.location_hint),
     },
@@ -368,10 +374,10 @@ export function BalanceDetailModal({
       fullWidth
       title={
         <Box sx={{ position: "relative", pr: 6 }}>
-          {`Chi tiết tồn kho — ${balance.sku}`}
+          {t("inventory.detail.title", { sku: balance.sku })}
           <ActionIconButton
             kind="close"
-            label="Đóng"
+            label={t("common.close")}
             onClick={dialog.close}
             sx={{ position: "absolute", right: -8, top: -4 }}
           />
@@ -399,7 +405,7 @@ export function BalanceDetailModal({
                   <CodeText>{balance.sku}</CodeText>
                   <ActionIconButton
                     kind="copy"
-                    label="Sao chép"
+                    label={t("inventory.detail.copy")}
                     onClick={() => {
                       void navigator.clipboard?.writeText(balance.sku);
                     }}
@@ -407,10 +413,13 @@ export function BalanceDetailModal({
                 </Stack>
               }
             />
-            <DetailField label="Tên hàng" value={balance.name} />
+            <DetailField
+              label={t("inventory.detail.fieldName")}
+              value={balance.name}
+            />
             <DetailField label="Kho" value={balance.warehouse} />
             <DetailField
-              label="Trạng thái tồn"
+              label={t("inventory.detail.fieldStockStatus")}
               value={
                 <UiStatusBadge
                   tone={
@@ -419,13 +428,13 @@ export function BalanceDetailModal({
                   label={businessLabel(
                     INVENTORY_STOCK_STATUS_LABELS,
                     balance.stockStatus,
-                    "Trạng thái khác",
+                    t("inventory.fallback.status"),
                   )}
                 />
               }
             />
             <DetailField
-              label="Đối soát"
+              label={t("inventory.detail.fieldReconcile")}
               value={
                 <Stack
                   direction="row"
@@ -437,7 +446,7 @@ export function BalanceDetailModal({
                     label={businessLabel(
                       RECONCILE_STATUS_LABELS,
                       balance.reconcile,
-                      "Chưa đối soát",
+                      t("inventory.fallback.notReconciled"),
                     )}
                   />
                   {balance.reconcileNote ? (
@@ -447,7 +456,7 @@ export function BalanceDetailModal({
               }
             />
             <DetailField
-              label="Cập nhật"
+              label={t("inventory.detail.fieldUpdated")}
               value={balance.dataAsOf || balance.updatedAt || EMPTY_TEXT}
             />
             {/* DR-LOC-001: 3 mảnh thông tin vị trí độc lập, tách riêng vì mỗi
@@ -456,22 +465,22 @@ export function BalanceDetailModal({
               (mô tả rời, có thể do người xếp khay ghi tay) không nhất thiết
               trùng mã khay. */}
             <DetailField
-              label="Mã hộp"
-              value={balance.containerCode || "Chưa có"}
+              label={t("inventory.detail.fieldBoxCode")}
+              value={balance.containerCode || t("inventory.detail.noBoxCode")}
             />
             <DetailField
-              label="Mã khay"
-              value={balance.trayCode || "Chưa xếp khay"}
+              label={t("inventory.detail.fieldTrayCode")}
+              value={balance.trayCode || t("inventory.detail.noTrayCode")}
             />
             <DetailField
-              label="Vị trí"
-              value={balance.location || "Chưa có"}
+              label={t("inventory.detail.fieldLocation")}
+              value={balance.location || t("inventory.detail.noLocation")}
             />
             {/* BE mới chỉ trả last_movement_id (UUID), chưa có movement_no
               tương ứng — hiển thị rút gọn + cho sao chép thay vì in chuỗi thô.
               Khi BE bổ sung last_movement_no thì đổi sang hiện mã đó. */}
             <DetailField
-              label="Biến động gần nhất"
+              label={t("inventory.detail.fieldLastMovement")}
               value={
                 balance.lastMovementId ? (
                   <CopyableId value={balance.lastMovementId} />
@@ -485,61 +494,73 @@ export function BalanceDetailModal({
 
         <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap", rowGap: 2 }}>
           <StatBox
-            label="Khả dụng"
+            label={t("inventory.detail.statAvailable")}
             value={formatQty(balance.available, balance.uom)}
           />
           <StatBox
-            label="Tồn hiện có"
+            label={t("inventory.detail.statOnHand")}
             value={formatQty(balance.onHand, balance.uom)}
           />
-          <StatBox label="Số sản phẩm" value={formatQty(balance.serialQty)} />
-          <StatBox label="Số hộp" value={formatQty(balance.boxQty)} />
+          <StatBox
+            label={t("inventory.detail.statItems")}
+            value={formatQty(balance.serialQty)}
+          />
+          <StatBox
+            label={t("inventory.detail.statBoxes")}
+            value={formatQty(balance.boxQty)}
+          />
         </Stack>
 
         {subledgerQuery.isError ? (
           <ApiErrorAlert
             error={subledgerQuery.error}
-            title="Không tải được chi tiết tồn kho"
+            title={t("inventory.detail.loadError")}
             onRetry={() => subledgerQuery.refetch()}
           />
         ) : null}
 
         <div>
           <SectionTitle>
-            {`Sản phẩm cụ thể (${subledger?.item_count ?? balance.serialQty})`}
+            {t("inventory.detail.itemsTitle", {
+              count: subledger?.item_count ?? balance.serialQty,
+            })}
           </SectionTitle>
           <ResponsiveDataTable<RawRecord>
             rows={(subledger?.items as RawRecord[]) ?? []}
             columns={itemColumns}
             rowKey={(row) => text(row.id, String(Math.random()))}
             loading={subledgerQuery.isLoading}
-            emptyText="Không có sản phẩm cụ thể"
+            emptyText={t("inventory.detail.itemsEmpty")}
           />
         </div>
 
         <div>
           <SectionTitle>
-            {`Vật chứa (${subledger?.container_count ?? balance.boxQty})`}
+            {t("inventory.detail.containersTitle", {
+              count: subledger?.container_count ?? balance.boxQty,
+            })}
           </SectionTitle>
           <ResponsiveDataTable<RawRecord>
             rows={(subledger?.containers as RawRecord[]) ?? []}
             columns={containerColumns}
             rowKey={(row) => text(row.id, String(Math.random()))}
             loading={subledgerQuery.isLoading}
-            emptyText="Không có vật chứa"
+            emptyText={t("inventory.detail.containersEmpty")}
           />
         </div>
 
         <div>
           <SectionTitle>
-            {`Biến động liên quan (${movements.length})`}
+            {t("inventory.detail.movementsTitle", {
+              count: movements.length,
+            })}
           </SectionTitle>
           <ResponsiveDataTable<StockMovementRow>
             rows={movements}
             columns={movementColumns}
             rowKey={(row) => row.id}
             loading={movementsQuery.isLoading}
-            emptyText="Không có biến động liên quan"
+            emptyText={t("inventory.detail.movementsEmpty")}
             renderRowActions={
               onTraceMovement
                 ? (row) => (
@@ -548,7 +569,7 @@ export function BalanceDetailModal({
                       sx={{ whiteSpace: "nowrap" }}
                       onClick={() => onTraceMovement(String(row.id))}
                     >
-                      Truy vết
+                      {t("inventory.detail.trace")}
                     </ActionButton>
                   )
                 : undefined
