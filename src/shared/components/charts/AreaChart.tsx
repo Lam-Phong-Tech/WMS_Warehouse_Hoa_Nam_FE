@@ -1,6 +1,6 @@
 import Chart from "react-apexcharts";
 import type { ApexOptions } from "apexcharts";
-import { baseChartOptions, CHART_COLORS } from "./chart-theme";
+import { useChartBaseOptions, CHART_COLORS } from "./chart-theme";
 
 export type AreaChartProps = {
   categories: string[];
@@ -21,6 +21,7 @@ export function AreaChart({
   color = CHART_COLORS.primary,
   valueFormatter,
 }: AreaChartProps) {
+  const baseChartOptions = useChartBaseOptions();
   const options: ApexOptions = {
     ...baseChartOptions,
     chart: { ...baseChartOptions.chart, type: "area" },

@@ -40,3 +40,8 @@ export {
 } from "./icon-slots";
 export { VUEXY_NAV_ICONS, type VuexyNavIconName } from "./vuexy-nav-icon-paths";
 export { VuexyNavIcon, type VuexyNavIconProps } from "./vuexy-nav-icons";
+export {
+  VUEXY_DEMO_ICONS,
+  type VuexyDemoIconName,
+} from "./vuexy-demo-icon-paths";
+export { VuexyDemoIcon } from "./VuexyDemoIcon";

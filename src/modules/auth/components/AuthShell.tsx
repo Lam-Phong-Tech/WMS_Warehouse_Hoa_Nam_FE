@@ -2,7 +2,14 @@ import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { Box, UiSpinner, type BoxProps } from "@/shared/ui";
 import { flatIconClass } from "@/shared/ui/icons";
-import { RADIUS, SEMANTIC_LIGHT as S, Z_INDEX, inkAlpha } from "@/shared/ui/tokens";
+import {
+  COLOR,
+  RADIUS,
+  SEMANTIC_LIGHT as S,
+  Z_INDEX,
+  inkAlpha,
+  inkAlphaVar,
+} from "@/shared/ui/tokens";
 import {
   AuthIllustration,
   type AuthIllustrationVariant,
@@ -41,14 +48,14 @@ function AuthBrand() {
           display: "grid",
           placeItems: "center",
           borderRadius: "8px",
-          background: `linear-gradient(135deg, #8B7FF3 0%, ${S.primary} 100%)`,
+          background: `linear-gradient(135deg, ${COLOR.purpleGradientStart} 0%, ${S.primary} 100%)`,
           boxShadow: `0 4px 10px ${inkAlpha(0.16)}`,
         }}
       >
         <svg width="19" height="19" viewBox="0 0 24 24" fill="none">
           <path
             d="M4 9.5 12 4l8 5.5V20a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1V9.5Z"
-            fill="#FFFFFF"
+            fill={S.onPrimary}
           />
         </svg>
       </Box>
@@ -206,7 +213,7 @@ export function AuthShell({
             sx={{
               // Vuexy login-v2: 26px / 500 / lineHeight 36 / màu ink 78%.
               margin: 0,
-              color: inkAlpha(0.78),
+              color: inkAlphaVar(0.78),
               fontSize: 26,
               fontWeight: 500,
               lineHeight: "36px",
@@ -215,7 +222,7 @@ export function AuthShell({
             {title}
           </Box>
           <Box
-            sx={{ marginTop: "6px", color: inkAlpha(0.68), fontSize: 15 }}
+            sx={{ marginTop: "6px", color: inkAlphaVar(0.68), fontSize: 15 }}
           >
             {subtitle}
           </Box>

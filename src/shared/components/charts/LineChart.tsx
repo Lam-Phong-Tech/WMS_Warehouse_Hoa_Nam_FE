@@ -1,7 +1,7 @@
 import Chart from "react-apexcharts";
 import type { ApexOptions } from "apexcharts";
 import {
-  baseChartOptions,
+  useChartBaseOptions,
   CATEGORICAL_PALETTE,
   chartPointEvents,
 } from "./chart-theme";
@@ -47,6 +47,8 @@ export function LineChart({
 }: LineChartProps) {
   const dense = categories.length > 60;
   const format = (value: number) => valueFormatter?.(value) ?? String(value);
+
+  const baseChartOptions = useChartBaseOptions();
 
   const options: ApexOptions = {
     ...baseChartOptions,

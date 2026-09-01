@@ -8,6 +8,12 @@
   "cssImports": {
     "src/shared/pwa/PwaStatus.tsx": [
       "./pwa-status.css"
+    ],
+    "src/modules/dashboard/pages/DashboardPage.tsx": [
+      "../dashboard-overview.css"
+    ],
+    "src/app/layouts/topbar/AppTopbar.tsx": [
+      "./app-topbar.css"
     ]
   },
   "important": {

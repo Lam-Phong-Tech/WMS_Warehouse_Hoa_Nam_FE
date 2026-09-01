@@ -9,9 +9,16 @@ import {
   BREAKPOINTS,
   COMPONENT_TOKENS as C,
   MOTION,
-  SEMANTIC_LIGHT as S,
+  PALETTE,
   TYPOGRAPHY,
 } from "@/shared/ui/tokens";
+
+/**
+ * So với `PALETTE.light` (giá trị THÔ) chứ không phải `SEMANTIC_LIGHT`: từ đợt
+ * dark mode, SEMANTIC_LIGHT là mặt tiền `var(--wms-…)` — dùng nó ở đây thì test
+ * chỉ so hai chuỗi biến với nhau và không còn bắt được theme drift nữa.
+ */
+const S = PALETTE.light;
 
 describe("MUI adapter ↔ tokens", () => {
   it("palette map đúng semantic", () => {

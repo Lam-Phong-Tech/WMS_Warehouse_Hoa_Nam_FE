@@ -513,6 +513,12 @@ export function resolveScreenMeta(pathname: string, search: string) {
 export interface BreadcrumbEntry {
   label: string;
   path?: string;
+  /**
+   * Khoá tra i18n của nhãn: screen-id cho mục, tên icon cho nhóm. `undefined`
+   * cho những chặng không nằm trong cây menu (Trang chủ, route ngoài nav) —
+   * chỗ đó dùng thẳng `label`.
+   */
+  i18nKey?: string;
 }
 
 /**
@@ -520,13 +526,21 @@ export interface BreadcrumbEntry {
  * Route ngoài nav (profile/notifications/roles...) lấy nhãn từ ROUTE_META.
  */
 export function getBreadcrumbTrail(pathname: string): BreadcrumbEntry[] {
-  const home: BreadcrumbEntry = { label: "Trang chủ", path: ROUTES.DASHBOARD };
+  const home: BreadcrumbEntry = {
+    label: "Trang chủ",
+    path: ROUTES.DASHBOARD,
+    i18nKey: "home",
+  };
   if (pathname === ROUTES.DASHBOARD) return [home];
 
   for (const group of NAV_GROUPS) {
     for (const item of group.items) {
       if (matchesPath(pathname, item.path)) {
-        return [home, { label: group.name }, { label: item.label }];
+        return [
+          home,
+          { label: group.name, i18nKey: group.icon },
+          { label: item.label, i18nKey: item.screen },
+        ];
       }
     }
   }

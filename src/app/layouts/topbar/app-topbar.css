@@ -1,0 +1,888 @@
+/**
+ * THANH TOPBAR — port 1:1 CSS của demo UI/UX đã chốt
+ * `10.WMS_Hoa_Nam_Trang_Tong_Quan.html`
+ * (Other/Trang_Tong_Quan/assets/styles.css, vùng `.topbar` → `.logout-button`).
+ *
+ * PHẠM VI: mọi selector nằm dưới `.hn-topbar` nên không rò ra màn khác.
+ *
+ * MÀU: dùng token `--wms-*` ở mọi chỗ demo dùng đúng bảng Vuexy. Số còn lại là
+ * sắc xám/sắc chữ phụ demo tự đặt mà bảng token CHƯA có — khai thành `--hnt-*`
+ * ngay đầu file để giữ đúng giá trị demo và gom vào một chỗ.
+ *
+ * KHÔNG dùng cờ ưu tiên cascade nào (guard ui:styles ratchet). Trạng thái
+ * ẩn/hiện do React quyết định bằng render có điều kiện.
+ */
+
+.hn-topbar {
+  --ink: var(--wms-text-strong);
+  --muted: var(--wms-text-medium);
+  --line: var(--wms-border);
+  --primary: var(--wms-primary);
+  --primary-dark: var(--wms-primary-dark);
+  --primary-soft: var(--wms-primary-soft);
+  --green: var(--wms-success);
+  --green-soft: var(--wms-success-soft);
+  --amber: var(--wms-warning);
+  --amber-soft: var(--wms-warning-soft);
+  --red: var(--wms-error);
+  --red-soft: var(--wms-error-soft);
+  --blue-soft: var(--wms-info-soft);
+  --surface: var(--wms-bg-surface);
+  --radius: var(--wms-radius-card);
+
+  --hnt-white: #fff;
+  --hnt-surface-muted: #faf9fc;
+  --hnt-surface-hover: #f3f2f5;
+  --hnt-shadow: 0 3px 12px rgba(47, 43, 61, 0.14);
+  --hnt-topbar-bg: rgba(255, 255, 255, 0.97);
+  --hnt-teal-fg: #14879a;
+
+  position: sticky;
+  top: 12px;
+  z-index: 30;
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 16px 24px 0;
+  padding: 8px 14px 8px 18px;
+  background: var(--hnt-topbar-bg);
+  border: 1px solid rgba(47, 43, 61, 0.06);
+  border-radius: var(--radius);
+  box-shadow: var(--hnt-shadow);
+  backdrop-filter: blur(10px);
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 22px;
+}
+
+.hn-topbar *,
+.hn-topbar *::before,
+.hn-topbar *::after {
+  box-sizing: border-box;
+}
+
+.hn-topbar button,
+.hn-topbar input {
+  font: inherit;
+}
+
+.hn-topbar button {
+  cursor: pointer;
+  min-height: 40px;
+}
+
+.hn-topbar button:focus-visible,
+.hn-topbar input:focus-visible {
+  outline: 3px solid #2168d4;
+  outline-offset: 2px;
+}
+
+.hn-topbar .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Chip đếm ở tiêu đề menu Thông báo — cùng số đo .chip của demo. */
+.hn-topbar .chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  line-height: 18px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.hn-topbar .chip-error {
+  background: var(--red-soft);
+  color: var(--red);
+}
+
+/* ── nút icon ───────────────────────────────────────────────────────────── */
+.hn-topbar .icon-button {
+  display: inline-grid;
+  place-items: center;
+  min-width: 38px;
+  width: 38px;
+  height: 38px;
+  min-height: 38px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+}
+.hn-topbar .icon-button svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.65;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.hn-topbar .icon-button:hover {
+  background: var(--hnt-surface-hover);
+}
+.hn-topbar .mobile-menu {
+  color: var(--ink);
+}
+
+/* ── ô tìm kiếm ─────────────────────────────────────────────────────────── */
+.hn-topbar .topbar-search-wrap {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 120px;
+}
+.hn-topbar .topbar-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  padding: 0 8px;
+  border-radius: 7px;
+  color: var(--muted);
+  cursor: text;
+}
+.hn-topbar .topbar-search:focus-within {
+  background: var(--hnt-surface-hover);
+  color: var(--ink);
+}
+.hn-topbar .topbar-search-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+}
+.hn-topbar .topbar-search-icon svg {
+  width: 21px;
+  height: 21px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.65;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.hn-topbar .topbar-search input {
+  flex: 1;
+  min-width: 80px;
+  height: 38px;
+  min-height: 38px;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+}
+.hn-topbar .topbar-search input::placeholder {
+  color: color-mix(in srgb, var(--muted) 70%, transparent);
+}
+.hn-topbar .topbar-search input::-webkit-search-cancel-button {
+  opacity: 0.55;
+}
+.hn-topbar .topbar-search kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  height: 26px;
+  padding: 0 6px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--hnt-surface-muted);
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 11px;
+  line-height: 1;
+  box-shadow: none;
+}
+
+/* ── cụm hành động phải ─────────────────────────────────────────────────── */
+.hn-topbar .topbar-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.hn-topbar .header-control {
+  position: relative;
+}
+.hn-topbar .header-menu-toggle[aria-expanded="true"] {
+  background: var(--primary-soft);
+  color: var(--primary-dark);
+}
+.hn-topbar .header-menu-toggle > .toggle-glyph {
+  display: grid;
+  place-items: center;
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+}
+.hn-topbar .header-menu-toggle > .toggle-glyph svg {
+  width: 20px;
+  height: 20px;
+}
+.hn-topbar .language-toggle {
+  min-width: 48px;
+  width: auto;
+  padding-inline: 8px;
+  gap: 2px;
+}
+.hn-topbar .control-code {
+  min-width: 18px;
+  font-size: 10px;
+  line-height: 14px;
+  font-weight: 700;
+}
+.hn-topbar .avatar {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--primary-soft);
+  color: var(--primary-dark);
+  font-size: 12px;
+  font-weight: 800;
+}
+.hn-topbar .avatar-button {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.hn-topbar .avatar-button:hover,
+.hn-topbar .avatar-button[aria-expanded="true"] {
+  background: var(--hnt-surface-hover);
+}
+.hn-topbar .avatar-button .avatar {
+  width: 36px;
+  height: 36px;
+  border: 2px solid var(--primary);
+}
+.hn-topbar .presence-dot {
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  width: 9px;
+  height: 9px;
+  border: 2px solid var(--surface);
+  border-radius: 50%;
+  background: var(--green);
+}
+.hn-topbar .notification-dot {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  display: grid;
+  place-items: center;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 3px;
+  border: 2px solid var(--surface);
+  border-radius: 999px;
+  background: var(--red);
+  color: var(--hnt-white);
+  font-size: 9px;
+  line-height: 13px;
+  font-weight: 700;
+}
+
+/* ── khung menu thả xuống ───────────────────────────────────────────────── */
+.hn-topbar .header-menu {
+  position: absolute;
+  z-index: 80;
+  top: calc(100% + 10px);
+  right: 0;
+  width: min(360px, calc(100vw - 32px));
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 10px 34px rgba(47, 43, 61, 0.2);
+}
+.hn-topbar .compact-menu {
+  width: 238px;
+  padding-bottom: 7px;
+}
+.hn-topbar .search-menu {
+  right: auto;
+  left: 0;
+  width: min(520px, calc(100vw - 32px));
+}
+.hn-topbar .shortcut-menu {
+  width: 390px;
+}
+.hn-topbar .notification-menu {
+  width: 370px;
+}
+.hn-topbar .account-menu {
+  width: 290px;
+  padding-bottom: 8px;
+}
+.hn-topbar .header-menu-heading {
+  display: grid;
+  gap: 2px;
+  padding: 15px 16px 12px;
+  border-bottom: 1px solid var(--line);
+}
+.hn-topbar .header-menu-heading strong {
+  font-size: 15px;
+  line-height: 22px;
+  font-weight: 600;
+}
+.hn-topbar .header-menu-heading span {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 18px;
+}
+.hn-topbar .header-menu-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.hn-topbar .header-menu-heading-row > div {
+  display: grid;
+  gap: 2px;
+}
+.hn-topbar .header-menu-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: calc(100% - 14px);
+  min-height: 42px;
+  margin: 5px 7px 0;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 20px;
+  text-align: left;
+}
+.hn-topbar .header-menu-item:hover,
+.hn-topbar .header-menu-item.is-active {
+  background: var(--primary-soft);
+  color: var(--primary-dark);
+}
+.hn-topbar .header-menu-item.is-active::after {
+  content: "✓";
+  margin-left: auto;
+  font-weight: 800;
+}
+.hn-topbar .header-menu-item > span:not(.menu-item-icon):not(.language-symbol) {
+  min-width: 0;
+}
+.hn-topbar .header-menu-item > span > strong,
+.hn-topbar .header-menu-item > span > small {
+  display: block;
+}
+.hn-topbar .header-menu-item small {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 16px;
+}
+.hn-topbar .menu-item-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 21px;
+  height: 21px;
+}
+.hn-topbar .menu-item-icon svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.65;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.hn-topbar .language-symbol {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 31px;
+  height: 31px;
+  border-radius: 50%;
+  background: var(--hnt-surface-hover);
+  color: var(--ink);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+/* ── kết quả tìm kiếm ───────────────────────────────────────────────────── */
+.hn-topbar .search-results {
+  max-height: 390px;
+  overflow: auto;
+  padding: 7px;
+}
+.hn-topbar .search-result {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) 20px;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  min-height: 54px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+}
+.hn-topbar .search-result:hover,
+.hn-topbar .search-result:focus-visible {
+  background: var(--primary-soft);
+  color: var(--primary-dark);
+}
+.hn-topbar .search-result-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 7px;
+  background: var(--hnt-surface-hover);
+}
+.hn-topbar .search-result-icon svg,
+.hn-topbar .search-result-arrow svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.65;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.hn-topbar .search-result > span:nth-child(2) {
+  min-width: 0;
+}
+.hn-topbar .search-result strong,
+.hn-topbar .search-result small {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.hn-topbar .search-result strong {
+  font-size: 13px;
+  line-height: 19px;
+  font-weight: 600;
+}
+.hn-topbar .search-result small {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 17px;
+}
+.hn-topbar .search-empty {
+  padding: 24px 16px;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+/* ── lối tắt nghiệp vụ ──────────────────────────────────────────────────── */
+.hn-topbar .shortcut-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.hn-topbar .shortcut-grid button {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 5px;
+  min-height: 132px;
+  padding: 14px;
+  border: 0;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+  text-align: center;
+}
+.hn-topbar .shortcut-grid button:nth-child(2n) {
+  border-right: 0;
+}
+.hn-topbar .shortcut-grid button:nth-last-child(-n + 2) {
+  border-bottom: 0;
+}
+.hn-topbar .shortcut-grid button:hover {
+  background: var(--primary-soft);
+}
+.hn-topbar .shortcut-grid strong {
+  font-size: 13px;
+  line-height: 19px;
+  font-weight: 600;
+}
+.hn-topbar .shortcut-grid small {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 16px;
+}
+.hn-topbar .shortcut-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-bottom: 2px;
+  border-radius: 50%;
+  background: var(--primary-soft);
+  color: var(--primary-dark);
+}
+.hn-topbar .shortcut-icon svg {
+  width: 21px;
+  height: 21px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.65;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.hn-topbar .shortcut-inbound {
+  background: var(--green-soft);
+  color: var(--green);
+}
+.hn-topbar .shortcut-outbound {
+  background: var(--red-soft);
+  color: var(--red);
+}
+.hn-topbar .shortcut-stock {
+  background: var(--amber-soft);
+  color: var(--amber);
+}
+.hn-topbar .shortcut-warranty {
+  background: var(--blue-soft);
+  color: var(--hnt-teal-fg);
+}
+
+/* ── thông báo ──────────────────────────────────────────────────────────── */
+.hn-topbar .notification-row {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  min-height: 72px;
+  padding: 10px 16px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+}
+.hn-topbar .notification-row:hover {
+  background: var(--hnt-surface-hover);
+}
+.hn-topbar .notification-row > span:nth-child(2) {
+  min-width: 0;
+}
+.hn-topbar .notification-row strong,
+.hn-topbar .notification-row small {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.hn-topbar .notification-row strong {
+  font-size: 13px;
+  line-height: 19px;
+  font-weight: 600;
+}
+.hn-topbar .notification-row small,
+.hn-topbar .notification-row time {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 17px;
+}
+.hn-topbar .notification-icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+}
+.hn-topbar .notification-icon svg {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.65;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.hn-topbar .notification-icon.is-danger {
+  background: var(--red-soft);
+  color: var(--red);
+}
+.hn-topbar .notification-icon.is-warning {
+  background: var(--amber-soft);
+  color: var(--amber);
+}
+.hn-topbar .notification-icon.is-info {
+  background: var(--blue-soft);
+  color: var(--hnt-teal-fg);
+}
+.hn-topbar .notification-empty {
+  padding: 24px 16px;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+}
+.hn-topbar .header-menu-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: calc(100% - 28px);
+  min-height: 38px;
+  margin: 9px 14px;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 7px;
+  background: var(--primary-soft);
+  color: var(--primary-dark);
+  font-size: 12px;
+  font-weight: 600;
+}
+.hn-topbar .header-menu-footer svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.65;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ── tài khoản ──────────────────────────────────────────────────────────── */
+.hn-topbar .account-summary {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 15px 16px;
+}
+.hn-topbar .avatar-large {
+  width: 44px;
+  height: 44px;
+}
+.hn-topbar .account-summary > div {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+.hn-topbar .account-summary strong {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+}
+.hn-topbar .account-summary span,
+.hn-topbar .account-summary small {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 17px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.hn-topbar .menu-separator {
+  height: 1px;
+  margin: 4px 0;
+  background: var(--line);
+}
+.hn-topbar .logout-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: calc(100% - 28px);
+  min-height: 38px;
+  margin: 8px 14px 2px;
+  padding: 7px 12px;
+  border: 0;
+  border-radius: 7px;
+  background: var(--red);
+  color: var(--hnt-white);
+  font-size: 13px;
+  font-weight: 600;
+}
+.hn-topbar .logout-button:hover {
+  background: var(--wms-error-dark);
+}
+.hn-topbar .logout-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.hn-topbar .logout-button svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.65;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ── responsive: giữ nguyên các mốc của demo ────────────────────────────── */
+@media (max-width: 1279px) {
+  .hn-topbar {
+    margin-inline: 16px;
+  }
+}
+
+@media (max-width: 979px) {
+  .hn-topbar {
+    top: 8px;
+    margin-top: 12px;
+    padding-inline: 14px;
+  }
+  .hn-topbar .topbar-actions {
+    gap: 3px;
+  }
+}
+
+@media (max-width: 767px) {
+  .hn-topbar {
+    min-height: 64px;
+    gap: 7px;
+    margin-inline: 12px;
+    padding-inline: 10px;
+  }
+  .hn-topbar .topbar-search-wrap {
+    flex: 1 1 86px;
+    min-width: 40px;
+  }
+  .hn-topbar .topbar-search {
+    gap: 7px;
+    padding-inline: 7px;
+  }
+  .hn-topbar .topbar-search kbd,
+  .hn-topbar .control-code {
+    display: none;
+  }
+  .hn-topbar .icon-button {
+    min-width: 36px;
+    width: 36px;
+    height: 36px;
+    min-height: 36px;
+  }
+  .hn-topbar .language-toggle {
+    padding-inline: 0;
+  }
+  .hn-topbar .avatar-button {
+    width: 38px;
+    height: 38px;
+    min-height: 38px;
+  }
+  .hn-topbar .avatar-button .avatar {
+    width: 32px;
+    height: 32px;
+  }
+  .hn-topbar .header-menu {
+    position: fixed;
+    top: 82px;
+    right: 12px;
+    left: 12px;
+    width: auto;
+    max-height: calc(100vh - 96px);
+    overflow: auto;
+  }
+  .hn-topbar .shortcut-menu,
+  .hn-topbar .notification-menu,
+  .hn-topbar .account-menu,
+  .hn-topbar .compact-menu,
+  .hn-topbar .search-menu {
+    width: auto;
+  }
+  .hn-topbar .shortcut-grid button {
+    min-height: 116px;
+  }
+}
+
+@media (max-width: 479px) {
+  .hn-topbar {
+    gap: 5px;
+  }
+  .hn-topbar .topbar-search-wrap {
+    flex: 0 0 40px;
+    min-width: 40px;
+  }
+  .hn-topbar .topbar-search input {
+    width: 0;
+    min-width: 0;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .hn-topbar .topbar-search-wrap:focus-within {
+    position: absolute;
+    z-index: 5;
+    left: 53px;
+    right: 10px;
+    flex: 1;
+  }
+  .hn-topbar .topbar-search-wrap:focus-within .topbar-search {
+    background: var(--surface);
+    box-shadow: var(--hnt-shadow);
+  }
+  .hn-topbar .topbar-search-wrap:focus-within input {
+    width: auto;
+    min-width: 0;
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .hn-topbar:has(.topbar-search-wrap:focus-within) .topbar-actions,
+  .hn-topbar:has(.topbar-search-wrap:focus-within) .mobile-menu {
+    visibility: hidden;
+  }
+  .hn-topbar .topbar-actions {
+    gap: 4px;
+  }
+}
+
+@media (pointer: coarse) {
+  .hn-topbar button {
+    min-height: 44px;
+  }
+  .hn-topbar .icon-button {
+    min-height: 38px;
+  }
+}
+
+/* ── CHẾ ĐỘ TỐI ─────────────────────────────────────────────────────────────
+   Nhóm màu chung (`--wms-*`) đã tự đổi ở css-vars-dark.css; ở đây chỉ đảo các
+   sắc riêng `--hnt-*` theo đúng khối `html[data-theme="dark"]` của demo.
+   `--hnt-white` GIỮ trắng: nó là màu CHỮ trên nền đỏ/tím, không phải nền. */
+:root[data-theme="dark"] .hn-topbar {
+  --hnt-surface-muted: #35354f;
+  --hnt-surface-hover: #3a3a55;
+  --hnt-shadow: 0 3px 14px rgba(12, 12, 24, 0.32);
+  --hnt-topbar-bg: rgba(47, 47, 72, 0.97);
+  --hnt-teal-fg: #5fddec;
+
+  border-color: rgba(231, 227, 252, 0.08);
+}
+:root[data-theme="dark"] .hn-topbar .header-menu {
+  box-shadow: 0 12px 34px rgba(12, 12, 24, 0.48);
+}

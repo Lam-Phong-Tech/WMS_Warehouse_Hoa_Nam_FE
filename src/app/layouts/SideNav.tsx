@@ -199,7 +199,6 @@ export function SideNav({
 }: SideNavProps) {
   const location = useLocation();
   const navigate = useNavigate();
-  const navLabel = useNavLabel();
   const t = useT();
   const permissionCodes = useAuthStore((state) => state.permissionCodes);
   const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
@@ -209,6 +208,11 @@ export function SideNav({
     DEFAULT_SCREEN_BY_PATH[location.pathname];
 
   const visibleGroups = getVisibleNavGroups(permissionCodes, isSuperAdmin);
+  /**
+   * Nhãn menu đi qua i18n: khoá là screen-id (mục) và tên icon (nhóm) — nhãn
+   * tiếng Việt trong nav-data vẫn là bản gốc và là fallback.
+   */
+  const navLabel = useNavLabel();
 
   const isItemActive = (item: NavItemData) =>
     (selectedScreen === item.screen || !selectedScreen) &&
@@ -217,9 +221,9 @@ export function SideNav({
   const activeGroupName = visibleGroups.find((group) =>
     group.items.some(isItemActive),
   )?.name;
-  const activeLabel = visibleGroups
+  const activeItem = visibleGroups
     .flatMap((group) => group.items)
-    .find(isItemActive)?.label;
+    .find(isItemActive);
 
   // Accordion "flush": CHỈ MỘT nhóm mở tại một thời điểm. Mặc định đóng hết —
   // vào ứng dụng thấy trọn cây menu, bấm tiêu đề nhóm mới sổ.
@@ -284,7 +288,7 @@ export function SideNav({
       <NavRowTooltip
         key={group.name}
         enabled={collapsed}
-        title={navLabel(item.label)}
+        title={navLabel(item.screen, item.label)}
       >
         <Box
           component="button"
@@ -304,7 +308,7 @@ export function SideNav({
           </Box>
           {!collapsed ? (
             <Box component="span" sx={labelSx}>
-              {navLabel(item.label)}
+              {navLabel(item.screen, item.label)}
             </Box>
           ) : null}
         </Box>
@@ -320,7 +324,7 @@ export function SideNav({
       <Box
         component="section"
         key={group.name}
-        aria-label={navLabel(group.name)}
+        aria-label={navLabel(group.icon, group.name)}
         sx={{
           // Rail: gạch 22px tách cụm ngay trên nhóm (demo: reports/system).
           ...(collapsed && group.railDivider
@@ -342,7 +346,7 @@ export function SideNav({
             : null),
         }}
       >
-        <NavRowTooltip enabled={collapsed} title={navLabel(group.name)}>
+        <NavRowTooltip enabled={collapsed} title={navLabel(group.icon, group.name)}>
           <Box
             component="button"
             type="button"
@@ -361,7 +365,7 @@ export function SideNav({
             {!collapsed ? (
               <>
                 <Box component="span" sx={labelSx}>
-                  {navLabel(group.name)}
+                  {navLabel(group.icon, group.name)}
                 </Box>
                 <Box
                   component="span"
@@ -417,7 +421,7 @@ export function SideNav({
                   sx={childRowSx(active)}
                 >
                   <Box component="span" sx={labelSx}>
-                    {navLabel(item.label)}
+                    {navLabel(item.screen, item.label)}
                   </Box>
                 </Box>
               );
@@ -566,8 +570,10 @@ export function SideNav({
 
       {/* Thông báo cho trình đọc màn hình (demo: .hnw-live) */}
       <Box component="p" aria-live="polite" sx={liveRegionSx}>
-        {activeLabel
-          ? t("nav.currentlySelected", { label: navLabel(activeLabel) })
+        {activeItem
+          ? t("nav.currentlySelected", {
+              label: navLabel(activeItem.screen, activeItem.label),
+            })
           : ""}
       </Box>
     </Box>

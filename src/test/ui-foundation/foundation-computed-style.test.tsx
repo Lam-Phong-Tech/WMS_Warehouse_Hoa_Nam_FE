@@ -9,13 +9,20 @@ import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { ThemeProvider as MuiThemeProvider } from "@mui/material/styles";
 import { muiTheme } from "@/shared/ui/theme/mui-adapter";
-import { COMPONENT_TOKENS as C, SEMANTIC_LIGHT as S } from "@/shared/ui/tokens";
+import { COMPONENT_TOKENS as C, PALETTE, cssVarNameOf } from "@/shared/ui/tokens";
 import {
   UiButton,
   UiStatusBadge,
   UiText,
   UiTextField,
 } from "@/shared/ui/components";
+
+/**
+ * So với `PALETTE.light` (giá trị THÔ) chứ không phải `SEMANTIC_LIGHT`: từ đợt
+ * dark mode, SEMANTIC_LIGHT là mặt tiền `var(--wms-…)` — dùng nó ở đây thì test
+ * chỉ so hai chuỗi biến với nhau và không còn bắt được theme drift nữa.
+ */
+const S = PALETTE.light;
 import { ICON_FAMILY } from "@/shared/ui/icons/icon-family";
 
 // Render qua MuiThemeProvider trực tiếp (test cô lập — không cần antd App).
@@ -61,13 +68,20 @@ describe("UiTextField", () => {
 });
 
 describe("UiStatusBadge", () => {
-  it("tone success → nền soft + chữ successText (inline qua emotion)", () => {
+  /**
+   * Khẳng định là BIẾN CSS chứ không phải màu thô: badge phải bám
+   * `--wms-success-*` để tự đổi khi `<html data-theme>` sang tối. Nếu emotion
+   * lại sinh ra hex/rgba cứng thì tone này sẽ đứng nguyên màu sáng trên nền tối —
+   * đúng thứ test này tồn tại để chặn.
+   */
+  it("tone success → nền soft + chữ successText, bám biến CSS để theo được chế độ tối", () => {
     renderUi(
       <UiStatusBadge tone="success" label="ĐÃ DUYỆT" data-testid="badge" />,
     );
     const css = emotionCss().toLowerCase();
-    expect(css).toContain(S.successSoft.toLowerCase());
-    expect(css).toContain(S.successText.toLowerCase());
+    expect(css).toContain(cssVarNameOf("successSoft"));
+    expect(css).toContain(cssVarNameOf("successText"));
+    expect(css).not.toContain(S.successSoft.toLowerCase());
   });
 });
 

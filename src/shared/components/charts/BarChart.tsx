@@ -1,6 +1,6 @@
 import Chart from "react-apexcharts";
 import type { ApexOptions } from "apexcharts";
-import { baseChartOptions, CATEGORICAL_PALETTE } from "./chart-theme";
+import { useChartBaseOptions, CATEGORICAL_PALETTE } from "./chart-theme";
 
 export type BarChartSeries = {
   name: string;
@@ -35,6 +35,8 @@ export function BarChart({
             item.color ??
             CATEGORICAL_PALETTE[index % CATEGORICAL_PALETTE.length],
         );
+
+  const baseChartOptions = useChartBaseOptions();
 
   const options: ApexOptions = {
     ...baseChartOptions,

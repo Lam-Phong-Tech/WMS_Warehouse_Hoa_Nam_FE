@@ -34,6 +34,7 @@ const ENTRYPOINT = "src/main.tsx";
 export const CSS_MANIFEST = [
   loadIconFamily().cssImport,
   "./shared/ui/tokens/css-vars.css",
+  "./shared/ui/tokens/css-vars-dark.css",
   "./index.css",
   "./styles/hn-wms-page-normalize.css",
   "./styles/hn-wms-source-screen.css",

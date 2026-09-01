@@ -249,8 +249,10 @@ describe("navigation metadata (nav-data — nguồn duy nhất, NAV-01)", () => 
     );
     expect(matchesPath(ROUTES.OUTBOUND, ROUTES.INBOUND)).toBe(false);
     // Breadcrumb hợp nhất từ nav-data (thay getBreadcrumb của menu.tsx cũ).
+    // `i18nKey` là khoá tra bản dịch của chặng (screen-id / tên icon nhóm);
+    // route ngoài cây menu như /profile chưa có khoá nên chỉ còn nhãn gốc.
     expect(getBreadcrumbTrail(ROUTES.PROFILE)).toEqual([
-      { label: "Trang chủ", path: ROUTES.DASHBOARD },
+      { label: "Trang chủ", path: ROUTES.DASHBOARD, i18nKey: "home" },
       { label: "Hồ sơ cá nhân" },
     ]);
     expect(getBreadcrumbTrail(ROUTES.INBOUND).map((c) => c.label)).toEqual([

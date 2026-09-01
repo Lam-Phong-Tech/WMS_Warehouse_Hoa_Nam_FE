@@ -1,64 +1,77 @@
 /**
  * Bản dịch EN cho cây điều hướng và breadcrumb.
  *
- * Nav label sống trong `nav-data.ts` dưới dạng BẢNG DỮ LIỆU (một cây duy nhất
- * cho sidebar + breadcrumb + test RBAC), không phải JSX. Đổi cả bảng đó sang
- * khoá i18n sẽ kéo theo SideNav, UiBreadcrumb và bộ test đang khoá nhãn tiếng
- * Việt. Nên ở đây tra theo CHÍNH nhãn tiếng Việt: nav-data giữ nguyên là nguồn
- * sự thật, EN chỉ là một lớp phủ.
+ * Tra theo KHOÁ ỔN ĐỊNH chứ không theo chuỗi tiếng Việt đang hiển thị:
+ * screen-id cho từng mục (MAP-01, IN-01…), tên icon cho nhóm cấp 1. Nhờ vậy
+ * sửa nhãn tiếng Việt trong `nav-data.ts` không làm rơi bản dịch EN — đó là
+ * lý do bảng này KHÔNG khoá theo `label`.
  *
- * Thiếu nhãn nào thì `useNavLabel` trả lại nguyên tiếng Việt — cùng lối
- * fail-safe với `useT`.
+ * `nav-data.ts` là nguồn sự thật của cây menu và mang sẵn `i18nKey`; ở đây chỉ
+ * là lớp phủ EN. Thiếu khoá thì trả lại `fallback` (nhãn tiếng Việt gốc) —
+ * cùng lối fail-safe với `useT`.
  */
 import { useCallback } from "react";
 import { useLanguageStore } from "./language.store";
 
-export const NAV_LABELS_EN: Readonly<Record<string, string>> = {
-  // Nhóm cấp 1
-  "Tổng quan": "Overview",
-  "Danh mục": "Master data",
-  "Nhập kho": "Inbound",
-  "Xuất kho": "Outbound",
-  "Bảo hành & linh kiện": "Warranty & components",
-  "Tồn kho & kiểm soát": "Stock & control",
-  "Báo cáo": "Reports",
-  "Hệ thống": "System",
+export const NAV_LABELS_EN: Record<string, string> = {
+  home: "Home",
 
-  // Trang
-  "Trang chủ": "Home",
-  "Tổng quan kho": "Warehouse overview",
-  "Danh sách SKU": "SKU list",
-  "Danh mục sản phẩm": "Product catalogue",
-  "Danh mục đại lý / nơi nhận": "Dealer / recipient catalogue",
-  "Danh mục bệnh / lỗi": "Symptom / defect catalogue",
-  "Danh sách phiếu nhập": "Receipt note list",
-  "Danh sách linh kiện chờ xếp khay": "Components awaiting tray",
-  "Danh sách phiếu xuất": "Issue note list",
-  "Danh sách bảo hành": "Warranty list",
-  "Danh sách phiếu xuất linh kiện": "Component issue note list",
-  "Tra cứu tồn & đối soát": "Stock lookup & reconciliation",
-  "Truy vết mã vật lý": "Physical code trace",
-  "Danh sách phiếu điều chỉnh tồn kho": "Stock adjustment note list",
-  "Nhập – Xuất – Tồn & Chứng từ": "Receipts – Issues – Stock & documents",
-  "Tồn kho & đối soát": "Stock & reconciliation",
-  "Truy vết hàng hóa": "Goods trace",
-  "Nhập dữ liệu / đối chiếu & lỗi dữ liệu":
-    "Data import / reconciliation & data errors",
-  "Nhãn đóng gói – Print / Reprint": "Packing label – Print / Reprint",
-  "Xuất theo người nhận / đại lý": "Issues by recipient / dealer",
-  "Chứng từ cần bổ sung": "Documents to supplement",
-  "Danh sách người dùng & phân quyền": "Users & permissions",
-  "Nhật ký hệ thống": "System audit log",
-  "Cấu hình kho": "Warehouse configuration",
-  "Ứng dụng phân vùng (PV)": "Zoning application (PV)",
+  // Nhóm
+  "layout-dashboard": "Overview",
+  "package-search": "Master data",
+  "package-plus": "Inbound",
+  "package-minus": "Outbound",
+  "briefcase-medical": "Warranty & components",
+  warehouse: "Inventory & control",
+  "chart-column-big": "Reports",
+  "settings-2": "System",
+
+  // Mục
+  "MAP-01": "Warehouse overview",
+  "MST-01": "SKU list",
+  "MST-CAT-01": "Product catalog",
+  "AGY-01": "Agencies / recipients",
+  "DEF-01": "Defect catalog",
+  "IN-01": "Inbound documents",
+  "PTW-00": "Components awaiting putaway",
+  "OUT-01": "Outbound documents",
+  "WAR-01": "Warranty cases",
+  "WAR-04": "Component issue documents",
+  "INV-01": "Stock lookup & reconciliation",
+  "TRACE-01": "Physical code trace",
+  "REV-00": "Stock adjustment documents",
+  "RPT-01": "Inbound – Outbound – Stock & documents",
+  "RPT-02": "Inventory & reconciliation",
+  "RPT-03": "Goods traceability",
+  "RPT-04": "Data entry / matching & errors",
+  "RPT-05": "Packing labels – print / reprint",
+  "RPT-06": "Warranty & components",
+  "RPT-07": "Issues by recipient / agency",
+  "RPT-08": "Documents needing evidence",
+  "IAM-01": "Users & permissions",
+  "PV-ADM-01": "Partition app (PV)",
+  "WH-01": "Warehouse settings",
+  "AUDIT-01": "System audit log",
 };
 
-/** Dịch một nhãn điều hướng sang ngôn ngữ đang chọn. */
-export function navLabel(language: string, label: string): string {
-  return language === "en" ? (NAV_LABELS_EN[label] ?? label) : label;
+/** Dịch một nhãn điều hướng. `key` rỗng (chặng ngoài cây menu) thì giữ nguyên. */
+export function navLabel(
+  language: string,
+  key: string | undefined,
+  fallback: string,
+): string {
+  if (language !== "en" || !key) return fallback;
+  return NAV_LABELS_EN[key] ?? fallback;
 }
 
-export function useNavLabel(): (label: string) => string {
+export function useNavLabel(): (
+  key: string | undefined,
+  fallback: string,
+) => string {
   const language = useLanguageStore((state) => state.language);
-  return useCallback((label: string) => navLabel(language, label), [language]);
+  return useCallback(
+    (key: string | undefined, fallback: string) =>
+      navLabel(language, key, fallback),
+    [language],
+  );
 }

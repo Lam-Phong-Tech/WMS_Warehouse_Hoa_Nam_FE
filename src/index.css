@@ -22,6 +22,13 @@ body,
   min-height: 100vh;
 }
 
+/* Nền/chữ gốc của tài liệu đọc từ token nên vùng overscroll và mọi portal chưa
+   kịp nhận theme vẫn đúng chế độ sáng/tối. */
+body {
+  background: var(--wms-bg-canvas);
+  color: var(--wms-text-high);
+}
+
 /* Toast (sonner): khi ẩn/kéo xuống thì trượt xuống dưới thay vì lên trên */
 .app-toaster
   [data-sonner-toast][data-y-position="top"][data-removed="true"][data-swipe-out="false"] {
@@ -34,11 +41,11 @@ body,
   height: 8px;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.18);
+  background: rgba(var(--wms-ink-rgb), 0.24);
   border-radius: 8px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(var(--wms-ink-rgb), 0.4);
 }
 
 /* Giao diện toast/action result thống nhất */

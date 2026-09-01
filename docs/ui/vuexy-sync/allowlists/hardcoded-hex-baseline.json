@@ -1,11 +1,13 @@
 {
   "meta": {
     "owner": "FE1 Team",
-    "reason": "Hex literal còn lại sau Part 2 (chủ yếu #fff + 4 màu sidebar legacy + literal TSX module chưa migrate). Ratchet: chỉ được GIẢM.",
+    "reason": "Hex literal còn lại sau Part 2 (chủ yếu #fff + 4 màu sidebar legacy + literal TSX module chưa migrate). Ratchet: chỉ được GIẢM. · 2026-09-01: thêm dashboard-overview.css — port 1:1 demo UI/UX Tổng quan vận hành; các hex còn lại là sắc xám/sắc chữ phụ của demo CHƯA có token tương ứng, đã gom hết vào một khối --hnd-* ở đầu file (mọi màu có token đều dùng var(--wms-*)). Rút khi bảng token bổ sung nhóm neutral/alert-text.",
     "deadline": "Part 4 (Screen Migration) — mục tiêu ~0 ngoài tokens",
     "generated_by": "scripts/check-ui-tokens.mjs --update-baseline"
   },
   "files": {
-    "src/shared/utils/performance-monitor.ts": 4
+    "src/shared/utils/performance-monitor.ts": 4,
+    "src/modules/dashboard/dashboard-overview.css": 52,
+    "src/app/layouts/topbar/app-topbar.css": 8
   }
 }

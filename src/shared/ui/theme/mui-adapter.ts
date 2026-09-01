@@ -2,6 +2,12 @@
  * MUI ADAPTER — map canonical tokens → MUI theme. `createTheme` DUY NHẤT của
  * dự án nằm ở đây (guard: provider-uniqueness test + `yarn ui:architecture`).
  *
+ * HAI CHẾ ĐỘ: `palette` phải là MÀU THẬT vì `createTheme` tự sinh biến thể
+ * (augmentColor) và vì `theme.palette.x.main` còn được đọc bằng JS ở vài chỗ
+ * (`alpha()`, tint của UiButton) — nên nó lấy từ `PALETTE[mode]`. Ngược lại
+ * `styleOverrides` bên dưới đọc `SEMANTIC_LIGHT` (đã là `var(--wms-…)`) nên
+ * tự đúng màu theo `<html data-theme>` mà không cần dựng lại theme.
+ *
  * Phần cấu trúc component overrides + motion kế thừa nguyên từ
  * src/app/mui-theme.ts cũ (đã đồng bộ nhịp với antd/CSS); chỉ thay giá trị
  * màu/kích thước bằng token Vuexy theo DEC-UI-BASELINE-01.
@@ -14,8 +20,10 @@ import {
   COMPONENT_TOKENS as C,
   CONTROL,
   MOTION,
+  PALETTE,
   SEMANTIC_LIGHT as S,
   TYPOGRAPHY,
+  type ThemeModeName,
 } from "@/shared/ui/tokens";
 
 /**
@@ -31,22 +39,25 @@ const CONTROL_TRANSITION = [
   `transform ${MOTION.duration.fast}ms ${MOTION.easing.standard}`,
 ].join(", ");
 
-export const muiTheme = createTheme({
+function buildMuiTheme(mode: ThemeModeName) {
+  const P = PALETTE[mode];
+  return createTheme({
   breakpoints: { values: { ...BREAKPOINTS } },
   palette: {
-    primary: { main: S.primary, dark: S.primaryDark, light: S.primaryLight },
-    secondary: { main: S.secondary, dark: S.secondaryDark },
-    error: { main: S.error, dark: S.errorDark },
-    warning: { main: S.warning, dark: S.warningDark },
-    success: { main: S.success, dark: S.successDark },
-    info: { main: S.info, dark: S.infoDark },
-    background: { default: S.bgCanvas, paper: S.bgSurface },
+    mode,
+    primary: { main: P.primary, dark: P.primaryDark, light: P.primaryLight },
+    secondary: { main: P.secondary, dark: P.secondaryDark },
+    error: { main: P.error, dark: P.errorDark },
+    warning: { main: P.warning, dark: P.warningDark },
+    success: { main: P.success, dark: P.successDark },
+    info: { main: P.info, dark: P.infoDark },
+    background: { default: P.bgCanvas, paper: P.bgSurface },
     text: {
-      primary: S.textHigh,
-      secondary: S.textMedium,
-      disabled: S.textDisabled,
+      primary: P.textHigh,
+      secondary: P.textMedium,
+      disabled: P.textDisabled,
     },
-    divider: S.divider,
+    divider: P.divider,
   },
   shape: { borderRadius: C.button.radius },
   transitions: {
@@ -316,4 +327,14 @@ export const muiTheme = createTheme({
       },
     },
   },
-});
+  });
+}
+
+/** Theme dựng sẵn cho hai chế độ — provider chỉ việc chọn theo `mode`. */
+export const MUI_THEMES = {
+  light: buildMuiTheme("light"),
+  dark: buildMuiTheme("dark"),
+} as const;
+
+/** Giữ tên cũ cho các chỗ đang import (test foundation, catalog). */
+export const muiTheme = MUI_THEMES.light;

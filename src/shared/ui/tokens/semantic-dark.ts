@@ -1,12 +1,13 @@
 /**
- * SEMANTIC (dark) — CHƯA CÓ TRONG BASELINE.
+ * SEMANTIC (dark) — bảng semantic của chế độ tối, dạng GIÁ TRỊ THÔ.
  *
- * DEC-UI-BASELINE-01 không phê duyệt dark mode; Mini App (hệ X) cũng chỉ cấu
- * hình selector mà chưa implement token dark. Giữ file này làm chỗ đứng cấu
- * trúc (theo kiến trúc đích của Prompt 2) — khi có Change Request, điền
- * mapping dark tại đây và bật qua adapter, KHÔNG tạo nguồn token thứ hai.
+ * Từ đợt bật dark mode toàn app, đây không còn là chỗ đứng rỗng nữa: nó là
+ * `PALETTE.dark` được phơi ra dưới đúng tên cũ, dùng bởi adapter antd/MUI và
+ * bởi test parity với `css-vars-dark.css`.
+ *
+ * Component KHÔNG đọc file này — component đọc `SEMANTIC_LIGHT` (mặt tiền
+ * `var(--wms-…)`) và tự đổi theo `<html data-theme>`.
  */
-import type { SemanticTokens } from "./semantic-light";
+import { PALETTE, type PaletteKey } from "./palette";
 
-/** null = dark mode chưa thuộc baseline; adapter phải bỏ qua khi null. */
-export const SEMANTIC_DARK: SemanticTokens | null = null;
+export const SEMANTIC_DARK: Record<PaletteKey, string> = PALETTE.dark;

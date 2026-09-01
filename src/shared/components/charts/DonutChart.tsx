@@ -1,7 +1,7 @@
 import Chart from "react-apexcharts";
 import type { ApexOptions } from "apexcharts";
 import {
-  baseChartOptions,
+  useChartBaseOptions,
   CATEGORICAL_PALETTE,
   chartPointEvents,
 } from "./chart-theme";
@@ -34,6 +34,8 @@ export function DonutChart({
 }: DonutChartProps) {
   const total = items.reduce((sum, item) => sum + item.value, 0);
   const format = (value: number) => valueFormatter?.(value) ?? String(value);
+
+  const baseChartOptions = useChartBaseOptions();
 
   const options: ApexOptions = {
     ...baseChartOptions,

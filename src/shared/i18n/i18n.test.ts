@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { MESSAGES_EN, MESSAGES_VI, type MessageKey } from "./messages";
 import { translate } from "./useT";
+import { NAV_GROUPS, SCREEN_META } from "@/app/layouts/nav-data";
 import { NAV_LABELS_EN, navLabel } from "./nav-labels";
 
 /** Thu mọi đường dẫn `a.b.c` trỏ tới chuỗi lá trong một cây message. */
@@ -92,20 +93,53 @@ describe("translate()", () => {
 
 describe("nhãn điều hướng", () => {
   it("giữ nguyên tiếng Việt khi ngôn ngữ là vi", () => {
-    expect(navLabel("vi", "Tổng quan kho")).toBe("Tổng quan kho");
+    expect(navLabel("vi", "MAP-01", "Tổng quan kho")).toBe("Tổng quan kho");
   });
 
   it("dịch sang tiếng Anh khi ngôn ngữ là en", () => {
-    expect(navLabel("en", "Tổng quan kho")).toBe("Warehouse overview");
+    expect(navLabel("en", "MAP-01", "Tổng quan kho")).toBe("Warehouse overview");
   });
 
-  it("nhãn chưa có bản dịch thì trả lại nguyên văn", () => {
-    expect(navLabel("en", "Một mục chưa dịch")).toBe("Một mục chưa dịch");
+  /**
+   * Bảng tra theo KHOÁ ỔN ĐỊNH (screen-id / tên icon nhóm) chứ không theo chuỗi
+   * tiếng Việt, nên sửa nhãn trong `nav-data.ts` không làm rơi bản dịch.
+   */
+  it("khoá chưa có bản dịch thì trả lại nhãn gốc", () => {
+    expect(navLabel("en", "XXX-99", "Một mục chưa dịch")).toBe(
+      "Một mục chưa dịch",
+    );
+  });
+
+  it("mục không mang khoá thì trả lại nhãn gốc", () => {
+    expect(navLabel("en", undefined, "Nhãn tự do")).toBe("Nhãn tự do");
   });
 
   it("không nhãn nào dịch thành chuỗi rỗng", () => {
-    for (const [vi, en] of Object.entries(NAV_LABELS_EN)) {
-      expect(en.trim(), `nhãn "${vi}"`).not.toBe("");
+    for (const [key, en] of Object.entries(NAV_LABELS_EN)) {
+      expect(en.trim(), `khoá "${key}"`).not.toBe("");
     }
+  });
+
+  /**
+   * Guard thật của lớp này, hai chiều:
+   *
+   * - Mọi mục đang HIỆN trên cây menu phải có bản EN. Thiếu một khoá là menu
+   *   hiện nửa Việt nửa Anh — lỗi im lặng, chỉ test này bắt được.
+   * - Mọi khoá EN phải trỏ tới một screen/nhóm CÓ THẬT. Cho phép khoá của
+   *   screen đang tạm ẩn khỏi sidebar (vẫn khai trong `SCREEN_META`) để lúc bật
+   *   lại không ship mục chưa dịch; nhưng khoá gõ sai thì không lọt.
+   */
+  it("phủ đúng bộ khoá mà cây menu đang dùng", () => {
+    const inTree = new Set<string>(["home"]);
+    for (const group of NAV_GROUPS) {
+      inTree.add(group.icon);
+      for (const item of group.items) inTree.add(item.screen);
+    }
+    expect([...inTree].filter((key) => !(key in NAV_LABELS_EN))).toEqual([]);
+
+    const known = new Set([...inTree, ...Object.keys(SCREEN_META)]);
+    expect(Object.keys(NAV_LABELS_EN).filter((key) => !known.has(key))).toEqual(
+      [],
+    );
   });
 });

@@ -1,7 +1,7 @@
 import Chart from "react-apexcharts";
 import type { ApexOptions } from "apexcharts";
 import {
-  baseChartOptions,
+  useChartBaseOptions,
   CATEGORICAL_PALETTE,
   chartPointEvents,
 } from "./chart-theme";
@@ -58,6 +58,8 @@ export function MultiSeriesBarChart({
   const resolvedHeight =
     height ?? (horizontal ? Math.max(240, categories.length * 32 + 80) : 300);
   const labelsOn = showValues ?? (!dense && series.length <= 3);
+
+  const baseChartOptions = useChartBaseOptions();
 
   const options: ApexOptions = {
     ...baseChartOptions,

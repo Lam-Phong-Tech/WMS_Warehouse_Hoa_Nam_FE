@@ -4,6 +4,8 @@ import App from "./App";
 import { AppProviders } from "./app/providers/AppProviders";
 import { bootstrapAuth } from "./app/bootstrap-auth";
 import { registerPwa } from "./shared/pwa/register-pwa";
+import { initializeLanguage } from "./shared/i18n/language.store";
+import { initializeTheme } from "./shared/ui/theme/theme.store";
 import "@flaticon/flaticon-uicons/css/regular/rounded.css";
 // Canonical design tokens (DEC-UI-BASELINE-01) — PHẢI đứng trước mọi CSS khác.
 // Đây là entrypoint CSS global DUY NHẤT của dự án (guard: yarn ui:styles).
@@ -11,6 +13,9 @@ import "@flaticon/flaticon-uicons/css/regular/rounded.css";
 // hn-wms-mvp-exact, hn-wms-sidebar-account) đã XOÁ — shell/screen style nằm
 // trong UiAppShell/sx token; chỉ giữ 3 lớp hỗ trợ màn raw-table + motion.
 import "./shared/ui/tokens/css-vars.css";
+// Lớp override chế độ tối — phải đứng NGAY SAU bảng sáng và TRƯỚC mọi lớp khác,
+// vì nó chỉ đổi giá trị biến chứ không đổi selector nào của app.
+import "./shared/ui/tokens/css-vars-dark.css";
 import "./index.css";
 import "./styles/hn-wms-page-normalize.css";
 import "./styles/hn-wms-source-screen.css";
@@ -29,6 +34,10 @@ import "./styles/hn-motion.css";
 // ProtectedRoute chờ cờ này trước khi quyết định redirect /login.
 void bootstrapAuth();
 void registerPwa();
+// Đặt <html lang> và data-theme TRƯỚC lần render đầu tiên: nếu để React làm sau
+// khi mount, người dùng chọn "Tối" sẽ thấy một nhịp trắng loá lúc tải trang.
+initializeLanguage();
+initializeTheme();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

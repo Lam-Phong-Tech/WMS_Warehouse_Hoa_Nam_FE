@@ -1,6 +1,6 @@
 import Chart from "react-apexcharts";
 import type { ApexOptions } from "apexcharts";
-import { baseChartOptions, CATEGORICAL_PALETTE } from "./chart-theme";
+import { useChartBaseOptions, CATEGORICAL_PALETTE } from "./chart-theme";
 
 export type StackedBarSegment = {
   label: string;
@@ -33,6 +33,8 @@ export function StackedBarChart({
 }: StackedBarChartProps) {
   const total = segments.reduce((sum, segment) => sum + segment.value, 0);
   const format = (value: number) => valueFormatter?.(value) ?? String(value);
+
+  const baseChartOptions = useChartBaseOptions();
 
   const options: ApexOptions = {
     ...baseChartOptions,

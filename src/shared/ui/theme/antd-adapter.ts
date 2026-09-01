@@ -3,15 +3,27 @@
  * antd còn phục vụ các màn chưa migrate (xem 06-library-import-graph.md);
  * adapter này bảo đảm antd render CÙNG token Vuexy với MUI — không literal.
  */
-import type { ThemeConfig } from "antd";
+import { theme as antdAlgorithms, type ThemeConfig } from "antd";
 import {
   COMPONENT_TOKENS as C,
   MOTION,
-  SEMANTIC_LIGHT as S,
+  PALETTE,
   TYPOGRAPHY,
+  type ThemeModeName,
 } from "@/shared/ui/tokens";
 
-export const antdTheme: ThemeConfig = {
+/**
+ * antd tính hàng trăm token dẫn xuất từ các màu gốc bằng JS (thuật toán
+ * darkAlgorithm/defaultAlgorithm), nên ở đây phải truyền MÀU THẬT theo chế độ —
+ * `var(--wms-…)` sẽ làm thuật toán sinh ra màu rác.
+ */
+export function buildAntdTheme(mode: ThemeModeName): ThemeConfig {
+  const S = PALETTE[mode];
+  return {
+  algorithm:
+    mode === "dark"
+      ? antdAlgorithms.darkAlgorithm
+      : antdAlgorithms.defaultAlgorithm,
   token: {
     colorPrimary: S.primary,
     colorLink: S.primary,
@@ -21,6 +33,7 @@ export const antdTheme: ThemeConfig = {
     colorError: S.error,
     colorBgLayout: S.bgCanvas,
     colorBgContainer: S.bgSurface,
+    colorBgElevated: S.bgSurface,
     colorText: S.textHigh,
     colorTextSecondary: S.textMedium,
     colorBorder: S.borderInput,
@@ -71,4 +84,14 @@ export const antdTheme: ThemeConfig = {
       borderRadiusLG: C.modal.radius,
     },
   },
-};
+  };
+}
+
+/** Theme dựng sẵn cho hai chế độ — provider chỉ việc chọn theo `mode`. */
+export const ANTD_THEMES = {
+  light: buildAntdTheme("light"),
+  dark: buildAntdTheme("dark"),
+} as const;
+
+/** Giữ tên cũ cho các chỗ đang import. */
+export const antdTheme = ANTD_THEMES.light;

@@ -23,7 +23,7 @@ import TextField from "@mui/material/TextField";
 import Box from "@mui/material/Box";
 import { UiIconButton } from "../components/UiButton";
 import InputAdornment from "@mui/material/InputAdornment";
-import { SEMANTIC_LIGHT as S, inkAlpha } from "../tokens";
+import { SEMANTIC_LIGHT as S, inkAlphaVar } from "../tokens";
 
 /**
  * MUI (bản đang dùng trong dự án) tự sinh/gỡ CSS động cho biến thể
@@ -174,7 +174,7 @@ export function UiFormText<T extends FieldValues>({
                 fontSize: 13,
                 fontWeight: 400,
                 lineHeight: 1.15,
-                color: fieldState.error ? S.error : inkAlpha(0.78),
+                color: fieldState.error ? S.error : inkAlphaVar(0.78),
               }}
             >
               {label}

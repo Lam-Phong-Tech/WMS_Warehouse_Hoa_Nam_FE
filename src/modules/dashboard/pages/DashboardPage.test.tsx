@@ -8,73 +8,29 @@ import {
 } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { isAxiosError } from "axios";
 import dayjs from "dayjs";
+
+vi.mock("@/shared/api/http", () => ({
+  http: { get: vi.fn(), getPage: vi.fn(), post: vi.fn() },
+}));
+
+import { http } from "@/shared/api/http";
+import { API_ENDPOINTS } from "@/shared/api/endpoints";
+import { OPERATIONS_REPORT_ENDPOINTS } from "@/modules/reports/operations/report-data";
 import { useAuthStore } from "@/shared/store/auth.store";
-import { fetchDashboardOverview } from "../services/dashboardService";
-import type { DashboardOverview } from "../types";
 import DashboardPage from "./DashboardPage";
 
-vi.mock("../services/dashboardService", () => ({
-  fetchDashboardOverview: vi.fn(),
-}));
-
-// jsdom không đo được kích thước SVG (getBBox/getComputedTextLength) nên
-// ApexCharts render với width:0 và không data-label nào vào DOM — chart vẫn đúng
-// trên trình duyệt thật. Stub tối thiểu render lại series thành text để assertion
-// đọc được, và phơi nút giả cho dataPointSelection để test được drilldown.
-vi.mock("react-apexcharts", () => ({
-  default: ({
-    series,
-    options,
-  }: {
-    series: unknown;
-    options?: {
-      chart?: {
-        events?: {
-          dataPointSelection?: (
-            event: unknown,
-            ctx: unknown,
-            config: { dataPointIndex: number },
-          ) => void;
-        };
-      };
-    };
-  }) => {
-    const onSelect = options?.chart?.events?.dataPointSelection;
-    const values = Array.isArray(series)
-      ? series.flatMap((entry) =>
-          typeof entry === "number"
-            ? [entry]
-            : Array.isArray((entry as { data?: unknown[] })?.data)
-              ? (entry as { data: unknown[] }).data
-              : [],
-        )
-      : [];
-    return (
-      <div data-testid="apex-chart-stub">
-        {values.map((value, index) => (
-          <span key={index}>{String(value)}</span>
-        ))}
-        {onSelect ? (
-          <button
-            type="button"
-            data-testid="apex-point-0"
-            onClick={() => onSelect(null, null, { dataPointIndex: 0 })}
-          >
-            point-0
-          </button>
-        ) : null}
-      </div>
-    );
-  },
-}));
-
-const mockedFetch = vi.mocked(fetchDashboardOverview);
+/**
+ * Màn "Tổng quan vận hành" dựng theo demo UI/UX, đọc từ BỐN nguồn thật. Test ở
+ * đây khoá đúng những điều dễ vỡ khi ai đó sửa layout: KPI phải đổi nhánh theo
+ * bộ lọc loại hàng, tổng quá hạn phải là tổng THẬT (không phải độ dài mảng mẫu),
+ * đẳng thức đối soát phải cộng từ sổ XNT, và không có quyền thì không rò số nào.
+ */
 
 const today = dayjs().format("YYYY-MM-DD");
+const mockedGet = vi.mocked(http.get);
 
-const populated: DashboardOverview = {
+const overview = {
   period: { from_date: today, to_date: today },
   data_scope: "GLOBAL",
   scope_warehouse_ids: null,
@@ -86,10 +42,7 @@ const populated: DashboardOverview = {
     issue_month: { product: 600, component: 150, total: 750 },
   },
   warranty_received: { today: 3, week: 11, month: 42 },
-  top_sku: {
-    best: { sku_code: "SKU-A", sku_name: "Máy bơm A", issue_qty: 90 },
-    worst: { sku_code: "SKU-Z", sku_name: "Máy bơm Z", issue_qty: 2 },
-  },
+  top_sku: { best: null, worst: null },
   flow_daily: [
     {
       date: today,
@@ -136,6 +89,57 @@ const populated: DashboardOverview = {
   },
 };
 
+const xnt = {
+  lines: [
+    {
+      product_code: "SKU-A",
+      product_name: "Máy bơm A",
+      opening: 1000,
+      receipt_net: 300,
+      issue_net: 90,
+      component_issue_net: 30,
+      reversal_unlinked_net: 0,
+      closing: 1180,
+    },
+    {
+      product_code: "SKU-B",
+      product_name: "Máy bơm B",
+      opening: 54,
+      receipt_net: 0,
+      issue_net: 0,
+      component_issue_net: 0,
+      reversal_unlinked_net: 0,
+      closing: 54,
+    },
+  ],
+};
+
+const xntDaily = {
+  days: [
+    {
+      date: today,
+      inbound_qty: 300,
+      outbound_qty: 120,
+      reversal_net: 0,
+      closing_qty: 1234,
+    },
+  ],
+};
+
+const quick = { below_min_stock_count: 14, above_max_stock_count: 4 };
+
+function routeResponses(url: string) {
+  if (url === API_ENDPOINTS.REPORTS_DASHBOARD_OVERVIEW)
+    return Promise.resolve(overview);
+  if (url === API_ENDPOINTS.REPORTS_XNT_ENHANCED) return Promise.resolve(xnt);
+  if (url === OPERATIONS_REPORT_ENDPOINTS.XNT_DAILY)
+    return Promise.resolve(xntDaily);
+  if (url === API_ENDPOINTS.DASHBOARD_KPI) return Promise.resolve(quick);
+  return Promise.reject(new Error(`unexpected url ${url}`));
+}
+
+// Cùng một con số còn xuất hiện ở khối đối soát, biểu đồ và bảng dữ liệu thay
+// thế, nên các assertion về KPI đều thu hẹp phạm vi vào #kpi-grid.
 function renderDashboard() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, gcTime: 0 } },
@@ -159,64 +163,59 @@ afterEach(() => {
   });
 });
 
-describe("DashboardPage — tổng quan", () => {
-  it("đổi toggle Sản phẩm/Linh kiện thì KPI đọc đúng nhánh số liệu", async () => {
-    mockedFetch.mockResolvedValue(populated);
+describe("DashboardPage — Tổng quan vận hành", () => {
+  it("đổi bộ lọc Loại hàng thì KPI đọc đúng nhánh và ẩn thẻ không còn nghĩa", async () => {
+    mockedGet.mockImplementation((url: string) => routeResponses(url));
     renderDashboard();
 
-    const kpi = await screen.findByRole("region", { name: "Chỉ số vận hành" });
-    // Mặc định "Sản phẩm & Linh kiện" → dùng total.
-    expect(within(kpi).getByText("1.234")).toBeInTheDocument();
-    expect(within(kpi).getByText("300")).toBeInTheDocument();
+    // Mặc định "Toàn bộ" → dùng total của on_hand.
+    expect(await screen.findByText("Xuất sản phẩm đã Post")).toBeInTheDocument();
+    const grid = document.querySelector("#kpi-grid") as HTMLElement;
+    expect(within(grid).getByText("1.234")).toBeInTheDocument();
 
-    fireEvent.click(within(kpi).getByRole("button", { name: "Linh kiện" }));
+    fireEvent.click(screen.getByRole("button", { name: "Linh kiện" }));
 
-    // Linh kiện → component. 434 và 100 chỉ xuất hiện ở nhánh này.
-    expect(within(kpi).getByText("434")).toBeInTheDocument();
-    expect(within(kpi).getByText("100")).toBeInTheDocument();
-    expect(within(kpi).queryByText("1.234")).not.toBeInTheDocument();
+    // Linh kiện → nhánh component; thẻ xuất sản phẩm biến mất đúng như demo.
+    expect(within(grid).getByText("434")).toBeInTheDocument();
+    expect(within(grid).queryByText("1.234")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Xuất sản phẩm đã Post"),
+    ).not.toBeInTheDocument();
   });
 
   it("hiển thị tổng thật của ca quá hạn, không lấy độ dài mảng mẫu", async () => {
-    mockedFetch.mockResolvedValue(populated);
+    mockedGet.mockImplementation((url: string) => routeResponses(url));
     renderDashboard();
 
     // overdue_sample chỉ có 1 phần tử nhưng tổng thật là 137.
-    expect(await screen.findByText("137 ca quá hạn")).toBeInTheDocument();
+    expect(await screen.findByText("137 quá hạn")).toBeInTheDocument();
+    expect(await screen.findByText("28 ngày")).toBeInTheDocument();
   });
 
-  it("mở được danh sách chi tiết ca bảo hành quá hạn", async () => {
-    mockedFetch.mockResolvedValue(populated);
+  it("đối soát tồn cộng từ sổ XNT và báo chênh lệch đo được", async () => {
+    mockedGet.mockImplementation((url: string) => routeResponses(url));
     renderDashboard();
 
-    fireEvent.click(
-      await screen.findByRole("button", { name: "Xem chi tiết" }),
-    );
-
-    const dialog = await screen.findByRole("dialog");
-    expect(within(dialog).getByText("WC-001")).toBeInTheDocument();
-    expect(within(dialog).getByText("28 ngày")).toBeInTheDocument();
-  });
-
-  it("đổi kỳ biểu đồ nhập-xuất thì gọi lại API với khoảng ngày mới", async () => {
-    mockedFetch.mockResolvedValue(populated);
-    renderDashboard();
-
-    await screen.findByRole("region", { name: "Chỉ số vận hành" });
-    const startOfWeek = dayjs().startOf("week").format("YYYY-MM-DD");
-    expect(mockedFetch).toHaveBeenCalledWith(
-      expect.objectContaining({ from_date: startOfWeek }),
-    );
-
-    const group = screen.getByRole("group", {
-      name: "Chọn kỳ xem biểu đồ nhập xuất",
+    const status = await screen.findByRole("status", {
+      name: "Đã khớp · Chênh lệch 0",
     });
-    fireEvent.click(within(group).getByRole("button", { name: "Năm này" }));
+    expect(status).toBeInTheDocument();
+    // 1000 + 54 = 1054 tồn đầu kỳ; 1180 + 54 = 1234 tồn cuối kỳ.
+    const card = document.querySelector("#equation-card") as HTMLElement;
+    expect(within(card).getByText("1.054")).toBeInTheDocument();
+    expect(within(card).getByText("1.234")).toBeInTheDocument();
+  });
 
-    const startOfYear = dayjs().startOf("year").format("YYYY-MM-DD");
-    expect(mockedFetch).toHaveBeenCalledWith(
-      expect.objectContaining({ from_date: startOfYear }),
-    );
+  it("thẻ định mức đọc số dưới/vượt ngưỡng từ dashboard-quick", async () => {
+    mockedGet.mockImplementation((url: string) => routeResponses(url));
+    renderDashboard();
+
+    expect(
+      await screen.findByLabelText("Tồn dưới định mức: 14 SKU"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByLabelText("Tồn vượt định mức: 4 SKU"),
+    ).toBeInTheDocument();
   });
 
   it("không gọi API báo cáo khi profile đã tải mà thiếu report.view", () => {
@@ -228,38 +227,49 @@ describe("DashboardPage — tổng quan", () => {
 
     renderDashboard();
 
-    expect(
-      screen.getByText(
-        "Vui lòng liên hệ quản trị viên nếu bạn cần quyền truy cập.",
-      ),
-    ).toBeInTheDocument();
-    expect(mockedFetch).not.toHaveBeenCalled();
+    expect(screen.getByText("Giới hạn quyền")).toBeInTheDocument();
+    expect(mockedGet).not.toHaveBeenCalled();
+    // Không có widget nào lộ số liệu.
+    expect(screen.queryByText("1.234")).not.toBeInTheDocument();
   });
 
-  it("lỗi 403 thì không lộ bất kỳ số liệu nào", async () => {
-    // src/test/setup.ts mock axios toàn cục với isAxiosError luôn trả false, nên
-    // nhánh phân loại theo HTTP status không bao giờ chạy. Cài lại đúng hành vi
-    // thật của axios (nhận diện theo cờ trên chính object lỗi) cho test này.
-    vi.mocked(isAxiosError).mockImplementation(
-      (payload: unknown): payload is never =>
-        Boolean(
-          payload &&
-          typeof payload === "object" &&
-          (payload as { isAxiosError?: boolean }).isAxiosError === true,
-        ),
+  it("lỗi nguồn đọc chính thì không thay số liệu bằng 0", async () => {
+    mockedGet.mockImplementation((url: string) =>
+      url === API_ENDPOINTS.REPORTS_DASHBOARD_OVERVIEW
+        ? Promise.reject(new Error("boom"))
+        : routeResponses(url),
     );
-    mockedFetch.mockRejectedValue({
-      isAxiosError: true,
-      response: { status: 403 },
-    });
 
     renderDashboard();
 
+    expect(await screen.findByText("Lỗi nguồn đọc")).toBeInTheDocument();
     expect(
-      await screen.findByText("Bạn không có quyền xem báo cáo tổng quan."),
+      screen.getByText("Không thể tải Tổng tồn khả dụng"),
     ).toBeInTheDocument();
-    expect(
-      screen.queryByRole("region", { name: "Chỉ số vận hành" }),
-    ).not.toBeInTheDocument();
+    // Lưới KPI không có con số nào — không thay dữ liệu lỗi bằng 0.
+    const grid = document.querySelector("#kpi-grid") as HTMLElement;
+    expect(within(grid).queryByText("1.234")).not.toBeInTheDocument();
+    expect(within(grid).queryByText("0")).not.toBeInTheDocument();
+  });
+
+  it("đổi kỳ KPI thì gọi lại các nguồn với khoảng ngày mới", async () => {
+    mockedGet.mockImplementation((url: string) => routeResponses(url));
+    renderDashboard();
+
+    await screen.findByText("Xuất sản phẩm đã Post");
+    expect(mockedGet).toHaveBeenCalledWith(
+      API_ENDPOINTS.REPORTS_XNT_ENHANCED,
+      expect.objectContaining({
+        params: { from_date: today, to_date: today },
+      }),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "7 ngày gần nhất" }));
+
+    const from = dayjs().subtract(6, "day").format("YYYY-MM-DD");
+    expect(mockedGet).toHaveBeenCalledWith(
+      API_ENDPOINTS.REPORTS_XNT_ENHANCED,
+      expect.objectContaining({ params: { from_date: from, to_date: today } }),
+    );
   });
 });

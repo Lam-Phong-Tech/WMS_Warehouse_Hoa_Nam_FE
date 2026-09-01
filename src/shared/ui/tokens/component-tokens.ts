@@ -5,7 +5,7 @@
  */
 import {
   CONTROL,
-  NAV_COLOR,
+  NAV_COLOR_VARS,
   NAV_MOTION,
   NAV_SHADOW,
   RADIUS,
@@ -129,7 +129,8 @@ export const COMPONENT_TOKENS = {
     /** gradient của mục đang chọn — 118deg đúng demo */
     activeGradientAngle: "118deg",
 
-    color: NAV_COLOR,
+    // Mặt tiền biến CSS: sidebar đổi màu theo chế độ mà không phải render lại.
+    color: NAV_COLOR_VARS,
     shadow: NAV_SHADOW,
     motion: NAV_MOTION,
   },

@@ -13,31 +13,24 @@
 import { useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { SideNav } from "@/app/layouts/SideNav";
-import { UserMenu } from "@/app/layouts/UserMenu";
-import { LanguageSwitcher } from "@/app/layouts/LanguageSwitcher";
-import { resolveScreenMeta, getBreadcrumbTrail } from "@/app/layouts/nav-data";
+import { AppTopbar } from "@/app/layouts/topbar/AppTopbar";
+import { getBreadcrumbTrail } from "@/app/layouts/nav-data";
 import { useMe } from "@/modules/auth/hooks/use-me";
 import { useNotificationSocket } from "@/modules/notifications/hooks/useNotificationSocket";
-import { NotificationBell } from "@/modules/notifications/components/NotificationBell";
 import { Loading } from "@/shared/components";
 import {
   Box,
   Drawer,
   LAYOUT,
   SPACING,
-  SEMANTIC_LIGHT as S,
-  TYPOGRAPHY,
   UiAppShell,
   useMediaQuery,
   UiBreadcrumb,
   UiFooter,
-  UiIcon,
-  UiIconButton,
-  UiTopbar,
 } from "@/shared/ui";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { useNavLabel } from "@/shared/i18n/nav-labels";
-import { useT } from "@/shared/i18n/useT";
+import { ROUTES } from "@/shared/constants/routes";
 import { useNavigate } from "react-router-dom";
 
 const SIDEBAR_COLLAPSED_STORAGE_KEY = "hn-wms-sidebar-collapsed";
@@ -53,8 +46,6 @@ function readStoredSidebarCollapsed() {
 export function MainLayout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const navLabel = useNavLabel();
-  const t = useT();
   // <lg (980): sidebar chuyển sang Drawer overlay + hamburger ở topbar
   // (hợp đồng responsive 360/768/1280 của SRS — không bóp 2 cột trên mobile).
   const isDesktop = useMediaQuery((theme) => theme.breakpoints.up("lg"));
@@ -96,8 +87,14 @@ export function MainLayout() {
   const expandSidebar = () => setCollapsed(false);
 
   const requestedScreen = new URLSearchParams(location.search).get("screen");
-  const meta = resolveScreenMeta(location.pathname, location.search);
+  /**
+   * Dashboard tự dựng nguyên khối theo demo UI/UX (page-wrap + breadcrumb riêng,
+   * padding 20/24/48 của demo). Bọc thêm padding và breadcrumb của shell sẽ làm
+   * lệch số đo demo và hiện breadcrumb hai lần — nên trang này chạy full-bleed.
+   */
+  const isDashboard = location.pathname === ROUTES.DASHBOARD;
   const trail = getBreadcrumbTrail(location.pathname);
+  const navLabel = useNavLabel();
 
   if (isLoadingProfile && !isProfileLoaded) return <Loading />;
 
@@ -117,72 +114,9 @@ export function MainLayout() {
           />
         }
         topbar={
-          <UiTopbar
-            left={
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1.5,
-                  minWidth: 0,
-                }}
-              >
-                {!isDesktop ? (
-                  <UiIconButton
-                    aria-label={t("topbar.openMenu")}
-                    data-testid="mobile-nav-toggle"
-                    onClick={() => setMobileNavOpen(true)}
-                  >
-                    <UiIcon name="menu-burger" />
-                  </UiIconButton>
-                ) : null}
-                <Box className="hn-mvp-title" sx={{ minWidth: 0 }}>
-                  <Box
-                    component="h2"
-                    sx={{
-                      margin: 0,
-                      fontSize: TYPOGRAPHY.cardTitle.fontSize,
-                      fontWeight: TYPOGRAPHY.cardTitle.fontWeight,
-                      color: S.textHigh,
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                    }}
-                  >
-                    {navLabel(meta.title)}
-                  </Box>
-                  <Box
-                    component="p"
-                    sx={{
-                      margin: 0,
-                      fontSize: TYPOGRAPHY.fontSizeSecondary,
-                      color: S.textMedium,
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                    }}
-                  >
-                    {meta.description}
-                  </Box>
-                </Box>
-              </Box>
-            }
-            right={
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1.5,
-                  minWidth: 0,
-                }}
-              >
-                <LanguageSwitcher />
-                <NotificationBell />
-                {/* Mobile: chỉ avatar — tên dài không co trong flex row
-                    (min-width:auto) từng đẩy topbar tràn ngang viewport hẹp. */}
-                <UserMenu compact={!isDesktop} />
-              </Box>
-            }
+          <AppTopbar
+            showMenuButton={!isDesktop}
+            onOpenMenu={() => setMobileNavOpen(true)}
           />
         }
         footer={
@@ -200,13 +134,23 @@ export function MainLayout() {
           </UiFooter>
         }
       >
-        <Box sx={{ padding: `${SPACING.xl}px`, display: "grid", gap: 2 }}>
-          <UiBreadcrumb
-            items={trail.map((entry) => ({
-              label: navLabel(entry.label),
-              onClick: entry.path ? () => navigate(entry.path!) : undefined,
-            }))}
-          />
+        <Box
+          sx={
+            isDashboard
+              ? { display: "grid" }
+              : { padding: `${SPACING.xl}px`, display: "grid", gap: 2 }
+          }
+        >
+          {isDashboard ? null : (
+            <UiBreadcrumb
+              items={trail.map((entry) => ({
+                label: entry.i18nKey
+                  ? navLabel(entry.i18nKey, entry.label)
+                  : entry.label,
+                onClick: entry.path ? () => navigate(entry.path!) : undefined,
+              }))}
+            />
+          )}
           {/*
            * key theo pathname + ?screen= → remount chạy lại hiệu ứng chuyển màn
            * (hn-page-transition). KHÔNG đưa cả search vào key: 7 trang giữ bộ

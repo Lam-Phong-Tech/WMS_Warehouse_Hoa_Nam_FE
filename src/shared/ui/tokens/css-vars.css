@@ -93,4 +93,13 @@
   --wms-z-dropdown: 999;
   --wms-z-pwa: 2200;
   --wms-z-loading: 9999;
+
+  /* Nav — bảng màu riêng của thanh điều hướng (mirror NAV_COLOR) */
+  --wms-nav-active-gradient-end: #9E95F5;
+  --wms-nav-hover: #F3F2F5;
+  --wms-nav-border: #E8E7EC;
+  --wms-nav-item-text: #5B5868;
+  --wms-nav-muted: #6D6A7B;
+  --wms-nav-marker: #8F8B99;
+  --wms-nav-focus: #8F85F3;
 }

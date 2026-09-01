@@ -1,7 +1,7 @@
 import Chart from "react-apexcharts";
 import type { ApexOptions } from "apexcharts";
 import {
-  baseChartOptions,
+  useChartBaseOptions,
   chartPointEvents,
   CHART_COLORS,
 } from "./chart-theme";
@@ -36,6 +36,8 @@ export function HorizontalBarChart({
 }: HorizontalBarChartProps) {
   const sorted = [...items].sort((a, b) => b.value - a.value).slice(0, limit);
   const resolvedHeight = height ?? Math.max(220, sorted.length * 34 + 40);
+
+  const baseChartOptions = useChartBaseOptions();
 
   const options: ApexOptions = {
     ...baseChartOptions,

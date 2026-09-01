@@ -1,74 +1,26 @@
 /**
- * SEMANTIC (light) — hợp đồng token ngữ nghĩa của design system.
+ * SEMANTIC — hợp đồng token ngữ nghĩa của design system.
  *
- * Đây là bề mặt mà adapter (antd/MUI/CSS vars) và component được phép đọc.
- * Mọi giá trị đều dẫn xuất từ primitives — không literal mới ở đây.
+ * TỪ ĐỢT DARK MODE: mỗi giá trị ở đây là một THAM CHIẾU BIẾN CSS
+ * (`var(--wms-…)`) chứ không còn là màu thô. Nhờ vậy mọi `sx`, `styleOverrides`
+ * và CSS đang đọc `SEMANTIC_LIGHT` tự đổi màu khi `<html data-theme>` đổi —
+ * không phải render lại, không phải sửa hàng trăm chỗ dùng.
+ *
+ * Tên `SEMANTIC_LIGHT` GIỮ NGUYÊN để 60+ file đang import khỏi phải sửa; đọc
+ * nó là "bảng semantic của chế độ ĐANG hiển thị", không phải "chỉ chế độ sáng".
+ * Giá trị thô theo từng chế độ nằm ở `palette.ts`.
+ *
+ * KHI NÀO KHÔNG ĐƯỢC DÙNG FILE NÀY: chỗ cần một màu THẬT vì giá trị không đi
+ * qua CSS — palette của MUI, bảng màu ApexCharts, phép trộn màu bằng JS. Những
+ * chỗ đó phải đọc `PALETTE` (palette.ts), nếu không sẽ nhận nguyên chuỗi
+ * "var(--wms-…)" và vẽ ra màu đen/không màu.
  */
-import { COLOR, INK_RGB, OPACITY, SHADOW, inkAlpha } from "./primitives";
+import { PALETTE_KEYS, cssVarNameOf, type PaletteKey } from "./palette";
 
-const soft = (rgb: string) => `rgba(${rgb}, ${OPACITY.soft})`;
+const cssVarFacade = Object.fromEntries(
+  PALETTE_KEYS.map((key) => [key, `var(${cssVarNameOf(key)})`]),
+) as Record<PaletteKey, string>;
 
-export const SEMANTIC_LIGHT = {
-  // --- Brand -----------------------------------------------------------
-  primary: COLOR.purple,
-  primaryDark: COLOR.purpleDark,
-  primaryLight: COLOR.purpleLight,
-  primarySoft: soft("115, 103, 240"),
-  onPrimary: COLOR.white,
+export const SEMANTIC_LIGHT = cssVarFacade;
 
-  secondary: COLOR.grey,
-  secondaryDark: COLOR.greyDark,
-  secondarySoft: soft("128, 131, 144"),
-
-  // --- Semantic --------------------------------------------------------
-  success: COLOR.green,
-  successDark: COLOR.greenDark,
-  successSoft: soft("40, 199, 111"),
-  successText: COLOR.greenText,
-
-  warning: COLOR.orange,
-  warningDark: COLOR.orangeDark,
-  warningSoft: soft("255, 159, 67"),
-  warningText: COLOR.orangeText,
-
-  error: COLOR.red,
-  errorDark: COLOR.redDark,
-  errorSoft: soft("255, 76, 81"),
-  errorText: COLOR.redText,
-
-  info: COLOR.cyan,
-  infoDark: COLOR.cyanDark,
-  infoSoft: soft("0, 186, 209"),
-  infoText: COLOR.cyanText,
-
-  // --- Surface / nền ---------------------------------------------------
-  bgCanvas: COLOR.canvas,
-  bgSurface: COLOR.white,
-  /** nền phụ trong surface (table head, khối nhấn nhẹ) */
-  bgSubtle: COLOR.canvas,
-
-  // --- Chữ --------------------------------------------------------------
-  inkRgb: INK_RGB,
-  textStrong: COLOR.ink,
-  textHigh: inkAlpha(OPACITY.highEmphasis),
-  textMedium: inkAlpha(OPACITY.mediumEmphasis),
-  textDisabled: inkAlpha(OPACITY.disabled),
-
-  // --- Viền / focus -----------------------------------------------------
-  border: inkAlpha(OPACITY.border),
-  borderInput: inkAlpha(OPACITY.inputBorder),
-  divider: inkAlpha(OPACITY.border),
-  focusRing: `0 0 0 3px rgba(115, 103, 240, 0.22)`,
-
-  // --- Bóng -------------------------------------------------------------
-  shadowCard: SHADOW.card,
-  shadowFloating: SHADOW.floating,
-
-  // --- Xám --------------------------------------------------------------
-  grey100: COLOR.grey100,
-  grey200: COLOR.grey200,
-  grey300: COLOR.grey300,
-  grey500: COLOR.grey500,
-} as const;
-
-export type SemanticTokens = typeof SEMANTIC_LIGHT;
+export type SemanticTokens = Record<PaletteKey, string>;

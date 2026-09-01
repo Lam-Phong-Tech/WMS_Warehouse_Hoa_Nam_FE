@@ -30,6 +30,8 @@ export const COLOR = {
   purpleDark: "#675DD8",
   /** [DX] tint ~40% về trắng của purple — viền/nhấn nhạt */
   purpleLight: "#ABA4F6",
+  /** [ĐO] đầu dải gradient của logo màn đăng nhập (đuôi là purple) */
+  purpleGradientStart: "#8B7FF3",
 
   /** [ĐO] secondary + darken-1 */
   grey: "#808390",
@@ -71,8 +73,20 @@ export const OPACITY = {
   soft: 0.16,
 } as const;
 
-/** alpha-variant trên kênh mực Vuexy */
+/**
+ * alpha-variant trên kênh mực Vuexy — GIÁ TRỊ THÔ của chế độ sáng.
+ *
+ * Dùng ở tầng token/adapter. KHÔNG dùng trong `sx` của component: nó khoá cứng
+ * kênh mực tối nên chữ sẽ chìm nghỉm khi bật chế độ tối — dùng `inkAlphaVar`.
+ */
 export const inkAlpha = (alpha: number): string => `rgba(${INK_RGB}, ${alpha})`;
+
+/**
+ * alpha-variant trên kênh mực ĐANG hiển thị. `--wms-ink-rgb` đảo sang kênh sáng
+ * ở chế độ tối nên cùng một dòng chữ vẫn đọc được ở cả hai chế độ.
+ */
+export const inkAlphaVar = (alpha: number): string =>
+  `rgba(var(--wms-ink-rgb), ${alpha})`;
 
 /** [X] thang spacing 4-based */
 export const SPACING = {
@@ -183,6 +197,33 @@ export const NAV_COLOR = {
   /** [ĐO] màu outline khi focus bằng bàn phím */
   focus: "#8F85F3",
 } as const;
+
+/**
+ * NAV_COLOR_DARK — bản chế độ tối của bảng trên. Nền sidebar ở chế độ tối là
+ * `--wms-bg-surface` (#2F2F48) nên chữ/viền/hover phải đảo sang mực SÁNG, nếu
+ * không cả thanh điều hướng thành chữ xám trên nền tối và không đọc được gì.
+ */
+export const NAV_COLOR_DARK = {
+  activeGradientEnd: "#8379EA",
+  hover: "#3A3A55",
+  border: "rgba(231, 227, 252, 0.10)",
+  itemText: "rgba(231, 227, 252, 0.78)",
+  muted: "rgba(231, 227, 252, 0.60)",
+  marker: "rgba(231, 227, 252, 0.42)",
+  focus: "#A79EFF",
+} as const;
+
+/**
+ * Mặt tiền BIẾN CSS của bảng màu nav — đây là thứ component/sx phải dùng để
+ * sidebar tự đổi theo `<html data-theme>`. Giá trị thô của hai chế độ nằm ở
+ * `NAV_COLOR` / `NAV_COLOR_DARK` và được mirror sang css-vars*.css.
+ */
+export const NAV_COLOR_VARS = Object.fromEntries(
+  Object.keys(NAV_COLOR).map((key) => [
+    key,
+    `var(--wms-nav-${key.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase()})`,
+  ]),
+) as Record<keyof typeof NAV_COLOR, string>;
 
 /** [ĐO] bộ bóng của sidebar theo 3 trạng thái + mục đang chọn. */
 export const NAV_SHADOW = {

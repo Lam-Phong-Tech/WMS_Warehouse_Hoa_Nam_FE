@@ -2,7 +2,8 @@ import { useMemo, useState } from "react";
 import Chart from "react-apexcharts";
 import type { ApexOptions } from "apexcharts";
 import { Box, Stack, Tooltip, UiStatusBadge } from "@/shared/ui";
-import { SEMANTIC_LIGHT as S, TYPOGRAPHY } from "@/shared/ui/tokens";
+import { PALETTE, TYPOGRAPHY, type ThemeModeName } from "@/shared/ui/tokens";
+import { useThemeStore } from "@/shared/ui/theme/theme.store";
 import { SearchInput } from "@/shared/components/data-display/SearchInput";
 import type { TrayOption } from "@/modules/putaway/services/putawayService";
 import { ActionIconButton } from "@/shared/components/actions";
@@ -112,10 +113,40 @@ function lighten(hexColor: string, coefficient: number): string {
 // suốt) — đã verify trên browser thật: khi đổi trạng thái ô (chọn khay),
 // ApexCharts tween màu rgba bị lỗi hiển thị (fill không đúng ngay sau khi
 // đổi), còn màu đặc (kể cả pastel) luôn cập nhật đúng.
-const EMPTY_COLOR = S.bgSurface;
-const USED_COLOR = lighten(S.info, 0.82);
-const SELECTED_COLOR = lighten(S.success, 0.82);
-const TEXT_COLOR = S.textHigh;
+/**
+ * Lưới khay là heatmap ApexCharts nên cần MÀU THẬT theo chế độ đang hiển thị —
+ * mặt tiền `var(--wms-…)` không dùng được ở đây (Apex ghi thẳng vào thuộc tính
+ * `fill` của SVG, không phân giải `var()`), và `lighten()` cũng cần hex để pha.
+ *
+ * Chế độ tối pha về NỀN TỐI thay vì về trắng, nếu không ô đã dùng/đang chọn sẽ
+ * loá lên như đèn pin giữa bảng tối.
+ */
+function trayColorsFor(mode: ThemeModeName) {
+  const P = PALETTE[mode];
+  const toward = mode === "dark" ? 0.72 : 0.82;
+  const blend = mode === "dark" ? darken : lighten;
+  return {
+    empty: P.bgSurface,
+    used: blend(P.info, toward),
+    selected: blend(P.success, toward),
+    text: P.textHigh,
+  };
+}
+
+/** Pha màu về đen — bản đối xứng của `lighten()` cho nền tối. */
+function darken(hexColor: string, coefficient: number): string {
+  const hex = hexColor.replace("#", "");
+  const full =
+    hex.length === 3
+      ? hex
+          .split("")
+          .map((ch) => ch + ch)
+          .join("")
+      : hex;
+  const num = Number.parseInt(full, 16);
+  const mix = (channel: number) => Math.round(channel * (1 - coefficient));
+  return `rgb(${mix((num >> 16) & 0xff)}, ${mix((num >> 8) & 0xff)}, ${mix(num & 0xff)})`;
+}
 
 interface TrayCellPoint {
   x: string;
@@ -176,6 +207,13 @@ export function TraySelectionGrid({
   pendingQuantity,
 }: TraySelectionGridProps) {
   const [search, setSearch] = useState("");
+  const themeMode = useThemeStore((state) => state.mode);
+  const {
+    empty: EMPTY_COLOR,
+    used: USED_COLOR,
+    selected: SELECTED_COLOR,
+    text: TEXT_COLOR,
+  } = trayColorsFor(themeMode);
 
   const sortedTrays = useMemo(
     () =>
@@ -318,7 +356,7 @@ export function TraySelectionGrid({
        * cùng màu nền khung chứa (bgCanvas), thay vì viền mảnh màu divider.
        * Nếu để mảnh, 2 ô liền kề cùng trạng thái (vd cùng "Đang chứa") sẽ
        * dính liền thành một khối, không phân biệt được từng khay. */
-      stroke: { width: 6, colors: [S.bgCanvas] },
+      stroke: { width: 6, colors: [PALETTE[themeMode].bgCanvas] },
       dataLabels: {
         enabled: true,
         // fontWeight 700 (không phải 800) vì Arial không có mặt chữ đậm hơn
@@ -337,7 +375,7 @@ export function TraySelectionGrid({
       yaxis: {
         labels: {
           show: showRowLabels,
-          style: { fontWeight: 700, colors: S.textMedium },
+          style: { fontWeight: 700, colors: PALETTE[themeMode].textMedium },
         },
       },
       grid: { show: false, padding: { left: 4, right: 4 } },
@@ -356,7 +394,19 @@ export function TraySelectionGrid({
         },
       },
     }),
-    [disabled, trays, onSelect, showRowLabels],
+    // Bảng màu heatmap dựng từ `themeMode`, nên đổi sáng/tối phải tính lại
+    // options — thiếu deps này thì lưới giữ nguyên màu của giao diện cũ.
+    [
+      disabled,
+      trays,
+      onSelect,
+      showRowLabels,
+      themeMode,
+      EMPTY_COLOR,
+      USED_COLOR,
+      SELECTED_COLOR,
+      TEXT_COLOR,
+    ],
   );
 
   const selectedTray =

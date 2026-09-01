@@ -1,7 +1,7 @@
 import Chart from "react-apexcharts";
 import type { ApexOptions } from "apexcharts";
 import {
-  baseChartOptions,
+  useChartBaseOptions,
   chartPointEvents,
   CHART_COLORS,
 } from "./chart-theme";
@@ -68,6 +68,8 @@ export function WaterfallChart({
             : CHART_COLORS.warning,
     });
   }
+
+  const baseChartOptions = useChartBaseOptions();
 
   const options: ApexOptions = {
     ...baseChartOptions,

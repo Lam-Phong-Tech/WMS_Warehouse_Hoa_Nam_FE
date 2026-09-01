@@ -1,4 +1,3 @@
-import { alpha } from "@mui/material/styles";
 import { RADIUS } from "@/shared/ui/tokens";
 import {
   ACTION_ICON_COLORS,
@@ -40,9 +39,21 @@ const SURFACE = {
   radius: RADIUS.control,
 } as const;
 
+/**
+ * Pha loãng một tông về trong suốt.
+ *
+ * Phải là `color-mix` của CSS chứ KHÔNG phải `alpha()` của MUI: từ đợt dark
+ * mode, token màu là tham chiếu `var(--wms-…)` nên không có hex nào cho JS đọc
+ * lúc dựng style — trộn ở tầng CSS thì trình duyệt tự lấy đúng giá trị của chế
+ * độ đang hiển thị.
+ */
+function tint(tone: string, ratio: number): string {
+  return `color-mix(in srgb, ${tone} ${Math.round(ratio * 100)}%, transparent)`;
+}
+
 /** Màu nền nhạt của một hành động. */
 export function actionTonalFill(kind: ActionKind): string {
-  return alpha(ACTION_ICON_COLORS[ACTION_KINDS[kind].tone], SURFACE.fill);
+  return tint(ACTION_ICON_COLORS[ACTION_KINDS[kind].tone], SURFACE.fill);
 }
 
 /** Màu chữ + icon của một hành động (đã đo tương phản ≥ 4.65:1 trên nền của nó). */
@@ -67,10 +78,10 @@ export function actionSurfaceSx(kind: ActionKind) {
     color: actionTonalText(kind),
     border: 0,
     borderRadius: `${SURFACE.radius}px`,
-    backgroundColor: alpha(tone, SURFACE.fill),
+    backgroundColor: tint(tone, SURFACE.fill),
     boxShadow: "none",
     "&:hover": {
-      backgroundColor: alpha(tone, SURFACE.fillHover),
+      backgroundColor: tint(tone, SURFACE.fillHover),
       boxShadow: "none",
     },
     // Nút bị khoá (thiếu quyền hoặc đang gửi) bỏ hẳn màu nghiệp vụ — nếu không

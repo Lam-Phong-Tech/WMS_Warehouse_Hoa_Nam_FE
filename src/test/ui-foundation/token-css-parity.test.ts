@@ -8,13 +8,33 @@ import fs from "node:fs";
 import path from "node:path";
 import {
   CONTROL,
-  INK_RGB,
   MOTION,
+  NAV_COLOR,
+  NAV_COLOR_DARK,
+  PALETTE,
+  PALETTE_KEYS,
   RADIUS,
-  SEMANTIC_LIGHT as S,
   TYPOGRAPHY,
   Z_INDEX,
+  cssVarNameOf,
 } from "@/shared/ui/tokens";
+
+/**
+ * Nguồn so sánh là `PALETTE` (giá trị THÔ) chứ không phải `SEMANTIC_LIGHT`:
+ * từ đợt dark mode, SEMANTIC_LIGHT là mặt tiền `var(--wms-…)` nên so nó với
+ * css-vars.css là so biến với chính nó — test sẽ xanh mà chẳng chứng minh gì.
+ */
+const S = PALETTE.light;
+
+/** `itemText` ⇒ `--wms-nav-item-text` — cùng quy ước với NAV_COLOR_VARS. */
+function navVars(source: Record<string, string>): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(source).map(([key, value]) => [
+      `--wms-nav-${key.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase()}`,
+      value,
+    ]),
+  );
+}
 
 const read = (rel: string) =>
   fs.readFileSync(path.resolve(process.cwd(), rel), "utf8");
@@ -41,54 +61,16 @@ describe("css-vars.css ↔ TS tokens parity", () => {
     "--wms-font-family": TYPOGRAPHY.fontFamily,
     "--wms-font-size-body": `${TYPOGRAPHY.fontSizeBody}px`,
     "--wms-font-size-secondary": `${TYPOGRAPHY.fontSizeSecondary}px`,
-    "--wms-primary": S.primary,
-    "--wms-primary-dark": S.primaryDark,
-    "--wms-primary-light": S.primaryLight,
-    "--wms-primary-soft": S.primarySoft,
-    "--wms-on-primary": S.onPrimary,
-    "--wms-secondary": S.secondary,
-    "--wms-secondary-dark": S.secondaryDark,
-    "--wms-secondary-soft": S.secondarySoft,
-    "--wms-success": S.success,
-    "--wms-success-dark": S.successDark,
-    "--wms-success-soft": S.successSoft,
-    "--wms-success-text": S.successText,
-    "--wms-warning": S.warning,
-    "--wms-warning-dark": S.warningDark,
-    "--wms-warning-soft": S.warningSoft,
-    "--wms-warning-text": S.warningText,
-    "--wms-error": S.error,
-    "--wms-error-dark": S.errorDark,
-    "--wms-error-soft": S.errorSoft,
-    "--wms-error-text": S.errorText,
-    "--wms-info": S.info,
-    "--wms-info-dark": S.infoDark,
-    "--wms-info-soft": S.infoSoft,
-    "--wms-info-text": S.infoText,
-    "--wms-bg-canvas": S.bgCanvas,
-    "--wms-bg-surface": S.bgSurface,
-    "--wms-bg-subtle": S.bgSubtle,
-    "--wms-text-strong": S.textStrong,
-    "--wms-text-high": S.textHigh,
-    "--wms-text-medium": S.textMedium,
-    "--wms-text-disabled": S.textDisabled,
-    "--wms-border": S.border,
-    "--wms-border-input": S.borderInput,
-    "--wms-divider": S.divider,
-    "--wms-focus-ring": S.focusRing,
-    "--wms-shadow-card": S.shadowCard,
-    "--wms-shadow-floating": S.shadowFloating,
-    "--wms-ink-rgb": INK_RGB,
+    // Toàn bộ nhóm màu sinh từ PALETTE — thêm token mới không phải sửa test.
+    ...Object.fromEntries(
+      PALETTE_KEYS.map((key) => [cssVarNameOf(key), S[key]]),
+    ),
     "--wms-radius-control": `${RADIUS.control}px`,
     "--wms-radius-card": `${RADIUS.card}px`,
     "--wms-radius-sheet": `${RADIUS.sheet}px`,
     "--wms-radius-pill": `${RADIUS.pill}px`,
     "--wms-control-height": `${CONTROL.height}px`,
     "--wms-control-height-touch": `${CONTROL.heightTouch}px`,
-    "--wms-grey-100": S.grey100,
-    "--wms-grey-200": S.grey200,
-    "--wms-grey-300": S.grey300,
-    "--wms-grey-500": S.grey500,
     "--wms-motion-instant": `${MOTION.duration.instant}ms`,
     "--wms-motion-fast": `${MOTION.duration.fast}ms`,
     "--wms-motion-normal": `${MOTION.duration.normal}ms`,
@@ -101,6 +83,7 @@ describe("css-vars.css ↔ TS tokens parity", () => {
     "--wms-z-dropdown": Z_INDEX.dropdown,
     "--wms-z-pwa": Z_INDEX.pwaBanner,
     "--wms-z-loading": Z_INDEX.blockingLoading,
+    ...navVars(NAV_COLOR),
   };
 
   it("mọi biến kỳ vọng tồn tại và đúng giá trị", () => {
@@ -116,6 +99,34 @@ describe("css-vars.css ↔ TS tokens parity", () => {
   it("css-vars.css không chứa biến lạ ngoài hợp đồng", () => {
     const extra = Object.keys(vars).filter((k) => !(k in expected));
     expect(extra).toEqual([]);
+  });
+});
+
+describe("css-vars-dark.css ↔ PALETTE.dark parity", () => {
+  const vars = parseCssVars(read("src/shared/ui/tokens/css-vars-dark.css"));
+
+  it("mọi màu của chế độ tối có mặt và đúng giá trị", () => {
+    const mismatches: string[] = [];
+    const expectedDark: Record<string, string> = {
+      ...Object.fromEntries(
+        PALETTE_KEYS.map((key) => [cssVarNameOf(key), PALETTE.dark[key]]),
+      ),
+      ...navVars(NAV_COLOR_DARK),
+    };
+    for (const [name, value] of Object.entries(expectedDark)) {
+      if (!(name in vars)) mismatches.push(`${name}: THIẾU trong css-vars-dark.css`);
+      else if (vars[name] !== norm(value))
+        mismatches.push(`${name}: css="${vars[name]}" ≠ ts="${norm(value)}"`);
+    }
+    expect(mismatches).toEqual([]);
+  });
+
+  it("không khai biến lạ ngoài bảng màu", () => {
+    const allowed = new Set([
+      ...PALETTE_KEYS.map(cssVarNameOf),
+      ...Object.keys(navVars(NAV_COLOR_DARK)),
+    ]);
+    expect(Object.keys(vars).filter((k) => !allowed.has(k))).toEqual([]);
   });
 });
 
