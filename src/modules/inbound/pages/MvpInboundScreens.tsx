@@ -71,6 +71,7 @@ import type {
 } from "@/modules/inbound/types";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 import { EMPTY_TEXT } from "@/shared/constants/display";
+import { useT, type TranslateFn } from "@/shared/i18n/useT";
 
 type BarcodeResult = { rawValue?: string };
 type BarcodeDetectorInstance = {
@@ -79,6 +80,11 @@ type BarcodeDetectorInstance = {
 type BarcodeDetectorConstructor = new (options?: {
   formats?: string[];
 }) => BarcodeDetectorInstance;
+
+/** Loại lỗi camera — dịch lúc render để effect không phụ thuộc `t`. */
+type CameraError =
+  | { kind: "unsupported" | "httpsRequired" | "noDevice" }
+  | { kind: "text"; text: string };
 
 type CameraScanModalProps = {
   open: boolean;
@@ -196,7 +202,10 @@ function CameraScanModal({
   const frameRef = useRef<number | null>(null);
   const detectedRef = useRef(false);
   const callbackRef = useRef(onDetected);
-  const [cameraError, setCameraError] = useState<string | null>(null);
+  const t = useT();
+  // Giữ LOẠI lỗi, không giữ câu đã dịch: effect camera không phụ thuộc `t` nên
+  // đổi ngôn ngữ không khởi động lại luồng camera; câu chữ dịch lúc render.
+  const [cameraError, setCameraError] = useState<CameraError | null>(null);
   const [cameraReady, setCameraReady] = useState(false);
 
   useEffect(() => {
@@ -222,21 +231,15 @@ function CameraScanModal({
     const start = async () => {
       const Detector = getBarcodeDetector();
       if (!Detector) {
-        setCameraError(
-          "Trình duyệt chưa hỗ trợ tính năng đọc mã vạch/QR. Hãy đóng camera và nhập mã thủ công.",
-        );
+        setCameraError({ kind: "unsupported" });
         return;
       }
       if (!window.isSecureContext) {
-        setCameraError(
-          "Camera của WMS yêu cầu kết nối HTTPS an toàn. Hãy đóng camera và nhập mã thủ công.",
-        );
+        setCameraError({ kind: "httpsRequired" });
         return;
       }
       if (!navigator.mediaDevices?.getUserMedia) {
-        setCameraError(
-          "Thiết bị hoặc trình duyệt không cung cấp chức năng camera. Hãy nhập mã thủ công.",
-        );
+        setCameraError({ kind: "noDevice" });
         return;
       }
 
@@ -296,7 +299,7 @@ function CameraScanModal({
       } catch (error) {
         // DOMException của trình duyệt mang message tiếng Anh kỹ thuật —
         // dịch sang câu tiếng Việt nêu nguyên nhân + cách xử lý.
-        setCameraError(getCameraErrorMessage(error));
+        setCameraError({ kind: "text", text: getCameraErrorMessage(error) });
         stop();
       }
     };
@@ -317,12 +320,16 @@ function CameraScanModal({
       title={title}
       actions={
         <ActionButton kind="close" onClick={onClose}>
-          Đóng / nhập tay
+          {t("inbound.camera.closeManual")}
         </ActionButton>
       }
     >
       {cameraError ? (
-        <UiAlert tone="warning">{cameraError}</UiAlert>
+        <UiAlert tone="warning">
+          {cameraError.kind === "text"
+            ? cameraError.text
+            : t(`inbound.camera.${cameraError.kind}`)}
+        </UiAlert>
       ) : (
         <>
           <video
@@ -342,13 +349,11 @@ function CameraScanModal({
           <Box sx={{ mt: 1.5 }}>
             <UiAlert tone="info">
               <Box sx={{ fontWeight: 700 }}>
-                {cameraReady ? "Camera sẵn sàng" : "Đang khởi tạo camera..."}
+                {cameraReady
+                  ? t("inbound.camera.ready")
+                  : t("inbound.camera.initializing")}
               </Box>
-              <Box sx={{ typography: "body2" }}>
-                Đưa mã vạch/QR vào khung hình. Camera chỉ đọc mã; dữ liệu vẫn
-                phải qua cùng kiểm tra hợp lệ như khi nhập tay. Camera không
-                dùng để đọc RFID.
-              </Box>
+              <Box sx={{ typography: "body2" }}>{t("inbound.camera.hint")}</Box>
             </UiAlert>
           </Box>
         </>
@@ -357,13 +362,17 @@ function CameraScanModal({
   );
 }
 
-function errorDescription(error: unknown) {
+function errorDescription(error: unknown, t: TranslateFn) {
   const normalized = normalizeError(error);
   const requestId = getErrorRequestId(error);
   return [
-    normalized.status ? `Mã phản hồi ${normalized.status}` : undefined,
-    normalized.code ? `Mã lỗi: ${normalized.code}` : undefined,
-    requestId ? `Mã yêu cầu: ${requestId}` : undefined,
+    normalized.status
+      ? t("inbound.error.responseCode", { status: normalized.status })
+      : undefined,
+    normalized.code
+      ? t("inbound.error.errorCode", { code: normalized.code })
+      : undefined,
+    requestId ? t("inbound.error.requestId", { id: requestId }) : undefined,
   ]
     .filter(Boolean)
     .join(" | ");
@@ -375,6 +384,7 @@ export function InboundScanModal({
   onChanged,
 }: InboundScanModalProps) {
   const dialog = useDialogExit(onClose);
+  const t = useT();
   const detailQuery = useInboundDetail(documentId);
   const skuQuery = useMvpSkus({ status: "ACTIVE", per_page: 100 });
   const scanEntriesQuery = useInboundScanEntries(documentId, "ALL");
@@ -478,20 +488,26 @@ export function InboundScanModal({
     };
 
     if (classified.container_type && classified.container_type !== "CARTON") {
-      const message = `"${cartonCode}" là vật chứa loại ${classified.container_type}, không phải thùng carton của luồng nhập sản phẩm.`;
+      const message = t("inbound.carton.wrongType", {
+        code: cartonCode,
+        type: classified.container_type,
+      });
       pushCartonLog(message, false);
       toast.error(message);
       return;
     }
     if (activeCarton && activeCarton.id !== cartonId) {
-      const message = `Đang quét dở thùng ${activeCarton.code}. Hãy bấm "Đã quét xong thùng" trước khi chuyển sang ${cartonCode}.`;
+      const message = t("inbound.carton.finishFirst", {
+        active: activeCarton.code,
+        next: cartonCode,
+      });
       pushCartonLog(message, false);
       toast.error(message);
       return;
     }
     setScanCode("");
     if (activeCarton?.id === cartonId) {
-      toast.info(`Thùng ${cartonCode} đang là thùng được quét.`);
+      toast.info(t("inbound.carton.alreadyActive", { code: cartonCode }));
       return;
     }
     setActiveCarton({
@@ -499,22 +515,15 @@ export function InboundScanModal({
       code: cartonCode,
       skuId: classified.sku_id ?? undefined,
     });
-    pushCartonLog(
-      `Thùng đang quét: ${cartonCode} · Sản phẩm quét tiếp theo sẽ gắn vào thùng này`,
-      true,
-    );
-    toast.success(
-      `Đã mở thùng ${cartonCode}. Quét các máy trong thùng rồi bấm "Đã quét xong thùng".`,
-    );
+    pushCartonLog(t("inbound.carton.activeBanner", { code: cartonCode }), true);
+    toast.success(t("inbound.carton.opened", { code: cartonCode }));
   };
 
   const handleCompleteCarton = async () => {
     if (!activeCarton || !canScan || !isMutable) return;
     if (activeCartonScannedQty <= 0) {
       setActiveCarton(null);
-      toast.info(
-        `Đã đóng thùng ${activeCarton.code}. Chưa ghi nhận máy nào nên không tạo mốc nhật ký.`,
-      );
+      toast.info(t("inbound.carton.closedEmpty", { code: activeCarton.code }));
       return;
     }
     try {
@@ -524,14 +533,15 @@ export function InboundScanModal({
       });
       setActiveCarton(null);
       toast.success(
-        `Đã quét xong thùng ${result.cartonCode || activeCarton.code}: ${result.actualItemQty} máy. Tồn kho không đổi — chỉ hoàn tất nhập kho mới tăng tồn.`,
+        t("inbound.carton.closed", {
+          code: result.cartonCode || activeCarton.code,
+          qty: result.actualItemQty,
+        }),
       );
       await scanEntriesQuery.refetch();
       onChanged?.();
     } catch (error) {
-      toast.error(
-        getApiErrorMessage(error, "Không ghi nhận được mốc xong thùng."),
-      );
+      toast.error(getApiErrorMessage(error, t("inbound.carton.closeError")));
       await Promise.all([detailQuery.refetch(), scanEntriesQuery.refetch()]);
     }
   };
@@ -582,7 +592,7 @@ export function InboundScanModal({
         idempotencyKey: scanAttemptKey,
       });
       const first = result[0];
-      if (!first) throw new Error("Hệ thống không trả kết quả quét.");
+      if (!first) throw new Error(t("inbound.scan.noResult"));
       scanKeyRef.current = null;
       setScanVersion(first.version);
       const identityText = [
@@ -596,9 +606,9 @@ export function InboundScanModal({
           ? ` · ${QR_RESOLUTION_STATUS_LABELS.NEW_ITEM_CANDIDATE}`
           : "";
       const kindText = boxSkuCode
-        ? " · hộp linh kiện"
+        ? t("inbound.scan.componentBox")
         : activeCarton
-          ? ` · thùng ${activeCarton.code}`
+          ? t("inbound.scan.inCarton", { code: activeCarton.code })
           : "";
       setScanLog((current) =>
         [
@@ -606,8 +616,13 @@ export function InboundScanModal({
             key: makeKey("scan"),
             code,
             result: first.replayed
-              ? "Hợp lệ · đã ghi nhận trước đó, không cộng thêm"
-              : `Hợp lệ · +${scanQuantity}${identityText ? ` · ${identityText}` : ""}${candidateText}${kindText}`,
+              ? t("inbound.scan.duplicateEntry")
+              : t("inbound.scan.validEntry", {
+                  qty: scanQuantity,
+                  identity: identityText ? ` · ${identityText}` : "",
+                  candidate: candidateText,
+                  kind: kindText,
+                }),
             success: true,
             lineId: first.line_id,
           },
@@ -615,16 +630,17 @@ export function InboundScanModal({
         ].slice(0, 20),
       );
       if (first.replayed) {
-        toast.success(
-          "Lần quét này đã được ghi nhận trước đó. Hệ thống trả lại kết quả cũ — số đã quét không tăng thêm.",
-        );
+        toast.success(t("inbound.scan.replayed"));
       }
       setScanCode("");
       await Promise.all([detailQuery.refetch(), scanEntriesQuery.refetch()]);
       onChanged?.();
       return true;
     } catch (error) {
-      const errorText = getApiErrorMessage(error, "Mã quét không hợp lệ.");
+      const errorText = getApiErrorMessage(
+        error,
+        t("inbound.scan.invalidCode"),
+      );
       const errorCode = normalizeError(error).code ?? undefined;
       scanKeyRef.current = shouldReuseScanKey(error)
         ? { key: scanAttemptKey, fingerprint: scanFingerprint }
@@ -669,7 +685,7 @@ export function InboundScanModal({
     if (!detail || scanVersion === null || !canScan || !isMutable) return;
     const normalizedCode = (scannedCode ?? scanCode).trim().toUpperCase();
     if (!normalizedCode) {
-      toast.error("Vui lòng quét hoặc nhập một mã.");
+      toast.error(t("inbound.scan.emptyInput"));
       return;
     }
 
@@ -746,11 +762,10 @@ export function InboundScanModal({
     // Gỡ mã là thao tác không hoàn tác được bằng nút bấm: muốn thêm lại phải
     // quét lại sản phẩm thật — bắt buộc xác nhận trước khi gọi server.
     const accepted = await confirm({
-      title: "Gỡ mã đã quét?",
-      content:
-        "Mã sẽ bị xóa khỏi phiếu nhập. Muốn thêm lại, bạn phải quét lại sản phẩm đó. Tồn kho không thay đổi.",
-      confirmText: "Gỡ mã",
-      cancelText: "Hủy",
+      title: t("inbound.removeEntry.title"),
+      content: t("inbound.removeEntry.description"),
+      confirmText: t("inbound.removeEntry.confirm"),
+      cancelText: t("inbound.removeEntry.cancel"),
       tone: "danger",
     });
     if (!accepted) return;
@@ -762,12 +777,12 @@ export function InboundScanModal({
       });
       setScanVersion(result.version);
       toast.success(
-        `Đã gỡ mã khỏi phiếu. Dòng còn ${result.scannedQuantity} đơn vị đã quét; tồn kho không đổi.`,
+        t("inbound.removeEntry.done", { qty: result.scannedQuantity }),
       );
       await Promise.all([detailQuery.refetch(), scanEntriesQuery.refetch()]);
       onChanged?.();
     } catch (error) {
-      toast.error(getApiErrorMessage(error, "Không gỡ được mã đã quét."));
+      toast.error(getApiErrorMessage(error, t("inbound.removeEntry.error")));
       await Promise.all([detailQuery.refetch(), scanEntriesQuery.refetch()]);
       onChanged?.();
     }
@@ -795,13 +810,13 @@ export function InboundScanModal({
       setReceiptEvidence(evidence);
       toast.success(
         evidence.replayed
-          ? "Phiếu đã được hoàn tất nhập kho trước đó. Hệ thống trả lại kết quả cũ, tồn kho không tăng thêm lần nữa."
-          : "Hoàn tất nhập kho thành công. Tồn kho tăng đúng một lần.",
+          ? t("inbound.post.replayed")
+          : t("inbound.post.success"),
       );
       await Promise.all([detailQuery.refetch(), scanEntriesQuery.refetch()]);
       onChanged?.();
     } catch (error) {
-      toast.error(getApiErrorMessage(error, "Không hoàn tất nhập kho được."));
+      toast.error(getApiErrorMessage(error, t("inbound.post.error")));
       await detailQuery.refetch();
       onChanged?.();
     }
@@ -816,12 +831,12 @@ export function InboundScanModal({
         reason: cancelReason.trim(),
         ifMatch: scanVersion,
       });
-      toast.success("Đã hủy phiếu nhập. Không phát sinh biến động tồn kho.");
+      toast.success(t("inbound.cancel.success"));
       setCancelOpen(false);
       onChanged?.();
       dialog.close();
     } catch (error) {
-      toast.error(getApiErrorMessage(error, "Không hủy được phiếu nhập."));
+      toast.error(getApiErrorMessage(error, t("inbound.cancel.error")));
       await detailQuery.refetch();
       onChanged?.();
     }
@@ -876,7 +891,7 @@ export function InboundScanModal({
     },
     {
       key: "name",
-      header: "Tên / loại",
+      header: t("inbound.detail.colNameType"),
       width: 250,
       render: (line) => {
         const sku = skuById.get(line.productId);
@@ -900,7 +915,7 @@ export function InboundScanModal({
     },
     {
       key: "scanned",
-      header: "Số lượng đã quét",
+      header: t("inbound.detail.colScannedQty"),
       width: 140,
       align: "right",
       render: (line) => <strong>{line.scanned}</strong>,
@@ -926,7 +941,7 @@ export function InboundScanModal({
     },
     {
       key: "code",
-      header: "Mã",
+      header: t("inbound.detail.colCode"),
       width: 240,
       render: (entry) => (
         <Box component="span" sx={{ fontFamily: "monospace" }}>
@@ -962,7 +977,7 @@ export function InboundScanModal({
     },
     {
       key: "result",
-      header: "Kết quả",
+      header: t("inbound.detail.colResult"),
       width: 180,
       render: (entry) =>
         entry.status === "ACTIVE" ? (
@@ -970,41 +985,41 @@ export function InboundScanModal({
             <UiStatusBadge
               tone="info"
               icon={<CheckCircleOutlined />}
-              label="Sản phẩm mới · chờ ghi nhận"
+              label={t("inbound.newSku.candidateSuffix")}
             />
           ) : (
             <UiStatusBadge
               tone="success"
               icon={<CheckCircleOutlined />}
-              label="Hợp lệ"
+              label={t("inbound.detail.resultValid")}
             />
           )
         ) : (
           <UiStatusBadge
             tone="neutral"
             icon={<CloseCircleOutlined />}
-            label="Đã gỡ"
+            label={t("inbound.detail.resultRemoved")}
           />
         ),
     },
     {
       key: "source",
-      header: "Nguồn",
+      header: t("inbound.detail.colSource"),
       width: 140,
       render: (entry) => (
         <UiStatusBadge
           tone="neutral"
           label={
             entry.scanSource === "CAMERA_OR_MANUAL_CODE"
-              ? "Camera / mã"
-              : "Nhập tay"
+              ? t("inbound.detail.sourceCamera")
+              : t("inbound.detail.sourceManual")
           }
         />
       ),
     },
     {
       key: "actions",
-      header: "Hành động",
+      header: t("inbound.detail.colAction"),
       width: 110,
       render: (entry) =>
         entry.status === "ACTIVE" && canScan && isMutable ? (
@@ -1013,7 +1028,7 @@ export function InboundScanModal({
             disabled={working}
             onClick={() => void handleUnscan(entry)}
           >
-            Gỡ mã
+            {t("inbound.detail.removeAction")}
           </ActionButton>
         ) : null,
     },
@@ -1032,10 +1047,15 @@ export function InboundScanModal({
           pagedScanLog.findIndex((item) => item.key === row.key),
         ),
     },
-    { key: "code", header: "Mã", width: 220, render: (row) => row.code },
+    {
+      key: "code",
+      header: t("inbound.detail.colCode"),
+      width: 220,
+      render: (row) => row.code,
+    },
     {
       key: "result",
-      header: "Kết quả",
+      header: t("inbound.detail.colResult"),
       render: (row) => (
         <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
           {row.success ? (
@@ -1066,12 +1086,14 @@ export function InboundScanModal({
           >
             <span>
               {detail
-                ? `Quét & hoàn tất nhập kho · ${detail.document.code || "chưa có mã"}`
-                : "Quét & hoàn tất nhập kho"}
+                ? t("inbound.detail.titleWithCode", {
+                    code: detail.document.code || t("inbound.list.noCode"),
+                  })
+                : t("inbound.detail.title")}
             </span>
             <ActionIconButton
               kind="close"
-              label="Đóng"
+              label={t("common.close")}
               onClick={dialog.close}
               disabled={working}
             />
@@ -1084,7 +1106,7 @@ export function InboundScanModal({
               disabled={working}
               onClick={dialog.close}
             >
-              Đóng
+              {t("common.close")}
             </ActionButton>
             {detail && canCancel && isMutable ? (
               <ActionButton
@@ -1092,7 +1114,7 @@ export function InboundScanModal({
                 disabled={working}
                 onClick={() => setCancelOpen(true)}
               >
-                Hủy phiếu
+                {t("inbound.cancel.trigger")}
               </ActionButton>
             ) : null}
             {detail && isMutable ? (
@@ -1106,7 +1128,9 @@ export function InboundScanModal({
                 }
                 onClick={() => void handlePost()}
               >
-                {postMutation.isPending ? "Đang xử lý..." : "Ghi nhận nhập"}
+                {postMutation.isPending
+                  ? t("inbound.detail.posting")
+                  : t("inbound.detail.post")}
               </ActionButton>
             ) : null}
           </>
@@ -1119,11 +1143,11 @@ export function InboundScanModal({
                 <Box sx={{ fontWeight: 700 }}>
                   {getApiErrorMessage(
                     detailQuery.error,
-                    "Không tải được phiếu nhập.",
+                    t("inbound.detail.loadError"),
                   )}
                 </Box>
                 <Box sx={{ typography: "body2" }}>
-                  {errorDescription(detailQuery.error)}
+                  {errorDescription(detailQuery.error, t)}
                 </Box>
               </UiAlert>
             </Box>
@@ -1145,7 +1169,7 @@ export function InboundScanModal({
                     <Box
                       sx={{ typography: "caption", color: "text.secondary" }}
                     >
-                      Phiếu
+                      {t("inbound.detail.fieldDocument")}
                     </Box>
                     <Box sx={{ typography: "body2" }}>
                       {detail.document.code || EMPTY_TEXT}
@@ -1155,7 +1179,7 @@ export function InboundScanModal({
                     <Box
                       sx={{ typography: "caption", color: "text.secondary" }}
                     >
-                      Nguồn
+                      {t("inbound.detail.fieldSource")}
                     </Box>
                     <Box sx={{ typography: "body2" }}>
                       {detail.document.source || EMPTY_TEXT}
@@ -1165,7 +1189,7 @@ export function InboundScanModal({
                     <Box
                       sx={{ typography: "caption", color: "text.secondary" }}
                     >
-                      Trạng thái
+                      {t("inbound.detail.fieldStatus")}
                     </Box>
                     <UiStatusBadge
                       tone={
@@ -1187,7 +1211,7 @@ export function InboundScanModal({
                     <Box
                       sx={{ typography: "caption", color: "text.secondary" }}
                     >
-                      Phiên bản dữ liệu
+                      {t("inbound.detail.fieldVersion")}
                     </Box>
                     <Box sx={{ typography: "body2" }}>
                       {scanVersion ?? detail.document.version}
@@ -1198,20 +1222,26 @@ export function InboundScanModal({
 
               <Grid container spacing={1.5} sx={{ mb: 2 }}>
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                  <StatCard label="Mã hợp lệ" value={totalScanned} />
+                  <StatCard
+                    label={t("inbound.detail.statValidCodes")}
+                    value={totalScanned}
+                  />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                   <StatCard
-                    label="Dòng SKU thực nhận"
+                    label={t("inbound.detail.statSkuLines")}
                     value={detail.lines.length}
                   />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                  <StatCard label="Mã đã gỡ" value={removedEntryCount} />
+                  <StatCard
+                    label={t("inbound.detail.statRemoved")}
+                    value={removedEntryCount}
+                  />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                   <StatCard
-                    label="Mã trùng / lỗi (phiên)"
+                    label={t("inbound.detail.statSessionErrors")}
                     value={sessionDuplicateCount + sessionErrorCount}
                   />
                 </Grid>
@@ -1230,7 +1260,7 @@ export function InboundScanModal({
                   <Box
                     sx={{ typography: "subtitle2", fontWeight: 700, mb: 1.5 }}
                   >
-                    Ghi nhận mã vạch / QR / hộp
+                    {t("inbound.scan.sectionTitle")}
                   </Box>
                   {activeCarton ? (
                     <Box sx={{ mb: 1.5 }}>
@@ -1242,13 +1272,18 @@ export function InboundScanModal({
                         >
                           <InboxOutlined />
                           <Box sx={{ fontWeight: 700 }}>
-                            {`Thùng đang quét: ${activeCarton.code}`}
+                            {t("inbound.carton.activeLabel", {
+                              code: activeCarton.code,
+                            })}
                           </Box>
                         </Stack>
                         <Box sx={{ typography: "body2" }}>
-                          Đã quét <strong>{activeCartonScannedQty}</strong> máy
-                          vào thùng này. Sản phẩm quét tiếp theo sẽ được gắn vào
-                          thùng {activeCarton.code}.
+                          {t("inbound.carton.scannedPrefix")}{" "}
+                          <strong>{activeCartonScannedQty}</strong>{" "}
+                          {t("inbound.carton.scannedSuffix")}{" "}
+                          {t("inbound.carton.scannedInto", {
+                            code: activeCarton.code,
+                          })}
                         </Box>
                         <ActionButton
                           kind="scan"
@@ -1257,8 +1292,8 @@ export function InboundScanModal({
                           onClick={() => void handleCompleteCarton()}
                         >
                           {completeCartonMutation.isPending
-                            ? "Đang xử lý..."
-                            : "Đã quét xong thùng"}
+                            ? t("inbound.detail.posting")
+                            : t("inbound.carton.finishButton")}
                         </ActionButton>
                       </UiAlert>
                     </Box>
@@ -1283,7 +1318,7 @@ export function InboundScanModal({
                       >
                         <InboxOutlined color="primary" />
                         <Box sx={{ fontWeight: 700 }}>
-                          {`Hộp linh kiện: ${pendingBox.skuCode}`}
+                          {t("inbound.box.title", { sku: pendingBox.skuCode })}
                         </Box>
                       </Stack>
                       <Box
@@ -1293,10 +1328,11 @@ export function InboundScanModal({
                           mb: 1.5,
                         }}
                       >
-                        Mã hộp <strong>{pendingBox.boxCode}</strong> chứa linh
-                        kiện <strong>{pendingBox.skuCode}</strong>. Nhập số lượng
-                        đếm được trong hộp rồi bấm Xác nhận. Nếu SKU chưa có trong
-                        kho, hệ thống sẽ tự tạo và bạn bổ sung thông tin sau.
+                        {t("inbound.box.codePrefix")}{" "}
+                        <strong>{pendingBox.boxCode}</strong>{" "}
+                        {t("inbound.box.description", {
+                          sku: pendingBox.skuCode,
+                        })}
                       </Box>
                       <Stack
                         direction={{ xs: "column", sm: "row" }}
@@ -1311,7 +1347,7 @@ export function InboundScanModal({
                               mb: 0.5,
                             }}
                           >
-                            Số lượng linh kiện trong hộp *
+                            {t("inbound.box.qtyLabel")}
                           </Box>
                           <UiTextField
                             type="number"
@@ -1336,14 +1372,16 @@ export function InboundScanModal({
                           disabled={!canScan || busy}
                           onClick={() => void handleConfirmBox()}
                         >
-                          {busy ? "Đang xử lý..." : "Xác nhận"}
+                          {busy
+                            ? t("inbound.detail.posting")
+                            : t("inbound.box.confirm")}
                         </ActionButton>
                         <ActionButton
                           kind="cancel"
                           disabled={busy}
                           onClick={handleCancelBox}
                         >
-                          Hủy
+                          {t("inbound.box.cancel")}
                         </ActionButton>
                       </Stack>
                     </Box>
@@ -1356,9 +1394,7 @@ export function InboundScanModal({
                           mb: 0.5,
                         }}
                       >
-                        Quét sản phẩm hoặc mã hộp linh kiện — hệ thống tự nhận
-                        diện: sản phẩm/linh kiện dán mã ghi nhận +1, mã hộp
-                        (BOX-…) mở ô nhập số lượng.
+                        {t("inbound.scan.hint")}
                       </Box>
                       <Stack
                         direction="row"
@@ -1370,7 +1406,7 @@ export function InboundScanModal({
                             value={scanCode}
                             size="middle"
                             disabled={!canScan || busy}
-                            placeholder="Quét sản phẩm hoặc mã hộp linh kiện (BOX-…)"
+                            placeholder={t("inbound.scan.inputPlaceholder")}
                             onChange={setScanCode}
                             onScan={(code) => void handleScan(code)}
                           />
@@ -1388,13 +1424,13 @@ export function InboundScanModal({
                   >
                     <Box sx={{ fontWeight: 700 }}>
                       {detail.document.status === "POSTED"
-                        ? "Nhập kho thành công"
-                        : "Nhập kho thất bại, phiếu đã bị hủy"}
+                        ? t("inbound.post.successTitle")
+                        : t("inbound.post.failedTitle")}
                     </Box>
                     <Box sx={{ typography: "body2" }}>
                       {detail.document.status === "POSTED"
                         ? ""
-                        : "Phiếu đã hủy không làm thay đổi tồn kho. "}
+                        : t("inbound.post.cancelledNote")}
                     </Box>
                   </UiAlert>
                 </Box>
@@ -1410,14 +1446,14 @@ export function InboundScanModal({
                 }}
               >
                 <Box sx={{ typography: "subtitle2", fontWeight: 700, mb: 1 }}>
-                  Hàng thực nhận theo SKU
+                  {t("inbound.detail.receivedTitle")}
                 </Box>
                 <ResponsiveDataTable<InboundLine>
                   columns={lineColumns}
                   rows={detail.lines}
                   rowKey={(line) => line.id}
                   loading={detailQuery.isFetching}
-                  emptyText="Chưa có dòng SKU nào — quét mã sản phẩm đầu tiên để hệ thống tự tạo dòng."
+                  emptyText={t("inbound.detail.receivedEmpty")}
                 />
               </Box>
 
@@ -1431,13 +1467,19 @@ export function InboundScanModal({
                 }}
               >
                 <Box sx={{ typography: "subtitle2", fontWeight: 700, mb: 1 }}>
-                  Mã đã quét của phiếu
+                  {t("inbound.detail.entriesTitle")}
                 </Box>
                 <Box
                   sx={{ typography: "caption", color: "text.secondary", mb: 1 }}
                 >
-                  {`${activeEntries.length} hợp lệ${
-                    removedEntryCount ? ` · ${removedEntryCount} đã gỡ` : ""
+                  {`${t("inbound.detail.entriesSummary", {
+                    valid: activeEntries.length,
+                  })}${
+                    removedEntryCount
+                      ? t("inbound.detail.entriesRemovedSuffix", {
+                          count: removedEntryCount,
+                        })
+                      : ""
                   }`}
                 </Box>
                 {scanEntriesQuery.isError ? (
@@ -1445,11 +1487,11 @@ export function InboundScanModal({
                     <Box sx={{ fontWeight: 700 }}>
                       {getApiErrorMessage(
                         scanEntriesQuery.error,
-                        "Không tải được danh sách mã đã quét.",
+                        t("inbound.detail.entriesLoadError"),
                       )}
                     </Box>
                     <Box sx={{ typography: "body2" }}>
-                      {errorDescription(scanEntriesQuery.error)}
+                      {errorDescription(scanEntriesQuery.error, t)}
                     </Box>
                   </UiAlert>
                 ) : (
@@ -1459,7 +1501,7 @@ export function InboundScanModal({
                       rows={pagedScanEntries}
                       rowKey={(entry) => entry.id}
                       loading={scanEntriesQuery.isLoading}
-                      emptyText="Chưa ghi nhận mã nào. Quét mã vạch/QR hoặc đăng ký hộp để bắt đầu."
+                      emptyText={t("inbound.detail.entriesEmpty")}
                     />
                     {scanEntries.length > SCAN_ENTRY_PAGE_SIZE ? (
                       <Box sx={{ mt: 1.5 }}>
@@ -1487,7 +1529,7 @@ export function InboundScanModal({
                   }}
                 >
                   <Box sx={{ typography: "subtitle2", fontWeight: 700, mb: 1 }}>
-                    Diễn biến quét trong phiên thao tác
+                    {t("inbound.detail.sessionTitle")}
                   </Box>
                   {/* Nhật ký phiên là state cục bộ (không có query) nên không có
                       cờ loading tương ứng; chỉ bổ sung emptyText. */}
@@ -1495,7 +1537,7 @@ export function InboundScanModal({
                     columns={scanLogColumns}
                     rows={pagedScanLog}
                     rowKey={(row) => row.key}
-                    emptyText="Chưa có lượt quét nào trong phiên này — kết quả từng lượt quét sẽ hiện ở đây."
+                    emptyText={t("inbound.detail.sessionEmpty")}
                   />
                   {scanLog.length > SCAN_LOG_PAGE_SIZE ? (
                     <Box sx={{ mt: 1.5 }}>
@@ -1515,7 +1557,7 @@ export function InboundScanModal({
                 <Box sx={{ mt: 2 }}>
                   <UiAlert tone="success">
                     <Box sx={{ fontWeight: 700 }}>
-                      Kết quả hoàn tất nhập kho
+                      {t("inbound.post.evidenceTitle")}
                     </Box>
                     {/* KHÔNG hiển thị request_id ở màn THÀNH CÔNG: đó là UUID
                       đối chiếu log do middleware sinh cho mỗi lượt gọi API, không
@@ -1530,7 +1572,7 @@ export function InboundScanModal({
                         gap: 0.5,
                       }}
                     >
-                      Phiếu nhập:{" "}
+                      {t("inbound.post.evidenceDocument")}{" "}
                       {receiptEvidence.receiptCode ? (
                         <strong>{receiptEvidence.receiptCode}</strong>
                       ) : (
@@ -1546,7 +1588,9 @@ export function InboundScanModal({
                         gap: 0.5,
                       }}
                     >
-                      Biến động tồn kho ({receiptEvidence.movements.length}):
+                      {t("inbound.post.evidenceMovements", {
+                        count: receiptEvidence.movements.length,
+                      })}
                       {receiptEvidence.movements.map((movement, index) => (
                         <Box
                           key={movement.id}
@@ -1574,7 +1618,7 @@ export function InboundScanModal({
 
       <CameraScanModal
         open={cameraOpen}
-        title="Quét mã vạch / QR / hộp bằng camera"
+        title={t("inbound.camera.title")}
         onClose={() => setCameraOpen(false)}
         onDetected={(code) => {
           setCameraOpen(false);
@@ -1587,7 +1631,7 @@ export function InboundScanModal({
         onClose={guardBackdropClose(() => setPendingNewSku(null))}
         maxWidth="xs"
         fullWidth
-        title="Đây là sản phẩm hay linh kiện?"
+        title={t("inbound.newSku.title")}
         actions={
           <>
             <ActionButton
@@ -1595,21 +1639,21 @@ export function InboundScanModal({
               disabled={busy}
               onClick={() => setPendingNewSku(null)}
             >
-              Hủy
+              {t("inbound.newSku.cancel")}
             </ActionButton>
             <ActionButton
               kind="confirm"
               disabled={busy}
               onClick={() => void handleChooseNewSkuType("COMPONENT")}
             >
-              Linh kiện
+              {t("inbound.newSku.component")}
             </ActionButton>
             <ActionButton
               kind="confirm"
               disabled={busy}
               onClick={() => void handleChooseNewSkuType("PRODUCT")}
             >
-              Sản phẩm
+              {t("inbound.newSku.product")}
             </ActionButton>
           </>
         }
@@ -1617,10 +1661,12 @@ export function InboundScanModal({
         <Stack spacing={1.5}>
           <UiAlert tone="info">
             <Box sx={{ fontWeight: 700 }}>
-              {`Mã "${pendingNewSku?.skuCode ?? ""}" chưa có trong hệ thống`}
+              {t("inbound.newSku.heading", {
+                code: pendingNewSku?.skuCode ?? "",
+              })}
             </Box>
             <Box sx={{ typography: "body2" }}>
-             Hệ thống phát hiện mã bạn vừa quét là mã mới chưa có trong kho. Bạn cần xác nhận đây là sản phẩm hay linh kiện.
+              {t("inbound.newSku.description")}
             </Box>
           </UiAlert>
         </Stack>
@@ -1631,7 +1677,7 @@ export function InboundScanModal({
         onClose={guardBackdropClose(() => setCancelOpen(false))}
         maxWidth="xs"
         fullWidth
-        title="Hủy phiếu nhập"
+        title={t("inbound.cancel.title")}
         actions={
           <>
             <ActionButton
@@ -1639,27 +1685,24 @@ export function InboundScanModal({
               onClick={() => setCancelOpen(false)}
               disabled={cancelMutation.isPending}
             >
-              Quay lại
+              {t("inbound.cancel.back")}
             </ActionButton>
             <ActionButton
               kind="confirm"
               disabled={!cancelReason.trim() || cancelMutation.isPending}
               onClick={() => void handleCancel()}
             >
-              {cancelMutation.isPending ? "Đang hủy..." : "Xác nhận hủy"}
+              {cancelMutation.isPending
+                ? t("inbound.cancel.pending")
+                : t("inbound.cancel.confirm")}
             </ActionButton>
           </>
         }
       >
         <Stack spacing={1.5}>
           <UiAlert tone="warning">
-            <Box sx={{ fontWeight: 700 }}>
-              Hủy là trạng thái kết thúc và không làm thay đổi tồn kho
-            </Box>
-            <Box sx={{ typography: "body2" }}>
-              Phiếu đã hủy không thể tiếp tục quét hoặc hoàn tất nhập kho. Nếu
-              cần làm lại, hãy tạo phiếu mới để bảo toàn lịch sử thao tác.
-            </Box>
+            <Box sx={{ fontWeight: 700 }}>{t("inbound.cancel.warning")}</Box>
+            <Box sx={{ typography: "body2" }}>{t("inbound.cancel.note")}</Box>
           </UiAlert>
           <UiTextField
             fullWidth
@@ -1667,8 +1710,8 @@ export function InboundScanModal({
             minRows={4}
             value={cancelReason}
             onChange={(event) => setCancelReason(event.target.value)}
-            label="Lý do hủy (bắt buộc)"
-            placeholder="Lý do hủy bắt buộc"
+            label={t("inbound.cancel.reasonLabel")}
+            placeholder={t("inbound.cancel.reasonPlaceholder")}
             slotProps={{ htmlInput: { maxLength: 1000 } }}
             helperText={`${cancelReason.length}/1000`}
           />
@@ -1687,6 +1730,7 @@ export function InboundSourceScreen({
 }: {
   screenId: LegacyScreenId;
 }) {
+  const t = useT();
   return (
     <>
       <Box
@@ -1698,8 +1742,8 @@ export function InboundSourceScreen({
         }}
       >
         {screenId === "IN-03"
-          ? "Quét & hoàn tất nhập kho được mở từ Danh sách phiếu nhập dưới dạng cửa sổ thao tác."
-          : "IN-01/IN-02 được quản lý trong Danh sách phiếu nhập."}
+          ? t("inbound.placeholder.scanModal")
+          : t("inbound.placeholder.list")}
       </Box>
     </>
   );

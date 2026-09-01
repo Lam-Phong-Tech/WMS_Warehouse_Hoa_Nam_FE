@@ -16,6 +16,7 @@ import {
   resolveFormErrors,
 } from "@/shared/api/api-error";
 import { useDialogExit } from "@/shared/utils/useDialogExit";
+import { useT } from "@/shared/i18n/useT";
 import { DocumentAttachmentsPanel } from "@/shared/components/DocumentAttachmentsPanel";
 import {
   hasAnyWmsPermission,
@@ -103,6 +104,7 @@ export function InboundDraftModal({
   onSaved,
 }: InboundDraftModalProps) {
   const dialog = useDialogExit(onClose);
+  const t = useT();
   const [formValues, setFormValues] = useState<FormValues>(EMPTY_FORM);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const initializedRef = useRef<string | null>(null);
@@ -168,12 +170,12 @@ export function InboundDraftModal({
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {};
     if (!formValues.documentDate) {
-      errors.documentDate = "Chọn ngày chứng từ.";
+      errors.documentDate = t("inbound.draft.errDocumentDate");
     } else if (formValues.documentDate > localToday()) {
-      errors.documentDate = "Ngày chứng từ không được ở tương lai.";
+      errors.documentDate = t("inbound.draft.errDocumentDateFuture");
     }
     if (!documentId && !formValues.warehouseId) {
-      errors.warehouseId = "Chọn kho nhận.";
+      errors.warehouseId = t("inbound.draft.errWarehouse");
     }
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
@@ -195,7 +197,7 @@ export function InboundDraftModal({
           payload,
           ifMatch: detail.document.version,
         });
-        toast.success("Đã cập nhật thông tin phiếu nhập.");
+        toast.success(t("inbound.draft.updated"));
         onSaved(updated.id);
         return;
       }
@@ -207,9 +209,7 @@ export function InboundDraftModal({
         note: formValues.note?.trim() || null,
       };
       const created = await createMutation.mutateAsync(payload);
-      toast.success(
-        "Đã tạo phiếu nhập. Quét hàng để hệ thống tự nhận SKU và số lượng.",
-      );
+      toast.success(t("inbound.draft.created"));
       onSaved(created.id);
     } catch (error) {
       // Lỗi nhập liệu từ server phải hiện ngay dưới ô sai, không dồn hết vào
@@ -230,7 +230,7 @@ export function InboundDraftModal({
         toast.error(
           hasFieldErrors
             ? message
-            : getApiErrorMessage(error, "Không lưu được phiếu nhập."),
+            : getApiErrorMessage(error, t("inbound.draft.saveError")),
         );
       }
 
@@ -253,10 +253,14 @@ export function InboundDraftModal({
           direction="row"
           sx={{ alignItems: "center", justifyContent: "space-between", gap: 1 }}
         >
-          <span>{documentId ? "Thông tin phiếu nhập" : "Tạo phiếu nhập"}</span>
+          <span>
+            {documentId
+              ? t("inbound.draft.titleEdit")
+              : t("inbound.draft.titleCreate")}
+          </span>
           <ActionIconButton
             kind="close"
-            label="Đóng"
+            label={t("common.close")}
             onClick={dialog.close}
             disabled={saving}
           />
@@ -265,7 +269,7 @@ export function InboundDraftModal({
       actions={
         <>
           <ActionButton kind="close" onClick={dialog.close}>
-            Đóng
+            {t("common.close")}
           </ActionButton>
           {mutable && canCreate ? (
             <ActionButton
@@ -273,15 +277,16 @@ export function InboundDraftModal({
               onClick={() => void handleSave()}
               disabled={saving}
             >
-              {documentId ? "Lưu thông tin" : "Tạo phiếu & quét hàng"}
+              {documentId
+                ? t("inbound.draft.submitEdit")
+                : t("inbound.draft.submitCreate")}
             </ActionButton>
           ) : null}
         </>
       }
-      
     >
       <br />
-    
+
       {detailQuery.isError ? (
         <Box sx={{ mb: 2 }}>
           <UiAlert
@@ -293,7 +298,7 @@ export function InboundDraftModal({
           >
             {getApiErrorMessage(
               detailQuery.error,
-              "Không tải được phiếu nhập.",
+              t("inbound.draft.loadError"),
             )}
           </UiAlert>
         </Box>
@@ -301,7 +306,7 @@ export function InboundDraftModal({
 
       {documentId && !mutable ? (
         <Box sx={{ mb: 2 }}>
-          <UiAlert tone="info">Phiếu đã kết thúc và chỉ được xem</UiAlert>
+          <UiAlert tone="info">{t("inbound.draft.readonly")}</UiAlert>
         </Box>
       ) : null}
 
@@ -309,7 +314,7 @@ export function InboundDraftModal({
         <Grid size={{ xs: 12, md: 6 }}>
           <UiTextField
             id="inbound-doc-date"
-            label="Ngày chứng từ"
+            label={t("inbound.draft.documentDate")}
             type="date"
             required
             fullWidth
@@ -332,7 +337,9 @@ export function InboundDraftModal({
               htmlInput: { max: localToday() },
             }}
             error={Boolean(fieldErrors.documentDate)}
-            helperText={fieldErrors.documentDate || "Định dạng: ngày/tháng/năm"}
+            helperText={
+              fieldErrors.documentDate || t("inbound.draft.documentDateHelper")
+            }
           />
         </Grid>
         <Grid size={{ xs: 12, md: 6 }}>
@@ -340,7 +347,7 @@ export function InboundDraftModal({
               cùng danh sách kho; chọn kho vẫn chỉ cập nhật state form. */}
           <UiTextField
             select
-            label="Kho nhận"
+            label={t("inbound.draft.warehouse")}
             required
             fullWidth
             value={formValues.warehouseId}
@@ -362,7 +369,7 @@ export function InboundDraftModal({
           >
             {warehouseSelectOptions.length === 0 ? (
               <MenuItem value="" disabled>
-                Chọn kho nhận
+                {t("inbound.draft.warehousePlaceholder")}
               </MenuItem>
             ) : null}
             {warehouseSelectOptions.map((option) => (
@@ -375,9 +382,9 @@ export function InboundDraftModal({
         <Grid size={12}>
           <UiTextField
             id="inbound-source"
-            label="Nguồn / tham chiếu"
+            label={t("inbound.draft.sourceRef")}
             fullWidth
-            placeholder="Chứng từ vận chuyển / nhà cung cấp (tùy chọn)"
+            placeholder={t("inbound.draft.sourceRefPlaceholder")}
             value={formValues.sourceName}
             onChange={(event) => {
               setFormValues((current) => ({
@@ -400,7 +407,7 @@ export function InboundDraftModal({
         <Grid size={12}>
           <UiTextField
             id="inbound-note"
-            label="Ghi chú"
+            label={t("inbound.draft.note")}
             fullWidth
             multiline
             minRows={3}

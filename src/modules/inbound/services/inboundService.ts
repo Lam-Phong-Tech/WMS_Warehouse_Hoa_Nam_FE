@@ -242,9 +242,7 @@ function normalizeReceiptEvidence(
   const richMovements = rowsOfUnknown(row.movements)
     .map((movement): ReceiptEvidenceMovement | null => {
       const rec = movement as RawRecord;
-      const id = text(
-        rec?.id ?? rec?.stock_movement_id ?? rec?.movement_id,
-      );
+      const id = text(rec?.id ?? rec?.stock_movement_id ?? rec?.movement_id);
       const code = text(rec?.movement_no ?? rec?.code) || undefined;
       return id ? { id, code } : null;
     })

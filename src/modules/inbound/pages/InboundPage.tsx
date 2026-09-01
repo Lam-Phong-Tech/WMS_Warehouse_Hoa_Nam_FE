@@ -25,6 +25,7 @@ import {
 import { useOverlayBackDismiss } from "@/shared/hooks/useOverlayBackDismiss";
 import { useRowSelection } from "@/shared/hooks/useRowSelection";
 import { useAuthStore } from "@/shared/store/auth.store";
+import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import { InboundDraftModal } from "@/modules/inbound/components/InboundDraftModal";
 import { useInboundDocuments } from "@/modules/inbound/hooks/use-inbound";
 import { InboundScanModal } from "@/modules/inbound/pages/MvpInboundScreens";
@@ -41,7 +42,7 @@ const STATUS_OPTIONS = Object.entries(INBOUND_STATUS_LABELS).map(
 );
 const SEARCH_DEBOUNCE_MS = 250;
 
-function statusTag(status: InboundDocument["status"]) {
+function statusTag(status: InboundDocument["status"], t: TranslateFn) {
   const tone =
     status === "POSTED"
       ? ("success" as const)
@@ -53,7 +54,11 @@ function statusTag(status: InboundDocument["status"]) {
   return (
     <UiStatusBadge
       tone={tone}
-      label={businessLabel(INBOUND_STATUS_LABELS, status, "Chưa xác định")}
+      label={businessLabel(
+        INBOUND_STATUS_LABELS,
+        status,
+        t("inbound.list.statusUnknown"),
+      )}
     />
   );
 }
@@ -65,6 +70,7 @@ function useInboundPermission(code: string) {
 }
 
 function InboundListScreen() {
+  const t = useT();
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
@@ -149,7 +155,7 @@ function InboundListScreen() {
     },
     {
       key: "code",
-      header: "Phiếu nhập",
+      header: t("inbound.list.colDocument"),
       width: 180,
       sortAccessor: (row) => row.code || "",
       // KHÔNG fallback sang row.id: cột này là MÃ PHIẾU đọc được ("PN-…").
@@ -158,14 +164,14 @@ function InboundListScreen() {
     },
     {
       key: "source",
-      header: "Nguồn / tham chiếu",
+      header: t("inbound.list.colSource"),
       width: 220,
       sortAccessor: (row) => row.source || "",
       render: (row) => row.source || EMPTY_TEXT,
     },
     {
       key: "date",
-      header: "Ngày tạo",
+      header: t("inbound.list.colCreated"),
       width: 150,
       hideOnMobile: true,
       sortType: "value",
@@ -180,7 +186,7 @@ function InboundListScreen() {
     },
     {
       key: "note",
-      header: "Ghi chú",
+      header: t("inbound.list.colNote"),
       width: 200,
       hideOnMobile: true,
       sortAccessor: (row) => row.note || "",
@@ -188,7 +194,7 @@ function InboundListScreen() {
     },
     {
       key: "scanned",
-      header: "Số lượng đã quét",
+      header: t("inbound.list.colScannedQty"),
       width: 150,
       align: "right",
       sortType: "value",
@@ -197,15 +203,15 @@ function InboundListScreen() {
     },
     {
       key: "status",
-      header: "Trạng thái",
+      header: t("inbound.list.colStatus"),
       width: 160,
       sortType: "value",
       sortAccessor: (row) => row.status,
-      render: (row) => statusTag(row.status),
+      render: (row) => statusTag(row.status, t),
     },
     {
       key: "updatedAt",
-      header: "Cập nhật",
+      header: t("inbound.list.colUpdated"),
       width: 180,
       sortType: "value",
       sortAccessor: (row) => row.updatedAt ?? row.date ?? "",
@@ -225,9 +231,9 @@ function InboundListScreen() {
         <ActionButton kind="scan" onClick={() => setScanDocumentId(row.id)}>
           {mutable && canScan
             ? row.status === "DRAFT"
-              ? "Bắt đầu quét"
-              : "Tiếp tục quét"
-            : "Xem"}
+              ? t("inbound.list.startScan")
+              : t("inbound.list.continueScan")
+            : t("inbound.list.view")}
         </ActionButton>
         {canCreate && mutable ? (
           <ActionButton
@@ -237,7 +243,7 @@ function InboundListScreen() {
               setDraftOpen(true);
             }}
           >
-            Sửa thông tin
+            {t("inbound.list.editInfo")}
           </ActionButton>
         ) : null}
       </Stack>
@@ -266,15 +272,17 @@ function InboundListScreen() {
       >
         <UiTextField
           value={searchInput}
-          placeholder="Tìm mã phiếu / nguồn nhập..."
-          slotProps={{ htmlInput: { "aria-label": "Tìm phiếu nhập" } }}
+          placeholder={t("inbound.list.searchPlaceholder")}
+          slotProps={{
+            htmlInput: { "aria-label": t("inbound.list.searchAria") },
+          }}
           onChange={(event) => setSearchInput(event.target.value)}
           sx={{ minWidth: 220 }}
         />
         <UiSelect
           value={status ?? ""}
-          aria-label="Lọc trạng thái phiếu nhập"
-          placeholder="Trạng thái: Tất cả"
+          aria-label={t("inbound.list.statusFilterAria")}
+          placeholder={t("inbound.list.statusFilterPlaceholder")}
           options={STATUS_OPTIONS}
           onChange={(value) => {
             setStatus(value || undefined);
@@ -284,7 +292,7 @@ function InboundListScreen() {
         />
         <UiSelect
           value={perPage}
-          aria-label="Số dòng mỗi trang"
+          aria-label={t("inbound.list.pageSizeAria")}
           options={perPageOptions.map((size) => ({
             value: size,
             label: `${size} / trang`,
@@ -304,7 +312,7 @@ function InboundListScreen() {
               setDraftOpen(true);
             }}
           >
-            Tạo phiếu nhập
+            {t("inbound.list.create")}
           </ActionButton>
         ) : null}
       </Stack>
@@ -313,7 +321,7 @@ function InboundListScreen() {
         <Box sx={{ mb: "14px" }}>
           <ApiErrorAlert
             error={query.error}
-            title="Không tải được danh sách phiếu nhập."
+            title={t("inbound.list.loadError")}
             onRetry={() => query.refetch()}
           />
         </Box>
@@ -325,19 +333,23 @@ function InboundListScreen() {
         rows={rows}
         rowKey={(row) => row.id}
         rowSelection={rowSelection}
-        selectionLabel={(row) => `Chọn phiếu nhập ${row.code || "chưa có mã"}`}
+        selectionLabel={(row) =>
+          t("inbound.list.selectionLabel", {
+            code: row.code || t("inbound.list.noCode"),
+          })
+        }
         loading={query.isLoading || query.isFetching}
         renderRowActions={renderRowActions}
         emptyText={tableEmptyText(
           query.isError ? query.error : null,
-          "Chưa có phiếu nhập phù hợp",
+          t("inbound.list.empty"),
         )}
       />
       <MvpPaginationFooter
         current={Number(meta?.current_page ?? page)}
         pageSize={perPage}
         total={total}
-        itemLabel="phiếu nhập"
+        itemLabel={t("inbound.list.itemLabel")}
         onChange={setPage}
       />
 

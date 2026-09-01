@@ -506,11 +506,13 @@ describe("IN-03 · quét mã hộp linh kiện (scan-driven)", () => {
   });
 
   it("xác nhận số lượng gửi mã hộp lên scan (không kèm line/container)", async () => {
-    const scanMutate = vi
-      .fn()
-      .mockResolvedValue([
-        { code_value: "BOX-HN-COMP-BASE-003-0001", status: "VALID", version: 5 },
-      ]);
+    const scanMutate = vi.fn().mockResolvedValue([
+      {
+        code_value: "BOX-HN-COMP-BASE-003-0001",
+        status: "VALID",
+        version: 5,
+      },
+    ]);
     mockHooks([]);
     vi.mocked(useScanInbound).mockReturnValue({
       isPending: false,
