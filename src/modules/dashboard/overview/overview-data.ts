@@ -171,11 +171,18 @@ const STALE_MS = 60_000;
 /** Demo ghi "Tự động làm mới sau 60 giây" — làm đúng như vậy, không chỉ ghi chữ. */
 const AUTO_REFRESH_MS = 60_000;
 
-function reportQueryOptions(enabled: boolean) {
+/**
+ * `autoRefresh: false` tắt hẳn vòng 60 giây.
+ *
+ * Dùng khi ngoại tuyến: banner đang hứa với người dùng là "tạm dừng làm mới",
+ * nên vòng lặp phải dừng thật chứ không chỉ nói. Nút Làm mới thủ công vẫn bấm
+ * được — người dùng có quyền tự thử lại.
+ */
+export function reportQueryOptions(enabled: boolean, autoRefresh: boolean) {
   return {
     enabled,
     staleTime: STALE_MS,
-    refetchInterval: AUTO_REFRESH_MS,
+    refetchInterval: autoRefresh ? AUTO_REFRESH_MS : (false as const),
     retry: (failureCount: number, error: unknown) => {
       const status = (error as { response?: { status?: number } })?.response
         ?.status;
@@ -196,6 +203,7 @@ export function useOverviewSource(
   range: DateRange,
   chartRange: DateRange,
   enabled: boolean,
+  autoRefresh: boolean,
 ) {
   const widened = useMemo(() => {
     const previous = previousRange(range);
@@ -211,7 +219,7 @@ export function useOverviewSource(
       http.get<DashboardOverview>(API_ENDPOINTS.REPORTS_DASHBOARD_OVERVIEW, {
         params: { from_date: widened.from, to_date: widened.to },
       }),
-    ...reportQueryOptions(enabled),
+    ...reportQueryOptions(enabled, autoRefresh),
   });
 
   const xnt = useQuery({
@@ -220,7 +228,7 @@ export function useOverviewSource(
       http.get<XntReport>(API_ENDPOINTS.REPORTS_XNT_ENHANCED, {
         params: { from_date: range.from, to_date: range.to },
       }),
-    ...reportQueryOptions(enabled),
+    ...reportQueryOptions(enabled, autoRefresh),
   });
 
   // Chỉ phục vụ chiều "Hoàn tác" của biểu đồ luồng nên bám cửa sổ biểu đồ.
@@ -235,7 +243,7 @@ export function useOverviewSource(
       http.get<XntDailyReport>(OPERATIONS_REPORT_ENDPOINTS.XNT_DAILY, {
         params: { from_date: chartRange.from, to_date: chartRange.to },
       }),
-    ...reportQueryOptions(enabled),
+    ...reportQueryOptions(enabled, autoRefresh),
   });
 
   const quick = useQuery({
@@ -244,7 +252,7 @@ export function useOverviewSource(
       http.get<DashboardQuick>(API_ENDPOINTS.DASHBOARD_KPI, {
         params: { from_date: range.from, to_date: range.to },
       }),
-    ...reportQueryOptions(enabled),
+    ...reportQueryOptions(enabled, autoRefresh),
   });
 
   return { overview, xnt, xntDaily, quick };

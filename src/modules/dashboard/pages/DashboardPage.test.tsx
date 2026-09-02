@@ -17,6 +17,7 @@ vi.mock("@/shared/api/http", () => ({
 import { http } from "@/shared/api/http";
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { OPERATIONS_REPORT_ENDPOINTS } from "@/modules/reports/operations/report-data";
+import { reportQueryOptions } from "../overview/overview-data";
 import { useAuthStore } from "@/shared/store/auth.store";
 import DashboardPage from "./DashboardPage";
 
@@ -426,5 +427,116 @@ describe("DashboardPage — cửa sổ biểu đồ 7 ngày", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Linh kiện" }));
     expect(live.textContent).toBe("Đã lọc loại hàng Linh kiện");
+  });
+});
+
+/**
+ * Nút "Làm mới": có sự kiện là chưa đủ, phải NHÌN THẤY nó đang chạy và không
+ * cho bấm chồng.
+ */
+describe("DashboardPage — nút làm mới", () => {
+  it("gọi lại cả bốn nguồn và xướng lên aria-live", async () => {
+    mockedGet.mockImplementation((url: string) => routeResponses(url));
+    const { container } = renderDashboard();
+
+    await screen.findByText("Xuất sản phẩm đã Post");
+    const before = mockedGet.mock.calls.length;
+
+    fireEvent.click(screen.getByRole("button", { name: /Làm mới/ }));
+
+    // Bốn nguồn đọc, bốn lượt gọi mới.
+    expect(mockedGet.mock.calls.length).toBe(before + 4);
+    expect(
+      (container.querySelector(".sr-only") as HTMLElement).textContent,
+    ).toBe("Đã làm mới Dashboard");
+  });
+
+  /**
+   * Bản trước khoá nút theo mỗi `overview.isFetching`, nên nút sáng lại trong
+   * lúc ba nguồn kia còn đang bay — bấm tiếp là nhân đôi request.
+   */
+  it("khoá nút cho tới khi cả bốn nguồn xong, không riêng nguồn chính", async () => {
+    let releaseQuick: (value: unknown) => void = () => {};
+    const slowQuick = new Promise((resolve) => {
+      releaseQuick = resolve;
+    });
+    let quickCalls = 0;
+    mockedGet.mockImplementation((url: string) => {
+      if (url === API_ENDPOINTS.DASHBOARD_KPI) {
+        quickCalls += 1;
+        return quickCalls === 1 ? Promise.resolve(quick) : slowQuick;
+      }
+      return routeResponses(url);
+    });
+    renderDashboard();
+
+    await screen.findByText("Xuất sản phẩm đã Post");
+    const button = screen.getByRole("button", {
+      name: /Làm mới/,
+    }) as HTMLButtonElement;
+    expect(button.disabled).toBe(false);
+
+    fireEvent.click(button);
+    // `quick` còn treo ⇒ nút phải vẫn khoá dù nguồn chính đã về.
+    await screen.findByText("Đang thử lại");
+    expect(button.disabled).toBe(true);
+
+    releaseQuick(quick);
+  });
+
+  /**
+   * Bấm Làm mới trên trang khoẻ mạnh cũng phải có phản hồi nhìn thấy được —
+   * bản trước chỉ hiện banner khi TRƯỚC ĐÓ đã có lỗi.
+   */
+  it("hiện banner Đang thử lại ngay khi bấm, không đợi phải có lỗi", async () => {
+    let release: (value: unknown) => void = () => {};
+    const slow = new Promise((resolve) => {
+      release = resolve;
+    });
+    let overviewCalls = 0;
+    mockedGet.mockImplementation((url: string) => {
+      if (url === API_ENDPOINTS.REPORTS_DASHBOARD_OVERVIEW) {
+        overviewCalls += 1;
+        return overviewCalls === 1 ? Promise.resolve(overview) : slow;
+      }
+      return routeResponses(url);
+    });
+    renderDashboard();
+
+    await screen.findByText("Xuất sản phẩm đã Post");
+    expect(screen.queryByText("Đang thử lại")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /Làm mới/ }));
+    expect(await screen.findByText("Đang thử lại")).toBeInTheDocument();
+
+    release(overview);
+  });
+
+  /**
+   * Banner ngoại tuyến hứa "tạm dừng làm mới" — phải dừng THẬT.
+   *
+   * Kiểm hai nửa vì một test đơn không phủ được cả hai mà vẫn tất định: nửa
+   * trên là cái công tắc, nửa dưới là việc trang bật đúng công tắc đó khi mất
+   * mạng. Chỗ nối giữa hai nửa chỉ có một điểm gọi duy nhất và đã được
+   * typecheck giữ.
+   */
+  it("tắt hẳn vòng 60 giây thay vì chỉ nói trong banner", () => {
+    expect(reportQueryOptions(true, true).refetchInterval).toBe(60_000);
+    expect(reportQueryOptions(true, false).refetchInterval).toBe(false);
+  });
+
+  it("nhận ra trạng thái ngoại tuyến lúc mở trang", async () => {
+    Object.defineProperty(window.navigator, "onLine", {
+      configurable: true,
+      get: () => false,
+    });
+    try {
+      mockedGet.mockImplementation((url: string) => routeResponses(url));
+      renderDashboard();
+      expect(await screen.findByText("Ngoại tuyến")).toBeInTheDocument();
+    } finally {
+      // `onLine` nằm trên prototype nên khôi phục bằng cách xoá bản ghi đè.
+      delete (window.navigator as { onLine?: boolean }).onLine;
+    }
   });
 });

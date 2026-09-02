@@ -124,10 +124,14 @@ export default function DashboardPage() {
   const chartRange = useMemo(() => chartRangeOf(dayjs(today)), [today]);
 
   const enabled = canViewReport && dateError === "";
+  const [offline, setOffline] = useState(
+    () => typeof navigator !== "undefined" && navigator.onLine === false,
+  );
   const { overview, xnt, xntDaily, quick } = useOverviewSource(
     range,
     chartRange,
     enabled,
+    !offline,
   );
 
   // Vùng aria-live: mỗi thao tác đổi dữ liệu được xướng thành lời.
@@ -135,9 +139,6 @@ export default function DashboardPage() {
   const revealAnalysis = useLazyReveal();
   const revealInsight = useLazyReveal();
 
-  const [offline, setOffline] = useState(
-    () => typeof navigator !== "undefined" && navigator.onLine === false,
-  );
   useEffect(() => {
     const online = () => setOffline(false);
     const down = () => setOffline(true);
@@ -155,7 +156,30 @@ export default function DashboardPage() {
   const failed = overview.isError && !forbidden;
   const partial =
     !failed && !forbidden && (xnt.isError || xntDaily.isError || quick.isError);
-  const retrying = overview.isError && overview.isFetching;
+
+  /**
+   * "Đang bận" tính trên CẢ BỐN nguồn, không riêng nguồn chính.
+   *
+   * Bản trước chỉ nhìn `overview.isFetching`: nút Làm mới sáng lại ngay khi
+   * nguồn chính về, trong lúc ba nguồn kia còn đang bay — bấm phát nữa là nhân
+   * đôi request.
+   */
+  const busy =
+    overview.isFetching ||
+    xnt.isFetching ||
+    xntDaily.isFetching ||
+    quick.isFetching;
+
+  /**
+   * Làm mới thủ công phải NHÌN THẤY được. Bản trước chỉ hiện banner "Đang thử
+   * lại" khi đã có lỗi từ trước, nên bấm Làm mới trên trang khoẻ mạnh thì
+   * ngoài việc nút xám đi là không có phản hồi nào.
+   *
+   * Vòng tự làm mới 60 giây thì KHÔNG hiện banner — nó chạy ngầm, nhấp nháy
+   * mỗi phút chỉ gây nhiễu.
+   */
+  const [manualRefresh, setManualRefresh] = useState(false);
+  const retrying = (overview.isError && overview.isFetching) || manualRefresh;
 
   const overviewData = overview.data;
 
@@ -482,10 +506,17 @@ export default function DashboardPage() {
     : t("dashboard.scope.roleOperator");
 
   const refreshAll = () => {
-    void overview.refetch();
-    void xnt.refetch();
-    void xntDaily.refetch();
-    void quick.refetch();
+    setManualRefresh(true);
+    // Dọn cờ khi CẢ BỐN nguồn đã lắng, thay vì bám `busy` qua một effect:
+    // effect sẽ đặt state đồng bộ trong lúc render (cascading render), còn bám
+    // `busy` thì thua cuộc đua — lần render ngay sau cú bấm có thể chưa kịp
+    // thấy nguồn nào đang bay và xoá cờ mất.
+    void Promise.allSettled([
+      overview.refetch(),
+      xnt.refetch(),
+      xntDaily.refetch(),
+      quick.refetch(),
+    ]).finally(() => setManualRefresh(false));
     setAnnouncement(t("dashboard.live.refreshed"));
   };
 
@@ -556,7 +587,7 @@ export default function DashboardPage() {
           type={type}
           onTypeChange={changeType}
           lastUpdatedLabel={lastUpdatedLabel}
-          refreshing={overview.isFetching}
+          refreshing={busy || manualRefresh}
           onRefresh={refreshAll}
         />
 
