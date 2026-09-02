@@ -19,6 +19,7 @@ import { ROUTES } from "@/shared/constants/routes";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { useT } from "@/shared/i18n/useT";
 import type { SkuTypeFilter } from "../types";
+import type { MessageKey } from "@/shared/i18n/messages";
 import "../dashboard-overview.css";
 import { OverviewFilters } from "../overview/OverviewFilters";
 import {
@@ -36,9 +37,11 @@ import { OverviewTrendChart } from "../overview/OverviewTrendChart";
 import { OverviewComposition } from "../overview/OverviewComposition";
 import { OverviewThreshold } from "../overview/OverviewThreshold";
 import { OverviewInsights, type SignalRow } from "../overview/OverviewInsights";
+import { useLazyReveal } from "../overview/use-lazy-reveal";
 import {
   PERIOD_NAME_KEYS,
   buildComposition,
+  chartRangeOf,
   buildEquation,
   buildFlowRows,
   buildTopSkus,
@@ -58,6 +61,12 @@ import {
 } from "../overview/overview-data";
 
 const ISO = "YYYY-MM-DD";
+
+const SKU_TYPE_KEYS: Record<SkuTypeFilter, MessageKey> = {
+  ALL: "dashboard.skuType.all",
+  PRODUCT: "dashboard.skuType.product",
+  COMPONENT: "dashboard.skuType.component",
+};
 
 function httpStatus(error: unknown): number | undefined {
   return (error as { response?: { status?: number } })?.response?.status;
@@ -108,9 +117,23 @@ export default function DashboardPage() {
     () => resolvePeriodRange(period, custom),
     [period, custom],
   );
+  /**
+   * Cửa sổ biểu đồ cố định 7 ngày, tách khỏi kỳ KPI (xem `chartRangeOf`).
+   * `today` là chuỗi ISO nên memo chỉ tính lại khi sang ngày mới.
+   */
+  const chartRange = useMemo(() => chartRangeOf(dayjs(today)), [today]);
 
   const enabled = canViewReport && dateError === "";
-  const { overview, xnt, xntDaily, quick } = useOverviewSource(range, enabled);
+  const { overview, xnt, xntDaily, quick } = useOverviewSource(
+    range,
+    chartRange,
+    enabled,
+  );
+
+  // Vùng aria-live: mỗi thao tác đổi dữ liệu được xướng thành lời.
+  const [announcement, setAnnouncement] = useState("");
+  const revealAnalysis = useLazyReveal();
+  const revealInsight = useLazyReveal();
 
   const [offline, setOffline] = useState(
     () => typeof navigator !== "undefined" && navigator.onLine === false,
@@ -135,18 +158,29 @@ export default function DashboardPage() {
   const retrying = overview.isError && overview.isFetching;
 
   const overviewData = overview.data;
-  const flowRows = useMemo(
+
+  /**
+   * HAI bộ chuỗi khác cửa sổ, cùng một payload đã nới — không thêm request:
+   *  · `kpiFlowRows` theo kỳ KPI, chỉ để cộng ra CON SỐ của thẻ KPI.
+   *  · `chartFlowRows` / `trendRows` theo cửa sổ 7 ngày, để VẼ.
+   * Gộp hai thứ này làm một chính là chỗ khiến kỳ "Hôm nay" ra biểu đồ trống.
+   */
+  const kpiFlowRows = useMemo(
     () => buildFlowRows(overviewData, xntDaily.data, range, type),
     [overviewData, xntDaily.data, range, type],
   );
-  const flowTotals = useMemo(() => sumFlow(flowRows), [flowRows]);
+  const chartFlowRows = useMemo(
+    () => buildFlowRows(overviewData, xntDaily.data, chartRange, type),
+    [overviewData, xntDaily.data, chartRange, type],
+  );
+  const flowTotals = useMemo(() => sumFlow(kpiFlowRows), [kpiFlowRows]);
   const previousTotals = useMemo(
     () => sumPreviousFlow(overviewData, range, type),
     [overviewData, range, type],
   );
   const trendRows = useMemo(
-    () => buildTrendRows(overviewData, range),
-    [overviewData, range],
+    () => buildTrendRows(overviewData, chartRange),
+    [overviewData, chartRange],
   );
   const equation = useMemo(() => buildEquation(xnt.data), [xnt.data]);
   const topSkus = useMemo(() => buildTopSkus(xnt.data), [xnt.data]);
@@ -188,7 +222,7 @@ export default function DashboardPage() {
         spark:
           type === "ALL"
             ? trendRows.map((row) => row.closing)
-            : flowRows.reduce<number[]>((series, row) => {
+            : chartFlowRows.reduce<number[]>((series, row) => {
                 const previous = series.at(-1) ?? 0;
                 series.push(
                   previous + row.inbound - row.product - row.component,
@@ -216,7 +250,7 @@ export default function DashboardPage() {
         trend: receiptDelta.trend,
         note: t("dashboard.kpi.notePreviousPeriod"),
         icon: "package-plus",
-        spark: flowRows.map((row) => row.inbound),
+        spark: chartFlowRows.map((row) => row.inbound),
         source: "reports/dashboard-overview",
       },
       {
@@ -227,7 +261,7 @@ export default function DashboardPage() {
         trend: productDelta.trend,
         note: t("dashboard.kpi.notePreviousPeriod"),
         icon: "package-minus",
-        spark: flowRows.map((row) => row.product),
+        spark: chartFlowRows.map((row) => row.product),
         source: "reports/dashboard-overview",
       },
       {
@@ -238,7 +272,7 @@ export default function DashboardPage() {
         trend: componentDelta.trend,
         note: t("dashboard.kpi.notePreviousPeriod"),
         icon: "briefcase-medical",
-        spark: flowRows.map((row) => row.component),
+        spark: chartFlowRows.map((row) => row.component),
         source: "reports/dashboard-overview",
       },
     ];
@@ -252,7 +286,7 @@ export default function DashboardPage() {
   }, [
     flowTotals,
     previousTotals,
-    flowRows,
+    chartFlowRows,
     trendRows,
     onHand,
     onHandDelta,
@@ -452,10 +486,35 @@ export default function DashboardPage() {
     void xnt.refetch();
     void xntDaily.refetch();
     void quick.refetch();
+    setAnnouncement(t("dashboard.live.refreshed"));
+  };
+
+  const changePeriod = (next: OverviewPeriod) => {
+    setPeriod(next);
+    setAnnouncement(
+      t("dashboard.live.periodChanged", { period: t(PERIOD_NAME_KEYS[next]) }),
+    );
+  };
+
+  const changeType = (next: SkuTypeFilter) => {
+    setType(next);
+    setAnnouncement(
+      t("dashboard.live.typeChanged", { type: t(SKU_TYPE_KEYS[next]) }),
+    );
+  };
+
+  const changeCustom = (next: DateRange) => {
+    setCustom(next);
+    setAnnouncement(
+      t("dashboard.live.dateChanged", { from: next.from, to: next.to }),
+    );
   };
 
   const periodName = t(PERIOD_NAME_KEYS[period]);
-  const cutoffLabel = `${dayjs(range.from).format("DD/MM/YYYY")} → ${dayjs(range.to).format("DD/MM/YYYY")}`;
+  const formatRange = (value: DateRange) =>
+    `${dayjs(value.from).format("DD/MM/YYYY")} → ${dayjs(value.to).format("DD/MM/YYYY")}`;
+  const cutoffLabel = formatRange(range);
+  const chartCutoffLabel = formatRange(chartRange);
 
   return (
     <div className="hn-dash" data-mvp-screen="MAP-01">
@@ -484,14 +543,18 @@ export default function DashboardPage() {
           </div>
         </section>
 
+        <div className="sr-only" role="status" aria-live="polite">
+          {announcement}
+        </div>
+
         <OverviewFilters
           period={period}
-          onPeriodChange={setPeriod}
+          onPeriodChange={changePeriod}
           custom={custom}
-          onCustomChange={setCustom}
+          onCustomChange={changeCustom}
           dateError={dateError}
           type={type}
-          onTypeChange={setType}
+          onTypeChange={changeType}
           lastUpdatedLabel={lastUpdatedLabel}
           refreshing={overview.isFetching}
           onRefresh={refreshAll}
@@ -518,7 +581,7 @@ export default function DashboardPage() {
             <span className="section-meta">
               {t("dashboard.section.quickMeta", {
                 period: periodName,
-                range: cutoffLabel,
+                range: chartCutoffLabel,
               })}
             </span>
           </div>
@@ -562,7 +625,11 @@ export default function DashboardPage() {
           />
         </section>
 
-        <section aria-labelledby="analysis-title">
+        <section
+          aria-labelledby="analysis-title"
+          data-lazy
+          ref={revealAnalysis}
+        >
           <div className="section-heading">
             <div>
               <span className="eyebrow">
@@ -578,7 +645,7 @@ export default function DashboardPage() {
           </div>
           <div className="analysis-grid">
             <OverviewFlowChart
-              rows={flowRows}
+              rows={chartFlowRows}
               loading={loading}
               failed={failed}
               forbidden={forbidden}
@@ -605,7 +672,12 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        <section className="insight-section" aria-labelledby="insight-title">
+        <section
+          className="insight-section"
+          aria-labelledby="insight-title"
+          data-lazy
+          ref={revealInsight}
+        >
           <div className="section-heading">
             <div>
               <span className="eyebrow">

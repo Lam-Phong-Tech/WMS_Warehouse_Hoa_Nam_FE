@@ -273,3 +273,158 @@ describe("DashboardPage — Tổng quan vận hành", () => {
     );
   });
 });
+
+/**
+ * Cửa sổ biểu đồ phải TÁCH khỏi kỳ KPI.
+ *
+ * Bản trước nối hai thứ làm một, nên kỳ mặc định "Hôm nay" chỉ còn 1 điểm dữ
+ * liệu: `<path>` sinh ra đúng một lệnh `M` — SVG không vẽ nét nào — và
+ * `sparkPoints()` bỏ hẳn sparkline vì dưới 2 giá trị. Màn hình vẫn đầy số
+ * nhưng mọi đường biểu đồ đều trống. Demo ghim biểu đồ ở 7 ngày (`app.js:706`
+ * luôn ghi "Biểu đồ: 7 ngày gần nhất") chính vì vậy.
+ */
+describe("DashboardPage — cửa sổ biểu đồ 7 ngày", () => {
+  const days = Array.from({ length: 7 }, (_, index) =>
+    dayjs()
+      .subtract(6 - index, "day")
+      .format("YYYY-MM-DD"),
+  );
+
+  const weekOverview = {
+    ...overview,
+    flow_daily: days.map((date, index) => ({
+      date,
+      receipt_product: 100 + index * 10,
+      receipt_component: 50 + index * 5,
+      issue_product: 40 + index * 3,
+      issue_component: 10 + index,
+    })),
+    stock_trend: days.map((date, index) => ({
+      date,
+      closing_qty: 1200 + index * 25,
+    })),
+  };
+
+  const weekDaily = {
+    days: days.map((date) => ({
+      date,
+      inbound_qty: 150,
+      outbound_qty: 50,
+      reversal_net: 5,
+      closing_qty: 1234,
+    })),
+  };
+
+  function routeWeek(url: string) {
+    if (url === API_ENDPOINTS.REPORTS_DASHBOARD_OVERVIEW)
+      return Promise.resolve(weekOverview);
+    if (url === API_ENDPOINTS.REPORTS_XNT_ENHANCED) return Promise.resolve(xnt);
+    if (url === OPERATIONS_REPORT_ENDPOINTS.XNT_DAILY)
+      return Promise.resolve(weekDaily);
+    if (url === API_ENDPOINTS.DASHBOARD_KPI) return Promise.resolve(quick);
+    return Promise.reject(new Error(`unexpected url ${url}`));
+  }
+
+  it("vẽ đường luồng nhiều điểm dù kỳ KPI là Hôm nay", async () => {
+    mockedGet.mockImplementation((url: string) => routeWeek(url));
+    renderDashboard();
+
+    await screen.findByText("Xuất sản phẩm đã Post");
+
+    const flow = document.querySelector("#flow-card") as HTMLElement;
+    expect(flow).not.toBeNull();
+    // Lệnh "L" là bằng chứng có NÉT: path chỉ có "M" thì SVG không vẽ gì.
+    const drawn = [...flow.querySelectorAll("path")].filter((node) =>
+      (node.getAttribute("d") ?? "").includes("L"),
+    );
+    expect(drawn.length).toBeGreaterThan(0);
+
+    // Bảng dữ liệu thay thế phải liệt kê đủ 7 ngày, không phải 1.
+    const table = flow.querySelector("tbody") as HTMLElement;
+    expect(table.querySelectorAll("tr")).toHaveLength(7);
+  });
+
+  it("giữ sparkline trên thẻ KPI ở kỳ Hôm nay", async () => {
+    mockedGet.mockImplementation((url: string) => routeWeek(url));
+    renderDashboard();
+
+    await screen.findByText("Xuất sản phẩm đã Post");
+
+    const sparks = [...document.querySelectorAll("#kpi-grid .kpi-spark")];
+    expect(sparks.length).toBeGreaterThan(0);
+    for (const spark of sparks) {
+      const points = spark.querySelector("polyline")?.getAttribute("points");
+      expect(points?.trim()).toBeTruthy();
+    }
+  });
+
+  it("đọc chuỗi theo ngày ở cửa sổ 7 ngày, không theo kỳ KPI", async () => {
+    mockedGet.mockImplementation((url: string) => routeWeek(url));
+    renderDashboard();
+
+    await screen.findByText("Xuất sản phẩm đã Post");
+
+    // Kỳ KPI là Hôm nay…
+    expect(mockedGet).toHaveBeenCalledWith(
+      API_ENDPOINTS.REPORTS_XNT_ENHANCED,
+      expect.objectContaining({ params: { from_date: today, to_date: today } }),
+    );
+    // …nhưng chuỗi theo ngày vẫn lấy trọn 7 ngày.
+    expect(mockedGet).toHaveBeenCalledWith(
+      OPERATIONS_REPORT_ENDPOINTS.XNT_DAILY,
+      expect.objectContaining({
+        params: { from_date: days[0], to_date: today },
+      }),
+    );
+    // Và payload chính chỉ tốn 1 request cho cả hai cửa sổ.
+    expect(mockedGet).toHaveBeenCalledWith(
+      API_ENDPOINTS.REPORTS_DASHBOARD_OVERVIEW,
+      expect.objectContaining({
+        params: { from_date: days[0], to_date: today },
+      }),
+    );
+  });
+
+  it("nói rõ cửa sổ biểu đồ trên section-meta", async () => {
+    mockedGet.mockImplementation((url: string) => routeWeek(url));
+    renderDashboard();
+
+    await screen.findByText("Xuất sản phẩm đã Post");
+
+    const meta = document.querySelector(".section-meta") as HTMLElement;
+    expect(meta.textContent).toContain(dayjs(days[0]).format("DD/MM/YYYY"));
+  });
+
+  /** CSS `[data-lazy]` để khối ở opacity .78; thiếu observer là kẹt luôn ở đó. */
+  it("lộ khối dưới fold thay vì bỏ chúng mờ vĩnh viễn", async () => {
+    mockedGet.mockImplementation((url: string) => routeWeek(url));
+    renderDashboard();
+
+    await screen.findByText("Xuất sản phẩm đã Post");
+
+    const lazy = [...document.querySelectorAll("[data-lazy]")];
+    expect(lazy.length).toBe(2);
+    // jsdom không có IntersectionObserver ⇒ hook phải hiện ngay, không treo.
+    for (const section of lazy) {
+      expect(section.classList.contains("lazy-ready")).toBe(true);
+    }
+  });
+
+  it("xướng lên vùng aria-live khi đổi kỳ KPI", async () => {
+    mockedGet.mockImplementation((url: string) => routeWeek(url));
+    const { container } = renderDashboard();
+
+    await screen.findByText("Xuất sản phẩm đã Post");
+
+    const live = container.querySelector(".sr-only") as HTMLElement;
+    expect(live).not.toBeNull();
+    expect(live.getAttribute("aria-live")).toBe("polite");
+    expect(live.textContent).toBe("");
+
+    fireEvent.click(screen.getByRole("button", { name: "7 ngày gần nhất" }));
+    expect(live.textContent).toBe("Đã chọn kỳ KPI 7 ngày gần nhất");
+
+    fireEvent.click(screen.getByRole("button", { name: "Linh kiện" }));
+    expect(live.textContent).toBe("Đã lọc loại hàng Linh kiện");
+  });
+});

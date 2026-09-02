@@ -61,6 +61,20 @@ export function resolvePeriodRange(
   return custom;
 }
 
+/**
+ * Cửa sổ của MỌI chuỗi thời gian trên màn: 7 ngày gần nhất, KHÔNG đổi theo kỳ
+ * KPI đang chọn.
+ *
+ * Đây là thiết kế của demo (`app.js:706` luôn ghi "Biểu đồ: 7 ngày gần nhất",
+ * thẻ luồng tên là "Luồng nhập – xuất 7 ngày"): nút chọn kỳ chỉ đổi CON SỐ của
+ * thẻ KPI, còn đường biểu đồ giữ nguyên cửa sổ để còn nhìn ra xu hướng. Nối
+ * biểu đồ vào kỳ KPI thì kỳ "Hôm nay" chỉ còn 1 điểm — một `<path>` chỉ có
+ * lệnh M không vẽ ra nét nào, và sparkline dưới 2 điểm bị bỏ hẳn.
+ */
+export function chartRangeOf(today: dayjs.Dayjs = dayjs()): DateRange {
+  return { from: today.subtract(6, "day").format(ISO), to: today.format(ISO) };
+}
+
 /** Kỳ liền trước, cùng độ dài — dùng cho các delta "so với kỳ trước". */
 export function previousRange(range: DateRange): DateRange {
   const from = dayjs(range.from);
@@ -172,14 +186,24 @@ function reportQueryOptions(enabled: boolean) {
 }
 
 /**
- * Nguồn 1 — bản đọc riêng của màn này: kỳ yêu cầu được NỚI về phía trước đúng
- * một kỳ để tính được delta "so với kỳ trước" và tồn đầu kỳ mà chỉ tốn 1 request.
+ * Nguồn 1 — bản đọc riêng của màn này.
+ *
+ * Payload được NỚI để một request phủ cả ba nhu cầu: kỳ liền trước (delta "so
+ * với kỳ trước" + tồn đầu kỳ), kỳ KPI đang chọn, và cửa sổ 7 ngày của biểu đồ.
+ * Nhờ vậy tách cửa sổ biểu đồ khỏi kỳ KPI không tốn thêm lượt gọi nào.
  */
-export function useOverviewSource(range: DateRange, enabled: boolean) {
+export function useOverviewSource(
+  range: DateRange,
+  chartRange: DateRange,
+  enabled: boolean,
+) {
   const widened = useMemo(() => {
     const previous = previousRange(range);
-    return { from: previous.from, to: range.to };
-  }, [range]);
+    return {
+      from: previous.from < chartRange.from ? previous.from : chartRange.from,
+      to: range.to > chartRange.to ? range.to : chartRange.to,
+    };
+  }, [range, chartRange]);
 
   const overview = useQuery({
     queryKey: ["dashboard", "overview-vuexy", widened.from, widened.to],
@@ -199,11 +223,17 @@ export function useOverviewSource(range: DateRange, enabled: boolean) {
     ...reportQueryOptions(enabled),
   });
 
+  // Chỉ phục vụ chiều "Hoàn tác" của biểu đồ luồng nên bám cửa sổ biểu đồ.
   const xntDaily = useQuery({
-    queryKey: ["dashboard", "overview-xnt-daily", range.from, range.to],
+    queryKey: [
+      "dashboard",
+      "overview-xnt-daily",
+      chartRange.from,
+      chartRange.to,
+    ],
     queryFn: () =>
       http.get<XntDailyReport>(OPERATIONS_REPORT_ENDPOINTS.XNT_DAILY, {
-        params: { from_date: range.from, to_date: range.to },
+        params: { from_date: chartRange.from, to_date: chartRange.to },
       }),
     ...reportQueryOptions(enabled),
   });

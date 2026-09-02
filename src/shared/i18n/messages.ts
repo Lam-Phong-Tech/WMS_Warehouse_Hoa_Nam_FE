@@ -156,6 +156,17 @@ export const MESSAGES_VI = {
       staleBadge: "Dữ liệu cũ",
     },
 
+    /**
+     * Câu xướng cho vùng aria-live. Người dùng screen-reader không thấy biểu
+     * đồ vẽ lại, nên mỗi thao tác đổi dữ liệu phải nói ra thành lời.
+     */
+    live: {
+      periodChanged: "Đã chọn kỳ KPI {period}",
+      typeChanged: "Đã lọc loại hàng {type}",
+      dateChanged: "Đã chọn khoảng ngày {from} đến {to}",
+      refreshed: "Đã làm mới Dashboard",
+    },
+
     dateError: {
       required: "Chọn đủ ngày bắt đầu và kết thúc.",
       order: "Ngày bắt đầu không được sau ngày kết thúc.",
@@ -250,8 +261,8 @@ export const MESSAGES_VI = {
     },
 
     flow: {
-      eyebrow: "LUỒNG THEO KỲ",
-      title: "Luồng nhập – xuất theo kỳ",
+      eyebrow: "LUỒNG 7 NGÀY",
+      title: "Luồng nhập – xuất 7 ngày",
       subtitle: "Theo dõi lượng nhập, xuất và hoàn tác theo ngày",
       unit: "Đơn vị: cái",
       loadingTitle: "Đang tải biểu đồ",
@@ -261,12 +272,12 @@ export const MESSAGES_VI = {
       failedTitle: "Không thể tải luồng",
       failedCopy: "Nguồn movement không phản hồi; không vẽ đường 0 giả.",
       emptyTitle: "Chưa có giao dịch",
-      emptyCopy: "Không có điểm dữ liệu trong kỳ đang xem.",
+      emptyCopy: "Không có điểm dữ liệu trong 7 ngày gần nhất.",
       inbound: "Nhập",
       issueProduct: "Xuất SP",
       issueComponent: "Xuất LK",
       reversal: "Hoàn tác",
-      svgTitle: "Luồng nhập xuất theo kỳ",
+      svgTitle: "Luồng nhập xuất 7 ngày",
       svgDesc:
         "Area chart bốn chuỗi nhập, xuất sản phẩm, xuất linh kiện và hoàn tác. Di chuột vào từng ngày để xem số liệu chi tiết; có bảng dữ liệu thay thế phía dưới.",
       tableSummary: "Xem bảng dữ liệu thay thế",
@@ -3075,6 +3086,13 @@ export const MESSAGES_EN: MessageTree = {
       staleBadge: "Stale data",
     },
 
+    live: {
+      periodChanged: "KPI period set to {period}",
+      typeChanged: "Item type filtered to {type}",
+      dateChanged: "Date range set to {from} through {to}",
+      refreshed: "Dashboard refreshed",
+    },
+
     dateError: {
       required: "Pick both a start and an end date.",
       order: "The start date cannot be after the end date.",
@@ -3171,8 +3189,8 @@ export const MESSAGES_EN: MessageTree = {
     },
 
     flow: {
-      eyebrow: "FLOW BY PERIOD",
-      title: "Inbound – outbound flow by period",
+      eyebrow: "7-DAY FLOW",
+      title: "7-day inbound – outbound flow",
       subtitle: "Track receipts, issues and reversals by day",
       unit: "Unit: pcs",
       loadingTitle: "Loading chart",
@@ -3183,12 +3201,12 @@ export const MESSAGES_EN: MessageTree = {
       failedCopy:
         "The movement source did not respond; no fake zero line is drawn.",
       emptyTitle: "No transactions yet",
-      emptyCopy: "There is no data point in the period in view.",
+      emptyCopy: "There is no data point in the last 7 days.",
       inbound: "Receipts",
       issueProduct: "Product out",
       issueComponent: "Component out",
       reversal: "Reversals",
-      svgTitle: "Inbound outbound flow by period",
+      svgTitle: "7-day inbound outbound flow",
       svgDesc:
         "Area chart with four series: receipts, product issues, component issues and reversals. Hover a day for details; an alternative data table follows below.",
       tableSummary: "View alternative data table",
