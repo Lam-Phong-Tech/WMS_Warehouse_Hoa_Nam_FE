@@ -73,8 +73,8 @@ describe("UiFormDate (wiring qua antd DatePicker stub)", () => {
   });
 
   it("helperText mặc định hiển thị khi không có lỗi", () => {
-    render(<Host helperText="Định dạng DD/MM/YYYY" />);
-    expect(screen.getByText("Định dạng DD/MM/YYYY")).toBeInTheDocument();
+    render(<Host helperText="Định dạng DD-MM-YYYY" />);
+    expect(screen.getByText("Định dạng DD-MM-YYYY")).toBeInTheDocument();
   });
 
   it("placeholder/disabled/data-testid truyền xuống stub", () => {

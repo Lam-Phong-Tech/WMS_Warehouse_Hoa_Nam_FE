@@ -393,7 +393,7 @@ describe("DashboardPage — cửa sổ biểu đồ 7 ngày", () => {
     await screen.findByText("Xuất sản phẩm đã Post");
 
     const meta = document.querySelector(".section-meta") as HTMLElement;
-    expect(meta.textContent).toContain(dayjs(days[0]).format("DD/MM/YYYY"));
+    expect(meta.textContent).toContain(dayjs(days[0]).format("DD-MM-YYYY"));
   });
 
   /** CSS `[data-lazy]` để khối ở opacity .78; thiếu observer là kẹt luôn ở đó. */

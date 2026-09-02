@@ -107,10 +107,10 @@ export function presetRange(preset: PeriodPreset): [Dayjs, Dayjs] {
 
 export const API_DATE = "YYYY-MM-DD";
 
-/** Nhãn ngày ngắn cho trục hoành chart theo ngày (dd/MM). */
+/** Nhãn ngày ngắn cho trục hoành chart theo ngày (dd-MM). */
 export function axisDayLabel(isoDate: string): string {
   const parsed = dayjs(isoDate);
-  return parsed.isValid() ? parsed.format("DD/MM") : isoDate;
+  return parsed.isValid() ? parsed.format("DD-MM") : isoDate;
 }
 
 // ── Phân loại hàng hóa (Sản phẩm / Linh kiện) ────────────────────────────

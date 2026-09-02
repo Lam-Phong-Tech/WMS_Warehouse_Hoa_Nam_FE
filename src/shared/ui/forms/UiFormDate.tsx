@@ -45,7 +45,7 @@ export function UiFormDate<T extends FieldValues>({
   name,
   label,
   required = false,
-  format = "DD/MM/YYYY",
+  format = "DD-MM-YYYY",
   allowClear = true,
   disabled = false,
   placeholder,

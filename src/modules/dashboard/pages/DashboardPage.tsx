@@ -543,7 +543,7 @@ export default function DashboardPage() {
 
   const periodName = t(PERIOD_NAME_KEYS[period]);
   const formatRange = (value: DateRange) =>
-    `${dayjs(value.from).format("DD/MM/YYYY")} → ${dayjs(value.to).format("DD/MM/YYYY")}`;
+    `${dayjs(value.from).format("DD-MM-YYYY")} → ${dayjs(value.to).format("DD-MM-YYYY")}`;
   const cutoffLabel = formatRange(range);
   const chartCutoffLabel = formatRange(chartRange);
 

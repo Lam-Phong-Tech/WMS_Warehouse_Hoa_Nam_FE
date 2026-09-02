@@ -291,7 +291,7 @@ export function buildFlowRows(
     .filter((point) => point.date >= range.from && point.date <= range.to)
     .map((point) => ({
       date: point.date,
-      label: dayjs(point.date).format("DD/MM"),
+      label: dayjs(point.date).format("DD-MM"),
       inbound:
         type === "PRODUCT"
           ? num(point.receipt_product)
@@ -362,7 +362,7 @@ export function buildTrendRows(
     .filter((point) => point.date >= range.from && point.date <= range.to)
     .map((point) => ({
       date: point.date,
-      label: dayjs(point.date).format("DD/MM"),
+      label: dayjs(point.date).format("DD-MM"),
       closing: num(point.closing_qty),
     }));
 }

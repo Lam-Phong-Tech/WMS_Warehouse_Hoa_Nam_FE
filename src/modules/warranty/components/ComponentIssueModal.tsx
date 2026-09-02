@@ -47,6 +47,7 @@ import {
 import { makeWarrantyIdempotencyKey } from "@/modules/warranty/services/warrantyService";
 import { COMPONENT_ISSUE_STATUS_BADGE } from "@/modules/warranty/constants";
 import { EMPTY_TEXT } from "@/shared/constants/display";
+import { formatDate } from "@/shared/utils/format-date";
 import type {
   ComponentIssueDocument,
   ComponentIssueLine,
@@ -731,7 +732,9 @@ export function ComponentIssueModal({
                         </UiText>
                       </Box>
                       <UiText variant="body">
-                        {detail.document_date || EMPTY_TEXT}
+                        {detail.document_date
+                          ? formatDate(detail.document_date)
+                          : EMPTY_TEXT}
                       </UiText>
                     </Grid>
                   </Grid>

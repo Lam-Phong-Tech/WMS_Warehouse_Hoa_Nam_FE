@@ -447,8 +447,17 @@ export function OutboundIntakeModal({
       key: "sku",
       header: "SKU",
       width: 220,
+      // Chỉ mã SKU đọc được (sku_code) mới in thẳng. Khi file nhập thiếu mã mà chỉ
+      // có sku_id (UUID nội bộ), KHÔNG in nguyên chuỗi thô — dùng CopyableId (rút
+      // gọn + nút sao chép) đúng quy ước không lộ UUID ở màn nghiệp vụ.
       render: (row) =>
-        text(row.normalized.sku_code ?? row.normalized.sku_id, "-"),
+        row.normalized.sku_code ? (
+          text(row.normalized.sku_code)
+        ) : row.normalized.sku_id ? (
+          <CopyableId value={String(row.normalized.sku_id)} />
+        ) : (
+          "-"
+        ),
     },
     {
       key: "sku_mapping",

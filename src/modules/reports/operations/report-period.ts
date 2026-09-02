@@ -43,7 +43,7 @@ export function usePeriodFilter(
   const from = range[0].format(API_DATE);
   const to = range[1].format(API_DATE);
   const invalid = range[0].isAfter(range[1], "day");
-  const label = `${range[0].format("DD/MM/YYYY")} → ${range[1].format("DD/MM/YYYY")}`;
+  const label = `${range[0].format("DD-MM-YYYY")} → ${range[1].format("DD-MM-YYYY")}`;
 
   return useMemo(
     () => ({ preset, setPreset, range, setRange, from, to, invalid, label }),

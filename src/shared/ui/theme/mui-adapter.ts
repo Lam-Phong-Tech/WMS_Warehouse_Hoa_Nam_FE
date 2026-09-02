@@ -251,7 +251,16 @@ function buildMuiTheme(mode: ThemeModeName) {
     },
     MuiDialogContent: {
       styleOverrides: {
-        root: { fontSize: TYPOGRAPHY.fontSizeBody },
+        // MUI đặt paddingTop:0 cho DialogContent khi nó đứng NGAY SAU DialogTitle
+        // (selector `.MuiDialogTitle-root + &`). Hệ quả: NHÃN NỔI (floating label) của
+        // hàng field TRÊN CÙNG nhô lên trên viền input → vượt mép vùng cuộn overflow
+        // của DialogContent và bị CẮT MẤT NỬA TRÊN. Trả lại một khoảng đệm đỉnh đủ để
+        // nhãn không bị cắt, dùng CHÍNH selector của MUI (đặt sau nên thắng theo thứ
+        // tự, cùng độ đặc hiệu) — sửa MỘT chỗ cho MỌI modal toàn dự án.
+        root: {
+          fontSize: TYPOGRAPHY.fontSizeBody,
+          ".MuiDialogTitle-root + &": { paddingTop: "14px" },
+        },
       },
     },
     MuiChip: {

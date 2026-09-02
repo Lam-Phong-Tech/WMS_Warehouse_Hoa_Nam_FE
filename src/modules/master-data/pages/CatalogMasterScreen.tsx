@@ -441,15 +441,6 @@ export function CatalogMasterScreen() {
         ),
     },
     {
-      key: "sortOrder",
-      header: t("masterData.catalog.colOrder"),
-      width: 90,
-      align: "right",
-      sortType: "value",
-      sortAccessor: (record) => record.sort_order,
-      render: (record) => record.sort_order,
-    },
-    {
       key: "status",
       header: t("masterData.status.label"),
       width: 140,
@@ -791,31 +782,6 @@ export function CatalogMasterScreen() {
                 error={Boolean(fieldErrors.description)}
                 helperText={fieldErrors.description}
                 slotProps={{ htmlInput: { maxLength: 2000 } }}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <UiTextField
-                id="catalog-sort-order"
-                label={t("masterData.catalog.displayOrder")}
-                type="number"
-                fullWidth
-                value={formValues.sort_order ?? 0}
-                onChange={(event) => {
-                  const value = Number(event.target.value) || 0;
-                  setFormValues((current) => ({
-                    ...current,
-                    sort_order: value,
-                  }));
-                  setFieldErrors((current) =>
-                    current.sort_order
-                      ? { ...current, sort_order: "" }
-                      : current,
-                  );
-                }}
-                disabled={saveMutation.isPending}
-                error={Boolean(fieldErrors.sort_order)}
-                helperText={fieldErrors.sort_order}
-                slotProps={{ htmlInput: { min: 0 } }}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
