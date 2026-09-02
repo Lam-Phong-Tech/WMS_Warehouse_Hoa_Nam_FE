@@ -1,15 +1,10 @@
 /**
- * 404 — Part 4 (đóng NAV-02): catch-all trước đây redirect lặng lẽ về "/",
- * che mất URL sai và làm khó debug. Trang này render bare (ngoài MainLayout)
- * để hoạt động cho cả người dùng chưa đăng nhập.
+ * 404 — catch-all thay cho việc redirect lặng lẽ về "/" (che mất URL sai, khó
+ * debug). Trang render TRONG MainLayout nên vẫn còn sidebar/topbar để đi tiếp;
+ * shell đã lo nền và chiều cao nên ở đây chỉ canh giữa vùng nội dung.
  */
 import { useNavigate } from "react-router-dom";
-import {
-  Box,
-  SEMANTIC_LIGHT as S,
-  UiButton,
-  UiStateSurface,
-} from "@/shared/ui";
+import { Box, UiButton, UiStateSurface } from "@/shared/ui";
 import { ROUTES } from "@/shared/constants/routes";
 
 export function NotFoundPage() {
@@ -17,11 +12,11 @@ export function NotFoundPage() {
   return (
     <Box
       sx={{
-        minHeight: "100dvh",
+        minHeight: 420,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: S.bgCanvas,
+        py: 3,
       }}
       data-testid="not-found-page"
     >

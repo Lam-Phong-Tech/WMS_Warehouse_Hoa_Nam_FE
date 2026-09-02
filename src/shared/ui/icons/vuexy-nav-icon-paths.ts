@@ -73,7 +73,7 @@ export const VUEXY_NAV_ICONS = {
     ["path", { d: "M6 6v14" }],
     ["rect", { width: "20", height: "14", x: "2", y: "6", rx: "2" }],
   ],
-  /** Tồn kho & kiểm soát */
+  /** Tồn kho & truy vết */
   warehouse: [
     ["path", { d: "M18 21V10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1v11" }],
     [

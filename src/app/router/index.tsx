@@ -397,10 +397,7 @@ export const router = createBrowserRouter([
           },
           {
             path: ROUTES.REPORTS_RECIPIENT,
-            element: routeEl(
-              ROUTES.REPORTS_RECIPIENT,
-              <RecipientReportPage />,
-            ),
+            element: routeEl(ROUTES.REPORTS_RECIPIENT, <RecipientReportPage />),
           },
           {
             path: ROUTES.REPORTS_PENDING_EVIDENCE,
@@ -439,20 +436,21 @@ export const router = createBrowserRouter([
             path: ROUTES.PROFILE,
             element: routeEl(ROUTES.PROFILE, <ProfilePage />),
           },
+          // 403 nằm TRONG MainLayout: người dùng đã đăng nhập nên phải giữ
+          // sidebar/topbar để đi tiếp chỗ khác, thay vì mắc kẹt ở một trang
+          // trống. KHÔNG bọc routeEl — chính trang báo thiếu quyền thì không
+          // được đòi quyền, nếu không sẽ lặp vô hạn.
+          {
+            path: ROUTES.NO_PERMISSION,
+            element: withPageLoader(<NoPermissionPage />),
+          },
+          // 404 cũng nằm trong khung: người đã đăng nhập gõ sai URL vẫn còn
+          // sidebar/topbar để đi tiếp. Người CHƯA đăng nhập rơi vào nhánh này
+          // sẽ bị ProtectedRoute đá về /login — quyết định đã chốt với PM,
+          // thay cho hành vi 404-trần của NAV-02 trước đây.
+          { path: "*", element: withPageLoader(<NotFoundPage />) },
         ],
       },
     ],
   },
-  {
-    element: <ProtectedRoute />,
-    children: [
-      {
-        path: ROUTES.NO_PERMISSION,
-        element: withPageLoader(<NoPermissionPage />),
-      },
-    ],
-  },
-  // NotFoundPage là lazy — phải qua withPageLoader như mọi route khác, nếu
-  // không render sẽ ném lỗi vì thiếu Suspense boundary khi chunk chưa tải.
-  { path: "*", element: withPageLoader(<NotFoundPage />) },
 ]);

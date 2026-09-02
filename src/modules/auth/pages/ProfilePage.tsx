@@ -49,7 +49,9 @@ function statusTone(status?: string): UiStatusTone {
 }
 
 function empty(value?: string | number | null) {
-  return value === undefined || value === null || value === "" ? EMPTY_TEXT : value;
+  return value === undefined || value === null || value === ""
+    ? EMPTY_TEXT
+    : value;
 }
 
 const HISTORY_COLUMNS: ResponsiveTableColumn<MyPermissionHistoryEntry>[] = [
@@ -109,7 +111,8 @@ export function ProfilePage() {
   const historyRows = historyQuery.data?.data ?? [];
 
   return (
-    <UiPageContainer title="Thông tin tài khoản">
+    // Tiêu đề màn do header chung của shell dựng (AppPageHeader).
+    <UiPageContainer>
       <UiCard>
         <Box
           sx={{

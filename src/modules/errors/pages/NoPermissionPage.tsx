@@ -1,6 +1,5 @@
 import { useNavigate } from "react-router-dom";
 import { Box, Stack, UiDescriptions, UiStatusBadge } from "@/shared/ui";
-import { SEMANTIC_LIGHT as S } from "@/shared/ui/tokens";
 import { NoPermissionState } from "@/shared/components/feedback/NoPermissionState";
 import { useAuthStore } from "@/shared/store/auth.store";
 
@@ -14,14 +13,15 @@ export function NoPermissionPage() {
   const permissionCodes = useAuthStore((s) => s.permissionCodes);
 
   return (
+    // Trang render TRONG MainLayout nên không tự vẽ nền/chiều cao toàn màn:
+    // shell đã lo nền, sidebar và topbar.
     <Box
       sx={{
-        minHeight: "100vh",
+        minHeight: 420,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        padding: "24px",
-        backgroundColor: S.bgCanvas,
+        py: 3,
       }}
     >
       <Box sx={{ maxWidth: 600, width: "100%" }}>

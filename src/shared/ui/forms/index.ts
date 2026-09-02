@@ -28,3 +28,7 @@ export {
   type UiDatePickerProps,
   type UiDateRangePickerProps,
 } from "./UiDatePicker";
+export {
+  UiVuexyDateRangePicker,
+  type UiVuexyDateRangePickerProps,
+} from "./UiVuexyDateRangePicker";

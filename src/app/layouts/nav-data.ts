@@ -57,7 +57,7 @@ export const NAV_GROUPS: NavGroupData[] = [
       {
         screen: "MAP-01",
         path: ROUTES.DASHBOARD,
-        label: "Tổng quan kho",
+        label: "Tổng quan vận hành",
         icon: "sitemap",
       },
     ],
@@ -147,7 +147,7 @@ export const NAV_GROUPS: NavGroupData[] = [
     ],
   },
   {
-    name: "Tồn kho & kiểm soát",
+    name: "Tồn kho & truy vết",
     icon: "warehouse",
     items: [
       {
@@ -382,6 +382,10 @@ export const ROUTE_META: Record<
     title: "Foundation catalog",
     description: "Golden catalog của design system (DEV).",
   },
+  [ROUTES.NO_PERMISSION]: {
+    title: "Không có quyền truy cập",
+    description: "Tài khoản hiện tại chưa được cấp quyền vào màn hình vừa mở.",
+  },
 };
 
 /** Tiêu đề/mô tả theo screen-id (header của shell). */
@@ -390,7 +394,7 @@ export const SCREEN_META: Record<
   { title: string; description: string }
 > = {
   "MAP-01": {
-    title: "Tổng quan kho",
+    title: "Tổng quan vận hành",
     description:
       "Tổng quan phạm vi giao diện, không bao gồm ứng dụng phân vùng.",
   },
@@ -496,18 +500,23 @@ export const SCREEN_META: Record<
   },
 };
 
+/**
+ * Meta trả về khi route KHÔNG khai báo tiêu đề — shell dùng nó làm dấu hiệu
+ * "màn này chưa có header chuẩn" và bỏ qua header thay vì in một cụm chữ vô
+ * nghĩa (vd trang 404 khớp mọi đường dẫn).
+ */
+export const UNKNOWN_SCREEN_META = {
+  title: "Hoa Nam WMS",
+  description: "Bám BRD / SRS-FRD / BPD hiện tại",
+};
+
 /** Tiêu đề header: ?screen= (đã normalize) → default theo route → ROUTE_META. */
 export function resolveScreenMeta(pathname: string, search: string) {
   const requested = normalizeScreen(new URLSearchParams(search).get("screen"));
   if (requested && SCREEN_META[requested]) return SCREEN_META[requested];
   const fallback = DEFAULT_SCREEN_BY_PATH[pathname];
   if (fallback && SCREEN_META[fallback]) return SCREEN_META[fallback];
-  return (
-    ROUTE_META[pathname] ?? {
-      title: "Hoa Nam WMS",
-      description: "Bám BRD / SRS-FRD / BPD hiện tại",
-    }
-  );
+  return ROUTE_META[pathname] ?? UNKNOWN_SCREEN_META;
 }
 
 export interface BreadcrumbEntry {

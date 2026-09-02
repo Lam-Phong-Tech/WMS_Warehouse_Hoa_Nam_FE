@@ -46,11 +46,11 @@ describe("catalog chuỗi giao diện", () => {
 
 describe("translate()", () => {
   it("trả tiếng Việt khi ngôn ngữ là vi", () => {
-    expect(translate("vi", "dashboard.title")).toBe("Tổng quan kho");
+    expect(translate("vi", "dashboard.title")).toBe("Tổng quan vận hành");
   });
 
   it("trả tiếng Anh khi ngôn ngữ là en", () => {
-    expect(translate("en", "dashboard.title")).toBe("Warehouse overview");
+    expect(translate("en", "dashboard.title")).toBe("Operations overview");
   });
 
   it("rơi về tiếng Việt khi khoá thiếu bản EN", () => {
@@ -93,11 +93,15 @@ describe("translate()", () => {
 
 describe("nhãn điều hướng", () => {
   it("giữ nguyên tiếng Việt khi ngôn ngữ là vi", () => {
-    expect(navLabel("vi", "MAP-01", "Tổng quan kho")).toBe("Tổng quan kho");
+    expect(navLabel("vi", "MAP-01", "Tổng quan vận hành")).toBe(
+      "Tổng quan vận hành",
+    );
   });
 
   it("dịch sang tiếng Anh khi ngôn ngữ là en", () => {
-    expect(navLabel("en", "MAP-01", "Tổng quan kho")).toBe("Warehouse overview");
+    expect(navLabel("en", "MAP-01", "Tổng quan vận hành")).toBe(
+      "Operations overview",
+    );
   });
 
   /**

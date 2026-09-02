@@ -663,17 +663,7 @@ export default function PvAdminPage() {
 
   return (
     <Box sx={{ padding: "clamp(8px, 2vw, 16px)" }}>
-      <Box
-        component="h1"
-        sx={{
-          fontSize: "clamp(17px, 3vw, 22px)",
-          fontWeight: 700,
-          color: S.textHigh,
-          margin: "0 0 4px",
-        }}
-      >
-        Quản trị ứng dụng phân vùng
-      </Box>
+      {/* Tiêu đề màn do header chung của shell dựng (AppPageHeader). */}
       <Box
         component="p"
         sx={{ color: S.textMedium, fontSize: 13, marginTop: 0 }}

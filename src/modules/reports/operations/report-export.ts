@@ -87,6 +87,54 @@ export type ReportExportRequest = {
 };
 
 /**
+ * Chạy TRỌN một lần xuất báo cáo qua job Annex C: kiểm quyền → tạo job → poll
+ * tới READY → tải file. Hàm này NÉM lỗi ra ngoài và không toast, để màn nào tự
+ * quản lý trạng thái/thông báo (vd RPT-07) dùng lại đúng một đường xử lý thay
+ * vì chép lại vòng poll.
+ */
+export async function runReportExport(
+  format: "xlsx" | "pdf",
+  request: ReportExportRequest,
+): Promise<number | null> {
+  assertWmsActionPermission(
+    WMS_ACTION_PERMISSIONS.EXPORT_REPORT,
+    "report export",
+  );
+  const job = await http.post<Raw>(
+    API_ENDPOINTS.REPORTS_EXPORT,
+    {
+      report_code: request.reportCode,
+      format,
+      filters: request.filters,
+    },
+    { headers: { "Idempotency-Key": createIdempotencyKey() } },
+  );
+  const jobId = text(job.export_job_id, "");
+  if (!jobId) {
+    throw new Error(tStatic("reports.export.noJobId"));
+  }
+
+  const finalStatus = await pollReportExportJob(jobId);
+  if (finalStatus.status === "FAILED") {
+    throw new Error(
+      text(finalStatus.error_message, tStatic("reports.export.failed")),
+    );
+  }
+  const downloadUrl = text(finalStatus.download_url, "");
+  if (!downloadUrl) {
+    throw new Error(tStatic("reports.export.noDownloadLink"));
+  }
+  const { blob, fileName } = await http.downloadFile(
+    stripApiPrefix(downloadUrl),
+  );
+  handleBlobDownload(
+    blob,
+    fileName ?? `${request.fileStem}${request.fileSuffix ?? ""}.${format}`,
+  );
+  return finalStatus.row_count;
+}
+
+/**
  * Xuất báo cáo theo ĐÚNG bộ lọc đang xem, đi qua job export của Annex C.
  * Dùng chung cho cả 7 tab để mọi lần xuất đều có Idempotency-Key và cùng một
  * đường xử lý lỗi/quyền.
@@ -102,45 +150,11 @@ export function useReportExport() {
     setExporting(format);
     setExportDenied(null);
     try {
-      assertWmsActionPermission(
-        WMS_ACTION_PERMISSIONS.EXPORT_REPORT,
-        "report export",
-      );
-      const job = await http.post<Raw>(
-        API_ENDPOINTS.REPORTS_EXPORT,
-        {
-          report_code: request.reportCode,
-          format,
-          filters: request.filters,
-        },
-        { headers: { "Idempotency-Key": createIdempotencyKey() } },
-      );
-      const jobId = text(job.export_job_id, "");
-      if (!jobId) {
-        throw new Error(tStatic("reports.export.noJobId"));
-      }
-
-      const finalStatus = await pollReportExportJob(jobId);
-      if (finalStatus.status === "FAILED") {
-        throw new Error(
-          text(finalStatus.error_message, tStatic("reports.export.failed")),
-        );
-      }
-      const downloadUrl = text(finalStatus.download_url, "");
-      if (!downloadUrl) {
-        throw new Error(tStatic("reports.export.noDownloadLink"));
-      }
-      const { blob, fileName } = await http.downloadFile(
-        stripApiPrefix(downloadUrl),
-      );
-      handleBlobDownload(
-        blob,
-        fileName ?? `${request.fileStem}${request.fileSuffix ?? ""}.${format}`,
-      );
+      const rowCount = await runReportExport(format, request);
       toast.success(
         tStatic("reports.export.ok", {
           format: format.toUpperCase(),
-          rows: fmt(finalStatus.row_count),
+          rows: fmt(rowCount),
         }),
       );
     } catch (error) {

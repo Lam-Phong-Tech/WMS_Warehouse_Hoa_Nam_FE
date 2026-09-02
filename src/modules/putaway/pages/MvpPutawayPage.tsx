@@ -630,10 +630,10 @@ export default function MvpPutawayPage() {
 
   return (
     <div className="putaway-page master-data-page">
+      {/* Tiêu đề màn do header chung của shell dựng (AppPageHeader); hàng này
+          chỉ còn giữ hành động. Ô rỗng để nút vẫn nằm bên phải. */}
       <div className="page-heading">
-        <div>
-          <h1>Danh sách linh kiện chờ xếp khay</h1>
-        </div>
+        <div />
         {/* Mục 15: lối vào trực tiếp màn XEM tổng quan khay (read-only), tách
             khỏi thao tác chọn khay trong dialog tạo lệnh. */}
         <RouterLink

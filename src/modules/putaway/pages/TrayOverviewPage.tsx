@@ -122,30 +122,14 @@ export default function TrayOverviewPage() {
       <Stack
         direction="row"
         sx={{
-          justifyContent: "space-between",
+          // Tiêu đề + mô tả màn do header chung của shell dựng.
+          justifyContent: "flex-end",
           alignItems: "flex-start",
           flexWrap: "wrap",
           gap: 1.5,
           mb: 2,
         }}
       >
-        <Box>
-          <Box
-            component="h1"
-            sx={{
-              fontSize: 20,
-              fontWeight: 700,
-              color: S.textHigh,
-              m: 0,
-            }}
-          >
-            Tổng quan tình trạng khay
-          </Box>
-          <Box sx={{ mt: 0.5, fontSize: 13, color: S.textMedium }}>
-            Chỉ để xem nhanh khay nào trống, khay nào đang dùng, khay nào cần
-            chú ý — không tạo/sửa/xếp khay tại đây.
-          </Box>
-        </Box>
         <RouterLink to={ROUTES.PUTAWAY} style={{ textDecoration: "none" }}>
           <ActionButton kind="back" label="Về xếp khay" />
         </RouterLink>

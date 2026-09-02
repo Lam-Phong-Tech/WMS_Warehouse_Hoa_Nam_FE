@@ -22,12 +22,12 @@ export const NAV_LABELS_EN: Record<string, string> = {
   "package-plus": "Inbound",
   "package-minus": "Outbound",
   "briefcase-medical": "Warranty & components",
-  warehouse: "Inventory & control",
+  warehouse: "Inventory & traceability",
   "chart-column-big": "Reports",
   "settings-2": "System",
 
   // Mục
-  "MAP-01": "Warehouse overview",
+  "MAP-01": "Operations overview",
   "MST-01": "SKU list",
   "MST-CAT-01": "Product catalog",
   "AGY-01": "Agencies / recipients",

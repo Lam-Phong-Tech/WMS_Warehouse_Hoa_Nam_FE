@@ -381,8 +381,8 @@ const PAGES: Array<{
   {
     Page: RecipientReportPage,
     path: ROUTES.REPORTS_RECIPIENT,
-    testId: "rpt-tab-recipient",
-    heading: /Bảng chi tiết xuất theo người nhận/,
+    testId: "report-08-recipient-agency",
+    heading: /Bảng đối soát xuất thuần/,
   },
   {
     Page: PendingEvidenceReportPage,

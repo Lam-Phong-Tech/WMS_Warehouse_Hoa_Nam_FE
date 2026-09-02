@@ -80,7 +80,7 @@ describe("AppTopbar", () => {
     renderTopbar();
 
     fireEvent.focusIn(screen.getByPlaceholderText("Tìm kiếm chức năng"));
-    expect(screen.getByText("Tổng quan kho")).toBeInTheDocument();
+    expect(screen.getByText("Tổng quan vận hành")).toBeInTheDocument();
     expect(
       screen.queryByText("Danh sách người dùng & phân quyền"),
     ).not.toBeInTheDocument();
@@ -91,7 +91,7 @@ describe("AppTopbar", () => {
     const input = screen.getByPlaceholderText("Tìm kiếm chức năng");
     fireEvent.focusIn(input);
     fireEvent.change(input, { target: { value: "tong quan" } });
-    expect(screen.getByText("Tổng quan kho")).toBeInTheDocument();
+    expect(screen.getByText("Tổng quan vận hành")).toBeInTheDocument();
   });
 
   it("đổi ngôn ngữ thì đổi chuỗi thật và ghi nhớ lựa chọn", () => {
@@ -99,9 +99,7 @@ describe("AppTopbar", () => {
     fireEvent.click(screen.getByRole("button", { name: "Ngôn ngữ" }));
     fireEvent.click(screen.getByRole("menuitemradio", { name: /English/ }));
 
-    expect(
-      screen.getByPlaceholderText("Search functions"),
-    ).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Search functions")).toBeInTheDocument();
     expect(useLanguageStore.getState().language).toBe("en");
     // `persist` của zustand ghi cả bao JSON, không phải chuỗi trần — đọc đúng
     // hình dạng đã lưu để test không xanh giả khi khoá đổi kiểu.

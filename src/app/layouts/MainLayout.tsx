@@ -15,6 +15,7 @@ import { Outlet, useLocation } from "react-router-dom";
 import { SideNav } from "@/app/layouts/SideNav";
 import { AppTopbar } from "@/app/layouts/topbar/AppTopbar";
 import { getBreadcrumbTrail } from "@/app/layouts/nav-data";
+import { AppPageHeader } from "@/app/layouts/AppPageHeader";
 import { useMe } from "@/modules/auth/hooks/use-me";
 import { useNotificationSocket } from "@/modules/notifications/hooks/useNotificationSocket";
 import { Loading } from "@/shared/components";
@@ -32,6 +33,16 @@ import { useAuthStore } from "@/shared/store/auth.store";
 import { useNavLabel } from "@/shared/i18n/nav-labels";
 import { ROUTES } from "@/shared/constants/routes";
 import { useNavigate } from "react-router-dom";
+
+/**
+ * Màn TỰ dựng header riêng nên shell không render `AppPageHeader` — nếu không
+ * sẽ có hai tiêu đề chồng nhau. Cả hai đều là bản port 1:1 từ mockup đã chốt
+ * (Tổng quan vận hành và RPT-07), header của chúng mang thêm chip/nút riêng.
+ */
+const ROUTES_WITH_OWN_HEADER: string[] = [
+  ROUTES.DASHBOARD,
+  ROUTES.REPORTS_RECIPIENT,
+];
 
 const SIDEBAR_COLLAPSED_STORAGE_KEY = "hn-wms-sidebar-collapsed";
 
@@ -93,6 +104,7 @@ export function MainLayout() {
    * lệch số đo demo và hiện breadcrumb hai lần — nên trang này chạy full-bleed.
    */
   const isDashboard = location.pathname === ROUTES.DASHBOARD;
+  const ownsHeader = ROUTES_WITH_OWN_HEADER.includes(location.pathname);
   const trail = getBreadcrumbTrail(location.pathname);
   const navLabel = useNavLabel();
 
@@ -151,6 +163,7 @@ export function MainLayout() {
               }))}
             />
           )}
+          {ownsHeader ? null : <AppPageHeader />}
           {/*
            * key theo pathname + ?screen= → remount chạy lại hiệu ứng chuyển màn
            * (hn-page-transition). KHÔNG đưa cả search vào key: 7 trang giữ bộ

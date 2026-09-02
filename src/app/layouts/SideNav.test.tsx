@@ -175,7 +175,7 @@ describe("SideNav — hình dạng theo demo Vuexy", () => {
       screen.queryByRole("button", { name: "Tổng quan" }),
     ).not.toBeInTheDocument();
     // …mà là chính mục trang, và đang là trang hiện tại.
-    const direct = screen.getByRole("button", { name: "Tổng quan kho" });
+    const direct = screen.getByRole("button", { name: "Tổng quan vận hành" });
     expect(direct).toHaveAttribute("aria-current", "page");
     expect(direct).not.toHaveAttribute("aria-expanded");
   });
@@ -189,7 +189,9 @@ describe("SideNav — hình dạng theo demo Vuexy", () => {
     await user.click(inboundGroup);
     expect(inboundGroup).toHaveAttribute("aria-expanded", "true");
 
-    await user.click(screen.getByRole("button", { name: "Tổng quan kho" }));
+    await user.click(
+      screen.getByRole("button", { name: "Tổng quan vận hành" }),
+    );
     expect(inboundGroup).toHaveAttribute("aria-expanded", "false");
   });
 
