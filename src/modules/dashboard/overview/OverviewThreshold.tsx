@@ -8,6 +8,7 @@
  * vẽ hai thanh rỗng.
  */
 import { DashIcon } from "../components/DashIcon";
+import { useT } from "@/shared/i18n/useT";
 import { OverviewStateBox } from "./OverviewStateBox";
 import { fmt } from "./overview-data";
 
@@ -24,6 +25,7 @@ export function OverviewThreshold({
   failed: boolean;
   forbidden: boolean;
 }) {
+  const t = useT();
   const header = (
     <header
       className="card-head chart-card-head threshold-card-head"
@@ -34,14 +36,14 @@ export function OverviewThreshold({
           <DashIcon name="settings-2" />
         </span>
         <div>
-          <span className="eyebrow">NGƯỠNG TỒN</span>
-          <h2>Cảnh báo tồn và dữ liệu</h2>
+          <span className="eyebrow">{t("dashboard.threshold.eyebrow")}</span>
+          <h2>{t("dashboard.threshold.title")}</h2>
           <span className="card-subtitle">
-            Chỉ áp dụng SKU có định mức hợp lệ
+            {t("dashboard.threshold.subtitle")}
           </span>
         </div>
       </div>
-      <span className="chip chip-warning">Cần chú ý</span>
+      <span className="chip chip-warning">{t("dashboard.threshold.chip")}</span>
     </header>
   );
 
@@ -51,8 +53,8 @@ export function OverviewThreshold({
         {header}
         <OverviewStateBox
           kind="loading"
-          title="Đang tải định mức"
-          copy="Kiểm tra cấu hình ngưỡng theo SKU."
+          title={t("dashboard.threshold.loadingTitle")}
+          copy={t("dashboard.threshold.loadingCopy")}
         />
       </article>
     );
@@ -62,8 +64,8 @@ export function OverviewThreshold({
         {header}
         <OverviewStateBox
           kind="forbidden"
-          title="Không có quyền xem cảnh báo"
-          copy="Không hiển thị số liệu nhạy cảm."
+          title={t("dashboard.threshold.forbiddenTitle")}
+          copy={t("dashboard.threshold.forbiddenCopy")}
         />
       </article>
     );
@@ -73,8 +75,8 @@ export function OverviewThreshold({
         {header}
         <OverviewStateBox
           kind="unavailable"
-          title="Nguồn định mức chưa sẵn sàng"
-          copy="Giữ nguyên các widget độc lập; không thay 0 cho dữ liệu lỗi."
+          title={t("dashboard.threshold.failedTitle")}
+          copy={t("dashboard.threshold.failedCopy")}
         />
       </article>
     );
@@ -86,15 +88,23 @@ export function OverviewThreshold({
         {header}
         <OverviewStateBox
           kind="empty"
-          title="Không có SKU lệch định mức"
-          copy="SKU chưa đặt min/max không được gắn nhãn thiếu tồn."
+          title={t("dashboard.threshold.emptyTitle")}
+          copy={t("dashboard.threshold.emptyCopy")}
         />
       </article>
     );
 
   const rows = [
-    { id: "DASH-KPI-19", name: "Tồn dưới định mức", value: belowMin },
-    { id: "DASH-KPI-20", name: "Tồn vượt định mức", value: aboveMax },
+    {
+      id: "DASH-KPI-19",
+      name: t("dashboard.threshold.belowMin"),
+      value: belowMin,
+    },
+    {
+      id: "DASH-KPI-20",
+      name: t("dashboard.threshold.aboveMax"),
+      value: aboveMax,
+    },
   ];
 
   return (
@@ -109,7 +119,10 @@ export function OverviewThreshold({
             <div
               className="meter"
               role="img"
-              aria-label={`${row.name}: ${fmt(row.value)} SKU`}
+              aria-label={t("dashboard.threshold.meterAria", {
+                name: row.name,
+                value: fmt(row.value),
+              })}
             >
               <span
                 style={

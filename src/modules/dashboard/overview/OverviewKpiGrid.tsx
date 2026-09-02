@@ -6,6 +6,7 @@
 import { DashIcon } from "../components/DashIcon";
 import type { DashboardIconName } from "../components/DashIcon";
 import { EMPTY_TEXT } from "@/shared/constants/display";
+import { useT } from "@/shared/i18n/useT";
 import { OverviewStateBox } from "./OverviewStateBox";
 import { fmt, type Trend } from "./overview-data";
 
@@ -54,6 +55,8 @@ export function OverviewKpiGrid({
   failed: boolean;
   forbidden: boolean;
 }) {
+  const t = useT();
+
   if (loading) {
     return (
       <div className="kpi-grid" id="kpi-grid">
@@ -62,7 +65,7 @@ export function OverviewKpiGrid({
             key={card.id}
             className="card kpi-card skeleton"
             data-kpi-id={card.id}
-            aria-label={`${card.label}: đang tải`}
+            aria-label={t("dashboard.kpi.loadingAria", { label: card.label })}
             aria-busy="true"
           >
             <div className="skeleton-line" />
@@ -78,11 +81,17 @@ export function OverviewKpiGrid({
     return (
       <div className="kpi-grid" id="kpi-grid">
         {cards.map((card) => (
-          <article key={card.id} className="card kpi-card" data-kpi-id={card.id}>
+          <article
+            key={card.id}
+            className="card kpi-card"
+            data-kpi-id={card.id}
+          >
             <OverviewStateBox
               kind="forbidden"
-              title="Không có quyền xem"
-              copy={`Cần quyền report.view để đọc ${card.label.toLowerCase()}.`}
+              title={t("dashboard.kpi.forbiddenTitle")}
+              copy={t("dashboard.kpi.forbiddenCopy", {
+                label: card.label.toLowerCase(),
+              })}
             />
           </article>
         ))}
@@ -94,11 +103,15 @@ export function OverviewKpiGrid({
     return (
       <div className="kpi-grid" id="kpi-grid">
         {cards.map((card) => (
-          <article key={card.id} className="card kpi-card" data-kpi-id={card.id}>
+          <article
+            key={card.id}
+            className="card kpi-card"
+            data-kpi-id={card.id}
+          >
             <OverviewStateBox
               kind="unavailable"
-              title={`Không thể tải ${card.label}`}
-              copy="Nguồn đọc lỗi; không thay bằng 0. Dùng Làm mới để thử lại."
+              title={t("dashboard.kpi.failedTitle", { label: card.label })}
+              copy={t("dashboard.kpi.failedCopy")}
             />
           </article>
         ))}
@@ -115,7 +128,10 @@ export function OverviewKpiGrid({
             key={card.id}
             className="card kpi-card"
             tabIndex={0}
-            title={`${card.label} · ${periodName}`}
+            title={t("dashboard.kpi.cardTitle", {
+              label: card.label,
+              period: periodName,
+            })}
             data-kpi-id={card.id}
             data-source={card.source}
           >
@@ -136,7 +152,11 @@ export function OverviewKpiGrid({
                 <span>{card.note}</span>
               </div>
               {points ? (
-                <svg className="kpi-spark" viewBox="0 0 48 30" aria-hidden="true">
+                <svg
+                  className="kpi-spark"
+                  viewBox="0 0 48 30"
+                  aria-hidden="true"
+                >
                   <polyline points={points} />
                 </svg>
               ) : null}

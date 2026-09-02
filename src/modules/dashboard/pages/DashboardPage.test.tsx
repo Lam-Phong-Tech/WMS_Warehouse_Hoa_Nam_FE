@@ -169,7 +169,9 @@ describe("DashboardPage — Tổng quan vận hành", () => {
     renderDashboard();
 
     // Mặc định "Toàn bộ" → dùng total của on_hand.
-    expect(await screen.findByText("Xuất sản phẩm đã Post")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Xuất sản phẩm đã Post"),
+    ).toBeInTheDocument();
     const grid = document.querySelector("#kpi-grid") as HTMLElement;
     expect(within(grid).getByText("1.234")).toBeInTheDocument();
 
@@ -178,9 +180,7 @@ describe("DashboardPage — Tổng quan vận hành", () => {
     // Linh kiện → nhánh component; thẻ xuất sản phẩm biến mất đúng như demo.
     expect(within(grid).getByText("434")).toBeInTheDocument();
     expect(within(grid).queryByText("1.234")).not.toBeInTheDocument();
-    expect(
-      screen.queryByText("Xuất sản phẩm đã Post"),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Xuất sản phẩm đã Post")).not.toBeInTheDocument();
   });
 
   it("hiển thị tổng thật của ca quá hạn, không lấy độ dài mảng mẫu", async () => {

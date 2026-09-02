@@ -8,6 +8,8 @@
  */
 import { useState } from "react";
 import { DashIcon } from "../components/DashIcon";
+import { useT, type TranslateFn } from "@/shared/i18n/useT";
+import type { MessageKey } from "@/shared/i18n/messages";
 import { OverviewStateBox } from "./OverviewStateBox";
 import { fmt, type FlowRow } from "./overview-data";
 
@@ -26,31 +28,31 @@ type SeriesKey = "inbound" | "product" | "component" | "reversal";
  */
 const SERIES: Array<{
   key: SeriesKey;
-  label: string;
+  labelKey: MessageKey;
   line: string;
   dot: string;
 }> = [
   {
     key: "inbound",
-    label: "Nhập",
+    labelKey: "dashboard.flow.inbound",
     line: "var(--wms-success)",
     dot: "var(--wms-success)",
   },
   {
     key: "product",
-    label: "Xuất SP",
+    labelKey: "dashboard.flow.issueProduct",
     line: "var(--wms-error)",
     dot: "var(--hnd-legend-product)",
   },
   {
     key: "component",
-    label: "Xuất LK",
+    labelKey: "dashboard.flow.issueComponent",
     line: "var(--wms-warning)",
     dot: "var(--hnd-legend-component)",
   },
   {
     key: "reversal",
-    label: "Hoàn tác",
+    labelKey: "dashboard.flow.reversal",
     line: "var(--wms-primary)",
     dot: "var(--hnd-legend-reversal)",
   },
@@ -82,6 +84,7 @@ export function OverviewFlowChart({
     () => new Set<SeriesKey>(["inbound", "product", "component", "reversal"]),
   );
   const [hover, setHover] = useState<number | null>(null);
+  const t = useT();
 
   const header = (
     <header className="card-head chart-card-head" data-trace="DASH-CHART-01">
@@ -90,14 +93,12 @@ export function OverviewFlowChart({
           <DashIcon name="chart-column-big" />
         </span>
         <div>
-          <span className="eyebrow">LUỒNG THEO KỲ</span>
-          <h2>Luồng nhập – xuất theo kỳ</h2>
-          <span className="card-subtitle">
-            Theo dõi lượng nhập, xuất và hoàn tác theo ngày
-          </span>
+          <span className="eyebrow">{t("dashboard.flow.eyebrow")}</span>
+          <h2>{t("dashboard.flow.title")}</h2>
+          <span className="card-subtitle">{t("dashboard.flow.subtitle")}</span>
         </div>
       </div>
-      <span className="chart-unit">Đơn vị: cái</span>
+      <span className="chart-unit">{t("dashboard.flow.unit")}</span>
     </header>
   );
 
@@ -107,8 +108,8 @@ export function OverviewFlowChart({
         {header}
         <OverviewStateBox
           kind="loading"
-          title="Đang tải biểu đồ"
-          copy="Nạp chuỗi ledger theo ngày."
+          title={t("dashboard.flow.loadingTitle")}
+          copy={t("dashboard.flow.loadingCopy")}
         />
       </article>
     );
@@ -118,8 +119,8 @@ export function OverviewFlowChart({
         {header}
         <OverviewStateBox
           kind="forbidden"
-          title="Không có quyền xem luồng"
-          copy="Dữ liệu chuỗi thời gian đã được che."
+          title={t("dashboard.flow.forbiddenTitle")}
+          copy={t("dashboard.flow.forbiddenCopy")}
         />
       </article>
     );
@@ -129,8 +130,8 @@ export function OverviewFlowChart({
         {header}
         <OverviewStateBox
           kind="unavailable"
-          title="Không thể tải luồng"
-          copy="Nguồn movement không phản hồi; không vẽ đường 0 giả."
+          title={t("dashboard.flow.failedTitle")}
+          copy={t("dashboard.flow.failedCopy")}
         />
       </article>
     );
@@ -140,8 +141,8 @@ export function OverviewFlowChart({
         {header}
         <OverviewStateBox
           kind="empty"
-          title="Chưa có giao dịch"
-          copy="Không có điểm dữ liệu trong kỳ đang xem."
+          title={t("dashboard.flow.emptyTitle")}
+          copy={t("dashboard.flow.emptyCopy")}
         />
       </article>
     );
@@ -188,7 +189,7 @@ export function OverviewFlowChart({
               }
             >
               <span className={`legend-dot legend-${series.key}`} />
-              {series.label}
+              {t(series.labelKey)}
             </button>
           ))}
         </div>
@@ -200,12 +201,8 @@ export function OverviewFlowChart({
             aria-labelledby="flow-svg-title flow-svg-desc"
             onPointerLeave={() => setHover(null)}
           >
-            <title id="flow-svg-title">Luồng nhập xuất theo kỳ</title>
-            <desc id="flow-svg-desc">
-              Area chart bốn chuỗi nhập, xuất sản phẩm, xuất linh kiện và hoàn
-              tác. Di chuột vào từng ngày để xem số liệu chi tiết; có bảng dữ
-              liệu thay thế phía dưới.
-            </desc>
+            <title id="flow-svg-title">{t("dashboard.flow.svgTitle")}</title>
+            <desc id="flow-svg-desc">{t("dashboard.flow.svgDesc")}</desc>
             <defs>
               {SERIES.map((series) => (
                 <linearGradient
@@ -300,21 +297,22 @@ export function OverviewFlowChart({
                 visible={visible}
                 xAt={xAt}
                 yAt={yAt}
+                t={t}
               />
             ) : null}
           </svg>
         </div>
       </div>
       <details className="chart-table">
-        <summary>Xem bảng dữ liệu thay thế</summary>
+        <summary>{t("dashboard.flow.tableSummary")}</summary>
         <table>
           <thead>
             <tr>
-              <th>Ngày</th>
-              <th>Nhập</th>
-              <th>Xuất SP</th>
-              <th>Xuất LK</th>
-              <th>Hoàn tác</th>
+              <th>{t("dashboard.flow.colDate")}</th>
+              <th>{t("dashboard.flow.inbound")}</th>
+              <th>{t("dashboard.flow.issueProduct")}</th>
+              <th>{t("dashboard.flow.issueComponent")}</th>
+              <th>{t("dashboard.flow.reversal")}</th>
             </tr>
           </thead>
           <tbody>
@@ -334,18 +332,21 @@ export function OverviewFlowChart({
   );
 }
 
+/** Nhận `t` từ component cha: tooltip vẽ trong SVG nên không dựng hook riêng. */
 function FlowTooltip({
   index,
   rows,
   visible,
   xAt,
   yAt,
+  t,
 }: {
   index: number;
   rows: FlowRow[];
   visible: Set<SeriesKey>;
   xAt: (index: number) => number;
   yAt: (value: number) => number;
+  t: TranslateFn;
 }) {
   const x = xAt(index);
   const shown = SERIES.filter((series) => visible.has(series.key));
@@ -375,7 +376,7 @@ function FlowTooltip({
         x={(boxX + 12).toFixed(1)}
         y={boxY + 20}
       >
-        Ngày {rows[index].label}
+        {t("dashboard.flow.tooltipDate", { label: rows[index].label })}
       </text>
       {shown.map((series, rowIndex) => {
         const y = 44 + rowIndex * 19;
@@ -401,7 +402,7 @@ function FlowTooltip({
               x={(boxX + 12).toFixed(1)}
               y={y}
             >
-              {series.label}
+              {t(series.labelKey)}
             </text>
             <text
               className="flow-tooltip-value"

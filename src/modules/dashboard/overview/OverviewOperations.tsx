@@ -7,8 +7,9 @@
  */
 import { useState } from "react";
 import { DashIcon } from "../components/DashIcon";
+import { useT } from "@/shared/i18n/useT";
 import { OverviewStateBox } from "./OverviewStateBox";
-import { fmt, SEVERITY_NAMES, type Severity } from "./overview-data";
+import { fmt, SEVERITY_NAME_KEYS, type Severity } from "./overview-data";
 
 const SEVERITY_ORDER: Record<Severity, number> = { P0: 0, P1: 1, P2: 2 };
 
@@ -31,12 +32,7 @@ export interface AlertRow {
 
 type Filter = "ALL" | Severity;
 
-const FILTERS: Array<{ value: Filter; label: string }> = [
-  { value: "ALL", label: "Tất cả" },
-  { value: "P0", label: SEVERITY_NAMES.P0 },
-  { value: "P1", label: SEVERITY_NAMES.P1 },
-  { value: "P2", label: SEVERITY_NAMES.P2 },
-];
+const FILTER_ORDER: Filter[] = ["ALL", "P0", "P1", "P2"];
 
 export function OverviewOperations({
   issues,
@@ -54,12 +50,15 @@ export function OverviewOperations({
   onNavigate: (route: string) => void;
 }) {
   const [severity, setSeverity] = useState<Filter>("ALL");
+  const t = useT();
+
+  const severityName = (value: Severity) => t(SEVERITY_NAME_KEYS[value]);
+  const filterLabel = (value: Filter) =>
+    value === "ALL" ? t("dashboard.operations.filterAll") : severityName(value);
 
   const filtered = issues
     .filter((item) => severity === "ALL" || item.severity === severity)
-    .sort(
-      (a, b) => SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity],
-    );
+    .sort((a, b) => SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity]);
   const visible = filtered.slice(0, 5);
 
   const renderIssueBody = () => {
@@ -67,35 +66,37 @@ export function OverviewOperations({
       return (
         <OverviewStateBox
           kind="loading"
-          title="Đang tải hàng việc"
-          copy="Giữ cấu trúc để tránh dịch chuyển bố cục."
+          title={t("dashboard.operations.loadingTitle")}
+          copy={t("dashboard.operations.loadingCopy")}
         />
       );
     if (forbidden)
       return (
         <OverviewStateBox
           kind="forbidden"
-          title="Không có quyền xem hàng việc"
-          copy="Widget này cần report.view và quyền route đích."
+          title={t("dashboard.operations.forbiddenTitle")}
+          copy={t("dashboard.operations.forbiddenCopy")}
         />
       );
     if (failed)
       return (
         <OverviewStateBox
           kind="unavailable"
-          title="Không thể tải hàng việc"
-          copy="Nguồn đọc không phản hồi; không có count nào được suy diễn."
+          title={t("dashboard.operations.failedTitle")}
+          copy={t("dashboard.operations.failedCopy")}
         />
       );
     if (visible.length === 0)
       return (
         <OverviewStateBox
           kind="empty"
-          title="Không có việc cần xử lý"
+          title={t("dashboard.operations.emptyTitle")}
           copy={
             severity === "ALL"
-              ? "Không có bản ghi phù hợp bộ lọc hiện tại."
-              : `Không có công việc thuộc mức ${SEVERITY_NAMES[severity]}.`
+              ? t("dashboard.operations.emptyCopy")
+              : t("dashboard.operations.emptyBySeverity", {
+                  severity: severityName(severity),
+                })
           }
         />
       );
@@ -109,10 +110,12 @@ export function OverviewOperations({
       >
         <span
           className={`severity severity-${item.severity.toLowerCase()}`}
-          aria-label={SEVERITY_NAMES[item.severity]}
-          title={`Mã nội bộ ${item.severity}`}
+          aria-label={severityName(item.severity)}
+          title={t("dashboard.operations.internalCode", {
+            code: item.severity,
+          })}
         >
-          {SEVERITY_NAMES[item.severity]}
+          {severityName(item.severity)}
         </span>
         <div className="issue-copy">
           <strong>{item.title}</strong>
@@ -121,10 +124,13 @@ export function OverviewOperations({
         <button
           className="issue-count text-route"
           type="button"
-          aria-label={`${item.count} công việc: ${item.title}`}
+          aria-label={t("dashboard.operations.countAria", {
+            count: item.count,
+            title: item.title,
+          })}
           onClick={() => onNavigate(item.route)}
         >
-          {fmt(item.count)} <small>việc</small>
+          {fmt(item.count)} <small>{t("dashboard.operations.unitTask")}</small>
         </button>
       </div>
     ));
@@ -135,32 +141,32 @@ export function OverviewOperations({
       return (
         <OverviewStateBox
           kind="loading"
-          title="Đang tải cảnh báo"
-          copy="Không suy diễn số liệu khi chưa có nguồn."
+          title={t("dashboard.operations.alertLoadingTitle")}
+          copy={t("dashboard.operations.alertLoadingCopy")}
         />
       );
     if (forbidden)
       return (
         <OverviewStateBox
           kind="forbidden"
-          title="Không có quyền xem cảnh báo"
-          copy="Không suy diễn số liệu khi chưa có nguồn."
+          title={t("dashboard.operations.alertForbiddenTitle")}
+          copy={t("dashboard.operations.alertForbiddenCopy")}
         />
       );
     if (failed)
       return (
         <OverviewStateBox
           kind="unavailable"
-          title="Không thể tải cảnh báo"
-          copy="Nguồn đọc lỗi; dùng Làm mới để thử lại."
+          title={t("dashboard.operations.alertFailedTitle")}
+          copy={t("dashboard.operations.alertFailedCopy")}
         />
       );
     if (alerts.length === 0)
       return (
         <OverviewStateBox
           kind="empty"
-          title="Không có cảnh báo"
-          copy="Không có ngoại lệ đang mở trong phạm vi lọc."
+          title={t("dashboard.operations.alertEmptyTitle")}
+          copy={t("dashboard.operations.alertEmptyCopy")}
         />
       );
     return alerts.map((item) => (
@@ -181,36 +187,41 @@ export function OverviewOperations({
   const showChip = !forbidden && !failed;
 
   return (
-    <section className="operations-grid" aria-label="Ưu tiên vận hành">
+    <section
+      className="operations-grid"
+      aria-label={t("dashboard.operations.sectionAria")}
+    >
       <article className="card queue-card" aria-labelledby="queue-title">
         <header className="card-head">
           <div>
-            <span className="eyebrow">ƯU TIÊN VẬN HÀNH</span>
-            <h2 id="queue-title">Công việc cần ưu tiên</h2>
+            <span className="eyebrow">
+              {t("dashboard.operations.queueEyebrow")}
+            </span>
+            <h2 id="queue-title">{t("dashboard.operations.queueTitle")}</h2>
             <span className="card-subtitle">
-              Tập trung xử lý công việc ảnh hưởng vận hành trước
+              {t("dashboard.operations.queueSubtitle")}
             </span>
           </div>
           <div
             className="mini-segmented severity-filter"
-            aria-label="Lọc công việc theo mức độ"
+            aria-label={t("dashboard.operations.filterAria")}
           >
-            {FILTERS.map((option) => (
+            {FILTER_ORDER.map((option) => (
               <button
-                key={option.value}
+                key={option}
                 type="button"
-                className={option.value === severity ? "active" : undefined}
-                data-severity={option.value === "ALL" ? undefined : option.value}
-                aria-pressed={option.value === severity}
-                aria-label={option.label}
+                className={option === severity ? "active" : undefined}
+                data-severity={option === "ALL" ? undefined : option}
+                aria-pressed={option === severity}
+                aria-label={filterLabel(option)}
                 title={
-                  option.value === "ALL"
+                  option === "ALL"
                     ? undefined
-                    : `Mã nội bộ ${option.value}`
+                    : t("dashboard.operations.internalCode", { code: option })
                 }
-                onClick={() => setSeverity(option.value)}
+                onClick={() => setSeverity(option)}
               >
-                {option.label}
+                {filterLabel(option)}
               </button>
             ))}
           </div>
@@ -222,7 +233,8 @@ export function OverviewOperations({
             type="button"
             onClick={() => onNavigate("/reports/import-quality")}
           >
-            Xem tất cả {filtered.length} công việc <DashIcon name="arrow-right" />
+            {t("dashboard.operations.viewAll", { count: filtered.length })}{" "}
+            <DashIcon name="arrow-right" />
           </button>
         ) : null}
       </article>
@@ -230,11 +242,15 @@ export function OverviewOperations({
       <article className="card alert-card" aria-labelledby="alerts-title">
         <header className="card-head">
           <div>
-            <span className="eyebrow">TÍN HIỆU HIỆN TẠI</span>
-            <h2 id="alerts-title">Điểm cần chú ý</h2>
+            <span className="eyebrow">
+              {t("dashboard.operations.alertEyebrow")}
+            </span>
+            <h2 id="alerts-title">{t("dashboard.operations.alertTitle")}</h2>
           </div>
           {showChip ? (
-            <span className="chip chip-error">{alerts.length} ưu tiên</span>
+            <span className="chip chip-error">
+              {t("dashboard.operations.alertChip", { count: alerts.length })}
+            </span>
           ) : null}
         </header>
         <div className="alert-list">{renderAlertBody()}</div>

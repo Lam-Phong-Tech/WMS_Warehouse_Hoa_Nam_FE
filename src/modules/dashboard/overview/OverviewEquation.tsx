@@ -6,6 +6,7 @@
  * CHÊNH LỆCH ĐO ĐƯỢC chứ không mặc định "đã khớp".
  */
 import { DashIcon } from "../components/DashIcon";
+import { useT } from "@/shared/i18n/useT";
 import { OverviewStateBox } from "./OverviewStateBox";
 import { fmt, type EquationTotals } from "./overview-data";
 
@@ -38,13 +39,14 @@ export function OverviewEquation({
   failed: boolean;
   forbidden: boolean;
 }) {
+  const t = useT();
   if (loading)
     return (
       <article className="card equation-card">
         <OverviewStateBox
           kind="loading"
-          title="Đang đối soát"
-          copy="Tổng hợp sổ Nhập-Xuất-Tồn theo kỳ đã chọn."
+          title={t("dashboard.equation.loadingTitle")}
+          copy={t("dashboard.equation.loadingCopy")}
         />
       </article>
     );
@@ -53,8 +55,8 @@ export function OverviewEquation({
       <article className="card equation-card">
         <OverviewStateBox
           kind="forbidden"
-          title="Không có quyền xem đối soát"
-          copy="Ẩn tất cả số hạng để tránh lộ dữ liệu suy diễn."
+          title={t("dashboard.equation.forbiddenTitle")}
+          copy={t("dashboard.equation.forbiddenCopy")}
         />
       </article>
     );
@@ -63,8 +65,8 @@ export function OverviewEquation({
       <article className="card equation-card">
         <OverviewStateBox
           kind="unavailable"
-          title="Không thể đối soát"
-          copy="Thiếu snapshot nhất quán; không suy ngược số hạng."
+          title={t("dashboard.equation.failedTitle")}
+          copy={t("dashboard.equation.failedCopy")}
         />
       </article>
     );
@@ -72,48 +74,48 @@ export function OverviewEquation({
   const terms: Term[] = [
     {
       key: "opening",
-      label: "Tồn đầu kỳ",
-      impact: "Số dư mở kỳ",
+      label: t("dashboard.equation.opening"),
+      impact: t("dashboard.equation.openingImpact"),
       tone: "opening",
       operator: "",
       value: totals.opening,
     },
     {
       key: "receipt",
-      label: "Nhập đã Post",
-      impact: "Tăng tồn",
+      label: t("dashboard.equation.receipt"),
+      impact: t("dashboard.equation.receiptImpact"),
       tone: "inbound",
       operator: "+",
       value: totals.receipt,
     },
     {
       key: "issue-product",
-      label: "Xuất sản phẩm",
-      impact: "Giảm tồn",
+      label: t("dashboard.equation.issueProduct"),
+      impact: t("dashboard.equation.decrease"),
       tone: "product",
       operator: "−",
       value: totals.issueProduct,
     },
     {
       key: "issue-component",
-      label: "Xuất linh kiện",
-      impact: "Giảm tồn",
+      label: t("dashboard.equation.issueComponent"),
+      impact: t("dashboard.equation.decrease"),
       tone: "component",
       operator: "−",
       value: totals.issueComponent,
     },
     {
       key: "reversal",
-      label: "Hoàn tác có dấu",
-      impact: "Điều chỉnh tồn",
+      label: t("dashboard.equation.reversal"),
+      impact: t("dashboard.equation.reversalImpact"),
       tone: "reversal",
       operator: "+",
       value: totals.reversal,
     },
     {
       key: "closing",
-      label: "Tồn cuối kỳ",
-      impact: "Số dư chốt kỳ",
+      label: t("dashboard.equation.closing"),
+      impact: t("dashboard.equation.closingImpact"),
       tone: "closing",
       operator: "=",
       value: totals.closing,
@@ -123,8 +125,10 @@ export function OverviewEquation({
 
   const matched = totals.difference === 0;
   const statusText = matched
-    ? "Đã khớp · Chênh lệch 0"
-    : `Chưa khớp · Chênh lệch ${fmt(totals.difference)}`;
+    ? t("dashboard.equation.matched")
+    : t("dashboard.equation.mismatched", {
+        difference: fmt(totals.difference),
+      });
 
   return (
     <article className="card equation-card" id="equation-card">
@@ -144,11 +148,10 @@ export function OverviewEquation({
       ))}
       <div className="equation-note">
         <div className="equation-formula">
-          <span className="equation-note-label">Công thức đối soát</span>
-          <span>
-            Đầu kỳ + Nhập − Xuất sản phẩm − Xuất linh kiện + Hoàn tác có dấu =
-            Cuối kỳ
+          <span className="equation-note-label">
+            {t("dashboard.equation.formulaLabel")}
           </span>
+          <span>{t("dashboard.equation.formula")}</span>
         </div>
         <div
           className={`equation-status ${matched ? "" : "is-mismatch"}`}
@@ -159,7 +162,7 @@ export function OverviewEquation({
             <DashIcon name={matched ? "circle-dot" : "triangle-alert"} />
           </span>
           <div>
-            <span>Trạng thái đối soát</span>
+            <span>{t("dashboard.equation.statusLabel")}</span>
             <strong>{statusText}</strong>
           </div>
         </div>

@@ -17,6 +17,7 @@ import dayjs from "dayjs";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { ROUTES } from "@/shared/constants/routes";
 import { EMPTY_TEXT } from "@/shared/constants/display";
+import { useT } from "@/shared/i18n/useT";
 import type { SkuTypeFilter } from "../types";
 import "../dashboard-overview.css";
 import { OverviewFilters } from "../overview/OverviewFilters";
@@ -36,7 +37,7 @@ import { OverviewComposition } from "../overview/OverviewComposition";
 import { OverviewThreshold } from "../overview/OverviewThreshold";
 import { OverviewInsights, type SignalRow } from "../overview/OverviewInsights";
 import {
-  PERIOD_NAMES,
+  PERIOD_NAME_KEYS,
   buildComposition,
   buildEquation,
   buildFlowRows,
@@ -82,6 +83,7 @@ export default function DashboardPage() {
   const permissionCodes = useAuthStore((state) => state.permissionCodes);
   const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
   const isProfileLoaded = useAuthStore((state) => state.isProfileLoaded);
+  const t = useT();
 
   const canViewReport =
     !isProfileLoaded || isSuperAdmin || permissionCodes.includes("report.view");
@@ -96,13 +98,11 @@ export default function DashboardPage() {
   const today = dayjs().format(ISO);
   const dateError = useMemo(() => {
     if (period !== "custom") return "";
-    if (!custom.from || !custom.to)
-      return "Chọn đủ ngày bắt đầu và kết thúc.";
-    if (custom.from > custom.to)
-      return "Ngày bắt đầu không được sau ngày kết thúc.";
-    if (custom.to > today) return "Không chọn ngày actual trong tương lai.";
+    if (!custom.from || !custom.to) return t("dashboard.dateError.required");
+    if (custom.from > custom.to) return t("dashboard.dateError.order");
+    if (custom.to > today) return t("dashboard.dateError.future");
     return "";
-  }, [period, custom, today]);
+  }, [period, custom, today, t]);
 
   const range = useMemo(
     () => resolvePeriodRange(period, custom),
@@ -131,9 +131,7 @@ export default function DashboardPage() {
   const loading = enabled && overview.isLoading;
   const failed = overview.isError && !forbidden;
   const partial =
-    !failed &&
-    !forbidden &&
-    (xnt.isError || xntDaily.isError || quick.isError);
+    !failed && !forbidden && (xnt.isError || xntDaily.isError || quick.isError);
   const retrying = overview.isError && overview.isFetching;
 
   const overviewData = overview.data;
@@ -160,11 +158,18 @@ export default function DashboardPage() {
 
   const typeKey = overviewTypeKey(type);
   const onHand = overviewData?.kpi.on_hand[typeKey] ?? null;
-  const onHandDelta = flowTotals.inbound - flowTotals.product - flowTotals.component;
+  const onHandDelta =
+    flowTotals.inbound - flowTotals.product - flowTotals.component;
 
   const kpiCards = useMemo<KpiCardModel[]>(() => {
-    const receiptDelta = periodDelta(flowTotals.inbound, previousTotals.inbound);
-    const productDelta = periodDelta(flowTotals.product, previousTotals.product);
+    const receiptDelta = periodDelta(
+      flowTotals.inbound,
+      previousTotals.inbound,
+    );
+    const productDelta = periodDelta(
+      flowTotals.product,
+      previousTotals.product,
+    );
     const componentDelta = periodDelta(
       flowTotals.component,
       previousTotals.component,
@@ -174,11 +179,11 @@ export default function DashboardPage() {
     const cards: KpiCardModel[] = [
       {
         id: "DASH-KPI-01",
-        label: "Tổng tồn khả dụng",
+        label: t("dashboard.kpi.onHand"),
         value: onHand,
         delta: fmtDelta(onHandDelta),
         trend: trendOf(onHandDelta),
-        note: "so với đầu kỳ",
+        note: t("dashboard.kpi.onHandNote"),
         icon: "layout-dashboard",
         spark:
           type === "ALL"
@@ -194,44 +199,44 @@ export default function DashboardPage() {
       },
       {
         id: "DASH-KPI-02",
-        label: "SKU đang có hàng",
+        label: t("dashboard.kpi.skuInStock"),
         value: xnt.isError ? null : skuCounts.closing,
         delta: xnt.isError ? null : fmtDelta(skuDelta),
         trend: trendOf(skuDelta),
-        note: "SKU phát sinh tồn",
+        note: t("dashboard.kpi.skuInStockNote"),
         icon: "package-search",
         spark: [],
         source: "reports/inventory-xnt-enhanced",
       },
       {
         id: "DASH-KPI-03",
-        label: "Nhập đã Post",
+        label: t("dashboard.kpi.receipt"),
         value: flowTotals.inbound,
         delta: receiptDelta.text,
         trend: receiptDelta.trend,
-        note: "so với kỳ trước",
+        note: t("dashboard.kpi.notePreviousPeriod"),
         icon: "package-plus",
         spark: flowRows.map((row) => row.inbound),
         source: "reports/dashboard-overview",
       },
       {
         id: "DASH-KPI-04",
-        label: "Xuất sản phẩm đã Post",
+        label: t("dashboard.kpi.issueProduct"),
         value: flowTotals.product,
         delta: productDelta.text,
         trend: productDelta.trend,
-        note: "so với kỳ trước",
+        note: t("dashboard.kpi.notePreviousPeriod"),
         icon: "package-minus",
         spark: flowRows.map((row) => row.product),
         source: "reports/dashboard-overview",
       },
       {
         id: "DASH-KPI-05",
-        label: "Xuất linh kiện bảo hành",
+        label: t("dashboard.kpi.issueComponent"),
         value: flowTotals.component,
         delta: componentDelta.text,
         trend: componentDelta.trend,
-        note: "so với kỳ trước",
+        note: t("dashboard.kpi.notePreviousPeriod"),
         icon: "briefcase-medical",
         spark: flowRows.map((row) => row.component),
         source: "reports/dashboard-overview",
@@ -254,6 +259,7 @@ export default function DashboardPage() {
     skuCounts,
     type,
     xnt.isError,
+    t,
   ]);
 
   const issues = useMemo<IssueRow[]>(() => {
@@ -264,8 +270,8 @@ export default function DashboardPage() {
       {
         id: "DASH-KPI-14",
         severity: "P0",
-        title: "Sự cố đối soát tồn",
-        detail: "Sự cố chưa được đối soát · Chênh lệch chưa đóng",
+        title: t("dashboard.issue.mismatchTitle"),
+        detail: t("dashboard.issue.mismatchDetail"),
         technical: "Distinct incident",
         count: source.inventory_mismatch,
         route: ROUTES.INVENTORY,
@@ -273,8 +279,8 @@ export default function DashboardPage() {
       {
         id: "DASH-KPI-15",
         severity: "P1",
-        title: "Hồ sơ bảo hành cần xử lý",
-        detail: `Đang xử lý · Có ${overdue} hồ sơ quá hạn`,
+        title: t("dashboard.issue.warrantyTitle"),
+        detail: t("dashboard.issue.warrantyDetail", { count: overdue }),
         technical: "Active / overdue",
         count: source.warranty_overdue,
         route: ROUTES.WARRANTY,
@@ -282,8 +288,8 @@ export default function DashboardPage() {
       {
         id: "DASH-KPI-13",
         severity: "P1",
-        title: "Nhãn cần xử lý",
-        detail: "Dữ liệu mới nhất sau khi ghi nhận · In nhãn chưa thành công",
+        title: t("dashboard.issue.labelTitle"),
+        detail: t("dashboard.issue.labelDetail"),
         technical: "Latest snapshot sau Post",
         count: source.print_failed,
         route: ROUTES.OUTBOUND,
@@ -291,8 +297,8 @@ export default function DashboardPage() {
       {
         id: "DASH-KPI-17",
         severity: "P1",
-        title: "Lỗi nhập liệu hoặc đối chiếu",
-        detail: "Dữ liệu nhập vào chưa khớp · Cần kiểm tra lại",
+        title: t("dashboard.issue.importTitle"),
+        detail: t("dashboard.issue.importDetail"),
         technical: "Import / match telemetry",
         count: source.import_error,
         route: ROUTES.REPORTS_IMPORT_QUALITY,
@@ -300,8 +306,8 @@ export default function DashboardPage() {
       {
         id: "DASH-KPI-16",
         severity: "P2",
-        title: "Sản phẩm chờ bổ sung thông tin",
-        detail: "Chưa đủ thông tin sản phẩm · Không chứa dữ liệu cá nhân",
+        title: t("dashboard.issue.skuTitle"),
+        detail: t("dashboard.issue.skuDetail"),
         technical: "PENDING_ENRICHMENT / no PII",
         count: source.sku_pending_info,
         route: ROUTES.MASTER_DATA,
@@ -309,7 +315,7 @@ export default function DashboardPage() {
     ];
     // Demo chỉ liệt kê việc CÓ số lượng — không dựng dòng rỗng cho vui mắt.
     return rows.filter((row) => row.count > 0);
-  }, [overviewData]);
+  }, [overviewData, t]);
 
   const alerts = useMemo<AlertRow[]>(() => {
     if (!overviewData) return [];
@@ -317,36 +323,38 @@ export default function DashboardPage() {
     const mismatch = overviewData.issues.inventory_mismatch;
     if (mismatch > 0)
       rows.push({
-        title: `${mismatch} sự cố đối soát tồn`,
-        copy: "Chênh lệch giữa sổ và tồn thực tế chưa được đóng.",
-        action: "Mở đối soát tồn",
+        title: t("dashboard.signal.mismatchTitle", { count: mismatch }),
+        copy: t("dashboard.signal.mismatchCopy"),
+        action: t("dashboard.signal.mismatchAction"),
         route: ROUTES.INVENTORY,
       });
     const overdue = overviewData.warranty.overdue_count;
     if (overdue > 0)
       rows.push({
-        title: `${overdue} hồ sơ bảo hành quá hạn`,
-        copy: `Tuổi hồ sơ cao nhất là ${oldestOverdueDays(overviewData)} ngày.`,
-        action: "Mở hồ sơ bảo hành",
+        title: t("dashboard.signal.warrantyTitle", { count: overdue }),
+        copy: t("dashboard.signal.warrantyCopy", {
+          days: oldestOverdueDays(overviewData),
+        }),
+        action: t("dashboard.signal.warrantyAction"),
         route: ROUTES.WARRANTY,
       });
     const belowMin = quick.data?.below_min_stock_count ?? 0;
     if (belowMin > 0)
       rows.push({
-        title: `${belowMin} SKU dưới ngưỡng`,
-        copy: "Không bao gồm SKU chưa cấu hình định mức.",
-        action: "Mở tồn kho",
+        title: t("dashboard.signal.belowMinTitle", { count: belowMin }),
+        copy: t("dashboard.signal.belowMinCopy"),
+        action: t("dashboard.signal.belowMinAction"),
         route: ROUTES.INVENTORY,
       });
     return rows;
-  }, [overviewData, quick.data]);
+  }, [overviewData, quick.data, t]);
 
   const lastUpdatedAt = overview.dataUpdatedAt
     ? dayjs(overview.dataUpdatedAt)
     : null;
   const lastUpdatedLabel = lastUpdatedAt
-    ? `Dữ liệu lúc ${lastUpdatedAt.format("HH:mm")}`
-    : "Chưa có dữ liệu";
+    ? t("dashboard.lastUpdated.at", { time: lastUpdatedAt.format("HH:mm") })
+    : t("dashboard.lastUpdated.none");
   const stale =
     lastUpdatedAt !== null && dayjs().diff(lastUpdatedAt, "minute") >= 60;
 
@@ -354,77 +362,90 @@ export default function DashboardPage() {
     () => [
       {
         id: "DASH-KPI-16",
-        name: "Sản phẩm chờ bổ sung thông tin",
+        name: t("dashboard.insight.rowSkuPending"),
         value: String(overviewData?.issues.sku_pending_info ?? 0),
         icon: "package-search",
       },
       {
         id: "DASH-KPI-17",
-        name: "Lỗi nhập liệu hoặc đối chiếu",
+        name: t("dashboard.insight.rowImportError"),
         value: String(overviewData?.issues.import_error ?? 0),
         icon: "settings-2",
       },
       {
         id: "DASH-KPI-21",
-        name: "Dữ liệu cập nhật gần nhất",
+        name: t("dashboard.insight.rowLastUpdated"),
         value: lastUpdatedAt ? lastUpdatedAt.format("HH:mm") : EMPTY_TEXT,
         icon: "file-clock",
       },
     ],
-    [overviewData, lastUpdatedAt],
+    [overviewData, lastUpdatedAt, t],
   );
 
   const pageAlert = useMemo(() => {
     if (forbidden)
       return {
-        copy: "Bạn không có quyền report.view nên các widget đọc số liệu đều bị che.",
+        copy: t("dashboard.alert.forbidden"),
         tone: "is-error",
-        badge: "Giới hạn quyền",
+        badge: t("dashboard.alert.forbiddenBadge"),
         badgeTone: "chip-error",
       };
     if (failed)
       return {
-        copy: "Không thể tải Dashboard từ các nguồn đọc. Không có dữ liệu nào được thay bằng 0; hãy dùng Làm mới để thử lại.",
+        copy: t("dashboard.alert.failed"),
         tone: "is-error",
-        badge: "Lỗi nguồn đọc",
+        badge: t("dashboard.alert.failedBadge"),
         badgeTone: "chip-error",
       };
     if (retrying)
       return {
-        copy: "Đang thử tải lại dữ liệu. Giữ snapshot trước đó cho tới khi xác nhận thành công.",
+        copy: t("dashboard.alert.retrying"),
         tone: "is-info",
-        badge: "Đang thử lại",
+        badge: t("dashboard.alert.retryingBadge"),
         badgeTone: "chip-info",
       };
     if (partial)
       return {
-        copy: "Lỗi một phần: một nguồn đọc phụ không phản hồi. Không thay số liệu lỗi bằng 0.",
+        copy: t("dashboard.alert.partial"),
         tone: "is-error",
-        badge: "Lỗi một phần",
+        badge: t("dashboard.alert.partialBadge"),
         badgeTone: "chip-error",
       };
     if (offline)
       return {
-        copy: "Bạn đang ngoại tuyến. Dashboard đang hiển thị snapshot đã lưu và tạm dừng làm mới.",
+        copy: t("dashboard.alert.offline"),
         tone: "is-info",
-        badge: "Ngoại tuyến",
+        badge: t("dashboard.alert.offlineBadge"),
         badgeTone: "chip-info",
       };
     if (stale)
       return {
-        copy: `${lastUpdatedLabel} · đã quá ngưỡng tươi 60 phút. Không có dữ liệu actual tương lai.`,
+        copy: t("dashboard.alert.stale", { updated: lastUpdatedLabel }),
         tone: "",
-        badge: "Dữ liệu cũ",
+        badge: t("dashboard.alert.staleBadge"),
         badgeTone: "chip-warning",
       };
     return null;
-  }, [forbidden, failed, retrying, partial, offline, stale, lastUpdatedLabel]);
+  }, [
+    forbidden,
+    failed,
+    retrying,
+    partial,
+    offline,
+    stale,
+    lastUpdatedLabel,
+    t,
+  ]);
 
   const scopeLabel =
     overviewData?.data_scope === "WAREHOUSE_SCOPED"
-      ? `${overviewData.scope_warehouse_ids?.length ?? 0} kho được phân quyền`
-      : "Toàn bộ kho Hoa Nam";
-  const roleLabel = isSuperAdmin ? "Super Admin" : "Người dùng vận hành";
+      ? t("dashboard.scope.warehouses", {
+          count: overviewData.scope_warehouse_ids?.length ?? 0,
+        })
+      : t("dashboard.scope.all");
+  const roleLabel = isSuperAdmin
+    ? t("dashboard.scope.roleSuperAdmin")
+    : t("dashboard.scope.roleOperator");
 
   const refreshAll = () => {
     void overview.refetch();
@@ -433,25 +454,23 @@ export default function DashboardPage() {
     void quick.refetch();
   };
 
-  const periodName = PERIOD_NAMES[period];
+  const periodName = t(PERIOD_NAME_KEYS[period]);
   const cutoffLabel = `${dayjs(range.from).format("DD/MM/YYYY")} → ${dayjs(range.to).format("DD/MM/YYYY")}`;
 
   return (
     <div className="hn-dash" data-mvp-screen="MAP-01">
       <div className="page-wrap">
-        <div className="breadcrumb" aria-label="Đường dẫn">
-          <span>Trang chủ</span>
+        <div className="breadcrumb" aria-label={t("dashboard.breadcrumb.nav")}>
+          <span>{t("dashboard.breadcrumb.home")}</span>
           <span aria-hidden="true">/</span>
-          <strong>Tổng quan vận hành</strong>
+          <strong>{t("dashboard.breadcrumb.current")}</strong>
         </div>
 
         <section className="page-header" aria-labelledby="page-title">
           <div>
-            <div className="eyebrow">TRUNG TÂM ĐIỀU HÀNH</div>
-            <h1 id="page-title">Tổng quan vận hành</h1>
-            <p>
-              Nắm nhanh tình trạng kho, xử lý ngoại lệ và theo dõi luồng hàng.
-            </p>
+            <div className="eyebrow">{t("dashboard.eyebrow")}</div>
+            <h1 id="page-title">{t("dashboard.heading")}</h1>
+            <p>{t("dashboard.lead")}</p>
           </div>
           <div className="scope-block">
             <span className="chip chip-primary">{scopeLabel}</span>
@@ -460,7 +479,7 @@ export default function DashboardPage() {
               className={`chip ${pageAlert?.badgeTone ?? "chip-success"}`}
               data-kpi-id="DASH-KPI-21"
             >
-              {pageAlert?.badge ?? "Dữ liệu mới"}
+              {pageAlert?.badge ?? t("dashboard.scope.badgeFresh")}
             </span>
           </div>
         </section>
@@ -491,11 +510,16 @@ export default function DashboardPage() {
         <section aria-labelledby="quick-title">
           <div className="section-heading">
             <div>
-              <span className="eyebrow">TÌNH HÌNH HIỆN TẠI</span>
-              <h2 id="quick-title">Tổng quan nhanh</h2>
+              <span className="eyebrow">
+                {t("dashboard.section.quickEyebrow")}
+              </span>
+              <h2 id="quick-title">{t("dashboard.section.quickTitle")}</h2>
             </div>
             <span className="section-meta">
-              KPI {periodName} · Biểu đồ {cutoffLabel}
+              {t("dashboard.section.quickMeta", {
+                period: periodName,
+                range: cutoffLabel,
+              })}
             </span>
           </div>
           <OverviewKpiGrid
@@ -519,11 +543,15 @@ export default function DashboardPage() {
         <section aria-labelledby="reconcile-title">
           <div className="section-heading">
             <div>
-              <span className="eyebrow">ĐỐI SOÁT TỒN</span>
-              <h2 id="reconcile-title">Đối soát tồn theo kỳ</h2>
+              <span className="eyebrow">
+                {t("dashboard.section.reconcileEyebrow")}
+              </span>
+              <h2 id="reconcile-title">
+                {t("dashboard.section.reconcileTitle")}
+              </h2>
             </div>
             <span className="section-meta">
-              Đơn vị: cái · Toàn bộ loại hàng · Kỳ {cutoffLabel}
+              {t("dashboard.section.reconcileMeta", { range: cutoffLabel })}
             </span>
           </div>
           <OverviewEquation
@@ -537,11 +565,15 @@ export default function DashboardPage() {
         <section aria-labelledby="analysis-title">
           <div className="section-heading">
             <div>
-              <span className="eyebrow">PHÂN TÍCH VẬN HÀNH</span>
-              <h2 id="analysis-title">Luồng và xu hướng</h2>
+              <span className="eyebrow">
+                {t("dashboard.section.analysisEyebrow")}
+              </span>
+              <h2 id="analysis-title">
+                {t("dashboard.section.analysisTitle")}
+              </h2>
             </div>
             <span className="section-meta">
-              Chỉ hiển thị số liệu thực tế đã ghi nhận
+              {t("dashboard.section.analysisMeta")}
             </span>
           </div>
           <div className="analysis-grid">
@@ -576,11 +608,13 @@ export default function DashboardPage() {
         <section className="insight-section" aria-labelledby="insight-title">
           <div className="section-heading">
             <div>
-              <span className="eyebrow">THEO DÕI BỔ SUNG</span>
-              <h2 id="insight-title">Theo dõi chuyên biệt</h2>
+              <span className="eyebrow">
+                {t("dashboard.section.insightEyebrow")}
+              </span>
+              <h2 id="insight-title">{t("dashboard.section.insightTitle")}</h2>
             </div>
             <span className="section-meta">
-              Hỗ trợ xử lý ngoại lệ và theo dõi luồng hàng
+              {t("dashboard.section.insightMeta")}
             </span>
           </div>
           <OverviewInsights

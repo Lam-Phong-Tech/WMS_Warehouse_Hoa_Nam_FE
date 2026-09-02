@@ -6,26 +6,55 @@
 import { useEffect, useRef, useState } from "react";
 import dayjs from "dayjs";
 import { DashIcon } from "../components/DashIcon";
+import { useT, type TranslateFn } from "@/shared/i18n/useT";
+import type { MessageKey } from "@/shared/i18n/messages";
 import type { SkuTypeFilter } from "../types";
 import {
-  PERIOD_NAMES,
+  PERIOD_NAME_KEYS,
+  activeLocale,
   type DateRange,
   type OverviewPeriod,
 } from "./overview-data";
 
 const ISO = "YYYY-MM-DD";
-const WEEKDAYS = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
+
+const WEEKDAY_KEYS: MessageKey[] = [
+  "dashboard.weekday.sun",
+  "dashboard.weekday.mon",
+  "dashboard.weekday.tue",
+  "dashboard.weekday.wed",
+  "dashboard.weekday.thu",
+  "dashboard.weekday.fri",
+  "dashboard.weekday.sat",
+];
 
 const PERIOD_ORDER: OverviewPeriod[] = ["today", "last7", "month", "custom"];
 
-const TYPE_ORDER: Array<{ value: SkuTypeFilter; label: string }> = [
-  { value: "ALL", label: "Toàn bộ" },
-  { value: "PRODUCT", label: "Sản phẩm" },
-  { value: "COMPONENT", label: "Linh kiện" },
+const TYPE_ORDER: Array<{ value: SkuTypeFilter; labelKey: MessageKey }> = [
+  { value: "ALL", labelKey: "dashboard.skuType.all" },
+  { value: "PRODUCT", labelKey: "dashboard.skuType.product" },
+  { value: "COMPONENT", labelKey: "dashboard.skuType.component" },
 ];
 
-function monthLabel(month: dayjs.Dayjs): string {
-  return `Tháng ${month.month() + 1} ${month.year()}`;
+/**
+ * Tên tháng bản địa cho lịch: "Tháng 9" ở vi-VN, "September" ở en-US.
+ *
+ * Viết hoa chữ đầu vì Intl trả về dạng thường ở tiếng Việt, mà chuỗi này đứng
+ * đầu tiêu đề lịch. Nhờ dùng chung một chỗ trống {monthName} cho cả hai ngôn
+ * ngữ, guard parity placeholder vẫn so được VI với EN.
+ */
+function monthName(month: dayjs.Dayjs): string {
+  const name = new Intl.DateTimeFormat(activeLocale(), {
+    month: "long",
+  }).format(month.toDate());
+  return name.charAt(0).toUpperCase() + name.slice(1);
+}
+
+function monthLabel(month: dayjs.Dayjs, t: TranslateFn): string {
+  return t("dashboard.filters.monthLabel", {
+    monthName: monthName(month),
+    year: month.year(),
+  });
 }
 
 /**
@@ -37,11 +66,13 @@ function CalendarPopover({
   value,
   today,
   onPick,
+  t,
 }: {
   label: string;
   value: string;
   today: string;
   onPick: (value: string) => void;
+  t: TranslateFn;
 }) {
   const [cursor, setCursor] = useState(() =>
     dayjs(value || today).startOf("month"),
@@ -65,7 +96,11 @@ function CalendarPopover({
       selected: raw === value,
       isToday: raw === today,
       future: raw > today,
-      aria: date.format("D [tháng] M [năm] YYYY"),
+      aria: t("dashboard.filters.dayLabel", {
+        day: date.date(),
+        monthName: monthName(date),
+        year: date.year(),
+      }),
     };
   });
 
@@ -73,21 +108,23 @@ function CalendarPopover({
     <div
       className="date-picker-popover"
       role="dialog"
-      aria-label={`Lịch chọn ${label.toLowerCase()}`}
+      aria-label={t("dashboard.filters.calendarDialog", {
+        field: label.toLowerCase(),
+      })}
     >
       <div className="datepicker-head">
-        <strong>{monthLabel(cursor)}</strong>
+        <strong>{monthLabel(cursor, t)}</strong>
         <div className="datepicker-nav">
           <button
             type="button"
-            aria-label="Tháng trước"
+            aria-label={t("dashboard.filters.prevMonth")}
             onClick={() => setCursor(cursor.subtract(1, "month"))}
           >
             <DashIcon name="chevron-left" />
           </button>
           <button
             type="button"
-            aria-label="Tháng sau"
+            aria-label={t("dashboard.filters.nextMonth")}
             disabled={atCurrentMonth}
             onClick={() => setCursor(cursor.add(1, "month"))}
           >
@@ -96,8 +133,8 @@ function CalendarPopover({
         </div>
       </div>
       <div className="datepicker-weekdays" aria-hidden="true">
-        {WEEKDAYS.map((day) => (
-          <span key={day}>{day}</span>
+        {WEEKDAY_KEYS.map((key) => (
+          <span key={key}>{t(key)}</span>
         ))}
       </div>
       <div className="datepicker-grid" role="grid">
@@ -135,6 +172,7 @@ function DatePickerField({
   open,
   onOpenChange,
   onChange,
+  t,
 }: {
   id: string;
   label: string;
@@ -143,13 +181,15 @@ function DatePickerField({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onChange: (value: string) => void;
+  t: TranslateFn;
 }) {
   const fieldRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!open) return;
     const onPointerDown = (event: MouseEvent) => {
-      if (!fieldRef.current?.contains(event.target as Node)) onOpenChange(false);
+      if (!fieldRef.current?.contains(event.target as Node))
+        onOpenChange(false);
     };
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") onOpenChange(false);
@@ -178,7 +218,9 @@ function DatePickerField({
         <button
           className="date-picker-trigger"
           type="button"
-          aria-label={`Mở lịch chọn ${label.toLowerCase()}`}
+          aria-label={t("dashboard.filters.openCalendar", {
+            field: label.toLowerCase(),
+          })}
           aria-haspopup="dialog"
           aria-expanded={open}
           onClick={() => onOpenChange(!open)}
@@ -195,6 +237,7 @@ function DatePickerField({
             onChange(picked);
             onOpenChange(false);
           }}
+          t={t}
         />
       ) : null}
     </div>
@@ -225,12 +268,15 @@ export function OverviewFilters({
   onRefresh: () => void;
 }) {
   const [openPicker, setOpenPicker] = useState<"from" | "to" | null>(null);
+  const t = useT();
   const today = dayjs().format(ISO);
 
   return (
-    <section className="filter-card" aria-label="Bộ lọc Dashboard">
+    <section className="filter-card" aria-label={t("dashboard.filters.region")}>
       <div className="filter-group">
-        <span className="filter-label">Kỳ KPI</span>
+        <span className="filter-label">
+          {t("dashboard.filters.periodLabel")}
+        </span>
         <div className="segmented period-buttons">
           {PERIOD_ORDER.map((value) => (
             <button
@@ -240,7 +286,7 @@ export function OverviewFilters({
               aria-pressed={value === period}
               onClick={() => onPeriodChange(value)}
             >
-              {PERIOD_NAMES[value]}
+              {t(PERIOD_NAME_KEYS[value])}
             </button>
           ))}
         </div>
@@ -251,21 +297,23 @@ export function OverviewFilters({
           <div className="custom-range-fields">
             <DatePickerField
               id="dashboard-date-from"
-              label="Từ ngày"
+              label={t("dashboard.filters.from")}
               value={custom.from}
               today={today}
               open={openPicker === "from"}
               onOpenChange={(open) => setOpenPicker(open ? "from" : null)}
               onChange={(value) => onCustomChange({ ...custom, from: value })}
+              t={t}
             />
             <DatePickerField
               id="dashboard-date-to"
-              label="Đến ngày"
+              label={t("dashboard.filters.to")}
               value={custom.to}
               today={today}
               open={openPicker === "to"}
               onOpenChange={(open) => setOpenPicker(open ? "to" : null)}
               onChange={(value) => onCustomChange({ ...custom, to: value })}
+              t={t}
             />
           </div>
           <span className="field-error" role="alert">
@@ -275,7 +323,7 @@ export function OverviewFilters({
       ) : null}
 
       <div className="filter-group">
-        <span className="filter-label">Loại hàng</span>
+        <span className="filter-label">{t("dashboard.filters.typeLabel")}</span>
         <div className="segmented type-buttons">
           {TYPE_ORDER.map((option) => (
             <button
@@ -285,7 +333,7 @@ export function OverviewFilters({
               aria-pressed={option.value === type}
               onClick={() => onTypeChange(option.value)}
             >
-              {option.label}
+              {t(option.labelKey)}
             </button>
           ))}
         </div>
@@ -298,11 +346,11 @@ export function OverviewFilters({
           onClick={onRefresh}
           disabled={refreshing}
         >
-          <DashIcon name="refresh-cw" /> Làm mới
+          <DashIcon name="refresh-cw" /> {t("dashboard.filters.refresh")}
         </button>
         <div className="refresh-meta">
           <span>{lastUpdatedLabel}</span>
-          <small>Tự động làm mới sau 60 giây</small>
+          <small>{t("dashboard.filters.autoRefresh")}</small>
         </div>
       </div>
     </section>

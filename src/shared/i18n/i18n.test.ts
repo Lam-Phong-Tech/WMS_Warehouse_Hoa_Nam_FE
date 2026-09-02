@@ -54,14 +54,14 @@ describe("translate()", () => {
   });
 
   it("rơi về tiếng Việt khi khoá thiếu bản EN", () => {
-    // `dashboard.period.today` có EN; dựng một khoá thiếu EN bằng cách xoá tạm.
-    const branch = MESSAGES_EN.dashboard?.period as
+    // `dashboard.periodName.today` có EN; dựng một khoá thiếu EN bằng cách xoá tạm.
+    const branch = MESSAGES_EN.dashboard?.periodName as
       | Record<string, string>
       | undefined;
     const saved = branch?.today;
     if (branch) delete branch.today;
     try {
-      expect(translate("en", "dashboard.period.today")).toBe("Hôm nay");
+      expect(translate("en", "dashboard.periodName.today")).toBe("Hôm nay");
     } finally {
       if (branch && saved !== undefined) branch.today = saved;
     }

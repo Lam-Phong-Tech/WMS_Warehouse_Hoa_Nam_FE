@@ -22,15 +22,18 @@ import dayjs from "dayjs";
 import { http } from "@/shared/api/http";
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { OPERATIONS_REPORT_ENDPOINTS } from "@/modules/reports/operations/report-data";
+import { INVENTORY_STOCK_STATUS_LABELS } from "@/shared/constants/business-labels";
+import { useLanguageStore } from "@/shared/i18n/language.store";
+import type { MessageKey } from "@/shared/i18n/messages";
 import type { DashboardOverview, SkuTypeFilter } from "../types";
 
 export type OverviewPeriod = "today" | "last7" | "month" | "custom";
 
-export const PERIOD_NAMES: Record<OverviewPeriod, string> = {
-  today: "Hôm nay",
-  last7: "7 ngày gần nhất",
-  month: "Tháng này",
-  custom: "Tùy chọn",
+export const PERIOD_NAME_KEYS: Record<OverviewPeriod, MessageKey> = {
+  today: "dashboard.periodName.today",
+  last7: "dashboard.periodName.last7",
+  month: "dashboard.periodName.month",
+  custom: "dashboard.periodName.custom",
 };
 
 export interface DateRange {
@@ -49,7 +52,10 @@ export function resolvePeriodRange(
   if (period === "today")
     return { from: today.format(ISO), to: today.format(ISO) };
   if (period === "last7")
-    return { from: today.subtract(6, "day").format(ISO), to: today.format(ISO) };
+    return {
+      from: today.subtract(6, "day").format(ISO),
+      to: today.format(ISO),
+    };
   if (period === "month")
     return { from: today.startOf("month").format(ISO), to: today.format(ISO) };
   return custom;
@@ -66,18 +72,39 @@ export function previousRange(range: DateRange): DateRange {
   };
 }
 
-const numberFormat = new Intl.NumberFormat("vi-VN", {
-  maximumFractionDigits: 2,
-});
+/**
+ * Nhóm chữ số theo ngôn ngữ đang chọn: `1.234,5` ở vi-VN nhưng `1,234.5` ở
+ * en-US. Đọc thẳng store thay vì nhận tham số vì `fmt` được gọi ở hàng chục
+ * chỗ trong lúc render, mà mọi component gọi nó đều dùng `useT()` nên đã render
+ * lại sẵn khi đổi ngôn ngữ.
+ */
+const NUMBER_LOCALE: Record<string, string> = { vi: "vi-VN", en: "en-US" };
+
+const numberFormats = new Map<string, Intl.NumberFormat>();
+
+function numberFormat(): Intl.NumberFormat {
+  const locale = NUMBER_LOCALE[useLanguageStore.getState().language] ?? "vi-VN";
+  let format = numberFormats.get(locale);
+  if (!format) {
+    format = new Intl.NumberFormat(locale, { maximumFractionDigits: 2 });
+    numberFormats.set(locale, format);
+  }
+  return format;
+}
 
 export function fmt(value: number): string {
-  return numberFormat.format(value);
+  return numberFormat().format(value);
+}
+
+/** Locale BCP-47 khớp ngôn ngữ đang chọn — cho `Intl` ngoài chỗ định dạng số. */
+export function activeLocale(): string {
+  return NUMBER_LOCALE[useLanguageStore.getState().language] ?? "vi-VN";
 }
 
 /** Dấu trừ của demo là U+2212 (−), không phải hyphen. */
 export function fmtDelta(value: number, suffix = ""): string {
   const sign = value > 0 ? "+" : value < 0 ? "−" : "";
-  return `${sign}${numberFormat.format(Math.abs(value))}${suffix}`;
+  return `${sign}${numberFormat().format(Math.abs(value))}${suffix}`;
 }
 
 export type Trend = "up" | "down" | "neutral";
@@ -327,8 +354,7 @@ export function buildEquation(xnt: XntReport | undefined): EquationTotals {
   const issueComponent = sum((line) => line.component_issue_net);
   const reversal = sum((line) => line.reversal_unlinked_net);
   const closing = sum((line) => line.closing);
-  const expected =
-    opening + receipt - issueProduct - issueComponent + reversal;
+  const expected = opening + receipt - issueProduct - issueComponent + reversal;
   return {
     opening,
     receipt,
@@ -423,24 +449,28 @@ export function buildComposition(
   type: SkuTypeFilter,
 ): Array<{ status: string; label: string; value: number; pct: number }> {
   const structure = overview?.stock_structure;
-  const pick = (status: "AVAILABLE" | "QUARANTINE" | "NON_SELLABLE" | "DEFECTIVE") => {
+  const pick = (
+    status: "AVAILABLE" | "QUARANTINE" | "NON_SELLABLE" | "DEFECTIVE",
+  ) => {
     const product = num(structure?.PRODUCT?.[status]);
     const component = num(structure?.COMPONENT?.[status]);
     if (type === "PRODUCT") return product;
     if (type === "COMPONENT") return component;
     return product + component;
   };
-  // Thứ tự và màu giữ đúng demo: khả dụng → cách ly → không bán được → lỗi.
-  const rows = [
-    { status: "AVAILABLE", label: "Khả dụng", value: pick("AVAILABLE") },
-    { status: "QUARANTINE", label: "Cách ly", value: pick("QUARANTINE") },
-    {
-      status: "NON_SELLABLE",
-      label: "Không bán được",
-      value: pick("NON_SELLABLE"),
-    },
-    { status: "DEFECTIVE", label: "Hàng lỗi", value: pick("DEFECTIVE") },
-  ];
+  /**
+   * Thứ tự và màu giữ đúng demo. Nhãn lấy từ `INVENTORY_STOCK_STATUS_LABELS`:
+   * đây là nhãn nghiệp vụ theo enum BE nên phải dùng bảng chung thay vì tự đặt
+   * chữ riêng cho màn này — bản trước ghi "Cách ly" trong khi mọi màn khác gọi
+   * cùng trạng thái đó là "Chờ kiểm tra".
+   */
+  const rows = (
+    ["AVAILABLE", "QUARANTINE", "NON_SELLABLE", "DEFECTIVE"] as const
+  ).map((status) => ({
+    status: status as string,
+    label: INVENTORY_STOCK_STATUS_LABELS[status],
+    value: pick(status),
+  }));
   const total = rows.reduce((sum, row) => sum + row.value, 0);
   return rows.map((row) => ({
     ...row,
@@ -450,11 +480,16 @@ export function buildComposition(
 
 export type Severity = "P0" | "P1" | "P2";
 
-/** Nhãn tiếng Việt của mức độ; mã nội bộ P0/P1/P2 chỉ đi kèm ở tooltip/data-attr. */
-export const SEVERITY_NAMES: Record<Severity, string> = {
-  P0: "Khẩn cấp",
-  P1: "Cần xử lý sớm",
-  P2: "Theo dõi",
+/**
+ * Nhãn mức độ; mã nội bộ P0/P1/P2 chỉ đi kèm ở tooltip và data-attribute.
+ *
+ * P0/P1/P2 do FE tự xếp cho hàng việc dashboard chứ không phải enum BE trả về,
+ * nên nhãn nằm trong từ điển i18n thay vì `business-labels.ts`.
+ */
+export const SEVERITY_NAME_KEYS: Record<Severity, MessageKey> = {
+  P0: "dashboard.severity.p0",
+  P1: "dashboard.severity.p1",
+  P2: "dashboard.severity.p2",
 };
 
 export function overviewTypeKey(

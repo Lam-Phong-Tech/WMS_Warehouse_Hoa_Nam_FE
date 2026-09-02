@@ -4,6 +4,7 @@
  */
 import { DashIcon } from "../components/DashIcon";
 import type { DashboardIconName } from "../components/DashIcon";
+import { useT } from "@/shared/i18n/useT";
 import { OverviewStateBox } from "./OverviewStateBox";
 import { fmt, type TopSkuRow } from "./overview-data";
 
@@ -27,7 +28,9 @@ function InsightShell({
   className: string;
   children: React.ReactNode;
 }) {
-  return <article className={`card insight-card ${className}`}>{children}</article>;
+  return (
+    <article className={`card insight-card ${className}`}>{children}</article>
+  );
 }
 
 export function OverviewInsights({
@@ -49,24 +52,25 @@ export function OverviewInsights({
   forbidden: boolean;
   onNavigate: (route: string) => void;
 }) {
+  const t = useT();
   const blocked = loading || failed || forbidden;
   const blockedBox = loading ? (
     <OverviewStateBox
       kind="loading"
-      title="Đang tải widget"
-      copy="Widget dưới fold tải khi đi vào viewport."
+      title={t("dashboard.insight.loadingTitle")}
+      copy={t("dashboard.insight.loadingCopy")}
     />
   ) : forbidden ? (
     <OverviewStateBox
       kind="forbidden"
-      title="Không có quyền xem"
-      copy="Widget này cần quyền report.view."
+      title={t("dashboard.insight.forbiddenTitle")}
+      copy={t("dashboard.insight.forbiddenCopy")}
     />
   ) : (
     <OverviewStateBox
       kind="unavailable"
-      title="Không thể tải widget"
-      copy="Nguồn đọc không phản hồi; dùng Làm mới để thử lại."
+      title={t("dashboard.insight.failedTitle")}
+      copy={t("dashboard.insight.failedCopy")}
     />
   );
 
@@ -97,30 +101,34 @@ export function OverviewInsights({
               <DashIcon name="briefcase-medical" />
             </span>
             <div>
-              <span className="eyebrow">BẢO HÀNH</span>
-              <h2>Hồ sơ cần theo dõi</h2>
+              <span className="eyebrow">
+                {t("dashboard.insight.warrantyEyebrow")}
+              </span>
+              <h2>{t("dashboard.insight.warrantyTitle")}</h2>
               <span className="card-subtitle">
-                Tình trạng xử lý hồ sơ bảo hành đang mở
+                {t("dashboard.insight.warrantySubtitle")}
               </span>
             </div>
           </div>
           <span
             className={`chip ${warranty.overdue > 3 ? "chip-error" : "chip-warning"}`}
           >
-            {fmt(warranty.overdue)} quá hạn
+            {t("dashboard.insight.warrantyChip", {
+              count: fmt(warranty.overdue),
+            })}
           </span>
         </header>
         <div className="insight-body">
           <div className="metric-pair">
             <div className="metric-box">
-              <span>Đang xử lý</span>
+              <span>{t("dashboard.insight.active")}</span>
               <strong>{fmt(warranty.active)}</strong>
-              <small>hồ sơ đang mở</small>
+              <small>{t("dashboard.insight.activeNote")}</small>
             </div>
             <div className="metric-box metric-box-alert">
-              <span>Quá hạn xử lý</span>
+              <span>{t("dashboard.insight.overdue")}</span>
               <strong>{fmt(warranty.overdue)}</strong>
-              <small>hồ sơ quá hạn SLA</small>
+              <small>{t("dashboard.insight.overdueNote")}</small>
             </div>
           </div>
           <div className="insight-highlight">
@@ -128,8 +136,12 @@ export function OverviewInsights({
               <DashIcon name="file-clock" />
             </span>
             <div>
-              <span>Tuổi hồ sơ cao nhất</span>
-              <strong>{fmt(warranty.oldestDays)} ngày</strong>
+              <span>{t("dashboard.insight.oldest")}</span>
+              <strong>
+                {t("dashboard.insight.oldestValue", {
+                  days: fmt(warranty.oldestDays),
+                })}
+              </strong>
             </div>
           </div>
           <button
@@ -137,23 +149,28 @@ export function OverviewInsights({
             type="button"
             onClick={() => onNavigate("/warranty")}
           >
-            <span>Xem hồ sơ bảo hành</span>
+            <span>{t("dashboard.insight.warrantyAction")}</span>
             <DashIcon name="arrow-right" />
           </button>
         </div>
       </InsightShell>
 
       <InsightShell className="insight-card-ranking">
-        <header className="card-head insight-card-head" data-kpi-id="DASH-KPI-18">
+        <header
+          className="card-head insight-card-head"
+          data-kpi-id="DASH-KPI-18"
+        >
           <div className="insight-heading">
             <span className="insight-icon" aria-hidden="true">
               <DashIcon name="package-minus" />
             </span>
             <div>
-              <span className="eyebrow">LUÂN CHUYỂN HÀNG</span>
-              <h2>Top 5 SKU xuất</h2>
+              <span className="eyebrow">
+                {t("dashboard.insight.rankEyebrow")}
+              </span>
+              <h2>{t("dashboard.insight.rankTitle")}</h2>
               <span className="card-subtitle">
-                Xếp theo tổng lượng xuất sản phẩm giảm dần
+                {t("dashboard.insight.rankSubtitle")}
               </span>
             </div>
           </div>
@@ -163,15 +180,20 @@ export function OverviewInsights({
           {topSkus.length === 0 ? (
             <OverviewStateBox
               kind="empty"
-              title="Chưa có SKU nào xuất kho"
-              copy="Không có phát sinh xuất trong kỳ đang xem."
+              title={t("dashboard.insight.rankEmptyTitle")}
+              copy={t("dashboard.insight.rankEmptyCopy")}
             />
           ) : (
             <>
               <ol className="rank-list">
                 {topSkus.map((row, index) => (
                   <li className="rank-row" data-rank={index + 1} key={row.code}>
-                    <span className="rank-number" aria-label={`Hạng ${index + 1}`}>
+                    <span
+                      className="rank-number"
+                      aria-label={t("dashboard.insight.rankAria", {
+                        rank: index + 1,
+                      })}
+                    >
                       {index + 1}
                     </span>
                     <div className="rank-copy">
@@ -194,15 +216,15 @@ export function OverviewInsights({
               </ol>
               <details className="chart-table insight-table">
                 <summary>
-                  <span>Xem bảng xếp hạng</span>
+                  <span>{t("dashboard.insight.rankTableSummary")}</span>
                   <DashIcon name="arrow-right" />
                 </summary>
                 <table>
                   <thead>
                     <tr>
-                      <th>Hạng</th>
-                      <th>SKU</th>
-                      <th>Số lượng</th>
+                      <th>{t("dashboard.insight.colRank")}</th>
+                      <th>{t("dashboard.insight.colSku")}</th>
+                      <th>{t("dashboard.insight.colQuantity")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -228,19 +250,27 @@ export function OverviewInsights({
               <DashIcon name="settings-2" />
             </span>
             <div>
-              <span className="eyebrow">KIỂM SOÁT DỮ LIỆU</span>
-              <h2>Chất lượng dữ liệu</h2>
+              <span className="eyebrow">
+                {t("dashboard.insight.qualityEyebrow")}
+              </span>
+              <h2>{t("dashboard.insight.qualityTitle")}</h2>
               <span className="card-subtitle">
-                Các tín hiệu cần kiểm tra để dữ liệu luôn đầy đủ
+                {t("dashboard.insight.qualitySubtitle")}
               </span>
             </div>
           </div>
-          <span className="chip chip-neutral">Theo dõi</span>
+          <span className="chip chip-neutral">
+            {t("dashboard.insight.qualityChip")}
+          </span>
         </header>
         <div className="insight-body">
           <div className="signal-list">
             {signals.map((signal) => (
-              <div className="signal-row" data-kpi-id={signal.id} key={signal.id}>
+              <div
+                className="signal-row"
+                data-kpi-id={signal.id}
+                key={signal.id}
+              >
                 <span className="signal-icon" aria-hidden="true">
                   <DashIcon name={signal.icon} />
                 </span>
@@ -254,7 +284,7 @@ export function OverviewInsights({
             type="button"
             onClick={() => onNavigate("/reports/import-quality")}
           >
-            <span>Xem báo cáo ngoại lệ</span>
+            <span>{t("dashboard.insight.qualityAction")}</span>
             <DashIcon name="arrow-right" />
           </button>
         </div>

@@ -3,6 +3,7 @@
  * (demo cố định 26.800..28.800) và chỉ vẽ những ngày ĐÃ CHỐT do BE trả.
  */
 import { DashIcon } from "../components/DashIcon";
+import { useT } from "@/shared/i18n/useT";
 import { OverviewStateBox } from "./OverviewStateBox";
 import { fmt, type TrendRow } from "./overview-data";
 
@@ -21,6 +22,7 @@ export function OverviewTrendChart({
   failed: boolean;
   forbidden: boolean;
 }) {
+  const t = useT();
   const hasData = !loading && !failed && !forbidden && rows.length > 0;
   const last = rows.at(-1);
 
@@ -31,21 +33,23 @@ export function OverviewTrendChart({
           <DashIcon name="chart-column-big" />
         </span>
         <div>
-          <span className="eyebrow">TỒN CUỐI NGÀY</span>
-          <h2>Xu hướng tồn cuối ngày</h2>
-          <span className="card-subtitle">Số liệu đã chốt theo từng ngày</span>
+          <span className="eyebrow">{t("dashboard.trend.eyebrow")}</span>
+          <h2>{t("dashboard.trend.title")}</h2>
+          <span className="card-subtitle">{t("dashboard.trend.subtitle")}</span>
         </div>
       </div>
       {hasData && last ? (
         <div className="chart-head-meta">
-          <span className="chip chip-success">Thực tế</span>
+          <span className="chip chip-success">
+            {t("dashboard.trend.chipActual")}
+          </span>
           <span className="chart-current">
             <strong>{fmt(last.closing)}</strong>
-            <small>cái cuối kỳ</small>
+            <small>{t("dashboard.trend.closingUnit")}</small>
           </span>
         </div>
       ) : (
-        <span className="chart-unit">Đơn vị: cái</span>
+        <span className="chart-unit">{t("dashboard.trend.unit")}</span>
       )}
     </header>
   );
@@ -56,8 +60,8 @@ export function OverviewTrendChart({
         {header}
         <OverviewStateBox
           kind="loading"
-          title="Đang tải xu hướng"
-          copy="Chỉ hiển thị actual đã chốt."
+          title={t("dashboard.trend.loadingTitle")}
+          copy={t("dashboard.trend.loadingCopy")}
         />
       </article>
     );
@@ -67,8 +71,8 @@ export function OverviewTrendChart({
         {header}
         <OverviewStateBox
           kind="forbidden"
-          title="Không có quyền xem xu hướng"
-          copy="Chuỗi tồn cuối ngày đã được che."
+          title={t("dashboard.trend.forbiddenTitle")}
+          copy={t("dashboard.trend.forbiddenCopy")}
         />
       </article>
     );
@@ -78,8 +82,8 @@ export function OverviewTrendChart({
         {header}
         <OverviewStateBox
           kind="unavailable"
-          title="Không thể tải xu hướng"
-          copy="Nguồn tồn cuối ngày không phản hồi."
+          title={t("dashboard.trend.failedTitle")}
+          copy={t("dashboard.trend.failedCopy")}
         />
       </article>
     );
@@ -89,8 +93,8 @@ export function OverviewTrendChart({
         {header}
         <OverviewStateBox
           kind="empty"
-          title="Chưa có số chốt ngày"
-          copy="Không nội suy khi nguồn dữ liệu trống."
+          title={t("dashboard.trend.emptyTitle")}
+          copy={t("dashboard.trend.emptyCopy")}
         />
       </article>
     );
@@ -125,9 +129,12 @@ export function OverviewTrendChart({
             role="img"
             aria-labelledby="trend-svg-title trend-svg-desc"
           >
-            <title id="trend-svg-title">Xu hướng tồn cuối ngày</title>
+            <title id="trend-svg-title">{t("dashboard.trend.svgTitle")}</title>
             <desc id="trend-svg-desc">
-              {`Đường actual ${rows.length} ngày kết thúc ở ${fmt(rows[rows.length - 1].closing)} cái.`}
+              {t("dashboard.trend.svgDesc", {
+                days: rows.length,
+                value: fmt(rows[rows.length - 1].closing),
+              })}
             </desc>
             <defs>
               <linearGradient id="trend-fill" x1="0" y1="0" x2="0" y2="1">
@@ -184,12 +191,12 @@ export function OverviewTrendChart({
         </div>
       </div>
       <details className="chart-table">
-        <summary>Xem bảng dữ liệu thay thế</summary>
+        <summary>{t("dashboard.trend.tableSummary")}</summary>
         <table>
           <thead>
             <tr>
-              <th>Ngày</th>
-              <th>Tồn cuối ngày</th>
+              <th>{t("dashboard.trend.colDate")}</th>
+              <th>{t("dashboard.trend.colClosing")}</th>
             </tr>
           </thead>
           <tbody>

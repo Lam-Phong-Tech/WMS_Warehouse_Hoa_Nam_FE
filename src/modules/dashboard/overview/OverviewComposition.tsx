@@ -6,6 +6,7 @@
  * thứ tự và bảng màu 4 ô.
  */
 import { DashIcon } from "../components/DashIcon";
+import { useT } from "@/shared/i18n/useT";
 import { OverviewStateBox } from "./OverviewStateBox";
 import { fmt } from "./overview-data";
 
@@ -27,6 +28,7 @@ export function OverviewComposition({
   failed: boolean;
   forbidden: boolean;
 }) {
+  const t = useT();
   const header = (
     <header className="card-head chart-card-head" data-trace="DASH-CHART-03">
       <div className="chart-heading">
@@ -34,14 +36,14 @@ export function OverviewComposition({
           <DashIcon name="layout-dashboard" />
         </span>
         <div>
-          <span className="eyebrow">CƠ CẤU TỒN</span>
-          <h2>Cơ cấu tồn theo trạng thái</h2>
+          <span className="eyebrow">{t("dashboard.composition.eyebrow")}</span>
+          <h2>{t("dashboard.composition.title")}</h2>
           <span className="card-subtitle">
-            Theo trạng thái hàng tại thời điểm chốt
+            {t("dashboard.composition.subtitle")}
           </span>
         </div>
       </div>
-      <span className="chart-unit">Đơn vị: cái</span>
+      <span className="chart-unit">{t("dashboard.composition.unit")}</span>
     </header>
   );
 
@@ -51,8 +53,8 @@ export function OverviewComposition({
         {header}
         <OverviewStateBox
           kind="loading"
-          title="Đang tải cơ cấu"
-          copy="Tổng hợp theo nhóm hàng."
+          title={t("dashboard.composition.loadingTitle")}
+          copy={t("dashboard.composition.loadingCopy")}
         />
       </article>
     );
@@ -62,8 +64,8 @@ export function OverviewComposition({
         {header}
         <OverviewStateBox
           kind="forbidden"
-          title="Không có quyền xem cơ cấu"
-          copy="Không hiển thị phần trăm suy diễn."
+          title={t("dashboard.composition.forbiddenTitle")}
+          copy={t("dashboard.composition.forbiddenCopy")}
         />
       </article>
     );
@@ -73,8 +75,8 @@ export function OverviewComposition({
         {header}
         <OverviewStateBox
           kind="unavailable"
-          title="Không thể tải cơ cấu"
-          copy="Nguồn stock-status không phản hồi."
+          title={t("dashboard.composition.failedTitle")}
+          copy={t("dashboard.composition.failedCopy")}
         />
       </article>
     );
@@ -86,8 +88,8 @@ export function OverviewComposition({
         {header}
         <OverviewStateBox
           kind="empty"
-          title="Không có tồn khả dụng"
-          copy="Không tạo biểu đồ khi tổng mẫu bằng 0."
+          title={t("dashboard.composition.emptyTitle")}
+          copy={t("dashboard.composition.emptyCopy")}
         />
       </article>
     );
@@ -98,15 +100,19 @@ export function OverviewComposition({
       <div className="composition-layout">
         <div className="composition-overview">
           <div className="composition-total-panel">
-            <span className="eyebrow">TỔNG TỒN TẠI CHỐT</span>
+            <span className="eyebrow">
+              {t("dashboard.composition.totalEyebrow")}
+            </span>
             <strong>{fmt(total)}</strong>
-            <span>Đơn vị: cái · đã phân bổ theo trạng thái</span>
+            <span>{t("dashboard.composition.totalUnit")}</span>
           </div>
           <div className="composition-distribution">
             <div
               className="composition-segmented"
               role="img"
-              aria-label={`Cơ cấu tồn theo trạng thái, tổng ${fmt(total)} cái`}
+              aria-label={t("dashboard.composition.chartAria", {
+                total: fmt(total),
+              })}
             >
               {rows.map((row) => (
                 <span
@@ -120,8 +126,12 @@ export function OverviewComposition({
               ))}
             </div>
             <div className="composition-distribution-meta">
-              <span>100% tổng tồn</span>
-              <span>{rows.length} trạng thái</span>
+              <span>{t("dashboard.composition.fullShare")}</span>
+              <span>
+                {t("dashboard.composition.statusCount", {
+                  count: rows.length,
+                })}
+              </span>
             </div>
           </div>
         </div>
@@ -146,13 +156,13 @@ export function OverviewComposition({
         </div>
       </div>
       <details className="chart-table">
-        <summary>Xem số liệu chi tiết</summary>
+        <summary>{t("dashboard.composition.tableSummary")}</summary>
         <table>
           <thead>
             <tr>
-              <th>Trạng thái</th>
-              <th>Số lượng</th>
-              <th>Tỷ trọng</th>
+              <th>{t("dashboard.composition.colStatus")}</th>
+              <th>{t("dashboard.composition.colQuantity")}</th>
+              <th>{t("dashboard.composition.colShare")}</th>
             </tr>
           </thead>
           <tbody>
