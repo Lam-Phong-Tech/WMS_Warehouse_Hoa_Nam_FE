@@ -191,7 +191,7 @@ describe("WarrantyDetailModal (WAR-03)", () => {
     expect(updateWarrantyCase).not.toHaveBeenCalled();
   });
 
-  it("case RETURNED (terminal): không cho cập nhật trạng thái, caseActive=false", async () => {
+  it("case RETURNED (terminal): không cho cập nhật trạng thái và chặn xuất linh kiện", async () => {
     vi.mocked(fetchWarrantyCase).mockResolvedValue({
       ...DETAIL,
       status: "RETURNED",
@@ -211,10 +211,34 @@ describe("WarrantyDetailModal (WAR-03)", () => {
         screen.getByRole("button", { name: /Cập nhật trạng thái/ }),
       ).toBeDisabled();
     });
-    fireEvent.click(screen.getByRole("button", { name: /Xuất linh kiện/ }));
-    expect(onOpenComponentIssue).toHaveBeenCalledWith(
-      expect.objectContaining({ caseActive: false }),
+    // Đã trả khách: nút Xuất linh kiện phải disable, không mở được modal tạo phiếu.
+    const issueButton = screen.getByRole("button", { name: /Xuất linh kiện/ });
+    expect(issueButton).toBeDisabled();
+    fireEvent.click(issueButton);
+    expect(onOpenComponentIssue).not.toHaveBeenCalled();
+  });
+
+  it("case COMPLETED (đã hoàn tất xử lý): chặn xuất linh kiện", async () => {
+    vi.mocked(fetchWarrantyCase).mockResolvedValue({
+      ...DETAIL,
+      status: "COMPLETED",
+    } as never);
+    const onOpenComponentIssue = vi.fn();
+    renderWithProviders(
+      <WarrantyDetailModal
+        caseId="wc-1"
+        onClose={() => {}}
+        onOpenComponentIssue={onOpenComponentIssue}
+      />,
     );
+    await screen.findByText("BH-0001");
+
+    const issueButton = await screen.findByRole("button", {
+      name: /Xuất linh kiện/,
+    });
+    expect(issueButton).toBeDisabled();
+    fireEvent.click(issueButton);
+    expect(onOpenComponentIssue).not.toHaveBeenCalled();
   });
 
   it("thiếu warranty.manage: không cập nhật được trạng thái", async () => {

@@ -204,15 +204,15 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
         reversal_qty: Number(draft[line.sku]?.reversal_qty ?? 0),
         reason: draft[line.sku]?.reason,
         max: line.reversible_qty,
-        is_serial_tracked: Boolean(line.is_serial_tracked),
+        item_scoped: Boolean(line.item_scoped),
         item_ids: draft[line.sku]?.item_ids ?? [],
       }))
       .filter((line) => line.reversal_qty > 0);
   }, [draft, selectedMovement]);
 
-  const serialLineMismatch = selectedLines.find(
-    (line) =>
-      line.is_serial_tracked && line.item_ids.length !== line.reversal_qty,
+  // Item-scoped (PRODUCT hoặc serial): phải chọn đúng số Item = số lượng đảo.
+  const itemLineMismatch = selectedLines.find(
+    (line) => line.item_scoped && line.item_ids.length !== line.reversal_qty,
   );
   const totalQty = selectedLines.reduce(
     (sum, line) => sum + line.reversal_qty,
@@ -236,7 +236,7 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
     totalQty > 0 &&
     reason.trim().length >= 5 &&
     !invalidLine &&
-    !serialLineMismatch &&
+    !itemLineMismatch &&
     (!isIssueReversal || (Boolean(returnCondition) && physicalConfirmed));
 
   function handleSelectMovement(movement: ReversibleMovement) {
@@ -253,7 +253,7 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
             {
               reversal_qty: defaultQty,
               reason: line.dependency_guard,
-              item_ids: line.is_serial_tracked
+              item_ids: line.item_scoped
                 ? candidates
                     .slice(0, defaultQty)
                     .map((candidate) => candidate.item_id)
@@ -282,14 +282,8 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
           }
         : {}),
       lines: selectedLines.flatMap(
-        ({
-          sku,
-          reversal_qty,
-          reason: lineReason,
-          is_serial_tracked,
-          item_ids,
-        }) =>
-          is_serial_tracked
+        ({ sku, reversal_qty, reason: lineReason, item_scoped, item_ids }) =>
+          item_scoped
             ? item_ids.map((item_id) => ({
                 sku,
                 reversal_qty: 1,
@@ -472,10 +466,12 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
     },
     {
       key: "serial_items",
-      header: "Sản phẩm theo số sê-ri",
+      // PRODUCT (kể cả non-serial) đảo theo từng Item/máy; nhãn item lấy số sê-ri
+      // nếu có, không thì mã vật lý (physical code).
+      header: "Item / máy cần đảo",
       width: 260,
       render: (line) =>
-        line.is_serial_tracked ? (
+        line.item_scoped ? (
           <SerialItemsSelect
             value={draft[line.sku]?.item_ids ?? []}
             options={(line.items ?? []).map((item) => ({
@@ -486,8 +482,8 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
                 item.item_id.slice(0, 8),
             }))}
             disabled={!line.can_reverse}
-            placeholder="Chọn sản phẩm cần điều chỉnh"
-            ariaLabel={`Chọn sản phẩm theo số sê-ri ${line.sku}`}
+            placeholder="Chọn Item/máy cần điều chỉnh"
+            ariaLabel={`Chọn Item/máy cần đảo cho ${line.sku}`}
             onChange={(nextItemIds) =>
               setDraft((current) => ({
                 ...current,
@@ -500,7 +496,7 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
           />
         ) : (
           <Box sx={{ typography: "body2", color: "text.secondary" }}>
-            Không quản lý theo số sê-ri
+            Đảo theo số lượng
           </Box>
         ),
     },
@@ -739,10 +735,10 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
                 />
               </Box>
 
-              {serialLineMismatch ? (
+              {itemLineMismatch ? (
                 <Box sx={{ mt: 1.5 }}>
                   <UiAlert tone="error">
-                    {`SKU ${serialLineMismatch.sku}: phải chọn đúng ${serialLineMismatch.reversal_qty} sản phẩm theo số sê-ri (đang chọn ${serialLineMismatch.item_ids.length}).`}
+                    {`SKU ${itemLineMismatch.sku}: phải chọn đúng ${itemLineMismatch.reversal_qty} Item/máy để đảo (đang chọn ${itemLineMismatch.item_ids.length}).`}
                   </UiAlert>
                 </Box>
               ) : null}

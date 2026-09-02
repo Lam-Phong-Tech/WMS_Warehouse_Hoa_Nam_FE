@@ -34,7 +34,6 @@ import {
 } from "@/shared/constants/business-labels";
 import { useDialogExit } from "@/shared/utils/useDialogExit";
 import { useT } from "@/shared/i18n/useT";
-import { CameraScanModal } from "@/shared/components/forms/CameraScanModal";
 import { ScanInput } from "@/shared/components/forms/ScanInput";
 import { useCanAny } from "@/shared/components/permission";
 import {
@@ -247,7 +246,6 @@ export function WarrantyIntakeModal({
   const [receivedCondition, setReceivedCondition] = useState("");
 
   const [formError, setFormError] = useState<string | null>(null);
-  const [cameraOpen, setCameraOpen] = useState(false);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [videoFiles, setVideoFiles] = useState<File[]>([]);
   const createMutation = useCreateWarrantyCase();
@@ -739,9 +737,6 @@ export function WarrantyIntakeModal({
                   onScan={(code) => void resolveScannedCode(code)}
                 />
               </Box>
-              <ActionButton kind="camera" onClick={() => setCameraOpen(true)}>
-                Camera
-              </ActionButton>
             </Stack>
             <Box sx={{ mt: 0.5 }}>
               <UiText variant="caption" color={SEMANTIC_LIGHT.textMedium}>
@@ -1062,18 +1057,6 @@ export function WarrantyIntakeModal({
           ) : null}
         </Box>
       </Stack>
-
-      <CameraScanModal
-        open={cameraOpen}
-        title={t("warranty.intake.scanTitle")}
-        onDetected={(code) => {
-          // Change Pack QR/SKU: gửi RAW payload cho backend resolve — FE không
-          // tự tách/parse; classify trả normalized item_code + SKU để tự điền.
-          void resolveScannedCode(code);
-          setCameraOpen(false);
-        }}
-        onClose={() => setCameraOpen(false)}
-      />
 
       <UiDialog
         open={defectDialogOpen}

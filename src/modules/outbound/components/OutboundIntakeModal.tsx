@@ -29,7 +29,9 @@ import {
   useMvpAgencies,
   useMvpSkus,
 } from "@/modules/master-data/hooks/use-mvp-master";
+import { RecipientCreateDialog } from "@/modules/master-data/components/RecipientCreateDialog";
 import type { AgencyRecord } from "@/modules/master-data/types/mvp-master.types";
+import { useCan } from "@/shared/components/permission";
 import { useDialogExit } from "@/shared/utils/useDialogExit";
 import {
   AnimatedList,
@@ -113,6 +115,10 @@ const IMPORT_STATUS_LABEL: Record<string, MessageKey> = {
 /** Bảng xem trước phân trang client-side như antd Table cũ (pageSize 10). */
 const PREVIEW_PAGE_SIZE = 10;
 
+/** Giá trị đặc biệt cho dòng "+ Thêm nơi nhận" trong dropdown đại lý — không phải
+ * một agency_id thật, chọn nó sẽ mở dialog tạo mới thay vì gán giá trị. */
+const AGENCY_CREATE_OPTION = "__create_recipient__";
+
 export function OutboundIntakeModal({
   open,
   canImport,
@@ -121,6 +127,10 @@ export function OutboundIntakeModal({
 }: OutboundIntakeModalProps) {
   const t = useT();
   const dialog = useDialogExit(onClose);
+  // Chỉ người có quyền quản lý nơi nhận mới thấy dòng "+ Thêm nơi nhận" trong
+  // dropdown (cùng quyền với nút trên màn Danh mục đại lý / nơi nhận).
+  const canManageAgency = useCan("agency.manage");
+  const [createAgencyOpen, setCreateAgencyOpen] = useState(false);
   const [mode, setMode] = useState<IntakeMode>("manual");
   const [file, setFile] = useState<File | null>(null);
   const [fileInputKey, setFileInputKey] = useState(0);
@@ -200,9 +210,9 @@ export function OutboundIntakeModal({
     sku_type: "PRODUCT",
     per_page: 100,
   });
+  // Danh sách mặc định (chưa gõ) để gợi ý ban đầu + seed nhãn cho map bên dưới.
   const agencyQuery = useMvpAgencies({ status: "ACTIVE", per_page: 100 });
   const skuRows = skuQuery.data?.data ?? [];
-  const agencyRows = agencyQuery.data?.data ?? [];
   const skuOptions = skuRows.map((sku) => ({
     value: sku.sku_id,
     label: `${sku.sku_code} · ${sku.sku_name}`,
@@ -248,10 +258,48 @@ export function OutboundIntakeModal({
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- chỉ cần re-run khi 2 danh sách nguồn đổi, không phải mọi lần skuOptions/skuSearchOptions tạo lại tham chiếu.
   }, [skuRows, skuSearchRows]);
-  const agencyOptions = agencyRows.map((agency) => ({
+  // Ô "Đại lý / nơi nhận" cũng gõ-để-lọc trên toàn danh mục đại lý (giống SKU):
+  // danh sách per_page 100 phía trên chỉ đủ cho gợi ý ban đầu, không thể chứa hết
+  // đại lý — gõ keyword gọi BE (AgencyRepository::$searchable = agency_code/
+  // agency_name).
+  const [agencyKeyword, setAgencyKeyword] = useState("");
+  const agencySearchQuery = useMvpAgencies({
+    status: "ACTIVE",
+    keyword: agencyKeyword.trim(),
+    per_page: 50,
+  });
+  const agencySearchRows = agencySearchQuery.data?.data ?? [];
+  const agencyOptions = agencySearchRows.map((agency) => ({
     value: agency.agency_id,
     label: `${agency.agency_code} · ${agency.agency_name}`,
   }));
+
+  // Bản ghi đại lý ĐÃ CHỌN phải bền vững qua mọi lần gõ tìm (giống skuLabelById):
+  // dùng để giữ nhãn hiển thị và để tự điền người nhận / địa chỉ ngay cả khi đại
+  // lý đó không còn nằm trong kết quả tìm kiếm hiện tại.
+  const [agencyById, setAgencyById] = useState<Map<string, AgencyRecord>>(
+    new Map(),
+  );
+  useEffect(() => {
+    const merged = [
+      ...(agencyQuery.data?.data ?? []),
+      ...(agencySearchQuery.data?.data ?? []),
+    ];
+    if (merged.length === 0) return;
+    setAgencyById((prev) => {
+      let changed = false;
+      const next = new Map(prev);
+      for (const agency of merged) {
+        if (next.get(agency.agency_id) !== agency) {
+          next.set(agency.agency_id, agency);
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [agencyQuery.data, agencySearchQuery.data]);
+  const agencyLabel = (agency: AgencyRecord) =>
+    `${agency.agency_code} · ${agency.agency_name}`;
 
   const previewSkuIds = [
     ...new Set([
@@ -291,6 +339,7 @@ export function OutboundIntakeModal({
     setMode("manual");
     setRequestNo("");
     setAgencyId(null);
+    setAgencyKeyword("");
     setRecipientName("");
     setRecipientAddress("");
     setRecipientPhone("");
@@ -407,11 +456,25 @@ export function OutboundIntakeModal({
   const handleAgencyChange = (nextAgencyId: string | null) => {
     setAgencyId(nextAgencyId);
     const agency: AgencyRecord | undefined = nextAgencyId
-      ? agencyRows.find((row) => row.agency_id === nextAgencyId)
+      ? agencyById.get(nextAgencyId)
       : undefined;
     if (!agency) return;
     setRecipientName(agency.agency_name);
     setRecipientAddress(agency.address ?? "");
+  };
+
+  // Nơi nhận vừa tạo trong dialog: nạp vào map (giữ nhãn + autofill), tự chọn và
+  // điền người nhận / địa chỉ như khi chọn từ danh sách.
+  const handleAgencyCreated = (record: AgencyRecord) => {
+    setAgencyById((prev) => {
+      const next = new Map(prev);
+      next.set(record.agency_id, record);
+      return next;
+    });
+    setAgencyId(record.agency_id);
+    setRecipientName(record.agency_name);
+    setRecipientAddress(record.address ?? "");
+    setCreateAgencyOpen(false);
   };
 
   const updateLine = (index: number, patch: Partial<LineInput>) => {
@@ -591,9 +654,21 @@ export function OutboundIntakeModal({
   const overridePhoneValid =
     recipientOverride.receiver_contact_phone === "" ||
     /^0\d{9}$/.test(recipientOverride.receiver_contact_phone);
-  const consumable = Boolean(preview) && canImport && overridePhoneValid;
 
   const previewRows = preview?.rows ?? [];
+  // Tồn không đủ ở BẤT KỲ dòng nào (khả dụng đã biết và < SL yêu cầu) thì CHẶN
+  // tạo phiếu nháp — chỉ tính dòng không có lỗi dữ liệu và đã có số liệu tồn
+  // (available === undefined nghĩa là chưa tra được, không kết luận thiếu).
+  const hasShortStock = previewRows.some((row) => {
+    if (row.errors.length > 0) return false;
+    const skuId = rowSkuId(row);
+    const available = skuId ? availabilityQuery.data?.[skuId] : undefined;
+    if (available === undefined) return false;
+    return available < rowRequiredQty(row);
+  });
+  const consumable =
+    Boolean(preview) && canImport && overridePhoneValid && !hasShortStock;
+
   const previewPaged = previewRows.length > PREVIEW_PAGE_SIZE;
   const pagedPreviewRows = previewPaged
     ? previewRows.slice(
@@ -603,6 +678,7 @@ export function OutboundIntakeModal({
     : previewRows;
 
   return (
+    <>
     <UiDialog
       {...dialog.dialogProps}
       open={open && dialog.open}
@@ -675,13 +751,83 @@ export function OutboundIntakeModal({
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
-                <UiSelect
+                <Autocomplete
                   fullWidth
-                  label={t("outbound.intake.fieldAgency")}
-                  placeholder={t("outbound.intake.fieldAgencyPlaceholder")}
-                  value={agencyId ?? ""}
-                  onChange={(value) => handleAgencyChange(value || null)}
+                  size="small"
                   options={agencyOptions}
+                  value={
+                    agencyId
+                      ? {
+                          value: agencyId,
+                          label: (() => {
+                            const record = agencyById.get(agencyId);
+                            return record ? agencyLabel(record) : agencyId;
+                          })(),
+                        }
+                      : null
+                  }
+                  onChange={(_event, next) => {
+                    if (next?.value === AGENCY_CREATE_OPTION) {
+                      setCreateAgencyOpen(true);
+                      return;
+                    }
+                    handleAgencyChange(next?.value ?? null);
+                  }}
+                  onInputChange={(_event, value, reason) => {
+                    if (reason === "input") setAgencyKeyword(value);
+                  }}
+                  getOptionLabel={(option) => option.label}
+                  isOptionEqualToValue={(option, val) =>
+                    option.value === val.value
+                  }
+                  // Dòng "+ Thêm nơi nhận" luôn nằm cuối dropdown (BE đã lọc theo
+                  // keyword nên chỉ cần chèn thêm, không lọc lại client-side).
+                  filterOptions={(opts) =>
+                    canManageAgency
+                      ? [
+                          ...opts,
+                          {
+                            value: AGENCY_CREATE_OPTION,
+                            label: t("outbound.intake.agencyCreate"),
+                          },
+                        ]
+                      : opts
+                  }
+                  renderOption={(props, option) => {
+                    const { key, ...rest } = props;
+                    return (
+                      <Box
+                        component="li"
+                        key={key}
+                        {...rest}
+                        sx={
+                          option.value === AGENCY_CREATE_OPTION
+                            ? {
+                                fontWeight: 600,
+                                color: "primary.main",
+                                borderTop: "1px solid",
+                                borderColor: "divider",
+                              }
+                            : undefined
+                        }
+                      >
+                        {option.label}
+                      </Box>
+                    );
+                  }}
+                  loading={agencySearchQuery.isFetching}
+                  noOptionsText={
+                    agencyKeyword.trim()
+                      ? t("outbound.intake.agencyNoMatch")
+                      : t("outbound.intake.agencyTypeToSearch")
+                  }
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label={t("outbound.intake.fieldAgency")}
+                      placeholder={t("outbound.intake.fieldAgencyPlaceholder")}
+                    />
+                  )}
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
@@ -1005,10 +1151,17 @@ export function OutboundIntakeModal({
                     : t("outbound.intake.confirm")}
                 </ActionButton>
                 {!consumable ? (
-                  <Box sx={{ typography: "body2", color: "text.secondary" }}>
+                  <Box
+                    sx={{
+                      typography: "body2",
+                      color: hasShortStock ? "warning.main" : "text.secondary",
+                    }}
+                  >
                     {!canImport
                       ? t("outbound.intake.noPermission")
-                      : t("outbound.intake.stillInvalid")}
+                      : hasShortStock
+                        ? t("outbound.intake.shortStockBlock")
+                        : t("outbound.intake.stillInvalid")}
                   </Box>
                 ) : null}
               </Stack>
@@ -1021,5 +1174,12 @@ export function OutboundIntakeModal({
         ) : null}
       </Stack>
     </UiDialog>
+    <RecipientCreateDialog
+      open={createAgencyOpen}
+      onClose={() => setCreateAgencyOpen(false)}
+      onCreated={handleAgencyCreated}
+      initialName={agencyKeyword.trim()}
+    />
+    </>
   );
 }

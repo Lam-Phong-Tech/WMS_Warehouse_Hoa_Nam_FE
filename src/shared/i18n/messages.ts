@@ -722,7 +722,7 @@ export const MESSAGES_VI = {
     },
 
     intake: {
-      title: "OUT-REQ-01 · Tiếp nhận phiếu yêu cầu xuất",
+      title: "Phiếu Toa hàng (Phiếu yêu cầu xuất)",
       rowLabel: "dòng {row}",
       genericError: "Lỗi",
       statusUploaded: "Đã tải lên",
@@ -768,7 +768,10 @@ export const MESSAGES_VI = {
       tabExcel: "Nhập từ Excel",
       fieldRequestNo: "Mã phiếu yêu cầu xuất",
       fieldAgency: "Đại lý / nơi nhận (tùy chọn)",
-      fieldAgencyPlaceholder: "Chọn đại lý để tự điền người nhận / địa chỉ",
+      fieldAgencyPlaceholder: "Gõ mã hoặc tên đại lý để tự điền người nhận / địa chỉ",
+      agencyNoMatch: "Không tìm thấy đại lý khớp từ khoá.",
+      agencyTypeToSearch: "Gõ mã hoặc tên đại lý để tìm.",
+      agencyCreate: "+ Thêm nơi nhận mới",
       fieldRecipient: "Người / nơi nhận",
       fieldAddress: "Địa chỉ nhận",
       fieldPhone: "SĐT liên hệ",
@@ -802,6 +805,8 @@ export const MESSAGES_VI = {
       noPermission: "Bạn không có quyền xác nhận yêu cầu xuất.",
       stillInvalid:
         "Còn dòng lỗi — gán SKU/số lượng hoặc sửa người nhận rồi xác nhận lại.",
+      shortStockBlock:
+        "Tồn không đủ ở ít nhất một dòng — giảm số lượng hoặc bổ sung tồn rồi kiểm tra lại trước khi tạo phiếu nháp.",
       confirmErrorTitle: "Không xác nhận được yêu cầu xuất",
     },
 
@@ -1067,7 +1072,6 @@ export const MESSAGES_VI = {
         "MP4/MOV/WEBM, tối đa 2 video, mỗi video ≤ 300MB và ≤ 5 phút. Video được tải lên sau khi case bảo hành được tạo.",
       videoDrop: "Kéo thả video vào đây hoặc bấm để chọn",
       videoLimits: "Tối đa {max} video, mỗi video ≤ 300MB, ≤ 5 phút.",
-      scanTitle: "Quét mã máy bảo hành",
       defectDialogTitle: "Thêm bệnh lỗi",
       defectSaving: "Đang lưu...",
       defectSave: "Lưu",
@@ -1090,7 +1094,7 @@ export const MESSAGES_VI = {
       cancelled: "Đã hủy phiếu xuất linh kiện.",
       posted: "Đã Post phiếu xuất linh kiện — {count} movement trừ tồn.",
       colComponent: "Linh kiện (COMPONENT)",
-      colProgress: "Tiến độ quét",
+      colProgress: "Số lượng",
       colScanKind: "Kiểu quét",
       scanPerItem: "Quét từng linh kiện",
       scanPerBox: "Quét theo hộp",
@@ -1122,9 +1126,9 @@ export const MESSAGES_VI = {
       cancelledReason: " — {reason}",
       postedNote: "Đã xuất kho linh kiện thành công",
       linesEmpty: "Phiếu chưa có dòng linh kiện nào.",
-      scanSectionTitle: "Quét serial linh kiện hoặc box + số lượng",
-      scanQtyLabel: "Số lượng quét",
-      scanPlaceholder: "Quét Barcode/QR serial linh kiện hoặc box code",
+      scanSectionTitle: "Quét linh kiện hoặc hộp (box)",
+      scanQtyLabel: "Số lượng",
+      scanPlaceholder: "Quét Barcode/QR linh kiện hoặc hộp (box)",
       cancelTitle: "Hủy phiếu xuất linh kiện",
       cancelBack: "Quay lại",
       cancelConfirm: "Xác nhận hủy",
@@ -1197,9 +1201,6 @@ export const MESSAGES_VI = {
       fieldEstimated: "Dự kiến hoàn thành",
       fieldCompleted: "Hoàn tất sửa",
       fieldReturned: "Trả khách",
-      uploadKindLabel: "Nhãn cho tệp sắp tải lên",
-      uploadKindHelper:
-        "Đang gợi ý theo bước hiện tại của case; đổi nếu ảnh thuộc bước khác.",
       imagesTitle: "Ảnh đính kèm ({count})",
       imagesHint:
         "JPG/PNG/WEBP, mỗi ảnh ≤ 10MB. Bấm vào ảnh để xem lớn; di chuột vào ảnh để tải xuống hoặc xóa.",
@@ -3617,7 +3618,10 @@ export const MESSAGES_EN: MessageTree = {
       fieldRequestNo: "Issue request code",
       fieldAgency: "Dealer / recipient (optional)",
       fieldAgencyPlaceholder:
-        "Choose a dealer to auto-fill recipient / address",
+        "Type a dealer code or name to auto-fill recipient / address",
+      agencyNoMatch: "No dealer matches that keyword.",
+      agencyTypeToSearch: "Type a dealer code or name to search.",
+      agencyCreate: "+ Add new recipient",
       fieldRecipient: "Recipient / destination",
       fieldAddress: "Delivery address",
       fieldPhone: "Contact phone",
@@ -3919,7 +3923,6 @@ export const MESSAGES_EN: MessageTree = {
         "MP4/MOV/WEBM, up to 2 videos, each ≤ 300MB and ≤ 5 minutes. Videos upload after the warranty case is created.",
       videoDrop: "Drag and drop a video here, or click to choose",
       videoLimits: "Up to {max} videos, each ≤ 300MB, ≤ 5 minutes.",
-      scanTitle: "Scan the warranty device code",
       defectDialogTitle: "Add a symptom",
       defectSaving: "Saving...",
       defectSave: "Save",
@@ -3942,7 +3945,7 @@ export const MESSAGES_EN: MessageTree = {
       cancelled: "Component issue note cancelled.",
       posted: "Component issue note posted — {count} movements deducted stock.",
       colComponent: "Component (COMPONENT)",
-      colProgress: "Scan progress",
+      colProgress: "Quantity",
       colScanKind: "Scan mode",
       scanPerItem: "Scan each component",
       scanPerBox: "Scan by box",
@@ -4050,9 +4053,6 @@ export const MESSAGES_EN: MessageTree = {
       fieldEstimated: "Estimated completion",
       fieldCompleted: "Repair completed",
       fieldReturned: "Returned to customer",
-      uploadKindLabel: "Label for the file about to be uploaded",
-      uploadKindHelper:
-        "Suggested from the case's current step; change it if the image belongs to a different step.",
       imagesTitle: "Attached images ({count})",
       imagesHint:
         "JPG/PNG/WEBP, each ≤ 10MB. Click an image to enlarge it; hover to download or delete.",

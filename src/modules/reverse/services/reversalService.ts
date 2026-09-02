@@ -147,6 +147,12 @@ function normalizeReversibleLine(row: RawRecord): ReversibleMovementLine {
     dependency_guard: guard,
     can_reverse: Boolean(row.can_reverse ?? (!guard && reversibleQty > 0)),
     is_serial_tracked: Boolean(row.is_serial_tracked),
+    // item_scoped mới là cờ quyết định reverse theo Item (PRODUCT || serial). BE
+    // cũ chưa có field này thì fallback về is_serial_tracked để không vỡ.
+    item_scoped:
+      row.item_scoped !== undefined
+        ? Boolean(row.item_scoped)
+        : Boolean(row.is_serial_tracked),
     items: Array.isArray(row.items)
       ? (row.items as RawRecord[]).map(normalizeItemCandidate)
       : [],

@@ -103,8 +103,15 @@ export interface ReversibleMovementLine {
   /** BR-REV-03/04: lý do bị chặn khi còn dependency downstream. */
   dependency_guard?: string;
   can_reverse: boolean;
-  /** SKU serial-tracked: BE bắt buộc reverse theo item (quantity=1 + item_id). */
+  /** SKU serial-tracked: có số sê-ri thật (dùng để hiển thị nhãn item). */
   is_serial_tracked?: boolean;
+  /**
+   * Rule chuẩn item-scope: PRODUCT (mọi is_serial_tracked) hoặc COMPONENT serial →
+   * BE bắt reverse theo từng Item/máy (quantity=1 + item_id), hỗ trợ partial. FE
+   * dựa vào cờ này để bật ô chọn Item; COMPONENT non-serial (item_scoped=false)
+   * đảo theo quantity.
+   */
+  item_scoped?: boolean;
   items?: ReversibleItemCandidate[];
 }
 

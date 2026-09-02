@@ -80,10 +80,6 @@ import {
   AnimatedInlineItem,
 } from "@/shared/components/motion";
 
-const RETURN_ATTACHMENT_TYPES = Object.entries(
-  WARRANTY_ATTACHMENT_TYPE_LABELS,
-) as Array<[WarrantyAttachmentType, string]>;
-
 // KHÔNG nối request_id: đó là mã tra cứu kỹ thuật cho debug, người dùng đọc
 // không hiểu (xem ApiErrorAlert.tsx — request_id chỉ hiện ở dòng phụ có nhãn
 // rõ, không bao giờ nối thẳng vào câu chính như toast ở đây).
@@ -696,8 +692,6 @@ export function WarrantyDetailModal({
     return () => subscription.unsubscribe();
   }, [statusDefectForm]);
 
-  const [attachmentTypeOverride, setAttachmentTypeOverride] =
-    useState<WarrantyAttachmentType | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<WarrantyDetailTab>("overview");
@@ -723,13 +717,11 @@ export function WarrantyDetailModal({
     canManage && detail && detail.status !== "CANCELLED",
   );
 
-  // Nhãn tệp bám theo giai đoạn của case cho tới khi người dùng tự chọn khác:
-  // bớt một thao tác chọn lại mỗi lần tải ảnh ở đúng bước đang làm.
-  const attachmentType =
-    attachmentTypeOverride ??
-    (detail
-      ? (ATTACHMENT_TYPE_BY_STATUS[detail.status] ?? "INTAKE")
-      : "INTAKE");
+  // Nhãn tệp tự suy theo giai đoạn của case (không còn ô chọn tay): ảnh tải ở
+  // bước nào gần như luôn thuộc nhãn của bước đó.
+  const attachmentType = detail
+    ? (ATTACHMENT_TYPE_BY_STATUS[detail.status] ?? "INTAKE")
+    : "INTAKE";
   const isTerminal = detail
     ? WARRANTY_TERMINAL_STATUSES.includes(detail.status)
     : true;
@@ -737,6 +729,12 @@ export function WarrantyDetailModal({
     ? (WARRANTY_NEXT_STATUS[detail.status] ?? [])
     : [];
   const caseActive = detail ? !isTerminal : false;
+  // Xuất linh kiện chỉ trong giai đoạn đang xử lý: CHẶN khi case đã "Đã hoàn tất
+  // xử lý" (COMPLETED) hoặc "Đã trả khách" (RETURNED / RETURNED_TO_CUSTOMER —
+  // isTerminal). Dùng để vừa disable nút mở phiếu, vừa chặn tạo mới trong modal.
+  const canIssueComponents = Boolean(
+    detail && !isTerminal && detail.status !== "COMPLETED",
+  );
   // DEC-WAR-STATE-001: chan tai form thay vi de BE tra 422 sau moi lan submit.
   const diagnosisRequired = Boolean(
     detail &&
@@ -1159,13 +1157,13 @@ export function WarrantyDetailModal({
             </ActionButton>
             <ActionButton
               kind="repair"
-              disabled={!canIssue || !detail}
+              disabled={!canIssue || !detail || !canIssueComponents}
               onClick={() =>
                 detail &&
                 onOpenComponentIssue({
                   caseId,
                   caseCode: detail.case_code,
-                  caseActive,
+                  caseActive: canIssueComponents,
                   documentId: null,
                 })
               }
@@ -1522,27 +1520,6 @@ export function WarrantyDetailModal({
 
               {activeTab === "media" ? (
                 <Stack className="hn-fade-in-up" spacing={2.5}>
-                  {canUploadAttachment ? (
-                    <UiTextField
-                      select
-                      label={t("warranty.detail.uploadKindLabel")}
-                      value={attachmentType}
-                      onChange={(event) =>
-                        setAttachmentTypeOverride(
-                          event.target.value as WarrantyAttachmentType,
-                        )
-                      }
-                      helperText={t("warranty.detail.uploadKindHelper")}
-                      sx={{ maxWidth: 320 }}
-                    >
-                      {RETURN_ATTACHMENT_TYPES.map(([value, label]) => (
-                        <MenuItem key={value} value={value}>
-                          {label}
-                        </MenuItem>
-                      ))}
-                    </UiTextField>
-                  ) : null}
-
                   <Box>
                     <Box
                       sx={{ typography: "subtitle2", fontWeight: 700, mb: 0.5 }}
@@ -2051,13 +2028,16 @@ export function WarrantyDetailModal({
           }
         >
           <Grid container spacing={2}>
-            <Grid size={12}>
-              <UiAlert tone="info">
-                {canViewPii
-                  ? t("warranty.detail.editHintFull")
-                  : t("warranty.detail.editHintMasked")}
-              </UiAlert>
-            </Grid>
+            {/* Chỉ giữ nhắc quyền PII khi người dùng KHÔNG có warranty.pii.view
+                (giải thích vì sao vài ô bị khóa). Ghi chú "sửa không đổi tồn
+                kho / ghi nhật ký / tăng version" đã bỏ theo yêu cầu. */}
+            {!canViewPii ? (
+              <Grid size={12}>
+                <UiAlert tone="info">
+                  {t("warranty.detail.editHintMasked")}
+                </UiAlert>
+              </Grid>
+            ) : null}
             <Grid size={12}>
               <UiFormAutocomplete
                 control={defectForm.control}
