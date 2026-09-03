@@ -92,10 +92,17 @@ describe("Flow 06 report pagination/export alignment", () => {
   /** §13.10: cột và filter bắt buộc của từng báo cáo phải có mặt trên màn hình. */
   it("renders the mandatory §13.10 columns and filters", () => {
     const source = readReportsModule();
-    // RPT-INV-01: tồn kho + đối soát + cập nhật cuối
-    expect(source).toContain('dataIndex: "updated_at"');
-    expect(source).toContain('dataIndex: "ledger_qty"');
-    expect(source).toContain('dataIndex: "variance"');
+    /**
+     * RPT-INV-01: tồn kho + đối soát + cập nhật cuối.
+     *
+     * Từ bản port 1:1 mockup 8.2, màn RPT-02 không dựng bảng bằng `dataIndex`
+     * nữa mà đọc thẳng các trường đã chuẩn hoá trong `stock-reconcile-api.ts`,
+     * nên guard neo vào TÊN TRƯỜNG chứ không vào cách khai cột.
+     */
+    expect(source).toContain("balance_updated_at");
+    expect(source).toContain("ledger_qty");
+    expect(source).toContain("delta_qty");
+    expect(source).toContain("reconciliation_overall");
     // RPT-XNT-01 (WWHN-240): mỗi chiều tách gross · đã đảo · thuần
     for (const field of [
       "receipt_gross",

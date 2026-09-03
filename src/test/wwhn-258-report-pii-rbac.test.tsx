@@ -86,10 +86,10 @@ async function openWarrantyTab() {
   return screen.findAllByText("BH-0001");
 }
 
-/** Mở modal "Chi tiết" của dòng đầu tiên bằng nút Xem ở cột Thao tác. */
+/** Mở modal đối soát của dòng đầu tiên bằng nút ở cột Thao tác. */
 async function openRowDetail() {
   const viewButtons = await screen.findAllByRole("button", {
-    name: /Xem chi tiết dòng báo cáo/i,
+    name: /Đối soát/i,
   });
   fireEvent.click(viewButtons[0]);
   return screen.findByRole("dialog");

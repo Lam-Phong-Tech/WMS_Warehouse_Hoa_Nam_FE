@@ -1,4 +1,4 @@
-import TabPackingLabel from "@/modules/reports/operations/TabPackingLabel";
+import PackingLabelPrintReport from "@/modules/reports/packing-label/PackingLabelPrintReport";
 
 /** RPT-05 — route /reports/packing-label (trang riêng, không còn tab). */
 export default function PackingLabelReportPage() {
@@ -8,7 +8,7 @@ export default function PackingLabelReportPage() {
       data-mvp-screen="RPT-05"
       data-testid="wwhn-258-report-screen"
     >
-      <TabPackingLabel />
+      <PackingLabelPrintReport />
     </div>
   );
 }

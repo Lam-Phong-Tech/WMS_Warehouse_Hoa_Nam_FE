@@ -37,7 +37,12 @@ import { formatQuantity } from "@/shared/utils/format-number";
 import { getApiErrorMessage } from "@/shared/api/api-error";
 import { MultiSelectFilter } from "@/modules/reports/operations/report-table";
 import { usePeriodFilter } from "@/modules/reports/operations/report-period";
+import {
+  RPT_CONTROL_MOTION_SX,
+  RPT_SCROLL_MAX_HEIGHT,
+} from "@/modules/reports/operations/report-tokens";
 import { DrillDownDialog } from "@/modules/reports/operations/report-ui";
+import { useReportRefresh } from "@/modules/reports/operations/report-refresh";
 import type { ClientSortState } from "@/shared/components/data-display/useClientSort";
 import {
   DEFAULT_RECIPIENT_AGENCY_FILTERS,
@@ -193,7 +198,9 @@ const viewTabSx = (active: boolean) => ({
   fontSize: 13,
   fontWeight: 700,
   cursor: "pointer",
-  transition: "all 140ms cubic-bezier(0.4, 0, 0.2, 1)",
+  // `transition: all` sẽ animate cả thuộc tính layout khi tab đổi trạng thái
+  // (gây giật) — dùng bộ transition liệt kê tường minh dùng chung của module.
+  ...RPT_CONTROL_MOTION_SX,
   "&:hover": {
     bgcolor: active ? S.primaryDark : S.primarySoft,
     color: active ? S.onPrimary : S.primaryDark,
@@ -702,6 +709,11 @@ export default function RecipientAgencyReport() {
   const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [viewMode, setViewMode] = useState<"table" | "snapshot">("table");
 
+  const { refreshing, refresh } = useReportRefresh({
+    refetch: () => Promise.all([summaryQuery.refetch(), optionQuery.refetch()]),
+    readError: () => summaryQuery.error,
+  });
+
   const filters = useMemo(
     () => ({
       ...DEFAULT_RECIPIENT_AGENCY_FILTERS,
@@ -1071,10 +1083,8 @@ export default function RecipientAgencyReport() {
           <UiButton
             appearance="outlined"
             startIcon={<ReloadOutlined />}
-            onClick={() => {
-              void summaryQuery.refetch();
-              void optionQuery.refetch();
-            }}
+            loading={refreshing}
+            onClick={refresh}
             disabled={period.invalid || summaryQuery.isFetching}
           >
             Làm mới
@@ -2040,6 +2050,9 @@ export default function RecipientAgencyReport() {
                 }
                 emptyText="Không có nghiệp vụ xuất hoặc hoàn tác phù hợp với bộ lọc hiện tại."
                 mobileBreakpoint="sm"
+                // Bảng đổ trọn tập nhóm dữ liệu đã lọc: cuộn trong khung và
+                // ghim tiêu đề cột thay vì kéo trang thành một dải rất dài.
+                maxBodyHeight={RPT_SCROLL_MAX_HEIGHT}
                 renderRowActions={(row) => (
                   <Box
                     data-offline-drill-key={row.drill_key}

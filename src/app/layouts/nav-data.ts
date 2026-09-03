@@ -182,7 +182,7 @@ export const NAV_GROUPS: NavGroupData[] = [
       {
         screen: "RPT-01",
         path: ROUTES.REPORTS_INVENTORY_FLOW,
-        label: "Nhập – Xuất – Tồn & Chứng từ",
+        label: "Nhập – Xuất – Tồn",
         icon: "arrows-repeat",
       },
       {
@@ -224,7 +224,7 @@ export const NAV_GROUPS: NavGroupData[] = [
       {
         screen: "RPT-08",
         path: ROUTES.REPORTS_PENDING_EVIDENCE,
-        label: "Chứng từ cần bổ sung",
+        label: "Lịch sử nhập – xuất kho",
         icon: "paperclip-vertical",
       },
     ],
@@ -458,7 +458,7 @@ export const SCREEN_META: Record<
     description: "Danh sách phiếu để chọn tạo điều chỉnh tồn kho.",
   },
   "RPT-01": {
-    title: "Nhập – Xuất – Tồn & Chứng từ",
+    title: "Nhập – Xuất – Tồn",
     description:
       "Cân đối tồn theo kỳ, biến động theo ngày và toàn bộ chứng từ phát sinh.",
   },
@@ -487,8 +487,9 @@ export const SCREEN_META: Record<
     description: "Cơ cấu hàng đã xuất theo người nhận và loại người nhận.",
   },
   "RPT-08": {
-    title: "Chứng từ cần bổ sung",
-    description: "Danh sách chứng từ còn thiếu cần bổ sung.",
+    title: "Lịch sử nhập – xuất kho",
+    description:
+      "Lịch sử chứng từ nhập / xuất / hoàn tác đã ghi nhận theo posted_at.",
   },
   "AUDIT-01": {
     title: "Nhật ký hệ thống",

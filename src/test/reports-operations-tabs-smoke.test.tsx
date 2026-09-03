@@ -10,6 +10,8 @@
  * cũ (typecheck không bắt được lỗi runtime: đọc field `undefined` của payload,
  * chart mount với series rỗng, hay bộ lọc chạy trên mảng chưa tồn tại).
  */
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import type { ComponentType } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { screen } from "@testing-library/react";
@@ -343,28 +345,31 @@ const PAGES: Array<{
   {
     Page: InventoryFlowReportPage,
     path: ROUTES.REPORTS_INVENTORY_FLOW,
-    testId: "rpt-tab-inventory-flow",
-    // Tiêu đề trang 1 cũng chứa cụm "Lịch sử chứng từ" nên phải khớp CHÍNH
-    // XÁC tiêu đề mục 1.4, nếu không sẽ dính hai phần tử.
+    // Bản port 1:1 mockup 8.1 dựng trang nguyên khối, mốc là vỏ trang RPT-01.
+    testId: "wwhn-258-report-screen",
+    // Cụm "Lịch sử chứng từ" còn nằm ở nhãn khác trên trang nên phải khớp
+    // CHÍNH XÁC tiêu đề mục cuối, nếu không sẽ dính hai phần tử.
     heading: /^Lịch sử chứng từ$/,
   },
   {
     Page: StockReconcileReportPage,
     path: ROUTES.REPORTS_STOCK_RECONCILE,
-    testId: "rpt-tab-stock-reconcile",
-    heading: /Cảnh báo định mức tồn kho/,
+    // Bản port 1:1 mockup 8.2 dựng trang nguyên khối, mốc là vỏ trang RPT-02.
+    testId: "wwhn-258-report-screen",
+    heading: /Kiểm soát lượng khả dụng/,
   },
   {
     Page: TraceabilityReportPage,
     path: ROUTES.REPORTS_TRACEABILITY,
-    testId: "rpt-tab-traceability",
-    heading: /Vòng đời sản phẩm/,
+    testId: "movement-trace-report",
+    heading: /Sổ tồn kho biến động/,
   },
   {
     Page: ImportQualityReportPage,
     path: ROUTES.REPORTS_IMPORT_QUALITY,
     testId: "rpt-tab-import-quality",
-    heading: /Lịch sử Import\/Scan & Batch/,
+    // Bản port 1:1 mockup 8.5: nhật ký batch của ngữ cảnh Import/Migration.
+    heading: /Nhật ký Import\/Migration/,
   },
   {
     Page: PackingLabelReportPage,
@@ -375,8 +380,8 @@ const PAGES: Array<{
   {
     Page: WarrantyReportPage,
     path: ROUTES.REPORTS_WARRANTY,
-    testId: "rpt-tab-warranty",
-    heading: /Danh sách chi tiết hồ sơ bảo hành/,
+    testId: "report-07-warranty-components",
+    heading: /Hồ sơ bảo hành trong kỳ/,
   },
   {
     Page: RecipientReportPage,
@@ -387,8 +392,11 @@ const PAGES: Array<{
   {
     Page: PendingEvidenceReportPage,
     path: ROUTES.REPORTS_PENDING_EVIDENCE,
-    testId: "rpt-tab-pending-evidence",
-    heading: /Danh sách chứng từ cần bổ sung/,
+    // Bản port 1:1 mockup 8.3 dựng trang nguyên khối, mốc là vỏ trang RPT-08.
+    testId: "wwhn-258-report-screen",
+    // "Lịch sử chứng từ đã ghi nhận" xuất hiện hai lần (tiêu đề mục + tiêu đề
+    // thẻ bảng) nên neo vào tiêu đề mục tổng quan cho duy nhất.
+    heading: /^Tổng quan lịch sử nhập – xuất$/,
   },
 ];
 
@@ -403,7 +411,7 @@ describe("Báo cáo vận hành · 8 trang render được với payload thật"
     vi.mocked(http.getPage).mockImplementation(async (url: unknown) => {
       const key = String(url);
       return {
-        data: (PAGE_PAYLOAD[key] ?? []) as never,
+        data: (PAGE_PAYLOAD[key] ?? PAYLOAD[key] ?? []) as never,
         meta: { current_page: 1, last_page: 1, total: 1 },
       };
     });
@@ -426,4 +434,41 @@ describe("Báo cáo vận hành · 8 trang render được với payload thật"
       expect(await screen.findByText(heading)).toBeInTheDocument();
     },
   );
+});
+
+/**
+ * Cả 8 màn Báo cáo đều TỰ dựng header riêng (eyebrow "BÁO CÁO VẬN HÀNH ·
+ * RPT-xx" + tiêu đề + mô tả). `MainLayout` chỉ bỏ `AppPageHeader` cho những
+ * route có tên trong `ROUTES_WITH_OWN_HEADER`; route nào bị bỏ sót khỏi danh
+ * sách đó sẽ hiện HAI tiêu đề chồng nhau — lỗi đã gặp thật với RPT-04
+ * (/reports/import-quality) và RPT-06 (/reports/warranty).
+ *
+ * Guard này đọc SOURCE của layout thay vì mount cả shell: danh sách là một hằng
+ * số cục bộ (không export) và điều cần chốt là "không route báo cáo nào rơi
+ * khỏi danh sách", chứ không phải cách layout dựng cây component.
+ */
+describe("MainLayout · 8 route Báo cáo đều tự dựng header", () => {
+  it("mọi route /reports/* đều nằm trong ROUTES_WITH_OWN_HEADER", () => {
+    const source = readFileSync(
+      resolve(process.cwd(), "src/app/layouts/MainLayout.tsx"),
+      "utf8",
+    );
+    const block = /const ROUTES_WITH_OWN_HEADER[^=]*=\s*\[([^\]]*)\]/u.exec(
+      source,
+    );
+    expect(block).not.toBeNull();
+    const listed = block![1];
+
+    const reportRouteKeys = Object.keys(ROUTES).filter(
+      (key) =>
+        key.startsWith("REPORTS_") &&
+        String(ROUTES[key as keyof typeof ROUTES]).startsWith("/reports/"),
+    );
+    expect(reportRouteKeys).toHaveLength(8);
+
+    const missing = reportRouteKeys.filter(
+      (key) => !listed.includes(`ROUTES.${key}`),
+    );
+    expect(missing).toEqual([]);
+  });
 });

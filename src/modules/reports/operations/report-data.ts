@@ -44,6 +44,12 @@ export type SkuCatalogEntry = {
   sku_code: string;
   sku_name: string;
   sku_type: "PRODUCT" | "COMPONENT";
+  /**
+   * Đơn vị tính của SKU (`products.unit`) — cột "Đơn vị" của RPT-01. Không
+   * endpoint `/reports/*` nào trả trường này nên danh mục là nguồn duy nhất;
+   * rỗng khi master data chưa khai (màn hiển thị `EMPTY_TEXT`).
+   */
+  unit: string;
   category_id: string | null;
   min_stock: number | null;
   max_stock: number | null;
@@ -71,6 +77,7 @@ async function fetchAllSkus(): Promise<SkuCatalogEntry[]> {
           text(row.sku_type, "PRODUCT") === "COMPONENT"
             ? "COMPONENT"
             : "PRODUCT",
+        unit: text(row.unit ?? row.uom, ""),
         category_id: row.category_id ? String(row.category_id) : null,
         min_stock:
           row.min_stock === null || row.min_stock === undefined

@@ -1,4 +1,4 @@
-import TabImportQuality from "@/modules/reports/operations/TabImportQuality";
+import ImportMatchReport from "@/modules/reports/import-match/ImportMatchReport";
 
 /** RPT-04 — route /reports/import-quality (trang riêng, không còn tab). */
 export default function ImportQualityReportPage() {
@@ -8,7 +8,7 @@ export default function ImportQualityReportPage() {
       data-mvp-screen="RPT-04"
       data-testid="wwhn-258-report-screen"
     >
-      <TabImportQuality />
+      <ImportMatchReport />
     </div>
   );
 }

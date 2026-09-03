@@ -96,7 +96,10 @@ export const API_ENDPOINTS = {
   OUTBOUND_REQUEST_IMPORT_CONFIRM: "/outbound-request-imports/:id/confirm",
 
   LABEL_SNAPSHOTS: "/label-snapshots",
+  LABEL_SNAPSHOT: "/label-snapshots/:id",
   LABEL_SNAPSHOT_APPLY: "/label-snapshots/:id/apply",
+  /** Nhật ký in nhãn — MỘT dòng cho MỖI lần Print/Reprint (ERD bảng 44). */
+  LABEL_PRINT_EVENTS: "/label-print-events",
   PRINTER_CONFIGS: "/printer-configs",
 
   // Annex C listPutawayTasks / createPutawayTask / confirmPutawayTask /

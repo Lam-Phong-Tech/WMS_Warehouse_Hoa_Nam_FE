@@ -36,12 +36,36 @@ import { useNavigate } from "react-router-dom";
 
 /**
  * Màn TỰ dựng header riêng nên shell không render `AppPageHeader` — nếu không
- * sẽ có hai tiêu đề chồng nhau. Cả hai đều là bản port 1:1 từ mockup đã chốt
- * (Tổng quan vận hành và RPT-07), header của chúng mang thêm chip/nút riêng.
+ * sẽ có hai tiêu đề chồng nhau. Tất cả đều là bản port 1:1 từ mockup đã chốt
+ * (Tổng quan vận hành + TRỌN BỘ 8 màn Báo cáo), header của chúng mang thêm
+ * eyebrow "BÁO CÁO VẬN HÀNH · RPT-xx", chip và nút riêng.
+ *
+ * DANH SÁCH NÀY PHẢI ĐỦ CẢ 8 ROUTE `/reports/*` — liệt kê đúng thứ tự sidebar
+ * để soát cho dễ. Thiếu route nào thì chính route đó hiện HAI tiêu đề chồng
+ * nhau (đã xảy ra với RPT-04 và RPT-06).
  */
 const ROUTES_WITH_OWN_HEADER: string[] = [
   ROUTES.DASHBOARD,
+  ROUTES.REPORTS_INVENTORY_FLOW,
+  ROUTES.REPORTS_STOCK_RECONCILE,
+  ROUTES.REPORTS_TRACEABILITY,
+  ROUTES.REPORTS_IMPORT_QUALITY,
+  ROUTES.REPORTS_PACKING_LABEL,
+  ROUTES.REPORTS_WARRANTY,
   ROUTES.REPORTS_RECIPIENT,
+  ROUTES.REPORTS_PENDING_EVIDENCE,
+];
+
+/**
+ * Màn dựng NGUYÊN KHỐI theo mockup: tự có `page-wrap` (padding 20/24/48) và
+ * breadcrumb riêng. Bọc thêm padding + breadcrumb của shell sẽ làm lệch số đo
+ * mockup và hiện breadcrumb hai lần — nên các trang này chạy full-bleed.
+ */
+const ROUTES_FULL_BLEED: string[] = [
+  ROUTES.DASHBOARD,
+  ROUTES.REPORTS_STOCK_RECONCILE,
+  ROUTES.REPORTS_INVENTORY_FLOW,
+  ROUTES.REPORTS_PENDING_EVIDENCE,
 ];
 
 const SIDEBAR_COLLAPSED_STORAGE_KEY = "hn-wms-sidebar-collapsed";
@@ -98,12 +122,7 @@ export function MainLayout() {
   const expandSidebar = () => setCollapsed(false);
 
   const requestedScreen = new URLSearchParams(location.search).get("screen");
-  /**
-   * Dashboard tự dựng nguyên khối theo demo UI/UX (page-wrap + breadcrumb riêng,
-   * padding 20/24/48 của demo). Bọc thêm padding và breadcrumb của shell sẽ làm
-   * lệch số đo demo và hiện breadcrumb hai lần — nên trang này chạy full-bleed.
-   */
-  const isDashboard = location.pathname === ROUTES.DASHBOARD;
+  const isFullBleed = ROUTES_FULL_BLEED.includes(location.pathname);
   const ownsHeader = ROUTES_WITH_OWN_HEADER.includes(location.pathname);
   const trail = getBreadcrumbTrail(location.pathname);
   const navLabel = useNavLabel();
@@ -148,12 +167,12 @@ export function MainLayout() {
       >
         <Box
           sx={
-            isDashboard
+            isFullBleed
               ? { display: "grid" }
               : { padding: `${SPACING.xl}px`, display: "grid", gap: 2 }
           }
         >
-          {isDashboard ? null : (
+          {isFullBleed ? null : (
             <UiBreadcrumb
               items={trail.map((entry) => ({
                 label: entry.i18nKey

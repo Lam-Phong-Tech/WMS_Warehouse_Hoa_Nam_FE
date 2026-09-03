@@ -1,14 +1,17 @@
-import TabInventoryFlow from "@/modules/reports/operations/TabInventoryFlow";
+import InventoryFlowXntReport from "@/modules/reports/inventory-flow/InventoryFlowXntReport";
 
-/** RPT-01 — route /reports/inventory-flow (trang riêng, không còn tab). */
+/**
+ * RPT-01 — route /reports/inventory-flow.
+ *
+ * Trang dựng nguyên khối theo mockup UI/UX đã chốt 8.1 (breadcrumb +
+ * page-header + padding riêng của mockup), nên KHÔNG bọc trong
+ * `hn-mvp-source-screen`: lớp đó áp style riêng cho `.card` / `table` / `.chip`
+ * và sẽ đè lên bản port. `data-testid` giữ nguyên làm mốc cho bộ E2E báo cáo.
+ */
 export default function InventoryFlowReportPage() {
   return (
-    <div
-      className="hn-mvp-source-screen"
-      data-mvp-screen="RPT-01"
-      data-testid="wwhn-258-report-screen"
-    >
-      <TabInventoryFlow />
+    <div data-testid="wwhn-258-report-screen">
+      <InventoryFlowXntReport />
     </div>
   );
 }

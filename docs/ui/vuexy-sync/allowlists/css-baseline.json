@@ -1,7 +1,7 @@
 {
   "meta": {
     "owner": "FE1 Team",
-    "reason": "Hiện trạng CSS cục bộ + !important sau Part 2. Ratchet: !important chỉ được GIẢM; không thêm CSS import ngoài entrypoint.",
+    "reason": "Hiện trạng CSS cục bộ + !important sau Part 2. Ratchet: !important chỉ được GIẢM; không thêm CSS import ngoài entrypoint. · 2026-09-03: thêm stock-reconcile-report.css — port 1:1 demo UI/UX 8.2 (RPT-02), cùng cơ chế CSS cục bộ như dashboard-overview.css, không dùng !important nào. · 2026-09-03: thêm inventory-flow-report.css — port 1:1 mockup UI/UX 8.1 (RPT-01), cùng cơ chế, không dùng !important nào. · 2026-09-03: thêm io-history-report.css — port 1:1 mockup UI/UX 8.3 (RPT-IO-01 trên route RPT-08), cùng cơ chế CSS cục bộ, không dùng cờ ưu tiên cascade nào.",
     "deadline": "Part 3-4 — rút các lớp wireframe/exact/normalize theo 09-remediation §Phase C",
     "generated_by": "scripts/check-ui-styles.mjs --update-baseline"
   },
@@ -14,6 +14,15 @@
     ],
     "src/app/layouts/topbar/AppTopbar.tsx": [
       "./app-topbar.css"
+    ],
+    "src/modules/reports/stock-reconcile/StockReconcileReport.tsx": [
+      "./stock-reconcile-report.css"
+    ],
+    "src/modules/reports/inventory-flow/InventoryFlowXntReport.tsx": [
+      "./inventory-flow-report.css"
+    ],
+    "src/modules/reports/io-history/IoHistoryReport.tsx": [
+      "./io-history-report.css"
     ]
   },
   "important": {

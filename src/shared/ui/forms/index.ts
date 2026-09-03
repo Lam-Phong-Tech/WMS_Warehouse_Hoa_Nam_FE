@@ -32,3 +32,7 @@ export {
   UiVuexyDateRangePicker,
   type UiVuexyDateRangePickerProps,
 } from "./UiVuexyDateRangePicker";
+export {
+  UiVuexyDateField,
+  type UiVuexyDateFieldProps,
+} from "./UiVuexyDateField";

@@ -1,0 +1,1538 @@
+/**
+ * RPT-IO-01 "Báo cáo Lịch sử nhập – xuất kho" — port 1:1 CSS của mockup UI/UX
+ * đã chốt `8.3.WMS_Hoa_Nam_Bao_Cao_Lich_Su_Nhap_Xuat.html`.
+ *
+ * Mockup nạp BỐN lớp style theo đúng thứ tự sau (cascade, không phải độ đặc
+ * hiệu, quyết định giá trị cuối):
+ *   1. `<style>` khối nền của trang (dòng 8 của mockup);
+ *   2. `<style>` khối ghi đè riêng 8.3 (dòng 11–50);
+ *   3. `Other/8.3.../vuexy-baseline.css` (token + shell + .card/.chip/.kpi…);
+ *   4. `Other/8.3.../report-8.3.css` (khối `.report-03 …`, thắng sau cùng).
+ * File này GỘP SẴN bốn lớp đó thành giá trị cuối cùng của từng selector, giữ
+ * nguyên số đo; mỗi chỗ có ghi chú khi lớp sau đè lớp trước.
+ *
+ * PHẠM VI: mọi selector nằm dưới `.hn-rpt-io` nên không rò sang màn khác. Đây
+ * là CSS CỤC BỘ (khai trong docs/ui/vuexy-sync/allowlists/css-baseline.json).
+ *
+ * MÀU: dùng token `--wms-*` ở mọi chỗ mockup dùng đúng bảng màu Vuexy; các sắc
+ * xám/sắc chữ phụ mockup tự đặt mà bảng token CHƯA có được gom vào khối
+ * `--hnio-*` ngay đầu file.
+ *
+ * KHÔNG dùng cờ ưu tiên cascade nào (guard `yarn ui:styles` ratchet). Ba chỗ
+ * mockup ép `grid-column` bằng cờ đó (`.filtergrid > .field`, `.search`) được
+ * thay bằng cách khai lại với ĐÚNG độ đặc hiệu `:nth-child(n)` và đặt sau, cho
+ * kết quả hiển thị y hệt.
+ *
+ * KHÔNG chép lại: `.app/.side/.brand/.nav/.top/.avatar` (vỏ shell — dự án đã có
+ * sidebar/topbar thật), `.hidden` (dùng render có điều kiện của React thay cho
+ * lớp ẩn có cờ ưu tiên cascade), `.toast` (dự án dùng toast dùng chung),
+ * `.facts/.fact` (8.3 dựng hộp thoại bằng `.detail-*`, hai lớp kia không được
+ * DOM nào tham chiếu) và các luật bị lớp sau vô hiệu hoàn toàn (vd `.picker`
+ * trong @media 560 đã bị `.report-03 .picker` đè).
+ */
+
+.hn-rpt-io {
+  /* Bảng màu mockup — phần đã có token */
+  --ink: var(--wms-text-strong);
+  --muted: var(--wms-text-medium);
+  --line: var(--wms-border);
+  --primary: var(--wms-primary);
+  --primary-dark: var(--wms-primary-dark);
+  --primary-soft: var(--wms-primary-soft);
+  --green: var(--wms-success);
+  --green-soft: var(--wms-success-soft);
+  --amber: var(--wms-warning);
+  --amber-soft: var(--wms-warning-soft);
+  --red: var(--wms-error);
+  --red-soft: var(--wms-error-soft);
+  --cyan: var(--wms-info);
+  --blue-soft: var(--wms-info-soft);
+  --surface: var(--wms-bg-surface);
+  --shadow: var(--wms-shadow-card);
+  --radius: var(--wms-radius-card);
+
+  /* Sắc riêng của mockup, chưa có token tương ứng */
+  --hnio-surface-muted: #faf9fc;
+  --hnio-chip-info-fg: #155faf;
+  --hnio-ok-fg: #168c4c;
+  --hnio-warn-fg: #c46d16;
+  --hnio-info-fg: #007b8c;
+  --hnio-pdf-fg: #d7373c;
+  --hnio-focus: #2168d4;
+  --hnio-card-line: rgba(47, 43, 61, 0.06);
+  --hnio-segment-bg: rgba(47, 43, 61, 0.06);
+  --hnio-segment-shadow: 0 2px 6px rgba(47, 43, 61, 0.11);
+  --hnio-control-line: rgba(47, 43, 61, 0.22);
+  --hnio-grid-line: rgba(47, 43, 61, 0.09);
+  --hnio-row-stripe: rgba(47, 43, 61, 0.014);
+  --hnio-row-hover: rgba(115, 103, 240, 0.05);
+  --hnio-kpi-hover-shadow: 0 8px 24px rgba(47, 43, 61, 0.16);
+  --hnio-floating-shadow: 0 12px 30px rgba(47, 43, 61, 0.18);
+  --hnio-menu-shadow: 0 14px 36px rgba(47, 43, 61, 0.18);
+  --hnio-overlay: rgba(47, 43, 61, 0.45);
+  --hnio-modal-line: rgba(47, 43, 61, 0.08);
+  --hnio-modal-shadow: 0 20px 64px rgba(47, 43, 61, 0.28);
+  --hnio-ok-soft: rgba(40, 199, 111, 0.13);
+  --hnio-warn-soft: rgba(255, 159, 67, 0.16);
+  --hnio-info-soft: rgba(0, 186, 209, 0.13);
+  --hnio-excel-soft: rgba(40, 199, 111, 0.12);
+  --hnio-pdf-soft: rgba(255, 76, 81, 0.11);
+  --hnio-option-hover: rgba(115, 103, 240, 0.1);
+  --hnio-day-hover: rgba(115, 103, 240, 0.12);
+  --hnio-detail-line: rgba(115, 103, 240, 0.2);
+  --hnio-detail-border: rgba(115, 103, 240, 0.22);
+  --hnio-detail-bg: linear-gradient(
+    135deg,
+    rgba(115, 103, 240, 0.1),
+    rgba(0, 186, 209, 0.06)
+  );
+  --hnio-detail-fact-line: rgba(47, 43, 61, 0.08);
+  --hnio-recon-ok-bg: rgba(40, 199, 111, 0.07);
+  --hnio-hint-bg: rgba(0, 186, 209, 0.07);
+
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 22px;
+  font-weight: 400;
+}
+
+.hn-rpt-io *,
+.hn-rpt-io *::before,
+.hn-rpt-io *::after {
+  box-sizing: border-box;
+}
+
+.hn-rpt-io button,
+.hn-rpt-io input {
+  font: inherit;
+}
+
+/* vuexy-baseline: mọi nút/ô nhập cao tối thiểu 40px (đè `height` nhỏ hơn). */
+.hn-rpt-io button,
+.hn-rpt-io input[type="date"] {
+  min-height: 40px;
+}
+
+.hn-rpt-io button {
+  cursor: pointer;
+}
+
+.hn-rpt-io button:focus-visible,
+.hn-rpt-io input:focus-visible,
+.hn-rpt-io [tabindex]:focus-visible {
+  outline: 3px solid var(--hnio-focus);
+  outline-offset: 2px;
+}
+
+.hn-rpt-io h1,
+.hn-rpt-io h2,
+.hn-rpt-io h3,
+.hn-rpt-io p {
+  margin-top: 0;
+}
+
+.hn-rpt-io h2,
+.hn-rpt-io h3 {
+  margin-bottom: 0;
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 600;
+}
+
+/* vuexy-baseline: mọi hình nằm trong một phần tử [data-icon] đều kéo đầy ô. */
+.hn-rpt-io [data-icon] {
+  display: inline-grid;
+  place-items: center;
+}
+
+.hn-rpt-io [data-icon] > svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.65;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.hn-rpt-io .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── Vỏ trang ───────────────────────────────────────────────────────────── */
+/* `.content` (max-width 1500) bị `.report-03 .content.page-wrap` gỡ trần. */
+.hn-rpt-io .page-wrap {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 20px 24px 48px;
+}
+
+.hn-rpt-io .breadcrumb {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.hn-rpt-io .breadcrumb strong {
+  color: var(--primary-dark);
+}
+
+/* `.report-03` đổi header từ flex-có-gạch-chân sang khối phẳng. */
+.hn-rpt-io .reporthead {
+  display: block;
+  margin-bottom: 18px;
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.hn-rpt-io .headtop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  width: 100%;
+}
+
+.hn-rpt-io .eyebrow {
+  display: inline-block;
+  color: var(--primary-dark);
+  font-size: 12.5px;
+  line-height: 18px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hn-rpt-io .reporthead h1 {
+  margin: 4px 0;
+  font-size: 24px;
+  line-height: 38px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.hn-rpt-io .reporthead p {
+  max-width: 760px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 22px;
+}
+
+.hn-rpt-io .chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-self: flex-start;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.hn-rpt-io .meta {
+  display: flex;
+  flex-basis: 100%;
+  flex-wrap: wrap;
+  gap: 8px 22px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 18px;
+}
+
+.hn-rpt-io .meta b {
+  color: var(--ink);
+}
+
+.hn-rpt-io .truncate {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Chip / badge ───────────────────────────────────────────────────────── */
+.hn-rpt-io .chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 4px 8px;
+  border-radius: var(--radius);
+  font-size: 12.5px;
+  line-height: 18px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* `.type` KHÔNG mang lớp `.chip` nên giữ nguyên dạng viên thuốc của khối nền. */
+.hn-rpt-io .type {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 3px 8px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.hn-rpt-io .chip-success {
+  color: var(--green);
+  background: var(--green-soft);
+}
+
+.hn-rpt-io .chip-info {
+  color: var(--hnio-chip-info-fg);
+  background: var(--blue-soft);
+}
+
+.hn-rpt-io .info {
+  color: var(--hnio-info-fg);
+  background: var(--hnio-info-soft);
+}
+
+.hn-rpt-io .ok {
+  color: var(--hnio-ok-fg);
+  background: var(--hnio-ok-soft);
+}
+
+.hn-rpt-io .warn {
+  color: var(--hnio-warn-fg);
+  background: var(--hnio-warn-soft);
+}
+
+/* ── Thẻ (card) ─────────────────────────────────────────────────────────── */
+.hn-rpt-io .card {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--hnio-card-line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.hn-rpt-io .cardhead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 62px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.hn-rpt-io .cardhead-l {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.hn-rpt-io .headicon {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius);
+  color: var(--primary-dark);
+  background: var(--primary-soft);
+  font-size: 16px;
+}
+
+/* Mockup đặt sắc lam cho hai `.headicon` bằng style nội tuyến. */
+.hn-rpt-io .headicon.is-info {
+  color: var(--cyan);
+  background: var(--hnio-info-soft);
+}
+
+.hn-rpt-io .headicon svg {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.65;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.hn-rpt-io .title {
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 21px;
+  font-weight: 600;
+}
+
+.hn-rpt-io .note {
+  overflow: hidden;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 18px;
+  font-weight: 400;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Bộ lọc ─────────────────────────────────────────────────────────────── */
+.hn-rpt-io .filters {
+  position: relative;
+  display: block;
+  margin-bottom: 20px;
+  padding: 16px 20px;
+  overflow: visible;
+  border: 1px solid var(--hnio-card-line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+/* `.report-03` ẩn hẳn đầu thẻ bộ lọc (chỉ còn lưới ô lọc + hàng nút). */
+.hn-rpt-io .filters > .cardhead {
+  display: none;
+}
+
+.hn-rpt-io .filtergrid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 14px 16px;
+  padding: 0;
+}
+
+.hn-rpt-io .filtergrid > .field:nth-child(1) {
+  grid-column: span 5;
+}
+
+.hn-rpt-io .filtergrid > .field:nth-child(2) {
+  grid-column: span 4;
+}
+
+.hn-rpt-io .filtergrid > .field:nth-child(3) {
+  grid-column: span 3;
+}
+
+.hn-rpt-io .filtergrid > .field:nth-child(4) {
+  grid-column: span 7;
+}
+
+.hn-rpt-io .field {
+  min-width: 0;
+}
+
+.hn-rpt-io .field label {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+}
+
+.hn-rpt-io .periods {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0;
+  width: fit-content;
+  max-width: 100%;
+  padding: 3px;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--hnio-segment-bg);
+}
+
+.hn-rpt-io .period {
+  min-width: 58px;
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 4px;
+  color: var(--muted);
+  background: transparent;
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.hn-rpt-io .period.active {
+  color: var(--primary-dark);
+  background: var(--surface);
+  box-shadow: var(--hnio-segment-shadow);
+}
+
+.hn-rpt-io .control {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 40px;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--hnio-control-line);
+  border-radius: var(--radius);
+  color: var(--ink);
+  background: var(--surface);
+  font-size: 13px;
+  line-height: 20px;
+  text-align: left;
+}
+
+.hn-rpt-io .control:hover,
+.hn-rpt-io .control:focus-within {
+  border-color: var(--primary);
+}
+
+.hn-rpt-io .down {
+  margin-left: auto;
+  color: var(--muted);
+}
+
+.hn-rpt-io .rangewrap,
+.hn-rpt-io .selectwrap {
+  position: relative;
+}
+
+.hn-rpt-io .range {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 18px minmax(0, 1fr);
+  align-items: center;
+  gap: 4px;
+}
+
+.hn-rpt-io .range button {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hn-rpt-io .range i {
+  color: var(--muted);
+  text-align: center;
+}
+
+.hn-rpt-io .search input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+}
+
+/* Mockup đặt 17px cho icon kính lúp trong ô "Tìm nhanh" bằng style nội tuyến. */
+.hn-rpt-io .control > [data-icon] {
+  flex: 0 0 auto;
+  width: 17px;
+  height: 17px;
+  margin-right: 8px;
+}
+
+/* ── Lớp nổi: menu loại chứng từ + lịch chọn khoảng ngày ────────────────── */
+.hn-rpt-io .menu {
+  position: absolute;
+  z-index: 20;
+  min-width: 100%;
+  margin-top: 5px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
+  box-shadow: var(--hnio-menu-shadow);
+}
+
+.hn-rpt-io .picker {
+  position: absolute;
+  right: auto;
+  left: 0;
+  z-index: 20;
+  min-width: 320px;
+  margin-top: 5px;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--hnio-floating-shadow);
+}
+
+.hn-rpt-io .opt {
+  display: block;
+  width: 100%;
+  min-height: 35px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 5px;
+  color: var(--ink);
+  background: transparent;
+  text-align: left;
+}
+
+.hn-rpt-io .opt:hover,
+.hn-rpt-io .opt.active {
+  color: var(--primary-dark);
+  background: var(--hnio-option-hover);
+}
+
+.hn-rpt-io .pickhead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0;
+  padding: 14px 16px 11px;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 800;
+}
+
+/* Hai nút ‹ › của mockup là nút chết; bản này gắn hành vi đổi tháng thật. */
+.hn-rpt-io .picknav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--muted);
+}
+
+.hn-rpt-io .picknav button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  min-height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  color: inherit;
+  background: transparent;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.hn-rpt-io .picknav button:hover:not(:disabled) {
+  color: var(--primary-dark);
+  background: var(--hnio-option-hover);
+}
+
+.hn-rpt-io .picknav button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.hn-rpt-io .pickstate {
+  margin: 10px 16px 8px;
+  color: var(--primary-dark);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.hn-rpt-io .cal {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+  padding: 0 14px 10px;
+}
+
+.hn-rpt-io .cal span {
+  display: grid;
+  place-items: center;
+  height: 23px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.hn-rpt-io .day {
+  display: grid;
+  place-items: center;
+  height: 32px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.hn-rpt-io .day:hover:not(:disabled),
+.hn-rpt-io .day.between {
+  background: var(--hnio-day-hover);
+}
+
+.hn-rpt-io .day.selected {
+  border-radius: 50%;
+  color: var(--wms-on-primary);
+  background: var(--primary);
+}
+
+.hn-rpt-io .day:disabled {
+  cursor: not-allowed;
+  color: var(--wms-text-disabled);
+}
+
+/* Ô đệm của các ngày thuộc tháng khác — mockup vẽ lưới chạy thẳng từ ngày 1. */
+.hn-rpt-io .day-pad {
+  height: 32px;
+}
+
+.hn-rpt-io .pickfoot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin: 0;
+  padding: 12px 14px;
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+}
+
+/* ── Hàng nút của bộ lọc ────────────────────────────────────────────────── */
+/*
+ * `.report-03` neo hàng nút vào góc dưới-phải của thẻ bộ lọc; bề rộng bằng
+ * đúng 5/12 lưới cộng khoảng đệm, để nó nằm gọn cạnh ô "Tìm nhanh".
+ */
+.hn-rpt-io .actions {
+  position: absolute;
+  right: 20px;
+  bottom: 16px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  width: calc((100% - 40px - 176px) * 5 / 12 + 64px);
+  padding: 0;
+  border-top: 0;
+}
+
+.hn-rpt-io .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  color: var(--ink);
+  background: var(--surface);
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.hn-rpt-io .btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.hn-rpt-io .btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.hn-rpt-io .btn [data-icon] {
+  display: inline-grid;
+  place-items: center;
+  width: 17px;
+  height: 17px;
+}
+
+.hn-rpt-io .btn [data-icon] svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.65;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.hn-rpt-io .secondary {
+  border-color: var(--line);
+  color: var(--muted);
+}
+
+.hn-rpt-io .excel {
+  color: var(--hnio-ok-fg);
+  background: var(--hnio-excel-soft);
+}
+
+.hn-rpt-io .pdf {
+  color: var(--hnio-pdf-fg);
+  background: var(--hnio-pdf-soft);
+}
+
+.hn-rpt-io .primary {
+  color: var(--wms-on-primary);
+  background: var(--primary);
+}
+
+/* ── Khối mục (section) ─────────────────────────────────────────────────── */
+.hn-rpt-io .report-section-block {
+  margin-bottom: 20px;
+}
+
+.hn-rpt-io .section-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 20px 0 12px;
+}
+
+.hn-rpt-io .section-heading > div {
+  display: grid;
+  gap: 4px;
+}
+
+.hn-rpt-io .section-meta {
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 18px;
+  text-align: right;
+}
+
+/* ── Bốn thẻ KPI ────────────────────────────────────────────────────────── */
+.hn-rpt-io .kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin: 0 0 20px;
+}
+
+.hn-rpt-io .report-section-block > .kpis {
+  margin-bottom: 0;
+}
+
+.hn-rpt-io .kpi {
+  position: relative;
+  display: block;
+  min-height: 156px;
+  padding: 20px;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.hn-rpt-io .kpi:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--hnio-kpi-hover-shadow);
+}
+
+/* Bốn sắc thẻ KPI — mockup truyền qua `--tone` / `--soft` nội tuyến. */
+.hn-rpt-io .kpi[data-tone="inbound"] {
+  --kpi-tone: var(--cyan);
+  --kpi-soft: rgba(0, 186, 209, 0.12);
+}
+
+.hn-rpt-io .kpi[data-tone="outbound"] {
+  --kpi-tone: var(--primary);
+  --kpi-soft: rgba(115, 103, 240, 0.12);
+}
+
+.hn-rpt-io .kpi[data-tone="reversal"] {
+  --kpi-tone: var(--amber);
+  --kpi-soft: var(--hnio-warn-soft);
+}
+
+.hn-rpt-io .kpi[data-tone="net"] {
+  --kpi-tone: var(--green);
+  --kpi-soft: var(--hnio-ok-soft);
+}
+
+.hn-rpt-io .kpitop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+  text-transform: none;
+}
+
+.hn-rpt-io .kpilabel {
+  min-height: 22px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+  text-transform: none;
+}
+
+.hn-rpt-io .kpiicon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius);
+  color: var(--kpi-tone);
+  background: var(--kpi-soft);
+  font-size: 18px;
+}
+
+.hn-rpt-io .kpiicon svg {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.hn-rpt-io .kpivalue {
+  margin: 10px 0 5px;
+  color: var(--ink);
+  font-size: 30px;
+  line-height: 38px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.hn-rpt-io .kpinote {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 18px;
+}
+
+/* ── Biểu đồ đường theo ngày ────────────────────────────────────────────── */
+.hn-rpt-io .chart {
+  margin-bottom: 20px;
+}
+
+.hn-rpt-io .report-section-block > .chart {
+  margin-bottom: 0;
+}
+
+.hn-rpt-io .chartbody {
+  min-width: 0;
+  padding: 14px 24px 10px;
+}
+
+.hn-rpt-io .legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 18px;
+}
+
+.hn-rpt-io .legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hn-rpt-io .legend i {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin: 0;
+  border-radius: 50%;
+  background: var(--series-color);
+}
+
+.hn-rpt-io .chartsvg {
+  display: block;
+  width: 100%;
+  max-width: none;
+  height: 245px;
+  min-height: 245px;
+  overflow: visible;
+}
+
+.hn-rpt-io .chartsvg text {
+  fill: var(--muted);
+  font-family: inherit;
+  font-size: 11px;
+}
+
+.hn-rpt-io .chart-grid {
+  stroke: var(--hnio-grid-line);
+}
+
+.hn-rpt-io .chart-line {
+  fill: none;
+  stroke: var(--series-color);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.hn-rpt-io .chart-point {
+  fill: var(--surface);
+  stroke: var(--series-color);
+  stroke-width: 3;
+}
+
+/* Ba chuỗi của mockup: nhập (lam) · xuất (tím) · hoàn tác (đỏ). */
+.hn-rpt-io .series-inbound {
+  --series-color: var(--cyan);
+}
+
+.hn-rpt-io .series-outbound {
+  --series-color: var(--primary);
+}
+
+.hn-rpt-io .series-reversal {
+  --series-color: var(--red);
+}
+
+/* ── Hai tab Bảng / Lát cắt ─────────────────────────────────────────────── */
+.hn-rpt-io .tabs {
+  display: inline-flex;
+  gap: 4px;
+  margin: 0 0 16px;
+  padding: 3px;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--hnio-segment-bg);
+  box-shadow: none;
+}
+
+.hn-rpt-io .tab {
+  min-height: 36px;
+  padding: 0 13px;
+  border: 0;
+  border-radius: 4px;
+  color: var(--muted);
+  background: transparent;
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+}
+
+.hn-rpt-io .tab[aria-selected="true"] {
+  color: var(--primary-dark);
+  background: var(--surface);
+  box-shadow: var(--hnio-segment-shadow);
+}
+
+.hn-rpt-io .tab [data-icon] {
+  display: inline-grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  margin-right: 6px;
+  vertical-align: -3px;
+}
+
+.hn-rpt-io .tab [data-icon] svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.65;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ── Bảng lịch sử chứng từ ──────────────────────────────────────────────── */
+.hn-rpt-io .scroll {
+  overflow-x: auto;
+}
+
+.hn-rpt-io table {
+  width: 100%;
+  min-width: 1080px;
+  border-collapse: collapse;
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.hn-rpt-io th {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  background: var(--hnio-surface-muted);
+  font-size: 11.5px;
+  line-height: 17px;
+  font-weight: 600;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.hn-rpt-io td {
+  max-width: 190px;
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+.hn-rpt-io tbody tr:nth-child(even) {
+  background: var(--hnio-row-stripe);
+}
+
+.hn-rpt-io tbody tr:hover {
+  background: var(--hnio-row-hover);
+}
+
+.hn-rpt-io .cell {
+  overflow: hidden;
+  color: var(--ink);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hn-rpt-io .sub {
+  overflow: hidden;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hn-rpt-io .qty {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.hn-rpt-io .empty-row {
+  padding: 36px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.hn-rpt-io .tfoot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 20px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* ── Lát cắt đối soát ───────────────────────────────────────────────────── */
+.hn-rpt-io .slices {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  max-height: 520px;
+  padding: 18px 20px;
+  overflow: auto;
+}
+
+.hn-rpt-io .slice {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+}
+
+.hn-rpt-io .slice::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 3px;
+  background: var(--primary);
+}
+
+.hn-rpt-io .slicetop {
+  display: flex;
+  justify-content: space-between;
+  gap: 9px;
+}
+
+.hn-rpt-io .slicetop > div {
+  min-width: 0;
+}
+
+.hn-rpt-io .slicemetrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.hn-rpt-io .slicemetrics small {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.hn-rpt-io .slicemetrics b {
+  display: block;
+  overflow: hidden;
+  margin-top: 4px;
+  font-size: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hn-rpt-io .slicefoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 11px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* ── Dải "Bộ lọc đang áp dụng" khi thu gọn bộ lọc ───────────────────────── */
+.hn-rpt-io .collapsed {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 18px 0;
+  padding: 12px 16px;
+}
+
+.hn-rpt-io .summary {
+  min-width: 0;
+}
+
+.hn-rpt-io .summary b {
+  display: block;
+}
+
+.hn-rpt-io .summary span {
+  display: block;
+  overflow: hidden;
+  max-width: 700px;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Hộp thoại chi tiết chứng từ ────────────────────────────────────────── */
+.hn-rpt-io .backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: var(--hnio-overlay);
+}
+
+.hn-rpt-io .modal {
+  width: min(780px, calc(100% - 32px));
+  max-height: calc(100vh - 40px);
+  overflow: auto;
+  border: 1px solid var(--hnio-modal-line);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: var(--hnio-modal-shadow);
+}
+
+.hn-rpt-io .modalhead {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 19px 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.hn-rpt-io .modal h2 {
+  margin: 0;
+  font-size: 19px;
+}
+
+.hn-rpt-io .modalbody {
+  display: grid;
+  gap: 18px;
+  padding: 20px;
+}
+
+.hn-rpt-io .detail-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid var(--hnio-detail-border);
+  border-radius: 8px;
+  background: var(--hnio-detail-bg);
+}
+
+.hn-rpt-io .detail-summary small,
+.hn-rpt-io .detail-fact small,
+.hn-rpt-io .detail-recon small {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.hn-rpt-io .detail-summary strong {
+  display: block;
+  margin-top: 5px;
+  font-size: 18px;
+  overflow-wrap: anywhere;
+}
+
+.hn-rpt-io .detail-summary .chip {
+  margin-top: 8px;
+}
+
+.hn-rpt-io .detail-qty {
+  min-width: 105px;
+  padding-left: 16px;
+  border-left: 1px solid var(--hnio-detail-line);
+  font-size: 26px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.hn-rpt-io .detail-section {
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.hn-rpt-io .detail-section h3 {
+  margin: 0 0 12px;
+  font-size: 14px;
+}
+
+.hn-rpt-io .detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 24px;
+}
+
+.hn-rpt-io .detail-fact {
+  min-width: 0;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--hnio-detail-fact-line);
+}
+
+.hn-rpt-io .detail-fact b {
+  display: block;
+  margin-top: 5px;
+  font-size: 14px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.hn-rpt-io .detail-recon {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.hn-rpt-io .detail-recon div {
+  min-width: 0;
+  padding: 13px;
+  border-right: 1px solid var(--line);
+}
+
+.hn-rpt-io .detail-recon div:last-child {
+  border-right: 0;
+  background: var(--hnio-recon-ok-bg);
+}
+
+.hn-rpt-io .detail-recon b {
+  display: block;
+  margin-top: 5px;
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+}
+
+.hn-rpt-io .detail-hint {
+  margin: 0;
+  padding: 11px 12px;
+  border-left: 3px solid var(--cyan);
+  border-radius: 0 6px 6px 0;
+  color: var(--muted);
+  background: var(--hnio-hint-bg);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* ── Dải trạng thái tải / lỗi (KHÔNG có trong mockup offline) ───────────── */
+/*
+ * Mockup chạy trên một khối JSON cứng nên không có trạng thái tải hay lỗi
+ * mạng. Bản này đọc dữ liệu THẬT nên phải nói được hai trạng thái đó; dùng
+ * đúng dải `.page-alert` của vuexy-baseline mà các báo cáo khác đang dùng.
+ */
+.hn-rpt-io .page-alert {
+  margin: 0 0 20px;
+  padding: 12px 16px;
+  border-left: 4px solid var(--amber);
+  border-radius: var(--radius);
+  color: var(--hnio-warn-fg);
+  background: var(--amber-soft);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.hn-rpt-io .page-alert.is-error {
+  border-color: var(--red);
+  color: var(--hnio-pdf-fg);
+  background: var(--red-soft);
+}
+
+.hn-rpt-io .page-alert.is-info {
+  border-color: var(--cyan);
+  color: var(--hnio-chip-info-fg);
+  background: var(--blue-soft);
+}
+
+/* ── Điểm ngắt (giữ nguyên thứ tự khai báo của mockup) ──────────────────── */
+@media (max-width: 1199px) {
+  .hn-rpt-io .filtergrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* `:nth-child(n)` để bằng đúng độ đặc hiệu của bốn luật span ở trên. */
+  .hn-rpt-io .filtergrid > .field:nth-child(n) {
+    grid-column: auto;
+  }
+
+  .hn-rpt-io .filtergrid > .field.search:nth-child(n) {
+    grid-column: 1 / -1;
+  }
+
+  .hn-rpt-io .actions {
+    position: static;
+    width: auto;
+    margin-top: 12px;
+  }
+
+  .hn-rpt-io .slices {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 991px) {
+  .hn-rpt-io .kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 767px) {
+  .hn-rpt-io .headtop {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .hn-rpt-io .chips {
+    justify-content: flex-start;
+  }
+
+  .hn-rpt-io .filtergrid {
+    grid-template-columns: 1fr;
+  }
+
+  .hn-rpt-io .filtergrid > .field.search:nth-child(n) {
+    grid-column: auto;
+  }
+
+  .hn-rpt-io .actions {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+
+  .hn-rpt-io .periods {
+    display: grid;
+    width: 100%;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .hn-rpt-io .period {
+    min-width: 0;
+    font-size: 11px;
+  }
+
+  .hn-rpt-io .kpis {
+    grid-template-columns: 1fr;
+  }
+
+  .hn-rpt-io .chartbody {
+    padding-inline: 16px;
+  }
+}
+
+@media (max-width: 560px) {
+  .hn-rpt-io .page-wrap {
+    padding: 14px;
+  }
+
+  .hn-rpt-io .actions .btn {
+    flex: 1 1 45%;
+  }
+
+  .hn-rpt-io .slices {
+    grid-template-columns: 1fr;
+    max-height: 560px;
+    padding: 14px;
+  }
+
+  .hn-rpt-io .cardhead {
+    padding: 12px 14px;
+  }
+
+  .hn-rpt-io .detail-summary,
+  .hn-rpt-io .detail-grid,
+  .hn-rpt-io .detail-recon {
+    grid-template-columns: 1fr;
+  }
+
+  .hn-rpt-io .detail-qty {
+    padding: 12px 0 0;
+    border-top: 1px solid var(--hnio-detail-line);
+    border-left: 0;
+    text-align: left;
+  }
+
+  .hn-rpt-io .detail-recon div {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .hn-rpt-io .detail-recon div:last-child {
+    border-bottom: 0;
+  }
+}
+
+/*
+ * Nút "Đặt lại": icon quay trong lúc gọi lại số liệu.
+ *
+ * Lượt gọi lại xong trong khoảng 50ms nên chỉ đặt `disabled` thì không ai kịp
+ * thấy — người dùng tưởng nút chết. `useReportRefresh` giữ trạng thái bận tối
+ * thiểu 420ms để vòng quay này chạy trọn một nhịp, và báo kết quả bằng toast.
+ */
+.hn-rpt-io .refresh-icon {
+  display: inline-grid;
+  place-items: center;
+}
+.hn-rpt-io .refresh-icon.is-spinning {
+  animation: hn-rpt-io-spin 900ms linear infinite;
+}
+@keyframes hn-rpt-io-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

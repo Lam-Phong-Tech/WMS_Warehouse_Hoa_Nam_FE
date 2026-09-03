@@ -1,22 +1,31 @@
 /**
- * WWHN-240 · DEV240-P1-HANDOFF-R3 — bằng chứng render THẬT của tab XNT.
+ * WWHN-240 · DEV240-P1-HANDOFF-R3 — bằng chứng render THẬT của màn XNT (RPT-01).
  *
- * Vì sao phải có file này: trước đây cột gross/đã đảo/thuần của XNT chỉ được
- * "test" bằng cách đọc source text (`flow06-report-pagination-export.test.ts`
+ * Vì sao phải có file này: trước đây các cột gross/đã đảo/thuần của XNT chỉ
+ * được "test" bằng cách đọc source text (`flow06-report-pagination-export.test.ts`
  * readFileSync + regex) — chứng minh "trong file có chuỗi này", không chứng minh
  * "người dùng nhìn thấy đúng số". Register R3 đòi "QA chụp/test XNT columns",
- * nên bộ test này mount `InventoryFlowReportPage` (trang Nhập-Xuất-Tồn riêng —
- * trước đây là tab 1 của AlignedReportsPage) với payload đúng hợp đồng
+ * nên bộ test này mount `InventoryFlowReportPage` với payload đúng hợp đồng
  * `report_xnt_enhanced` (BE `OperationalReportController::buildXnt`) và assert
- * từng cột reversal hiển thị đúng giá trị BE trả về.
+ * từng ô hiển thị đúng giá trị BE trả về.
  *
- * Bất biến nghiệp vụ được phản chiếu (BR-RPT-01..07 + BR-REV-11, SRS §13.10
- * RPT-XNT-01): mỗi chiều Nhập/Xuất/Xuất LK tách gross / đã đảo / thuần;
- * closing = opening + receipt_net - issue_net - component_issue_net
- * + reversal_unlinked_net; không ẩn hay sửa lịch sử.
+ * PHẠM VI ĐÃ ĐỔI (2026-09-03, bản port 1:1 mockup UI/UX 8.1):
+ * mockup chốt cho RPT-01 hiển thị bảng "Chi tiết cân đối tồn kho" theo cột
+ * THUẦN (Đầu kỳ · Nhập thuần · Xuất SP · Xuất LK · Hoàn tác · Cuối kỳ), không
+ * còn ba tầng cột gross/đã đảo/thuần của bản bảng cũ. Bộ test vì vậy:
+ *  · assert đúng những ô NGƯỜI DÙNG THẤY (cột thuần) — vẫn là bằng chứng render
+ *    thật, không phải đọc source;
+ *  · assert hộp thoại "Đối soát SKU" in đúng phương trình BR-RPT/BA-03 trên
+ *    cùng bộ số đó;
+ *  · giữ nguyên chốt chặn bất biến trên chính fixture;
+ *  · thêm guard rằng adapter vẫn CHUẨN HOÁ đủ ba tầng cột của hợp đồng BE
+ *    (`*_gross` / `*_reversal` / `*_net`) để hợp đồng WWHN-240 không bị âm thầm
+ *    rơi mất ở tầng dữ liệu khi UI chỉ còn hiển thị cột thuần.
  */
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
-import { screen } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
 import { renderWithProviders } from "@/test/test-utils";
 import { cleanupTestState } from "@/test/setup";
 
@@ -83,20 +92,15 @@ function xntPayload() {
   };
 }
 
-/**
- * Trang "Nhập – Xuất – Tồn & Chứng từ" (route riêng, trước đây là tab 1 của
- * bản 7 tab); bảng "Chi tiết cân đối theo SKU" nằm ngay dưới biểu đồ waterfall
- * 1.1 và chính là nơi giữ hợp đồng cột gross / đã đảo / thuần của WWHN-240.
- */
-async function openXntTab() {
-  renderWithProviders(
-    <InventoryFlowReportPage />,
-    [ROUTES.REPORTS_INVENTORY_FLOW],
-  );
+/** Mở màn RPT-01 và chờ dòng SKU của fixture xuất hiện trong bảng. */
+async function openXntScreen() {
+  renderWithProviders(<InventoryFlowReportPage />, [
+    ROUTES.REPORTS_INVENTORY_FLOW,
+  ]);
   return screen.findByText("PRD-QA19-01");
 }
 
-describe("WWHN-240 · tab XNT render đủ cột gross / đã đảo / thuần", () => {
+describe("WWHN-240 · màn XNT render đúng số BE trả về", () => {
   beforeEach(() => {
     vi.mocked(http.get).mockReset();
     vi.mocked(http.getPage).mockReset();
@@ -117,7 +121,7 @@ describe("WWHN-240 · tab XNT render đủ cột gross / đã đảo / thuần",
   });
 
   it("gọi đúng endpoint canonical /reports/inventory-xnt-enhanced", async () => {
-    await openXntTab();
+    await openXntScreen();
 
     const calls = vi.mocked(http.get).mock.calls.map(([endpoint]) => endpoint);
     expect(calls).toContain(API_ENDPOINTS.REPORTS_XNT_ENHANCED);
@@ -126,43 +130,51 @@ describe("WWHN-240 · tab XNT render đủ cột gross / đã đảo / thuần",
     );
   });
 
-  it("giá trị từng ô reversal đúng số BE trả về, không tráo/mất cột nhóm", async () => {
-    // Harness mock antd Table flatten grouped columns về cột lá (xem
-    // src/test/setup.ts, ghi chú WWHN-240) — trước đó mọi ô thuộc nhóm
-    // Nhập/Xuất/Xuất LK render null và test kiểu này không thể tồn tại.
-    await openXntTab();
-    const row = screen.getByText("PRD-QA19-01").closest('[role="row"]');
-    expect(row).not.toBeNull();
-    const cells = Array.from((row as HTMLElement).children)
-      .map((cell) => cell.textContent?.trim())
-      // Cột đầu là STT của mọi bảng báo cáo — không thuộc phạm vi assertion
-      // cột reversal (bảng cân đối không bật chọn nhiều dòng).
-      .slice(1);
+  it("gọi /reports/inventory-ledger cho drill-down và hai biểu đồ theo ngày", async () => {
+    await openXntScreen();
 
-    // Thứ tự cột lá theo xntColumns (TabInventoryFlow): kho, mã, tên, tồn, đầu kỳ,
-    // nhập(gross/đã đảo/thuần), xuất(g/đ/t), xuất LK(g/đ/t), reversal net,
-    // cuối kỳ. Mỗi giá trị fixture là duy nhất nên mọi hoán vị/mất cột đều đỏ.
-    // Ô "Xem" cuối dòng là cột Thao tác chung của mọi báo cáo (mở modal chi tiết).
+    const calls = vi.mocked(http.get).mock.calls.map(([endpoint]) => endpoint);
+    expect(calls).toContain(API_ENDPOINTS.REPORTS_INVENTORY_LEDGER);
+    expect(API_ENDPOINTS.REPORTS_INVENTORY_LEDGER).toBe(
+      "/reports/inventory-ledger",
+    );
+  });
+
+  it("từng ô cột thuần đúng số BE trả về, không tráo/mất cột", async () => {
+    await openXntScreen();
+    const row = screen.getByText("PRD-QA19-01").closest("tr");
+    expect(row).not.toBeNull();
+    const cells = Array.from((row as HTMLElement).children).map((cell) =>
+      cell.textContent?.trim(),
+    );
+
+    // Thứ tự cột của mockup 8.1: SKU/Tên hàng · Loại · Đơn vị · Đầu kỳ ·
+    // Nhập thuần · Xuất SP · Xuất LK · Hoàn tác · Cuối kỳ · Đối soát · Thao tác.
+    // Loại/Đơn vị đến từ danh mục `/products` — fixture để trống danh mục nên
+    // hai ô đó hiển thị "Chưa có" theo quy ước EMPTY_TEXT.
     expect(cells).toEqual([
-      "KHO-TONG-HN",
-      "PRD-QA19-01",
-      "Máy KT-2000",
-      // i18n: stock_status AVAILABLE render qua INVENTORY_STOCK_STATUS_LABELS
-      "Khả dụng",
+      "PRD-QA19-01Máy KT-2000",
+      "Chưa có",
+      "Chưa có",
       "100",
-      "21",
-      "3",
       "18",
-      "55",
-      "5",
       "50",
-      "13",
-      "6",
       "7",
-      "-2",
+      "0",
       "61",
-      "Xem",
+      "Khớp",
+      "Đối soát",
     ]);
+  });
+
+  it("hộp thoại Đối soát SKU in đúng phương trình BA-03 trên cùng bộ số", async () => {
+    await openXntScreen();
+    fireEvent.click(screen.getByRole("button", { name: "Đối soát" }));
+
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog).toHaveTextContent("PRD-QA19-01 · Máy KT-2000");
+    // Dấu trừ của mockup là U+2212, không phải dấu gạch nối.
+    expect(dialog).toHaveTextContent("100 + 18 − 50 − 7 + 0 = 61");
   });
 
   it("bất biến WWHN-240 giữ trên chính fixture: closing = opening + Σnet + unlinked, net = gross - reversal", () => {
@@ -185,5 +197,33 @@ describe("WWHN-240 · tab XNT render đủ cột gross / đã đảo / thuần",
         XNT_LINE.component_issue_net +
         XNT_LINE.reversal_unlinked_net,
     );
+  });
+
+  it("adapter vẫn chuẩn hoá đủ ba tầng cột gross / đã đảo / thuần của hợp đồng BE", () => {
+    // Mockup 8.1 chỉ hiển thị cột THUẦN, nhưng hợp đồng XntReportLine vẫn phát
+    // hành cả ba tầng; giữ chúng ở tầng dữ liệu để không phải sửa lại adapter
+    // khi cần thêm cột, và để hợp đồng WWHN-240 không rơi mất lặng lẽ.
+    const source = readFileSync(
+      resolve(
+        process.cwd(),
+        "src/modules/reports/inventory-flow/inventory-flow-api.ts",
+      ),
+      "utf8",
+    );
+    for (const field of [
+      "receipt_gross",
+      "receipt_reversal",
+      "receipt_net",
+      "issue_gross",
+      "issue_reversal",
+      "issue_net",
+      "component_issue_gross",
+      "component_issue_reversal",
+      "component_issue_net",
+      "reversal_unlinked_net",
+      "reversal_net",
+    ]) {
+      expect(source).toContain(field);
+    }
   });
 });

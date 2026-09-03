@@ -1,13 +1,16 @@
 {
   "meta": {
     "owner": "FE1 Team",
-    "reason": "Hex literal còn lại sau Part 2 (chủ yếu #fff + 4 màu sidebar legacy + literal TSX module chưa migrate). Ratchet: chỉ được GIẢM. · 2026-09-01: thêm dashboard-overview.css — port 1:1 demo UI/UX Tổng quan vận hành; các hex còn lại là sắc xám/sắc chữ phụ của demo CHƯA có token tương ứng, đã gom hết vào một khối --hnd-* ở đầu file (mọi màu có token đều dùng var(--wms-*)). Rút khi bảng token bổ sung nhóm neutral/alert-text.",
+    "reason": "Hex literal còn lại sau Part 2 (chủ yếu #fff + 4 màu sidebar legacy + literal TSX module chưa migrate). Ratchet: chỉ được GIẢM. · 2026-09-01: thêm dashboard-overview.css — port 1:1 demo UI/UX Tổng quan vận hành; các hex còn lại là sắc xám/sắc chữ phụ của demo CHƯA có token tương ứng, đã gom hết vào một khối --hnd-* ở đầu file (mọi màu có token đều dùng var(--wms-*)). Rút khi bảng token bổ sung nhóm neutral/alert-text. · 2026-09-03: thêm stock-reconcile-report.css — port 1:1 demo UI/UX 8.2 (RPT-02), cùng cơ chế: mọi màu có token dùng var(--wms-*), phần còn lại gom vào khối --hnr-* ở đầu file. · 2026-09-03: thêm inventory-flow-report.css — port 1:1 mockup UI/UX 8.1 (RPT-01), cùng cơ chế: mọi màu có token dùng var(--wms-*), phần còn lại gom vào khối --hnf-* ở đầu file; con số gồm cả khối nền tối `:root[data-theme=\"dark\"]` port từ demo, cùng cơ chế RPT-02. · 2026-09-03: thêm io-history-report.css — port 1:1 mockup UI/UX 8.3 (RPT-IO-01), cùng cơ chế: mọi màu có token dùng var(--wms-*), phần còn lại gom vào khối --hnio-* ở đầu file.",
     "deadline": "Part 4 (Screen Migration) — mục tiêu ~0 ngoài tokens",
     "generated_by": "scripts/check-ui-tokens.mjs --update-baseline"
   },
   "files": {
     "src/shared/utils/performance-monitor.ts": 4,
     "src/modules/dashboard/dashboard-overview.css": 52,
-    "src/app/layouts/topbar/app-topbar.css": 8
+    "src/app/layouts/topbar/app-topbar.css": 8,
+    "src/modules/reports/stock-reconcile/stock-reconcile-report.css": 27,
+    "src/modules/reports/inventory-flow/inventory-flow-report.css": 45,
+    "src/modules/reports/io-history/io-history-report.css": 7
   }
 }

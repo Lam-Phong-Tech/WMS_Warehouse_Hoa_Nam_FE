@@ -2001,7 +2001,7 @@ export const MESSAGES_VI = {
       colDepartment: "Phòng ban",
       colRecordedBy: "Người ghi nhận",
       colNote: "Ghi chú",
-      title: "Báo cáo Nhập – Xuất – Tồn & Lịch sử chứng từ",
+      title: "Báo cáo Nhập – Xuất – Tồn",
       description:
         "Cân đối tồn theo kỳ, biến động theo ngày và toàn bộ chứng từ phát sinh.",
       chartFilterLabel: "Bộ lọc chung cho các biểu đồ bên dưới",

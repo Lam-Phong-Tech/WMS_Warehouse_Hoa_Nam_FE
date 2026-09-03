@@ -55,7 +55,7 @@ describe("SideNav RBAC filtering", () => {
     expect(screen.getByText("Danh sách phiếu xuất")).toBeInTheDocument();
     expect(screen.getByText("Tra cứu tồn & đối soát")).toBeInTheDocument();
     expect(
-      screen.getByText("Nhập – Xuất – Tồn & Chứng từ"),
+      screen.getByText("Nhập – Xuất – Tồn"),
     ).toBeInTheDocument();
   });
 
@@ -67,7 +67,7 @@ describe("SideNav RBAC filtering", () => {
     expect(screen.getByText("Danh sách phiếu nhập")).toBeInTheDocument();
     expect(screen.queryByText("Danh sách bảo hành")).not.toBeInTheDocument();
     expect(
-      screen.queryByText("Nhập – Xuất – Tồn & Chứng từ"),
+      screen.queryByText("Nhập – Xuất – Tồn"),
     ).not.toBeInTheDocument();
     expect(
       screen.queryByText("Danh sách linh kiện chờ xếp khay"),
@@ -151,7 +151,7 @@ describe("SideNav RBAC filtering", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Danh sách bảo hành")).toBeInTheDocument();
     expect(
-      screen.getByText("Nhập – Xuất – Tồn & Chứng từ"),
+      screen.getByText("Nhập – Xuất – Tồn"),
     ).toBeInTheDocument();
   });
 });

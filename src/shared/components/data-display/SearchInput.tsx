@@ -28,8 +28,14 @@ export function SearchInput({
   slotProps,
   ...rest
 }: SearchInputProps) {
-  const ariaLabel =
-    (rest as { "aria-label"?: string })["aria-label"] ?? placeholder;
+  // `aria-label` được gắn cho THẺ INPUT bên dưới (slotProps.htmlInput). Phải
+  // tách nó khỏi `rest`, nếu không nó rơi xuống cả div bọc của TextField và ô
+  // tìm kiếm có HAI phần tử mang cùng tên trợ năng — trình đọc màn hình đọc
+  // lặp, còn `getByLabelText` trong test thì báo "Found multiple elements".
+  const { "aria-label": ariaLabelProp, ...rootProps } = rest as typeof rest & {
+    "aria-label"?: string;
+  };
+  const ariaLabel = ariaLabelProp ?? placeholder;
 
   return (
     <TextField
@@ -39,16 +45,17 @@ export function SearchInput({
       autoComplete="off"
       // width cố định qua maxWidth (không phải width tuyệt đối) để control vẫn
       // co được dưới 576px theo baseline responsive chung.
-      // Giảm padding dọc so với mặc định muiTheme (10px) để chiều cao khớp
-      // antd Select (~35px) đặt cạnh nhau trong FilterBar — padding mặc định
-      // ra ~41.5px, cao hơn hẳn Select, nhìn lệch dù cùng size="small".
+      //
+      // CHIỀU CAO: cố ý KHÔNG ghi đè padding dọc — để nguyên `C.input.paddingY`
+      // của theme thì ô cao đúng 38px (CONTROL.height), bằng UiSelect,
+      // UiTextField và UiVuexyDateField đứng cạnh nó trong mọi thanh lọc.
+      // Trước đây chỗ này ép padding 6px để khớp antd Select (~35px); từ khi
+      // toolbar chuyển hết sang MUI (Part 4) thì không còn antd Select nào
+      // trong `src/` nữa, nên phép bù đó chỉ còn làm ô tìm kiếm THẤP hơn 2px so
+      // với các control bên cạnh (thấy rõ ở thanh lọc 8 màn Báo cáo).
       sx={{
         width: "100%",
         maxWidth: width,
-        "& .MuiOutlinedInput-input": {
-          paddingTop: "6px",
-          paddingBottom: "6px",
-        },
         ...sx,
       }}
       slotProps={{
@@ -76,7 +83,7 @@ export function SearchInput({
           ...(slotProps?.input as object),
         },
       }}
-      {...rest}
+      {...rootProps}
     />
   );
 }

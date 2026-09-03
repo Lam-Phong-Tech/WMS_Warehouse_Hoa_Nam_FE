@@ -1,0 +1,1499 @@
+/**
+ * RPT-02 "Báo cáo Tồn kho & đối soát" — port 1:1 CSS của demo UI/UX đã chốt
+ * `8.2.WMS_Hoa_Nam_Bao_Cao_Ton_Kho__Doi_Soat.html`, gộp đúng thứ tự hai
+ * stylesheet mà demo nạp:
+ *   1. Other/Report01_HTML_Export/report-01-offline.css  (vùng `.page-wrap` →
+ *      cuối file, phần `.report-01 …`)
+ *   2. Other/Report02_HTML_Export/report-02-offline.css  (khối `.report-02 …`)
+ * Thứ tự khai báo và thứ tự các @media giữ NGUYÊN như demo, vì report-02 ghi đè
+ * report-01 bằng cascade chứ không bằng độ đặc hiệu.
+ *
+ * PHẠM VI: mọi selector nằm dưới `.hn-rpt02` nên không rò ra màn khác. Đây là
+ * CSS CỤC BỘ (khai trong docs/ui/vuexy-sync/allowlists/css-baseline.json).
+ *
+ * MÀU: dùng token `--wms-*` ở mọi chỗ demo dùng đúng màu bảng Vuexy. Số còn lại
+ * là sắc xám/sắc chữ phụ demo tự đặt mà bảng token CHƯA có — khai thành
+ * `--hnr-*` ngay đầu file để giữ đúng giá trị demo và gom vào một chỗ.
+ *
+ * KHÔNG dùng cờ ưu tiên cascade nào (guard ui:styles ratchet). Chỗ demo ép
+ * `.analysis-grid > *` về `grid-column: 1 / -1` bằng cờ đó được thay bằng việc
+ * khai thẳng `grid-column: auto` — lưới ở breakpoint đó chỉ còn 1 cột nên kết
+ * quả hiển thị y hệt.
+ */
+
+.hn-rpt02 {
+  /* Bảng màu demo — phần đã có token */
+  --ink: var(--wms-text-strong);
+  --muted: var(--wms-text-medium);
+  --line: var(--wms-border);
+  --primary: var(--wms-primary);
+  --primary-dark: var(--wms-primary-dark);
+  --primary-soft: var(--wms-primary-soft);
+  --green: var(--wms-success);
+  --green-soft: var(--wms-success-soft);
+  --amber: var(--wms-warning);
+  --amber-soft: var(--wms-warning-soft);
+  --red: var(--wms-error);
+  --red-soft: var(--wms-error-soft);
+  --blue: var(--wms-info);
+  --blue-soft: var(--wms-info-soft);
+  --surface: var(--wms-bg-surface);
+  --shadow: var(--wms-shadow-card);
+  --floating-shadow: var(--wms-shadow-floating);
+  --radius: var(--wms-radius-card);
+
+  /* Sắc riêng của demo, chưa có token tương ứng */
+  --hnr-surface-muted: #faf9fc;
+  --hnr-chip-neutral-bg: #ebeaf0;
+  --hnr-chip-neutral-fg: #554f61;
+  --hnr-chip-info-fg: #155faf;
+  --hnr-match-fg: #157a46;
+  --hnr-teal-fg: #117387;
+  --hnr-teal-fg-strong: #0e6577;
+  --hnr-action-hover-bg: rgba(0, 186, 209, 0.22);
+  --hnr-ghost-border: #d9d6e3;
+  --hnr-alert-warning-fg: #6f430c;
+  --hnr-alert-error-fg: #8d2130;
+  --hnr-alert-info-fg: #154f91;
+  --hnr-donut-track: #efedf3;
+  --hnr-axis: #5f596a;
+  --hnr-table-line: #eeeaf3;
+  --hnr-row-line: rgba(47, 43, 61, 0.07);
+  --hnr-card-line: rgba(47, 43, 61, 0.06);
+  --hnr-track-inset: rgba(47, 43, 61, 0.04);
+  --hnr-segment-bg: rgba(47, 43, 61, 0.06);
+  --hnr-segment-shadow: 0 2px 6px rgba(47, 43, 61, 0.11);
+  --hnr-overlay: rgba(47, 43, 61, 0.35);
+  --hnr-overlay-shadow: 0 18px 48px rgba(47, 43, 61, 0.24);
+  --hnr-modal-line: rgba(47, 43, 61, 0.1);
+  --hnr-focus: #2168d4;
+
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 22px;
+  font-weight: 400;
+}
+
+.hn-rpt02 *,
+.hn-rpt02 *::before,
+.hn-rpt02 *::after {
+  box-sizing: border-box;
+}
+
+.hn-rpt02 button,
+.hn-rpt02 input {
+  font: inherit;
+}
+
+.hn-rpt02 button {
+  cursor: pointer;
+}
+
+.hn-rpt02 button:focus-visible,
+.hn-rpt02 input:focus-visible,
+.hn-rpt02 summary:focus-visible,
+.hn-rpt02 [tabindex]:focus-visible {
+  outline: 3px solid var(--hnr-focus);
+  outline-offset: 2px;
+}
+
+.hn-rpt02 .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── page wrap / header (report-01) ─────────────────────────────────────── */
+.hn-rpt02 .page-wrap {
+  width: 100%;
+  margin: 0;
+  padding: 20px 24px 48px;
+}
+.hn-rpt02 .breadcrumb {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 20px;
+}
+.hn-rpt02 .breadcrumb strong {
+  color: var(--primary-dark);
+}
+.hn-rpt02 .page-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.hn-rpt02 .eyebrow {
+  display: inline-block;
+  color: var(--primary-dark);
+  font-size: 12.5px;
+  line-height: 18px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+}
+.hn-rpt02 h1,
+.hn-rpt02 h2,
+.hn-rpt02 h3,
+.hn-rpt02 p {
+  margin-top: 0;
+}
+.hn-rpt02 h1 {
+  margin-bottom: 4px;
+  font-size: 24px;
+  line-height: 38px;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--ink);
+}
+.hn-rpt02 h2,
+.hn-rpt02 h3 {
+  margin-bottom: 0;
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.hn-rpt02 .page-header p {
+  max-width: 680px;
+  margin-bottom: 0;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 22px;
+}
+.hn-rpt02 .scope-block {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* ── chip ───────────────────────────────────────────────────────────────── */
+.hn-rpt02 .chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  line-height: 18px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.hn-rpt02 .chip-primary {
+  background: var(--primary-soft);
+  color: var(--primary-dark);
+}
+.hn-rpt02 .chip-neutral {
+  background: var(--hnr-chip-neutral-bg);
+  color: var(--hnr-chip-neutral-fg);
+}
+.hn-rpt02 .chip-success {
+  background: var(--green-soft);
+  color: var(--green);
+}
+.hn-rpt02 .chip-warning {
+  background: var(--amber-soft);
+  color: var(--amber);
+}
+.hn-rpt02 .chip-error {
+  background: var(--red-soft);
+  color: var(--red);
+}
+.hn-rpt02 .chip-info {
+  background: var(--blue-soft);
+  color: var(--hnr-chip-info-fg);
+}
+
+/* ── filter card ────────────────────────────────────────────────────────── */
+.hn-rpt02 .filter-card {
+  display: grid;
+  align-items: end;
+  gap: 16px 20px;
+  margin-bottom: 20px;
+  padding: 16px 20px;
+  border: 1px solid var(--hnr-card-line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+.hn-rpt02 .filter-group {
+  display: grid;
+  gap: 7px;
+}
+.hn-rpt02 .filter-label {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+}
+.hn-rpt02 .refresh-block {
+  display: flex;
+  align-items: center;
+  justify-self: end;
+  gap: 12px;
+}
+.hn-rpt02 .refresh-meta {
+  display: grid;
+  gap: 1px;
+  min-width: 154px;
+  padding-left: 12px;
+  border-left: 1px solid var(--line);
+}
+.hn-rpt02 .refresh-meta small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 18px;
+  white-space: nowrap;
+}
+.hn-rpt02 .refresh-meta > span {
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* ── button ─────────────────────────────────────────────────────────────── */
+.hn-rpt02 .button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 8px 16px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  font-weight: 500;
+  font-size: 15px;
+  line-height: 20px;
+  white-space: nowrap;
+}
+.hn-rpt02 .button svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.65;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.hn-rpt02 .button-primary {
+  background: var(--primary);
+  color: var(--wms-on-primary);
+}
+.hn-rpt02 .button-primary:hover {
+  background: var(--primary-dark);
+}
+.hn-rpt02 .button-primary:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.hn-rpt02 .button-ghost {
+  border-color: var(--hnr-ghost-border);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+/* ── page alert ─────────────────────────────────────────────────────────── */
+.hn-rpt02 .page-alert {
+  margin: 0 0 24px;
+  padding: 12px 16px;
+  border-left: 4px solid var(--amber);
+  border-radius: var(--radius);
+  background: var(--amber-soft);
+  color: var(--hnr-alert-warning-fg);
+  font-size: 13px;
+  line-height: 20px;
+}
+.hn-rpt02 .page-alert.is-error {
+  border-color: var(--red);
+  background: var(--red-soft);
+  color: var(--hnr-alert-error-fg);
+}
+.hn-rpt02 .page-alert.is-info {
+  border-color: var(--blue);
+  background: var(--blue-soft);
+  color: var(--hnr-alert-info-fg);
+}
+
+/* ── section heading / card ─────────────────────────────────────────────── */
+.hn-rpt02 .section-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 20px 0 12px;
+}
+.hn-rpt02 .section-heading > div {
+  display: grid;
+  gap: 4px;
+}
+.hn-rpt02 .section-meta {
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 18px;
+  text-align: right;
+}
+.hn-rpt02 .card {
+  border: 1px solid var(--hnr-card-line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.hn-rpt02 .card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 24px 24px 16px;
+}
+.hn-rpt02 .card-head > div:first-child {
+  display: grid;
+  gap: 5px;
+}
+.hn-rpt02 .card-subtitle {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+/* ── KPI ────────────────────────────────────────────────────────────────── */
+.hn-rpt02 .kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 24px;
+}
+.hn-rpt02 .kpi-card {
+  position: relative;
+  grid-column: auto;
+  min-height: 156px;
+  padding: 20px;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease;
+}
+.hn-rpt02 .kpi-card:hover,
+.hn-rpt02 .kpi-card:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: var(--floating-shadow);
+}
+.hn-rpt02 .kpi-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+.hn-rpt02 .kpi-icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius);
+  background: var(--accent-soft, var(--primary-soft));
+  color: var(--accent, var(--primary));
+}
+.hn-rpt02 .kpi-icon svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.65;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.hn-rpt02 .kpi-label {
+  min-height: 22px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 20px;
+}
+.hn-rpt02 .kpi-value {
+  margin: 10px 0 5px;
+  color: var(--ink);
+  font-size: 30px;
+  line-height: 38px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.hn-rpt02 .kpi-bottom {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+}
+.hn-rpt02 .kpi-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 18px;
+}
+.hn-rpt02 .kpi-spark {
+  display: block;
+  flex: 0 0 auto;
+  width: 48px;
+  height: 30px;
+  color: var(--accent, var(--primary));
+  opacity: 0.82;
+}
+.hn-rpt02 .kpi-spark polyline {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ── analysis grid / chart card ─────────────────────────────────────────── */
+.hn-rpt02 .analysis-grid {
+  display: grid;
+  gap: 24px;
+  align-items: start;
+}
+.hn-rpt02 .chart-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 360px;
+  border-top: 3px solid var(--primary);
+}
+.hn-rpt02 .chart-card-head {
+  min-height: 104px;
+  align-items: center;
+  border-bottom: 1px solid rgba(115, 103, 240, 0.12);
+  background: linear-gradient(
+    125deg,
+    rgba(115, 103, 240, 0.09) 0%,
+    rgba(115, 103, 240, 0.025) 62%,
+    var(--surface) 100%
+  );
+}
+.hn-rpt02 .chart-card-head > .chart-heading {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  min-width: 0;
+}
+.hn-rpt02 .chart-heading > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.hn-rpt02 .chart-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+.hn-rpt02 .chart-icon-warning {
+  background: var(--amber-soft);
+  color: var(--amber);
+}
+.hn-rpt02 .chart-icon svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.65;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.hn-rpt02 .chart-unit {
+  align-self: start;
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: var(--hnr-surface-muted);
+  color: var(--muted);
+  font-size: 11.5px;
+  line-height: 17px;
+  white-space: nowrap;
+}
+.hn-rpt02 .chart-head-meta {
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+}
+.hn-rpt02 .chart-current {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  color: var(--muted);
+}
+.hn-rpt02 .chart-current strong {
+  color: var(--ink);
+  font-size: 17px;
+  line-height: 22px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.hn-rpt02 .chart-current small {
+  font-size: 11px;
+  line-height: 16px;
+}
+.hn-rpt02 .chart-wrap {
+  display: flex;
+  flex: 1;
+  min-height: 276px;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 24px 8px;
+}
+.hn-rpt02 .chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.hn-rpt02 .legend-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 4px 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 18px;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    color 160ms ease;
+}
+.hn-rpt02 .legend-button:hover,
+.hn-rpt02 .legend-button:focus-visible {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  color: var(--primary-dark);
+}
+.hn-rpt02 .legend-button[aria-pressed="false"] {
+  opacity: 0.45;
+  text-decoration: line-through;
+}
+.hn-rpt02 .legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--legend);
+}
+.hn-rpt02 .chart-plot {
+  display: flex;
+  flex: 1;
+  min-height: 232px;
+  align-items: stretch;
+}
+.hn-rpt02 .chart-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 232px;
+}
+.hn-rpt02 .chart-empty {
+  min-height: 280px;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 20px;
+  text-align: center;
+}
+.hn-rpt02 .chart-table {
+  margin: 0 24px 24px;
+  font-size: 12.5px;
+  line-height: 18px;
+}
+.hn-rpt02 .chart-table summary {
+  color: var(--primary-dark);
+  cursor: pointer;
+  font-weight: 500;
+}
+.hn-rpt02 .chart-table table {
+  width: 100%;
+  margin-top: 7px;
+  border-collapse: collapse;
+}
+.hn-rpt02 .chart-table th,
+.hn-rpt02 .chart-table td {
+  padding: 5px;
+  border-bottom: 1px solid var(--hnr-table-line);
+  text-align: right;
+}
+.hn-rpt02 .chart-table th:first-child,
+.hn-rpt02 .chart-table td:first-child {
+  text-align: left;
+}
+.hn-rpt02 .chart-card .chart-table {
+  margin-top: auto;
+}
+
+/* ── báo cáo: bộ lọc, KPI, bảng, lát cắt, overlay (report-01 §.report-01) ── */
+.hn-rpt02 .page-header {
+  margin-bottom: 18px;
+}
+.hn-rpt02 .page-header h1 {
+  margin: 0;
+}
+.hn-rpt02 .page-header p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 20px;
+}
+.hn-rpt02 .report-filter-card {
+  grid-template-columns:
+    minmax(300px, 1.08fr) minmax(230px, 0.88fr)
+    minmax(180px, 0.72fr) auto;
+  align-items: end;
+}
+.hn-rpt02 .report-filter-card > .filter-group {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+.hn-rpt02 .report-filter-actions {
+  display: flex;
+  align-items: end;
+}
+.hn-rpt02 .report-filter-actions .button {
+  min-width: 110px;
+}
+.hn-rpt02 .report-snapshot {
+  grid-column: 1 / -1;
+  margin-top: -4px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 18px;
+}
+.hn-rpt02 .report-snapshot strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+.hn-rpt02 .report-kpi-grid {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+.hn-rpt02 .report-kpi-card {
+  --accent: var(--report-accent);
+  --accent-soft: var(--report-accent-soft);
+}
+.hn-rpt02 .report-kpi-card .kpi-foot {
+  min-height: 36px;
+}
+.hn-rpt02 .report-kpi-card .kpi-spark {
+  margin-left: auto;
+}
+.hn-rpt02 .report-kpi-card[data-tone="opening"] {
+  --report-accent: var(--wms-grey-500);
+  --report-accent-soft: var(--wms-grey-200);
+}
+.hn-rpt02 .report-kpi-card[data-tone="inbound"] {
+  --report-accent: var(--green);
+  --report-accent-soft: var(--green-soft);
+}
+.hn-rpt02 .report-kpi-card[data-tone="product"] {
+  --report-accent: var(--red);
+  --report-accent-soft: var(--red-soft);
+}
+.hn-rpt02 .report-kpi-card[data-tone="component"] {
+  --report-accent: var(--amber);
+  --report-accent-soft: var(--amber-soft);
+}
+.hn-rpt02 .report-table-card .card-head {
+  align-items: center;
+}
+.hn-rpt02 .report-view-tabs {
+  display: flex;
+  gap: 7px;
+  padding: 0 24px 16px;
+}
+.hn-rpt02 .report-view-tabs .button {
+  min-height: 34px;
+  padding: 6px 11px;
+  font-size: 13px;
+}
+.hn-rpt02 .table-wrap {
+  overflow-x: auto;
+  padding: 0 24px 24px;
+}
+.hn-rpt02 .report-table {
+  width: 100%;
+  min-width: 1040px;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13.5px;
+  line-height: 20px;
+}
+.hn-rpt02 .report-table th {
+  padding: 10px 12px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background: var(--hnr-surface-muted);
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.hn-rpt02 .report-table th:first-child {
+  border-left: 1px solid var(--line);
+  border-radius: var(--radius) 0 0 0;
+}
+.hn-rpt02 .report-table th:last-child {
+  border-right: 1px solid var(--line);
+  border-radius: 0 var(--radius) 0 0;
+}
+.hn-rpt02 .report-table td {
+  padding: 12px;
+  border-bottom: 1px solid var(--hnr-row-line);
+  color: var(--ink);
+  vertical-align: middle;
+}
+.hn-rpt02 .report-table tbody tr:last-child td {
+  border-bottom: 1px solid var(--line);
+}
+.hn-rpt02 .report-table tbody tr:hover {
+  background: var(--hnr-surface-muted);
+}
+.hn-rpt02 .report-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.hn-rpt02 .sku {
+  display: block;
+  color: var(--primary-dark);
+  font-size: 11px;
+  font-weight: 700;
+}
+.hn-rpt02 .truncate {
+  max-width: 190px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hn-rpt02 .match-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--green-soft);
+  color: var(--hnr-match-fg);
+  font-size: 11px;
+  font-weight: 700;
+}
+/* Số âm trong bảng (demo dùng style="color:#ff4c51" inline). */
+.hn-rpt02 .is-negative {
+  color: var(--red);
+}
+.hn-rpt02 .report-snapshot-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  padding: 0 24px 24px;
+}
+.hn-rpt02 .report-slice {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--primary);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.hn-rpt02 .report-slice-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.hn-rpt02 .report-slice-head strong {
+  display: block;
+  font-size: 14px;
+  line-height: 20px;
+}
+.hn-rpt02 .report-slice-head span {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 18px;
+}
+.hn-rpt02 .report-slice-values {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+.hn-rpt02 .report-slice-values div {
+  padding: 8px;
+  border-radius: 6px;
+  background: var(--hnr-surface-muted);
+}
+.hn-rpt02 .report-slice-values dt {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 14px;
+}
+.hn-rpt02 .report-slice-values dd {
+  margin: 3px 0 0;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.hn-rpt02 .report-chart-card {
+  min-height: 382px;
+}
+.hn-rpt02 .report-chart-card .chart-card-head {
+  min-height: 100px;
+}
+.hn-rpt02 .chart-axis-label {
+  fill: var(--hnr-axis);
+  font-size: 10px;
+}
+.hn-rpt02 .chart-donut-total {
+  fill: var(--ink);
+  font-size: 30px;
+  font-weight: 600;
+}
+.hn-rpt02 .chart-donut-track {
+  stroke: var(--hnr-donut-track);
+}
+.hn-rpt02 .chart-donut-match {
+  stroke: var(--green);
+}
+.hn-rpt02 .chart-donut-mismatch {
+  stroke: var(--red);
+}
+.hn-rpt02 .report-chart-card .chart-svg {
+  min-height: 220px;
+}
+.hn-rpt02 .backdrop {
+  position: fixed;
+  z-index: 70;
+  inset: 0;
+  background: var(--hnr-overlay);
+}
+.hn-rpt02 .modal {
+  z-index: 71;
+  border: 1px solid var(--hnr-modal-line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--hnr-overlay-shadow);
+}
+.hn-rpt02 .modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: min(620px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+  transform: translate(-50%, -50%);
+}
+.hn-rpt02 .modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 22px 24px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.hn-rpt02 .modal-head h2 {
+  margin: 5px 0 8px;
+  font-size: 20px;
+  line-height: 28px;
+}
+.hn-rpt02 .modal-close {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 7px;
+  background: var(--hnr-surface-muted);
+  color: var(--muted);
+  font-size: 22px;
+}
+.hn-rpt02 .modal-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding: 18px 24px 0;
+}
+.hn-rpt02 .modal-grid > div {
+  padding: 12px;
+  border-radius: var(--radius);
+  background: var(--hnr-surface-muted);
+}
+.hn-rpt02 .meta-label {
+  color: var(--muted);
+  font-size: 11px;
+}
+.hn-rpt02 .meta-value {
+  margin-top: 4px;
+  color: var(--ink);
+  font-size: 21px;
+  font-weight: 600;
+}
+.hn-rpt02 .formula {
+  margin: 16px 24px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--primary-soft);
+  color: var(--primary-dark);
+  font-size: 13px;
+  font-weight: 700;
+}
+.hn-rpt02 .modal h3 {
+  margin: 0;
+  padding: 0 24px 10px;
+  font-size: 14px;
+}
+.hn-rpt02 .modal-events {
+  display: grid;
+  gap: 0;
+  padding: 0 24px 24px;
+}
+.hn-rpt02 .modal-events > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 3px 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+.hn-rpt02 .modal-events span {
+  color: var(--muted);
+  font-size: 12px;
+}
+.hn-rpt02 .modal-events b {
+  grid-row: span 2;
+  align-self: center;
+  color: var(--primary-dark);
+  font-variant-numeric: tabular-nums;
+}
+.hn-rpt02 .modal-eyebrow {
+  color: var(--primary-dark);
+}
+
+@media (max-width: 1279.95px) {
+  .hn-rpt02 .report-kpi-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .hn-rpt02 .report-filter-card {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .hn-rpt02 .report-filter-actions {
+    justify-content: flex-end;
+  }
+}
+@media (max-width: 979.95px) {
+  .hn-rpt02 .report-snapshot-grid {
+    grid-template-columns: 1fr;
+  }
+  .hn-rpt02 .report-slice-values {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 767.95px) {
+  .hn-rpt02 .report-filter-card {
+    grid-template-columns: 1fr;
+  }
+  .hn-rpt02 .report-filter-actions .button {
+    width: 100%;
+  }
+  .hn-rpt02 .report-slice-values {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 575.95px) {
+  .hn-rpt02 .report-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+  .hn-rpt02 .modal-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ══ report-02-offline.css ═══════════════════════════════════════════════
+   Ghi đè của RIÊNG báo cáo 8.2 — giữ nguyên thứ tự sau khối report-01. */
+
+.hn-rpt02 .report-kpi-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+.hn-rpt02 .report-kpi-card {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  grid-template-rows: auto auto auto;
+  column-gap: 16px;
+  align-content: center;
+  min-height: 112px;
+  padding: 16px;
+  border: 0;
+}
+.hn-rpt02 .report-kpi-card .kpi-top {
+  display: contents;
+}
+.hn-rpt02 .report-kpi-card .kpi-icon {
+  grid-column: 1;
+  grid-row: 1 / span 3;
+  align-self: center;
+  width: 40px;
+  height: 40px;
+}
+.hn-rpt02 .report-kpi-card .kpi-label,
+.hn-rpt02 .report-kpi-card .kpi-value,
+.hn-rpt02 .report-kpi-card .kpi-bottom {
+  grid-column: 2;
+}
+.hn-rpt02 .report-kpi-card .kpi-label {
+  min-height: 0;
+  font-size: 13px;
+}
+.hn-rpt02 .report-kpi-card .kpi-value {
+  margin: 1px 0 0;
+  font-size: 22px;
+  line-height: 32px;
+}
+.hn-rpt02 .report-kpi-card .kpi-foot {
+  min-height: 0;
+  color: color-mix(in srgb, var(--muted) 72%, transparent);
+  font-size: 12px;
+  line-height: 17px;
+}
+.hn-rpt02 .report-kpi-card .kpi-spark {
+  display: none;
+}
+.hn-rpt02 .analysis-grid {
+  grid-template-columns: minmax(0, 1.2fr) minmax(300px, 0.8fr);
+  gap: 16px;
+  align-items: stretch;
+}
+.hn-rpt02 .analysis-grid > :nth-child(1),
+.hn-rpt02 .analysis-grid > :nth-child(2) {
+  grid-column: auto;
+}
+.hn-rpt02 .report-chart-card {
+  min-height: 382px;
+  padding: 24px;
+  border: 0;
+  border-top: 0;
+}
+.hn-rpt02 .report-chart-card .chart-card-head {
+  min-height: 0;
+  padding: 0;
+  border-bottom: 0;
+  background: transparent;
+}
+.hn-rpt02 .report-chart-card .chart-wrap {
+  min-height: 260px;
+  padding: 16px 0 0;
+}
+.hn-rpt02 .report-chart-card .chart-plot {
+  order: 2;
+  width: 100%;
+  min-height: 205px;
+}
+.hn-rpt02 .report-chart-card .chart-legend {
+  order: 1;
+  justify-content: flex-start;
+}
+.hn-rpt02 [data-chart-series="structure"] .chart-wrap {
+  padding-top: 14px;
+}
+.hn-rpt02 .structure-plot {
+  align-items: center;
+}
+.hn-rpt02 .structure-chart {
+  display: grid;
+  width: 100%;
+  gap: 13px;
+}
+.hn-rpt02 .structure-row {
+  display: grid;
+  gap: 7px;
+}
+.hn-rpt02 .structure-row-head {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 18px;
+}
+.hn-rpt02 .structure-name {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+}
+.hn-rpt02 .structure-name > i {
+  width: 9px;
+  height: 9px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--structure-color);
+}
+.hn-rpt02 .structure-row-head > strong {
+  flex: 0 0 auto;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.hn-rpt02 .structure-row-head small {
+  margin-left: 5px;
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 400;
+}
+.hn-rpt02 .structure-track {
+  display: block;
+  height: 9px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--hnr-surface-muted);
+  box-shadow: inset 0 0 0 1px var(--hnr-track-inset);
+}
+.hn-rpt02 .structure-track > i {
+  display: block;
+  width: var(--structure-width);
+  height: 100%;
+  border-radius: inherit;
+  background: var(--structure-color);
+  transition: width 220ms ease;
+}
+.hn-rpt02 .report-chart-card .chart-table {
+  margin: 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.hn-rpt02 .action-button {
+  min-height: 38px;
+  padding: 7px 12px;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--blue-soft);
+  box-shadow: none;
+  color: var(--hnr-teal-fg);
+  font-size: 13px;
+  font-weight: 600;
+}
+.hn-rpt02 .action-button:hover {
+  border: 0;
+  background: var(--hnr-action-hover-bg);
+  color: var(--hnr-teal-fg-strong);
+}
+.hn-rpt02 .action-button svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+@media (max-width: 1399.95px) {
+  .hn-rpt02 .report-filter-card {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .hn-rpt02 .report-filter-actions {
+    justify-self: stretch;
+    justify-content: flex-end;
+  }
+}
+@media (max-width: 1279px) {
+  .hn-rpt02 .analysis-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .hn-rpt02 .analysis-grid > * {
+    grid-column: auto;
+  }
+}
+@media (max-width: 979.95px) {
+  .hn-rpt02 .report-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 767.95px) {
+  .hn-rpt02 .report-filter-card,
+  .hn-rpt02 .report-kpi-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .hn-rpt02 .report-filter-actions {
+    justify-content: stretch;
+  }
+  .hn-rpt02 .report-chart-card {
+    padding: 16px;
+  }
+  .hn-rpt02 .page-wrap {
+    padding: 16px 16px 40px;
+  }
+}
+
+@media (pointer: coarse) {
+  .hn-rpt02 button,
+  .hn-rpt02 input:not([type="checkbox"]) {
+    min-height: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hn-rpt02 *,
+  .hn-rpt02 *::before,
+  .hn-rpt02 *::after {
+    animation-duration: 0.001ms;
+    animation-iteration-count: 1;
+    transition-duration: 0.001ms;
+  }
+}
+
+/* ── Chế độ tối ──────────────────────────────────────────────────────────
+   Nhóm màu chung (`--wms-*`) đã tự đổi ở css-vars-dark.css nên ở đây chỉ đảo
+   các sắc riêng `--hnr-*` mà demo vẽ lại cho nền tối (khối
+   `html[data-theme="dark"]` của report-01-offline.css). */
+:root[data-theme="dark"] .hn-rpt02 {
+  --hnr-surface-muted: #35354f;
+  --hnr-chip-neutral-bg: #41415d;
+  --hnr-chip-neutral-fg: #d8d4e8;
+  --hnr-chip-info-fg: #8fc2ff;
+  --hnr-match-fg: #70e6a7;
+  --hnr-teal-fg: #5fddec;
+  --hnr-teal-fg-strong: #8ae8f3;
+  --hnr-ghost-border: rgba(231, 227, 252, 0.18);
+  --hnr-alert-warning-fg: #ffc27a;
+  --hnr-alert-error-fg: #ff9ba0;
+  --hnr-alert-info-fg: #8fc2ff;
+  --hnr-donut-track: #44445e;
+  --hnr-axis: rgba(231, 227, 252, 0.68);
+  --hnr-table-line: rgba(231, 227, 252, 0.08);
+  --hnr-row-line: rgba(231, 227, 252, 0.08);
+  --hnr-card-line: rgba(231, 227, 252, 0.08);
+  --hnr-track-inset: rgba(231, 227, 252, 0.06);
+  --hnr-segment-bg: rgba(231, 227, 252, 0.07);
+  --hnr-segment-shadow: 0 2px 6px rgba(12, 12, 24, 0.22);
+  --hnr-overlay: rgba(29, 25, 38, 0.5);
+  --hnr-overlay-shadow: 0 18px 48px rgba(12, 12, 24, 0.48);
+  --hnr-modal-line: rgba(231, 227, 252, 0.12);
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   BỔ SUNG NGOÀI DEMO · 1. Khối dài cuộn trong khung
+   -------------------------------------------------------------------------
+   Demo 8.2 chỉ có vài dòng nên khối nào cũng ngắn. Dữ liệu thật một lát cắt có
+   thể hàng trăm dòng: để nguyên thì "SKU cần làm rõ", "Danh sách định mức theo
+   SKU" và "Dòng tồn kho theo trạng thái" kéo trang thành một dải rất dài. Đây
+   là `max-height` nên khối NGẮN không bị độn thêm khoảng trắng — chỉ khối dài
+   mới sinh thanh cuộn. Giá trị dùng chung với 7 màn báo cáo còn lại
+   (`RPT_SCROLL_MAX_HEIGHT` ở operations/report-tokens.ts).
+   ═════════════════════════════════════════════════════════════════════════ */
+.hn-rpt02 {
+  --hn-rpt-scroll-h: clamp(320px, 56vh, 640px);
+  --hnr-scrollbar-thumb: rgba(47, 43, 61, 0.22);
+  --hnr-scrollbar-thumb-hover: rgba(47, 43, 61, 0.38);
+}
+
+.hn-rpt02 .table-wrap,
+.hn-rpt02 .report-snapshot-grid {
+  max-height: var(--hn-rpt-scroll-h);
+  overflow-y: auto;
+  /* Cuộn hết khối thì DỪNG, không "xuyên" ra cuộn tiếp cả trang. */
+  overscroll-behavior: contain;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: var(--hnr-scrollbar-thumb) transparent;
+}
+
+/* Lưới thẻ lát cắt giờ là KHUNG CUỘN nên cần đệm trên: thẻ nhấc 2px khi rê
+   chuột, không có đệm thì hàng đầu bị mép khung cắt cụt phần nhấc lên. */
+.hn-rpt02 .report-snapshot-grid {
+  padding-top: 3px;
+}
+
+/* Cuộn dọc mà tiêu đề trôi mất thì không còn biết cột nào là cột nào. */
+.hn-rpt02 .table-wrap .report-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.hn-rpt02 .table-wrap::-webkit-scrollbar,
+.hn-rpt02 .report-snapshot-grid::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.hn-rpt02 .table-wrap::-webkit-scrollbar-thumb,
+.hn-rpt02 .report-snapshot-grid::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background: var(--hnr-scrollbar-thumb);
+  background-clip: content-box;
+}
+.hn-rpt02 .table-wrap:hover::-webkit-scrollbar-thumb,
+.hn-rpt02 .report-snapshot-grid:hover::-webkit-scrollbar-thumb {
+  background: var(--hnr-scrollbar-thumb-hover);
+  background-clip: content-box;
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   BỔ SUNG NGOÀI DEMO · 2. Chuyển động
+   -------------------------------------------------------------------------
+   Demo là HTML tĩnh nên mọi thay đổi trạng thái đều "nhảy" một phát. Lớp
+   chuyển động toàn cục `src/styles/hn-motion.css` chỉ phủ antd/MUI, không với
+   tới thẻ HTML thuần của bản port — nên khai lại ở đây bằng ĐÚNG bộ token
+   `--hn-ease*` / `--hn-dur*` và keyframes của lớp đó. Không cần khối
+   `prefers-reduced-motion` riêng: hn-motion.css đã tắt toàn cục.
+   ═════════════════════════════════════════════════════════════════════════ */
+.hn-rpt02 .button,
+.hn-rpt02 .mini-action,
+.hn-rpt02 .legend-button,
+.hn-rpt02 .modal-close,
+.hn-rpt02 .chart-table summary {
+  transition:
+    color var(--hn-dur-instant) var(--hn-ease),
+    background-color var(--hn-dur-fast) var(--hn-ease),
+    border-color var(--hn-dur-fast) var(--hn-ease),
+    box-shadow var(--hn-dur-fast) var(--hn-ease),
+    transform var(--hn-dur-fast) var(--hn-ease),
+    opacity var(--hn-dur-fast) var(--hn-ease);
+}
+
+.hn-rpt02 .button:not(:disabled):hover,
+.hn-rpt02 .mini-action:not(:disabled):hover {
+  transform: translateY(-1px);
+}
+.hn-rpt02 .button:not(:disabled):active,
+.hn-rpt02 .mini-action:not(:disabled):active,
+.hn-rpt02 .legend-button:active {
+  transform: translateY(0) scale(0.98);
+  transition-duration: var(--hn-dur-instant);
+}
+
+.hn-rpt02 .chip,
+.hn-rpt02 .match-chip {
+  transition:
+    color var(--hn-dur-instant) var(--hn-ease),
+    background-color var(--hn-dur-fast) var(--hn-ease);
+}
+
+.hn-rpt02 .report-table tbody tr {
+  transition: background-color var(--hn-dur-fast) var(--hn-ease);
+}
+
+.hn-rpt02 .report-slice {
+  transition:
+    box-shadow var(--hn-dur) var(--hn-ease),
+    border-color var(--hn-dur-fast) var(--hn-ease),
+    transform var(--hn-dur) var(--hn-ease-out);
+}
+.hn-rpt02 .report-slice:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--floating-shadow);
+}
+
+/* Đổi tab Bảng ↔ Lát cắt: nội dung hiện dần thay vì tráo phát một. */
+.hn-rpt02 [role="tabpanel"]:not([hidden]) {
+  animation: hn-fade-in-up var(--hn-dur) var(--hn-ease-out) backwards;
+}
+.hn-rpt02 .backdrop {
+  animation: hn-fade-in var(--hn-dur-fast) var(--hn-ease-out) backwards;
+}
+/*
+ * `.modal` đã dùng `transform: translate(-50%,-50%)` để căn giữa nên KHÔNG
+ * dùng lại được `hn-scale-in` toàn cục (nó ghi đè transform và hộp thoại nhảy
+ * sang góc dưới phải). Keyframes riêng giữ nguyên phép căn giữa.
+ */
+.hn-rpt02 .modal {
+  animation: hn-rpt02-modal-in var(--hn-dur-slow) var(--hn-ease-out) backwards;
+}
+@keyframes hn-rpt02-modal-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+:root[data-theme="dark"] .hn-rpt02 {
+  --hnr-scrollbar-thumb: rgba(231, 227, 252, 0.24);
+  --hnr-scrollbar-thumb-hover: rgba(231, 227, 252, 0.4);
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   BỔ SUNG NGOÀI DEMO · 3. Control bộ lọc dùng CHUNG toàn hub Báo cáo
+   -------------------------------------------------------------------------
+   Demo 8.2 tự dựng ô "Mốc đối soát", ô tìm kiếm và ô "Loại hàng" bằng HTML
+   thuần, kèm một popover lịch và một popover listbox riêng. Yêu cầu người dùng
+   2026-09-03: thao tác trên 8 màn Báo cáo phải ĐỒNG BỘ với màn "Nhập liệu, đối
+   chiếu & lỗi" (RPT-04) — nên ba ô đó nay là `UiDatePicker` / `SearchInput` /
+   `UiSelect` dùng chung, cùng lịch, cùng dropdown, cùng chuyển động với mọi bộ
+   lọc khác. Khối dưới đây CHỈ ép control dùng chung lấp đầy đúng ô lưới mà demo
+   đã chia (giống hệt cách `FilterField` của RPT-04 làm).
+   ═════════════════════════════════════════════════════════════════════════ */
+.hn-rpt02 .filter-group .MuiFormControl-root,
+.hn-rpt02 .filter-group .MuiTextField-root {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+}
+
+/*
+ * Control dùng chung TỰ QUẢN chiều cao (CONTROL.height = 38px, đúng bằng ô lọc
+ * của 6 màn Báo cáo còn lại). Quy tắc `button/input { min-height: 40px }` —
+ * và bản 44px trong hai @media bên trên — là của bản port, dành cho nút do
+ * chính mockup dựng; nếu để nó áp vào đây thì thanh lọc màn này cao hơn hẳn
+ * các màn khác, tức là lại lệch đúng thứ vừa đồng bộ. Độ đặc hiệu 0-3-0 nên
+ * thắng cả ba quy tắc kia bất kể thứ tự khai báo.
+ */
+.hn-rpt02 .report-filter-card .hn-vuexy-date-field,
+.hn-rpt02 .report-filter-card .MuiInputBase-input {
+  min-height: 0;
+}
+
+/*
+ * Nút "Làm mới": icon quay trong lúc gọi lại số liệu.
+ *
+ * Lượt gọi lại xong trong khoảng 50ms nên chỉ đặt `disabled` thì không ai kịp
+ * thấy — người dùng tưởng nút chết. `useReportRefresh` giữ trạng thái bận tối
+ * thiểu 420ms để vòng quay này chạy trọn một nhịp, và báo kết quả bằng toast.
+ * Dùng chung keyframes `hn-spin` khai ngay dưới đây (hn-motion.css toàn cục
+ * không có sẵn keyframes xoay).
+ */
+.hn-rpt02 .refresh-icon {
+  display: inline-grid;
+  place-items: center;
+}
+.hn-rpt02 .refresh-icon.is-spinning {
+  animation: hn-rpt02-spin 900ms linear infinite;
+}
+@keyframes hn-rpt02-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

@@ -1,0 +1,1989 @@
+/**
+ * RPT-01 "Báo cáo Nhập – Xuất – Tồn" — port 1:1 CSS của demo UI/UX đã chốt
+ * `8.1.WMS_Hoa_Nam_Bao_Cao_Xuat_Nhap_Ton.html`, lấy từ đúng stylesheet mà demo
+ * nạp: `Other/Report01_HTML_Export/report-01-offline.css`, gồm hai vùng và giữ
+ * NGUYÊN thứ tự khai báo của nó:
+ *   1. vùng dùng chung `.page-wrap` → `.state-box` (dòng 188–602)
+ *   2. vùng riêng của trang `.report-01 …` (dòng 848 → hết file)
+ * Vùng 1 khai trước vì vùng 2 ghi đè nó bằng cascade chứ không bằng độ đặc hiệu.
+ *
+ * PHẠM VI: mọi selector nằm dưới `.hn-rpt01` nên không rò ra màn khác. Đây là
+ * CSS CỤC BỘ (khai trong docs/ui/vuexy-sync/allowlists/css-baseline.json).
+ *
+ * CHỈ CHÉP PHẦN TRANG NÀY DÙNG: các khối của demo mà RPT-01 không dựng
+ * (qa-panel, operations-grid, issue-row, composition-*, threshold-*, signal-*,
+ * datepicker-field, dialog…) được bỏ — chép vào cũng là CSS chết.
+ *
+ * MÀU: dùng token `--wms-*` ở mọi chỗ demo dùng đúng màu bảng Vuexy. Số còn lại
+ * là sắc xám/sắc chữ phụ demo tự đặt mà bảng token CHƯA có — khai thành
+ * `--hnf-*` ngay đầu file để giữ đúng giá trị demo và gom vào một chỗ.
+ *
+ * KHÔNG dùng cờ ưu tiên cascade nào (guard ui:styles ratchet). Chỗ demo ép
+ * `.analysis-grid > *` / `.insight-grid > *` về `grid-column: 1 / -1` bằng cờ
+ * đó được thay bằng việc liệt kê đúng các `:nth-child()` tương ứng — cùng độ
+ * đặc hiệu với khai báo bị ghi đè nên kết quả hiển thị y hệt.
+ */
+
+.hn-rpt01 {
+  /* Bảng màu demo — phần đã có token */
+  --ink: var(--wms-text-strong);
+  --muted: var(--wms-text-medium);
+  --line: var(--wms-border);
+  --primary: var(--wms-primary);
+  --primary-dark: var(--wms-primary-dark);
+  --primary-soft: var(--wms-primary-soft);
+  --teal: var(--wms-info);
+  --green: var(--wms-success);
+  --green-soft: var(--wms-success-soft);
+  --amber: var(--wms-warning);
+  --amber-soft: var(--wms-warning-soft);
+  --red: var(--wms-error);
+  --red-soft: var(--wms-error-soft);
+  --blue: var(--wms-info);
+  --blue-soft: var(--wms-info-soft);
+  --surface: var(--wms-bg-surface);
+  --surface-muted: #faf9fc;
+  --shadow: var(--wms-shadow-card);
+  --floating-shadow: var(--wms-shadow-floating);
+  --radius: var(--wms-radius-card);
+
+  /* Sắc riêng của demo, chưa có token tương ứng */
+  --hnf-chip-neutral-bg: #ebeaf0;
+  --hnf-chip-neutral-fg: #554f61;
+  --hnf-chip-info-fg: #155faf;
+  --hnf-match-fg: #157a46;
+  --hnf-ghost-border: #d9d6e3;
+  --hnf-alert-warning-fg: #6f430c;
+  --hnf-alert-error-fg: #8d2130;
+  --hnf-alert-info-fg: #154f91;
+  --hnf-axis: #5f596a;
+  --hnf-grid-line: #eceaf0;
+  --hnf-table-line: #eeeaf3;
+  --hnf-row-line: rgba(47, 43, 61, 0.07);
+  --hnf-card-line: rgba(47, 43, 61, 0.06);
+  --hnf-segment-bg: rgba(47, 43, 61, 0.06);
+  --hnf-segment-shadow: 0 2px 6px rgba(47, 43, 61, 0.11);
+  --hnf-equation-card-bg: #fcfbff;
+  --hnf-equation-neutral: #8f8b99;
+  --hnf-equation-neutral-soft: rgba(47, 43, 61, 0.07);
+  --hnf-equation-line: #ebe9f0;
+  --hnf-equation-shadow: 0 2px 7px rgba(47, 43, 61, 0.05);
+  --hnf-equation-op-line: #e4e1eb;
+  --hnf-equation-op-shadow: 0 3px 8px rgba(47, 43, 61, 0.11);
+  --hnf-equation-note-bg: rgba(47, 43, 61, 0.035);
+  --hnf-result-gradient: linear-gradient(135deg, #7367f0 0%, #9188f4 100%);
+  --hnf-result-shadow: 0 8px 18px rgba(115, 103, 240, 0.24);
+  --hnf-legend-inbound: #28c76f;
+  --hnf-legend-product: #ff6b76;
+  --hnf-legend-component: #ffb96a;
+  --hnf-legend-reversal: #8f86f7;
+  /*
+   * Màu NÉT VẼ của 5 chuỗi biểu đồ — mockup xuất thẳng vào thuộc tính `stroke`.
+   * Bốn trong năm màu trùng bảng token; `--hnf-chart-product` (#ff5c65) là sắc
+   * đỏ riêng mockup dùng cho đường "Xuất SP", nhạt hơn `--wms-error` (#ff4c51).
+   * Khai ở đây để TSX chỉ tham chiếu biến, không mang hex nào.
+   */
+  --hnf-chart-inbound: var(--wms-success);
+  --hnf-chart-product: #ff5c65;
+  --hnf-chart-component: var(--wms-warning);
+  --hnf-chart-reversal: var(--wms-info);
+  --hnf-chart-closing: var(--wms-primary);
+  --hnf-overlay: rgba(47, 43, 61, 0.35);
+  --hnf-overlay-shadow: 0 18px 48px rgba(47, 43, 61, 0.24);
+  --hnf-modal-line: rgba(47, 43, 61, 0.1);
+  --hnf-insight-shadow: 0 6px 20px rgba(47, 43, 61, 0.1);
+  --hnf-skeleton: #e9e8ee;
+  --hnf-focus: #2168d4;
+  --hnf-scrollbar-thumb: rgba(47, 43, 61, 0.22);
+  --hnf-scrollbar-thumb-hover: rgba(47, 43, 61, 0.38);
+
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 22px;
+  font-weight: 400;
+}
+
+.hn-rpt01 *,
+.hn-rpt01 *::before,
+.hn-rpt01 *::after {
+  box-sizing: border-box;
+}
+
+.hn-rpt01 button,
+.hn-rpt01 input {
+  font: inherit;
+}
+
+.hn-rpt01 button,
+.hn-rpt01 input {
+  min-height: 40px;
+}
+
+.hn-rpt01 button {
+  cursor: pointer;
+}
+
+.hn-rpt01 button:focus-visible,
+.hn-rpt01 input:focus-visible,
+.hn-rpt01 summary:focus-visible,
+.hn-rpt01 [tabindex]:focus-visible {
+  outline: 3px solid var(--hnf-focus);
+  outline-offset: 2px;
+}
+
+.hn-rpt01 .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── vùng 1 · page wrap / header ─────────────────────────────────────────── */
+.hn-rpt01 .page-wrap {
+  width: 100%;
+  margin: 0;
+  padding: 20px 24px 48px;
+}
+.hn-rpt01 .breadcrumb {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 20px;
+}
+.hn-rpt01 .breadcrumb strong {
+  color: var(--primary-dark);
+}
+.hn-rpt01 .page-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.hn-rpt01 .eyebrow {
+  display: inline-block;
+  color: var(--primary-dark);
+  font-size: 12.5px;
+  line-height: 18px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+}
+.hn-rpt01 h1,
+.hn-rpt01 h2,
+.hn-rpt01 h3,
+.hn-rpt01 p {
+  margin-top: 0;
+}
+.hn-rpt01 h1 {
+  margin-bottom: 4px;
+  font-size: 24px;
+  line-height: 38px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+.hn-rpt01 h2,
+.hn-rpt01 h3 {
+  margin-bottom: 0;
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 600;
+}
+.hn-rpt01 .page-header p {
+  max-width: 680px;
+  margin-bottom: 0;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 22px;
+}
+.hn-rpt01 .scope-block {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.hn-rpt01 .chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  line-height: 18px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.hn-rpt01 .chip-primary {
+  background: var(--primary-soft);
+  color: var(--primary-dark);
+}
+.hn-rpt01 .chip-neutral {
+  background: var(--hnf-chip-neutral-bg);
+  color: var(--hnf-chip-neutral-fg);
+}
+.hn-rpt01 .chip-success {
+  background: var(--green-soft);
+  color: var(--green);
+}
+.hn-rpt01 .chip-warning {
+  background: var(--amber-soft);
+  color: var(--amber);
+}
+.hn-rpt01 .chip-error {
+  background: var(--red-soft);
+  color: var(--red);
+}
+.hn-rpt01 .chip-info {
+  background: var(--blue-soft);
+  color: var(--hnf-chip-info-fg);
+}
+
+/* ── vùng 1 · thanh lọc ──────────────────────────────────────────────────── */
+.hn-rpt01 .filter-card {
+  display: grid;
+  grid-template-columns: minmax(390px, 1.45fr) minmax(280px, 1fr) auto;
+  align-items: end;
+  gap: 16px 20px;
+  margin-bottom: 20px;
+  padding: 16px 20px;
+  border: 1px solid var(--hnf-card-line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+.hn-rpt01 .filter-group {
+  display: grid;
+  gap: 7px;
+}
+.hn-rpt01 .filter-label {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+}
+.hn-rpt01 .refresh-block {
+  display: flex;
+  align-items: center;
+  justify-self: end;
+  gap: 12px;
+}
+.hn-rpt01 .refresh-meta {
+  display: grid;
+  gap: 1px;
+  min-width: 154px;
+  padding-left: 12px;
+  border-left: 1px solid var(--line);
+}
+.hn-rpt01 .refresh-meta small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 18px;
+  white-space: nowrap;
+}
+.hn-rpt01 .refresh-meta > span {
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.hn-rpt01 .button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 8px 16px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  font-weight: 500;
+  font-size: 15px;
+  line-height: 20px;
+  white-space: nowrap;
+}
+.hn-rpt01 .button svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.65;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.hn-rpt01 .button-primary {
+  background: var(--primary);
+  color: var(--wms-on-primary);
+}
+.hn-rpt01 .button-primary:hover {
+  background: var(--primary-dark);
+}
+.hn-rpt01 .button-primary:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.hn-rpt01 .button-ghost {
+  border-color: var(--hnf-ghost-border);
+  background: var(--surface);
+  color: var(--ink);
+}
+.hn-rpt01 .page-alert {
+  margin: 0 0 24px;
+  padding: 12px 16px;
+  border-left: 4px solid var(--amber);
+  border-radius: var(--radius);
+  background: var(--amber-soft);
+  color: var(--hnf-alert-warning-fg);
+  font-size: 13px;
+  line-height: 20px;
+}
+.hn-rpt01 .page-alert.is-error {
+  border-color: var(--red);
+  background: var(--red-soft);
+  color: var(--hnf-alert-error-fg);
+}
+.hn-rpt01 .page-alert.is-info {
+  border-color: var(--blue);
+  background: var(--blue-soft);
+  color: var(--hnf-alert-info-fg);
+}
+
+/* ── vùng 1 · tiêu đề mục và thẻ ─────────────────────────────────────────── */
+.hn-rpt01 .section-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 20px 0 12px;
+}
+.hn-rpt01 .section-heading > div {
+  display: grid;
+  gap: 4px;
+}
+.hn-rpt01 .section-meta {
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 18px;
+  text-align: right;
+}
+.hn-rpt01 .card {
+  border: 1px solid var(--hnf-card-line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.hn-rpt01 .card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 24px 24px 16px;
+}
+.hn-rpt01 .card-head > div:first-child {
+  display: grid;
+  gap: 5px;
+}
+.hn-rpt01 .card-subtitle {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+/* ── vùng 1 · KPI ────────────────────────────────────────────────────────── */
+.hn-rpt01 .kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 24px;
+}
+.hn-rpt01 .kpi-card {
+  position: relative;
+  grid-column: auto;
+  min-height: 156px;
+  padding: 20px;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease;
+}
+.hn-rpt01 .kpi-card:hover,
+.hn-rpt01 .kpi-card:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: var(--floating-shadow);
+}
+.hn-rpt01 .kpi-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+.hn-rpt01 .kpi-icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius);
+  background: var(--accent-soft, var(--primary-soft));
+  color: var(--accent, var(--primary));
+}
+.hn-rpt01 .kpi-icon svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.65;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.hn-rpt01 .kpi-label {
+  min-height: 22px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 20px;
+}
+.hn-rpt01 .kpi-value {
+  margin: 10px 0 5px;
+  color: var(--ink);
+  font-size: 30px;
+  line-height: 38px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.hn-rpt01 .kpi-bottom {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+}
+.hn-rpt01 .kpi-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 18px;
+}
+.hn-rpt01 .kpi-spark {
+  display: block;
+  flex: 0 0 auto;
+  width: 48px;
+  height: 30px;
+  color: var(--accent, var(--primary));
+  opacity: 0.82;
+}
+.hn-rpt01 .kpi-spark polyline {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ── vùng 1 · phương trình cân đối ───────────────────────────────────────── */
+.hn-rpt01 .equation-card {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 12px;
+  padding: 20px;
+  background: linear-gradient(
+    180deg,
+    var(--surface) 0%,
+    var(--hnf-equation-card-bg) 100%
+  );
+}
+.hn-rpt01 .equation-item {
+  --equation-accent: var(--hnf-equation-neutral);
+  --equation-soft: var(--hnf-equation-neutral-soft);
+  position: relative;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 15px;
+  align-content: center;
+  min-width: 0;
+  min-height: 122px;
+  padding: 16px;
+  border: 1px solid
+    color-mix(in srgb, var(--equation-accent) 17%, var(--hnf-equation-line));
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: var(--hnf-equation-shadow);
+  overflow: visible;
+}
+.hn-rpt01 .equation-item::after {
+  content: "";
+  position: absolute;
+  inset: 0 14px auto;
+  height: 3px;
+  border-radius: 0 0 4px 4px;
+  background: var(--equation-accent);
+  opacity: 0.78;
+}
+.hn-rpt01 .equation-item + .equation-item::before {
+  content: attr(data-operator);
+  position: absolute;
+  z-index: 2;
+  left: -21px;
+  top: 46px;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--hnf-equation-op-line);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--hnf-axis);
+  box-shadow: var(--hnf-equation-op-shadow);
+  font-size: 16px;
+  line-height: 1;
+  font-weight: 700;
+}
+.hn-rpt01 .equation-item[data-tone="opening"] {
+  --equation-accent: var(--hnf-equation-neutral);
+  --equation-soft: var(--hnf-equation-neutral-soft);
+}
+.hn-rpt01 .equation-item[data-tone="inbound"] {
+  --equation-accent: var(--wms-success);
+  --equation-soft: rgba(40, 199, 111, 0.11);
+}
+.hn-rpt01 .equation-item[data-tone="product"] {
+  --equation-accent: var(--wms-error);
+  --equation-soft: rgba(255, 76, 81, 0.1);
+}
+.hn-rpt01 .equation-item[data-tone="component"] {
+  --equation-accent: var(--wms-warning);
+  --equation-soft: rgba(255, 159, 67, 0.12);
+}
+.hn-rpt01 .equation-item[data-tone="reversal"] {
+  --equation-accent: var(--wms-info);
+  --equation-soft: rgba(0, 186, 209, 0.11);
+}
+.hn-rpt01 .equation-item[data-tone="closing"] {
+  --equation-accent: var(--wms-primary);
+  --equation-soft: rgba(115, 103, 240, 0.15);
+}
+.hn-rpt01 .equation-item-head {
+  display: grid;
+  gap: 7px;
+  align-content: start;
+  min-width: 0;
+}
+.hn-rpt01 .equation-label {
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 600;
+}
+.hn-rpt01 .equation-impact {
+  justify-self: start;
+  min-height: 22px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--equation-soft);
+  color: var(--equation-accent);
+  font-size: 11.5px;
+  line-height: 18px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.hn-rpt01 .equation-value {
+  align-self: end;
+  color: var(--ink);
+  font-size: 25px;
+  line-height: 32px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.hn-rpt01 .equation-item.result {
+  border-color: transparent;
+  background: var(--hnf-result-gradient);
+  box-shadow: var(--hnf-result-shadow);
+}
+.hn-rpt01 .equation-item.result::after {
+  background: rgba(255, 255, 255, 0.74);
+}
+.hn-rpt01 .equation-item.result .equation-label,
+.hn-rpt01 .equation-item.result .equation-value {
+  color: var(--wms-on-primary);
+}
+.hn-rpt01 .equation-item.result .equation-impact {
+  background: rgba(255, 255, 255, 0.17);
+  color: var(--wms-on-primary);
+}
+.hn-rpt01 .equation-note {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-top: 4px;
+  padding: 14px 16px;
+  border: 1px solid var(--hnf-row-line);
+  border-radius: 10px;
+  background: var(--hnf-equation-note-bg);
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 18px;
+}
+.hn-rpt01 .equation-formula {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.hn-rpt01 .equation-note-label {
+  color: var(--ink);
+  font-size: 11.5px;
+  line-height: 17px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.hn-rpt01 .equation-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+  padding: 8px 11px;
+  border-radius: 8px;
+  background: var(--green-soft);
+  color: var(--hnf-match-fg);
+}
+.hn-rpt01 .equation-status.is-mismatch {
+  background: var(--red-soft);
+  color: var(--hnf-alert-error-fg);
+}
+.hn-rpt01 .equation-status-icon {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+}
+.hn-rpt01 .equation-status-icon svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+}
+.hn-rpt01 .equation-status > div {
+  display: grid;
+  gap: 1px;
+}
+.hn-rpt01 .equation-status span {
+  font-size: 11px;
+  line-height: 16px;
+}
+.hn-rpt01 .equation-status strong {
+  font-size: 12.5px;
+  line-height: 18px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.hn-rpt01 .equation-card > .state-box {
+  grid-column: 1 / -1;
+  min-height: 142px;
+}
+
+/* ── vùng 1 · biểu đồ ────────────────────────────────────────────────────── */
+.hn-rpt01 .analysis-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 24px;
+  align-items: start;
+}
+.hn-rpt01 .analysis-grid > :nth-child(1) {
+  grid-column: span 8;
+}
+.hn-rpt01 .analysis-grid > :nth-child(2) {
+  grid-column: span 4;
+}
+.hn-rpt01 .analysis-grid > :nth-child(1),
+.hn-rpt01 .analysis-grid > :nth-child(2) {
+  align-self: stretch;
+}
+.hn-rpt01 .chart-card {
+  display: flex;
+  min-height: 360px;
+  flex-direction: column;
+  border-top: 3px solid var(--primary);
+}
+.hn-rpt01 .chart-card-head {
+  min-height: 104px;
+  align-items: center;
+  border-bottom: 1px solid rgba(115, 103, 240, 0.12);
+  background: linear-gradient(
+    125deg,
+    rgba(115, 103, 240, 0.09) 0%,
+    rgba(115, 103, 240, 0.025) 62%,
+    var(--surface) 100%
+  );
+}
+.hn-rpt01 .chart-card-head > .chart-heading {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  min-width: 0;
+}
+.hn-rpt01 .chart-heading > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.hn-rpt01 .chart-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+.hn-rpt01 .chart-icon-success {
+  background: var(--green-soft);
+  color: var(--green);
+}
+.hn-rpt01 .chart-icon svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.65;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.hn-rpt01 .chart-unit {
+  align-self: start;
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: var(--surface-muted);
+  color: var(--muted);
+  font-size: 11.5px;
+  line-height: 17px;
+  white-space: nowrap;
+}
+.hn-rpt01 .chart-head-meta {
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+}
+.hn-rpt01 .chart-current {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  color: var(--muted);
+}
+.hn-rpt01 .chart-current strong {
+  color: var(--ink);
+  font-size: 17px;
+  line-height: 22px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.hn-rpt01 .chart-current small {
+  font-size: 11px;
+  line-height: 16px;
+}
+.hn-rpt01 .chart-wrap {
+  display: flex;
+  flex: 1;
+  min-height: 276px;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 24px 8px;
+}
+.hn-rpt01 .chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.hn-rpt01 .legend-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 4px 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 18px;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    color 160ms ease;
+}
+.hn-rpt01 .legend-button:hover,
+.hn-rpt01 .legend-button:focus-visible {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  color: var(--primary-dark);
+}
+.hn-rpt01 .legend-button[aria-pressed="false"] {
+  opacity: 0.45;
+  text-decoration: line-through;
+}
+.hn-rpt01 .legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--legend);
+}
+.hn-rpt01 .legend-inbound {
+  --legend: var(--hnf-legend-inbound);
+}
+.hn-rpt01 .legend-product {
+  --legend: var(--hnf-legend-product);
+}
+.hn-rpt01 .legend-component {
+  --legend: var(--hnf-legend-component);
+}
+.hn-rpt01 .legend-reversal {
+  --legend: var(--hnf-legend-reversal);
+}
+.hn-rpt01 .chart-plot {
+  display: flex;
+  flex: 1;
+  min-height: 232px;
+  align-items: stretch;
+}
+.hn-rpt01 .chart-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 232px;
+}
+/*
+ * Nét vẽ của chuỗi: mockup đặt thẳng `fill`/`stroke` lên từng phần tử SVG. Ở
+ * đây màu đi qua biến `--series-color` (component gán inline) nên phần tạo hình
+ * vẫn nằm trọn trong CSS như mọi khối khác của bản port.
+ */
+.hn-rpt01 .chart-line {
+  fill: none;
+  stroke: var(--series-color, var(--primary));
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.hn-rpt01 .chart-point {
+  fill: var(--surface);
+  stroke: var(--series-color, var(--primary));
+  stroke-width: 2.5;
+}
+.hn-rpt01 .chart-empty {
+  min-height: 280px;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 20px;
+  text-align: center;
+}
+.hn-rpt01 .chart-table {
+  margin: 0 24px 24px;
+  font-size: 12.5px;
+  line-height: 18px;
+}
+.hn-rpt01 .chart-table summary {
+  color: var(--primary-dark);
+  cursor: pointer;
+  font-weight: 500;
+}
+.hn-rpt01 .chart-table table {
+  width: 100%;
+  margin-top: 7px;
+  border-collapse: collapse;
+}
+.hn-rpt01 .chart-table th,
+.hn-rpt01 .chart-table td {
+  padding: 5px;
+  border-bottom: 1px solid var(--hnf-table-line);
+  text-align: right;
+}
+.hn-rpt01 .chart-table th:first-child,
+.hn-rpt01 .chart-table td:first-child {
+  text-align: left;
+}
+.hn-rpt01 .chart-card .chart-table {
+  margin-top: auto;
+}
+.hn-rpt01 .chart-card > .state-box {
+  flex: 1;
+  min-height: 280px;
+}
+
+/* ── vùng 1 · thẻ chứng từ ───────────────────────────────────────────────── */
+.hn-rpt01 .insight-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 24px;
+  align-items: stretch;
+}
+.hn-rpt01 .insight-grid > * {
+  grid-column: span 4;
+}
+.hn-rpt01 .insight-card {
+  --insight-accent: var(--primary);
+  --insight-soft: var(--primary-soft);
+  display: flex;
+  min-height: 408px;
+  flex-direction: column;
+  border-top: 3px solid var(--insight-accent);
+  box-shadow: var(--hnf-insight-shadow);
+}
+.hn-rpt01 .insight-card-warranty {
+  --insight-accent: var(--amber);
+  --insight-soft: var(--amber-soft);
+}
+.hn-rpt01 .insight-card-ranking {
+  --insight-accent: var(--primary);
+  --insight-soft: var(--primary-soft);
+}
+.hn-rpt01 .insight-card-quality {
+  --insight-accent: var(--teal);
+  --insight-soft: var(--blue-soft);
+}
+.hn-rpt01 .insight-card .insight-card-head {
+  min-height: 124px;
+  align-items: flex-start;
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--insight-accent) 16%, transparent);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--insight-accent) 10%, var(--surface)) 0%,
+    var(--surface) 72%
+  );
+}
+.hn-rpt01 .card-head > .insight-heading {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+.hn-rpt01 .insight-heading > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.hn-rpt01 .insight-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: var(--insight-soft);
+  color: var(--insight-accent);
+}
+.hn-rpt01 .insight-icon svg {
+  width: 21px;
+  height: 21px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.65;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.hn-rpt01 .insight-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 24px 24px;
+}
+.hn-rpt01 .insight-card .insight-action {
+  width: 100%;
+  margin: auto 0 0;
+  background: var(--insight-soft);
+  color: color-mix(in srgb, var(--insight-accent) 82%, var(--ink));
+}
+.hn-rpt01 .insight-card .insight-action:hover {
+  background: color-mix(in srgb, var(--insight-accent) 22%, var(--surface));
+}
+.hn-rpt01 .insight-card > .state-box {
+  flex: 1;
+  min-height: 405px;
+}
+
+/* ── vùng 1 · trạng thái rỗng / đang tải ─────────────────────────────────── */
+.hn-rpt01 .state-box {
+  min-height: 240px;
+  display: grid;
+  place-content: center;
+  gap: 8px;
+  padding: 24px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 20px;
+}
+.hn-rpt01 .state-box strong {
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 22px;
+  font-weight: 600;
+}
+.hn-rpt01 .state-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin: auto;
+  border-radius: var(--radius);
+  background: var(--primary-soft);
+  color: var(--primary-dark);
+}
+.hn-rpt01 .state-icon svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.65;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.hn-rpt01 .is-busy .state-icon svg {
+  animation: hn-rpt01-state-spin 1.4s linear infinite;
+}
+@keyframes hn-rpt01-state-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── vùng 2 · riêng của trang RPT-01 ─────────────────────────────────────── */
+.hn-rpt01 .page-header {
+  margin-bottom: 18px;
+}
+.hn-rpt01 .page-header h1 {
+  margin: 0;
+}
+.hn-rpt01 .page-header p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 20px;
+}
+.hn-rpt01 .report-filter-card {
+  grid-template-columns:
+    minmax(300px, 1.08fr) minmax(230px, 0.88fr)
+    minmax(180px, 0.72fr) auto;
+  align-items: end;
+}
+.hn-rpt01 .report-filter-card > .filter-group {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+.hn-rpt01 .filter-label {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 20px;
+}
+/*
+ * Hai ô ngày của "Kỳ báo cáo" nằm NGANG HÀNG trên một dòng, đúng mockup —
+ * đây là lưới 2 cột, không phải hai khối xếp chồng.
+ */
+.hn-rpt01 .report-date-range {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  align-items: center;
+}
+.hn-rpt01 .report-filter-actions {
+  display: flex;
+  align-items: end;
+}
+.hn-rpt01 .report-filter-actions .button {
+  min-width: 110px;
+}
+.hn-rpt01 .report-snapshot {
+  grid-column: 1 / -1;
+  margin-top: -4px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 18px;
+}
+.hn-rpt01 .report-snapshot strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+.hn-rpt01 .report-kpi-grid {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+.hn-rpt01 .report-kpi-card {
+  --accent: var(--report-accent);
+  --accent-soft: var(--report-accent-soft);
+}
+.hn-rpt01 .report-kpi-card .kpi-foot {
+  min-height: 36px;
+}
+.hn-rpt01 .report-kpi-card .kpi-spark {
+  margin-left: auto;
+}
+.hn-rpt01 .report-kpi-card[data-tone="opening"] {
+  --report-accent: var(--hnf-equation-neutral);
+  --report-accent-soft: rgba(47, 43, 61, 0.08);
+}
+.hn-rpt01 .report-kpi-card[data-tone="inbound"] {
+  --report-accent: var(--wms-success);
+  --report-accent-soft: rgba(40, 199, 111, 0.16);
+}
+.hn-rpt01 .report-kpi-card[data-tone="product"] {
+  --report-accent: var(--wms-error);
+  --report-accent-soft: rgba(255, 76, 81, 0.16);
+}
+.hn-rpt01 .report-kpi-card[data-tone="component"] {
+  --report-accent: var(--wms-warning);
+  --report-accent-soft: rgba(255, 159, 67, 0.16);
+}
+.hn-rpt01 .report-kpi-card[data-tone="reversal"] {
+  --report-accent: var(--wms-info);
+  --report-accent-soft: rgba(0, 186, 209, 0.16);
+}
+.hn-rpt01 .report-kpi-card[data-tone="closing"] {
+  --report-accent: var(--wms-primary);
+  --report-accent-soft: rgba(115, 103, 240, 0.16);
+}
+.hn-rpt01 .equation-card {
+  margin: 0;
+}
+.hn-rpt01 .report-table-card .card-head {
+  align-items: center;
+}
+.hn-rpt01 .report-view-tabs {
+  display: flex;
+  gap: 7px;
+  padding: 0 24px 16px;
+}
+.hn-rpt01 .report-view-tabs .button {
+  min-height: 34px;
+  padding: 6px 11px;
+  font-size: 13px;
+}
+.hn-rpt01 .table-wrap {
+  overflow-x: auto;
+  padding: 0 24px 24px;
+}
+.hn-rpt01 .report-table {
+  width: 100%;
+  min-width: 1040px;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13.5px;
+  line-height: 20px;
+}
+.hn-rpt01 .report-table th {
+  padding: 10px 12px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-muted);
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.hn-rpt01 .report-table th:first-child {
+  border-left: 1px solid var(--line);
+  border-radius: var(--radius) 0 0 0;
+}
+.hn-rpt01 .report-table th:last-child {
+  border-right: 1px solid var(--line);
+  border-radius: 0 var(--radius) 0 0;
+}
+.hn-rpt01 .report-table td {
+  padding: 12px;
+  border-bottom: 1px solid var(--hnf-row-line);
+  color: var(--ink);
+  vertical-align: middle;
+}
+.hn-rpt01 .report-table tbody tr:last-child td {
+  border-bottom: 1px solid var(--line);
+}
+.hn-rpt01 .report-table tbody tr:hover {
+  background: var(--surface-muted);
+}
+.hn-rpt01 .report-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.hn-rpt01 .report-table .table-empty {
+  padding: 28px 12px;
+  color: var(--muted);
+  text-align: center;
+}
+.hn-rpt01 .sku {
+  display: block;
+  color: var(--primary-dark);
+  font-size: 11px;
+  font-weight: 700;
+}
+.hn-rpt01 .truncate {
+  max-width: 190px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hn-rpt01 .match-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--green-soft);
+  color: var(--hnf-match-fg);
+  font-size: 11px;
+  font-weight: 700;
+}
+.hn-rpt01 .mini-action {
+  min-height: 30px;
+  padding: 4px 9px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--primary-soft);
+  color: var(--primary-dark);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+}
+.hn-rpt01 .mini-action:hover {
+  background: color-mix(in srgb, var(--primary) 25%, var(--surface));
+}
+.hn-rpt01 .report-snapshot-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  padding: 0 24px 24px;
+}
+.hn-rpt01 .report-slice {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--primary);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.hn-rpt01 .report-slice-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.hn-rpt01 .report-slice-head strong {
+  display: block;
+  font-size: 14px;
+  line-height: 20px;
+}
+.hn-rpt01 .report-slice-head span {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 18px;
+}
+.hn-rpt01 .report-slice-values {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+.hn-rpt01 .report-slice-values div {
+  padding: 8px;
+  border-radius: 6px;
+  background: var(--surface-muted);
+}
+.hn-rpt01 .report-slice-values dt {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 14px;
+}
+.hn-rpt01 .report-slice-values dd {
+  margin: 3px 0 0;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.hn-rpt01 .report-chart-card {
+  min-height: 382px;
+}
+.hn-rpt01 .report-chart-card .chart-card-head {
+  min-height: 100px;
+}
+.hn-rpt01 .chart-grid-line {
+  stroke: var(--hnf-grid-line);
+  stroke-width: 1;
+}
+.hn-rpt01 .chart-axis-label {
+  fill: var(--hnf-axis);
+  font-size: 10px;
+}
+.hn-rpt01 .chart-point-label {
+  fill: var(--ink);
+  font-size: 10px;
+  font-weight: 700;
+}
+.hn-rpt01 .report-chart-card .chart-svg {
+  min-height: 220px;
+}
+.hn-rpt01 .report-document-card {
+  min-height: 236px;
+}
+.hn-rpt01 .report-document-card .insight-card-head {
+  min-height: 96px;
+}
+.hn-rpt01 .report-document-card .insight-body {
+  gap: 9px;
+  padding-top: 16px;
+}
+.hn-rpt01 .document-line {
+  display: grid;
+  gap: 3px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--hnf-row-line);
+}
+.hn-rpt01 .document-line:last-of-type {
+  border-bottom: 0;
+}
+.hn-rpt01 .document-line strong {
+  font-size: 12.5px;
+  line-height: 18px;
+}
+.hn-rpt01 .document-line span {
+  color: var(--muted);
+  font-size: 11.5px;
+  line-height: 17px;
+}
+
+/* ── vùng 2 · lớp nổi ────────────────────────────────────────────────────── */
+.hn-rpt01 .backdrop {
+  position: fixed;
+  z-index: 70;
+  inset: 0;
+  background: var(--hnf-overlay);
+}
+.hn-rpt01 .modal {
+  z-index: 71;
+  border: 1px solid var(--hnf-modal-line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--hnf-overlay-shadow);
+}
+.hn-rpt01 .modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: min(620px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+  transform: translate(-50%, -50%);
+}
+.hn-rpt01 .modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 22px 24px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.hn-rpt01 .modal-head h2 {
+  margin: 5px 0 8px;
+  font-size: 20px;
+  line-height: 28px;
+}
+.hn-rpt01 .modal-head .eyebrow {
+  color: var(--primary-dark);
+}
+.hn-rpt01 .modal-close {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  border: 0;
+  border-radius: 7px;
+  background: var(--surface-muted);
+  color: var(--muted);
+  font-size: 22px;
+}
+.hn-rpt01 .modal-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding: 18px 24px 0;
+}
+.hn-rpt01 .modal-grid > div {
+  padding: 12px;
+  border-radius: var(--radius);
+  background: var(--surface-muted);
+}
+.hn-rpt01 .meta-label {
+  color: var(--muted);
+  font-size: 11px;
+}
+.hn-rpt01 .meta-value {
+  margin-top: 4px;
+  color: var(--ink);
+  font-size: 21px;
+  font-weight: 600;
+}
+.hn-rpt01 .formula {
+  margin: 16px 24px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--primary-soft);
+  color: var(--primary-dark);
+  font-size: 13px;
+  font-weight: 700;
+}
+.hn-rpt01 .modal h3 {
+  margin: 0;
+  padding: 0 24px 10px;
+  font-size: 14px;
+}
+.hn-rpt01 .modal-events {
+  display: grid;
+  gap: 0;
+  padding: 0 24px 24px;
+}
+.hn-rpt01 .modal-events > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 3px 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+.hn-rpt01 .modal-events span {
+  color: var(--muted);
+  font-size: 12px;
+}
+.hn-rpt01 .modal-events b {
+  grid-row: span 2;
+  align-self: center;
+  color: var(--primary-dark);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   BỔ SUNG NGOÀI MOCKUP · 1. Khối dài cuộn trong khung
+   -------------------------------------------------------------------------
+   Mockup 8.1 chỉ có 2 SKU và 3 chứng từ nên mọi khối đều ngắn. Dữ liệu thật
+   một kỳ có thể hàng trăm dòng: để nguyên thì "Đối chiếu từng SKU" và "Lịch sử
+   chứng từ" kéo trang thành một dải rất dài, người đọc mất luôn ngữ cảnh mục
+   kế tiếp. Đây là `max-height` nên khối NGẮN không bị độn thêm khoảng trắng —
+   chỉ khối dài mới sinh thanh cuộn. Giá trị dùng chung với 6 màn báo cáo còn
+   lại (`RPT_SCROLL_MAX_HEIGHT` ở operations/report-tokens.ts).
+   ═════════════════════════════════════════════════════════════════════════ */
+.hn-rpt01 {
+  --hn-rpt-scroll-h: clamp(320px, 56vh, 640px);
+}
+
+.hn-rpt01 .table-wrap,
+.hn-rpt01 .report-snapshot-grid,
+.hn-rpt01 .insight-grid {
+  max-height: var(--hn-rpt-scroll-h);
+  overflow-y: auto;
+  /* Cuộn hết khối thì DỪNG, không "xuyên" ra cuộn tiếp cả trang. */
+  overscroll-behavior: contain;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: var(--hnf-scrollbar-thumb) transparent;
+}
+
+/* Cuộn dọc mà tiêu đề trôi mất thì không còn biết cột nào là cột nào. */
+.hn-rpt01 .table-wrap .report-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.hn-rpt01 .table-wrap::-webkit-scrollbar,
+.hn-rpt01 .report-snapshot-grid::-webkit-scrollbar,
+.hn-rpt01 .insight-grid::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.hn-rpt01 .table-wrap::-webkit-scrollbar-thumb,
+.hn-rpt01 .report-snapshot-grid::-webkit-scrollbar-thumb,
+.hn-rpt01 .insight-grid::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background: var(--hnf-scrollbar-thumb);
+  background-clip: content-box;
+}
+.hn-rpt01 .table-wrap:hover::-webkit-scrollbar-thumb,
+.hn-rpt01 .report-snapshot-grid:hover::-webkit-scrollbar-thumb,
+.hn-rpt01 .insight-grid:hover::-webkit-scrollbar-thumb {
+  background: var(--hnf-scrollbar-thumb-hover);
+  background-clip: content-box;
+}
+
+/* Hai lưới thẻ giờ là KHUNG CUỘN nên cần đệm trên: thẻ nhấc 2px khi rê chuột,
+   không có đệm thì hàng đầu bị mép khung cắt cụt phần nhấc lên. */
+.hn-rpt01 .insight-grid {
+  padding: 2px 2px 4px;
+}
+.hn-rpt01 .report-snapshot-grid {
+  padding-top: 3px;
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   BỔ SUNG NGOÀI MOCKUP · 2. Chuyển động
+   -------------------------------------------------------------------------
+   Mockup là HTML tĩnh nên mọi thay đổi trạng thái đều "nhảy" một phát. Lớp
+   chuyển động toàn cục `src/styles/hn-motion.css` chỉ phủ antd/MUI, không với
+   tới các thẻ HTML thuần của bản port này — nên khai lại ở đây bằng ĐÚNG bộ
+   token `--hn-ease*` / `--hn-dur*` và keyframes của lớp đó, để nhịp chuyển
+   động của màn báo cáo trùng phần còn lại của ứng dụng.
+   Không cần khối `prefers-reduced-motion` riêng: hn-motion.css đã tắt toàn cục.
+   ═════════════════════════════════════════════════════════════════════════ */
+.hn-rpt01 .button,
+.hn-rpt01 .mini-action,
+.hn-rpt01 .legend-button,
+.hn-rpt01 .modal-close,
+.hn-rpt01 .chart-table summary {
+  transition:
+    color var(--hn-dur-instant) var(--hn-ease),
+    background-color var(--hn-dur-fast) var(--hn-ease),
+    border-color var(--hn-dur-fast) var(--hn-ease),
+    box-shadow var(--hn-dur-fast) var(--hn-ease),
+    transform var(--hn-dur-fast) var(--hn-ease),
+    opacity var(--hn-dur-fast) var(--hn-ease);
+}
+
+/* Phản hồi bấm: nhấc nhẹ khi rê, "lún" khi nhấn — cùng nhịp với `.ant-btn`. */
+.hn-rpt01 .button:not(:disabled):hover,
+.hn-rpt01 .mini-action:not(:disabled):hover {
+  transform: translateY(-1px);
+}
+.hn-rpt01 .button:not(:disabled):active,
+.hn-rpt01 .mini-action:not(:disabled):active,
+.hn-rpt01 .legend-button:active {
+  transform: translateY(0) scale(0.98);
+  transition-duration: var(--hn-dur-instant);
+}
+
+.hn-rpt01 .chip,
+.hn-rpt01 .match-chip,
+.hn-rpt01 .equation-impact,
+.hn-rpt01 .equation-status {
+  transition:
+    color var(--hn-dur-instant) var(--hn-ease),
+    background-color var(--hn-dur-fast) var(--hn-ease);
+}
+
+.hn-rpt01 .report-table tbody tr {
+  transition: background-color var(--hn-dur-fast) var(--hn-ease);
+}
+
+.hn-rpt01 .report-slice,
+.hn-rpt01 .equation-item,
+.hn-rpt01 .report-document-card {
+  transition:
+    box-shadow var(--hn-dur) var(--hn-ease),
+    border-color var(--hn-dur-fast) var(--hn-ease),
+    transform var(--hn-dur) var(--hn-ease-out);
+}
+.hn-rpt01 .report-slice:hover,
+.hn-rpt01 .equation-item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--floating-shadow);
+}
+
+/* Đổi tab Bảng ↔ Lát cắt: nội dung hiện dần thay vì tráo phát một. */
+.hn-rpt01 [role="tabpanel"]:not([hidden]) {
+  animation: hn-fade-in-up var(--hn-dur) var(--hn-ease-out) backwards;
+}
+
+/* Lớp nổi: nền mờ dần, hộp thoại phóng nhẹ, popover trượt xuống. */
+.hn-rpt01 .backdrop {
+  animation: hn-fade-in var(--hn-dur-fast) var(--hn-ease-out) backwards;
+}
+.hn-rpt01 .modal {
+  animation: hn-rpt01-modal-in var(--hn-dur-slow) var(--hn-ease-out) backwards;
+}
+
+/*
+ * `.modal` đã dùng `transform: translate(-50%,-50%)` để căn giữa, nên KHÔNG
+ * dùng lại được `hn-scale-in` toàn cục (nó ghi đè transform và hộp thoại sẽ
+ * nhảy sang góc dưới phải). Keyframes riêng giữ nguyên phép căn giữa.
+ */
+@keyframes hn-rpt01-modal-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+/* ── @media — giữ nguyên thứ tự và ngưỡng của demo ───────────────────────── */
+@media (max-width: 1279px) {
+  .hn-rpt01 .page-wrap {
+    padding-inline: 16px;
+  }
+  .hn-rpt01 .kpi-grid {
+    gap: 16px;
+  }
+  .hn-rpt01 .equation-card {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+  }
+  .hn-rpt01 .analysis-grid,
+  .hn-rpt01 .insight-grid {
+    gap: 16px;
+  }
+  .hn-rpt01 .analysis-grid > :nth-child(1),
+  .hn-rpt01 .analysis-grid > :nth-child(2) {
+    grid-column: span 12;
+  }
+  .hn-rpt01 .insight-grid > :nth-child(1),
+  .hn-rpt01 .insight-grid > :nth-child(2) {
+    grid-column: span 6;
+  }
+  .hn-rpt01 .insight-grid > :nth-child(3) {
+    grid-column: span 12;
+  }
+}
+
+@media (max-width: 1279.95px) {
+  .hn-rpt01 .report-kpi-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .hn-rpt01 .report-filter-card {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .hn-rpt01 .report-filter-actions {
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 979px) {
+  .hn-rpt01 button,
+  .hn-rpt01 input {
+    min-height: 44px;
+  }
+  .hn-rpt01 .button,
+  .hn-rpt01 .legend-button {
+    min-height: 44px;
+  }
+  .hn-rpt01 .refresh-block {
+    grid-column: 1 / -1;
+    justify-self: stretch;
+  }
+  .hn-rpt01 .kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .hn-rpt01 .analysis-grid > :nth-child(1),
+  .hn-rpt01 .analysis-grid > :nth-child(2),
+  .hn-rpt01 .insight-grid > :nth-child(1),
+  .hn-rpt01 .insight-grid > :nth-child(2),
+  .hn-rpt01 .insight-grid > :nth-child(3) {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 979.95px) {
+  .hn-rpt01 .report-snapshot-grid {
+    grid-template-columns: 1fr;
+  }
+  .hn-rpt01 .report-slice-values {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 767px) {
+  .hn-rpt01 .page-wrap {
+    padding: 16px 16px 40px;
+  }
+  .hn-rpt01 .page-header {
+    display: grid;
+  }
+  .hn-rpt01 .scope-block {
+    justify-content: flex-start;
+  }
+  .hn-rpt01 .filter-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+    gap: 16px;
+    padding: 16px;
+  }
+  .hn-rpt01 .filter-group {
+    min-width: 0;
+    width: 100%;
+  }
+  .hn-rpt01 .refresh-block {
+    margin-left: 0;
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .hn-rpt01 .refresh-meta {
+    min-width: 0;
+    overflow: hidden;
+  }
+  .hn-rpt01 .refresh-meta > span,
+  .hn-rpt01 .refresh-meta > small {
+    display: block;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .hn-rpt01 .kpi-card {
+    min-height: 132px;
+    padding: 16px;
+  }
+  .hn-rpt01 .card-head {
+    padding: 16px 16px 12px;
+  }
+  .hn-rpt01 .chart-card .chart-card-head {
+    display: grid;
+    align-items: start;
+    gap: 10px;
+  }
+  .hn-rpt01 .chart-card-head > .chart-head-meta {
+    justify-self: start;
+    margin-left: 52px;
+  }
+  .hn-rpt01 .chart-head-meta {
+    grid-auto-flow: column;
+    align-items: center;
+    justify-items: start;
+  }
+  .hn-rpt01 .insight-card .insight-card-head {
+    display: grid;
+    min-height: 0;
+    gap: 12px;
+  }
+  .hn-rpt01 .equation-card {
+    grid-template-columns: 1fr;
+    gap: 28px;
+    padding: 16px;
+  }
+  .hn-rpt01 .equation-item {
+    min-height: 112px;
+  }
+  .hn-rpt01 .equation-item + .equation-item::before {
+    left: 50%;
+    top: -29px;
+    transform: translateX(-50%);
+  }
+  .hn-rpt01 .equation-note {
+    gap: 12px;
+    margin-top: -8px;
+  }
+  .hn-rpt01 .section-heading {
+    align-items: flex-start;
+  }
+  .hn-rpt01 .section-meta {
+    max-width: 145px;
+  }
+  .hn-rpt01 .chart-wrap,
+  .hn-rpt01 .insight-body {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .hn-rpt01 .chart-table {
+    margin-left: 16px;
+    margin-right: 16px;
+  }
+  .hn-rpt01 .chart-svg {
+    min-height: 240px;
+  }
+}
+
+@media (max-width: 767.95px) {
+  .hn-rpt01 .report-filter-card {
+    grid-template-columns: 1fr;
+  }
+  .hn-rpt01 .report-filter-actions .button {
+    width: 100%;
+  }
+  .hn-rpt01 .report-slice-values {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 575.95px) {
+  .hn-rpt01 .report-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+  /* Dưới 576px một dòng không đủ chỗ cho hai ô ngày — mới xếp chồng. */
+  .hn-rpt01 .report-date-range,
+  .hn-rpt01 .modal-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 479px) {
+  .hn-rpt01 .page-wrap {
+    padding-inline: 16px;
+  }
+  .hn-rpt01 h1 {
+    font-size: 24px;
+  }
+  .hn-rpt01 .scope-block .chip-neutral {
+    display: none;
+  }
+  .hn-rpt01 .kpi-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .hn-rpt01 .kpi-label {
+    font-size: 13px;
+  }
+  .hn-rpt01 .kpi-value {
+    font-size: 26px;
+    line-height: 34px;
+  }
+  .hn-rpt01 .equation-item {
+    min-height: 106px;
+    padding: 14px;
+  }
+  .hn-rpt01 .equation-value {
+    font-size: 23px;
+  }
+  .hn-rpt01 .equation-note {
+    display: grid;
+    padding: 13px;
+  }
+  .hn-rpt01 .equation-status {
+    width: 100%;
+  }
+  .hn-rpt01 .section-heading {
+    margin-top: 22px;
+  }
+}
+
+@media (pointer: coarse) {
+  .hn-rpt01 button,
+  .hn-rpt01 input {
+    min-height: 44px;
+  }
+}
+
+/* ── Nền tối ─────────────────────────────────────────────────────────────
+   Port khối `html[data-theme="dark"]` của report-01-offline.css, chỉ giữ phần
+   RPT-01 thật sự dựng. Các màu đã đi qua token `--wms-*` tự đổi theo bảng tối
+   (src/shared/ui/tokens/css-vars-dark.css) nên ở đây chỉ khai lại các sắc
+   riêng `--hnf-*` và mấy chỗ demo vẽ gradient cứng. Cùng cơ chế với RPT-02. */
+:root[data-theme="dark"] .hn-rpt01 {
+  --hnf-surface-muted: #35354f;
+  --hnf-equation-card-bg: #2c2c44;
+  --hnf-chip-neutral-bg: #41415d;
+  --hnf-chip-neutral-fg: #d8d4e8;
+  --hnf-chip-info-fg: #8fc2ff;
+  --hnf-match-fg: #70e6a7;
+  --hnf-ghost-border: rgba(231, 227, 252, 0.18);
+  --hnf-alert-warning-fg: #ffc27a;
+  --hnf-alert-error-fg: #ff9ba0;
+  --hnf-alert-info-fg: #8fc2ff;
+  --hnf-axis: rgba(231, 227, 252, 0.68);
+  --hnf-grid-line: #44445e;
+  --hnf-table-line: rgba(231, 227, 252, 0.08);
+  --hnf-row-line: rgba(231, 227, 252, 0.08);
+  --hnf-card-line: rgba(231, 227, 252, 0.08);
+  --hnf-segment-bg: rgba(231, 227, 252, 0.07);
+  --hnf-segment-shadow: 0 2px 6px rgba(12, 12, 24, 0.22);
+  --hnf-equation-neutral: #8f8b99;
+  --hnf-equation-neutral-soft: rgba(231, 227, 252, 0.08);
+  --hnf-equation-line: #474761;
+  --hnf-equation-shadow: 0 2px 8px rgba(12, 12, 24, 0.2);
+  --hnf-equation-op-line: #4a4a65;
+  --hnf-equation-op-shadow: 0 3px 8px rgba(12, 12, 24, 0.32);
+  --hnf-equation-note-bg: rgba(231, 227, 252, 0.045);
+  --hnf-result-gradient: linear-gradient(135deg, #675dd8 0%, #8379ea 100%);
+  --hnf-overlay: rgba(29, 25, 38, 0.5);
+  --hnf-overlay-shadow: 0 18px 48px rgba(12, 12, 24, 0.48);
+  --hnf-modal-line: rgba(231, 227, 252, 0.12);
+  --hnf-insight-shadow: 0 6px 20px rgba(12, 12, 24, 0.34);
+  --hnf-scrollbar-thumb: rgba(231, 227, 252, 0.24);
+  --hnf-scrollbar-thumb-hover: rgba(231, 227, 252, 0.4);
+}
+:root[data-theme="dark"] .hn-rpt01 .equation-card {
+  background: linear-gradient(180deg, #303049 0%, #2c2c44 100%);
+}
+:root[data-theme="dark"] .hn-rpt01 .equation-item,
+:root[data-theme="dark"] .hn-rpt01 .equation-item + .equation-item::before {
+  background: #35354f;
+}
+:root[data-theme="dark"] .hn-rpt01 .equation-item + .equation-item::before {
+  color: var(--ink);
+}
+:root[data-theme="dark"] .hn-rpt01 .equation-status {
+  background: rgba(40, 199, 111, 0.18);
+  color: var(--hnf-match-fg);
+}
+:root[data-theme="dark"] .hn-rpt01 .button-ghost,
+:root[data-theme="dark"] .hn-rpt01 .legend-button {
+  background: var(--surface);
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   BỔ SUNG NGOÀI MOCKUP · 3. Control bộ lọc dùng CHUNG toàn hub Báo cáo
+   -------------------------------------------------------------------------
+   Mockup 8.1 tự dựng ô ngày, ô tìm kiếm và ô "Loại hàng" bằng HTML thuần, kèm
+   một popover lịch và một popover listbox riêng. Yêu cầu người dùng 2026-09-03:
+   thao tác trên 8 màn Báo cáo phải ĐỒNG BỘ với màn "Nhập liệu, đối chiếu & lỗi"
+   (RPT-04) — nên ba ô đó nay là `UiDatePicker` / `SearchInput` / `UiSelect` dùng
+   chung, cùng lịch, cùng dropdown, cùng chuyển động với mọi bộ lọc khác.
+   Khối dưới đây CHỈ làm một việc: ép control dùng chung lấp đầy đúng ô lưới mà
+   mockup đã chia (giống hệt cách `FilterField` của RPT-04 làm).
+   ═════════════════════════════════════════════════════════════════════════ */
+.hn-rpt01 .filter-group .MuiFormControl-root,
+.hn-rpt01 .filter-group .MuiTextField-root {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+}
+
+/*
+ * Control dùng chung TỰ QUẢN chiều cao (CONTROL.height = 38px, đúng bằng ô lọc
+ * của 6 màn Báo cáo còn lại). Quy tắc `button/input { min-height: 40px }` —
+ * và bản 44px trong hai @media bên trên — là của bản port, dành cho nút do
+ * chính mockup dựng; nếu để nó áp vào đây thì thanh lọc màn này cao hơn hẳn
+ * các màn khác, tức là lại lệch đúng thứ vừa đồng bộ. Độ đặc hiệu 0-3-0 nên
+ * thắng cả ba quy tắc kia bất kể thứ tự khai báo.
+ */
+.hn-rpt01 .report-filter-card .hn-vuexy-date-field,
+.hn-rpt01 .report-filter-card .MuiInputBase-input {
+  min-height: 0;
+}
+
+/*
+ * Nút "Làm mới": icon quay trong lúc gọi lại số liệu.
+ *
+ * Lượt gọi lại xong trong khoảng 50ms nên chỉ đặt `disabled` thì không ai kịp
+ * thấy — người dùng tưởng nút chết. `useReportRefresh` giữ trạng thái bận tối
+ * thiểu 420ms để vòng quay này chạy trọn một nhịp, và báo kết quả bằng toast.
+ * Dùng chung keyframes `hn-spin` khai ngay dưới đây (hn-motion.css toàn cục
+ * không có sẵn keyframes xoay).
+ */
+.hn-rpt01 .refresh-icon {
+  display: inline-grid;
+  place-items: center;
+}
+.hn-rpt01 .refresh-icon.is-spinning {
+  animation: hn-rpt01-spin 900ms linear infinite;
+}
+@keyframes hn-rpt01-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

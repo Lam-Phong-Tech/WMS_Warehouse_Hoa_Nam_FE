@@ -65,6 +65,16 @@ export interface ResponsiveDataTableProps<T> {
   rowSelection?: RowSelectionState;
   /** Nhãn a11y cho checkbox từng dòng — mặc định "Chọn dòng <rowKey>". */
   selectionLabel?: (row: T) => string;
+  /**
+   * Trần chiều cao của KHUNG bảng (desktop). Có giá trị ⇒ bảng dài tự cuộn dọc
+   * trong khung và `thead` được ghim lại, thay vì kéo trang thành một dải rất
+   * dài. Bỏ trống ⇒ giữ nguyên hành vi cũ (bảng cao bao nhiêu hiện bấy nhiêu).
+   *
+   * Đây là `max-height` nên bảng ngắn KHÔNG bị độn thêm khoảng trắng. Ở mobile
+   * bảng đã chuyển sang danh sách card nên prop này không áp dụng — trang mobile
+   * vốn cuộn dọc tự nhiên, lồng thêm một khung cuộn nữa chỉ gây kẹt cử chỉ.
+   */
+  maxBodyHeight?: number | string;
 }
 
 /**
@@ -88,6 +98,7 @@ export function ResponsiveDataTable<T>({
   onSortChange: controlledOnSortChange,
   rowSelection,
   selectionLabel,
+  maxBodyHeight,
 }: ResponsiveDataTableProps<T>) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down(mobileBreakpoint));
@@ -306,6 +317,21 @@ export function ResponsiveDataTable<T>({
           border: 1,
           borderColor: "divider",
           borderRadius: 2.5,
+          ...(maxBodyHeight === undefined
+            ? null
+            : {
+                maxHeight: maxBodyHeight,
+                overflowY: "auto",
+                // Cuộn dọc mà tiêu đề trôi mất thì người đọc không còn biết cột
+                // nào là cột nào — ghim thead lại ngay trong khung cuộn.
+                "& thead th": {
+                  position: "sticky",
+                  top: 0,
+                  zIndex: 2,
+                },
+                scrollBehavior: "smooth",
+                overscrollBehavior: "contain",
+              }),
         }}
       >
         <Box
@@ -404,6 +430,12 @@ export function ResponsiveDataTable<T>({
                 onClick={onRowClick ? () => onRowClick(row) : undefined}
                 sx={{
                   cursor: onRowClick ? "pointer" : undefined,
+                  // Dòng đổi nền mượt khi rê chuột thay vì nhảy màu một phát —
+                  // cùng nhịp với `MuiTableRow` khai trong theme (mui-adapter).
+                  transition: (theme) =>
+                    theme.transitions.create("background-color", {
+                      duration: theme.transitions.duration.shortest,
+                    }),
                   "&:hover": { bgcolor: "action.hover" },
                   "&:not(:last-of-type)": {
                     borderBottom: 1,
